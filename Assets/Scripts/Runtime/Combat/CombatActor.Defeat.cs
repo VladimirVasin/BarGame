@@ -39,6 +39,7 @@ namespace BarPromenade
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
+            if (zombieVoice != null) zombieVoice.Stop();
             CancelWeaponCarry(retainPose: true);
             roundEnded = true;
             EndPistolAction();

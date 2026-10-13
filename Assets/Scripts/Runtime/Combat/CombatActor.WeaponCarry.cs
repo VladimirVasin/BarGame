@@ -157,13 +157,17 @@ namespace BarPromenade
         public bool TrySelectWeapon(CombatWeaponId id)
         {
             CarriedWeaponRecord record = FindCarriedWeapon(id);
-            if (record == null || record.Location == CombatWeaponCarryLocation.Dropped || resettingCarry || disposingCarry ||
-                !BodyDamage.CanUseRightHand || !BodyDamage.CanUseLeftHand &&
-                (id != CombatWeaponId.Crowbar || HasWeaponInHand && activeCarry?.Id != CombatWeaponId.Crowbar) ||
-                State.IsDefeated || IsKnockedDown || IsRagdollActive || !isActiveAndEnabled ||
-                !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            int request = JournalCommand("select_weapon");
+            string reason = record == null ? "not_carried" : record.Location == CombatWeaponCarryLocation.Dropped ? "dropped" :
+                resettingCarry || disposingCarry ? "lifecycle" : !BodyDamage.CanUseRightHand || !BodyDamage.CanUseLeftHand &&
+                (id != CombatWeaponId.Crowbar || HasWeaponInHand && activeCarry?.Id != CombatWeaponId.Crowbar) ? "hands_unavailable" :
+                State.IsDefeated || IsKnockedDown || IsRagdollActive ? "body_unavailable" :
+                !isActiveAndEnabled ? "disabled" : !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" : null;
+            if (reason != null) { JournalWeaponCarry("request", record, reason); return false; }
+            JournalWeaponCarry("request", record);
             if (!IsSwitchingWeapon && !requestedCarry.HasValue && activeCarry == record && HasWeaponInHand) return true;
             requestedCarry = id;
+            journalCarryQueuedRequest = request;
             CancelPendingPistolShot("weapon_selection"); SetPistolAim(false);
             guardHeld = false; State.SetBlocking(false);
             State.CancelCharge(); State.CancelBufferedAction(State.BufferedAction);
@@ -212,8 +216,10 @@ namespace BarPromenade
             EndPistolAction(); ReleasePresentation(preservePresentedPose: true);
             if (draw) BindCarriedWeapon(record);
             carryAction = record; carryDraw = draw; carryTransferred = false;
+            journalCarryActionRequest = journalCarryQueuedRequest;
             shotgunDrawStage = 0;
             carryElapsed = carrySettleElapsed = 0f; carryTerminalFrame = -1; carrySettling = true;
+            JournalWeaponCarry("begin", record);
             AnimationClip clip = record.CarryClips[draw ? 1 : 0];
             if (!hero.TryAcquireClip(this, clip.name)) { CancelWeaponCarry(); return; }
             hero.SetOwnedClipLocomotion(this, true);
@@ -241,6 +247,7 @@ namespace BarPromenade
             {
                 if (Time.frameCount <= carryTerminalFrame) return;
                 bool drew = carryDraw;
+                JournalWeaponCarry("complete", carryAction);
                 carryAction = null;
                 if (drew)
                 {
@@ -301,6 +308,7 @@ namespace BarPromenade
                     ResetWeaponContacts();
                 }
                 carryTransferred = true;
+                JournalWeaponCarry("transfer", carryAction);
                 UpdateConcealedPistol();
             }
             carryElapsed = next;
@@ -320,6 +328,7 @@ namespace BarPromenade
             carryAction.Location = CombatWeaponCarryLocation.Held;
             weaponDropped = false;
             carryTransferred = true;
+            JournalWeaponCarry("transfer", carryAction, stage: stage);
         }
 
         private bool PresentWeaponCarry()
@@ -353,6 +362,7 @@ namespace BarPromenade
             if (!IsSwitchingWeapon) return false;
             bool releaseTransientHold = carryAction.Id == CombatWeaponId.Shotgun && carryDraw &&
                 shotgunDrawStage > 0 && shotgunDrawStage < 3 && !resettingCarry && !disposingCarry && gameObject.activeInHierarchy;
+            JournalWeaponCarry("cancel", carryAction, resettingCarry || disposingCarry ? "lifecycle" : "interrupted");
             carryAction = null; carryTerminalFrame = -1;
             // A palm push or upper catch is not a stable firing hold. Interruptions
             // release the same real gun at its live pose instead of snapping it to

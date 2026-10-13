@@ -102,7 +102,11 @@ namespace BarPromenade
         private bool Commit()
         {
             if (accepted || !available || !interactionEnabled || owner == null || !owner.isActiveAndEnabled ||
-                owner.State.IsDefeated || state.AddReserveRounds(RoundsPerPickup) <= 0) return false;
+                owner.State.IsDefeated) return false;
+            int before = state.ReserveRounds;
+            int granted = state.AddReserveRounds(RoundsPerPickup);
+            owner.JournalAmmunitionPickup(WeaponId, before, granted);
+            if (granted <= 0) return false;
             accepted = true;
             available = false;
             RespawnRemaining = CombatAmmoSpawner.RespawnSeconds;

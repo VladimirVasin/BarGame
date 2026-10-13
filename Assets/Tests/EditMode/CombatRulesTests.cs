@@ -8,6 +8,32 @@ namespace BarPromenade.Tests.EditMode
         private static MeleeCombatSettings S => MeleeCombatSettings.Crowbar;
         private const float Eps = .0001f;
 
+        [TestCase(MeleeHitResult.Hit)]
+        [TestCase(MeleeHitResult.Blocked)]
+        public void ZombieCannotChainOrShortenItsLongReturn(MeleeHitResult result)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(hitRecoverySeconds: .95f),
+                "Human frame advantage still rejects a return longer than the target's stagger.");
+            var zombie = new MeleeCombatant(MeleeCombatSettings.ZombieUnarmed);
+            zombie.SetBodyCapabilities(false, true, true);
+            Assert.That(zombie.RequestAttack(), Is.True, "The remaining left hand owns a full unarmed attack.");
+            Assert.That(zombie.Swing, Is.EqualTo(MeleeSwing.Backhand));
+            zombie.Advance(zombie.AttackWindupSeconds + .01f);
+            Assert.That(zombie.RecordAttackOutcome(result, zombie.AttackSequence), Is.True);
+            zombie.Advance(Math.Max(0f, zombie.AttackActiveEnd - zombie.AttackElapsed) + .001f);
+            Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Recovery));
+            Assert.That(zombie.AttackRecoverySeconds, Is.EqualTo(.95f).Within(Eps));
+            Assert.That(zombie.RequestAttack(true), Is.False);
+            Assert.That(zombie.TryStartRecoveryAttack(), Is.False);
+            Assert.That(zombie.HasBufferedAttack || zombie.IsChained, Is.False);
+            zombie.Advance(.94f);
+            Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Recovery));
+            zombie.Advance(.02f);
+            Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Ready));
+            Assert.That(zombie.Stamina, Is.EqualTo(zombie.Settings.MaxStamina));
+            Assert.That(zombie.RequestAttack(), Is.True);
+        }
+
         /// <summary>Raise the guard early enough that the next contact is an ordinary block, not a parry.</summary>
         private static void HoldGuard(MeleeCombatant actor)
         {

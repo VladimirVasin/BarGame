@@ -47,6 +47,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            CombatTestRoot.UseHumanOpponentsForTests = true;
             CombatTestRoot.UseLegacyArenaForTests = true;
             previousCaptureDelta = Time.captureDeltaTime;
             previousAudioPause = AudioListener.pause;
@@ -62,6 +63,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            CombatTestRoot.UseHumanOpponentsForTests = false;
             CombatTestRoot.UseLegacyArenaForTests = false;
             if (root != null) root.AutomaticSimulation = false;
             // Contact voices are pooled under DontDestroyOnLoad. End them before

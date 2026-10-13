@@ -15,6 +15,8 @@ namespace BarPromenade
         private readonly Dictionary<string, long> rejections = new Dictionary<string, long>(StringComparer.Ordinal);
         private readonly Dictionary<string, (double seconds, long sequence)> longest = new Dictionary<string, (double, long)>(StringComparer.Ordinal);
         private readonly List<string> milestones = new List<string>(24);
+        private readonly Packet[] causalTail = new Packet[32];
+        private int causalTailNext, causalTailCount;
         private readonly List<GameLogField> fields = new List<GameLogField>(48);
         private readonly GameLogFormatter.Buffer recordBuffer = new GameLogFormatter.Buffer(16384, 16384);
         private readonly (int frame, double milliseconds)[] slowest = new (int, double)[10];
@@ -31,8 +33,9 @@ namespace BarPromenade
         private FileStream activeLock;
         private string roundDirectory, roundIoError;
         private Packet roundHeader, lastPacket;
-        private long bytes, written, fileDropped, oversized, seenProducerDrops, summarizedRejections;
-        private bool fileLimited, marked;
+        private long bytes, telemetryBytes, written, fileDropped, telemetryDropped, causalDropped,
+            oversized, seenProducerDrops, summarizedRejections;
+        private bool fileLimited, telemetryLimited, causalLimited, limitMarkerWritten, marked;
 
         private void Run()
         {
@@ -50,7 +53,16 @@ namespace BarPromenade
                                 case Kind.Begin: OpenRound(lastPacket); break;
                                 case Kind.Event: ProcessEvent(ref lastPacket); break;
                                 case Kind.End: CloseRound(lastPacket); break;
-                                case Kind.Flush: output?.Flush(); lastPacket.Barrier.TrySetResult(true); break;
+                                case Kind.Flush:
+                                    output?.Flush();
+                                    if (fileLimited && roundDirectory != null)
+                                    {
+                                        long losses = Math.Max(0, lastPacket.Dropped - roundHeader.Dropped) + fileDropped;
+                                        File.WriteAllText(Path.Combine(roundDirectory, "summary.txt"),
+                                            LimitUtf8(BuildSummary(lastPacket, losses, false, live: true), (int)SummaryBudget), Utf8);
+                                    }
+                                    lastPacket.Barrier.TrySetResult(true);
+                                    break;
                             }
                         }
                         catch (Exception error)
@@ -88,6 +100,10 @@ namespace BarPromenade
 
         private long SummaryBudget => Math.Min(16384L, maxRoundBytes / 4);
         private long FooterBudget => Math.Min(4096L, maxRoundBytes / 2);
+        private long RecordBudget => maxRoundBytes - SummaryBudget - FooterBudget - 64;
+        // Samples cannot consume the room reserved for commands, contacts and
+        // results. Unused sample space remains available to causal records.
+        private long TelemetryBudget => RecordBudget * 7 / 10;
 
         // Packets carry eight inline fields; pass by reference through IO/error
         // boundaries instead of copying the large struct across worker frames.
@@ -97,8 +113,10 @@ namespace BarPromenade
             roundHeader = packet; lastPacket = packet;
             events.Clear(); rejections.Clear(); longest.Clear(); milestones.Clear(); Array.Clear(slowest, 0, slowest.Length);
             Array.Clear(rejectionSeries, 0, rejectionSeries.Length); finishedSeries.Clear();
-            bytes = written = fileDropped = oversized = summarizedRejections = 0; seenProducerDrops = packet.Dropped;
-            fileLimited = marked = false; roundIoError = null;
+            Array.Clear(causalTail, 0, causalTail.Length); causalTailNext = causalTailCount = 0;
+            bytes = telemetryBytes = written = fileDropped = telemetryDropped = causalDropped = oversized = summarizedRejections = 0;
+            seenProducerDrops = packet.Dropped;
+            fileLimited = telemetryLimited = causalLimited = limitMarkerWritten = marked = false; roundIoError = null;
             roundDirectory = ReserveRound(directory, folderSession, packet.Round, maxRoundBytes, out activeLock);
             output = new StreamWriter(new FileStream(Path.Combine(roundDirectory, "duel.ndjson"),
                 FileMode.CreateNew, FileAccess.Write, FileShare.Read), Utf8) { NewLine = "\n", AutoFlush = false };
@@ -139,20 +157,56 @@ namespace BarPromenade
                     " actor=" + packet.Actor + " action=" + packet.Action + " request=" + packet.Request +
                     (reason == null ? string.Empty : " reason=" + reason));
             }
-            if (fileLimited || roundIoError != null)
-            { fileDropped++; Interlocked.Increment(ref dropped); return; }
-            if (WritePacket(packet, false)) return;
-            fileDropped++; Interlocked.Increment(ref dropped);
-            fileLimited = true;
+            if (CausalTailEvent(packet.Name)) RememberCausalTail(packet);
+            bool sample = SampleEvent(packet.Name);
+            if (roundIoError != null || causalLimited || sample && telemetryLimited)
+            { DropFileRecord(sample); return; }
+            if (!FormatPacket(packet)) { DropFileRecord(sample); return; }
+            if (FormattedByteLength > 16384) { oversized++; DropFileRecord(sample); return; }
+            if (sample && telemetryBytes + FormattedByteLength > TelemetryBudget)
+            {
+                telemetryLimited = fileLimited = true;
+                DropFileRecord(true);
+                WriteLimitMarker(packet, "telemetry_budget");
+                return;
+            }
+            long before = bytes;
+            if (WritePacket(packet, false, alreadyFormatted: true))
+            {
+                if (sample) telemetryBytes += bytes - before;
+                return;
+            }
+            DropFileRecord(sample);
+            causalLimited = fileLimited = true;
+            WriteLimitMarker(packet, "round_budget");
+        }
+
+        private void DropFileRecord(bool sample)
+        {
+            fileDropped++;
+            if (sample) telemetryDropped++; else causalDropped++;
+            Interlocked.Increment(ref dropped);
+        }
+
+        private void WriteLimitMarker(in Packet packet, string cause)
+        {
+            // One warning fits even a small test budget. A later hard limit is
+            // explicit in the terminal causal_limit and omission counters.
+            if (limitMarkerWritten) return;
             Packet marker = packet; marker.Name = "file_limit"; marker.Metadata = null;
             marker.F0 = GameLog.Field("omitted_event", packet.Name);
             marker.F1 = GameLog.Field("max_round_bytes", maxRoundBytes);
-            marker.F2 = marker.F3 = marker.F4 = marker.F5 = marker.F6 = marker.F7 = default;
-            WritePacket(marker, true);
+            marker.F2 = GameLog.Field("cause", cause);
+            marker.F3 = GameLog.Field("telemetry_budget_bytes", TelemetryBudget);
+            marker.F4 = GameLog.Field("causal_reserve_bytes", RecordBudget - TelemetryBudget);
+            marker.F5 = marker.F6 = marker.F7 = default;
+            limitMarkerWritten = WritePacket(marker, true);
             Prune(directory);
         }
 
-        private bool WritePacket(in Packet packet, bool terminal)
+        private int FormattedByteLength => Utf8.GetByteCount(recordBuffer.Characters, 0, recordBuffer.Count) + 1;
+
+        private bool FormatPacket(in Packet packet, bool compactTail = false)
         {
             fields.Clear();
             fields.Add(GameLog.Field("round", roundHeader.Round));
@@ -165,18 +219,27 @@ namespace BarPromenade
                 fields.Add(GameLog.Field("duel_schema_version", 2));
                 fields.Add(GameLog.Field("stage_sample_encoding", "absent_numeric_zero"));
                 fields.Add(GameLog.Field("zero_stage_events", ZeroStageEvents));
+                fields.Add(GameLog.Field("telemetry_budget_bytes", TelemetryBudget));
+                fields.Add(GameLog.Field("causal_tail", "summary_original_envelopes"));
             }
             if (packet.Dropped > seenProducerDrops)
                 fields.Add(GameLog.Field("queue_dropped_before", packet.Dropped - seenProducerDrops));
+            if (compactTail) fields.Add(GameLog.Field("causal_tail_copy", true));
             if (packet.Metadata != null)
-                foreach (GameLogField field in packet.Metadata) AddField(field);
-            for (int i = 0; i < 8; i++) AddField(FieldAt(packet, i));
+                foreach (GameLogField field in packet.Metadata) AddField(field, compactTail);
+            for (int i = 0; i < 8; i++) AddField(FieldAt(packet, i), compactTail);
             double elapsed = Math.Max(0d, (packet.Stamp - started) / (double)Stopwatch.Frequency);
             bool formatted = GameLogFormatter.TryFormat(recordBuffer, utcStarted.AddSeconds(elapsed),
                 (long)(elapsed * 1000d), packet.Sequence, packet.Name == "file_limit" ? GameLogLevel.Warning : GameLogLevel.Info,
                 "duel", packet.Name, SessionId, "CombatTest", null, fields);
             if (!formatted) { oversized++; return false; }
-            int length = Utf8.GetByteCount(recordBuffer.Characters, 0, recordBuffer.Count) + 1;
+            return true;
+        }
+
+        private bool WritePacket(in Packet packet, bool terminal, bool alreadyFormatted = false)
+        {
+            if (!alreadyFormatted && !FormatPacket(packet)) return false;
+            int length = FormattedByteLength;
             long limit = maxRoundBytes - SummaryBudget - 64 - (terminal ? 0 : FooterBudget);
             if (length > 16384 || bytes + length > limit)
             { if (length > 16384) oversized++; return false; }
@@ -185,11 +248,18 @@ namespace BarPromenade
             return true;
         }
 
-        private void AddField(GameLogField field)
+        private void AddField(GameLogField field, bool compactTail = false)
         {
             if (string.IsNullOrEmpty(field.Name)) return;
             // Correlation fields are owned by the envelope; payload cannot spoof them.
             foreach (GameLogField existing in fields) if (existing.Name == field.Name) return;
+            if (compactTail && field.Type == GameLogFieldType.String && field.StringValue != null && field.StringValue.Length > 64)
+            {
+                field = GameLog.Field(field.Name, Clip(field.StringValue, 64));
+                bool recorded = false;
+                foreach (GameLogField existing in fields) if (existing.Name == "tail_strings_clipped") { recorded = true; break; }
+                if (!recorded) fields.Add(GameLog.Field("tail_strings_clipped", true));
+            }
             fields.Add(field);
         }
 
@@ -204,7 +274,12 @@ namespace BarPromenade
                 if (output != null && roundIoError == null)
                 {
                     Packet footer = packet; footer.Name = "round_end";
-                    footer.Metadata = new[] { GameLog.Field("summarized_rejections", summarizedRejections) };
+                    footer.Metadata = new[] {
+                        GameLog.Field("summarized_rejections", summarizedRejections),
+                        GameLog.Field("telemetry_dropped_records", telemetryDropped),
+                        GameLog.Field("causal_dropped_records", causalDropped),
+                        GameLog.Field("producer_dropped_records", Math.Max(0, packet.Dropped - roundHeader.Dropped)),
+                        GameLog.Field("telemetry_limit", telemetryLimited), GameLog.Field("causal_limit", causalLimited) };
                     footer.F0 = GameLog.Field("reason", Clip(packet.Name, 128));
                     footer.F1 = GameLog.Field("dropped_records", losses);
                     footer.F2 = GameLog.Field("file_limit", fileLimited);
@@ -229,18 +304,21 @@ namespace BarPromenade
             Prune(directory);
         }
 
-        private string BuildSummary(in Packet packet, long losses, bool complete)
+        private string BuildSummary(in Packet packet, long losses, bool complete, bool live = false)
         {
             var text = new StringBuilder(2048);
             text.AppendLine("Duel journal " + SessionId + ", round " + roundHeader.Round);
-            text.AppendLine("Status: " + (complete ? "completed" : "incomplete") + "; reason: " + Clip(packet.Name, 128));
+            text.AppendLine("Status: " + (live ? "live" : complete ? "completed" : "incomplete") + "; reason: " + Clip(packet.Name, 128));
             text.AppendLine("Ticks: " + roundHeader.Tick + ".." + packet.Tick + "; records written: " + written);
             text.AppendLine("Losses: " + losses + "; file_limit: " + fileLimited + "; oversized: " + oversized +
                 "; io_error: " + (roundIoError ?? "none") + "; marked: " + marked);
+            text.AppendLine("File omissions: telemetry=" + telemetryDropped + "; causal=" + causalDropped +
+                "; telemetry_budget_bytes=" + TelemetryBudget + "; causal_reserve_bytes=" + (RecordBudget - TelemetryBudget));
             text.AppendLine("Repeated rejection records summarized (not lost): " + summarizedRejections);
             text.AppendLine("Absent numeric-zero stage samples (not lost): " + ZeroStageEvents);
             text.AppendLine("Collector stopwatch ticks: " + CollectorTicks + "/" + Stopwatch.Frequency +
                 "; maximum queued: " + MaximumQueued);
+            AppendCausalTail(text);
             text.AppendLine("Event counts:"); foreach (var item in events) text.AppendLine("  " + item.Key + ": " + item.Value);
             text.AppendLine("Rejected reasons:"); foreach (var item in rejections) text.AppendLine("  " + item.Key + ": " + item.Value);
             text.AppendLine("Longest observed intervals (duel seconds; open_* may be unfinished):");
@@ -264,6 +342,7 @@ namespace BarPromenade
             activeLock = null;
             if (roundDirectory != null) try { File.Delete(Path.Combine(roundDirectory, ".active")); } catch { }
             roundDirectory = null;
+            Array.Clear(causalTail, 0, causalTail.Length); causalTailNext = causalTailCount = 0;
         }
 
         private static void Count(Dictionary<string, long> counts, string name)
@@ -293,6 +372,47 @@ namespace BarPromenade
             name == "state" || name == "pose" || name == "vectors" || name == "presentation" || name == "balance" ||
             name == "impulse_movement" ||
             name.EndsWith("_snapshot", StringComparison.Ordinal) || name.EndsWith("_sample", StringComparison.Ordinal);
+
+        // Keep actions and outcomes separate from repeated solver corrections,
+        // discarded time, AI decisions and clearance candidate geometry. The
+        // existing milestone list still describes those diagnostic transitions.
+        private static bool CausalTailEvent(string name) => name == "command_requested" || name == "command_result" ||
+            name == "input" || name == "input_rejected" || name == "input_gate" || name == "focus" ||
+            name == "application_pause" || name == "phase" || name == "impact_applied" || name == "impact_kind" ||
+            name == "mark" || name == "round_result" ||
+            name.StartsWith("weapon_", StringComparison.Ordinal) && name != "weapon_constraint" && !SampleEvent(name) ||
+            name.StartsWith("ammo_", StringComparison.Ordinal) || name.StartsWith("reload_", StringComparison.Ordinal) ||
+            name.StartsWith("carry_", StringComparison.Ordinal) || name.EndsWith("_fired", StringComparison.Ordinal) ||
+            name.IndexOf("_shot_", StringComparison.Ordinal) >= 0 || name.IndexOf("_reload_", StringComparison.Ordinal) >= 0;
+
+        private void RememberCausalTail(in Packet packet)
+        {
+            causalTail[causalTailNext] = packet;
+            causalTailNext = (causalTailNext + 1) % causalTail.Length;
+            causalTailCount = Math.Min(causalTailCount + 1, causalTail.Length);
+        }
+
+        private void AppendCausalTail(StringBuilder text)
+        {
+            // Finalization only: producer packets retain bounded inline fields,
+            // and the latest complete JSON envelopes use half the existing
+            // summary allowance. No extra file, sequence or disk budget is added.
+            const string title = "Causal/action tail (latest original envelopes; copies, not additional duel records):";
+            int remaining = (int)SummaryBudget / 2 - Utf8.GetByteCount(title) - 130;
+            var rows = new List<string>(causalTailCount);
+            for (int offset = 1; offset <= causalTailCount; offset++)
+            {
+                Packet packet = causalTail[(causalTailNext - offset + causalTail.Length) % causalTail.Length];
+                if (!FormatPacket(packet, compactTail: true)) continue;
+                int length = FormattedByteLength;
+                if (length > remaining) break;
+                rows.Add(new string(recordBuffer.Characters, 0, recordBuffer.Count));
+                remaining -= length;
+            }
+            text.AppendLine(title);
+            for (int i = rows.Count - 1; i >= 0; i--) text.AppendLine(rows[i]);
+            text.AppendLine("End causal/action tail; retained=" + rows.Count + "; older_or_budget_omitted=" + (causalTailCount - rows.Count));
+        }
 
         private bool SummarizeRejection(ref Packet packet, string reason)
         {

@@ -420,6 +420,15 @@ namespace BarPromenade
                 patch.Projection = new ProjectileWound { Patch = patch };
                 patches.Add(patch);
             }
+            // Exactly one empty reusable layer per prepared actor. Load the
+            // shared wound shader/material and native property buffers while
+            // the scene is loading, not during its first shotgun pellet.
+            if (patches.Count > 0)
+            {
+                ProjectileLayer layer = CreateProjectileLayer(patches[0]);
+                ConfigureProjectileLayer(layer, patches[0]);
+                UploadProjectileLayer(layer);
+            }
         }
 
         public void Add(Vector3 point, Vector3 incoming, bool projectile = false, bool head = false,
@@ -569,11 +578,7 @@ namespace BarPromenade
                 foreach (ProjectileLayer candidate in projectileLayers)
                     if (candidate.Count == 0) { layer = candidate; break; }
                 if (layer == null)
-                {
-                    var host = new GameObject("Projectile Wounds__" + patch.SourceName + "__" + projectileLayers.Count);
-                    layer = new ProjectileLayer { Renderer = host.AddComponent<SkinnedMeshRenderer>() };
-                    projectileLayers.Add(layer);
-                }
+                    layer = CreateProjectileLayer(patch);
                 ConfigureProjectileLayer(layer, patch);
             }
             wound.Layer = layer; wound.Slot = layer.Count++;
@@ -582,6 +587,17 @@ namespace BarPromenade
             UploadProjectileLayer(layer);
             projectileWounds.Add(wound);
             Count++;
+        }
+
+        private ProjectileLayer CreateProjectileLayer(Patch patch)
+        {
+            var host = new GameObject("Projectile Wounds__" + patch.SourceName + "__" + projectileLayers.Count);
+            var layer = new ProjectileLayer { Renderer = host.AddComponent<SkinnedMeshRenderer>() };
+            // ConfigureProjectileLayer supplies the original mesh/rig when this
+            // bounded reserve is first used; it never renders an empty layer.
+            layer.Renderer.enabled = false;
+            projectileLayers.Add(layer);
+            return layer;
         }
 
         private static void StoreProjectile(ProjectileWound wound)
@@ -818,6 +834,11 @@ namespace BarPromenade
             foreach (ProjectileLayer layer in projectileLayers)
                 if (layer.Renderer != null)
                 {
+                    if (layer.Count == 0)
+                    {
+                        if (layer.Renderer.enabled) layer.Renderer.enabled = false;
+                        continue;
+                    }
                     layer.Patch.SyncBlendShapeWeights(layer.Renderer);
                     bool visible = false;
                     for (int i = 0; i < layer.Count; i++) visible |= layer.Holes[i].z > 0f;
@@ -854,7 +875,13 @@ namespace BarPromenade
                 Array.Clear(layer.Holes, 0, layer.Holes.Length);
                 Array.Clear(layer.Shapes, 0, layer.Shapes.Length);
                 Array.Clear(layer.States, 0, layer.States.Length);
-                if (layer.Renderer != null) { layer.Renderer.enabled = false; layer.Renderer.SetPropertyBlock(null); }
+                if (layer.Renderer != null)
+                {
+                    layer.Renderer.enabled = false;
+                    // Keep the already allocated native arrays ready for the
+                    // next encounter/reset, with no retained visible openings.
+                    UploadProjectileLayer(layer);
+                }
             }
             projectileWounds.Clear();
             Count = 0; last = null; lastProjectile = null;

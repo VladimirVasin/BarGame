@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator Range_ManualCpuTimelineStopsAndRestoresProfiler()
         {
             Type captureType = null;
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
                 captureType ??= assembly.GetType("BarPromenade.Editor.CombatCpuTimelineCapture");
             Assert.That(captureType, Is.Not.Null);
             const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;

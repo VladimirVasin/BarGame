@@ -96,7 +96,7 @@ namespace BarPromenade
                 float distance = delta.magnitude;
                 if (distance > .001f)
                 {
-                    MoveOpponent(delta / distance, Mathf.Min(1.8f * seconds, distance), seconds,
+                    MoveOpponent(delta / distance, Mathf.Min((AiOpponent.IsZombie ? ZombieWalkSpeed : 1.8f) * seconds, distance), seconds,
                         steerAroundObstacle: false);
                     if (opponentContext.opponentMoveRequest.sqrMagnitude < .000001f) opponentContext.warehouseStuckSeconds += seconds;
                 }

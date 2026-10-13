@@ -1,0 +1,79 @@
+{
+  "generator": "tools/build-combat-zombie-3d-model.py",
+  "version": "1.0.0",
+  "test_only": true,
+  "rig": "NpcHumanV2",
+  "topology": "retained_ordinary_worker",
+  "root_motion": false,
+  "animation_events": 0,
+  "source_fps": 100,
+  "walk_cycle_distance_m": 1.2,
+  "prepare_seconds": 0.6,
+  "active_seconds": 0.22,
+  "recovery_seconds": 0.95,
+  "signature": "8c52267848f03b965f6691cb9b30a18002538e218dd20c54160c53f9e63171e9",
+  "clips": [
+    {
+      "name": "ZombieIdle",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "maximum_ground_support_error_m": 2.2183845676763755e-06,
+      "maximum_loop_seam_error": 1.7881393432617188e-07,
+      "maximum_knee_flexion_degrees": 36.87036859263141,
+      "minimum_foot_separation_m": 0.19534494637265568,
+      "maximum_wrist_reach_m": 0.5136924651025226,
+      "minimum_grounded_feet": 2
+    },
+    {
+      "name": "ZombieWalk",
+      "duration_seconds": 1.6,
+      "loop": true,
+      "maximum_ground_support_error_m": 2.3941302035467408e-06,
+      "maximum_loop_seam_error": 2.980232238769531e-07,
+      "maximum_knee_flexion_degrees": 82.64425759858962,
+      "minimum_foot_separation_m": 0.1973442772712803,
+      "maximum_wrist_reach_m": 0.51930328683803,
+      "minimum_grounded_feet": 1
+    },
+    {
+      "name": "ZombieAttackRight",
+      "duration_seconds": 1.77,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.142297817577069e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 72.28085255206429,
+      "minimum_foot_separation_m": 0.19250318781448786,
+      "maximum_wrist_reach_m": 0.5102705286024379,
+      "minimum_grounded_feet": 1
+    },
+    {
+      "name": "ZombieAttackLeft",
+      "duration_seconds": 1.77,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.3409529789275506e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 69.49066563460072,
+      "minimum_foot_separation_m": 0.19534484178715186,
+      "maximum_wrist_reach_m": 0.5108777217617553,
+      "minimum_grounded_feet": 1
+    },
+    {
+      "name": "ZombieHit",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.2316199097429348e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 36.9446912960849,
+      "minimum_foot_separation_m": 0.19534497348781926,
+      "maximum_wrist_reach_m": 0.5102705463976944,
+      "minimum_grounded_feet": 2
+    }
+  ],
+  "assets": {
+    "ZombieFace1.png": "b05ea3753db48c6b54259807879a0e8783e37f32a0d7a4c61e3f684860a155d4",
+    "ZombieFace2.png": "903b9101de3a5d32559920456466744145ae346efbc76cefe37b80149c1cc831",
+    "ZombieFace3.png": "81c197043a4f80d04daafc506f3fd7b9cef2a12c51fda5436d14a3d22b756fc5",
+    "ZombieGroan.wav": "be09ef70ae738d3e221173a891e5b34dcdb8153f859a663869d31d3fb09fb618",
+    "ZombieLunge.wav": "2684c8312d9e4b90ed5f97abb7e426b358aca0e950a39323e71191bccc72013a"
+  }
+}

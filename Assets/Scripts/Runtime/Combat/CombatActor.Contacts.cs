@@ -6,9 +6,6 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
-        // The generated shaft is 38 mm across. A broad .10 m damage proxy
-        // would claim a wound before a real intervening crowbar could meet it.
-        private const float WeaponRadius = .019f + CombatWeaponGeometry.ContactSkin;
         private Collider[] contactBuffer = new Collider[32];
         private RaycastHit[] castBuffer = new RaycastHit[32];
         private CombatActor contactTarget;
@@ -29,6 +26,10 @@ namespace BarPromenade
         internal int WeaponClashCount { get; private set; }
         internal int LastWeaponClashSequence { get; private set; }
         internal Vector3 LastWeaponClashPoint { get; private set; }
+        internal int BlockedWeaponSwingCount { get; private set; }
+        internal float LastRejectedWeaponDepth { get; private set; }
+        internal bool LastRejectedWeaponSweep { get; private set; }
+        internal CombatWeaponConstraint.OwnForearmPoseDiagnostic LastRejectedWeaponGeometry { get; private set; }
         private int journalContactRejectedSequence = -1;
         private string journalContactRejectedReason;
 
@@ -48,6 +49,7 @@ namespace BarPromenade
             // restoring a guard still waits for the next presented duel step.
             if (guardHeld && State.IsBlocking && GuardSupportRejection != null) RefreshBlock();
             if (captureAnatomy) Hurtboxes?.Capture();
+            if (IsZombie) { CaptureZombieHandPose(); return; }
             Pose pose = new Pose(Weapon.transform.position, Weapon.transform.rotation);
             frozenWeaponFrom = frozenWeaponValid ? frozenWeaponTo : pose;
             frozenWeaponTo = pose; frozenWeaponValid = true;
@@ -59,6 +61,9 @@ namespace BarPromenade
         {
             frozenWeaponValid = frozenWeaponActive = false;
             WeaponClashCount = LastWeaponClashSequence = 0; LastWeaponClashPoint = Vector3.zero;
+            BlockedWeaponSwingCount = 0;
+            LastRejectedWeaponDepth = 0f; LastRejectedWeaponSweep = false;
+            LastRejectedWeaponGeometry = default;
         }
 
         internal bool CollectContacts(List<Contact> pending)
@@ -66,6 +71,7 @@ namespace BarPromenade
             ContactPoseSamples = 0;
             if (!collectSweep) return false;
             collectSweep = false;
+            if (IsZombie) { SweepZombieHand(sweepFrom, sweepTo, pendingSequence, pending); return true; }
             SweepWeapon(sweepFrom, sweepTo, pendingSequence, pending);
             return true;
         }
@@ -90,10 +96,12 @@ namespace BarPromenade
             private readonly bool solid, metal, otherActive, physicalBody, guarded;
             private readonly int otherSequence;
             private readonly float time;
+            private readonly bool constraintFailure;
+            private readonly string constraintShape;
 
             internal bool IsSolid => solid;
             internal float Time => time;
-            internal int Priority => !solid ? 2 : metal ? 1 : 0;
+            internal int Priority => constraintFailure ? 3 : !solid ? 2 : metal ? 1 : 0;
             internal int SourceId => source.GetEntityId().GetHashCode();
             internal bool IsCurrent => source != null && source.ContactGeneration == sourceGeneration && source.isActiveAndEnabled &&
                 (target == null || target.ContactGeneration == targetGeneration && target.isActiveAndEnabled);
@@ -118,6 +126,7 @@ namespace BarPromenade
                 this.physicalBody = physicalBody;
                 this.bodyRegion = bodyRegion; this.bodyPatch = bodyPatch; this.detachedPart = detachedPart;
                 guarded = false;
+                constraintFailure = false; constraintShape = null;
                 Vector3 incoming = source.transform.position - target.transform.position;
                 incoming.y = 0f;
                 fromFront = Vector3.Dot(target.transform.forward, incoming.normalized) >= .35f;
@@ -138,7 +147,20 @@ namespace BarPromenade
                 physicalBody = false;
                 bodyRegion = null; bodyPatch = -1; detachedPart = false;
                 location = default; part = default; localPoint = default;
+                constraintFailure = false; constraintShape = null;
             }
+
+            private Contact(CombatActor source, int sequence, string shape)
+            {
+                this = default;
+                this.source = source; sourceGeneration = source.ContactGeneration;
+                attackSequence = sequence; constraintFailure = true; constraintShape = shape;
+                // Actual contacts from BOTH actors get their normal ordering first.
+                time = float.PositiveInfinity;
+            }
+
+            internal static Contact RejectedPose(CombatActor source, int sequence, string shape) =>
+                new Contact(source, sequence, shape);
 
             internal static Contact Obstacle(CombatActor source, CombatActor target, Vector3 point, Vector3 normal,
                 Vector3 direction, float time, bool metal, bool otherActive = false) =>
@@ -154,6 +176,11 @@ namespace BarPromenade
             public void Apply()
             {
                 if (!IsCurrent) return;
+                if (constraintFailure)
+                {
+                    source.RecoverBlockedWeaponSwing(attackSequence, constraintShape);
+                    return;
+                }
                 if (solid)
                 {
                     source.StopWeaponOnSolid(attackSequence, point, normal, metal);
@@ -165,7 +192,7 @@ namespace BarPromenade
                         if (guarded) target.ReceiveWeaponGuard(source, attackSequence, point, normal, direction, blockCost, power);
                         source.GetComponentInParent<CombatTestRoot>()?.SparkEffects?.Emit(point, normal, direction);
                     }
-                    RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .6f);
+                    RetroAudio.PlayAt(source.IsZombie ? RetroSfxId.SpadeBite : RetroSfxId.SpadeGlance, point, .6f);
                     return;
                 }
                 MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction,
@@ -224,11 +251,27 @@ namespace BarPromenade
 
         private void StopWeaponOnSolid(int sequence, Vector3 point, Vector3 normal, bool metal)
         {
+            if (IsZombie) { if (State.AttackSequence == sequence) StopZombieAttack(); return; }
             if (State.AttackSequence != sequence || !State.CancelAttackOnObstacle()) return;
             reaction = Current.Recoil; reactionClock = 0f; sweepValid = collectSweep = false;
             JournalEvent("weapon_contact_terminal", contactTarget?.JournalActorId ?? 0, sequence, journalActionRequest,
                 GameLog.Field("reason", metal ? "weapon_blocked" : "world_blocked"),
                 GameLog.Field("point_x", point.x), GameLog.Field("point_y", point.y), GameLog.Field("point_z", point.z));
+        }
+
+        private void RecoverBlockedWeaponSwing(int sequence, string shape)
+        {
+            if (State.AttackSequence != sequence ||
+                State.AttackOutcome is not (MeleeAttackOutcome.None or MeleeAttackOutcome.Miss) ||
+                !State.CancelAttackOnObstacle()) return;
+            BlockedWeaponSwingCount++;
+            reaction = Current.Recoil; reactionClock = 0f; sweepValid = collectSweep = false;
+            // Inherit the physically stopped arm rather than an authored active
+            // endpoint that the rejected arm never reached.
+            BeginPoseBlend(force: true);
+            JournalEvent("weapon_contact_terminal", contactTarget?.JournalActorId ?? 0, sequence, journalActionRequest,
+                GameLog.Field("reason", "pose_blocked"), GameLog.Field("shape", shape),
+                GameLog.Field("desired_depth", LastRejectedWeaponDepth), GameLog.Field("desired_sweep_blocked", LastRejectedWeaponSweep));
         }
 
         private void SweepWeapon(float from, float to, int sequence, List<Contact> pending)
@@ -261,6 +304,13 @@ namespace BarPromenade
                 if (usePresentedEndpoint)
                 {
                     previewWorldBlocked = weaponConstraint.WorldBlocked;
+                    previewMotionBlocked = weaponConstraint.MotionBlocked;
+                    previewBlockingShape = weaponConstraint.BlockingShape;
+                    previewDesiredDepth = weaponConstraint.DesiredPoseDepth;
+                    previewDesiredSweep = weaponConstraint.DesiredPoseSweepBlocked;
+                    previewOwnForearm = weaponConstraint.DesiredOwnForearmDiagnostic;
+                    previewBodyContactActor = weaponConstraint.RequestedBodyContactActor;
+                    previewRequestedWeapon = weaponConstraint.RequestedWeaponPose;
                     previewWorldFraction = weaponConstraint.WorldContactFraction;
                     previewWorldPoint = weaponConstraint.WorldContactPoint; previewWorldNormal = weaponConstraint.WorldContactNormal;
                 }
@@ -276,6 +326,12 @@ namespace BarPromenade
                 }
                 Vector3 currentBase = strikeBase.position, currentTip = strikeTip.position;
                 Pose currentWeapon = new Pose(Weapon.transform.position, Weapon.transform.rotation);
+                // A native recipient capsule may stop/roll back the very
+                // interval which reached its physical skin. Resolve that
+                // requested metal path against the frozen real surfaces first.
+                // Own arm/core rejection cannot supply this alternative path.
+                if (previewMotionBlocked && previewBodyContactActor != null)
+                    currentWeapon = previewRequestedWeapon;
                 Vector3 travel = sweepValid ? (currentBase + currentTip - previousBase - previousTip) * .5f : transform.forward;
                 if (travel.sqrMagnitude < .000001f) travel = transform.forward;
                 // The tell may brush a wall; only the live arc is stopped by one.
@@ -287,7 +343,7 @@ namespace BarPromenade
                 }
                 float sampleSeconds = Mathf.Max(.0001f, (to - from) / samples);
                 float sampleStart = Mathf.Max(0f, (i - 1f) / samples), sampleEnd = i / (float)samples;
-                bool world = GatherWorldContact(currentBase, currentTip, out float solidFraction, out Vector3 solidPoint, out Vector3 solidNormal);
+                bool world = GatherWorldContact(currentWeapon, out float solidFraction, out Vector3 solidPoint, out Vector3 solidNormal);
                 if (previewWorldBlocked && previewWorldFraction < solidFraction)
                 {
                     world = true; solidFraction = previewWorldFraction; solidPoint = previewWorldPoint; solidNormal = previewWorldNormal;
@@ -306,7 +362,7 @@ namespace BarPromenade
                     metalTarget = target;
                     metal = true; world = false; solidFraction = metalFraction; solidPoint = metalPoint; solidNormal = metalNormal;
                 }
-                bool body = FindAnatomicalContact(currentBase, currentTip, travel.normalized, sequence, sampleSeconds,
+                bool body = FindAnatomicalContact(currentWeapon, travel.normalized, sequence, sampleSeconds,
                     out CombatActor bodyTarget, out CombatHurtboxes.Hit nearest, out float bodyFraction, out float weaponSpeed);
                 // Keep the body candidate behind a proposed interception until
                 // BOTH sweeps have been collected. The other moving bar may itself
@@ -332,6 +388,16 @@ namespace BarPromenade
                         Mathf.Lerp(sampleStart, sampleEnd, solidFraction), metal, metal && metalTarget.frozenWeaponActive));
                     sweepValid = false; return;
                 }
+                if (previewMotionBlocked)
+                {
+                    LastRejectedWeaponDepth = previewDesiredDepth; LastRejectedWeaponSweep = previewDesiredSweep;
+                    previewOwnForearm.phase = (int)State.Phase;
+                    previewOwnForearm.attackElapsed = elapsed;
+                    previewOwnForearm.animationProgress = State.AnimationProgressAt(elapsed);
+                    LastRejectedWeaponGeometry = previewOwnForearm;
+                    pending.Add(Contact.RejectedPose(this, sequence, previewBlockingShape));
+                    sweepValid = false; return;
+                }
                 previousBase = currentBase; previousTip = currentTip; previousWeapon = currentWeapon;
                 lastSweepElapsed = elapsed; sweepValid = true;
             }
@@ -340,7 +406,7 @@ namespace BarPromenade
                     GameLog.Field("reason", "active_window_complete"), GameLog.Field("outcome", (int)State.AttackOutcome));
         }
 
-        private bool FindAnatomicalContact(Vector3 currentBase, Vector3 currentTip, Vector3 direction,
+        private bool FindAnatomicalContact(Pose currentWeapon, Vector3 direction,
             int sequence, float sampleSeconds, out CombatActor target, out CombatHurtboxes.Hit nearest, out float earliest, out float weaponSpeed)
         {
             target = null; nearest = default; earliest = float.PositiveInfinity; weaponSpeed = 0f;
@@ -349,39 +415,13 @@ namespace BarPromenade
                 CombatActor candidate = ContactParticipantAt(i);
                 if (candidate == this || !HasPhysicalBody(candidate) ||
                     !candidate.IsAvailable && !candidate.IsKnockedDown && !candidate.State.IsDefeated ||
-                    !FindAnatomicalContact(candidate, currentBase, currentTip, direction, sampleSeconds,
+                    !CombatWeaponGeometry.SweepAnatomy(candidate.Hurtboxes, sweepValid ? previousWeapon : currentWeapon,
+                        currentWeapon, sampleSeconds, direction,
                         out var hit, out float fraction, out float speed) || fraction >= earliest) continue;
                 target = candidate; nearest = hit; earliest = fraction; weaponSpeed = speed;
             }
             if (ContactParticipantCount == 0) JournalContactRejected("no_target", sequence);
             return target != null;
-        }
-
-        private bool FindAnatomicalContact(CombatActor target, Vector3 currentBase, Vector3 currentTip, Vector3 direction,
-            float sampleSeconds, out CombatHurtboxes.Hit nearest, out float earliest, out float weaponSpeed)
-        {
-            // End-pose overlap is later than every swept contact. The row of moving
-            // spheres retains the existing blade coverage, including translation.
-            weaponSpeed = sweepValid ? ((currentBase - previousBase).magnitude + (currentTip - previousTip).magnitude) * .5f / sampleSeconds : 0f;
-            bool found = target.Hurtboxes.SweepSphere(currentBase, currentTip, WeaponRadius, direction, out nearest);
-            earliest = found ? 1f : float.PositiveInfinity;
-            if (sweepValid)
-            {
-                float length = Mathf.Max(Vector3.Distance(previousBase, previousTip), Vector3.Distance(currentBase, currentTip));
-                int intervals = Mathf.Max(1, Mathf.CeilToInt(length / WeaponRadius));
-                for (int point = 0; point <= intervals; point++)
-                {
-                    float t = point / (float)intervals;
-                    Vector3 start = Vector3.Lerp(previousBase, previousTip, t);
-                    Vector3 end = Vector3.Lerp(currentBase, currentTip, t);
-                    Vector3 travel = end - start;
-                    if (travel.sqrMagnitude < .0000001f) continue;
-                    if (!target.Hurtboxes.SweepSphere(start, end, WeaponRadius, travel.normalized, out var hit) ||
-                        hit.Fraction >= earliest) continue;
-                    nearest = hit; earliest = hit.Fraction; found = true; weaponSpeed = travel.magnitude / sampleSeconds;
-                }
-            }
-            return found;
         }
 
         private void JournalContactRejected(string reason, int sequence)
@@ -392,32 +432,23 @@ namespace BarPromenade
                 GameLog.Field("reason", reason), GameLog.Field("phase", (int)State.Phase), GameLog.Field("elapsed", State.AttackElapsed));
         }
 
-        private bool GatherWorldContact(Vector3 a, Vector3 b, out float fraction, out Vector3 point, out Vector3 normal)
+        private bool GatherWorldContact(Pose currentWeapon, out float fraction, out Vector3 point, out Vector3 normal)
         {
             fraction = float.PositiveInfinity; point = normal = Vector3.zero;
-            int count;
-            while (true)
+            foreach (CombatWeaponGeometry.Segment segment in CombatWeaponGeometry.Segments)
             {
-                JournalPhysicsQuery();
-                count = Physics.OverlapCapsuleNonAlloc(a, b, WeaponRadius, contactBuffer, ~0,
-                    QueryTriggerInteraction.Collide);
-                if (count < contactBuffer.Length) break;
-                JournalQueryBufferFull(1, "weapon_overlap", contactBuffer.Length);
-                Array.Resize(ref contactBuffer, contactBuffer.Length * 2);
-            }
-            for (int i = 0; i < count; i++)
-                if (IsContactWorld(contactBuffer[i]))
-                {
-                    fraction = 1f; point = contactBuffer[i].ClosestPoint((a + b) * .5f);
-                    normal = ((a + b) * .5f - point).normalized;
-                }
-            if (sweepValid)
-            {
-                int intervals = Mathf.Max(1, Mathf.CeilToInt(Mathf.Max(Vector3.Distance(previousBase, previousTip),
-                    Vector3.Distance(a, b)) / WeaponRadius));
+                Vector3 a = currentWeapon.position + currentWeapon.rotation * segment.A;
+                Vector3 b = currentWeapon.position + currentWeapon.rotation * segment.B;
+                float radius = segment.Radius + CombatWeaponGeometry.ContactSkin;
+                GatherWorldSegment(a, b, radius, ref fraction, ref point, ref normal);
+                if (!sweepValid) continue;
+                int intervals = Mathf.CeilToInt(Vector3.Distance(segment.A, segment.B) / radius);
                 for (int i = 0; i <= intervals; i++)
-                    GatherWorldSweep(Vector3.Lerp(previousBase, previousTip, i / (float)intervals),
-                        Vector3.Lerp(a, b, i / (float)intervals), ref fraction, ref point, ref normal);
+                {
+                    Vector3 local = Vector3.Lerp(segment.A, segment.B, intervals == 0 ? 0f : i / (float)intervals);
+                    GatherWorldSweep(previousWeapon.position + previousWeapon.rotation * local,
+                        currentWeapon.position + currentWeapon.rotation * local, radius, ref fraction, ref point, ref normal);
+                }
             }
             return fraction <= 1f;
         }
@@ -425,7 +456,27 @@ namespace BarPromenade
         private bool IsContactWorld(Collider candidate) => candidate != null && !candidate.isTrigger &&
             !candidate.transform.IsChildOf(transform) && candidate.GetComponentInParent<CombatActor>() == null;
 
-        private void GatherWorldSweep(Vector3 from, Vector3 to, ref float fraction, ref Vector3 point, ref Vector3 normal)
+        private void GatherWorldSegment(Vector3 a, Vector3 b, float radius, ref float fraction, ref Vector3 point, ref Vector3 normal)
+        {
+            int count;
+            while (true)
+            {
+                JournalPhysicsQuery();
+                count = a == b ? Physics.OverlapSphereNonAlloc(a, radius, contactBuffer, ~0, QueryTriggerInteraction.Collide) :
+                    Physics.OverlapCapsuleNonAlloc(a, b, radius, contactBuffer, ~0, QueryTriggerInteraction.Collide);
+                if (count < contactBuffer.Length) break;
+                JournalQueryBufferFull(1, "weapon_overlap", contactBuffer.Length);
+                Array.Resize(ref contactBuffer, contactBuffer.Length * 2);
+            }
+            for (int i = 0; i < count; i++)
+                if (fraction > 1f && IsContactWorld(contactBuffer[i]))
+                {
+                    fraction = 1f; point = contactBuffer[i].ClosestPoint((a + b) * .5f);
+                    normal = ((a + b) * .5f - point).normalized;
+                }
+        }
+
+        private void GatherWorldSweep(Vector3 from, Vector3 to, float radius, ref float fraction, ref Vector3 point, ref Vector3 normal)
         {
             Vector3 delta = to - from;
             float distance = delta.magnitude;
@@ -434,7 +485,7 @@ namespace BarPromenade
             while (true)
             {
                 JournalPhysicsQuery();
-                count = Physics.SphereCastNonAlloc(from, WeaponRadius, delta / distance,
+                count = Physics.SphereCastNonAlloc(from, radius, delta / distance,
                     castBuffer, distance, ~0, QueryTriggerInteraction.Collide);
                 if (count < castBuffer.Length) break;
                 JournalQueryBufferFull(2, "weapon_sweep", castBuffer.Length);

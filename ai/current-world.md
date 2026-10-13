@@ -140,35 +140,37 @@ The vertical slice contains:
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:seeded warehouse24×18×6m/upper2.6m/2stairs/straight-L-U galleries;
-  Blender kit/cargo-racks/pipes/8lamps/2shadows/concrete-metal steps/vent.
-  NPC graph/gravity/height-LOS;resetkeep/Newreplace;seed/v:plan/journal/CLI;
-  flat:test-only. Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2);
-  Backsettings;2–4→3–7active s/free≥3m-route/0backlog.
-  Pool=livecap≤5/IDs/AI-space-stairs/kill1x/heroend;
-  injury/action/ammo/flights/survivors kept/0encounterrefill.
-  Unused→oldest corpse reuse;excess oldest retire/body-drop0;
-  focus≠hits/shotgun-victim/Tab-E0.
-  All3/prepheld(defaultbar);pistol Lundercoat/bar Rbelt/shotgunback;
-  sling:Lshoulder→chest/abdomen→low Rside;1/2/3;DpadR cycle-skipdrop;
-  6stow-draw/torso-gait;2×/settle;pistol↔bar~1.7s/shotgun~2.4s;
-  rig-model-ammo/reloadfirst/lastqueue/pause-hitstop.
-  Fallcancel/original+pose+ammo+slot;Erecord.
-  NPCbar/3AI/freecam;dummy/TabAIreset;MMBfocus/bar-Qfocus.
-  Guns:RMBaim/LMBedge/R-Xreload;8clips/2.21-back1.19/0run/FOV-IK.25;
+- CombatTest:seeded warehouse24×18×6m/upper2.6m/2stairs/straight-L-U;
+  Blender:cargo-racks/pipes/8lamps/2shadows/concrete-metal steps/vent.
+  NPC graph/gravity/LOS;resetkeep/Newreplace;seed/v:plan-journal-CLI/flat:test-only.
+  Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/Backsettings;
+  2–4→3–7active s/free≥3m-route/0backlog/pool=livecap≤5/IDs/space-stairs/kill1x/heroend.
+  Injury-action-ammo-flights-survivors kept/0refill;unused→oldestcorpse/excess retire;
+  body-drop0/focus≠hits/shotgun-victim/Tab-E0.
+  All3/prepheld(defaultbar)/1-2-3/DpadR;physical stow-draw/mounts/reloadfirst;
+  fallcancel/original-pose-ammo-slot/Erecord;mounts-timing:architecture.
+  Zombies:3worn corpse looks/gait-clips/groan-lunge;
+  slow chase→telegraph→latched lunge→miss recovery/hand firstsurface/1hit/0metal;
+  no guard-counter-retreat-stamina;one hand→other/both0-grounded0attack;
+  Rearhead0finisher/0world-infection;human:test-only.
+  Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
+  rise queries grow-retry/fallback;real blockers kept.
+  Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
   reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
-  Start/reset:Pistol8+0(cap48)/reload1.8/slide-emptylock/mag-rack/cases;
-  shotgun2+0(cap16)/12pellets/.55/head×2/break2.8/stageammo/atomicspend/winfire.
+  Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
+  shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
   Partial reload/physical spend/0reserve refusal;
-  ammo:4fixed lower-upper/+8Magazine/+4Shells/Eshared confirm1x/full refusal/
-  partial consumes/12active s endless/pause-modal-focus-disable-defeat0/resetpool/Standardwin live.
+  Ammo:4fixed/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes;
+  12active s endless/pause-modal-focus-disable-defeat0/resetpool/win live.
   Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
-  Bar6zones/rearhead-end/metalrecoil/Qsupport;standard taunt/Eshared/0grant;
+  Bar8segments/skin/firstsurface/1hit/blocked→recoil/6zones/rearhead-end/Qsupport;
+  standard taunt/Eshared/0grant.
+  Cloth:prewarm/guard reuse/Aim/old gear→live;wound scratch ready.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.
@@ -2779,11 +2781,8 @@ The vertical slice contains:
   crates, clear final approach about `20 m` from factory→normal unload/production.
   Works pre-dock/paused; seeks only delivery time/batch (repeat→next batch),
   calendar/needs/hero stay;
-- bounded structured session diagnostics in `debug.log`: stable NDJSON
-  envelopes correlate scene transitions, generated-city/bar/home initialization,
-  drinking and balance outcomes, plus
-  Unity warnings/errors; `F8` writes an immediate state snapshot and
-  `Shift+F8` opens the log directory;
+- `debug.log`:NDJSON scene/world/drink/balance/Unity results;F8snapshot/Shift+F8dir;
+  cached movement_summary before end-close. Duel:20MiB/70%samples/32-action summary tail;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
   stock and the bar's four-item visible drink menu. The bar now uses the same
   physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe.

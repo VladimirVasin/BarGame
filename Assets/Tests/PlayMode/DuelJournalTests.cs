@@ -189,6 +189,135 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [Test]
+        public void TelemetryLimitKeepsLateCausalRecordsWithinTheRoundBudget()
+        {
+            const int budget = 32768;
+            using var journal = new DuelJournal(directory, "Test causal priority", capacity: 32, maxRoundBytes: budget);
+            journal.BeginRound(1);
+            Wait(journal.FlushAsync());
+            GameLogField payload = GameLog.Field("text", new string('x', 256));
+            for (int batch = 0; batch < 20; batch++)
+            {
+                for (int sample = 0; sample < 8; sample++) journal.Record("pose", f0: payload);
+                Wait(journal.FlushAsync()); // File policy, rather than a full producer queue, is under test.
+            }
+            journal.SetClock(1500, 9000, 75d);
+            long request = journal.Record("command_requested", 1, 2, 4, 11, GameLog.Field("command", "charge"));
+            journal.Record("command_result", 1, 2, 4, 11, GameLog.Field("result", "accepted"));
+            journal.Record("impact_applied", 1, 2, 4, 11, GameLog.Field("power", 12f));
+            journal.Mark("Test late visible strike");
+            journal.EndRound("Test priority ended");
+            Wait(journal.FlushAsync());
+            string folder = Directory.GetDirectories(directory).Single();
+            string trace = File.ReadAllText(Path.Combine(folder, "duel.ndjson"));
+            StringAssert.Contains("\"cause\":\"telemetry_budget\"", trace);
+            StringAssert.Contains("\"event\":\"command_requested\"", trace);
+            StringAssert.Contains("\"seq\":" + request + ",", trace);
+            StringAssert.Contains("\"frame\":1500,\"tick\":9000,\"duel_seconds\":75", trace);
+            StringAssert.Contains("\"actor\":1,\"target\":2,\"action\":4,\"request\":11", trace);
+            StringAssert.Contains("\"event\":\"impact_applied\"", trace);
+            StringAssert.Contains("\"event\":\"mark\"", trace);
+            StringAssert.Contains("\"causal_dropped_records\":0", trace);
+            StringAssert.Contains("\"producer_dropped_records\":0", trace);
+            StringAssert.Contains("\"telemetry_limit\":true", trace);
+            StringAssert.Contains("\"causal_limit\":false", trace);
+            Assert.That(Directory.GetFiles(folder).Sum(path => new FileInfo(path).Length), Is.LessThanOrEqualTo(budget));
+            Assert.That(File.Exists(Path.Combine(folder, ".complete")), Is.True);
+        }
+
+        [Test]
+        public void CausalTailPreservesLateActionsWhenFileBudgetIsFull()
+        {
+            const int budget = 32768;
+            using var journal = new DuelJournal(directory, "Test causal tail", capacity: 32, maxRoundBytes: budget);
+            journal.BeginRound(1);
+            Wait(journal.FlushAsync());
+            GameLogField payload = GameLog.Field("text", new string('x', 256));
+            for (int batch = 0; batch < 20; batch++)
+            {
+                for (int sample = 0; sample < 8; sample++) journal.Record("weapon_constraint", f0: payload);
+                Wait(journal.FlushAsync());
+            }
+            journal.SetClock(2001, 12001, 99.5d);
+            long request = journal.Record("command_requested", 1, 2, 42, 9, GameLog.Field("command", "charge"));
+            journal.Record("command_result", 1, 2, 42, 9, GameLog.Field("result", "accepted"));
+            journal.Record("weapon_contact_rejected", 1, 2, 42, 9, GameLog.Field("reason", "world_blocked"));
+            for (int batch = 0; batch < 10; batch++)
+            {
+                for (int sample = 0; sample < 8; sample++) journal.Record("time_discarded", f0: GameLog.Field("seconds", .01f));
+                Wait(journal.FlushAsync());
+            }
+            string folder = Directory.GetDirectories(directory).Single();
+            string liveSummary = File.ReadAllText(Path.Combine(folder, "summary.txt"));
+            StringAssert.Contains("Status: live", liveSummary);
+            StringAssert.Contains("\"reason\":\"world_blocked\"", liveSummary);
+            Assert.That(File.Exists(Path.Combine(folder, ".active")), Is.True);
+            Assert.That(File.Exists(Path.Combine(folder, ".complete")), Is.False);
+            journal.EndRound("Test tail ended");
+            Wait(journal.FlushAsync());
+            string trace = File.ReadAllText(Path.Combine(folder, "duel.ndjson"));
+            string summary = File.ReadAllText(Path.Combine(folder, "summary.txt"));
+            StringAssert.Contains("\"cause\":\"round_budget\"", trace);
+            StringAssert.Contains("\"causal_limit\":true", trace);
+            Assert.That(trace.Contains("\"event\":\"command_requested\""), Is.False,
+                "This action happened after the hard file cap, so its retained copy belongs to the summary.");
+            StringAssert.Contains("\"event\":\"command_requested\"", summary);
+            StringAssert.Contains("\"event\":\"weapon_contact_rejected\"", summary);
+            StringAssert.Contains("\"reason\":\"world_blocked\"", summary);
+            StringAssert.Contains("\"seq\":" + request + ",", summary);
+            StringAssert.Contains("\"frame\":2001,\"tick\":12001,\"duel_seconds\":99.5", summary);
+            StringAssert.Contains("\"actor\":1,\"target\":2,\"action\":42,\"request\":9", summary);
+            StringAssert.Contains("\"causal_tail_copy\":true", summary);
+            Assert.That(Directory.GetFiles(folder).Sum(path => new FileInfo(path).Length), Is.LessThanOrEqualTo(budget));
+            Assert.That(File.Exists(Path.Combine(folder, ".complete")), Is.True);
+
+            journal.BeginRound(2);
+            journal.Mark("Test fresh round");
+            journal.EndRound("Test reset ended");
+            Wait(journal.FlushAsync());
+            string reset = Path.Combine(directory, "duel_Test-causal-tail_000002", "summary.txt");
+            Assert.That(File.ReadAllText(reset).Contains("world_blocked"), Is.False,
+                "A new round releases every retained packet and cannot inherit the previous action tail.");
+        }
+
+        [Test]
+        public void GeneralShutdownPublishesCachedSummaryBeforeEndAndIsolatesObservers()
+        {
+            string path = Path.Combine(directory, "Test final general log.ndjson");
+            int calls = 0;
+            Action broken = () => throw new InvalidOperationException("Test shutdown observer");
+            Action cached = () =>
+            {
+                calls++;
+                GameLog.Info("combat", "movement_summary", GameLog.Field("source_scene", "CombatTest"));
+                GameLog.Shutdown("Test recursive shutdown", true);
+            };
+            try
+            {
+                GameLog.Initialize(new GameLogSettings(GameLogProfile.Verbose, path), new SystemGameLogClock(), "Test final session", false);
+                GameLog.BeforeShutdown += broken;
+                GameLog.BeforeShutdown += cached;
+                GameLog.Shutdown("Test session ended", true);
+                GameLog.Shutdown("Test repeated shutdown", true);
+                string[] rows = File.ReadAllLines(path);
+                Assert.That(calls, Is.EqualTo(1));
+                Assert.That(rows.Count(row => row.Contains("\"event\":\"shutdown_observer_failed\"")), Is.EqualTo(1));
+                Assert.That(rows.Count(row => row.Contains("\"event\":\"movement_summary\"")), Is.EqualTo(1));
+                Assert.That(rows.Count(row => row.Contains("\"event\":\"end\"")), Is.EqualTo(1));
+                Assert.That(Array.FindIndex(rows, row => row.Contains("\"event\":\"movement_summary\"")),
+                    Is.LessThan(Array.FindIndex(rows, row => row.Contains("\"event\":\"end\""))));
+                StringAssert.Contains("\"reason\":\"Test session ended\"", rows.Last());
+                Assert.That(GameLog.CurrentFilePath, Is.Empty);
+            }
+            finally
+            {
+                GameLog.BeforeShutdown -= broken;
+                GameLog.BeforeShutdown -= cached;
+                GameLog.Shutdown("Test cleanup", false);
+            }
+        }
+
+        [Test]
         public void RetentionProtectsLiveAndForeignFilesAndPrefersMarkedRoundsWithinBudget()
         {
             string old = FakeRound(1, 300, marked: false);

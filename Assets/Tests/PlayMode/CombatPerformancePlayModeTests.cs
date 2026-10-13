@@ -20,6 +20,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator SetUp()
         {
             CombatTestRoot.UseLegacyArenaForTests = true;
+            CombatTestRoot.UseHumanOpponentsForTests = true;
             previousCaptureDelta = Time.captureDeltaTime;
             Time.captureDeltaTime = TickSeconds;
             RetroAudioService.Instance?.StopAll();
@@ -1316,6 +1317,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator TearDown()
         {
             CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.UseHumanOpponentsForTests = false;
             if (root != null) root.AutomaticSimulation = false;
             RetroAudioService.Instance?.StopAll();
             Scene active = SceneManager.GetActiveScene();

@@ -16,7 +16,7 @@ namespace BarPromenade
 
         public bool RequestCharge()
         {
-            if (IsFirearm) return false;
+            if (IsFirearm || IsZombie) return false;
             int request = JournalCommand("charge");
             if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");

@@ -147,6 +147,8 @@ namespace BarPromenade
         private Vector3 bakedGravity;
         private CombatWeaponCarryAssetProvider.Mount bakeMount;
         private GameObject bakeOwnerObject;
+        private CombatWeaponCarryAssetProvider.Mount bakeCrowbarMount;
+        private GameObject bakeCrowbar;
         private ProjectionWorkArena projectionWork, retainedProjectionWork;
         internal int ProjectionWorkspaceAllocations { get; private set; }
 
@@ -317,7 +319,7 @@ namespace BarPromenade
             return local.MultiplyPoint3x4(Vector3.zero);
         }
 
-        internal static CombatShotgunSling CreateBakeSling(Player3DAssetRegistry rig)
+        internal static CombatShotgunSling CreateBakeSling(Player3DAssetRegistry rig, bool includeStowedCrowbar = false)
         {
             if (rig == null) throw new ArgumentNullException(nameof(rig));
             NpcHandPose pose = rig.Anchors.RightGrip.GetComponentInParent<NpcHandPose>();
@@ -327,7 +329,9 @@ namespace BarPromenade
             CombatActor actor = ownerObject.AddComponent<CombatActor>();
             actor.enabled = false;
             CombatWeaponCarryAssetProvider.Mount mount = null;
+            CombatWeaponCarryAssetProvider.Mount crowbarMount = null;
             GameObject gun = null;
+            GameObject crowbar = null;
             try
             {
                 mount = CombatWeaponCarryAssetProvider.CreateMount(CombatWeaponId.Shotgun, rig);
@@ -337,13 +341,27 @@ namespace BarPromenade
                 sling.bakeMount = mount; sling.bakeOwnerObject = ownerObject;
                 CombatWeaponCarryAssetProvider.PlaceOnMount(gun, mount.WeaponDock);
                 sling.equipment = rig.GetComponent<PlayerEquipmentContacts>() ?? rig.gameObject.AddComponent<PlayerEquipmentContacts>();
-                sling.equipment.Register(sling, gun, mount.Root);
+                if (includeStowedCrowbar)
+                {
+                    // Combat now carries all three weapons. The hidden pistol
+                    // is excluded by production garment ownership, whereas the
+                    // actual crowbar and holder remain jacket contacts. Record
+                    // these boxes rather than weakening the final-pose guard.
+                    crowbarMount = CombatWeaponCarryAssetProvider.CreateMount(CombatWeaponId.Crowbar, rig);
+                    crowbar = CombatAssetProvider.CreateCrowbar(rig.Anchors.RightGrip, pose);
+                    CombatWeaponCarryAssetProvider.PlaceOnMount(crowbar, crowbarMount.WeaponDock);
+                    sling.bakeCrowbarMount = crowbarMount; sling.bakeCrowbar = crowbar;
+                    sling.equipment.Register(sling, crowbar, gun, crowbarMount.Root, mount.Root);
+                }
+                else sling.equipment.Register(sling, gun, mount.Root);
                 return sling;
             }
             catch
             {
                 if (gun != null) gun.GetComponent<CombatShotgunSling>()?.DisposePresentationResources();
                 DestroyBakeObject(gun);
+                DestroyBakeObject(crowbar);
+                if (crowbarMount != null) DestroyBakeObject(crowbarMount.Root);
                 if (mount != null) DestroyBakeObject(mount.Root);
                 DestroyBakeObject(ownerObject);
                 throw;
@@ -516,12 +534,17 @@ namespace BarPromenade
             if (bakeOwnerObject == null) return;
             GameObject ownerObject = bakeOwnerObject;
             GameObject mountObject = bakeMount?.Root;
+            GameObject crowbarObject = bakeCrowbar;
+            GameObject crowbarMountObject = bakeCrowbarMount?.Root;
             bakeOwnerObject = null; bakeMount = null;
+            bakeCrowbar = null; bakeCrowbarMount = null;
             // Edit-mode authoring components may never receive Awake/OnDestroy.
             // Release native work and query ownership before destroying the rig.
             DisposePresentationResources();
             DestroyBakeObject(gameObject);
             DestroyBakeObject(mountObject);
+            DestroyBakeObject(crowbarObject);
+            DestroyBakeObject(crowbarMountObject);
             DestroyBakeObject(ownerObject);
         }
 

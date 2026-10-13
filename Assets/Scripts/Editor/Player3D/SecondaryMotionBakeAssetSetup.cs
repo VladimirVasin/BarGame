@@ -67,10 +67,10 @@ namespace BarPromenade.Editor
                     foreach (AnimationClip clip in clips.Values.OrderBy(value => value.name, StringComparer.Ordinal))
                     {
                         if (clip == draw || clip == stow) continue;
-                        Bake(prefab, clip, variant, paths);
+                        Bake(prefab, clip, variant, paths, includeStowedCrowbar: variant == "stored-shotgun");
                     }
-                Bake(prefab, draw, "draw-shotgun", paths);
-                Bake(prefab, stow, "stow-shotgun", paths);
+                Bake(prefab, draw, "draw-shotgun", paths, includeStowedCrowbar: true);
+                Bake(prefab, stow, "stow-shotgun", paths, includeStowedCrowbar: true);
                 // Remove only obsolete recordings owned by this bank, together
                 // with their Unity metadata; the production assets stay intact.
                 var expected = new HashSet<string>(paths, StringComparer.Ordinal);
@@ -105,7 +105,8 @@ namespace BarPromenade.Editor
             void Add(AnimationClip clip) { if (clip == null) throw new InvalidOperationException("Missing authoring animation."); clips[clip.name] = clip; }
         }
 
-        private static void Bake(GameObject prefab, AnimationClip clip, string variant, List<string> paths)
+        private static void Bake(GameObject prefab, AnimationClip clip, string variant, List<string> paths,
+            bool includeStowedCrowbar = false)
         {
             string relative = variant + "/" + clip.name + ".bytes", path = Output + "/" + relative;
             EditorUtility.DisplayProgressBar("Bake secondary motion", relative, 0f);
@@ -123,7 +124,7 @@ namespace BarPromenade.Editor
                 CharacterJointDeformation joints = rig.GetComponent<CharacterJointDeformation>();
                 PlayerBootDeformation boots = rig.GetComponent<PlayerBootDeformation>();
                 bool carryAction = variant == "draw-shotgun" || variant == "stow-shotgun";
-                if (variant != "no-gear") sling = CombatShotgunSling.CreateBakeSling(rig);
+                if (variant != "no-gear") sling = CombatShotgunSling.CreateBakeSling(rig, includeStowedCrowbar);
                 using IDisposable hairCapture = hair.BeginBakeCapture();
                 using IDisposable jacketCapture = jacket.BeginBakeCapture();
                 using IDisposable slingCapture = sling != null ? sling.BeginBakeCapture(variant) : null;
@@ -306,6 +307,27 @@ namespace BarPromenade.Editor
                     Bake(prefab, clip, "no-gear", paths);
                     if (name == "Idle") Bake(prefab, clip, "stored-shotgun", paths);
                 }
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                SecondaryMotionBakeRuntime.ReloadAssets();
+            }
+            finally { EditorUtility.ClearProgressBar(); }
+        }
+
+        // The two observed combat recordings now include the real stowed bar.
+        // Other recordings retain their existing conservative live fallback;
+        // a selective refresh never certifies the entire bank's provenance.
+        public static void BakeCombatStoredAnimationSet()
+        {
+            if (EditorApplication.isPlaying) throw new InvalidOperationException("Record combat cloth outside Play Mode.");
+            GameObject prefab = Player3DResources.LoadPrefab();
+            Player3DAssetRegistry template = prefab.GetComponent<Player3DAssetRegistry>();
+            var paths = new List<string>(2);
+            try
+            {
+                Bake(prefab, template.Animations.Single(binding => binding.ClipName == "Idle").Clip,
+                    "stored-shotgun", paths, includeStowedCrowbar: true);
+                Bake(prefab, CombatPistolAssetProvider.LoadClip(CombatPistolAssetProvider.AimClip),
+                    "stored-shotgun", paths, includeStowedCrowbar: true);
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 SecondaryMotionBakeRuntime.ReloadAssets();
             }

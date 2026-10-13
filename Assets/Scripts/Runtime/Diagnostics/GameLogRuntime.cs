@@ -39,6 +39,7 @@ namespace BarPromenade
             Unsubscribe();
             shuttingDown = true;
             GameLog.Shutdown("subsystem_reset", false);
+            GameLog.ClearShutdownObservers();
             shuttingDown = false;
             host = null;
             LoadedSceneHandles.Clear();

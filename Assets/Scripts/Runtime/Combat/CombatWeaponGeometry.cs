@@ -132,6 +132,45 @@ namespace BarPromenade
         internal static Pose At(Pose from, Pose to, float t) =>
             new Pose(Vector3.Lerp(from.position, to.position, t), Quaternion.Slerp(from.rotation, to.rotation, t));
 
+        /// <summary>The contact skin surrounds the authored segments, not a chord
+        /// between the grip and the bent tip. Keep the same shape as clearance/parry.</summary>
+        internal static bool SweepAnatomy(CombatHurtboxes anatomy, Pose from, Pose to,
+            float seconds, Vector3 fallbackDirection, out CombatHurtboxes.Hit nearest,
+            out float fraction, out float speed)
+        {
+            nearest = default; fraction = float.PositiveInfinity; speed = 0f;
+            foreach (Segment segment in Segments)
+            {
+                float radius = segment.Radius + ContactSkin;
+                Vector3 a = to.position + to.rotation * segment.A;
+                Vector3 b = to.position + to.rotation * segment.B;
+                Vector3 oldA = from.position + from.rotation * segment.A;
+                Vector3 oldB = from.position + from.rotation * segment.B;
+                Vector3 displacement = (a + b - oldA - oldB) * .5f;
+                Vector3 direction = displacement.sqrMagnitude > .0000001f ? displacement.normalized : fallbackDirection;
+                if (fraction > 1f && anatomy.SweepSphere(a, b, radius, direction, out var overlap))
+                {
+                    nearest = overlap; fraction = 1f;
+                    speed = displacement.magnitude / Mathf.Max(.0001f, seconds);
+                }
+                // Bounded by the immutable metre-sized asset. Zero-length end
+                // segments are spheres and need exactly one travelling probe.
+                int points = Mathf.CeilToInt(Vector3.Distance(segment.A, segment.B) / radius);
+                for (int point = 0; point <= points; point++)
+                {
+                    float t = points == 0 ? 0f : point / (float)points;
+                    Vector3 start = Vector3.Lerp(oldA, oldB, t), end = Vector3.Lerp(a, b, t);
+                    Vector3 travel = end - start;
+                    if (travel.sqrMagnitude < .0000001f ||
+                        !anatomy.SweepSphere(start, end, radius, travel.normalized, out var hit) ||
+                        hit.Fraction >= fraction) continue;
+                    nearest = hit; fraction = hit.Fraction;
+                    speed = travel.magnitude / Mathf.Max(.0001f, seconds);
+                }
+            }
+            return fraction <= 1f;
+        }
+
         private static Bounds SweepBounds(Segment segment, Pose from, Pose to, float angle)
         {
             Bounds bounds = new Bounds(from.position + from.rotation * segment.A, Vector3.zero);

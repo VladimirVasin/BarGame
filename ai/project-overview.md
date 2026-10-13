@@ -80,9 +80,10 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/routes;Standard1;Endless1–5(default2)/corpses≤2/pool≤5.
+- CombatTest:warehouse/routes;unarmed zombies/slow chase/committed lunge;
+  Standard1;Endless1–5(default2)/corpses≤2/pool≤5.
   2–4→3–7s/oldest;start-reset8+0/2+0 ammo/4 slots/+8/+4/12s respawn.
-  All3/1-2-3/damage/novice sway-recoil/muzzle reticle;gap:pierce/balance.
+  All3/1-2-3/whole-bar hits/safe rise/novice aim;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

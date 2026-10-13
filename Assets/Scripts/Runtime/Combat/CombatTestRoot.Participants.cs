@@ -91,7 +91,8 @@ namespace BarPromenade
                 VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
                     obj.transform, DefaultNpcPopulation.CombatTestOpponentId(i));
                 CombatActor actor = obj.AddComponent<CombatActor>();
-                actor.InitializeOpponent(presentation, body);
+                actor.InitializeOpponent(presentation, body, zombie: !UseHumanOpponentsForTests);
+                if (actor.IsZombie) CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
                 actor.SetContactTarget(Hero);
                 actor.JournalActorId = i + 2;
                 combatOpponents.Add(actor);

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     internal enum SecondaryMotionBakePart { Hair, Jacket, Sling }
-    internal enum SecondaryMotionBakeResult { None, Sampled, Disabled, Wind, NoContext, NoAnimation, StaleClock, RootMotion, BodyMotion, Damage, MissingAsset, TrackLayout, FinalPose }
+    internal enum SecondaryMotionBakeResult { None, Sampled, Disabled, Wind, NoContext, NoAnimation, StaleClock, RootMotion, BodyMotion, Damage, MissingAsset, TrackLayout, FinalPose, GuardLayout }
 
     internal readonly struct SecondaryMotionBakeSample
     {
@@ -22,19 +22,20 @@ namespace BarPromenade
 
     /// <summary>Offline physical samples, selected by the authoritative animation clock.
     /// No sampling or simulation is performed when an asset is missing or incompatible.</summary>
-    internal static class SecondaryMotionBakeRuntime
+    internal static partial class SecondaryMotionBakeRuntime
     {
         internal const string ResourceRoot = "Player/SecondaryMotionBakes/";
         private const int Magic = 0x42504d53, Version = 4, MaximumResidentClips = 12;
         private static readonly Dictionary<Player3DAssetRegistry, Context> contexts = new();
-        private static readonly Dictionary<string, ClipData> clips = new(StringComparer.Ordinal);
-        private static readonly Queue<string> residentOrder = new();
+        private static readonly Dictionary<ClipKey, ClipData> clips = new();
+        private static readonly Queue<ClipKey> residentOrder = new();
         internal static bool Enabled { get; set; } = true;
         internal static bool CaptureRejectionDetails { get; set; }
 
         private sealed class Context
         {
             internal AnimationClip Clip;
+            internal string ClipName;
             internal double Seconds;
             internal int Frame;
             internal string Variant;
@@ -72,7 +73,7 @@ namespace BarPromenade
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
-        { contexts.Clear(); clips.Clear(); residentOrder.Clear(); Enabled = true; CaptureRejectionDetails = false; }
+        { contexts.Clear(); clips.Clear(); residentOrder.Clear(); ResetDiagnostics(); Enabled = true; CaptureRejectionDetails = false; }
 
         internal static void SetContext(Player3DAssetRegistry registry, AnimationClip clip, double seconds, string variant = null,
             bool validateRootMotion = false)
@@ -80,6 +81,7 @@ namespace BarPromenade
             if (registry == null) return;
             if (!contexts.TryGetValue(registry, out Context context))
                 contexts.Add(registry, context = new Context());
+            if (context.Clip != clip) context.ClipName = clip != null ? clip.name : null;
             if (validateRootMotion)
             {
                 Transform root = registry.transform;
@@ -99,7 +101,7 @@ namespace BarPromenade
                     context.RootTime = now; context.Velocity = velocity; context.HasRootHistory = true;
                     context.RootFrame = Time.frameCount;
                 }
-                Vector3 expected = root.TransformDirection(registry.Metrics.LocalForward) * AuthoredSpeed(clip != null ? clip.name : "");
+                Vector3 expected = root.TransformDirection(registry.Metrics.LocalForward) * AuthoredSpeed(context.ClipName ?? "");
                 context.MotionCompatible = context.FrameMotionSteady && (context.Velocity - expected).sqrMagnitude < .35f * .35f;
             }
             else if (clip != null) context.MotionCompatible = true;
@@ -133,7 +135,8 @@ namespace BarPromenade
             out SecondaryMotionBakeSample sample, string variant = "")
         {
             sample = default;
-            if (registry == null || !contexts.TryGetValue(registry, out Context context)) return false;
+            if (registry == null || !contexts.TryGetValue(registry, out Context context))
+            { RecordResult(part, SecondaryMotionBakeResult.NoContext); return false; }
             if (!Enabled) return Reject(SecondaryMotionBakeResult.Disabled);
             if (outside && wind.Strength01 > .01f) return Reject(SecondaryMotionBakeResult.Wind);
             if (context.Clip == null) return Reject(SecondaryMotionBakeResult.NoAnimation);
@@ -142,15 +145,7 @@ namespace BarPromenade
             CombatActor actor = registry.GetComponentInParent<CombatActor>();
             if (actor != null && (actor.IsRagdollActive || actor.IsKnockedDown || actor.BodyDamage.ContactRevision != 0)) return Reject(SecondaryMotionBakeResult.Damage);
             variant = string.IsNullOrEmpty(variant) ? context.Variant ?? EquipmentVariant(registry) : variant;
-            string key = variant + "/" + context.Clip.name;
-            if (!clips.TryGetValue(key, out ClipData clip))
-            {
-                TextAsset asset = Resources.Load<TextAsset>(ResourceRoot + key);
-                clip = asset != null ? Decode(asset.bytes) : null;
-                while (residentOrder.Count > 0 && (clips.Count >= MaximumResidentClips ||
-                    ResidentValues() + Values(clip) > 16000000)) clips.Remove(residentOrder.Dequeue());
-                clips.Add(key, clip); residentOrder.Enqueue(key);
-            }
+            ClipData clip = GetOrLoadClip(new ClipKey(variant, context.ClipName));
             if (clip == null || Mathf.Abs(clip.Duration - context.Clip.length) > .001f) return Reject(SecondaryMotionBakeResult.MissingAsset);
             Track track = null;
             foreach (Track candidate in clip.Tracks) if (candidate.Part == part) { track = candidate; break; }
@@ -165,14 +160,21 @@ namespace BarPromenade
             int guardFrom = Mathf.Clamp(Mathf.FloorToInt(guardFrame), 0, track.Guards.Length - 1);
             int guardTo = Mathf.Min(guardFrom + 1, track.Guards.Length - 1);
             float guardAlpha = guardFrame - guardFrom;
-            if (!context.Guards.TryGetValue(part, out PoseGuard guard) ||
-                guard.ValueCount != track.Guards[guardFrom].Length || !guard.IsLayoutCurrent)
+            // A recording's obsolete gear layout cannot be fixed by rebuilding
+            // today's rig guard on every sample. Retain the current guard until
+            // its actual equipment layout changes, then reject the old track.
+            if (!context.Guards.TryGetValue(part, out PoseGuard guard) || !guard.IsLayoutCurrent)
+            {
                 context.Guards[part] = guard = new PoseGuard(registry, part);
+                guardBuildCount++;
+            }
+            if (guard.ValueCount != track.Guards[guardFrom].Length)
+                return Reject(SecondaryMotionBakeResult.GuardLayout);
             if (!guard.Matches(track.Guards[guardFrom], track.Guards[guardTo], guardAlpha,
-                context.Clip.name == "Idle", track.Values[from], track.Values[to]))
+                context.ClipName == "Idle", track.Values[from], track.Values[to]))
             {
                 if (CaptureRejectionDetails && context.Rejections[(int)part] == null) context.Rejections[(int)part] = guard.Describe(track.Guards[guardFrom], track.Guards[guardTo], guardAlpha,
-                    context.Clip.name == "Idle", track.Values[from], track.Values[to]);
+                    context.ClipName == "Idle", track.Values[from], track.Values[to]);
                 return Reject(SecondaryMotionBakeResult.FinalPose);
             }
             if (context.ValidateMotion)
@@ -183,7 +185,7 @@ namespace BarPromenade
                     float dt = (float)(now - context.OffsetTime);
                     Vector3 position = registry.transform.position + guard.WorldOffset;
                     Vector3 velocity = dt > 0f ? (position - context.OffsetPosition) / dt : Vector3.zero;
-                    Vector3 expected = registry.transform.TransformDirection(registry.Metrics.LocalForward) * AuthoredSpeed(context.Clip.name);
+                    Vector3 expected = registry.transform.TransformDirection(registry.Metrics.LocalForward) * AuthoredSpeed(context.ClipName);
                     context.OffsetCompatible = !context.HasOffsetHistory || dt > 0f && dt < .15f &&
                         (velocity - expected).sqrMagnitude < .35f * .35f &&
                         (velocity - context.OffsetVelocity).sqrMagnitude < 9f * dt * dt;
@@ -196,8 +198,10 @@ namespace BarPromenade
             sample = new SecondaryMotionBakeSample(track.Values[from], track.Values[to], alpha, track, guard.WorldOffset,
                 context.ValidateMotion ? context.OffsetVelocity - context.Velocity : Vector3.zero);
             context.LastResults[(int)part] = SecondaryMotionBakeResult.Sampled;
+            RecordResult(part, SecondaryMotionBakeResult.Sampled);
             return true;
-            bool Reject(SecondaryMotionBakeResult reason) { context.LastResults[(int)part] = reason; return false; }
+            bool Reject(SecondaryMotionBakeResult reason)
+            { context.LastResults[(int)part] = reason; RecordResult(part, reason); return false; }
         }
 
         internal static SecondaryMotionBakeResult LastResult(Player3DAssetRegistry registry, SecondaryMotionBakePart part) =>
@@ -220,7 +224,7 @@ namespace BarPromenade
         {
             if (!contexts.TryGetValue(registry, out Context context)) return "no animation context";
             if (context.Clip == null) return "no single animation";
-            string key = (context.Variant ?? EquipmentVariant(registry)) + "/" + context.Clip.name;
+            var key = new ClipKey(context.Variant ?? EquipmentVariant(registry), context.ClipName);
             string state = FormattableString.Invariant($"{key}; root motion={context.MotionCompatible}; age={Time.frameCount - context.Frame}; dt={context.RootDeltaTime:F6}; velocity={context.Velocity:F5}; acceleration={context.Acceleration:F5}; angular speed={context.AngularSpeed:F5}");
             if (!clips.TryGetValue(key, out ClipData clip) || clip == null) return state + "; no compatible asset";
             foreach (Track track in clip.Tracks)

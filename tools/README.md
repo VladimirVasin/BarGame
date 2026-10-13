@@ -118,18 +118,18 @@ prompt, hash and linear-mask import settings are recorded in
 [alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime only reveals and
 tints that bitmap; it does not generate images.
 
-`toolchain.json` pins versions. Inspect without generating assets:
+`toolchain.json` pins versions. Inspect pins:
 
 ```powershell
 python tools/toolchain.py --scope all
 ```
 
 Install Python packages: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
-`BP_BLENDER`/`--blender` selects another installation of the same pinned build.
-The native launcher locates pinned MSVC/SDK versions.
+`BP_BLENDER`/`--blender`:another installation of the same pinned build;
+native launcher:MSVC/SDK pins.
 
-Run from repo root; args after `--` go to the generator. Launcher checks pins/
-startup/errors/fresh `--expect` files/JSON; `--validate-only` on both validates.
+From repo root; after `--`:generator args. Launcher:pins/startup/errors/fresh
+`--expect`/JSON; `--validate-only` on both validates.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
@@ -147,16 +147,22 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood,pistol,shotgun,gore,body,skull}-3d-model.py`:
-test `--actions-only --kick-only|--recovery-only|--footwork-only`
-`--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`;
-blood `--texture-only`;others `--validate-only`;`CombatGore`:hero/NPC body-skull.
+`build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie}-3d-model.py`:
+test:--actions-only+--kick-only/--recovery-only/--footwork-only;
+--refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
+blood:--texture-only;others:--validate-only;CombatGore:hero/NPC body-skull.
+zombie:ZombieActions/3faces/2SFX;NPCrig/anatomy/loops/determinism.
+Forehand pending:Hero/NPC;Ready/unrelated retained.
+
+```powershell
+python tools/run-blender.py tools/build-combat-test-3d-model.py -- --repair-forehand-only --output-dir Captures/Tooling/Forehand --source-dir Captures/Tooling/Forehand/Source
+```
+
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`:same launcher/check;
 `Assets/Resources/Combat{FirearmWalk,WeaponCarry}`/`*AssetSetup`.
-Walk:8fixed-facing/1.6m/C2feet/levelpelvis/200Hz;carry:holster/belt/sling/6draw-stow.
-`build-combat-warehouse-3d-model.py`:11FBX/JSON→`Assets/Resources/CombatWarehouse`;
-`ArtSource/CombatWarehouse`;check(det/FBX metres);
-read-only:`CombatWarehouseAssetValidation`.
+Walk:8fixed-facing/1.6m/C2feet/pelvis/200Hz;carry:holster/belt/sling/6draw-stow.
+`build-combat-warehouse-3d-model.py`:11FBX/JSON→Resources/CombatWarehouse;
+ArtSource/CombatWarehouse;det/metres/read-only `CombatWarehouseAssetValidation`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require
@@ -164,11 +170,10 @@ Refresh `Player3DV2` via asset setup. Lower-body changes require
 `player_cold_actions.py --refresh-actions --stage-dir Captures/Tooling/cold-actions`:
 endpoint/lower-body/hand/arm/determinism checks; publish with Unity closed,
 keep `.meta`, refresh `Player3DV2`.
-Unity: `Tools/Bar Promenade/Player/Bake secondary motion` records
-hair/jacket/sling at120Hz→30Hz. Build rejects stale source hashes.
+Unity:`Tools/Bar Promenade/Player/Bake secondary motion`:hair/jacket/sling120→30Hz;
+build rejects stale hashes.
 
-Pipeline failure/rollback regressions use synthetic files and a mocked Blender
-process, without generating art or compiling native code:
+Pipeline rollback:synthetic files/mock Blender;no art/native compile:
 
 ```powershell
 python tools/test_asset_pipeline.py
@@ -181,10 +186,9 @@ python tools/run-blender.py tools/build-home-shower-curtain-actions.py --expect 
 python tools/run-blender.py tools/build-home-shower-curtain-actions.py --validate-only -- --validate-only
 ```
 
-Keep Unity closed while publishing the bank. Its generator checks neutral
-entry/exit, fixed pelvis/feet, moving grip contact and both arms against the
-evaluated body meshes throughout each action at 60 Hz. The second command
-rebuilds and compares the manifest without publishing. Unity's
+Close Unity to publish. Checks:neutral ends/fixed pelvis-feet/moving grip/both arms
+against evaluated body at60Hz. Second command:manifest comparison,0publication.
+Unity's
 `Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
 the imported clips against the production Idle pose and world grip targets.
 

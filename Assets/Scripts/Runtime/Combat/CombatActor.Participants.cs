@@ -21,6 +21,7 @@ namespace BarPromenade
         {
             ContactGeneration = unchecked(ContactGeneration + 1);
             frozenWeaponValid = frozenWeaponActive = sweepValid = collectSweep = false;
+            ResetZombieAttack();
         }
 
         private int ContactParticipantCount => CombatParticipants?.Count ?? (contactTarget != null ? 1 : 0);

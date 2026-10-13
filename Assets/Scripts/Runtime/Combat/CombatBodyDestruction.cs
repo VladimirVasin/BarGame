@@ -344,7 +344,7 @@ namespace BarPromenade
         public void Apply(CombatImpact impact)
         {
             if (impact.Target == null || impact.Result is not (MeleeHitResult.Hit or MeleeHitResult.GuardBroken)) return;
-            if (impact.Kind is CombatImpactKind.Shove or CombatImpactKind.Kick) return;
+            if (impact.Kind is CombatImpactKind.Shove or CombatImpactKind.Kick or CombatImpactKind.Unarmed) return;
             BodyDamageRegion region = impact.BodyRegion ?? CombatBodyAnatomy.ToRegion(impact.Part);
             if (!bodies.TryGetValue(impact.Target, out Body body)) return;
             if (impact.DetachedPart) ApplyDetachedImpulse(body, region, impact);

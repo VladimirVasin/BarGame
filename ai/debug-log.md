@@ -1,13 +1,13 @@
 # Structured session diagnostics
 
-`debug.log`:context/actions/pending/Unity warnings/exceptions.
+`debug.log`:context/actions/pending/Unity faults.
 `DuelJournal`: CombatTest rounds.
 
 ## General profiles
 
 Editor:`verbose`,repository root `debug.log`.
-Development/Release Player:`verbose`/`basic`,`Application.persistentDataPath/Logs/debug.log`.
-Batch/CLI tests:`off`,no file.
+Player dev/release:`verbose`/`basic`,`Application.persistentDataPath/Logs/debug.log`.
+Batch tests:`off`,no file.
 
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
 `F8`:`diagnostics/snapshot`+CombatTest mark;`Shift+F8`:CombatLogs or general log directory.
@@ -17,19 +17,19 @@ Batch/CLI tests:`off`,no file.
 UTF-8 NDJSON:schema_version/utc/mono_ms/seq/level/category/event/
 session_id/scene/city_seed/data(typed). Order:utc/mono/seq;
 Join:operation_id(transition)/sequence(balance)/snapshot_id(support).
-Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
+Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 
 | Category | Boundaries/results |
 | --- | --- |
 | `session` | start/end/seed/bar/return/drinking;resolved drink purchases/cash before-after |
-| `needs`, `inventory` | visible hunger/fatigue progression;explicit hunger/stress/fatigue;committed alcohol relief;atomic item-use results |
-| `scene` | loaded/ready;transition requested/rejected/fallback/completed/failed;composition_frames:frames/path(area/door)/frame_budget_ms/AdvanceFrame CPU-wall;door duration_ms incl.build. |
-| `city`, `bar`, `mountain_road`, `alpine_village`, `home`, `stairwell`, `supermarket`, `church`, `mothers_house` | world/layout/bar/spawn/`initialize_phase`;first `cemetery_first_grave_sealed`/`cemetery_raven_{spawned,provider_missing,plot_missing}`;outdoor `raven_roost_{spawned,provider_missing}` |
-| `city`, `mountain_road`, `alpine_village` (verbose) | world_build_block:seacoast/*,roads_and_river/east_exit*;terrain_mesh:sample_ms/cook_ms/primed;terrain_grid/water_surface/cloth_panels/world_inventory/cannery_phase;city_plans_prime started/finished/joined:interior New Game primes City plans on pool thread |
+| `needs`, `inventory` | visible progression,explicit needs,committed alcohol/item-use results |
+| `scene` | load/ready/transition outcomes;composition_frames:frames/path/budget/CPU-wall;door duration incl.build |
+| World categories | world/layout/spawn/initialize_phase;cemetery_first_grave_sealed/cemetery_raven_*;raven_roost_* provider/plot results |
+| Outdoor categories (verbose) | world_build_block/terrain mesh-cook/grid/water/cloth/inventory/cannery;city_plans_prime started/finished/joined:pool-thread City plans |
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
-| `combat` | Cached exit/quit `movement_summary`: WASD/request/app-focus-neutral gates,motor/input/capsule/phase/scale/speed/turn;request/min-scale require `has_request_sample=true`;off disables. |
+| `combat` | Cached movement_summary before close/disable/exit:keys/request/focus/gates/motor/capsule/phase/scale/speed/turn;min-scale requires has_request_sample |
 | `diagnostics` | manual snapshots/directory commands |
 | `unity` | warnings/assertions/errors/exceptions and stacks |
 
@@ -45,7 +45,7 @@ messages_rate_limited:drops/severity;separate exception budget.
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
 Fault→F8→Shift+F8;collect archives/round;join error/`operation_id`.
-No user/save paths/frames;review stack paths before sharing.
+No user/save paths/frames;review stacks before sharing.
 
 ## DuelJournal
 
@@ -56,9 +56,13 @@ duel_<session>_<round>:{summary.txt,duel.ndjson}.
 Melee:MeleeCommandRejection→reason/reason_checked/cost/remaining/cooldown_seconds/phase/stamina.
 recovery_step: rescue; fall_committed: refusal; observed_counter: whiff.
 Standard20Hz/Endless10Hz pose/support/CPU/pistol;impact/F8 force.
-Pistol:pistol_shot_{requested,rejected,pose}/pistol_fired:request/action IDs;
-reason/stage(input/commit/cancel)/phase/aim_error_degrees;pose:muzzle/target/reachable.
-pistol_state:ammo/aim/reload/body;vectors:pistol_{muzzle_and_target,forward_and_support_error}.
+*_shot_{requested,rejected,pose}/*_fired:request/action/reason/stage/phase/aim_error;
+pose:muzzle/target/reachable;*_state:loaded/aim/reload/body;vectors:muzzle-target/forward-support.
+ammunition_snapshot:both guns/rounds/reserve/cap/location/pending/progress/load_mask.
+ammo_picked_up/pickup_rejected:accepted/reserve before-after/loaded/cap/reason.
+reload_{rejected,interrupted},*_reload_{started,completed}:request/reserve/reason/resuming/masks.
+weapon_carry:request/begin/transfer/complete/cancel/weapon/location/progress/stage/reserve.
+input_gate:allowed/owner/focus/motor-interactor input;changes only.
 movement_input:changes;keys=W1/S2/A4/D8,stick_x/y,effective x/y,
 focused=app/awaiting_neutral/target_focused=enemy.
 vectors/movement_drive:a=walk request,b=balance drift.
@@ -81,43 +85,42 @@ post_round_time_discarded:aftermath;snapshots to exit/reset.
 Impact events:source→victim;impact_seq;
 kind=weapon/kick/shove/projectile;region/side/critical/finisher/pre-post phase/power.
 Pre-hit phase:nullable.
-revision_identity:Runtime/Rules MVID≠Editor commit/state;bank hash/Player GUID;
-null/unavailable;no replay/FPS guarantee.
+revision_identity:compiled Runtime/Rules MVID≠workspace commit/state;bank hash/Player GUID;
+unavailable=null;no replay/FPS guarantee.
 
-frame.pose_ms:Present CPU incl.Endless.
-frame_detail:rig-only late_pose_ms;impact impact_apply_ms;
-update_to_late_ms:Update→cloth observer.
-latest_target_wait_ms=Unity;latest_{present_wait,cpu_main,cpu_render}_ms=FrameTiming.
-latest_timing_repeat_frames:-1 n/a/0 new/>0 repeats≠age.
-pose_work:Present/Weapon/Support CPU/calls/candidates/budget;0cloth.
-population_settings.actor_work_samples=active_or_called.
-corpse_settings:maximum_corpses/total_pool/retirement_order=oldest_defeat_first.
-corpse_retired:generation/reason/corpses;limit excess or pool reuse.
-opponent_spawn:search_ms/activation_ms/reset_ms/animation_graph_builds/corpses.
-frame_delivery/late_to_next_update_ms:observer→Update wall;render/editor/waits≠CPU/GPU.
-Camera SRP:render_context_captured/late_to_render_begin_ms/
-render_context_span_ms/render_end_to_next_update_ms/render_contexts;
-same frame;submit≠GPU finish;absent=null.
-weapon_constraint_sample:candidates/sweeps/world/anatomy_queries/reuse/core/shoulder/budget.
-frame_stage_sample:capture/flight/effects/aim/proxy/recovery
-{damage,blood,head}_stage_sample/body_sync_sample:CPU.
-projectile_defeat_stage_sample:total/preparation/ragdoll/drop ms.
-cloth_{stage,budget}_sample:stage=sling/jacket/hair/scarf CPU/calls/steps;
-budget=sling steps/iterations;discard ms;{sling,jacket,hair}_baked_calls.
-Prior;nested≠sum;unsupported=null;GPU latest.
+CPU:frame.pose_ms=Present incl.Endless;frame_detail:late_pose_ms/impact_apply_ms;
+update_to_late_ms=Update→cloth observer. pose_work:Present/Weapon/Support/calls/candidates/budget,0cloth.
+latest_target_wait_ms=Unity;latest_{present_wait,cpu_main,cpu_render}_ms=FrameTiming;
+latest_timing_repeat_frames:-1 n/a/0 new/>0 repeated≠age.
+population_settings.actor_work_samples=active_or_called;
+corpse_settings:maximum/total_pool/oldest_defeat_first;corpse_retired:generation/reason/count.
+opponent_spawn:search/activation/reset ms/graph builds/corpses.
+frame_delivery:late_to_next_update_ms wall≠CPU/GPU.
+SRP:render_context_captured/late_to_render_begin_ms/render_context_span_ms/
+render_end_to_next_update_ms/render_contexts;submit≠GPU finish;absent=null.
+weapon_constraint_sample:candidates/sweeps/world/anatomy queries/reuse/core/shoulder/budget.
+frame_stage_sample:capture/flight/effects/aim/proxy/recovery;
+{damage,blood,head}_stage_sample/body_sync_sample:CPU;
+projectile_defeat_stage_sample:total/preparation/ragdoll/drop.
+cloth_{stage,budget}_sample:sling/jacket/hair/scarf CPU/calls/steps/iterations/discard/baked_calls.
+secondary_motion_cache:decode/load/eviction/residency;part/reason counts in snapshots.
+Prior frames;nested≠sum;unsupported=null;GPU latest.
 
-Editor:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
-Trace/manifest frames:TestResults/Test duel diagnostics;
-timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
+Editor:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`:
+trace/manifest;timeout/scene/Play/reload restores Profiler;active refuses;overhead.
 Rendered Editor explicit:`Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`.
 
-Queue:2048/4096 default/max+8 control;reused chars/0 string-field copies.
+Queue:2048/4096 default/max+8controls;reused chars/0string copies.
 v2:stage_sample_encoding=absent_numeric_zero;
 zero_stage_events:damage/sync/blood/head/defeat.
-Missing=0 only for measured lossless frames;nonzero/unavailable/causal stay;envelope=v1.
-Drops/I/O/limits;≤2 live/stalled workers;extra=worker_limit.
-20MiB/round/10 closed/100MiB;prune ordinary then marked/abandoned;never live/foreign.
-Bounded marks;one CombatLogs/no sweep.
+Measured lossless frames:absent=0;unavailable explicit;envelope=v1.
+20MiB incl.summary/footer:telemetry≤70%body;causal reserve.
+file_limit.cause=telemetry_budget|round_budget;one warning,causal continues after sample limit.
+round_end:{telemetry,causal,producer}_dropped_records+limit flags;loss gaps unknown.
+32-action ring≠solver milestones;summary.txt:latest original JSON,≤half its budget.
+causal_tail_copy=true;strings>64:tail_strings_clipped. Flush after limit:live;end:final;reset:clear.
+≤2 workers;worker_limit/I/O explicit;10 closed/100MiB,ordinary→marked/abandoned;
+never live/foreign;bounded marks/one CombatLogs/no sweep.
 
 ## Area performance capture
 
@@ -127,14 +130,14 @@ CLI:
 -bp-perf-scene=City -bp-perf-seconds=30
 ```
 
-Waits scene/transition;keeps position/render.
+Waits scene/transition;keeps pose/render.
 Editor: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
 API: `RuntimePerformanceCapture.StartCapture`.
 
 Default:`Application.persistentDataPath/PerformanceCaptures`;8 JSON/≤36,000 samples.
 Capture1–120s/warmup≤60s/wait≤300s;scene/render changes end:reason.
 
-Reports:context+frame/CPU/GPU/GC/foot-bake/reflection p50/p95/p99/max.
+Reports:context/frame/CPU/GPU/GC/foot-bake/reflection quantiles/max.
 Markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
-GPU:Frame Timing Stats required;sampleCount=0 unavailable.
-Frames include waits;Editor≠player;match route/render/pause/focus.
+GPU needs Frame Timing Stats;sampleCount=0 unavailable.
+Frames incl.waits;Editor≠player;match route/render/pause/focus.

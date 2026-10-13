@@ -138,19 +138,77 @@ namespace BarPromenade.Tests.PlayMode
             PlacePair(1.1f);
             CombatActor actor = heroActs ? root.Hero : root.Opponent;
             CombatActor target = heroActs ? root.Opponent : root.Hero;
+            var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(actor);
             // Positive control for the physical-radius HP sweep. Remove only
             // the competing prop, keeping the authored target anatomy untouched.
             target.Weapon.SetActive(false);
             try
             {
+                constraint.CaptureRejectedPoseDiagnostics = true;
                 Assert.That(actor.TryAttack(), Is.True);
-                for (int tick = 0; tick < ContactTicks(120f) + 8; tick++) root.Tick(CombatTestRoot.SimulationStep);
-                Assert.That(target.State.Health, Is.LessThan(S.MaxHealth), "The authored thin shaft must still reach real anatomy.");
+                // This is a weapon/body positive control, not an AI exchange:
+                // retain the recipient's real standing rig instead of allowing
+                // its pursuit, shove or counter to interrupt the sampled arc.
+                float travel = 0f;
+                bool capturedFirstBlock = false;
+                bool capturedFirstImpact = false;
+                Vector3 previous = actor.Weapon.transform.position;
+                for (int tick = 0; tick < ContactTicks(120f) + 8; tick++)
+                {
+                    actor.Step(CombatTestRoot.SimulationStep);
+                    travel += Vector3.Distance(previous, actor.Weapon.transform.position);
+                    previous = actor.Weapon.transform.position;
+                    Assert.That(constraint.RightWristWithinLimits, Is.True,
+                        "The visible real hand must stay anatomically reachable throughout the arc.");
+                    if (tick == 60) VerifyCrowbarRepeatPresentation(actor, target, constraint);
+                    if (!capturedFirstImpact && target.ReceivedImpactCount > 0)
+                    {
+                        capturedFirstImpact = true;
+                        VerifyCrowbarVisibleImpactContact(actor, target);
+                        CaptureCrowbarReturn(heroActs ? "normal-contact-hero" : "normal-contact-opponent");
+                    }
+                    if (!capturedFirstBlock && actor.BlockedWeaponSwingCount > 0)
+                    {
+                        capturedFirstBlock = true;
+                        System.IO.Directory.CreateDirectory("TestResults");
+                        System.IO.File.WriteAllText(System.IO.Path.Combine("TestResults", "crowbar-first-block.json"),
+                            JsonUtility.ToJson(actor.LastRejectedWeaponGeometry, true));
+                        CaptureCrowbarReturn(heroActs ? "first-block-hero" : "first-block-opponent");
+                    }
+                }
+                Assert.That(target.State.Health, Is.LessThan(S.MaxHealth),
+                    $"The authored thin shaft must still reach real anatomy: hero={heroActs}, phase={actor.State.Phase}, " +
+                    $"outcome={actor.State.AttackOutcome}, blocked={actor.BlockedWeaponSwingCount}, " +
+                    $"shape={constraint.BlockingShape}, motionBlocked={constraint.MotionBlocked}, travel={travel:F3}m, " +
+                    $"desiredDepth={actor.LastRejectedWeaponDepth:F6}m, desiredSweep={actor.LastRejectedWeaponSweep}.");
                 Assert.That(target.ReceivedImpactCount, Is.EqualTo(1));
+                Assert.That(travel, Is.GreaterThan(.15f), "A real visible arc reaches the standing body.");
+                Assert.That(constraint.RightWristWithinLimits, Is.True,
+                    "The real held wrist remains inside 25° deviation, 55° flexion and 65° cone limits.");
+                var hands = actor.GetComponentInChildren<NpcHandPose>();
+                Assert.That(hands, Is.Not.Null);
+                Assert.That(Vector3.Distance(actor.Weapon.transform.position, hands.CylinderCentre(false)), Is.LessThan(.001f),
+                    "Wrist clearance moves the continuous real hand and its attached prop together.");
                 Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(1));
                 Assert.That(root.SparkEffects.EmissionCount, Is.Zero);
             }
-            finally { target.Weapon.SetActive(true); }
+            finally { constraint.CaptureRejectedPoseDiagnostics = false; target.Weapon.SetActive(true); }
+        }
+
+        private static void VerifyCrowbarVisibleImpactContact(CombatActor actor, CombatActor target)
+        {
+            Transform bar = actor.Weapon.transform;
+            Vector3 point = target.LastImpact.Point;
+            float gap = float.PositiveInfinity;
+            foreach (CombatWeaponGeometry.Segment segment in CombatWeaponGeometry.Segments)
+            {
+                Vector3 a = bar.position + bar.rotation * segment.A;
+                Vector3 b = bar.position + bar.rotation * segment.B;
+                gap = Mathf.Min(gap, Vector3.Distance(ClosestCrowbarChord(a, b, point), point) - segment.Radius);
+            }
+            Assert.That(gap, Is.LessThanOrEqualTo(CombatWeaponGeometry.ContactSkin + .005f),
+                "The visible metal must reach the registered body surface; a rejected hidden pose cannot supply the hit.");
         }
 
         private void VerifyCollectedMetalContact(bool heroActs, bool guarding)

@@ -549,10 +549,13 @@ class CombatBuilder(dialogue.DialogueBuilder):
         wrist = target - rotation @ (centre - hand.bone.head_local)
         return wrist, rotation @ hand.bone.matrix_local.to_3x3()
 
-    def pin_left_grip(self, pose, offset=SUPPORT_GRIP, pole=None, move_right=True, optimize_pole=True, radial_limit=None, runtime_support=False, continuation=None):
+    def pin_left_grip(self, pose, offset=SUPPORT_GRIP, pole=None, move_right=True, optimize_pole=True, radial_limit=None, runtime_support=False, continuation=None, support_trace=None):
         """Bake the opposing palm on the actual shaft, not the neutral socket."""
         self._reset_pose(); self._apply_pose(pose)
         rig = self.result.rig
+        if support_trace is not None:
+            support_trace["raw_elbows"] = {side: rig.pose.bones["forearm."+side].head.copy() for side in ("R", "L")}
+            support_trace["raw_left_wrist"] = rig.pose.bones["hand.L"].head.copy()
         wrist, rotation = self.left_contact_frame(offset)
         current=self.result.rig.pose.bones["hand.L"]
         held_right=rig.pose.bones["hand.R"].matrix.copy()
@@ -629,6 +632,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             raw=Euler(tuple(math.radians(v) for v in raw_pose[upper.name].rotation_degrees),"XYZ").to_quaternion()
             correction=(rest @ upper.rotation_quaternion @ raw.inverted() @ rest.inverted()).normalized()
         return dict(axis=axis,pole=pole,seconds=seconds,pose=dict(pose),elbow=bones["forearm.R"].head.copy(),
+                    hand=bones["hand.R"].head.copy(),
                     shoulder_correction=correction,
                     left_elbow=bones["forearm.L"].head.copy(),
                     rotations={name:(bones[name].matrix.to_quaternion().copy(),bones[name].rotation_quaternion.copy())
@@ -667,9 +671,10 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 if action is not None and slot is not None:animation.action_slot=slot
             self._reset_pose();self._apply_pose(restore_pose)
 
-    def clear_whole_weapon_arm(self,pose,continuation,seconds,context,*,limit_degrees=45.):
+    def clear_whole_weapon_arm(self,pose,continuation,seconds,context,*,limit_degrees=45.,shoulder_hint=None,support_hint=None,hand_hint=None,hand_travel_limit=None,support_clearance=.005,weapon_reserve=.0005):
         """Move the rigid held chain at its shoulder; never bend the wrist to clear a body."""
         self.last_whole_edge_failure=None
+        self.last_whole_hand_minimum=None
         name=context.split("@")[0]
         rig=self.result.rig
         upper,lower,hand=(rig.pose.bones[n+".R"] for n in ("upper_arm","forearm","hand"))
@@ -705,10 +710,12 @@ class CombatBuilder(dialogue.DialogueBuilder):
             rotation=rotation.normalized()
             if rotation_degrees(rotation)>limit_degrees+1.e-7:return None
             moved_elbow=shoulder+rotation @ (elbow-shoulder);moved_wrist=shoulder+rotation @ (wrist-shoulder)
+            hand_step=(moved_wrist-hand_hint).length if hand_hint is not None else 0.
             segments=((shoulder.lerp(moved_elbow,.65),moved_elbow),(moved_elbow,moved_wrist))
             # Keep interpolation inside the unchanged 5 mm presented-pose gate.
             if any(self.segment_box_distance(a,b,c,q,h)<.007 for a,b in segments for _,c,q,h in boxes):return None
             if any(self.segment_distance(a,b,head_a,head_b)<.127 for a,b in segments):return None
+            if getattr(self,"native_right_arm",False) and self.right_arm_native_gap(shoulder,moved_elbow,moved_wrist)<-.004:return None
             if continuation is not None and (moved_elbow-continuation["elbow"]).length>6.*elapsed+1.e-7:return None
             pivot=Matrix.Translation(shoulder) @ rotation.to_matrix().to_4x4() @ Matrix.Translation(-shoulder)
             moved_hand=pivot @ hand_matrix
@@ -719,12 +726,19 @@ class CombatBuilder(dialogue.DialogueBuilder):
             if held:
                 left_wrist,left_rotation=self.left_frame_for_weapon(moved_origin,moved_weapon,moved_hand,offset)
                 if (left_wrist-left_shoulder).length>left_upper.bone.length+left_lower.bone.length-.010:return None
-                left=self.grip_elbow("L",left_wrist,left_rotation,left_hint,nearest=True,radial_limit=25.,support_head=True)
+                pole=left_hint if support_hint is None else support_hint-left_shoulder
+                left=self.grip_elbow("L",left_wrist,left_rotation,pole,nearest=True,radial_limit=25.,support_head=True,
+                    target_pole=pole if support_hint is not None else None,
+                    previous_elbow=support_hint,maximum_elbow_travel=6./FPS if support_hint is not None else None,
+                    arm_clearance=max(support_clearance,.007 if support_hint is not None else .005))
                 if left is None:return None
                 if continuation is not None and (left[2]-continuation["left_elbow"]).length>6.*elapsed+1.e-7:return None
                 arms["L"]=(left_shoulder,left[2],left_wrist)
             clearance=self.weapon_clearance(moved_origin,moved_weapon,arms)
-            if clearance["body_gap_m"]<.0005 or clearance["floor_gap_m"]<.025:return None
+            if clearance["body_gap_m"]<weapon_reserve or clearance["floor_gap_m"]<.025:return None
+            if hand_hint is not None:
+                if self.last_whole_hand_minimum is None or hand_step<self.last_whole_hand_minimum:self.last_whole_hand_minimum=hand_step
+                if hand_step>hand_travel_limit+1.e-7:return None
             moved_upper=pivot @ upper_matrix
             parent=upper.parent
             basis=upper.bone.matrix_local.inverted() @ parent.bone.matrix_local @ parent.matrix.inverted() @ moved_upper
@@ -737,6 +751,9 @@ class CombatBuilder(dialogue.DialogueBuilder):
             return cost,result,moved_hand,moved_origin,moved_weapon
         axes=[Vector(v).normalized() for v in ((0,0,1),(1,0,0),(0,1,0),(1,0,1),(-1,0,1))]
         identity=Quaternion();warm=identity
+        if shoulder_hint is not None:
+            parent=upper.parent.matrix.to_quaternion().normalized()
+            warm=(parent @ shoulder_hint @ parent.inverted()).normalized()
         if continuation is not None and name!="CombatReady":
             parent=upper.parent.matrix.to_quaternion().normalized()
             warm=(parent @ continuation.get("shoulder_correction",identity) @ parent.inverted()).normalized()
@@ -791,7 +808,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             raise ValueError(f"Shoulder clearance lost rigid palm/weapon frame: {context}; matrix={hand_error}, origin={origin_error}, rotation={weapon_angle}")
         return best[1],rotation_degrees(best_rotation)
 
-    def project_weapon_arm(self,pose,continuation=None,context=""):
+    def project_weapon_arm(self,pose,continuation=None,context="",*,shoulder_hint=None,support_hint=None,hand_hint=None,hand_travel_limit=None,support_clearance=.005,weapon_reserve=.0005):
         """Preserve a nominal held chain; repair its elbow only for a non-nominal wrist."""
         self._reset_pose(); self._apply_pose(pose)
         rig=self.result.rig
@@ -815,7 +832,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                  abs(math.degrees(math.atan2(direction.dot(palm),direction.dot(fingers))))<=55.+1.e-5 and
                  math.degrees(direction.angle(fingers))<=65.+1.e-5)
         solved=None if nominal else self.grip_elbow("R",held.translation,held.to_3x3(),pole,**args)
-        whole=self.clear_whole_weapon_arm(pose,continuation,seconds,context) if nominal else None
+        whole=self.clear_whole_weapon_arm(pose,continuation,seconds,context,shoulder_hint=shoulder_hint,support_hint=support_hint,hand_hint=hand_hint,hand_travel_limit=hand_travel_limit,support_clearance=support_clearance,weapon_reserve=weapon_reserve) if nominal else None
         if solved is None and whole is None:
             trace=[]
             nearest=self.grip_elbow("R",held.translation,held.to_3x3(),pole,
@@ -827,6 +844,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         previous_elbow=list(continuation["elbow"]) if continuation is not None else None,
                         maximum_travel_m=6.*elapsed,
                         nearest_angle=None if nearest is None else math.degrees(math.atan2(axis.dot(pole.cross(nearest[3])),pole.dot(nearest[3]))),
+                        minimum_physical_hand_step_m=getattr(self,"last_whole_hand_minimum",None),
                         edge_failure=getattr(self,"last_whole_edge_failure",None))
             target=ROOT/"Captures/CombatTest/recovery-authoring/right-arm-projection-failure.json"
             target.write_text(json.dumps(detail),encoding="utf8")
@@ -925,38 +943,59 @@ class CombatBuilder(dialogue.DialogueBuilder):
         wrist=origin+weapon @ Vector((0.,offset,0.))-rotation @ (centre-left.head_local)
         return wrist,rotation @ left.matrix_local.to_3x3()
 
-    def solve_backhand_arm_path(self,keys):
+    def solve_backhand_arm_path(self,keys,*,clip_name="CombatBackhand",pin_end=False,body_reserve=.0005,presented_ready=False,carry_left=False):
         """Choose one coupled arm/grip path; Ready is exact, contact stays physical."""
         rig=self.result.rig;layers=[];costs=[];links=[];step_limit=6./FPS;edge_cache={};parity_checked=False
-        edge_rejections={};edge_examples={}
+        edge_rejections={};edge_examples={};edge_witness=None
         def quaternion(pose,name):
             return Euler(tuple(math.radians(v) for v in pose[name].rotation_degrees),"XYZ").to_quaternion()
         def rotation_angle(a,b):
             return 2.*math.acos(min(1.,abs(a.normalized().dot(b.normalized()))))
         def check_edge(frame,left_index,right_index,left,right):
+            nonlocal edge_witness
             cache_key=(frame,left_index,right_index)
             if cache_key in edge_cache:return edge_cache[cache_key]
             a,b=left["poses"][left_index],right["poses"][right_index]
             previous_matrices=left["matrices"][left_index]
             previous_pose=a;record=dict(valid=True,metrics={})
+            previous_raw={side:previous_matrices["forearm."+side].translation.copy() for side in ("R","L")}
+            samples=[]
             for weight in (.25,.5,.75,1.):
                 seconds=(frame-1+weight)/FPS
                 if weight==1.:
                     posed=b;matrices=right["matrices"][right_index]
+                    raw_elbows={side:matrices["forearm."+side].translation.copy() for side in ("R","L")}
                 else:
                     posed=self.linear_key_pose(a,b,weight)
                     try:
                         # This call applies the supplied pose itself and
                         # asserts the right hand is untouched by the left solve.
-                        self.pin_left_grip(posed,move_right=False,runtime_support=True)
+                        support_trace={} if carry_left else None
+                        self.pin_left_grip(posed,move_right=False,runtime_support=True,support_trace=support_trace)
                         matrices={name+"."+side:rig.pose.bones[name+"."+side].matrix.copy() for side in ("R","L") for name in ("upper_arm","forearm","hand")}
+                        raw_elbows=support_trace["raw_elbows"] if support_trace is not None else {side:matrices["forearm."+side].translation.copy() for side in ("R","L")}
                         if weight==.5:record["midpoint"]={name:value.copy() for name,value in matrices.items() if name.endswith(".R")}
-                        self.weapon_anatomy(f"CombatBackhand@edge{seconds:.5f}")
+                        anatomy=self.weapon_anatomy(f"{clip_name}@edge{seconds:.5f}")
+                        if anatomy["body_gap_m"]<body_reserve:
+                            raise ValueError(f"Held weapon skin reserve {clip_name}@{seconds:.5f}: {anatomy}")
                         posed=self.snapshot_pose()
                     except ValueError as error:
                         record.update(valid=False,error=str(error),seconds=seconds);break
-                speed=max((matrices["forearm."+side].translation-previous_matrices["forearm."+side].translation).length*FPS*4. for side in ("R","L"))
+                speeds={side:(matrices["forearm."+side].translation-previous_matrices["forearm."+side].translation).length*FPS*4. for side in ("R","L")}
+                speed=max(speeds.values())
+                if carry_left:
+                    samples.append(dict(seconds=seconds,final_speed_m_s=speeds,
+                        raw_speed_m_s={side:(raw_elbows[side]-previous_raw[side]).length*FPS*4. for side in ("R","L")},
+                        raw_elbows={side:list(raw_elbows[side]) for side in ("R","L")},
+                        final_elbows={side:list(matrices["forearm."+side].translation) for side in ("R","L")},
+                        support_correction_m=(matrices["forearm.L"].translation-raw_elbows["L"]).length))
                 if speed>6.+1.e-4:
+                    if carry_left and (edge_witness is None or edge_witness["frame"]!=frame or speed<edge_witness["failure_speed_m_s"]):
+                        def serial(pose):
+                            return {name:dict(rotation_degrees=list(value.rotation_degrees),location_m=list(value.location_m),scale=list(value.scale)) for name,value in pose.items()}
+                        edge_witness=dict(frame=frame,left_index=left_index,right_index=right_index,
+                            failure_speed_m_s=speed,source_poses=[serial(a),serial(b)],samples=samples,
+                            initial_elbows={side:list(left["matrices"][left_index]["forearm."+side].translation) for side in ("R","L")})
                     record.update(valid=False,error=f"elbow speed {speed:.6f}",seconds=seconds);break
                 values=dict(elbow_speed_m_s=speed)
                 for name in ("upper_arm.R","forearm.R","upper_arm.L","forearm.L","hand.R","hand.L"):
@@ -964,7 +1003,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     values[name+"_local_degrees_per_10ms"]=math.degrees(rotation_angle(quaternion(previous_pose,name),quaternion(posed,name)))*4.
                 for name,value in values.items():
                     if value>record["metrics"].get(name,0.):record["metrics"][name]=value;record["metrics"][name+"_time"]=seconds
-                previous_matrices=matrices;previous_pose=posed
+                previous_matrices=matrices;previous_pose=posed;previous_raw=raw_elbows
             if not record["valid"]:
                 reason=record["error"].split(":",1)[0];edge_rejections[reason]=edge_rejections.get(reason,0)+1
                 edge_examples.setdefault(reason,dict(seconds=record["seconds"],error=record["error"]))
@@ -972,44 +1011,109 @@ class CombatBuilder(dialogue.DialogueBuilder):
             return record
         for frame,(_,pose) in enumerate(keys):
             self._reset_pose();self._apply_pose(pose)
-            if frame==0:self.weapon_anatomy("CombatBackhand@exact-ready",65.)
+            pinned=frame==0 or (pin_end and frame==len(keys)-1)
+            pinned_matrices=None
+            if pinned:
+                if pin_end or presented_ready:self.pin_left_grip(pose,move_right=False,runtime_support=True)
+                self.weapon_anatomy(f"{clip_name}@exact-ready",65.)
+                pinned_matrices={n+"."+s:rig.pose.bones[n+"."+s].matrix.copy()
+                                 for s in ("R","L") for n in ("upper_arm","forearm","hand")}
+                self._reset_pose();self._apply_pose(pose)
             upper,lower,hand=(rig.pose.bones[n+".R"] for n in ("upper_arm","forearm","hand"))
             raw=lower.head.copy();held=hand.matrix.copy();axis=(hand.head-upper.head).normalized()
             hint=raw-upper.head;hint=(hint-axis*hint.dot(axis)).normalized()
             circles=self.grip_elbow("R",held.translation,held.to_3x3(),hint,nearest=True,
                 radial_limit=25.,support_head=True,maximum_turn=180.,candidate_step_degrees=2.5,ignore_flexion=True) or []
-            if frame==0:circles=[c for c in circles if (c[2]-raw).length<1.e-5]
+            if pinned:circles=[c for c in circles if (c[2]-raw).length<1.e-5]
             origin,weapon=self.weapon_frame();shaft=(weapon @ Vector((0.,1.,0.))).normalized()
             delta=held.to_3x3() @ hand.bone.matrix_local.to_3x3().inverted()
             fingers=held.to_quaternion() @ Vector((0.,1.,0.));palm=delta @ self.hand_frame("R")[2]
             left_upper,left_lower=(rig.pose.bones[n+".L"] for n in ("upper_arm","forearm"))
             left_shoulder=left_upper.head.copy();left_hint=left_lower.head-left_shoulder;raw_left=left_lower.head.copy()
             candidates=[];candidate_poses=[];candidate_matrices=[];rolls=[];candidate_hands=[]
+            rejected=dict(right_circles=len(circles),flexion=0,reach=0,left=0,clearance=0)
+            examples={}
             for candidate in circles:
                 direction=(held.translation-candidate[2]).normalized()
                 flex=math.degrees(math.atan2(direction.dot(palm),direction.dot(fingers)))
                 minimum=flex-max(-55.,min(55.,flex))
                 # The envelope follows the necessary anatomical correction;
                 # zero and neighbouring rolls permit anticipating it in time.
-                roll_options=(0.,) if frame==0 else (0.,-5.,5.) if abs(minimum)<1.e-6 else (minimum,minimum+math.copysign(5.,minimum),minimum+math.copysign(10.,minimum))
+                roll_options=(0.,) if pinned else (0.,-5.,5.) if abs(minimum)<1.e-6 else (minimum,minimum+math.copysign(5.,minimum),minimum+math.copysign(10.,minimum))
                 for degrees in roll_options:
-                    if abs(flex-degrees)>55.+1.e-5:continue
+                    if abs(flex-degrees)>55.+1.e-5:rejected["flexion"]+=1;continue
                     roll=Quaternion(shaft,math.radians(degrees))
                     changed=Matrix.Translation(held.translation) @ (roll @ held.to_quaternion()).to_matrix().to_4x4()
                     changed_origin=held.translation+roll @ (origin-held.translation);changed_weapon=roll @ weapon
                     if frame==56 and -(changed_origin+changed_weapon @ Vector((0.,.595,.145))).y<.95:continue
                     left_wrist,left_rotation=self.left_frame_for_weapon(changed_origin,changed_weapon,changed)
-                    if (left_wrist-left_shoulder).length>left_upper.bone.length+left_lower.bone.length-.010:continue
-                    left=self.grip_elbow("L",left_wrist,left_rotation,left_hint,nearest=True,radial_limit=25.,support_head=True)
-                    if left is None:continue
-                    clearance=self.weapon_clearance(changed_origin,changed_weapon,arms={"R":(upper.head,candidate[2],held.translation),"L":(left_shoulder,left[2],left_wrist)})
-                    if clearance["body_gap_m"]<.0005 or clearance["floor_gap_m"]<.025:continue
-                    local,matrices=self.right_candidate_pose(pose,changed,candidate[2])
-                    local,left_matrices=self.right_candidate_pose(local,Matrix.Translation(left_wrist) @ left_rotation.to_4x4(),left[2],"L")
-                    matrices.update(left_matrices)
-                    if frame==0:
-                        local=pose;matrices={name+"."+side:rig.pose.bones[name+"."+side].matrix.copy() for side in ("R","L") for name in ("upper_arm","forearm","hand")}
-                    candidates.append(candidate);candidate_poses.append(local);candidate_matrices.append(matrices);rolls.append(degrees);candidate_hands.append(changed)
+                    if (left_wrist-left_shoulder).length>left_upper.bone.length+left_lower.bone.length-.010:
+                        rejected["reach"]+=1;examples.setdefault("reach",dict(distance=(left_wrist-left_shoulder).length));continue
+                    left_reserve=.007 if carry_left else .005
+                    left=self.grip_elbow("L",left_wrist,left_rotation,left_hint,nearest=True,radial_limit=25.,support_head=True,arm_clearance=left_reserve)
+                    left_choices=[] if left is None else [left]
+                    if carry_left and frame and not pinned:
+                        previous=layers[-1];eligible=[i for i,cost in enumerate(costs[-1])
+                            if math.isfinite(cost) and (candidate[2]-previous["candidates"][i][2]).length<=step_limit+1.e-7]
+                        # An endpoint can be continuous while its local FK arc
+                        # briefly enters the core. Keep nearby previous branches
+                        # available so quarter-edge validation can anticipate it.
+                        if eligible:
+                            eligible.sort(key=lambda i:((left[2] if left is not None else left_wrist)-previous["matrices"][i]["forearm.L"].translation).length_squared+
+                                .20*(candidate[2]-previous["candidates"][i][2]).length_squared+.0001*costs[-1][i])
+                            seen=set();references=[]
+                            for i in eligible:
+                                point=previous["matrices"][i]["forearm.L"].translation
+                                key=tuple(round(v,5) for v in point)
+                                if key in seen:continue
+                                seen.add(key);references.append(point)
+                                if len(references)==4:break
+                            for point in references:
+                                pole=point-left_shoulder
+                                proposal=self.grip_elbow("L",left_wrist,left_rotation,pole,nearest=True,
+                                    radial_limit=25.,support_head=True,target_pole=pole,
+                                    previous_elbow=point,maximum_elbow_travel=step_limit,arm_clearance=left_reserve)
+                                if proposal is not None and all((proposal[2]-value[2]).length>1.e-5 for value in left_choices):
+                                    left_choices.append(proposal)
+                                if len(left_choices)==4:break
+                    if carry_left and not self.hero_profile and not pinned:
+                        # Past-only hints retain a branch but cannot anticipate
+                        # the next held dock. Keep four physical representatives,
+                        # never the sampled Left circle as a Cartesian DAG layer.
+                        proposals=[value for value in left_choices if value is not left]
+                        diverse=[] if left is None else [left]
+                        if proposals:
+                            best_previous=min(proposals,key=lambda value:min(
+                                (value[2]-previous["matrices"][i]["forearm.L"].translation).length_squared
+                                for i in eligible))
+                            diverse.append(best_previous)
+                        domain=self.grip_elbow("L",left_wrist,left_rotation,left_hint,nearest=False,
+                            radial_limit=24.8,total_limit=64.8,support_head=True,
+                            candidate_step_degrees=5.,arm_clearance=left_reserve) or []
+                        admissible=[]
+                        for value in domain:
+                            gap=self.weapon_clearance(changed_origin,changed_weapon,
+                                arms={"R":(upper.head,candidate[2],held.translation),
+                                      "L":(left_shoulder,value[2],left_wrist)})
+                            if gap["body_gap_m"]>=body_reserve and gap["floor_gap_m"]>=.025:
+                                admissible.append(value)
+                        if admissible:
+                            for value in (max(admissible,key=lambda value:value[2].z),
+                                          min(admissible,key=lambda value:value[2].z)):
+                                if all((value[2]-other[2]).length>1.e-5 for other in diverse):
+                                    diverse.append(value)
+                        left_choices=diverse
+                    if not left_choices:rejected["left"]+=1;examples.setdefault("left",dict(wrist=list(left_wrist),hand=list(changed.translation)));continue
+                    for left in left_choices:
+                        clearance=self.weapon_clearance(changed_origin,changed_weapon,arms={"R":(upper.head,candidate[2],held.translation),"L":(left_shoulder,left[2],left_wrist)})
+                        if clearance["body_gap_m"]<body_reserve or clearance["floor_gap_m"]<.025:
+                            rejected["clearance"]+=1;examples.setdefault("clearance",clearance);continue
+                        local,matrices=self.right_candidate_pose(pose,changed,candidate[2])
+                        local,left_matrices=self.right_candidate_pose(local,Matrix.Translation(left_wrist) @ left_rotation.to_4x4(),left[2],"L")
+                        matrices.update(left_matrices)
+                        if pinned:
+                            local=pose;matrices=pinned_matrices
+                        candidates.append(candidate);candidate_poses.append(local);candidate_matrices.append(matrices);rolls.append(degrees);candidate_hands.append(changed)
             if candidates and not parity_checked and frame>0:
                 self._reset_pose();self._apply_pose(candidate_poses[0])
                 error=max(abs(candidate_matrices[0][name][i][j]-rig.pose.bones[name].matrix[i][j]) for name in candidate_matrices[0] for i in range(4) for j in range(4))
@@ -1037,12 +1141,18 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     candidates=[list(c[2]) for c in candidates],
                     reachable_previous=[list(previous[i][2]) for i in reachable],
                     minimum_transition_m=min(((c[2]-previous[i][2]).length for c in candidates for i in reachable),default=None),
-                    edge_rejections=edge_rejections,edge_examples=edge_examples,roll_degrees=rolls,
+                    minimum_left_transition_m=min(((matrix["forearm.L"].translation-layers[-2]["matrices"][i]["forearm.L"].translation).length
+                        for matrix in candidate_matrices for i in reachable),default=None),
+                    minimum_paired_transition_m=min((max((c[2]-previous[i][2]).length,
+                        (candidate_matrices[j]["forearm.L"].translation-layers[-2]["matrices"][i]["forearm.L"].translation).length)
+                        for j,c in enumerate(candidates) for i in reachable),default=None),
+                    edge_rejections=edge_rejections,edge_examples=edge_examples,edge_witness=edge_witness,roll_degrees=rolls,
+                    candidate_rejections=rejected,candidate_examples=examples,
                     layers=[dict(seconds=i/FPS,count=len(row["candidates"]),reachable=sum(math.isfinite(v) for v in costs[i])) for i,row in enumerate(layers)])
                 target=ROOT/"Captures/CombatTest/recovery-authoring/backhand-arm-path-failure.json"
                 target.write_text(json.dumps(detail),encoding="utf8")
                 raise ValueError(f"Disconnected backhand right-arm path at {frame/FPS:.3f}: {len(candidates)} candidates, nearest {detail['minimum_transition_m']}; {target}")
-            if frame%10==0 or frame>=50:print(f"Backhand DAG {frame/FPS:.2f}: candidates={len(candidates)}, reachable={sum(math.isfinite(v) for v in current)}, edges={len(edge_cache)}",flush=True)
+            if frame%10==0 or frame>=50:print(f"{clip_name} DAG {frame/FPS:.2f}: candidates={len(candidates)}, reachable={sum(math.isfinite(v) for v in current)}, edges={len(edge_cache)}",flush=True)
         selected=[0]*len(layers);selected[-1]=min(range(len(costs[-1])),key=lambda i:costs[-1][i])
         for frame in range(len(layers)-1,0,-1): selected[frame-1]=links[frame][selected[frame]]
         solved=[];previous=None;edge_speeds=[0.];metrics=dict(maximum_elbow_speed_m_s=0.,maximum_correction_m=0.)
@@ -1099,12 +1209,13 @@ class CombatBuilder(dialogue.DialogueBuilder):
             speeds.append(maximum)
         return speeds
 
-    def recoil_keys(self,duration,reference,edge_speeds,name):
+    def recoil_keys(self,duration,reference,edge_speeds,name,*,source_end=.56):
         """Reverse the proven full-body prefix with a continuous measured clock."""
         # Each edge already measured both actual elbows at quarter-frame FK
         # samples. Give fast edges enough time, then stretch to the clip's
         # existing duration. The C1 clock removes the old held recoil plateau.
-        speeds=list(reversed(edge_speeds[1:57]))
+        source_count=round(source_end*FPS)
+        speeds=list(reversed(edge_speeds[1:source_count+1]))
         intervals=[max(1.e-5,speed/FPS/6.) for speed in speeds]
         def derivatives(spans):
             chords=[1./FPS/value for value in spans]
@@ -1132,13 +1243,13 @@ class CombatBuilder(dialogue.DialogueBuilder):
         count=round(duration*FPS);keys=[]
         for frame in range(count+1):
             second=frame/FPS
-            if frame==0:source=.56
+            if frame==0:source=source_end
             elif frame==count:source=0.
             else:
                 index=next(i for i in range(len(intervals)) if second<=times[i+1])
                 u=(second-times[index])/intervals[index]
                 travel=(-2*u**3+3*u*u)/FPS+(u**3-2*u*u+u)*intervals[index]*tangent[index]+(u**3-u*u)*intervals[index]*tangent[index+1]
-                source=(56-index)/FPS-travel
+                source=(source_count-index)/FPS-travel
             keys.append((frame/count,self.sample_forward_keys(reference,source)))
         print(name+" measured clock "+json.dumps(dict(duration_seconds=duration,minimum_measured_seconds=required,
             maximum_bound_m_s=max(speed*maximum_rate(span,a,b) for speed,span,a,b in zip(speeds,intervals,tangent,tangent[1:])))),flush=True)
@@ -1431,6 +1542,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                    self.segment_box_distance(elbow,wrist,c,q,h)<arm_clearance for _,c,q,h in torso): return None
             if support_head and (self.segment_distance(shoulder.lerp(elbow,.65),elbow,head_a,head_b)<.12+arm_clearance or
                                  self.segment_distance(elbow,wrist,head_a,head_b)<.12+arm_clearance): return None
+            if side=="R" and getattr(self,"native_right_arm",False) and self.right_arm_native_gap(shoulder,elbow,wrist)<-.004:return None
             wrist_angle=math.degrees((wrist-elbow).angle(fingers))
             lower_axis=(wrist-elbow).normalized()
             wrist_deviation=math.degrees(math.asin(max(-1.,min(1.,lower_axis.dot(across)))))
@@ -1572,6 +1684,26 @@ class CombatBuilder(dialogue.DialogueBuilder):
         return min(*(self.segment_box_distance(a,b,c,q,h) for a,b in segments for _,c,q,h in self.body_boxes()),
                    *(self.segment_distance(a,b,head_a,head_b)-.12 for a,b in segments))
 
+    def right_arm_native_gap(self,shoulder,elbow,wrist):
+        """Runtime CombatArmClearance envelopes; centres use native total-height caps."""
+        radius=.05*self.scale;axis=wrist-elbow
+        inset=min(radius,axis.length*.5);axis.normalize()
+        a,b=elbow+axis*inset,wrist-axis*inset
+        boxes=[(name,c,q,Vector((h.x*self.scale,h.y*self.scale,h.z)))
+               for name,c,q,h in self.body_boxes()];head=self.result.rig.pose.bones["head"]
+        delta=head.matrix.to_quaternion() @ head.bone.matrix_local.to_quaternion().inverted()
+        head_a=head.head+delta @ Vector((0.,0.,.10*self.scale))
+        head_b=head.head+delta @ Vector((0.,0.,.20*self.scale))
+        values=[self.segment_box_distance(a,b,c,q,h)-radius for _,c,q,h in boxes]
+        values.extend(self.segment_box_distance(elbow,elbow,c,q,h)-.025 for _,c,q,h in boxes)
+        start=shoulder.lerp(elbow,.45)
+        values.extend(self.segment_box_distance(start,elbow,c,q,h)-.045
+                      for name,c,q,h in boxes if name=="chest")
+        values.extend((self.segment_distance(a,b,head_a,head_b)-radius-.12*self.scale,
+                       self.segment_distance(elbow,elbow,head_a,head_b)-.025-.12*self.scale,
+                       self.segment_distance(start,elbow,head_a,head_b)-.045-.12*self.scale))
+        return min(values)
+
     def weapon_anatomy(self,context,wrist_limit=75.):
         """Measure the presented rigid object and both actual wrist directions."""
         rig=self.result.rig
@@ -1588,9 +1720,15 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 math.degrees(math.atan2(direction.dot(palm),direction.dot(fingers)))))
         clearance=self.weapon_clearance()
         arm_clearance={side:self.arm_core_clearance(side) for side in sides}
+        if getattr(self,"native_right_arm",False):
+            shoulder,elbow,wrist=(rig.pose.bones[n+".R"].head for n in ("upper_arm","forearm","hand"))
+            native_gap=self.right_arm_native_gap(shoulder,elbow,wrist)
+            if native_gap<-.004:raise ValueError(f"Native right arm/core envelope {context}: gap={native_gap:.9f}m")
         if max(angles)>wrist_limit+.01 or max(abs(c[0]) for c in components)>25.01 or max(abs(c[1]) for c in components)>55.01 or clearance["body_gap_m"]<-.0001 or clearance["floor_gap_m"]<.025 or min(arm_clearance.values())<.0049:
             raise ValueError(f"Held weapon anatomy {context}: wrist={angles}, deviation/flexion={components}, clearance={clearance}, arm_core={arm_clearance}")
-        return dict(maximum_wrist_degrees=max(angles),**clearance)
+        result=dict(maximum_wrist_degrees=max(angles),**clearance)
+        if getattr(self,"native_right_arm",False):result["native_right_arm_gap_m"]=native_gap
+        return result
 
     def place_raised_grip(self, pose, wrist, grip):
         """Lift a reachable two-hand grip with a forward elbow and forearm roll."""
@@ -3635,6 +3773,8 @@ def refresh_published_contracts(published_out, published_source):
     for is_hero in (False,True):
         profile,filename = ("hero","CombatActions") if is_hero else ("npc","CombatNpcActions")
         data = payload["actions"] if is_hero else payload["actions"]["npc"]
+        data["forehand_anatomy"]=module("combat_forehand_refresh_audit","combat_forehand_repair.py").validate_retained_forehand(
+            sys.modules[__name__],published_out/(filename+".fbx"),is_hero)
         before = bank_motion_samples(published_out/(filename+".fbx"),data,excluded)
         for family in SWING_FAMILIES:
             track=before[family["attack"]]
@@ -3964,6 +4104,7 @@ def main():
     parser.add_argument("--pack-review-source", action="store_true")
     parser.add_argument("--probe-published-contracts", type=Path)
     parser.add_argument("--refresh-published-contracts", action="store_true")
+    parser.add_argument("--repair-forehand-only", action="store_true")
     parser.add_argument("--refresh-published-metadata", action="store_true")
     parser.add_argument("--refresh-weapon-collision-metadata", action="store_true")
     parser.add_argument("--probe-only", action="store_true")
@@ -3975,6 +4116,15 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if args.repair_forehand_only:
+        if any((args.actions_only,args.validate_only,args.kick_only,args.footwork_only,args.recovery_only,
+                args.rebase_npc_recovery,args.finish_recovery_banks,args.probe_only,args.dense_hero_probe,
+                args.recovery_probe,args.pose_probe,args.resume_npc_bank,args.refresh_published_contracts)):
+            parser.error("--repair-forehand-only is a standalone retained-bank repair")
+        common.ANIMATION_FPS=FPS
+        module("combat_forehand_repair","combat_forehand_repair.py").repair(
+            sys.modules[__name__],OUT,SOURCE,args.output_dir.resolve(),args.source_dir.resolve())
+        return
     if args.footwork_only:
         if not args.actions_only or any((args.kick_only,args.recovery_only,args.validate_only,args.probe_only,
                 args.dense_hero_probe,args.recovery_probe,args.pose_probe,args.resume_npc_bank)):

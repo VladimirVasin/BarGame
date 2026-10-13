@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -20,6 +21,18 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CombatStoredSecondaryMotionAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            if (!Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatStoredSecondaryMotionProof")) return;
+            Type.GetType("BarPromenade.Editor.SecondaryMotionBakeAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BakeCombatStoredAnimationSet", BindingFlags.Static | BindingFlags.Public).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
@@ -223,6 +236,145 @@ namespace BarPromenade.Tests.PlayMode
             yield return CaptureEndlessGameView("endless-preparation-en", "en");
             Assert.That(PauseMenuController.IsAnyPaused, Is.False);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatStoredSecondaryMotionAssetsSetup))]
+        public IEnumerator Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads()
+        {
+            Assert.That(Application.isBatchMode, Is.False, "The focused cloth comparison requires rendered Editor frames.");
+            float captureDelta = Time.captureDeltaTime;
+            int targetRate = Application.targetFrameRate, vSync = QualitySettings.vSyncCount;
+            bool useLegacy = CombatTestRoot.UseLegacyArenaForTests, bakedEnabled = SecondaryMotionBakeRuntime.Enabled;
+            int? warehouseSeed = CombatTestRoot.WarehouseSeedForTests;
+            string folder = Path.GetFullPath("TestResults/Test combat secondary motion");
+            var phases = new List<EndlessPerformancePhase>(3);
+            var framePhases = new Dictionary<int, string>();
+            var measurements = new List<string>();
+            EndlessPerformanceRecorder recorder = null;
+            IDisposable gameView = null;
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            try
+            {
+                input.Setup(); mouse = InputSystem.AddDevice<Mouse>();
+                Directory.CreateDirectory(folder);
+                Time.captureDeltaTime = 0f; Application.targetFrameRate = 60; QualitySettings.vSyncCount = 0;
+#if UNITY_EDITOR
+                Type sizeOwner = typeof(AreaLoadingVisualCapture).GetNestedType("GameViewResolution", BindingFlags.NonPublic);
+                gameView = (IDisposable)Activator.CreateInstance(sizeOwner, true);
+                sizeOwner.GetMethod("Set").Invoke(gameView, new object[] { 1920, 1080 });
+#endif
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                CombatTestRoot.UseLegacyArenaForTests = false; CombatTestRoot.WarehouseSeedForTests = -834214790;
+                var schedule = new CombatEncounterSettings(3, 60f, 60f, 60f, 60f);
+                Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                    new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, schedule)), Is.True);
+                yield return AwaitSelectedCombatRange();
+                root.SendMessage("OnApplicationFocus", true); GameInput.HandleApplicationFocus(true);
+                foreach (CombatWeaponId id in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
+                    Assert.That(root.Hero.CarriedWeapon(id), Is.Not.Null);
+                root.SetDuelLogging(true, Path.Combine(folder, "Duel")); root.AutomaticSimulation = true;
+                recorder = new EndlessPerformanceRecorder(root);
+                // The reference retains identical world, animation and real gear.
+                SecondaryMotionBakeRuntime.Enabled = false;
+                for (int warm = 0; warm < 12; warm++) yield return null;
+                yield return MeasureEndlessPerformancePhase(recorder, phases, framePhases, "Test physical idle", 30);
+                AssertRealCarrySurfaceSkinFreshness(recorder.Jackets);
+                using var allocations = CreateBodyAllocationRecorder();
+
+                // The unrefreshed rest recording still lacks the carried bar.
+                // It must keep its strict refusal without reconstructing guard
+                // meshes and arrays every time the same layout is sampled.
+                SecondaryMotionBakeRuntime.Enabled = true;
+                Player3DAssetRegistry rig = ((Player3DCharacterPresentation)root.Player.Visual).Registry;
+                PlayerJacketCloth jacket = rig.GetComponent<PlayerJacketCloth>();
+                SecondaryMotionBakeRuntime.SetContext(rig, CombatPistolAssetProvider.LoadClip(CombatPistolAssetProvider.RestClip),
+                    0d, variant: "stored-shotgun");
+                Assert.That(SecondaryMotionBakeRuntime.TrySample(rig, SecondaryMotionBakePart.Jacket,
+                    jacket.BakedPoseSignature, jacket.BakedPoseValueCount, false, new WindSample(0f, 0f), out _), Is.False);
+                Assert.That(SecondaryMotionBakeRuntime.LastResult(rig, SecondaryMotionBakePart.Jacket),
+                    Is.EqualTo(SecondaryMotionBakeResult.GuardLayout));
+                long guardBuilds = SecondaryMotionBakeRuntime.Diagnostics.GuardBuildCount;
+                long refusals = SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.GuardLayout);
+                allocations.Reset(); allocations.Start();
+                for (int sample = 0; sample < 32; sample++)
+                    SecondaryMotionBakeRuntime.TrySample(rig, SecondaryMotionBakePart.Jacket,
+                        jacket.BakedPoseSignature, jacket.BakedPoseValueCount, false, new WindSample(0f, 0f), out _);
+                long refusalAllocations = StopBodyAllocationRecorder(allocations);
+                Assert.That(SecondaryMotionBakeRuntime.Diagnostics.GuardBuildCount, Is.EqualTo(guardBuilds));
+                Assert.That(SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.GuardLayout),
+                    Is.EqualTo(refusals + 32));
+                Assert.That(refusalAllocations, Is.Zero, "A known obsolete recording must reuse its current rig guard without allocating.");
+                measurements.Add("Test obsolete recording: strict GuardLayout refusal; repeated guard builds=0; GC.Alloc events=0 (recorder positive control passed).");
+                SecondaryMotionBakeRuntime.Enabled = false;
+
+                SecondaryMotionBakeRuntime.ReloadAssets();
+                var before = SecondaryMotionBakeRuntime.Diagnostics;
+                allocations.Reset(); allocations.Start();
+                long started = Stopwatch.GetTimestamp();
+                bool idlePrepared = SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle");
+                bool aimPrepared = SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim");
+                long coldTicks = Stopwatch.GetTimestamp() - started;
+                long coldAllocations = StopBodyAllocationRecorder(allocations);
+                var prepared = SecondaryMotionBakeRuntime.Diagnostics;
+                allocations.Reset(); allocations.Start(); started = Stopwatch.GetTimestamp();
+                bool idleHit = SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle");
+                bool aimHit = SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim");
+                long hitTicks = Stopwatch.GetTimestamp() - started;
+                long hitAllocations = StopBodyAllocationRecorder(allocations);
+                var cached = SecondaryMotionBakeRuntime.Diagnostics;
+                Assert.That(idlePrepared && aimPrepared && idleHit && aimHit, Is.True);
+                Assert.That(prepared.DecodeCount - before.DecodeCount, Is.EqualTo(2));
+                Assert.That(cached.DecodeCount, Is.EqualTo(prepared.DecodeCount));
+                Assert.That(coldAllocations, Is.GreaterThan(0), "The cold scope must observe its decoded arrays through the validated recorder.");
+                Assert.That(hitAllocations, Is.Zero, "Prepared lookups must not copy TextAsset bytes or allocate cache keys.");
+                Assert.That(cached.ResidentClips, Is.LessThanOrEqualTo(12));
+                Assert.That(cached.ResidentFloatValues, Is.LessThanOrEqualTo(16000000));
+                measurements.Add(FormattableString.Invariant($"Test selected recordings: cold={EndlessMilliseconds(coldTicks):F5}ms/{coldAllocations} GC.Alloc events; prepared={EndlessMilliseconds(hitTicks):F5}ms/{hitAllocations} GC.Alloc events; decoded={prepared.DecodeCount - before.DecodeCount}; resident={cached.ResidentFloatValues * 4}B; evictions={cached.Evictions - before.Evictions}. Lookup scopes exclude frame rendering; allocation event counts use the current-thread recorder with a positive control, not unsupported Mono byte counters."));
+
+                SecondaryMotionBakeRuntime.Enabled = true;
+                for (int warm = 0; warm < 16; warm++) yield return null;
+                yield return MeasureEndlessPerformancePhase(recorder, phases, framePhases, "Test prepared idle", 30);
+                TestContext.Out.WriteLine(phases[1].BakeContext);
+                Assert.That(phases[1].BakeResults[(int)SecondaryMotionBakePart.Jacket, (int)SecondaryMotionBakeResult.FinalPose], Is.Zero, phases[1].BakeContext);
+                Assert.That(phases[1].Cloth.JacketBaked, Is.GreaterThanOrEqualTo(15), phases[1].BakeContext);
+                Assert.That(phases[1].Cloth.SlingBaked, Is.GreaterThanOrEqualTo(15), "The real stowed crowbar must retain a certified sling layout.");
+                AssertRealCarrySurfaceSkinFreshness(recorder.Jackets);
+                // Novice procedural aiming can legitimately require live cloth;
+                // preparation never bypasses the authoritative final-pose guard.
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int warm = 0; warm < 20; warm++) yield return null;
+                Assert.That(root.Hero.Firearm.AimRequested && root.Hero.Firearm.IsAiming, Is.True,
+                    "The measured aim must consume the real held input rather than stay in Idle.");
+                Assert.That(root.Hero.JournalClip, Is.EqualTo("PistolAim"));
+                long aimDecodes = SecondaryMotionBakeRuntime.Diagnostics.DecodeCount;
+                yield return MeasureEndlessPerformancePhase(recorder, phases, framePhases, "Test prepared novice aim", 30);
+                Assert.That(SecondaryMotionBakeRuntime.Diagnostics.DecodeCount, Is.EqualTo(aimDecodes));
+                Assert.That(root.LiveOpponentCount, Is.Zero);
+                Assert.That(PlayerJacketCloth.MaximumFrameSubsteps, Is.EqualTo(3));
+                Assert.That(CombatTestRoot.MaximumFrameSubsteps, Is.EqualTo(4));
+                foreach (EndlessPerformancePhase phase in phases) phase.Cloth.AssertPhysicalBounds();
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                try { WriteEndlessPerformanceReport(folder, recorder, phases, measurements, null,
+                    "Test rendered three-weapon secondary motion; seed=-834214790; hero=Pistol plus carried Crowbar and Shotgun; capacity=3; live NPCs=0; first/next arrivals=60s; matched physical/prepared Idle and actual held novice aim; captureDeltaTime=0; target=60; vSync=0"); }
+                finally
+                {
+                    try { recorder?.Dispose(); if (root != null) { root.AutomaticSimulation = false; root.SetDuelLogging(false); } }
+                    finally
+                    {
+                        gameView?.Dispose(); SecondaryMotionBakeRuntime.Enabled = bakedEnabled;
+                        input.TearDown();
+                        Time.captureDeltaTime = captureDelta; Application.targetFrameRate = targetRate; QualitySettings.vSyncCount = vSync;
+                        CombatTestRoot.UseLegacyArenaForTests = useLegacy; CombatTestRoot.WarehouseSeedForTests = warehouseSeed;
+                    }
+                }
+            }
         }
 
         // A headless Tick benchmark cannot reproduce the log's long intervals
@@ -537,7 +689,7 @@ namespace BarPromenade.Tests.PlayMode
             internal string Directory { get; private set; }
             internal EndlessCpuTimelineScope(string folder)
             {
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
                     type ??= assembly.GetType("BarPromenade.Editor.CombatCpuTimelineCapture");
                 Assert.That(type, Is.Not.Null);
                 LogAssert.Expect(LogType.Log, new Regex("^Combat CPU Timeline recording for 15 seconds: " +
@@ -558,13 +710,15 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void WriteEndlessPerformanceReport(string folder, EndlessPerformanceRecorder recorder,
-            List<EndlessPerformancePhase> phases, List<string> arrivals, string timelineDirectory)
+            List<EndlessPerformancePhase> phases, List<string> arrivals, string timelineDirectory, string context = null)
         {
             Directory.CreateDirectory(folder);
             var report = new StringBuilder();
-            report.AppendLine("Test rendered Endless warehouse; seed=-41128863; hero=Pistol plus carried Shotgun; NPC=Crowbar; capacity=5; controlled first/next opponent schedule=60s; captureDeltaTime=0; target=60; vSync=0; framebuffer=" + Screen.width + "x" + Screen.height + ".");
+            report.AppendLine((context ?? "Test rendered Endless warehouse; seed=-41128863; hero=Pistol plus carried Crowbar and Shotgun; NPC=Crowbar; capacity=5; controlled first/next opponent schedule=60s; captureDeltaTime=0; target=60; vSync=0") + "; framebuffer=" + Screen.width + "x" + Screen.height + ".");
             report.AppendLine("Machine-specific measurements, without absolute FPS assertions. Coroutine wall covers actual rendered intervals; Tick/pose/contacts/cloth scopes overlap and must not be summed. Latest GPU/present timings can refer to older frames. Duel frame_delivery partitions after-LateUpdate/render submission/next-Update wall time, not GPU completion.");
-            report.AppendLine("Between phases only spawn readiness is prepared; activation/reset still belongs to the production Tick. The settlement preparation pauses combat/spawn advancement while real PhysX settles the damaged body, outside timing buckets. Main/PlayerLoop recorder samples can lag; exact source attribution is in the optional CPU Timeline and matching Unity-frame markers.");
+            report.AppendLine(context != null
+                ? "The selected recordings are prepared between reference and playback phases. Both Idle phases retain the same real equipment and empty warehouse; the aim phase changes pose through actual held input. Main/PlayerLoop recorder samples can lag."
+                : "Between phases only spawn readiness is prepared; activation/reset still belongs to the production Tick. The settlement preparation pauses combat/spawn advancement while real PhysX settles the damaged body, outside timing buckets. Main/PlayerLoop recorder samples can lag; exact source attribution is in the optional CPU Timeline and matching Unity-frame markers.");
             report.AppendLine("CPU Timeline: " + (timelineDirectory ?? "not requested; use -endlessPerformanceCpuTimeline"));
             recorder?.AppendAvailability(report);
             foreach (string arrival in arrivals) report.AppendLine(arrival);

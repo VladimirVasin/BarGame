@@ -28,6 +28,8 @@ namespace BarPromenade
         private int rejectedSearchCursor;
         private readonly CombatActor actor;
         private readonly Transform upper, forearm, hand, weapon;
+        private readonly NpcHandPose rightHandPose;
+        private readonly Vector3 rightFingersInHand, rightPalmInHand;
         private readonly CapsuleCollider probe;
         private readonly CombatArmClearance armClearance;
         private readonly CombatPrimitiveQueryCache anatomyQueries = new CombatPrimitiveQueryCache();
@@ -35,6 +37,7 @@ namespace BarPromenade
         private readonly RaycastHit[] sweeps = new RaycastHit[48];
         private readonly List<Collider> obstacles = new List<Collider>(96);
         private readonly List<Collider> anatomy = new List<Collider>(20);
+        private readonly int rightForearmIndex = -1;
         private readonly List<Collider> otherAnatomy = new List<Collider>(20);
         private readonly List<CombatActor> otherOwners = new List<CombatActor>(20);
         private IReadOnlyList<CombatActor> participants;
@@ -82,8 +85,16 @@ namespace BarPromenade
         private bool fullPoseApplied, contactPreview, pendingCommit, checkingDesiredPath;
         private Vector3 escapeAxis;
         private float escapeAngle;
+        internal bool RightWristWithinLimits => RightWristCanHold(hand.rotation);
         internal bool MotionBlocked { get; private set; }
         internal string BlockingShape { get; private set; }
+        internal Collider BlockingCollider { get; private set; }
+        internal CombatActor BlockingActor { get; private set; }
+        internal Pose RequestedWeaponPose { get; private set; }
+        internal CombatActor RequestedBodyContactActor { get; private set; }
+        private Collider requestedBlockingCollider;
+        private CombatActor requestedBlockingActor;
+        private bool requestedOwnGeometryBlocked;
         internal bool Blocked { get; private set; }
         internal bool WorldBlocked { get; private set; }
         internal float WorldContactFraction { get; private set; } = float.PositiveInfinity;
@@ -91,6 +102,8 @@ namespace BarPromenade
         internal Vector3 WorldContactNormal { get; private set; }
         internal bool SupportBlocked { get; private set; }
         internal float PenetrationDepth { get; private set; }
+        internal float DesiredPoseDepth => journalDesiredDepth;
+        internal bool DesiredPoseSweepBlocked => journalDesiredSweep;
         internal long CandidateChecks { get; private set; }
         internal long ShoulderChoicesReused { get; private set; }
         internal long CandidateBudgetExhaustions { get; private set; }
@@ -125,6 +138,12 @@ namespace BarPromenade
             }
             if (upper == null || forearm == null || hand == null)
                 throw new InvalidOperationException("Held weapon clearance requires the complete right arm.");
+            rightHandPose = owner.GetComponentInChildren<NpcHandPose>(true);
+            if (rightHandPose == null)
+                throw new InvalidOperationException("Held weapon clearance requires the authored palm frame.");
+            rightPalmInHand = Quaternion.Inverse(hand.rotation) * rightHandPose.PalmNormal(false);
+            rightFingersInHand = Quaternion.Inverse(hand.rotation) * Vector3.ProjectOnPlane(
+                rightHandPose.CylinderCentre(false) - hand.position, rightHandPose.PalmNormal(false)).normalized;
             var ordered = new List<Transform>();
             foreach (SkinnedMeshRenderer skin in owner.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 foreach (Transform bone in skin.bones)
@@ -136,7 +155,10 @@ namespace BarPromenade
             fallbackBasePositions = new Vector3[poseBones.Length];
             fallbackBaseRotations = new Quaternion[poseBones.Length];
             foreach (var entry in owner.Ragdoll.PhysicsController.AnatomicalColliders)
+            {
+                if (entry.Value == Player3DAnatomicalPart.RightForearm) rightForearmIndex = anatomy.Count;
                 anatomy.Add(entry.Key);
+            }
             previousAnatomy = new Pose[anatomy.Count];
             anatomySweep = new BodySweep[anatomy.Count];
             clearAnatomy = new AnatomyStamp[anatomy.Count];
@@ -261,8 +283,13 @@ namespace BarPromenade
             applied = false;
         }
 
-        internal void Forget() { EndRecoveryContact(); ClearAnatomyReuse(); hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
-        internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
+        internal void Forget() { EndRecoveryContact(); ClearAnatomyReuse(); hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f;
+            RequestedBodyContactActor = requestedBlockingActor = BlockingActor = null;
+            requestedBlockingCollider = BlockingCollider = null; requestedOwnGeometryBlocked = false; }
+        internal void Reset()
+        {
+            Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null;
+        }
 
         internal void Apply()
         {
@@ -276,6 +303,9 @@ namespace BarPromenade
             pendingCommit = false;
             MotionBlocked = false;
             SupportBlocked = false;
+            RequestedBodyContactActor = null;
+            requestedBlockingCollider = null; requestedBlockingActor = null;
+            requestedOwnGeometryBlocked = false;
             baseUpper = upper.localRotation; baseForearm = forearm.localRotation; baseHand = hand.localRotation;
             Quaternion desired = upper.rotation;
             solveTargetRotation = desired; solveTargetPosition = upper.position;
@@ -287,12 +317,18 @@ namespace BarPromenade
             WorldBlocked = false;
             WorldContactFraction = float.PositiveInfinity;
             checkingDesiredPath = true;
+            RequestedWeaponPose = WeaponPose;
+            BeginOwnForearmDiagnostic();
             float depth = CandidateDepth();
+            requestedBlockingCollider = BlockingCollider; requestedBlockingActor = BlockingActor;
             Vector3 firstEscapeAxis = escapeAxis;
             float firstEscapeAngle = escapeAngle;
             bool swept = hasLast && !SweepClear(lastWeapon, WeaponPose);
+            if (requestedOwnGeometryBlocked) RequestedBodyContactActor = null;
             journalDesiredDepth = depth; journalDesiredSweep = swept;
             string desiredBlockingShape = BlockingShape;
+            Collider desiredBlockingCollider = BlockingCollider;
+            CombatActor desiredBlockingActor = BlockingActor;
             checkingDesiredPath = false;
             Blocked = depth > 0f || swept;
             // A held two-handed bar has one reachable pose. Probe the frozen
@@ -427,6 +463,8 @@ namespace BarPromenade
             // The restored pose can be clear while the requested step was blocked.
             // Retain its cause instead of losing the floor/wall name in Depth().
             BlockingShape = desiredBlockingShape ?? BlockingShape;
+            if (desiredBlockingShape != null)
+            { BlockingCollider = desiredBlockingCollider; BlockingActor = desiredBlockingActor; }
             // Do not accept an intersecting pose as the sweep's next starting point.
             JournalConstraint(SupportBlocked ? "support_contact" : "pose_rejected");
             ClearAnatomyReuse();
@@ -444,6 +482,18 @@ namespace BarPromenade
             remainingCandidateChecks--;
             depth = CandidateDepth();
             return depth <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
+        }
+
+        private bool RightWristCanHold(Quaternion rotation)
+        {
+            Vector3 direction = (hand.position - forearm.position).normalized;
+            Vector3 fingers = rotation * rightFingersInHand;
+            Vector3 palm = rotation * rightPalmInHand;
+            float forward = Vector3.Dot(direction, fingers);
+            // Equivalent to the existing 25/55/65 degree support-hand limits,
+            // without inverse trigonometry during ordinary candidate checks.
+            return Mathf.Abs(Vector3.Dot(direction, Vector3.Cross(palm, fingers).normalized)) <= .42261827f &&
+                forward >= .42261827f && Mathf.Abs(Vector3.Dot(direction, palm)) <= 1.428148f * forward;
         }
 
         private void AcceptCandidate()
@@ -491,9 +541,12 @@ namespace BarPromenade
                 {
                     MotionBlocked = Blocked = true;
                     string rejectedShape = BlockingShape;
+                    Collider rejectedCollider = BlockingCollider;
+                    CombatActor rejectedActor = BlockingActor;
                     RestoreLastSafePose();
                     PenetrationDepth = Depth();
                     BlockingShape = rejectedShape ?? BlockingShape;
+                    if (rejectedShape != null) { BlockingCollider = rejectedCollider; BlockingActor = rejectedActor; }
                 }
                 if (!contactPreview) support?.CommitPresentedContact(clear);
                 JournalConstraint(clear ? "committed" : "commit_rejected");
@@ -587,7 +640,7 @@ namespace BarPromenade
                 AnatomyStamp current = gatheredOtherAnatomy[i] = CaptureOtherInput(i);
                 if (!current.CanParticipate) continue;
                 PrepareOtherAnatomy(i, current);
-                otherDepthShapes.Add(otherSweep[i].EndShape(otherAnatomy[i]));
+                otherDepthShapes.Add(otherSweep[i].EndShape(otherAnatomy[i], otherOwners[i]));
             }
             otherSnapshotReady = true;
         }
@@ -601,6 +654,7 @@ namespace BarPromenade
             CandidateChecks++;
             if (!armClearance.IsClear())
             {
+                if (checkingDesiredPath) requestedOwnGeometryBlocked = true;
                 // A body correction must not hide a simultaneous wall contact
                 // from the attack preview's obstacle result.
                 if (checkingDesiredPath)
@@ -609,6 +663,7 @@ namespace BarPromenade
                     if (weaponDepth > 0f) return weaponDepth;
                 }
                 BlockingShape = armClearance.LastBlockingShape;
+                BlockingCollider = null; BlockingActor = actor;
                 return .02f;
             }
             return Depth();
@@ -619,6 +674,7 @@ namespace BarPromenade
             using var timing = DepthMarker.Auto();
             float maximum = 0f;
             BlockingShape = null;
+            BlockingCollider = null; BlockingActor = null;
             Pose pose = WeaponPose;
             // Each shoulder candidate moves live anatomy. Snapshot it once here,
             // not once per weapon segment, and use tight conservative AABBs even
@@ -637,7 +693,7 @@ namespace BarPromenade
             foreach (Collider shape in anatomy)
                 if (shape != null && actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(shape))
                 {
-                    var live = new DepthShape(shape, false);
+                    var live = new DepthShape(shape, false, actor);
                     if (live.Bounds.Intersects(weaponBounds))
                         depthShapes.Add(live.WithQuery(anatomyQueries.Prepare(shape)));
                 }
@@ -671,7 +727,18 @@ namespace BarPromenade
                             RecoveryCoreClear(segment, a, b, shape.Collider)) continue;
                         if (shape.WorldObstacle) RecordWorldContact(1f, center - direction * radius, direction);
                         if (depth > maximum)
-                        { maximum = depth; BlockingShape = shape.Collider.name; SetEscape(center, direction, depth); }
+                        { maximum = depth; BlockingShape = shape.Collider.name;
+                            BlockingCollider = shape.Collider; BlockingActor = shape.Owner;
+                            SetEscape(center, direction, depth); }
+                        if (checkingDesiredPath && depth > 0f)
+                        {
+                            if (shape.Owner == actor) requestedOwnGeometryBlocked = true;
+                            else if (shape.Owner != null) RequestedBodyContactActor = shape.Owner;
+                        }
+                        if (checkingDesiredPath && rightForearmIndex >= 0 && shape.Collider == anatomy[rightForearmIndex])
+                        {
+                            RecordOwnForearmPenetration(index, a, b, radius, shape, direction, depth);
+                        }
                         if (maximum > 0f && !checkingDesiredPath) return maximum;
                     }
                 }
@@ -701,20 +768,23 @@ namespace BarPromenade
             internal readonly Pose Pose;
             internal readonly Bounds Bounds;
             internal readonly bool WorldObstacle;
+            internal readonly CombatActor Owner;
 
-            internal DepthShape(Collider shape, bool worldObstacle)
+            internal DepthShape(Collider shape, bool worldObstacle, CombatActor owner = null)
             {
                 Collider = Query = shape;
                 Pose = new Pose(shape.transform.position, shape.transform.rotation);
                 Bounds = new CombatWeaponGeometry.ShapeBounds(shape).At(Pose.position, Pose.rotation);
                 WorldObstacle = worldObstacle;
+                Owner = owner;
             }
 
-            internal DepthShape(Collider shape, Pose pose, Bounds bounds)
-            { Collider = Query = shape; Pose = pose; Bounds = bounds; WorldObstacle = false; }
+            internal DepthShape(Collider shape, Pose pose, Bounds bounds, CombatActor owner)
+            { Collider = Query = shape; Pose = pose; Bounds = bounds; WorldObstacle = false; Owner = owner; }
 
             private DepthShape(DepthShape source, Collider query)
-            { Collider = source.Collider; Query = query; Pose = source.Pose; Bounds = source.Bounds; WorldObstacle = source.WorldObstacle; }
+            { Collider = source.Collider; Query = query; Pose = source.Pose; Bounds = source.Bounds;
+                WorldObstacle = source.WorldObstacle; Owner = source.Owner; }
 
             internal DepthShape WithQuery(Collider query) => new DepthShape(this, query);
         }
@@ -749,6 +819,22 @@ namespace BarPromenade
             return depth;
         }
 
+        internal static Pose AttachedWeaponPoseAt(Pose from, Pose to, Pose armFrom, Pose armTo, float t)
+        {
+            RelativeWeaponPoses(from, to, armFrom, armTo, out Pose localFrom, out Pose localTo);
+            Pose arm = CombatWeaponGeometry.At(armFrom, armTo, t);
+            Pose local = CombatWeaponGeometry.At(localFrom, localTo, t);
+            return new Pose(arm.position + arm.rotation * local.position, arm.rotation * local.rotation);
+        }
+
+        private static void RelativeWeaponPoses(Pose from, Pose to, Pose armFrom, Pose armTo,
+            out Pose localFrom, out Pose localTo)
+        {
+            Quaternion first = Quaternion.Inverse(armFrom.rotation), last = Quaternion.Inverse(armTo.rotation);
+            localFrom = new Pose(first * (from.position - armFrom.position), first * from.rotation);
+            localTo = new Pose(last * (to.position - armTo.position), last * to.rotation);
+        }
+
         private bool SweepClear(Pose from, Pose to)
         {
             using var timing = SweepMarker.Auto();
@@ -763,6 +849,7 @@ namespace BarPromenade
             // primitive and segment pair again during the final commit.
             float bodyTravel = reuseAnatomy ? clearAnatomyBodyTravel : 0f;
             bool nearOther = reuseAnatomy && clearAnatomyNearOther;
+            bool rightForearmPrepared = false;
             if (!reuseAnatomy)
             {
                 anatomySweepCandidates.Clear(); otherSweepCandidates.Clear();
@@ -770,10 +857,13 @@ namespace BarPromenade
                     if (anatomy[i] != null && actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(anatomy[i]))
                     {
                         anatomySweep[i] = new BodySweep(anatomy[i], previousAnatomy[i]);
-                        anatomySweep[i].SegmentMask = SweptPairs(anatomySweep[i].TravelBounds);
+                        // Its palm and the held weapon are one articulated
+                        // linkage. A world-space chord is not their relative path.
+                        anatomySweep[i].SegmentMask = i == rightForearmIndex ? uint.MaxValue : SweptPairs(anatomySweep[i].TravelBounds);
                         if (anatomySweep[i].SegmentMask == 0) continue;
                         anatomySweep[i].Query = anatomyQueries.Prepare(anatomy[i]);
                         anatomySweepCandidates.Add(i);
+                        rightForearmPrepared |= i == rightForearmIndex;
                         bodyTravel = Mathf.Max(bodyTravel, anatomySweep[i].Travel);
                     }
                 for (int i = 0; i < otherAnatomy.Count; i++)
@@ -792,9 +882,25 @@ namespace BarPromenade
             // A planted hand does not make the torso or the other fighter static.
             // Bound relative surface travel, including rotation about each shape's
             // pivot, before choosing either the fast path or interpolation spacing.
-            if (weaponTravel + bodyTravel < .001f) return true;
-            int steps = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max((weaponTravel + bodyTravel) / .025f,
-                angle / 4f)), 1, 48);
+            Pose attachedFrom = default, attachedTo = default;
+            float attachedTravel = 0f, attachedAngle = 0f;
+            Bounds attachedForearmBounds = default;
+            if (rightForearmPrepared)
+            {
+                RelativeWeaponPoses(from, to, anatomySweep[rightForearmIndex].From,
+                    anatomySweep[rightForearmIndex].To, out attachedFrom, out attachedTo);
+                attachedAngle = Quaternion.Angle(attachedFrom.rotation, attachedTo.rotation);
+                attachedTravel = Vector3.Distance(attachedFrom.position, attachedTo.position) +
+                    attachedAngle * Mathf.Deg2Rad * .7f;
+                attachedForearmBounds = anatomySweep[rightForearmIndex].RelativeBounds;
+            }
+            // Test the attached pair in the forearm frame. Its common parent
+            // orbit cancels exactly; a compensating wrist can still have real
+            // relative travel even when both WORLD bar endpoints are identical.
+            float motion = Mathf.Max(weaponTravel + bodyTravel, attachedTravel);
+            if (motion < .001f) return true;
+            int steps = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(motion / .025f,
+                Mathf.Max(angle, attachedAngle) / 4f)), 1, 48);
             worldSweepBounds.Clear();
             foreach (Collider obstacle in obstacles)
                 if (obstacle != null && obstacle.bounds.Intersects(travelBounds)) worldSweepBounds.Add(obstacle.bounds);
@@ -814,6 +920,8 @@ namespace BarPromenade
                 int sampleStamp = ++worldProbeStamp;
                 float t = step / (float)steps;
                 Pose next = new Pose(Vector3.Lerp(from.position, to.position, t), Quaternion.Slerp(from.rotation, to.rotation, t));
+                Pose attached = rightForearmPrepared
+                    ? CombatWeaponGeometry.At(attachedFrom, attachedTo, t) : next;
                 // Interpolate each body once per time sample, not once for every
                 // weapon segment. The disabled rig shapes still use their live poses.
                 if (!reuseAnatomy)
@@ -835,15 +943,29 @@ namespace BarPromenade
                     for (int candidate = 0; !reuseAnatomy && candidate < anatomySweepCandidates.Count; candidate++)
                     {
                         int body = anatomySweepCandidates[candidate];
+                        Vector3 bodyA = body == rightForearmIndex ? attached.position + attached.rotation * segment.A : a;
+                        Vector3 bodyB = body == rightForearmIndex ? attached.position + attached.rotation * segment.B : b;
+                        Bounds bodyBounds = segmentBounds;
+                        if (body == rightForearmIndex)
+                        {
+                            bodyBounds = new Bounds(bodyA, Vector3.zero); bodyBounds.Encapsulate(bodyB);
+                            bodyBounds.Expand(segment.Radius * 2f);
+                        }
                         if ((anatomySweep[body].SegmentMask & (1u << index)) == 0 ||
-                            !anatomySweep[body].Bounds.Intersects(segmentBounds)) continue;
+                            !(body == rightForearmIndex ? attachedForearmBounds : anatomySweep[body].Bounds).Intersects(bodyBounds)) continue;
                         AnatomySweepQueries++;
                         actor.JournalPhysicsQuery();
-                        if (Physics.ComputePenetration(probe, (a + b) * .5f, capsuleRotation,
-                            anatomySweep[body].Query, anatomySweep[body].Pose.position, anatomySweep[body].Pose.rotation,
+                        Quaternion bodyRotation = body == rightForearmIndex && (bodyB - bodyA).sqrMagnitude > .000001f
+                            ? Quaternion.FromToRotation(Vector3.up, bodyB - bodyA) : capsuleRotation;
+                        Pose bodyPose = body == rightForearmIndex
+                            ? new Pose(Vector3.zero, Quaternion.identity) : anatomySweep[body].Pose;
+                        if (Physics.ComputePenetration(probe, (bodyA + bodyB) * .5f, bodyRotation,
+                            anatomySweep[body].Query, bodyPose.position, bodyPose.rotation,
                             out _, out float overlap) && overlap > .001f)
                         {
                             BlockingShape = anatomy[body].name;
+                            BlockingCollider = anatomy[body]; BlockingActor = actor;
+                            if (checkingDesiredPath) requestedOwnGeometryBlocked = true;
                             if (!checkingDesiredPath || !nearWorld) return false;
                             anatomyBlocked = true;
                         }
@@ -861,7 +983,17 @@ namespace BarPromenade
                                 out _, out float overlap) && overlap > .001f)
                             {
                                 BlockingShape = shape.name;
-                                if (!checkingDesiredPath || !nearWorld) return false;
+                                BlockingCollider = shape; BlockingActor = otherOwners[body];
+                                if (checkingDesiredPath)
+                                {
+                                    RequestedBodyContactActor = otherOwners[body];
+                                    if (requestedBlockingCollider == null)
+                                    { requestedBlockingCollider = shape; requestedBlockingActor = otherOwners[body]; }
+                                }
+                                // Finish the requested interval's OWN geometry
+                                // checks even after a foreign body intercepts it.
+                                // Its rollback cannot authorize a hidden self-crossing.
+                                if (!checkingDesiredPath) return false;
                                 anatomyBlocked = true;
                             }
                         }
@@ -1114,7 +1246,10 @@ namespace BarPromenade
         private struct BodySweep
         {
             private readonly Pose from, to;
+            internal Pose From => from;
+            internal Pose To => to;
             private readonly CombatWeaponGeometry.ShapeBounds geometry;
+            internal Bounds RelativeBounds => geometry.At(Vector3.zero, Quaternion.identity);
             internal readonly float Travel;
             internal readonly Bounds TravelBounds;
             internal uint SegmentMask;
@@ -1143,7 +1278,8 @@ namespace BarPromenade
                 Bounds = geometry.At(Pose.position, Pose.rotation);
             }
 
-            internal DepthShape EndShape(Collider shape) => new DepthShape(shape, to, geometry.At(to.position, to.rotation));
+            internal DepthShape EndShape(Collider shape, CombatActor owner) =>
+                new DepthShape(shape, to, geometry.At(to.position, to.rotation), owner);
         }
 
         internal PreviewScope BeginContactPreview() => new PreviewScope(this);

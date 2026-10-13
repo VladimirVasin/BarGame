@@ -16,6 +16,17 @@ namespace BarPromenade
         private static string currentDirectoryPath = string.Empty;
         private static int? citySeed;
         private static long sequence;
+        private static bool closingSink;
+
+        // Cold lifecycle boundary: cached owners publish their final records
+        // while the current sink is still available, independent of Unity's
+        // component destruction order.
+        internal static event Action BeforeShutdown;
+
+        internal static void ClearShutdownObservers()
+        {
+            lock (Sync) { BeforeShutdown = null; }
+        }
 
         public static bool IsVerbose
         {
@@ -170,6 +181,7 @@ namespace BarPromenade
             lock (Sync)
             {
                 DisableNoLock();
+                closingSink = false;
                 profile = settings?.Profile ?? GameLogProfile.Off;
                 clock = eventClock ?? new SystemGameLogClock();
                 sessionId = newSessionId ?? string.Empty;
@@ -219,9 +231,19 @@ namespace BarPromenade
         {
             lock (Sync)
             {
+                if (closingSink) return;
+                closingSink = true;
                 if (emitSessionEnd &&
                     IsEnabledNoLock(GameLogLevel.Info))
                 {
+                    if (BeforeShutdown != null)
+                        foreach (Action observer in BeforeShutdown.GetInvocationList())
+                            try { observer(); }
+                            catch (Exception error)
+                            {
+                                WriteNoLock(GameLogLevel.Error, "diagnostics", "shutdown_observer_failed",
+                                    new[] { Field("exception_type", error.GetType().Name) });
+                            }
                     WriteNoLock(
                         GameLogLevel.Info,
                         "session",

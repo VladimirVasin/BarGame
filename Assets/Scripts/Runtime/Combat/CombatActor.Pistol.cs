@@ -157,12 +157,23 @@ namespace BarPromenade
         public bool TryReloadPistol()
         {
             bool resuming = Firearm?.ReloadPending ?? false;
-            if (!BodyDamage.CanUseLeftHand || !BodyDamage.CanUseRightHand || IsBodyGrounded ||
-                !PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Firearm.TryReload()) return false;
+            int request = JournalCommand("reload");
+            string reason = Firearm == null ? "no_firearm" :
+                !BodyDamage.CanUseLeftHand || !BodyDamage.CanUseRightHand ? "hands_unavailable" :
+                IsBodyGrounded ? "body_grounded" : !PistolBodyAvailable ? PistolBodyRejection :
+                !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" :
+                Firearm.IsReloading ? "already_reloading" :
+                !resuming && Firearm.Rounds == Firearm.Settings.MagazineCapacity ? "full" :
+                !resuming && Firearm.ReserveRounds == 0 ? "no_reserve" : null;
+            if (reason != null || !Firearm.TryReload())
+            {
+                JournalReload("reload_rejected", request, reason ?? "state_refused", resuming);
+                return false;
+            }
             pistolReloadSettleRemaining = resuming ? PoseBlendSeconds : 0f;
             if (!IsShotgun) BeginPistolReloadAudio(resuming);
             CancelPendingPistolShot("reload_started");
-            JournalEvent(IsShotgun ? "shotgun_reload_started" : "pistol_reload_started", f0: GameLog.Field("rounds", Firearm.Rounds));
+            JournalReload(IsShotgun ? "shotgun_reload_started" : "pistol_reload_started", request, "accepted", resuming);
             Present();
             return true;
         }
@@ -227,9 +238,13 @@ namespace BarPromenade
         {
             if (Firearm == null) return;
             if (IsSwitchingWeapon) { Firearm.Advance(seconds); UpdatePistolMechanics(); return; }
+            bool wasReloading = Firearm.IsReloading;
             if (!BodyDamage.CanUseLeftHand || IsBodyGrounded) Firearm.CancelReload();
             if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelAction(); }
             else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelReload(); }
+            if (wasReloading && !Firearm.IsReloading)
+                JournalReload("reload_interrupted", 0, !BodyDamage.CanUseLeftHand || !BodyDamage.CanUseRightHand ? "hands_unavailable" :
+                    IsBodyGrounded ? "body_grounded" : PistolBodyRejection, true);
             bool reloading = Firearm.IsReloading;
             int spentBefore = IsShotgun ? ShotgunSpentMask : 0;
             int loadMaskBefore = IsShotgun ? Shotgun.ReloadLoadMask : 0;
@@ -253,7 +268,7 @@ namespace BarPromenade
                 seconds / Mathf.Max(.001f, travelSeconds));
             if (reloading && !Firearm.IsReloading)
             {
-                JournalEvent(IsShotgun ? "shotgun_reload_completed" : "pistol_reload_completed", f0: GameLog.Field("rounds", Firearm.Rounds));
+                JournalReload(IsShotgun ? "shotgun_reload_completed" : "pistol_reload_completed", 0, "completed", false);
             }
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(!weaponDropped &&
                 Firearm.CooldownRemaining > 0f && Firearm.ShotElapsed < .05f);
@@ -272,6 +287,7 @@ namespace BarPromenade
         private void EndPistolAction()
         {
             CancelPendingPistolShot("action_ended");
+            if (Firearm?.IsReloading ?? false) JournalReload("reload_interrupted", 0, "action_ended", true);
             Firearm?.CancelAction();
             Ragdoll?.PhysicsController?.ResetCombatSurvivorArmAim();
             pistolVisualAimProgress = 0f;

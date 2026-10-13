@@ -14,7 +14,8 @@ namespace BarPromenade.Editor
         public const string ManifestPath = Folder + "CombatTest3D.json";
         public override uint GetVersion() => 6;
         private readonly Dictionary<string, AnimationClip> importedClips = new Dictionary<string, AnimationClip>();
-        private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal);
+        private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal) &&
+            !assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
 
         private void OnPreprocessModel()
@@ -337,7 +338,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException("Combat kick lost its opposite support sole or exact Ready endpoints.");
         }
 
-        private static void ValidateInPlaceClip(AnimationClip clip)
+        internal static void ValidateInPlaceClip(AnimationClip clip)
         {
             foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
             {

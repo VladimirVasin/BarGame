@@ -270,6 +270,7 @@
     { "key": "inventory.item.combat_shotgun_ammo.name", "value": "Ружейные патроны" },
     { "key": "inventory.item.combat_shotgun_ammo.description", "value": "Четыре патрона для двустволки. Латунные донца потемнели." },
     { "key": "combat.opponent", "value": "Противник" },
+    { "key": "combat.zombie", "value": "Зомби" },
     { "key": "combat.victory", "value": "Победа" },
     { "key": "combat.defeat", "value": "Поражение" },
     { "key": "combat.controls", "value": "WASD · ход   СКМ · фокус   Space · шаг   Q · пинок   ЛКМ · заряд/удар   ПКМ · блок" },

@@ -24,6 +24,7 @@ namespace BarPromenade
 
         private Vector3 heroSpawn, opponentSpawn;
         public const float SimulationStep = 1f / 120f;
+        internal static bool UseHumanOpponentsForTests { get; set; }
         internal const int MaximumFrameSubsteps = 4;
         private static readonly ProfilerMarker SimulationMarker = new ProfilerMarker("BarPromenade.Combat.Simulation");
         /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
@@ -117,7 +118,7 @@ namespace BarPromenade
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
             Mode = selection.Mode;
             EncounterSettings = selection.EncounterSettings;
-            Sparring = Mode == CombatTestMode.Endless;
+            Sparring = !UseHumanOpponentsForTests || Mode == CombatTestMode.Endless;
             Hero.InitializeHero(Player, selection.Loadout);
             InitializeWeaponPools();
             InitializeAmmoPickups();
@@ -127,6 +128,8 @@ namespace BarPromenade
             InitializeDamageEffects();
             SparkEffects = gameObject.AddComponent<CombatSparkEffects>();
             SparkEffects.Initialize(transform);
+            SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle");
+            SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim");
             Taunt = opponentObject.AddComponent<CombatTauntInteraction>();
             Taunt.Initialize(this, arenaBounds);
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
@@ -134,6 +137,7 @@ namespace BarPromenade
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(Player, CameraFollow, null);
             IsInitialized = true;
+            GameLog.BeforeShutdown += WriteMovementSummary;
             InitializeDuelJournal();
             PlaceRound(focusOpponent: Mode == CombatTestMode.Endless && !Hero.IsFirearm);
         }
@@ -543,7 +547,9 @@ namespace BarPromenade
                 RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
                 if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
                     LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
-                if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
+                if (Opponent.IsZombie)
+                    GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18), LocalizationService.Get("combat.zombie"), small);
+                else if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
                     LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
                     Mode != CombatTestMode.Endless || EndlessRunFinished))
                     SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
@@ -586,7 +592,7 @@ namespace BarPromenade
             DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - (actor.IsHero ? 32f : 12f), 14f), healthKey,
                 actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f,
                 actor.IsHero ? heroHealthLabel : opponentHealthLabel);
-            DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
+            if (!actor.IsZombie) DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
                 actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f,
                 actor.IsHero ? heroStaminaLabel : opponentStaminaLabel);
             if (actor.IsHero) DrawGuardReadiness(new Rect(rect.xMax - 22f, rect.y + 2f, 15f, 15f), actor);

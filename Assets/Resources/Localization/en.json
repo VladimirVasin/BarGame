@@ -270,6 +270,7 @@
     { "key": "inventory.item.combat_shotgun_ammo.name", "value": "Shotgun ammunition" },
     { "key": "inventory.item.combat_shotgun_ammo.description", "value": "Four rounds for the double barrel. The brass bases have darkened." },
     { "key": "combat.opponent", "value": "Opponent" },
+    { "key": "combat.zombie", "value": "Zombie" },
     { "key": "combat.victory", "value": "Victory" },
     { "key": "combat.defeat", "value": "Defeat" },
     { "key": "combat.controls", "value": "WASD · move   MMB · focus   Space · step   Q · kick   LMB · hold/release   RMB · block" },

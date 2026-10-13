@@ -42,6 +42,10 @@ namespace BarPromenade
         private bool journalRoundOpen, journalResultWritten, journalInputAllowed, journalAttackHeld, journalFrozen;
         private bool journalForceSnapshot, journalFocus = true;
         private bool journalFailureReported;
+        private string journalInputOwner;
+        private WorldItemFoundScreen journalFoundScreen;
+        private PlayerAnimatedInteractionController journalInteraction;
+        private SecondaryMotionBakeRuntime.DiagnosticsSnapshot journalBakeDiagnostics;
         private bool journalMovementCaptured, journalMovementFocused, journalMovementAwaitingNeutral, journalTargetFocused;
         private int journalMovementKeys;
         private Vector2 journalMovementStick, journalMovementInput;
@@ -52,6 +56,7 @@ namespace BarPromenade
         private static readonly string[] JournalGrips = Enum.GetNames(typeof(CombatArmSupportState));
         private static readonly string[] JournalIntents = Enum.GetNames(typeof(CombatOpponentIntent));
         private static readonly string[] JournalOpponentStyles = Enum.GetNames(typeof(CombatOpponentStyle));
+        private static readonly string[] JournalBakeResults = Enum.GetNames(typeof(SecondaryMotionBakeResult));
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
         private int JournalSnapshotHz => Mode == CombatTestMode.Endless ? 10 : 20;
 
@@ -183,6 +188,10 @@ namespace BarPromenade
             foreach (CombatActor actor in combatParticipants) actor.BeginJournalWorkFrame();
             journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
+            journalFoundScreen = WorldItemFoundScreen.For(Player.Interactor);
+            journalInteraction = Player.GameObject.GetComponent<PlayerAnimatedInteractionController>();
+            journalInputOwner = null;
+            journalBakeDiagnostics = default;
             journalMovementCaptured = false;
             ResetJournalActorState(journalHero);
             foreach (JournalActorState saved in journalOpponents) ResetJournalActorState(saved);
@@ -204,7 +213,7 @@ namespace BarPromenade
                 GameLog.Field("capture_delta_time", Time.captureDeltaTime),
                 GameLog.Field("target_wait_marker_available", journalTargetWait.Valid),
                 GameLog.Field("code_revision", journalIdentity.Code),
-                GameLog.Field("opponent_style", JournalOpponentStyles[(int)OpponentStyle]));
+                GameLog.Field("opponent_style", Opponent != null && Opponent.IsZombie ? "Zombie" : JournalOpponentStyles[(int)OpponentStyle]));
             duelJournal.Record("revision_identity",
                 f0: GameLog.Field("code_identity_source", journalIdentity.CodeSource),
                 f1: GameLog.Field("workspace_commit", journalIdentity.WorkspaceCommit),
@@ -250,7 +259,7 @@ namespace BarPromenade
                     duelJournal.Record("setting", actor: actor.JournalActorId,
                         f0: GameLog.Field("name", property.Name), f1: GameLog.Field("value", (float)property.GetValue(settings)));
             duelJournal.Record("actor_configuration", actor: actor.JournalActorId,
-                f0: GameLog.Field("model", actor.DamageRigRoot.name), f1: GameLog.Field("weapon", actor.Weapon.name),
+                f0: GameLog.Field("model", actor.DamageRigRoot.name), f1: GameLog.Field("weapon", actor.Weapon != null ? actor.Weapon.name : "Unarmed"),
                 f2: GameLog.Field("experimental_recovery", actor.ImpactMotion.ExperimentalRecovery),
                 f3: GameLog.Field("max_recovery_steps", actor.ImpactMotion.MaximumRecoverySteps),
                 f4: GameLog.Field("shove_range", CombatActor.ShoveRange), f5: GameLog.Field("shove_impulse", CombatActor.ShoveImpulse),
@@ -416,11 +425,20 @@ namespace BarPromenade
             journalStagesAtFrameStart = CaptureJournalStageCounters();
             duelJournal.SetClock(Time.frameCount, journalTick, journalSeconds);
             bool allowed = GameInput.CanRead(GameInputContext.Gameplay);
-            if (allowed != journalInputAllowed)
+            string owner = !pistolApplicationFocused && (Hero.IsFirearm || Hero.IsSwitchingWeapon) ? "application_focus" :
+                SceneTransitionService.IsTransitioning ? "scene_transition" :
+                PauseMenuController.IsAnyPaused ? "pause_menu" : GameTimeScaleRuntime.IsPaused ? "time_pause" :
+                journalFoundScreen != null && journalFoundScreen.IsPresenting ? "found_item" :
+                Taunt != null && Taunt.IsActive ? "taunt" : journalInteraction != null && journalInteraction.IsActive ? "contextual_animation" :
+                BarMinigameModalLock.IsAnyLocked ? "modal_lock" : "gameplay";
+            if (allowed != journalInputAllowed || owner != journalInputOwner)
             {
-                journalInputAllowed = allowed; journalForceSnapshot = true;
+                journalInputAllowed = allowed; journalInputOwner = owner; journalForceSnapshot = true;
                 duelJournal.Record("input_gate", f0: GameLog.Field("allowed", allowed),
-                    f1: GameLog.Field("paused", PauseMenuController.IsAnyPaused), f2: GameLog.Field("transitioning", SceneTransitionService.IsTransitioning));
+                    f1: GameLog.Field("paused", PauseMenuController.IsAnyPaused), f2: GameLog.Field("transitioning", SceneTransitionService.IsTransitioning),
+                    f3: GameLog.Field("owner", owner), f4: GameLog.Field("application_focused", pistolApplicationFocused),
+                    f5: GameLog.Field("motor_input_enabled", Player.Motor.InputEnabled),
+                    f6: GameLog.Field("interactor_input_enabled", Player.Interactor.InputEnabled));
             }
         }
 
@@ -721,6 +739,17 @@ namespace BarPromenade
             CombatActor actor = saved.Actor;
             var grip = actor.SupportGrip;
             int id = actor.JournalActorId;
+            if (actor.IsHero)
+            {
+                WriteJournalAmmunition(actor, CombatWeaponId.Pistol);
+                WriteJournalAmmunition(actor, CombatWeaponId.Shotgun);
+                WriteJournalSecondaryMotionDiagnostics();
+                var registry = (Player.Visual as Player3DCharacterPresentation)?.Registry;
+                duelJournal.Record("secondary_motion_snapshot", actor: id,
+                    f0: GameLog.Field("hair", JournalBakeResults[(int)SecondaryMotionBakeRuntime.LastResult(registry, SecondaryMotionBakePart.Hair)]),
+                    f1: GameLog.Field("jacket", JournalBakeResults[(int)SecondaryMotionBakeRuntime.LastResult(registry, SecondaryMotionBakePart.Jacket)]),
+                    f2: GameLog.Field("sling", JournalBakeResults[(int)SecondaryMotionBakeRuntime.LastResult(registry, SecondaryMotionBakePart.Sling)]));
+            }
             var state = actor.State;
             duelJournal.Record("state", actor: id, action: state.AttackSequence, request: actor.JournalRequestId,
                 f0: GameLog.Field("phase", JournalPhases[(int)state.Phase]), f1: GameLog.Field("health", state.Health),
@@ -792,6 +821,36 @@ namespace BarPromenade
                 WriteJournalVectors(id, "movement", Player.Motor.PlanarVelocity, actor.Body != null ? actor.Body.velocity : Vector3.zero);
                 WriteJournalVectors(id, "movement_drive", Player.Motor.RequestedPlanarVelocity, Player.Motor.BalanceDriftVelocity);
             }
+        }
+
+        private void WriteJournalAmmunition(CombatActor actor, CombatWeaponId weapon)
+        {
+            IFirearmState firearm = actor.CarriedFirearm(weapon);
+            if (firearm == null) return;
+            duelJournal.Record("ammunition_snapshot", actor: actor.JournalActorId,
+                f0: GameLog.Field("weapon", weapon == CombatWeaponId.Pistol ? "Pistol" : "Shotgun"),
+                f1: GameLog.Field("rounds", firearm.Rounds), f2: GameLog.Field("reserve", firearm.ReserveRounds),
+                f3: GameLog.Field("capacity", firearm.ReserveCapacity), f4: GameLog.Field("location", (int)actor.CarriedWeaponLocation(weapon)),
+                f5: GameLog.Field("reload_pending", firearm.ReloadPending), f6: GameLog.Field("reload_progress", firearm.ReloadProgress),
+                f7: GameLog.Field("load_mask", (firearm as ShotgunState)?.ReloadLoadMask ?? 0));
+        }
+
+        private void WriteJournalSecondaryMotionDiagnostics()
+        {
+            var current = SecondaryMotionBakeRuntime.Diagnostics;
+            if (current.CacheMisses == journalBakeDiagnostics.CacheMisses && current.Evictions == journalBakeDiagnostics.Evictions &&
+                current.GuardBuildCount == journalBakeDiagnostics.GuardBuildCount) return;
+            duelJournal.Record("secondary_motion_cache",
+                f0: GameLog.Field("last_clip", current.LastDecodedKey), f1: GameLog.Field("decodes", current.DecodeCount),
+                f2: GameLog.Field("load_ms", current.LoadTicks * JournalMillisecondsPerTick),
+                f3: GameLog.Field("decode_ms", current.DecodeTicks * JournalMillisecondsPerTick),
+                f4: GameLog.Field("largest_decode_ms", current.LargestDecodeTicks * JournalMillisecondsPerTick),
+                f5: GameLog.Field("resident_floats", current.ResidentFloatValues), f6: GameLog.Field("resident_clips", current.ResidentClips),
+                f7: GameLog.Field("evictions", current.Evictions));
+            duelJournal.Record("secondary_motion_cache_sample",
+                f0: GameLog.Field("hits", current.CacheHits), f1: GameLog.Field("misses", current.CacheMisses),
+                f2: GameLog.Field("guard_builds", current.GuardBuildCount), f3: GameLog.Field("decoded_floats", current.DecodedValues));
+            journalBakeDiagnostics = current;
         }
 
         private void WriteJournalPose(int actor, string bone, Transform value)

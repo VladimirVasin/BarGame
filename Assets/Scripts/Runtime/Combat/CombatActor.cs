@@ -30,7 +30,8 @@ namespace BarPromenade
         private bool receivedDuringStep;
         private bool guardHeld;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
-        public MeleeCombatant State { get; } = new MeleeCombatant();
+        public MeleeCombatant State { get; private set; } = new MeleeCombatant();
+        public bool IsZombie { get; private set; }
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
         public CombatWeaponId WeaponId { get; private set; }
@@ -108,19 +109,23 @@ namespace BarPromenade
             Present();
         }
 
-        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body)
+        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body, bool zombie = false)
         {
+            IsZombie = zombie;
+            if (zombie) State = new MeleeCombatant(MeleeCombatSettings.ZombieUnarmed);
             npc = presentation;
             Body = body;
             npc.ReleaseAnimation();
-            LoadClips(true);
+            if (zombie) LoadZombieClips();
+            else LoadClips(true);
             InitializeNpcAnimation();
             InitializeNpcPoseBlend();
-            InitializeNpcChargeBlend();
+            if (!zombie) InitializeNpcChargeBlend();
             LoadStepClips(true);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body);
-            AttachWeapon(npc.RightGrip);
+            if (zombie) InitializeZombieHands();
+            else AttachWeapon(npc.RightGrip);
             InitializeDamagePose();
             InitializeCombatAttention();
             Present();
@@ -186,7 +191,7 @@ namespace BarPromenade
         internal bool HasTwoHandSupport => BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand && !weaponDropped && HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
         public bool GuardRequested => guardHeld;
-        public bool GuardReady => GuardSupportRejection == null &&
+        public bool GuardReady => !IsZombie && GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
         internal string GuardSupportRejection => HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
@@ -197,6 +202,7 @@ namespace BarPromenade
 
         public bool TryAttack()
         {
+            if (IsZombie) return TryZombieAttack();
             if (IsFirearm) return false;
             int request = JournalCommand("attack_immediate");
             if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
@@ -218,6 +224,7 @@ namespace BarPromenade
 
         public bool RequestAttack()
         {
+            if (IsZombie) return TryZombieAttack();
             if (IsFirearm) return false;
             int request = JournalCommand("attack");
             if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
@@ -251,7 +258,7 @@ namespace BarPromenade
 
         public void SetBlock(bool held)
         {
-            if (IsFirearm) held = false;
+            if (IsFirearm || IsZombie) held = false;
             bool freshPress = held && !guardHeld;
             guardHeld = held && CombatFocused;
             RefreshBlock(freshPress);
@@ -327,7 +334,7 @@ namespace BarPromenade
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
             if (guardHeld) RefreshBlock();
-            if (CombatFocused && BodyDamage.CanUseLeftHand && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
+            if (!IsZombie && CombatFocused && BodyDamage.CanUseLeftHand && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
@@ -357,7 +364,10 @@ namespace BarPromenade
             // The crowbar only starts moving when the arc opens: that is where it whistles.
             if (previousPhase == MeleePhase.Windup && State.Phase != MeleePhase.Windup && State.IsAttacking &&
                 sequence == State.AttackSequence)
-                RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
+            {
+                if (IsZombie) PlayZombieLunge();
+                else RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
+            }
             if ((State.IsAttacking && !IsRecoil(reaction)) || (elapsed.HasActiveWindow && !elapsed.IsKick))
             {
                 collectSweep = true;
@@ -367,6 +377,7 @@ namespace BarPromenade
             }
             else sweepValid = false;
             simulationPosePending = true;
+            if (IsZombie) AdvanceZombiePresentation(seconds);
             if (!deferPoseMotion) CompleteSimulationPose(seconds);
         }
 
@@ -379,8 +390,8 @@ namespace BarPromenade
             if (IsSwitchingWeapon) return;
             if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
-            AdvanceCombatFacing(seconds);
-            UpdateAttackReach(true);
+            if (!IsZombie || !State.IsAttacking) AdvanceCombatFacing(seconds);
+            if (!IsZombie) UpdateAttackReach(true);
             footwork?.SetFirearmWalkLocomotion(UsesFirearmWalkLocomotion);
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
@@ -398,7 +409,9 @@ namespace BarPromenade
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
             BodyDamageRegion region = bodyRegion ?? CombatBodyAnatomy.ToRegion(part);
-            float requested = MeleeDamageProfile.Crowbar.ResolveDamage(damage, State.Settings.MaxHealth, location);
+            bool unarmed = source.IsZombie;
+            float requested = (unarmed ? MeleeDamageProfile.Unarmed : MeleeDamageProfile.Crowbar)
+                .ResolveDamage(damage, State.Settings.MaxHealth, location);
             bool structuralOnly = postmortem || detachedPart;
             // Real body sweeps passed the physical weapon guard already. Charge
             // only the shared limb wound budget that can actually reach health;
@@ -412,6 +425,7 @@ namespace BarPromenade
             // Actual sweeps already tested the blocking prop before this body.
             // A guard flag cannot intercept a blade which physically went around it.
             MeleeHitResult result = structuralOnly ? MeleeHitResult.Hit :
+                unarmed ? State.ReceiveUnarmedHit(damage, blockCost, front && !physicalBody, power, location) :
                 State.ReceiveHit(damage, blockCost, front && !physicalBody, power, location);
             if (!postmortem && !detachedPart) CancelInterruptedShoveContact();
             if (result == MeleeHitResult.Ignored) { receivedDuringStep = false; return result; }
@@ -429,7 +443,7 @@ namespace BarPromenade
                     reaction = null;
                     break;
                 case MeleeHitResult.Blocked:
-                    RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .55f);
+                    RetroAudio.PlayAt(unarmed ? RetroSfxId.SpadeBite : RetroSfxId.SpadeGlance, point, .55f);
                     source.Shove(-direction, .04f, .12f);
                     reaction = guardImpact;
                     break;
@@ -442,12 +456,14 @@ namespace BarPromenade
             if (!postmortem && !detachedPart) reactionClock = 0f;
             var impact = new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
-                woundDamage: requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
+                unarmed ? direction * (result == MeleeHitResult.Blocked ? 12f : 28f) :
+                    CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
+                kind: unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
+                woundDamage: unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
             // A strong fatal torso strike hands the live pose to physics before
             // publishing its momentum, just like a fatal projectile contact.
             bool immediateFall = !postmortem && !detachedPart && State.IsDefeated &&
-                CombatBodyDamageState.IsTorso(region) && impact.Impulse.sqrMagnitude >= 120f * 120f;
+                (IsZombie || CombatBodyDamageState.IsTorso(region) && impact.Impulse.sqrMagnitude >= 120f * 120f);
             if (immediateFall) BeginProjectileDefeat(impact);
             PublishImpact(impact, phaseBefore);
             if (!postmortem && !detachedPart && State.IsDefeated && !immediateFall) BeginDefeat(direction, point);
@@ -459,6 +475,7 @@ namespace BarPromenade
         /// <summary>The parried swing stops where it was met: the recoil clip and a short shove back.</summary>
         internal void ShowParried(Vector3 point, Vector3 direction)
         {
+            if (IsZombie) { StopZombieAttack(); return; }
             reaction = Current.Recoil;
             reactionClock = 0f;
             sweepValid = false;
@@ -475,6 +492,13 @@ namespace BarPromenade
         }
 
         private bool previewWorldBlocked;
+        private bool previewMotionBlocked;
+        private string previewBlockingShape;
+        private float previewDesiredDepth;
+        private bool previewDesiredSweep;
+        private CombatWeaponConstraint.OwnForearmPoseDiagnostic previewOwnForearm;
+        private CombatActor previewBodyContactActor;
+        private Pose previewRequestedWeapon;
 
         private bool SampleAttack(float progress)
         {
@@ -522,6 +546,13 @@ namespace BarPromenade
             // Read before the preview restores persistent presentation diagnostics.
             // Contacts still need the world obstruction that corrected this sample.
             previewWorldBlocked = weaponConstraint.WorldBlocked;
+            previewMotionBlocked = weaponConstraint.MotionBlocked;
+            previewBlockingShape = weaponConstraint.BlockingShape;
+            previewDesiredDepth = weaponConstraint.DesiredPoseDepth;
+            previewDesiredSweep = weaponConstraint.DesiredPoseSweepBlocked;
+            previewOwnForearm = weaponConstraint.DesiredOwnForearmDiagnostic;
+            previewBodyContactActor = weaponConstraint.RequestedBodyContactActor;
+            previewRequestedWeapon = weaponConstraint.RequestedWeaponPose;
             previewWorldFraction = weaponConstraint.WorldContactFraction;
             previewWorldPoint = weaponConstraint.WorldContactPoint; previewWorldNormal = weaponConstraint.WorldContactNormal;
             return true;
@@ -532,6 +563,8 @@ namespace BarPromenade
         internal void SetPresentationFrozen(bool frozen)
         {
             presentationFrozen = frozen;
+            if (zombieVoice != null)
+            { if (frozen) zombieVoice.Pause(); else zombieVoice.UnPause(); }
             motor?.SetOwnedMovementFrozen(this, frozen);
             if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen && !IsKnockedDown && !IsRagdollActive);
             SetKnockdownFrozen(frozen);
@@ -562,6 +595,7 @@ namespace BarPromenade
             freeLocomotionReleased = false;
             BindGroundedFirearm();
             if (PresentKnockdown() || IsRagdollActive) return;
+            if (IsZombie) { PresentZombie(); return; }
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
             UpdateAttackReach(false);
@@ -711,6 +745,7 @@ namespace BarPromenade
             ResetDamage();
             ResetShove();
             ResetKick();
+            ResetZombieAttack();
             ResetAttackReach();
             supportGrip?.Reset();
             weaponConstraint?.Reset();
@@ -768,6 +803,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (IsZombie) { State.CancelAction(); ResetZombieAttack(); }
             bool releasedTransientCarry = CancelWeaponCarry();
             UnregisterWeaponEquipment();
             SuspendNpcAnimation();

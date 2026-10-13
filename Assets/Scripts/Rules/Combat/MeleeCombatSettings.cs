@@ -2,11 +2,16 @@ using System;
 
 namespace BarPromenade
 {
-    /// <summary>One immutable tuning set shared by both participants on the test range.
-    /// Strikes are free; the single meter pays for guard, steps, shoves, kicks and growing charge.</summary>
+    /// <summary>Immutable timings for a weapon fighter or a slow unarmed zombie.
+    /// Human strikes are free; the meter pays for guard, steps, shoves, kicks and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
+        public static MeleeCombatSettings ZombieUnarmed { get; } = new MeleeCombatSettings(
+            damage: 18f, blockCost: 14f, windupSeconds: .60f, activeSeconds: .22f,
+            recoverySeconds: .95f, hitRecoverySeconds: .95f, blockRecoverySeconds: .95f,
+            obstacleRecoverySeconds: .95f, parriedRecoverySeconds: .95f,
+            animationRecoverySeconds: .95f, isUnarmedZombie: true);
 
         public MeleeCombatSettings(float maxHealth = 100f, float maxStamina = 100f,
             float damage = 25f, float attackCost = 0f, float blockCost = 20f,
@@ -33,8 +38,9 @@ namespace BarPromenade
             float kickHitRecoverySeconds = .40f, float kickMissRecoverySeconds = .55f,
             float kickObstacleRecoverySeconds = .55f, float kickCost = 15f,
             float kickDamage = 5f, float kickStaggerSeconds = .24f,
-            float shoveContactWindowSeconds = .08f)
+            float shoveContactWindowSeconds = .08f, bool isUnarmedZombie = false)
         {
+            IsUnarmedZombie = isUnarmedZombie;
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
             Damage = Positive(damage, nameof(damage));
@@ -102,12 +108,12 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(attackBufferSeconds));
             // Frame-advantage invariants: a landed hit keeps the initiative, a
             // counter-hit guarantees the backhand, a parry guarantees one light.
-            if (StaggerSeconds <= HitRecoverySeconds)
+            if (!IsUnarmedZombie && StaggerSeconds <= HitRecoverySeconds)
                 throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
-            if (StaggerSeconds + CounterHitStaggerBonus <
+            if (!IsUnarmedZombie && StaggerSeconds + CounterHitStaggerBonus <
                 HitRecoverySeconds + ActiveSeconds + ChainWindupSeconds + .10f - .00001f)
                 throw new ArgumentOutOfRangeException(nameof(counterHitStaggerBonus));
-            if (ParriedRecoverySeconds + ActiveSeconds <
+            if (!IsUnarmedZombie && ParriedRecoverySeconds + ActiveSeconds <
                 ParryImpactSeconds + WindupSeconds + .12f - .00001f)
                 throw new ArgumentOutOfRangeException(nameof(parriedRecoverySeconds));
             Positive(WindupSeconds + ActiveSeconds + LongestRecoverySeconds, nameof(recoverySeconds));
@@ -123,6 +129,7 @@ namespace BarPromenade
         }
 
         public float MaxHealth { get; }
+        public bool IsUnarmedZombie { get; }
         public float MaxStamina { get; }
         public float Damage { get; }
         public float AttackCost { get; }

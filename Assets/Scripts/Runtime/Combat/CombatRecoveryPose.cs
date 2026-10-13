@@ -27,8 +27,10 @@ namespace BarPromenade
         private readonly Vector3 pelvisDown, pelvisForward, pelvisRight, leftKneeForward, rightKneeForward;
         private readonly Vector3 leftHipPosition, leftKneePosition, leftAnklePosition, rightHipPosition, rightKneePosition, rightAnklePosition;
         private readonly Quaternion leftAnkleRest, rightAnkleRest;
-        private readonly RaycastHit[] floorHits = new RaycastHit[24];
-        private readonly Collider[] clearanceHits = new Collider[24];
+        private const int MaximumQueryScratch = 192;
+        private RaycastHit[] floorHits = new RaycastHit[24];
+        private Collider[] clearanceHits = new Collider[24];
+        internal int ClearanceQueryCapacity => clearanceHits.Length;
         private readonly ClearanceRefusal[] clearanceRefusals = new ClearanceRefusal[17];
         private ClearanceRefusal clearanceCandidate;
         private Collider floorSurface;
@@ -267,7 +269,7 @@ namespace BarPromenade
                 minimumBlend = valid;
                 fitted = PoseWithBlend(valid, out leftSole, out rightSole);
             }
-            hands.SetGrip(false, 1f);
+            hands.SetGrip(false, ownedWeapon != null ? 1f : 0f);
             if (!gripOwnsLeft) hands.SetGrip(true, 0f);
             FeetSupported = fitted && FootSupported(FootSide.Left, leftFoot, true, leftSole) &&
                 FootSupported(FootSide.Right, rightFoot, true, rightSole);
@@ -434,18 +436,18 @@ namespace BarPromenade
                     Vector3 travel = candidate - desired;
                     clearanceCandidate.PathTested = true;
                     clearanceCandidate.PathTo = clearanceCandidate.PathFrom + travel;
-                    int hits = Physics.RaycastNonAlloc(lyingPelvis + Vector3.up * .12f, travel.normalized,
-                        floorHits, travel.magnitude, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                    bool crossed = hits == floorHits.Length;
+                    int hits = RaycastComplete(lyingPelvis + Vector3.up * .12f, travel.normalized,
+                        travel.magnitude, out RaycastHit[] pathHits);
+                    bool crossed = false;
                     Collider pathObstacle = null; float nearest = float.PositiveInfinity;
                     for (int h = 0; h < hits; h++)
-                        if (floorHits[h].collider != null && !OwnsCollider(floorHits[h].collider))
+                        if (pathHits[h].collider != null && !OwnsCollider(pathHits[h].collider))
                         {
                             crossed = true;
-                            if (floorHits[h].distance < nearest) { nearest = floorHits[h].distance; pathObstacle = floorHits[h].collider; }
+                            if (pathHits[h].distance < nearest) { nearest = pathHits[h].distance; pathObstacle = pathHits[h].collider; }
                         }
                     if (crossed)
-                    { RejectClearance(hits == floorHits.Length ? "path_buffer_full" : "path_obstacle", pathObstacle); continue; }
+                    { RejectClearance("path_obstacle", pathObstacle); continue; }
                     if (!HasStandingClearance(candidate, rotation)) continue;
                     result = candidate;
                     ClearanceRefusalCount = 0;
@@ -461,12 +463,11 @@ namespace BarPromenade
             float radius = Mathf.Max(.08f, capsule.radius - capsule.skinWidth);
             Vector3 centre = position + rotation * capsule.center;
             float half = Mathf.Max(0f, capsule.height * .5f - radius);
-            int count = Physics.OverlapCapsuleNonAlloc(centre + Vector3.up * half,
-                centre - Vector3.up * half, radius, clearanceHits, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == clearanceHits.Length) return RejectClearance("capsule_buffer_full");
+            int count = OverlapComplete(centre + Vector3.up * half, centre - Vector3.up * half, radius,
+                out Collider[] hits);
             for (int i = 0; i < count; i++)
-                if (clearanceHits[i] != null && !OwnsCollider(clearanceHits[i]))
-                    return RejectClearance("capsule_overlap", clearanceHits[i]);
+                if (hits[i] != null && !OwnsCollider(hits[i]))
+                    return RejectClearance("capsule_overlap", hits[i]);
             return true;
         }
 
@@ -506,16 +507,49 @@ namespace BarPromenade
             contact = point; normal = Vector3.up;
             floorSurface = null;
             float closest = float.PositiveInfinity;
-            int count = Physics.RaycastNonAlloc(point + Vector3.up * .65f, Vector3.down,
-                floorHits, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            int count = RaycastComplete(point + Vector3.up * .65f, Vector3.down, 2f, out RaycastHit[] hits);
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = floorHits[i];
+                RaycastHit hit = hits[i];
                 if (hit.collider == null || OwnsCollider(hit.collider) ||
                     hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= closest) continue;
                 closest = hit.distance; contact = hit.point; normal = hit.normal; floorSurface = hit.collider;
             }
             return !float.IsPositiveInfinity(closest);
+        }
+
+        private int RaycastComplete(Vector3 origin, Vector3 direction, float distance, out RaycastHit[] hits)
+        {
+            int count = Physics.RaycastNonAlloc(origin, direction, floorHits, distance,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            while (count == floorHits.Length && floorHits.Length < MaximumQueryScratch)
+            {
+                Array.Resize(ref floorHits, Math.Min(MaximumQueryScratch, floorHits.Length * 2));
+                count = Physics.RaycastNonAlloc(origin, direction, floorHits, distance,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            }
+            // The retained scratch is bounded. A rare larger result must remain
+            // complete: an unordered truncated result cannot prove a clear path/floor.
+            hits = count == floorHits.Length
+                ? Physics.RaycastAll(origin, direction, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                : floorHits;
+            return hits == floorHits ? count : hits.Length;
+        }
+
+        private int OverlapComplete(Vector3 top, Vector3 bottom, float radius, out Collider[] hits)
+        {
+            int count = Physics.OverlapCapsuleNonAlloc(top, bottom, radius, clearanceHits,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            while (count == clearanceHits.Length && clearanceHits.Length < MaximumQueryScratch)
+            {
+                Array.Resize(ref clearanceHits, Math.Min(MaximumQueryScratch, clearanceHits.Length * 2));
+                count = Physics.OverlapCapsuleNonAlloc(top, bottom, radius, clearanceHits,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            }
+            hits = count == clearanceHits.Length
+                ? Physics.OverlapCapsule(top, bottom, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                : clearanceHits;
+            return hits == clearanceHits ? count : hits.Length;
         }
 
         private void Sample(float normalized)

@@ -194,6 +194,7 @@ namespace BarPromenade
             if (!BodyAllows(action)) return MeleeCommandRejection.BodyUnavailable;
             if (IsKnockedDown) return MeleeCommandRejection.KnockedDown;
             if (Phase == MeleePhase.GuardBroken) return MeleeCommandRejection.GuardBroken;
+            if (Settings.IsUnarmedZombie && Phase != MeleePhase.Ready) return MeleeCommandRejection.Phase;
             bool ordinaryContinuation = IsWeaponAction(action) && Phase == MeleePhase.Recovery &&
                 (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == MeleeAttackOutcome.Miss);
             if (!ordinaryContinuation && clock + .000001d < ReadyAt(action)) return MeleeCommandRejection.Cooldown;
@@ -270,6 +271,7 @@ namespace BarPromenade
         /// Only a press made while free opens the parry window, and only after the re-arm.</summary>
         public void SetBlocking(bool held, bool freshPress = true)
         {
+            if (Settings.IsUnarmedZombie) { DropGuard(); return; }
             if (held) CancelCharge();
             bool next = held && !IsDefeated && !IsKnockedDown && bodyRightHand && bodyLeftHand && bodyStanding;
             if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready && freshPress
@@ -290,6 +292,8 @@ namespace BarPromenade
 
         private MeleeSwing ChooseSwing()
         {
+            if (Settings.IsUnarmedZombie)
+                return !bodyRightHand ? MeleeSwing.Backhand : !bodyLeftHand ? MeleeSwing.Forehand : rhythm;
             bool stepAttack = clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
             int cue = stepAttack && stepCue != 0 ? stepCue : lateralCue;
             // The bar goes toward the cue: a target or a step on the left calls the
@@ -448,6 +452,7 @@ namespace BarPromenade
         {
             BeginCommand(MeleeBufferedAction.Attack);
             if (TryStartAttack()) return true;
+            if (Settings.IsUnarmedZombie) return false;
             if (allowRecoveryAttack && (Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardImpact))
                 return TryStartRecoveryAttack();
             if (!QueueCommandAllowed(MeleeBufferedAction.Attack, Settings.AttackCost)) return false;
@@ -602,6 +607,8 @@ namespace BarPromenade
         /// short response. It reuses the return swing without damage or effort bonuses.</summary>
         public bool TryStartObservedCounterAttack()
         {
+            if (Settings.IsUnarmedZombie)
+            { BeginCommand(MeleeBufferedAction.Attack); return RejectCommand(MeleeCommandRejection.Phase); }
             if (!TryStartAttack(false)) return false;
             chained = true;
             return true;
@@ -619,7 +626,7 @@ namespace BarPromenade
             ClearCharge();
             // The return swing follows a landed hit straight out of the buffer, or a
             // step whose settle just ended. It never chains into itself.
-            chained = (fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
+            chained = !Settings.IsUnarmedZombie && ((fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds);
             chainArmed = false;
             Swing = ChooseSwing();
             attackElapsed = 0d;
@@ -940,6 +947,11 @@ namespace BarPromenade
             AttackOutcome = outcome;
             SettleRhythm();
             weaponReadyAt = attackStartedAt + AttackDuration;
+            if (Settings.IsUnarmedZombie && outcome == MeleeAttackOutcome.Blocked)
+            {
+                if (IsAttacking || (Phase == MeleePhase.Ready && advancedActiveWindow)) EndSwingNow();
+                return true;
+            }
             if (outcome == MeleeAttackOutcome.Parried)
             {
                 if (IsAttacking || (Phase == MeleePhase.Ready && advancedActiveWindow)) EndSwingNow();
@@ -951,7 +963,7 @@ namespace BarPromenade
                 attackElapsed = Math.Min(elapsed, AttackDuration);
                 if (elapsed >= AttackDuration) Phase = MeleePhase.Ready;
                 // Landing a clean hit arms the one backhand a queued press may take.
-                if (outcome == MeleeAttackOutcome.Hit && IsAttacking && !chained) chainArmed = true;
+                if (!Settings.IsUnarmedZombie && outcome == MeleeAttackOutcome.Hit && IsAttacking && !chained) chainArmed = true;
             }
             return true;
         }
@@ -1086,6 +1098,16 @@ namespace BarPromenade
         /// A received hit never delays breath.</summary>
         public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f,
             MeleeHitLocation location = default)
+            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Crowbar, true);
+
+        /// <summary>A hand contact may be blocked, but has no weapon parry, regional
+        /// multiplier or rear-head finisher. Runtime owns the hand/body sweep.</summary>
+        public MeleeHitResult ReceiveUnarmedHit(float damage, float blockCost, bool fromFront, float power = 0f,
+            MeleeHitLocation location = default)
+            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Unarmed, false);
+
+        private MeleeHitResult ReceiveMeleeHit(float damage, float blockCost, bool fromFront, float power,
+            MeleeHitLocation location, MeleeDamageProfile profile, bool allowParry)
         {
             NonNegative(damage, nameof(damage));
             NonNegative(blockCost, nameof(blockCost));
@@ -1104,7 +1126,7 @@ namespace BarPromenade
                 bool freshPress = clock - guardPressedAt <= Settings.ParryWindowSeconds &&
                     guardPressedAt - guardReleasedAt >= Settings.ParryRearmSeconds;
                 guardPressedAt = double.NegativeInfinity;
-                if (freshPress && power < Settings.ParryMaxPower)
+                if (allowParry && freshPress && power < Settings.ParryMaxPower)
                 {
                     stunRemaining = Math.Max(stunRemaining, Settings.ParryImpactSeconds);
                     stunDuration = stunRemaining;
@@ -1129,8 +1151,8 @@ namespace BarPromenade
                  (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle));
             double swingRemaining = Math.Max(kickRemaining,
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d);
-            float resolvedDamage = MeleeDamageProfile.Crowbar.ResolveDamage(damage, Settings.MaxHealth, location);
-            Health = location.IsFinisher ? 0f : Math.Max(0f,
+            float resolvedDamage = profile.ResolveDamage(damage, Settings.MaxHealth, location);
+            Health = profile.RearHeadFinisher && location.IsFinisher ? 0f : Math.Max(0f,
                 Health - (guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage));
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             chained = false;
@@ -1242,19 +1264,24 @@ namespace BarPromenade
         {
             bodyRightHand = rightHand; bodyLeftHand = leftHand; bodyStanding = standing;
             if (!rightHand || !leftHand || !standing) DropGuard();
-            bool activeUnsupported = (IsAttacking || IsCharging) && !rightHand || IsShoving && !leftHand ||
+            bool attackUnsupported = Settings.IsUnarmedZombie
+                ? !standing || (Swing == MeleeSwing.Backhand ? !leftHand : !rightHand)
+                : !rightHand;
+            bool activeUnsupported = (IsAttacking || IsCharging) && attackUnsupported || IsShoving && !leftHand ||
                 (IsKicking || Phase == MeleePhase.Step) && !standing;
             if (activeUnsupported) CancelAction();
             else if (bufferedAction != MeleeBufferedAction.None && !BodyAllows(bufferedAction)) CancelBufferedAction(bufferedAction);
         }
 
-        private bool BodyAllows(MeleeBufferedAction action) => action switch
-        {
-            MeleeBufferedAction.Attack or MeleeBufferedAction.Charge => bodyRightHand,
-            MeleeBufferedAction.Shove => bodyLeftHand,
-            MeleeBufferedAction.Step or MeleeBufferedAction.Kick => bodyStanding,
-            _ => true
-        };
+        private bool BodyAllows(MeleeBufferedAction action) => Settings.IsUnarmedZombie
+            ? action == MeleeBufferedAction.Attack && bodyStanding && (bodyRightHand || bodyLeftHand)
+            : action switch
+            {
+                MeleeBufferedAction.Attack or MeleeBufferedAction.Charge => bodyRightHand,
+                MeleeBufferedAction.Shove => bodyLeftHand,
+                MeleeBufferedAction.Step or MeleeBufferedAction.Kick => bodyStanding,
+                _ => true
+            };
 
         /// <summary>A critical anatomical discontinuity is a rules-owned terminal
         /// cause, never fabricated HP damage from a renderer.</summary>

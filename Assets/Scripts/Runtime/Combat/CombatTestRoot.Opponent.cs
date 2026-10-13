@@ -24,6 +24,7 @@ namespace BarPromenade
             if (!IsInitialized || Mode == CombatTestMode.Endless && !EndlessRunFinished ||
                 !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             CombatOpponentProfile.For(style);
+            if (Opponent != null && Opponent.IsZombie) return false;
             OpponentStyle = style;
             ResetRound();
             return true;
@@ -42,6 +43,7 @@ namespace BarPromenade
         private void ResetOpponentDecisions()
         {
             opponentContext.opponentDelay = .8f;
+            opponentContext.zombieLungeBlocked = false;
             ResetOpponentMovement();
             ResetWarehouseOpponentNavigation();
             OpponentRound = opponentContext.roundsPlaced++;
@@ -88,6 +90,7 @@ namespace BarPromenade
 
         private void AdvanceOpponent(float seconds)
         {
+            if (AiOpponent.IsZombie) { AdvanceZombieOpponent(seconds); return; }
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
             opponentContext.guardMemorySeconds = Mathf.Max(0f, opponentContext.guardMemorySeconds - seconds);
             opponentContext.coverSeconds = Mathf.Max(0f, opponentContext.coverSeconds - seconds);
@@ -633,6 +636,8 @@ namespace BarPromenade
                 ResetOpponentMovement();
                 return;
             }
+            if (AiOpponent.IsZombie && AiOpponent.State.IsAttacking)
+            { AdvanceZombieLunge(seconds); return; }
             // A committed stop or stun drops only travel. The actor separately
             // advances supported facing on the shared duel clock.
             if (AiOpponent.MovementScale <= 0f)
@@ -642,7 +647,7 @@ namespace BarPromenade
             }
             // A reduced action allowance is a hard bound, just like the hero's
             // committed stop; the owned step displacement remains independent.
-            float maximumSpeed = 1.8f * AiOpponent.MovementScale;
+            float maximumSpeed = (AiOpponent.IsZombie ? ZombieWalkSpeed : 1.8f) * AiOpponent.MovementScale;
             Vector3 desiredVelocity = Vector3.ClampMagnitude(opponentContext.opponentMoveRequest, maximumSpeed);
             desiredVelocity = SeparateOpponentVelocity(AiOpponent.transform.position, desiredVelocity, maximumSpeed);
             opponentContext.opponentMoveVelocity = Vector3.ClampMagnitude(opponentContext.opponentMoveVelocity, maximumSpeed);
@@ -753,7 +758,8 @@ namespace BarPromenade
             Vector3 toHero = Hero.transform.position - before; toHero.y = 0f;
             float toward = Vector3.Dot(toHero, travel / length);
             if (toward <= 0f) return travel;
-            float spacingSquared = WeaponSpacing * WeaponSpacing;
+            float spacing = AiOpponent.IsZombie ? ZombieApproachSpacing : WeaponSpacing;
+            float spacingSquared = spacing * spacing;
             if (toHero.sqrMagnitude <= spacingSquared) return Vector3.zero;
             float closestSquared = Mathf.Max(0f, toHero.sqrMagnitude - toward * toward);
             if (closestSquared >= spacingSquared) return travel;

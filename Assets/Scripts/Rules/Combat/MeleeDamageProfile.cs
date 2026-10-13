@@ -58,12 +58,16 @@ namespace BarPromenade
         }
     }
 
-    /// <summary>The immutable crowbar damage table shared by both combatants.</summary>
+    /// <summary>Immutable anatomical weapon damage and flat unarmed damage.</summary>
     public sealed class MeleeDamageProfile
     {
         public static MeleeDamageProfile Crowbar { get; } = new MeleeDamageProfile();
+        public static MeleeDamageProfile Unarmed { get; } = new MeleeDamageProfile(true);
 
-        private MeleeDamageProfile() { }
+        private readonly bool unarmed;
+        public bool RearHeadFinisher => !unarmed;
+
+        private MeleeDamageProfile(bool unarmed = false) { this.unarmed = unarmed; }
 
         /// <summary>Resolves damage before guard reduction. A rear head contact requests
         /// full defeat; the combatant applies that only after resolving its protection.</summary>
@@ -74,6 +78,7 @@ namespace BarPromenade
             if (float.IsNaN(maxHealth) || float.IsInfinity(maxHealth) || maxHealth <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(maxHealth));
             if (baseDamage == 0f) return 0f;
+            if (unarmed) return baseDamage;
             if (location.IsFinisher) return maxHealth;
             if (location.IsCritical) return (float)Math.Min((double)baseDamage * 2d, (double)maxHealth * .99d);
             double scale = location.Region switch

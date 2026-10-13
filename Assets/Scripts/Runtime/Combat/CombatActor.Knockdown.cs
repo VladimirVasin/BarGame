@@ -80,7 +80,7 @@ namespace BarPromenade
                 RecoverySoleRendererCount = knockdownRigBindings.LeftSoles.Length + knockdownRigBindings.RightSoles.Length;
             }
             knockdownPose = new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose,
-                hero == null, Weapon.transform, knockdownRigBindings);
+                hero == null, Weapon != null ? Weapon.transform : null, knockdownRigBindings);
             RecoveryPreparationCount++;
             RecoveryPreparationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
         }
@@ -187,7 +187,7 @@ namespace BarPromenade
                 using (RecoveryCommitMarker.Auto()) weaponConstraint?.CommitPresentedPose(supportGrip);
                 visibleClip = knockdownPose.ClipName;
             }
-            handPose?.SetGrip(false, weaponDropped ? 0f : 1f);
+            handPose?.SetGrip(false, IsZombie || weaponDropped ? 0f : 1f);
             if (!recoveryRegrip) handPose?.SetGrip(true, 0f);
             return true;
         }

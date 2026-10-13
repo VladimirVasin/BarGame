@@ -39,6 +39,8 @@ namespace BarPromenade
             internal Vector3 warehouseRouteTarget;
             internal float opponentDelay = .8f;
             internal bool warehouseCrowdWaiting;
+            internal bool zombieLungeBlocked;
+            internal RaycastHit[] zombieLungeContacts = new RaycastHit[16];
 
             internal OpponentAiContext(int slotIndex = 0) { SlotIndex = slotIndex; }
         }

@@ -142,6 +142,8 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            GameLog.BeforeShutdown -= WriteMovementSummary;
+            WriteMovementSummary();
             AmmoSpawns?.Dispose();
             ClearWeaponPools();
             ReleaseFreePistolAim();
@@ -149,7 +151,6 @@ namespace BarPromenade
             ReleaseDamageEffects();
             if (CameraFollow != null) CameraFollow.ClearTargetLock(this);
             if (Player.Motor != null) Player.Motor.ClearMovementTarget(this);
-            WriteMovementSummary();
         }
 
         private void WriteMovementSummary()

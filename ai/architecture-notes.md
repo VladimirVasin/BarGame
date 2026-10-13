@@ -2,29 +2,40 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-13, zombie duel:**
+  CombatTest:unarmed dead only/slow→lunge/0world-infection;
+  §6/art§15a/§16/§21/9checks;human:tests.
+
+- **Proposed — 2026-10-13, forehand repair:**
+  Hero/NPC forehand/Ready-unrelated kept/arc measured.
+  Arm overlap≤4mm/wrist25-55-65/elbows≤6m/s/C1/metal≥5mm.
+  Retained FBX anatomy gate;proof pending.
+
+- **Accepted — 2026-10-13, diagnostic retention:**
+  GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
+  batchoff/5MiB+3/F8;cached finals before close/fault-isolated/reset.
+  Duel:on/batchoff/CLI/async;20MiB total/sample70%body/causal reserve/
+  32-action tail≠solver/original envelopes/clip-loss/flush/end/reset.
+  See:`ai/debug-log.md`.
+
 - **Accepted exception — 2026-10-13, finite combat ammunition:**
-  User:CombatTest finite reserve/endless level respawn/0wave refill/0story.
-  Start/reset:pistol8/shotgun2 loaded/0reserve.
-  4slots/authored ammo/shared item standard/reserve-only grant;
-  §6/art§15a/§21/9checks.
+  User:finite ammo/0wave refill/0story;start-reset loaded8/2+0reserve.
+  4authored slots/Eshared/reserve-only/endless respawn;§6/art§15a/§21/9checks.
 
 - **Accepted — 2026-10-13, three-weapon carry:**
-  User:CombatTest all3/1held/2stowed.
-  Bounded3/mount-action-ammo/drop-recover-reset/0story;§6/art§15a/9checks.
+  All3/1held/2stowed;3mount-action-ammo/drop-recover-reset/0story;§6/art§15a/9checks.
 
 - **Accepted exception 2026-10-13, novice firearms:**
-  Hero nonmilitary:CombatTest sway/walk-settle/recoil-yaw-overshoot/
-  regrip/blink-chin-breath;NPC/same rig kept. Muzzle reticle/shotgun centre/
-  stablecam/intent legs/0assets-lore;§6/§7/art§15a/9checks.
+  Hero nonmilitary:sway/walk-settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
+  NPC/rig kept;muzzle reticle/shotguncentre/stablecam/intent legs/0assets-lore;
+  §6/§7/art§15a/9checks.
 
 - **Accepted — 2026-10-13, bounded world presentation:**
-  User:litter finitepalette/root lifetime/0MPB;forest48m/layerchunks;
-  same geometry/UV/windbounds/shadows/1collider;duplicate trunkbuffer.
-  Canneryhair:physical time/constraints kept/8→2refinement/.2s/20/24m;
-  screenheight≥.025/forced/authoring full. Village autoretry/.2sim s/E immediate;
-  visibilitybuffer grow-retry saturation. PortConcrete/PortTimber/
-  PortWarehousePlaster:Windows BC7HQ/same512-mips-sampling;
-  0world-storychange/FPSunmeasured.
+  Litter:root palette/0MPB;forest48m/chunks/samegeometry-UV-wind-shadows/
+  1collider/duplicate trunkbuffer. Canneryhair:time-constraints/8→2/.2s/20-24m/
+  screenheight≥.025/forced-authoring full. Village autoretry/.2sim s/E/visibility grow-retry.
+  Three port albedos:Windows BC7HQ/same512-mips-sampling;
+  0world-story/FPSunmeasured.
 
 - **Accepted exception — 2026-10-12, warehouse polygon:**
   seed/resetkeeps/levels/flat:test-only/0story-hazard-falldmg;§6/art§15a/9checks.
@@ -46,11 +57,12 @@
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→chest/abdomen→low Rside;draw/stow.
   Ribbon0jacket;gun/bar-coat/scarf/hair;JacketBody-only width/seam pad.
 
-- **Accepted — 2026-10-12, secondary-motion baking:**
-  User:physical120Hz→30Hz hair/jacket/sling;same rig.
-  Final pose/gear;Idle≤20mm Y/all17+gear/motion proof.
-  Whole warm cycles;unsafe tracks/wind/falls→live≤3/2/2,0debt.
-  Pins/material/body/gear/face-safe;hashes/reference/render/CPU.
+- **Accepted — 2026-10-13, secondary-motion baking:**
+  120→30Hz/same rig-pose-gear/Idle≤20mm Y/all17/warm cycles;
+  unsafe/wind/falls→live≤3/2/2,0debt;pins/material/body/face/hash-reference-render-CPU.
+  Prewarm/cached keys/guard;bad layout→GuardLayout live.
+  Idle prepared/Aim FinalPose→live;stowed bar;build:fullbank refresh.
+  Bounded reason/decode/load/resident/eviction;FPSgain unmeasured.
 
 - **Accepted — 2026-10-10, separate military belt:**
   Olive webbing/muted metal buckle;pelvis over trousers.
@@ -331,10 +343,10 @@
   CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;
   Step1m/15/noinputback/wall-pause/tankreturn/0handoff/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Standard dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force.
-  stablecam/hitkick/recoil-streak/head0HP-ragdoll;
-  cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/E/Rresume.
-  0lock-pierce-ricochet-guard-parry-taunt-reward;stage/win/pause:art§15a.
+  Dummy/freecam/focus/Q-Step/firstworld-anatomy/regional SFX-force;
+  stablecam/hitkick/recoil-streak/head0HP-ragdoll/cases:port-delay-gravity-bounce-cap;
+  emptylock/mag-seat-rack1.8/ammo-last/E/Rresume;
+  0lock-pierce-ricochet-guard-parry-taunt-reward/stage-win-pause:art§15a.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
   immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso.
@@ -355,23 +367,22 @@
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
   Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/floorcancel.
-  NPC approach-Q/rise ignores drop;HP-focus-AI/MMB/reset mode-focus;
+  HP-focus/MMB/reset mode-focus;
   pause-hitstop0/hitstop≠lock-reset;Aim¼Windup lock/Charge free/motor yield;
   Step1m/bounded landing-overload/first bar-world-body/metal-wall recoil-stop/
   guard-break/0HPparry/pooled sparks-SFX;Q/Step contacts-poses:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
-  AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
   Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
 - **Accepted 2026-10-03, combat:**
   Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;
   regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
-  Q/B/3AI/recoil hold;.20s walk wait/tail buffer/support≠chain.
+  Q/B/recoil hold;.20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
   Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;
   `CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/
-  drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°/QA pending.
+  drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
   6bone zones/first seq;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
@@ -379,11 +390,11 @@
   Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
   Ready low/Block high/attack-recoil→L;Hit-GuardBreak-Defeat release;
-  L opposed.16→.42m/breath4s/blend/injury/NPC RRest-Lsubdiv;
+  L opposed.16→.42m/breath4s/blend/injury;
   Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
   Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;
-  seeded AI/fall freecam/fore-back flips/0repeats/target>15°≠strafe/shared dmg-time-cost.
+  Fall freecam/fore-back flips/0repeats/shared dmg-time-cost.
   Charge:q=power/Forehand Light/upper(t+q*.18*(1-smooth(t/.45)))/lower(t)/
   retimed Attack/neutral lower;Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
   recoil .56→Ready0/.48s inverse/C1/0dwell/wrist-core-speed-clearance gates.
@@ -4088,13 +4099,6 @@
   `GameTimeState.Advance` also returns the actually elapsed
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
-- **Accepted — Bounded structured diagnostics:**
-  Fail-safe/versioned UTF-8 NDJSON/monotonic seq/session-scene-seed/transition IDs;
-  boundaries/results/Unity/0frames;Editor-dev verbose/release basic/batch off;
-  5MiB/3archives/F8snapshot-flush.
-- **Accepted — 2026-09-26, duel journal:**
-  `DuelJournal`:CombatTest on/batch off/CLI;round NDJSON-summary/F8/Shift+F8;
-  reasons/state/CPU/async bounds/priority pruning:`ai/debug-log.md`.
 - **Accepted — Separate classic door transition:** Building doors first run
   the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
   grounded dock. Only its terminal neutral completion reserves the

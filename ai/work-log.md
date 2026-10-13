@@ -5,47 +5,44 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-13 — Bounded world and combat population
 
-- City litter: root-owned finite shared palette/0MPBs, retained while dormant;
-  teardown preserves others/defaults. Float colours use tolerance.
-- Forest chunks preserve whole-layer geometry/UV/normals/collision, wind/shadows
-  and one collider; renderless trunk buffer duplicated.
-- Cannery hair: distance/camera hysteresis retains time/contacts/pause/near
-  continuity; EditMode releases authored graphs.
-- Village: greetings use simulation time/E immediate; saturated visibility
-  buffers grow/retry/reuse, keeping walls.
-- Three port albedos: Windows BC7/same resolution-mips-sampling; actual imports
-  checked beyond requested settings.
-- Endless defaults to two live opponents, pool still permits five. Corpse cap
-  retires oldest deaths/props/owned damage-physics, preserving survivors/flights.
-  DuelJournal supports a conservative default, no hardware max/FPS gain;
-  general debug logs contain no frame timings.
-- Optimization is mandatory: `AGENTS.md` rules/`AI.md` entry; behavior/canon/FAST
-  retained, gains need comparable measurements. Memory: checker/diff review.
-- Hero firearm aim: breath/tremor/walk-settle/asymmetric recoil-overshoot,
-  original peaks; fingers regrip with palm contact; blink/chin/breath reuse
-  body tension/rig. Muzzle reticle agrees with shots; camera/intended legs stay
-  stable, including grounded aim. NPC unchanged; phases freeze/reset with owner.
-- All3/prepheld/1-2-3; separate existing mounts/models/ammo/animated handoffs.
-- Finite start/reset:pistol8+0/shotgun2+0, caps48/16; physical/partial reload spends reserve,
-  no wave refill. Four authored-model packs grant +8/+4 once through shared E
-  screen; capacity/cancel/partial-safe, respawn12active s indefinitely.
-  Pause/modal/focus/disable/defeat freeze; reset restores pool, Standardwin stays live.
-- Checks: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
+- Litter:root palette/0MPB/owned cleanup/tolerance;forest:geometry-UV-normal-collision/
+  wind-shadow/one collider/trunk buffer. Hair:distance-camera/time-contact-pause/
+  near continuity/EditMode graph cleanup. Village:sim greetings/E/visibility grow-retry.
+  Port:Windows BC7/same sampling. Optimization:AGENTS/AI/canon/FAST/FPSunmeasured.
+- Endless:bounded pool/oldest corpse retirement/survivors-flights kept.
+- Guns:breath-tremor/walk-settle/asymmetric recoil/regrip/blink-chin/reticle=muzzle/
+  camera-legs stable/freeze-reset;all3/1-2-3/mount-model-ammo-handoffs.
+- Ammo:start-reset8+0/2+0/caps48-16/partial physical reload/0wave refill;
+  4packs/+8-4/Eshared1x/full-cancel-partial safe/endless respawn/freeze-reset/win live.
+- Bar diagnosis:Hero/NPC forehand wrist illegal in Blender+FBX;retained refresh missed anatomy certificate.
+  Forehand family reauthoring pending;Ready/unrelated curves kept. Runtime:8metal segments/coupled forearm sweep/
+  physical refusal→Obstacle recovery/original gates kept;strike proof pending.
+  NPC rise:query grow-retry/real blockers kept;empty wound scratch preloaded/reused reset.
+- Journal:sample quota protects causal events inside old cap;independent action tail/
+  live flush/explicit sample-causal-producer losses. Reserve/reload/carry/input owner
+  visible;cached movement summary before sink closes.
+- Cloth:prewarm/guard reused/old gear→GuardLayout live/Idle prepared/Aim FinalPose→live;
+  fullbank provenance refresh pending/FPSgain unmeasured.
+- Zombies:polygon-only exception/three worn civilian looks/own grounded clips/SFX;
+  slow chase→latched hand lunge/miss return/1hit/world stops/remaining arm/pool-reset.
+  Proof:`COMBAT ZOMBIE ART CONTRACT OK`;`Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`;
+  `ZombieCannotChainOrShortenItsLongReturn`;frames viewed.
+- Compile:EntityId/CurrentAssemblies API fixes;`BarPromenade.PlayModeTests` dependency build.
+- Proof: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
-  `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
-  `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`
-  proves corpse order/cleanup, pacing, reset and exit; frame reviewed.
-  City/forest frames and nearby hair return reviewed; worker frame selection
-  checks visible coworker bounds as well as physics occlusion.
-  Optional woman CPU capture distinguishes unmeasured iteration fields.
-  `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether` verifies
-  novice motion, barrel projection, fire direction, pause and reset.
-  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs` proves all3.
-  `Range_AmmoReservesAndRespawningPickupsStayFinite` proves zero reserve at
-  start/reset, reload after pickup, spend/one credit/respawn/freeze/layout/unload.
-  Found screens/initial HUD/full-reserve refusal reviewed: models fit,
-  text/buttons readable.
+  `AreaCaptureFixture.WorldPerformance`,
+  `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`,
+  `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether`,
+  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
+  `Range_AmmoReservesAndRespawningPickupsStayFinite`.
+  Selected `DuelJournalTests`:priority/tail/loss/zero-stage/shutdown;
+  `Range_RecoveryQueriesGrowPastOwnShapesAndStillRejectRealBlockers`,
+  `Range_ProjectileWoundPreparationReusesTheFirstLayerThroughReset`,
+  `Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads`,
+  `Range_QueuedWeaponCarryJournalKeepsItsSelectionRequests`;
+  `check-docs.py`, `git diff --check`.
+  City/forest/hair/found-screen/HUD/full-reserve frames reviewed;unmeasured fields unavailable.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 
