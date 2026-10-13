@@ -20,15 +20,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Руки дрожат сильнее на ходу, ствол после выстрела возвращается неровно.
   Крестик следует стволу, камера стабильна.
 - Все три оружия при себе; выбор: `1/2/3` или крестовина→.
-- Патроны кончаются. Четыре точки подбора +8/+4 возвращаются через 12 с,
-  пока бесконечно; перезарядка тратит запас.
+- Старт/сброс: заряжены 8/2, запаса нет. Четыре точки +8/+4 снова через 12 с,
+  пока бесконечно; перезарядка из запаса.
 - Проверки: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
   `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`.
   `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether`.
   `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`.
-  `Range_AmmoReservesAndRespawningPickupsStayFinite`; экраны подбора/отказа
-  и счётчик патронов просмотрены.
+  `Range_AmmoReservesAndRespawningPickupsStayFinite`; подбор/отказ,
+  HUD `8/0`, «Запаса нет» просмотрены.
 
 ### 2026-10-12 — Ткань, смена оружия и бесконечный бой
 

@@ -26,7 +26,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   body tension/rig. Muzzle reticle agrees with shots; camera/intended legs stay
   stable, including grounded aim. NPC unchanged; phases freeze/reset with owner.
 - All3/prepheld/1-2-3; separate existing mounts/models/ammo/animated handoffs.
-- Finite pistol8+24/shotgun2+8, caps48/16; physical/partial reload spends reserve,
+- Finite start/reset:pistol8+0/shotgun2+0, caps48/16; physical/partial reload spends reserve,
   no wave refill. Four authored-model packs grant +8/+4 once through shared E
   screen; capacity/cancel/partial-safe, respawn12active s indefinitely.
   Pause/modal/focus/disable/defeat freeze; reset restores pool, Standardwin stays live.
@@ -42,9 +42,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether` verifies
   novice motion, barrel projection, fire direction, pause and reset.
   `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs` proves all3.
-  `Range_AmmoReservesAndRespawningPickupsStayFinite` proves spend/one credit/
-  respawn/freeze/reset-layout/unload. Found screens/HUD/full-reserve refusal
-  reviewed: models fit, text/buttons readable.
+  `Range_AmmoReservesAndRespawningPickupsStayFinite` proves zero reserve at
+  start/reset, reload after pickup, spend/one credit/respawn/freeze/layout/unload.
+  Found screens/initial HUD/full-reserve refusal reviewed: models fit,
+  text/buttons readable.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 

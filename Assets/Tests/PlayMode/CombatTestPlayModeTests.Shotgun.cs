@@ -221,7 +221,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Opponent.IsFirearm, Is.False);
                 AssertShotgunImportedModel();
 
-                PlacePair(8f);
+                PlacePairWithReloadReserve(8f);
                 root.Opponent.ResetActor(new Vector3(6f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
                 Assert.That(root.SetOpponentFocus(false), Is.True);
                 root.Hero.SetPistolAim(true, new Vector3(0f, 1.4f, 20f));
@@ -310,7 +310,7 @@ namespace BarPromenade.Tests.PlayMode
                 // A single fired shell is the other reload transaction: the second live
                 // shell stays in place through pause, interruption, and the explicit R resume.
                 root.ResetRound();
-                PlacePair(8f);
+                PlacePairWithReloadReserve(8f);
                 root.Opponent.ResetActor(new Vector3(6f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
                 Assert.That(root.SetOpponentFocus(false), Is.True);
                 root.Hero.SetPistolAim(true, new Vector3(0f, 1.4f, 20f));
@@ -373,7 +373,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 // Exercise the opposite chamber independently of the current left-first firing order.
                 root.ResetRound();
-                PlacePair(8f);
+                PlacePairWithReloadReserve(8f);
                 root.Opponent.ResetActor(new Vector3(6f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
                 Assert.That(root.SetOpponentFocus(false), Is.True);
                 const BindingFlags chamberFlags = BindingFlags.Instance | BindingFlags.NonPublic;

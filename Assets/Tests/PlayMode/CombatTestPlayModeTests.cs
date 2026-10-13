@@ -1673,6 +1673,15 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
         }
 
+        private void PlacePairWithReloadReserve(float distance)
+        {
+            PlacePair(distance);
+            // Reload mechanics need explicitly arranged stock; real scene entry has none.
+            IFirearmState firearm = root.Hero.Firearm;
+            Assert.That(firearm, Is.Not.Null);
+            Assert.That(firearm.AddReserveRounds(firearm.ReserveCapacity), Is.EqualTo(firearm.ReserveCapacity));
+        }
+
         private static IEnumerator WaitFor(Func<bool> condition, string failure)
         {
             float deadline = Time.realtimeSinceStartup + 30f;

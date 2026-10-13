@@ -4,6 +4,7 @@
 
 - **Accepted exception — 2026-10-13, finite combat ammunition:**
   User:CombatTest finite reserve/endless level respawn/0wave refill/0story.
+  Start/reset:pistol8/shotgun2 loaded/0reserve.
   4slots/authored ammo/shared item standard/reserve-only grant;
   §6/art§15a/§21/9checks.
 

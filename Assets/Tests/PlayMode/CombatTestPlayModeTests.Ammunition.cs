@@ -49,19 +49,31 @@ namespace BarPromenade.Tests.PlayMode
                 IFirearmState shotgun = root.Hero.CarriedFirearm(CombatWeaponId.Shotgun);
                 WorldItemFoundScreen found = WorldItemFoundScreen.For(root.Player.Interactor);
                 Assert.That(found.IsInitialized, Is.True);
+                Assert.That(pistol.Rounds, Is.EqualTo(8));
+                Assert.That(shotgun.Rounds, Is.EqualTo(2));
+                Assert.That(pistol.ReserveRounds + shotgun.ReserveRounds, Is.Zero,
+                    "A new run starts with only the rounds already loaded in both guns.");
+                yield return CaptureAmmoScreen("Test empty starting ammunition reserve HUD");
+                pistol.SetAim(true);
+                pistol.Advance(pistol.Settings.RaiseSeconds);
+                Assert.That(pistol.TryFire(), Is.True);
+                pistol.Advance(pistol.Settings.FireCooldownSeconds);
+                pistol.CancelAction();
+                Assert.That(root.Hero.TryReloadPistol(), Is.False,
+                    "Even a partly empty magazine cannot reload before a pack is collected.");
 
                 ApproachAmmo(pistolPack);
                 Assert.That(pistolPack.TryBeginPickup(root.Player.Interactor), Is.True);
                 yield return WaitFor(() => found.IsShowing, "The ammunition find never reached its shared take screen.");
                 yield return null;
                 Assert.That(found.ActiveItemId, Is.EqualTo(InventoryItemId.CombatPistolAmmo));
-                Assert.That(pistol.ReserveRounds, Is.EqualTo(24));
+                Assert.That(pistol.ReserveRounds, Is.Zero);
                 Assert.That(found.Dismiss(), Is.True);
                 yield return WaitFor(() => !found.IsPresenting, "Cancelling the ammunition find did not restore the world.");
                 yield return null;
                 Assert.That(pistolPack.IsAvailable && !pistolPack.IsPresenting, Is.True);
                 Assert.That(pistolPack.Model.parent, Is.SameAs(pistolPack.transform));
-                Assert.That(pistol.ReserveRounds, Is.EqualTo(24), "Looking at or cancelling a pack cannot grant it.");
+                Assert.That(pistol.ReserveRounds, Is.Zero, "Looking at or cancelling a pack cannot grant it.");
 
                 ForceAmmoFocus();
                 Assert.That(pistolPack.TryBeginPickup(root.Player.Interactor), Is.True);
@@ -74,15 +86,20 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 yield return WaitFor(() => !found.IsPresenting, "Holding the actual take key did not finish the pickup.");
                 yield return null; // The original E is still held during the next world Update.
-                Assert.That(pistol.ReserveRounds, Is.EqualTo(32));
+                Assert.That(pistol.ReserveRounds, Is.EqualTo(8));
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.CombatPistolAmmo), Is.Zero,
                     "Polygon ammunition stays in the weapon reserve rather than the story inventory.");
-                Assert.That(pistol.Rounds, Is.EqualTo(8), "A world pickup supplies reserve rather than the magazine.");
+                Assert.That(pistol.Rounds, Is.EqualTo(7), "A world pickup supplies reserve rather than the magazine.");
                 Assert.That(pistolPack.IsAvailable || pistolPack.IsPresenting || found.IsPresenting, Is.False);
                 Assert.That(found.Confirm(), Is.False, "A repeated confirmation cannot grant another pack.");
                 input.Release(keyboard.eKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(pistolPack.RespawnRemaining, Is.EqualTo(12f).Within(.001f));
+                Assert.That(root.Hero.TryReloadPistol(), Is.True,
+                    "Collecting a map pack enables the same reload that was refused before it.");
+                root.Hero.Step(pistol.Settings.ReloadSeconds + .02f);
+                Assert.That(pistol.Rounds, Is.EqualTo(8));
+                Assert.That(pistol.ReserveRounds, Is.EqualTo(7), "Reload spends the collected reserve.");
                 yield return CaptureAmmoScreen("Test finite ammunition HUD");
 
                 Assert.That(root.PauseMenu.Open(), Is.True);
@@ -105,7 +122,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(pistolPack.RespawnRemaining, Is.EqualTo(12f).Within(.001f), "A shared modal freezes every pack's return timer.");
                 Assert.That(found.Confirm(), Is.True);
                 Assert.That(found.Confirm(), Is.False);
-                Assert.That(shotgun.ReserveRounds, Is.EqualTo(12));
+                Assert.That(shotgun.ReserveRounds, Is.EqualTo(4));
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.CombatShotgunAmmo), Is.Zero);
                 Assert.That(root.Hero.WeaponId, Is.EqualTo(CombatWeaponId.Pistol));
                 yield return WaitFor(() => !found.IsPresenting, "The shotgun pack did not finish its shared return.");
@@ -120,7 +137,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(pistolPack.IsAvailable && shotgunPack.IsAvailable, Is.True);
                 AssertWarehouseAmmoPlacement(pickups, models);
 
-                Assert.That(pistol.AddReserveRounds(int.MaxValue), Is.EqualTo(16));
+                Assert.That(pistol.AddReserveRounds(int.MaxValue), Is.EqualTo(41));
                 ApproachAmmo(pistolPack);
                 Assert.That(pistolPack.TryBeginPickup(root.Player.Interactor), Is.True);
                 yield return WaitFor(() => found.IsShowing, "The full-reserve refusal did not open its find screen.");
@@ -171,8 +188,10 @@ namespace BarPromenade.Tests.PlayMode
 
                 root.ResetRound();
                 Assert.That(root.Hero.State.IsDefeated, Is.False);
-                Assert.That(pistol.ReserveRounds, Is.EqualTo(24));
-                Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
+                Assert.That(pistol.Rounds, Is.EqualTo(8));
+                Assert.That(shotgun.Rounds, Is.EqualTo(2));
+                Assert.That(pistol.ReserveRounds + shotgun.ReserveRounds, Is.Zero,
+                    "Reset restores loaded rounds without supplying a carried reserve.");
                 AssertWarehouseAmmoPlacement(pickups, models);
                 Assert.That(root.NewWarehouseLayout(1), Is.True);
                 yield return null;
@@ -262,20 +281,13 @@ namespace BarPromenade.Tests.PlayMode
         private static void VerifyFiniteAmmoTransactions()
         {
             var pistol = new PistolState();
+            Assert.That(pistol.ReserveRounds, Is.Zero);
             pistol.SetAim(true);
             pistol.Advance(pistol.Settings.RaiseSeconds);
-            for (int magazine = 0; magazine < 4; magazine++)
+            for (int round = 0; round < 8; round++)
             {
-                for (int round = 0; round < 8; round++)
-                {
-                    Assert.That(pistol.TryFire(), Is.True);
-                    pistol.Advance(pistol.Settings.FireCooldownSeconds);
-                }
-                if (magazine < 3)
-                {
-                    Assert.That(pistol.TryReload(), Is.True);
-                    pistol.Advance(pistol.Settings.ReloadSeconds + pistol.Settings.RaiseSeconds);
-                }
+                Assert.That(pistol.TryFire(), Is.True);
+                pistol.Advance(pistol.Settings.FireCooldownSeconds);
             }
             Assert.That(pistol.Rounds + pistol.ReserveRounds, Is.Zero);
             Assert.That(pistol.TryFire() || pistol.TryReload(), Is.False);
@@ -291,7 +303,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(pistol.Rounds, Is.EqualTo(3));
             Assert.That(pistol.ReserveRounds, Is.Zero);
 
-            var shotgun = new ShotgunState(new ShotgunSettings(startingReserveRounds: 1));
+            pistol.Reset();
+            Assert.That(pistol.Rounds, Is.EqualTo(8));
+            Assert.That(pistol.ReserveRounds, Is.Zero);
+
+            var shotgun = new ShotgunState();
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
             shotgun.SetAim(true);
             shotgun.Advance(shotgun.Settings.RaiseSeconds);
             for (int round = 0; round < 2; round++)
@@ -299,6 +316,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(shotgun.TryFire(), Is.True);
                 shotgun.Advance(shotgun.Settings.FireCooldownSeconds);
             }
+            Assert.That(shotgun.TryReload(), Is.False, "Only the two loaded shells are available before a pickup.");
+            Assert.That(shotgun.AddReserveRounds(1), Is.EqualTo(1));
             Assert.That(shotgun.TryReload(), Is.True);
             Assert.That(shotgun.ReloadChamberMask, Is.EqualTo(3));
             Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(1));
@@ -315,7 +334,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shotgun.AddReserveRounds(int.MaxValue), Is.EqualTo(16));
             Assert.That(shotgun.AddReserveRounds(1), Is.Zero);
             shotgun.Reset();
-            Assert.That(shotgun.ReserveRounds, Is.EqualTo(1));
+            Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
         }
     }
 }

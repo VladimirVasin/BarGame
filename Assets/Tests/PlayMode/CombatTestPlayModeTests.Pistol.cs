@@ -334,7 +334,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 Assert.That(CombatTestStartService.TryStart(weapon), Is.True);
                 yield return AwaitSelectedCombatRange();
-                PlacePair(8f);
+                PlacePairWithReloadReserve(8f);
                 root.Opponent.ResetActor(new Vector3(7f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
                 root.SendMessage("OnApplicationFocus", true);
                 GameInput.HandleApplicationFocus(true);
@@ -2401,7 +2401,7 @@ namespace BarPromenade.Tests.PlayMode
                 // The real keyboard route must make R reload, keeping the existing
                 // reset button/API independent from the newly assigned key.
                 root.ResetRound();
-                PlacePair(6f);
+                PlacePairWithReloadReserve(6f);
                 root.Hero.SetPistolAim(true);
                 root.Tick(.25f);
                 Assert.That(root.Hero.RequestPistolShot(), Is.True);
@@ -3029,7 +3029,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator VerifyPistolTriggerStepBoundaries()
         {
-            PlacePair(6f);
+            PlacePairWithReloadReserve(6f);
             root.Opponent.ResetActor(Vector3.left * 6f + Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.right);
             Physics.SyncTransforms();
             Assert.That(root.SetOpponentFocus(false), Is.True);
@@ -3457,7 +3457,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator VerifyPistolCarryAndWinnerInput(InputTestFixture input, Mouse mouse, Keyboard keyboard)
         {
-            PlacePair(6f);
+            PlacePairWithReloadReserve(6f);
             Assert.That(root.SetOpponentFocus(false), Is.True);
             root.Tick(.6f);
             for (int frame = 0; frame < 24; frame++) yield return null;

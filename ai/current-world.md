@@ -159,8 +159,8 @@ The vertical slice contains:
   camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
   reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
-  Pistol8+24(cap48)/reload1.8/slide-emptylock/mag-rack/cases;
-  shotgun2+8(cap16)/12pellets/.55/head×2/break2.8/stageammo/atomicspend/winfire.
+  Start/reset:Pistol8+0(cap48)/reload1.8/slide-emptylock/mag-rack/cases;
+  shotgun2+0(cap16)/12pellets/.55/head×2/break2.8/stageammo/atomicspend/winfire.
   Partial reload/physical spend/0reserve refusal;
   ammo:4fixed lower-upper/+8Magazine/+4Shells/Eshared confirm1x/full refusal/
   partial consumes/12active s endless/pause-modal-focus-disable-defeat0/resetpool/Standardwin live.

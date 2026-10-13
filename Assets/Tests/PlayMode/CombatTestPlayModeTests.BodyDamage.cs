@@ -1043,7 +1043,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return EnterRange(false, CombatWeaponId.Pistol);
             root.ResetRound();
-            PlacePair(6f);
+            PlacePairWithReloadReserve(6f);
             Assert.That(root.SetOpponentFocus(false), Is.True);
             CombatActor pistolSurvivor = root.Hero;
             ApplyKnownBodyContact(pistolSurvivor, root.Opponent, BodyDamageRegion.LeftHand, 0, 2f, 101);

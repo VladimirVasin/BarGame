@@ -11,7 +11,7 @@ namespace BarPromenade.Tests.EditMode
         public void EachRequestSpendsExactlyOneChamberAndEmptyBarrelsCannotFire()
         {
             var shotgun = new ShotgunState();
-            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
             Assert.That(shotgun.ReserveCapacity, Is.EqualTo(16));
             Assert.That(shotgun.TryReload(), Is.False);
             Assert.That(shotgun.TryFire(), Is.False);
@@ -39,6 +39,7 @@ namespace BarPromenade.Tests.EditMode
             }
             Assert.That(shotgun.NextBarrel, Is.EqualTo(-1));
             Assert.That(shotgun.TryFire(), Is.False);
+            Assert.That(shotgun.TryReload(), Is.False, "Only the two loaded shells are available before a pickup.");
         }
 
         [TestCase(1)]
@@ -46,6 +47,7 @@ namespace BarPromenade.Tests.EditMode
         public void ReloadEjectsOnlySpentCasesAndCommitsEachNeededShellAtItsOwnBoundary(int shots)
         {
             var shotgun = FiredShotgun(shots);
+            Assert.That(shotgun.AddReserveRounds(8), Is.EqualTo(8));
             Assert.That(shotgun.TryReload(), Is.True);
             Assert.That(shotgun.ReloadChamberMask, Is.EqualTo(shots == 1 ? 1 : 3));
             Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(shotgun.ReloadChamberMask));
@@ -171,6 +173,8 @@ namespace BarPromenade.Tests.EditMode
         {
             var fine = FiredShotgun(shots);
             var hitch = FiredShotgun(shots);
+            Assert.That(fine.AddReserveRounds(8), Is.EqualTo(8));
+            Assert.That(hitch.AddReserveRounds(8), Is.EqualTo(8));
             fine.TryReload();
             hitch.TryReload();
             for (int step = 0; step < 378; step++) fine.Advance(1f / 120f);
@@ -188,6 +192,7 @@ namespace BarPromenade.Tests.EditMode
         public void InvalidElapsedCannotMutateACommittedShotOrAnActiveReload(float seconds)
         {
             var shotgun = FiredShotgun(1, advanceCooldown: false);
+            Assert.That(shotgun.AddReserveRounds(8), Is.EqualTo(8));
             shotgun.TryReload();
             Assert.Throws<ArgumentOutOfRangeException>(() => shotgun.Advance(seconds));
             Assert.That(shotgun.Rounds, Is.EqualTo(1));
@@ -199,7 +204,7 @@ namespace BarPromenade.Tests.EditMode
             int sequence = shotgun.ShotSequence;
             shotgun.Reset();
             Assert.That(shotgun.Rounds, Is.EqualTo(2));
-            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
             Assert.That(shotgun.ChamberSpent(0) || shotgun.ChamberSpent(1), Is.False);
             Assert.That(shotgun.ReloadPending || shotgun.AimRequested, Is.False);
             Assert.That(shotgun.CooldownRemaining, Is.Zero);
@@ -283,8 +288,9 @@ namespace BarPromenade.Tests.EditMode
             IFirearmState firearm = pistol;
             Assert.That(firearm.Settings, Is.SameAs(pistol.Settings));
             Assert.That(firearm.Settings.MagazineCapacity, Is.EqualTo(8));
-            Assert.That(firearm.ReserveRounds, Is.EqualTo(24));
+            Assert.That(firearm.ReserveRounds, Is.Zero);
             Assert.That(firearm.ReserveCapacity, Is.EqualTo(48));
+            Assert.That(firearm.AddReserveRounds(24), Is.EqualTo(24));
             firearm.SetAim(true);
             firearm.Advance(.25f);
             Assert.That(firearm.TryFire(), Is.True);

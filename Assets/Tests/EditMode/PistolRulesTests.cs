@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var pistol = new PistolState();
             Assert.That(pistol.Rounds, Is.EqualTo(8));
-            Assert.That(pistol.ReserveRounds, Is.EqualTo(24));
+            Assert.That(pistol.ReserveRounds, Is.Zero);
             Assert.That(pistol.ReserveCapacity, Is.EqualTo(48));
             Assert.That(pistol.TryFire(), Is.False);
             pistol.SetAim(true);
@@ -39,7 +39,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void ReloadCommitsOnlyOnCompletionAndRequiresAimToRiseAgain()
         {
-            var pistol = AimedPistol();
+            var pistol = AimedPistol(24);
             Assert.That(pistol.TryReload(), Is.False, "A full magazine must not start a reload.");
             Assert.That(pistol.TryFire(), Is.True);
             Assert.That(pistol.TryReload(), Is.True);
@@ -74,7 +74,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(1.6f, true)]
         public void InterruptedExchangeRetainsTheMagazineStageAndResumesWithoutCreatingAmmo(float elapsed, bool attached)
         {
-            var pistol = AimedPistol();
+            var pistol = AimedPistol(24);
             pistol.TryFire();
             pistol.TryReload();
             pistol.Advance(elapsed);
@@ -105,6 +105,7 @@ namespace BarPromenade.Tests.EditMode
         public void SlideReturnsAfterALiveShotAndLocksUntilTheEmptyReloadRackReleasesIt()
         {
             var pistol = new PistolState(new PistolSettings(magazineCapacity: 2));
+            Assert.That(pistol.AddReserveRounds(2), Is.EqualTo(2));
             pistol.SetAim(true);
             pistol.Advance(pistol.Settings.RaiseSeconds);
             Assert.That(pistol.TryFire(), Is.True);
@@ -139,6 +140,7 @@ namespace BarPromenade.Tests.EditMode
         public void EmptyMagazineConsumesTheFiniteReserveUntilFireAndReloadAreRejected()
         {
             var pistol = AimedPistol();
+            Assert.That(pistol.ReserveRounds, Is.Zero);
             for (int magazine = 0; magazine < 4; magazine++)
             {
                 for (int round = 0; round < 8; round++)
@@ -148,6 +150,11 @@ namespace BarPromenade.Tests.EditMode
                 }
                 Assert.That(pistol.Rounds, Is.Zero);
                 Assert.That(pistol.TryFire(), Is.False);
+                if (magazine == 0)
+                {
+                    Assert.That(pistol.TryReload(), Is.False, "Only the initial eight loaded rounds are available before a pickup.");
+                    Assert.That(pistol.AddReserveRounds(24), Is.EqualTo(24));
+                }
                 if (magazine == 3)
                 {
                     Assert.That(pistol.ReserveRounds, Is.Zero);
@@ -203,8 +210,8 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void ReloadAndAimCarryTheSameTimeThroughFineStepsAndAHitch()
         {
-            var fine = AimedPistol();
-            var hitch = AimedPistol();
+            var fine = AimedPistol(24);
+            var hitch = AimedPistol(24);
             Assert.That(fine.TryFire() && hitch.TryFire(), Is.True);
             Assert.That(fine.TryReload() && hitch.TryReload(), Is.True);
             for (int step = 0; step < 246; step++) fine.Advance(1f / 120f);
@@ -220,7 +227,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void CancelAndZeroElapsedPreserveSpentAmmoAndCooldownWhileResetRestoresTheRound()
         {
-            var pistol = AimedPistol();
+            var pistol = AimedPistol(24);
             Assert.That(pistol.TryFire(), Is.True);
             Assert.That(pistol.TryReload(), Is.True);
             pistol.Advance(0f);
@@ -234,7 +241,7 @@ namespace BarPromenade.Tests.EditMode
             int sequence = pistol.ShotSequence;
             pistol.Reset();
             Assert.That(pistol.Rounds, Is.EqualTo(8));
-            Assert.That(pistol.ReserveRounds, Is.EqualTo(24));
+            Assert.That(pistol.ReserveRounds, Is.Zero, "Reset restores loaded ammunition but does not supply picked-up reserves.");
             Assert.That(pistol.CooldownRemaining, Is.Zero);
             Assert.That(pistol.ShotSequence, Is.Not.EqualTo(sequence));
         }
@@ -244,7 +251,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(float.PositiveInfinity)]
         public void InvalidClockCannotChangeAnActiveReload(float seconds)
         {
-            var pistol = AimedPistol();
+            var pistol = AimedPistol(24);
             pistol.TryFire();
             pistol.TryReload();
             Assert.Throws<ArgumentOutOfRangeException>(() => pistol.Advance(seconds));
@@ -351,9 +358,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
         }
 
-        private static PistolState AimedPistol()
+        private static PistolState AimedPistol(int reserveRounds = 0)
         {
             var pistol = new PistolState();
+            Assert.That(pistol.AddReserveRounds(reserveRounds), Is.EqualTo(reserveRounds));
             pistol.SetAim(true);
             pistol.Advance(pistol.Settings.RaiseSeconds);
             return pistol;
