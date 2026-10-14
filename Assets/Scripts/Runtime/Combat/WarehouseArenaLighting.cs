@@ -4,12 +4,13 @@ using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
-    /// <summary>Scene-local darkness with a faint diffuse floor, never an invisible direct light.</summary>
+    /// <summary>Scene-local darkness, dim practical pools and the fan's authored overhead source.</summary>
     public static class WarehouseArenaLighting
     {
         public const float NearDistance = 3f;
         public const float FarDistance = 12f;
         public const string OriginPropertyName = "_WarehouseAmbientOrigin";
+        public const string FanLightName = "Warehouse Fan Overhead Light";
         private static readonly int OriginId = Shader.PropertyToID(OriginPropertyName);
         private static readonly int FalloffId = Shader.PropertyToID("_WarehouseAmbientFalloff");
         private static Transform visibilityOwner;
@@ -24,7 +25,7 @@ namespace BarPromenade
             camera.farClipPlane = 48f;
             camera.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             // The warehouse is Single-loaded. Any authored scene light is off;
-            // plan-owned practical lights and the original hero's source are installed later.
+            // Warehouse practicals, the fan source and the hero's light are installed later.
             foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
                 if (light.gameObject.scene == camera.gameObject.scene) light.enabled = false;
             ApplyAmbient();
@@ -65,9 +66,37 @@ namespace BarPromenade
             light.spotAngle = 92f;
             light.innerSpotAngle = 48f;
             light.shadows = LightShadows.Hard;
-            light.shadowResolution = LightShadowResolution.Low;
             light.shadowBias = .035f;
             light.shadowNormalBias = .12f;
+            UniversalAdditionalLightData data = host.AddComponent<UniversalAdditionalLightData>();
+            data.usePipelineSettings = false;
+            data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
+            return light;
+        }
+
+        public static Light CreateFanOverhead(Transform sourceAnchor, Transform parent)
+        {
+            var host = new GameObject(FanLightName);
+            host.transform.SetParent(parent, false);
+            // Read the imported anchor in world space: its FBX root owns the
+            // centimetre unit factor. The light itself uses the metre wrapper.
+            host.transform.position = sourceAnchor.position;
+            host.transform.localRotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            Light light = host.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(.92f, .86f, .65f);
+            light.intensity = 250f;
+            light.range = 30f;
+            light.spotAngle = 125f;
+            light.innerSpotAngle = 108f;
+            light.shadows = LightShadows.Hard;
+            light.shadowStrength = 1f;
+            light.shadowBias = .012f;
+            light.shadowNormalBias = .025f;
+            light.shadowNearPlane = .05f;
+            UniversalAdditionalLightData data = host.AddComponent<UniversalAdditionalLightData>();
+            data.usePipelineSettings = false;
+            data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierHigh;
             return light;
         }
 

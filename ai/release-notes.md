@@ -15,15 +15,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Полигон: ткань следует телу/креплениям без физики; открывание рукой/волосы прежние.
   `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; кадры просмотрены.
 - Грудной луч с тенями; торс следует обзору/прицелу, действия важнее.
-  Вдали вне луча чёрно; подбор освещён. Проверка: `CombatWarehouseFlashlight`,
+  Вне источников чёрно; подбор освещён. Проверка: `CombatWarehouseFlashlight`,
   `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; кадры просмотрены.
-- Склад: три этажа/тесные комнаты-коридоры/сырость-ржавчина/огромный вентилятор/
-  механизмы/тусклые лампы/решётка; открывание заглушка.
-  Шаги/выстрелы тяжёлые и низкие, с гулким эхом.
-  Износ по UV, пятна/потёки; мебель напротив входов, лицом к ним, проход свободен.
+- Склад: три этажа/комнаты-коридоры, ржавчина/потёки, движущиеся механизмы.
+  Решётка — заглушка; верхний свет бросает тени лопастей по залу/галереям.
+  Шаги/выстрелы тяжёлые и низкие, с эхом; UV-износ.
+  Мебель лицом к входам; проход свободен.
 - Тема `Audio/CombatWarehouseMusic/warehouse_theme`:80% скорости/ниже тон,
   сильное эхо/реверберация;вход→петля/сброс-новый сохраняют позицию.
-- Проверки: `CombatWarehouse`, `CombatWarehouseAudio`,
+- Проверки: `CombatWarehouse`, `CombatWarehouseFanShadows`, `CombatWarehouseAudio`,
   `MixerAsset_HasCanonicalDspRoutingAndSceneValues`, `check-docs.py`; кадры просмотрены.
 
 ### 2026-10-13 — Ресурсы и полигон

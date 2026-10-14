@@ -24,6 +24,7 @@ namespace BarPromenade
         private bool audioPaused;
         public double ElapsedSeconds { get; private set; }
         public Transform FanRotor { get; private set; }
+        public Light FanLight { get; private set; }
         public int MachineCount => machines.Length;
 
         public void Initialize(WarehouseArenaPlan plan, CombatTestRoot warehouse)
@@ -42,7 +43,10 @@ namespace BarPromenade
                 switch (specification.Kind)
                 {
                     case "Fan":
-                        WarehouseArenaAssetProvider.Create("FanHousing", transform, specification.Position + Vector3.up * .42f, rotation);
+                        GameObject housing = WarehouseArenaAssetProvider.Create("FanHousing", transform,
+                            specification.Position + Vector3.up * .42f, rotation);
+                        FanLight = WarehouseArenaLighting.CreateFanOverhead(
+                            WarehouseArenaAssetProvider.FindAnchor(housing, "FanLight"), transform);
                         pivot = WarehouseArenaAssetProvider.Create("FanRotor", transform, specification.Position, rotation).transform;
                         FanRotor = pivot;
                         gameObject.AddComponent<WarehouseArenaAmbience>().Initialize(pivot, owner);

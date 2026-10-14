@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
@@ -351,6 +352,8 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertWarehouseLightAndMechanisms(CombatTestRoot root)
         {
             Assert.That(root.WarehousePlan.Lamps.Count, Is.EqualTo(6));
+            WarehouseArenaMechanisms machines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
+            Assert.That(machines, Is.Not.Null);
             int practical = 0, active = 0;
             foreach (Light light in Object.FindObjectsByType<Light>())
             {
@@ -358,18 +361,18 @@ namespace BarPromenade.Tests.PlayMode
                 active++;
                 if (light.gameObject.name != "Warehouse Work Lamp")
                 {
-                    Assert.That(light, Is.SameAs(root.Flashlight.SpotLight));
+                    Assert.That(light == root.Flashlight.SpotLight || light == machines.FanLight, Is.True);
                     continue;
                 }
                 practical++;
                 Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 Assert.That(light.shadows, Is.EqualTo(LightShadows.Hard));
                 Assert.That(light.intensity, Is.LessThan(root.Flashlight.SpotLight.intensity * .12f));
+                Assert.That(light.GetComponent<UniversalAdditionalLightData>().additionalLightsShadowResolutionTier,
+                    Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }
             Assert.That(practical, Is.EqualTo(6));
-            Assert.That(active, Is.EqualTo(7), "Six rare practical pools plus the hero's existing chest light.");
-            WarehouseArenaMechanisms machines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
-            Assert.That(machines, Is.Not.Null);
+            Assert.That(active, Is.EqualTo(8), "Six dim pools, the overhead fan source and the chest light.");
             Assert.That(machines.MachineCount, Is.EqualTo(4));
             Assert.That(machines.FanRotor.position.y, Is.EqualTo(WarehouseArenaPlan.CeilingHeight - .42f).Within(.001f));
             float sweptRadius = 0f;

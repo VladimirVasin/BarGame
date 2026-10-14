@@ -81,7 +81,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 ## Implemented capabilities
 
 - CombatTest:3floor/9room nightmare warehouse/UVatlases/macro/wear;
-  fan/movers/6lamps/grille stub;heavy low SFX/echo-reverb/theme.8;
+  fan shadows/movers/6lamps/grille stub;heavy low SFX/echo-reverb/theme.8;
   Lchest Spot/torso/fill→black;zombies/lunge;Standard1/Endless1–5/≤2corpses/≤5pool.
   All3/1-2-3/finiteammo+4packs/safe rise/novice aim/corpse step;
   gap:pierce/balance. [World](current-world.md).

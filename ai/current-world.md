@@ -134,18 +134,18 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:30×24×10.2/levels0-3.2-6.4/9rooms6×6/hall12×12;
+- CombatTest:30×24×10.2/fanwell12.22/levels0-3.2-6.4/9rooms6×6/hall12×12;
   2stairs/4flights/3seeds/resetkeep/New.
-  3shared UVatlas1024/prop UV0unique/UV1m;
-  metric tiles/macro512 wet-rust-scuff/cutout512/0collider-shadow;
-  9room sets opposite entry/front→entry;collision turns/clear approach;
-  triplanar0;D7fan/lift/drums/pusher/pause;
-  grille stub;6dim lamps/shadows.
-  Heavy low steps-guns/echo-reverb/UI dry/exit restore.
-  Theme Audio/CombatWarehouseMusic/warehouse_theme WAV/OGG/MP3 optional;
-  .8speed+pitch/strong echo-reverb/root reset-New playhead/pause-disable-resume/exit fade.
-  LupperM65 Chest Spot60/16m/60–28°/hard;on/torso-look/1hero/resetkeep;
-  key-fog-sky0;ambient hero3D3→black12m/beam-shadow kept/camera0.
+  3atlas1024/UV0unique/UV1m/metric tiles;
+  macro512 wet-rust-scuff/wear512/0collider-shadow/triplanar0;
+  9room sets opposite entry/front→entry/collision-clear;
+  D7fan/top Spot/blade shadows→hall-galleries;
+  roofs-decks occlude;lift-drums-pusher/pause/grille stub/6dim lamps.
+  Low heavy SFX/echo-reverb/UI dry/exit restore.
+  Theme Audio/CombatWarehouseMusic/warehouse_theme optional;
+  .8speed+pitch/strong echo-reverb/reset-New playhead/pause-disable-resume/exit fade.
+  LM65Chest Spot60/16m/60–28°/hard;on/torso-look/1hero/resetkeep;
+  fog-sky0;ambient hero3D3→black12m/beam-shadow kept/camera0.
   NPCgraph/gravity/LOS;flat:test-only.
   Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
   2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.

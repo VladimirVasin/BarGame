@@ -70,8 +70,8 @@
     },
     {
       "name": "WarehouseMechanismsAtlas",
-      "sha256": "19cc6fd117ca605929ba6a6a58badd287e1f2ed12cf31617dc98b4ffbb4ea8f7",
-      "source_sha256": "0ed9c7ba3b6fa449d01c8f6d650fb8af37a4b7fb32832ed864293573e3689f71",
+      "sha256": "fb6e96af3479e1aae10c346cb467d6298e3e741f3a25c1ad5e23fb634b6819b8",
+      "source_sha256": "268daa8bac7a3c7377d642d6c3734ce387180f324da916be0d64c5dcf9d22669",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,

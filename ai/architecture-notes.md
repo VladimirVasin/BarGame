@@ -2,28 +2,32 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-14, warehouse fan light:**
+  User:Spot/shadows/source11.8/cap12.1–12.22;
+  roofs-decks occlude/pausefreeze/0cookie-strobe;
+  URP2048:keyHigh1024/6dimLow256/chestMedium512;art§15a
+
 - **Accepted exception — 2026-10-14, warehouse otherworld:**
-  CombatTest wet-rust/loader monotony-exhaustion-disgust→routes/futile machines.
+  CombatTest:port-work monotony/exhaustion/disgust→wet-rust/routes/futile machines;
   0City job-wage-quest/monologue/dream/organic/siren/mystics/clues/infection.
-  §6outside-scale/art§15a/9checks;Blender/seed/resetkeep/New/flat:test-only;
-  0hazard-falldmg;movers clear routes/pause.
+  art§15a/§6;Blender/seed/resetkeep/New/flat:test-only;
+  movers clear/pause/0hazard-falldmg.
 
 - **Accepted — 2026-10-14, warehouse acoustics:**
-  User:heavy low steps/guns+echo;theme.8 speed+pitch/strong echo-reverb.
-  CombatWarehouse shared EQ/LP/room/echo;UI dry/exit restore.
-  Audio/CombatWarehouseMusic/warehouse_theme WAV/OGG/MP3 optional;
-  MusicMix/stream-background-stereo/root playhead/reset-New/pause-disable-resume/
-  exit/empty silent. 11mono cues/steps×.84/guns×.88/prewarm/resetkeep/teardown;
-  5World/0hotalloc.
+  Heavy low steps/guns+echo;theme.8 speed-pitch/strong echo-reverb.
+  CombatWarehouse EQ/LP/room/echo/dryUI/exit restore;
+  Audio/CombatWarehouseMusic/warehouse_theme WAV/OGG/MP3 optional.
+  MusicMix/stream/root playhead/reset-New/pause-disable-resume/exit/empty0;
+  11mono/steps×.84/guns×.88/5World/prewarm-cache/resetkeep/teardown/0hotalloc.
 
 - **Accepted — 2026-10-14, warehouse UV surfaces:**
-  User:3×1024 prop UV atlases/metric tiles+macro/rare decals;
-  local triplanar if UV stretch remains. PS1/shared/bounded/Blender sources-checks;
-  joint/contact/load wear;warehouse only/0text-newstory/art§15a/§6/§16/§21/9checks.
+  3×1024 propUV/metric tiles+macro/rare decals;
+  local triplanar if stretch/PS1/shared/bounded/Blender;
+  joint-contact-load wear/0text-newstory/art§15a.
 
 - **Accepted — 2026-10-14, warehouse room furniture:**
-  User:9Technical/Locker/Break sets opposite entry/front→entry;
-  model/collision rotate;clear approaches/0newstory.
+  9Technical-Locker-Break opposite entry/front→entry;
+  collision turns/clear approach/0newstory.
 
 - **Accepted — 2026-10-14, warehouse torso look:**
   Orbit≠camera/neutral14°/gun intent;Spine-Chest40/60/down35/up20/yaw20/roll6°;
@@ -32,12 +36,12 @@
   sim Advance only/repeated Apply0time-bend.
 
 - **Accepted exception — 2026-10-14, warehouse chest flashlight:**
-  CombatTest/Blender/LM65Chest/torso→/always on/Spot60/16m/60–28°/hard;
-  practicals:otherworld/key-fog-sky0. Hero3D GI3m→SmoothStep→black12m/0camera veil;
-  Ps1Lit bakedGI-only/passes-pragmas-direct-shadows-emission kept.
-  Movement-only cached LateUpdate/scene global off outside/disable-unload-subsystem;
-  0MPB-clones-newpass;
-  1hero/resetkeep/sharedassets/bounds/teardown/unmeasuredcost/0input-battery-inventory-story.
+  CombatTest/Blender/LM65Chest→/always Spot60/16m/60–28°/hard;
+  fog-sky0/GIhero3D3→SmoothStep→black12m/camera0;
+  Ps1Lit:bakedGI-only/passes-pragmas-direct-shadows-emission kept;
+  cached movement LateUpdate/scene off-outside/disable-unload-subsystem;
+  1hero/resetkeep/sharedassets/bounds/teardown/0MPB-clones-newpass;
+  unmeasuredcost/0input-battery-inventory-story.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.

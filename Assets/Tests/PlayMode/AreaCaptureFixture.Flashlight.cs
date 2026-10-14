@@ -282,13 +282,13 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
                 active++;
-                if (light == spot) continue;
+                if (light == spot || light == root.GetComponentInChildren<WarehouseArenaMechanisms>().FanLight) continue;
                 Assert.That(light.gameObject.name, Is.EqualTo("Warehouse Work Lamp"),
-                    "Only the plan's rare practical lamps may accompany the original chest source.");
+                    "Other sources must belong to the plan's rare practical lamps.");
                 practical++;
             }
             Assert.That(practical, Is.EqualTo(root.WarehousePlan.Lamps.Count));
-            Assert.That(active, Is.EqualTo(1 + root.WarehousePlan.Lamps.Count));
+            Assert.That(active, Is.EqualTo(2 + root.WarehousePlan.Lamps.Count));
         }
 
         private static IEnumerator CaptureFlashlightDistanceVisibility(CombatTestRoot root,

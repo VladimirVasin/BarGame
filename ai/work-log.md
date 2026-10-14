@@ -23,25 +23,25 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   replace nested body/head imports, without global version/geometry change. Proof:
   `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`; rebuild logs clean.
 - Chest Spot/hard shadows, hero-centred ambient→black; Ps1Lit bakedGI-only,
-  passes/pragmas/direct beam retained; cached globals/cleanup/key-fog-sky off.
+  passes/pragmas/direct beam retained; cached globals/cleanup/fog-sky off.
   Bounded Spine-Chest orbit/gun intent keeps root/legs; actions win, pause holds,
   repeated Apply advances no time. Shared preview/fridge use cached Point pair,
   isolated masks/restore, materials/MPBs kept. Proof:
   `tools/build-player-flashlight-3d-model.py`, `CombatWarehouseFlashlight`,
   `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames reviewed.
-- Warehouse:wet rust/routes/fan/futile machines→port-work disgust;
-  dim lamps/grille stub/0story job-monologue. UV atlases/metric tiles/macro masks/
-  sparse cutout/sharedfamily-role;UVs prioritize close props without extra sheets.
-  Triplanar optional0;root theme/reset-New playhead/pause-disable-exit;
-  annuli/bore rays restore fan. Room sets face entry from opposite wall,
-  collision follows/clear approach. Bibles/state/index.
+- Warehouse:wet rust/routes/futile machines→port-work disgust;
+  dim lamps/grille stub/0story job-monologue. UV atlases/metric tiles/macro/
+  rare cutout/close-prop density;triplanar0. Root theme/reset-New playhead/cleanup;
+  room sets opposite entry/front→entry/collision-clear approach.
+  Fan duct/fixture/steady top Spot/real blade shadows;
+  roof-deck occlusion/bounded shadow tiers/pausefreeze/cleanup. Bibles/state/index.
 - Warehouse acoustics:cached prewarmed low-impact cues/shared snapshot return
   echo-reverb/theme pitch.8;UI dry/other scenes restore/voice bounds retained.
   Proof: `AreaCaptureFixture.CombatWarehouseAudio`,
   `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`.
 - Proof: `build-combat-warehouse-3d-model.py`, `build-combat-warehouse-textures.py`,
   `build-combat-warehouse-shader.py`, `tools/check-docs.py`,
-  `AreaCaptureFixture.CombatWarehouse`;UV/room approach/frames reviewed.
+  `CombatWarehouse`, `CombatWarehouseFanShadows`;UV/room/fan shadow frames reviewed.
 - Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
   before/new pragmas identical.
 

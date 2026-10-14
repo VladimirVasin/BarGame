@@ -28,9 +28,11 @@ import warehouse_surface_authoring as appearance
 spec = importlib.util.spec_from_file_location("warehouse_passive_export", ROOT / "tools/build-city-fair-3d-model.py")
 passive = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(passive)
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse"
+FAN_HOUSING_WORLD_Y = 10.2
+FAN_LIGHT_LOCAL = (0, 1.6, 0)
 SURFACES = {
     "Concrete": (.38, .39, .34), "ConcreteDark": (.20, .23, .21),
     "Steel": (.20, .24, .22), "WornSteel": (.36, .39, .32),
@@ -475,14 +477,69 @@ def validate_fan_aperture(item):
                     raise RuntimeError(f"Fan bore was capped by {group} at aperture ray {(x, z)}")
 
 
+def segment_hits_authored_faces(geometry, origin, target):
+    """Two-sided finite ray against the actual authored triangles, not bounds."""
+    def subtract(a, b):
+        return tuple(a[index] - b[index] for index in range(3))
+
+    def cross(a, b):
+        return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+                a[0] * b[1] - a[1] * b[0])
+
+    def dot(a, b):
+        return sum(a[index] * b[index] for index in range(3))
+
+    direction = subtract(target, origin)
+    vertices, faces = geometry
+    for face in faces:
+        first = vertices[face[0]]
+        for index in range(1, len(face) - 1):
+            edge_b = subtract(vertices[face[index]], first)
+            edge_c = subtract(vertices[face[index + 1]], first)
+            normal = cross(direction, edge_c)
+            determinant = dot(edge_b, normal)
+            if abs(determinant) < 1e-12:
+                continue
+            relative = subtract(origin, first)
+            u = dot(relative, normal) / determinant
+            if u < -1e-9 or u > 1 + 1e-9:
+                continue
+            side = cross(relative, edge_b)
+            v = dot(direction, side) / determinant
+            if v < -1e-9 or u + v > 1 + 1e-9:
+                continue
+            distance = dot(edge_c, side) / determinant
+            if 1e-9 < distance < 1 - 1e-9:
+                return True
+    return False
+
+
+def validate_fan_light_clearance(item):
+    # The motor, its fixed supports and the rotating blades intentionally cast
+    # shadows. The annular housing and open lamp must instead transmit the
+    # source's broad cone, including all four corners of the 30 x 24 m floor.
+    transmitting_groups = {"Rim", "Duct", "AperturePlate", "DuctEnd", "Mounts",
+                           "LampReflector", "LampRim", "LampMount", "LampConduit"}
+    targets = [(x, -FAN_HOUSING_WORLD_Y, z)
+               for x, z in ((-15, -12), (-15, 12), (15, -12), (15, 12),
+                            (-15, 0), (15, 0), (0, -12), (0, 12), (0, 0))]
+    for (group, _), solids in item.parts.items():
+        if group not in transmitting_groups:
+            continue
+        for geometry in solids:
+            if any(segment_hits_authored_faces(geometry, FAN_LIGHT_LOCAL, target)
+                   for target in targets):
+                raise RuntimeError(f"Fan top light's warehouse cone was blocked by {group}")
+
+
 def make_fan_housing():
     item = Item("FanHousing")
     item.add("Steel", square_aperture(4., 3.57, 0, .16), "AperturePlate")
     for y, radius, inner in ((-.47, 3.85, 3.57), (.02, 3.88, 3.57), (.45, 3.78, 3.59)):
         item.add("Rust", annular_profile([(y, radius), (y + .09, radius),
                  (y + .09, inner), (y, inner)], 28), "Rim")
-    item.add("Steel", annular_profile([(-.4, 3.72), (.45, 3.72),
-             (.45, 3.65), (-.4, 3.65)], 28), "Duct")
+    item.add("Steel", annular_profile([(-.4, 3.72), (1.9, 3.72),
+             (1.9, 3.65), (-.4, 3.65)], 28), "Duct")
     # Square roof aperture corners are solid in the housing, not four visible gaps.
     for sign in (-1, 1):
         for side in (-1, 1):
@@ -497,10 +554,23 @@ def make_fan_housing():
             (x * 3.79, -.33, z * 3.79), .035, "RimBolts", sides=6)
     rod(item, "Steel", (0, -.15, 0), (0, .76, 0), .24, "Motor", sides=16)
     rod(item, "WornSteel", (0, -.60, 0), (0, .12, 0), .08, "Spindle", sides=12)
-    # A black capped duct above the recess prevents a view into the void.
-    rod(item, "ConcreteDark", (0, .90, 0), (0, 1.02, 0), 3.65, "DuctEnd", sides=28)
+    # A real open reflector hangs below the raised duct cap. Its lens is just
+    # above the source anchor, while its lower rim clears a broad downward cone.
+    # The motor/supports remain physical casters; no material skips their shadow.
+    item.add("Steel", annular_profile([(1.57, .79), (1.90, .61),
+             (1.90, .53), (1.57, .71)], 16), "LampReflector")
+    item.add("Rust", annular_profile([(1.565, .80), (1.595, .80),
+             (1.595, .70), (1.565, .70)], 16), "LampRim")
+    rod(item, "Lamp", (0, 1.605, 0), (0, 1.622, 0), .51, "LampLens", sides=16)
+    rod(item, "WornSteel", (0, 1.885, 0), (0, 1.93, 0), .61, "LampMount", sides=16)
+    rod(item, "Rust", (.62, 1.93, 0), (3.5, 1.93, 0), .035, "LampConduit", sides=8)
+    # The opaque termination stays ABOVE the light, so it hides the void
+    # without turning the entire warehouse into its stationary shadow.
+    rod(item, "ConcreteDark", (0, 1.90, 0), (0, 2.02, 0), 3.65, "DuctEnd", sides=28)
     item.anchor("Rotor", (0, -.42, 0))
+    item.anchor("FanLight", FAN_LIGHT_LOCAL)
     validate_fan_aperture(item)
+    validate_fan_light_clearance(item)
     return item
 
 
@@ -722,6 +792,10 @@ def manifest(items, checksum):
         "main_door_size": [4, 3], "gate_size": [4, 3],
         "fan_diameter": 7., "fan_axis": "Y", "fan_rotor_anchor": [0, -.42, 0],
         "fan_aperture_validation": "vertical authored-face rays clear through rim/duct below DuctEnd",
+        "fan_light_anchor": list(FAN_LIGHT_LOCAL),
+        "fan_light_world_position": [0, FAN_HOUSING_WORLD_Y + FAN_LIGHT_LOCAL[1], 0],
+        "fan_duct_cap_world_y": [12.1, 12.22],
+        "fan_light_clearance_validation": "authored-face source rays reach floor corners through housing/open lamp; motor/supports/rotor retain real shadows",
         "lift_footprint": [3, 2.8], "lift_height": 8.9,
         "lift_platform_local_y": [.4, 6.6],
         "drum_rotor_anchor": [0, 1.1, 0], "drum_rotation_axis": "X",
@@ -789,6 +863,12 @@ def main():
         for root in roots:
             appearance.apply_uvs(root, uv_cache)
         appearance.source_materials(roots, atlas_dir)
+        # Staged publication removes its temporary directories. Keep the source
+        # project self-contained and retain useful relative image paths on disk.
+        for image in bpy.data.images:
+            if image.source == "FILE" and Path(image.filepath).parent == atlas_dir:
+                image.pack()
+                image.filepath = "//Textures/Atlases/" + Path(image.filepath).name
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CombatWarehouse3D.blend"), check_existing=False)
     passive.verify_fbx(args.model_dir, payload)

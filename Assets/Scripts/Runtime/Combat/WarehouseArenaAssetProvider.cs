@@ -126,7 +126,8 @@ namespace BarPromenade
         {
             string atlas = AtlasForModel(kind);
             string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Structure";
-            string key = family + "/" + role;
+            bool fanLens = kind == "FanHousing" && role == "Lamp";
+            string key = family + "/" + (fanLens ? "FanLens" : role);
             if (Materials.TryGetValue(key,out Material cached) && cached != null) return cached;
             string texture = null; Color color;
             switch (role)
@@ -163,6 +164,11 @@ namespace BarPromenade
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
             material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" ? .25f : 0f);
+            if (fanLens)
+            {
+                material.EnableKeyword("_EMISSION");
+                material.SetColor("_EmissionColor",new Color(.92f,.86f,.65f).linear);
+            }
             if (layered)
             {
                 Texture2D mask = Resources.Load<Texture2D>(ResourceFolder + "Textures/WarehouseMacroMask");
