@@ -29,18 +29,19 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   isolated masks/restore, materials/MPBs kept. Proof:
   `tools/build-player-flashlight-3d-model.py`, `CombatWarehouseFlashlight`,
   `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames reviewed.
-- Warehouse otherworld:approved damp rust/peeling,repeated rooms/corridors/fan/
-  futile machines→port-work disgust;dim lamps/grille stub/0story job-monologue.
-  Shared streaming root theme:reset/New playhead,pause/disable/exit owned.
-  Ring caps hid blades;closed annuli/bore rays restore view. Bibles/state/index updated.
+- Warehouse:wet rust/routes/fan/futile machines→port-work disgust;
+  dim lamps/grille stub/0story job-monologue. UV atlases/metric tiles/macro masks/
+  sparse cutout/sharedfamily-role;UVs prioritize close props without extra sheets.
+  Triplanar optional0;root theme/reset-New playhead/pause-disable-exit;
+  annuli/bore rays restore fan. Room sets face entry from opposite wall,
+  collision follows/clear approach. Bibles/state/index.
 - Warehouse acoustics:cached prewarmed low-impact cues/shared snapshot return
   echo-reverb/theme pitch.8;UI dry/other scenes restore/voice bounds retained.
   Proof: `AreaCaptureFixture.CombatWarehouseAudio`,
   `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`.
 - Proof: `build-combat-warehouse-3d-model.py`, `build-combat-warehouse-textures.py`,
-  `tools/check-docs.py`; geometry/surfaces/canon/budgets.
-  `AreaCaptureFixture.CombatWarehouse`:metres/hero-NPC stairs/grille/pause/music;
-  frames reviewed.
+  `build-combat-warehouse-shader.py`, `tools/check-docs.py`,
+  `AreaCaptureFixture.CombatWarehouse`;UV/room approach/frames reviewed.
 - Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
   before/new pragmas identical.
 

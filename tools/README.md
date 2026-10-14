@@ -160,9 +160,9 @@ python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-stri
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.
-`build-combat-warehouse-3d-model.py`:25FBX/JSON/CombatWarehouse;det/metres.
-Textures: `python tools/build-combat-warehouse-textures.py --validate-only`;
-7ImageGen/512RGB/BC7-mips-Repeat/hash-prompt JSON.
+`build-combat-warehouse-{3d-model,textures,shader}.py`:25FBX/m/UV0-1;
+3atlas1024/7ImageGen-base512/macro512/cutout512/BC7-mips/8MiB cap;
+source/checker/FBX UV;textures `--validate-only`,shader `--check`.
 `build-player-flashlight-3d-model.py`:clip/lens/metres;
 `CombatFlashlight{AssetSetup,AssetProvider}`;CombatTest Lchest.
 

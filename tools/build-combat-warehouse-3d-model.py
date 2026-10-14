@@ -22,12 +22,13 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.dont_write_bytecode = True
 import bar_parts as bp
 import interior_kit as interior
+import warehouse_surface_authoring as appearance
 
 # Reuse the established passive metric exporter, not a second export convention.
 spec = importlib.util.spec_from_file_location("warehouse_passive_export", ROOT / "tools/build-city-fair-3d-model.py")
 passive = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(passive)
-VERSION = "2.0.1"
+VERSION = "2.1.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse"
 SURFACES = {
@@ -36,6 +37,7 @@ SURFACES = {
     "Rust": (.39, .23, .13), "Timber": (.31, .25, .18),
     "Cardboard": (.39, .32, .23), "Glass": (.24, .30, .27),
     "Lamp": (.67, .57, .36), "Rubber": (.08, .10, .085),
+    "WearDecal": (.21, .17, .11),
 }
 passive.SURFACES = SURFACES
 passive.VERSION = VERSION
@@ -88,6 +90,27 @@ def beam(item, a, b, width, depth, group="Structure", collision=False):
         duplicate_collision(item, geometry, group)
 
 
+def wear_decal(item, p, width, height, normal, cell):
+    """Explicit one-sided colour overlay, not a closed solid or collision mesh."""
+    x, y, z = p
+    if normal[1]:
+        vertices = [(x - width / 2, y, z - height / 2), (x + width / 2, y, z - height / 2),
+                    (x + width / 2, y, z + height / 2), (x - width / 2, y, z + height / 2)]
+        face = (0, 3, 2, 1) if normal[1] > 0 else (0, 1, 2, 3)
+    elif normal[2]:
+        vertices = [(x - width / 2, y - height / 2, z), (x + width / 2, y - height / 2, z),
+                    (x + width / 2, y + height / 2, z), (x - width / 2, y + height / 2, z)]
+        face = (0, 1, 2, 3) if normal[2] > 0 else (0, 3, 2, 1)
+    else:
+        vertices = [(x, y - height / 2, z - width / 2), (x, y - height / 2, z + width / 2),
+                    (x, y + height / 2, z + width / 2), (x, y + height / 2, z - width / 2)]
+        face = (0, 3, 2, 1) if normal[0] > 0 else (0, 1, 2, 3)
+    item.parts.setdefault(("WearDecals", "WearDecal"), []).append((vertices, [face]))
+    if not hasattr(item, "wear_cells"):
+        item.wear_cells = []
+    item.wear_cells.append(cell)
+
+
 def make_shell():
     item = Item("Shell")
     box(item, "Concrete", (0, -.12, 0), (30.6, .24, 24.6), "Floor", collision=True)
@@ -122,6 +145,18 @@ def make_shell():
         box(item, "Steel", (x, .007, -7.7), (.8, .008, .28), "FlushDrain", .001)
         for index in range(7):
             box(item, "ConcreteDark", (x - .30 + index * .10, .012, -7.7), (.028, .003, .22), "DrainSlots", .0005)
+    # Stains have a physical source: wall steel, lift/drum/pusher or dragged load.
+    # Eight sparse quads remain one mesh/material and inside the shell bounds.
+    for p, width, height, normal, cell in (
+            ((-9., 7.0, 11.989), 1.15, 2.3, (0, 0, -1), 0),
+            ((9., 5.8, -11.989), 1.20, 2.5, (0, 0, 1), 0),
+            ((-14.989, 4.1, -3.), 1.2, 2.2, (1, 0, 0), 0),
+            ((14.989, 2.1, 3.4), 1.3, 1.8, (-1, 0, 0), 3),
+            ((-10.5, .014, 7.5), 2.5, 2.0, (0, 1, 0), 1),
+            ((-12., .014, .5), 1.8, 1.1, (0, 1, 0), 1),
+            ((4.6, .014, -4.1), 3.2, .70, (0, 1, 0), 3),
+            ((7.8, .014, 7.7), 2.4, 1.5, (0, 1, 0), 2)):
+        wear_decal(item, p, width, height, normal, cell)
     item.anchor("FloorCenter", (0, 0, 0))
     item.anchor("CeilingCenter", (0, 10.2, 0))
     item.anchor("GoalDoor", (0, 0, 11.9))
@@ -319,6 +354,8 @@ def make_room_shell():
     # neither intrudes on the doorway or the usable standing volume.
     beam(item, (-2.6, 2.85, -1.8), (2.65, 2.66, -1.65), .10, .13, "SaggedBearer")
     box(item, "Rust", (-2.60, 2.45, 0), (.16, .075, 4.5), "CableTray")
+    wear_decal(item, (-1.1, 1.15, -2.829), .75, 1.7, (0, 0, 1), 0)
+    wear_decal(item, (-2.829, 1.0, 1.3), 1.25, 1.05, (1, 0, 0), 3)
     item.anchor("Entry", (3., 0, 0))
     item.anchor("RoomCenter", (0, 0, 0))
     return item
@@ -692,6 +729,8 @@ def manifest(items, checksum):
         "moving_parts_have_collision": False,
         "rail_length": 1, "rack_footprint": [3, 1.2], "cargo_footprint": [2, 1.4],
         "light_anchor": [0, -.37, 0], "collision_mesh_prefix": "Collision_",
+        "authored_wear_quads": {"Shell": 8, "RoomShell": 2},
+        "wear_collision": False, "wear_surface_role": "WearDecal",
     }
     if any(record["triangle_count"] <= 0 for record in payload["models"]):
         raise RuntimeError("Warehouse module lost measurable geometry")
@@ -704,28 +743,56 @@ def main():
     parser.add_argument("--source-dir", type=Path, default=SOURCE_DIR)
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    args.model_dir = args.model_dir.resolve()
+    args.source_dir = args.source_dir.resolve()
     items = make_items()
     checksum = passive.signature(items)
     if passive.signature(make_items()) != checksum:
         raise RuntimeError("Warehouse repeated geometry differs")
     payload = manifest(items, checksum)
+    roots = passive.build_objects(items)
+    uv_cache = appearance.unwrap(roots, items)
+    atlas_dir = args.source_dir / "Textures/Atlases"
+    if not args.validate_only:
+        atlas_dir.mkdir(parents=True, exist_ok=True)
+    payload["surfaces"] = appearance.validate_layout(roots, uv_cache, None if args.validate_only else atlas_dir)
+    # Rebuild and repack independently; geometry-only determinism cannot see UVs.
+    roots = passive.build_objects(items)
+    second_uv = appearance.unwrap(roots, items)
+    if appearance.uv_signature(second_uv) != appearance.uv_signature(uv_cache):
+        raise RuntimeError("Warehouse repeated unique UV pack differs")
     if args.validate_only:
         current = json.loads((args.model_dir / "CombatWarehouse3D.json").read_text(encoding="utf8"))
+        payload["surfaces"]["base_sources"] = appearance.source_images()[1]
+        payload["surfaces"]["atlases"] = current["surfaces"]["atlases"]
         if current != payload:
             raise RuntimeError("Published warehouse manifest differs from deterministic geometry")
+        for record in current["surfaces"]["atlases"]:
+            path = atlas_dir / (record["name"] + ".source.png")
+            import hashlib
+            if hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+                raise RuntimeError("Published warehouse bake changed: " + record["name"])
     else:
         args.model_dir.mkdir(parents=True, exist_ok=True)
         args.source_dir.mkdir(parents=True, exist_ok=True)
+        sources, atlases = appearance.bake_atlases(roots, atlas_dir)
+        payload["surfaces"]["base_sources"] = sources
+        payload["surfaces"]["atlases"] = atlases
         # Blender object names are global. Export each module in a fresh scene
         # so common names such as Posts__Steel and Start never gain .001 suffixes.
         for item in items:
             root = passive.build_objects([item])[0]
+            appearance.apply_uvs(root, uv_cache)
             passive.export(root, args.model_dir / (root.name + ".fbx"))
         (args.model_dir / "CombatWarehouse3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
-        passive.build_objects(items)
+        roots = passive.build_objects(items)
+        for root in roots:
+            appearance.apply_uvs(root, uv_cache)
+        appearance.source_materials(roots, atlas_dir)
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CombatWarehouse3D.blend"), check_existing=False)
     passive.verify_fbx(args.model_dir, payload)
+    appearance.verify_fbx_uvs(args.model_dir, uv_cache, [item.name for item in items])
     print("COMBAT WAREHOUSE ART CONTRACT OK " + json.dumps({"models": len(items),
           "triangles": payload["triangle_count"], "signature": checksum}), flush=True)
 

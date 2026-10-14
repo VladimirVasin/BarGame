@@ -4239,14 +4239,16 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 ### Принятое исключение — боевой полигон
 
 §6:PS1/0story/9checks;`architecture-notes.md`.
-`2026-10-14`:warehouse30×24×10.2/levels0-3.2-6.4/9rooms6×6/hall12×12;
-2stairs/4flights/continuous. CombatTest rust/wet/repeated routes/twisted steel/
-hanging loads/damp concrete/peeling paint/swollen timber-cardboard/worn rubber;
-shared/port-work disgust (§6). D7ceilingfan/guarded empty lift/
-chain drums/pusher load↔/causalSFX/pause;grille/collision/opening stub;
-6dim lamps/bounded shadows/chestbeam/key-fog-sky0/no strobe;
-3cargo seeds/resetkeep/New. Heavy low steps/guns/echo-reverb;
-optional theme.8 speed+pitch/strong echo-reverb;dryUI/scene restore.
+`2026-10-14`:3levels/9rooms6×6/hall12×12;
+2stairs/4flights;rust/wet/twist steel/cargo/work disgust§6.
+Wet concrete/peeling paint/swollen wood-cardboard/worn rubber;
+UV atlases/metric tiles/macro wet-rust-scuff;
+rare cutout wear;triplanar optional-local.
+9room sets opposite entry/front→entry;collision turns/clear approach.
+D7fan/guarded lift/drums/pusher↔/causalSFX/pause;
+grille/collision/opening stub;6dim lamps/shadows/chestbeam/key-fog-sky0/0strobe;
+seeds/resetkeep/New/low heavy SFX/echo-reverb;
+theme optional/.8/strong echo-reverb/dryUI/exit restore.
 0dream-transition/organic/siren/mystics/clues/infection;architecture decision owns bounds.
 Endless1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.

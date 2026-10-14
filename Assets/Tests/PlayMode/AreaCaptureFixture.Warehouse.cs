@@ -49,6 +49,7 @@ namespace BarPromenade.Tests.PlayMode
                     var area = new WarehouseArenaArea(plan);
                     Assert.That(plan.RoomCenters.Count, Is.EqualTo(9));
                     Assert.That(plan.Stairs.Count, Is.EqualTo(4));
+                    AssertWarehouseRoomFurnitureFacesEntry(plan);
                     foreach (Vector3 room in plan.RoomCenters)
                         Assert.That(area.FindRoute(plan.HeroSpawn, room, route), Is.True,
                             "Each small room must connect through its inward doorway on its own storey.");
@@ -87,6 +88,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(camera, Is.SameAs(Camera.main));
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, "warehouse-00-entry");
                 AssertWarehouseImportedMetres(root);
+                AssertWarehouseSurfaceMaterials(root);
                 AssertWarehousePhysicalSurfaces(root);
                 AssertWarehouseLightAndMechanisms(root);
                 CombatWarehouseMusicPlayer music = root.Music;
@@ -185,6 +187,7 @@ namespace BarPromenade.Tests.PlayMode
                         for (int frame = 0; frame < 2; frame++) yield return null;
                     }
                     AssertWarehouseImportedMetres(root);
+                    AssertWarehouseSurfaceMaterials(root);
                     yield return CaptureWarehouseEnvironment(root);
                 }
             }
@@ -228,6 +231,41 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private static void AssertWarehouseRoomFurnitureFacesEntry(WarehouseArenaPlan plan)
+        {
+            int rooms = 0;
+            foreach (WarehouseArenaPlacement room in plan.ModulePlacements)
+            {
+                if (room.Kind != "RoomShell") continue;
+                Quaternion rotation = Quaternion.Euler(0f,room.Yaw,0f);
+                Vector3 expected = room.Position + rotation * new Vector3(-1.8f,0f,0f);
+                int matches = 0;
+                foreach (WarehouseArenaPlacement prop in plan.ModulePlacements)
+                {
+                    if (prop.Kind != "TechnicalProps" && prop.Kind != "LockerProps" && prop.Kind != "BreakProps") continue;
+                    if (Vector3.Distance(prop.Position,expected) > .001f) continue;
+                    matches++;
+                    Vector3 front = Quaternion.Euler(0f,prop.Yaw,0f) * Vector3.back;
+                    Assert.That(Vector3.Dot(front,rotation * Vector3.right), Is.GreaterThan(.999f),
+                        "Each room's furniture front must face its entrance from the opposite wall.");
+                    bool collision = false;
+                    foreach (WarehouseArenaObstacle obstacle in plan.Obstacles)
+                        if (obstacle.Kind == WarehouseArenaObstacleKind.Furniture &&
+                            Vector3.Distance(obstacle.Position,prop.Position) < .001f)
+                        {
+                            collision = true;
+                            Assert.That(obstacle.Yaw, Is.EqualTo(prop.Yaw));
+                            Assert.That(obstacle.Bounds.size, Is.EqualTo(new Vector3(1.3f,1.9f,2.2f)),
+                                "The authoritative furniture footprint must rotate with the visible module.");
+                        }
+                    Assert.That(collision, Is.True);
+                }
+                Assert.That(matches, Is.EqualTo(1), "Each room has one furnishing module against its opposite wall.");
+                rooms++;
+            }
+            Assert.That(rooms, Is.EqualTo(plan.RoomCenters.Count));
+        }
+
         private static void AssertWarehouseImportedMetres(CombatTestRoot root)
         {
             Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(25));
@@ -246,6 +284,68 @@ namespace BarPromenade.Tests.PlayMode
                     kind != "PusherHead" && kind != "Rail")
                     WarehouseArenaAssetProvider.ValidatePlacedModel(kind, wrapper);
             }
+        }
+
+        private static void AssertWarehouseSurfaceMaterials(CombatTestRoot root)
+        {
+            var reused = new Dictionary<string,Material>();
+            var families = new HashSet<string>();
+            int overlays = 0, structural = 0;
+            foreach (Transform wrapper in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (!wrapper.name.StartsWith("Warehouse ",System.StringComparison.Ordinal)) continue;
+                string kind = wrapper.name.Substring("Warehouse ".Length);
+                if (System.Array.IndexOf(WarehouseArenaAssetProvider.ModelNames,kind) < 0) continue;
+                string family = WarehouseArenaAssetProvider.AtlasForModel(kind);
+                foreach (MeshRenderer renderer in wrapper.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    if (!renderer.enabled || renderer.name.StartsWith("Collision_",System.StringComparison.Ordinal)) continue;
+                    Material material = renderer.sharedMaterial;
+                    Assert.That(material, Is.Not.Null);
+                    Assert.That(material.shader.isSupported, Is.True);
+                    Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                    Assert.That(mesh.uv.Length, Is.EqualTo(mesh.vertexCount));
+                    Assert.That(mesh.uv2.Length, Is.EqualTo(mesh.vertexCount));
+                    if (reused.TryGetValue(material.name,out Material first))
+                        Assert.That(material, Is.SameAs(first), "Instances must reuse their atlas-family and role material.");
+                    else reused.Add(material.name,material);
+                    bool decal = renderer.name.EndsWith("__WearDecal",System.StringComparison.Ordinal);
+                    if (decal)
+                    {
+                        overlays++;
+                        Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseWearDecals"));
+                        Assert.That(material.IsKeywordEnabled("_ALPHATEST_ON"), Is.True);
+                        Assert.That(renderer.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
+                        Assert.That(renderer.GetComponent<Collider>(), Is.Null);
+                        continue;
+                    }
+                    if (family != null)
+                    {
+                        families.Add(family);
+                        Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo(family));
+                        Assert.That(material.GetColor("_BaseColor"), Is.EqualTo(Color.white),
+                            "Baked role tint must be applied once, rather than darkened again at runtime.");
+                        foreach (Vector2 uv in mesh.uv)
+                        {
+                            Assert.That(uv.x, Is.InRange(-.0001f,1.0001f));
+                            Assert.That(uv.y, Is.InRange(-.0001f,1.0001f));
+                        }
+                    }
+                    else
+                    {
+                        structural++;
+                        Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/Warehouse Surface"));
+                        Assert.That(material.GetTexture("_WarehouseMacroMask").name, Is.EqualTo("WarehouseMacroMask"));
+                        Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.GreaterThan(0f));
+                        Assert.That(material.GetFloat("_WarehouseTriplanarStrength"), Is.Zero,
+                            "The clean authored UV does not justify extra triplanar samples.");
+                    }
+                }
+            }
+            Assert.That(families.Count, Is.EqualTo(3));
+            Assert.That(structural, Is.GreaterThan(0));
+            Assert.That(overlays, Is.EqualTo(1 + root.WarehousePlan.RoomCenters.Count),
+                "Only authored Shell and RoomShell overlay meshes add wear draw calls.");
         }
 
         private static void AssertWarehouseLightAndMechanisms(CombatTestRoot root)
@@ -399,6 +499,18 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 room = plan.RoomCenters[0], corridorRoom = plan.RoomCenters[3];
             Vector3 fan = plan.Mechanisms[0].Position, lift = plan.Mechanisms[1].Position,
                 drum = plan.Mechanisms[2].Position, pusher = plan.Mechanisms[3].Position;
+            WarehouseArenaPlacement locker = default;
+            WarehouseArenaPlacement technical = default;
+            bool hasLocker = false, hasTechnical = false;
+            foreach (WarehouseArenaPlacement placement in plan.ModulePlacements)
+            {
+                if (!hasLocker && placement.Kind == "LockerProps") { locker = placement; hasLocker = true; }
+                if (!hasTechnical && placement.Kind == "TechnicalProps") { technical = placement; hasTechnical = true; }
+            }
+            Assert.That(hasLocker, Is.True);
+            Assert.That(hasTechnical, Is.True);
+            Quaternion lockerRotation = Quaternion.Euler(0f,locker.Yaw,0f);
+            Quaternion technicalRotation = Quaternion.Euler(0f,technical.Yaw,0f);
             var shots = new[]
             {
                 // The entry is beneath the front gallery. Step into the actual
@@ -408,7 +520,7 @@ namespace BarPromenade.Tests.PlayMode
                 Shot.At(caption + "Physical stair", stair.Foot + new Vector3(-2.5f, 1.7f, -1.4f),
                     stair.Foot + new Vector3(0f, 1.8f, 3f), 62f),
                 Shot.At(caption + "Small technical room", room + Vector3.up * 1.7f,
-                    room + new Vector3(-1.5f, 1f, -1.8f), 68f),
+                    technical.Position + technicalRotation * new Vector3(0f, 1f, -.3f), 68f),
                 Shot.At(caption + "Locker corridor", corridorRoom + new Vector3(4.5f, 1.7f, .7f),
                     corridorRoom + Vector3.up * 1.4f, 64f),
                 Shot.At(caption + "Barred main door", plan.GateApproach + new Vector3(0f, 1.7f, -1f),
@@ -418,7 +530,16 @@ namespace BarPromenade.Tests.PlayMode
                 Shot.At(caption + "Chain drum", drum + new Vector3(0f, 1.7f, -3f),
                     drum + Vector3.up * 1.1f, 65f),
                 Shot.At(caption + "Endless load pusher", pusher + new Vector3(2.7f, 1.7f, -2.7f),
-                    pusher + Vector3.up, 68f)
+                    pusher + Vector3.up, 68f),
+                Shot.At(caption + "Door wear close view", plan.GateApproach + new Vector3(0f, 1.65f, .2f),
+                    plan.GoalDoorPosition + new Vector3(-.6f, 1.4f, 0f), 48f),
+                // The doors face the module's -Z, independent of room yaw.
+                Shot.At(caption + "Locker wear close view", locker.Position + lockerRotation * new Vector3(.5f, 1.6f, -1.4f),
+                    locker.Position + lockerRotation * new Vector3(0f, 1.05f, -.3f), 68f),
+                Shot.At(caption + "Drum wear close view", drum + new Vector3(.55f, 1.7f, -2f),
+                    drum + Vector3.up * 1.1f, 44f),
+                Shot.At(caption + "Concrete and floor wear", room + new Vector3(1.1f, 1.7f, 1.1f),
+                    room + new Vector3(-1f, .3f, 2.5f), 54f)
             };
             try
             {
@@ -429,6 +550,10 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Vector3 facing = shot.Target - shot.Position; facing.y = 0f; facing.Normalize();
                     Vector3 foot = shot.Position - Vector3.up * 1.7f - facing * .65f;
+                    // The imported doors face the clear aisle toward the
+                    // room entrance; keep the real chest source there too.
+                    if (shot.Name.Contains("Locker wear close view"))
+                        foot = locker.Position + lockerRotation * new Vector3(0f,0f,-1.5f);
                     Assert.That(area.TryGetHeight(foot, out float height, .32f), Is.True,
                         "The staged real hero must stand in the declared corridor for " + shot.Name + ".");
                     foot.y = height;
@@ -450,6 +575,8 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (Renderer renderer in heroRenderers)
                         if (renderer != null) renderer.forceRenderingOff = true;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest, shot.Name);
+                    if (plan.Seed == 0 && shot.Name.Contains("wear close view"))
+                        yield return CaptureWarehouseUvChecker(root,camera,shot.Name + " - Test UV checker");
                 }
             }
             finally
@@ -461,6 +588,66 @@ namespace BarPromenade.Tests.PlayMode
                 camera.transform.SetPositionAndRotation(position, rotation);
                 camera.fieldOfView = fov;
                 root.CameraFollow.enabled = following;
+            }
+        }
+
+        private static IEnumerator CaptureWarehouseUvChecker(CombatTestRoot root, Camera camera, string name)
+        {
+            const int size = 512, square = 16;
+            var checker = new Texture2D(size,size,TextureFormat.RGB24,true)
+                { name = "Test warehouse UV checker", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    byte value = ((x / square + y / square) & 1) == 0 ? (byte)210 : (byte)65;
+                    pixels[y * size + x] = new Color32(value,value,value,255);
+                }
+            checker.SetPixels32(pixels); checker.Apply(true,false);
+            var material = new Material(Resources.Load<Shader>("Shaders/Ps1Lit"))
+                { name = "Test warehouse UV checker material" };
+            material.SetTexture("_BaseMap",checker);
+            material.SetColor("_BaseColor",Color.white);
+            material.SetFloat("_Smoothness",.02f);
+            var originals = new Dictionary<Renderer,Material[]>();
+            try
+            {
+                foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (!renderer.enabled) continue;
+                    Material[] current = renderer.sharedMaterials;
+                    Material[] replacement = null;
+                    for (int index = 0; index < current.Length; index++)
+                    {
+                        Material surface = current[index];
+                        if (surface == null || !surface.HasProperty("_BaseMap")) continue;
+                        Texture texture = surface.GetTexture("_BaseMap");
+                        if (texture == null || System.Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,texture.name) < 0) continue;
+                        replacement ??= (Material[])current.Clone();
+                        replacement[index] = material;
+                    }
+                    if (replacement == null) continue;
+                    originals.Add(renderer,current); renderer.sharedMaterials = replacement;
+                }
+                // Let renderer bindings complete a normal frame before this
+                // diagnostic's additional Camera.Render.
+                yield return null;
+                bool drumBody = false;
+                foreach (Renderer renderer in originals.Keys)
+                    if (renderer.name.StartsWith("DrumRotor__Rust",System.StringComparison.Ordinal))
+                    {
+                        drumBody = true;
+                        Assert.That(renderer.sharedMaterial, Is.SameAs(material));
+                        Assert.That(renderer.sharedMaterial.GetTexture("_BaseMap"), Is.SameAs(checker));
+                    }
+                Assert.That(drumBody, Is.True, "The real rotating drum body must receive the UV checker too.");
+                CaptureCurrentCamera(camera,SceneIds.CombatTest,name);
+            }
+            finally
+            {
+                foreach (KeyValuePair<Renderer,Material[]> item in originals)
+                    if (item.Key != null) item.Key.sharedMaterials = item.Value;
+                Object.Destroy(material); Object.Destroy(checker);
             }
         }
     }

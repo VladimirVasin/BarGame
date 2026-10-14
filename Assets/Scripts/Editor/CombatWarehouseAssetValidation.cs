@@ -25,6 +25,7 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             ValidateTextures();
+            ValidateShader();
             TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
             if (source == null || source != Resources.Load<TextAsset>(
                     WarehouseArenaAssetProvider.ResourceFolder + "CombatWarehouse3D"))
@@ -34,7 +35,9 @@ namespace BarPromenade.Editor
             if (manifest == null || !manifest.passive || manifest.units != "metres" ||
                 manifest.generator != "tools/build-combat-warehouse-3d-model.py" ||
                 string.IsNullOrWhiteSpace(manifest.build_signature) || manifest.models == null ||
-                manifest.models.Length != WarehouseArenaAssetProvider.ModelNames.Length)
+                manifest.models.Length != WarehouseArenaAssetProvider.ModelNames.Length ||
+                manifest.surfaces == null || manifest.surfaces.size != 1024 ||
+                string.IsNullOrWhiteSpace(manifest.surfaces.uv_signature))
                 throw new InvalidOperationException("Warehouse manifest violates its passive metric module contract.");
 
             var names = new HashSet<string>(StringComparer.Ordinal);
@@ -88,6 +91,29 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void ValidateShader()
+        {
+            Shader shader = Resources.Load<Shader>("Shaders/WarehouseSurface");
+            Shader shared = Resources.Load<Shader>("Shaders/Ps1Lit");
+            if (shader == null || shared == null || !shader.isSupported || ShaderUtil.ShaderHasError(shader))
+                throw new InvalidOperationException("Warehouse PS1 surface shader is absent, unsupported or has a compile error.");
+            var warehouse = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+            var baseline = new Material(shared) { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                if (warehouse.passCount != baseline.passCount)
+                    throw new InvalidOperationException("Warehouse shader lost a shared PS1/URP pass.");
+                for (int index = 0; index < baseline.passCount; index++)
+                    if (warehouse.GetPassName(index) != baseline.GetPassName(index))
+                        throw new InvalidOperationException("Warehouse shader pass order differs from shared PS1/URP.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(warehouse);
+                UnityEngine.Object.DestroyImmediate(baseline);
+            }
+        }
+
         private static void ValidateSource(Model model)
         {
             string path = Folder + model.name + ".fbx";
@@ -118,10 +144,32 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Warehouse imported mesh is missing or unreadable: " + model.name);
                 for (int index = 0; index < mesh.subMeshCount; index++)
                     triangles += (int)mesh.GetIndexCount(index) / 3;
+                if (!filter.name.StartsWith("Collision_",StringComparison.Ordinal))
+                    ValidateSurfaceCoordinates(model.name,filter.name,mesh);
             }
             if (filters.Length != model.mesh_count || triangles != model.triangle_count)
                 throw new InvalidOperationException("Warehouse imported mesh measurements differ from its manifest: " + model.name);
         }
+
+        private static void ValidateSurfaceCoordinates(string model, string meshName, Mesh mesh)
+        {
+            Vector2[] uv = mesh.uv, metreUv = mesh.uv2;
+            if (uv.Length != mesh.vertexCount || metreUv.Length != mesh.vertexCount)
+                throw new InvalidOperationException("Warehouse render meshes require UV0 and metre-space UV1: " + model + "/" + meshName);
+            bool atlas = WarehouseArenaAssetProvider.AtlasForModel(model) != null ||
+                meshName.EndsWith("__WearDecal",StringComparison.Ordinal);
+            for (int index = 0; index < uv.Length; index++)
+            {
+                if (!Finite(uv[index]) || !Finite(metreUv[index]))
+                    throw new InvalidOperationException("Warehouse texture coordinates must be finite: " + model + "/" + meshName);
+                if (atlas && (uv[index].x < -.0001f || uv[index].y < -.0001f ||
+                    uv[index].x > 1.0001f || uv[index].y > 1.0001f))
+                    throw new InvalidOperationException("Warehouse atlas coordinates escaped their clamped sheet: " + model + "/" + meshName);
+            }
+        }
+
+        private static bool Finite(Vector2 value) => !float.IsNaN(value.x) && !float.IsNaN(value.y) &&
+            !float.IsInfinity(value.x) && !float.IsInfinity(value.y);
 
         private static void RequireVector(float[] value, string label)
         {
@@ -136,16 +184,21 @@ namespace BarPromenade.Editor
         {
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
+                bool atlas = Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,name) >= 0;
+                bool mask = name == "WarehouseMacroMask", decals = name == "WarehouseWearDecals";
+                int size = atlas ? 1024 : 512;
+                TextureWrapMode wrap = atlas || decals ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                 string path = Folder + "Textures/" + name + ".png";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (texture == null || importer == null || texture.width != 512 || texture.height != 512 ||
+                if (texture == null || importer == null || texture.width != size || texture.height != size ||
                     texture != Resources.Load<Texture2D>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name) ||
-                    !importer.sRGBTexture || !importer.mipmapEnabled || importer.isReadable ||
-                    importer.wrapMode != TextureWrapMode.Repeat)
-                    throw new InvalidOperationException("Warehouse surface must be a shared 512 RGB sRGB/mipped/repeating map: " + name);
+                    importer.sRGBTexture == mask || !importer.mipmapEnabled || importer.isReadable ||
+                    importer.wrapMode != wrap || importer.maxTextureSize != size ||
+                    (decals && importer.alphaSource != TextureImporterAlphaSource.FromInput))
+                    throw new InvalidOperationException("Warehouse texture violates its bounded atlas/base/mask import profile: " + name);
                 TextureImporterPlatformSettings windows = importer.GetPlatformTextureSettings("Standalone");
-                if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != 512)
+                if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != size)
                     throw new InvalidOperationException("Warehouse surface must retain the Windows BC7 profile: " + name);
             }
         }
@@ -155,6 +208,13 @@ namespace BarPromenade.Editor
             public bool passive;
             public string units, generator, build_signature;
             public Model[] models;
+            public Surfaces surfaces;
+        }
+
+        [Serializable] private sealed class Surfaces
+        {
+            public int size;
+            public string uv_signature;
         }
 
         [Serializable] private sealed class Model

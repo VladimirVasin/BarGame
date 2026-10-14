@@ -2,38 +2,41 @@
 
 ## Current facts
 
-CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
-
 - **Accepted exception — 2026-10-14, warehouse otherworld:**
-  CombatTest rusty/wet otherworld;art§15a. Port-loader monotony/exhaustion/disgust
-  →repeated routes/futile machines;0City job-wage-quest/monologue.
-  0dream-transition/organic/siren/mystics/clues/world infection;
-  §6(outside-scale)/§16/§21/9checks. Blender assets/sources/phases;
-  seed/resetkeep/New/flat:test-only/0hazard-falldmg;movers clear routes/pause.
+  CombatTest wet-rust/loader monotony-exhaustion-disgust→routes/futile machines.
+  0City job-wage-quest/monologue/dream/organic/siren/mystics/clues/infection.
+  §6outside-scale/art§15a/9checks;Blender/seed/resetkeep/New/flat:test-only;
+  0hazard-falldmg;movers clear routes/pause.
 
 - **Accepted — 2026-10-14, warehouse acoustics:**
-  User:heavy low booming steps/guns+echo;theme20%slower/strong echo-reverb.
-  CombatWarehouse/shared returns/World165Hz↑/5.2kHzLP;room3.4s/echo340ms/.52;
-  UI dry/other scenes restore.
-  Optional `Audio/CombatWarehouseMusic/warehouse_theme` WAV/OGG/MP3;
-  SceneMusicPlayer/MusicMix/Streaming-background-stereo/pitch.8(speed+tone).
-  Root carrier/reset-New playhead/pause-disable-resume/exit;empty silent/add→entry.
-  11cached mono impact cues/steps pitch×.84/guns×.88;warm before input/resetkeep/
-  service teardown;5World voices/room DSP shared/0hotalloc.
+  User:heavy low steps/guns+echo;theme.8 speed+pitch/strong echo-reverb.
+  CombatWarehouse shared EQ/LP/room/echo;UI dry/exit restore.
+  Audio/CombatWarehouseMusic/warehouse_theme WAV/OGG/MP3 optional;
+  MusicMix/stream-background-stereo/root playhead/reset-New/pause-disable-resume/
+  exit/empty silent. 11mono cues/steps×.84/guns×.88/prewarm/resetkeep/teardown;
+  5World/0hotalloc.
+
+- **Accepted — 2026-10-14, warehouse UV surfaces:**
+  User:3×1024 prop UV atlases/metric tiles+macro/rare decals;
+  local triplanar if UV stretch remains. PS1/shared/bounded/Blender sources-checks;
+  joint/contact/load wear;warehouse only/0text-newstory/art§15a/§6/§16/§21/9checks.
+
+- **Accepted — 2026-10-14, warehouse room furniture:**
+  User:9Technical/Locker/Break sets opposite entry/front→entry;
+  model/collision rotate;clear approaches/0newstory.
 
 - **Accepted — 2026-10-14, warehouse torso look:**
-  Orbit≠camera target/neutral14°;stable gun intent;Spine-Chest40/60;
-  down35/up20/yaw20/roll6° combined;orbit≤35full→90zero/root-legs kept/Llight.
-  Actions-draw-fall-rise win/pause-modal hold/ownedcleanup/cachedbones/0hotalloc;
+  Orbit≠camera/neutral14°/gun intent;Spine-Chest40/60/down35/up20/yaw20/roll6°;
+  orbit≤35full→90zero/root-legs kept/Llight. Actions win/pause-modal hold/
+  cleanup/cachedbones/0hotalloc;
   sim Advance only/repeated Apply0time-bend.
 
 - **Accepted exception — 2026-10-14, warehouse chest flashlight:**
-  User:CombatTest/Blender/LM65Chest/torso→/always on.
-  Spot60/16m/60–28°/hard;practicals:otherworld decision/key-fog-sky0.
-  Ambient:hero3D full3m→SmoothStep→black12m/0camera veil;
-  Ps1Lit Forward bakedGI-only/passes-pragmas-direct-shadows-emission kept.
-  Cachedhero/movement-only LateUpdate/scene-ownedglobal off outside;
-  disable-unload-subsystem cleanup/0MPB-clones-newpass;
+  CombatTest/Blender/LM65Chest/torso→/always on/Spot60/16m/60–28°/hard;
+  practicals:otherworld/key-fog-sky0. Hero3D GI3m→SmoothStep→black12m/0camera veil;
+  Ps1Lit bakedGI-only/passes-pragmas-direct-shadows-emission kept.
+  Movement-only cached LateUpdate/scene global off outside/disable-unload-subsystem;
+  0MPB-clones-newpass;
   1hero/resetkeep/sharedassets/bounds/teardown/unmeasuredcost/0input-battery-inventory-story.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
@@ -5835,8 +5838,8 @@ CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
   `Resources/Audio/Mixers/BarPromenadeAudio`:Music/Ambience(Beds,Details)/
   SFX(World,Gameplay)/dryUI. City/Bar/Stairwell/Home/CombatWarehouse blend
   `.25 s`;DoorTransition cuts at blackout;Master `-6 dB`/compressor.
-  Music/details/world→shared Receive/Reverb/Echo;Home short/damped/echo-free,
-  Stairwell dark restrained echo;warehouse acoustics above.
+  Music/details/world→shared returns;Home short/damped/noecho;Stairwell dark/
+  restrained echo;warehouse above.
 - **Accepted — The mix hierarchy is invariant across scenes:** Snapshots keep
   Music `-11.5`,Beds `-4`,Details `+0.5`,World `+2`,Gameplay `+2.5`,dryUI `+1.5 dB`;
   Master `-6 dB`;detail/world send trims retain wet energy. Thunder=World,

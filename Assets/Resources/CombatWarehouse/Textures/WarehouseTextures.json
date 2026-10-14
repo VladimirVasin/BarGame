@@ -1,45 +1,126 @@
 {
-  "design_id": "warehouse_surfaces_v2",
-  "size": 512,
-  "mode": "RGB",
+  "design_id": "warehouse_uv_surfaces_v3",
   "mipmaps": true,
-  "wrap": "Repeat",
   "windows_compression": "BC7",
+  "gpu_budget_bytes": 8388608,
+  "estimated_gpu_bytes": 7340352,
   "sheets": [
     {
       "name": "WarehouseConcrete",
       "sha256": "adf1e3da406392136b605d2940ead1ed2a2dd2baef4044265cf27015df670dfd",
-      "mean_linear_luminance": 0.21547
+      "mean_linear_luminance": 0.21547,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehousePaint",
       "sha256": "ac9e9a6e01394e4a3c3c173360ca008e15ccab1fc76b0154c1af2a57a449f4a4",
-      "mean_linear_luminance": 0.14528
+      "mean_linear_luminance": 0.14528,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehouseSteel",
       "sha256": "e7c1cd9e37c445c2d4856712384e4909e35728ed458a70521bb7bda64b1720c5",
-      "mean_linear_luminance": 0.040143
+      "mean_linear_luminance": 0.040143,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehouseRust",
       "sha256": "f278812ca44507346fd1bf60e20b8c772304e5e55cd786eae39508437ac3300e",
-      "mean_linear_luminance": 0.06672
+      "mean_linear_luminance": 0.06672,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehouseTimber",
       "sha256": "8884d6f78a99c54a4cb69ae8f1270541a3480f39b0991750390afcc2ccdbad9f",
-      "mean_linear_luminance": 0.117248
+      "mean_linear_luminance": 0.117248,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehouseCardboard",
       "sha256": "da4bd3c9458146bd0d72e3601724a25becab200fb95f45170d16f051c3a4f1ad",
-      "mean_linear_luminance": 0.151625
+      "mean_linear_luminance": 0.151625,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
     },
     {
       "name": "WarehouseRubber",
       "sha256": "ad9247dfac17f3eb9cfb376bc1d6aee4ef3880b1aab891d0aa6a7f7a381bdda6",
-      "mean_linear_luminance": 0.045721
+      "mean_linear_luminance": 0.045721,
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Repeat"
+    },
+    {
+      "name": "WarehouseMechanismsAtlas",
+      "sha256": "19cc6fd117ca605929ba6a6a58badd287e1f2ed12cf31617dc98b4ffbb4ea8f7",
+      "source_sha256": "0ed9c7ba3b6fa449d01c8f6d650fb8af37a4b7fb32832ed864293573e3689f71",
+      "size": 1024,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "Blender EMIT UV bake"
+    },
+    {
+      "name": "WarehouseFurnishingsAtlas",
+      "sha256": "1847319a376c1cf18943d393a8b4785d81fcc42549a5b68938873d8a08915539",
+      "source_sha256": "861bb323ba81f5758ce13e10a4bdec974e9cb36728ab63e3cb65b3ab1fe15df7",
+      "size": 1024,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "Blender EMIT UV bake"
+    },
+    {
+      "name": "WarehouseCargoAtlas",
+      "sha256": "5556344d66856c762357809843d41760d331a2d876d1250b364b9b7875756430",
+      "source_sha256": "d76bbd16cf0d948d7f469bac3bf17dc0d032441586a23fa0ba78d4bd9531447f",
+      "size": 1024,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "Blender EMIT UV bake"
+    },
+    {
+      "name": "WarehouseMacroMask",
+      "sha256": "e25d0671e0d1af1e5b43da45ccf24eeb96f2962c718a4f92cf3aef3bb1583d2e",
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": false,
+      "wrap": "Repeat",
+      "authoring": "periodic packed channel data v1",
+      "channels": [
+        "moisture",
+        "oxide",
+        "rubbed patches"
+      ]
+    },
+    {
+      "name": "WarehouseWearDecals",
+      "sha256": "9a8b4792d0c80fa3a1f0759a69b832db20ee61735b9837eba437c137348a65e3",
+      "source_sha256": "dccea822efd60fa348dd1065eb3f9807023647602d92a875d12caee6702d1c7e",
+      "size": 512,
+      "mode": "RGBA",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "image_gen fixed transparent 2x2 source"
     }
   ]
 }

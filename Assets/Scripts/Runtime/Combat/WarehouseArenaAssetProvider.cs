@@ -14,7 +14,11 @@ namespace BarPromenade
             "LiftFrame", "LiftPlatform", "ChainDrum", "PusherFrame", "PusherHead", "LockerProps", "BreakProps",
             "TechnicalProps", "TwistedFrame" };
         public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
-            "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber" };
+            "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber",
+            "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas",
+            "WarehouseMacroMask", "WarehouseWearDecals" };
+        public static readonly string[] AtlasTextureNames = { "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas",
+            "WarehouseCargoAtlas" };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
         private static readonly HashSet<string> Measured = new HashSet<string>();
@@ -51,8 +55,9 @@ namespace BarPromenade
                 int separator = renderer.name.LastIndexOf("__",StringComparison.Ordinal);
                 if (separator < 0) throw new InvalidOperationException("Warehouse mesh lacks a surface role: " + renderer.name);
                 string role = renderer.name.Substring(separator + 2);
-                renderer.sharedMaterial = Surface(role);
-                renderer.shadowCastingMode = role == "Lamp" || role == "Glass" ? ShadowCastingMode.Off : ShadowCastingMode.On;
+                renderer.sharedMaterial = Surface(kind,role);
+                renderer.shadowCastingMode = role == "Lamp" || role == "Glass" || role == "WearDecal" ?
+                    ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
@@ -103,9 +108,26 @@ namespace BarPromenade
             throw new InvalidOperationException("Warehouse model lacks anchor " + name);
         }
 
-        private static Material Surface(string role)
+        public static string AtlasForModel(string kind)
         {
-            if (Materials.TryGetValue(role,out Material cached) && cached != null) return cached;
+            switch (kind)
+            {
+                case "Shell": case "RoomShell": case "Platform": case "Stair": case "Rail": return null;
+                case "MainDoor": case "LockerProps": case "BreakProps": case "TechnicalProps": case "Lamp":
+                    return "WarehouseFurnishingsAtlas";
+                case "Rack": case "Cargo": return "WarehouseCargoAtlas";
+                default:
+                    if (Array.IndexOf(ModelNames,kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
+                    return "WarehouseMechanismsAtlas";
+            }
+        }
+
+        private static Material Surface(string kind, string role)
+        {
+            string atlas = AtlasForModel(kind);
+            string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Structure";
+            string key = family + "/" + role;
+            if (Materials.TryGetValue(key,out Material cached) && cached != null) return cached;
             string texture = null; Color color;
             switch (role)
             {
@@ -119,18 +141,49 @@ namespace BarPromenade
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
                 case "Lamp": color = new Color(.38f,.37f,.31f); break;
                 case "Rubber": color = new Color(.70f,.73f,.69f); texture = "WarehouseRubber"; break;
+                case "WearDecal": color = Color.white; texture = "WarehouseWearDecals"; break;
                 default: throw new InvalidOperationException("Unknown warehouse surface " + role);
             }
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Warehouse requires the shared PS1 shader.");
+            // Role properties remain shared within each atlas family. A copied
+            // cargo or mechanism never allocates another instance material.
+            if (atlas != null && role != "WearDecal")
+            {
+                texture = atlas;
+                // The EMIT bake already includes each role's authored tint.
+                // Tinting again would square that darkness on the props.
+                color = Color.white;
+            }
+            bool layered = atlas == null && role != "WearDecal" && role != "Lamp" && role != "Glass";
+            Shader shader = Resources.Load<Shader>(layered ? "Shaders/WarehouseSurface" : "Shaders/Ps1Lit");
+            if (shader == null) throw new InvalidOperationException("Warehouse requires its PS1 surface shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>(ResourceFolder + "Textures/" + texture);
             if (sheet == null) throw new InvalidOperationException("Warehouse is missing its shared surface " + texture);
-            var material = new Material(shader) { name = "Warehouse " + role + " Shared", hideFlags = HideFlags.HideAndDontSave,
+            var material = new Material(shader) { name = "Warehouse " + family + " " + role + " Shared", hideFlags = HideFlags.HideAndDontSave,
                 enableInstancing = true };
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
             material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" ? .25f : 0f);
-            Materials[role] = material;
+            if (layered)
+            {
+                Texture2D mask = Resources.Load<Texture2D>(ResourceFolder + "Textures/WarehouseMacroMask");
+                if (mask == null) throw new InvalidOperationException("Warehouse requires its shared macro variation mask.");
+                material.SetTexture("_WarehouseMacroMask",mask);
+                material.SetFloat("_WarehouseMacroStrength",.72f);
+                material.SetFloat("_WarehouseRustStrength",role == "Steel" || role == "WornSteel" || role == "Rust" ? .46f : .12f);
+                material.SetFloat("_WarehouseTriplanarStrength",0f);
+            }
+            if (role == "WearDecal")
+            {
+                // Authored sparse planes use a cutout, preserving opaque depth
+                // and the existing PS1 light/shadow/ambient presentation.
+                material.EnableKeyword("_ALPHATEST_ON");
+                material.SetFloat("_AlphaClip",1f);
+                material.SetFloat("_Cutoff",.16f);
+                material.SetFloat("_Smoothness",.02f);
+                material.SetOverrideTag("RenderType","TransparentCutout");
+                material.renderQueue = (int)RenderQueue.AlphaTest;
+            }
+            Materials[key] = material;
             return material;
         }
 

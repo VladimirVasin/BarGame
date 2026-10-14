@@ -245,8 +245,11 @@ namespace BarPromenade
             AddRoomWall(center, yaw, new Vector3(2.92f,2.55f,0f), new Vector3(.16f,.45f,2.4f), obstacles);
             AddRoomWall(center, yaw, new Vector3(0f,2.96f,0f), new Vector3(6f,.12f,6f), obstacles);
             string props = level == 0 ? "TechnicalProps" : level == 1 ? "LockerProps" : "BreakProps";
-            Vector3 propPosition = center + RotateRoom(new Vector3(-1.5f,0f,-1.8f),yaw);
-            AddProp(props, WarehouseArenaObstacleKind.Furniture, propPosition, yaw,
+            // Place furnishings against the wall opposite the +X doorway.
+            // Every imported module's front (-Z) faces that entrance.
+            Vector3 propPosition = center + RotateRoom(new Vector3(-1.8f,0f,0f),yaw);
+            float propYaw = yaw - 90f;
+            AddProp(props, WarehouseArenaObstacleKind.Furniture, propPosition, propYaw,
                 new Vector3(2.2f,1.9f,1.3f), modules, obstacles);
         }
 

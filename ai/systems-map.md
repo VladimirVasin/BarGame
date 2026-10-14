@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Zombies;Endless1–5/≤2corpses;all3;2hand swing/block/free-facing;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatAmmoPickup` | Partial |
-| Warehouse | 3floors/9rooms/fan/movers/6lamps;chest Spot/torso/fill→black;gap:grille opening. | `WarehouseArena*`, `CombatChestFlashlight` | Partial |
+| Warehouse | 3floors/9rooms/UV/macro/wear/fan/movers;lamps/chestbeam→black;gap:grille opening. | `WarehouseArena*`, `CombatChestFlashlight` | Partial |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |

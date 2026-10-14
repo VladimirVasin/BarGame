@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-combat-warehouse-3d-model.py",
-  "generator_version": "2.0.1",
+  "generator_version": "2.1.0",
   "blender_version": "5.0.1",
-  "build_signature": "defc7c3343cbff16b79dcde5421c41a58e423591959170cb432a817f3edd3593",
+  "build_signature": "004f980807dcac5525c2b30daa651e06d89ea5c12080d33b9351c2a70e9d610a",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -11,7 +11,7 @@
   "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
   "signed_volumes": "every solid positive before and after axis swap",
   "determinism": "two independent geometry builds match",
-  "triangle_count": 25404,
+  "triangle_count": 25424,
   "materials": {
     "Concrete": [
       0.38,
@@ -62,6 +62,11 @@
       0.08,
       0.1,
       0.085
+    ],
+    "WearDecal": [
+      0.21,
+      0.17,
+      0.11
     ]
   },
   "models": [
@@ -77,9 +82,9 @@
         10.38,
         12.3
       ],
-      "triangle_count": 2772,
+      "triangle_count": 2788,
       "solid_count": 95,
-      "mesh_count": 23,
+      "mesh_count": 24,
       "anchors": [
         {
           "name": "FloorCenter",
@@ -398,9 +403,9 @@
         3.08,
         3.0
       ],
-      "triangle_count": 588,
+      "triangle_count": 592,
       "solid_count": 17,
-      "mesh_count": 14,
+      "mesh_count": 15,
       "anchors": [
         {
           "name": "Entry",
@@ -844,6 +849,1024 @@
       -0.37,
       0
     ],
-    "collision_mesh_prefix": "Collision_"
+    "collision_mesh_prefix": "Collision_",
+    "authored_wear_quads": {
+      "Shell": 8,
+      "RoomShell": 2
+    },
+    "wear_collision": false,
+    "wear_surface_role": "WearDecal"
+  },
+  "surfaces": {
+    "version": "1.1.0",
+    "size": 1024,
+    "UV0": "unique nonoverlapping prop family atlas / tiled structural metres / authored cutout cells",
+    "UV1": "object-anchored metre face projection",
+    "uv_signature": "3ce14e779729f48e0415cfc86bbd9d94e4569cdf1d6bbd9403243922096f1f20",
+    "bake": "Cycles EMIT only; unchanged ImageGen albedo sources with module-anchored macro, damp and mesh-curvature wear",
+    "bake_margin_px": 2,
+    "pack_margin_px": 4,
+    "uv_importance": {
+      "ChainDrum": 4.0,
+      "PusherHead": 3.0,
+      "PusherFrame": 2.0,
+      "LiftPlatform": 2.0,
+      "Gate": 1.0,
+      "FanHousing": 0.65,
+      "FanRotor": 0.65,
+      "LiftFrame": 0.7,
+      "TwistedFrame": 0.65,
+      "Pipes": 0.7,
+      "PipeStraight": 0.8,
+      "PipeElbow": 0.8,
+      "PipeEnd": 0.8
+    },
+    "tiled_models": [
+      "Shell",
+      "RoomShell",
+      "Platform",
+      "Stair",
+      "Rail"
+    ],
+    "families": [
+      {
+        "uv_area": 0.267861,
+        "occupied_texels": 279583,
+        "overlap_texels": 0,
+        "texels_per_metre_median": 11.907,
+        "triangle_stretch_max": 2.2505,
+        "triangle_stretch_p95": 1.9999,
+        "model_density": [
+          {
+            "model": "Pipes",
+            "uv_importance": 0.7,
+            "surface_area_m2": 19.545933,
+            "uv_area": 0.002642,
+            "texels_per_metre_area_equivalent": 11.905,
+            "texels_per_metre_min": 9.365,
+            "texels_per_metre_median": 11.905,
+            "texels_per_metre_max": 14.207
+          },
+          {
+            "model": "PipeStraight",
+            "uv_importance": 0.8,
+            "surface_area_m2": 2.276055,
+            "uv_area": 0.000402,
+            "texels_per_metre_area_equivalent": 13.606,
+            "texels_per_metre_min": 10.703,
+            "texels_per_metre_median": 13.606,
+            "texels_per_metre_max": 15.749
+          },
+          {
+            "model": "PipeElbow",
+            "uv_importance": 0.8,
+            "surface_area_m2": 1.093387,
+            "uv_area": 0.000193,
+            "texels_per_metre_area_equivalent": 13.606,
+            "texels_per_metre_min": 13.1,
+            "texels_per_metre_median": 13.606,
+            "texels_per_metre_max": 14.565
+          },
+          {
+            "model": "PipeEnd",
+            "uv_importance": 0.8,
+            "surface_area_m2": 2.697597,
+            "uv_area": 0.000476,
+            "texels_per_metre_area_equivalent": 13.606,
+            "texels_per_metre_min": 11.002,
+            "texels_per_metre_median": 13.605,
+            "texels_per_metre_max": 15.383
+          },
+          {
+            "model": "Gate",
+            "uv_importance": 1.0,
+            "surface_area_m2": 14.790463,
+            "uv_area": 0.00408,
+            "texels_per_metre_area_equivalent": 17.008,
+            "texels_per_metre_min": 14.478,
+            "texels_per_metre_median": 17.006,
+            "texels_per_metre_max": 20.831
+          },
+          {
+            "model": "FanHousing",
+            "uv_importance": 0.65,
+            "surface_area_m2": 265.562377,
+            "uv_area": 0.030951,
+            "texels_per_metre_area_equivalent": 11.055,
+            "texels_per_metre_min": 9.292,
+            "texels_per_metre_median": 11.055,
+            "texels_per_metre_max": 13.54
+          },
+          {
+            "model": "FanRotor",
+            "uv_importance": 0.65,
+            "surface_area_m2": 32.965313,
+            "uv_area": 0.003842,
+            "texels_per_metre_area_equivalent": 11.055,
+            "texels_per_metre_min": 9.861,
+            "texels_per_metre_median": 11.055,
+            "texels_per_metre_max": 13.756
+          },
+          {
+            "model": "LiftFrame",
+            "uv_importance": 0.7,
+            "surface_area_m2": 91.690731,
+            "uv_area": 0.012394,
+            "texels_per_metre_area_equivalent": 11.905,
+            "texels_per_metre_min": 9.719,
+            "texels_per_metre_median": 11.904,
+            "texels_per_metre_max": 14.584
+          },
+          {
+            "model": "LiftPlatform",
+            "uv_importance": 2.0,
+            "surface_area_m2": 16.787821,
+            "uv_area": 0.018524,
+            "texels_per_metre_area_equivalent": 34.015,
+            "texels_per_metre_min": 28.662,
+            "texels_per_metre_median": 33.962,
+            "texels_per_metre_max": 40.418
+          },
+          {
+            "model": "ChainDrum",
+            "uv_importance": 4.0,
+            "surface_area_m2": 28.306809,
+            "uv_area": 0.124939,
+            "texels_per_metre_area_equivalent": 68.03,
+            "texels_per_metre_min": 53.399,
+            "texels_per_metre_median": 68.03,
+            "texels_per_metre_max": 83.322
+          },
+          {
+            "model": "PusherFrame",
+            "uv_importance": 2.0,
+            "surface_area_m2": 37.154627,
+            "uv_area": 0.040998,
+            "texels_per_metre_area_equivalent": 34.015,
+            "texels_per_metre_min": 28.656,
+            "texels_per_metre_median": 34.015,
+            "texels_per_metre_max": 40.426
+          },
+          {
+            "model": "PusherHead",
+            "uv_importance": 3.0,
+            "surface_area_m2": 10.675721,
+            "uv_area": 0.026505,
+            "texels_per_metre_area_equivalent": 51.023,
+            "texels_per_metre_min": 42.814,
+            "texels_per_metre_median": 50.986,
+            "texels_per_metre_max": 60.732
+          },
+          {
+            "model": "TwistedFrame",
+            "uv_importance": 0.65,
+            "surface_area_m2": 16.441812,
+            "uv_area": 0.001916,
+            "texels_per_metre_area_equivalent": 11.055,
+            "texels_per_metre_min": 9.156,
+            "texels_per_metre_median": 10.895,
+            "texels_per_metre_max": 13.54
+          }
+        ],
+        "meshes": [
+          {
+            "mesh": "Pipes/Body__Steel",
+            "surface_area_m2": 13.793017,
+            "uv_area": 0.001864,
+            "triangles": 144
+          },
+          {
+            "mesh": "Pipes/Body__WornSteel",
+            "surface_area_m2": 0.727011,
+            "uv_area": 9.8e-05,
+            "triangles": 264
+          },
+          {
+            "mesh": "Pipes/DrainConnection__WornSteel",
+            "surface_area_m2": 0.263957,
+            "uv_area": 3.6e-05,
+            "triangles": 28
+          },
+          {
+            "mesh": "Pipes/Equipment__Steel",
+            "surface_area_m2": 1.753023,
+            "uv_area": 0.000237,
+            "triangles": 100
+          },
+          {
+            "mesh": "Pipes/Equipment__WornSteel",
+            "surface_area_m2": 0.711347,
+            "uv_area": 9.6e-05,
+            "triangles": 72
+          },
+          {
+            "mesh": "Pipes/PipeSupports__Steel",
+            "surface_area_m2": 0.688645,
+            "uv_area": 9.3e-05,
+            "triangles": 280
+          },
+          {
+            "mesh": "Pipes/ValveWheel__Rust",
+            "surface_area_m2": 0.151665,
+            "uv_area": 2.1e-05,
+            "triangles": 92
+          },
+          {
+            "mesh": "Pipes/VentSlots__ConcreteDark",
+            "surface_area_m2": 0.081562,
+            "uv_area": 1.1e-05,
+            "triangles": 140
+          },
+          {
+            "mesh": "Pipes/WallBrackets__WornSteel",
+            "surface_area_m2": 1.375706,
+            "uv_area": 0.000186,
+            "triangles": 224
+          },
+          {
+            "mesh": "PipeStraight/Body__Steel",
+            "surface_area_m2": 1.912881,
+            "uv_area": 0.000338,
+            "triangles": 36
+          },
+          {
+            "mesh": "PipeStraight/Body__WornSteel",
+            "surface_area_m2": 0.363175,
+            "uv_area": 6.4e-05,
+            "triangles": 88
+          },
+          {
+            "mesh": "PipeElbow/Body__Steel",
+            "surface_area_m2": 1.093387,
+            "uv_area": 0.000193,
+            "triangles": 432
+          },
+          {
+            "mesh": "PipeEnd/Equipment__Steel",
+            "surface_area_m2": 1.753024,
+            "uv_area": 0.000309,
+            "triangles": 100
+          },
+          {
+            "mesh": "PipeEnd/Equipment__WornSteel",
+            "surface_area_m2": 0.711347,
+            "uv_area": 0.000126,
+            "triangles": 72
+          },
+          {
+            "mesh": "PipeEnd/ValveWheel__Rust",
+            "surface_area_m2": 0.151665,
+            "uv_area": 2.7e-05,
+            "triangles": 92
+          },
+          {
+            "mesh": "PipeEnd/VentSlots__ConcreteDark",
+            "surface_area_m2": 0.081562,
+            "uv_area": 1.4e-05,
+            "triangles": 140
+          },
+          {
+            "mesh": "Gate/GateCrossbars__Rust",
+            "surface_area_m2": 1.679323,
+            "uv_area": 0.000463,
+            "triangles": 56
+          },
+          {
+            "mesh": "Gate/GateFrame__Rust",
+            "surface_area_m2": 3.082856,
+            "uv_area": 0.00085,
+            "triangles": 56
+          },
+          {
+            "mesh": "Gate/GateFrame__Steel",
+            "surface_area_m2": 2.264715,
+            "uv_area": 0.000625,
+            "triangles": 56
+          },
+          {
+            "mesh": "Gate/Latch__Rust",
+            "surface_area_m2": 0.061319,
+            "uv_area": 1.7e-05,
+            "triangles": 36
+          },
+          {
+            "mesh": "Gate/Latch__Steel",
+            "surface_area_m2": 0.216939,
+            "uv_area": 6e-05,
+            "triangles": 28
+          },
+          {
+            "mesh": "Gate/VerticalBars__Steel",
+            "surface_area_m2": 7.485311,
+            "uv_area": 0.002065,
+            "triangles": 340
+          },
+          {
+            "mesh": "FanHousing/AperturePlate__Steel",
+            "surface_area_m2": 57.138179,
+            "uv_area": 0.006659,
+            "triangles": 256
+          },
+          {
+            "mesh": "FanHousing/Duct__Steel",
+            "surface_area_m2": 42.492842,
+            "uv_area": 0.004953,
+            "triangles": 224
+          },
+          {
+            "mesh": "FanHousing/DuctEnd__ConcreteDark",
+            "surface_area_m2": 85.753252,
+            "uv_area": 0.009995,
+            "triangles": 108
+          },
+          {
+            "mesh": "FanHousing/Motor__Steel",
+            "surface_area_m2": 1.716128,
+            "uv_area": 0.0002,
+            "triangles": 60
+          },
+          {
+            "mesh": "FanHousing/MotorSupports__Steel",
+            "surface_area_m2": 10.277759,
+            "uv_area": 0.001198,
+            "triangles": 224
+          },
+          {
+            "mesh": "FanHousing/Mounts__Steel",
+            "surface_area_m2": 18.859352,
+            "uv_area": 0.002198,
+            "triangles": 224
+          },
+          {
+            "mesh": "FanHousing/Rim__Rust",
+            "surface_area_m2": 48.608951,
+            "uv_area": 0.005665,
+            "triangles": 672
+          },
+          {
+            "mesh": "FanHousing/RimBolts__WornSteel",
+            "surface_area_m2": 0.319722,
+            "uv_area": 3.7e-05,
+            "triangles": 160
+          },
+          {
+            "mesh": "FanHousing/Spindle__WornSteel",
+            "surface_area_m2": 0.396191,
+            "uv_area": 4.6e-05,
+            "triangles": 44
+          },
+          {
+            "mesh": "FanRotor/Blades__Rust",
+            "surface_area_m2": 15.366255,
+            "uv_area": 0.001791,
+            "triangles": 84
+          },
+          {
+            "mesh": "FanRotor/Blades__WornSteel",
+            "surface_area_m2": 15.366255,
+            "uv_area": 0.001791,
+            "triangles": 84
+          },
+          {
+            "mesh": "FanRotor/Hub__Steel",
+            "surface_area_m2": 2.232804,
+            "uv_area": 0.00026,
+            "triangles": 60
+          },
+          {
+            "mesh": "LiftFrame/Cage__Steel",
+            "surface_area_m2": 28.330352,
+            "uv_area": 0.003829,
+            "triangles": 1280
+          },
+          {
+            "mesh": "LiftFrame/CarriageGuides__Steel",
+            "surface_area_m2": 7.195896,
+            "uv_area": 0.000973,
+            "triangles": 72
+          },
+          {
+            "mesh": "LiftFrame/Chains__Steel",
+            "surface_area_m2": 2.518574,
+            "uv_area": 0.00034,
+            "triangles": 40
+          },
+          {
+            "mesh": "LiftFrame/Crossbearers__Rust",
+            "surface_area_m2": 9.058866,
+            "uv_area": 0.001224,
+            "triangles": 224
+          },
+          {
+            "mesh": "LiftFrame/HoistDeck__Steel",
+            "surface_area_m2": 19.029543,
+            "uv_area": 0.002572,
+            "triangles": 28
+          },
+          {
+            "mesh": "LiftFrame/HoistDrums__Rust",
+            "surface_area_m2": 5.492317,
+            "uv_area": 0.000742,
+            "triangles": 88
+          },
+          {
+            "mesh": "LiftFrame/Shoes__Rust",
+            "surface_area_m2": 0.991028,
+            "uv_area": 0.000134,
+            "triangles": 112
+          },
+          {
+            "mesh": "LiftFrame/Uprights__Steel",
+            "surface_area_m2": 19.074154,
+            "uv_area": 0.002578,
+            "triangles": 112
+          },
+          {
+            "mesh": "LiftPlatform/Carriage__Steel",
+            "surface_area_m2": 12.099228,
+            "uv_area": 0.013351,
+            "triangles": 28
+          },
+          {
+            "mesh": "LiftPlatform/CarriageLip__Rust",
+            "surface_area_m2": 4.688592,
+            "uv_area": 0.005174,
+            "triangles": 112
+          },
+          {
+            "mesh": "ChainDrum/Bearings__WornSteel",
+            "surface_area_m2": 0.863765,
+            "uv_area": 0.003812,
+            "triangles": 88
+          },
+          {
+            "mesh": "ChainDrum/ChainGuides__Steel",
+            "surface_area_m2": 2.345622,
+            "uv_area": 0.010353,
+            "triangles": 56
+          },
+          {
+            "mesh": "ChainDrum/DrumRotor__Rust",
+            "surface_area_m2": 6.68303,
+            "uv_area": 0.029497,
+            "triangles": 60
+          },
+          {
+            "mesh": "ChainDrum/DrumRotor__Steel",
+            "surface_area_m2": 9.30027,
+            "uv_area": 0.041049,
+            "triangles": 360
+          },
+          {
+            "mesh": "ChainDrum/Feet__Rust",
+            "surface_area_m2": 3.844742,
+            "uv_area": 0.01697,
+            "triangles": 56
+          },
+          {
+            "mesh": "ChainDrum/Frame__Steel",
+            "surface_area_m2": 2.881904,
+            "uv_area": 0.01272,
+            "triangles": 56
+          },
+          {
+            "mesh": "ChainDrum/HangingChains__Rust",
+            "surface_area_m2": 0.630709,
+            "uv_area": 0.002784,
+            "triangles": 40
+          },
+          {
+            "mesh": "ChainDrum/Supports__Steel",
+            "surface_area_m2": 1.756768,
+            "uv_area": 0.007754,
+            "triangles": 56
+          },
+          {
+            "mesh": "PusherFrame/Base__Steel",
+            "surface_area_m2": 21.175487,
+            "uv_area": 0.023366,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherFrame/Cylinders__Rust",
+            "surface_area_m2": 0.557731,
+            "uv_area": 0.000615,
+            "triangles": 72
+          },
+          {
+            "mesh": "PusherFrame/Drive__WornSteel",
+            "surface_area_m2": 3.526533,
+            "uv_area": 0.003891,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherFrame/GuardBars__Steel",
+            "surface_area_m2": 6.124308,
+            "uv_area": 0.006758,
+            "triangles": 520
+          },
+          {
+            "mesh": "PusherFrame/GuardPosts__Rust",
+            "surface_area_m2": 4.692058,
+            "uv_area": 0.005177,
+            "triangles": 112
+          },
+          {
+            "mesh": "PusherFrame/LoadRails__Steel",
+            "surface_area_m2": 1.07851,
+            "uv_area": 0.00119,
+            "triangles": 72
+          },
+          {
+            "mesh": "PusherHead/CartonHandholds__ConcreteDark",
+            "surface_area_m2": 0.042413,
+            "uv_area": 0.000105,
+            "triangles": 56
+          },
+          {
+            "mesh": "PusherHead/CartonSeams__Timber",
+            "surface_area_m2": 0.032465,
+            "uv_area": 8.1e-05,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherHead/EndlessLoad__Cardboard",
+            "surface_area_m2": 4.53989,
+            "uv_area": 0.011271,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherHead/EndlessLoad__Timber",
+            "surface_area_m2": 1.85794,
+            "uv_area": 0.004613,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherHead/PushPlate__Steel",
+            "surface_area_m2": 3.677417,
+            "uv_area": 0.00913,
+            "triangles": 28
+          },
+          {
+            "mesh": "PusherHead/PushRods__WornSteel",
+            "surface_area_m2": 0.525597,
+            "uv_area": 0.001305,
+            "triangles": 72
+          },
+          {
+            "mesh": "TwistedFrame/BentBearers__Steel",
+            "surface_area_m2": 6.209903,
+            "uv_area": 0.000724,
+            "triangles": 84
+          },
+          {
+            "mesh": "TwistedFrame/BuckledPosts__Steel",
+            "surface_area_m2": 9.511105,
+            "uv_area": 0.001109,
+            "triangles": 168
+          },
+          {
+            "mesh": "TwistedFrame/DeadChain__Rust",
+            "surface_area_m2": 0.720803,
+            "uv_area": 8.4e-05,
+            "triangles": 40
+          }
+        ],
+        "name": "WarehouseMechanismsAtlas",
+        "models": [
+          "Gate",
+          "FanHousing",
+          "FanRotor",
+          "LiftFrame",
+          "LiftPlatform",
+          "ChainDrum",
+          "PusherFrame",
+          "PusherHead",
+          "TwistedFrame",
+          "PipeStraight",
+          "PipeElbow",
+          "PipeEnd",
+          "Pipes"
+        ]
+      },
+      {
+        "uv_area": 0.528683,
+        "occupied_texels": 553911,
+        "overlap_texels": 0,
+        "texels_per_metre_median": 79.263,
+        "triangle_stretch_max": 2.0004,
+        "triangle_stretch_p95": 1.416,
+        "model_density": [
+          {
+            "model": "Lamp",
+            "uv_importance": 1.0,
+            "surface_area_m2": 2.401888,
+            "uv_area": 0.014514,
+            "texels_per_metre_area_equivalent": 79.6,
+            "texels_per_metre_min": 67.304,
+            "texels_per_metre_median": 79.588,
+            "texels_per_metre_max": 97.492
+          },
+          {
+            "model": "MainDoor",
+            "uv_importance": 1.0,
+            "surface_area_m2": 38.296599,
+            "uv_area": 0.231412,
+            "texels_per_metre_area_equivalent": 79.6,
+            "texels_per_metre_min": 66.994,
+            "texels_per_metre_median": 79.404,
+            "texels_per_metre_max": 94.579
+          },
+          {
+            "model": "LockerProps",
+            "uv_importance": 1.0,
+            "surface_area_m2": 21.724412,
+            "uv_area": 0.131273,
+            "texels_per_metre_area_equivalent": 79.6,
+            "texels_per_metre_min": 67.29,
+            "texels_per_metre_median": 72.835,
+            "texels_per_metre_max": 97.491
+          },
+          {
+            "model": "BreakProps",
+            "uv_importance": 1.0,
+            "surface_area_m2": 5.851986,
+            "uv_area": 0.035361,
+            "texels_per_metre_area_equivalent": 79.6,
+            "texels_per_metre_min": 66.374,
+            "texels_per_metre_median": 79.062,
+            "texels_per_metre_max": 94.521
+          },
+          {
+            "model": "TechnicalProps",
+            "uv_importance": 1.0,
+            "surface_area_m2": 19.217343,
+            "uv_area": 0.116123,
+            "texels_per_metre_area_equivalent": 79.6,
+            "texels_per_metre_min": 62.616,
+            "texels_per_metre_median": 79.598,
+            "texels_per_metre_max": 97.49
+          }
+        ],
+        "meshes": [
+          {
+            "mesh": "Lamp/GuardRim__WornSteel",
+            "surface_area_m2": 0.451762,
+            "uv_area": 0.00273,
+            "triangles": 56
+          },
+          {
+            "mesh": "Lamp/Hangers__Steel",
+            "surface_area_m2": 0.027569,
+            "uv_area": 0.000167,
+            "triangles": 72
+          },
+          {
+            "mesh": "Lamp/Housing__Steel",
+            "surface_area_m2": 1.163019,
+            "uv_area": 0.007028,
+            "triangles": 28
+          },
+          {
+            "mesh": "Lamp/Lens__Lamp",
+            "surface_area_m2": 0.605519,
+            "uv_area": 0.003659,
+            "triangles": 28
+          },
+          {
+            "mesh": "Lamp/LensGuard__Steel",
+            "surface_area_m2": 0.032961,
+            "uv_area": 0.000199,
+            "triangles": 60
+          },
+          {
+            "mesh": "Lamp/Mounts__Steel",
+            "surface_area_m2": 0.121057,
+            "uv_area": 0.000732,
+            "triangles": 56
+          },
+          {
+            "mesh": "MainDoor/DoorFrame__Rust",
+            "surface_area_m2": 2.812928,
+            "uv_area": 0.016997,
+            "triangles": 28
+          },
+          {
+            "mesh": "MainDoor/DoorFrame__WornSteel",
+            "surface_area_m2": 4.00919,
+            "uv_area": 0.024226,
+            "triangles": 56
+          },
+          {
+            "mesh": "MainDoor/DoorLeaf__Steel",
+            "surface_area_m2": 25.931511,
+            "uv_area": 0.156695,
+            "triangles": 56
+          },
+          {
+            "mesh": "MainDoor/DoorReinforcement__Rust",
+            "surface_area_m2": 2.979523,
+            "uv_area": 0.018004,
+            "triangles": 224
+          },
+          {
+            "mesh": "MainDoor/DoorReinforcement__Steel",
+            "surface_area_m2": 2.436591,
+            "uv_area": 0.014723,
+            "triangles": 112
+          },
+          {
+            "mesh": "MainDoor/Handle__WornSteel",
+            "surface_area_m2": 0.126857,
+            "uv_area": 0.000767,
+            "triangles": 72
+          },
+          {
+            "mesh": "LockerProps/CorrodedHinge__Rust",
+            "surface_area_m2": 0.207695,
+            "uv_area": 0.001255,
+            "triangles": 84
+          },
+          {
+            "mesh": "LockerProps/Handles__Rust",
+            "surface_area_m2": 0.050071,
+            "uv_area": 0.000303,
+            "triangles": 60
+          },
+          {
+            "mesh": "LockerProps/LockerBodies__Steel",
+            "surface_area_m2": 14.966373,
+            "uv_area": 0.090436,
+            "triangles": 84
+          },
+          {
+            "mesh": "LockerProps/LockerDoors__WornSteel",
+            "surface_area_m2": 6.161603,
+            "uv_area": 0.037232,
+            "triangles": 84
+          },
+          {
+            "mesh": "LockerProps/Vents__ConcreteDark",
+            "surface_area_m2": 0.33867,
+            "uv_area": 0.002046,
+            "triangles": 504
+          },
+          {
+            "mesh": "BreakProps/EmptyLunchWrapper__Cardboard",
+            "surface_area_m2": 0.333056,
+            "uv_area": 0.002013,
+            "triangles": 28
+          },
+          {
+            "mesh": "BreakProps/StoolLegs__Steel",
+            "surface_area_m2": 0.727892,
+            "uv_area": 0.004398,
+            "triangles": 224
+          },
+          {
+            "mesh": "BreakProps/StoolSeats__Timber",
+            "surface_area_m2": 0.967284,
+            "uv_area": 0.005845,
+            "triangles": 56
+          },
+          {
+            "mesh": "BreakProps/TableLegs__Steel",
+            "surface_area_m2": 0.801617,
+            "uv_area": 0.004844,
+            "triangles": 112
+          },
+          {
+            "mesh": "BreakProps/TableTop__Timber",
+            "surface_area_m2": 2.923287,
+            "uv_area": 0.017664,
+            "triangles": 28
+          },
+          {
+            "mesh": "BreakProps/TinCup__Steel",
+            "surface_area_m2": 0.09885,
+            "uv_area": 0.000597,
+            "triangles": 36
+          },
+          {
+            "mesh": "TechnicalProps/ControlBodies__Steel",
+            "surface_area_m2": 9.313617,
+            "uv_area": 0.056279,
+            "triangles": 56
+          },
+          {
+            "mesh": "TechnicalProps/ControlDoors__WornSteel",
+            "surface_area_m2": 4.285685,
+            "uv_area": 0.025897,
+            "triangles": 56
+          },
+          {
+            "mesh": "TechnicalProps/Handles__Rust",
+            "surface_area_m2": 0.035767,
+            "uv_area": 0.000216,
+            "triangles": 40
+          },
+          {
+            "mesh": "TechnicalProps/PipeFeed__Steel",
+            "surface_area_m2": 0.974532,
+            "uv_area": 0.005889,
+            "triangles": 72
+          },
+          {
+            "mesh": "TechnicalProps/PipeFeed__WornSteel",
+            "surface_area_m2": 0.126493,
+            "uv_area": 0.000764,
+            "triangles": 88
+          },
+          {
+            "mesh": "TechnicalProps/Plinth__Rust",
+            "surface_area_m2": 4.234102,
+            "uv_area": 0.025585,
+            "triangles": 28
+          },
+          {
+            "mesh": "TechnicalProps/VentSlots__ConcreteDark",
+            "surface_area_m2": 0.247147,
+            "uv_area": 0.001493,
+            "triangles": 224
+          }
+        ],
+        "name": "WarehouseFurnishingsAtlas",
+        "models": [
+          "MainDoor",
+          "LockerProps",
+          "BreakProps",
+          "TechnicalProps",
+          "Lamp"
+        ]
+      },
+      {
+        "uv_area": 0.530443,
+        "occupied_texels": 556584,
+        "overlap_texels": 0,
+        "texels_per_metre_median": 88.018,
+        "triangle_stretch_max": 1.5394,
+        "triangle_stretch_p95": 1.4148,
+        "model_density": [
+          {
+            "model": "Rack",
+            "uv_importance": 1.0,
+            "surface_area_m2": 43.591127,
+            "uv_area": 0.324492,
+            "texels_per_metre_area_equivalent": 88.349,
+            "texels_per_metre_min": 74.262,
+            "texels_per_metre_median": 88.181,
+            "texels_per_metre_max": 105.093
+          },
+          {
+            "model": "Cargo",
+            "uv_importance": 1.0,
+            "surface_area_m2": 27.667019,
+            "uv_area": 0.205953,
+            "texels_per_metre_area_equivalent": 88.349,
+            "texels_per_metre_min": 74.189,
+            "texels_per_metre_median": 86.565,
+            "texels_per_metre_max": 105.059
+          }
+        ],
+        "meshes": [
+          {
+            "mesh": "Rack/BackBrace__Steel",
+            "surface_area_m2": 0.998214,
+            "uv_area": 0.007431,
+            "triangles": 72
+          },
+          {
+            "mesh": "Rack/CartonHandholds__ConcreteDark",
+            "surface_area_m2": 0.16965,
+            "uv_area": 0.001263,
+            "triangles": 224
+          },
+          {
+            "mesh": "Rack/CartonSeams__Timber",
+            "surface_area_m2": 0.254498,
+            "uv_area": 0.001894,
+            "triangles": 112
+          },
+          {
+            "mesh": "Rack/Load__Cardboard",
+            "surface_area_m2": 12.017137,
+            "uv_area": 0.089455,
+            "triangles": 112
+          },
+          {
+            "mesh": "Rack/Posts__Steel",
+            "surface_area_m2": 2.790896,
+            "uv_area": 0.020775,
+            "triangles": 112
+          },
+          {
+            "mesh": "Rack/ShelfLips__Steel",
+            "surface_area_m2": 5.438609,
+            "uv_area": 0.040485,
+            "triangles": 168
+          },
+          {
+            "mesh": "Rack/Shelves__Timber",
+            "surface_area_m2": 21.508943,
+            "uv_area": 0.160112,
+            "triangles": 84
+          },
+          {
+            "mesh": "Rack/Shoes__WornSteel",
+            "surface_area_m2": 0.413179,
+            "uv_area": 0.003076,
+            "triangles": 112
+          },
+          {
+            "mesh": "Cargo/CartonHandholds__ConcreteDark",
+            "surface_area_m2": 0.16965,
+            "uv_area": 0.001263,
+            "triangles": 224
+          },
+          {
+            "mesh": "Cargo/CartonSeams__Timber",
+            "surface_area_m2": 0.193698,
+            "uv_area": 0.001442,
+            "triangles": 112
+          },
+          {
+            "mesh": "Cargo/Load__Cardboard",
+            "surface_area_m2": 17.463293,
+            "uv_area": 0.129996,
+            "triangles": 112
+          },
+          {
+            "mesh": "Cargo/LoadStraps__Rubber",
+            "surface_area_m2": 0.720601,
+            "uv_area": 0.005364,
+            "triangles": 168
+          },
+          {
+            "mesh": "Cargo/PalletSkids__Timber",
+            "surface_area_m2": 2.261437,
+            "uv_area": 0.016834,
+            "triangles": 84
+          },
+          {
+            "mesh": "Cargo/PalletSlats__Timber",
+            "surface_area_m2": 6.85834,
+            "uv_area": 0.051053,
+            "triangles": 196
+          }
+        ],
+        "name": "WarehouseCargoAtlas",
+        "models": [
+          "Rack",
+          "Cargo"
+        ]
+      }
+    ],
+    "base_sources": [
+      {
+        "name": "WarehouseConcrete",
+        "sha256": "e780537b3eaa7938e09025855accd237ca18bd269ac9a7f8d777884ff59d502e"
+      },
+      {
+        "name": "WarehousePaint",
+        "sha256": "557b096291237203fe0a6185330d3290762be6b1df18ddcbc7e1358d0578f0d8"
+      },
+      {
+        "name": "WarehouseSteel",
+        "sha256": "361bc5674ddc4ea1e48c366190f6216b24cefcfe1e8dcc280f41a489bb7601f9"
+      },
+      {
+        "name": "WarehouseRust",
+        "sha256": "14e37398089412df751d565afe4e95da88958a931a53327bfc71c63afc9a9010"
+      },
+      {
+        "name": "WarehouseTimber",
+        "sha256": "bc55ff1a7d4e32a1b00e490d4ff8d5088deecd7b93aa232fc93b705fb30ceb00"
+      },
+      {
+        "name": "WarehouseCardboard",
+        "sha256": "328686b3f4f7b2681a64a3cb8c0158a97304fae56414eeb661d626e180b55b01"
+      },
+      {
+        "name": "WarehouseRubber",
+        "sha256": "af63170e96ab49c757924c15edb20acd53ad58c2be4dddaa48cd4498a5174bcf"
+      }
+    ],
+    "atlases": [
+      {
+        "name": "WarehouseMechanismsAtlas",
+        "source": "ArtSource/CombatWarehouse/Textures/Atlases/WarehouseMechanismsAtlas.source.png",
+        "sha256": "0ed9c7ba3b6fa449d01c8f6d650fb8af37a4b7fb32832ed864293573e3689f71"
+      },
+      {
+        "name": "WarehouseFurnishingsAtlas",
+        "source": "ArtSource/CombatWarehouse/Textures/Atlases/WarehouseFurnishingsAtlas.source.png",
+        "sha256": "861bb323ba81f5758ce13e10a4bdec974e9cb36728ab63e3cb65b3ab1fe15df7"
+      },
+      {
+        "name": "WarehouseCargoAtlas",
+        "source": "ArtSource/CombatWarehouse/Textures/Atlases/WarehouseCargoAtlas.source.png",
+        "sha256": "d76bbd16cf0d948d7f469bac3bf17dc0d032441586a23fa0ba78d4bd9531447f"
+      }
+    ]
   }
 }
