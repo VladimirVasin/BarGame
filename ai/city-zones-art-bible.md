@@ -4243,18 +4243,16 @@ Wet concrete/rust-bent steel/peeling paint/swollen wood-cardboard/worn rubber;
 cargo/work disgust§6/metric wet-rust-scuff/rare wear;
 9sets opposite entry/front→door/clear;
 9wall plaques/print1-9/seed-fixed.
-D7fan/guarded lift-drums-pusher↔/causalSFX;
-gate-frame/drive/backdoor/spoked valve-stem/yellow chain/gray lock;
-E:close→2locked tugs/chain-lock→silent key info§21/§6;
-pusher→left/clear/key-open0.
-6practicals(5dim+red)/steadySpot/chestbeam;
-topSpot/blade shadows→hall-galleries/roof+deck block;
-`2026-10-15`:City prep/toprear over gate→hall/topSpot;
-Home fridge1seedroom/floor;rust-peel-streaks;originals kept.
-9entry reds:3on/6Light-emission0/gate on.
-Rotten cans/small scraps/cream labels:big clear tail-belly-head drawings/Take/Reset-New keep.
-fog-sky-strobe0;seed/resetkeep/New/low heavy SFX/echo-reverb;
-theme?/.8/dryUI/exitrestore.
+D7fan/guarded lift-drums-pusher↔/SFX;gate-frame/drive/backdoor;
+spoked stem-valve/yellow chain/gray lock;E:close/2locked tugs→silent key§21/§6;
+Pusher left/clear/open0.
+4dim/red/bulb;fanSpot/blade shadows/roof-deck/chestbeam.
+`2026-10-15`:prep/toprear;3rustfridges/seed/floor;roomreds/Take→fade+dyinghum-click/gate on;
+cans/scraps/cream tail-belly-head print/Take/Reset-New keep.
+Low white bulb/socket/long ceiling cord;
+all3/anyorder→Home flicker-crackle;fan light-lens/vent0/mechanisms0/grind;
+Reset-New stopped/noreplay;pause0/cleanup/pendant-only strobe0;
+fog-sky0/low heavySFX/echo/dryUI/theme.8→mech-sync tapechew-stop/exitrestore.
 0dream-transition/organic/siren/mystics/clues/infection.
 Endless1–5/poolIDs/≥3m/AI-spacing-stairs/heroend.
 Undead-only/0lore-infection/3worn/pale-darkeyes;

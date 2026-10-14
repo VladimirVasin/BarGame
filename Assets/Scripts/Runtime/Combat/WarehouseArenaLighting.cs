@@ -53,6 +53,7 @@ namespace BarPromenade
         public static Light CreatePractical(WarehouseArenaLamp lamp, Transform sourceAnchor, Transform parent)
         {
             bool roomIndicator = lamp.Kind == "EmergencyRoomLamp";
+            bool bareBulb = lamp.Kind == "FishStationLamp";
             var host = new GameObject(roomIndicator ? "Warehouse Room Indicator Light" : "Warehouse Work Lamp");
             host.transform.SetParent(parent, false);
             // The real fixture lens owns the source, including its imported FBX unit factor.
@@ -61,8 +62,9 @@ namespace BarPromenade
                 Mathf.Abs(Vector3.Dot(lamp.Direction, Vector3.up)) > .99f ? Vector3.forward : Vector3.up);
             Light light = host.AddComponent<Light>();
             // A caged entrance bulb must wash its own wall as well as the floor.
-            // Its short point source stays local; the work fixtures keep their directed pools.
-            light.type = roomIndicator ? LightType.Point : LightType.Spot;
+            // A bare processing bulb also lights the table and its surroundings in every direction.
+            // The remaining work fixtures keep their directed pools.
+            light.type = roomIndicator || bareBulb ? LightType.Point : LightType.Spot;
             light.color = lamp.Color;
             light.intensity = lamp.Intensity;
             light.range = lamp.Range;

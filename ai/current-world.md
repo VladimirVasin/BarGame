@@ -138,14 +138,13 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   2stairs-4flights/3seeds/resetkeep/New/9sets→entry/9signs.44x.5m/1–9.
   gate-drive/backdoor/spoked valve/yellow chain/gray lock/Pusher left/clear.
   E:2pulls/1.2s→silent key RU-EN;E-Esc/pause/disable restore/clock0/open0.
-  City station/toprear/upper lamp;
-  Home fridge1seedroom/floor/rust;tail-belly-head bottom→top/clear drawing labels/scraps.
-  Inspect-Take1x/capacity/Reset-New kept;
-  browse beam→cursor plane/torso lag/pause-nested suspend/close-cancel reset.
-  9roomreds3on6off/gate on/6practicals.
+  prep/toprear;low bulb;all3anyorder→white flicker-crackle+mechanisms stop/fan grind;
+  3rustfridges;tail-belly-head/labels/scraps/Take1x/full keeps;
+  roomreds/Take→fade-hum-click/gate on/6practicals;beam lag/modal0/close reset.
   D7fan/topSpot/blade shadows→hall-galleries/roof-deck block/lift-drums-pusher/pause;
-  heavy SFX/dryUI/exitrestore/theme?/.8speed-pitch/strong echo-reverb;
-  reset-New playhead/pause-disable-resume/exitfade.
+  SFX/dryUI/theme?/.8speed-pitch/echo;
+  finalcan→same tape-chew/wow-pitch-LP-volume→stop;
+  Reset-New:playhead before/stopped after/no replay;pause-disable-resume/exitfade.
   LM65Chest Spot60/16m/60–28°/hard/on/torso-look;
   fog-sky0/ambient hero3D3→black12m/camera0.
   NPCgraph/gravity/LOS;flat:test-only.

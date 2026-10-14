@@ -240,9 +240,10 @@ namespace BarPromenade
                     6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 78f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
-                // Reuse the upper practical to reveal the fish station from the ascending stairs.
-                new WarehouseArenaLamp(new Vector3(0f, 9.35f, 10.15f), new Vector3(0f,-1f,.12f), 4.8f, 7f,
-                    outerAngle: 70f, innerAngle: 42f),
+                // The separate corded bulb is rooted at the real ceiling; finite finds own its power.
+                new WarehouseArenaLamp(new Vector3(0f, WarehouseArenaPlan.CeilingHeight, 10.15f),
+                    Vector3.down, 4.5f, 18f, "FishStationLamp", Color.white,
+                    outerAngle: 85f, innerAngle: 50f, modelRotation: Quaternion.identity),
                 // A rim-mounted maintenance lamp reveals the rotor's underside from the entrance.
                 new WarehouseArenaLamp(new Vector3(3.78f, 9.4f, 0f), new Vector3(-1f,.1f,0f), 8f, 4f)
             };
@@ -440,6 +441,11 @@ namespace BarPromenade
                 plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
                 plan.Refrigerators.Count != 3)
                 throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, four ammo anchors and sparse light.");
+            WarehouseArenaLamp stationLamp = plan.Lamps[4];
+            if (stationLamp.Kind != "FishStationLamp" ||
+                Vector3.Distance(stationLamp.Position, new Vector3(0f, WarehouseArenaPlan.CeilingHeight, 10.15f)) > .001f ||
+                Quaternion.Angle(stationLamp.ModelRotation, Quaternion.identity) > .001f || stationLamp.Color != Color.white)
+                throw new InvalidOperationException("The white preparation pendant must hang from its ceiling origin.");
             var area = new WarehouseArenaArea(plan);
             foreach (Vector3 spawn in plan.SpawnPoints)
                 if (!area.TryGetHeight(spawn, out float height, .5f) || Mathf.Abs(height - spawn.y) > .02f)

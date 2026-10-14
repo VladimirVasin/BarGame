@@ -27,13 +27,23 @@ namespace BarPromenade
                     // Only the metre wrapper changes; the imported root retains its FBX unit factor.
                     rail.transform.localScale = new Vector3(span.Length, 1f, 1f);
                 }
-                foreach (WarehouseArenaLamp lamp in plan.Lamps)
+                for (int lampIndex = 0; lampIndex < plan.Lamps.Count; lampIndex++)
                 {
+                    WarehouseArenaLamp lamp = plan.Lamps[lampIndex];
                     GameObject fixture = WarehouseArenaAssetProvider.Create(lamp.Kind, host.transform,
                         lamp.Position, lamp.ModelRotation);
                     if (lamp.Kind == "EmergencyRoomLamp") WarehouseArenaAssetProvider.SetSignalLight(fixture, lamp.Enabled);
-                    if (lamp.Enabled) WarehouseArenaLighting.CreatePractical(lamp,
-                        WarehouseArenaAssetProvider.FindAnchor(fixture, "Light"), host.transform);
+                    if (lamp.Enabled)
+                    {
+                        Light light = WarehouseArenaLighting.CreatePractical(lamp,
+                            WarehouseArenaAssetProvider.FindAnchor(fixture, "Light"),
+                            lamp.Kind == "FishStationLamp" || lamp.Kind == "EmergencyRoomLamp" ? fixture.transform : host.transform);
+                        if (lamp.Kind == "FishStationLamp")
+                            fixture.AddComponent<WarehouseFishLamp>().Initialize(fixture, light, owner);
+                        else if (lamp.Kind == "EmergencyRoomLamp")
+                            fixture.AddComponent<WarehouseRoomIndicator>().Initialize(fixture, light, owner,
+                                plan.Refrigerators[(lampIndex - 6) / 3].SourceId);
+                    }
                 }
                 foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators)
                     WarehouseRefrigeratorFactory.Create(host.transform, owner, fridge.Floor, fridge.Position,

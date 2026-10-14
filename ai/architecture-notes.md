@@ -2,33 +2,33 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-15, warehouse final-can power:**
+  Blender bare white bulb/socket/~2m ceiling cord/.83m over worktop/replaces practical.
+  Off until3unique fish takes/anyorder.
+  Home rhythm→white spill/emission/crackle;fan light-lens/vent→0/all mechanisms+strain5s→0/fangrind.
+  Music→same tape-chew/wow-pitch-LP-volume stop.
+  Pause0/teardown;Reset-New stopped/silent.
+  Cached/no hotload;pendant-only strobe0/§6/art§15a/9checks/0story.
+
 - **Accepted — 2026-10-15, inspection framing:**
-  User: compact shared title/description/buttons and smaller can models;
-  Inventory Examine keeps a compact centred preview/no inner frame.
-  Actions/navigation retained.
+  User:compact shared text-buttons/smaller cans;
+  Inventory Examine compact/centred/no inner frame;actions kept.
 
 - **Accepted exception — 2026-10-15, hand-free refrigerators:**
-  User: Home/warehouse remove camera-local hand;door/handle/camera/modal kept.
-  Closeup keeps owned world-visibility lease without subset/exact restore.
-  Contextual standard exception;production hero/other actions unchanged.
-  Warehouse cached hero-child renderers/owned forceRenderingOff/flags restore;
-  enabled/damage/light/rig kept.
+  User:Home/warehouse remove camera-local hand;door-handle-camera-modal kept.
+  Contextual exception:closeup owns world-visibility lease/no subset/exact restore.
+  Cached hero renderers/forceRenderingOff restore;enabled-damage-light-rig kept.
 
 - **Accepted exception — 2026-10-15, warehouse fish finds:**
-  CombatTest/§6/art§15a: City preparation station/top rear gallery/above locked
-  door/front→hall/reused upper practical/passive. Home fridge/one seeded room
-  per floor; Reset keeps rooms, New recomputes. Nine gate-type red room lamps:
-  fridge three on/six Light-emission off/gate on. Warehouse-only shared finish:
-  peeling dirty enamel/seam rust/dark steel/streaks/stained shelves; Home/City kept.
-  Rotten open cans tail-belly-head bottom→top: small abstract dark scraps;
-  large high-contrast cream labels with clear tail-belly-head drawings/no text-brand.
-  Shared 3D inspection:
-  Take→one inventory grant/shelf removed only on success/capacity refusal keeps.
-  Stable floor sources retain collection on Reset-New/session; room change≠refill.
-  Browse chest beam:cursor-plane/existing torso lag/mount pitch/bounded;
-  pause-nested suspend/close-cancel restore/no new light.
-  Routes/modal-pause-cleanup/§21/9checks;0new action-speech-consume-quest-lore-clue.
-  Three fridges/nine fixtures/cached assets.
+  CombatTest/§6/art§15a:passive City prep/toprear over locked door/front→hall.
+  Home fridge1seedroom/floor;Reset keep/New recompute;9gate-type reds:
+  uncollected fridge rooms on/Take→fadeoff/local dyinghum-click/6off/gate on.
+  Warehouse-only rust-peel/enamel-steel/
+  streaks/stained shelves;Home-City kept.
+  Rotten open tail-belly-head cans bottom→top/small dark scraps/large cream drawings/no text-brand.
+  Shared item standard/Inspect-Take/full keeps;floor sources/Reset-New/session keep/room change≠refill.
+  Browse beam:cursor-plane/torso lag/mount pitch;pause-nested suspend/close-cancel restore/0light.
+  Routes/modal/§21/9checks;action-speech-consume-quest-lore-clue0.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
   User:chase .5m camera-right/1.9m back(ext/int);free aim .5/1.4m;stable lock1.4m.
@@ -65,7 +65,7 @@
 - **Accepted 2026-10-14, warehouse audio:**
   Low heavy steps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
   Optional warehouse_theme WAV-OGG-MP3/MusicMix stream;
-  playhead/reset-New/pause-disable-resume/exit/empty0;
+  playhead/reset-New before finalcan/pause-disable-resume/exit/empty0;
   11mono/steps×.84/guns×.88/5World/prewarm-cache/resetkeep/teardown/hotalloc0.
 
 - **Accepted 2026-10-14, warehouse UV:**

@@ -14,9 +14,9 @@ namespace BarPromenade
             "LiftFrame", "LiftPlatform", "ChainDrum", "PusherFrame", "PusherHead", "LockerProps", "BreakProps",
             "TechnicalProps", "TwistedFrame", "GateControl", "EmergencyLamp",
             "RoomSign1", "RoomSign2", "RoomSign3", "RoomSign4", "RoomSign5", "RoomSign6", "RoomSign7", "RoomSign8", "RoomSign9",
-            "FishPreparationStation", "EmergencyRoomLamp", "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan" };
+            "FishPreparationStation", "EmergencyRoomLamp", "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan", "FishStationLamp" };
         public static readonly string[] FishModelNames = { "FishPreparationStation", "EmergencyRoomLamp",
-            "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan" };
+            "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan", "FishStationLamp" };
         public const int CoreModelCount = 36;
         public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
             "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber",
@@ -150,7 +150,8 @@ namespace BarPromenade
             string atlas = AtlasForModel(kind);
             string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Structure";
             bool fanLens = kind == "FanHousing" && role == "Lamp";
-            string key = family + "/" + (fanLens ? "FanLens" : role);
+            bool fishBulb = kind == "FishStationLamp" && role == "Lamp";
+            string key = family + "/" + (fishBulb ? "FishBulb" : fanLens ? "FanLens" : role);
             if (Materials.TryGetValue(key,out Material cached) && cached != null) return cached;
             string texture = null; Color color;
             switch (role)
@@ -199,6 +200,12 @@ namespace BarPromenade
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
             material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" || role == "LockSteel" ? .25f : 0f);
+            if (fishBulb)
+            {
+                material.EnableKeyword("_EMISSION");
+                material.SetColor("_BaseColor", Color.white);
+                material.SetColor("_EmissionColor", Color.white);
+            }
             if (fanLens)
             {
                 material.EnableKeyword("_EMISSION");

@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-combat-warehouse-fish-props.py",
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.0",
   "blender_version": "5.0.1",
-  "build_signature": "f3d676eae1e7efad586d371c8996259c344fc115fe83559fa8e0b0c682296403",
+  "build_signature": "31c3e8d8e1e4bb807e4d529df316e1cf7631c021d49523368a90462bf5a2b3e4",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -11,7 +11,7 @@
   "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
   "signed_volumes": "every solid positive before and after axis swap",
   "determinism": "two independent geometry builds match",
-  "triangle_count": 6960,
+  "triangle_count": 7948,
   "materials": {
     "Concrete": [
       0.38,
@@ -289,12 +289,48 @@
           "parent": null
         }
       ]
+    },
+    {
+      "name": "FishStationLamp",
+      "bounds_min": [
+        -0.08,
+        -2.189,
+        -0.08
+      ],
+      "bounds_max": [
+        0.08,
+        0.006,
+        0.08
+      ],
+      "triangle_count": 988,
+      "solid_count": 10,
+      "mesh_count": 7,
+      "anchors": [
+        {
+          "name": "CeilingMount",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Light",
+          "position": [
+            0,
+            -2.215,
+            0
+          ],
+          "parent": null
+        }
+      ]
     }
   ],
   "design_id": "warehouse_fish_props_v1",
   "surfaces": {
     "mode": "shared warehouse textures / paper label UV0 atlas / metric UV1",
-    "uv_signature": "1d2e99607d70dd5583f2d30d658b81d4de1269250ff3d6f483c775d3724303d6",
+    "uv_signature": "0fe1459ae18696429bc4f77426165e4a0dc33d852eb26fc31787b6c5be07c591",
     "additional_runtime_textures": 1,
     "labels": {
       "generator": "tools/build-warehouse-fish-labels.py",
@@ -403,6 +439,34 @@
       2.55,
       3
     ],
-    "room_lamp_body": "exact EmergencyLamp cage/body with short side-fed supply"
+    "room_lamp_body": "exact EmergencyLamp cage/body with short side-fed supply",
+    "station_lamp": {
+      "ceiling_origin": [
+        0,
+        0,
+        0
+      ],
+      "light_anchor": [
+        0,
+        -2.215,
+        0
+      ],
+      "bulb_renderer": "LampBulb__Lamp",
+      "cord_radius": 0.007,
+      "cord_ends": [
+        [
+          0,
+          -0.024,
+          0
+        ],
+        [
+          0,
+          -1.973,
+          0
+        ]
+      ],
+      "work_surface_clearance": 0.831,
+      "presentation": "bare frosted bulb and socket on continuous dark cord with ceiling rose"
+    }
   }
 }

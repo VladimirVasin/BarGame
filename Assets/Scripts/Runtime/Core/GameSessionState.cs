@@ -286,6 +286,8 @@ namespace BarPromenade
         public static IReadOnlyList<InventoryItemStack> InventoryItems =>
             inventory.Items;
         public static event Action InventoryEquipmentChanged;
+        /// <summary>Committed finite world stock changed, including a new session reset.</summary>
+        public static event Action WorldItemsChanged;
         public static IReadOnlyList<QuestLogEntry> Quests =>
             questLog.Entries;
 
@@ -331,6 +333,7 @@ namespace BarPromenade
         private static void Reset()
         {
             InventoryEquipmentChanged = null;
+            WorldItemsChanged = null;
             QuestLogChanged = null;
             ResetToDefaults();
         }
@@ -551,6 +554,7 @@ namespace BarPromenade
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            WorldItemsChanged?.Invoke();
             InventoryEquipmentChanged?.Invoke();
             questLog.ResetWithStarterQuests();
             firedDayEvents.Clear();
@@ -1184,6 +1188,7 @@ namespace BarPromenade
             }
 
             collectedWorldItems.Add(normalizedSourceId);
+            WorldItemsChanged?.Invoke();
             GameLog.Info(
                 "inventory",
                 "world_item_collected",
@@ -1244,6 +1249,7 @@ namespace BarPromenade
             }
 
             CashBalance = result.CashAfter;
+            WorldItemsChanged?.Invoke();
             LogWorldItemPurchase(result);
             return result;
         }
@@ -1260,6 +1266,7 @@ namespace BarPromenade
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            WorldItemsChanged?.Invoke();
             ScarfRestingLowered = false;
             InventoryEquipmentChanged?.Invoke();
             GameLog.Info(

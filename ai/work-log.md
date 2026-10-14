@@ -5,10 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-15 - Warehouse fish and shared refrigerator
 
-- City fish-preparation model on the top rear gallery reuses the upper practical;
-  seeded Home fridges occupy one room per floor. Isolated rusty finishes;
+- City fish-preparation model on the top rear gallery has a low bare bulb on
+  a visible ceiling cord; seeded Home fridges occupy one room per floor. Rusty finishes;
   open rotten cans have small scraps and large tail/belly/head label drawings.
-  Room indicators mark the fridge rooms with visible red surface spill;
+  Room indicators mark uncollected fridge rooms with red surface spill;
   other entrance lenses and sources stay off, the gate indicator stays on.
 - Shared refrigerator: hand-free camera/door flow, atomic inventory pickup and
   capacity refusal. Stable item sources keep collected shelves empty through
@@ -18,10 +18,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   nested inspection freeze the aim, closing releases it. Held item orientation
   is independent of room yaw; nested focus stays sharp. Compact panels and
   smaller can previews retain shared inspection and inventory actions.
+- Successful Take fades its room indicator with local dying hum/click. The last
+  unique source activates Home bathroom white flicker/crackle and slows every
+  mechanism and working sound to a halt. Fan light/lens and ventilation fade
+  with metal grinding; music follows the same clock through tape-chew shutdown.
+  Pause freezes the sequence; rebuilt collected/stopped state stays silent.
 - Proof: `AreaCaptureFixture.CombatWarehouseFishProps` passed, including
-  lamp surface on/off, delayed aim, modal cleanup, pickup/capacity and layout
-  lifecycle. `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay` passed
-  for Home. Fresh room, inspection and inventory frames reviewed;
+  pickup order/capacity, room fade/audio, white work-surface spill, synchronized
+  mechanism/music shutdown, pause, rebuild and cleanup.
+  `build-combat-warehouse-fish-props.py` contract passed.
+  `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay` passed for Home.
+  Fresh room, inspection, inventory, pendant and stopped-fan frames reviewed;
   `check-docs.py` and `git diff --check` passed.
 
 ## 2026-10-14 - Combat and warehouse

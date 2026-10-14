@@ -377,6 +377,10 @@ namespace BarPromenade.Tests.PlayMode
             Transform source = WarehouseArenaAssetProvider.FindAnchor(fixture, "Light");
             Light emergency = null;
             int practicals = 0, active = 0, red = 0;
+            WarehouseFishLamp fishLamp = root.GetComponentInChildren<WarehouseFishLamp>();
+            int poweredFishLamp = fishLamp != null && fishLamp.Light.isActiveAndEnabled && fishLamp.Light.intensity > 0f ? 1 : 0;
+            WarehouseArenaMechanisms fanMachines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
+            int poweredFan = fanMachines != null && fanMachines.FanLight.isActiveAndEnabled && fanMachines.FanLight.intensity > 0f ? 1 : 0;
             foreach (Light light in root.GetComponentsInChildren<Light>())
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
@@ -386,8 +390,8 @@ namespace BarPromenade.Tests.PlayMode
                 if (light.color.r < light.color.g * 3f) continue;
                 red++; emergency = light;
             }
-            Assert.That(practicals, Is.EqualTo(6), "The emergency fixture replaces one of the six practical lamps.");
-            Assert.That(active, Is.EqualTo(11));
+            Assert.That(practicals, Is.EqualTo(5 + poweredFishLamp), "The fish-table pendant joins the five powered practicals only after collection.");
+            Assert.That(active, Is.EqualTo(6 + ActiveWarehouseRoomIndicatorCount(root) + poweredFishLamp + poweredFan));
             Assert.That(red, Is.EqualTo(1));
             Assert.That(Vector3.Distance(emergency.transform.position, source.position), Is.LessThan(.001f));
             Assert.That(emergency.type, Is.EqualTo(LightType.Spot));
@@ -747,7 +751,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehouseImportedMetres(CombatTestRoot root)
         {
-            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(41));
+            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(42));
             foreach (string kind in WarehouseArenaAssetProvider.ModelNames)
             {
                 Assert.That(Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind), Is.Not.Null,
@@ -844,6 +848,9 @@ namespace BarPromenade.Tests.PlayMode
             WarehouseArenaMechanisms machines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
             Assert.That(machines, Is.Not.Null);
             int practical = 0, active = 0;
+            WarehouseFishLamp fishLamp = root.GetComponentInChildren<WarehouseFishLamp>();
+            int poweredFishLamp = fishLamp != null && fishLamp.Light.isActiveAndEnabled && fishLamp.Light.intensity > 0f ? 1 : 0;
+            int poweredFan = machines.FanLight.isActiveAndEnabled && machines.FanLight.intensity > 0f ? 1 : 0;
             foreach (Light light in Object.FindObjectsByType<Light>())
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
@@ -859,15 +866,22 @@ namespace BarPromenade.Tests.PlayMode
                     continue;
                 }
                 practical++;
-                Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                bool fishPendant = fishLamp != null && light == fishLamp.Light;
+                Assert.That(light.type, Is.EqualTo(fishPendant ? LightType.Point : LightType.Spot));
                 Assert.That(light.shadows, Is.EqualTo(LightShadows.Hard));
-                if (light.color.r < light.color.g * 3f)
+                if (fishPendant)
+                {
+                    Assert.That(light.range, Is.LessThanOrEqualTo(4.5f));
+                    Assert.That(light.intensity, Is.LessThanOrEqualTo(18f));
+                }
+                else if (light.color.r < light.color.g * 3f)
                     Assert.That(light.intensity, Is.LessThan(root.Flashlight.SpotLight.intensity * .12f));
                 Assert.That(light.GetComponent<UniversalAdditionalLightData>().additionalLightsShadowResolutionTier,
                     Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }
-            Assert.That(practical, Is.EqualTo(6));
-            Assert.That(active, Is.EqualTo(11), "Six practicals, three room indicators, the fan source and the chest light.");
+            Assert.That(practical, Is.EqualTo(5 + poweredFishLamp));
+            Assert.That(active, Is.EqualTo(6 + ActiveWarehouseRoomIndicatorCount(root) + poweredFishLamp + poweredFan),
+                "Five steady practicals, conditional pendant/fan/room indicators and the chest light.");
             Assert.That(machines.MachineCount, Is.EqualTo(4));
             Assert.That(machines.FanRotor.position.y, Is.EqualTo(WarehouseArenaPlan.CeilingHeight - .42f).Within(.001f));
             float sweptRadius = 0f;
@@ -882,7 +896,18 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(machines.FanRotor.GetComponentsInChildren<Collider>().Length, Is.Zero);
             Quaternion before = machines.FanRotor.localRotation;
             machines.Advance(1f);
-            Assert.That(Quaternion.Angle(before, machines.FanRotor.localRotation), Is.GreaterThan(8f));
+            if (machines.FanSpeedFactor == 0f)
+                Assert.That(Quaternion.Angle(before, machines.FanRotor.localRotation), Is.LessThan(.001f));
+            else if (!machines.FanShutdownStarted)
+                Assert.That(Quaternion.Angle(before, machines.FanRotor.localRotation), Is.GreaterThan(8f));
+        }
+
+        private static int ActiveWarehouseRoomIndicatorCount(CombatTestRoot root)
+        {
+            int count = 0;
+            foreach (Light light in root.GetComponentsInChildren<Light>())
+                if (light.name == "Warehouse Room Indicator Light" && light.isActiveAndEnabled && light.intensity > 0f) count++;
+            return count;
         }
 
         private static void AssertWarehousePhysicalSurfaces(CombatTestRoot root)

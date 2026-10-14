@@ -4,6 +4,8 @@
 The City preparation trough supplies its exact geometry. Its local finish uses
 the existing warehouse textures; source City assets remain unchanged. Three
 open rusty cans keep small ambiguous spoiled contents beneath large label drawings.
+The preparation station has a separate bare bulb, socket, continuous cord and
+ceiling rose; runtime owns its white light and shared flicker presentation.
 Roots use fixed Unity metres; paper UV0 uses one shared picture atlas while its
 UV1 and all other surfaces keep metric projections.
 """
@@ -41,10 +43,11 @@ def module(name, filename):
 warehouse = module("warehouse_fish_base", "build-combat-warehouse-3d-model.py")
 cannery = module("warehouse_fish_cannery", "build-city-cannery-3d-model.py")
 passive = warehouse.passive
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse/FishProps"
-NAMES = ("FishPreparationStation", "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan", "EmergencyRoomLamp")
+NAMES = ("FishPreparationStation", "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan",
+         "EmergencyRoomLamp", "FishStationLamp")
 SURFACES = {**warehouse.SURFACES, "SpoiledFish": (.40, .45, .37),
             "SpoiledFishFlesh": (.57, .57, .43), "SpoiledFishDark": (.14, .19, .145),
             "FishLabelPaper": (1, 1, 1)}
@@ -153,23 +156,65 @@ def abstract_can(name, icon):
     return item
 
 
+def station_lamp():
+    """Ceiling-origin bare pendant with a continuous, visibly connected supply."""
+    item = passive.Item("FishStationLamp")
+    # The rose slightly enters the real ceiling instead of stopping below it.
+    item.add("Steel", passive.ring([(-.043, .049), (-.032, .071),
+             (-.008, .080), (.006, .080)], 16), "CeilingRose")
+    for x in (-.052, .052):
+        item.rod("WornSteel", (x, -.034, 0), (x, -.039, 0), .007,
+                 "RoseScrews", sides=8)
+    # The ends overlap rose, strain relief and socket; no detached support.
+    item.rod("Rubber", (0, -.024, 0), (0, -1.973, 0), .007,
+             "SupplyCord", sides=10)
+    item.add("Rubber", passive.ring([(-1.977, .013), (-1.941, .013)], 12), "StrainRelief")
+    item.add("Steel", passive.ring([(-2.051, .027), (-2.038, .034),
+             (-1.966, .034), (-1.958, .025)], 16), "Socket")
+    for y in (-2.027, -2.010, -1.993):
+        item.add("WornSteel", warehouse.hollow_ring([(y-.002, .035),
+                 (y+.002, .035), (y+.002, .033), (y-.002, .033)], 16), "SocketBands")
+    # An opaque frosted envelope remains readable when switched off. The group
+    # is a stable renderer hook; existing Lamp material is shared at runtime.
+    # At the 10.2m ceiling / 6.4m gallery, the bulb bottom is .831m above
+    # the preparation station's authored .78m work surface.
+    item.add("Lamp", passive.ring([(-2.189, .006), (-2.179, .034),
+             (-2.152, .060), (-2.120, .070), (-2.090, .064),
+             (-2.064, .041), (-2.046, .022)], 16), "LampBulb")
+    item.anchor("CeilingMount", (0, 0, 0))
+    item.anchor("Light", (0, -2.215, 0))
+    return item
+
+
 def make_items():
     return [preparation_station(), abstract_can("RottenFishTailCan", "tail"),
             abstract_can("RottenFishBellyCan", "belly"), abstract_can("RottenFishHeadCan", "head"),
-            warehouse.make_emergency_lamp(room=True)]
+            warehouse.make_emergency_lamp(room=True), station_lamp()]
 
 
 def validate_geometry(items):
     if tuple(item.name for item in items) != NAMES:
         raise RuntimeError("Warehouse fish supplement changed its bounded model set")
     original_lamp = warehouse.make_emergency_lamp()
-    room_lamp = items[-1]
+    room_lamp = items[4]
     for key, geometry in original_lamp.parts.items():
         if key[0] not in ("SupplyCable", "CableJunction") and room_lamp.parts.get(key) != geometry:
             raise RuntimeError("Room indicator must retain the goal lamp's exact cage and body")
     lamp_bounds = kit.bounds(kit.merge_all(g for solids in room_lamp.parts.values() for g in solids))
     if lamp_bounds[0][1] + 2.72 < 2.55 or lamp_bounds[1][1] + 2.72 > 3:
         raise RuntimeError("Emergency room fixture does not fit above the real doorway")
+    pendant = items[5]
+    pendant_bounds = kit.bounds(kit.merge_all(g for solids in pendant.parts.values() for g in solids))
+    if pendant_bounds != ((-.08, -2.189, -.08), (.08, .006, .08)):
+        raise RuntimeError("Preparation lamp must stay within its measured low work-light envelope")
+    if pendant.anchors != {"CeilingMount": {"position": [0, 0, 0], "parent": None},
+                           "Light": {"position": [0, -2.215, 0], "parent": None}}:
+        raise RuntimeError("Preparation lamp anchors must retain ceiling origin and light below the bulb")
+    cord = kit.bounds(kit.merge_all(pendant.parts[("SupplyCord", "Rubber")]))
+    if abs(cord[0][1] + 1.973) > .000001 or abs(cord[1][1] + .024) > .000001:
+        raise RuntimeError("Preparation lamp cord must connect rose to socket without a gap")
+    if ("LampBulb", "Lamp") not in pendant.parts or any(group.startswith("Collision_") for group, _ in pendant.parts):
+        raise RuntimeError("Preparation pendant needs one passive bulb renderer and no collision proxy")
     for item in items[1:4]:
         if any(group.startswith("Collision_") for group, _ in item.parts):
             raise RuntimeError("Inspection cans must remain collision-free")
@@ -268,7 +313,8 @@ def preview(items, path):
     source_materials(roots)
     # Review enlarged cans beside the metre-scale trough; only review transforms
     # change, and no enlarged model is exported or saved as the source contract.
-    placements = [(-1.7, 0, 0), (1.15, 0, -.3), (2.05, 0, -.3), (2.95, 0, -.3), (.1, 1.2, .65)]
+    placements = [(-1.7, 0, 0), (1.15, 0, -.3), (2.05, 0, -.3), (2.95, 0, -.3),
+                  (.1, 1.2, .65), (3.3, 3.35, 1.1)]
     for root, p in zip(roots, placements, strict=True):
         root.location = (p[0], p[2], p[1])
         if root.name.startswith("Rotten"):
@@ -330,7 +376,11 @@ def main():
         "can_label_roles": ["FishLabelPaper"],
         "can_label_pictures": {item.name: item.label_kind for item in items[1:4]},
         "room_lamp_center_height": 2.72, "room_lamp_lintel_range": [2.55, 3],
-        "room_lamp_body": "exact EmergencyLamp cage/body with short side-fed supply"}
+        "room_lamp_body": "exact EmergencyLamp cage/body with short side-fed supply",
+        "station_lamp": {"ceiling_origin": [0, 0, 0], "light_anchor": [0, -2.215, 0],
+            "bulb_renderer": "LampBulb__Lamp", "cord_radius": .007,
+            "cord_ends": [[0, -.024, 0], [0, -1.973, 0]], "work_surface_clearance": .831,
+            "presentation": "bare frosted bulb and socket on continuous dark cord with ceiling rose"}}
     if uv_cache != metric_uvs(passive.build_objects(items)):
         raise RuntimeError("Warehouse fish supplement repeated metric UVs differ")
     manifest_path = args.model_dir / "WarehouseFishProps3D.json"

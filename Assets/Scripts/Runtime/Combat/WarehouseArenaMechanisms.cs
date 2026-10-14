@@ -6,6 +6,8 @@ namespace BarPromenade
     /// <summary>Four finite rigged machines. Scene-owned time, cached pivots and causal local audio.</summary>
     public sealed class WarehouseArenaMechanisms : MonoBehaviour
     {
+        public const float FanShutdownDuration = 5f;
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private enum Motion { Fan, Lift, Drum, Pusher }
         private struct Machine
         {
@@ -20,16 +22,39 @@ namespace BarPromenade
 
         private Machine[] machines = Array.Empty<Machine>();
         private CombatTestRoot owner;
+        private WarehouseArenaPlan plan;
+        private WarehouseArenaAmbience ambience;
         private AudioClip contact;
+        private AudioClip fanGrind;
+        private Renderer fanLens;
+        private MaterialPropertyBlock fanProperties;
+        private Color fanEmission;
+        private float fanIntensity;
+        private float lastFanFactor = -1f;
+        private double fanShutdownSeconds;
+        private bool initialized;
+        private bool subscribed;
+        private bool fanGrindPending;
         private bool audioPaused;
         public double ElapsedSeconds { get; private set; }
+        public double MechanicalSeconds { get; private set; }
         public Transform FanRotor { get; private set; }
         public Light FanLight { get; private set; }
+        public bool FanShutdownStarted { get; private set; }
+        public float FanShutdownProgress => FanShutdownStarted ? (float)(fanShutdownSeconds / FanShutdownDuration) : 0f;
+        public float FanSpeedFactor => 1f - FanShutdownProgress;
+        public AudioSource FanGrindSource { get; private set; }
+        public int FanGrindPlayCount { get; private set; }
         public int MachineCount => machines.Length;
 
         public void Initialize(WarehouseArenaPlan plan, CombatTestRoot warehouse)
         {
+            if (initialized) throw new InvalidOperationException("Warehouse mechanisms already initialized.");
+            this.plan = plan;
             owner = warehouse;
+            // Rebuilding a cleared warehouse restores the final state silently.
+            FanShutdownStarted = WarehouseFishLamp.AllSourcesCollected(plan);
+            fanShutdownSeconds = FanShutdownStarted ? FanShutdownDuration : 0d;
             machines = new Machine[plan.Mechanisms.Count];
             float[] samples = StairwellSoundscapeSynthesis.GenerateCueSamples(StairwellSoundscapeCueKind.MetalStress);
             contact = AudioClip.Create("Warehouse mechanism strain", samples.Length, 1, StairwellSoundscapeSynthesis.SampleRate, false);
@@ -47,9 +72,30 @@ namespace BarPromenade
                             specification.Position + Vector3.up * .42f, rotation);
                         FanLight = WarehouseArenaLighting.CreateFanOverhead(
                             WarehouseArenaAssetProvider.FindAnchor(housing, "FanLight"), transform);
+                        fanIntensity = FanLight.intensity;
+                        foreach (Renderer candidate in housing.GetComponentsInChildren<Renderer>(true))
+                            if (candidate.name.EndsWith("__Lamp", StringComparison.Ordinal))
+                            {
+                                fanLens = candidate;
+                                break;
+                            }
+                        if (fanLens == null) throw new InvalidOperationException("Warehouse fan lacks its authored lamp lens.");
+                        fanEmission = fanLens.sharedMaterial.GetColor(EmissionColorId);
+                        fanProperties = new MaterialPropertyBlock();
+                        fanLens.GetPropertyBlock(fanProperties);
                         pivot = WarehouseArenaAssetProvider.Create("FanRotor", transform, specification.Position, rotation).transform;
                         FanRotor = pivot;
-                        gameObject.AddComponent<WarehouseArenaAmbience>().Initialize(pivot, owner);
+                        ambience = gameObject.AddComponent<WarehouseArenaAmbience>();
+                        ambience.Initialize(pivot, owner, FanSpeedFactor);
+                        var grindVoice = new GameObject("Warehouse Fan Grinding");
+                        grindVoice.transform.SetParent(transform, false);
+                        grindVoice.transform.position = pivot.position;
+                        FanGrindSource = grindVoice.AddComponent<AudioSource>();
+                        FanGrindSource.playOnAwake = false;
+                        CityWorkAudio.Configure(FanGrindSource, true, 3800f, 32f, false);
+                        FanGrindSource.minDistance = 3f;
+                        FanGrindSource.volume = .70f;
+                        FanGrindSource.priority = 80;
                         motion = Motion.Fan;
                         break;
                     case "Lift":
@@ -85,14 +131,61 @@ namespace BarPromenade
                     machines[i].Voice = source;
                 }
             }
+            initialized = true;
+            Subscribe();
+            ApplyFanPower();
             ApplyPoses(false);
+        }
+
+        private void Subscribe()
+        {
+            if (subscribed || !isActiveAndEnabled) return;
+            GameSessionState.WorldItemsChanged += RefreshFanCompletion;
+            subscribed = true;
+        }
+
+        private void Unsubscribe()
+        {
+            if (!subscribed) return;
+            GameSessionState.WorldItemsChanged -= RefreshFanCompletion;
+            subscribed = false;
+        }
+
+        private void RefreshFanCompletion()
+        {
+            if (!initialized) return;
+            bool complete = WarehouseFishLamp.AllSourcesCollected(plan);
+            if (complete == FanShutdownStarted) return;
+            FanShutdownStarted = complete;
+            fanShutdownSeconds = 0d;
+            if (!complete)
+            {
+                fanGrindPending = false;
+                if (FanGrindSource != null) FanGrindSource.Stop();
+                ApplyFanPower();
+                return;
+            }
+            if (FanGrindSource == null) return;
+            if (fanGrind == null)
+            {
+                float[] samples = CreateFanGrindSamples();
+                fanGrind = AudioClip.Create("Warehouse fan metal grinding", samples.Length, 1,
+                    StairwellSoundscapeSynthesis.SampleRate, false);
+                fanGrind.SetData(samples, 0);
+                FanGrindSource.clip = fanGrind;
+            }
+            // A successful Take is committed inside the refrigerator modal.
+            // Defer native playback until its pause owner has released input.
+            fanGrindPending = true;
+            SynchronizeAudio(Running);
         }
 
         private bool Running => owner != null && owner.isActiveAndEnabled && !GameTimeScaleRuntime.IsPaused;
 
-        private void Update()
+        private void Update() => Advance(Time.deltaTime);
+
+        private void SynchronizeAudio(bool running)
         {
-            bool running = Running;
             if (audioPaused == running)
             {
                 foreach (Machine machine in machines)
@@ -101,15 +194,45 @@ namespace BarPromenade
                         if (running) machine.Voice.UnPause();
                         else machine.Voice.Pause();
                     }
+                if (FanGrindSource != null)
+                {
+                    if (running) FanGrindSource.UnPause();
+                    else FanGrindSource.Pause();
+                }
                 audioPaused = !running;
             }
-            if (running) Advance(Time.deltaTime);
+            if (running && fanGrindPending && FanGrindSource != null)
+            {
+                fanGrindPending = false;
+                FanGrindSource.Play();
+                FanGrindPlayCount++;
+            }
         }
 
         public void Advance(float seconds)
         {
-            if (!Running || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
+            if (!initialized) return;
+            bool running = Running;
+            SynchronizeAudio(running);
+            if (!running || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
             ElapsedSeconds += seconds;
+            if (FanShutdownStarted)
+            {
+                double previous = fanShutdownSeconds;
+                fanShutdownSeconds = Math.Min(FanShutdownDuration, previous + seconds);
+                double step = fanShutdownSeconds - previous;
+                // All drives share the integral of the linear motor ramp. Their
+                // authored phase stays continuous at the trigger and is stable
+                // across frame sizes and long background catch-up advances.
+                MechanicalSeconds += step * (1d - (previous + fanShutdownSeconds) / (2d * FanShutdownDuration));
+                ApplyFanPower();
+                if (fanShutdownSeconds >= FanShutdownDuration && FanGrindSource != null)
+                {
+                    fanGrindPending = false;
+                    FanGrindSource.Stop();
+                }
+            }
+            else MechanicalSeconds += seconds;
             // A background jump restores phase without replaying missed contacts.
             ApplyPoses(seconds <= .25f);
         }
@@ -119,7 +242,7 @@ namespace BarPromenade
             for (int i = 0; i < machines.Length; i++)
             {
                 ref Machine machine = ref machines[i];
-                double time = ElapsedSeconds + machine.Phase;
+                double time = MechanicalSeconds + machine.Phase;
                 float phase;
                 int cycle;
                 switch (machine.Motion)
@@ -143,19 +266,97 @@ namespace BarPromenade
                         cycle = (int)(time / 4d);
                         break;
                 }
-                if (cycle != machine.Cycle && machine.Cycle >= 0 && sound && owner.Hero != null &&
+                if (cycle != machine.Cycle && machine.Cycle >= 0 && sound && FanSpeedFactor > 0f && owner.Hero != null &&
                     (owner.Hero.transform.position - machine.Voice.transform.position).sqrMagnitude < 169f)
                     machine.Voice.Play();
                 machine.Cycle = cycle;
             }
         }
 
+        private void ApplyFanPower()
+        {
+            float factor = FanSpeedFactor;
+            if (lastFanFactor == factor) return;
+            lastFanFactor = factor;
+            if (FanLight != null)
+            {
+                FanLight.intensity = fanIntensity * factor;
+                FanLight.enabled = factor > 0f;
+            }
+            if (fanLens != null)
+            {
+                fanProperties.SetColor(EmissionColorId, fanEmission * factor);
+                fanLens.SetPropertyBlock(fanProperties);
+            }
+            if (ambience != null) ambience.SetPower(factor);
+            foreach (Machine machine in machines)
+                if (machine.Voice != null)
+                {
+                    machine.Voice.volume = .07f * factor;
+                    if (factor <= 0f) machine.Voice.Stop();
+                }
+            owner?.Music?.ApplyFanShutdown(FanShutdownProgress);
+        }
+
+        private static float[] CreateFanGrindSamples()
+        {
+            int sampleRate = StairwellSoundscapeSynthesis.SampleRate;
+            var samples = new float[Mathf.RoundToInt(FanShutdownDuration * sampleRate)];
+            uint noiseState = 0x64A8F23Du;
+            double scrapePhase = 0d, metalPhase = 0d;
+            float filteredNoise = 0f;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                float time = (float)index / sampleRate;
+                float progress = time / FanShutdownDuration;
+                float speed = 1f - progress;
+                noiseState = unchecked(noiseState * 1664525u + 1013904223u);
+                float noise = (noiseState >> 8) * (2f / 16777215f) - 1f;
+                filteredNoise += .16f * (noise - filteredNoise);
+                scrapePhase += (5d + 20d * speed) / sampleRate;
+                metalPhase += (135d + 96d * speed) / sampleRate;
+                float chatter = .35f + .65f * Mathf.Pow(.5f + .5f * (float)Math.Sin(scrapePhase * Math.PI * 2d), 3f);
+                float scrape = (noise - filteredNoise) * .70f + filteredNoise * .28f;
+                float metal = (float)(Math.Sin(metalPhase * Math.PI * 2d) * .16d +
+                    Math.Sin(metalPhase * Math.PI * 2d * 2.713d) * .09d +
+                    Math.Sin(metalPhase * Math.PI * 2d * 4.37d) * .055d);
+                float attack = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(time / .10f));
+                float release = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((FanShutdownDuration - time) / .50f));
+                samples[index] = Mathf.Clamp((scrape * chatter + metal) * attack * release * .85f, -.95f, .95f);
+            }
+            return samples;
+        }
+
+        private void OnEnable()
+        {
+            if (!initialized) return;
+            Subscribe();
+            // If completion happened while disabled, restore state without a
+            // second shutdown performance or grinding replay.
+            bool complete = WarehouseFishLamp.AllSourcesCollected(plan);
+            if (complete != FanShutdownStarted)
+            {
+                FanShutdownStarted = complete;
+                fanShutdownSeconds = complete ? FanShutdownDuration : 0d;
+                ApplyFanPower();
+            }
+        }
+
         private void OnDisable()
         {
+            Unsubscribe();
             foreach (Machine machine in machines) if (machine.Voice != null) machine.Voice.Stop();
+            fanGrindPending = false;
+            if (FanGrindSource != null) FanGrindSource.Stop();
             audioPaused = false;
         }
 
-        private void OnDestroy() { if (contact != null) Destroy(contact); }
+        private void OnDestroy()
+        {
+            Unsubscribe();
+            if (FanGrindSource != null) { FanGrindSource.Stop(); FanGrindSource.clip = null; }
+            if (contact != null) Destroy(contact);
+            if (fanGrind != null) Destroy(fanGrind);
+        }
     }
 }
