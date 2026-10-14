@@ -95,10 +95,13 @@ namespace BarPromenade.Tests.PlayMode
                 camera.fieldOfView,
                 Is.EqualTo(53f).Within(0.01f));
             Assert.That(
-                Vector3.Distance(
-                    target.position + Vector3.up * 1.4f,
-                    camera.transform.position),
-                Is.EqualTo(2.6f).Within(0.001f));
+                Vector3.Dot(
+                    target.position + Vector3.up * 1.6f - camera.transform.position,
+                    camera.transform.forward),
+                Is.EqualTo(1.9f).Within(0.001f));
+            Assert.That(Vector3.Dot(camera.transform.position -
+                (target.position + Vector3.up * 1.6f), camera.transform.right),
+                Is.EqualTo(.5f).Within(.001f));
             Assert.That(
                 Vector3.Angle(
                     GetPlanarCameraArm(camera, target),

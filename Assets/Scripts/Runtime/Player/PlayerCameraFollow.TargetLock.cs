@@ -36,7 +36,8 @@ namespace BarPromenade
         public void SetTargetLockFarDistance(object owner, float distance)
         {
             if (owner == null || !ReferenceEquals(owner, targetLockOwner) || float.IsNaN(distance)) return;
-            targetLockFarDistance = Mathf.Clamp(distance, 1.5f, 3f);
+            targetLockFarDistance = Mathf.Clamp(distance,
+                targetLockStableFraming ? FirearmAimDistance : 1.5f, 3f);
         }
 
         public bool TargetLockActive => targetLockOwner != null &&
@@ -62,7 +63,7 @@ namespace BarPromenade
             targetLockAimLocal = opponentRoot.InverseTransformPoint(opponentAim.position);
             targetLockInitialized = false;
             targetLockKick = Vector3.zero;
-            targetLockFarDistance = TargetLockDistance;
+            targetLockFarDistance = stableFraming ? FirearmAimDistance : TargetLockDistance;
             Snap();
             return true;
         }
@@ -94,7 +95,8 @@ namespace BarPromenade
         {
             Vector3 aim = targetLockStableFraming ? targetLockRoot.TransformPoint(targetLockAimLocal) : targetLockAim.position;
             Vector3 shoulder = targetLockStableFraming ? followTarget.TransformPoint(targetLockShoulderLocal) : targetLockShoulder.position;
-            Vector3 anchor = shoulder + Vector3.up * TargetLockHeightOffset + targetLockKick;
+            Vector3 anchor = shoulder + Vector3.up *
+                (targetLockStableFraming ? FirearmAimHeightOffset : TargetLockHeightOffset) + targetLockKick;
             if (!IsFinite(aim) || !IsFinite(anchor)) return;
             // The kick decays on its own clock; a frozen simulation still lets the camera settle.
             targetLockKick *= Mathf.Exp(-16f * Mathf.Max(0f, deltaTime));
@@ -127,7 +129,8 @@ namespace BarPromenade
             Quaternion orientation = Quaternion.Euler(0f, targetLockYaw, 0f);
             Vector3 forward = orientation * Vector3.forward;
             float duelDistance = Mathf.Max(.2f, axis.magnitude);
-            float boom = Mathf.Lerp(1.5f, targetLockFarDistance, Mathf.InverseLerp(.7f, 1.8f, duelDistance));
+            float nearDistance = targetLockStableFraming ? FirearmAimDistance : 1.5f;
+            float boom = Mathf.Lerp(nearDistance, targetLockFarDistance, Mathf.InverseLerp(.7f, 1.8f, duelDistance));
             // At melee range a narrow shoulder offset aims through the hero's
             // torso. Keep that sight line outside his silhouette in open space.
             float sideOffset = Mathf.Clamp(.72f * (boom + duelDistance) / duelDistance,

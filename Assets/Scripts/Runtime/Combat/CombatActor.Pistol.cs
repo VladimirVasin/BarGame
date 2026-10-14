@@ -35,6 +35,7 @@ namespace BarPromenade
             ? contactTarget.Ragdoll.PhysicsController.ChestBody.position : pistolFreeAimPoint;
         internal float FirearmShotReaction => bodyMotion?.FirearmShotReaction ?? 0f;
         internal Vector2 FirearmAimRecoveryDegrees => firearmAimMotion.RecoveryOffset;
+        internal float FirearmAimMovementAmount => firearmAimMotion.MovementAmount;
         internal Vector2 FirearmAimOffsetDegrees => hero != null && IsFirearm && !weaponDropped &&
             Firearm != null && !Firearm.ReloadPending && !State.IsDefeated
             ? (firearmAimMotion.Offset(IsShotgun) + Vector2.up *
@@ -97,7 +98,7 @@ namespace BarPromenade
             bool requested = held && !HasWeaponSwitchRequest && PistolAimBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
             Firearm.SetAim(requested);
             if (!requested && !GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
-                firearmAimMotion.Reset();
+                firearmAimMotion.ResetAim();
         }
 
         /// <summary>Queue one trigger edge for a single attempt on the next live step; true does not promise a shot.</summary>
@@ -237,7 +238,14 @@ namespace BarPromenade
         private void AdvancePistol(float seconds)
         {
             if (Firearm == null) return;
-            if (IsSwitchingWeapon) { Firearm.Advance(seconds); UpdatePistolMechanics(); return; }
+            if (IsSwitchingWeapon)
+            {
+                Firearm.Advance(seconds);
+                if (hero != null)
+                    firearmAimMotion.Advance(seconds, motor != null ? motor.PlanarVelocity.magnitude : 0f, false);
+                UpdatePistolMechanics();
+                return;
+            }
             bool wasReloading = Firearm.IsReloading;
             if (!BodyDamage.CanUseLeftHand || IsBodyGrounded) Firearm.CancelReload();
             if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelAction(); }

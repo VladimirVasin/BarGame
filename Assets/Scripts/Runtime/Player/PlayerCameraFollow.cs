@@ -13,15 +13,15 @@ namespace BarPromenade
     {
         [Header("Exterior")]
         [SerializeField, Range(1f, 40f)] private float exteriorPitch = 14f;
-        [SerializeField, Min(0.1f)] private float exteriorDistance = 2.6f;
+        [SerializeField, Min(0.1f)] private float exteriorDistance = 1.9f;
         [SerializeField, Range(20f, 100f)] private float exteriorFieldOfView = 53f;
-        [SerializeField] private float exteriorFocusHeight = 1.4f;
+        [SerializeField] private float exteriorFocusHeight = 1.6f;
 
         [Header("Interior")]
         [SerializeField, Range(1f, 40f)] private float interiorPitch = 13f;
-        [SerializeField, Min(0.1f)] private float interiorDistance = 2.2f;
+        [SerializeField, Min(0.1f)] private float interiorDistance = 1.9f;
         [SerializeField, Range(20f, 100f)] private float interiorFieldOfView = 57f;
-        [SerializeField] private float interiorFocusHeight = 1.3f;
+        [SerializeField] private float interiorFocusHeight = 1.5f;
 
         [Header("Motion")]
         [SerializeField, Min(0f)] private float yawSmoothTime = 0.2f;
@@ -73,7 +73,7 @@ namespace BarPromenade
         private const float DollyZoomReleaseToleranceDegrees = 1.5f;
         private const float MinimumDollyDistance = 0.02f;
 
-        private readonly RaycastHit[] collisionHits = new RaycastHit[24];
+        private RaycastHit[] collisionHits = new RaycastHit[24];
         private Camera controlledCamera;
         private Transform followTarget;
         private bool isInterior;
@@ -468,9 +468,10 @@ namespace BarPromenade
             Quaternion rotation = GetDesiredRotation();
             float distance = GetCollisionAdjustedDistance(
                 focusPoint,
-                rotation);
+                rotation,
+                out Vector3 cameraPivot);
             return new Pose(
-                focusPoint - rotation * Vector3.forward * distance,
+                cameraPivot - rotation * Vector3.forward * distance,
                 rotation);
         }
 
@@ -644,11 +645,12 @@ namespace BarPromenade
             Quaternion rotation = GetDesiredRotation();
             currentDistance = GetCollisionAdjustedDistance(
                 currentFocusPoint,
-                rotation);
+                rotation,
+                out Vector3 cameraPivot);
             dollySmoothedClearance = dollyClearance;
             dollyClearanceVelocity = 0f;
             ResolveDollyZoom();
-            ApplyPose(currentFocusPoint, rotation);
+            ApplyPose(cameraPivot, rotation);
             ConfigureCamera();
         }
 
@@ -735,7 +737,8 @@ namespace BarPromenade
                 currentFocusPoint + desiredRotation * localFocusOffset;
             float allowedDistance = GetCollisionAdjustedDistance(
                 focusPoint,
-                desiredRotation);
+                desiredRotation,
+                out Vector3 cameraPivot);
             if (allowedDistance <= currentDistance)
             {
                 currentDistance = allowedDistance;
@@ -757,7 +760,7 @@ namespace BarPromenade
             AdvanceDollyZoom(deltaTime);
             ResolveDollyZoom();
             ApplyAimTransition(
-                focusPoint - desiredRotation * Vector3.forward * dollyDistance,
+                cameraPivot - desiredRotation * Vector3.forward * dollyDistance,
                 desiredRotation, dollyFieldOfView, focusPoint);
         }
 
@@ -873,10 +876,10 @@ namespace BarPromenade
             fixedFocusVelocity = Vector2.zero;
         }
 
-        private void ApplyPose(Vector3 focusPoint, Quaternion rotation)
+        private void ApplyPose(Vector3 cameraPivot, Quaternion rotation)
         {
             controlledCamera.transform.SetPositionAndRotation(
-                focusPoint - rotation * Vector3.forward * dollyDistance,
+                cameraPivot - rotation * Vector3.forward * dollyDistance,
                 rotation);
         }
 
@@ -921,7 +924,6 @@ namespace BarPromenade
         {
             if (teleportSnapDistance <= 0f)
             {
-                previousTargetPosition = followTarget.position;
                 return false;
             }
 
@@ -935,6 +937,10 @@ namespace BarPromenade
         {
             Vector3 displacement =
                 followTarget.position - previousTargetPosition;
+            // Carry ordinary locomotion directly with the hero. Damping a
+            // moving root made the anchor trail and pulled the view back
+            // while running; only changes of the authored focus should lag.
+            currentFocusPoint += displacement * (1f - FocusOverrideWeight);
             displacement.y = 0f;
             previousTargetPosition = followTarget.position;
             float observedSpeed = deltaTime > 0.0001f
@@ -1086,15 +1092,22 @@ namespace BarPromenade
 
         private float GetCollisionAdjustedDistance(
             Vector3 focusPoint,
-            Quaternion rotation)
+            Quaternion rotation,
+            out Vector3 cameraPivot)
         {
+            // The ordinary view shares free aim's right-shoulder offset.
+            // Sweep the lateral path before the backward arm so its pivot
+            // cannot start on the far side of a wall beside the hero.
+            Vector3 right = rotation * Vector3.right;
+            cameraPivot = focusPoint + right * GetCameraClearance(
+                focusPoint, right, RightShoulderOffset);
             float idealDistance = isInterior ? interiorDistance : exteriorDistance;
             // The sweep reaches as far as a full pull-out would, so the
             // one cast that shortens the ordinary arm also measures the
             // room the drunk dolly zoom has behind the camera.
             float reach = idealDistance * GetDollyNarrowScale();
             Vector3 direction = -(rotation * Vector3.forward);
-            float obstruction = GetCameraClearance(focusPoint, direction, reach, freeDistance: float.PositiveInfinity);
+            float obstruction = GetCameraClearance(cameraPivot, direction, reach, freeDistance: float.PositiveInfinity);
             dollyClearance = Mathf.Min(reach, obstruction);
             return Mathf.Min(idealDistance, obstruction);
         }
@@ -1111,11 +1124,23 @@ namespace BarPromenade
                 reach,
                 collisionMask,
                 QueryTriggerInteraction.Ignore);
+            // A full NonAlloc buffer is unordered and can omit the nearest
+            // wall. Grow only on saturation and retain the normal buffer.
+            while (hitCount == collisionHits.Length && collisionHits.Length < 1024)
+            {
+                collisionHits = new RaycastHit[Mathf.Min(1024, collisionHits.Length * 2)];
+                hitCount = Physics.SphereCastNonAlloc(origin, collisionRadius, direction,
+                    collisionHits, reach, collisionMask, QueryTriggerInteraction.Ignore);
+            }
+            RaycastHit[] hits = hitCount == collisionHits.Length
+                ? Physics.SphereCastAll(origin, collisionRadius, direction, reach,
+                    collisionMask, QueryTriggerInteraction.Ignore) : collisionHits;
+            if (!ReferenceEquals(hits, collisionHits)) hitCount = hits.Length;
             float clearance = freeDistance < 0f ? reach : freeDistance;
 
             for (int index = 0; index < hitCount; index++)
             {
-                RaycastHit hit = collisionHits[index];
+                RaycastHit hit = hits[index];
                 if (hit.collider == null || IsPlayerCollider(hit.collider.transform) ||
                     (ignoredTarget != null && hit.collider.transform.IsChildOf(ignoredTarget)))
                 {

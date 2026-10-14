@@ -38,8 +38,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(camera.orthographic, Is.False);
             Assert.That(
                 Vector3.Angle(
-                    originalPlayerToCamera,
-                    -player.transform.forward),
+                    Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up),
+                    player.transform.forward),
                 Is.LessThan(0.1f),
                 "The initial camera pose should follow the actor heading.");
             Assert.That(camera.fieldOfView, Is.EqualTo(53f).Within(0.01f));
@@ -53,7 +53,7 @@ namespace BarPromenade.Tests.PlayMode
             follow.Snap();
             yield return null;
 
-            Vector3 focusPoint = player.transform.position + Vector3.up * 1.4f;
+            Vector3 focusPoint = player.transform.position + Vector3.up * 1.6f;
             Vector3 playerToCamera = Vector3.ProjectOnPlane(
                 camera.transform.position - player.transform.position,
                 Vector3.up).normalized;
@@ -67,9 +67,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 Vector3.Angle(
                     camera.transform.forward,
-                    (focusPoint - camera.transform.position).normalized),
+                    (focusPoint + camera.transform.right * .5f - camera.transform.position).normalized),
                 Is.LessThan(0.1f),
-                "Orbit yaw must keep the camera aimed at the player.");
+                "Orbit yaw must retain the right-shoulder sight line.");
             Assert.That(
                 Vector3.Angle(originalPlayerToCamera, playerToCamera),
                 Is.EqualTo(135f).Within(0.1f),
@@ -160,7 +160,7 @@ namespace BarPromenade.Tests.PlayMode
                         player.transform.rotation,
                         playerHeading),
                     Is.LessThan(0.001f));
-                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+                AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
 
                 follow.RotatePitch(10000f);
                 follow.Snap();
@@ -170,7 +170,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     follow.CurrentOrbitPitch,
                     Is.EqualTo(55f).Within(0.001f));
-                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+                AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
 
                 follow.RotatePitch(-10000f);
                 follow.Snap();
@@ -180,7 +180,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     follow.CurrentOrbitPitch,
                     Is.EqualTo(-20f).Within(0.001f));
-                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+                AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
             }
             finally
             {
@@ -406,28 +406,26 @@ namespace BarPromenade.Tests.PlayMode
             PlayerCameraFollow follow =
                 camera.gameObject.AddComponent<PlayerCameraFollow>();
             follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
+            follow.SetCinematicMotionEnabled(false);
+            follow.Snap();
             yield return null;
 
 
-            Vector3 focusPoint = player.transform.position + Vector3.up * 1.4f;
-            float unobstructedDistance = Vector3.Distance(
-                focusPoint,
-                camera.transform.position);
-            Vector3 cameraDirection =
-                (camera.transform.position - focusPoint).normalized;
+            Vector3 focusPoint = player.transform.position + Vector3.up * 1.6f;
+            float unobstructedDistance = GetBackwardDistance(camera, focusPoint);
+            Vector3 cameraPivot = focusPoint + camera.transform.right * .5f;
             GameObject wall = CreateObject("Camera Obstacle");
-            wall.transform.position = focusPoint + cameraDirection * 1.5f;
+            wall.transform.position = cameraPivot - camera.transform.forward * 1.5f;
             BoxCollider wallCollider = wall.AddComponent<BoxCollider>();
             wallCollider.size = new Vector3(4f, 4f, 0.25f);
             Physics.SyncTransforms();
             yield return null;
 
-            float actualDistance = Vector3.Distance(
-                focusPoint,
-                camera.transform.position);
+            float actualDistance = GetBackwardDistance(camera, focusPoint);
             Assert.That(
                 unobstructedDistance,
-                Is.EqualTo(2.6f).Within(0.01f));
+                Is.EqualTo(1.9f).Within(0.01f));
             Assert.That(
                 actualDistance,
                 Is.LessThan(1.5f),
@@ -435,16 +433,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 Vector3.Angle(
                     camera.transform.forward,
-                    (focusPoint - camera.transform.position).normalized),
+                    (cameraPivot - camera.transform.position).normalized),
                 Is.LessThan(0.1f),
-                "Collision handling must keep the player centered.");
+                "Backward clearance must preserve the right-shoulder sight line.");
 
             wallCollider.enabled = false;
             yield return null;
 
-            float firstRecoveryDistance = Vector3.Distance(
-                focusPoint,
-                camera.transform.position);
+            float firstRecoveryDistance = GetBackwardDistance(camera, focusPoint);
             Assert.That(
                 firstRecoveryDistance,
                 Is.GreaterThan(actualDistance)
@@ -455,19 +451,40 @@ namespace BarPromenade.Tests.PlayMode
             float recoveryDeadline =
                 Time.realtimeSinceStartup + 2f;
             while (Time.realtimeSinceStartup < recoveryDeadline &&
-                   Vector3.Distance(
-                       focusPoint,
-                       camera.transform.position) <
+                   GetBackwardDistance(camera, focusPoint) <
                    unobstructedDistance - 0.01f)
             {
                 yield return null;
             }
 
             Assert.That(
-                Vector3.Distance(
-                    focusPoint,
-                    camera.transform.position),
+                GetBackwardDistance(camera, focusPoint),
                 Is.EqualTo(unobstructedDistance).Within(0.01f));
+            follow.Snap();
+
+            GameObject rightWall = CreateObject("Test right shoulder camera wall");
+            rightWall.transform.position = focusPoint + Vector3.right * .55f;
+            BoxCollider rightWallCollider = rightWall.AddComponent<BoxCollider>();
+            rightWallCollider.size = new Vector3(.1f, 4f, 8f);
+            // More overlapping distant panels than the initial query buffer.
+            // The nearest wall must still win rather than whichever hits fit.
+            for (int index = 0; index < 32; index++)
+            {
+                GameObject panel = CreateObject("Test right camera wall panel");
+                panel.transform.position = focusPoint + Vector3.right * .7f;
+                panel.AddComponent<BoxCollider>().size = new Vector3(.1f, 4f, 8f);
+            }
+            Physics.SyncTransforms();
+            yield return null;
+            Vector3 offset = Quaternion.Inverse(camera.transform.rotation) *
+                (camera.transform.position - focusPoint);
+            Assert.That(offset.x, Is.InRange(.1f, .25f),
+                "The lateral sweep must select the nearest right wall even when its query buffer fills.");
+            Assert.That(-offset.z, Is.EqualTo(1.9f).Within(.001f),
+                "A wall alongside the hero must contract the shoulder offset while keeping the free backward arm.");
+            Assert.That(Vector3.Distance(rightWallCollider.ClosestPoint(camera.transform.position),
+                camera.transform.position), Is.GreaterThan(.2f),
+                "The whole camera sphere must remain on the hero's side of the right wall.");
         }
 
 
@@ -505,10 +522,10 @@ namespace BarPromenade.Tests.PlayMode
             follow.SetCinematicMotionEnabled(false);
 
             Vector3 focusPoint =
-                player.transform.position + Vector3.up * 1.4f;
+                player.transform.position + Vector3.up * 1.6f;
             Assert.That(
-                Vector3.Distance(focusPoint, camera.transform.position),
-                Is.EqualTo(2.6f).Within(0.01f),
+                GetBackwardDistance(camera, focusPoint),
+                Is.EqualTo(1.9f).Within(0.01f),
                 "The ordinary low-angle shot must retain its full arm.");
 
             follow.RotatePitch(
@@ -516,9 +533,7 @@ namespace BarPromenade.Tests.PlayMode
             follow.Snap();
             yield return null;
 
-            float obstructedDistance = Vector3.Distance(
-                focusPoint,
-                camera.transform.position);
+            float obstructedDistance = GetBackwardDistance(camera, focusPoint);
             Assert.That(
                 obstructedDistance,
                 Is.LessThan(1.2f),
@@ -532,9 +547,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 Vector3.Angle(
                     camera.transform.forward,
-                    (focusPoint - camera.transform.position).normalized),
+                    (focusPoint + camera.transform.right * .5f - camera.transform.position).normalized),
                 Is.LessThan(0.1f),
-                "Vault avoidance must keep the hero centered.");
+                "Vault avoidance must preserve the right-shoulder sight line.");
         }
 
 
@@ -556,19 +571,22 @@ namespace BarPromenade.Tests.PlayMode
                 false);
 
             Vector3 exteriorFocus =
-                exteriorPlayer.transform.position + Vector3.up * 1.4f;
-            Assert.That(
-                Vector3.Distance(
-                    exteriorFocus,
-                    exteriorCamera.transform.position),
-                Is.EqualTo(2.6f).Within(0.001f));
+                exteriorPlayer.transform.position + Vector3.up * 1.6f;
+            AssertCameraAimsAtFocus(exteriorCamera, exteriorPlayer.transform, 1.6f, 1.9f);
+            Pose resolvedExterior = exteriorFollow.ResolveFollowPose(exteriorPlayer.transform.position);
+            Assert.That(Vector3.Distance(resolvedExterior.position, exteriorCamera.transform.position),
+                Is.LessThan(.001f), "A prospective contextual return must resolve the same shoulder pose.");
+            Assert.That(Quaternion.Angle(resolvedExterior.rotation, exteriorCamera.transform.rotation),
+                Is.LessThan(.01f));
             Assert.That(
                 exteriorCamera.fieldOfView,
                 Is.EqualTo(53f).Within(0.01f));
+            Pose ordinaryPose = new Pose(exteriorCamera.transform.position, exteriorCamera.transform.rotation);
+            float ordinaryFieldOfView = exteriorCamera.fieldOfView;
             Assert.That(
                 exteriorCamera.WorldToViewportPoint(
                     exteriorPlayer.transform.position + Vector3.up).y,
-                Is.InRange(0.3f, 0.42f),
+                Is.InRange(0.15f, 0.3f),
                 "The exterior profile must compose the player's center " +
                 "below the middle of the frame.");
 
@@ -587,22 +605,115 @@ namespace BarPromenade.Tests.PlayMode
                 true);
 
             Vector3 interiorFocus =
-                interiorPlayer.transform.position + Vector3.up * 1.3f;
-            Assert.That(
-                Vector3.Distance(
-                    interiorFocus,
-                    interiorCamera.transform.position),
-                Is.EqualTo(2.2f).Within(0.001f));
+                interiorPlayer.transform.position + Vector3.up * 1.5f;
+            AssertCameraAimsAtFocus(interiorCamera, interiorPlayer.transform, 1.5f, 1.9f);
+            Pose resolvedInterior = interiorFollow.ResolveFollowPose(interiorPlayer.transform.position);
+            Assert.That(Vector3.Distance(resolvedInterior.position, interiorCamera.transform.position),
+                Is.LessThan(.001f));
+            Assert.That(Quaternion.Angle(resolvedInterior.rotation, interiorCamera.transform.rotation),
+                Is.LessThan(.01f));
             Assert.That(
                 interiorCamera.fieldOfView,
                 Is.EqualTo(57f).Within(0.01f));
             Assert.That(
                 interiorCamera.WorldToViewportPoint(
                     interiorPlayer.transform.position + Vector3.up).y,
-                Is.InRange(0.3f, 0.42f),
+                Is.InRange(0.2f, 0.35f),
                 "The interior profile must compose the player's center " +
                 "below the middle of the frame.");
+
+            Transform exteriorShoulder = CreateObject("Test exterior firearm shoulder").transform;
+            exteriorShoulder.SetParent(exteriorPlayer.transform, false);
+            exteriorShoulder.localPosition = Vector3.up * 1.1f;
+            Transform interiorShoulder = CreateObject("Test interior firearm shoulder").transform;
+            interiorShoulder.SetParent(interiorPlayer.transform, false);
+            interiorShoulder.localPosition = Vector3.up * 1.1f;
+            exteriorFollow.SetOrbitInputEnabled(false);
+            interiorFollow.SetOrbitInputEnabled(false);
+            exteriorFollow.SetCinematicMotionEnabled(false);
+            interiorFollow.SetCinematicMotionEnabled(false);
+            Assert.That(exteriorFollow.SetFreeAim(this, exteriorShoulder), Is.True);
+            Assert.That(interiorFollow.SetFreeAim(this, interiorShoulder), Is.True);
+            yield return new WaitForSeconds(.3f);
+            // A long frame can finish WaitForSeconds before its LateUpdate.
             yield return null;
+            foreach (var profile in new[]
+            {
+                (Camera: exteriorCamera, Player: exteriorPlayer),
+                (Camera: interiorCamera, Player: interiorPlayer)
+            })
+            {
+                Vector3 origin = profile.Player.transform.position + Vector3.up * 1.5f;
+                Vector3 offset = Quaternion.Inverse(profile.Camera.transform.rotation) *
+                    (profile.Camera.transform.position - origin);
+                Assert.That(offset.x, Is.EqualTo(.5f).Within(.001f));
+                Assert.That(offset.y, Is.EqualTo(0f).Within(.001f),
+                    "Firearm aim must use the raised shoulder origin.");
+                Assert.That(offset.z, Is.EqualTo(-1.4f).Within(.001f),
+                    "Both ordinary camera profiles must push closer when firearm aim begins.");
+            }
+            Pose aimedPose = new Pose(exteriorCamera.transform.position, exteriorCamera.transform.rotation);
+            float aimedFieldOfView = exteriorCamera.fieldOfView;
+
+            exteriorFollow.ClearFreeAim(this);
+            interiorFollow.ClearFreeAim(this);
+            yield return new WaitForSeconds(.3f);
+            yield return null;
+            AssertCameraAimsAtFocus(exteriorCamera, exteriorPlayer.transform, 1.6f, 1.9f);
+            AssertCameraAimsAtFocus(interiorCamera, interiorPlayer.transform, 1.5f, 1.9f);
+            Assert.That(exteriorCamera.WorldToViewportPoint(exteriorFocus).x, Is.LessThan(.5f),
+                "Returning from aim must keep the hero to the left of the right-shoulder sight line.");
+            Assert.That(interiorCamera.WorldToViewportPoint(interiorFocus).x, Is.LessThan(.5f));
+            Transform opponent = CreateObject("Test firearm camera opponent").transform;
+            opponent.position = exteriorPlayer.transform.position + Vector3.forward * 4f;
+            Transform opponentAim = CreateObject("Test firearm camera opponent shoulder").transform;
+            opponentAim.SetParent(opponent, false);
+            opponentAim.localPosition = Vector3.up * 1.1f;
+            Assert.That(exteriorFollow.SetTargetLock(this, opponent, opponentAim, exteriorShoulder,
+                stableFraming: true), Is.True);
+            Assert.That(exteriorCamera.transform.position.z - exteriorPlayer.transform.position.z,
+                Is.EqualTo(-1.4f).Within(.001f),
+                "Target-focused firearm aim must share the closer backward arm.");
+            Assert.That(exteriorCamera.transform.position.y - exteriorPlayer.transform.position.y,
+                Is.EqualTo(1.5f).Within(.001f),
+                "Target-focused firearm aim must share the raised shoulder origin.");
+            Vector3 lockedPosition = exteriorCamera.transform.position;
+            Quaternion lockedRotation = exteriorCamera.transform.rotation;
+            exteriorFollow.ClearTargetLock(this, preservePose: true);
+            Assert.That(exteriorFollow.SetFreeAim(this, exteriorShoulder, preserveCurrentPose: true), Is.True);
+            yield return null;
+            exteriorFollow.PrepareFreeAimFrame(this);
+            Assert.That(Vector3.Distance(exteriorCamera.transform.position, lockedPosition), Is.LessThan(.001f));
+            Assert.That(Quaternion.Angle(exteriorCamera.transform.rotation, lockedRotation), Is.LessThan(.01f),
+                "Releasing a firearm target must preserve its accepted closer framing.");
+
+            // Load/render the production hero only after the live transition
+            // assertions, so a cold asset or render frame cannot consume their wait.
+            exteriorFollow.enabled = false;
+            Player3DAssetRegistry registry = Player3DResources.Instantiate(exteriorPlayer.transform);
+            registry.gameObject.name = "Test camera presentation hero";
+            foreach (MonoBehaviour driver in registry.GetComponentsInChildren<MonoBehaviour>(true))
+                if (!(driver is Player3DAssetRegistry) && !(driver is PlayerWardrobe)) driver.enabled = false;
+            registry.Animator.enabled = false;
+            foreach (Collider collider in registry.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            foreach (Rigidbody body in registry.GetComponentsInChildren<Rigidbody>(true)) body.isKinematic = true;
+            Assert.That(registry.TryGetAnimation("Idle", out Player3DAnimationBinding idle), Is.True);
+            idle.Clip.SampleAnimation(registry.Animator.gameObject, .35f);
+            GameObject lightObject = CreateObject("Test camera presentation key light");
+            lightObject.transform.rotation = Quaternion.Euler(25f, -35f, 0f);
+            Light keyLight = lightObject.AddComponent<Light>();
+            keyLight.type = LightType.Directional;
+            keyLight.intensity = 1.6f;
+            exteriorCamera.clearFlags = CameraClearFlags.SolidColor;
+            exteriorCamera.backgroundColor = new Color(.09f, .1f, .12f);
+            exteriorCamera.transform.SetPositionAndRotation(ordinaryPose.position, ordinaryPose.rotation);
+            exteriorCamera.fieldOfView = ordinaryFieldOfView;
+            AreaCaptureFixture.CaptureCurrentCamera(exteriorCamera, "PlayerCameraShoulder",
+                "Test ordinary right shoulder");
+            exteriorCamera.transform.SetPositionAndRotation(aimedPose.position, aimedPose.rotation);
+            exteriorCamera.fieldOfView = aimedFieldOfView;
+            AreaCaptureFixture.CaptureCurrentCamera(exteriorCamera, "PlayerCameraShoulder",
+                "Test aiming right shoulder");
         }
 
 
@@ -616,55 +727,56 @@ namespace BarPromenade.Tests.PlayMode
             PlayerCameraFollow follow =
                 camera.gameObject.AddComponent<PlayerCameraFollow>();
             follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
             follow.SetCinematicMotionEnabled(false);
             follow.Snap();
 
-            Vector3 initialFocus = follow.CurrentFocusPoint;
-            player.transform.position += Vector3.right;
-            yield return null;
-
-            Vector3 targetFocus =
-                player.transform.position + Vector3.up * 1.4f;
-            float firstFrameProgress =
-                follow.CurrentFocusPoint.x - initialFocus.x;
-            Assert.That(
-                firstFrameProgress,
-                Is.GreaterThan(0f).And.LessThan(0.65f),
-                "Normal target motion must be damped.");
-            Assert.That(
-                Vector3.Distance(
-                    follow.CurrentFocusPoint,
-                    targetFocus),
-                Is.LessThanOrEqualTo(0.451f),
-                "Focus damping must never leave the player too far behind.");
-
-            float previousX = follow.CurrentFocusPoint.x;
-            float convergenceDeadline =
-                Time.realtimeSinceStartup + 1.5f;
-            while (Time.realtimeSinceStartup < convergenceDeadline &&
-                   Vector3.Distance(
-                       follow.CurrentFocusPoint,
-                       targetFocus) >= 0.01f)
+            // Walk, run, strafe, backpedal and changes of ground height
+            // carry the shoulder framing with the body in the same frame.
+            foreach (Vector3 velocity in new[]
             {
-                yield return null;
-                Assert.That(
-                    follow.CurrentFocusPoint.x,
-                    Is.GreaterThanOrEqualTo(previousX - 0.0001f),
-                    "The damped focus must converge without overshooting.");
-                previousX = follow.CurrentFocusPoint.x;
+                Vector3.forward * 2.6f, Vector3.forward * 4.2f,
+                Vector3.right * 2.6f, Vector3.left * 2.6f,
+                Vector3.back * 1.4f, Vector3.up * .3f, Vector3.down * .3f
+            })
+            {
+                for (int frame = 0; frame < 8; frame++)
+                {
+                    player.transform.position += velocity * Mathf.Min(Time.unscaledDeltaTime, .05f);
+                    yield return null;
+                    Assert.That(Vector3.Distance(follow.CurrentFocusPoint,
+                        player.transform.position + Vector3.up * 1.6f), Is.LessThan(.0001f),
+                        "Movement must not make the focus trail the hero or pull his camera backward.");
+                    AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
+                }
+                Vector3 stoppedCameraPosition = camera.transform.position;
+                for (int frame = 0; frame < 3; frame++)
+                {
+                    yield return null;
+                    Assert.That(Vector3.Distance(camera.transform.position, stoppedCameraPosition),
+                        Is.LessThan(.0001f), "Stopping must not leave a delayed camera catch-up.");
+                    AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
+                }
             }
 
-            Assert.That(
-                Vector3.Distance(
-                    follow.CurrentFocusPoint,
-                    targetFocus),
-                Is.LessThan(0.01f));
+            FieldInfo snapDistance = typeof(PlayerCameraFollow).GetField("teleportSnapDistance",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(snapDistance, Is.Not.Null);
+            float configuredSnapDistance = (float)snapDistance.GetValue(follow);
+            snapDistance.SetValue(follow, 0f);
+            player.transform.position += Vector3.forward * .1f;
+            yield return null;
+            Assert.That(Vector3.Distance(follow.CurrentFocusPoint,
+                player.transform.position + Vector3.up * 1.6f), Is.LessThan(.0001f),
+                "Disabling teleport snapping must still carry ordinary movement into the camera focus.");
+            AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
+            snapDistance.SetValue(follow, configuredSnapDistance);
 
             player.transform.position += Vector3.right * 2f;
             yield return null;
 
             Vector3 teleportedFocus =
-                player.transform.position + Vector3.up * 1.4f;
+                player.transform.position + Vector3.up * 1.6f;
             Assert.That(
                 Vector3.Distance(
                     follow.CurrentFocusPoint,
@@ -672,10 +784,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.0001f),
                 "Large target jumps must snap instead of dragging the camera.");
             Assert.That(
-                Vector3.Distance(
-                    teleportedFocus,
-                    camera.transform.position),
-                Is.EqualTo(2.6f).Within(0.001f),
+                GetBackwardDistance(camera, teleportedFocus),
+                Is.EqualTo(1.9f).Within(0.001f),
                 "Teleport snap must apply the exact collision-safe pose.");
 
         }
@@ -704,7 +814,7 @@ namespace BarPromenade.Tests.PlayMode
                         camera,
                         follow,
                         baseRotation,
-                        2.6f));
+                        1.9f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -723,7 +833,7 @@ namespace BarPromenade.Tests.PlayMode
                         camera,
                         follow,
                         baseRotation,
-                        2.6f));
+                        1.9f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -748,7 +858,7 @@ namespace BarPromenade.Tests.PlayMode
                     camera,
                     follow,
                     baseRotation,
-                    2.6f),
+                    1.9f),
                 Is.LessThan(0.002f),
                 "Modal camera suppression must fade the sway to rest.");
         }
@@ -772,7 +882,7 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 follow.SetIntoxication(1f);
-                float sizeConstant = 2.6f * Mathf.Tan(26.5f * Mathf.Deg2Rad);
+                float sizeConstant = 1.9f * Mathf.Tan(26.5f * Mathf.Deg2Rad);
                 float maximumDeviation = 0f;
                 float previousFieldOfView = camera.fieldOfView;
                 float deadline = Time.realtimeSinceStartup + 10f;
@@ -781,9 +891,7 @@ namespace BarPromenade.Tests.PlayMode
                     float frameSeconds = Time.unscaledDeltaTime;
                     yield return null;
                     float fieldOfView = camera.fieldOfView;
-                    float distance = Vector3.Distance(
-                        camera.transform.position,
-                        follow.CurrentFocusPoint);
+                    float distance = GetBackwardDistance(camera, follow.CurrentFocusPoint);
                     Assert.That(
                         fieldOfView,
                         Is.InRange(34f - 0.01f, 100f + 0.01f),
@@ -978,7 +1086,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Vector3 basePosition =
 
-                follow.CurrentFocusPoint -
+                follow.CurrentFocusPoint + baseRotation * Vector3.right * .5f -
                 baseRotation * Vector3.forward * distance;
             return Vector3.Distance(
                 camera.transform.position,
@@ -1011,14 +1119,21 @@ namespace BarPromenade.Tests.PlayMode
             float expectedDistance)
         {
             Vector3 focus = target.position + Vector3.up * focusHeight;
+            Vector3 offset = Quaternion.Inverse(camera.transform.rotation) *
+                (camera.transform.position - focus);
             Assert.That(
                 Vector3.Angle(
                     camera.transform.forward,
-                    (focus - camera.transform.position).normalized),
+                    (focus + camera.transform.right * .5f - camera.transform.position).normalized),
                 Is.LessThan(0.1f));
-            Assert.That(
-                Vector3.Distance(focus, camera.transform.position),
-                Is.EqualTo(expectedDistance).Within(0.001f));
+            Assert.That(offset.x, Is.EqualTo(.5f).Within(.001f),
+                "An unobstructed ordinary view must sit on the hero's right shoulder.");
+            Assert.That(-offset.z, Is.EqualTo(expectedDistance).Within(.001f));
+        }
+
+        private static float GetBackwardDistance(Camera camera, Vector3 focus)
+        {
+            return Vector3.Dot(focus - camera.transform.position, camera.transform.forward);
         }
 
 
@@ -1037,7 +1152,7 @@ namespace BarPromenade.Tests.PlayMode
             follow.Snap();
             yield return null;
 
-            Vector3 rootFocus = player.transform.position + Vector3.up * 1.4f;
+            Vector3 rootFocus = player.transform.position + Vector3.up * 1.6f;
             Assert.That(AimError(camera, rootFocus), Is.LessThan(0.5f));
 
             // A body lying a stride to the side: the focus pans over to
@@ -1102,7 +1217,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             return Vector3.Angle(
                 camera.transform.forward,
-                (focus - camera.transform.position).normalized);
+                (focus + camera.transform.right * .5f - camera.transform.position).normalized);
         }
 
         private Camera CreateCamera(Vector3 position)

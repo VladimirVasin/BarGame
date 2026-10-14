@@ -334,8 +334,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 Assert.That(CombatTestStartService.TryStart(weapon), Is.True);
                 yield return AwaitSelectedCombatRange();
-                PlacePairWithReloadReserve(8f);
-                root.Opponent.ResetActor(new Vector3(7f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
+                PrepareInexperiencedFirearmZombieRange();
                 root.SendMessage("OnApplicationFocus", true);
                 GameInput.HandleApplicationFocus(true);
                 Assert.That(root.SetOpponentFocus(false), Is.True);
@@ -360,23 +359,40 @@ namespace BarPromenade.Tests.PlayMode
                 AssertPistolCameraShotReady("Inexperienced " + weapon + " aim");
                 Quaternion acceptedView = camera.transform.rotation, acceptedHeading = root.Hero.transform.rotation;
                 Vector2 firstOffset = root.Hero.FirearmAimOffsetDegrees;
+                Vector2 previousOffset = firstOffset;
+                float previousPoseClock = root.Hero.JournalPoseClock, maximumAimSpeed = 0f;
                 Vector3 firstMuzzleForward = root.Hero.PistolMuzzle.forward;
                 float offsetSpan = 0f, muzzleSpan = 0f, cameraDrift = 0f, headingDrift = 0f;
                 float reticleError = 0f, surfaceError = 0f, supportError = 0f, cacheError = 0f;
                 bool reticleAvailable = true;
+                string missingReticleState = null;
                 int samples = 0;
                 probe = root.gameObject.AddComponent<PistolCameraContinuityProbe>();
                 probe.Sample = () =>
                 {
                     samples++;
-                    offsetSpan = Mathf.Max(offsetSpan, Vector2.Distance(firstOffset, root.Hero.FirearmAimOffsetDegrees));
+                    Vector2 offset = root.Hero.FirearmAimOffsetDegrees;
+                    float poseClock = root.Hero.JournalPoseClock;
+                    float simulatedSeconds = poseClock - previousPoseClock;
+                    if (simulatedSeconds > .0001f)
+                        maximumAimSpeed = Mathf.Max(maximumAimSpeed,
+                            Vector2.Distance(previousOffset, offset) / simulatedSeconds);
+                    previousOffset = offset;
+                    previousPoseClock = poseClock;
+                    offsetSpan = Mathf.Max(offsetSpan, Vector2.Distance(firstOffset, offset));
                     muzzleSpan = Mathf.Max(muzzleSpan, Vector3.Angle(firstMuzzleForward, root.Hero.PistolMuzzle.forward));
                     cameraDrift = Mathf.Max(cameraDrift, Quaternion.Angle(acceptedView, camera.transform.rotation));
                     headingDrift = Mathf.Max(headingDrift, Quaternion.Angle(acceptedHeading, root.Hero.transform.rotation));
                     supportError = Mathf.Max(supportError, root.Hero.PistolSupportError);
                     bool available = root.TryGetFirearmCrosshairPoint(out Vector3 point);
                     reticleAvailable &= available;
-                    if (!available) return;
+                    if (!available)
+                    {
+                        missingReticleState ??= $"frame={Time.frameCount}, initialized={root.IsInitialized}, " +
+                            $"hero focused={root.Hero.CombatFocused}, aim requested={root.Hero.Firearm.AimRequested}, " +
+                            $"free camera={root.CameraFollow.FreeAimActive}, muzzle available={root.Hero.FirearmAimingMuzzle != null}";
+                        return;
+                    }
                     Transform muzzle = root.Hero.IsShotgun ? root.Hero.ShotgunMuzzle(root.Hero.Shotgun.NextBarrel) : root.Hero.PistolMuzzle;
                     reticleError = Mathf.Max(reticleError, Vector3.Angle(muzzle.forward, point - muzzle.position));
                     Vector3 localPoint = panel.transform.InverseTransformPoint(point);
@@ -388,16 +404,20 @@ namespace BarPromenade.Tests.PlayMode
                 probe.Sample = null;
                 Assert.That(samples, Is.GreaterThanOrEqualTo(85), "Observe completed gameplay poses, not unsampled rule offsets.");
                 Assert.That(offsetSpan, Is.GreaterThan(.15f), "A stopped inexperienced hero keeps breathing and trembling.");
+                Assert.That(maximumAimSpeed, Is.LessThan(3f),
+                    "Ordinary hand drift must travel smoothly on the simulation clock, without the old rapid tremor.");
                 Assert.That(muzzleSpan, Is.GreaterThan(.1f), "The live world weapon must move with the aim offset.");
                 Assert.That(cameraDrift, Is.LessThan(.03f), "Hand sway cannot rotate the player's accepted view.");
                 Assert.That(headingDrift, Is.LessThan(.03f), "Hand sway cannot continually turn the hero's feet.");
-                Assert.That(reticleAvailable, Is.True);
+                Assert.That(reticleAvailable, Is.True, "Every completed free-aim pose must expose its reticle. " + missingReticleState);
                 Assert.That(reticleError, Is.LessThan(.05f), "The reticle follows the final physical firing barrel.");
                 Assert.That(surfaceError, Is.LessThan(.005f), "The reticle stops on the first world surface.");
                 Assert.That(cacheError, Is.LessThan(.000001f), "Two queries of the same completed pose must agree.");
                 Assert.That(supportError, Is.LessThan(.025f), "Aim motion must retain both physical hand contacts.");
                 Assert.That(root.Opponent.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero), "The hero's tremor cannot leak to another actor.");
                 string prefix = weapon.ToString().ToLowerInvariant() + "-inexperienced";
+                float restingGap = root.FirearmCrosshairSpread;
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.Zero.Within(.0001f));
                 PrepareInexperiencedFirearmCapture();
                 yield return CaptureFocusGameView(prefix + "-rest");
 
@@ -411,6 +431,17 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     if (GameInput.CanRead(GameInputContext.Gameplay)) strafeElapsed += Time.deltaTime;
                 }
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.GreaterThan(.95f),
+                    "Actual aimed walking must expand the shared movement accuracy envelope.");
+                float movingGap = root.FirearmCrosshairSpread;
+                Assert.That(movingGap, Is.GreaterThan(restingGap + 2f),
+                    "The moving crosshair must be visibly wider before any shot is fired.");
+                Assert.That(root.PistolCrosshairExpansion, Is.Zero,
+                    "Movement cannot manufacture the separate shot impulse.");
+                root.AutomaticSimulation = false;
+                PrepareInexperiencedFirearmCapture();
+                yield return CaptureFocusGameView(prefix + "-moving-crosshair");
+                root.AutomaticSimulation = true;
                 int releaseFrame = Time.frameCount;
                 input.Release(keyboard.dKey, queueEventOnly: true);
                 yield return WaitFor(() => probe.CompletedFrame > releaseFrame, "The strafe release needs a completed gameplay frame.");
@@ -418,7 +449,69 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(travel.magnitude, Is.GreaterThan(.25f));
                 Assert.That(Vector3.Angle(travel, Vector3.ProjectOnPlane(acceptedRight, Vector3.up)), Is.LessThan(1f),
                     "Movement uses the camera heading while the hands drift independently.");
-                for (int frame = 0; frame < 90; frame++) yield return null;
+                yield return WaitFor(() => root.Player.Motor.PlanarVelocity.magnitude <= .05f,
+                    "The movement settling clock must start after the live motor stops.");
+                root.AutomaticSimulation = false;
+                AdvanceInexperiencedAimStillness(120);
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.InRange(.2f, .8f),
+                    "One stationary simulated second must only partly narrow the movement crosshair.");
+                Assert.That(root.FirearmCrosshairSpread, Is.GreaterThan(restingGap).And.LessThan(movingGap));
+                PrepareInexperiencedFirearmCapture();
+                yield return CaptureFocusGameView(prefix + "-settling-crosshair");
+
+                // A second real movement interrupts the first wait. The new
+                // stationary period must start over rather than inherit it.
+                root.AutomaticSimulation = true;
+                input.Press(keyboard.aKey, queueEventOnly: true);
+                yield return WaitFor(() => root.Player.Motor.PlanarVelocity.magnitude > .2f &&
+                    root.Hero.FirearmAimMovementAmount > .95f, "Moving again must restore the wide crosshair.");
+                input.Release(keyboard.aKey, queueEventOnly: true);
+                releaseFrame = Time.frameCount;
+                yield return WaitFor(() => probe.CompletedFrame > releaseFrame && root.Player.Motor.PlanarVelocity.magnitude <= .05f,
+                    "The repeated movement must finish through the live motor.");
+                root.AutomaticSimulation = false;
+                AdvanceInexperiencedAimStillness(120);
+                float partiallySettled = root.Hero.FirearmAimMovementAmount;
+                float partiallySettledGap = root.FirearmCrosshairSpread;
+                Assert.That(partiallySettled, Is.InRange(.2f, .8f),
+                    "Repeated movement must restart two continuous stationary seconds.");
+
+                Quaternion beforeLook = camera.transform.rotation;
+                int lookFrame = Time.frameCount;
+                root.CameraFollow.RotateYaw(2f);
+                yield return WaitFor(() => probe.CompletedFrame > lookFrame, "Camera look needs its real LateUpdate.");
+                Assert.That(Quaternion.Angle(beforeLook, camera.transform.rotation), Is.GreaterThan(1f));
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.EqualTo(partiallySettled).Within(.0001f),
+                    "Camera look alone cannot restart movement settling.");
+
+                float stationaryClock = root.Hero.JournalPoseClock;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(2f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(root.Hero.JournalPoseClock, Is.EqualTo(stationaryClock));
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.EqualTo(partiallySettled).Within(.0001f),
+                    "Paused time cannot help the crosshair finish narrowing.");
+                Assert.That(root.FirearmCrosshairSpread, Is.EqualTo(partiallySettledGap).Within(.0001f));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release movement settling.");
+
+                Vector3 retainedIntent = root.Hero.PistolAimIntentPoint;
+                root.Hero.SetPistolAim(false);
+                root.Hero.SetPistolAim(true, retainedIntent);
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.EqualTo(partiallySettled).Within(.0001f),
+                    "Quickly releasing and reacquiring aim cannot bypass the stationary wait.");
+                AdvanceInexperiencedAimStillness(108);
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.GreaterThan(.0001f),
+                    "The crosshair must remain wider before two stationary simulated seconds.");
+                Assert.That(root.FirearmCrosshairSpread, Is.GreaterThan(restingGap),
+                    "The drawn crosshair must retain its final extra pixel until stationary settling completes.");
+                AdvanceInexperiencedAimStillness(12);
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.Zero.Within(.0001f),
+                    "Two continuous stationary simulated seconds restore normal accuracy.");
+                Assert.That(root.FirearmCrosshairSpread, Is.EqualTo(restingGap).Within(.0001f),
+                    "The same movement state must restore the normal HUD gap.");
+                PrepareInexperiencedFirearmCapture();
+                yield return CaptureFocusGameView(prefix + "-settled-crosshair");
                 AssertPistolCameraShotReady($"Settled inexperienced {weapon} shot; supplied mouse current={Mouse.current == mouse}, " +
                     $"RMB held={mouse.rightButton.isPressed}, application focused={Application.isFocused}, movement focused={GameInput.MovementFocused}, " +
                     $"body available={root.Hero.PistolBodyAvailable}, grounded={root.Hero.IsBodyGrounded}, knocked down={root.Hero.IsKnockedDown}, " +
@@ -542,6 +635,7 @@ namespace BarPromenade.Tests.PlayMode
                     root.Player.Motor.MovementBasisActive || root.CameraFollow.FreeAimActive, Is.False);
                 root.ResetRound();
                 Assert.That(root.Hero.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero), "Round reset clears the previous hand-motion state.");
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.Zero, "Round reset clears the previous movement accuracy envelope.");
                 Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero), "Round reset clears raw hand correction even without an aim lease.");
                 Assert.That(root.Hero.FirearmShotReaction, Is.Zero, "Round reset clears the previous bodily shot reaction.");
                 Assert.That(root.Hero.Firearm.AimRequested || root.Player.Motor.MovementBasisActive, Is.False);
@@ -551,7 +645,7 @@ namespace BarPromenade.Tests.PlayMode
                 // End on a fresh live correction, so disable proves cleanup of
                 // the internal motion rather than only hiding an aim property.
                 root.AutomaticSimulation = false;
-                root.Opponent.ResetActor(new Vector3(7f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
+                root.Opponent.ResetActor(new Vector3(6.5f, PlayerFactory.GroundedRootOffset, 6.5f), Vector3.back);
                 Physics.SyncTransforms();
                 root.Hero.SetPistolAim(true, root.Hero.transform.position + root.Hero.transform.forward * 20f + Vector3.up * 1.35f);
                 root.Tick(.6f);
@@ -562,6 +656,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Hero.enabled = false;
                 Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero), "Disable clears the active hand-correction owner.");
                 Assert.That(root.Hero.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero));
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.Zero, "Disable clears the movement accuracy owner.");
                 Assert.That(root.Hero.FirearmShotReaction, Is.Zero, "Disable clears the bodily shot-reaction owner.");
                 TestContext.Out.WriteLine($"{weapon}: live offset span={offsetSpan:F3} degrees; recoil={peakRecoil:F3} degrees; reaction={peakReaction:F3}.");
                 LogAssert.NoUnexpectedReceived();
@@ -575,6 +670,48 @@ namespace BarPromenade.Tests.PlayMode
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
                 GameInput.HandleApplicationFocus(true);
                 input.TearDown();
+            }
+        }
+
+        private void PrepareInexperiencedFirearmZombieRange()
+        {
+            Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Standard));
+            Assert.That(root.Player.Visual, Is.InstanceOf<Player3DCharacterPresentation>());
+            Assert.That(root.Opponent.IsZombie, Is.True,
+                "Aim verification retains the current production zombie, never a retired human duel opponent.");
+            Assert.That(root.Opponent.Weapon, Is.Null);
+            Assert.That(root.Opponent.State.Settings, Is.EqualTo(MeleeCombatSettings.ZombieUnarmed));
+            // Target mode pauses only autonomous pursuit. The real unarmed
+            // zombie, rig, hurtboxes and focus handoffs remain in the scene.
+            root.SetSparring(false);
+            Assert.That(root.Sparring, Is.False);
+            root.Hero.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
+            root.Opponent.ResetActor(new Vector3(6.5f, PlayerFactory.GroundedRootOffset, 6.5f), Vector3.back);
+            // ResetActor restores the hero's combat stance. Acquire and release
+            // the real focus lease so both hero and camera leave it together.
+            Assert.That(root.SetOpponentFocus(true), Is.True);
+            Assert.That(root.SetOpponentFocus(false), Is.True);
+            Assert.That(root.Hero.CombatFocused || root.CameraFollow.TargetLockActive, Is.False,
+                "The arranged hero and camera must both start outside target focus.");
+            IFirearmState firearm = root.Hero.Firearm;
+            Assert.That(firearm, Is.Not.Null);
+            Assert.That(firearm.AddReserveRounds(firearm.ReserveCapacity), Is.EqualTo(firearm.ReserveCapacity));
+            Physics.SyncTransforms();
+        }
+
+        private void AdvanceInexperiencedAimStillness(int substeps)
+        {
+            Assert.That(root.AutomaticSimulation, Is.False);
+            Assert.That(root.Player.Motor.PlanarVelocity.magnitude, Is.LessThanOrEqualTo(.05f));
+            for (int step = 0; step < substeps; step++)
+            {
+                float previousMovement = root.Hero.FirearmAimMovementAmount;
+                float previousGap = root.FirearmCrosshairSpread;
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.FirearmAimMovementAmount, Is.LessThanOrEqualTo(previousMovement + .000001f),
+                    "Continuous stillness must narrow movement accuracy smoothly and monotonically.");
+                Assert.That(root.FirearmCrosshairSpread, Is.LessThanOrEqualTo(previousGap + .000001f),
+                    "The HUD gap must follow the same narrowing envelope.");
             }
         }
 

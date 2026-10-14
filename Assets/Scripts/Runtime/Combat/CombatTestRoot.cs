@@ -524,7 +524,9 @@ namespace BarPromenade
                 SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));
-            CameraFollow.SetTargetLockFarDistance(this, Mathf.Lerp(1.9f, 2.1f, settle));
+            CameraFollow.SetTargetLockFarDistance(this, Hero.IsFirearm
+                ? Mathf.Lerp(PlayerCameraFollow.FirearmAimDistance, 1.9f, settle)
+                : Mathf.Lerp(1.9f, 2.1f, settle));
             if (!roundCameraReleased && settle >= 1f) ReleaseRoundCamera();
         }
 

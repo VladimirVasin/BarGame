@@ -2,6 +2,20 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-14, closer camera and steadier aim:**
+  User:chase .5m camera-right/1.9m back(ext/int);free aim .5/1.4m;stable lock1.4m.
+  Focus1.6/1.5m ext/int;free-stable firearm shoulder+.4m,melee+.2m kept.
+  Root delta×(1-override weight) before focus damping;routine travel0lag.
+  Authored focus override lag≤.45m;teleport snap>1.75m.
+  FOV/blends/handoff;side-back clearance/dolly aligned.
+  Hit buffer24→1024 retry/cap SphereCastAll;
+  Normal2 cached queries/0alloc;overflow can allocate.
+  HUD arms3×2/dot2×2 logicalpx;movement gap+6pistol/+10shotgun;
+  Rig/HUD:smooth expand/2s continuous still settle.
+  Look/reaim keep state;pause0/reset clears;slow drift.
+  Moving4×/muzzle-shotgun centre authoritative/recoil kept.
+  Bounded state/assets-story kept;novice exception §7.
+
 - **Accepted exception — 2026-10-14, warehouse fan light:**
   User:Spot/shadows/source11.8/cap12.1–12.22;
   roofs-decks occlude/pausefreeze/0cookie-strobe;
@@ -5521,26 +5535,17 @@
   pedestrian locomotion bank remained at `37` Actions; neither received this
   production clip. This is an ordinary locomotion decision, not an exception
   to the contextual-animation standard.
-- **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
-  `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
-  points that compose the hero below frame center. RMB mouse motion, the
-  gamepad right stick and the arrow keys drive independent yaw and pitch in
-  ordinary City, Bar and Supermarket follow; pitch is clamped to `-20°..55°`.
-  The arrows are a stick-style per-second axis (`150°/120°` per second) and
-  no longer walk the hero — movement is WASD-only — and the seated park
-  board game opts the keyboard out of its orbit sample because the arrows
-  own its board cursor. Orbit yaw, pitch and
-  target focus use deliberately weighty `0.20 s`, `0.18 s` and `0.18 s`
-  damping; focus stays within `0.45 m` and snaps on jumps beyond `1.75 m`.
-  Deterministic low-frequency idle drift and speed-driven bob affect only
-  focus, pitch and roll; requested yaw remains stable, and FOV is stable
-  below the balance threshold — above it the drunk dolly zoom (accepted
-  2026-09-04, below) owns the lens and the arm together. Collision
-  shortens the arm immediately, restores it with `0.32 s` damping and fades
-  cinematic motion during fullscreen modal ownership. Balance checks disable
-  orbit input but deliberately retain cinematic motion so intoxication lean
-  and fall reactions remain visible. Fixed Home/Stairwell and contextual
-  camera owners remain non-orbiting; the bus keeps its separate seated bounds.
+- **Accepted — Bounded cinematic chase camera:** Profiles:
+  FOV53°/57° ext/int;arm/focus/tracking:camera tuning above.
+  RMB mouse/right stick/arrows:yaw/pitch (`-20°..55°`);
+  `150°/120°/s` arrows;WASD walks.
+  Seated park chess owns arrows. Yaw/pitch/focus damping:
+  `.20/.18/.18 s`;teleport snap>`1.75 m`.
+  Idle/walk:deterministic focus-pitch-roll;requested yaw kept.
+  FOV stable below balance threshold; above it drunk dolly zoom
+  (2026-09-04) owns lens/arm. Collision contracts immediately/restores `.32 s`;
+  Fullscreen modals fade cinematics;balance disables orbit input/keeps intoxication-fall motion.
+  Home/Stairwell/contextual:fixed;bus:seated bounds.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are runtime-built. Hero, City pedestrians and stairwell cat
   load low-poly 3D prefabs; no world gameplay sprites/`BillboardSprite` remain.

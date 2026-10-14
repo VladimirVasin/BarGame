@@ -33,7 +33,7 @@ namespace BarPromenade.Tests.PlayMode
         //  the camera while it plays and hands it back to the follow.
         private const float SettleSeconds = 2f;
 
-        //  The chase camera wants 2.2 m indoors and gives that up to
+        //  The chase camera wants 1.9 m indoors and gives that up to
         //  geometry behind the hero. Under a metre it is inside him.
         private const float MinimumCameraDistance = 1f;
 

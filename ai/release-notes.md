@@ -8,23 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-14 — Бой и склад
 
-- Хват биты/крюк вперёд; удар из-за плеча с акцентом/возвратом, блок двумя.
-  Без фокуса — по направлению героя. `TWO HAND STRIKE EXPORTED PROOF`; позы просмотрены.
-- Герой/зомби перешагивают трупы; стены/лестницы/сброс сохранены.
-  `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`; кадры просмотрены.
-- Полигон: ткань следует телу/креплениям без физики; открывание рукой/волосы прежние.
-  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; кадры просмотрены.
-- Грудной луч с тенями; торс следует обзору/прицелу, действия важнее.
-  Вне источников чёрно; подбор освещён. Проверка: `CombatWarehouseFlashlight`,
-  `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; кадры просмотрены.
-- Склад: три этажа/комнаты-коридоры, ржавчина/потёки, движущиеся механизмы.
-  Решётка — заглушка; верхний свет бросает тени лопастей по залу/галереям.
-  Шаги/выстрелы тяжёлые и низкие, с эхом; UV-износ.
-  Мебель лицом к входам; проход свободен.
-- Тема `Audio/CombatWarehouseMusic/warehouse_theme`:80% скорости/ниже тон,
-  сильное эхо/реверберация;вход→петля/сброс-новый сохраняют позицию.
-- Проверки: `CombatWarehouse`, `CombatWarehouseFanShadows`, `CombatWarehouseAudio`,
-  `MixerAsset_HasCanonicalDspRoutingAndSceneValues`, `check-docs.py`; кадры просмотрены.
+- Лом: хват биты/крюк вперёд; акцент из-за плеча/возврат/блок двумя;
+  без фокуса — по направлению героя. `TWO HAND STRIKE EXPORTED PROOF`.
+- Герой/зомби: шаг через трупы; стены/лестницы/сброс прежние.
+  `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`.
+- Полигон: ткань на теле/креплениях без физики; открывание рукой/волосы прежние.
+  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`.
+- Грудной луч/тени; торс: обзор-прицел/действия важнее.
+  Вне источников чёрно, подбор освещён. `CombatWarehouseFlashlight`,
+  `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`.
+- Склад:3 этажа/комнаты/ржавчина/потёки/UV-износ/движущие механизмы.
+  Решётка — заглушка; тени лопастей зал-галереи/мебель к входам/свободный подход.
+  Шаги/выстрелы тяжёлые/низкие/эхо.
+- `Audio/CombatWarehouseMusic/warehouse_theme`:80% скорости/ниже тон/эхо-реверберация;
+  вход→петля; сброс/новый: позиция сохранена.
+- `CombatWarehouse`, `CombatWarehouseFanShadows`, `CombatWarehouseAudio`,
+  `MixerAsset_HasCanonicalDspRoutingAndSceneValues`, `check-docs.py`; позы/кадры просмотрены.
+- Камера справа выше на20см:1,9 м/прицел1,4 м; движение не отдаляет.
+  Крестик крупнее/шире на ходу.
+  Сужение:2 с покоя; дрожь плавнее/отдача прежняя.
+  `CameraProfiles/CameraFollow/Obstacle/DollyZoom`, `AIM STABILITY MODEL PASSED`, `check-docs.py`.
 
 ### 2026-10-13 — Ресурсы и полигон
 

@@ -5,37 +5,34 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-14 - Combat and warehouse
 
-- Bat grip: adjacent fists at handle end, right above left/hook forward; one
-  accented shoulder strike/return and block. Free strike follows hero facing;
-  shared rig/stops/Ready/arm handoff remain. Offline continuity adds no actions;
-  FBX socket half-turn fixes hook orientation. Proof: `TWO HAND STRIKE EXPORTED PROOF`,
+- Bat: adjacent handle-end fists/R above L/hook→; shoulder accent/return/block/free-facing.
+  Rig/stops/Ready/handoff; offline0new actions, FBX socket half-turn fix.
+  Proof: `TWO HAND STRIKE EXPORTED PROOF`,
   `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`; source/export matched, motion reviewed.
-- Hero/zombies cross bodies/remains, including chase/lunge/crawl; original-leg
-  clearance retains walls/floor. Owned exclusions reset on pooled disabled anatomy;
-  scratch grows/retries. Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
+- Hero/zombies cross bodies/remains/chase/lunge/crawl; original-leg clearance keeps walls/
+  floor. Pool exclusions reset even on disabled anatomy; scratch grows/retries.
+  Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
   movement, pause, stairs, reuse and frames reviewed.
-- Combat cloth-off before hero creation: jacket/scarf use rig, sling anchors;
-  hand opening/hair/world retained. No solve/contact/playback through pause,
-  drop/pickup/defeat/reset; resume starts fresh. Proof:
+- Combat cloth-off before hero: jacket/scarf rig/sling anchors; hand-opening/hair/
+  world kept. No solve/contact/playback during pause/drop/pickup/defeat/reset;
+  fresh resume. Proof:
   `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; counters/frames reviewed.
-- Cached failed BodyHero artifact: scoped source-skin metadata/recipe migration
-  prevents reselection. Ordered imports retain avatar/meshes; declared dependencies
-  replace nested body/head imports, without global version/geometry change. Proof:
+- Failed BodyHero cache: scoped source-skin metadata/recipe migration blocks reuse.
+  Ordered imports keep avatar/meshes; declared deps replace nested body/head imports;
+  global version/geometry kept.
   `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`; rebuild logs clean.
-- Chest Spot/hard shadows, hero-centred ambient→black; Ps1Lit bakedGI-only,
-  passes/pragmas/direct beam retained; cached globals/cleanup/fog-sky off.
-  Bounded Spine-Chest orbit/gun intent keeps root/legs; actions win, pause holds,
-  repeated Apply advances no time. Shared preview/fridge use cached Point pair,
-  isolated masks/restore, materials/MPBs kept. Proof:
+- Chest Spot/hard shadows/hero ambient→black; Ps1Lit bakedGI-only, passes/pragmas/
+  beam kept; cached globals/cleanup/fog-sky off. Spine-Chest orbit/gun intent:
+  bounded/root-legs kept/actions win/pause/repeated Apply0time.
+  Preview/fridge:cached Point pair/isolated masks/restore/shared materials-MPBs. Proof:
   `tools/build-player-flashlight-3d-model.py`, `CombatWarehouseFlashlight`,
   `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames reviewed.
-- Warehouse:wet rust/routes/futile machines→port-work disgust;
-  dim lamps/grille stub/0story job-monologue. UV atlases/metric tiles/macro/
-  rare cutout/close-prop density;triplanar0. Root theme/reset-New playhead/cleanup;
-  room sets opposite entry/front→entry/collision-clear approach.
-  Fan duct/fixture/steady top Spot/real blade shadows;
-  roof-deck occlusion/bounded shadow tiers/pausefreeze/cleanup. Bibles/state/index.
-- Warehouse acoustics:cached prewarmed low-impact cues/shared snapshot return
+- Warehouse:wet rust/routes/futile machines→port-work disgust;dim lamps/grille
+  stub/0story job-monologue. UV/metric tiles/macro/rare cutout/close-prop density/
+  triplanar0. Root theme/reset-New playhead/cleanup;rooms face entry/clear approach.
+  Fan duct/fixture/steady Spot/blade shadows/roof-deck occlusion/bounded tiers/
+  pause/cleanup. Bibles/state/index.
+- Acoustics:cached prewarmed low-impact cues/shared snapshot return
   echo-reverb/theme pitch.8;UI dry/other scenes restore/voice bounds retained.
   Proof: `AreaCaptureFixture.CombatWarehouseAudio`,
   `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`.
@@ -44,6 +41,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `CombatWarehouse`, `CombatWarehouseFanShadows`;UV/room/fan shadow frames reviewed.
 - Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
   before/new pragmas identical.
+- Camera:right shoulder.5/back1.9/aim1.4/up.2;root0lag/handoff/dolly;overflow grow-retry/fallback.
+  Larger HUD/moving drift;2s continuous still/reaim-look keep/pause0;
+  slower drift/recoil kept. Proof: `CameraProfiles/CameraFollow/Obstacle/DollyZoom`,
+  `AIM STABILITY MODEL PASSED`, `check-docs.py`;hero frames reviewed.
 
 ## 2026-10-13 - Bounded world and simple combat
 

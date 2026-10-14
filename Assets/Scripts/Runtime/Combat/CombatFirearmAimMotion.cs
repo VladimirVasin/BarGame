@@ -5,7 +5,11 @@ namespace BarPromenade
     /// <summary>Bounded, simulation-owned hand drift and imperfect recovery; samples never advance it.</summary>
     internal sealed class CombatFirearmAimMotion
     {
+        private const float StationarySpeed = .05f;
+        private const float MovementExpandSeconds = .08f;
+        private const float StationarySettleSeconds = 2f;
         private float driftPhase, verticalPhase, irregularPhase, tremorPhase, finePhase, movement;
+        private float stationaryElapsed = StationarySettleSeconds, settleOrigin;
         private float recoveryElapsed = 1f, recoverySeconds = .72f;
         private Vector2 recoveryOrigin, kick;
 
@@ -25,7 +29,7 @@ namespace BarPromenade
 
         internal Vector2 Offset(bool shotgun)
         {
-            float weight = (shotgun ? .72f : 1f) * (1f + 1.7f * movement);
+            float weight = (shotgun ? .72f : 1f) * (1f + 3f * movement);
             float irregular = .65f + .35f * Mathf.Sin(irregularPhase);
             return new Vector2(
                 (.28f * Mathf.Sin(driftPhase) + .12f * Mathf.Sin(tremorPhase) * irregular) * weight,
@@ -40,14 +44,26 @@ namespace BarPromenade
             // Reloading may hide the hands' offset, but cannot suspend a
             // previous shot and resurrect it when the magazine returns.
             recoveryElapsed = Mathf.Min(recoverySeconds, recoveryElapsed + dt);
+            // Accuracy belongs to actual motion, even with the weapon lowered.
+            // Releasing aim cannot bypass the uninterrupted standing interval.
+            if (float.IsFinite(planarSpeed) && planarSpeed > StationarySpeed)
+            {
+                movement = Mathf.MoveTowards(movement, 1f, dt / MovementExpandSeconds);
+                stationaryElapsed = 0f;
+                settleOrigin = movement;
+            }
+            else
+            {
+                stationaryElapsed = Mathf.Min(StationarySettleSeconds, stationaryElapsed + dt);
+                movement = settleOrigin * (1f - Mathf.SmoothStep(0f, 1f,
+                    stationaryElapsed / StationarySettleSeconds));
+            }
             if (!aiming) return;
             driftPhase = Mathf.Repeat(driftPhase + dt * 1.31f, Mathf.PI * 2f);
             verticalPhase = Mathf.Repeat(verticalPhase + dt * 1.7947f, Mathf.PI * 2f);
             irregularPhase = Mathf.Repeat(irregularPhase + dt * 1.0349f, Mathf.PI * 2f);
-            tremorPhase = Mathf.Repeat(tremorPhase + dt * 47f, Mathf.PI * 2f);
-            finePhase = Mathf.Repeat(finePhase + dt * 39.01f, Mathf.PI * 2f);
-            float target = float.IsFinite(planarSpeed) ? Mathf.Clamp01(planarSpeed / 2.2f) : 0f;
-            movement = Mathf.Lerp(target, movement, Mathf.Exp(-dt * (target > movement ? 12f : 4f)));
+            tremorPhase = Mathf.Repeat(tremorPhase + dt * 6.1f, Mathf.PI * 2f);
+            finePhase = Mathf.Repeat(finePhase + dt * 5.3f, Mathf.PI * 2f);
         }
 
         internal void NotifyShot(bool shotgun, int sequence)
@@ -60,11 +76,18 @@ namespace BarPromenade
             recoveryElapsed = 0f;
         }
 
-        internal void Reset()
+        internal void ResetAim()
         {
-            driftPhase = verticalPhase = irregularPhase = tremorPhase = finePhase = movement = 0f;
+            driftPhase = verticalPhase = irregularPhase = tremorPhase = finePhase = 0f;
             recoveryOrigin = kick = Vector2.zero;
             recoveryElapsed = recoverySeconds;
+        }
+
+        internal void Reset()
+        {
+            ResetAim();
+            movement = settleOrigin = 0f;
+            stationaryElapsed = StationarySettleSeconds;
         }
     }
 }

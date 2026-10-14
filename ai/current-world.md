@@ -161,7 +161,9 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Rise:tread/pose→Rising/retry/blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
-  Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
+  Hero:smooth drift/moving aim4×/2s stationary settle/recoil-yaw-overshoot/regrip/blink-chin;
+  HUD/rig share movement;look/aim toggle keep settle,pause0;
+  reticle:3×2px arms/2×2dot/moving gap+6pistol/+10shotgun/muzzle direction;
   Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
   shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
   Partialreload/physicalspend/empty refusal;
@@ -1747,20 +1749,17 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Accel/brake `6.5/11 m/s²`; release coasts; modal/transition/teleport stop;
   constraints retain no momentum. Camera-plane only in CombatTest aim.
   Intoxication scales walk/run; fatigue no debuff; scripted approaches walk;
-- in City, BarInterior and ordinary Supermarket play, a very close freely
-  orbiting perspective third-person chase camera with
-  `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing,
-  raised `1.4 m / 1.3 m` focus points that keep the hero in the lower frame,
-  weighty yaw/pitch/focus damping, a player-controlled vertical orbit bounded
-  to `-20°..55°`, bounded focus lag, teleport snapping, subtle deterministic
-  idle/walk motion and smoothly recovering obstacle-aware distance. RMB mouse
-  motion, the gamepad right stick and the arrow keys (a stick-style
-  per-second axis; walking is WASD-only) drive both orbit axes in City, Bar
-  and ordinary Supermarket play; the seated park board game opts the arrows
-  out of its camera sample because they own the board cursor there;
-  cinematic motion fades out for fullscreen modals,
-  while the balance-specific lock keeps its intoxication and fall reactions
-  visible;
+- City/Bar/ordinary Supermarket:orbiting third-person chase `1.9 m` ext/int;
+  FOV `53°/57°`,focus `1.6/1.5 m`,hero low.
+  Camera-right `.5 m` matches free aim;aim `1.4 m` back/FOV kept.
+  Free/stable gun origin:shoulder+`.4 m`;melee lock+`.2 m`.
+  Stable gun lock:same distance/handoff;side/back collision/dolly align.
+  Root travel is direct; authored focus overrides damp/cap `.45 m`.
+  Yaw/pitch damping,`-20°..55°`,teleport snap/idle-walk motion remain.
+  Collision contracts immediately/recovers smoothly. RMB mouse, right stick and
+  arrow keys drive orbit; arrows are per-second axes, WASD alone walks.
+  The seated park board game reserves arrows for its cursor. Fullscreen modals
+  fade cinematic motion; balance lock retains intoxication/fall reactions;
 - Home keeps its three authored fixed shots and now protects the player from
   foreground occlusion through one explicit registry of logical furniture,
   dressing, door and balcony-rail groups. Five 3D presentation samples cover

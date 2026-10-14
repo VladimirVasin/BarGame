@@ -4,12 +4,16 @@ namespace BarPromenade
 {
     public sealed partial class PlayerCameraFollow
     {
+        internal const float FirearmAimDistance = 1.4f;
+        internal const float RightShoulderOffset = .5f;
+        internal const float FirearmAimHeightOffset = .4f;
+
         private object freeAimOwner;
         private Transform freeAimShoulder;
         private int freeAimInputFrame = -1;
         private int freeAimOrbitFrame = -1;
         private float freeAimShoulderHeight;
-        private Vector3 freeAimCameraOffset = new Vector3(.8f, 0f, -1.9f);
+        private Vector3 freeAimCameraOffset = new Vector3(RightShoulderOffset, 0f, -FirearmAimDistance);
         private Quaternion freeAimRotationOffset = Quaternion.identity;
         private float freeAimFieldOfView = TargetLockFieldOfView;
         private float freeAimHitKick;
@@ -42,7 +46,7 @@ namespace BarPromenade
             freeAimOwner = owner;
             freeAimShoulder = shoulder;
             freeAimShoulderHeight = shoulder.position.y - followTarget.position.y;
-            freeAimCameraOffset = new Vector3(.8f, 0f, -1.9f);
+            freeAimCameraOffset = new Vector3(RightShoulderOffset, 0f, -FirearmAimDistance);
             freeAimRotationOffset = Quaternion.identity;
             freeAimFieldOfView = TargetLockFieldOfView;
             if (preserveCurrentPose)
@@ -199,7 +203,7 @@ namespace BarPromenade
             // Arm/torso recoil belongs to the character, not the camera boom
             // or the next centre ray used to aim the gun.
             Vector3 origin = followTarget.position;
-            origin.y += Mathf.Max(freeAimShoulderHeight + .2f, collisionRadius + collisionPadding);
+            origin.y += Mathf.Max(freeAimShoulderHeight + FirearmAimHeightOffset, collisionRadius + collisionPadding);
             return origin;
         }
     }

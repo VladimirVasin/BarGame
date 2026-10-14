@@ -46,6 +46,12 @@ namespace BarPromenade
             }
         }
 
+        // Keep the last movement pixel until standing has fully settled;
+        // the separate shot pulse retains its existing pixel rounding.
+        internal float FirearmCrosshairSpread => 1f + (Hero.IsShotgun ? 5f : 0f) +
+            Mathf.Ceil((Hero.IsShotgun ? 10f : 6f) * Hero.FirearmAimMovementAmount) +
+            Mathf.Round(PistolCrosshairExpansion);
+
         private void AdvancePistolCrosshair(float seconds) => pistolCrosshairElapsed = Mathf.Min(
             CrosshairExpandSeconds + CrosshairReturnSeconds, pistolCrosshairElapsed + seconds);
 
@@ -231,13 +237,14 @@ namespace BarPromenade
                 Vector3 centre = CameraFollow.Camera.WorldToScreenPoint(aimPoint);
                 Vector2 point = canvas.ScreenToLogical(new Vector2(centre.x, Screen.height - centre.y));
                 Color colour = Hero.PistolBodyAvailable && Hero.Firearm.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
-                float spread = Mathf.Round(PistolCrosshairExpansion) + (Hero.IsShotgun ? 5f : 0f);
+                float spread = FirearmCrosshairSpread;
+                point = new Vector2(Mathf.Round(point.x), Mathf.Round(point.y));
                 if (centre.z > 0f && centre.x >= 0f && centre.x < Screen.width && centre.y >= 0f && centre.y < Screen.height)
                 {
-                    RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
+                    RetroUiTheme.FillRect(new Rect(point.x - 2f, point.y - 2f, 4f, 4f), RetroUiTheme.Ink);
                     DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);
                     DrawPistolCrosshairArms(point, spread, colour, 0f);
-                    RetroUiTheme.FillRect(new Rect(point.x, point.y, 1f, 1f), colour);
+                    RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 2f, 2f), colour);
                 }
             }
             var rect = new Rect(14, 273, 170, 25);
@@ -256,10 +263,10 @@ namespace BarPromenade
 
         private static void DrawPistolCrosshairArms(Vector2 point, float spread, Color colour, float rim)
         {
-            RetroUiTheme.FillRect(new Rect(point.x - 2f - spread - rim, point.y - rim, 2f + rim * 2f, 1f + rim * 2f), colour);
-            RetroUiTheme.FillRect(new Rect(point.x + 1f + spread - rim, point.y - rim, 2f + rim * 2f, 1f + rim * 2f), colour);
-            RetroUiTheme.FillRect(new Rect(point.x - rim, point.y - 2f - spread - rim, 1f + rim * 2f, 2f + rim * 2f), colour);
-            RetroUiTheme.FillRect(new Rect(point.x - rim, point.y + 1f + spread - rim, 1f + rim * 2f, 2f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x - 4f - spread - rim, point.y - 1f - rim, 3f + rim * 2f, 2f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x + 1f + spread - rim, point.y - 1f - rim, 3f + rim * 2f, 2f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x - 1f - rim, point.y - 4f - spread - rim, 2f + rim * 2f, 3f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x - 1f - rim, point.y + 1f + spread - rim, 2f + rim * 2f, 3f + rim * 2f), colour);
         }
     }
 }
