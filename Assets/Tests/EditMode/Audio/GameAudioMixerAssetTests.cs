@@ -50,7 +50,8 @@ namespace BarPromenade.Tests.EditMode
             GameAudioProfile.Bar,
             GameAudioProfile.Stairwell,
             GameAudioProfile.Home,
-            GameAudioProfile.DoorTransition
+            GameAudioProfile.DoorTransition,
+            GameAudioProfile.CombatWarehouse
         };
 
         private static readonly string[] RequiredSnapshotNames =
@@ -59,7 +60,8 @@ namespace BarPromenade.Tests.EditMode
             "Bar",
             "Stairwell",
             "Home",
-            "DoorTransition"
+            "DoorTransition",
+            "CombatWarehouse"
         };
 
         [TestCase(
@@ -73,6 +75,9 @@ namespace BarPromenade.Tests.EditMode
             GameAudioMixer.SceneProfileTransitionSeconds)]
         [TestCase(
             GameAudioProfile.Home,
+            GameAudioMixer.SceneProfileTransitionSeconds)]
+        [TestCase(
+            GameAudioProfile.CombatWarehouse,
             GameAudioMixer.SceneProfileTransitionSeconds)]
         [TestCase(
             GameAudioProfile.DoorTransition,
@@ -271,7 +276,7 @@ namespace BarPromenade.Tests.EditMode
             List<Object> receives =
                 RequireEffects(effects, "Receive", 2);
             List<Object> sends =
-                RequireEffects(effects, "Send", 5);
+                RequireEffects(effects, "Send", 6);
 
             for (int index = 0; index < sends.Count; index++)
             {
@@ -312,6 +317,8 @@ namespace BarPromenade.Tests.EditMode
                     mixer,
                     "Master/Perception/Echo Return",
                     "Echo Return");
+            Object worldLowMid = GetSingleGroupEffect(world, "ParamEQ");
+            Object worldLowpass = GetSingleGroupEffect(world, "Lowpass");
 
             Assert.That(
                 GetSingleGroupEffect(master, "Compressor"),
@@ -357,11 +364,11 @@ namespace BarPromenade.Tests.EditMode
                 receives,
                 new[] { reverbReceive, echoReceive });
 
-            AssertSendLayout(music, reverbReceive);
+            AssertSendLayout(music, reverbReceive, echoReceive);
             CollectionAssert.AreEqual(
-                new[] { "Attenuation", "Send" },
+                new[] { "Attenuation", "Send", "Send" },
                 GetOrderedEffectNames(music),
-                "Music gain must lower both the dry theme and its reverb send.");
+                "Music gain must lower the dry theme and both room sends.");
             AssertSendLayout(
                 details,
                 reverbReceive,
@@ -370,6 +377,10 @@ namespace BarPromenade.Tests.EditMode
                 world,
                 reverbReceive,
                 echoReceive);
+            CollectionAssert.AreEqual(
+                new[] { "Attenuation", "ParamEQ", "Lowpass", "Send", "Send" },
+                GetOrderedEffectNames(world),
+                "Warehouse impact tone must reach both the dry and wet paths.");
             Assert.That(
                 GetGroupEffects(ui, "Send"),
                 Is.Empty,
@@ -384,6 +395,19 @@ namespace BarPromenade.Tests.EditMode
                 AudioMixerSnapshot snapshot =
                     mixer.FindSnapshot(snapshotName);
                 Assert.That(snapshot, Is.Not.Null);
+                bool warehouse = snapshotName ==
+                    GameAudioMixer.CombatWarehouseSnapshotName;
+                AssertValue(GetEffectParameter(worldLowMid, mixer, snapshot,
+                    "Center freq"), 165f, snapshotName + " impact low-mid centre");
+                AssertValue(GetEffectParameter(worldLowMid, mixer, snapshot,
+                    "Frequency gain"), warehouse ? 1.65f : 1f,
+                    snapshotName + " impact low-mid gain");
+                AssertValue(GetEffectParameter(worldLowpass, mixer, snapshot,
+                    "Cutoff freq"), warehouse ? 5200f : 22000f,
+                    snapshotName + " impact high-frequency cutoff");
+                AssertValue(GetEffectMixLevel(FindSendTo(music, echoReceive),
+                    mixer, snapshot), warehouse ? -7f : -80f,
+                    snapshotName + " music echo send");
 
                 AssertValue(GetGroupVolume(perception, mixer, snapshot), 0f,
                     snapshotName + " perception gain");
@@ -405,7 +429,7 @@ namespace BarPromenade.Tests.EditMode
                         mixer,
                         snapshot,
                         "Delay"),
-                    230f,
+                    warehouse ? 340f : 230f,
                     $"{snapshotName} Echo Delay");
                 AssertValue(
                     GetEffectParameter(
@@ -413,7 +437,7 @@ namespace BarPromenade.Tests.EditMode
                         mixer,
                         snapshot,
                         "Decay"),
-                    0.18f,
+                    warehouse ? 0.52f : 0.18f,
                     $"{snapshotName} Echo Decay");
                 AssertValue(
                     GetEffectParameter(
@@ -437,7 +461,7 @@ namespace BarPromenade.Tests.EditMode
                         mixer,
                         snapshot,
                         "Wetmix"),
-                    0.34f,
+                    warehouse ? 0.72f : 0.34f,
                     $"{snapshotName} Echo Wetmix");
                 for (int groupIndex = 0;
                      groupIndex < RequiredGroups.Length;
@@ -539,6 +563,19 @@ namespace BarPromenade.Tests.EditMode
                         mixer,
                         home,
                         "Decay Time")));
+
+            AudioMixerSnapshot warehouseSnapshot = mixer.FindSnapshot(
+                GameAudioMixer.CombatWarehouseSnapshotName);
+            AssertValue(GetEffectParameter(reverb, mixer, warehouseSnapshot,
+                "Decay Time"), 3.4f, "Warehouse bounded reverb decay");
+            AssertValue(GetEffectParameter(reverb, mixer, warehouseSnapshot,
+                "Decay HF Ratio"), 0.32f, "Warehouse dark reverb tail");
+            AssertValue(GetEffectMixLevel(FindSendTo(music, reverbReceive),
+                mixer, warehouseSnapshot), -8f, "Warehouse music reverb send");
+            AssertValue(GetEffectMixLevel(FindSendTo(world, reverbReceive),
+                mixer, warehouseSnapshot), -7f, "Warehouse impact reverb send");
+            AssertValue(GetEffectMixLevel(FindSendTo(world, echoReceive),
+                mixer, warehouseSnapshot), -8f, "Warehouse impact echo send");
         }
 
         private static Dictionary<string, List<Object>> IndexEffects(

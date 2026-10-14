@@ -145,6 +145,39 @@ namespace BarPromenade
     public static class RetroSfxLibrary
     {
         public const int SampleRate = 22050;
+        public const float WarehouseFootstepPitchScale = 0.84f;
+        public const float WarehouseGunshotPitchScale = 0.88f;
+
+        public static bool HasWarehouseTreatment(RetroSfxId id)
+        {
+            switch (id)
+            {
+                case RetroSfxId.Footstep:
+                case RetroSfxId.FootstepConcrete:
+                case RetroSfxId.FootstepMetal:
+                case RetroSfxId.PistolFire:
+                case RetroSfxId.ShotgunFire:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static float GetWarehousePitchScale(RetroSfxId id)
+        {
+            switch (id)
+            {
+                case RetroSfxId.Footstep:
+                case RetroSfxId.FootstepConcrete:
+                case RetroSfxId.FootstepMetal:
+                    return WarehouseFootstepPitchScale;
+                case RetroSfxId.PistolFire:
+                case RetroSfxId.ShotgunFire:
+                    return WarehouseGunshotPitchScale;
+                default:
+                    return 1f;
+            }
+        }
 
         private static readonly RetroSfxDefinition[] definitions =
         {
@@ -1043,6 +1076,82 @@ namespace BarPromenade
             clip.SetData(samples, 0);
             clip.hideFlags = HideFlags.DontSave;
             return clip;
+        }
+
+        /// <summary>
+        /// Dry warehouse impact bodies. Room reflections belong to the shared
+        /// mixer, so these short clips neither duplicate echo nor retain a voice
+        /// for the full reverberation tail. Canonical clips remain unchanged.
+        /// </summary>
+        public static float[] GenerateWarehouseSamples(RetroSfxId id, int variant = 0)
+        {
+            if (!HasWarehouseTreatment(id))
+                throw new ArgumentOutOfRangeException(nameof(id));
+            RetroSfxDefinition definition = GetDefinition(id);
+            if (variant < 0 || variant >= definition.VariantCount)
+                throw new ArgumentOutOfRangeException(nameof(variant));
+
+            bool gunshot = id == RetroSfxId.PistolFire || id == RetroSfxId.ShotgunFire;
+            float duration = id == RetroSfxId.ShotgunFire ? .64f :
+                id == RetroSfxId.PistolFire ? .42f : id == RetroSfxId.FootstepMetal ? .32f : .22f;
+            var samples = new float[Mathf.CeilToInt(duration * SampleRate)];
+            uint noiseState = 0x9E3779B9u ^ ((uint)id * 0x85EBCA6Bu) ^
+                ((uint)variant * 0xC2B2AE35u);
+            float detune = VariantDetune(variant);
+            float lowPassAmount = 1f - Mathf.Exp(-2f * Mathf.PI *
+                (gunshot ? 4200f : 2000f) / SampleRate);
+            float filtered = 0f;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                float time = index / (float)SampleRate;
+                float raw = GenerateWarehouseImpact(id, time, duration, definition.Duration,
+                    ref noiseState, detune);
+                filtered += (raw - filtered) * lowPassAmount;
+                samples[index] = Mathf.Clamp(filtered, -.96f, .96f);
+            }
+            return samples;
+        }
+
+        internal static AudioClip CreateWarehouseRuntimeClip(RetroSfxId id, int variant)
+        {
+            float[] samples = GenerateWarehouseSamples(id, variant);
+            AudioClip clip = AudioClip.Create("Warehouse " + id + " " + (variant + 1),
+                samples.Length, 1, SampleRate, false);
+            clip.SetData(samples, 0);
+            clip.hideFlags = HideFlags.DontSave;
+            return clip;
+        }
+
+        private static float GenerateWarehouseImpact(
+            RetroSfxId id, float time, float duration, float textureDuration,
+            ref uint noiseState, float detune)
+        {
+            bool gunshot = id == RetroSfxId.PistolFire || id == RetroSfxId.ShotgunFire;
+            // Keep the original material/weapon onset recognizable; only its
+            // high bite is reduced. Do not stretch animation-synchronous cues.
+            float texture = time < textureDuration
+                ? GenerateRawSample(id, time, textureDuration, ref noiseState, detune)
+                : 0f;
+            float body = Envelope(time, duration, gunshot ? .0008f : .0015f, 3f);
+            if (gunshot)
+            {
+                bool shotgun = id == RetroSfxId.ShotgunFire;
+                float weight = GlideSine(time, duration, shotgun ? 102f : 142f,
+                    shotgun ? 36f : 48f) * .48f * body;
+                float resonance = Mathf.Sin(2f * Mathf.PI * (shotgun ? 58f : 72f) * time) *
+                    .13f * Envelope(time, duration, .002f, 2.4f);
+                return texture * .20f + weight + resonance;
+            }
+
+            bool metal = id == RetroSfxId.FootstepMetal;
+            float impact = Mathf.Sin(2f * Mathf.PI * (metal ? 71f : 64f) * detune * time) *
+                .52f * body;
+            float material = metal
+                ? MetalModes(time, 290f, detune) * .16f *
+                    Envelope(time, duration, .001f, 4.5f)
+                : Mathf.Sin(2f * Mathf.PI * 128f * detune * time) * .10f *
+                    Envelope(time, duration, .001f, 6f);
+            return texture * .32f + impact + material;
         }
 
         private static float GenerateRawSample(

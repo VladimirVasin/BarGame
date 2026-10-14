@@ -1,0 +1,45 @@
+{
+  "design_id": "warehouse_surfaces_v2",
+  "size": 512,
+  "mode": "RGB",
+  "mipmaps": true,
+  "wrap": "Repeat",
+  "windows_compression": "BC7",
+  "sheets": [
+    {
+      "name": "WarehouseConcrete",
+      "sha256": "adf1e3da406392136b605d2940ead1ed2a2dd2baef4044265cf27015df670dfd",
+      "mean_linear_luminance": 0.21547
+    },
+    {
+      "name": "WarehousePaint",
+      "sha256": "ac9e9a6e01394e4a3c3c173360ca008e15ccab1fc76b0154c1af2a57a449f4a4",
+      "mean_linear_luminance": 0.14528
+    },
+    {
+      "name": "WarehouseSteel",
+      "sha256": "e7c1cd9e37c445c2d4856712384e4909e35728ed458a70521bb7bda64b1720c5",
+      "mean_linear_luminance": 0.040143
+    },
+    {
+      "name": "WarehouseRust",
+      "sha256": "f278812ca44507346fd1bf60e20b8c772304e5e55cd786eae39508437ac3300e",
+      "mean_linear_luminance": 0.06672
+    },
+    {
+      "name": "WarehouseTimber",
+      "sha256": "8884d6f78a99c54a4cb69ae8f1270541a3480f39b0991750390afcc2ccdbad9f",
+      "mean_linear_luminance": 0.117248
+    },
+    {
+      "name": "WarehouseCardboard",
+      "sha256": "da4bd3c9458146bd0d72e3601724a25becab200fb95f45170d16f051c3a4f1ad",
+      "mean_linear_luminance": 0.151625
+    },
+    {
+      "name": "WarehouseRubber",
+      "sha256": "ad9247dfac17f3eb9cfb376bc1d6aee4ef3880b1aab891d0aa6a7f7a381bdda6",
+      "mean_linear_luminance": 0.045721
+    }
+  ]
+}

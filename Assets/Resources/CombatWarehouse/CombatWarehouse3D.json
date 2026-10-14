@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-combat-warehouse-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "2.0.1",
   "blender_version": "5.0.1",
-  "build_signature": "bbf3f41048321d82008d31b165b441a3af0cd9b4733a69450a6e2bc0acff0633",
+  "build_signature": "defc7c3343cbff16b79dcde5421c41a58e423591959170cb432a817f3edd3593",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -11,75 +11,75 @@
   "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
   "signed_volumes": "every solid positive before and after axis swap",
   "determinism": "two independent geometry builds match",
-  "triangle_count": 17204,
+  "triangle_count": 25404,
   "materials": {
     "Concrete": [
-      0.48,
-      0.49,
-      0.45
+      0.38,
+      0.39,
+      0.34
     ],
     "ConcreteDark": [
-      0.3,
-      0.33,
-      0.3
+      0.2,
+      0.23,
+      0.21
     ],
     "Steel": [
-      0.23,
-      0.29,
-      0.28
-    ],
-    "WornSteel": [
-      0.48,
-      0.51,
-      0.47
-    ],
-    "Rust": [
-      0.34,
-      0.23,
-      0.17
-    ],
-    "Timber": [
-      0.38,
-      0.3,
+      0.2,
+      0.24,
       0.22
     ],
+    "WornSteel": [
+      0.36,
+      0.39,
+      0.32
+    ],
+    "Rust": [
+      0.39,
+      0.23,
+      0.13
+    ],
+    "Timber": [
+      0.31,
+      0.25,
+      0.18
+    ],
     "Cardboard": [
-      0.51,
-      0.43,
-      0.31
+      0.39,
+      0.32,
+      0.23
     ],
     "Glass": [
-      0.36,
-      0.43,
-      0.42
+      0.24,
+      0.3,
+      0.27
     ],
     "Lamp": [
-      0.88,
-      0.78,
-      0.59
+      0.67,
+      0.57,
+      0.36
     ],
     "Rubber": [
+      0.08,
       0.1,
-      0.12,
-      0.115
+      0.085
     ]
   },
   "models": [
     {
       "name": "Shell",
       "bounds_min": [
-        -12.3,
+        -15.3,
         -0.24,
-        -9.3
+        -12.3
       ],
       "bounds_max": [
-        12.3,
-        6.18,
-        9.3
+        15.3,
+        10.38,
+        12.3
       ],
-      "triangle_count": 6224,
-      "solid_count": 164,
-      "mesh_count": 30,
+      "triangle_count": 2772,
+      "solid_count": 95,
+      "mesh_count": 23,
       "anchors": [
         {
           "name": "FloorCenter",
@@ -94,7 +94,25 @@
           "name": "CeilingCenter",
           "position": [
             0,
-            6.0,
+            10.2,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "GoalDoor",
+          "position": [
+            0,
+            0,
+            11.9
+          ],
+          "parent": null
+        },
+        {
+          "name": "FanMount",
+          "position": [
+            0,
+            10.2,
             0
           ],
           "parent": null
@@ -105,7 +123,7 @@
       "name": "Platform",
       "bounds_min": [
         -1.5,
-        -2.6,
+        -0.32,
         -1.5
       ],
       "bounds_max": [
@@ -113,9 +131,9 @@
         0.005,
         1.5
       ],
-      "triangle_count": 1244,
-      "solid_count": 49,
-      "mesh_count": 9,
+      "triangle_count": 476,
+      "solid_count": 17,
+      "mesh_count": 4,
       "anchors": [
         {
           "name": "DeckCenter",
@@ -131,17 +149,17 @@
     {
       "name": "Stair",
       "bounds_min": [
-        -1.08,
-        -0.05914,
+        -1.28,
+        -0.059275,
         -0.07
       ],
       "bounds_max": [
-        1.08,
-        3.609269,
-        4.816686
+        1.28,
+        4.209371,
+        6.016471
       ],
-      "triangle_count": 4816,
-      "solid_count": 164,
+      "triangle_count": 5856,
+      "solid_count": 200,
       "mesh_count": 10,
       "anchors": [
         {
@@ -157,8 +175,8 @@
           "name": "Top",
           "position": [
             0,
-            2.6,
-            4.8
+            3.2,
+            6.0
           ],
           "parent": null
         }
@@ -367,14 +385,379 @@
           "parent": null
         }
       ]
+    },
+    {
+      "name": "RoomShell",
+      "bounds_min": [
+        -3.0,
+        0.0,
+        -3.0
+      ],
+      "bounds_max": [
+        3.0,
+        3.08,
+        3.0
+      ],
+      "triangle_count": 588,
+      "solid_count": 17,
+      "mesh_count": 14,
+      "anchors": [
+        {
+          "name": "Entry",
+          "position": [
+            3.0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "RoomCenter",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "MainDoor",
+      "bounds_min": [
+        -2.12,
+        0.0,
+        -0.186
+      ],
+      "bounds_max": [
+        2.12,
+        3.09,
+        0.11
+      ],
+      "triangle_count": 604,
+      "solid_count": 21,
+      "mesh_count": 7,
+      "anchors": [
+        {
+          "name": "Approach",
+          "position": [
+            0,
+            0,
+            -1.3
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Gate",
+      "bounds_min": [
+        -2.05,
+        0.0,
+        -0.17
+      ],
+      "bounds_max": [
+        2.05,
+        3.0,
+        0.05
+      ],
+      "triangle_count": 1108,
+      "solid_count": 49,
+      "mesh_count": 10,
+      "anchors": [
+        {
+          "name": "Lock",
+          "position": [
+            0.17,
+            1.15,
+            -0.13
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "FanHousing",
+      "bounds_min": [
+        -4.0,
+        -0.6,
+        -4.0
+      ],
+      "bounds_max": [
+        4.0,
+        1.02,
+        4.0
+      ],
+      "triangle_count": 1972,
+      "solid_count": 32,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "Rotor",
+          "position": [
+            0,
+            -0.42,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "FanRotor",
+      "bounds_min": [
+        -3.5,
+        -0.15,
+        -3.081185
+      ],
+      "bounds_max": [
+        3.5,
+        0.15,
+        3.081185
+      ],
+      "triangle_count": 228,
+      "solid_count": 7,
+      "mesh_count": 3,
+      "anchors": [
+        {
+          "name": "Axis",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "LiftFrame",
+      "bounds_min": [
+        -1.55,
+        0.0,
+        -1.45
+      ],
+      "bounds_max": [
+        1.55,
+        8.9,
+        1.45
+      ],
+      "triangle_count": 2068,
+      "solid_count": 91,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "PlatformLower",
+          "position": [
+            0,
+            0.4,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "PlatformUpper",
+          "position": [
+            0,
+            6.6,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "LiftPlatform",
+      "bounds_min": [
+        -1.15,
+        -0.1,
+        -1.125
+      ],
+      "bounds_max": [
+        1.15,
+        0.28,
+        1.125
+      ],
+      "triangle_count": 140,
+      "solid_count": 5,
+      "mesh_count": 2,
+      "anchors": [
+        {
+          "name": "Axis",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "ChainDrum",
+      "bounds_min": [
+        -1.5,
+        0.0,
+        -0.79
+      ],
+      "bounds_max": [
+        1.5,
+        2.6,
+        0.79
+      ],
+      "triangle_count": 940,
+      "solid_count": 33,
+      "mesh_count": 11,
+      "anchors": [
+        {
+          "name": "DrumRotor",
+          "position": [
+            0,
+            1.1,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PusherFrame",
+      "bounds_min": [
+        -1.7,
+        0.0,
+        -1.3
+      ],
+      "bounds_max": [
+        1.7,
+        2.2,
+        1.3
+      ],
+      "triangle_count": 972,
+      "solid_count": 41,
+      "mesh_count": 8,
+      "anchors": [
+        {
+          "name": "HeadLower",
+          "position": [
+            0,
+            0,
+            0.2
+          ],
+          "parent": null
+        },
+        {
+          "name": "HeadUpper",
+          "position": [
+            0,
+            0,
+            0.65
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PusherHead",
+      "bounds_min": [
+        -0.725,
+        0.315,
+        -1.05
+      ],
+      "bounds_max": [
+        0.725,
+        1.5475,
+        0.58
+      ],
+      "triangle_count": 240,
+      "solid_count": 8,
+      "mesh_count": 6,
+      "anchors": [
+        {
+          "name": "Axis",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "LockerProps",
+      "bounds_min": [
+        -0.975,
+        0.0,
+        -0.366
+      ],
+      "bounds_max": [
+        0.965,
+        1.85,
+        0.275
+      ],
+      "triangle_count": 900,
+      "solid_count": 33,
+      "mesh_count": 6,
+      "anchors": []
+    },
+    {
+      "name": "BreakProps",
+      "bounds_min": [
+        -0.95,
+        0.028356,
+        -0.65
+      ],
+      "bounds_max": [
+        0.95,
+        1.03,
+        0.605
+      ],
+      "triangle_count": 680,
+      "solid_count": 24,
+      "mesh_count": 9,
+      "anchors": []
+    },
+    {
+      "name": "TechnicalProps",
+      "bounds_min": [
+        -1.075,
+        0.0,
+        -0.32
+      ],
+      "bounds_max": [
+        1.075,
+        1.85,
+        0.58
+      ],
+      "triangle_count": 648,
+      "solid_count": 22,
+      "mesh_count": 9,
+      "anchors": []
+    },
+    {
+      "name": "TwistedFrame",
+      "bounds_min": [
+        -2.009461,
+        -0.018059,
+        -0.3787
+      ],
+      "bounds_max": [
+        2.009461,
+        5.799369,
+        0.449832
+      ],
+      "triangle_count": 292,
+      "solid_count": 11,
+      "mesh_count": 3,
+      "anchors": []
     }
   ],
-  "design_id": "combat_warehouse_modular_v1",
+  "design_id": "combat_warehouse_industrial_nightmare_v2",
   "contract": {
     "shell_inner_dimensions": [
-      24,
-      6,
-      18
+      30,
+      10.2,
+      24
     ],
     "deck_tile_size": [
       3,
@@ -382,19 +765,71 @@
       3
     ],
     "deck_top_local_y": 0,
-    "platform_height": 2.6,
-    "platform_posts_xz": [
-      -1.34,
-      1.34
+    "platform_height": 3.2,
+    "platform_posts_xz": [],
+    "platform_post_width": 0,
+    "platform_shoe_width": 0,
+    "level_heights": [
+      0,
+      3.2,
+      6.4
     ],
-    "platform_post_width": 0.14,
-    "platform_shoe_width": 0.26,
-    "stair_width": 2,
-    "stair_run": 4.8,
-    "stair_rise": 2.6,
-    "stair_treads": 16,
+    "stair_width": 2.4,
+    "stair_run": 6.0,
+    "stair_rise": 3.2,
+    "stair_treads": 20,
     "stair_tread_depth": 0.3,
-    "stair_tread_rise": 0.1625,
+    "stair_tread_rise": 0.16,
+    "room_dimensions": [
+      6,
+      3,
+      6
+    ],
+    "room_wall_thickness": 0.16,
+    "room_door_width": 2.4,
+    "room_door_height": 2.55,
+    "room_door_local_direction": "+X",
+    "room_floor_owned_by_deck": true,
+    "main_door_size": [
+      4,
+      3
+    ],
+    "gate_size": [
+      4,
+      3
+    ],
+    "fan_diameter": 7.0,
+    "fan_axis": "Y",
+    "fan_rotor_anchor": [
+      0,
+      -0.42,
+      0
+    ],
+    "fan_aperture_validation": "vertical authored-face rays clear through rim/duct below DuctEnd",
+    "lift_footprint": [
+      3,
+      2.8
+    ],
+    "lift_height": 8.9,
+    "lift_platform_local_y": [
+      0.4,
+      6.6
+    ],
+    "drum_rotor_anchor": [
+      0,
+      1.1,
+      0
+    ],
+    "drum_rotation_axis": "X",
+    "pusher_footprint": [
+      3.4,
+      2.6
+    ],
+    "pusher_head_local_z": [
+      0.2,
+      0.65
+    ],
+    "moving_parts_have_collision": false,
     "rail_length": 1,
     "rack_footprint": [
       3,

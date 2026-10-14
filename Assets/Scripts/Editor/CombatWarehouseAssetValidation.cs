@@ -24,6 +24,7 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Combat Test/Validate Warehouse Assets (Read Only)")]
         public static void ValidateOrThrow()
         {
+            ValidateTextures();
             TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
             if (source == null || source != Resources.Load<TextAsset>(
                     WarehouseArenaAssetProvider.ResourceFolder + "CombatWarehouse3D"))
@@ -129,6 +130,24 @@ namespace BarPromenade.Editor
             foreach (float component in value)
                 if (float.IsNaN(component) || float.IsInfinity(component))
                     throw new InvalidOperationException("Warehouse manifest vector is not finite: " + label);
+        }
+
+        private static void ValidateTextures()
+        {
+            foreach (string name in WarehouseArenaAssetProvider.TextureNames)
+            {
+                string path = Folder + "Textures/" + name + ".png";
+                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (texture == null || importer == null || texture.width != 512 || texture.height != 512 ||
+                    texture != Resources.Load<Texture2D>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name) ||
+                    !importer.sRGBTexture || !importer.mipmapEnabled || importer.isReadable ||
+                    importer.wrapMode != TextureWrapMode.Repeat)
+                    throw new InvalidOperationException("Warehouse surface must be a shared 512 RGB sRGB/mipped/repeating map: " + name);
+                TextureImporterPlatformSettings windows = importer.GetPlatformTextureSettings("Standalone");
+                if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != 512)
+                    throw new InvalidOperationException("Warehouse surface must retain the Windows BC7 profile: " + name);
+            }
         }
 
         [Serializable] private sealed class Manifest

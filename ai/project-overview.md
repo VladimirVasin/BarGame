@@ -80,10 +80,11 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/Lchest lamp/torso-look Spot/nearfill→black;
+- CombatTest:3floor/9room nightmare warehouse/fan/movers/6lamps/grille stub;
+  heavy low steps/guns/echo-reverb/theme.8;Lchest Spot/torso/fill→black;
   zombies/chase-lunge;Standard1/Endless1–5(default2)/≤2corpses/≤5pool.
-  All3/1-2-3/finiteammo+4pickups/safe rise/novice aim/corpse step;
-  gap:pierce/balance. Rules/owners: [current-world.md](current-world.md).
+  All3/1-2-3/finiteammo+4packs/safe rise/novice aim/corpse step;
+  gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;
@@ -131,9 +132,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Shared PS1 presentation, causal audio and bounded diagnostics.
 
 See [current-world.md](current-world.md) for gameplay and
-[systems-map.md](systems-map.md) for system owners. Find paths with `git ls-files`
-and `rg`. The story/art bibles define canon; implementation documents do not
-authorize deviations.
+[systems-map.md](systems-map.md) for owners. Paths: `git ls-files`/`rg`; the bibles own canon.
 
 ## Deferred
 

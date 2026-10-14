@@ -7,8 +7,8 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private readonly EndlessCombatState endless = new EndlessCombatState();
-        private readonly RaycastHit[] spawnGroundHits = new RaycastHit[16];
-        private readonly Collider[] spawnOverlapHits = new Collider[32];
+        private RaycastHit[] spawnGroundHits = new RaycastHit[16];
+        private Collider[] spawnOverlapHits = new Collider[32];
         private readonly List<Vector3> warehouseSpawnRoute = new List<Vector3>(64);
         private readonly List<Vector3> validSpawnPoints = new List<Vector3>(32);
         private uint spawnPointSeed;
@@ -154,13 +154,12 @@ namespace BarPromenade
         private bool TrySpawnGround(Vector3 candidate, CombatActor recycled, out Vector3 grounded)
         {
             grounded = default;
-            int count = Physics.RaycastNonAlloc(candidate + Vector3.up * 3f, Vector3.down,
-                spawnGroundHits, 6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == spawnGroundHits.Length) return false;
+            RaycastHit[] groundHits = CombatTraversalQueries.Raycast(candidate + Vector3.up * 3f, Vector3.down,
+                ref spawnGroundHits, 6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore, out int count);
             float nearest = float.PositiveInfinity;
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = spawnGroundHits[i];
+                RaycastHit hit = groundHits[i];
                 float expectedHeight = WarehousePlan != null ? candidate.y : heroSpawn.y - PlayerFactory.GroundedRootOffset;
                 if (hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .7f ||
                     Mathf.Abs(hit.point.y - expectedHeight) > .15f || hit.distance >= nearest) continue;
@@ -168,12 +167,11 @@ namespace BarPromenade
                 grounded = hit.point + Vector3.up * PlayerFactory.GroundedRootOffset;
             }
             if (float.IsPositiveInfinity(nearest) || !arenaBounds.Contains(grounded, .32f)) return false;
-            count = Physics.OverlapCapsuleNonAlloc(grounded + Vector3.up * .32f,
-                grounded + Vector3.up * 1.43f, .32f, spawnOverlapHits,
-                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == spawnOverlapHits.Length) return false;
+            Collider[] overlapHits = CombatTraversalQueries.OverlapCapsule(grounded + Vector3.up * .32f,
+                grounded + Vector3.up * 1.43f, .32f, ref spawnOverlapHits,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore, out count);
             for (int i = 0; i < count; i++)
-                if (spawnOverlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;
+                if (overlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;
             return true;
         }
 

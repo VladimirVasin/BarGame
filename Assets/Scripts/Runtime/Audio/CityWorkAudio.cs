@@ -6,7 +6,8 @@ namespace BarPromenade
     /// short room response. No listener-wide zone or extra ambience bed.</summary>
     public static class CityWorkAudio
     {
-        public static void Configure(AudioSource source, bool interior, float cutoff, float radius)
+        public static void Configure(AudioSource source, bool interior, float cutoff, float radius,
+            bool sourceRoom = true)
         {
             source.spatialBlend = 1f;
             source.panStereo = 0f;
@@ -21,6 +22,8 @@ namespace BarPromenade
             var filter = source.gameObject.AddComponent<AudioLowPassFilter>();
             filter.cutoffFrequency = cutoff;
             filter.lowpassResonanceQ = 1f;
+            // A scene mixer can own the whole room response once for its bus.
+            if (!sourceRoom) return;
             var room = source.gameObject.AddComponent<AudioReverbFilter>();
             room.reverbPreset = AudioReverbPreset.User;
             room.dryLevel = 0f;

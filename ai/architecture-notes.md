@@ -4,24 +4,37 @@
 
 CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
 
+- **Accepted exception — 2026-10-14, warehouse otherworld:**
+  CombatTest rusty/wet otherworld;art§15a. Port-loader monotony/exhaustion/disgust
+  →repeated routes/futile machines;0City job-wage-quest/monologue.
+  0dream-transition/organic/siren/mystics/clues/world infection;
+  §6(outside-scale)/§16/§21/9checks. Blender assets/sources/phases;
+  seed/resetkeep/New/flat:test-only/0hazard-falldmg;movers clear routes/pause.
+
+- **Accepted — 2026-10-14, warehouse acoustics:**
+  User:heavy low booming steps/guns+echo;theme20%slower/strong echo-reverb.
+  CombatWarehouse/shared returns/World165Hz↑/5.2kHzLP;room3.4s/echo340ms/.52;
+  UI dry/other scenes restore.
+  Optional `Audio/CombatWarehouseMusic/warehouse_theme` WAV/OGG/MP3;
+  SceneMusicPlayer/MusicMix/Streaming-background-stereo/pitch.8(speed+tone).
+  Root carrier/reset-New playhead/pause-disable-resume/exit;empty silent/add→entry.
+  11cached mono impact cues/steps pitch×.84/guns×.88;warm before input/resetkeep/
+  service teardown;5World voices/room DSP shared/0hotalloc.
+
 - **Accepted — 2026-10-14, warehouse torso look:**
-  Clean ordinary orbit/neutral14° (not hero camera target); stable gun intent.
-  Spine/Chest40/60;down35/up20/residualyaw20/roll6°/combined envelope.
-  Orbit yaw≤35 full→90 zero;root/legs kept;left Chest light follows.
-  Contextual/authored actions/draw/fall/rise win;owned cleanup/cached bones/0hotalloc.
-  Pause/modal holds the accepted pose.
-  Simulation Advance only; repeated Apply0time/0accumulated bend.
+  Orbit≠camera target/neutral14°;stable gun intent;Spine-Chest40/60;
+  down35/up20/yaw20/roll6° combined;orbit≤35full→90zero/root-legs kept/Llight.
+  Actions-draw-fall-rise win/pause-modal hold/ownedcleanup/cachedbones/0hotalloc;
+  sim Advance only/repeated Apply0time-bend.
 
 - **Accepted exception — 2026-10-14, warehouse chest flashlight:**
   User:CombatTest/Blender/LM65Chest/torso→/always on.
-  Spot intensity60/16m/60–28°/hard;8fixtures passive/emission-key-fog-sky0;
-  Ambient-only:hero3D full3m→SmoothStep→black12m/0camera veil;
-  Shared `Ps1Lit` Forward wrap: bakedGI only;
-  existing passes/pragmas/direct-light/shadows/emission stay.
-  Scene-owned global off outside warehouse; cached hero/movement-only LateUpdate;
-  disable/unload/subsystem cleanup/0MPB-material clones-new pass.
-  1hero/resetkeep/sharedassets/bounds/teardown;
-  costunmeasured/0input-battery-inventory-story.
+  Spot60/16m/60–28°/hard;practicals:otherworld decision/key-fog-sky0.
+  Ambient:hero3D full3m→SmoothStep→black12m/0camera veil;
+  Ps1Lit Forward bakedGI-only/passes-pragmas-direct-shadows-emission kept.
+  Cachedhero/movement-only LateUpdate/scene-ownedglobal off outside;
+  disable-unload-subsystem cleanup/0MPB-clones-newpass;
+  1hero/resetkeep/sharedassets/bounds/teardown/unmeasuredcost/0input-battery-inventory-story.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.
@@ -66,8 +79,6 @@ CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
   Three port albedos:Windows BC7HQ/same512-mips-sampling;
   0world-story/FPSunmeasured.
 
-- **Accepted exception — 2026-10-12, warehouse polygon:**
-  seed/resetkeep/levels/flat:test-only/0story-hazard-falldmg.
 - **Accepted exception — 2026-10-13, bounded combat population:**
   User:Endless1–5(default2)/corpses0–2(default2)/pool=livecap≤5.
   Oldest defeat retires;unused→oldest;others/flights kept;Standard1/Ebody.
@@ -5821,19 +5832,15 @@ CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
   seed-phased controller for two heads and flashes amber below 1 Hz; red and
   green lenses remain dimly visible without realtime lights.
 - **Accepted — One canonical audio mixer:** `GameAudioMixer` loads one
-  `Resources/Audio/Mixers/BarPromenadeAudio` asset and resolves exact
-  `Music`, `Ambience/Beds`, `Ambience/Details`, `SFX/World`,
-  `SFX/Gameplay` and dry `UI`. City, Bar, Stairwell and Home snapshots blend
-  over `.25 s`; DoorTransition cuts at blackout. Master keeps `-6 dB` under
-  a compressor. Music/details/world feed scene-specific Receive/Reverb and
-  Receive/Echo returns: Home short, damped, echo-free; Stairwell longest and
-  strongest, with dark high-frequency rolloff and restrained stereo echo.
-- **Accepted — The mix hierarchy is invariant across scenes:** All snapshots keep
-  Music `-11.5 dB`, Ambience/Beds `-4 dB`, Ambience/Details `+0.5 dB`,
-  SFX/World `+2 dB`, SFX/Gameplay `+2.5 dB` and dry UI `+1.5 dB` below the
-  shared `-6 dB` Master. Detail/world send trims preserve wet-tail energy
-  despite raised dry buses. Thunder is a world event, the wake alarm a gameplay
-  signal; neither uses the continuous ambience tier. Room response may vary.
+  `Resources/Audio/Mixers/BarPromenadeAudio`:Music/Ambience(Beds,Details)/
+  SFX(World,Gameplay)/dryUI. City/Bar/Stairwell/Home/CombatWarehouse blend
+  `.25 s`;DoorTransition cuts at blackout;Master `-6 dB`/compressor.
+  Music/details/world→shared Receive/Reverb/Echo;Home short/damped/echo-free,
+  Stairwell dark restrained echo;warehouse acoustics above.
+- **Accepted — The mix hierarchy is invariant across scenes:** Snapshots keep
+  Music `-11.5`,Beds `-4`,Details `+0.5`,World `+2`,Gameplay `+2.5`,dryUI `+1.5 dB`;
+  Master `-6 dB`;detail/world send trims retain wet energy. Thunder=World,
+  wake alarm=Gameplay,neither bed;room response varies.
 - **Accepted — Bus audio belongs to visible mechanisms:** The pooled Route 01
   actor owns exactly four fully spatial voices. Two sit in the rear motor
   compartment: a mid-rich exterior diesel whose linear `24-48 m` tail is tied

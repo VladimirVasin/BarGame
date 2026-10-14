@@ -61,7 +61,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(leftChest, Is.InRange(-.32f, -.04f),
                     "In the standing pose the imported flashlight must sit on the hero's anatomical left chest.");
                 AssertFlashlightMount(flashlight, chest, bindings);
-                AssertOnlyWarehouseFlashlight(root, spot);
+                AssertWarehouseFlashlightAndPracticals(root, spot);
                 Assert.That(spot.type, Is.EqualTo(LightType.Spot));
                 Assert.That(spot.shadows, Is.Not.EqualTo(LightShadows.None));
                 Assert.That(spot.shadowStrength, Is.EqualTo(1f).Within(.001f));
@@ -76,7 +76,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.CameraFollow.enabled = false;
                 yield return CaptureFlashlightMount(camera, root, flashlight, "Test flashlight left chest");
 
-                // The south loading door is three metres from the authored entrance.
+                // The south loading wall is three metres from the authored entrance.
                 // Its real dark painted steel is a demanding readability receiver.
                 root.Hero.ResetActor(root.WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset,
                     Vector3.back);
@@ -216,12 +216,12 @@ namespace BarPromenade.Tests.PlayMode
                 root.ResetRound();
                 yield return null;
                 Assert.That(root.Flashlight, Is.SameAs(flashlight));
-                AssertOnlyWarehouseFlashlight(root, spot);
+                AssertWarehouseFlashlightAndPracticals(root, spot);
                 AssertFlashlightMount(flashlight, chest, bindings);
                 Assert.That(root.NewWarehouseLayout(1), Is.True);
                 yield return null;
                 Assert.That(root.Flashlight, Is.SameAs(flashlight));
-                AssertOnlyWarehouseFlashlight(root, spot);
+                AssertWarehouseFlashlightAndPracticals(root, spot);
                 root.CameraFollow.enabled = true;
                 root.CameraFollow.Snap();
                 yield return null;
@@ -274,17 +274,21 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(1f));
         }
 
-        private static void AssertOnlyWarehouseFlashlight(CombatTestRoot root, Light spot)
+        private static void AssertWarehouseFlashlightAndPracticals(CombatTestRoot root, Light spot)
         {
             Assert.That(root.GetComponentsInChildren<CombatChestFlashlight>(true).Length, Is.EqualTo(1));
-            int active = 0;
+            int active = 0, practical = 0;
             foreach (Light light in Object.FindObjectsByType<Light>())
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
                 active++;
-                Assert.That(light, Is.SameAs(spot), "No warehouse work light or exterior sun may fill the room.");
+                if (light == spot) continue;
+                Assert.That(light.gameObject.name, Is.EqualTo("Warehouse Work Lamp"),
+                    "Only the plan's rare practical lamps may accompany the original chest source.");
+                practical++;
             }
-            Assert.That(active, Is.EqualTo(1));
+            Assert.That(practical, Is.EqualTo(root.WarehousePlan.Lamps.Count));
+            Assert.That(active, Is.EqualTo(1 + root.WarehousePlan.Lamps.Count));
         }
 
         private static IEnumerator CaptureFlashlightDistanceVisibility(CombatTestRoot root,

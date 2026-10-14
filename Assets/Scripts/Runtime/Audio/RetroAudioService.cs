@@ -145,6 +145,7 @@ namespace BarPromenade
         // more than one; slot 0 is the same object as `clips[id]`. Null
         // where a cue has a single clip, which is nearly everything.
         private AudioClip[][] variantClips;
+        private AudioClip[][] warehouseClips;
         private int[] lastVariants;
         private SourcePool[] pools;
         private double[] nextAllowedTimes;
@@ -155,6 +156,7 @@ namespace BarPromenade
         public bool IsInitialized => initialized;
         public int GeneratedClipCount { get; private set; }
         public int GeneratedVariantClipCount { get; private set; }
+        public int GeneratedWarehouseClipCount { get; private set; }
         public int SourceCount { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(
@@ -230,6 +232,44 @@ namespace BarPromenade
             return variantClips[index][variant];
         }
 
+        /// <summary>
+        /// A warehouse-only dry impact; this read does not allocate or change
+        /// the canonical clip accessors used elsewhere in the world.
+        /// </summary>
+        public AudioClip GetWarehouseClip(RetroSfxId id, int variant = 0)
+        {
+            int index = (int)id;
+            if (warehouseClips == null || index <= 0 || index >= warehouseClips.Length ||
+                warehouseClips[index] == null || variant < 0 ||
+                variant >= warehouseClips[index].Length)
+                return null;
+            return warehouseClips[index][variant];
+        }
+
+        /// <summary>
+        /// Called at warehouse construction, before input. Eleven mono clips
+        /// are shared by all feet and firearms, including repeated rounds.
+        /// </summary>
+        public void WarmWarehouseClips()
+        {
+            Initialize();
+            if (warehouseClips != null) return;
+            warehouseClips = new AudioClip[clips.Length][];
+            for (int index = 1; index < clips.Length; index++)
+            {
+                var id = (RetroSfxId)index;
+                if (!RetroSfxLibrary.HasWarehouseTreatment(id)) continue;
+                int variantCount = RetroSfxLibrary.GetDefinition(id).VariantCount;
+                var bank = new AudioClip[variantCount];
+                for (int variant = 0; variant < variantCount; variant++)
+                {
+                    bank[variant] = RetroSfxLibrary.CreateWarehouseRuntimeClip(id, variant);
+                    GeneratedWarehouseClipCount++;
+                }
+                warehouseClips[index] = bank;
+            }
+        }
+
         /// <summary>The bank slot the last play of this cue used.</summary>
         public int GetLastVariant(RetroSfxId id)
         {
@@ -277,6 +317,16 @@ namespace BarPromenade
             SourcePool pool = pools[(int)definition.Category];
             AudioClip clip = clips[index];
             AudioClip[] bank = variantClips[index];
+            bool warehouseTreatment = GameAudioMixer.CurrentProfile == GameAudioProfile.CombatWarehouse &&
+                RetroSfxLibrary.HasWarehouseTreatment(id);
+            if (warehouseTreatment)
+            {
+                // Defensive fallback for direct callers; production warms the
+                // finite bank when composing the warehouse, before gameplay.
+                WarmWarehouseClips();
+                bank = warehouseClips[index];
+                clip = bank[0];
+            }
             if (bank != null && bank.Length > 1)
             {
                 int variant = RetroSfxLibrary.NextVariant(
@@ -288,6 +338,7 @@ namespace BarPromenade
             }
 
             float pitch = GetNextPitch(definition);
+            if (warehouseTreatment) pitch *= RetroSfxLibrary.GetWarehousePitchScale(id);
             if (!pool.TryPlay(
                     definition,
                     clip,
@@ -447,9 +498,21 @@ namespace BarPromenade
 
             clips = null;
             variantClips = null;
+            if (warehouseClips != null)
+            {
+                for (int index = 1; index < warehouseClips.Length; index++)
+                {
+                    AudioClip[] bank = warehouseClips[index];
+                    if (bank == null) continue;
+                    for (int variant = 0; variant < bank.Length; variant++)
+                        DestroyClip(bank[variant]);
+                }
+            }
+            warehouseClips = null;
             lastVariants = null;
             GeneratedClipCount = 0;
             GeneratedVariantClipCount = 0;
+            GeneratedWarehouseClipCount = 0;
             initialized = false;
         }
 

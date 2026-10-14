@@ -38,6 +38,7 @@ namespace BarPromenade.Editor
             StairwellMusicPlayer.ResourcePath,
             SupermarketMusicPlayer.ResourcePath,
             HomeSmokingMusicPlayer.ResourcePath,
+            CombatWarehouseMusicPlayer.ResourcePath,
             MonoResourcePaths[0],
             MonoResourcePaths[1],
             MonoResourcePaths[2]
@@ -137,9 +138,10 @@ namespace BarPromenade.Editor
                 string path = FindAssetPath(resource);
                 if (path == null)
                 {
-                    // Radio stations and the newly prepared village slot may
+                    // Radio stations and the optional village/warehouse slots may
                     // be empty; their players stay silent until a file arrives.
-                    if (IsMonoResource(resource) || resource == AlpineVillageMusicPlayer.ResourcePath) continue;
+                    if (IsMonoResource(resource) || resource == AlpineVillageMusicPlayer.ResourcePath ||
+                        resource == CombatWarehouseMusicPlayer.ResourcePath) continue;
                     throw new InvalidOperationException($"Scene theme is missing: '{resource}'.");
                 }
 

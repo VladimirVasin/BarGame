@@ -6,16 +6,11 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private readonly Vector3[] ammoPositions = new Vector3[CombatAmmoSpawner.Capacity];
-        private static readonly Vector3[] AmmoPlacementTargets =
-        {
-            new Vector3(-6f, 0f, -4f), new Vector3(6f, 0f, -4f),
-            new Vector3(-6f, WarehouseArenaPlan.UpperHeight, 7f),
-            new Vector3(6f, WarehouseArenaPlan.UpperHeight, 7f)
-        };
         internal CombatAmmoSpawner AmmoSpawns { get; private set; }
 
         private void OnEnable()
         {
+            AcquireWarehouseAcoustics();
             if (Flashlight != null) Flashlight.enabled = true;
             AmmoSpawns?.SetInteractionEnabled(Hero != null && !Hero.State.IsDefeated && pistolApplicationFocused);
         }
@@ -51,11 +46,10 @@ namespace BarPromenade
                 return;
             }
             var area = (WarehouseArenaArea)arenaBounds;
-            // Select on immutable validated routes only at initialization/reset/layout changes.
-            // Two lower and two upper positions spread both ammunition types across the level.
+            // The plan owns anchors on all three storeys. Resolve only at initialization/reset/layout changes.
             for (int slot = 0; slot < ammoPositions.Length; slot++)
             {
-                Vector3 target = AmmoPlacementTargets[slot];
+                Vector3 target = WarehousePlan.AmmoAnchors[slot];
                 float best = float.PositiveInfinity;
                 bool found = false;
                 foreach (Vector3 node in WarehousePlan.NavigationNodes)

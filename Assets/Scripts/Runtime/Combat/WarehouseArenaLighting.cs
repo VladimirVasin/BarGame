@@ -24,7 +24,7 @@ namespace BarPromenade
             camera.farClipPlane = 48f;
             camera.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             // The warehouse is Single-loaded. Any authored scene light is off;
-            // the one moving source is installed later with the original hero rig.
+            // plan-owned practical lights and the original hero's source are installed later.
             foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
                 if (light.gameObject.scene == camera.gameObject.scene) light.enabled = false;
             ApplyAmbient();
@@ -47,6 +47,28 @@ namespace BarPromenade
             var diffuse = new SphericalHarmonicsL2();
             diffuse.AddAmbientLight(AmbientColor);
             RenderSettings.ambientProbe = diffuse;
+        }
+
+        public static Light CreatePractical(WarehouseArenaLamp lamp, Transform parent)
+        {
+            var host = new GameObject("Warehouse Work Lamp");
+            host.transform.SetParent(parent, false);
+            host.transform.localPosition = lamp.Position + lamp.Direction * .37f;
+            host.transform.localRotation = Quaternion.LookRotation(lamp.Direction,
+                Mathf.Abs(Vector3.Dot(lamp.Direction, Vector3.up)) > .99f ? Vector3.forward : Vector3.up);
+            Light light = host.AddComponent<Light>();
+            // Short directed pools prevent a room's light leaking through its neighbours.
+            light.type = LightType.Spot;
+            light.color = new Color(.78f, .75f, .57f);
+            light.intensity = lamp.Intensity;
+            light.range = lamp.Range;
+            light.spotAngle = 92f;
+            light.innerSpotAngle = 48f;
+            light.shadows = LightShadows.Hard;
+            light.shadowResolution = LightShadowResolution.Low;
+            light.shadowBias = .035f;
+            light.shadowNormalBias = .12f;
+            return light;
         }
 
         public static void BindHeroVisibility(Transform hero)

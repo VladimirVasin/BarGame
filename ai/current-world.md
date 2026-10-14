@@ -1,23 +1,17 @@
 # Current world and gameplay catalogue
 
-Read [project-overview.md](project-overview.md) for the concise technical baseline,
-[systems-map.md](systems-map.md) for owners and [architecture-notes.md](architecture-notes.md)
-for decisions. The world bibles govern additions and changes.
+Baseline: [overview](project-overview.md); owners: [systems](systems-map.md);
+decisions: [architecture](architecture-notes.md).
 
-Loading (`2026-09-06`): one static painting per directed City ↔ MountainRoad ↔
-AlpineVillage edge, bottom progress bar. Direct map transfers use the last leg.
-The village stays warm/inhabited; no text, portrait, spoiler or new world fact.
-Scope: art-bible §15a and the accepted architecture exception.
+Loading (`2026-09-06`, art§15a): static painting/directed City↔MountainRoad↔Village
+edge/bottom bar; direct map uses last leg. Village warm/inhabited;
+no text/portrait/spoiler/new fact; architecture exception.
 
 ## Implemented MVP
 
-A runtime-composed 3D coastal city, separately loaded mountain road and village
-above the cableway, with the upper house's accessible interior. One modular
-low-poly 3D hero walks streets/climb/village lane, approaches the home-adjacent
-bar, supermarket, his home and church north of the cemetery, enters their
-separate interiors and returns to matching exterior entrances.
-
-The vertical slice contains:
+Runtime-composed coastal City; separate MountainRoad/Village above cableway/
+upper-house interior. One modular low-poly 3D hero walks streets/climb/lane;
+home-adjacent bar/shop/home/church north of cemetery: separate interiors/matching returns.
 
 
 ### Areas and scenes
@@ -140,12 +134,19 @@ The vertical slice contains:
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:seeded warehouse24×18×6m/upper2.6m/2stairs/straight-L-U;
-  Blender:cargo-racks/pipes/8passive lamps/concrete-metal steps/vent.
+- CombatTest:warehouse30×24×10.2/levels0-3.2-6.4/9rooms6×6/hall12×12;
+  2stairs/4flights/routes;3seeds/resetkeep/New.
+  Blender:racks/loads/pipes/D7fan/lift/drums/pusher/pause;
+  shared damp concrete/paint/rust/wood/cardboard/rubber;
+  grille/collision/opening stub/approach;6dim lamps/shadows/sound.
+  CombatWarehouse:heavy low steps/guns/echo-reverb;UI dry/other scenes restore.
+  Theme `Audio/CombatWarehouseMusic/warehouse_theme` WAV/OGG/MP3/optional;
+  pitch.8(speed+tone)/strong echo-reverb;
+  root/reset-New keep/disable-resume/exit fade.
   Flashlight:LupperM65/Chest/always on/torso-look/1hero/resetkeep;
-  Spot60/16m/60–28°/hard;ceiling-emission-key-fog-sky0;
+  Spot60/16m/60–28°/hard;key-fog-sky0;
   Ambient-only:hero3D full3→smooth black12m/beam-shadow kept/camera0.
-  NPCgraph/gravity/LOS;resetkeep/Newreplace;flat:test-only.
+  NPCgraph/gravity/LOS;flat:test-only.
   Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
   2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
   Survivors:injury-action-ammo-flights kept/0refill;unused→oldest/excess retire;

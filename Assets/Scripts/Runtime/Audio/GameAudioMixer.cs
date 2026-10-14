@@ -12,6 +12,7 @@ namespace BarPromenade
         Stairwell,
         Home,
         DoorTransition,
+        CombatWarehouse,
         Count
     }
 
@@ -62,6 +63,8 @@ namespace BarPromenade
         public const string HomeSnapshotName = "Home";
         public const string DoorTransitionSnapshotName =
             "DoorTransition";
+        public const string CombatWarehouseSnapshotName =
+            "CombatWarehouse";
 
         public const float SceneProfileTransitionSeconds = 0.25f;
         public const float DoorTransitionProfileTransitionSeconds = 0f;
@@ -84,7 +87,8 @@ namespace BarPromenade
             BarSnapshotName,
             StairwellSnapshotName,
             HomeSnapshotName,
-            DoorTransitionSnapshotName
+            DoorTransitionSnapshotName,
+            CombatWarehouseSnapshotName
         };
 
         private static AudioMixer mixer;
@@ -292,6 +296,7 @@ namespace BarPromenade
                 case GameAudioProfile.Bar:
                 case GameAudioProfile.Stairwell:
                 case GameAudioProfile.Home:
+                case GameAudioProfile.CombatWarehouse:
                     return SceneProfileTransitionSeconds;
                 case GameAudioProfile.DoorTransition:
                     return DoorTransitionProfileTransitionSeconds;

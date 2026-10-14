@@ -75,5 +75,22 @@ namespace BarPromenade
                 Array.Resize(ref scratch, Math.Min(MaximumScratch, scratch.Length * 2));
             }
         }
+
+        internal static Collider[] OverlapCapsule(Vector3 top, Vector3 bottom, float radius, ref Collider[] scratch,
+            int mask, QueryTriggerInteraction triggers, out int count)
+        {
+            while (true)
+            {
+                count = Physics.OverlapCapsuleNonAlloc(top, bottom, radius, scratch, mask, triggers);
+                if (count < scratch.Length) return scratch;
+                if (scratch.Length >= MaximumScratch)
+                {
+                    Collider[] all = Physics.OverlapCapsule(top, bottom, radius, mask, triggers);
+                    count = all.Length;
+                    return all;
+                }
+                Array.Resize(ref scratch, Math.Min(MaximumScratch, scratch.Length * 2));
+            }
+        }
     }
 }

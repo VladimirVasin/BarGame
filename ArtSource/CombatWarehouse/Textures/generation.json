@@ -1,0 +1,47 @@
+{
+  "generator": "image_gen (built-in)",
+  "images": [
+    {
+      "name": "WarehouseConcrete",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseConcrete.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Damp aged warehouse concrete, pale dirty gray green, salt bloom, sparse hairline cracks and dark mineral staining; fine irregular aggregate, medium low contrast. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "e780537b3eaa7938e09025855accd237ca18bd269ac9a7f8d777884ff59d502e"
+    },
+    {
+      "name": "WarehousePaint",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehousePaint.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Old industrial sage green painted metal, broad irregular peeling patches exposing dark iron, salt stains, scraped matte paint, decades of use. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "557b096291237203fe0a6185330d3290762be6b1df18ddcbc7e1358d0578f0d8"
+    },
+    {
+      "name": "WarehouseSteel",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseSteel.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Dark oily structural steel, oxidized brown edges and rubbed gray tool marks, subtle irregular mottling, muted near black gray. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "361bc5674ddc4ea1e48c366190f6216b24cefcfe1e8dcc280f41a489bb7601f9"
+    },
+    {
+      "name": "WarehouseRust",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseRust.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Deep worn iron corrosion, layered umber and orange rust islands with small exposed charcoal metal areas; no bright red. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "14e37398089412df751d565afe4e95da88958a931a53327bfc71c63afc9a9010"
+    },
+    {
+      "name": "WarehouseTimber",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseTimber.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Waterlogged rough pallet timber, gray brown wood grain in parallel vertical planks, dark moisture marks and worn fibers, no hardware. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "bc55ff1a7d4e32a1b00e490d4ff8d5088deecd7b93aa232fc93b705fb30ceb00"
+    },
+    {
+      "name": "WarehouseCardboard",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseCardboard.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Damp dirty brown corrugated cardboard surface, crumpled fibers, subtle folds and water stains, torn paper patches, no printed symbols. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "328686b3f4f7b2681a64a3cb8c0158a97304fae56414eeb661d626e180b55b01"
+    },
+    {
+      "name": "WarehouseRubber",
+      "source": "ArtSource/CombatWarehouse/Textures/WarehouseRubber.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: opaque square seamless tileable game albedo texture for a surreal industrial port warehouse with PS1 presentation. Primary request: Worn industrial black rubber, gray scuff trails, faint molded ridges and oily grime, non shiny. Composition: flat orthographic surface filling the whole square edge to edge; all four edges should tile. Lighting: uniform neutral diffuse illumination, NO directional shading, NO cast shadows, NO baked highlights. Restrained desaturated industrial color with medium readable surface variation. No objects, no text, no labels, no border, no perspective, no holes, no gore. Generate a single square material texture.",
+      "sha256": "af63170e96ab49c757924c15edb20acd53ad58c2be4dddaa48cd4498a5174bcf"
+    }
+  ]
+}

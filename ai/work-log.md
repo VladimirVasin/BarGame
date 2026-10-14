@@ -5,44 +5,42 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-14 - Combat and warehouse
 
-- User chose adjacent bat grip at the handle end, right fist above left;
-  raised hook faces forward. One broad shoulder strike with accented contact
-  and return, plus block; all swing sides/powers use the same authored take.
-- Strike/block no longer require target focus; free strike follows hero facing.
-  Shared world rig, physical stops and bounded support ownership remain.
-- Ready matches the new take; retained actions enter through their existing
-  arm blend. Offline left-arm continuity has no runtime graph or added actions.
-- Fixed FBX socket half-turn maps the source hook to world forward;
-  the rigid hook follows torso winding within its forward cone.
-- Proof: `TWO HAND STRIKE EXPORTED PROOF`; source/export SHA matched;
-  `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`. Current HeroV2 motion reviewed.
-- Hero/zombies cross retained bodies and detached remains; shared original-leg
-  clearance keeps floor/walls authoritative, including chase/lunge and living crawl.
-  Owned collision exclusions reset even on disabled pooled anatomy; query scratch
-  grows/retries instead of treating crowded remains as an absent floor.
-- Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
-  ordinary/aimed movement, committed step, pause, stairs and reuse; crossing frames reviewed.
-- CombatTest selects cloth-off before hero creation: jacket/scarf use the rig,
-  shotgun ribbon follows anchors; pistol hand opening stays. Hair and world-default
-  motion remain. Cloth solvers/contacts/playback stay off through pause, drop,
-  pickup, defeat and reset; restoring simulation starts fresh.
-- Proof: `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`;
-  solver/playback counters, hair continuity, attachments and rendered frames reviewed.
-- Hero rebuild exposed a cached failed BodyHero artifact. Scoped source-skin
-  metadata/recipe migration prevents reselection; ordered main-Editor imports
-  retain avatar/mesh identity. Declared dependencies replace nested body/head
-  reimports; global importer versions and model geometry stay unchanged.
-- Proof: `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`;
-  repeated rebuild and derivative import logs are clean.
-- Warehouse:Lchest Spot/hard shadows;3D ambient→0.
-  Ps1Lit bakedGI-only/passes-pragmas kept;cached globals/cleanup;
-  passive fixtures/key-fog-sky0;beam/emission kept;reset/cost unmeasured.
-  Torso:clean orbit/stable gun intent/Spine-Chest/bounded/rear fade;
-  legs-root kept/actions priority/pause-modal hold/sim Advance/repeat Apply0time.
-  Shared preview/fridge:cached Point pair/bit5/no shadows;restore masks;
-  materials/MPBs/world kept.
-- Proof: `tools/build-player-flashlight-3d-model.py`; deterministic FBX roundtrip;
-  `CombatWarehouseFlashlight`, `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; frames reviewed.
+- Bat grip: adjacent fists at handle end, right above left/hook forward; one
+  accented shoulder strike/return and block. Free strike follows hero facing;
+  shared rig/stops/Ready/arm handoff remain. Offline continuity adds no actions;
+  FBX socket half-turn fixes hook orientation. Proof: `TWO HAND STRIKE EXPORTED PROOF`,
+  `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`; source/export matched, motion reviewed.
+- Hero/zombies cross bodies/remains, including chase/lunge/crawl; original-leg
+  clearance retains walls/floor. Owned exclusions reset on pooled disabled anatomy;
+  scratch grows/retries. Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
+  movement, pause, stairs, reuse and frames reviewed.
+- Combat cloth-off before hero creation: jacket/scarf use rig, sling anchors;
+  hand opening/hair/world retained. No solve/contact/playback through pause,
+  drop/pickup/defeat/reset; resume starts fresh. Proof:
+  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; counters/frames reviewed.
+- Cached failed BodyHero artifact: scoped source-skin metadata/recipe migration
+  prevents reselection. Ordered imports retain avatar/meshes; declared dependencies
+  replace nested body/head imports, without global version/geometry change. Proof:
+  `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`; rebuild logs clean.
+- Chest Spot/hard shadows, hero-centred ambient→black; Ps1Lit bakedGI-only,
+  passes/pragmas/direct beam retained; cached globals/cleanup/key-fog-sky off.
+  Bounded Spine-Chest orbit/gun intent keeps root/legs; actions win, pause holds,
+  repeated Apply advances no time. Shared preview/fridge use cached Point pair,
+  isolated masks/restore, materials/MPBs kept. Proof:
+  `tools/build-player-flashlight-3d-model.py`, `CombatWarehouseFlashlight`,
+  `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames reviewed.
+- Warehouse otherworld:approved damp rust/peeling,repeated rooms/corridors/fan/
+  futile machines→port-work disgust;dim lamps/grille stub/0story job-monologue.
+  Shared streaming root theme:reset/New playhead,pause/disable/exit owned.
+  Ring caps hid blades;closed annuli/bore rays restore view. Bibles/state/index updated.
+- Warehouse acoustics:cached prewarmed low-impact cues/shared snapshot return
+  echo-reverb/theme pitch.8;UI dry/other scenes restore/voice bounds retained.
+  Proof: `AreaCaptureFixture.CombatWarehouseAudio`,
+  `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`.
+- Proof: `build-combat-warehouse-3d-model.py`, `build-combat-warehouse-textures.py`,
+  `tools/check-docs.py`; geometry/surfaces/canon/budgets.
+  `AreaCaptureFixture.CombatWarehouse`:metres/hero-NPC stairs/grille/pause/music;
+  frames reviewed.
 - Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
   before/new pragmas identical.
 

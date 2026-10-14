@@ -10,7 +10,11 @@ namespace BarPromenade
     {
         public const string ResourceFolder = "CombatWarehouse/";
         public static readonly string[] ModelNames = { "Shell", "Platform", "Stair", "Rail", "Rack", "Cargo", "Pipes", "Lamp",
-            "PipeStraight", "PipeElbow", "PipeEnd" };
+            "PipeStraight", "PipeElbow", "PipeEnd", "RoomShell", "MainDoor", "Gate", "FanHousing", "FanRotor",
+            "LiftFrame", "LiftPlatform", "ChainDrum", "PusherFrame", "PusherHead", "LockerProps", "BreakProps",
+            "TechnicalProps", "TwistedFrame" };
+        public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
+            "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber" };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
         private static readonly HashSet<string> Measured = new HashSet<string>();
@@ -105,23 +109,24 @@ namespace BarPromenade
             string texture = null; Color color;
             switch (role)
             {
-                case "Concrete": color = new Color(.68f,.70f,.66f); texture = "PortConcreteAlbedo"; break;
-                case "ConcreteDark": color = new Color(.48f,.51f,.47f); texture = "PortConcreteWallAlbedo"; break;
-                case "Steel": color = new Color(.38f,.47f,.43f); texture = "PortPaintedSteelAlbedo"; break;
-                case "WornSteel": color = new Color(.61f,.64f,.57f); texture = "PortPaintedSteelAlbedo"; break;
-                case "Rust": color = new Color(.45f,.31f,.22f); texture = "PortPaintedSteelAlbedo"; break;
-                case "Timber": color = new Color(.77f,.65f,.48f); texture = "PortTimberAlbedo"; break;
-                case "Cardboard": color = new Color(.55f,.45f,.30f); texture = "PortTimberAlbedo"; break;
+                case "Concrete": color = new Color(.84f,.88f,.83f); texture = "WarehouseConcrete"; break;
+                case "ConcreteDark": color = new Color(.57f,.63f,.58f); texture = "WarehouseConcrete"; break;
+                case "Steel": color = new Color(.72f,.77f,.70f); texture = "WarehousePaint"; break;
+                case "WornSteel": color = new Color(.88f,.88f,.82f); texture = "WarehouseSteel"; break;
+                case "Rust": color = new Color(.90f,.83f,.72f); texture = "WarehouseRust"; break;
+                case "Timber": color = new Color(.80f,.77f,.68f); texture = "WarehouseTimber"; break;
+                case "Cardboard": color = new Color(.88f,.82f,.72f); texture = "WarehouseCardboard"; break;
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
                 case "Lamp": color = new Color(.38f,.37f,.31f); break;
-                case "Rubber": color = new Color(.12f,.15f,.13f); texture = "PortRubberAlbedo"; break;
+                case "Rubber": color = new Color(.70f,.73f,.69f); texture = "WarehouseRubber"; break;
                 default: throw new InvalidOperationException("Unknown warehouse surface " + role);
             }
             Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
             if (shader == null) throw new InvalidOperationException("Warehouse requires the shared PS1 shader.");
-            Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>("City/Port/Textures/" + texture);
-            if (sheet == null) throw new InvalidOperationException("Warehouse is missing a shared port surface " + texture);
-            var material = new Material(shader) { name = "Warehouse " + role + " Shared", hideFlags = HideFlags.HideAndDontSave };
+            Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>(ResourceFolder + "Textures/" + texture);
+            if (sheet == null) throw new InvalidOperationException("Warehouse is missing its shared surface " + texture);
+            var material = new Material(shader) { name = "Warehouse " + role + " Shared", hideFlags = HideFlags.HideAndDontSave,
+                enableInstancing = true };
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
             material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" ? .25f : 0f);

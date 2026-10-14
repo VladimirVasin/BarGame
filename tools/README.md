@@ -134,10 +134,10 @@ Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
-Stage all model/source/texture/animation dirs with repeated
-`--stage-output=--model-dir=Assets/path` to empty `Captures/Tooling`; other args stay.
-Each `--expect` belongs to a mapped destination. Publish checked outputs with Unity
-closed; preserve `.meta`, roll back replacements on failure. Import is not atomic.
+Stage assets via repeated
+`--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`; other args stay.
+`--expect` maps destinations. Publish checked/Unity closed;
+keep `.meta`/rollback on failure. Import is not atomic.
 
 The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
@@ -160,8 +160,9 @@ python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-stri
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.
-`build-combat-warehouse-3d-model.py`→CombatWarehouse;11FBX/JSON;
-`CombatWarehouseAssetValidation`:det/metres.
+`build-combat-warehouse-3d-model.py`:25FBX/JSON/CombatWarehouse;det/metres.
+Textures: `python tools/build-combat-warehouse-textures.py --validate-only`;
+7ImageGen/512RGB/BC7-mips-Repeat/hash-prompt JSON.
 `build-player-flashlight-3d-model.py`:clip/lens/metres;
 `CombatFlashlight{AssetSetup,AssetProvider}`;CombatTest Lchest.
 

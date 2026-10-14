@@ -4,23 +4,44 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Surface-aware constraints and a small immutable-plan route graph. Physics owns visible collision.</summary>
+    /// <summary>Feet-aware storey selection; bounded spatial lookups and reusable route scratch.</summary>
     public sealed class WarehouseArenaArea : IWalkableArea
     {
-        private const float MaximumStep = .23f;
+        private const float MaximumStep = .23f, Headroom = 1.85f, SurfaceCapture = .62f, ObstacleCellSize = 3f;
+        private readonly HashSet<Vector3Int> deckTiles = new HashSet<Vector3Int>();
+        private readonly Dictionary<Vector2Int, List<int>> obstacleCells = new Dictionary<Vector2Int, List<int>>();
+        private readonly List<Vector3> nextStepRoute = new List<Vector3>(64);
         private List<int>[] neighbours = Array.Empty<List<int>>();
-        private float[] routeCost = Array.Empty<float>();
-        private int[] routePrevious = Array.Empty<int>();
+        private float[] routeCost = Array.Empty<float>(), routeEstimate = Array.Empty<float>();
+        private int[] routePrevious = Array.Empty<int>(), routeHeap = Array.Empty<int>(), heapIndex = Array.Empty<int>();
         private bool[] routeClosed = Array.Empty<bool>();
+        private int heapCount;
         public WarehouseArenaPlan Plan { get; private set; }
         public WarehouseArenaArea(WarehouseArenaPlan plan) { ReplacePlan(plan); }
 
         public void ReplacePlan(WarehouseArenaPlan plan)
         {
             Plan = plan ?? throw new ArgumentNullException(nameof(plan));
-            neighbours = new List<int>[plan.NavigationNodes.Count];
-            routeCost = new float[neighbours.Length]; routePrevious = new int[neighbours.Length]; routeClosed = new bool[neighbours.Length];
-            for (int i = 0; i < neighbours.Length; i++) neighbours[i] = new List<int>();
+            deckTiles.Clear(); obstacleCells.Clear(); nextStepRoute.Clear();
+            foreach (Vector3 tile in plan.Platforms)
+                deckTiles.Add(new Vector3Int(Mathf.RoundToInt((tile.x + 13.5f) / 3f),
+                    Mathf.RoundToInt(tile.y / WarehouseArenaPlan.LevelRise), Mathf.RoundToInt((tile.z + 10.5f) / 3f)));
+            for (int i = 0; i < plan.Obstacles.Count; i++)
+            {
+                Bounds bounds = plan.Obstacles[i].Bounds;
+                for (int z = Mathf.FloorToInt(bounds.min.z / ObstacleCellSize); z <= Mathf.FloorToInt(bounds.max.z / ObstacleCellSize); z++)
+                    for (int x = Mathf.FloorToInt(bounds.min.x / ObstacleCellSize); x <= Mathf.FloorToInt(bounds.max.x / ObstacleCellSize); x++)
+                    {
+                        var key = new Vector2Int(x,z);
+                        if (!obstacleCells.TryGetValue(key, out List<int> indices))
+                        { indices = new List<int>(8); obstacleCells.Add(key,indices); }
+                        indices.Add(i);
+                    }
+            }
+            int count = plan.NavigationNodes.Count;
+            neighbours = new List<int>[count]; routeCost = new float[count]; routeEstimate = new float[count];
+            routePrevious = new int[count]; routeClosed = new bool[count]; routeHeap = new int[count]; heapIndex = new int[count];
+            for (int i = 0; i < count; i++) neighbours[i] = new List<int>(8);
             foreach (WarehouseArenaEdge edge in plan.NavigationEdges)
             { neighbours[edge.From].Add(edge.To); neighbours[edge.To].Add(edge.From); }
         }
@@ -30,10 +51,9 @@ namespace BarPromenade
         public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius = 0f)
         {
             if (!Finite(desiredPosition) || radius < 0f) return currentPosition;
-            desiredPosition.x = Mathf.Clamp(desiredPosition.x, -12f + radius, 12f - radius);
-            desiredPosition.z = Mathf.Clamp(desiredPosition.z, -9f + radius, 9f - radius);
+            desiredPosition.x = Mathf.Clamp(desiredPosition.x, -WarehouseArenaPlan.HalfWidth + radius, WarehouseArenaPlan.HalfWidth - radius);
+            desiredPosition.z = Mathf.Clamp(desiredPosition.z, -WarehouseArenaPlan.HalfDepth + radius, WarehouseArenaPlan.HalfDepth - radius);
             if (StepAllowed(currentPosition, desiredPosition, radius)) return desiredPosition;
-            // Preserve sliding beside racks/rails instead of snapping the capsule around a corner.
             Vector3 alongX = new Vector3(desiredPosition.x, desiredPosition.y, currentPosition.z);
             if (StepAllowed(currentPosition, alongX, radius)) return alongX;
             Vector3 alongZ = new Vector3(currentPosition.x, desiredPosition.y, desiredPosition.z);
@@ -43,94 +63,126 @@ namespace BarPromenade
 
         private bool StepAllowed(Vector3 current, Vector3 desired, float radius)
         {
-            if (!TryGetHeight(current, out float before, radius) || !TryGetHeight(desired, out float after, radius)) return false;
-            return Mathf.Abs(after - before) <= MaximumStep && Mathf.Abs(after - current.y) < .48f;
+            if (!TryGetHeight(current, out float before, radius) || !TryGetHeight(desired, out float after, radius) ||
+                Mathf.Abs(after - before) > MaximumStep || Mathf.Abs(after - current.y) >= .48f) return false;
+            // Impulses may be longer than a frame of walking. Sample them too, so thin partitions remain solid.
+            current.y = before; desired.y = after;
+            return CanTraverse(current, desired, radius);
         }
 
-        /// <summary>Chooses the surface nearest the query's feet, keeping the lower floor distinct from its gallery.</summary>
+        /// <summary>Choose a nearby supporting surface from feet height, never a different floor through a shaft.</summary>
         public bool TryGetHeight(Vector3 position, out float height, float radius = 0f)
         {
             height = 0f;
-            if (!Finite(position) || radius < 0f || Mathf.Abs(position.x) > 12f - radius || Mathf.Abs(position.z) > 9f - radius)
-                return false;
-            float best = float.PositiveInfinity;
-            bool found = false;
-            float floorClearance = float.PositiveInfinity;
-            foreach (WarehouseArenaStair stair in Plan.Stairs)
-                if (InRect(stair.Bounds, position.x, position.z)) floorClearance = Mathf.Min(floorClearance, stair.HeightAt(position.z) - .07f);
-            // Low open treads leave no standing headroom. The first tread remains a normal climbable step.
-            if (floorClearance > 1.85f || floorClearance < .12f)
-                Consider(position, radius, 0f, ref height, ref best, ref found);
-            if (CircleOnUpper(position.x, position.z, radius))
-                Consider(position, radius, WarehouseArenaPlan.UpperHeight, ref height, ref best, ref found);
+            if (!Finite(position) || radius < 0f || Mathf.Abs(position.x) > WarehouseArenaPlan.HalfWidth - radius ||
+                Mathf.Abs(position.z) > WarehouseArenaPlan.HalfDepth - radius) return false;
+            float best = float.PositiveInfinity; bool found = false;
+            for (int level = 0; level <= 2; level++)
+            {
+                float candidate = level * WarehouseArenaPlan.LevelRise;
+                if (Mathf.Abs(candidate - position.y) > SurfaceCapture || !CircleOnSurface(position.x,position.z,level,radius)) continue;
+                Consider(position, radius, candidate, ref height, ref best, ref found);
+            }
             foreach (WarehouseArenaStair stair in Plan.Stairs)
             {
                 Rect bounds = stair.Bounds;
-                if (position.x < bounds.xMin + radius || position.x > bounds.xMax - radius ||
+                // The side stringers sit slightly inside the tread edge; the capsule must clear those too.
+                float inside = (WarehouseArenaStair.Width-WarehouseArenaStair.ClearWidth) * .5f;
+                if (position.x < bounds.xMin + inside + radius || position.x > bounds.xMax - inside - radius ||
                     position.z < bounds.yMin - .03f || position.z > bounds.yMax + .03f) continue;
-                Consider(position, radius, stair.HeightAt(position.z), ref height, ref best, ref found);
+                float candidate = stair.HeightAt(position.z);
+                if (Mathf.Abs(candidate - position.y) <= SurfaceCapture)
+                    Consider(position, radius, candidate, ref height, ref best, ref found);
             }
             return found;
         }
 
         private void Consider(Vector3 position, float radius, float candidate, ref float height, ref float best, ref bool found)
         {
-            if (Blocked(position.x, position.z, candidate, radius)) return;
+            if (Blocked(position.x,position.z,candidate,radius) || !HasHeadroom(position.x,position.z,candidate)) return;
             float distance = Mathf.Abs(position.y - candidate);
             if (distance >= best) return;
             height = candidate; best = distance; found = true;
         }
 
+        private bool HasHeadroom(float x, float z, float floor)
+        {
+            foreach (WarehouseArenaStair stair in Plan.Stairs)
+            {
+                if (!InRect(stair.Bounds,x,z)) continue;
+                float underside = stair.HeightAt(z) - .08f;
+                // The first tread is a normal step. Low treads above a lower standing floor are not a tunnel.
+                if (underside > floor + .12f && underside < floor + Headroom) return false;
+            }
+            return floor + Headroom <= WarehouseArenaPlan.CeilingHeight;
+        }
+
         private bool Blocked(float x, float z, float floor, float radius)
         {
-            foreach (WarehouseArenaObstacle obstacle in Plan.Obstacles)
-            {
-                Bounds bounds = obstacle.Bounds;
-                if (floor >= bounds.max.y - .01f || floor + 1.75f <= bounds.min.y) continue;
-                if (x > bounds.min.x - radius && x < bounds.max.x + radius &&
-                    z > bounds.min.z - radius && z < bounds.max.z + radius) return true;
-            }
+            for (int cz = Mathf.FloorToInt((z-radius) / ObstacleCellSize); cz <= Mathf.FloorToInt((z+radius) / ObstacleCellSize); cz++)
+                for (int cx = Mathf.FloorToInt((x-radius) / ObstacleCellSize); cx <= Mathf.FloorToInt((x+radius) / ObstacleCellSize); cx++)
+                {
+                    if (!obstacleCells.TryGetValue(new Vector2Int(cx,cz),out List<int> indices)) continue;
+                    foreach (int index in indices)
+                    {
+                        Bounds bounds = Plan.Obstacles[index].Bounds;
+                        if (floor >= bounds.max.y - .01f || floor + Headroom <= bounds.min.y) continue;
+                        if (x > bounds.min.x - radius && x < bounds.max.x + radius &&
+                            z > bounds.min.z - radius && z < bounds.max.z + radius) return true;
+                    }
+                }
             return false;
         }
 
-        private bool CircleOnUpper(float x, float z, float radius)
+        private bool CircleOnSurface(float x, float z, int level, float radius)
         {
-            if (!OnUpper(x,z)) return false;
+            if (!PointOnSurface(x,z,level)) return false;
             for (int i = 0; i < 8 && radius > 0f; i++)
             {
                 float angle = i * Mathf.PI * .25f;
                 float sx = x + Mathf.Cos(angle) * radius, sz = z + Mathf.Sin(angle) * radius;
-                if (OnUpper(sx,sz)) continue;
+                if (PointOnSurface(sx,sz,level)) continue;
                 bool joinsStair = false;
                 foreach (WarehouseArenaStair stair in Plan.Stairs)
-                    if (sx >= stair.Foot.x - 1f && sx <= stair.Foot.x + 1f && sz >= 5.1f && sz <= 5.51f)
-                    { joinsStair = true; break; }
+                {
+                    if (sx < stair.Bounds.xMin || sx > stair.Bounds.xMax) continue;
+                    float floor = level * WarehouseArenaPlan.LevelRise;
+                    bool atTop = Mathf.Abs(stair.Top.y-floor) < .01f && sz >= stair.Top.z-.42f && sz <= stair.Top.z+.01f;
+                    bool atFoot = Mathf.Abs(stair.Foot.y-floor) < .01f && sz >= stair.Foot.z-.01f && sz <= stair.Foot.z+.42f;
+                    if (!atTop && !atFoot) continue;
+                    joinsStair = true; break;
+                }
                 if (!joinsStair) return false;
             }
             return true;
         }
 
-        private bool OnUpper(float x, float z)
+        private bool PointOnSurface(float x, float z, int level)
         {
-            foreach (Vector3 platform in Plan.Platforms)
-                if (Mathf.Abs(x - platform.x) <= 1.5001f && Mathf.Abs(z - platform.z) <= 1.5001f) return true;
+            if (level == 0) return Mathf.Abs(x) <= WarehouseArenaPlan.HalfWidth && Mathf.Abs(z) <= WarehouseArenaPlan.HalfDepth;
+            float columnPosition = (x + WarehouseArenaPlan.HalfWidth) / WarehouseArenaPlan.TileSize;
+            float rowPosition = (z + WarehouseArenaPlan.HalfDepth) / WarehouseArenaPlan.TileSize;
+            int column = Mathf.FloorToInt(columnPosition), row = Mathf.FloorToInt(rowPosition);
+            bool seamX = Mathf.Abs(columnPosition - column) < .0001f, seamZ = Mathf.Abs(rowPosition - row) < .0001f;
+            for (int dx = 0; dx >= (seamX ? -1 : 0); dx--)
+                for (int dz = 0; dz >= (seamZ ? -1 : 0); dz--)
+                    if (deckTiles.Contains(new Vector3Int(column + dx,level,row + dz))) return true;
             return false;
         }
 
         public bool SameSurface(Vector3 from, Vector3 to) =>
-            TryGetHeight(from, out float a) && TryGetHeight(to, out float b) && Mathf.Abs(a - b) < .24f;
+            TryGetHeight(from,out float a) && TryGetHeight(to,out float b) && Mathf.Abs(a-b) < .24f;
 
-        /// <summary>Direct travel must stay clear at feet and capsule height; deck edges cannot become shortcuts.</summary>
         public bool CanTraverse(Vector3 from, Vector3 to, float radius = .36f)
         {
-            if (!TryGetHeight(from, out float previous, radius) || !TryGetHeight(to, out float target, radius)) return false;
-            if (Mathf.Abs(previous - from.y) > .25f || Mathf.Abs(target - to.y) > .25f) return false;
-            int samples = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(from,to) / .15f));
+            if (!TryGetHeight(from,out float previous,radius) || !TryGetHeight(to,out float target,radius)) return false;
+            if (Mathf.Abs(previous-from.y) > .25f || Mathf.Abs(target-to.y) > .25f) return false;
+            int samples = Mathf.Max(1,Mathf.CeilToInt(Vector3.Distance(from,to) / .15f));
             for (int i = 1; i <= samples; i++)
             {
                 Vector3 position = Vector3.Lerp(from,to,i/(float)samples);
-                if (!TryGetHeight(position, out float next, radius) || Mathf.Abs(next - position.y) > .24f ||
-                    Mathf.Abs(next - previous) > MaximumStep) return false;
+                if (!TryGetHeight(position,out float next,radius) || Mathf.Abs(next-position.y) > .24f ||
+                    Mathf.Abs(next-previous) > MaximumStep) return false;
                 previous = next;
             }
             return true;
@@ -143,38 +195,34 @@ namespace BarPromenade
             if (!TryGetHeight(from,out float fromHeight,radius) || !TryGetHeight(to,out float toHeight,radius)) return false;
             from.y = fromHeight; to.y = toHeight;
             if (CanTraverse(from,to,radius)) { destination.Add(to); return true; }
-            int count = Plan.NavigationNodes.Count;
-            float[] cost = routeCost; int[] previous = routePrevious; bool[] closed = routeClosed;
-            int end = -1;
+            int count = Plan.NavigationNodes.Count, end = -1;
+            heapCount = 0;
             for (int i = 0; i < count; i++)
             {
-                cost[i] = float.PositiveInfinity; previous[i] = -1; closed[i] = false;
-                if ((from - Plan.NavigationNodes[i]).sqrMagnitude <= 9f && CanTraverse(from,Plan.NavigationNodes[i],radius))
-                    cost[i] = Vector3.Distance(from,Plan.NavigationNodes[i]);
+                routeCost[i] = float.PositiveInfinity; routePrevious[i] = -1; routeClosed[i] = false; heapIndex[i] = -1;
+                routeEstimate[i] = Vector3.Distance(Plan.NavigationNodes[i],to);
             }
-            for (int iteration = 0; iteration < count; iteration++)
+            for (int i = 0; i < count; i++)
+                if ((from-Plan.NavigationNodes[i]).sqrMagnitude <= 9f && CanTraverse(from,Plan.NavigationNodes[i],radius))
+                { routeCost[i] = Vector3.Distance(from,Plan.NavigationNodes[i]); PushOrDecrease(i); }
+            while (heapCount > 0)
             {
-                int current = -1; float best = float.PositiveInfinity;
-                for (int i = 0; i < count; i++)
-                {
-                    float estimate = cost[i] + Vector3.Distance(Plan.NavigationNodes[i],to);
-                    if (!closed[i] && estimate < best) { best = estimate; current = i; }
-                }
-                if (current < 0) break;
-                if ((Plan.NavigationNodes[current] - to).sqrMagnitude <= 9f && CanTraverse(Plan.NavigationNodes[current],to,radius))
+                int current = PopNearest();
+                if ((Plan.NavigationNodes[current]-to).sqrMagnitude <= 9f && CanTraverse(Plan.NavigationNodes[current],to,radius))
                 { end = current; break; }
-                closed[current] = true;
+                routeClosed[current] = true;
                 foreach (int neighbour in neighbours[current])
                 {
-                    float next = cost[current] + Vector3.Distance(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour]);
-                    if (next >= cost[neighbour]) continue;
-                    cost[neighbour] = next; previous[neighbour] = current;
+                    if (routeClosed[neighbour]) continue;
+                    if (radius > .3601f && !CanTraverse(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour],radius)) continue;
+                    float next = routeCost[current] + Vector3.Distance(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour]);
+                    if (next >= routeCost[neighbour]) continue;
+                    routeCost[neighbour] = next; routePrevious[neighbour] = current; PushOrDecrease(neighbour);
                 }
             }
             if (end < 0) return false;
-            for (int i = end; i >= 0; i = previous[i]) destination.Add(Plan.NavigationNodes[i]);
+            for (int i = end; i >= 0; i = routePrevious[i]) destination.Add(Plan.NavigationNodes[i]);
             destination.Reverse(); destination.Add(to);
-            // Skip visible same-surface intermediate nodes but retain every stair turn and floor change.
             Vector3 start = from;
             for (int i = 0; i + 1 < destination.Count;)
             {
@@ -184,11 +232,45 @@ namespace BarPromenade
             return true;
         }
 
+        private bool Before(int a, int b)
+        {
+            float difference = (routeCost[a] + routeEstimate[a]) - (routeCost[b] + routeEstimate[b]);
+            return difference < 0f || difference == 0f && a < b;
+        }
+
+        private void PushOrDecrease(int node)
+        {
+            int index = heapIndex[node];
+            if (index < 0) { index = heapCount++; routeHeap[index] = node; heapIndex[node] = index; }
+            while (index > 0)
+            {
+                int parent = (index-1) / 2;
+                if (!Before(node,routeHeap[parent])) break;
+                routeHeap[index] = routeHeap[parent]; heapIndex[routeHeap[index]] = index; index = parent;
+            }
+            routeHeap[index] = node; heapIndex[node] = index;
+        }
+
+        private int PopNearest()
+        {
+            int result = routeHeap[0], node = routeHeap[--heapCount]; heapIndex[result] = -1;
+            if (heapCount == 0) return result;
+            int index = 0;
+            while (index * 2 + 1 < heapCount)
+            {
+                int child = index * 2 + 1;
+                if (child + 1 < heapCount && Before(routeHeap[child+1],routeHeap[child])) child++;
+                if (!Before(routeHeap[child],node)) break;
+                routeHeap[index] = routeHeap[child]; heapIndex[routeHeap[index]] = index; index = child;
+            }
+            routeHeap[index] = node; heapIndex[node] = index;
+            return result;
+        }
+
         public bool TryGetNextStep(Vector3 from, Vector3 to, out Vector3 next, float radius = .36f)
         {
-            var route = new List<Vector3>();
-            bool found = FindRoute(from,to,route,radius);
-            next = found ? route[0] : from;
+            bool found = FindRoute(from,to,nextStepRoute,radius);
+            next = found ? nextStepRoute[0] : from;
             return found;
         }
 

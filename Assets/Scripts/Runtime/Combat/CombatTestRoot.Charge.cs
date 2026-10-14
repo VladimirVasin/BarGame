@@ -121,6 +121,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            SuspendWarehouseMusic();
+            ReleaseWarehouseAcoustics();
             Hero?.ClearWarehouseTorsoLook();
             if (Flashlight != null) Flashlight.enabled = false;
             AmmoSpawns?.SetInteractionEnabled(false);

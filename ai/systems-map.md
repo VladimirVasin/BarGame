@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Zombies;Endless1–5/≤2corpses;all3;2hand swing/block/free-facing;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatAmmoPickup` | Partial |
-| Warehouse hero look/light | Orbit/aim→bounded Spine-Chest;left Spot;3D fill→black;root/legs kept. | `CombatActor.TorsoLook`, `PlayerTorsoLookPose`, `CombatChestFlashlight` | Current |
+| Warehouse | 3floors/9rooms/fan/movers/6lamps;chest Spot/torso/fill→black;gap:grille opening. | `WarehouseArena*`, `CombatChestFlashlight` | Partial |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -134,8 +134,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
-| Scene and place music | Village theme requires hero inside closed lodge; radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
-| Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
+| Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
+| Common audio mix | Shared scene routing;warehouse low SFX/echo-reverb;dryUI;reversible intoxication. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |

@@ -22,7 +22,8 @@ namespace BarPromenade.Editor
             "Bar",
             "Stairwell",
             "Home",
-            "DoorTransition"
+            "DoorTransition",
+            "CombatWarehouse"
         };
 
         private static readonly SceneMix[] SceneMixes =
@@ -86,7 +87,20 @@ namespace BarPromenade.Editor
                 0.10f,
                 -10000f,
                 -10000f,
-                -10000f)
+                -10000f),
+            new SceneMix(
+                GameAudioMixer.CombatWarehouseSnapshotName,
+                -8f,
+                -15f,
+                -7f,
+                -18f,
+                -8f,
+                3.4f,
+                0.32f,
+                -350f,
+                -2200f,
+                -90f,
+                -7f)
         };
 
         [MenuItem("Bar Promenade/Audio/Create or Update Audio Mixer")]
@@ -416,12 +430,23 @@ namespace BarPromenade.Editor
                 echoReturn,
                 1,
                 "Echo");
+            // The dry impacts and the signal sent into the room share their
+            // tone. Other rooms use unity gain and the full-band cutoff.
+            object worldLowMid = EnsureRequiredEffect(
+                api, mixer, world, 1, "ParamEQ");
+            object worldLowpass = EnsureRequiredEffect(
+                api, mixer, world, 2, "Lowpass");
 
             object musicReverbSend = EnsureRequiredSend(
                 api,
                 mixer,
                 music,
                 reverbReceive);
+            object musicEchoSend = EnsureRequiredSend(
+                api,
+                mixer,
+                music,
+                echoReceive);
             object detailsReverbSend = EnsureRequiredSend(
                 api,
                 mixer,
@@ -448,16 +473,12 @@ namespace BarPromenade.Editor
                 controller,
                 compressor,
                 snapshots);
-            ConfigureEcho(
-                api,
-                controller,
-                echo,
-                snapshots);
-
             for (int index = 0; index < SceneMixes.Length; index++)
             {
                 SceneMix mix = SceneMixes[index];
                 object snapshot = snapshots[mix.SnapshotName];
+                bool warehouse = mix.SnapshotName ==
+                    GameAudioMixer.CombatWarehouseSnapshotName;
                 api.SetGroupVolume(perception, controller, snapshot, 0f);
                 for (int groupIndex = 0;
                      groupIndex < (int)GameAudioGroup.Count;
@@ -497,6 +518,12 @@ namespace BarPromenade.Editor
                     mix.MusicReverbSendDb);
                 SetSendLevel(
                     api,
+                    musicEchoSend,
+                    controller,
+                    snapshot,
+                    mix.MusicEchoSendDb);
+                SetSendLevel(
+                    api,
                     detailsReverbSend,
                     controller,
                     snapshot,
@@ -525,6 +552,11 @@ namespace BarPromenade.Editor
                     reverb,
                     snapshot,
                     mix);
+                ConfigureEcho(
+                    api, controller, echo, snapshot, warehouse);
+                ConfigureWorldTone(
+                    api, controller, worldLowMid, worldLowpass,
+                    snapshot, warehouse);
             }
         }
 
@@ -581,53 +613,75 @@ namespace BarPromenade.Editor
             MixerEditorApi api,
             object controller,
             object echo,
-            IReadOnlyDictionary<string, object> snapshots)
+            object snapshot,
+            bool warehouse)
         {
             if (echo == null)
             {
                 return;
             }
 
-            foreach (string name in SnapshotNames)
-            {
-                object snapshot = snapshots[name];
-                SetRequiredEffectParameter(
-                    api,
-                    echo,
-                    controller,
-                    snapshot,
-                    230f,
-                    "Delay");
-                SetRequiredEffectParameter(
-                    api,
-                    echo,
-                    controller,
-                    snapshot,
-                    0.18f,
-                    "Decay Ratio",
-                    "Decay");
-                SetRequiredEffectParameter(
-                    api,
-                    echo,
-                    controller,
-                    snapshot,
-                    2f,
-                    "Max channels");
-                SetRequiredEffectParameter(
-                    api,
-                    echo,
-                    controller,
-                    snapshot,
-                    0f,
-                    "Dry Mix");
-                SetRequiredEffectParameter(
-                    api,
-                    echo,
-                    controller,
-                    snapshot,
-                    0.34f,
-                    "Wet Mix");
-            }
+            SetRequiredEffectParameter(
+                api,
+                echo,
+                controller,
+                snapshot,
+                warehouse ? 340f : 230f,
+                "Delay");
+            SetRequiredEffectParameter(
+                api,
+                echo,
+                controller,
+                snapshot,
+                warehouse ? 0.52f : 0.18f,
+                "Decay Ratio",
+                "Decay");
+            SetRequiredEffectParameter(
+                api,
+                echo,
+                controller,
+                snapshot,
+                2f,
+                "Max channels");
+            SetRequiredEffectParameter(
+                api,
+                echo,
+                controller,
+                snapshot,
+                0f,
+                "Dry Mix");
+            SetRequiredEffectParameter(
+                api,
+                echo,
+                controller,
+                snapshot,
+                warehouse ? 0.72f : 0.34f,
+                "Wet Mix");
+        }
+
+        private static void ConfigureWorldTone(
+            MixerEditorApi api,
+            object controller,
+            object lowMid,
+            object lowpass,
+            object snapshot,
+            bool warehouse)
+        {
+            SetRequiredEffectParameter(
+                api, lowMid, controller, snapshot, 165f,
+                "Center freq");
+            SetRequiredEffectParameter(
+                api, lowMid, controller, snapshot, 2.2f,
+                "Octave range");
+            SetRequiredEffectParameter(
+                api, lowMid, controller, snapshot,
+                warehouse ? 1.65f : 1f, "Frequency gain");
+            SetRequiredEffectParameter(
+                api, lowpass, controller, snapshot,
+                warehouse ? 5200f : 22000f, "Cutoff freq");
+            SetRequiredEffectParameter(
+                api, lowpass, controller, snapshot, 1f,
+                "Resonance");
         }
 
         private static void SetRequiredEffectParameter(
@@ -664,6 +718,10 @@ namespace BarPromenade.Editor
             {
                 return;
             }
+
+            bool warehouse = mix.SnapshotName ==
+                GameAudioMixer.CombatWarehouseSnapshotName;
+            bool stairwell = mix.SnapshotName == "Stairwell";
 
             api.TrySetEffectParameter(
                 reverb,
@@ -708,33 +766,33 @@ namespace BarPromenade.Editor
                 reverb,
                 controller,
                 snapshot,
-                mix.SnapshotName == "Stairwell" ? -900f : -2400f,
+                warehouse ? -450f : stairwell ? -900f : -2400f,
                 "Reflections",
                 "Reflections Level");
             api.TrySetEffectParameter(
                 reverb,
                 controller,
                 snapshot,
-                mix.SnapshotName == "Stairwell" ? 0.020f : 0.008f,
+                warehouse ? 0.032f : stairwell ? 0.020f : 0.008f,
                 "Reflect Delay",
                 "Reflections Delay");
             api.TrySetEffectParameter(
                 reverb,
                 controller,
                 snapshot,
-                mix.SnapshotName == "Stairwell" ? 0.028f : 0.010f,
+                warehouse ? 0.055f : stairwell ? 0.028f : 0.010f,
                 "Reverb Delay");
             api.TrySetEffectParameter(
                 reverb,
                 controller,
                 snapshot,
-                mix.SnapshotName == "Stairwell" ? 72f : 58f,
+                warehouse ? 88f : stairwell ? 72f : 58f,
                 "Diffusion");
             api.TrySetEffectParameter(
                 reverb,
                 controller,
                 snapshot,
-                mix.SnapshotName == "Stairwell" ? 86f : 68f,
+                warehouse ? 94f : stairwell ? 86f : 68f,
                 "Density");
         }
 
@@ -902,10 +960,12 @@ namespace BarPromenade.Editor
                 float decayHighFrequencyRatio,
                 float roomLevel,
                 float roomHighFrequencyLevel,
-                float reverbLevel)
+                float reverbLevel,
+                float musicEchoSendDb = SilentDb)
             {
                 SnapshotName = snapshotName;
                 MusicReverbSendDb = musicReverbSendDb;
+                MusicEchoSendDb = musicEchoSendDb;
                 DetailsReverbSendDb = detailsReverbSendDb;
                 WorldReverbSendDb = worldReverbSendDb;
                 DetailsEchoSendDb = detailsEchoSendDb;
@@ -921,6 +981,7 @@ namespace BarPromenade.Editor
 
             public string SnapshotName { get; }
             public float MusicReverbSendDb { get; }
+            public float MusicEchoSendDb { get; }
             public float DetailsReverbSendDb { get; }
             public float WorldReverbSendDb { get; }
             public float DetailsEchoSendDb { get; }

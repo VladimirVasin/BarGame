@@ -120,6 +120,8 @@ namespace BarPromenade
             else camera = WarehouseArenaLighting.EnsureCamera();
             RetroAudioService.EnsureInstalled();
             CreateCombatLocation();
+            AcquireWarehouseAcoustics();
+            InitializeWarehouseMusic();
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
             Prompt = ui.AddComponent<InteractionPromptView>();
             gameObject.AddComponent<PlayerClothPhysicsPolicy>().SetSimulationEnabled(false);
