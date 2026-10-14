@@ -31,6 +31,13 @@ namespace BarPromenade
             ResetTorsoLook();
         }
 
+        // An inspection camera is finalized after the ordinary rig late pass.
+        // Reapply just this accepted additive bend, without evaluating the graph twice.
+        internal void ReapplyTorsoLook(object owner)
+        {
+            if (ReferenceEquals(torsoLookOwner, owner)) ApplyTorsoLookPose();
+        }
+
         private bool CanPresentTorsoLook(object owner) => isActiveAndEnabled &&
             owner is CombatActor actor && actor != null && actor.CanPresentTorsoLook &&
             !ragdollPoseActive && !risePose.Active && !interactionHandoffLocked && fallAmount <= .01f &&

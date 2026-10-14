@@ -1,5 +1,11 @@
 {
   "entries": [
+    {"key":"inventory.item.rotten_fish_tail_can.name","value":"Fish tin with a tail"},
+    {"key":"inventory.item.rotten_fish_tail_can.description","value":"A tail on the faded label. The fish inside has turned dark."},
+    {"key":"inventory.item.rotten_fish_belly_can.name","value":"Fish tin with a belly"},
+    {"key":"inventory.item.rotten_fish_belly_can.description","value":"A belly on the worn label. The fish inside has darkened."},
+    {"key":"inventory.item.rotten_fish_head_can.name","value":"Fish tin with a head"},
+    {"key":"inventory.item.rotten_fish_head_can.description","value":"A head on the faded label. The fish lies in dark sludge."},
     {"key":"interaction.warehouse_valve","value":"E — inspect the valve"},
     {"key":"combat.warehouse.valve.locked","value":"The valve is chained shut. The padlock needs a key."},
     {"key":"interaction.lodge_cellar","value":"E — inspect the hatch"},

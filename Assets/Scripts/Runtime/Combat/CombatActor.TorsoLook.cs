@@ -6,11 +6,13 @@ namespace BarPromenade
     {
         private CombatTestRoot torsoLookArena;
         private PlayerCameraFollow torsoLookCamera;
+        private object inspectionTorsoLookOwner;
 
         // This presentation belongs only to the warehouse hero. Pausing keeps
         // the accepted pose; authored actions and physical recovery own the rig.
         internal bool CanPresentTorsoLook => hero != null && torsoLookArena != null &&
-            torsoLookArena.isActiveAndEnabled && isActiveAndEnabled && IsAvailable &&
+            torsoLookArena.isActiveAndEnabled && isActiveAndEnabled &&
+            (IsAvailable || inspectionTorsoLookOwner != null && !interaction.IsActive) &&
             CanAttemptBodyAction && !HasWeaponSwitchRequest && reaction == null &&
             !(Firearm?.ReloadPending ?? false) && !(ImpactMotion?.IsActive ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false) && !State.IsBlocking &&
@@ -26,9 +28,34 @@ namespace BarPromenade
 
         internal void ClearWarehouseTorsoLook() => hero?.ClearTorsoLook(this);
 
+        internal bool BeginInspectionTorsoLook(object owner)
+        {
+            if (owner == null || hero == null || !CanBeginStandingInspection ||
+                inspectionTorsoLookOwner != null && !ReferenceEquals(inspectionTorsoLookOwner, owner)) return false;
+            inspectionTorsoLookOwner = owner;
+            ClearWarehouseTorsoLook();
+            return true;
+        }
+
+        internal void SetInspectionTorsoLook(object owner, Vector3 direction, float neutralPitch, float seconds)
+        {
+            if (!ReferenceEquals(inspectionTorsoLookOwner, owner) || hero == null) return;
+            hero.SetTorsoLookIntent(this, direction, neutralPitch, true);
+            if (seconds <= 0f) return;
+            hero.AdvanceTorsoLook(this, seconds);
+            hero.ReapplyTorsoLook(this);
+        }
+
+        internal void EndInspectionTorsoLook(object owner)
+        {
+            if (!ReferenceEquals(inspectionTorsoLookOwner, owner)) return;
+            inspectionTorsoLookOwner = null;
+            ClearWarehouseTorsoLook();
+        }
+
         private void AdvanceWarehouseTorsoLook(float seconds)
         {
-            if (hero == null || torsoLookArena == null) return;
+            if (hero == null || torsoLookArena == null || inspectionTorsoLookOwner != null) return;
             if (!CanPresentTorsoLook)
             {
                 ClearWarehouseTorsoLook();

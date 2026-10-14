@@ -21,7 +21,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 0f,
                 door: 0f,
                 handle: 0f,
-                hand: 0f,
                 light: 0f);
 
             timeline.Advance(
@@ -33,7 +32,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 0f,
                 handle: 0f,
-                hand: 0f,
                 light: 0f);
 
             timeline.Advance(
@@ -45,7 +43,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 0f,
                 handle: 0f,
-                hand: 1f,
                 light: 0f);
 
             timeline.Advance(
@@ -57,7 +54,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 0f,
                 handle: 1f,
-                hand: 1f,
                 light: 0f);
 
             timeline.Advance(
@@ -69,7 +65,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 1f,
                 handle: 0f,
-                hand: 0f,
                 light: 1f);
             Assert.That(timeline.IsInspecting, Is.True);
             Assert.That(timeline.CanBeginClose, Is.True);
@@ -103,7 +98,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 1f,
                 handle: 0f,
-                hand: 0f,
                 light: 1f);
         }
 
@@ -123,7 +117,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 0f,
                 handle: 1f,
-                hand: 1f,
                 light: 0f);
 
             timeline.Advance(
@@ -135,7 +128,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 1f,
                 door: 0f,
                 handle: 0f,
-                hand: 0f,
                 light: 0f);
 
             timeline.Advance(
@@ -333,7 +325,6 @@ namespace BarPromenade.Tests.EditMode
                 camera: 0f,
                 door: 0f,
                 handle: 0f,
-                hand: 0f,
                 light: 0f);
         }
 
@@ -351,7 +342,6 @@ namespace BarPromenade.Tests.EditMode
                         .DoorOpeningOvershoot +
                     Tolerance));
             Assert.That(frame.HandleTurn, Is.InRange(0f, 1f));
-            Assert.That(frame.HandReach, Is.InRange(0f, 1f));
             Assert.That(frame.LightIntensity, Is.InRange(0f, 1f));
         }
 
@@ -361,7 +351,6 @@ namespace BarPromenade.Tests.EditMode
             float camera,
             float door,
             float handle,
-            float hand,
             float light)
         {
             HomeRefrigeratorInteractionFrame frame =
@@ -376,9 +365,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 frame.HandleTurn,
                 Is.EqualTo(handle).Within(Tolerance));
-            Assert.That(
-                frame.HandReach,
-                Is.EqualTo(hand).Within(Tolerance));
             Assert.That(
                 frame.LightIntensity,
                 Is.EqualTo(light).Within(Tolerance));
@@ -425,10 +411,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 actualFrame.HandleTurn,
                 Is.EqualTo(expectedFrame.HandleTurn)
-                    .Within(Tolerance));
-            Assert.That(
-                actualFrame.HandReach,
-                Is.EqualTo(expectedFrame.HandReach)
                     .Within(Tolerance));
             Assert.That(
                 actualFrame.LightIntensity,

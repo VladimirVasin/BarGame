@@ -1,0 +1,408 @@
+{
+  "generator": "tools/build-combat-warehouse-fish-props.py",
+  "generator_version": "1.3.0",
+  "blender_version": "5.0.1",
+  "build_signature": "f3d676eae1e7efad586d371c8996259c344fc115fe83559fa8e0b0c682296403",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 6960,
+  "materials": {
+    "Concrete": [
+      0.38,
+      0.39,
+      0.34
+    ],
+    "ConcreteDark": [
+      0.2,
+      0.23,
+      0.21
+    ],
+    "Steel": [
+      0.2,
+      0.24,
+      0.22
+    ],
+    "WornSteel": [
+      0.36,
+      0.39,
+      0.32
+    ],
+    "Rust": [
+      0.39,
+      0.23,
+      0.13
+    ],
+    "Timber": [
+      0.31,
+      0.25,
+      0.18
+    ],
+    "Cardboard": [
+      0.39,
+      0.32,
+      0.23
+    ],
+    "Glass": [
+      0.24,
+      0.3,
+      0.27
+    ],
+    "Lamp": [
+      0.67,
+      0.57,
+      0.36
+    ],
+    "Rubber": [
+      0.08,
+      0.1,
+      0.085
+    ],
+    "WearDecal": [
+      0.21,
+      0.17,
+      0.11
+    ],
+    "SignalRed": [
+      0.75,
+      0.035,
+      0.018
+    ],
+    "SafetyYellow": [
+      0.82,
+      0.64,
+      0.075
+    ],
+    "NumberPlate": [
+      0.75,
+      0.73,
+      0.62
+    ],
+    "LockSteel": [
+      0.44,
+      0.46,
+      0.45
+    ],
+    "SpoiledFish": [
+      0.4,
+      0.45,
+      0.37
+    ],
+    "SpoiledFishFlesh": [
+      0.57,
+      0.57,
+      0.43
+    ],
+    "SpoiledFishDark": [
+      0.14,
+      0.19,
+      0.145
+    ],
+    "FishLabelPaper": [
+      1,
+      1,
+      1
+    ]
+  },
+  "models": [
+    {
+      "name": "FishPreparationStation",
+      "bounds_min": [
+        -1.13,
+        0.0,
+        -0.61092
+      ],
+      "bounds_max": [
+        1.13,
+        1.425,
+        0.61092
+      ],
+      "triangle_count": 956,
+      "solid_count": 4,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "WorkSurface",
+          "position": [
+            0,
+            0.78,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "PreparationLoad",
+          "position": [
+            -0.7,
+            0.78,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Front",
+          "position": [
+            0,
+            0.78,
+            -0.61
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "RottenFishTailCan",
+      "bounds_min": [
+        -0.064464,
+        0,
+        -0.0646
+      ],
+      "bounds_max": [
+        0.064464,
+        0.210156,
+        0.104136
+      ],
+      "triangle_count": 1852,
+      "solid_count": 14,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "Rim",
+          "position": [
+            0,
+            0.095,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "InspectionCenter",
+          "position": [
+            0,
+            0.12,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "RottenFishBellyCan",
+      "bounds_min": [
+        -0.064464,
+        0,
+        -0.0646
+      ],
+      "bounds_max": [
+        0.064464,
+        0.210156,
+        0.104136
+      ],
+      "triangle_count": 1852,
+      "solid_count": 14,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "Rim",
+          "position": [
+            0,
+            0.095,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "InspectionCenter",
+          "position": [
+            0,
+            0.12,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "RottenFishHeadCan",
+      "bounds_min": [
+        -0.064464,
+        0,
+        -0.0646
+      ],
+      "bounds_max": [
+        0.064464,
+        0.210156,
+        0.104136
+      ],
+      "triangle_count": 1852,
+      "solid_count": 14,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "Rim",
+          "position": [
+            0,
+            0.095,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "InspectionCenter",
+          "position": [
+            0,
+            0.12,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "EmergencyRoomLamp",
+      "bounds_min": [
+        -0.245,
+        -0.165,
+        -0.32
+      ],
+      "bounds_max": [
+        0.49,
+        0.255,
+        0.0575
+      ],
+      "triangle_count": 448,
+      "solid_count": 16,
+      "mesh_count": 8,
+      "anchors": [
+        {
+          "name": "Light",
+          "position": [
+            0,
+            -0.1,
+            -0.29
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "design_id": "warehouse_fish_props_v1",
+  "surfaces": {
+    "mode": "shared warehouse textures / paper label UV0 atlas / metric UV1",
+    "uv_signature": "1d2e99607d70dd5583f2d30d658b81d4de1269250ff3d6f483c775d3724303d6",
+    "additional_runtime_textures": 1,
+    "labels": {
+      "generator": "tools/build-warehouse-fish-labels.py",
+      "version": "2.0.0",
+      "texture": "Assets/Resources/CombatWarehouse/Textures/WarehouseFishLabels.png",
+      "sha256": "9082088a62266a9fb2092da4bd622ecdb53503ea445153f0104aeacb8deca4e4",
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "mipmaps": true,
+      "wrap": "Clamp",
+      "windows_compression": "BC7",
+      "labels": [
+        {
+          "model": "RottenFishTailCan",
+          "kind": "tail",
+          "cell_pixels": [
+            0,
+            0,
+            512,
+            170
+          ],
+          "front_arc_radians": [
+            -1.3,
+            1.3
+          ],
+          "ink_bounds_pixels": [
+            75,
+            16,
+            428,
+            155
+          ]
+        },
+        {
+          "model": "RottenFishBellyCan",
+          "kind": "belly",
+          "cell_pixels": [
+            0,
+            170,
+            512,
+            340
+          ],
+          "front_arc_radians": [
+            -1.3,
+            1.3
+          ],
+          "ink_bounds_pixels": [
+            75,
+            186,
+            428,
+            325
+          ]
+        },
+        {
+          "model": "RottenFishHeadCan",
+          "kind": "head",
+          "cell_pixels": [
+            0,
+            340,
+            512,
+            512
+          ],
+          "front_arc_radians": [
+            -1.3,
+            1.3
+          ],
+          "ink_bounds_pixels": [
+            75,
+            356,
+            428,
+            495
+          ]
+        }
+      ],
+      "text": false,
+      "authoring": "large filled fish-part drawings and broad cut/rib/fin strokes",
+      "wear": "faint paper grain and border only; drawings intact"
+    }
+  },
+  "contract": {
+    "preparation_source": "tools/build-city-cannery-3d-model.py:add_preparation_station",
+    "preparation_source_geometry_signature": "7dec845a703d53476fd47cadd16fb138283c4e4578376ac5e903e950072ba7b3",
+    "preparation_source_origin": [
+      -5.0,
+      0.18000000715255737,
+      -2.055919826030731
+    ],
+    "preparation_work_height": 0.78,
+    "can_body_radius": 0.063,
+    "can_rim_height": 0.095,
+    "can_inner_bottom": 0.012,
+    "can_lid_open_degrees": 110,
+    "can_colliders": false,
+    "can_text": false,
+    "can_contents": "small dark ambiguous fragments entirely below the rim",
+    "can_label_roles": [
+      "FishLabelPaper"
+    ],
+    "can_label_pictures": {
+      "RottenFishTailCan": "tail",
+      "RottenFishBellyCan": "belly",
+      "RottenFishHeadCan": "head"
+    },
+    "room_lamp_center_height": 2.72,
+    "room_lamp_lintel_range": [
+      2.55,
+      3
+    ],
+    "room_lamp_body": "exact EmergencyLamp cage/body with short side-fed supply"
+  }
+}

@@ -14,6 +14,8 @@ namespace BarPromenade.Tests.PlayMode
         private HomeInteriorRoot home;
         private InputTestFixture inputFixture;
         private Mouse mouse;
+        private bool[] initialRigRendererStates;
+        private bool initialContactShadowEnabled;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -96,6 +98,7 @@ namespace BarPromenade.Tests.PlayMode
             float gameplayFieldOfView =
                 home.CameraFollow.FixedBaseFieldOfView;
             Camera camera = Camera.main;
+            SkinnedMeshRenderer[] initialCameraRigs = camera.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             Vector3 renderedCameraPosition =
                 camera.transform.position;
             Quaternion renderedCameraRotation =
@@ -130,10 +133,7 @@ namespace BarPromenade.Tests.PlayMode
                 interaction.Phase,
                 Is.EqualTo(
                     HomeRefrigeratorInteractionPhase.Reach));
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.False);
-            AssertPlayerVisualState(true);
+            AssertPlayerVisualState(false);
             Assert.That(
                 Vector3.Distance(
                     home.CameraFollow.FixedBasePosition,
@@ -146,43 +146,12 @@ namespace BarPromenade.Tests.PlayMode
                     home.RefrigeratorPlan.CameraFieldOfView)
                     .Within(0.001f));
 
-            const int reachProbeStepCount = 128;
-            float reachProbeStep =
-                HomeRefrigeratorInteractionTimeline
-                    .ReachDurationSeconds /
-                reachProbeStepCount;
-            bool handBecameVisible = false;
-            for (int index = 0;
-                 index < reachProbeStepCount;
-                 index++)
-            {
-                interaction.AdvanceInteraction(reachProbeStep);
-                bool handVisible =
-                    interaction.FirstPersonHand.IsVisible;
-                AssertPlayerVisualState(!handVisible);
-                if (handVisible)
-                {
-                    handBecameVisible = true;
-                    break;
-                }
-            }
-
-            Assert.That(handBecameVisible, Is.True);
-            Assert.That(
-                interaction.FirstPersonHand.ReachAmount,
-                Is.GreaterThan(0f));
-
-            // The loop above stops on the FIRST frame the hand is visible,
-            // which is the frame it is still entering on - at that instant
-            // it is at the very edge of the picture by construction, and
-            // asking it to sit inside a two-percent margin there was asking
-            // the reach to be over before it began. Let it finish, then
-            // check where it arrived.
+            Assert.That(camera.GetComponentsInChildren<SkinnedMeshRenderer>(true),
+                Is.EquivalentTo(initialCameraRigs),
+                "Opening a refrigerator must not create a camera-local hero arm.");
             interaction.AdvanceInteraction(
-                HomeRefrigeratorInteractionTimeline
-                    .ReachDurationSeconds);
-            AssertFirstPersonHandIsInFrame(
-                interaction.FirstPersonHand);
+                HomeRefrigeratorInteractionTimeline.ReachDurationSeconds);
+            AssertPlayerVisualState(false);
 
             interaction.AdvanceInteraction(
                 HomeRefrigeratorInteractionTimeline
@@ -203,9 +172,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeRefrigeratorInteraction.ClosePromptKey));
             Assert.That(home.InteractionPrompt.IsClickable, Is.True);
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.False);
             AssertPlayerVisualState(false);
             Assert.That(view.SlotRoots, Has.Count.EqualTo(8));
 
@@ -247,9 +213,6 @@ namespace BarPromenade.Tests.PlayMode
                 interaction.Phase,
                 Is.EqualTo(
                     HomeRefrigeratorInteractionPhase.CameraReturn));
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.False);
             AssertPlayerVisualState(true);
             Assert.That(home.Player.Motor.InputEnabled, Is.False);
             Assert.That(home.Player.Interactor.InputEnabled, Is.False);
@@ -284,7 +247,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            LargeAdvanceSkipsRenderedReach_HidesRigForInspection()
+            LargeAdvanceToCloseUp_HidesRigForInspection()
         {
             yield return LoadHome();
             HomeRefrigeratorInteraction interaction =
@@ -300,9 +263,6 @@ namespace BarPromenade.Tests.PlayMode
                 interaction.Phase,
                 Is.EqualTo(
                     HomeRefrigeratorInteractionPhase.Inspecting));
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.False);
             AssertPlayerVisualState(false);
 
             Assert.That(interaction.CancelInteraction(), Is.True);
@@ -630,6 +590,10 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(home, Is.Not.Null);
             Assert.That(home.IsInitialized, Is.True);
+            initialRigRendererStates = new bool[home.Player.Visual.Renderers.Count];
+            for (int index = 0; index < initialRigRendererStates.Length; index++)
+                initialRigRendererStates[index] = home.Player.Visual.Renderers[index].enabled;
+            initialContactShadowEnabled = home.Player.ContactShadow.enabled;
         }
 
         private IEnumerator WaitForActiveRefrigerator()
@@ -674,13 +638,14 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertRigRendererState(bool expected)
         {
+            Assert.That(home.Player.Visual.Renderers.Count, Is.EqualTo(initialRigRendererStates.Length));
             for (int index = 0;
                  index < home.Player.Visual.Renderers.Count;
                  index++)
             {
                 Assert.That(
                     home.Player.Visual.Renderers[index].enabled,
-                    Is.EqualTo(expected),
+                    Is.EqualTo(expected && initialRigRendererStates[index]),
                     $"Unexpected player renderer state {index}.");
             }
         }
@@ -690,40 +655,8 @@ namespace BarPromenade.Tests.PlayMode
             AssertRigRendererState(expected);
             Assert.That(
                 home.Player.ContactShadow.enabled,
-                Is.EqualTo(expected),
+                Is.EqualTo(expected && initialContactShadowEnabled),
                 "Unexpected contact-shadow state.");
-        }
-
-        private static void AssertFirstPersonHandIsInFrame(
-            HomeRefrigeratorFirstPersonHand hand)
-        {
-            Camera camera = Camera.main;
-            Assert.That(camera, Is.Not.Null);
-            Assert.That(hand.PresentationRoot, Is.Not.Null);
-            Renderer[] renderers =
-                hand.PresentationRoot.GetComponentsInChildren<Renderer>();
-            Assert.That(renderers, Is.Not.Empty);
-
-            bool visibleRendererFound = false;
-            for (int index = 0; index < renderers.Length; index++)
-            {
-                Vector3 viewport = camera.WorldToViewportPoint(
-                    renderers[index].bounds.center);
-                if (viewport.z > camera.nearClipPlane &&
-                    viewport.x >= 0.02f &&
-                    viewport.x <= 0.98f &&
-                    viewport.y >= 0.02f &&
-                    viewport.y <= 0.98f)
-                {
-                    visibleRendererFound = true;
-                    break;
-                }
-            }
-
-            Assert.That(
-                visibleRendererFound,
-                Is.True,
-                "The first-person hand must visibly reach into the frame.");
         }
 
         private static void AssertClosedPresentation(
@@ -740,9 +673,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(view.InteriorLightAmount, Is.Zero);
             Assert.That(view.InteriorLightStrip.enabled, Is.False);
             Assert.That(view.InteriorHalo.IsVisible, Is.False);
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.False);
         }
 
         private static Bounds GetItemBounds(

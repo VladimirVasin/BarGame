@@ -7,8 +7,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Owns the modal, first-person refrigerator inspection. The pure timeline
-    /// supplies animation channels; this component binds them to the Home
-    /// camera, generated refrigerator, player presentation, prompts and audio.
+    /// supplies animation channels; the context binds the same presentation
+    /// to a location's camera, player, prompts and audio.
     /// </summary>
     [DefaultExecutionOrder(260)]
     [DisallowMultipleComponent]
@@ -24,16 +24,19 @@ namespace BarPromenade
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
 
-        private HomeInteriorRoot home;
+        private RefrigeratorInteractionContext context;
+        private bool preparedPlayer;
+        private bool nestedInspectionFocus;
         private HomeRefrigeratorPlan plan;
         private HomeRefrigeratorView view;
         private HomeRefrigeratorInteractionTimeline timeline;
-        private HomeRefrigeratorFirstPersonHand firstPersonHand;
         private HomeRefrigeratorItemInspectionController itemInspection;
         private Camera targetCamera;
         private Vector3 cameraStartPosition;
         private Quaternion cameraStartRotation;
         private float cameraStartFieldOfView;
+        private bool cameraStateCaptured;
+        private bool cameraWasFixedPose;
         private Vector3 cameraControlPosition;
         private Vector3 depthOfFieldFocusPoint;
         private Vector3 cameraTargetPosition;
@@ -60,8 +63,6 @@ namespace BarPromenade
                 ? timeline.Phase
                 : HomeRefrigeratorInteractionPhase.Closed;
         public HomeRefrigeratorInteractionTimeline Timeline => timeline;
-        public HomeRefrigeratorFirstPersonHand FirstPersonHand =>
-            firstPersonHand;
         public HomeRefrigeratorItemInspectionController ItemInspection =>
             itemInspection;
         public HomeRefrigeratorPlan Plan => plan;
@@ -72,7 +73,7 @@ namespace BarPromenade
                 : OpenPromptKey;
         public Vector3 InteractionPosition =>
             plan != null
-                ? home.transform.TransformPoint(plan.ApproachPosition)
+                ? context.Space.TransformPoint(plan.ApproachPosition)
                 : transform.position;
 
         public void Initialize(
@@ -98,11 +99,27 @@ namespace BarPromenade
             }
 
             ValidateHome(homeRoot);
+            var adapter = new RefrigeratorInteractionContext(homeRoot.transform, homeRoot.Player,
+                homeRoot.CameraFollow, homeRoot.InteractionPrompt, homeRoot.IntoxicationHud)
+            {
+                Admission = () => homeRoot != null && homeRoot.AnimatedInteraction != null && !homeRoot.AnimatedInteraction.IsActive,
+                RestoreCamera = () => homeRoot?.FixedCamera?.ReapplyActiveShot(),
+                DoorAmountChanged = amount => homeRoot?.Soundscape?.SetRefrigeratorDoorOpenAmount(amount),
+                PlayCue = (cue, position) => homeRoot?.Audio?.TryPlay(cue, position)
+            };
+            Initialize(adapter, refrigeratorPlan, refrigeratorView);
+        }
+
+        public void Initialize(RefrigeratorInteractionContext interactionContext,
+            HomeRefrigeratorPlan refrigeratorPlan, HomeRefrigeratorView refrigeratorView)
+        {
+            if (interactionContext == null || refrigeratorPlan == null || refrigeratorView == null)
+                throw new ArgumentNullException();
             CancelInteraction();
-            home = homeRoot;
+            context = interactionContext;
             plan = refrigeratorPlan;
             view = refrigeratorView;
-            targetCamera = home.CameraFollow.GetComponent<Camera>();
+            targetCamera = context.CameraFollow.GetComponent<Camera>();
             if (targetCamera == null)
             {
                 targetCamera = Camera.main;
@@ -111,23 +128,10 @@ namespace BarPromenade
             if (targetCamera == null)
             {
                 throw new InvalidOperationException(
-                    "The refrigerator interaction requires the Home camera.");
+                    "The refrigerator interaction requires a camera.");
             }
 
             timeline = new HomeRefrigeratorInteractionTimeline();
-            firstPersonHand =
-                GetComponent<HomeRefrigeratorFirstPersonHand>();
-            if (firstPersonHand == null)
-            {
-                firstPersonHand =
-                    gameObject.AddComponent<
-                        HomeRefrigeratorFirstPersonHand>();
-            }
-
-            firstPersonHand.Initialize(
-                targetCamera,
-                view.HandlePivot,
-                (home.Player.Visual as Player3DCharacterPresentation)?.Registry);
             itemInspection =
                 GetComponent<
                     HomeRefrigeratorItemInspectionController>();
@@ -145,7 +149,7 @@ namespace BarPromenade
             }
 
             view.ResetPresentation();
-            home.Soundscape?.SetRefrigeratorDoorOpenAmount(0f);
+            context.DoorAmountChanged?.Invoke(0f);
             IsInitialized = true;
         }
 
@@ -154,14 +158,13 @@ namespace BarPromenade
             return IsInitialized &&
                    isActiveAndEnabled &&
                    interactor != null &&
-                   interactor == home.Player.Interactor &&
+                   context != null && interactor == context.Player.Interactor &&
                    timeline != null &&
                    timeline.CanBeginOpen &&
                    !ownsInteraction &&
                    !SceneTransitionService.IsTransitioning &&
                    !BarMinigameModalLock.IsAnyLocked &&
-                   home.AnimatedInteraction != null &&
-                   !home.AnimatedInteraction.IsActive;
+                   (context.Admission == null || context.Admission());
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -174,23 +177,25 @@ namespace BarPromenade
 
         public bool BeginInteraction()
         {
-            if (!CanInteract(home != null
-                    ? home.Player.Interactor
+            if (!CanInteract(context != null
+                    ? context.Player.Interactor
                     : null))
             {
                 return false;
             }
 
             if (!modalLock.TryCaptureAndDisable(
-                    home.Player.Interactor,
-                    home.CameraFollow,
-                    home.IntoxicationHud))
+                    context.Player.Interactor,
+                    context.CameraFollow,
+                    context.Hud))
             {
                 return false;
             }
 
             try
             {
+                preparedPlayer = true;
+                context.PreparingPlayer?.Invoke();
                 CapturePlayerVisualState();
                 CaptureCameraPath();
                 ResetCueState();
@@ -280,7 +285,6 @@ namespace BarPromenade
             if (!hadInteraction)
             {
                 view?.ResetPresentation();
-                firstPersonHand?.Hide();
                 return false;
             }
 
@@ -336,26 +340,29 @@ namespace BarPromenade
             cameraStartPosition = targetCamera.transform.position;
             cameraStartRotation = targetCamera.transform.rotation;
             cameraStartFieldOfView = targetCamera.fieldOfView;
+            cameraWasFixedPose = context.CameraFollow.FixedPoseActive;
+            cameraStateCaptured = true;
 
             cameraTargetPosition =
-                home.transform.TransformPoint(plan.CameraPosition);
+                context.Space.TransformPoint(plan.CameraPosition);
             Vector3 lookAt =
-                home.transform.TransformPoint(plan.CameraLookAt);
+                context.Space.TransformPoint(plan.CameraLookAt);
             Vector3 forward = lookAt - cameraTargetPosition;
             cameraTargetRotation = Quaternion.LookRotation(
                 forward.normalized,
-                home.transform.up);
+                context.Space.up);
             cameraTargetFieldOfView = plan.CameraFieldOfView;
             cameraControlPosition = Vector3.Lerp(
                     cameraStartPosition,
                     cameraTargetPosition,
                     0.48f) +
-                home.transform.up * 0.20f +
+                context.Space.up * 0.20f +
                 cameraStartRotation * Vector3.right * 0.07f;
 
             // The shelves at arm's length hold focus; the kitchen
             // behind the door melts away.
             depthOfFieldFocusPoint = lookAt;
+            nestedInspectionFocus = false;
             CinematicDepthOfField.Begin(
                 Vector3.Distance(
                     cameraStartPosition,
@@ -379,19 +386,17 @@ namespace BarPromenade
                 frame.DoorOpen,
                 frame.HandleTurn,
                 frame.LightIntensity);
-            home?.Soundscape?.SetRefrigeratorDoorOpenAmount(
-                frame.DoorOpen);
+            context?.DoorAmountChanged?.Invoke(frame.DoorOpen);
             ApplyCamera(frame.CameraBlend);
-            firstPersonHand?.ApplyReach(frame.HandReach);
             ApplyPlayerVisualForFrame(frame);
-            if (home?.InteractionPrompt != null)
+            if (context?.Prompt != null)
             {
                 bool canRequestClose =
                     frame.Phase ==
                     HomeRefrigeratorInteractionPhase.Inspecting &&
                     (itemInspection == null ||
                      !itemInspection.IsActive);
-                home.InteractionPrompt.SetPrompt(
+                context.Prompt.SetPrompt(
                     canRequestClose ? ClosePromptKey : string.Empty,
                     canRequestClose ? closePromptAction : null);
             }
@@ -399,7 +404,7 @@ namespace BarPromenade
 
         private void ApplyCamera(float blend)
         {
-            if (home?.CameraFollow == null)
+            if (context?.CameraFollow == null)
             {
                 return;
             }
@@ -410,7 +415,7 @@ namespace BarPromenade
                 remaining * remaining * cameraStartPosition +
                 2f * remaining * amount * cameraControlPosition +
                 amount * amount * cameraTargetPosition;
-            home.CameraFollow.SetFixedPose(
+            context.CameraFollow.SetFixedPose(
                 position,
                 Quaternion.Slerp(
                     cameraStartRotation,
@@ -420,10 +425,17 @@ namespace BarPromenade
                     cameraStartFieldOfView,
                     cameraTargetFieldOfView,
                     amount));
-            CinematicDepthOfField.SetFocusDistance(
-                Vector3.Distance(
-                    position,
-                    depthOfFieldFocusPoint));
+            // The nested presenter owns focus on its camera-local model.
+            // Applying the cabinet shot later in the frame must not blur it again.
+            bool inspectingItem = itemInspection != null && itemInspection.IsActive;
+            if (inspectingItem != nestedInspectionFocus)
+            {
+                nestedInspectionFocus = inspectingItem;
+                CinematicDepthOfField.Begin(inspectingItem ? WorldItemInspectionPresenter.PreviewDistance :
+                    Vector3.Distance(position, depthOfFieldFocusPoint), inspectingItem ? 16f : 4f, inspectingItem ? 35f : 50f);
+            }
+            if (!inspectingItem)
+                CinematicDepthOfField.SetFocusDistance(Vector3.Distance(position, depthOfFieldFocusPoint));
         }
 
         private void CapturePlayerVisualState()
@@ -437,31 +449,24 @@ namespace BarPromenade
         private void ApplyPlayerVisualForFrame(
             HomeRefrigeratorInteractionFrame frame)
         {
-            // After Reach has elapsed, keep the first-person handoff latched
-            // even if one long frame skipped every visible hand sample or the
-            // hand has already retracted for inspection.
+            // The close-up owns body visibility directly. Refrigerator opening
+            // creates no camera-local hero subset in any location.
             bool shouldHide =
-                frame.Phase ==
-                    HomeRefrigeratorInteractionPhase.Reach
-                    ? firstPersonHand != null &&
-                      firstPersonHand.IsVisible
-                    : frame.Phase >=
-                          HomeRefrigeratorInteractionPhase.Unsealing &&
-                      frame.Phase <=
-                          HomeRefrigeratorInteractionPhase.Sealing;
+                frame.Phase >= HomeRefrigeratorInteractionPhase.Reach &&
+                frame.Phase <= HomeRefrigeratorInteractionPhase.Sealing;
             SetPlayerVisualHidden(shouldHide);
         }
 
         private void SetPlayerVisualHidden(bool hidden)
         {
             if (!playerVisualStateCaptured ||
-                home == null ||
+                context == null ||
                 playerVisualHidden == hidden)
             {
                 return;
             }
 
-            PlayerRuntime player = home.Player;
+            PlayerRuntime player = context.Player;
             if (hidden)
             {
                 playerVisualHideLease =
@@ -478,7 +483,7 @@ namespace BarPromenade
 
         private void RestorePlayerVisual()
         {
-            if (!playerVisualStateCaptured || home == null)
+            if (!playerVisualStateCaptured || context == null)
             {
                 return;
             }
@@ -496,16 +501,30 @@ namespace BarPromenade
             itemInspection?.SetBrowsingEnabled(false);
             itemInspection?.CancelAndRestore();
             view?.ResetPresentation();
-            firstPersonHand?.Hide();
-            home?.Soundscape?.SetRefrigeratorDoorOpenAmount(0f);
-            if (home?.InteractionPrompt != null)
+            context?.DoorAmountChanged?.Invoke(0f);
+            if (context?.Prompt != null)
             {
-                home.InteractionPrompt.SetPrompt(string.Empty);
+                context.Prompt.SetPrompt(string.Empty);
             }
 
             RestorePlayerVisual();
             modalLock.Restore();
-            home?.FixedCamera?.ReapplyActiveShot();
+            if (cameraStateCaptured)
+            {
+                cameraStateCaptured = false;
+                if (context?.RestoreCamera != null) context.RestoreCamera();
+                else if (context?.CameraFollow != null)
+                {
+                    if (cameraWasFixedPose)
+                        context.CameraFollow.SetFixedPose(cameraStartPosition, cameraStartRotation, cameraStartFieldOfView);
+                    else context.CameraFollow.ClearFixedPose();
+                }
+            }
+            if (preparedPlayer)
+            {
+                preparedPlayer = false;
+                context?.RestoringPlayer?.Invoke();
+            }
         }
 
         private void ResetCueState()
@@ -560,14 +579,12 @@ namespace BarPromenade
 
         private void PlayCue(RetroSfxId cue)
         {
-            if (home?.Audio == null || plan == null)
+            if (context?.PlayCue == null || plan == null)
             {
                 return;
             }
 
-            home.Audio.TryPlay(
-                cue,
-                home.transform.TransformPoint(plan.SoundAnchor));
+            context.PlayCue(cue, context.Space.TransformPoint(plan.SoundAnchor));
         }
 
         private static bool WasClosePressed()

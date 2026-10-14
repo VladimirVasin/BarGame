@@ -67,6 +67,7 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool BrowsingEnabled => browsingEnabled;
+        public bool UsesPointerSelection => !keyboardSelectionActive;
         public bool IsActive => timeline != null && timeline.IsActive;
         public bool IsInspecting =>
             timeline != null && timeline.IsInspecting;
@@ -153,7 +154,8 @@ namespace BarPromenade
         {
             if (!IsInitialized ||
                 !isActiveAndEnabled ||
-                !browsingEnabled)
+                !browsingEnabled ||
+                !GameInput.CanRead(GameInputContext.Menu))
             {
                 return false;
             }
@@ -290,7 +292,7 @@ namespace BarPromenade
 
         public bool SelectAction(int index)
         {
-            if (!IsInspecting || index < 0 || index > 2)
+            if (!IsInspecting || !GameInput.CanRead(GameInputContext.Menu) || index < 0 || index > 2)
             {
                 return false;
             }
@@ -301,7 +303,7 @@ namespace BarPromenade
 
         public bool InvokeAction(HomeRefrigeratorItemAction action)
         {
-            if (!IsInspecting)
+            if (!IsInspecting || !GameInput.CanRead(GameInputContext.Menu))
             {
                 return false;
             }
@@ -337,14 +339,12 @@ namespace BarPromenade
                 return true;
             }
 
-            string sourceId =
-                HomeRefrigeratorInventoryAdapter.GetSourceId(
-                    activeItem.SlotId);
+            string sourceId = activeItem.SourceId;
             if (!GameSessionState.TryCollectWorldItem(
                     sourceId,
                     inventoryItemId))
             {
-                feedbackKey = UnavailableFeedbackKey;
+                feedbackKey = WorldItemFoundScreen.NoRoomFeedbackKey;
                 return true;
             }
 
@@ -464,11 +464,18 @@ namespace BarPromenade
                 MaximumRayDistance,
                 ~0,
                 QueryTriggerInteraction.Collide);
+            RaycastHit[] hits = raycastBuffer;
+            if (count == raycastBuffer.Length)
+            {
+                // A crowded shelf/room must not silently lose the selectable can.
+                hits = Physics.RaycastAll(ray, MaximumRayDistance, ~0, QueryTriggerInteraction.Collide);
+                count = hits.Length;
+            }
             HomeRefrigeratorItemView nearest = null;
             float nearestDistance = float.PositiveInfinity;
             for (int index = 0; index < count; index++)
             {
-                RaycastHit hit = raycastBuffer[index];
+                RaycastHit hit = hits[index];
                 HomeRefrigeratorItemView item =
                     hit.collider != null
                         ? hit.collider.GetComponentInParent<

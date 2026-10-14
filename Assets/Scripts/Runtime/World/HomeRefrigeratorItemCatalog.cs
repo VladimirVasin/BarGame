@@ -44,6 +44,12 @@ namespace BarPromenade
     {
         private static readonly HomeRefrigeratorItemDefinition[] definitions =
         {
+            Define(HomeRefrigeratorItemKind.RottenFishTailCan,
+                "inventory.item.rotten_fish_tail_can.name", "inventory.item.rotten_fish_tail_can.description"),
+            Define(HomeRefrigeratorItemKind.RottenFishBellyCan,
+                "inventory.item.rotten_fish_belly_can.name", "inventory.item.rotten_fish_belly_can.description"),
+            Define(HomeRefrigeratorItemKind.RottenFishHeadCan,
+                "inventory.item.rotten_fish_head_can.name", "inventory.item.rotten_fish_head_can.description"),
             Define(
                 HomeRefrigeratorItemKind.VodkaBottle,
                 "home.refrigerator.item.vodka.name",

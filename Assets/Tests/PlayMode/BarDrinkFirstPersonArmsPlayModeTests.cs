@@ -10,13 +10,11 @@ namespace BarPromenade.Tests.PlayMode
     {
         private GameObject cameraObject;
         private GameObject ownerObject;
-        private GameObject handleObject;
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             DestroyObject(ownerObject);
-            DestroyObject(handleObject);
             DestroyObject(cameraObject);
             yield return null;
         }
@@ -131,65 +129,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(firstRoot == null, Is.True);
 
             Transform releasedRoot = arms.PresentationRoot;
-            DestroyObject(ownerObject);
-            ownerObject = null;
-            yield return null;
-            Assert.That(releasedRoot == null, Is.True);
-        }
-
-        [UnityTest]
-        public IEnumerator RefrigeratorHand_UsesPlayer3DArmAndTracksHandle()
-        {
-            cameraObject = new GameObject("Refrigerator Hand Test Camera");
-            Camera camera = cameraObject.AddComponent<Camera>();
-            camera.nearClipPlane = 0.1f;
-
-            handleObject = new GameObject("Refrigerator Handle");
-            handleObject.transform.SetPositionAndRotation(
-                new Vector3(0.22f, -0.03f, 0.68f),
-                Quaternion.Euler(0f, 18f, 0f));
-
-            ownerObject = new GameObject("Refrigerator Hand Test Owner");
-            HomeRefrigeratorFirstPersonHand hand = ownerObject.AddComponent<
-                HomeRefrigeratorFirstPersonHand>();
-            hand.Initialize(camera, handleObject.transform);
-
-            Assert.That(hand.IsInitialized, Is.True);
-            Assert.That(hand.IsVisible, Is.False);
-            Assert.That(hand.PresentationRoot.parent, Is.SameAs(camera.transform));
-            Assert.That(hand.HandModelRoot, Is.Not.Null);
-            AssertModelDerivedArm(hand.ModelRegistry, "Right");
-
-            hand.ApplyReach(1f);
-            yield return null;
-
-            Assert.That(hand.IsVisible, Is.True);
-            Vector3 initialPosition = hand.PresentationRoot.position;
-            Vector3 expectedGrip =
-                handleObject.transform.position +
-                (camera.transform.position - handleObject.transform.position)
-                    .normalized * 0.047f;
-            Assert.That(
-                Vector3.Distance(
-                    hand.ModelRegistry.Anchors.RightGrip.position,
-                    expectedGrip),
-                Is.LessThan(0.002f));
-            Assert.That(
-                hand.PresentationRoot.localPosition.z,
-                Is.GreaterThanOrEqualTo(camera.nearClipPlane + 0.079f));
-
-            handleObject.transform.position +=
-                new Vector3(-0.08f, 0.12f, 0.04f);
-            yield return null;
-            Assert.That(
-                Vector3.Distance(initialPosition, hand.PresentationRoot.position),
-                Is.GreaterThan(0.05f));
-
-            hand.enabled = false;
-            Assert.That(hand.IsVisible, Is.False);
-            Assert.That(hand.ReachAmount, Is.Zero);
-
-            Transform releasedRoot = hand.PresentationRoot;
             DestroyObject(ownerObject);
             ownerObject = null;
             yield return null;

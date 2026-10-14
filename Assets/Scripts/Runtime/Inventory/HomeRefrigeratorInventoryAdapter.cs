@@ -12,6 +12,15 @@ namespace BarPromenade
         {
             switch (kind)
             {
+                case HomeRefrigeratorItemKind.RottenFishTailCan:
+                    itemId = InventoryItemId.RottenFishTailCan;
+                    return true;
+                case HomeRefrigeratorItemKind.RottenFishBellyCan:
+                    itemId = InventoryItemId.RottenFishBellyCan;
+                    return true;
+                case HomeRefrigeratorItemKind.RottenFishHeadCan:
+                    itemId = InventoryItemId.RottenFishHeadCan;
+                    return true;
                 case HomeRefrigeratorItemKind.VodkaBottle:
                     itemId = InventoryItemId.VodkaBottle;
                     return true;

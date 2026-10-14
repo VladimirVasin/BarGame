@@ -64,15 +64,29 @@ namespace BarPromenade
         public readonly Quaternion ModelRotation;
         public readonly Color Color;
         public readonly float Range, Intensity, OuterAngle, InnerAngle;
+        public readonly bool Enabled;
         public WarehouseArenaLamp(Vector3 position, Vector3 direction, float range, float intensity,
             string kind = "Lamp", Color? color = null, float outerAngle = 92f, float innerAngle = 48f,
-            Quaternion? modelRotation = null)
+            Quaternion? modelRotation = null, bool enabled = true)
         {
             Kind = kind; Position = position; Direction = direction.normalized;
             ModelRotation = modelRotation ?? Quaternion.FromToRotation(Vector3.down, Direction);
             Color = color ?? new Color(.78f, .75f, .57f);
             Range = range; Intensity = intensity; OuterAngle = outerAngle; InnerAngle = innerAngle;
+            Enabled = enabled;
         }
+    }
+
+    public readonly struct WarehouseRefrigeratorPlacement
+    {
+        public readonly int Floor, RoomIndex;
+        public readonly Vector3 Position;
+        public readonly float Yaw;
+        public Vector3 Approach => Position + Quaternion.Euler(0f, Yaw, 0f) * new Vector3(.14f, 0f, -1.10f);
+        public string SourceId => Floor == 0 ? "warehouse.refrigerator.tail" :
+            Floor == 1 ? "warehouse.refrigerator.belly" : "warehouse.refrigerator.head";
+        public WarehouseRefrigeratorPlacement(int floor, int roomIndex, Vector3 position, float yaw)
+        { Floor = floor; RoomIndex = roomIndex; Position = position; Yaw = yaw; }
     }
 
     public readonly struct WarehouseArenaMechanism
@@ -93,7 +107,7 @@ namespace BarPromenade
     /// <summary>Metre-space authority for imported geometry, all storeys, guarded machinery and safe routes.</summary>
     public sealed class WarehouseArenaPlan
     {
-        public const string GeneratorVersion = "warehouse-v2";
+        public const string GeneratorVersion = "warehouse-v3";
         public const float LevelRise = 3.2f, TopHeight = 6.4f, TileSize = 3f, DeckThickness = .18f;
         public const float HalfWidth = 15f, HalfDepth = 12f, CeilingHeight = 10.2f;
         // Compatibility for clients that capture the first gallery. Storey logic uses LevelRise/TopHeight.
@@ -110,6 +124,7 @@ namespace BarPromenade
         public Vector3 GateApproach => new Vector3(0f, 0f, 9.8f);
         public Vector3 GateControlPosition => new Vector3(-2.75f, 0f, 11.5f);
         public Vector3 GateControlApproach => new Vector3(-2.75f, 0f, 9f);
+        public Vector3 FishStationPosition => new Vector3(0f, TopHeight, 10.5f);
         public IReadOnlyList<Vector3> SpawnPoints { get; }
         public IReadOnlyList<Vector3> Platforms { get; }
         public IReadOnlyList<WarehouseArenaSurface> Surfaces { get; }
@@ -121,19 +136,22 @@ namespace BarPromenade
         public IReadOnlyList<WarehouseArenaMechanism> Mechanisms { get; }
         public IReadOnlyList<Vector3> RoomCenters { get; }
         public IReadOnlyList<Vector3> AmmoAnchors { get; }
+        public IReadOnlyList<WarehouseRefrigeratorPlacement> Refrigerators { get; }
         public IReadOnlyList<Vector3> NavigationNodes { get; private set; }
         public IReadOnlyList<WarehouseArenaEdge> NavigationEdges { get; private set; }
 
         internal WarehouseArenaPlan(int seed, WarehouseArenaTemplate template, Vector3[] platforms,
             WarehouseArenaSurface[] surfaces, WarehouseArenaStair[] stairs, WarehouseArenaObstacle[] obstacles,
             WarehouseArenaPlacement[] modules, WarehouseArenaRailSpan[] rails, WarehouseArenaLamp[] lamps,
-            WarehouseArenaMechanism[] mechanisms, Vector3[] rooms, Vector3[] ammo, Vector3[] spawns)
+            WarehouseArenaMechanism[] mechanisms, Vector3[] rooms, Vector3[] ammo, Vector3[] spawns,
+            WarehouseRefrigeratorPlacement[] refrigerators)
         {
             Seed = seed; Template = template; Platforms = Array.AsReadOnly(platforms);
             Surfaces = Array.AsReadOnly(surfaces); Stairs = Array.AsReadOnly(stairs); Obstacles = Array.AsReadOnly(obstacles);
             ModulePlacements = Array.AsReadOnly(modules); RailSpans = Array.AsReadOnly(rails);
             Lamps = Array.AsReadOnly(lamps); Mechanisms = Array.AsReadOnly(mechanisms);
             RoomCenters = Array.AsReadOnly(rooms); AmmoAnchors = Array.AsReadOnly(ammo); SpawnPoints = Array.AsReadOnly(spawns);
+            Refrigerators = Array.AsReadOnly(refrigerators);
             NavigationNodes = Array.Empty<Vector3>(); NavigationEdges = Array.Empty<WarehouseArenaEdge>();
         }
 
@@ -214,7 +232,7 @@ namespace BarPromenade
                 mechanisms[2].Position, 0f, new Vector3(3f, 2.6f, 1.6f)));
             obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Mechanism,
                 mechanisms[3].Position, 0f, new Vector3(3.4f, 2.2f, 2.6f)));
-            var lamps = new[]
+            var lamps = new List<WarehouseArenaLamp>
             {
                 new WarehouseArenaLamp(new Vector3(-7.5f, 2.72f, -4.6f), Vector3.down, 5.5f, .65f),
                 // The wall-mounted emergency fixture replaces the existing goal practical.
@@ -222,10 +240,35 @@ namespace BarPromenade
                     6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 78f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
-                new WarehouseArenaLamp(new Vector3(11f, 9.12f, 9f), new Vector3(1f,-1f,0f), 4.8f, .48f),
+                // Reuse the upper practical to reveal the fish station from the ascending stairs.
+                new WarehouseArenaLamp(new Vector3(0f, 9.35f, 10.15f), new Vector3(0f,-1f,.12f), 4.8f, 7f,
+                    outerAngle: 70f, innerAngle: 42f),
                 // A rim-mounted maintenance lamp reveals the rotor's underside from the entrance.
                 new WarehouseArenaLamp(new Vector3(3.78f, 9.4f, 0f), new Vector3(-1f,.1f,0f), 8f, 4f)
             };
+            AddProp("FishPreparationStation", WarehouseArenaObstacleKind.Furniture,
+                new Vector3(0f, WarehouseArenaPlan.TopHeight, 10.5f), 0f,
+                new Vector3(2.26f, 1.425f, 1.222f), modules, obstacles);
+            // A separate stream preserves the existing cargo/template/mechanism choices.
+            uint refrigeratorState = unchecked((uint)seed) ^ 0x46495348u;
+            var refrigerators = new WarehouseRefrigeratorPlacement[3];
+            for (int level = 0; level < 3; level++)
+            {
+                int chosenRoom = level * 3 + (int)(Next(ref refrigeratorState) % 3u);
+                float fridgeYaw = chosenRoom % 3 == 0 ? 0f : 180f;
+                Vector3 fridgePosition = rooms[chosenRoom] + RotateRoom(new Vector3(0f, 0f, 2.2f), fridgeYaw);
+                refrigerators[level] = new WarehouseRefrigeratorPlacement(level, chosenRoom, fridgePosition, fridgeYaw);
+                obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Furniture, fridgePosition,
+                    fridgeYaw, new Vector3(1.08f, 2.24f, .76f)));
+                for (int room = level * 3; room < level * 3 + 3; room++)
+                {
+                    float yaw = room % 3 == 0 ? 0f : 180f;
+                    Vector3 direction = RotateRoom(new Vector3(1f, -1f, 0f), yaw);
+                    lamps.Add(new WarehouseArenaLamp(rooms[room] + RotateRoom(new Vector3(3.015f, 2.72f, 0f), yaw),
+                        direction, 3.4f, 12f, "EmergencyRoomLamp", new Color(1f, .075f, .035f), 105f, 65f,
+                        Quaternion.Euler(0f, yaw - 90f, 0f), room == chosenRoom));
+                }
+            }
             var rails = new List<WarehouseArenaRailSpan>();
             BuildRails(platforms, stairs, rails, obstacles);
             var ammo = new[]
@@ -242,7 +285,8 @@ namespace BarPromenade
                 spawns.Add(new Vector3(0f,y,-7.5f));
             }
             var plan = new WarehouseArenaPlan(seed, template, platforms.ToArray(), surfaces.ToArray(), stairs,
-                obstacles.ToArray(), modules.ToArray(), rails.ToArray(), lamps, mechanisms, rooms.ToArray(), ammo, spawns.ToArray());
+                obstacles.ToArray(), modules.ToArray(), rails.ToArray(), lamps.ToArray(), mechanisms, rooms.ToArray(), ammo,
+                spawns.ToArray(), refrigerators);
             BuildNavigation(plan);
             WarehouseArenaValidator.ValidateOrThrow(plan);
             return plan;
@@ -354,6 +398,7 @@ namespace BarPromenade
             }
             foreach (Vector3 spawn in plan.SpawnPoints) AddNode(spawn, nodes, unique);
             foreach (Vector3 ammo in plan.AmmoAnchors) AddNode(ammo, nodes, unique);
+            foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators) AddNode(fridge.Approach, nodes, unique);
             AddNode(plan.GateApproach, nodes, unique);
             AddNode(plan.GateControlApproach, nodes, unique);
             // Only spatial neighbours can form a short valid edge; avoid an all-pairs graph build.
@@ -392,7 +437,8 @@ namespace BarPromenade
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (plan.Stairs.Count != 4 || plan.RoomCenters.Count != 9 || plan.Platforms.Count < 100 ||
-                plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 6)
+                plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
+                plan.Refrigerators.Count != 3)
                 throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, four ammo anchors and sparse light.");
             var area = new WarehouseArenaArea(plan);
             foreach (Vector3 spawn in plan.SpawnPoints)
@@ -409,6 +455,16 @@ namespace BarPromenade
             var route = new List<Vector3>();
             foreach (Vector3 spawn in plan.SpawnPoints) RequireRoute(area, plan.HeroSpawn, spawn, route);
             foreach (Vector3 ammo in plan.AmmoAnchors) RequireRoute(area, plan.HeroSpawn, ammo, route);
+            for (int floor = 0; floor < 3; floor++)
+            {
+                WarehouseRefrigeratorPlacement fridge = plan.Refrigerators[floor];
+                if (fridge.Floor != floor || fridge.RoomIndex / 3 != floor)
+                    throw new InvalidOperationException("Each warehouse floor needs exactly one refrigerator in its own room.");
+                RequireRoute(area, plan.HeroSpawn, fridge.Approach, route);
+                for (int room = 0; room < 3; room++)
+                    if (plan.Lamps[6 + floor * 3 + room].Enabled != (fridge.RoomIndex % 3 == room))
+                        throw new InvalidOperationException("Only each refrigerator room may have a lit red entrance lamp.");
+            }
             RequireRoute(area, plan.HeroSpawn, plan.GateApproach, route);
             RequireRoute(area, plan.HeroSpawn, plan.GateControlApproach, route);
             if (!area.CanTraverse(plan.GateApproach, plan.GateControlApproach, .36f))

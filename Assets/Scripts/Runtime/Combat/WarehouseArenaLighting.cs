@@ -52,21 +52,23 @@ namespace BarPromenade
 
         public static Light CreatePractical(WarehouseArenaLamp lamp, Transform sourceAnchor, Transform parent)
         {
-            var host = new GameObject("Warehouse Work Lamp");
+            bool roomIndicator = lamp.Kind == "EmergencyRoomLamp";
+            var host = new GameObject(roomIndicator ? "Warehouse Room Indicator Light" : "Warehouse Work Lamp");
             host.transform.SetParent(parent, false);
             // The real fixture lens owns the source, including its imported FBX unit factor.
             host.transform.position = sourceAnchor.position;
             host.transform.localRotation = Quaternion.LookRotation(lamp.Direction,
                 Mathf.Abs(Vector3.Dot(lamp.Direction, Vector3.up)) > .99f ? Vector3.forward : Vector3.up);
             Light light = host.AddComponent<Light>();
-            // Short directed pools prevent a room's light leaking through its neighbours.
-            light.type = LightType.Spot;
+            // A caged entrance bulb must wash its own wall as well as the floor.
+            // Its short point source stays local; the work fixtures keep their directed pools.
+            light.type = roomIndicator ? LightType.Point : LightType.Spot;
             light.color = lamp.Color;
             light.intensity = lamp.Intensity;
             light.range = lamp.Range;
             light.spotAngle = lamp.OuterAngle;
             light.innerSpotAngle = lamp.InnerAngle;
-            light.shadows = LightShadows.Hard;
+            light.shadows = roomIndicator ? LightShadows.None : LightShadows.Hard;
             light.shadowBias = .035f;
             light.shadowNormalBias = .12f;
             UniversalAdditionalLightData data = host.AddComponent<UniversalAdditionalLightData>();

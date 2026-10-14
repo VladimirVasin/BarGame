@@ -70,13 +70,29 @@ namespace BarPromenade.Editor
             if (manifest == null || !manifest.passive || manifest.units != "metres" ||
                 manifest.generator != "tools/build-combat-warehouse-3d-model.py" ||
                 string.IsNullOrWhiteSpace(manifest.build_signature) || manifest.models == null ||
-                manifest.models.Length != WarehouseArenaAssetProvider.ModelNames.Length ||
+                manifest.models.Length != WarehouseArenaAssetProvider.CoreModelCount ||
                 manifest.surfaces == null || manifest.surfaces.size != 1024 ||
                 string.IsNullOrWhiteSpace(manifest.surfaces.uv_signature))
                 throw new InvalidOperationException("Warehouse manifest violates its passive metric module contract.");
 
+            TextAsset fishSource = AssetDatabase.LoadAssetAtPath<TextAsset>(Folder + "WarehouseFishProps3D.json");
+            if (fishSource == null || fishSource != Resources.Load<TextAsset>(
+                    WarehouseArenaAssetProvider.ResourceFolder + "WarehouseFishProps3D"))
+                throw new InvalidOperationException("Warehouse fish-prop manifest is missing or its Resources reference differs.");
+            Manifest fish = JsonUtility.FromJson<Manifest>(fishSource.text);
+            if (fish == null || !fish.passive || fish.units != "metres" ||
+                fish.generator != "tools/build-combat-warehouse-fish-props.py" ||
+                string.IsNullOrWhiteSpace(fish.build_signature) || fish.models == null ||
+                fish.models.Length != WarehouseArenaAssetProvider.FishModelNames.Length)
+                throw new InvalidOperationException("Warehouse fish props violate their passive metric contract.");
+            foreach (Model model in fish.models)
+                if (model == null || Array.IndexOf(WarehouseArenaAssetProvider.FishModelNames, model.name) < 0)
+                    throw new InvalidOperationException("Warehouse fish-prop manifest contains an unexpected module.");
+            var models = new List<Model>(manifest.models);
+            models.AddRange(fish.models);
+
             var names = new HashSet<string>(StringComparer.Ordinal);
-            foreach (Model model in manifest.models)
+            foreach (Model model in models)
             {
                 if (model == null || string.IsNullOrWhiteSpace(model.name) || !names.Add(model.name) ||
                     Array.IndexOf(WarehouseArenaAssetProvider.ModelNames, model.name) < 0 ||
@@ -92,7 +108,7 @@ namespace BarPromenade.Editor
             {
                 root = new GameObject("Warehouse asset validation") { hideFlags = HideFlags.HideAndDontSave };
                 SceneManager.MoveGameObjectToScene(root, preview);
-                foreach (Model model in manifest.models)
+                foreach (Model model in models)
                 {
                     ValidateSource(model);
                     GameObject placed = null;
@@ -192,7 +208,8 @@ namespace BarPromenade.Editor
             if (uv.Length != mesh.vertexCount || metreUv.Length != mesh.vertexCount)
                 throw new InvalidOperationException("Warehouse render meshes require UV0 and metre-space UV1: " + model + "/" + meshName);
             bool atlas = WarehouseArenaAssetProvider.AtlasForModel(model) != null ||
-                meshName.EndsWith("__WearDecal",StringComparison.Ordinal);
+                meshName.EndsWith("__WearDecal",StringComparison.Ordinal) ||
+                meshName.EndsWith("__FishLabelPaper",StringComparison.Ordinal);
             for (int index = 0; index < uv.Length; index++)
             {
                 if (!Finite(uv[index]) || !Finite(metreUv[index]))
@@ -220,9 +237,10 @@ namespace BarPromenade.Editor
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
                 bool atlas = Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,name) >= 0;
+                bool label = name == "WarehouseFishLabels";
                 bool mask = name == "WarehouseMacroMask", decals = name == "WarehouseWearDecals";
                 int size = atlas ? 1024 : 512;
-                TextureWrapMode wrap = atlas || decals ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+                TextureWrapMode wrap = atlas || decals || label ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                 string path = Folder + "Textures/" + name + ".png";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;

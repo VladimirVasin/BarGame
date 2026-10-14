@@ -758,10 +758,10 @@ Unity владеет коллизией, взаимодействиями, св�
 опускается к подушке после перестановок. Старая наволочка сохраняет общий материал постели.
 Старая груда вещей в углу у камеры собрана плотнее к западной стене; подход
 к середине кровати остаётся свободным во все дни.
-Кровать придвинута изголовьем к западной стене, а кухонный шкаф стоит в
-крайнем северо-западном углу, с небольшим зазором до обеих стен. Левый край
-кухонной тумбы укорочен под шкаф; холодильник сохраняет место. Радио остаётся
-на шкафу, будильник — у изголовья, вещи поздних дней следуют новой расстановке.
+Кровать — изголовьем к западу; шкаф — в северо-западном углу с зазорами до стен.
+Левый край тумбы укорочен под шкаф; холодильник на прежнем месте,
+открывается без отдельной экранной руки (`2026-10-15`, также склад).
+Радио на шкафу, будильник у изголовья; поздние вещи следуют этой расстановке.
 
 По принятому пользователем плану `2026-09-07` действие у туалета сначала
 предлагает два коротких пункта: «По-маленькому» и «По-большому», в общем
@@ -4223,9 +4223,8 @@ Unity legacy — аварийный fallback. Заголовок/основна�
   угольная подложка/отступ `0,25–0,5 м`; проявление `6 м`→полное `4 м`.
   Стены/предметы скрывают, край кадра не держит; речь/пауза/modal/переход скрывают.
   Пересечения: цель действия→ближайший. Деревня/мать исключены.
-- Инвентарь/магазин/осмотр/журнал: одна рамка, внутренние линейки, один выбор;
-  сетка — инструмент, без цветных плиток. `2026-10-14`: 3D-вещь
-  всегда освещена; свет мира прежний.
+- Инвентарь/магазин/осмотр/журнал: рамка/деления/выбор; сетка без цветных плиток.
+  `2026-10-14`:3D lit/world kept; `2026-10-15`:compact text-buttons/smaller centered model.
 - Карта — угольно-бумажная схема. Районы, вода, дороги, маршрут и точки
   различаются прежде всего значением, толщиной, штрихом и силуэтом; цвет не
   должен быть нужен для чтения текущей вкладки, игрока или выбранной точки.
@@ -4250,11 +4249,14 @@ E:close→2locked tugs/chain-lock→silent key info§21/§6;
 pusher→left/clear/key-open0.
 6practicals(5dim+red)/steadySpot/chestbeam;
 topSpot/blade shadows→hall-galleries/roof+deck block;
+`2026-10-15`:City prep/toprear over gate→hall/topSpot;
+Home fridge1seedroom/floor;rust-peel-streaks;originals kept.
+9entry reds:3on/6Light-emission0/gate on.
+Rotten cans/small scraps/cream labels:big clear tail-belly-head drawings/Take/Reset-New keep.
 fog-sky-strobe0;seed/resetkeep/New/low heavy SFX/echo-reverb;
-theme?/.8/strong echo-reverb/dryUI/exitrestore.
+theme?/.8/dryUI/exitrestore.
 0dream-transition/organic/siren/mystics/clues/infection.
-Endless1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
-`2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
+Endless1–5/poolIDs/≥3m/AI-spacing-stairs/heroend.
 Undead-only/0lore-infection/3worn/pale-darkeyes;
 slump/heavy-asymgait/palms/idle-walk/RLlunge/telegraph→rush→return/groan-hiss.
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
@@ -4262,7 +4264,7 @@ coat-scarf rig/sling anchors;physics0/hair kept.
 Lchestlamp/look→;nearfill→far0/beam↑.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
-`2026-10-13`:all3/1held-2stowed/finiteammo/0waverefill/4packs/Eshared;
+`2026-10-13`:all3/1held-2stowed/finiteammo/Eshared;
 endless12active s/pause-modal-focus-defeat0/resetpool.
 Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.

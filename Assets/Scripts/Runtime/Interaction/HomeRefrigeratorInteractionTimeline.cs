@@ -30,7 +30,6 @@ namespace BarPromenade
             float cameraBlend,
             float doorOpen,
             float handleTurn,
-            float handReach,
             float lightIntensity)
         {
             Phase = phase;
@@ -40,7 +39,6 @@ namespace BarPromenade
             CameraBlend = cameraBlend;
             DoorOpen = doorOpen;
             HandleTurn = handleTurn;
-            HandReach = handReach;
             LightIntensity = lightIntensity;
         }
 
@@ -51,7 +49,6 @@ namespace BarPromenade
         public float CameraBlend { get; }
         public float DoorOpen { get; }
         public float HandleTurn { get; }
-        public float HandReach { get; }
         public float LightIntensity { get; }
     }
 
@@ -167,7 +164,6 @@ namespace BarPromenade
             float cameraBlend = 0f;
             float doorOpen = 0f;
             float handleTurn = 0f;
-            float handReach = 0f;
             float lightIntensity = 0f;
 
             switch (Phase)
@@ -177,12 +173,10 @@ namespace BarPromenade
                     break;
                 case HomeRefrigeratorInteractionPhase.Reach:
                     cameraBlend = 1f;
-                    handReach = SmootherStep(progress);
                     break;
                 case HomeRefrigeratorInteractionPhase.Unsealing:
                     cameraBlend = 1f;
                     handleTurn = SmootherStep(progress);
-                    handReach = 1f;
                     break;
                 case HomeRefrigeratorInteractionPhase.Opening:
                     cameraBlend = 1f;
@@ -191,10 +185,6 @@ namespace BarPromenade
                         progress,
                         0f,
                         0.32f);
-                    handReach = 1f - SmootherRange(
-                        progress,
-                        0.18f,
-                        0.72f);
                     lightIntensity = SmootherRange(
                         progress,
                         0.05f,
@@ -215,10 +205,6 @@ namespace BarPromenade
                         progress,
                         0.75f,
                         1f);
-                    handReach = SmootherRange(
-                        progress,
-                        0f,
-                        0.22f);
                     lightIntensity = 1f - SmootherRange(
                         progress,
                         0.58f,
@@ -231,10 +217,6 @@ namespace BarPromenade
                         progress,
                         0.10f,
                         0.75f);
-                    handReach = 1f - SmootherRange(
-                        progress,
-                        0.35f,
-                        1f);
                     break;
                 case HomeRefrigeratorInteractionPhase.CameraReturn:
                     cameraBlend = 1f - SmootherStep(progress);
@@ -249,7 +231,6 @@ namespace BarPromenade
                 cameraBlend,
                 doorOpen,
                 handleTurn,
-                handReach,
                 lightIntensity);
         }
 

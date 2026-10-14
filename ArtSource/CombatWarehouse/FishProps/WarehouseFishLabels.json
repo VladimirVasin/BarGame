@@ -1,0 +1,77 @@
+{
+  "generator": "tools/build-warehouse-fish-labels.py",
+  "version": "2.0.0",
+  "texture": "Assets/Resources/CombatWarehouse/Textures/WarehouseFishLabels.png",
+  "sha256": "9082088a62266a9fb2092da4bd622ecdb53503ea445153f0104aeacb8deca4e4",
+  "size": 512,
+  "mode": "RGB",
+  "sRGB": true,
+  "mipmaps": true,
+  "wrap": "Clamp",
+  "windows_compression": "BC7",
+  "labels": [
+    {
+      "model": "RottenFishTailCan",
+      "kind": "tail",
+      "cell_pixels": [
+        0,
+        0,
+        512,
+        170
+      ],
+      "front_arc_radians": [
+        -1.3,
+        1.3
+      ],
+      "ink_bounds_pixels": [
+        75,
+        16,
+        428,
+        155
+      ]
+    },
+    {
+      "model": "RottenFishBellyCan",
+      "kind": "belly",
+      "cell_pixels": [
+        0,
+        170,
+        512,
+        340
+      ],
+      "front_arc_radians": [
+        -1.3,
+        1.3
+      ],
+      "ink_bounds_pixels": [
+        75,
+        186,
+        428,
+        325
+      ]
+    },
+    {
+      "model": "RottenFishHeadCan",
+      "kind": "head",
+      "cell_pixels": [
+        0,
+        340,
+        512,
+        512
+      ],
+      "front_arc_radians": [
+        -1.3,
+        1.3
+      ],
+      "ink_bounds_pixels": [
+        75,
+        356,
+        428,
+        495
+      ]
+    }
+  ],
+  "text": false,
+  "authoring": "large filled fish-part drawings and broad cut/rib/fin strokes",
+  "wear": "faint paper grain and border only; drawings intact"
+}

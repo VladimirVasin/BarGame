@@ -31,9 +31,13 @@ namespace BarPromenade
                 {
                     GameObject fixture = WarehouseArenaAssetProvider.Create(lamp.Kind, host.transform,
                         lamp.Position, lamp.ModelRotation);
-                    WarehouseArenaLighting.CreatePractical(lamp,
+                    if (lamp.Kind == "EmergencyRoomLamp") WarehouseArenaAssetProvider.SetSignalLight(fixture, lamp.Enabled);
+                    if (lamp.Enabled) WarehouseArenaLighting.CreatePractical(lamp,
                         WarehouseArenaAssetProvider.FindAnchor(fixture, "Light"), host.transform);
                 }
+                foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators)
+                    WarehouseRefrigeratorFactory.Create(host.transform, owner, fridge.Floor, fridge.Position,
+                        fridge.Yaw, fridge.SourceId);
                 host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
                 return host;
             }

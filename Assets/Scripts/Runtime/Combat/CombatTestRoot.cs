@@ -83,6 +83,7 @@ namespace BarPromenade
         public CombatCasingPool Casings => Hero != null && Hero.IsShotgun ? shotgunCasings : pistolCasings;
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+        public InventoryController Inventory { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
@@ -141,6 +142,11 @@ namespace BarPromenade
             InitializeAmmoPickups();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
+            if (WarehousePlan != null)
+            {
+                Inventory = ui.AddComponent<InventoryController>();
+                Inventory.Initialize(Player, CameraFollow, null);
+            }
             if (WarehousePlan != null) Hero.BindWarehouseTorsoLook(this);
             CreateCombatOpponents();
             InitializeDamageEffects();

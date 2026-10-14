@@ -15,17 +15,17 @@ namespace BarPromenade
     public static class RetroItemPanel
     {
         public static readonly Rect TitleRect =
-            new Rect(170f, 14f, 300f, 34f);
+            new Rect(200f, 16f, 240f, 26f);
         public static readonly Rect DescriptionRect =
-            new Rect(92f, 244f, 456f, 48f);
+            new Rect(140f, 264f, 360f, 38f);
         public static readonly Rect FeedbackRect =
-            new Rect(108f, 292f, 424f, 17f);
+            new Rect(148f, 304f, 344f, 13f);
 
         private static readonly Rect[] ActionRects =
         {
-            new Rect(142f, 310f, 112f, 25f),
-            new Rect(264f, 310f, 112f, 25f),
-            new Rect(386f, 310f, 112f, 25f)
+            new Rect(185f, 322f, 82f, 22f),
+            new Rect(279f, 322f, 82f, 22f),
+            new Rect(373f, 322f, 82f, 22f)
         };
 
         public static int ActionSlotCount => ActionRects.Length;
@@ -71,7 +71,7 @@ namespace BarPromenade
         public static GUIStyle CreateTitleStyle()
         {
             return RetroUiTheme.CreateLabelStyle(
-                18,
+                14,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 false);
@@ -80,7 +80,7 @@ namespace BarPromenade
         public static GUIStyle CreateDescriptionStyle()
         {
             return RetroUiTheme.CreateLabelStyle(
-                12,
+                10,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 false,
@@ -99,7 +99,7 @@ namespace BarPromenade
         public static GUIStyle CreateActionStyle(bool selected)
         {
             return RetroUiTheme.CreateButtonStyle(
-                11,
+                10,
                 TextAnchor.MiddleCenter,
                 selected
                     ? RetroUiTheme.SelectionText

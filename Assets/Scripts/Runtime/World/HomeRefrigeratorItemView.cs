@@ -15,6 +15,7 @@ namespace BarPromenade
     {
         [SerializeField] private HomeRefrigeratorItemKind kind;
         [SerializeField] private string slotId;
+        [SerializeField] private string sourceId;
         [SerializeField] private Transform originalRoot;
         [SerializeField] private Renderer[] itemRenderers =
             Array.Empty<Renderer>();
@@ -24,6 +25,7 @@ namespace BarPromenade
 
         public HomeRefrigeratorItemKind Kind => kind;
         public string SlotId => slotId;
+        public string SourceId => sourceId;
         public Transform OriginalRoot => originalRoot;
         public IReadOnlyList<Renderer> Renderers =>
             renderersView ??= Array.AsReadOnly(
@@ -35,7 +37,8 @@ namespace BarPromenade
             string newSlotId,
             Transform newOriginalRoot,
             IReadOnlyList<Renderer> newRenderers,
-            Collider newSelectionCollider)
+            Collider newSelectionCollider,
+            string newSourceId = null)
         {
             if (newKind == HomeRefrigeratorItemKind.None)
             {
@@ -101,6 +104,7 @@ namespace BarPromenade
 
             kind = newKind;
             slotId = newSlotId.Trim();
+            sourceId = newSourceId ?? HomeRefrigeratorInventoryAdapter.GetSourceId(slotId);
             originalRoot = newOriginalRoot;
             selectionCollider = newSelectionCollider;
             renderersView = Array.AsReadOnly(itemRenderers);

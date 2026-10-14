@@ -399,10 +399,12 @@ def shipping_scale(root,mat):
     anchor("ReceivingLoad",root,(1.20,.32,6.95))
 
 
-def equipment(mat):
-    root=empty("Equipment");g=Geometry()
-    shipping_scale(root,mat)
-    anchor("Receiver",root,(-3.4,.18,-6.5))
+def add_preparation_station(g):
+    """Append the existing fish-preparation trough, retaining its City metre frame.
+
+    The isolated warehouse imports this exact passive geometry and moves its
+    floor origin; its finish and placement are owned by that scene.
+    """
     # Wash trough has an open dark bowl, a lip, tap, bottom drain and hose.
     wash_start=len(g.vertices)
     g.role="Stainless"
@@ -425,6 +427,13 @@ def equipment(mat):
     g.rod((-5.75,.24,-3.4),(-5.75,.24,-3.65),.045,METAL,8)
     g.rod((-5.75,.24,-3.65),(-5.75,.185,-3.65),.045,METAL,8)
     shift_geometry(g,wash_start,(0,0,1.35))
+
+
+def equipment(mat):
+    root=empty("Equipment");g=Geometry()
+    shipping_scale(root,mat)
+    anchor("Receiver",root,(-3.4,.18,-6.5))
+    add_preparation_station(g)
     anchor("PreparationWorker",root,(-6.65,.18,-2.05));anchor("PreparationLeftHand",root,(-6.12,1.18,-2.25))
     anchor("PreparationRightHand",root,(-6.12,1.18,-1.85));anchor("PreparationLoad",root,(-5.7,.96,-2.05))
     prep=empty("MOVE_PreparationFish",root,(-5.7,.94,-2.05));p=Geometry()

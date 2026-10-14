@@ -390,8 +390,8 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Derived player representations
 
-- Refrigerator reach uses a camera-local arm subset instantiated from the same
-  production prefab. `Player3DFirstPersonSubset` enables only the registered
+- Refrigerator opening has no camera-local hand (`2026-10-15`).
+  `Player3DFirstPersonSubset` derives from the shared prefab and enables the registered
   side's upper-arm, forearm, hand, clothing/detail meshes and grip socket,
   copying the current outfit and hiding its covered anatomy. It
   disables unused renderers/colliders/lights and never creates a second hero

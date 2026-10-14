@@ -2,6 +2,34 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-15, inspection framing:**
+  User: compact shared title/description/buttons and smaller can models;
+  Inventory Examine keeps a compact centred preview/no inner frame.
+  Actions/navigation retained.
+
+- **Accepted exception — 2026-10-15, hand-free refrigerators:**
+  User: Home/warehouse remove camera-local hand;door/handle/camera/modal kept.
+  Closeup keeps owned world-visibility lease without subset/exact restore.
+  Contextual standard exception;production hero/other actions unchanged.
+  Warehouse cached hero-child renderers/owned forceRenderingOff/flags restore;
+  enabled/damage/light/rig kept.
+
+- **Accepted exception — 2026-10-15, warehouse fish finds:**
+  CombatTest/§6/art§15a: City preparation station/top rear gallery/above locked
+  door/front→hall/reused upper practical/passive. Home fridge/one seeded room
+  per floor; Reset keeps rooms, New recomputes. Nine gate-type red room lamps:
+  fridge three on/six Light-emission off/gate on. Warehouse-only shared finish:
+  peeling dirty enamel/seam rust/dark steel/streaks/stained shelves; Home/City kept.
+  Rotten open cans tail-belly-head bottom→top: small abstract dark scraps;
+  large high-contrast cream labels with clear tail-belly-head drawings/no text-brand.
+  Shared 3D inspection:
+  Take→one inventory grant/shelf removed only on success/capacity refusal keeps.
+  Stable floor sources retain collection on Reset-New/session; room change≠refill.
+  Browse chest beam:cursor-plane/existing torso lag/mount pitch/bounded;
+  pause-nested suspend/close-cancel restore/no new light.
+  Routes/modal-pause-cleanup/§21/9checks;0new action-speech-consume-quest-lore-clue.
+  Three fridges/nine fixtures/cached assets.
+
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
   User:chase .5m camera-right/1.9m back(ext/int);free aim .5/1.4m;stable lock1.4m.
   Focus1.6/1.5m ext/int;free-stable firearm shoulder+.4m,melee+.2m kept.
@@ -1875,8 +1903,8 @@
 - **Accepted:** City, Mountain Road, Alpine Village, Bar, Supermarket, Home,
   Stairwell, Church and Mother's House instantiate one
   `Resources/Player/Player3DV2` modular hero prefab through `PlayerFactory`.
-  Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
-  visible refrigerator arm, nested full-body seated bar-drinking actions,
+  Its Generic rig, independent mesh parts, in-place Actions,
+  nested full-body seated bar-drinking actions,
   dedicated 3D portrait, real mesh shadows and
   analytic contact patch are the active player presentation. A runtime-composed
   14-body companion ragdoll temporarily owns those same bones during failed
@@ -4957,47 +4985,27 @@
   remain valid in every state; no guests, readable clues, flies, blood or new
   supernatural effects are introduced. The corresponding story §6 row and
   art §7 define the accepted scope.
-- **Accepted — Data-first interactive Home refrigerator:** A validated
-  kitchen-footprint plan splits the counter around `1.08 x 0.76 m` and moves
-  the table `0.30 m` deeper in Home-local Z, retaining a player-width waypoint
-  route and dedicated approach trigger. Runtime: hollow worn cabinet/three
-  shelves/lower drawer/two door bins/six cavity+two door slots, initially one
-  vodka bottle/chicken egg/open stew can. `HomeRefrigeratorItemCatalog`: localized
-  name/description/preview transform; `HomeRefrigeratorItemView`: original root/renderers/
-  tight trigger. Stable slot IDs map to session world-item IDs; collected slots
-  stay physically empty across Home rebuilds/scene trips.
-  `HomeRefrigeratorInteraction` owns a separate unscaled
-  `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
-  Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
-  the normal 3D hero and contact shadow through the camera approach, then
-  acquires their owner-scoped visibility lease in the same presentation frame
-  that a right-arm subset filtered from the production prefab appears.
-  It holds the `102°` open state until explicit close input; while the ordinary
-  interactor is suspended, its clickable close prompt binds directly to the
-  same `RequestClose` guard used by keyboard/gamepad input. It disposes the
-  subset and lease at the start of `CameraReturn`, restoring the exact world
-  mesh and contact-shadow state; the active fixed-camera shot, input and HUD
-  restore on completion, disable or destroy. A cold
-  emissive strip plus `CityLightHalo` reveals the contents without increasing
-  Home's realtime-light count; generated seal, hinge and thunk cues use the
-  existing spatial audio contracts.
+- **Accepted — Data-first interactive Home refrigerator:**
+  Validated counter split `1.08 x 0.76 m`/table Z+`0.30 m`/player-width route/trigger.
+  Worn hollow cabinet/three shelves/drawer/two bins/six cavity+two door slots;
+  initial vodka/egg/open stew. `HomeRefrigerator{ItemCatalog,ItemView}`:
+  name-description-preview/root-renderers-tight trigger.
+  Stable slot→session source/empty across rebuilds-trips.
+  `HomeRefrigeratorInteraction`: CameraApproach→Reach→Unsealing→Opening→Inspecting
+  →Closing→Sealing→CameraReturn/modal. Hero/shadow stay through approach;
+  hand-free door/handle/open `102°`. Pointer-keyboard-gamepad close shares
+  `RequestClose`/interactor suspended. Return restores hero/shadow;
+  completion-disable-destroy restores camera/input/HUD.
+  Cold strip/`CityLightHalo`/no new Home lights/spatial seal-hinge-thunk.
 - **Accepted — Nested PS1 refrigerator item inspection:** Item browsing exists
-  only while the outer refrigerator timeline holds `Inspecting` and reuses its
-  captured modal lock. A pointer ray against registered trigger colliders
-  applies a reversible `MaterialPropertyBlock` hover tint and draws the
-  localized name beside the cursor; keyboard/gamepad cycling plus confirm is an
-  equivalent path. Selecting the vodka, egg or open stew can advances a pure
-  unscaled `Browsing -> FlyingIn -> Inspecting -> FlyingOut` timeline, reparents
-  the model through a camera-relative pivot, eases it to a centered preview,
-  rotates it at `18°/s` and reveals a dark camera-facing backdrop. Crisp
-  post-composite UI shows the localized title, short description and
-  `Take`/`Use`/`Back`. `Take` atomically adds the matching inventory item and
-  stable collected-source marker, unregisters the refrigerator item and removes
-  its physical model; `Use` remains unavailable. Back or an outer close request
-  returns an untaken item before the door can close. Normal return, cancel, disable and
-  destroy restore its exact parent, sibling index, local position/rotation/
-  scale, selection-collider state and original renderer colors, then clear the
-  temporary presentation state.
+  only in outer `Inspecting`, under its modal. Registered-trigger pointer ray:
+  reversible MPB tint/cursor name; keyboard/gamepad cycle-confirm equivalent.
+  Stock: pure Browsing→FlyingIn→Inspecting→FlyingOut;
+  camera-relative pivot/centered ease/`18°/s`/dark camera-facing backdrop.
+  Post-composite title/description/Take-Use-Back. Take atomically grants item/source,
+  unregisters/removes world model; Use unavailable. Back/outer close return untaken
+  item before closing. Return/cancel/disable/destroy restore parent/sibling/local
+  pose-scale/collider/renderer colors, then clear presentation state.
 - **Accepted — Session hero inventory:** One pure ordered stack model and code
   catalog own the current run's apartment keys, lighter and collected Home or
   purchased supermarket food and drink items. `GameSessionState` exposes
@@ -5144,7 +5152,7 @@
   `Player3DCharacterPresentation`:locomotion/face/intoxication/balance/authored
   falls/full-body side-down→all-fours→stand Rise; ragdoll owns bounded physics
   and `0.16 s` return bridge. Bed/smoking/cat feeding share full-body clips;
-  refrigerator:right camera-local prefab arm; bar drinking:seated world rig/
+  refrigerator:camera-door timeline; bar drinking:seated world rig/
   nested pickup-sip-return. Inventory:transparent 3D portrait. Meshes cast URP
   shadows; analytic contact patch stays grounded/fall-aware. Guided approach,
   independent entry/action/exit poses, neutral settle/terminal hold,
@@ -8006,18 +8014,15 @@
   half-kneel, wobble).
 
 - **Current — one item-examination screen (2026-09-09):**
-  `WorldItemInspectionPresenter` owns shared pivot/fit-to-frame/near backdrop/
-  focus; pure `WorldItemInspectionTimeline` adds manual turning that suppresses
-  idle drift. `WorldItemFoundScreen` is installed by `PlayerFactory` on every
-  gameplay root. Refrigerator keeps shelf hover/Use stub/nested no-lock;
-  world finds own the fullscreen modal lock.
-  `InventoryItemPreviewPoses` serve portrait/shelf/find. Take commits only on
-  confirm; cancel keeps the source. Mouse/right-stick turn stays discoverable,
-  without captions (art §15a/retired-hint catalog).
-  This screen moves the item, not the hero; no contextual-animation exception.
+  `WorldItemInspectionPresenter`: pivot/fit/near backdrop/focus;
+  pure `WorldItemInspectionTimeline`: manual turn suppresses idle drift.
+  `WorldItemFoundScreen`: PlayerFactory/every root;fridge hover/Use stub/no nested
+  lock;world finds fullscreen modal. `InventoryItemPreviewPoses`: portrait/shelf/find.
+  Take only on confirm;cancel keeps source. Mouse/right-stick turn/no captions
+  (art §15a/retired hints). Screen moves item/no hero/contextual exception.
 
 - **Accepted — 2026-10-14, always-lit item examination:**
   User: pickup-screen items always illuminated. Shared presenter, refrigerator
   included: two cached camera-local Point lights/no shadows; held renderers
   temporarily use bit5. Exact original masks restored on Restore/Detach/Dispose.
-  Shared model materials/MPBs retained; world lighting/ambient/torch unchanged.
+  Shared model materials/MPBs retained; world lighting/ambient unchanged.

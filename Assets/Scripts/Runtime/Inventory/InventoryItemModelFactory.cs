@@ -85,6 +85,10 @@ namespace BarPromenade
 
             switch (itemId)
             {
+                case InventoryItemId.RottenFishTailCan:
+                case InventoryItemId.RottenFishBellyCan:
+                case InventoryItemId.RottenFishHeadCan:
+                    return BuildWarehouseCan(itemId, parent, availableSize);
                 case InventoryItemId.ApartmentKeys:
                     return BuildApartmentKeys(parent, rootPrefix);
                 case InventoryItemId.Lighter:
@@ -134,6 +138,36 @@ namespace BarPromenade
                         itemId,
                         "An inventory model requires a concrete item ID.");
             }
+        }
+
+        private static Transform BuildWarehouseCan(InventoryItemId itemId, Transform parent, Vector3 availableSize)
+        {
+            Transform root = WarehouseArenaAssetProvider.Create(itemId.ToString(), parent,
+                Vector3.zero, Quaternion.identity).transform;
+            Bounds bounds = default;
+            bool measured = false;
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer.enabled) continue;
+                Matrix4x4 toRoot = root.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+                Bounds local = renderer.localBounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 point = toRoot.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents,
+                        new Vector3((corner & 1) == 0 ? -1f : 1f, (corner & 2) == 0 ? -1f : 1f,
+                            (corner & 4) == 0 ? -1f : 1f)));
+                    if (!measured) { bounds = new Bounds(point, Vector3.zero); measured = true; }
+                    else bounds.Encapsulate(point);
+                }
+            }
+            if (!measured || bounds.size.x <= 0f || bounds.size.y <= 0f || bounds.size.z <= 0f)
+                throw new InvalidOperationException("The rotten fish tin requires finite visible geometry.");
+            float scale = Mathf.Min(1f, Mathf.Min(availableSize.x / bounds.size.x,
+                Mathf.Min(availableSize.y / bounds.size.y, availableSize.z / bounds.size.z)));
+            // Only the metre wrapper is fitted; the imported child's scale is untouched.
+            root.localScale = Vector3.one * scale;
+            root.localPosition = new Vector3(-bounds.center.x, -bounds.min.y, -bounds.center.z) * scale;
+            return root;
         }
 
         private static Transform BuildShotgunAmmo(Transform parent)

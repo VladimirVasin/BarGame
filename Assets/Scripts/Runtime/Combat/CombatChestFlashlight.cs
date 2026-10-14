@@ -1,11 +1,13 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
     /// <summary>One passive chest attachment and one real, torso-directed warehouse light.</summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(310)]
     public sealed class CombatChestFlashlight : MonoBehaviour
     {
         public const float Range = 16f;
@@ -19,6 +21,84 @@ namespace BarPromenade
         private PlayerEquipmentContacts equipment;
         private Renderer[] renderers;
         private bool contactsRegistered;
+        private object inspectionAimOwner;
+        private CombatActor inspectionActor;
+        private Camera inspectionCamera;
+        private Transform inspectionAimFrame;
+        private Vector3 inspectionCavitySize;
+        private float inspectionNeutralPitch;
+        private Func<bool> inspectionBrowsing;
+        private Func<bool> inspectionPointerSelection;
+        public bool HasInspectionAim => inspectionAimOwner != null;
+        public Vector3 InspectionAimTarget { get; private set; }
+
+        public bool BeginInspectionAim(object owner, CombatActor actor, Camera camera, Transform frame,
+            Vector3 cavitySize, Func<bool> browsing, Func<bool> pointerSelection)
+        {
+            if (!isActiveAndEnabled || SpotLight == null || owner == null || actor == null || camera == null || frame == null ||
+                browsing == null || inspectionAimOwner != null || !actor.BeginInspectionTorsoLook(owner)) return false;
+            inspectionAimOwner = owner;
+            inspectionActor = actor;
+            inspectionCamera = camera;
+            inspectionAimFrame = frame;
+            inspectionCavitySize = cavitySize;
+            // The existing authored mount already points below actor-forward.
+            // Measure its live rest direction after the previous bend was cleared,
+            // so the additive torso solver does not apply that downward angle twice.
+            Vector3 rest = actor.transform.InverseTransformDirection(SpotLight.transform.forward);
+            inspectionNeutralPitch = Mathf.Atan2(-rest.y, Mathf.Sqrt(rest.x * rest.x + rest.z * rest.z)) * Mathf.Rad2Deg;
+            inspectionBrowsing = browsing;
+            inspectionPointerSelection = pointerSelection;
+            InspectionAimTarget = frame.position;
+            return true;
+        }
+
+        public void EndInspectionAim(object owner)
+        {
+            if (!ReferenceEquals(inspectionAimOwner, owner)) return;
+            inspectionActor?.EndInspectionTorsoLook(owner);
+            inspectionAimOwner = null;
+            inspectionActor = null;
+            inspectionCamera = null;
+            inspectionAimFrame = null;
+            inspectionNeutralPitch = 0f;
+            inspectionBrowsing = null;
+            inspectionPointerSelection = null;
+            InspectionAimTarget = Vector3.zero;
+        }
+
+        public void AdvanceInspectionAim(float seconds)
+        {
+            if (!float.IsFinite(seconds) || seconds < 0f) throw new ArgumentOutOfRangeException(nameof(seconds));
+            if (!HasInspectionAim) return;
+            if (inspectionActor == null || inspectionCamera == null || inspectionAimFrame == null ||
+                inspectionAimOwner is UnityEngine.Object unityOwner && unityOwner == null)
+            {
+                EndInspectionAim(inspectionAimOwner);
+                return;
+            }
+            if (GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused ||
+                !GameInput.CanRead(GameInputContext.Menu) || !inspectionBrowsing()) return;
+            Rect pixels = inspectionCamera.pixelRect;
+            Vector2 pointer = pixels.center;
+            Mouse mouse = Mouse.current;
+            if (mouse != null && (inspectionPointerSelection == null || inspectionPointerSelection()))
+            {
+                Vector2 position = mouse.position.ReadValue();
+                if (pixels.Contains(position)) pointer = position;
+            }
+            Ray ray = inspectionCamera.ScreenPointToRay(pointer);
+            var plane = new Plane(inspectionAimFrame.forward, inspectionAimFrame.position);
+            Vector3 point = plane.Raycast(ray, out float distance) ? ray.GetPoint(distance) : inspectionAimFrame.position;
+            Vector3 local = inspectionAimFrame.InverseTransformPoint(point);
+            local.x = Mathf.Clamp(local.x, -inspectionCavitySize.x * .47f, inspectionCavitySize.x * .47f);
+            local.y = Mathf.Clamp(local.y, -inspectionCavitySize.y * .47f, inspectionCavitySize.y * .47f);
+            local.z = 0f;
+            InspectionAimTarget = inspectionAimFrame.TransformPoint(local);
+            // Root-relative origin avoids feedback as the same real chest bends.
+            Vector3 origin = inspectionActor.transform.position + inspectionActor.transform.up * 1.4f;
+            inspectionActor.SetInspectionTorsoLook(inspectionAimOwner, InspectionAimTarget - origin, inspectionNeutralPitch, seconds);
+        }
 
         public void Initialize(Player3DCharacterPresentation hero)
         {
@@ -68,10 +148,19 @@ namespace BarPromenade
         }
 
         private void OnEnable() => SetActive(true);
-        private void OnDisable() => SetActive(false);
-        private void LateUpdate() => WarehouseArenaLighting.UpdateHeroVisibility(transform);
+        private void OnDisable()
+        {
+            if (HasInspectionAim) EndInspectionAim(inspectionAimOwner);
+            SetActive(false);
+        }
+        private void LateUpdate()
+        {
+            AdvanceInspectionAim(Time.deltaTime);
+            WarehouseArenaLighting.UpdateHeroVisibility(transform);
+        }
         private void OnDestroy()
         {
+            if (HasInspectionAim) EndInspectionAim(inspectionAimOwner);
             WarehouseArenaLighting.ClearHeroVisibility(transform);
             if (contactsRegistered && equipment != null) equipment.Unregister(this);
             if (presentation != null && renderers != null) presentation.UnregisterAccessoryRenderers(renderers);

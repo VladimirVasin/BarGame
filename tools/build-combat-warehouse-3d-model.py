@@ -338,9 +338,9 @@ def make_lamp():
     return item
 
 
-def make_emergency_lamp():
+def make_emergency_lamp(room=False):
     """A wall-mounted caged practical, facing the warehouse (-Z)."""
-    item = Item("EmergencyLamp")
+    item = Item("EmergencyRoomLamp" if room else "EmergencyLamp")
     box(item, "Steel", (0, .045, .015), (.36, .42, .045), "WallMount")
     for x in (-.13, .13):
         for y in (-.11, .19):
@@ -353,8 +353,14 @@ def make_emergency_lamp():
         rod(item, "Steel", (x, -.15, -.273), (x, .105, -.273), .011, "LensGuard", sides=8)
     for y in (-.145, -.065, .02, .105):
         rod(item, "Steel", (-.20, y, -.273), (.20, y, -.273), .009, "LensGuard", sides=8)
-    rod(item, "Rubber", (0, .20, .025), (0, .54, .025), .023, "SupplyCable", sides=8)
-    box(item, "Steel", (0, .56, .02), (.14, .10, .075), "CableJunction", .01)
+    if room:
+        # The room lintel is only .45m high. Retain the exact guarded fixture,
+        # but feed its junction sideways below the ceiling/deck above.
+        rod(item, "Rubber", (0, .20, .025), (.36, .20, .025), .023, "SupplyCable", sides=8)
+        box(item, "Steel", (.42, .20, .02), (.14, .10, .075), "CableJunction", .01)
+    else:
+        rod(item, "Rubber", (0, .20, .025), (0, .54, .025), .023, "SupplyCable", sides=8)
+        box(item, "Steel", (0, .56, .02), (.14, .10, .075), "CableJunction", .01)
     item.anchor("Light", (0, -.10, -.29))
     return item
 

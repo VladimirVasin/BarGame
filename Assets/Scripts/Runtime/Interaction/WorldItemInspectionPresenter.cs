@@ -21,7 +21,7 @@ namespace BarPromenade
     {
         public const float PreviewDistance = 0.68f;
         public const float BackdropDistance = 0.82f;
-        public const float PreviewHeightFraction = 0.46f;
+        public const float PreviewHeightFraction = 0.40f;
         public const float PreviewWidthFraction = 0.42f;
         public const float MinimumPreviewScale = 0.55f;
         public const float MaximumPreviewScale = 5.5f;
@@ -312,12 +312,14 @@ namespace BarPromenade
         {
             pivot.SetParent(targetCamera.transform, true);
             pivot.position = itemBounds.center;
-            pivot.rotation = Quaternion.identity;
+            // Borrow the item's authored frame as well as its centre. A cabinet
+            // turned in the world must still present the label in the same held pose.
+            pivot.rotation = heldRoot.rotation;
             pivot.localScale = Vector3.one;
             pivotStartLocalPosition = pivot.localPosition;
             pivotStartLocalRotation = pivot.localRotation;
             pivotTargetLocalPosition =
-                new Vector3(0f, 0.035f, PreviewDistance);
+                new Vector3(0f, 0.060f, PreviewDistance);
             pivotTargetLocalRotation = baseRotation;
             pivotTargetScale =
                 CalculatePreviewScale(itemBounds, authoredScale);

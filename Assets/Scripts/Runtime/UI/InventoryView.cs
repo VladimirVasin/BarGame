@@ -17,7 +17,7 @@ namespace BarPromenade
         private static readonly Rect CommandPanel =
             new Rect(482f, 184f, 146f, 164f);
         private static readonly Rect ExaminePanel =
-            new Rect(72f, 38f, 496f, 284f);
+            new Rect(132f, 14f, 376f, 334f);
 
         private InventoryController controller;
         private GUIStyle headingStyle;
@@ -30,6 +30,9 @@ namespace BarPromenade
         private GUIStyle commandStyle;
         private GUIStyle transparentButtonStyle;
         private GUIStyle emptyStyle;
+        private GUIStyle examineTitleStyle;
+        private GUIStyle examineDescriptionStyle;
+        private GUIStyle examineFeedbackStyle;
 
         public InventoryItemPreviewRenderer PreviewRenderer
         {
@@ -418,37 +421,40 @@ namespace BarPromenade
             InventoryItemDefinition definition =
                 controller.SelectedDefinition;
             GUI.Label(
-                new Rect(92f, 54f, 456f, 30f),
+                RetroItemPanel.TitleRect,
                 LocalizationService.Get(definition.NameLocalizationKey),
-                headingStyle);
-            DrawPreview(new Rect(96f, 92f, 160f, 156f));
+                examineTitleStyle);
+            DrawPreview(new Rect(230f, 62f, 180f, 144f), false);
             GUI.Label(
-                new Rect(270f, 106f, 250f, 119f),
+                new Rect(150f, 268f, 340f, 30f),
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
-                descriptionStyle);
+                examineDescriptionStyle);
             if (controller.SelectedIsEquippable)
             {
                 GUI.Label(
-                    new Rect(270f, 229f, 250f, 20f),
+                    RetroItemPanel.FeedbackRect,
                     controller.SelectedEquipmentStatusLabel,
-                    descriptionStyle);
+                    examineFeedbackStyle);
             }
 
             DrawCommandButton(
-                new Rect(252f, 266f, 136f, 32f),
+                RetroItemPanel.SoleActionRect,
                 "inventory.action.back",
                 true,
                 controller.Cancel);
         }
 
-        private void DrawPreview(Rect rect)
+        private void DrawPreview(Rect rect, bool framed = true)
         {
-            RetroUiTheme.FillRect(rect, RetroUiTheme.Ink);
-            RetroUiTheme.DrawFrame(
-                rect,
-                RetroUiTheme.FrameOuter,
-                RetroUiTheme.FrameInner);
+            if (framed)
+            {
+                RetroUiTheme.FillRect(rect, RetroUiTheme.Ink);
+                RetroUiTheme.DrawFrame(
+                    rect,
+                    RetroUiTheme.FrameOuter,
+                    RetroUiTheme.FrameInner);
+            }
             Texture texture = PreviewRenderer != null
                 ? PreviewRenderer.Texture
                 : null;
@@ -531,6 +537,9 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 false);
+            examineTitleStyle = RetroItemPanel.CreateTitleStyle();
+            examineDescriptionStyle = RetroItemPanel.CreateDescriptionStyle();
+            examineFeedbackStyle = RetroItemPanel.CreateFeedbackStyle();
             statusStyle = RetroUiTheme.CreateLabelStyle(
                 10,
                 TextAnchor.MiddleCenter,

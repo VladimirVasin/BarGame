@@ -16,7 +16,10 @@ namespace BarPromenade
         None = 0,
         VodkaBottle = 1,
         ChickenEgg = 2,
-        OpenStewCan = 3
+        OpenStewCan = 3,
+        RottenFishTailCan = 4,
+        RottenFishBellyCan = 5,
+        RottenFishHeadCan = 6
     }
 
     public readonly struct HomeRefrigeratorSlotPlan
@@ -70,6 +73,50 @@ namespace BarPromenade
             HomeInteriorLayoutValidator.PlayerClearanceRadius * 2f;
 
         private const float Tolerance = 0.001f;
+        // One cabinet shape serves Home and other authored interiors. Placement,
+        // stock and approach routes remain owned by the containing location.
+        private static readonly Vector3 CabinetSize = new Vector3(1.08f, 2.24f, 0.76f);
+        private static readonly Vector3 CabinetCavityCenter = new Vector3(0f, 1.15f, -0.025f);
+        private static readonly Vector3 CabinetCavitySize = new Vector3(0.82f, 1.78f, 0.50f);
+        private static readonly Vector3 CabinetDoorSize = new Vector3(1.00f, 2.08f, 0.10f);
+        private static readonly Vector3 CabinetHandleCenter = new Vector3(0.84f, 0.12f, -0.085f);
+        private static readonly Vector3 CabinetHandleSize = new Vector3(0.055f, 0.52f, 0.065f);
+
+        /// <summary>Origin-local cabinet in a room whose transform owns position/yaw.
+        /// The front faces -Z. Admission and clear placement belong to that room's plan.</summary>
+        public static HomeRefrigeratorPlan CreatePlaced(HomeRefrigeratorItemKind occupant, float groundedRootHeight)
+        {
+            if (occupant == HomeRefrigeratorItemKind.None ||
+                !HomeRefrigeratorInventoryAdapter.TryGetInventoryItem(occupant, out _) ||
+                float.IsNaN(groundedRootHeight) || float.IsInfinity(groundedRootHeight))
+                throw new ArgumentOutOfRangeException(nameof(occupant));
+            var slots = CreateSlots();
+            for (int index = 0; index < slots.Count; index++)
+            {
+                HomeRefrigeratorSlotPlan slot = slots[index];
+                slots[index] = new HomeRefrigeratorSlotPlan(slot.Id, slot.Parent, slot.LocalPosition, slot.Size,
+                    slot.Id == "shelf-middle-right" ? occupant : HomeRefrigeratorItemKind.None);
+            }
+            var approach = new Vector3(.14f, groundedRootHeight, -1.10f);
+            var plan = new HomeRefrigeratorPlan(new Rect(-3f, -3f, 6f, 6f), Vector3.zero,
+                new Rect(-.54f, -.38f, 1.08f, .76f), new Vector3(0f, CabinetSize.y * .5f, 0f), CabinetSize,
+                CabinetCavityCenter, CabinetCavitySize,
+                new Vector3(-CabinetDoorSize.x * .5f, CabinetSize.y * .5f, -CabinetSize.z * .5f - CabinetDoorSize.z * .5f),
+                new Vector3(CabinetDoorSize.x * .5f, 0f, 0f), CabinetDoorSize, 102f,
+                CabinetHandleCenter, CabinetHandleSize, approach,
+                new Rect(approach.x - .41f, approach.z - .37f, .82f, .74f), new[] { approach }, .82f,
+                new Vector3(.08f, .92f, -.80f), new Vector3(1.34f, 1.84f, .84f),
+                new Vector3(.18f, 1.62f, -1.90f), CabinetCavityCenter + new Vector3(0f, 0f, -.12f), 54f,
+                CabinetCavityCenter + new Vector3(CabinetCavitySize.x * .24f, CabinetCavitySize.y * .45f, -.12f),
+                new Vector3(0f, .72f, .08f), slots);
+            ValidateGeometry(plan);
+            foreach (HomeRefrigeratorSlotPlan slot in slots)
+            {
+                if (slot.Parent == HomeRefrigeratorSlotParent.Cavity) ValidateCavitySlot(plan, slot);
+                else ValidateDoorSlot(plan, slot);
+            }
+            return plan;
+        }
 
         private HomeRefrigeratorPlan(
             Rect kitchenBounds,
@@ -231,7 +278,7 @@ namespace BarPromenade
                     layout,
                     HomeInteriorPathKind.Main);
 
-            var bodySize = new Vector3(1.08f, 2.24f, 0.76f);
+            Vector3 bodySize = CabinetSize;
             // Keep the refrigerator and its right counter in place when
             // the left counter is shortened for the corner cupboard.
             const float bodyCenterFromKitchenRight = 1.3845f;
@@ -246,12 +293,9 @@ namespace BarPromenade
                 bodySize.z);
             var bodyCenterLocal =
                 new Vector3(0f, bodySize.y * 0.5f, 0f);
-            var cavityCenterLocal =
-                new Vector3(0f, 1.15f, -0.025f);
-            var cavitySize =
-                new Vector3(0.82f, 1.78f, 0.50f);
-            var doorSize =
-                new Vector3(1.00f, 2.08f, 0.10f);
+            Vector3 cavityCenterLocal = CabinetCavityCenter;
+            Vector3 cavitySize = CabinetCavitySize;
+            Vector3 doorSize = CabinetDoorSize;
             var doorPivotLocal = new Vector3(
                 doorSize.x * -0.5f,
                 bodyCenterLocal.y,
@@ -259,10 +303,8 @@ namespace BarPromenade
                 doorSize.z * 0.5f);
             var doorClosedCenterLocal =
                 new Vector3(doorSize.x * 0.5f, 0f, 0f);
-            var handleCenterLocal =
-                new Vector3(0.84f, 0.12f, -0.085f);
-            var handleSize =
-                new Vector3(0.055f, 0.52f, 0.065f);
+            Vector3 handleCenterLocal = CabinetHandleCenter;
+            Vector3 handleSize = CabinetHandleSize;
 
             float approachClearance =
                 table.Bounds.yMin - bed.Bounds.yMax;

@@ -41,7 +41,8 @@ namespace BarPromenade
 
         public static HomeRefrigeratorView Build(
             Transform parent,
-            HomeRefrigeratorPlan plan)
+            HomeRefrigeratorPlan plan,
+            Func<string, string> sourceIdForSlot = null)
         {
             if (parent == null)
             {
@@ -89,7 +90,8 @@ namespace BarPromenade
                 doorPivot,
                 plan,
                 slots,
-                items);
+                items,
+                sourceIdForSlot ?? HomeRefrigeratorInventoryAdapter.GetSourceId);
 
             Renderer lightStrip = BuildInteriorLight(root, plan);
             CityLightHalo halo = BuildInteriorHalo(root, plan);
@@ -848,7 +850,8 @@ namespace BarPromenade
             Transform doorPivot,
             HomeRefrigeratorPlan plan,
             IDictionary<string, Transform> slotRoots,
-            IList<HomeRefrigeratorItemView> items)
+            IList<HomeRefrigeratorItemView> items,
+            Func<string, string> sourceIdForSlot)
         {
             for (int index = 0; index < plan.Slots.Count; index++)
             {
@@ -874,8 +877,7 @@ namespace BarPromenade
                 bool alreadyCollected =
                     slot.IsOccupied &&
                     GameSessionState.IsWorldItemCollected(
-                        HomeRefrigeratorInventoryAdapter.GetSourceId(
-                            slot.Id));
+                        sourceIdForSlot(slot.Id));
                 if (slot.IsOccupied && !alreadyCollected)
                 {
                     Transform itemRoot = BuildOccupant(slotRoot, slot);
@@ -891,7 +893,8 @@ namespace BarPromenade
                         slot.Id,
                         itemRoot,
                         renderers,
-                        selectionCollider);
+                        selectionCollider,
+                        sourceIdForSlot(slot.Id));
                     items.Add(itemView);
                 }
             }

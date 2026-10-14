@@ -1,5 +1,11 @@
 {
   "entries": [
+    {"key":"inventory.item.rotten_fish_tail_can.name","value":"Консервы с хвостом"},
+    {"key":"inventory.item.rotten_fish_tail_can.description","value":"На выцветшей этикетке — хвост. Внутри потемневшая рыба."},
+    {"key":"inventory.item.rotten_fish_belly_can.name","value":"Консервы с брюшком"},
+    {"key":"inventory.item.rotten_fish_belly_can.description","value":"На потёртой этикетке — брюшко. Рыба внутри потемнела."},
+    {"key":"inventory.item.rotten_fish_head_can.name","value":"Консервы с головой"},
+    {"key":"inventory.item.rotten_fish_head_can.description","value":"На выцветшей этикетке — голова. Рыба лежит в тёмной жиже."},
     {"key":"interaction.warehouse_valve","value":"E — осмотреть вентиль"},
     {"key":"combat.warehouse.valve.locked","value":"Вентиль заперт цепью. Нужен ключ от замка."},
     {"key":"interaction.lodge_cellar","value":"E — осмотреть люк"},

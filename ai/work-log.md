@@ -3,6 +3,27 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-15 - Warehouse fish and shared refrigerator
+
+- City fish-preparation model on the top rear gallery reuses the upper practical;
+  seeded Home fridges occupy one room per floor. Isolated rusty finishes;
+  open rotten cans have small scraps and large tail/belly/head label drawings.
+  Room indicators mark the fridge rooms with visible red surface spill;
+  other entrance lenses and sources stay off, the gate indicator stays on.
+- Shared refrigerator: hand-free camera/door flow, atomic inventory pickup and
+  capacity refusal. Stable item sources keep collected shelves empty through
+  Reset and New Layout; only New Layout recomputes rooms. Owned renderer flags
+  hide the complete warehouse hero during closeup and restore exactly.
+- Browsing chest beam follows the cursor through existing torso lag; pause and
+  nested inspection freeze the aim, closing releases it. Held item orientation
+  is independent of room yaw; nested focus stays sharp. Compact panels and
+  smaller can previews retain shared inspection and inventory actions.
+- Proof: `AreaCaptureFixture.CombatWarehouseFishProps` passed, including
+  lamp surface on/off, delayed aim, modal cleanup, pickup/capacity and layout
+  lifecycle. `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay` passed
+  for Home. Fresh room, inspection and inventory frames reviewed;
+  `check-docs.py` and `git diff --check` passed.
+
 ## 2026-10-14 - Combat and warehouse
 
 - Bat: adjacent handle-end fists/R above L/hook→/shoulder accent/return/block/free-facing.

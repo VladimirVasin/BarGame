@@ -13,17 +13,22 @@ namespace BarPromenade
             "PipeStraight", "PipeElbow", "PipeEnd", "RoomShell", "MainDoor", "Gate", "FanHousing", "FanRotor",
             "LiftFrame", "LiftPlatform", "ChainDrum", "PusherFrame", "PusherHead", "LockerProps", "BreakProps",
             "TechnicalProps", "TwistedFrame", "GateControl", "EmergencyLamp",
-            "RoomSign1", "RoomSign2", "RoomSign3", "RoomSign4", "RoomSign5", "RoomSign6", "RoomSign7", "RoomSign8", "RoomSign9" };
+            "RoomSign1", "RoomSign2", "RoomSign3", "RoomSign4", "RoomSign5", "RoomSign6", "RoomSign7", "RoomSign8", "RoomSign9",
+            "FishPreparationStation", "EmergencyRoomLamp", "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan" };
+        public static readonly string[] FishModelNames = { "FishPreparationStation", "EmergencyRoomLamp",
+            "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan" };
+        public const int CoreModelCount = 36;
         public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
             "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber",
             "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas",
-            "WarehouseMacroMask", "WarehouseWearDecals" };
+            "WarehouseMacroMask", "WarehouseWearDecals", "WarehouseFishLabels" };
         public static readonly string[] AtlasTextureNames = { "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas",
             "WarehouseCargoAtlas" };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
         private static readonly HashSet<string> Measured = new HashSet<string>();
         private static Manifest manifest;
+        private static Manifest fishManifest;
 
         [Serializable] private sealed class Manifest { public Model[] models; }
         [Serializable] private sealed class Model { public string name; public float[] bounds_min, bounds_max; }
@@ -57,7 +62,7 @@ namespace BarPromenade
                 if (separator < 0) throw new InvalidOperationException("Warehouse mesh lacks a surface role: " + renderer.name);
                 string role = renderer.name.Substring(separator + 2);
                 renderer.sharedMaterial = Surface(kind,role);
-                renderer.shadowCastingMode = role == "Lamp" || role == "SignalRed" || role == "Glass" || role == "WearDecal" ?
+                renderer.shadowCastingMode = role == "Lamp" || role == "SignalRed" || role == "SignalRedOff" || role == "Glass" || role == "WearDecal" ?
                     ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -73,13 +78,17 @@ namespace BarPromenade
 
         public static void ValidatePlacedModel(string kind, GameObject wrapper)
         {
-            if (manifest == null)
+            bool fishProp = Array.IndexOf(FishModelNames, kind) >= 0;
+            Manifest measuredManifest = fishProp ? fishManifest : manifest;
+            if (measuredManifest == null)
             {
-                TextAsset source = Resources.Load<TextAsset>(ResourceFolder + "CombatWarehouse3D");
+                TextAsset source = Resources.Load<TextAsset>(ResourceFolder + (fishProp ? "WarehouseFishProps3D" : "CombatWarehouse3D"));
                 if (source == null) throw new InvalidOperationException("Missing measured warehouse manifest.");
-                manifest = JsonUtility.FromJson<Manifest>(source.text);
+                measuredManifest = JsonUtility.FromJson<Manifest>(source.text);
+                if (fishProp) fishManifest = measuredManifest;
+                else manifest = measuredManifest;
             }
-            Model expected = Array.Find(manifest.models,item => item.name == kind);
+            Model expected = Array.Find(measuredManifest.models,item => item.name == kind);
             if (expected == null) throw new InvalidOperationException("Warehouse manifest does not describe " + kind);
             Bounds actual = default; bool found = false;
             foreach (MeshRenderer renderer in wrapper.GetComponentsInChildren<MeshRenderer>(true))
@@ -111,6 +120,7 @@ namespace BarPromenade
 
         public static string AtlasForModel(string kind)
         {
+            if (Array.IndexOf(FishModelNames, kind) >= 0) return null;
             switch (kind)
             {
                 case "Shell": case "RoomShell": case "Platform": case "Stair": case "Rail": return null;
@@ -124,6 +134,15 @@ namespace BarPromenade
                     if (Array.IndexOf(ModelNames,kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
                     return "WarehouseMechanismsAtlas";
             }
+        }
+
+        public static Material GetPropSurface(string role) => Surface("Shell", role);
+
+        public static void SetSignalLight(GameObject fixture, bool enabled)
+        {
+            foreach (MeshRenderer renderer in fixture.GetComponentsInChildren<MeshRenderer>(true))
+                if (renderer.name.EndsWith("__SignalRed", StringComparison.Ordinal))
+                    renderer.sharedMaterial = Surface("EmergencyRoomLamp", enabled ? "SignalRed" : "SignalRedOff");
         }
 
         private static Material Surface(string kind, string role)
@@ -146,6 +165,12 @@ namespace BarPromenade
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
                 case "Lamp": color = new Color(.38f,.37f,.31f); break;
                 case "SignalRed": color = new Color(.90f,.045f,.02f); break;
+                case "SignalRedOff": color = new Color(.12f,.018f,.014f); break;
+                case "SpoiledFish": color = new Color(.38f,.42f,.29f); texture = "WarehouseConcrete"; break;
+                case "SpoiledFishFlesh": color = new Color(.43f,.34f,.25f); texture = "WarehouseConcrete"; break;
+                case "SpoiledFishDark": color = new Color(.075f,.085f,.055f); texture = "WarehouseRubber"; break;
+                case "FishLabelPaper": color = Color.white; texture = "WarehouseFishLabels"; break;
+                case "FishLabelInk": color = new Color(.065f,.085f,.070f); break;
                 case "SafetyYellow": color = new Color(.82f,.62f,.12f); break;
                 case "NumberPlate": color = new Color(.83f,.79f,.64f); break;
                 case "LockSteel": color = new Color(.44f,.46f,.45f); break;
@@ -162,7 +187,9 @@ namespace BarPromenade
                 // Tinting again would square that darkness on the props.
                 color = Color.white;
             }
-            bool layered = atlas == null && role != "WearDecal" && role != "Lamp" && role != "Glass";
+            bool layered = atlas == null && role != "WearDecal" && role != "Lamp" && role != "Glass" &&
+                role != "SignalRed" && role != "SignalRedOff";
+            if (role == "FishLabelPaper") layered = false;
             Shader shader = Resources.Load<Shader>(layered ? "Shaders/WarehouseSurface" : "Shaders/Ps1Lit");
             if (shader == null) throw new InvalidOperationException("Warehouse requires its PS1 surface shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>(ResourceFolder + "Textures/" + texture);
@@ -210,7 +237,7 @@ namespace BarPromenade
         private static void ResetCache()
         {
             foreach (Material material in Materials.Values) if (material != null) UnityEngine.Object.Destroy(material);
-            Materials.Clear(); Templates.Clear(); Measured.Clear(); manifest = null;
+            Materials.Clear(); Templates.Clear(); Measured.Clear(); manifest = null; fishManifest = null;
         }
     }
 }

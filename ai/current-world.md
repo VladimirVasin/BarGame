@@ -135,18 +135,16 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
 - CombatTest:30×24×10.2/fanwell12.22/levels0-3.2-6.4/9rooms6×6/hall12×12;
-  2stairs-4flights/3seeds/resetkeep/New.
-  3atlas1024/UV0unique-UV1m/metric/macro-wear512 wet-rust-scuff;
-  9sets opposite entry/front→door/clear.
-  9signs.44x.5m/print1-9/3floor/seed-fixed;
-  gate-frame-drive/backdoor/spoked valve/yellow chain/gray lock;
-  Pusher→left lane/clear valve dock;
-  E/inspection:2pulls/1.2s→silent locked-key RU-EN;
-  E-Esc/pause/disable:rest/focus/clock0/grant-unlock-open0.
-  D7fan/topSpot/blade shadows→hall-galleries/roof-deck block;
-  lift-drums-pusher/pause/6lamps/redgoal/steadySpot;
-  Low heavy SFX/dryUI/exitrestore;
-  warehouse_theme?/.8speed-pitch/strong echo-reverb;
+  2stairs-4flights/3seeds/resetkeep/New/9sets→entry/9signs.44x.5m/1–9.
+  gate-drive/backdoor/spoked valve/yellow chain/gray lock/Pusher left/clear.
+  E:2pulls/1.2s→silent key RU-EN;E-Esc/pause/disable restore/clock0/open0.
+  City station/toprear/upper lamp;
+  Home fridge1seedroom/floor/rust;tail-belly-head bottom→top/clear drawing labels/scraps.
+  Inspect-Take1x/capacity/Reset-New kept;
+  browse beam→cursor plane/torso lag/pause-nested suspend/close-cancel reset.
+  9roomreds3on6off/gate on/6practicals.
+  D7fan/topSpot/blade shadows→hall-galleries/roof-deck block/lift-drums-pusher/pause;
+  heavy SFX/dryUI/exitrestore/theme?/.8speed-pitch/strong echo-reverb;
   reset-New playhead/pause-disable-resume/exitfade.
   LM65Chest Spot60/16m/60–28°/hard/on/torso-look;
   fog-sky0/ambient hero3D3→black12m/camera0.
@@ -2270,13 +2268,13 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   and persists the stable collected slot across scene round trips;
 - one localized modal refrigerator interaction: the Home camera follows an
   unscaled first-person Bezier approach while the ordinary 3D hero remains
-  visible, then acquires an owner-scoped world-visibility lease in the same
-  frame that a camera-local right-arm subset from the production player prefab
-  appears to turn the handle before the sealed door opens to `102°`. The open
+  visible, then the handle turns and the sealed door opens to `102°` without a
+  separate camera-local hand model. Home and warehouse share this presentation.
+  The open
   inspection persists until the clickable close prompt, a second
   keyboard/gamepad interaction or cancel requests the same guarded close path,
-  then closes and seals; releasing the subset restores the exact world mesh and
-  contact-shadow states as camera return begins, while input and HUD restore on
+  then closes and seals; world mesh and contact-shadow states restore as camera
+  return begins, while input and HUD restore on
   completion at the fixed Home shot. A cold emissive strip and halo reveal the
   contents without adding another realtime `Light`; generated seal, hinge and
   closing-thunk
@@ -2316,10 +2314,11 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   the hunger fraction when it applies its relief, while only a normally
   completed bed sleep clears fatigue and its
   fraction. Neither need has a gameplay debuff yet. The selected item is a
-  live low-resolution 3D model in both the lower panel and Examine view; its
-  hidden preview stage rotates on unscaled time and reuses the same procedural
-  bottle, egg and open-can geometry as the refrigerator, plus the supermarket's
-  closed can, noodles and loaf, alongside inventory key and lighter models. A
+   live low-resolution 3D model in the lower panel and Examine view. Examine
+   centres a compact preview without an inner frame, with compact text/buttons;
+   fish cans use a smaller inspection scale.
+   The hidden unscaled preview stage reuses Home/shop bottle/egg/stew/noodles/loaf,
+   warehouse fish cans and inventory key/lighter geometry. A
   pure catalog and ordered stack state begin every new run with apartment keys
   and a lighter, persist across scene loads and reset with the session. Current
   clothing has a separate equipped flag, with `Используется` / `Не используется`

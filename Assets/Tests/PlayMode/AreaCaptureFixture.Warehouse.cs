@@ -387,7 +387,7 @@ namespace BarPromenade.Tests.PlayMode
                 red++; emergency = light;
             }
             Assert.That(practicals, Is.EqualTo(6), "The emergency fixture replaces one of the six practical lamps.");
-            Assert.That(active, Is.EqualTo(8));
+            Assert.That(active, Is.EqualTo(11));
             Assert.That(red, Is.EqualTo(1));
             Assert.That(Vector3.Distance(emergency.transform.position, source.position), Is.LessThan(.001f));
             Assert.That(emergency.type, Is.EqualTo(LightType.Spot));
@@ -685,6 +685,7 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(a.SpawnPoints, b.SpawnPoints);
             CollectionAssert.AreEqual(a.NavigationNodes, b.NavigationNodes);
             CollectionAssert.AreEqual(a.RoomCenters, b.RoomCenters);
+            CollectionAssert.AreEqual(a.Refrigerators, b.Refrigerators);
             Assert.That(b.GatePosition, Is.EqualTo(a.GatePosition));
             Assert.That(b.Mechanisms.Count, Is.EqualTo(a.Mechanisms.Count));
             for (int i = 0; i < a.Mechanisms.Count; i++)
@@ -746,7 +747,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehouseImportedMetres(CombatTestRoot root)
         {
-            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(36));
+            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(41));
             foreach (string kind in WarehouseArenaAssetProvider.ModelNames)
             {
                 Assert.That(Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind), Is.Not.Null,
@@ -797,6 +798,17 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(renderer.GetComponent<Collider>(), Is.Null);
                         continue;
                     }
+                    if (renderer.name.EndsWith("__FishLabelPaper", System.StringComparison.Ordinal))
+                    {
+                        Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseFishLabels"));
+                        Assert.That(material.GetColor("_BaseColor"), Is.EqualTo(Color.white));
+                        continue;
+                    }
+                    if (family == null && renderer.name.EndsWith("__SignalRed", System.StringComparison.Ordinal))
+                    {
+                        Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
+                        continue;
+                    }
                     if (family != null)
                     {
                         families.Add(family);
@@ -828,7 +840,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehouseLightAndMechanisms(CombatTestRoot root)
         {
-            Assert.That(root.WarehousePlan.Lamps.Count, Is.EqualTo(6));
+            Assert.That(root.WarehousePlan.Lamps.Count, Is.EqualTo(15));
             WarehouseArenaMechanisms machines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
             Assert.That(machines, Is.Not.Null);
             int practical = 0, active = 0;
@@ -836,6 +848,11 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
                 active++;
+                if (light.name == "Warehouse Room Indicator Light")
+                {
+                    Assert.That(light.shadows, Is.EqualTo(LightShadows.None));
+                    continue;
+                }
                 if (light.gameObject.name != "Warehouse Work Lamp")
                 {
                     Assert.That(light == root.Flashlight.SpotLight || light == machines.FanLight, Is.True);
@@ -850,7 +867,7 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }
             Assert.That(practical, Is.EqualTo(6));
-            Assert.That(active, Is.EqualTo(8), "Six dim pools, the overhead fan source and the chest light.");
+            Assert.That(active, Is.EqualTo(11), "Six practicals, three room indicators, the fan source and the chest light.");
             Assert.That(machines.MachineCount, Is.EqualTo(4));
             Assert.That(machines.FanRotor.position.y, Is.EqualTo(WarehouseArenaPlan.CeilingHeight - .42f).Within(.001f));
             float sweptRadius = 0f;
