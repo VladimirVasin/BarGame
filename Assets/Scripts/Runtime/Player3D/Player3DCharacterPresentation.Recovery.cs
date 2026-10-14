@@ -300,6 +300,8 @@ namespace BarPromenade
                 ApplyAttentionPose(deltaTime);
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
+                ApplyCombatFootwork();
+                ApplyTorsoLookPose();
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(deltaTime);
                 ApplyCombatSupportGrip();

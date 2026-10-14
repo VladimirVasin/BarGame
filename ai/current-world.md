@@ -141,37 +141,39 @@ The vertical slice contains:
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
 - CombatTest:seeded warehouse24×18×6m/upper2.6m/2stairs/straight-L-U;
-  Blender:cargo-racks/pipes/8lamps/2shadows/concrete-metal steps/vent.
-  NPC graph/gravity/LOS;resetkeep/Newreplace;seed/v:plan-journal-CLI/flat:test-only.
-  Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/Backsettings;
-  2–4→3–7active s/free≥3m-route/0backlog/pool=livecap≤5/IDs/space-stairs/kill1x/heroend.
-  Injury-action-ammo-flights-survivors kept/0refill;unused→oldestcorpse/excess retire;
+  Blender:cargo-racks/pipes/8passive lamps/concrete-metal steps/vent.
+  Flashlight:LupperM65/Chest/always on/torso-look/1hero/resetkeep;
+  Spot60/16m/60–28°/hard;ceiling-emission-key-fog-sky0;
+  Ambient-only:hero3D full3→smooth black12m/beam-shadow kept/camera0.
+  NPCgraph/gravity/LOS;resetkeep/Newreplace;flat:test-only.
+  Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
+  2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
+  Survivors:injury-action-ammo-flights kept/0refill;unused→oldest/excess retire;
   body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/prepheld(defaultbar)/1-2-3/DpadR;physical stow-draw/mounts/reloadfirst;
-  fallcancel/original-pose-ammo-slot/Erecord;mounts-timing:architecture.
+  All3/held(defaultbar)/1-2-3/DpadR;physical stow-draw/mounts/reloadfirst;
+  fallcancel/pose-ammo-slot/Erecord.
   Zombies:3worn looks/clips/groan-lunge;
-  slow chase→telegraph→latched lunge→miss recovery/hand firstsurface/1hit/0metal;
-  no guard-counter-retreat-stamina;one hand→other/both0-grounded0attack;
+  slowchase→telegraph→latchedlunge→missrecovery/hand firstsurface/1hit/0metal;
+  guard-counter-retreat-stamina0/onehand→other/both0-grounded0attack;
   Rearhead0finisher/0world-infection.
   Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
-  Rise:tread support/accepted pose→Rising/retry/real blockers.
+  Rise:tread/pose→Rising/retry/blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
-  reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
   Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
   shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
-  Partial reload/physical spend/0reserve refusal;
-  Ammo:4fixed/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes;
+  Partialreload/physicalspend/empty refusal;
+  Ammo:4slots/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes;
   12active s endless/pause-modal-focus-disable-defeat0/resetpool/win live.
-  Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
+  Nearlaunch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset.
   Remains:passable/rig foot lift/floor-walls/pool reset.
   Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
   standard taunt/Eshared/0grant.
-  Jacket/scarf/sling:rig/anchors/hand-opening;0live-baked physics;hair kept.
-  Pause/drop/reset cleanup;world on/fresh resume.
+  Jacket/scarf/sling:rig/anchors/hand-opening/0live-baked physics;hair kept.
+  Pause/drop/reset cleanup.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.

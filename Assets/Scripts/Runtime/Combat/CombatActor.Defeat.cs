@@ -108,6 +108,7 @@ namespace BarPromenade
                     return;
                 }
                 State.Advance(seconds);
+                AdvanceWarehouseTorsoLook(seconds);
                 if (!winnerPresentationReleased)
                 {
                     ReleaseStandingPresentation();
@@ -135,7 +136,7 @@ namespace BarPromenade
             }
             EndPistolAction();
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
-            if (winnerPresentationReleased) { State.Advance(seconds); return; }
+            if (winnerPresentationReleased) { State.Advance(seconds); AdvanceWarehouseTorsoLook(seconds); return; }
             // The winner finishes the visible swing without another damage window.
             AdvanceVisualClock(seconds);
             State.Advance(seconds);

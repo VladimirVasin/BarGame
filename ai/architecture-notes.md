@@ -2,24 +2,43 @@
 
 ## Current facts
 
+CombatTest decisions keep story §6/§16/§21, art §15a/nine checks.
+
+- **Accepted — 2026-10-14, warehouse torso look:**
+  Clean ordinary orbit/neutral14° (not hero camera target); stable gun intent.
+  Spine/Chest40/60;down35/up20/residualyaw20/roll6°/combined envelope.
+  Orbit yaw≤35 full→90 zero;root/legs kept;left Chest light follows.
+  Contextual/authored actions/draw/fall/rise win;owned cleanup/cached bones/0hotalloc.
+  Pause/modal holds the accepted pose.
+  Simulation Advance only; repeated Apply0time/0accumulated bend.
+
+- **Accepted exception — 2026-10-14, warehouse chest flashlight:**
+  User:CombatTest/Blender/LM65Chest/torso→/always on.
+  Spot intensity60/16m/60–28°/hard;8fixtures passive/emission-key-fog-sky0;
+  Ambient-only:hero3D full3m→SmoothStep→black12m/0camera veil;
+  Shared `Ps1Lit` Forward wrap: bakedGI only;
+  existing passes/pragmas/direct-light/shadows/emission stay.
+  Scene-owned global off outside warehouse; cached hero/movement-only LateUpdate;
+  disable/unload/subsystem cleanup/0MPB-material clones-new pass.
+  1hero/resetkeep/sharedassets/bounds/teardown;
+  costunmeasured/0input-battery-inventory-story.
+
 - **Accepted — 2026-10-14, combat cloth policy:**
-  User:fabric only;CombatTest:no live/baked jacket-scarf-sling;hair kept.
-  Rig/hand-opening/anchors/cloth0solve-contact-wind-request;pause/drop/reset/dispose;
-  world default on/fresh resume.
-  `PlayerClothPhysicsPolicy`;§6/art§15a/9checks.
+  User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.
+  Rig/hand-opening/anchors;0solve-contact-wind-request;pause/drop/reset/dispose;
+  world on/fresh resume;`PlayerClothPhysicsPolicy`.
 
 - **Accepted — 2026-10-14, corpse traversal:**
-  CombatTest:auto corpse-part step/rig/cached ownership;live fall≠corpse;
-  world-weapon physics kept/lifecycle;§6/art§15a/9checks.
+  CombatTest:auto remains step/rig/cache;livefall≠corpse;
+  world-weapon physics/lifecycle.
 
 - **Accepted exception — 2026-10-13, zombie duel:**
-  CombatTest:unarmed dead only/slow→lunge/0world-infection;
-  §6/art§15a/§16/§21/9checks;human duel/tests retired.
+  CombatTest:unarmed dead/slow→lunge/0world-infection;human duel retired.
 
 - **Accepted — 2026-10-13, simple crowbar strike:**
-  User:2actions;bat/RaboveL/end/85mm/hook→;shoulder load→accent→return/block.
-  One arc/powers/natural palms/Ready match/legacy arm blend/free-facing.
-  Polygon:rig/stops/continuous return/25mm/12° contacts/0paired DAG;§6/art§15a/9checks.
+  User:2actions/bat/RaboveL/end85mm/hook→/shoulder→accent→return/block.
+  Onearc/powers/palms/Ready/legacy arms/free-facing;rig/stops/continuous
+  return/25mm/12° contacts/0paired DAG.
 
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
@@ -30,16 +49,15 @@
   `ai/debug-log.md`.
 
 - **Accepted exception — 2026-10-13, finite combat ammunition:**
-  User:finite ammo/0wave refill/0story;start-reset loaded8/2+0reserve.
-  4authored slots/Eshared/reserve-only/endless respawn;§6/art§15a/§21/9checks.
+  User:finite ammo/0wave refill-story/start-reset8/2+0reserve.
+  4slots/Eshared/reserve-only/endless respawn.
 
 - **Accepted — 2026-10-13, three-weapon carry:**
-  All3/1held/2stowed;3mount-action-ammo/drop-recover-reset/0story;§6/art§15a/9checks.
+  All3/1held-2stowed/3mount-action-ammo/drop-recover-reset/0story.
 
 - **Accepted exception 2026-10-13, novice firearms:**
-  Hero nonmilitary:sway/walk-settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
-  NPC/rig kept;muzzle reticle/shotguncentre/stablecam/intent legs/0assets-lore;
-  §6/§7/art§15a/9checks.
+  Hero nonmilitary:sway/settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
+  NPC/rig;muzzle reticle/shotguncentre/stablecam/intent legs/0assets-lore;§7.
 
 - **Accepted — 2026-10-13, bounded world presentation:**
   Litter:root palette/0MPB;forest48m/chunks/samegeometry-UV-wind-shadows/
@@ -49,30 +67,29 @@
   0world-story/FPSunmeasured.
 
 - **Accepted exception — 2026-10-12, warehouse polygon:**
-  seed/resetkeeps/levels/flat:test-only/0story-hazard-falldmg;§6/art§15a/9checks.
+  seed/resetkeep/levels/flat:test-only/0story-hazard-falldmg.
 - **Accepted exception — 2026-10-13, bounded combat population:**
-  User:Endless1–5(default2)/corpses0–2(default2);pool=livecap≤5.
-  Oldest defeat retires;unused→oldest spawn;others/flights kept;Standard1/Ebody.
-  Conservative;0hardware max/60FPS/gain.
-  §6/art§15a/9checks;`debug-log.md`.
+  User:Endless1–5(default2)/corpses0–2(default2)/pool=livecap≤5.
+  Oldest defeat retires;unused→oldest;others/flights kept;Standard1/Ebody.
+  0hardware max/60FPS/gain;`debug-log.md`.
 - **Accepted — 2026-10-10, carry mounts:**
-  CombatTest:pistol Lchest/M65;bar Rbelt;shotgun soft-sling/back.
-  Holster0cloth:stored hidden/else seen;6stow-draw/rig-model-ammo/0hardmount.
+  CombatTest:pistol Lchest/M65/holster0cloth/storedhidden-else seen;
+  bar Rbelt/shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
-  Ropen/barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown catch
-  →outside shoulder/frontchest→Rgrip/Lforeend;0crossing.
-  Importoffsets/continuous handoffs/pause-drop=original-pose-ammo/stow-model-rig-sling/2×.
+  Ropen/barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown
+  →outer shoulder/chest→Rgrip/Lforeend;0crossing.
+  Importoffsets/continuous handoffs/pause-drop=pose-ammo/stow-model-rig-sling/2×.
 
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→chest/abdomen→low Rside;draw/stow.
   Ribbon0jacket;gun/bar→hair;JacketBody-only width/seam pad.
 
 - **Accepted — 2026-10-13, secondary-motion baking:**
-  Hair/world-jacket:120→30Hz/rig-pose-gear/Idle≤20mmY/all17/warmcycles;
+  Hair/world-jacket:120→30Hz/rig-pose-gear/Idle≤20mmY/17/warmcycles;
   unsafe-wind-falls→live≤3/2/2,0debt;pins/material/body/face/hash-reference-render-CPU.
-  Bounded LRU/prewarm/buffered decode/layout guard→GuardLayout live.
+  LRU/prewarm/buffered decode/layout guard→GuardLayout live.
   Idle prepared/Aim FinalPose→live;stowedbar/build:fullbank refresh.
-  Bounded reason-decode-load-resident-eviction;FPSunmeasured.
+  Bounded reason/decode/load/resident/eviction;FPSunmeasured.
 
 - **Accepted — 2026-10-10, separate military belt:**
   Olive webbing/muted metal buckle;pelvis over trousers.
@@ -80,14 +97,13 @@
   Buckle allowed;0insignia/ammo/military bio.
 
 - **Accepted — 2026-10-10, hero footwear:**
-  Burgundy Dr. Martens 1460 Smooth Leather Lace Up Boots:
-  rounded toe/8 eyelets/black laces/yellow welt stitching/grooved sole.
-  Leather/sole ankle/ball flex in foot roll;rig/actions/support footprint kept.
+  Burgundy Dr. Martens1460 Smooth Leather Lace Up Boots/roundtoe/8eyelets/
+  blacklaces/yellowwelt/grooved sole;ankle-ball flex/rig-actions-footprint kept.
 
 - **Accepted — 2026-10-10, hero body silhouette:**
   Wide torso/continuous shoulders/shirt-M65/tapered neck-jaw;
-  male hips-thighs→two modest round buttocks/cleft/low distinct cheeks/trouser coverage.
-  Lean identity/rig/actions/details/0story/§6 deviation.
+  male hips-thighs/round modest buttocks/cleft/low distinct cheeks/trousers.
+  Lean identity/rig-actions-details/0story-§6 deviation.
 
 - **Accepted — 2026-10-10, continuous joints and loose hero garments:**
   Hero/NPC rig-actions-sockets-parts-wardrobe;`character_joint_surfaces_v1`:
@@ -1811,12 +1827,9 @@
   already had as `SmoothRange`. A sweep found every other call in the project
   correct.
 - **Corrected — the village ground carried vertex colours no shader reads:**
-  `RuntimePrimitiveLit` is `Ps1Lit`, a verbatim URP Lit copy, and URP Lit's
-  `Attributes` has no `COLOR` semantic in any pass. Ground tint belongs to the
-  surface sheet and to the path ribbons that already carry it; a mesh writing
-  colours into the shared default material is writing into nothing. The dead
-  field was deleted rather than revived, because reviving it means hand-editing
-  a clone that must stay re-copyable on a URP bump.
+  `Ps1Lit`/`RuntimePrimitiveLit`: stock URP `Attributes` has no `COLOR` in any pass.
+  Ground tint: surface sheet/path ribbons; vertex-colour field removed
+  for re-copyable stock attributes.
 - **Accepted:** Small causal props in the village use
   `AlpineVillageDressingPlanner` for form-owned semantic IDs and anchors; the
   world and soundscape are readers, so rendering never depends on audio to
@@ -5088,28 +5101,20 @@
   one item stack per definition; multi-item recipes require a later atomic
   inventory transaction rather than sequential removal.
 - **Accepted and implemented 2026-08-04 — Continuous modular 3D hero:** Every
-  production runtime and UI representation of the main hero now derives from
-  the generated modular 3D character. `PlayerFactory` preserves the
-  authoritative `PlayerMotor`/`CharacterController` root and instantiates one
-  hero prefab in every gameplay root. Its Generic Animator uses no root motion;
-  the prefab retains a 31-bone body core with six non-deforming sockets, while
-  `Player3DAssetRegistry` serializes the mesh bindings, the 16 required
-  anatomical parts, the metrics and the in-place Actions. The counts and the
-  prefab named here were this decision's own, on its date; the current ones are
-  owned by `Assets/Player3D/V2/Models/PlayerCharacter3DV2.json` and restated in
-  `ai/systems-map.md`.
-  `Player3DCharacterPresentation` owns locomotion, face,
-  intoxication/balance and authored fall sampling, including the full-body
-  side-down-to-all-fours-to-stand Rise actions; the companion ragdoll owns only
-  the bounded physics interval and its `0.16 s` return bridge. Bed, smoking and
-  cat feeding drive continuous full-body clips on that same rig; refrigerator
-  reach exposes a visible camera-local right arm from the prefab, while bar
-  drinking keeps the seated world body and drives a nested full-body
-  pickup/sip/return action on it. Inventory loads the dedicated transparent 3D portrait. Real meshes cast URP
-  shadows while the analytic contact patch remains grounded and fall-aware.
-  Guided approach,
-  independent entry/action/exit poses, neutral settle, terminal hold, atomic
-  preparation and owned lifecycle cleanup remain mandatory.
+  production runtime/UI hero derives from the generated modular 3D character.
+  `PlayerFactory`: one prefab/gameplay root; authoritative
+  `PlayerMotor`/`CharacterController`, Generic Animator/no root motion.
+  Decision-date core:31bones/6non-deforming sockets; `Player3DAssetRegistry`
+  binds meshes/16anatomical parts/metrics/in-place Actions. Current counts:
+  `Assets/Player3D/V2/Models/PlayerCharacter3DV2.json`/`ai/systems-map.md`.
+  `Player3DCharacterPresentation`:locomotion/face/intoxication/balance/authored
+  falls/full-body side-down→all-fours→stand Rise; ragdoll owns bounded physics
+  and `0.16 s` return bridge. Bed/smoking/cat feeding share full-body clips;
+  refrigerator:right camera-local prefab arm; bar drinking:seated world rig/
+  nested pickup-sip-return. Inventory:transparent 3D portrait. Meshes cast URP
+  shadows; analytic contact patch stays grounded/fall-aware. Guided approach,
+  independent entry/action/exit poses, neutral settle/terminal hold,
+  atomic preparation/owned cleanup remain mandatory.
 - **Accepted — Grounded endpoint contract for contextual 3D animation:**
   This is the mandatory project-wide authoring and runtime contract for every
   future interaction in this class; the normative checklist lives in
@@ -7979,22 +7984,19 @@
   `TestResults/topple-rise-sheet.png` (lunge, brace, stirring, slump,
   half-kneel, wobble).
 
-- **Current — one item-examination screen (2026-09-09):** Holding an object up to the
-  eye is one implementation in the game, not one per place. The
-  `WorldItemInspectionPresenter` (pivot, fit-to-frame scale, near backdrop
-  quad, focus push) was lifted out of the refrigerator's inspector unchanged;
-  the pure timeline moved to Rules as `WorldItemInspectionTimeline` and grew
-  one thing the shelf never needed — a manual turn that holds the idle drift
-  off. `WorldItemFoundScreen` on the hero — installed by `PlayerFactory`, so every gameplay root has it without
-  wiring — reuses both for a thing picked off the floor. The refrigerator
-  keeps its own shelf hover, its `Use` stub and its nested no-lock behaviour;
-  the world screen takes the fullscreen modal lock, because outdoors nothing
-  else holds one. An item's held pose is `InventoryItemPreviewPoses`, read by
-  the portrait, the shelf and the find alike. Two rules the screen must not
-  break: the session records a take only on the player's confirm, so an
-  abandoned screen leaves the object where it lay; and no control hint stands
-  beside the button, per art §15a and the retired-hint catalog test — the turn
-  by mouse or right stick is discoverable, not captioned. The find is a
-  screen, not a contextual action: the hero does not bend for it, so
-  `ai/contextual-animation-standard.md` is untouched and this is no
-  precedent for an unanimated one.
+- **Current — one item-examination screen (2026-09-09):**
+  `WorldItemInspectionPresenter` owns shared pivot/fit-to-frame/near backdrop/
+  focus; pure `WorldItemInspectionTimeline` adds manual turning that suppresses
+  idle drift. `WorldItemFoundScreen` is installed by `PlayerFactory` on every
+  gameplay root. Refrigerator keeps shelf hover/Use stub/nested no-lock;
+  world finds own the fullscreen modal lock.
+  `InventoryItemPreviewPoses` serve portrait/shelf/find. Take commits only on
+  confirm; cancel keeps the source. Mouse/right-stick turn stays discoverable,
+  without captions (art §15a/retired-hint catalog).
+  This screen moves the item, not the hero; no contextual-animation exception.
+
+- **Accepted — 2026-10-14, always-lit item examination:**
+  User: pickup-screen items always illuminated. Shared presenter, refrigerator
+  included: two cached camera-local Point lights/no shadows; held renderers
+  temporarily use bit5. Exact original masks restored on Restore/Detach/Dispose.
+  Shared model materials/MPBs retained; world lighting/ambient/torch unchanged.

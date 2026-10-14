@@ -292,6 +292,15 @@ namespace BarPromenade
             if (registry != null) allRenderers.AddRange(registry.Renderers);
             allRenderers.AddRange(accessoryRenderers);
         }
+
+        public void UnregisterAccessoryRenderers(IReadOnlyList<Renderer> removals)
+        {
+            for (int index = 0; index < removals.Count; index++)
+                accessoryRenderers.Remove(removals[index]);
+            allRenderers.Clear();
+            if (registry != null) allRenderers.AddRange(registry.Renderers);
+            allRenderers.AddRange(accessoryRenderers);
+        }
         public Transform VisualRoot =>
             registry != null && registry.ModelRoot != null
                 ? registry.ModelRoot
@@ -412,6 +421,7 @@ namespace BarPromenade
             ConfigureWorldRenderers();
             BuildGraph(animator);
             CaptureStatusBones();
+            torsoLookPose = new PlayerTorsoLookPose(registry.Anchors.Spine, registry.Anchors.Chest, actorFacingTransform);
             CaptureFacialBones();
             facialState.Reset();
             SetMotion(PlayerMotionSample.Stationary);
@@ -534,6 +544,7 @@ namespace BarPromenade
 
             interactionHandoffLocked = true;
             CancelRecoveryPoseTransition();
+            ResetTorsoLook();
             releaseInteractionHandoffAfterLateUpdate = false;
             planarSpeed = 0f;
             ResetGaitWeights();
@@ -763,6 +774,7 @@ namespace BarPromenade
             ForgetCombatDamagePose();
             combatBodyMotion?.Forget();
             combatFootwork?.Forget();
+            ForgetTorsoLook();
             corpseStepPose?.Forget();
             combatGrip?.Forget();
             combatWeapon?.Forget();
@@ -840,6 +852,7 @@ namespace BarPromenade
             RestoreCorpseStepPose();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            ResetTorsoLook();
             RestoreCombatFootwork();
             RestoreCombatDamagePose();
             RestoreCombatBodyMotion();
@@ -1048,6 +1061,7 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
+                ApplyTorsoLookPose();
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(deltaTime);
                 ConstrainCombatFootContacts();
@@ -1170,6 +1184,7 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
+                ApplyTorsoLookPose();
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(0f);
                 ConstrainCombatFootContacts();
@@ -1211,6 +1226,7 @@ namespace BarPromenade
             RestoreCorpseStepPose();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            RestoreTorsoLookPose();
             RestoreCombatFootwork();
             RestoreCombatDamagePose();
             RestoreCombatBodyMotion();
@@ -1244,6 +1260,7 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
+                ApplyTorsoLookPose();
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(0f);
                 ConstrainCombatFootContacts();
@@ -1257,6 +1274,7 @@ namespace BarPromenade
         {
             ResetCorpseStepPose();
             ClearCombatSupportGrip(combatGripOwner);
+            ResetTorsoLook();
             ClearCombatDamagePose();
             ClearCombatBodyMotion(combatMotionOwner);
             ClearSpeechFace();
@@ -1322,6 +1340,7 @@ namespace BarPromenade
         {
             ResetCorpseStepPose();
             ClearCombatSupportGrip(combatGripOwner);
+            ResetTorsoLook();
             ClearCombatDamagePose();
             ClearSpeechFace();
             layer.Dispose();
@@ -3203,6 +3222,7 @@ namespace BarPromenade
             RestoreCombatFirearm();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            RestoreTorsoLookPose();
             RestoreCombatFootwork();
             // Both additive layers come off before the graph writes the
             // frame: restoring them in LateUpdate instead would roll the
@@ -3223,6 +3243,8 @@ namespace BarPromenade
 
         private void DestroyGraph()
         {
+            ResetTorsoLook();
+            torsoLookPose = null;
             ResetCorpseStepPose();
             corpseStepPose = null;
             SecondaryMotionBakeRuntime.Release(registry);

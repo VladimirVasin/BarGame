@@ -92,6 +92,7 @@ namespace BarPromenade
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
         public CombatSparkEffects SparkEffects { get; private set; }
+        public CombatChestFlashlight Flashlight { get; private set; }
         internal long SimulationPoseTicks { get; private set; }
         internal long SimulationCaptureTicks { get; private set; }
         internal long SimulationFlightTicks { get; private set; }
@@ -100,14 +101,23 @@ namespace BarPromenade
         internal int FinishedRoundSubsteps { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
+        private void Start()
+        {
+            // Reapply after Single-load activation, when this scene owns RenderSettings.
+            if (WarehousePlan != null) WarehouseArenaLighting.ApplyAmbient();
+        }
+
         private void Awake()
         {
             GameLog.SetScene(gameObject.scene.name);
-            Camera camera = RuntimeSceneSetup.EnsureCityNight();
-            RuntimeSceneSetup.EnsureLighting(new Color(.34f, .37f, .35f));
-            RenderSettings.fogStartDistance = 14f;
-            RenderSettings.fogEndDistance = 45f;
-            if (RenderSettings.sun != null) RenderSettings.sun.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
+            Camera camera;
+            if (UseLegacyArenaForTests)
+            {
+                camera = RuntimeSceneSetup.EnsureCityNight();
+                RuntimeSceneSetup.EnsureLighting(new Color(.34f, .37f, .35f));
+                if (RenderSettings.sun != null) RenderSettings.sun.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
+            }
+            else camera = WarehouseArenaLighting.EnsureCamera();
             RetroAudioService.EnsureInstalled();
             CreateCombatLocation();
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
@@ -120,10 +130,16 @@ namespace BarPromenade
             EncounterSettings = selection.EncounterSettings;
             Sparring = true;
             Hero.InitializeHero(Player, selection.Loadout);
+            if (WarehousePlan != null)
+            {
+                Flashlight = Player.GameObject.AddComponent<CombatChestFlashlight>();
+                Flashlight.Initialize((Player3DCharacterPresentation)Player.Visual);
+            }
             InitializeWeaponPools();
             InitializeAmmoPickups();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
+            if (WarehousePlan != null) Hero.BindWarehouseTorsoLook(this);
             CreateCombatOpponents();
             InitializeDamageEffects();
             SparkEffects = gameObject.AddComponent<CombatSparkEffects>();

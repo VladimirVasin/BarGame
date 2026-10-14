@@ -35,7 +35,6 @@ namespace BarPromenade
             WarehouseSeedForTests = null;
             WarehousePlan = WarehouseArenaPlanner.Create(seed);
             combatLocation = WarehouseArenaBuilder.Create(WarehousePlan, transform);
-            if (RenderSettings.sun != null) RenderSettings.sun.shadows = LightShadows.None;
             arenaBounds = new WarehouseArenaArea(WarehousePlan);
             UpdateWarehouseSpawns();
         }

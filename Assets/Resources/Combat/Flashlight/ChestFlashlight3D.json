@@ -1,0 +1,122 @@
+{
+  "generator": "tools/build-player-flashlight-3d-model.py",
+  "generator_version": "1.1.0",
+  "blender_version": "5.0.1",
+  "build_signature": "1c5f8c6de866ccba25018b6e31b12e9ad6fc4a22dd43bbf703ce9ce02b194ef3",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 456,
+  "materials": {
+    "Paint": [
+      0.205,
+      0.225,
+      0.195
+    ],
+    "Steel": [
+      0.29,
+      0.305,
+      0.285
+    ],
+    "WornSteel": [
+      0.4,
+      0.415,
+      0.38
+    ],
+    "Rubber": [
+      0.115,
+      0.125,
+      0.105
+    ],
+    "Glass": [
+      0.74,
+      0.76,
+      0.65
+    ]
+  },
+  "models": [
+    {
+      "name": "ChestFlashlight",
+      "bounds_min": [
+        -0.025,
+        -0.0555,
+        -0.033
+      ],
+      "bounds_max": [
+        0.025,
+        0.05,
+        0.0515
+      ],
+      "triangle_count": 456,
+      "solid_count": 14,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "ClipContact",
+          "position": [
+            0.0,
+            0.026,
+            -0.033
+          ],
+          "parent": null
+        },
+        {
+          "name": "Lens",
+          "position": [
+            0.0,
+            0.025,
+            0.053
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "test_only": true,
+  "always_on_warehouse_only": true,
+  "mount": {
+    "bone": "chest",
+    "reference_action": "Relaxed",
+    "reference_time": 0.0,
+    "physical_side": "Left",
+    "hero_source_contact": [
+      0.085,
+      -0.1062899,
+      1.365
+    ],
+    "hero_actor_contact": [
+      -0.085,
+      1.365,
+      0.1062899
+    ],
+    "hero_actor_position": [
+      -0.085,
+      1.339,
+      0.1392899
+    ],
+    "hero_actor_forward": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "hero_actor_up": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "jacket_renderer": "CLO_JacketBody",
+    "surface_normal_actor": [
+      -0.1552765,
+      0.0891953,
+      0.9838361
+    ],
+    "maximum_imported_clip_gap_m": 0.006,
+    "hero_manifest_sha256": "6bc8706edac7acafe6932d586e1b0b6fab7f7aa7dfd69aa94f3f0a5260a2af6f"
+  },
+  "geometry_signature": "30869d041abc75ab1b120fd24787d4efc7df465a491c5a2d3395a63e0c6e7cfe"
+}

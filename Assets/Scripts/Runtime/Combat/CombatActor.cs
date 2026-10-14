@@ -323,6 +323,7 @@ namespace BarPromenade
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
             {
+                ClearWarehouseTorsoLook();
                 State.CancelAction(); reaction = null; sweepValid = false;
                 CancelInterruptedShoveContact();
                 ReleasePresentation(); return;
@@ -733,6 +734,7 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            ClearWarehouseTorsoLook();
             ResetCorpseStepPose();
             CombatFocused = true;
             freeLocomotionReleased = false;
@@ -784,6 +786,7 @@ namespace BarPromenade
 
         private void ReleasePresentation(bool preservePresentedPose = false)
         {
+            ClearWarehouseTorsoLook();
             if (IsRagdollActive || preservePresentedPose) ForgetCorpseStepPose();
             else ResetCorpseStepPose();
             simulationPosePending = false;
@@ -815,6 +818,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearWarehouseTorsoLook();
             CombatCorpseTraversal.RefreshActor(this);
             if (IsZombie) { State.CancelAction(); ResetZombieAttack(); }
             bool releasedTransientCarry = CancelWeaponCarry();
@@ -841,6 +845,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ClearWarehouseTorsoLook();
             CombatCorpseTraversal.UnregisterActor(this);
             DisposeWeaponCarry();
             ReleaseNpcAnimation();

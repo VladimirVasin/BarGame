@@ -1,22 +1,24 @@
 // The city as the PlayStation would have drawn it: stock URP Lit with its
 // projected vertices rounded to the grid the frame is presented on.
 //
-// This file is a VERBATIM clone of the package shader at
+// This file retains the project's URP Lit pass layout and variant declarations.
+// The package source against which parity is checked lives at
 //   Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader
-// and must stay one. Every pragma, include and pass is copied byte for
-// byte, because a single missing multi_compile silently compiles a
+// Every pragma and pass must stay in parity: a missing multi_compile compiles a
 // variant that never runs - this project already lost the water shader's
 // lamp glints to exactly that, a dropped _CLUSTER_LIGHT_LOOP. Do not
 // hand-curate the pragma blocks. Ps1LitShaderParityTests reads the live
 // package file and fails the moment the two drift apart, which is what
 // turns the next URP upgrade into a red test instead of wrong lighting.
 //
-// Exactly four things differ from the original:
+// The deliberate differences from the original:
 //   1. the shader name;
 //   2. ForwardLit, DepthOnly and DepthNormals call a wrapper vertex
 //      function that runs URP's own and then snaps the clip position;
 //   3. those three passes include Ps1VertexJitter.hlsl;
-//   4. this comment.
+//   4. ForwardLit wraps stock PBR to fade ambient only around the warehouse
+//      hero; the scene-owned global defaults off everywhere else;
+//   5. this comment.
 //
 // All nine passes are kept even though Forward+ never runs GBuffer and
 // nothing here runs Universal2D: URP strips by PASS NAME, so identical
@@ -219,7 +221,13 @@ Shader "Bar Promenade/PS1 Lit"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            // Define the stock implementation before redirecting only the
+            // Forward pass call. Its include guard retains all URP lighting.
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "WarehouseAmbientVisibility.hlsl"
+            #define UniversalFragmentPBR Ps1WarehouseFragmentPBR
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl"
+            #undef UniversalFragmentPBR
             #include "Ps1VertexJitter.hlsl"
 
             // Runs URP's own vertex stage untouched, then rounds only the

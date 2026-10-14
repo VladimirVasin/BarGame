@@ -113,7 +113,7 @@ namespace BarPromenade
                 case "Timber": color = new Color(.77f,.65f,.48f); texture = "PortTimberAlbedo"; break;
                 case "Cardboard": color = new Color(.55f,.45f,.30f); texture = "PortTimberAlbedo"; break;
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
-                case "Lamp": color = new Color(.93f,.83f,.61f); break;
+                case "Lamp": color = new Color(.38f,.37f,.31f); break;
                 case "Rubber": color = new Color(.12f,.15f,.13f); texture = "PortRubberAlbedo"; break;
                 default: throw new InvalidOperationException("Unknown warehouse surface " + role);
             }
@@ -125,8 +125,6 @@ namespace BarPromenade
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
             material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" ? .25f : 0f);
-            if (role == "Lamp")
-            { material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor",color.linear * 1.6f); }
             Materials[role] = material;
             return material;
         }

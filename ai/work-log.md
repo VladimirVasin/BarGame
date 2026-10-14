@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-14 - Two-hand crowbar, corpse traversal and combat cloth
+## 2026-10-14 - Combat and warehouse
 
 - User chose adjacent bat grip at the handle end, right fist above left;
   raised hook faces forward. One broad shoulder strike with accented contact
@@ -34,6 +34,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   reimports; global importer versions and model geometry stay unchanged.
 - Proof: `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`;
   repeated rebuild and derivative import logs are clean.
+- Warehouse:Lchest Spot/hard shadows;3D ambient→0.
+  Ps1Lit bakedGI-only/passes-pragmas kept;cached globals/cleanup;
+  passive fixtures/key-fog-sky0;beam/emission kept;reset/cost unmeasured.
+  Torso:clean orbit/stable gun intent/Spine-Chest/bounded/rear fade;
+  legs-root kept/actions priority/pause-modal hold/sim Advance/repeat Apply0time.
+  Shared preview/fridge:cached Point pair/bit5/no shadows;restore masks;
+  materials/MPBs/world kept.
+- Proof: `tools/build-player-flashlight-3d-model.py`; deterministic FBX roundtrip;
+  `CombatWarehouseFlashlight`, `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; frames reviewed.
+- Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
+  before/new pragmas identical.
 
 ## 2026-10-13 - Bounded world and simple combat
 

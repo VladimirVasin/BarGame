@@ -14,8 +14,11 @@ namespace BarPromenade
         };
         internal CombatAmmoSpawner AmmoSpawns { get; private set; }
 
-        private void OnEnable() => AmmoSpawns?.SetInteractionEnabled(
-            Hero != null && !Hero.State.IsDefeated && pistolApplicationFocused);
+        private void OnEnable()
+        {
+            if (Flashlight != null) Flashlight.enabled = true;
+            AmmoSpawns?.SetInteractionEnabled(Hero != null && !Hero.State.IsDefeated && pistolApplicationFocused);
+        }
 
         private void InitializeAmmoPickups()
         {

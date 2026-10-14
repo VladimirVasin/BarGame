@@ -158,11 +158,12 @@ Hero:bat grip/hook→/strike-block/Ready.
 python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-strike-only --output-dir Captures/Tooling/Strike --source-dir Captures/Tooling/Strike/Source
 ```
 
-`build-combat-{firearm-walk,weapon-carry}-3d-model.py`:same launcher/check;
-`Assets/Resources/Combat{FirearmWalk,WeaponCarry}`/`*AssetSetup`.
-Walk:8fixed-facing/1.6m/C2feet/pelvis/200Hz;carry:holster/belt/sling/6draw-stow.
-`build-combat-warehouse-3d-model.py`:11FBX/JSON→Resources/CombatWarehouse;
-ArtSource/CombatWarehouse;det/metres/read-only `CombatWarehouseAssetValidation`.
+`build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
+8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.
+`build-combat-warehouse-3d-model.py`→CombatWarehouse;11FBX/JSON;
+`CombatWarehouseAssetValidation`:det/metres.
+`build-player-flashlight-3d-model.py`:clip/lens/metres;
+`CombatFlashlight{AssetSetup,AssetProvider}`;CombatTest Lchest.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require

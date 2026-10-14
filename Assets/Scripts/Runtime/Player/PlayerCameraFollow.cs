@@ -175,6 +175,17 @@ namespace BarPromenade
                 : IntoxicationDollyZoomPhase.Rest;
         public float DollyZoomFieldOfView => dollyFieldOfView;
         public float CurrentOrbitPitch => currentPitch;
+        /// <summary>Accepted ordinary orbit, before cinematic/dolly motion and firearm ownership.</summary>
+        internal bool TryGetOrdinaryLookDirection(out Vector3 direction, out float neutralPitchDegrees)
+        {
+            direction = Vector3.zero;
+            neutralPitchDegrees = isInterior ? interiorPitch : exteriorPitch;
+            if (!isActiveAndEnabled || controlledCamera == null || !controlledCamera.isActiveAndEnabled ||
+                followTarget == null || fixedPoseActive || FreeAimActive || TargetLockActive) return false;
+            direction = Quaternion.Euler(currentPitch, currentYaw, 0f) * Vector3.forward;
+            return true;
+        }
+
         public float TargetOrbitPitch => targetPitch;
         public float MinimumOrbitPitch => Mathf.Min(
             minimumOrbitPitch,

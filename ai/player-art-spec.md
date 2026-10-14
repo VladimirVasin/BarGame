@@ -31,11 +31,11 @@
   An authored `MouthLowered`
   shape and the original rig's left hand provide temporary mouth access;
   head/body hiding, bathing and the bathroom mirror include the accessory.
-  Core body mesh, bone and source-action counts below exclude this optional pack.
-- Persistent physical asymmetry:
-  - muted ochre patch on the **right** shoulder; both sleeves otherwise match,
-    without a left bandage or answering patch;
-  - no decorative strap or military insignia; the plain waist belt is independent.
+  Core mesh/bone/action counts below exclude this optional pack.
+- Asymmetry: muted ochre **right** shoulder patch; sleeves match, no bandage.
+  Accepted `2026-10-14`, CombatTest only: worn, unbranded flashlight clipped
+  on left upper M-65 chest/below collar; Chest carries model/forward Spot.
+  No decorative strap/insignia/biography; belt/core rig stay.
 - Mood: restrained low-poly PS1 survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
 - Do not mirror the character. Blender anatomical left is `+X`, the character
@@ -48,7 +48,7 @@ prefab-derived first-person subsets and the inventory portrait resolve through
 the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 
 - Same lean `1.75 m` man/face/six sockets, shaped hands and work boots.
-  User refinement `2026-10-10`: torso broadens into continuous shoulders;
+  `2026-10-10`: torso broadens into continuous shoulders;
   waist/ribcage widths `26.6/38 cm`. Matching tapered neck follows the jaw:
   base/top `14.8/10.8 cm`, `32 mm` visible above collar. Male hips/two modest
   rounded buttocks with a cleft join thighs. Independent trousers retain
@@ -212,6 +212,9 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Animation contract
 
+- Accepted `2026-10-14`, CombatTest: clean orbit/neutral14°/stable gun intent;
+  Spine/Chest40/60/down35-up20/yaw20/roll6°/combined cap;orbit35→90 fade.
+  Legs/root kept;owned actions/fall/rise win;Lchest lamp follows.
 - Accepted `2026-09-21`, CombatTest: .42 m wide/.28 m staggered stance;
   soft knees/low pelvis/travel feet/plant in Windup. Raised shoulders/tucked chin/
   stiff grip/awkward effort;NPC calmer. Stamina breath/tremor/flinch keep grips;
@@ -284,12 +287,9 @@ This opt-in applies only during the interaction handoff without an active clip.
   the face at all: the presentation reads the moment — the fight for balance,
   the floor, the stir, the crawl — and the level, and draws it, under the
   ragdoll too.
-- The Rise keys obey one rule the generator now enforces frame by frame for
-  Hero V2: every shin's `armature_direction` runs KNEE TO ANKLE so the knee
-  bends toward the character's front (`cross(thigh, shin).x >= 0`), no knee or
-  elbow opens more than `8°` past straight or folds past `130°`, and no visible
-  vertex of the lie or the rise passes more than `2 cm` under the neutral
-  floor. Foot turns between two keys are quarter turns, never half turns.
+- Rise, framewise: shin `armature_direction` KNEE→ANKLE/frontward knee
+  (`cross(thigh, shin).x >= 0`); knee/elbow≤`8°` beyond straight/≤`130°` fold;
+  lie/rise vertices≤`2 cm` below neutral floor; foot keys quarter-turn, never half.
 - Left and right balance failures use `RiseLeft/Right`; `FallLeft/Right` and
   `DownLeft/Right` remain authored and registered but the 3D hero no longer
   plays them — the balance model's own topple (the lunge, the arms out for the

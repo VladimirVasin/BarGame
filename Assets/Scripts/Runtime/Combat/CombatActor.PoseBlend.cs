@@ -43,6 +43,7 @@ namespace BarPromenade
             supportGrip?.Advance(seconds);
             UpdateCombatEmotion();
             bodyMotion?.Advance(seconds, motor != null ? motor.PlanarVelocity : locomotionVelocity);
+            AdvanceWarehouseTorsoLook(seconds);
             poseClock += seconds;
             if (poseBlendRemaining > 0f)
             {

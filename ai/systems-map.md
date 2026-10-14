@@ -8,13 +8,12 @@ paths: `git ls-files`/`rg`.
 
 | Status | Meaning |
 | --- | --- |
-| `Current` | Implemented and verified in the repository. |
-| `Partial` | Implemented, but a named part of *this system's own* intent is missing. The row must state the gap. |
-| `Planned` | Intended; no implementation in the repository. |
-| `Deferred` | Explicitly outside the present milestone; see `ai/project-overview.md`. |
+| `Current` | Implemented/verified. |
+| `Partial` | Implemented; row names its own gap. |
+| `Planned` | Intended, absent. |
+| `Deferred` | Outside milestone; `ai/project-overview.md`. |
 
-Only these statuses apply. Product scope cuts are `Deferred` in
-`ai/project-overview.md`; they do not make a completed system `Partial`.
+Scope cuts are `Deferred`; a completed system stays `Current`.
 
 ## Systems
 
@@ -50,6 +49,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Zombies;Endless1–5/≤2corpses;all3;2hand swing/block/free-facing;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatAmmoPickup` | Partial |
+| Warehouse hero look/light | Orbit/aim→bounded Spine-Chest;left Spot;3D fill→black;root/legs kept. | `CombatActor.TorsoLook`, `PlayerTorsoLookPose`, `CombatChestFlashlight` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -58,7 +58,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
 | Hero inventory | Session actions/equipment, one-log cap; mandatory shared pickup/receipt flow. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
-| World item pickup and its found screen | A thing on the floor is held up, turned by hand or by itself, and only then taken; the take is recorded once. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView}` | Current |
+| World item pickup and its found screen | Shared lit 3D examination/turn; one confirmed take; isolated model lights; original layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
 | Quest log and journal | Day one opens the mother's house; the full-screen journal lists ticked boxes over one description panel. | `Quest{Types,LogState}`, `GameDaySchedule`, `Journal{MenuModel,View}` | Current |

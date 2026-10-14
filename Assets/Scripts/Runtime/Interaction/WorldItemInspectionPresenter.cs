@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -23,6 +25,9 @@ namespace BarPromenade
         public const float PreviewWidthFraction = 0.42f;
         public const float MinimumPreviewScale = 0.55f;
         public const float MaximumPreviewScale = 5.5f;
+        // Bit 4 belongs to the seated toilet episode. This pair lights only
+        // the borrowed inspection model, without lifting the surrounding world.
+        private const uint InspectionLightLayer = 1u << 5;
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -36,6 +41,9 @@ namespace BarPromenade
         private Transform pivot;
         private GameObject backdropObject;
         private Renderer backdropRenderer;
+        private GameObject lightingRoot;
+        private readonly List<Renderer> litRenderers = new List<Renderer>(8);
+        private readonly List<uint> savedRenderingLayers = new List<uint>(8);
 
         private Transform heldRoot;
         private Transform savedParent;
@@ -96,6 +104,7 @@ namespace BarPromenade
 
             PreparePivot(worldBounds, baseRotation, authoredScale);
             itemRoot.SetParent(pivot, true);
+            BeginLighting(itemRoot);
             return true;
         }
 
@@ -133,6 +142,7 @@ namespace BarPromenade
                 blend);
             pivot.localScale =
                 Vector3.one * Mathf.Lerp(1f, pivotTargetScale, blend);
+            UpdateLightingPosition();
             ApplyBackdrop(frame.BackdropAlpha);
             CinematicDepthOfField.SetFocusDistance(
                 Vector3.Distance(
@@ -145,6 +155,7 @@ namespace BarPromenade
         {
             if (!IsHolding)
             {
+                EndLighting();
                 HideBackdrop();
                 return false;
             }
@@ -181,6 +192,7 @@ namespace BarPromenade
         {
             if (!IsHolding)
             {
+                EndLighting();
                 HideBackdrop();
                 return false;
             }
@@ -192,6 +204,7 @@ namespace BarPromenade
         public void Dispose()
         {
             Restore();
+            DestroyOwnedObject(lightingRoot);
             DestroyOwnedObject(backdropObject);
             if (pivot != null)
             {
@@ -200,6 +213,7 @@ namespace BarPromenade
 
             backdropObject = null;
             backdropRenderer = null;
+            lightingRoot = null;
             pivot = null;
         }
 
@@ -228,9 +242,67 @@ namespace BarPromenade
 
         private void ClearHeld()
         {
+            EndLighting();
             heldRoot = null;
             savedParent = null;
             HideBackdrop();
+        }
+
+        private void BeginLighting(Transform itemRoot)
+        {
+            if (lightingRoot == null)
+            {
+                lightingRoot = new GameObject($"{label} Lighting") { hideFlags = HideFlags.DontSave };
+                lightingRoot.transform.SetParent(targetCamera.transform, false);
+                BuildInspectionLight("Key", new Vector3(-.55f, .65f, -.05f),
+                    new Color(1f, .96f, .9f), 1.3f);
+                BuildInspectionLight("Fill", new Vector3(.55f, -.15f, .1f),
+                    new Color(.9f, .95f, 1f), .7f);
+            }
+            litRenderers.Clear();
+            savedRenderingLayers.Clear();
+            itemRoot.GetComponentsInChildren(true, litRenderers);
+            foreach (Renderer renderer in litRenderers)
+            {
+                savedRenderingLayers.Add(renderer.renderingLayerMask);
+                renderer.renderingLayerMask = InspectionLightLayer;
+            }
+            UpdateLightingPosition();
+            lightingRoot.SetActive(true);
+        }
+
+        private void UpdateLightingPosition()
+        {
+            // Follow translation through the lift/return, but never inherit
+            // the item's rotation or fit-to-frame scale: light stays readable.
+            if (lightingRoot != null && pivot != null)
+                lightingRoot.transform.localPosition = pivot.localPosition -
+                    new Vector3(0f, .035f, PreviewDistance);
+        }
+
+        private void BuildInspectionLight(string role, Vector3 position, Color color, float intensity)
+        {
+            var carrier = new GameObject($"{label} {role} Light") { hideFlags = HideFlags.DontSave };
+            carrier.transform.SetParent(lightingRoot.transform, false);
+            carrier.transform.localPosition = position;
+            Light light = carrier.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = 2.5f;
+            light.shadows = LightShadows.None;
+            light.bounceIntensity = 0f;
+            light.GetUniversalAdditionalLightData().renderingLayers = InspectionLightLayer;
+        }
+
+        private void EndLighting()
+        {
+            if (lightingRoot != null) lightingRoot.SetActive(false);
+            for (int index = 0; index < litRenderers.Count; index++)
+                if (litRenderers[index] != null)
+                    litRenderers[index].renderingLayerMask = savedRenderingLayers[index];
+            litRenderers.Clear();
+            savedRenderingLayers.Clear();
         }
 
         private void PreparePivot(

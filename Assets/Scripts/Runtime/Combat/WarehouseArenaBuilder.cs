@@ -25,11 +25,11 @@ namespace BarPromenade
             // The wall-local service box owns its low mechanical sound; generation and reset
             // cannot leave detached voices, lights or runtime clips in the scene.
             host.AddComponent<WarehouseArenaAmbience>().Initialize(pipes.transform);
-            BuildLights(plan,host.transform);
+            BuildLampFixtures(plan,host.transform);
             return host;
         }
 
-        private static void BuildLights(WarehouseArenaPlan plan, Transform parent)
+        private static void BuildLampFixtures(WarehouseArenaPlan plan, Transform parent)
         {
             Vector2[] lamps = {
                 new Vector2(-7f,-5f), new Vector2(0f,-5f), new Vector2(7f,-5f),
@@ -38,17 +38,10 @@ namespace BarPromenade
             };
             for (int i = 0; i < lamps.Length; i++)
             {
-                GameObject fixture = WarehouseArenaAssetProvider.Create("Lamp",parent,
+                // Retain the authored fittings, but the hero's chest lamp is the
+                // warehouse's only direct light. No hidden fill lights are created.
+                WarehouseArenaAssetProvider.Create("Lamp",parent,
                     new Vector3(lamps[i].x,5.55f,lamps[i].y),Quaternion.identity);
-                var lightHost = new GameObject("Warehouse Work Light");
-                lightHost.transform.SetParent(fixture.transform,false);
-                lightHost.transform.position = WarehouseArenaAssetProvider.FindAnchor(fixture,"Light").position;
-                lightHost.transform.localRotation = Quaternion.Euler(90f,0f,0f);
-                Light light = lightHost.AddComponent<Light>();
-                light.type = LightType.Spot; light.color = new Color(.94f,.87f,.73f);
-                light.intensity = 2.6f; light.range = 10f; light.spotAngle = 105f; light.innerSpotAngle = 55f;
-                light.shadows = i == 1 || i == 4 ? LightShadows.Hard : LightShadows.None;
-                light.shadowStrength = .7f; light.shadowBias = .025f; light.shadowNormalBias = .1f;
             }
         }
 

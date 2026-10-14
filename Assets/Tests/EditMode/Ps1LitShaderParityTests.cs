@@ -10,8 +10,8 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The PS1 Lit shader is a verbatim clone of URP's Lit with a vertex
-    /// snap wrapped around three of its passes. A clone is a snapshot, so
+    /// PS1 Lit retains URP's passes/keywords, wrapping vertex snap and the
+    /// scene-owned warehouse ambient fade. A clone is a snapshot, so
     /// the danger is not that it breaks - it is that the package moves and
     /// the clone quietly does not, leaving the world lit by a stale
     /// variant set. These tests read the live package file off disk, so
