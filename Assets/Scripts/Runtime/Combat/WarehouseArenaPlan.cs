@@ -59,10 +59,20 @@ namespace BarPromenade
 
     public readonly struct WarehouseArenaLamp
     {
+        public readonly string Kind;
         public readonly Vector3 Position, Direction;
-        public readonly float Range, Intensity;
-        public WarehouseArenaLamp(Vector3 position, Vector3 direction, float range, float intensity)
-        { Position = position; Direction = direction.normalized; Range = range; Intensity = intensity; }
+        public readonly Quaternion ModelRotation;
+        public readonly Color Color;
+        public readonly float Range, Intensity, OuterAngle, InnerAngle;
+        public WarehouseArenaLamp(Vector3 position, Vector3 direction, float range, float intensity,
+            string kind = "Lamp", Color? color = null, float outerAngle = 92f, float innerAngle = 48f,
+            Quaternion? modelRotation = null)
+        {
+            Kind = kind; Position = position; Direction = direction.normalized;
+            ModelRotation = modelRotation ?? Quaternion.FromToRotation(Vector3.down, Direction);
+            Color = color ?? new Color(.78f, .75f, .57f);
+            Range = range; Intensity = intensity; OuterAngle = outerAngle; InnerAngle = innerAngle;
+        }
     }
 
     public readonly struct WarehouseArenaMechanism
@@ -98,6 +108,8 @@ namespace BarPromenade
         public Vector3 GatePosition => new Vector3(0f, 0f, 11.6f);
         public Vector3 GoalDoorPosition => new Vector3(0f, 0f, 11.9f);
         public Vector3 GateApproach => new Vector3(0f, 0f, 9.8f);
+        public Vector3 GateControlPosition => new Vector3(-2.75f, 0f, 11.5f);
+        public Vector3 GateControlApproach => new Vector3(-2.75f, 0f, 9f);
         public IReadOnlyList<Vector3> SpawnPoints { get; }
         public IReadOnlyList<Vector3> Platforms { get; }
         public IReadOnlyList<WarehouseArenaSurface> Surfaces { get; }
@@ -185,6 +197,7 @@ namespace BarPromenade
             modules.Add(new WarehouseArenaPlacement("TwistedFrame", new Vector3(2.4f, 3.5f, 3.8f), -10f));
             modules.Add(new WarehouseArenaPlacement("MainDoor", new Vector3(0f, 0f, 11.9f)));
             modules.Add(new WarehouseArenaPlacement("Gate", new Vector3(0f, 0f, 11.6f)));
+            modules.Add(new WarehouseArenaPlacement("GateControl", new Vector3(-2.75f, 0f, 11.5f)));
             obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Gate,
                 new Vector3(0f, 0f, 11.6f), 0f, new Vector3(4f, 3f, .18f)));
             var mechanisms = new[]
@@ -192,7 +205,8 @@ namespace BarPromenade
                 new WarehouseArenaMechanism("Fan", new Vector3(0f, 9.78f, 0f), 0f, Phase(ref state)),
                 new WarehouseArenaMechanism("Lift", new Vector3(-10.5f, 0f, 7.5f), 0f, Phase(ref state)),
                 new WarehouseArenaMechanism("Drum", new Vector3(-12f, 3.2f, 0f), 0f, Phase(ref state)),
-                new WarehouseArenaMechanism("Pusher", new Vector3(-4.5f, 0f, 9f), 0f, Phase(ref state))
+                // The guarded sweep stays in the left service lane, clear of the valve dock.
+                new WarehouseArenaMechanism("Pusher", new Vector3(-12f, 0f, 0f), 0f, Phase(ref state))
             };
             obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Mechanism,
                 mechanisms[1].Position, 0f, new Vector3(3.1f, 8.9f, 2.9f)));
@@ -203,7 +217,9 @@ namespace BarPromenade
             var lamps = new[]
             {
                 new WarehouseArenaLamp(new Vector3(-7.5f, 2.72f, -4.6f), Vector3.down, 5.5f, .65f),
-                new WarehouseArenaLamp(new Vector3(0f, 2.72f, 10.3f), new Vector3(0f,-1f,-.25f), 5f, .58f),
+                // The wall-mounted emergency fixture replaces the existing goal practical.
+                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.75f), new Vector3(.65f,-1f,-.35f),
+                    6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 78f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
                 new WarehouseArenaLamp(new Vector3(11f, 9.12f, 9f), new Vector3(1f,-1f,0f), 4.8f, .48f),
@@ -236,6 +252,10 @@ namespace BarPromenade
             List<WarehouseArenaPlacement> modules, List<WarehouseArenaObstacle> obstacles)
         {
             rooms.Add(center); modules.Add(new WarehouseArenaPlacement("RoomShell", center, yaw));
+            // The printed plate faces +X, toward the corridor outside the doorway.
+            // Room insertion order fixes numbers 1–3 / 4–6 / 7–9 independently of cargo seed.
+            modules.Add(new WarehouseArenaPlacement("RoomSign" + rooms.Count,
+                center + RotateRoom(new Vector3(3.015f,1.7f,1.65f),yaw), yaw));
             // The +X wall has a real 2.4m opening. Right-side rooms rotate it toward the hall.
             AddRoomWall(center, yaw, new Vector3(-2.92f,0f,0f), new Vector3(.16f,3f,6f), obstacles);
             AddRoomWall(center, yaw, new Vector3(0f,0f,-2.92f), new Vector3(6f,3f,.16f), obstacles);
@@ -335,6 +355,7 @@ namespace BarPromenade
             foreach (Vector3 spawn in plan.SpawnPoints) AddNode(spawn, nodes, unique);
             foreach (Vector3 ammo in plan.AmmoAnchors) AddNode(ammo, nodes, unique);
             AddNode(plan.GateApproach, nodes, unique);
+            AddNode(plan.GateControlApproach, nodes, unique);
             // Only spatial neighbours can form a short valid edge; avoid an all-pairs graph build.
             const float cellSize = 2.11f;
             var buckets = new Dictionary<Vector3Int, List<int>>();
@@ -389,6 +410,9 @@ namespace BarPromenade
             foreach (Vector3 spawn in plan.SpawnPoints) RequireRoute(area, plan.HeroSpawn, spawn, route);
             foreach (Vector3 ammo in plan.AmmoAnchors) RequireRoute(area, plan.HeroSpawn, ammo, route);
             RequireRoute(area, plan.HeroSpawn, plan.GateApproach, route);
+            RequireRoute(area, plan.HeroSpawn, plan.GateControlApproach, route);
+            if (!area.CanTraverse(plan.GateApproach, plan.GateControlApproach, .36f))
+                throw new InvalidOperationException("The valve approach must stay clear across the gate's front aisle.");
             foreach (WarehouseArenaStair stair in plan.Stairs)
                 RequireRoute(area, stair.Foot + Vector3.back * .6f, stair.Top + Vector3.forward * .6f, route);
             if (area.CanTraverse(plan.GateApproach, new Vector3(0f,0f,11.9f), .36f))

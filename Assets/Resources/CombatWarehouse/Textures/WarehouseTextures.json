@@ -70,8 +70,8 @@
     },
     {
       "name": "WarehouseMechanismsAtlas",
-      "sha256": "fb6e96af3479e1aae10c346cb467d6298e3e741f3a25c1ad5e23fb634b6819b8",
-      "source_sha256": "268daa8bac7a3c7377d642d6c3734ce387180f324da916be0d64c5dcf9d22669",
+      "sha256": "bba8d147f6a54cd35c2d4c1db708e17fc8710865fed9f5883319cebbe6a9bdf9",
+      "source_sha256": "ed92ec755ab3d8eb1ac138dbc969913a8d99f284ea2726df1e660226af6443c6",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,
@@ -80,8 +80,8 @@
     },
     {
       "name": "WarehouseFurnishingsAtlas",
-      "sha256": "1847319a376c1cf18943d393a8b4785d81fcc42549a5b68938873d8a08915539",
-      "source_sha256": "861bb323ba81f5758ce13e10a4bdec974e9cb36728ab63e3cb65b3ab1fe15df7",
+      "sha256": "b377899edd12a880de4752890a32f08d1032815ef5ec57c4f03b585805057a66",
+      "source_sha256": "a1fe5aa6e3bf3dfaf9a610630f7a68fd6bbc2fa34ff2e3836966ca00efd24a6a",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,

@@ -26,22 +26,25 @@ namespace BarPromenade
 
     public readonly struct NarrativePage
     {
-        public NarrativePage(string textKey, bool document = false, string attributionKey = null)
+        public NarrativePage(string textKey, bool document = false, string attributionKey = null, bool compact = false)
         {
             if (string.IsNullOrWhiteSpace(textKey)) throw new ArgumentException("A narrative page needs a localization key.", nameof(textKey));
             TextKey = textKey;
             Kind = document ? NarrativePageKind.DocumentText : NarrativePageKind.HeroThought;
             AttributionKey = attributionKey;
+            Compact = compact;
         }
         public string TextKey { get; }
         public NarrativePageKind Kind { get; }
         public string AttributionKey { get; }
+        public bool Compact { get; }
     }
 
     /// <summary>Immutable content shared by any number of physical approach anchors.</summary>
     public sealed class NarrativeInteractionDefinition
     {
-        public NarrativeInteractionDefinition(string id, string promptKey, IReadOnlyList<NarrativePage> pages)
+        public NarrativeInteractionDefinition(string id, string promptKey, IReadOnlyList<NarrativePage> pages,
+            bool requiresRunningGameTime = true)
         {
             if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A narrative needs a stable ID.", nameof(id));
             if (string.IsNullOrWhiteSpace(promptKey)) throw new ArgumentException("A narrative needs a keyed prompt.", nameof(promptKey));
@@ -53,10 +56,13 @@ namespace BarPromenade
                 copy[index] = pages[index];
             }
             Id = id; PromptKey = promptKey; Pages = Array.AsReadOnly(copy);
+            RequiresRunningGameTime = requiresRunningGameTime;
         }
         public string Id { get; }
         public string PromptKey { get; }
         public IReadOnlyList<NarrativePage> Pages { get; }
+        /// <summary>Story inspections require the calendar; isolated test scenes may opt out.</summary>
+        public bool RequiresRunningGameTime { get; }
     }
 
     public readonly struct NarrativeStagingPlan

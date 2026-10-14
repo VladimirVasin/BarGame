@@ -18,18 +18,19 @@ ROOT = Path(__file__).resolve().parents[1]
 SIZE = 1024
 BAKE_MARGIN = 2
 PACK_MARGIN = 4 / SIZE
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 FAMILIES = {
     "WarehouseMechanismsAtlas": ("Gate", "FanHousing", "FanRotor", "LiftFrame", "LiftPlatform",
-        "ChainDrum", "PusherFrame", "PusherHead", "TwistedFrame", "PipeStraight", "PipeElbow", "PipeEnd", "Pipes"),
-    "WarehouseFurnishingsAtlas": ("MainDoor", "LockerProps", "BreakProps", "TechnicalProps", "Lamp"),
+        "ChainDrum", "PusherFrame", "PusherHead", "TwistedFrame", "PipeStraight", "PipeElbow", "PipeEnd", "Pipes", "GateControl"),
+    "WarehouseFurnishingsAtlas": ("MainDoor", "LockerProps", "BreakProps", "TechnicalProps", "Lamp", "EmergencyLamp",
+        *(f"RoomSign{number}" for number in range(1, 10))),
     "WarehouseCargoAtlas": ("Rack", "Cargo"),
 }
 TILED = ("Shell", "RoomShell", "Platform", "Stair", "Rail")
 # Allocate the fixed atlas by actual viewing distance. Large ceiling/shaft
 # members must not consume the texels needed by the reachable working parts.
 UV_IMPORTANCE = {
-    "ChainDrum": 4., "PusherHead": 3., "PusherFrame": 2., "LiftPlatform": 2., "Gate": 1.,
+    "ChainDrum": 4., "PusherHead": 3., "PusherFrame": 2., "LiftPlatform": 2., "Gate": 1., "GateControl": 2.,
     "FanHousing": .65, "FanRotor": .65, "LiftFrame": .70, "TwistedFrame": .65,
     "Pipes": .70, "PipeStraight": .80, "PipeElbow": .80, "PipeEnd": .80,
 }
@@ -37,7 +38,33 @@ ROLE_SOURCE = {"Concrete": "Concrete", "ConcreteDark": "Concrete", "Steel": "Pai
     "WornSteel": "Steel", "Rust": "Rust", "Timber": "Timber", "Cardboard": "Cardboard", "Rubber": "Rubber"}
 ROLE_TINT = {"Concrete": (.84, .88, .83), "ConcreteDark": (.57, .63, .58), "Steel": (.72, .77, .70),
     "WornSteel": (.88, .88, .82), "Rust": (.90, .83, .72), "Timber": (.80, .77, .68),
-    "Cardboard": (.88, .82, .72), "Rubber": (.70, .73, .69), "Glass": (.22, .30, .28), "Lamp": (.38, .37, .31)}
+    "Cardboard": (.88, .82, .72), "Rubber": (.70, .73, .69), "Glass": (.22, .30, .28), "Lamp": (.38, .37, .31),
+    "SignalRed": (.75, .035, .018), "SafetyYellow": (.82, .64, .075), "NumberPlate": (.75, .73, .62),
+    "LockSteel": (.44, .46, .45)}
+
+
+def number_source_manifest():
+    directory = ROOT / "ArtSource/CombatWarehouse/Textures/RoomNumbers"
+    source = json.loads((directory / "RoomNumbers.json").read_text(encoding="utf8"))
+    if source["font"] != "Assets/Resources/Fonts/Roboto-Regular.ttf" or \
+            hashlib.sha256((ROOT / source["font"]).read_bytes()).hexdigest() != source["font_sha256"]:
+        raise RuntimeError("Room plaques must use the unchanged project Roboto typeface")
+    if [record["number"] for record in source["numbers"]] != list(range(1, 10)):
+        raise RuntimeError("Room plaques require each numeral 1-9 once")
+    for record in source["numbers"]:
+        path = directory / f"RoomNumber{record['number']}.png"
+        if record["file"] != path.name or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+            raise RuntimeError("Room numeral source changed: " + path.name)
+    return source
+
+
+def number_source_image(root):
+    number_source_manifest()
+    number = int(root.name.removeprefix("RoomSign"))
+    path = ROOT / f"ArtSource/CombatWarehouse/Textures/RoomNumbers/RoomNumber{number}.png"
+    image = bpy.data.images.load(str(path), check_existing=True)
+    image.colorspace_settings.name = "sRGB"
+    return image
 
 
 def family_for(name):
@@ -238,7 +265,22 @@ def bake_material(root, obj, target, sources):
     metric.uv_map = "WarehouseMetres"
     texture = node(tree, "ShaderNodeTexImage", "Unchanged ImageGen base surface")
     name = ROLE_SOURCE.get(role)
-    if name:
+    if role == "NumberPlate":
+        texture.image = number_source_image(root)
+        texture.extension = "EXTEND"
+        # UV1 is still the metre-space projection. Only the passive bake uses
+        # this normalized view of the printed face; exported UV0 stays packed.
+        scale = node(tree, "ShaderNodeVectorMath", "Enamel face metres to print coordinates")
+        scale.operation = "MULTIPLY"
+        scale.inputs[1].default_value = (1 / .416, 1 / .476, 1)
+        tree.links.new(metric.outputs[0], scale.inputs[0])
+        offset = node(tree, "ShaderNodeVectorMath", "Centre the printed numeral")
+        offset.operation = "ADD"
+        offset.inputs[1].default_value = (.5, .5, 0)
+        tree.links.new(scale.outputs[0], offset.inputs[0])
+        tree.links.new(offset.outputs[0], texture.inputs["Vector"])
+        colour = texture.outputs["Color"]
+    elif name:
         texture.image = sources["Warehouse" + name]
         texture.extension = "REPEAT"
         tree.links.new(metric.outputs[0], texture.inputs["Vector"])
@@ -439,7 +481,8 @@ def validate_layout(roots, cache, directory=None):
         "bake": "Cycles EMIT only; unchanged ImageGen albedo sources with module-anchored macro, damp and mesh-curvature wear",
         "bake_margin_px": BAKE_MARGIN, "pack_margin_px": round(PACK_MARGIN * SIZE),
         "uv_importance": UV_IMPORTANCE,
-        "tiled_models": list(TILED), "families": families}
+        "tiled_models": list(TILED), "families": families,
+        "printed_room_numbers": number_source_manifest()}
 
 
 def verify_fbx_uvs(model_dir, cache, models):

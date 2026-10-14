@@ -7,6 +7,29 @@ namespace BarPromenade
         /// <summary>The hero's voluntary combat stance; the opponent remains engaged independently.</summary>
         public bool CombatFocused { get; private set; } = true;
 
+        internal bool CanBeginStandingInspection => hero != null && isActiveAndEnabled &&
+            State.Phase == MeleePhase.Ready && !State.IsBlocking && HasAttackBalance &&
+            !HasWeaponSwitchRequest && !IsRagdollActive && !(ImpactMotion?.IsActive ?? false) &&
+            !(Firearm?.ReloadPending ?? false) && !(Firearm?.AimRequested ?? false);
+
+        /// <summary>Yield a settled voluntary pose without cancelling any committed combat action.</summary>
+        internal void PrepareStandingInspection()
+        {
+            SetCombatFocused(false);
+            ReleaseStandingPresentation();
+            freeLocomotionReleased = true;
+        }
+
+        internal void RestoreStandingInspectionFocus(bool focused)
+        {
+            if (isActiveAndEnabled) SetCombatFocused(focused);
+            else
+            {
+                CombatFocused = focused;
+                freeLocomotionReleased = !focused;
+            }
+        }
+
         // Dedicated directional firearm steps keep the body aimed forwards.
         // Physical recovery and committed actions retain their combat contacts.
         internal bool UsesFirearmWalkLocomotion => hero != null && IsFirearm &&

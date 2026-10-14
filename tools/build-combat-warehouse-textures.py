@@ -14,7 +14,7 @@ import uuid
 
 sys.dont_write_bytecode = True
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import toolchain
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +25,39 @@ NAMES = tuple("Warehouse" + name for name in
 SIZE = 512
 ATLAS_NAMES = ("WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas")
 GPU_BUDGET_BYTES = 8 * 1024 * 1024
+
+
+def prepare_room_numbers():
+    """Print the project's ordinary typeface onto enamel, never digit meshes.
+
+    These small authoring images are baked into the existing furnishings atlas;
+    no extra runtime texture, material instance or live text surface is needed.
+    """
+    font_path = ROOT / "Assets/Resources/Fonts/Roboto-Regular.ttf"
+    font = ImageFont.truetype(str(font_path), 232)
+    directory = SOURCE / "RoomNumbers"
+    directory.mkdir(parents=True, exist_ok=True)
+    records = []
+    for number in range(1, 10):
+        image = Image.new("RGB", (256, 288), (191, 185, 158))
+        draw = ImageDraw.Draw(image)
+        # A quiet worn border leaves the numeral itself intact at PS1 resolution.
+        draw.rectangle((4, 4, 251, 283), outline=(146, 143, 122), width=3)
+        text = str(number)
+        left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+        position = ((256 - (right - left)) / 2 - left,
+                    (288 - (bottom - top)) / 2 - top)
+        draw.text(position, text, font=font, fill=(18, 23, 21))
+        raw = encode_png(image)
+        path = directory / f"RoomNumber{number}.png"
+        path.write_bytes(raw)
+        records.append({"number": number, "file": path.name,
+                        "sha256": hashlib.sha256(raw).hexdigest()})
+    manifest = {"font": "Assets/Resources/Fonts/Roboto-Regular.ttf",
+                "font_sha256": hashlib.sha256(font_path.read_bytes()).hexdigest(),
+                "size": [256, 288], "numbers": records}
+    (directory / "RoomNumbers.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf8")
+    print("WAREHOUSE ROOM NUMBERS PREPARED: Roboto texture numerals 1-9 for the shared furnishings atlas")
 
 
 def meta(path, folder=False, size=SIZE, linear=False, clamp=False, alpha=False):
@@ -195,6 +228,10 @@ def build(validate_only):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--prepare-signs", action="store_true", help="Prepare only the deterministic number bake sources")
     options = parser.parse_args()
     toolchain.check_python(toolchain.load_config(), ("Pillow", "numpy"))
-    build(options.validate_only)
+    if options.prepare_signs:
+        prepare_room_numbers()
+    else:
+        build(options.validate_only)

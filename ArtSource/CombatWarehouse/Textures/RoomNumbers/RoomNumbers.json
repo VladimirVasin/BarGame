@@ -1,0 +1,55 @@
+{
+  "font": "Assets/Resources/Fonts/Roboto-Regular.ttf",
+  "font_sha256": "b2efabca5ea4bc56eea829713706b5cd0788b82aca153bd4adde9b1573933b4f",
+  "size": [
+    256,
+    288
+  ],
+  "numbers": [
+    {
+      "number": 1,
+      "file": "RoomNumber1.png",
+      "sha256": "ff8a44b3878ca1e0346963c5016758498e383e8dd1481d750f0dab18cc21e48c"
+    },
+    {
+      "number": 2,
+      "file": "RoomNumber2.png",
+      "sha256": "d2c7f1c841edf980dbf74b67d591d5c5b5c9d1a472bf829d7cea34392da82fa7"
+    },
+    {
+      "number": 3,
+      "file": "RoomNumber3.png",
+      "sha256": "b058c5d202a8d7645eb6669df3442942dc6125519d67534d198d6ec806a36eca"
+    },
+    {
+      "number": 4,
+      "file": "RoomNumber4.png",
+      "sha256": "a7e0d377abe17564b088c0545e8ebe9dc4d08ece56c3d97a4eda744042d54b5c"
+    },
+    {
+      "number": 5,
+      "file": "RoomNumber5.png",
+      "sha256": "9f8860fa4a90309d1269bce9b7d19b9c50729c9a28c7ce1d525ac9f3053e1789"
+    },
+    {
+      "number": 6,
+      "file": "RoomNumber6.png",
+      "sha256": "8de9fba9ce7054fe470c5ee7e6293d301ad7e9113ede5303068c1800872570bf"
+    },
+    {
+      "number": 7,
+      "file": "RoomNumber7.png",
+      "sha256": "cb65b3c6d34ad6e2c02e56375ebc1a7566e9bf4963c079a99311a31da5a1e17a"
+    },
+    {
+      "number": 8,
+      "file": "RoomNumber8.png",
+      "sha256": "7c96fcf1362bd0bc0e238d12021942eb9cacb8331e46964e9d2043f36405b355"
+    },
+    {
+      "number": 9,
+      "file": "RoomNumber9.png",
+      "sha256": "91f988473f1932a558f88f6e68aa1bee3e374908716ed1c8e73cea1a021c9de6"
+    }
+  ]
+}

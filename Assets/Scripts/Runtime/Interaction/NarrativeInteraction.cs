@@ -12,6 +12,7 @@ namespace BarPromenade
         private Vector3 interactionPosition;
         private float radius;
         private SphereCollider trigger;
+        private float inspectionAttemptSeconds;
         public NarrativeInteractionDefinition Definition { get; private set; }
         public NarrativeStagingPlan Staging { get; private set; }
         public Transform SubjectRoot { get; private set; }
@@ -22,8 +23,23 @@ namespace BarPromenade
         public event Action<PlayerInteractor> Completed;
         public string CompletionActionKey { get; set; }
         public NarrativeConfirmation Confirmation { get; set; }
+        /// <summary>Optional automatic prop attempt once the inspection camera settles, before its first page.</summary>
+        public float InspectionAttemptSeconds
+        {
+            get => inspectionAttemptSeconds;
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value) || value < 0f)
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                inspectionAttemptSeconds = value;
+            }
+        }
         /// <summary>Shared session time drives an optional prop-only attempt; zero restores its rest pose.</summary>
         public event Action<float> AttemptProgress;
+        /// <summary>Local eligibility and reversible presentation handoff; the shared session owns their lifetime.</summary>
+        public Func<PlayerInteractor, bool> Admission { get; set; }
+        public event Action<PlayerInteractor> PreparingPlayer;
+        public event Action<PlayerInteractor> RestoringPlayer;
 
         public void Configure(NarrativeInteractionDefinition definition, Transform subjectRoot,
             NarrativeStagingPlan staging, Vector3 position, float interactionRadius = PlayerInteractor.InteractionRadius)
@@ -51,6 +67,7 @@ namespace BarPromenade
             if (!isActiveAndEnabled || Definition == null || SubjectRoot == null || !SubjectRoot.gameObject.activeInHierarchy ||
                 interactor == null || !interactor.isActiveAndEnabled || !interactor.InputEnabled || interactor.InteractKeyClaimed ||
                 IsPresenting || CounterMenuInput.IsBlockedByOtherUi() || SceneTransitionService.IsTransitioning ||
+                Admission != null && !Admission(interactor) ||
                 (interactor.transform.position + Vector3.up * .8f - interactionPosition).sqrMagnitude > radius * radius)
                 return false;
             // The close anchor sits on an accessible side of a large prop. A trigger
@@ -79,6 +96,8 @@ namespace BarPromenade
         internal void SetSession(NarrativeInteractionController controller) => session = controller;
         internal void Complete(PlayerInteractor interactor) => Completed?.Invoke(interactor);
         internal void SampleAttempt(float progress) => AttemptProgress?.Invoke(progress);
+        internal void PreparePlayer(PlayerInteractor interactor) => PreparingPlayer?.Invoke(interactor);
+        internal void RestorePlayer(PlayerInteractor interactor) => RestoringPlayer?.Invoke(interactor);
 
         private void OnDisable() { if (IsPresenting) session.RestoreImmediate(); }
         private void OnDestroy() { if (IsPresenting) session.RestoreImmediate(); }

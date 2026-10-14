@@ -50,21 +50,22 @@ namespace BarPromenade
             RenderSettings.ambientProbe = diffuse;
         }
 
-        public static Light CreatePractical(WarehouseArenaLamp lamp, Transform parent)
+        public static Light CreatePractical(WarehouseArenaLamp lamp, Transform sourceAnchor, Transform parent)
         {
             var host = new GameObject("Warehouse Work Lamp");
             host.transform.SetParent(parent, false);
-            host.transform.localPosition = lamp.Position + lamp.Direction * .37f;
+            // The real fixture lens owns the source, including its imported FBX unit factor.
+            host.transform.position = sourceAnchor.position;
             host.transform.localRotation = Quaternion.LookRotation(lamp.Direction,
                 Mathf.Abs(Vector3.Dot(lamp.Direction, Vector3.up)) > .99f ? Vector3.forward : Vector3.up);
             Light light = host.AddComponent<Light>();
             // Short directed pools prevent a room's light leaking through its neighbours.
             light.type = LightType.Spot;
-            light.color = new Color(.78f, .75f, .57f);
+            light.color = lamp.Color;
             light.intensity = lamp.Intensity;
             light.range = lamp.Range;
-            light.spotAngle = 92f;
-            light.innerSpotAngle = 48f;
+            light.spotAngle = lamp.OuterAngle;
+            light.innerSpotAngle = lamp.InnerAngle;
             light.shadows = LightShadows.Hard;
             light.shadowBias = .035f;
             light.shadowNormalBias = .12f;

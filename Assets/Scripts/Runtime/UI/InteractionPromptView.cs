@@ -26,6 +26,7 @@ namespace BarPromenade
         private string heldPageKey, heldHeadingKey, heldControlsKey;
         private Func<bool> heldPageAction;
         private bool heldPageCompact;
+        private bool heldPageRequiresRunningGameTime = true;
         private int heldPageFrame;
         private string heldYesKey, heldNoKey;
         public bool HeldYesSelected { get; private set; }
@@ -73,22 +74,24 @@ namespace BarPromenade
 
         /// <summary>A silent, explicitly released page. Updating prompts/feedback cannot replace its owner.</summary>
         public bool TryHoldPage(UnityEngine.Object owner, string textKey, string headingKey,
-            string controlsKey, Func<bool> advance, bool compact = false)
+            string controlsKey, Func<bool> advance, bool compact = false, bool requiresRunningGameTime = true)
         {
             if (!isActiveAndEnabled || owner == null || string.IsNullOrWhiteSpace(textKey) ||
                 HasHeldPage && pageOwner != owner) return false;
             heldYesKey = heldNoKey = null;
             heldPageCompact = compact;
+            heldPageRequiresRunningGameTime = requiresRunningGameTime;
             pageOwner = owner; heldPageKey = textKey; heldHeadingKey = headingKey;
             heldControlsKey = controlsKey; heldPageAction = advance; heldPageFrame = Time.frameCount;
             return true;
         }
 
         public bool TryHoldConfirmation(UnityEngine.Object owner, string questionKey, string yesKey,
-            string noKey, Func<bool, bool> choose)
+            string noKey, Func<bool, bool> choose, bool requiresRunningGameTime = true)
         {
             if (string.IsNullOrWhiteSpace(yesKey) || string.IsNullOrWhiteSpace(noKey) || choose == null ||
-                !TryHoldPage(owner, questionKey, null, null, () => choose(HeldYesSelected), compact: true)) return false;
+                !TryHoldPage(owner, questionKey, null, null, () => choose(HeldYesSelected), compact: true,
+                    requiresRunningGameTime: requiresRunningGameTime)) return false;
             heldYesKey = yesKey; heldNoKey = noKey; HeldYesSelected = false;
             return true;
         }
@@ -110,6 +113,7 @@ namespace BarPromenade
             pageOwner = null; heldPageKey = heldHeadingKey = heldControlsKey = null;
             heldPageAction = null;
             heldPageCompact = false;
+            heldPageRequiresRunningGameTime = true;
             heldYesKey = heldNoKey = null; HeldYesSelected = false;
         }
 
@@ -511,7 +515,7 @@ namespace BarPromenade
         {
             HasRenderedLayout = false;
             if (HasHeldPage && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
-                !GameSessionState.IsGameTimeRunning)) return;
+                heldPageRequiresRunningGameTime && !GameSessionState.IsGameTimeRunning)) return;
             float unscaledTime = Time.unscaledTime;
             string displayedPromptKey =
                 GetBottomPromptKeyAt(unscaledTime);

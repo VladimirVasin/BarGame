@@ -5,45 +5,45 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-14 - Combat and warehouse
 
-- Bat: adjacent handle-end fists/R above L/hook→; shoulder accent/return/block/free-facing.
+- Bat: adjacent handle-end fists/R above L/hook→/shoulder accent/return/block/free-facing.
   Rig/stops/Ready/handoff; offline0new actions, FBX socket half-turn fix.
-  Proof: `TWO HAND STRIKE EXPORTED PROOF`,
-  `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`; source/export matched, motion reviewed.
-- Hero/zombies cross bodies/remains/chase/lunge/crawl; original-leg clearance keeps walls/
-  floor. Pool exclusions reset even on disabled anatomy; scratch grows/retries.
-  Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
-  movement, pause, stairs, reuse and frames reviewed.
-- Combat cloth-off before hero: jacket/scarf rig/sling anchors; hand-opening/hair/
-  world kept. No solve/contact/playback during pause/drop/pickup/defeat/reset;
-  fresh resume. Proof:
-  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; counters/frames reviewed.
-- Failed BodyHero cache: scoped source-skin metadata/recipe migration blocks reuse.
-  Ordered imports keep avatar/meshes; declared deps replace nested body/head imports;
-  global version/geometry kept.
+  `TWO HAND STRIKE EXPORTED PROOF`,
+  `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`; reviewed.
+- Hero/zombies cross bodies/remains/chase/lunge/crawl; original legs keep walls/floor.
+  Pool exclusions reset on disabled anatomy; scratch grows/retries.
+  `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
+  pause/stairs/reuse/frames reviewed.
+- Combat cloth-off before hero: jacket/scarf rig/sling anchors; hand-opening/hair/world kept.
+  Pause/drop/pickup/defeat/reset0solve-contact-playback; fresh resume.
+  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`; counters/frames checked.
+- Failed BodyHero cache: scoped skin metadata/recipe blocks reuse.
+  Ordered imports keep avatar/meshes; declared deps replace body/head recursion;
+  version/geometry kept.
   `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`; rebuild logs clean.
 - Chest Spot/hard shadows/hero ambient→black; Ps1Lit bakedGI-only, passes/pragmas/
   beam kept; cached globals/cleanup/fog-sky off. Spine-Chest orbit/gun intent:
   bounded/root-legs kept/actions win/pause/repeated Apply0time.
-  Preview/fridge:cached Point pair/isolated masks/restore/shared materials-MPBs. Proof:
+  Preview/fridge:cached Point pair/isolated masks/restore/shared materials-MPBs.
   `tools/build-player-flashlight-3d-model.py`, `CombatWarehouseFlashlight`,
-  `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames reviewed.
-- Warehouse:wet rust/routes/futile machines→port-work disgust;dim lamps/grille
-  stub/0story job-monologue. UV/metric tiles/macro/rare cutout/close-prop density/
-  triplanar0. Root theme/reset-New playhead/cleanup;rooms face entry/clear approach.
-  Fan duct/fixture/steady Spot/blade shadows/roof-deck occlusion/bounded tiers/
-  pause/cleanup. Bibles/state/index.
-- Acoustics:cached prewarmed low-impact cues/shared snapshot return
-  echo-reverb/theme pitch.8;UI dry/other scenes restore/voice bounds retained.
-  Proof: `AreaCaptureFixture.CombatWarehouseAudio`,
+  `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`; roundtrip/frames checked.
+- Warehouse:wet rust/UV-macro-wear/routes/futile machines→work disgust/story0.
+  Rooms→entry;fan Spot/shadows/roof-deck block/pause;red source/spoked wheel/yellow chain/gray lock;
+  printed plates;Pusher→left/free valve dock.
+  Shared Narrative:close→locked tug/chain-lock→silent RU-EN key info/calendar0;
+  pause/E-Esc-disable:rest/rig/focus/input restore.
+  `CombatWarehouseGoalVisuals`:real input/prop movement/light/collision/plates/layout;
+  geometry/UV/FBX/frames reviewed.
+- Acoustics:cached prewarmed low cues/shared snapshot return/echo-reverb/theme pitch.8;
+  UI dry/other scenes restore/voice bounds retained.
+  `AreaCaptureFixture.CombatWarehouseAudio`,
   `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`.
 - Proof: `build-combat-warehouse-3d-model.py`, `build-combat-warehouse-textures.py`,
   `build-combat-warehouse-shader.py`, `tools/check-docs.py`,
-  `CombatWarehouse`, `CombatWarehouseFanShadows`;UV/room/fan shadow frames reviewed.
-- Known baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift;
-  before/new pragmas identical.
+  `CombatWarehouse`, `CombatWarehouseFanShadows`;UV/room/fan frames reviewed.
+- Baseline: `Ps1LitShaderParityTests` SSR keyword/pragma drift; pragmas unchanged.
 - Camera:right shoulder.5/back1.9/aim1.4/up.2;root0lag/handoff/dolly;overflow grow-retry/fallback.
-  Larger HUD/moving drift;2s continuous still/reaim-look keep/pause0;
-  slower drift/recoil kept. Proof: `CameraProfiles/CameraFollow/Obstacle/DollyZoom`,
+  Larger HUD/moving drift;2s still/reaim-look keep/pause0;
+  slower drift/recoil kept. `CameraProfiles/CameraFollow/Obstacle/DollyZoom`,
   `AIM STABILITY MODEL PASSED`, `check-docs.py`;hero frames reviewed.
 
 ## 2026-10-13 - Bounded world and simple combat

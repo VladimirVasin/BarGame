@@ -135,25 +135,29 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
 - CombatTest:30×24×10.2/fanwell12.22/levels0-3.2-6.4/9rooms6×6/hall12×12;
-  2stairs/4flights/3seeds/resetkeep/New.
-  3atlas1024/UV0unique/UV1m/metric tiles;
-  macro512 wet-rust-scuff/wear512/0collider-shadow/triplanar0;
-  9room sets opposite entry/front→entry/collision-clear;
-  D7fan/top Spot/blade shadows→hall-galleries;
-  roofs-decks occlude;lift-drums-pusher/pause/grille stub/6dim lamps.
-  Low heavy SFX/echo-reverb/UI dry/exit restore.
-  Theme Audio/CombatWarehouseMusic/warehouse_theme optional;
-  .8speed+pitch/strong echo-reverb/reset-New playhead/pause-disable-resume/exit fade.
-  LM65Chest Spot60/16m/60–28°/hard;on/torso-look/1hero/resetkeep;
-  fog-sky0;ambient hero3D3→black12m/beam-shadow kept/camera0.
+  2stairs-4flights/3seeds/resetkeep/New.
+  3atlas1024/UV0unique-UV1m/metric/macro-wear512 wet-rust-scuff;
+  9sets opposite entry/front→door/clear.
+  9signs.44x.5m/print1-9/3floor/seed-fixed;
+  gate-frame-drive/backdoor/spoked valve/yellow chain/gray lock;
+  Pusher→left lane/clear valve dock;
+  E/inspection:2pulls/1.2s→silent locked-key RU-EN;
+  E-Esc/pause/disable:rest/focus/clock0/grant-unlock-open0.
+  D7fan/topSpot/blade shadows→hall-galleries/roof-deck block;
+  lift-drums-pusher/pause/6lamps/redgoal/steadySpot;
+  Low heavy SFX/dryUI/exitrestore;
+  warehouse_theme?/.8speed-pitch/strong echo-reverb;
+  reset-New playhead/pause-disable-resume/exitfade.
+  LM65Chest Spot60/16m/60–28°/hard/on/torso-look;
+  fog-sky0/ambient hero3D3→black12m/camera0.
   NPCgraph/gravity/LOS;flat:test-only.
   Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
   2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
-  Survivors:injury-action-ammo-flights kept/0refill;unused→oldest/excess retire;
+  Survivors:injury-action-ammo-flights kept/refill0;unused→oldest/excess retire;
   body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/held(defaultbar)/1-2-3/DpadR;physical stow-draw/mounts/reloadfirst;
+  All3/held(defaultbar)/1-2-3/DpadR/physical stow-draw/mounts/reloadfirst;
   fallcancel/pose-ammo-slot/Erecord.
-  Zombies:3worn looks/clips/groan-lunge;
+  Zombies:3worn/clips/groan-lunge;
   slowchase→telegraph→latchedlunge→missrecovery/hand firstsurface/1hit/0metal;
   guard-counter-retreat-stamina0/onehand→other/both0-grounded0attack;
   Rearhead0finisher/0world-infection.
@@ -161,8 +165,8 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Rise:tread/pose→Rising/retry/blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
-  Hero:smooth drift/moving aim4×/2s stationary settle/recoil-yaw-overshoot/regrip/blink-chin;
-  HUD/rig share movement;look/aim toggle keep settle,pause0;
+  Hero:smooth drift/moving aim4×/stillsettle2s/recoil-yaw-overshoot/regrip/blink-chin;
+  HUD-rig movement/look-aim keep settle/pause0;
   reticle:3×2px arms/2×2dot/moving gap+6pistol/+10shotgun/muzzle direction;
   Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
   shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
@@ -175,8 +179,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Remains:passable/rig foot lift/floor-walls/pool reset.
   Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
   standard taunt/Eshared/0grant.
-  Jacket/scarf/sling:rig/anchors/hand-opening/0live-baked physics;hair kept.
-  Pause/drop/reset cleanup.
+  Jacket-scarf-sling:rig/anchors/hand-opening/physics0/hair;pause-drop-reset cleanup.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.
@@ -2910,4 +2913,4 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   service and all three single-bottle routes are already present; the former six-arm return chord is a
   superseded legacy proposal, not the upgrade path.
 
-South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.
+South City Rollers/Skaters: procedural-world/sprite reference only; no imported code/assets.

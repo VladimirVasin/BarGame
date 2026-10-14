@@ -28,7 +28,7 @@ import warehouse_surface_authoring as appearance
 spec = importlib.util.spec_from_file_location("warehouse_passive_export", ROOT / "tools/build-city-fair-3d-model.py")
 passive = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(passive)
-VERSION = "2.2.0"
+VERSION = "2.3.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse"
 FAN_HOUSING_WORLD_Y = 10.2
@@ -40,6 +40,8 @@ SURFACES = {
     "Cardboard": (.39, .32, .23), "Glass": (.24, .30, .27),
     "Lamp": (.67, .57, .36), "Rubber": (.08, .10, .085),
     "WearDecal": (.21, .17, .11),
+    "SignalRed": (.75, .035, .018), "SafetyYellow": (.82, .64, .075),
+    "NumberPlate": (.75, .73, .62), "LockSteel": (.44, .46, .45),
 }
 passive.SURFACES = SURFACES
 passive.VERSION = VERSION
@@ -336,6 +338,42 @@ def make_lamp():
     return item
 
 
+def make_emergency_lamp():
+    """A wall-mounted caged practical, facing the warehouse (-Z)."""
+    item = Item("EmergencyLamp")
+    box(item, "Steel", (0, .045, .015), (.36, .42, .045), "WallMount")
+    for x in (-.13, .13):
+        for y in (-.11, .19):
+            rod(item, "WornSteel", (x, y, -.018), (x, y, -.038), .021, "MountBolts", sides=8)
+    box(item, "Steel", (0, 0, -.115), (.42, .30, .22), "Housing", .035)
+    box(item, "SignalRed", (0, -.025, -.237), (.34, .21, .036), "RedLens", .014)
+    # A projecting brow and real guard bars leave a clear light origin below.
+    box(item, "WornSteel", (0, .155, -.145), (.49, .065, .35), "RainHood", .012)
+    for x in (-.19, .19):
+        rod(item, "Steel", (x, -.15, -.273), (x, .105, -.273), .011, "LensGuard", sides=8)
+    for y in (-.145, -.065, .02, .105):
+        rod(item, "Steel", (-.20, y, -.273), (.20, y, -.273), .009, "LensGuard", sides=8)
+    rod(item, "Rubber", (0, .20, .025), (0, .54, .025), .023, "SupplyCable", sides=8)
+    box(item, "Steel", (0, .56, .02), (.14, .10, .075), "CableJunction", .01)
+    item.anchor("Light", (0, -.10, -.29))
+    return item
+
+
+def make_room_sign(number):
+    """A thin enamel plaque with one textured face; no geometry makes the digit."""
+    item = Item(f"RoomSign{number}")
+    box(item, "Steel", (0, 0, 0), (.04, .50, .44), "PlateBacking", .007)
+    # Printed side faces +X (corridor side of the room's +X wall).
+    vertices = [(.025, -.238, -.208), (.025, -.238, .208),
+                (.025, .238, .208), (.025, .238, -.208)]
+    item.parts[("PrintedNumber", "NumberPlate")] = [(vertices, [(0, 3, 2, 1)])]
+    for y in (-.222, .222):
+        for z in (-.19, .19):
+            rod(item, "WornSteel", (.023, y, z), (.035, y, z), .009, "Screws", sides=6)
+    item.anchor("PrintedFace", (.025, 0, 0))
+    return item
+
+
 def make_room_shell():
     item = Item("RoomShell")
     # Six-metre corner rooms connect through a true opening in their +X wall.
@@ -391,10 +429,117 @@ def make_gate():
         rod(item, "Steel", (x, .1, 0), (x, 2.9, 0), .026, "VerticalBars", collision=True, sides=6)
     for y in (.83, 1.73):
         box(item, "Rust", (0, y, 0), (3.94, .065, .055), "GateCrossbars", collision=True)
-    # The physical latch is an unpowered future goal; no authored fiction text.
-    box(item, "Steel", (.17, 1.15, -.065), (.22, .32, .085), "Latch", collision=True)
-    rod(item, "Rust", (.16, .97, -.13), (.16, 1.18, -.13), .04, "Latch")
+    # Heavy guides and a drive header make this goal distinct from room doors.
+    # Existing blocking geometry stays passive; these are visible drive details.
+    for x in (-2.08, 2.08):
+        box(item, "WornSteel", (x, 1.56, -.07), (.19, 3.12, .22), "LiftGuides", .02)
+        box(item, "Steel", (x, 1.56, -.202), (.055, 2.93, .045), "GuideSlots", .006)
+        for y in (.30, 1.5, 2.76):
+            box(item, "Rust", (x, y, -.035), (.27, .16, .10), "GuideMounts", .012)
+            rod(item, "WornSteel", (x, y, -.212), (x, y, -.232), .032, "GuideBolts", sides=8)
+    box(item, "Steel", (0, 3.19, -.07), (4.54, .32, .30), "DriveHeader", .025)
+    rod(item, "WornSteel", (-2.18, 3.19, -.14), (2.18, 3.19, -.14), .055, "DriveShaft", sides=10)
+    for x in (-1.78, 1.78):
+        box(item, "WornSteel", (x, 3.19, -.23), (.26, .19, .06), "ShaftBearings", .012)
+    # Solid lower bands echo the door behind without adding another lock cue.
+    for y in (.29, 2.66):
+        box(item, "WornSteel", (0, y, -.047), (3.90, .14, .035), "LeafBands", .007)
     item.anchor("Lock", (.17, 1.15, -.13))
+    item.anchor("DriveConnection", (-2.13, 3.2, -.12))
+    return item
+
+
+def hollow_ring(profile, sides):
+    """Close the profile across its own seam, leaving the centre genuinely open.
+
+    The passive lathe helper caps both end rings with discs; that is suitable
+    for vessels but closes a wheel. This local loop has no cap across the hole.
+    """
+    vertices, faces = passive.ring(profile, sides)
+    faces = faces[2:]
+    last = (len(profile) - 1) * sides
+    faces.extend((last + (i + 1) % sides, last + i, i, (i + 1) % sides) for i in range(sides))
+    geometry = vertices, faces
+    if bp.signed_volume(geometry) < 0:
+        geometry = vertices, [tuple(reversed(face)) for face in faces]
+    return geometry
+
+
+def chain_link(item, p, tilt, index):
+    """Closed oval low-poly link, alternating planes so links visibly interlock."""
+    segments, sides = 12, 6
+    vertices, faces = [], []
+    for segment in range(segments):
+        angle = segment * math.tau / segments
+        for side in range(sides):
+            tube = side * math.tau / sides
+            vertices.append(((.038 + .010 * math.cos(tube)) * math.cos(angle),
+                             (.062 + .010 * math.cos(tube)) * math.sin(angle),
+                             .010 * math.sin(tube)))
+    for segment in range(segments):
+        for side in range(sides):
+            a = segment * sides + side
+            b = ((segment + 1) % segments) * sides + side
+            faces.append((a, b, ((segment + 1) % segments) * sides + (side + 1) % sides,
+                          segment * sides + (side + 1) % sides))
+    geometry = (vertices, faces)
+    if bp.signed_volume(geometry) < 0:
+        geometry = (vertices, [tuple(reversed(face)) for face in faces])
+    # Link long axis is Y; orient it along the chain's path in the wheel face.
+    geometry = bp.u_rotated(geometry, (0, 65 if index % 2 else 0, tilt))
+    geometry = interior.translated(geometry, p)
+    item.add("SafetyYellow", geometry, "YellowChain")
+
+
+def make_gate_control():
+    item = Item("GateControl")
+    box(item, "Steel", (0, 1.36, .035), (.54, .68, .09), "MountingPlate", .014)
+    for x in (-.21, .21):
+        for y in (1.10, 1.62):
+            rod(item, "WornSteel", (x, y, -.015), (x, y, -.04), .025, "MountBolts", sides=8)
+    box(item, "Rust", (0, 1.36, -.085), (.28, .34, .22), "Gearbox", .025)
+    wheel = (0, 1.36, -.335)
+    ring = hollow_ring([(-.031, .36), (.031, .36), (.031, .305), (-.031, .305)], 24)
+    item.add("WornSteel", interior.translated(bp.u_rotated(ring, (90, 0, 0)), wheel), "WheelRim")
+    rod(item, "Steel", (0, 1.36, -.16), (0, 1.36, -.39), .07, "WheelHub", sides=12)
+    for spoke in range(6):
+        angle = spoke * math.tau / 6
+        rod(item, "WornSteel", wheel, (.315 * math.cos(angle),
+            1.36 + .315 * math.sin(angle), -.335), .024, "WheelSpokes", sides=8)
+    # Handwheel -> reduction case -> vertical shaft -> gate header at local +.62.
+    rod(item, "Steel", (0, 1.60, -.06), (0, 3.2, -.06), .045, "DriveRiser", sides=10)
+    rod(item, "WornSteel", (0, 3.2, -.06), (.62, 3.2, -.02), .042, "GateDriveLink", sides=10)
+    for y in (1.86, 2.62, 3.2):
+        box(item, "WornSteel", (0, y, .022), (.19, .12, .07), "RiserBrackets", .008)
+    # A fixed lug and taut loop through the spokes visibly prevent rotation.
+    box(item, "Steel", (.23, 1.81, -.10), (.15, .18, .25), "FixedChainLug", .012)
+    path = [(.23, 1.86, -.245), (-.24, 1.13, -.385), (-.05, .99, -.395),
+            (.23, 1.10, -.395), (.30, 1.48, -.27), (.23, 1.86, -.245)]
+    index = 0
+    for a, b in zip(path, path[1:]):
+        length = math.dist(a, b)
+        count = max(1, round(length / .078))
+        tilt = -math.degrees(math.atan2(b[0] - a[0], b[1] - a[1]))
+        for n in range(count):
+            fraction = (n + .5) / count
+            point = tuple(a[axis] + (b[axis] - a[axis]) * fraction for axis in range(3))
+            chain_link(item, point, tilt, index)
+            index += 1
+    # The chain alone is yellow. Plain grey steel and a U shackle identify the lock.
+    lock = (.23, 1.015, -.465)
+    box(item, "LockSteel", lock, (.16, .18, .085), "PadlockBody", .022)
+    shackle_path = [(.17, 1.083, -.465), (.17, 1.155, -.465)]
+    for i in range(1, 11):
+        angle = math.pi - i * math.pi / 10
+        shackle_path.append((.23 + .06 * math.cos(angle), 1.155 + .06 * math.sin(angle), -.465))
+    shackle_path.append((.29, 1.083, -.465))
+    for a, b in zip(shackle_path, shackle_path[1:]):
+        rod(item, "LockSteel", a, b, .013, "PadlockShackle", sides=8)
+    rod(item, "Rubber", (.23, 1.035, -.509), (.23, 1.035, -.513), .016, "Keyhole", sides=8)
+    box(item, "Rubber", (.23, 1.012, -.512), (.014, .031, .004), "KeyholeSlot", .001)
+    item.anchor("Wheel", wheel)
+    item.anchor("Lock", lock)
+    item.anchor("DriveConnection", (.62, 3.2, -.02))
     return item
 
 
@@ -772,7 +917,8 @@ def make_items():
             make_gate(), make_fan_housing(), make_fan_rotor(), make_lift_frame(),
             make_lift_platform(), make_chain_drum(), make_pusher_frame(),
             make_pusher_head(), make_locker_props(), make_break_props(),
-            make_technical_props(), make_twisted_frame()]
+            make_technical_props(), make_twisted_frame(), make_gate_control(),
+            make_emergency_lamp(), *(make_room_sign(number) for number in range(1, 10))]
 
 
 def manifest(items, checksum):
@@ -790,6 +936,13 @@ def manifest(items, checksum):
         "room_door_width": 2.4, "room_door_height": 2.55,
         "room_door_local_direction": "+X", "room_floor_owned_by_deck": True,
         "main_door_size": [4, 3], "gate_size": [4, 3],
+        "goal_visual_only": True, "gate_control_position": [-2.75, 0, 11.5],
+        "gate_control_wheel": [0, 1.36, -.335], "gate_control_lock": [.23, 1.015, -.465],
+        "emergency_light_anchor": [0, -.10, -.29],
+        "room_sign_numbers": list(range(1, 10)), "room_sign_face": "+X",
+        "room_sign_local_position": [3.015, 1.7, 1.65],
+        "room_sign_size": [.04, .50, .44], "padlock_surface": "LockSteel",
+        "room_sign_digit_authoring": "Roboto-Regular printed albedo in shared furnishings atlas; no digit geometry",
         "fan_diameter": 7., "fan_axis": "Y", "fan_rotor_anchor": [0, -.42, 0],
         "fan_aperture_validation": "vertical authored-face rays clear through rim/duct below DuctEnd",
         "fan_light_anchor": list(FAN_LIGHT_LOCAL),

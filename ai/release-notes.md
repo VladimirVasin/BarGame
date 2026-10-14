@@ -8,25 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-14 — Бой и склад
 
-- Лом: хват биты/крюк вперёд; акцент из-за плеча/возврат/блок двумя;
-  без фокуса — по направлению героя. `TWO HAND STRIKE EXPORTED PROOF`.
+- Лом: хват биты/крюк вперёд/из-за плеча/возврат/блок двумя;
+  без фокуса — вперёд. `TWO HAND STRIKE EXPORTED PROOF`.
 - Герой/зомби: шаг через трупы; стены/лестницы/сброс прежние.
   `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`.
-- Полигон: ткань на теле/креплениях без физики; открывание рукой/волосы прежние.
+- Ткань на теле/креплениях без физики; открывание рукой/волосы прежние.
   `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`.
-- Грудной луч/тени; торс: обзор-прицел/действия важнее.
-  Вне источников чёрно, подбор освещён. `CombatWarehouseFlashlight`,
+- Грудной луч/тени/торс/приоритет действий; вдали чёрно/подбор освещён.
+  `CombatWarehouseFlashlight`,
   `CombatWarehouseTorsoLook`, `CombatWarehouseFoundItemLighting`.
-- Склад:3 этажа/комнаты/ржавчина/потёки/UV-износ/движущие механизмы.
-  Решётка — заглушка; тени лопастей зал-галереи/мебель к входам/свободный подход.
-  Шаги/выстрелы тяжёлые/низкие/эхо.
+- Склад:износ/этажи/тени/мебель к входам/крупные номера;
+  ворота/красный свет/спицы/жёлтая цепь/серый замок/свободный подход.
+  E:камера/рывок вентиля-цепи-замка/сообщение о ключе;
+  E-Esc:назад. Открывания нет.
+  `CombatWarehouseGoalVisuals`; кадры. Шаги/выстрелы низкие/гулкие.
 - `Audio/CombatWarehouseMusic/warehouse_theme`:80% скорости/ниже тон/эхо-реверберация;
-  вход→петля; сброс/новый: позиция сохранена.
+  петля/сброс/новый: позиция прежняя.
 - `CombatWarehouse`, `CombatWarehouseFanShadows`, `CombatWarehouseAudio`,
-  `MixerAsset_HasCanonicalDspRoutingAndSceneValues`, `check-docs.py`; позы/кадры просмотрены.
-- Камера справа выше на20см:1,9 м/прицел1,4 м; движение не отдаляет.
-  Крестик крупнее/шире на ходу.
-  Сужение:2 с покоя; дрожь плавнее/отдача прежняя.
+  `MixerAsset_HasCanonicalDspRoutingAndSceneValues`, `check-docs.py`; позы/кадры.
+- Камера справа выше на20см:1,9 м/прицел1,4 м/без отдаления на ходу.
+  Крестик крупнее/шире на ходу/сужение:2 с покоя/дрожь плавнее/отдача прежняя.
   `CameraProfiles/CameraFollow/Obstacle/DollyZoom`, `AIM STABILITY MODEL PASSED`, `check-docs.py`.
 
 ### 2026-10-13 — Ресурсы и полигон

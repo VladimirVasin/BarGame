@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
@@ -201,6 +203,481 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        [Explicit("Real warehouse goal fixture, locked wheel, printed room plates and unchanged closed gate.")]
+        public IEnumerator CombatWarehouseGoalVisuals()
+        {
+            float previousDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 60f;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            try
+            {
+#if UNITY_EDITOR
+                System.Type.GetType("BarPromenade.Editor.CombatWarehouseAssetValidation, BarPromenade.Editor", true)
+                    .GetMethod("ValidateOrThrow", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+                GameSessionState.BeginNewGame();
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                CombatTestRoot root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized, Is.True);
+                root.AutomaticSimulation = false;
+                root.SetDuelLogging(false);
+                root.SetSparring(false);
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+
+                Light emergency = AssertWarehouseGoalVisuals(root);
+                WarehouseArenaPlan alternate = WarehouseArenaPlanner.Create(1);
+                for (int number = 1; number <= 9; number++)
+                {
+                    WarehouseArenaPlacement first = FindWarehousePlacement(root.WarehousePlan, "RoomSign" + number);
+                    WarehouseArenaPlacement second = FindWarehousePlacement(alternate, "RoomSign" + number);
+                    Assert.That(second.Position, Is.EqualTo(first.Position), "Room numbers stay with their doors across seeds.");
+                    Assert.That(second.Yaw, Is.EqualTo(first.Yaw));
+                }
+                float power = emergency.intensity;
+                Color color = emergency.color;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                yield return null;
+                Assert.That(emergency.isActiveAndEnabled, Is.True);
+                Assert.That(emergency.intensity, Is.EqualTo(power));
+                Assert.That(emergency.color, Is.EqualTo(color), "The emergency source is constant, including during pause.");
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return CaptureWarehouseGoalVisuals(root);
+
+                Assert.That(root.NewWarehouseLayout(1), Is.True);
+                yield return null;
+                Assert.That(emergency == null, Is.True, "Changing layout must release the old physical source.");
+                AssertWarehouseGoalVisuals(root);
+                yield return VerifyWarehouseValveInspection(root);
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousDelta;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+            }
+        }
+
+        private static WarehouseArenaPlacement FindWarehousePlacement(WarehouseArenaPlan plan, string kind)
+        {
+            foreach (WarehouseArenaPlacement placement in plan.ModulePlacements)
+                if (placement.Kind == kind) return placement;
+            Assert.Fail("The warehouse plan requires " + kind + ".");
+            return default;
+        }
+
+        private static GameObject FindWarehouseModel(CombatTestRoot root, string kind)
+        {
+            foreach (Transform child in root.GetComponentsInChildren<Transform>())
+                if (child.name == "Warehouse " + kind) return child.gameObject;
+            Assert.Fail("The real warehouse requires " + kind + ".");
+            return null;
+        }
+
+        private static Light AssertWarehouseGoalVisuals(CombatTestRoot root)
+        {
+            WarehouseArenaPlan plan = root.WarehousePlan;
+            GameObject gate = FindWarehouseModel(root, "Gate");
+            GameObject control = FindWarehouseModel(root, "GateControl");
+            GameObject fixture = FindWarehouseModel(root, "EmergencyLamp");
+            WarehouseArenaAssetProvider.ValidatePlacedModel("Gate", gate);
+            WarehouseArenaAssetProvider.ValidatePlacedModel("GateControl", control);
+            WarehouseArenaAssetProvider.ValidatePlacedModel("EmergencyLamp", fixture);
+            Assert.That(control.transform.position, Is.EqualTo(plan.GateControlPosition));
+            foreach (Collider collider in control.GetComponentsInChildren<Collider>(true))
+                Assert.That(collider.isTrigger, Is.True,
+                    "The wall control may offer an inspection trigger, without obstructing the approach.");
+            bool chain = false, lockFace = false, openRim = false;
+            Vector3 wheelCenter = control.transform.InverseTransformPoint(
+                WarehouseArenaAssetProvider.FindAnchor(control, "Wheel").position);
+            foreach (MeshRenderer renderer in control.GetComponentsInChildren<MeshRenderer>())
+            {
+                if (renderer.name.EndsWith("__SafetyYellow", System.StringComparison.Ordinal)) chain = true;
+                if (renderer.name.StartsWith("Padlock", System.StringComparison.Ordinal))
+                {
+                    lockFace = true;
+                    Assert.That(renderer.name.EndsWith("__LockSteel", System.StringComparison.Ordinal), Is.True,
+                        "The padlock body and shackle use neutral steel, distinct from the yellow chain.");
+                    Assert.That(renderer.sharedMaterial.name.EndsWith(" LockSteel Shared", System.StringComparison.Ordinal), Is.True);
+                }
+                if (!renderer.name.StartsWith("WheelRim", System.StringComparison.Ordinal)) continue;
+                openRim = true;
+                Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                Vector3[] vertices = mesh.vertices;
+                int[] triangles = mesh.triangles;
+                for (int triangle = 0; triangle < triangles.Length; triangle += 3)
+                {
+                    Vector3 center = (vertices[triangles[triangle]] + vertices[triangles[triangle + 1]] +
+                        vertices[triangles[triangle + 2]]) / 3f;
+                    center = control.transform.InverseTransformPoint(renderer.transform.TransformPoint(center)) - wheelCenter;
+                    Assert.That(new Vector2(center.x, center.y).magnitude, Is.GreaterThan(.29f),
+                        "The actual rim triangles must leave the wheel centre open, without a filled disc cap.");
+                }
+            }
+            Assert.That(chain && lockFace && openRim, Is.True, "The open wheel must carry a yellow chain and a neutral steel padlock.");
+
+            int printed = 0;
+            Material plateMaterial = null;
+            foreach (WarehouseArenaPlacement placement in plan.ModulePlacements)
+            {
+                if (!placement.Kind.StartsWith("RoomSign", System.StringComparison.Ordinal)) continue;
+                int number = int.Parse(placement.Kind.Substring("RoomSign".Length));
+                Assert.That(number, Is.InRange(1, 9));
+                Vector3 room = plan.RoomCenters[number - 1];
+                Quaternion rotation = Quaternion.Euler(0f, placement.Yaw, 0f);
+                Assert.That(Vector3.Distance(placement.Position,
+                    room + rotation * new Vector3(3.015f, 1.7f, 1.65f)), Is.LessThan(.001f));
+                GameObject sign = FindWarehouseModel(root, placement.Kind);
+                WarehouseArenaAssetProvider.ValidatePlacedModel(placement.Kind, sign);
+                Assert.That(sign.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(sign.GetComponentsInChildren<TextMesh>(true), Is.Empty,
+                    "Numbers are printed into the shared atlas, without independent text geometry.");
+                bool face = false;
+                Bounds plateBounds = default;
+                bool hasBounds = false;
+                foreach (MeshRenderer renderer in sign.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!hasBounds) { plateBounds = renderer.bounds; hasBounds = true; }
+                    else plateBounds.Encapsulate(renderer.bounds);
+                    if (!renderer.name.EndsWith("__NumberPlate", System.StringComparison.Ordinal)) continue;
+                    face = true;
+                    Assert.That(renderer.GetComponent<MeshFilter>().sharedMesh.triangles.Length, Is.EqualTo(6),
+                        "Each numeral is printed on a single flat quad, without digit geometry.");
+                    Material material = renderer.sharedMaterial;
+                    Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseFurnishingsAtlas"));
+                    if (plateMaterial == null) plateMaterial = material;
+                    else Assert.That(material, Is.SameAs(plateMaterial), "All printed plates share one atlas material.");
+                }
+                Assert.That(face, Is.True);
+                Assert.That(plateBounds.size.y, Is.EqualTo(.50f).Within(.005f), "Room plates retain their enlarged authored height.");
+                Assert.That(plateBounds.size.z, Is.EqualTo(.44f).Within(.005f), "Room plates retain their enlarged authored width.");
+                printed++;
+            }
+            Assert.That(printed, Is.EqualTo(9));
+
+            var area = new WarehouseArenaArea(plan);
+            var route = new List<Vector3>();
+            Assert.That(area.FindRoute(plan.HeroSpawn, plan.GateControlApproach, route), Is.True,
+                "The valve's standing dock must connect to the warehouse entrance.");
+            Assert.That(area.CanTraverse(plan.GateApproach, plan.GateControlApproach, .36f), Is.True,
+                "The pusher must leave the direct gate-front approach to the valve clear.");
+            Vector3 aisle = plan.GateControlApproach - plan.GateApproach;
+            Assert.That(Physics.CapsuleCast(plan.GateApproach + Vector3.up * .36f,
+                plan.GateApproach + Vector3.up * 1.4f, .32f, aisle.normalized, out _, aisle.magnitude,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.False,
+                "The real authored machinery must leave the valve aisle physically clear.");
+            Assert.That(area.CanTraverse(plan.GateApproach, plan.GoalDoorPosition), Is.False);
+            Assert.That(Physics.Raycast(plan.GateApproach + Vector3.up * 1.2f, Vector3.forward,
+                out RaycastHit hit, 2.2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+            Assert.That(hit.collider.transform.IsChildOf(gate.transform), Is.True,
+                "The unchanged gate collision must still stop the approach before the main door.");
+            Assert.That(hit.point.z, Is.EqualTo(plan.GatePosition.z).Within(.08f));
+
+            Transform source = WarehouseArenaAssetProvider.FindAnchor(fixture, "Light");
+            Light emergency = null;
+            int practicals = 0, active = 0, red = 0;
+            foreach (Light light in root.GetComponentsInChildren<Light>())
+            {
+                if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
+                active++;
+                if (light.name != "Warehouse Work Lamp") continue;
+                practicals++;
+                if (light.color.r < light.color.g * 3f) continue;
+                red++; emergency = light;
+            }
+            Assert.That(practicals, Is.EqualTo(6), "The emergency fixture replaces one of the six practical lamps.");
+            Assert.That(active, Is.EqualTo(8));
+            Assert.That(red, Is.EqualTo(1));
+            Assert.That(Vector3.Distance(emergency.transform.position, source.position), Is.LessThan(.001f));
+            Assert.That(emergency.type, Is.EqualTo(LightType.Spot));
+            Assert.That(emergency.shadows, Is.EqualTo(LightShadows.Hard));
+            Assert.That(emergency.GetComponent<UniversalAdditionalLightData>().additionalLightsShadowResolutionTier,
+                Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
+            return emergency;
+        }
+
+        private static IEnumerator CaptureWarehouseGoalVisuals(CombatTestRoot root)
+        {
+            WarehouseArenaPlan plan = root.WarehousePlan;
+            Transform wheel = WarehouseArenaAssetProvider.FindAnchor(FindWarehouseModel(root, "GateControl"), "Wheel");
+            var shots = new List<Shot>
+            {
+                Shot.At("Test warehouse - Gate goal", new Vector3(0f, 1.7f, 7.1f),
+                    plan.GatePosition + new Vector3(-.7f, 1.55f, 0f), 68f),
+                Shot.At("Test warehouse - Locked yellow chain", new Vector3(-1.6f, 1.7f, 9.1f), wheel.position, 46f)
+            };
+            for (int number = 1; number <= 9; number++)
+            {
+                WarehouseArenaPlacement sign = FindWarehousePlacement(plan, "RoomSign" + number);
+                Quaternion rotation = Quaternion.Euler(0f, sign.Yaw, 0f);
+                Vector3 room = plan.RoomCenters[number - 1];
+                shots.Add(Shot.At("Test warehouse - Room " + number + " sign",
+                    room + rotation * new Vector3(5.1f, 1.7f, .3f), sign.Position, 60f));
+            }
+            Camera camera = root.CameraFollow.Camera;
+            bool following = root.CameraFollow.enabled;
+            Vector3 position = camera.transform.position;
+            Quaternion cameraRotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            Vector3 heroPosition = root.Hero.transform.position, heroFacing = root.Hero.transform.forward;
+            Renderer[] renderers = root.Hero.GetComponentsInChildren<Renderer>(true);
+            var hidden = new bool[renderers.Length];
+            for (int index = 0; index < renderers.Length; index++) hidden[index] = renderers[index].forceRenderingOff;
+            var visual = (Player3DCharacterPresentation)root.Player.Visual;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                var area = new WarehouseArenaArea(plan);
+                foreach (Shot shot in shots)
+                {
+                    Vector3 facing = shot.Target - shot.Position; facing.y = 0f; facing.Normalize();
+                    Vector3 foot = shot.Position - Vector3.up * 1.7f - facing * .65f;
+                    Assert.That(area.TryGetHeight(foot, out float height, .32f), Is.True,
+                        "The real hero must stand in the existing aisle for " + shot.Name + ".");
+                    foot.y = height;
+                    root.Hero.ResetActor(foot + Vector3.up * PlayerFactory.GroundedRootOffset, facing);
+                    root.Hero.SetCombatFocused(false);
+                    root.Hero.ApplyMotorConstraint();
+                    Physics.SyncTransforms();
+                    camera.transform.SetPositionAndRotation(shot.Position, Quaternion.LookRotation(shot.Target - shot.Position));
+                    camera.fieldOfView = shot.FieldOfView;
+                    for (int frame = 0; frame < 2; frame++) yield return null;
+                    visual.SetTorsoLookIntent(root.Hero,
+                        shot.Target - (root.Hero.transform.position + Vector3.up * 1.4f), 0f, false);
+                    visual.AdvanceTorsoLook(root.Hero, .5f);
+                    visual.ReapplyLatePresentationPose();
+                    WarehouseArenaLighting.UpdateHeroVisibility(root.Flashlight.transform);
+                    foreach (Renderer renderer in renderers)
+                        if (renderer != null) renderer.forceRenderingOff = true;
+                    CaptureCurrentCamera(camera, SceneIds.CombatTest, shot.Name);
+                }
+            }
+            finally
+            {
+                root.Hero.ResetActor(heroPosition, heroFacing);
+                visual.ClearTorsoLook(root.Hero);
+                for (int index = 0; index < renderers.Length; index++)
+                    if (renderers[index] != null) renderers[index].forceRenderingOff = hidden[index];
+                camera.transform.SetPositionAndRotation(position, cameraRotation);
+                camera.fieldOfView = fov;
+                root.CameraFollow.enabled = following;
+            }
+        }
+
+        private static IEnumerator VerifyWarehouseValveInspection(CombatTestRoot root)
+        {
+            GameObject control = FindWarehouseModel(root, "GateControl");
+            NarrativeInteraction target = null;
+            foreach (NarrativeInteraction candidate in root.GetComponentsInChildren<NarrativeInteraction>())
+                if (candidate.SubjectRoot == control.transform ||
+                    candidate.SubjectRoot != null && candidate.SubjectRoot.IsChildOf(control.transform))
+                {
+                    Assert.That(target, Is.Null, "The valve uses one shared inspection target.");
+                    target = candidate;
+                }
+            Assert.That(target, Is.Not.Null);
+            Assert.That(target.Staging.CameraMode, Is.EqualTo(NarrativeCameraMode.ObjectCloseUp));
+            Assert.That(target.Definition.Pages.Count, Is.EqualTo(1));
+            Assert.That(target.Definition.RequiresRunningGameTime, Is.False);
+            Assert.That(new NarrativeInteractionDefinition("Test inspection", target.PromptKey,
+                target.Definition.Pages).RequiresRunningGameTime, Is.True,
+                "Story inspections keep their default calendar admission guard.");
+            Assert.That(target.Definition.Pages[0].Compact, Is.True);
+            Assert.That(target.Confirmation, Is.Null, "The locked tug precedes the information page without a separate choice.");
+            Assert.That(target.InspectionAttemptSeconds, Is.EqualTo(1.2f));
+            MeshRenderer[] controlMeshes = control.GetComponentsInChildren<MeshRenderer>();
+            MeshRenderer[] movingMeshes =
+            {
+                controlMeshes.First(mesh => mesh.name.StartsWith("WheelRim", System.StringComparison.Ordinal)),
+                controlMeshes.First(mesh => mesh.name.StartsWith("YellowChain", System.StringComparison.Ordinal)),
+                controlMeshes.First(mesh => mesh.name.StartsWith("PadlockBody", System.StringComparison.Ordinal))
+            };
+            Transform[] movers = movingMeshes.Select(mesh => mesh.transform).ToArray();
+            Vector3[] restPositions = movers.Select(part => part.position).ToArray();
+            Vector3[] restCenters = movingMeshes.Select(mesh => mesh.bounds.center).ToArray();
+            Quaternion[] restRotations = movers.Select(part => part.rotation).ToArray();
+            Assert.That(Vector3.Distance(target.Staging.Entry.RootPosition,
+                root.WarehousePlan.GateControlApproach + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.001f));
+            string textKey = target.Definition.Pages[0].TextKey;
+            Assert.That(target.PromptKey, Is.EqualTo("interaction.warehouse_valve"));
+            Assert.That(textKey, Is.EqualTo("combat.warehouse.valve.locked"));
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False,
+                "The CombatTest inspection must work without starting the story calendar.");
+
+            PlayerInteractor hero = root.Player.Interactor;
+            NarrativeInteractionController session = NarrativeInteractionController.For(hero);
+            Vector3 heroPosition = root.Hero.transform.position, heroFacing = root.Hero.transform.forward;
+            var input = new InputTestFixture();
+            input.Setup();
+            bool captureAttempt = true;
+            try
+            {
+                Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+                foreach (string language in new[] { "ru", "en" })
+                {
+                    var catalog = JsonUtility.FromJson<NameplateCatalog>(Resources.Load<TextAsset>("Localization/" + language).text);
+                    string[] keys = { target.PromptKey, textKey, "narrative.controls.close" };
+                    using (new NameplateLanguageScope(catalog.entries.Where(entry => keys.Contains(entry.key)).ToArray()))
+                    {
+                        foreach (string key in keys)
+                            Assert.That(LocalizationService.Get(key), Is.Not.Empty.And.Not.EqualTo(key));
+                        string locked = LocalizationService.Get(textKey);
+                        Assert.That(locked, Does.Contain(language == "ru" ? "цеп" : "chain"));
+                        Assert.That(locked, Does.Contain(language == "ru" ? "ключ" : "key"));
+                        yield return BeginReading();
+                        using (GameTimeScaleRuntime.AcquirePause())
+                        {
+                            Vector3 pausedCamera = root.CameraFollow.Camera.transform.position;
+                            for (int frame = 0; frame < 3; frame++) yield return null;
+                            Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading));
+                            Assert.That(session.Confirm(), Is.False);
+                            Assert.That(root.CameraFollow.Camera.transform.position, Is.EqualTo(pausedCamera));
+                        }
+                        yield return null;
+                        if (!Application.isBatchMode)
+                        {
+                            Assert.That(root.Prompt.LastRenderedText, Is.EqualTo(locked));
+                            Assert.That(root.Prompt.LastRenderedTextFits, Is.True);
+                            yield return CaptureFoundItemGameView("Test warehouse - Locked valve inspection - " +
+                                (language == "ru" ? "Russian" : "English"));
+                        }
+                        yield return PressLodgeUse(input, keyboard);
+                        yield return WaitForExit();
+                        AssertClean();
+                    }
+                }
+                yield return BeginReading();
+                input.Press(keyboard.escapeKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.escapeKey, queueEventOnly: true);
+                yield return WaitForExit();
+                AssertClean();
+                yield return BeginReading(cancelAttempt: true);
+                yield return BeginReading(disableAttempt: true);
+
+                IEnumerator BeginReading(bool cancelAttempt = false, bool disableAttempt = false)
+                {
+                    root.Hero.ResetActor(target.Staging.Entry.RootPosition, target.Staging.Entry.RootRotation * Vector3.forward);
+                    root.Hero.SetCombatFocused(true);
+                    root.Hero.ApplyMotorConstraint();
+                    Physics.SyncTransforms();
+                    root.CameraFollow.ClearFixedPose();
+                    root.CameraFollow.RotateYaw(Mathf.DeltaAngle(root.CameraFollow.Camera.transform.eulerAngles.y,
+                        target.Staging.Entry.RootRotation.eulerAngles.y));
+                    root.CameraFollow.Snap();
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    Assert.That(target.CanInteract(hero), Is.True, "The real player can reach the clear valve dock while the story clock is stopped.");
+                    Assert.That(hero.ActiveInteractable, Is.SameAs(target));
+                    yield return PressLodgeUse(input, keyboard);
+                    bool seenAttempt = false, attemptPaused = false;
+                    float maxWheel = 0f, maxChain = 0f, maxLock = 0f;
+                    for (int frame = 0; frame < 200 && session.Phase != NarrativeInteractionPhase.Reading && session.IsActive; frame++)
+                    {
+                        if (session.Phase == NarrativeInteractionPhase.Attempting)
+                        {
+                            seenAttempt = true;
+                            Assert.That(root.Prompt.HasHeldPage, Is.False, "The locked tug finishes before its information page.");
+                            maxWheel = Mathf.Max(maxWheel, Quaternion.Angle(restRotations[0], movers[0].rotation));
+                            maxChain = Mathf.Max(maxChain, Vector3.Distance(restCenters[1], movingMeshes[1].bounds.center));
+                            maxLock = Mathf.Max(maxLock, Vector3.Distance(restCenters[2], movingMeshes[2].bounds.center));
+                            if (!attemptPaused && maxWheel > 1f)
+                            {
+                                Vector3[] frozenPositions = movers.Select(part => part.position).ToArray();
+                                Quaternion[] frozenRotations = movers.Select(part => part.rotation).ToArray();
+                                using (GameTimeScaleRuntime.AcquirePause())
+                                {
+                                    for (int pausedFrame = 0; pausedFrame < 3; pausedFrame++) yield return null;
+                                    Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Attempting));
+                                    for (int part = 0; part < movers.Length; part++)
+                                    {
+                                        Assert.That(Vector3.Distance(movers[part].position, frozenPositions[part]), Is.LessThan(.00001f));
+                                        Assert.That(Quaternion.Angle(movers[part].rotation, frozenRotations[part]), Is.LessThan(.001f));
+                                    }
+                                }
+                                attemptPaused = true;
+                            }
+                            if (captureAttempt && maxWheel > 4f && !Application.isBatchMode)
+                            {
+                                captureAttempt = false;
+                                yield return CaptureFoundItemGameView("Test warehouse - Locked valve tug");
+                            }
+                            if (disableAttempt && maxWheel > 1f && maxChain > .002f)
+                            {
+                                root.Hero.enabled = false;
+                                target.enabled = false;
+                                AssertClean();
+                                root.Hero.enabled = true;
+                                target.enabled = true;
+                                yield break;
+                            }
+                            if (cancelAttempt && maxWheel > 1f && maxChain > .002f)
+                            {
+                                input.Press(keyboard.escapeKey, queueEventOnly: true);
+                                yield return null;
+                                input.Release(keyboard.escapeKey, queueEventOnly: true);
+                                yield return WaitForExit();
+                                AssertClean();
+                                yield break;
+                            }
+                        }
+                        yield return null;
+                    }
+                    Assert.That(seenAttempt && attemptPaused, Is.True);
+                    Assert.That(maxWheel, Is.GreaterThan(4f).And.LessThan(10f), "The wheel visibly strains against its locked chain.");
+                    Assert.That(maxChain, Is.GreaterThan(.002f).And.LessThan(.12f), "The attached yellow chain visibly tensions and rattles.");
+                    Assert.That(maxLock, Is.GreaterThan(.002f).And.LessThan(.15f), "The neutral lock follows the locked chain without opening.");
+                    Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading), session.LastFailureReason);
+                    yield return null; yield return null;
+                    Assert.That(session.CurrentPage.TextKey, Is.EqualTo(textKey));
+                    Assert.That(root.Hero.CombatFocused, Is.False, "Inspection yields the settled combat pose to the shared hero rig.");
+                    Assert.That(root.Prompt.HasHeldPage && root.Prompt.IsHeldBy(session), Is.True);
+                    Assert.That(root.Prompt.IsSpeaking, Is.False, "The locked condition uses the silent inspection page.");
+                    Assert.That(root.Prompt.SpokenBubbles != null && root.Prompt.SpokenBubbles.IsShowing(session), Is.False);
+                    Assert.That(session.CameraDirector.CurrentShotIsClear, Is.True);
+                    Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
+                    Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+                    AssertRestPose();
+                }
+
+                void AssertRestPose()
+                {
+                    for (int part = 0; part < movers.Length; part++)
+                    {
+                        Assert.That(Vector3.Distance(movers[part].position, restPositions[part]), Is.LessThan(.00001f));
+                        Assert.That(Quaternion.Angle(movers[part].rotation, restRotations[part]), Is.LessThan(.001f));
+                    }
+                }
+
+                IEnumerator WaitForExit()
+                {
+                    for (int frame = 0; frame < 150 && session.IsActive; frame++) yield return null;
+                    yield return null;
+                }
+
+                void AssertClean()
+                {
+                    Assert.That(session.IsActive, Is.False);
+                    Assert.That(hero.InputEnabled, Is.True);
+                    Assert.That(root.Hero.CombatFocused, Is.True, "Every dismissal restores the prior voluntary combat focus.");
+                    Assert.That(root.CameraFollow.FixedPoseActive || root.Prompt.HasHeldPage, Is.False,
+                        "Dismissal returns the shared camera and lower page to gameplay.");
+                    Assert.That(new WarehouseArenaArea(root.WarehousePlan).CanTraverse(
+                        root.WarehousePlan.GateApproach, root.WarehousePlan.GoalDoorPosition), Is.False);
+                    Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+                    AssertRestPose();
+                }
+            }
+            finally
+            {
+                session.RestoreImmediate();
+                root.Hero.enabled = true;
+                target.enabled = true;
+                root.Hero.ResetActor(heroPosition, heroFacing);
+                input.TearDown();
+            }
+        }
+
         private static void AssertWarehouseDeterminism(WarehouseArenaPlan a, WarehouseArenaPlan b)
         {
             Assert.That(b.Template, Is.EqualTo(a.Template));
@@ -269,7 +746,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehouseImportedMetres(CombatTestRoot root)
         {
-            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(25));
+            Assert.That(WarehouseArenaAssetProvider.ModelNames.Length, Is.EqualTo(36));
             foreach (string kind in WarehouseArenaAssetProvider.ModelNames)
             {
                 Assert.That(Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind), Is.Not.Null,
@@ -281,7 +758,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(wrapper, Is.Not.Null, "The real built warehouse must contain " + kind + ".");
                 // Its metre vertices are measured below; a rotating wrapper's
                 // world AABB cannot be inverse-rotated into its authored bounds.
-                if (kind != "FanRotor" && kind != "LiftPlatform" && kind != "ChainDrum" &&
+                if (kind != "FanRotor" && kind != "LiftPlatform" && kind != "ChainDrum" && kind != "Lamp" &&
                     kind != "PusherHead" && kind != "Rail")
                     WarehouseArenaAssetProvider.ValidatePlacedModel(kind, wrapper);
             }
@@ -367,7 +844,8 @@ namespace BarPromenade.Tests.PlayMode
                 practical++;
                 Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 Assert.That(light.shadows, Is.EqualTo(LightShadows.Hard));
-                Assert.That(light.intensity, Is.LessThan(root.Flashlight.SpotLight.intensity * .12f));
+                if (light.color.r < light.color.g * 3f)
+                    Assert.That(light.intensity, Is.LessThan(root.Flashlight.SpotLight.intensity * .12f));
                 Assert.That(light.GetComponent<UniversalAdditionalLightData>().additionalLightsShadowResolutionTier,
                     Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }

@@ -4182,20 +4182,20 @@ gameplay-модификатор морали.
 
 ### Область действия
 
-Интерфейс сохраняет мир/камеру/свет/материалы/PS1/формат/звук/правила/управление/строки;
-исключения — ниже. Холст `640x360` читается после композита в тёмном/пьяном мире.
+Мир/камера/свет/материалы/PS1/формат/звук/правила/управление/строки сохранены;
+исключения ниже. `640x360` читается после композита в тёмном/пьяном мире.
 Загрузка: живописный viewport/пропорции-кадрирование/нижняя полоса.
 Сажа/старая бумага/тонкая линейка/воздух; изображение-текст-рамка не соперничают.
 
 ### Форма и материал
 
 - Почти чёрный угольный фон, тёмно-серые панели, грязно-костяной текст,
-  один светлый выбор. Слабые холодные/ржавые оттенки — семантический остаток,
-  никогда единственный носитель состояния.
+  один светлый выбор. Слабые холодные/ржавые оттенки — остаток смысла,
+  не единственный носитель состояния.
 - Панели плоские прямоугольные: тонкая рамка и отступившая внутренняя линия.
-  Нет срезанных углов, фасок, объёмных карточек, свечения и декоративной тени.
-- Мелкая редкая фактура панели детерминирована и неподвижна: след материала,
-  без шума между кадрами и нового постэффекта.
+  Без срезов углов, фасок, объёмных карточек, свечения и декоративной тени.
+- Мелкая редкая фактура детерминирована и неподвижна: след материала,
+  без межкадрового шума/нового постэффекта.
 - Разделы окна отделены одной линией и пустым полем.
   Цветные коробки для отдельных параметров/предметов запрещены.
 
@@ -4238,18 +4238,20 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-§6:PS1/0story/9checks;`architecture-notes.md`.
-`2026-10-14`:3levels/9rooms6×6/hall12×12;
-2stairs/4flights;rust/wet/twist steel/cargo/work disgust§6.
-Wet concrete/peeling paint/swollen wood-cardboard/worn rubber;
-UV atlases/metric tiles+macro wet-rust-scuff/rare wear;
-triplanar optional;9room sets opposite entry/front→entry/clear approach.
-D7fan/guarded lift/drums/pusher↔/causalSFX/pause;
-grille stub;6dim lamps/chestbeam/strong constant overhead Spot;
-blade shadows→hall/open galleries;decks-room roofs occlude;
-fog-sky0/0strobe;
-seeds/resetkeep/New/low heavy SFX/echo-reverb;
-theme optional/.8/strong echo-reverb/dryUI/exit restore.
+PS1/0story/9checks;`architecture-notes.md`.
+`2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
+Wet concrete/rust-bent steel/peeling paint/swollen wood-cardboard/worn rubber;
+cargo/work disgust§6/metric wet-rust-scuff/rare wear;
+9sets opposite entry/front→door/clear;
+9wall plaques/print1-9/seed-fixed.
+D7fan/guarded lift-drums-pusher↔/causalSFX;
+gate-frame/drive/backdoor/spoked valve-stem/yellow chain/gray lock;
+E:close→2locked tugs/chain-lock→silent key info§21/§6;
+pusher→left/clear/key-open0.
+6practicals(5dim+red)/steadySpot/chestbeam;
+topSpot/blade shadows→hall-galleries/roof+deck block;
+fog-sky-strobe0;seed/resetkeep/New/low heavy SFX/echo-reverb;
+theme?/.8/strong echo-reverb/dryUI/exitrestore.
 0dream-transition/organic/siren/mystics/clues/infection.
 Endless1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.

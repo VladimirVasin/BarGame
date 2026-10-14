@@ -16,46 +16,48 @@
   Moving4×/muzzle-shotgun centre authoritative/recoil kept.
   Bounded state/assets-story kept;novice exception §7.
 
-- **Accepted exception — 2026-10-14, warehouse fan light:**
-  User:Spot/shadows/source11.8/cap12.1–12.22;
-  roofs-decks occlude/pausefreeze/0cookie-strobe;
-  URP2048:keyHigh1024/6dimLow256/chestMedium512;art§15a
+- **Accepted 2026-10-14, warehouse goal:**
+  Gate-frame/drive/red goal source;spoked valve/yellow chain/gray lock;
+  9thin wall plaques.44×.5/print1–9/3floor/seed-fixed.
 
-- **Accepted exception — 2026-10-14, warehouse otherworld:**
-  CombatTest:port-work monotony/exhaustion/disgust→wet-rust/routes/futile machines;
-  0City job-wage-quest/monologue/dream/organic/siren/mystics/clues/infection.
-  art§15a/§6;Blender/seed/resetkeep/New/flat:test-only;
-  movers clear/pause/0hazard-falldmg.
+- **Accepted exception 2026-10-14, valve inspection:**
+  User§21:CombatTest/E/NarrativeInteraction;
+  close→1.2s/2locked pulls/chain-lock→compact silent RU-EN key;
+  E-Esc-disable/rest/focus/clock0/pause/grant-unlock-open0;§6/art§15a.
 
-- **Accepted — 2026-10-14, warehouse acoustics:**
-  Heavy low steps/guns+echo;theme.8 speed-pitch/strong echo-reverb.
-  CombatWarehouse EQ/LP/room/echo/dryUI/exit restore;
-  Audio/CombatWarehouseMusic/warehouse_theme WAV/OGG/MP3 optional.
-  MusicMix/stream/root playhead/reset-New/pause-disable-resume/exit/empty0;
-  11mono/steps×.84/guns×.88/5World/prewarm-cache/resetkeep/teardown/0hotalloc.
+- **Accepted exception 2026-10-14, warehouse fan:**
+  Spot11.8/shadows/cap12.1–12.22/roof-deck block/pause/cookie-strobe0;
+  URP2048:keyHigh1024/6practicalLow256/chestMed512.
 
-- **Accepted — 2026-10-14, warehouse UV surfaces:**
-  3×1024 propUV/metric tiles+macro/rare decals;
-  local triplanar if stretch/PS1/shared/bounded/Blender;
-  joint-contact-load wear/0text-newstory/art§15a.
+- **Accepted exception 2026-10-14, warehouse otherworld:**
+  CombatTest:port-work monotony-exhaustion-disgust→wet-rust/routes/futile machines.
+  City job-wage-quest/monologue-dream-organic-siren-mystics-clues-infection0.
+  Blender/seed/resetkeep/New/flat:test-only;clear/pause/hazard-falldmg0.
 
-- **Accepted — 2026-10-14, warehouse room furniture:**
-  9Technical-Locker-Break opposite entry/front→entry;
-  collision turns/clear approach/0newstory.
+- **Accepted 2026-10-14, warehouse audio:**
+  Low heavy steps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
+  Optional warehouse_theme WAV-OGG-MP3/MusicMix stream;
+  playhead/reset-New/pause-disable-resume/exit/empty0;
+  11mono/steps×.84/guns×.88/5World/prewarm-cache/resetkeep/teardown/hotalloc0.
 
-- **Accepted — 2026-10-14, warehouse torso look:**
-  Orbit≠camera/neutral14°/gun intent;Spine-Chest40/60/down35/up20/yaw20/roll6°;
-  orbit≤35full→90zero/root-legs kept/Llight. Actions win/pause-modal hold/
-  cleanup/cachedbones/0hotalloc;
-  sim Advance only/repeated Apply0time-bend.
+- **Accepted 2026-10-14, warehouse UV:**
+  3×1024 propUV/metric tiles-macro/rare decals/stretch→triplanar;
+  Joint-contact-load wear.
 
-- **Accepted exception — 2026-10-14, warehouse chest flashlight:**
-  CombatTest/Blender/LM65Chest→/always Spot60/16m/60–28°/hard;
-  fog-sky0/GIhero3D3→SmoothStep→black12m/camera0;
-  Ps1Lit:bakedGI-only/passes-pragmas-direct-shadows-emission kept;
-  cached movement LateUpdate/scene off-outside/disable-unload-subsystem;
-  1hero/resetkeep/sharedassets/bounds/teardown/0MPB-clones-newpass;
-  unmeasuredcost/0input-battery-inventory-story.
+- **Accepted 2026-10-14, warehouse rooms:**
+  9Technical-Locker-Break/opposite entry/front→door/turned collision/entryclear.
+
+- **Accepted 2026-10-14, warehouse look:**
+  Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35/up20/yaw20/roll6°;
+  orbit≤35full→90zero/root-legs/Llight/action priority/pause-modal.
+  Cleanup/hotalloc0;Advance/repeat Apply0time-bend
+
+- **Accepted exception 2026-10-14, warehouse chest light:**
+  LM65Chest/on/Spot60/16m/60–28°/hard;
+  fog-sky0/GIhero3D3→SmoothStep→black12m/camera0.
+  Ps1Lit:bakedGI-only/rest unchanged;
+  LateUpdate/off outside-disable-unload-subsystem;
+  1hero/resetkeep/bounds/teardown/MPB-clones-newpass0/cost unmeasured/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.

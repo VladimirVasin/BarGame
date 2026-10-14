@@ -12,8 +12,13 @@ namespace BarPromenade
             host.transform.SetParent(parent, false);
             try
             {
+                CombatTestRoot owner = parent.GetComponent<CombatTestRoot>();
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
-                    WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f));
+                {
+                    GameObject model = WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position,
+                        Quaternion.Euler(0f, part.Yaw, 0f));
+                    if (part.Kind == "GateControl") WarehouseValveInspection.Create(model, plan, owner);
+                }
                 foreach (WarehouseArenaStair stair in plan.Stairs)
                     WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity);
                 foreach (WarehouseArenaRailSpan span in plan.RailSpans)
@@ -24,11 +29,12 @@ namespace BarPromenade
                 }
                 foreach (WarehouseArenaLamp lamp in plan.Lamps)
                 {
-                    WarehouseArenaAssetProvider.Create("Lamp", host.transform, lamp.Position,
-                        Quaternion.FromToRotation(Vector3.down, lamp.Direction));
-                    WarehouseArenaLighting.CreatePractical(lamp, host.transform);
+                    GameObject fixture = WarehouseArenaAssetProvider.Create(lamp.Kind, host.transform,
+                        lamp.Position, lamp.ModelRotation);
+                    WarehouseArenaLighting.CreatePractical(lamp,
+                        WarehouseArenaAssetProvider.FindAnchor(fixture, "Light"), host.transform);
                 }
-                host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, parent.GetComponent<CombatTestRoot>());
+                host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
                 return host;
             }
             catch

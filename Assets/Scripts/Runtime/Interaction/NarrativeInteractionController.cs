@@ -20,7 +20,10 @@ namespace BarPromenade
         private bool previousCursorVisible;
         private int pageFrame, animationFinishedFrame;
         private bool completed;
+        private bool playerPrepared;
         private float attemptElapsed;
+        private float attemptSeconds;
+        private bool inspectionAttempt;
         public bool SelectedAnswerYes { get; private set; }
         public NarrativeInteraction Target { get; private set; }
         public NarrativeInteractionPhase Phase { get; private set; }
@@ -40,7 +43,7 @@ namespace BarPromenade
         public bool Begin(NarrativeInteraction target, PlayerInteractor interactor)
         {
             LastFailureReason = string.Empty;
-            if (IsActive || Paused || !isActiveAndEnabled || target == null || interactor == null ||
+            if (IsActive || IsPausedFor(target) || !isActiveAndEnabled || target == null || interactor == null ||
                 !target.CanInteract(interactor) || BarMinigameModalLock.IsAnyLocked)
             { LastFailureReason = "Inspection admission refused"; return false; }
             var registry = interactor.GetComponentInChildren<Player3DAssetRegistry>();
@@ -55,7 +58,7 @@ namespace BarPromenade
             if (!modal.TryCaptureAndDisable(interactor, follow, FindAnyObjectByType<IntoxicationHudView>()))
             { LastFailureReason = "Another modal owns input"; return false; }
             listener = interactor; Target = target; PageIndex = 0;
-            attemptElapsed = 0f; SelectedAnswerYes = false;
+            attemptElapsed = attemptSeconds = 0f; inspectionAttempt = false; SelectedAnswerYes = false;
             LastFailureReason = string.Empty;
             Phase = NarrativeInteractionPhase.Positioning;
             ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = false;
@@ -65,6 +68,8 @@ namespace BarPromenade
             Cursor.lockState = CursorLockMode.None; Cursor.visible = false;
             try
             {
+                playerPrepared = true;
+                target.PreparePlayer(interactor);
                 NarrativeStagingPlan staging = target.Staging;
                 ownsAnimation = animation.BeginPositioned(PlayerDialogueActions.CreateListeningDefinition(),
                     staging.Entry, staging.ActionHip, staging.Exit, staging.InitialVerticalTolerance);
@@ -90,9 +95,7 @@ namespace BarPromenade
             if (PageIndex + 1 == Target.Definition.Pages.Count && Target.Confirmation != null)
             {
                 if (!SelectedAnswerYes) { Cancel(); return true; }
-                view.ReleaseHeldPage(this); Cursor.visible = false;
-                Phase = NarrativeInteractionPhase.Attempting;
-                attemptElapsed = 0f; Target.SampleAttempt(0f);
+                BeginAttempt(Target.Confirmation.AttemptSeconds, false);
             }
             else if (PageIndex + 1 == Target.Definition.Pages.Count) { Cancel(); completed = true; }
             else { PageIndex++; ShowPage(); }
@@ -146,7 +149,11 @@ namespace BarPromenade
                     }
                     break;
                 case NarrativeInteractionPhase.Framing:
-                    if (director.IsSettled && animation.Phase == PlayerAnimatedInteractionPhase.Looping) ShowPage();
+                    if (director.IsSettled && animation.Phase == PlayerAnimatedInteractionPhase.Looping)
+                    {
+                        if (Target.InspectionAttemptSeconds > 0f) BeginAttempt(Target.InspectionAttemptSeconds, true);
+                        else ShowPage();
+                    }
                     break;
                 case NarrativeInteractionPhase.Reading:
                 case NarrativeInteractionPhase.Outcome:
@@ -164,11 +171,12 @@ namespace BarPromenade
                     break;
                 case NarrativeInteractionPhase.Attempting:
                     attemptElapsed += Time.deltaTime;
-                    Target.SampleAttempt(Mathf.Clamp01(attemptElapsed / Target.Confirmation.AttemptSeconds));
-                    if (attemptElapsed >= Target.Confirmation.AttemptSeconds)
+                    Target.SampleAttempt(Mathf.Clamp01(attemptElapsed / attemptSeconds));
+                    if (attemptElapsed >= attemptSeconds)
                     {
                         Target.SampleAttempt(0f);
-                        ShowOutcome();
+                        if (inspectionAttempt) ShowPage();
+                        else ShowOutcome();
                     }
                     break;
                 case NarrativeInteractionPhase.Exiting:
@@ -178,18 +186,28 @@ namespace BarPromenade
             if (IsActive && Phase != NarrativeInteractionPhase.Exiting && !animation.IsActive) RestoreImmediate();
         }
 
+        private void BeginAttempt(float seconds, bool beforeFirstPage)
+        {
+            view.ReleaseHeldPage(this); Cursor.visible = false;
+            inspectionAttempt = beforeFirstPage; attemptSeconds = seconds;
+            Phase = NarrativeInteractionPhase.Attempting;
+            attemptElapsed = 0f; Target.SampleAttempt(0f);
+        }
+
         private void ShowPage()
         {
             NarrativePage page = CurrentPage;
-            string heading = !string.IsNullOrWhiteSpace(page.AttributionKey) ? page.AttributionKey :
+            string heading = page.Compact ? null : !string.IsNullOrWhiteSpace(page.AttributionKey) ? page.AttributionKey :
                 page.Kind == NarrativePageKind.DocumentText ? "narrative.page.document" : "narrative.page.thought";
             string controls = PageIndex + 1 < Target.Definition.Pages.Count ? "narrative.controls.next" : "narrative.controls.close";
             if (PageIndex + 1 == Target.Definition.Pages.Count && !string.IsNullOrWhiteSpace(Target.CompletionActionKey))
                 controls = Target.CompletionActionKey;
             bool confirmation = PageIndex + 1 == Target.Definition.Pages.Count && Target.Confirmation != null;
             bool held = confirmation
-                ? view.TryHoldConfirmation(this, page.TextKey, Target.Confirmation.YesKey, Target.Confirmation.NoKey, ChooseAnswer)
-                : view.TryHoldPage(this, page.TextKey, heading, controls, Confirm);
+                ? view.TryHoldConfirmation(this, page.TextKey, Target.Confirmation.YesKey, Target.Confirmation.NoKey, ChooseAnswer,
+                    requiresRunningGameTime: Target.Definition.RequiresRunningGameTime)
+                : view.TryHoldPage(this, page.TextKey, heading, controls, Confirm, compact: page.Compact,
+                    requiresRunningGameTime: Target.Definition.RequiresRunningGameTime);
             if (!held) { Cancel(); return; }
             SelectedAnswerYes = false;
             Phase = NarrativeInteractionPhase.Reading; pageFrame = Time.frameCount;
@@ -201,7 +219,8 @@ namespace BarPromenade
             // An explicitly authored silent outcome uses the same lower page;
             // the closed prop remains framed until the player dismisses it.
             if (!view.TryHoldPage(this, Target.Confirmation.ReplyKey, null,
-                "narrative.controls.close", Confirm, compact: true)) { Cancel(); return; }
+                "narrative.controls.close", Confirm, compact: true,
+                requiresRunningGameTime: Target.Definition.RequiresRunningGameTime)) { Cancel(); return; }
             Phase = NarrativeInteractionPhase.Outcome; pageFrame = Time.frameCount;
             confirmArmed = false; Cursor.visible = true;
         }
@@ -248,14 +267,29 @@ namespace BarPromenade
             director.RestoreImmediate(); cameraStarted = false;
             if (cursorCaptured)
             { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; cursorCaptured = false; }
-            modal.Restore();
-            Target = null; listener = null; animation = null; follow = null; view = null;
+            try
+            {
+                if (playerPrepared)
+                {
+                    playerPrepared = false;
+                    if (Target != null) Target.RestorePlayer(listener);
+                }
+            }
+            finally
+            {
+                modal.Restore();
+                Target = null; listener = null; animation = null; follow = null; view = null;
+            }
             if (completedTarget != null && completedTarget.isActiveAndEnabled &&
                 completedListener != null && completedListener.isActiveAndEnabled && !SceneTransitionService.IsTransitioning)
                 completedTarget.Complete(completedListener);
         }
 
-        private static bool Paused => PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning;
+        private bool Paused => IsPausedFor(Target);
+        private static bool IsPausedFor(NarrativeInteraction target) =>
+            PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
+            (target == null || target.Definition == null || target.Definition.RequiresRunningGameTime) &&
+            !GameSessionState.IsGameTimeRunning;
         private void OnDisable() => RestoreImmediate();
         private void OnDestroy() => RestoreImmediate();
     }

@@ -1,5 +1,7 @@
 {
   "entries": [
+    {"key":"interaction.warehouse_valve","value":"E — осмотреть вентиль"},
+    {"key":"combat.warehouse.valve.locked","value":"Вентиль заперт цепью. Нужен ключ от замка."},
     {"key":"interaction.lodge_cellar","value":"E — осмотреть люк"},
     {"key":"lodge.cellar.open_question","value":"Открыть люк?"},
     {"key":"lodge.cellar.locked","value":"Заперто. Похоже... изнутри?"},

@@ -7,6 +7,41 @@ using UnityEngine.SceneManagement;
 
 namespace BarPromenade.Editor
 {
+    /// <summary>Automatic passive metric settings for the warehouse's direct FBX modules.</summary>
+    public sealed class CombatWarehouseModelImporter : AssetPostprocessor
+    {
+        private const string Folder = "Assets/Resources/CombatWarehouse/";
+
+        private void OnPreprocessModel()
+        {
+            if (!assetPath.StartsWith(Folder, StringComparison.Ordinal) ||
+                !assetPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase) ||
+                assetPath.IndexOf('/', Folder.Length) >= 0 || !(assetImporter is ModelImporter importer)) return;
+            importer.globalScale = 1f;
+            importer.useFileScale = true;
+            importer.bakeAxisConversion = true;
+            importer.preserveHierarchy = true;
+            importer.optimizeGameObjects = false;
+            importer.optimizeMeshPolygons = false;
+            importer.optimizeMeshVertices = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.importAnimation = false;
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.importVisibility = false;
+            importer.importBlendShapes = false;
+            importer.addCollider = false;
+            importer.isReadable = true;
+            importer.importNormals = ModelImporterNormals.Import;
+            importer.importTangents = ModelImporterTangents.None;
+            importer.meshCompression = ModelImporterMeshCompression.Off;
+            importer.materialImportMode = ModelImporterMaterialImportMode.None;
+            importer.generateSecondaryUV = false;
+            importer.weldVertices = true;
+            importer.keepQuads = false;
+        }
+    }
+
     /// <summary>Read-only packaging gate for the passive metre-space warehouse kit.</summary>
     [InitializeOnLoad]
     public static class CombatWarehouseAssetValidation

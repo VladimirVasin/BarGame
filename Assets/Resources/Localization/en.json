@@ -1,5 +1,7 @@
 {
   "entries": [
+    {"key":"interaction.warehouse_valve","value":"E — inspect the valve"},
+    {"key":"combat.warehouse.valve.locked","value":"The valve is chained shut. The padlock needs a key."},
     {"key":"interaction.lodge_cellar","value":"E — inspect the hatch"},
     {"key":"lodge.cellar.open_question","value":"Open the hatch?"},
     {"key":"lodge.cellar.locked","value":"Locked. Seems... from the inside?"},

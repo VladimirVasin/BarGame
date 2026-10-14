@@ -12,7 +12,8 @@ namespace BarPromenade
         public static readonly string[] ModelNames = { "Shell", "Platform", "Stair", "Rail", "Rack", "Cargo", "Pipes", "Lamp",
             "PipeStraight", "PipeElbow", "PipeEnd", "RoomShell", "MainDoor", "Gate", "FanHousing", "FanRotor",
             "LiftFrame", "LiftPlatform", "ChainDrum", "PusherFrame", "PusherHead", "LockerProps", "BreakProps",
-            "TechnicalProps", "TwistedFrame" };
+            "TechnicalProps", "TwistedFrame", "GateControl", "EmergencyLamp",
+            "RoomSign1", "RoomSign2", "RoomSign3", "RoomSign4", "RoomSign5", "RoomSign6", "RoomSign7", "RoomSign8", "RoomSign9" };
         public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
             "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber",
             "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas",
@@ -56,7 +57,7 @@ namespace BarPromenade
                 if (separator < 0) throw new InvalidOperationException("Warehouse mesh lacks a surface role: " + renderer.name);
                 string role = renderer.name.Substring(separator + 2);
                 renderer.sharedMaterial = Surface(kind,role);
-                renderer.shadowCastingMode = role == "Lamp" || role == "Glass" || role == "WearDecal" ?
+                renderer.shadowCastingMode = role == "Lamp" || role == "SignalRed" || role == "Glass" || role == "WearDecal" ?
                     ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -114,6 +115,9 @@ namespace BarPromenade
             {
                 case "Shell": case "RoomShell": case "Platform": case "Stair": case "Rail": return null;
                 case "MainDoor": case "LockerProps": case "BreakProps": case "TechnicalProps": case "Lamp":
+                case "EmergencyLamp":
+                case "RoomSign1": case "RoomSign2": case "RoomSign3": case "RoomSign4": case "RoomSign5":
+                case "RoomSign6": case "RoomSign7": case "RoomSign8": case "RoomSign9":
                     return "WarehouseFurnishingsAtlas";
                 case "Rack": case "Cargo": return "WarehouseCargoAtlas";
                 default:
@@ -141,6 +145,10 @@ namespace BarPromenade
                 case "Cardboard": color = new Color(.88f,.82f,.72f); texture = "WarehouseCardboard"; break;
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
                 case "Lamp": color = new Color(.38f,.37f,.31f); break;
+                case "SignalRed": color = new Color(.90f,.045f,.02f); break;
+                case "SafetyYellow": color = new Color(.82f,.62f,.12f); break;
+                case "NumberPlate": color = new Color(.83f,.79f,.64f); break;
+                case "LockSteel": color = new Color(.44f,.46f,.45f); break;
                 case "Rubber": color = new Color(.70f,.73f,.69f); texture = "WarehouseRubber"; break;
                 case "WearDecal": color = Color.white; texture = "WarehouseWearDecals"; break;
                 default: throw new InvalidOperationException("Unknown warehouse surface " + role);
@@ -163,11 +171,16 @@ namespace BarPromenade
                 enableInstancing = true };
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
-            material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" ? .25f : 0f);
+            material.SetFloat("_Metallic",role == "Steel" || role == "WornSteel" || role == "LockSteel" ? .25f : 0f);
             if (fanLens)
             {
                 material.EnableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor",new Color(.92f,.86f,.65f).linear);
+            }
+            if (role == "SignalRed")
+            {
+                material.EnableKeyword("_EMISSION");
+                material.SetColor("_EmissionColor",new Color(.72f,.012f,.005f).linear);
             }
             if (layered)
             {

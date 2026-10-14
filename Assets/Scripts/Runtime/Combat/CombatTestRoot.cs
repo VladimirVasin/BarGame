@@ -552,7 +552,7 @@ namespace BarPromenade
         private void OnGUI()
         {
             if (!IsInitialized || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning ||
-                (Taunt != null && Taunt.IsActive)) return;
+                (Taunt != null && Taunt.IsActive) || BarMinigameModalLock.IsAnyLocked) return;
             if (small == null)
             {
                 small = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleLeft, RetroUiTheme.Text);
