@@ -58,6 +58,7 @@ namespace BarPromenade
                 foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators)
                     WarehouseRefrigeratorFactory.Create(host.transform, owner, fridge.Floor, fridge.Position,
                         fridge.Yaw, fridge.SourceId);
+                host.AddComponent<WarehouseFishCratePopulation>().Initialize(plan);
                 host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
                 host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform);
                 return host;

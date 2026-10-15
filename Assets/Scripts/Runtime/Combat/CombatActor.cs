@@ -312,13 +312,14 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
-            if (!presentationFrozen) zombieLoad?.AdvanceCatch(seconds);
+            if (!presentationFrozen && !ZombieDormant) zombieLoad?.AdvanceCatch(seconds);
             AdvanceWeaponCarry(seconds);
             AdvancePistol(seconds);
             simulationPosePending = false;
             collectSweep = false;
             collectShove = false;
             collectKick = false;
+            if (AdvanceZombieMimic(seconds)) return;
             CancelInterruptedShoveContact();
             if (AdvanceKnockdown(seconds)) { CancelPendingKick("knocked_down"); return; }
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
@@ -566,8 +567,7 @@ namespace BarPromenade
         {
             presentationFrozen = frozen;
             zombieLoad?.SetSimulationFrozen(frozen);
-            if (zombieVoice != null)
-            { if (frozen) zombieVoice.Pause(); else zombieVoice.UnPause(); }
+            zombieAudio?.SetFrozen(frozen);
             motor?.SetOwnedMovementFrozen(this, frozen);
             if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen && !IsKnockedDown && !IsRagdollActive);
             SetKnockdownFrozen(frozen);
@@ -597,6 +597,7 @@ namespace BarPromenade
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.RightFoot, out Pose rightSole))
                 footwork?.AdoptPresentedStance(leftSole, rightSole);
             freeLocomotionReleased = false;
+            if (PresentZombieMimic()) return;
             BindGroundedFirearm();
             if (PresentKnockdown() || IsRagdollActive) return;
             if (IsZombie) { PresentZombie(); return; }

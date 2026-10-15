@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-combat-zombie-3d-model.py",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "test_only": true,
   "rig": "NpcHumanV2",
   "topology": "retained_ordinary_worker",
@@ -70,20 +70,132 @@
   "neck_head_compression_m": 0.075,
   "foot_centre_spacing_m": 0.65,
   "arm_pose": "retained asymmetric elongated forearms and limp downward hands, no crate grip",
-  "authoring_connections": "torso/neck/head/clavicles disconnected for translation; production parents/rest matrices unchanged",
+  "authoring_connections": "major articulated joints disconnected for authored fold translation; production parents/rest matrices unchanged",
+  "mimic": {
+    "dormant": "ZombieDormant",
+    "reveal": "ZombieReveal",
+    "reveal_seconds": 1.4,
+    "renderer_visibility_keys": 0,
+    "object_scale_keys": 0,
+    "same_rig_and_crate": true,
+    "release_events": [
+      {
+        "seconds": 0.24,
+        "board_numbers": [
+          6,
+          31
+        ],
+        "escape_bone": "foot.L",
+        "impulse_blender": [
+          -0.15,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "seconds": 0.3,
+        "board_numbers": [
+          36
+        ],
+        "escape_bone": "shin.R",
+        "impulse_blender": [
+          0.0,
+          1.0,
+          0.0
+        ]
+      },
+      {
+        "seconds": 0.35,
+        "board_numbers": [
+          2,
+          32
+        ],
+        "escape_bone": "foot.R",
+        "impulse_blender": [
+          0.15,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "seconds": 0.59,
+        "board_numbers": [
+          20,
+          33
+        ],
+        "escape_bone": "hand.L",
+        "impulse_blender": [
+          1.0,
+          -0.25,
+          0.0
+        ]
+      },
+      {
+        "seconds": 0.7,
+        "board_numbers": [
+          10,
+          34
+        ],
+        "escape_bone": "hand.R",
+        "impulse_blender": [
+          -1.0,
+          -0.25,
+          0.0
+        ]
+      },
+      {
+        "seconds": 0.91,
+        "board_numbers": [
+          35
+        ],
+        "escape_bone": "head",
+        "impulse_blender": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    ],
+    "dormant_chest_blender_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -1.0,
+        -8.742277657347586e-08,
+        0.0
+      ],
+      [
+        0.0,
+        8.742277657347586e-08,
+        -1.0,
+        0.21400000154972076
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
   "head_pose": "hyperextended cervical arch; human rest face basis points world-forward between authored jerks",
   "crate_attachment": "ZombieCrate/ChestSocket aligned to production chest",
-  "signature": "12228133dcdb86eeed000ad036379acd8a3058de883023d5747492e9f4af8fae",
+  "signature": "d27f87b5ef793f6d8b08e51c669e7cc51314199919ae9eeb19576bb9afbd945b",
   "clips": [
     {
       "name": "ZombieIdle",
       "duration_seconds": 4.0,
       "loop": true,
-      "maximum_ground_support_error_m": 2.9563317970847177e-06,
+      "maximum_ground_support_error_m": 3.5112713777864513e-07,
       "maximum_loop_seam_error": 2.384185791015625e-07,
-      "maximum_knee_flexion_degrees": 76.29946948232217,
-      "minimum_foot_separation_m": 0.6509943370238545,
-      "maximum_wrist_reach_m": 0.5698219027958397,
+      "maximum_knee_flexion_degrees": 76.2994831427005,
+      "minimum_foot_separation_m": 0.6509959968005918,
+      "maximum_wrist_reach_m": 0.5698218815485102,
       "minimum_grounded_feet": 2,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 26.352114619885427,
@@ -129,11 +241,11 @@
       "name": "ZombieWalk",
       "duration_seconds": 1.6,
       "loop": true,
-      "maximum_ground_support_error_m": 3.0624174819419856e-06,
+      "maximum_ground_support_error_m": 4.172325134277344e-07,
       "maximum_loop_seam_error": 1.7881393432617188e-07,
-      "maximum_knee_flexion_degrees": 84.08027755082811,
-      "minimum_foot_separation_m": 0.6504489096005023,
-      "maximum_wrist_reach_m": 0.5638290869403471,
+      "maximum_knee_flexion_degrees": 84.08028438101728,
+      "minimum_foot_separation_m": 0.6504504400580386,
+      "maximum_wrist_reach_m": 0.5638291662258637,
       "minimum_grounded_feet": 1,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 24.918077130053522,
@@ -179,11 +291,11 @@
       "name": "ZombieAttackRight",
       "duration_seconds": 1.77,
       "loop": false,
-      "maximum_ground_support_error_m": 3.307655026429773e-06,
+      "maximum_ground_support_error_m": 2.8312206268310547e-07,
       "maximum_loop_seam_error": 0.0,
-      "maximum_knee_flexion_degrees": 89.38176793175447,
-      "minimum_foot_separation_m": 0.6501471009053559,
-      "maximum_wrist_reach_m": 0.5899675157310709,
+      "maximum_knee_flexion_degrees": 89.3817815921328,
+      "minimum_foot_separation_m": 0.6501490677111048,
+      "maximum_wrist_reach_m": 0.5899674699516763,
       "minimum_grounded_feet": 1,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 21.4089701137638,
@@ -218,11 +330,11 @@
       "name": "ZombieAttackLeft",
       "duration_seconds": 1.77,
       "loop": false,
-      "maximum_ground_support_error_m": 3.274400907732786e-06,
+      "maximum_ground_support_error_m": 2.611957213723377e-07,
       "maximum_loop_seam_error": 0.0,
-      "maximum_knee_flexion_degrees": 86.67054483128541,
-      "minimum_foot_separation_m": 0.6509943254909879,
-      "maximum_wrist_reach_m": 0.5834342444931274,
+      "maximum_knee_flexion_degrees": 86.66995060482762,
+      "minimum_foot_separation_m": 0.6509959986782704,
+      "maximum_wrist_reach_m": 0.5834342317229125,
       "minimum_grounded_feet": 1,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 21.408959868480046,
@@ -257,11 +369,11 @@
       "name": "ZombieHit",
       "duration_seconds": 0.45,
       "loop": false,
-      "maximum_ground_support_error_m": 2.6617661906989314e-06,
+      "maximum_ground_support_error_m": 3.010405684155881e-07,
       "maximum_loop_seam_error": 0.0,
-      "maximum_knee_flexion_degrees": 72.31850738495856,
-      "minimum_foot_separation_m": 0.6509945673532986,
-      "maximum_wrist_reach_m": 0.5569256788825482,
+      "maximum_knee_flexion_degrees": 72.31852104533691,
+      "minimum_foot_separation_m": 0.6509960722653743,
+      "maximum_wrist_reach_m": 0.5569256721935222,
       "minimum_grounded_feet": 2,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 24.573763878898596,
@@ -296,11 +408,11 @@
       "name": "ZombieLoadAdjust",
       "duration_seconds": 2.4,
       "loop": false,
-      "maximum_ground_support_error_m": 2.927499891766255e-06,
+      "maximum_ground_support_error_m": 2.756982248494498e-07,
       "maximum_loop_seam_error": 0.0,
-      "maximum_knee_flexion_degrees": 76.29947631251133,
-      "minimum_foot_separation_m": 0.6509943254900117,
-      "maximum_wrist_reach_m": 0.5698218112688764,
+      "maximum_knee_flexion_degrees": 76.2994831427005,
+      "minimum_foot_separation_m": 0.6509960018077323,
+      "maximum_wrist_reach_m": 0.5698217033977937,
       "minimum_grounded_feet": 2,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 26.177625484706404,
@@ -335,11 +447,11 @@
       "name": "ZombieWatch",
       "duration_seconds": 2.8,
       "loop": false,
-      "maximum_ground_support_error_m": 2.544785040556184e-06,
+      "maximum_ground_support_error_m": 1.9153798430519076e-07,
       "maximum_loop_seam_error": 0.0,
-      "maximum_knee_flexion_degrees": 72.25506858794749,
-      "minimum_foot_separation_m": 0.6509946353965267,
-      "maximum_wrist_reach_m": 0.5569256270425949,
+      "maximum_knee_flexion_degrees": 72.25508224832583,
+      "minimum_foot_separation_m": 0.6509961234097339,
+      "maximum_wrist_reach_m": 0.5569256721935222,
       "minimum_grounded_feet": 2,
       "maximum_hand_axis_from_world_down_degrees": 0.0,
       "maximum_face_from_world_forward_degrees": 20.439978006403262,
@@ -380,14 +492,96 @@
           ]
         }
       ]
+    },
+    {
+      "name": "ZombieDormant",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "maximum_endpoint_error": 2.980232238769531e-07,
+      "minimum_bone_scale": 0.9999887943267822,
+      "maximum_local_translation_step_m": 0.0,
+      "renderer_visibility_keys": 0,
+      "dormant_chest_blender_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -1.0,
+          -8.742277657347586e-08,
+          0.0
+        ],
+        [
+          0.0,
+          8.742277657347586e-08,
+          -1.0,
+          0.21400000154972076
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "reveal_endpoint": "same physical folded pose"
+    },
+    {
+      "name": "ZombieReveal",
+      "duration_seconds": 1.4,
+      "loop": false,
+      "maximum_endpoint_error": 2.682209014892578e-07,
+      "minimum_bone_scale": 0.806451678276062,
+      "maximum_local_translation_step_m": 0.06037866552848002,
+      "renderer_visibility_keys": 0,
+      "dormant_chest_blender_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -1.0,
+          -8.742277657347586e-08,
+          0.0
+        ],
+        [
+          0.0,
+          8.742277657347586e-08,
+          -1.0,
+          0.21400000154972076
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "reveal_endpoint": "ZombieIdle/0"
     }
   ],
   "assets": {
     "ZombieFace1.png": "b05ea3753db48c6b54259807879a0e8783e37f32a0d7a4c61e3f684860a155d4",
     "ZombieFace2.png": "903b9101de3a5d32559920456466744145ae346efbc76cefe37b80149c1cc831",
     "ZombieFace3.png": "81c197043a4f80d04daafc506f3fd7b9cef2a12c51fda5436d14a3d22b756fc5",
-    "ZombieGroan.wav": "be09ef70ae738d3e221173a891e5b34dcdb8153f859a663869d31d3fb09fb618",
-    "ZombieLunge.wav": "2684c8312d9e4b90ed5f97abb7e426b358aca0e950a39323e71191bccc72013a",
+    "ZombieReveal.wav": "149f389af86e059905a30e464e52b47f631ffeb872f58770762f8e0d1425c2c5",
+    "ZombieGroan.wav": "9fc3b9a0afeb3d810e8101a932194f57c8f4f7935dba97874c39d257fc5fbe8b",
+    "ZombieGroan2.wav": "2efe6c3dbaf6ce29637506d981257661354637e85f24a9b32ea375760e92b92e",
+    "ZombieGroan3.wav": "4ce4e9d189e2bee8be5879b378476243f161719cba6cee93b50d4fc5f093df60",
+    "ZombieLunge.wav": "0e38b2ef3743cd844e05f11167c9fa825df8d642760041bbbf8e9393c6409fb1",
+    "ZombieLunge2.wav": "51fa223826403a1ca401a9c0ce8d5dbaad4af8e87c781b9c5dd7cce8420df402",
+    "ZombieHurtWood.wav": "25d3cbb391da5becdbe8a5b85cf8e5a57e124e5893d74de257b052736a15db81",
+    "ZombieHurtWood2.wav": "3cd7eb5edfd054c0c915dda93b356b5d96508a41eb79eb542b847065ba17ff83",
+    "ZombieHurtFlesh.wav": "af29772ce463afab348fb5ce97f8a76fd5c74dd430a7130a7eb62131643e0a07",
+    "ZombieHurtFlesh2.wav": "42435c6b7eb5bf0c2a6a02c022fce58255cd50b22fbbad37c57219c8b761032d",
+    "ZombieDeath.wav": "25aa5f49d18e076e95e0cb57c1ec70e22f84728a2cdcf9b44842439119033265",
+    "ZombieDeath2.wav": "cca21d9868d03a6944e62a833cbafab39326ec4e093a8da2f80cd2e61e6548a1",
     "ZombieCrateAtlas.png": "0f6a7e134f566a6428b5bb4f46f5aa56e40069df21dcbfe4dac9f6d567476d38"
   }
 }

@@ -136,7 +136,7 @@ namespace BarPromenade
         private void AdvanceWarehouseOpponentGrounding(float seconds)
         {
             if (WarehousePlan == null || seconds <= 0f || AiOpponent == null || AiOpponent.Body == null ||
-                !AiOpponent.Body.enabled || AiOpponent.IsKnockedDown || AiOpponent.IsBodyGrounded || AiOpponent.IsRagdollActive)
+                !AiOpponent.Body.enabled || !AiOpponent.ZombieAwake || AiOpponent.IsKnockedDown || AiOpponent.IsBodyGrounded || AiOpponent.IsRagdollActive)
             {
                 opponentContext.warehouseOpponentVerticalSpeed = 0f;
                 opponentContext.warehouseOpponentGrounded = false;

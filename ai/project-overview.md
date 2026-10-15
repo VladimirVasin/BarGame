@@ -81,10 +81,11 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/key-valve-gate/doorstub;
-  3fridges/Take→redoff;all3→whitebulb/mechgrind-musicchew0/newspawns0-livekept;
-  fish/cans0→key/receipt/keep;Lchest Spot/torso/fill→black;crateholes/fishspill/dockerram;Std1/Endless1–5/≤2corpses/≤5pool.
-  All3/1-2-3/finiteammo+4packs/safe rise/novice aim/corpse step;
+- CombatTest:warehouse/key-valve-gate/doorstub;3fridges/redTake0;
+  all3→bulb-mech-music-newspawns0/livekept;fish→key/receipt/keep.
+  Dormant Std1/Endless1–5/18crates;near-hit→rig1.4s reveal;
+  unseenrefill/cutoff;holes/fishspill/ram/SFX.
+  ChestSpot/black;all3/finiteammo+4packs/rise/corpse step/≤2corpses/≤5pool;
   gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

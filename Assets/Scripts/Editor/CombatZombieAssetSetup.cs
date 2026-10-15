@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string BankPath = Folder + "ZombieActions.fbx";
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 5;
         private bool IsBank => assetPath == BankPath;
         private bool IsZombie => assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
 
@@ -28,6 +28,9 @@ namespace BarPromenade.Editor
             importer.animationCompression = ModelImporterAnimationCompression.Off;
             if (isCrate)
             {
+                // Passive cargo combines the static fusion mesh once at runtime.
+                // Keep its shared source data available in players as well as Editor.
+                importer.isReadable = true;
                 importer.avatarSetup = ModelImporterAvatarSetup.NoAvatar;
                 importer.sourceAvatar = null;
                 return;
@@ -104,8 +107,11 @@ namespace BarPromenade.Editor
         public static void BuildOrThrow()
         {
             foreach (string file in new[] { "ZombieActions.fbx", "Zombie3D.json", "ZombieCrate.fbx", "ZombieCrateAtlas.png",
-                "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav" })
-                AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav",
+                "ZombieGroan2.wav", "ZombieGroan3.wav", "ZombieLunge2.wav", "ZombieReveal.wav",
+                "ZombieHurtWood.wav", "ZombieHurtWood2.wav", "ZombieHurtFlesh.wav", "ZombieHurtFlesh2.wav",
+                "ZombieDeath.wav", "ZombieDeath2.wav" })
+                AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + "Zombie3D.json"));
             if (manifest == null || !manifest.test_only || manifest.root_motion || manifest.animation_events != 0 ||
                 manifest.rig != "NpcHumanV2" || manifest.clips == null || manifest.clips.Length != CombatZombieAssetProvider.ClipNames.Length ||

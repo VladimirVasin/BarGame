@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -10,7 +11,28 @@ namespace BarPromenade
         public const string ResourceFolder = "Combat/";
         public const string IdleClip = "ZombieIdle", WalkClip = "ZombieWalk",
             AttackRightClip = "ZombieAttackRight", AttackLeftClip = "ZombieAttackLeft", HitClip = "ZombieHit",
-            LoadAdjustClip = "ZombieLoadAdjust", WatchClip = "ZombieWatch";
+            LoadAdjustClip = "ZombieLoadAdjust", WatchClip = "ZombieWatch",
+            DormantClip = "ZombieDormant", RevealClip = "ZombieReveal";
+        public const float RevealSeconds = 1.4f;
+        private const float DormantChestHeight = .214f;
+        internal readonly struct MimicBreak
+        {
+            internal readonly float Seconds;
+            internal readonly int[] BoardNumbers;
+            internal readonly string EscapeBone;
+            internal readonly Vector3 LocalImpulseDirection;
+            internal MimicBreak(float seconds, int[] boardNumbers, string escapeBone, Vector3 localImpulseDirection)
+            { Seconds = seconds; BoardNumbers = boardNumbers; EscapeBone = escapeBone; LocalImpulseDirection = localImpulseDirection; }
+        }
+        internal static readonly MimicBreak[] RevealBreaks =
+        {
+            new MimicBreak(.24f, new[] { 6, 31 }, "foot.L", new Vector3(-.15f, -1f, 0f)),
+            new MimicBreak(.30f, new[] { 36 }, "shin.R", Vector3.back),
+            new MimicBreak(.35f, new[] { 2, 32 }, "foot.R", new Vector3(.15f, -1f, 0f)),
+            new MimicBreak(.59f, new[] { 20, 33 }, "hand.L", new Vector3(-1f, 0f, .25f)),
+            new MimicBreak(.70f, new[] { 10, 34 }, "hand.R", new Vector3(1f, 0f, .25f)),
+            new MimicBreak(.91f, new[] { 35 }, "head", Vector3.forward)
+        };
         public const float WalkCycleDistance = .72f, WalkCycleSeconds = 1.6f;
         private static readonly Vector2[] WalkTravelKeys =
         {
@@ -34,8 +56,11 @@ namespace BarPromenade
         }
         public const string CatchClip = "ZombieCatchFlop";
         public const float CatchCycleSeconds = 6.4f;
-        public static readonly string[] ClipNames = { IdleClip, WalkClip, AttackRightClip, AttackLeftClip, HitClip, LoadAdjustClip, WatchClip };
-        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(7);
+        public static readonly string[] ClipNames = { IdleClip, WalkClip, AttackRightClip, AttackLeftClip, HitClip, LoadAdjustClip, WatchClip, DormantClip, RevealClip };
+        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(9);
+        private static readonly Dictionary<string, AudioClip> Audio = new Dictionary<string, AudioClip>(12);
+        private static Mesh dormantCrateMesh;
+        private static Bounds dormantCrateCollision;
         private static readonly Texture2D[] Faces = new Texture2D[3];
         private static AudioClip groan, lunge;
         private static AnimationClip catchClip;
@@ -43,10 +68,10 @@ namespace BarPromenade
         private static Material crateMaterial;
         private static bool loaded;
 
-        public static bool IsLoop(string name) => name == IdleClip || name == WalkClip;
+        public static bool IsLoop(string name) => name == IdleClip || name == WalkClip || name == DormantClip;
         public static float ClipDuration(string name) => name switch
         {
-            IdleClip => 4f, WalkClip => WalkCycleSeconds,
+            IdleClip => 4f, WalkClip => WalkCycleSeconds, DormantClip => 1f, RevealClip => RevealSeconds,
             AttackRightClip or AttackLeftClip => 1.77f, HitClip => .45f,
             LoadAdjustClip => 2.4f, WatchClip => 2.8f,
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown zombie action.")
@@ -93,8 +118,77 @@ namespace BarPromenade
 
         public static AudioClip LoadGroan() => groan != null ? groan : groan = RequireAudio("ZombieGroan");
         public static AudioClip LoadLunge() => lunge != null ? lunge : lunge = RequireAudio("ZombieLunge");
-        private static AudioClip RequireAudio(string name) => Resources.Load<AudioClip>(ResourceFolder + name)
-            ?? throw new InvalidOperationException("Missing authored zombie sound " + name);
+        private static AudioClip RequireAudio(string name) => LoadAudio(name);
+        public static AudioClip LoadAudio(string name)
+        {
+            if (Audio.TryGetValue(name, out AudioClip clip) && clip != null) return clip;
+            clip = Resources.Load<AudioClip>(ResourceFolder + name)
+                ?? throw new InvalidOperationException("Missing authored zombie sound " + name);
+            Audio[name] = clip;
+            return clip;
+        }
+
+        /// <summary>The same grounded box as the folded porter, baked once for passive cargo.</summary>
+        public static GameObject CreateDormantCrate(Transform parent, Vector3 position, Quaternion rotation)
+        {
+            EnsureDormantCrateMesh();
+            var result = new GameObject("Fish crate");
+            result.transform.SetParent(parent, false);
+            result.transform.SetLocalPositionAndRotation(position, rotation);
+            result.AddComponent<MeshFilter>().sharedMesh = dormantCrateMesh;
+            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = CrateMaterial;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            BoxCollider collision = result.AddComponent<BoxCollider>();
+            collision.center = dormantCrateCollision.center;
+            collision.size = dormantCrateCollision.size;
+            return result;
+        }
+
+        private static void EnsureDormantCrateMesh()
+        {
+            if (dormantCrateMesh != null) return;
+            GameObject source = UnityEngine.Object.Instantiate(LoadCrate());
+            source.name = "Dormant fish crate bake";
+            Transform socket = CityPedestrianHandProps.FindSocket(source.transform, "ChestSocket");
+            if (socket == null) throw new InvalidOperationException("Missing dormant chest socket.");
+            // The imported socket carries the FBX quarter turn. Match the
+            // folded load's real frame: fish above the horizontal crate floor.
+            source.transform.rotation = Quaternion.Euler(270f, 0f, 0f) * Quaternion.Inverse(socket.rotation) * source.transform.rotation;
+            source.transform.position += new Vector3(0f, DormantChestHeight + PlayerFactory.GroundedRootOffset, 0f) - socket.position;
+            var combined = new List<CombineInstance>(3);
+            var temporary = new List<Mesh>(2);
+            foreach (Renderer renderer in source.GetComponentsInChildren<Renderer>(true))
+            {
+                Mesh mesh;
+                if (renderer is SkinnedMeshRenderer skin)
+                {
+                    mesh = new Mesh { name = "Dormant crate skin bake" };
+                    // Compensate the renderer's imported scale, as for shared
+                    // body/contact bakes. The full matrix below then applies
+                    // FBX units once, matching the measured collision markers.
+                    skin.BakeMesh(mesh, true);
+                    temporary.Add(mesh);
+                }
+                else
+                {
+                    MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                    if (filter == null || filter.sharedMesh == null) continue;
+                    mesh = filter.sharedMesh;
+                }
+                combined.Add(new CombineInstance { mesh = mesh, transform = renderer.localToWorldMatrix });
+            }
+            dormantCrateMesh = new Mesh { name = "Dormant Fish Crate Shared", hideFlags = HideFlags.HideAndDontSave };
+            dormantCrateMesh.CombineMeshes(combined.ToArray(), true, true);
+            Transform collision = CityPedestrianHandProps.FindSocket(source.transform, "CollisionBox");
+            Transform minimum = CityPedestrianHandProps.FindSocket(collision, "BoundsMin");
+            Transform maximum = CityPedestrianHandProps.FindSocket(collision, "BoundsMax");
+            dormantCrateCollision = new Bounds((minimum.position + maximum.position) * .5f,
+                new Vector3(Mathf.Abs(maximum.position.x-minimum.position.x), Mathf.Abs(maximum.position.y-minimum.position.y), Mathf.Abs(maximum.position.z-minimum.position.z)));
+            source.SetActive(false);
+            UnityEngine.Object.Destroy(source);
+            foreach (Mesh mesh in temporary) UnityEngine.Object.Destroy(mesh);
+        }
 
         public static GameObject LoadCrate() => crate != null ? crate : crate =
             Resources.Load<GameObject>(ResourceFolder + "ZombieCrate")
@@ -132,10 +226,13 @@ namespace BarPromenade
         private static void ResetCache()
         {
             Clips.Clear(); Array.Clear(Faces, 0, Faces.Length);
+            Audio.Clear();
             loaded = false; groan = lunge = null; catchClip = null;
             crate = null;
             if (crateMaterial != null) UnityEngine.Object.Destroy(crateMaterial);
             crateMaterial = null;
+            if (dormantCrateMesh != null) UnityEngine.Object.Destroy(dormantCrateMesh);
+            dormantCrateMesh = null;
         }
     }
 }

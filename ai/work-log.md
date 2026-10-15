@@ -5,20 +5,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-15 - Warehouse, cursor, HUD and loader
 
-- Top-rear fish station/corded bulb; seeded rusty Home fridges by floor,
-  scraps/tail-belly-head labels. Untaken rooms red, others dark, gate lit.
-  Hand-free camera/door/atomic pickup/capacity refusal; Reset keeps empty
-  sources, New recomputes rooms. Hidden hero restores; chest beam follows
-  cursor/torso lag, pause/nested freeze. Held yaw independent; compact shared
-  inspection keeps sharp nested focus/smaller previews.
+- Top-rear station/corded bulb; seeded rusty fridges/floor/scraps/labels.
+  Untaken rooms red, gate lit; hand-free camera/door/atomic pickup/full refusal.
+  Reset keeps empty sources/New recomputes rooms; hero restores; chest beam
+  cursor/torso lag/pause/nested freeze. Compact sharp inspection/held yaw.
 - Take fades red with hum/click; final can starts white flicker/crackle,
   grinding/mechanism-fan-lens-vent fade, tape-chewed music stop/new arrivals off;
   live enemies remain. Pause freezes; Reset/New retain cutoff/silent state.
-- Standing tabletop/trough below bulb: poured cans vanish; atomic transfer,
-  flat physical sections/drag/seams join into convulsing skin, death/key/shared
-  receipt. Cancel/rebuild keep progress. Key drops chain/lock; held valve raises
-  leaf/collision, release/Escape retains travel, max latches/exits. Gallery
-  clearance/door silent stub; Reset/New keep.
+- Tabletop below bulb: poured cans vanish; atomic transfer/flat sections/drag/
+  seams→convulsing skin/death/key/shared receipt. Cancel/rebuild keep progress.
+  Key drops chain-lock; held valve raises leaf/collision/release-Esc keeps/max
+  latches; gallery clearance/silent door stub/Reset-New keep.
 - After key receipt, either upper stair descent heats filament/electrical rise,
   pop/glass/shards; socket/cord stay, fixed lights/lenses/ambient dark,
   chest torch remains. Pause/retention/silent rebuild.
@@ -28,15 +25,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   alignment; F8legacy/Alt/result-reset-menu; pause hides/freezes,
   modal-reset-disable clears. GameView reviewed.
 - Loader: fused warped torso/head back/limp hands/knees forward/head bursts;
-  planted jerky gait follows achieved root travel. Each slat takes hits/detaches:
-  real holes admit next bullet; no added penetration, frame stays fused.
-  Catch retains shared skin/world physics roots; bounded exit steering through holes;
-  any fall cancels steering/releases remainder. Asynchronous spasms settle;
-  bounded pooled bodies/clocks, pause/reset/disable restore. CombatTest-only canon exception.
+  planted jerky gait follows achieved travel; slats detach/holes admit next
+  bullet/frame fused. Shared catch skin/world physics roots; bounded hole-exit
+  steering/any fall releases remainder/async spasms settle/pool cleanup.
+- Mimics: seeded sleepers/same rig-load/limbs-head break wood near-hit;
+  HP/free camera/unseen refill/fish cutoff/sleepers kept/Endless Reset0.
+  Wood/wet contacts/body cues share bounded voices/mix/pause/reset.
+  Metre-scale crate/shared CPU-read bake; real room entries clear; CombatTest-only.
+  Passed: `Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle`.
 - `build-combat-zombie-3d-model.py` / `Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`: passed; frames reviewed.
 - `Range_GameplayHudRespondsToAimDamageAndDebugToggle` passed.
-- Proof: `CombatWarehouseFishProps`, `CombatWarehouseFishAssembly`,
-  `build-combat-warehouse-fish-props.py`,
+- Proof: `CombatWarehouseFishProps`, `CombatWarehouseFishAssembly`, `build-combat-warehouse-fish-props.py`,
   `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay`,
   `build-warehouse-fish-assembly-3d-model.py`,
   `build-warehouse-gate-chain-3d-model.py`,
@@ -46,7 +45,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `ExteriorCamera_VerticalOrbitConsumesMouseInputAndClamps`,
   `ExteriorCamera_CursorOwnersAltAndFocusResumeWithoutStaleLook` and
   `Range_MouseLookKeepsAimAndCursorHandoffsIndependent` passed.
-  `check-docs.py` and scoped source/docs `git diff --check` passed.
+  `check-docs.py`/scoped `git diff --check` passed.
 
 ## 2026-10-14 - Combat and warehouse
 

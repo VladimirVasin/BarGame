@@ -14,6 +14,7 @@ namespace BarPromenade
             internal Quaternion RestRotation;
             internal BoxCollider Attached, Loose;
             internal Rigidbody Body;
+            internal CombatZombieMaterialContact Sound;
             internal bool Detached, Core, OwnsRamIgnore, Retired;
             internal float Health = 40f, Age;
         }
@@ -54,11 +55,46 @@ namespace BarPromenade
 
         internal static bool TryReceiveHit(Collider shape, Vector3 point, Vector3 impulse, float damage)
         {
-            if (shape == null || !partOwners.TryGetValue(shape, out Part part) || part.Core || part.Detached ||
+            if (shape == null || !partOwners.TryGetValue(shape, out Part part) || part.Detached ||
                 !float.IsFinite(damage) || damage <= 0f) return false;
+            part.Owner.owner.NotifyZombieWoodHit();
+            if (part.Core) return true;
             part.Health -= damage;
             if (part.Health <= 0f) part.Owner.DetachBoard(part, point, impulse);
             return true;
+        }
+
+        // Authored limb contacts use the same retained boards, real holes and
+        // debris bodies as weapon damage. A previously broken panel stays gone.
+        internal bool BreakMimicPanel(int boardNumber, Vector3 worldDirection)
+        {
+            string name = "Board" + boardNumber.ToString("D2");
+            foreach (Part part in boards)
+            {
+                if (part.Bone.name != name) continue;
+                if (part.Detached) return false;
+                Vector3 outward = worldDirection.normalized;
+                Vector3 point = part.Attached.transform.TransformPoint(part.Attached.center);
+                part.Health = 0f;
+                DetachBoard(part, point + Vector3.up * .025f,
+                    (outward * 18f + Vector3.up * 3f) * part.Body.mass);
+                return true;
+            }
+            throw new InvalidOperationException("Missing authored mimic panel " + name);
+        }
+
+        internal void BindMaterialAudio(CombatZombieAudio audio)
+        {
+            foreach (Part part in boards)
+            {
+                part.Sound = part.Body.gameObject.AddComponent<CombatZombieMaterialContact>();
+                part.Sound.Initialize(audio, true);
+            }
+            foreach (Fish fish in fishParts)
+            {
+                fish.Sound = fish.Body.gameObject.AddComponent<CombatZombieMaterialContact>();
+                fish.Sound.Initialize(audio, false);
+            }
         }
 
         private void InitializeParts()
@@ -130,6 +166,7 @@ namespace BarPromenade
             debrisRoot.gameObject.SetActive(true);
             foreach (Part part in boards)
             {
+                part.Sound?.ResetContacts();
                 part.Body.isKinematic = true; part.Loose.enabled = false; part.Detached = part.Retired = false; part.Health = 40f; part.Age = 0f;
                 part.Bone.SetLocalPositionAndRotation(part.RestPosition, part.RestRotation); part.Bone.localScale = part.RestScale;
                 part.Attached.enabled = true;

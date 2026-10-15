@@ -202,7 +202,7 @@ namespace BarPromenade
             HitStopSecondsConsumed = 0f;
             roundCameraReleased = false;
             finishedRoundInitialized = false;
-            if (focusOpponent && Mode == CombatTestMode.Standard) LockOnOpponent();
+            if (focusOpponent && Mode == CombatTestMode.Standard && WarehousePlan == null) LockOnOpponent();
             else
             {
                 ClearFocusTracking();

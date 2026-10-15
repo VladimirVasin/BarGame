@@ -13,12 +13,25 @@ namespace BarPromenade
         private readonly Dictionary<AnimationClip, AnimationClipPlayable> npcAnimationClips =
             new Dictionary<AnimationClip, AnimationClipPlayable>(32);
         private AnimationClip npcSampledClip;
+        private Transform[] npcAnimationBaseBones;
+        private Vector3[] npcAnimationBasePositions, npcAnimationBaseScales;
+        private Quaternion[] npcAnimationBaseRotations;
         internal int NpcAnimationGraphBuilds { get; private set; }
 
         internal void InitializeNpcAnimation()
         {
             if (npc == null || npc.Animator == null || npcAnimationGraph.IsValid()) return;
             CacheZombieOriginalAnatomy();
+            npcAnimationBaseBones = IsZombie ? npc.Animator.GetComponentsInChildren<Transform>(true) : Array.Empty<Transform>();
+            int baseCount = npcAnimationBaseBones.Length;
+            npcAnimationBasePositions = new Vector3[baseCount];
+            npcAnimationBaseScales = new Vector3[baseCount];
+            npcAnimationBaseRotations = new Quaternion[baseCount];
+            for (int i = 0; i < baseCount; i++)
+            {
+                npcAnimationBaseBones[i].GetLocalPositionAndRotation(out npcAnimationBasePositions[i], out npcAnimationBaseRotations[i]);
+                npcAnimationBaseScales[i] = npcAnimationBaseBones[i].localScale;
+            }
             // The resident hands this same Animator to combat. A manual graph
             // retains native clip bindings without adding an animation clock.
             npc.ReleaseAnimation();
@@ -27,7 +40,7 @@ namespace BarPromenade
             npcAnimationGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
             foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft,
-                zombieLoadAdjust, zombieWatch, hit, defeat })
+                zombieLoadAdjust, zombieWatch, zombieDormant, zombieReveal, hit, defeat })
                 NpcAnimationClip(clip);
             Prepare(CombatAssetProvider.RecoveryClipNames);
             npcAnimationGraph.Play();
@@ -62,6 +75,15 @@ namespace BarPromenade
             AnimationClipPlayable playable = NpcAnimationClip(clip);
             if (npcSampledClip != clip)
             {
+                // Generic import can omit bind-constant tracks. The folded
+                // mimic changes those same channels, so switching to an older
+                // standing take must not retain a folded limb's translation.
+                // Restore only at a clip boundary, before the new take owns it.
+                for (int i = 0; i < npcAnimationBaseBones.Length; i++)
+                {
+                    npcAnimationBaseBones[i].SetLocalPositionAndRotation(npcAnimationBasePositions[i], npcAnimationBaseRotations[i]);
+                    npcAnimationBaseBones[i].localScale = npcAnimationBaseScales[i];
+                }
                 npcAnimationOutput.SetSourcePlayable(playable);
                 npcSampledClip = clip;
             }

@@ -630,7 +630,7 @@ namespace BarPromenade
         private void AdvanceOpponentMovement(float seconds)
         {
             if (seconds <= 0f) return;
-            if (!Sparring || AiOpponent == null || Hero == null || AiOpponent.IsKnockedDown || HeroIsOnGround && !Hero.IsBodyGrounded || !AiOpponent.IsAvailable ||
+            if (!Sparring || AiOpponent == null || !AiOpponent.ZombieAwake || Hero == null || AiOpponent.IsKnockedDown || HeroIsOnGround && !Hero.IsBodyGrounded || !AiOpponent.IsAvailable ||
                 (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising) ||
                 AiOpponent.Body == null || !AiOpponent.Body.enabled)
             {

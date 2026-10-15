@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-combat-zombie-3d-model.py",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "test_only": true,
   "units": "metres",
   "attachment_bone": "chest",
@@ -10,8 +10,8 @@
   "meshes": [
     {
       "name": "ZombieCrateMesh",
-      "vertex_count": 608,
-      "triangle_count": 1064,
+      "vertex_count": 704,
+      "triangle_count": 1232,
       "bounds_min": [
         -0.6390428,
         0.373988,
@@ -28,14 +28,14 @@
       "vertex_count": 4160,
       "triangle_count": 7808,
       "bounds_min": [
-        -0.7279991,
-        0.4225553,
-        -0.1951164
+        -0.7613323,
+        0.3527427,
+        -0.1292257
       ],
       "bounds_max": [
-        0.5506469,
-        1.5625929,
-        0.6465911
+        0.6385276,
+        1.7384244,
+        0.7137102
       ]
     },
     {
@@ -43,14 +43,14 @@
       "vertex_count": 396,
       "triangle_count": 756,
       "bounds_min": [
-        -0.495,
-        0.5877664,
-        -0.2922935
+        -0.453,
+        0.7045056,
+        -0.1962191
       ],
       "bounds_max": [
-        0.505,
-        1.6468325,
-        0.0572426
+        0.462,
+        1.4419541,
+        0.160321
       ]
     }
   ],
@@ -1021,6 +1021,198 @@
         -0.10000000149011612
       ],
       "detachable": true
+    },
+    {
+      "name": "Board31",
+      "bone": "Board31",
+      "collision_frame": "Board31",
+      "pivot_chest_local_blender": [
+        0.1599999964237213,
+        -0.14000000059604645,
+        0.23799999058246613
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.1599999964237213,
+        -0.49000000953674316,
+        -0.012999996542930603
+      ],
+      "bounds_max_bone_local_blender": [
+        0.1599999964237213,
+        0.49000000953674316,
+        0.012999996542930603
+      ],
+      "bounds_min_marker": "Board31BoundsMin",
+      "bounds_max_marker": "Board31BoundsMax",
+      "vertex_start": 608,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board31Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board32",
+      "bone": "Board32",
+      "collision_frame": "Board32",
+      "pivot_chest_local_blender": [
+        -0.1599999964237213,
+        -0.14000000059604645,
+        0.23799999058246613
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.1599999964237213,
+        -0.49000000953674316,
+        -0.012999996542930603
+      ],
+      "bounds_max_bone_local_blender": [
+        0.1599999964237213,
+        0.49000000953674316,
+        0.012999996542930603
+      ],
+      "bounds_min_marker": "Board32BoundsMin",
+      "bounds_max_marker": "Board32BoundsMax",
+      "vertex_start": 624,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board32Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board33",
+      "bone": "Board33",
+      "collision_frame": "Board33",
+      "pivot_chest_local_blender": [
+        0.5612342357635498,
+        -0.22999998927116394,
+        0.014507614076137543
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.009234249591827393,
+        -0.5299999713897705,
+        -0.20549237728118896
+      ],
+      "bounds_max_bone_local_blender": [
+        0.009234249591827393,
+        0.5299999713897705,
+        0.20549237728118896
+      ],
+      "bounds_min_marker": "Board33BoundsMin",
+      "bounds_max_marker": "Board33BoundsMax",
+      "vertex_start": 640,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board33Outward",
+      "outward_bone_local_blender": [
+        0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board34",
+      "bone": "Board34",
+      "collision_frame": "Board34",
+      "pivot_chest_local_blender": [
+        -0.5612342357635498,
+        -0.22999998927116394,
+        0.014357216656208038
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.009234249591827393,
+        -0.5299999713897705,
+        -0.20564278960227966
+      ],
+      "bounds_max_bone_local_blender": [
+        0.009234249591827393,
+        0.5299999713897705,
+        0.20564278960227966
+      ],
+      "bounds_min_marker": "Board34BoundsMin",
+      "bounds_max_marker": "Board34BoundsMax",
+      "vertex_start": 656,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board34Outward",
+      "outward_bone_local_blender": [
+        -0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board35",
+      "bone": "Board35",
+      "collision_frame": "Board35",
+      "pivot_chest_local_blender": [
+        0.0,
+        0.3349999785423279,
+        -0.005000002682209015
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.3400000035762787,
+        -0.01299998164176941,
+        -0.08500000089406967
+      ],
+      "bounds_max_bone_local_blender": [
+        0.3400000035762787,
+        0.013000011444091797,
+        0.08500000089406967
+      ],
+      "bounds_min_marker": "Board35BoundsMin",
+      "bounds_max_marker": "Board35BoundsMax",
+      "vertex_start": 672,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board35Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board36",
+      "bone": "Board36",
+      "collision_frame": "Board36",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.7694902420043945,
+        0.014785684645175934
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.557417094707489,
+        -0.00850975513458252,
+        -0.20521432161331177
+      ],
+      "bounds_max_bone_local_blender": [
+        0.557417094707489,
+        0.00850975513458252,
+        0.20521432161331177
+      ],
+      "bounds_min_marker": "Board36BoundsMin",
+      "bounds_max_marker": "Board36BoundsMax",
+      "vertex_start": 688,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board36Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        -0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
     }
   ],
   "core_parts": [
@@ -1231,25 +1423,25 @@
       "bone": "Fish01",
       "collision_frame": "Fish01",
       "pivot_chest_local_blender": [
-        -0.17000000178813934,
-        -0.4399999976158142,
-        0.12999999523162842
+        0.0,
+        0.28999999165534973,
+        0.004999999888241291
       ],
       "rest_rotation_quaternion": [
-        0.9881290197372437,
-        -0.10385654121637344,
-        -0.011832953430712223,
-        0.11258303374052048
+        0.9975640773773193,
+        0.06975643336772919,
+        0.0,
+        0.0
       ],
       "bounds_min_bone_local_blender": [
-        -0.48450008034706116,
-        -0.17425000667572021,
-        -0.17424999177455902
+        -0.6155999302864075,
+        -0.22139999270439148,
+        -0.2213999629020691
       ],
       "bounds_max_bone_local_blender": [
-        0.416500061750412,
-        0.1742500215768814,
-        0.08245659619569778
+        0.5291998982429504,
+        0.22139997780323029,
+        0.10476838797330856
       ],
       "bounds_min_marker": "Fish01BoundsMin",
       "bounds_max_marker": "Fish01BoundsMax",
@@ -1265,25 +1457,25 @@
       "bone": "Fish02",
       "collision_frame": "Fish02",
       "pivot_chest_local_blender": [
-        0.11999999731779099,
-        0.07000000029802322,
-        0.03999999910593033
+        -0.11999999731779099,
+        0.18000000715255737,
+        -0.2849999964237213
       ],
       "rest_rotation_quaternion": [
-        0.9828867316246033,
-        0.12068333476781845,
-        -0.01696094311773777,
-        -0.13813577592372894
+        0.9935753345489502,
+        0.1044289767742157,
+        -0.004559466615319252,
+        -0.04338042810559273
       ],
       "bounds_min_bone_local_blender": [
-        -0.518700122833252,
-        -0.18655003607273102,
-        -0.18655003607273102
+        -0.5985000729560852,
+        -0.21524998545646667,
+        -0.21525001525878906
       ],
       "bounds_max_bone_local_blender": [
-        0.4459001123905182,
-        0.1865500509738922,
-        0.08827709406614304
+        0.5145000219345093,
+        0.21525000035762787,
+        0.10185814648866653
       ],
       "bounds_min_marker": "Fish02BoundsMin",
       "bounds_max_marker": "Fish02BoundsMax",
@@ -1299,25 +1491,25 @@
       "bone": "Fish03",
       "collision_frame": "Fish03",
       "pivot_chest_local_blender": [
-        0.029999999329447746,
-        -0.6100000143051147,
-        -0.07000000029802322
+        0.14000000059604645,
+        -0.03999999910593033,
+        -0.32499998807907104
       ],
       "rest_rotation_quaternion": [
-        0.9951341152191162,
-        -0.06958651542663574,
-        0.004865960218012333,
-        -0.06958651542663574
+        0.9966146349906921,
+        -0.06969004124403,
+        -0.0030427323654294014,
+        0.04351312667131424
       ],
       "bounds_min_bone_local_blender": [
-        -0.5187000632286072,
-        -0.18655003607273102,
-        -0.1865500509738922
+        -0.5814001560211182,
+        -0.20910003781318665,
+        -0.20910005271434784
       ],
       "bounds_max_bone_local_blender": [
-        0.4459000825881958,
-        0.18655000627040863,
-        0.08827707916498184
+        0.4998001754283905,
+        0.20910002291202545,
+        0.0989479348063469
       ],
       "bounds_min_marker": "Fish03BoundsMin",
       "bounds_max_marker": "Fish03BoundsMax",
@@ -1333,25 +1525,25 @@
       "bone": "Fish04",
       "collision_frame": "Fish04",
       "pivot_chest_local_blender": [
-        -0.029999999329447746,
-        0.1599999964237213,
-        -0.17000000178813934
+        -0.12999999523162842,
+        -0.25999999046325684,
+        -0.3400000035762787
       ],
       "rest_rotation_quaternion": [
-        0.9832451939582825,
-        0.07738310843706131,
-        0.01294949185103178,
-        0.16453883051872253
+        0.9962730407714844,
+        0.06093468517065048,
+        -0.003726925700902939,
+        -0.06093468517065048
       ],
       "bounds_min_bone_local_blender": [
-        -0.5358000993728638,
-        -0.19270002841949463,
-        -0.19270004332065582
+        -0.6156001091003418,
+        -0.22140003740787506,
+        -0.22140006721019745
       ],
       "bounds_max_bone_local_blender": [
-        0.4606001377105713,
-        0.19270004332065582,
-        0.09118731319904327
+        0.5292001366615295,
+        0.22140003740787506,
+        0.10476842522621155
       ],
       "bounds_min_marker": "Fish04BoundsMin",
       "bounds_max_marker": "Fish04BoundsMax",
@@ -1367,25 +1559,25 @@
       "bone": "Fish05",
       "collision_frame": "Fish05",
       "pivot_chest_local_blender": [
-        -0.18000000715255737,
-        -0.23999999463558197,
+        0.10999999940395355,
+        -0.47999998927116394,
         -0.30000001192092896
       ],
       "rest_rotation_quaternion": [
-        0.9816439151763916,
-        -0.1467076539993286,
-        0.01801343820989132,
-        -0.12053073197603226
+        0.9944888949394226,
+        -0.06954139471054077,
+        -0.005473028868436813,
+        0.07826800644397736
       ],
       "bounds_min_bone_local_blender": [
-        -0.5301000475883484,
-        -0.19065004587173462,
-        -0.19065003097057343
+        -0.5813999176025391,
+        -0.2090999335050583,
+        -0.20909996330738068
       ],
       "bounds_max_bone_local_blender": [
-        0.4557000994682312,
-        0.19065004587173462,
-        0.09021725505590439
+        0.499799907207489,
+        0.20909994840621948,
+        0.09894789755344391
       ],
       "bounds_min_marker": "Fish05BoundsMin",
       "bounds_max_marker": "Fish05BoundsMax",
@@ -1401,25 +1593,25 @@
       "bone": "Fish06",
       "collision_frame": "Fish06",
       "pivot_chest_local_blender": [
-        0.23000000417232513,
-        -0.3100000023841858,
-        -0.28999999165534973
+        -0.10000000149011612,
+        -0.6600000262260437,
+        -0.23499999940395355
       ],
       "rest_rotation_quaternion": [
-        0.8224495053291321,
-        0.13763085007667542,
-        0.09109590202569962,
-        0.5443676114082336
+        0.9965757131576538,
+        0.07843224704265594,
+        -0.0020538184326142073,
+        -0.026096224784851074
       ],
       "bounds_min_bone_local_blender": [
-        -0.478799968957901,
-        -0.17219996452331543,
-        -0.17219999432563782
+        -0.5814000368118286,
+        -0.20910002291202545,
+        -0.20910002291202545
       ],
       "bounds_max_bone_local_blender": [
-        0.4116000235080719,
-        0.17219999432563782,
-        0.0814865306019783
+        0.49980002641677856,
+        0.20910000801086426,
+        0.0989479348063469
       ],
       "bounds_min_marker": "Fish06BoundsMin",
       "bounds_max_marker": "Fish06BoundsMax",
@@ -1435,25 +1627,25 @@
       "bone": "Fish07",
       "collision_frame": "Fish07",
       "pivot_chest_local_blender": [
-        -0.03999999910593033,
-        0.029999999329447746,
-        -0.41999998688697815
+        0.4000000059604645,
+        0.0,
+        -0.49000000953674316
       ],
       "rest_rotation_quaternion": [
-        0.9872153401374817,
-        -0.13874411582946777,
-        0.010919404216110706,
-        -0.0776955708861351
+        0.7175874710083008,
+        -0.05017857253551483,
+        -0.04845689237117767,
+        0.6929662823677063
       ],
       "bounds_min_bone_local_blender": [
-        -0.5358001589775085,
-        -0.1927000731229782,
-        -0.1927000731229782
+        -0.592799961566925,
+        -0.21320000290870667,
+        -0.21320001780986786
       ],
       "bounds_max_bone_local_blender": [
-        0.4606001675128937,
-        0.19270004332065582,
-        0.09118732810020447
+        0.509600043296814,
+        0.21319998800754547,
+        0.10088807344436646
       ],
       "bounds_min_marker": "Fish07BoundsMin",
       "bounds_max_marker": "Fish07BoundsMax",
@@ -1469,25 +1661,25 @@
       "bone": "Fish08",
       "collision_frame": "Fish08",
       "pivot_chest_local_blender": [
-        0.05000000074505806,
-        -0.38999998569488525,
-        -0.44999998807907104
+        -0.3799999952316284,
+        -0.30000001192092896,
+        -0.49000000953674316
       ],
       "rest_rotation_quaternion": [
-        0.9822777509689331,
-        0.15557745099067688,
-        0.0163518488407135,
-        0.10324154794216156
+        0.7153992056846619,
+        0.07519148290157318,
+        -0.07261157780885696,
+        -0.6908529996871948
       ],
       "bounds_min_bone_local_blender": [
-        -0.524399995803833,
-        -0.18860000371932983,
-        -0.18860001862049103
+        -0.5985000729560852,
+        -0.21525001525878906,
+        -0.21525004506111145
       ],
       "bounds_max_bone_local_blender": [
-        0.4508000314235687,
-        0.18860001862049103,
-        0.08924713730812073
+        0.514500081539154,
+        0.21525001525878906,
+        0.10185816884040833
       ],
       "bounds_min_marker": "Fish08BoundsMin",
       "bounds_max_marker": "Fish08BoundsMax",
@@ -1499,9 +1691,9 @@
       "vertex_count": 520
     }
   ],
-  "board_count": 30,
+  "board_count": 36,
   "core_count": 8,
-  "skeleton_bone_count": 63,
+  "skeleton_bone_count": 69,
   "physical_root_animation": "BoardNN/FishNN/CrateCore have no source keys; importer retains only CatchNBody/Tail/Head curves",
   "body_embedded_in_centre": true,
   "ram_contact": "two capsules inside the two actual straight front crossbars",
@@ -1565,18 +1757,18 @@
     "source_fps": 30,
     "mesh": "ZombieCatchMesh",
     "bounds_frame": "CatchBounds",
-    "signature": "f5f9100ab6e99b0eb5f022b530579c65f06d3e796782dfaae06a49561bb4f75e",
+    "signature": "647e216eca3184403f814d0db34e06d0b0b865b6ec4e83127d10aced94edb509",
     "bounds_min_chest_local_blender": [
-      -0.7289808988571167,
-      -0.8027129173278809,
-      -0.6753627061843872
+      -0.7613503336906433,
+      -0.8669082522392273,
+      -0.7543290257453918
     ],
     "bounds_max_chest_local_blender": [
-      0.5511316061019897,
-      0.3628900647163391,
-      0.25603988766670227
+      0.638534665107727,
+      0.5095465183258057,
+      0.13922739028930664
     ],
-    "maximum_vertex_motion_m": 0.22374981808380306,
+    "maximum_vertex_motion_m": 0.2542759507755181,
     "loop_seam_m": 0.0,
     "renderer_count": 1,
     "skin_bones": 24,
@@ -1602,26 +1794,26 @@
   ],
   "texture": "ZombieCrateAtlas",
   "material": "ZombieCrateTimber",
-  "triangle_count": 9628,
+  "triangle_count": 9796,
   "bounds_min": [
-    -0.7279991,
-    0.373988,
-    -0.2922935
+    -0.7613323,
+    0.3527427,
+    -0.2693305
   ],
   "bounds_max": [
     0.6390428,
-    1.6468325,
-    0.6465911
+    1.7384244,
+    0.7137102
   ],
   "chest_local_blender_bounds_min": [
-    -0.7279990911483765,
-    -0.8200000524520874,
-    -0.6306486129760742
+    -0.7613323330879211,
+    -0.8656170964241028,
+    -0.7017765045166016
   ],
   "chest_local_blender_bounds_max": [
     0.6390427947044373,
-    0.4449796974658966,
-    0.3182026147842407
+    0.5095465183258057,
+    0.2539999783039093
   ],
   "chest_rest_blender_matrix": [
     [
@@ -1652,8 +1844,8 @@
   "socket_alignment": "Align imported ChestSocket world matrix to live chest; preserve imported model scale and parent with worldPositionStays true",
   "collision_box": "CollisionBox; BoundsMin/BoundsMax are real imported corners in its own frame",
   "hands": "retained rig forearms and limp hands; no carrying grip or lock markers",
-  "geometry_signature": "fe6324a78eb4948cc0316a7538272650a4431aa80c3187a7ed9f2dd57153b328",
-  "uv_signature": "650d6f4e291c5911e5f3bcec020a07e6dd5baf2216abf9746c4c7b6d587c1cea",
+  "geometry_signature": "a912e53cce17c48b7f7f7ef05a06f029a9655333594ae7693b0407857afc4630",
+  "uv_signature": "3d5dbaa9162a2b5d5d1f72b9b9e76f56e2940002c41fe4d6f87ab2735438b350",
   "texture_sha256": "0f6a7e134f566a6428b5bb4f46f5aa56e40069df21dcbfe4dac9f6d567476d38",
   "winding": "all individual bevelled solids positive",
   "determinism": "two independent geometry builds match"

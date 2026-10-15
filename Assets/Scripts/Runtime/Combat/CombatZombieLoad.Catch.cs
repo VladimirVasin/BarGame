@@ -14,6 +14,7 @@ namespace BarPromenade
             internal readonly Vector3[] RestPositions = new Vector3[3], SamplePositions = new Vector3[3];
             internal readonly Quaternion[] RestRotations = new Quaternion[3], SampleRotations = new Quaternion[3];
             internal Rigidbody Body;
+            internal CombatZombieMaterialContact Sound;
             internal CapsuleCollider Shape;
             internal bool Released, Pending, Retired, Exiting;
             internal float Delay, Age;
@@ -73,6 +74,7 @@ namespace BarPromenade
             ReleasedFishCount = SettledFishCount = 0; catchSpilledOnFall = false;
             foreach (Fish fish in fishParts)
             {
+                fish.Sound?.ResetContacts();
                 fish.Body.isKinematic = true; fish.Body.useGravity = true; fish.Body.constraints = RigidbodyConstraints.None;
                 fish.Shape.enabled = false;
                 fish.Released = fish.Pending = fish.Retired = fish.Exiting = false; fish.Age = fish.Delay = 0f; fish.Pulse = -1;

@@ -2,6 +2,12 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-15, mimics:**
+  CombatTest/§6/art§15a;Dormant/same rig-load→near-hit/reveal1.4s;
+  HP-kept/freeinput/Awakefocus/18crates/unseenrefill/3src0/dormantkept;
+  Arms/legs/head break wood;cached TRS resets on clip changes.
+  Wood-wet SFX/EndlessReset0init.
+
 - **Accepted exception — 2026-10-15, docker:**
   User:CombatTest/art§15a/story§6;
   Eachslat detach→hole/corekept/nextbullet0pierce;
@@ -9,16 +15,15 @@
   ram:head/livewood/skinclamp/CCpairsrestore
 
 - **Accepted — 2026-10-15, contextual CombatTest HUD:**
-  Ammo1row/head0/widthcache;reloadRUEN measured/RBalign.
-  Fade.15/.3 reverse/state-gamepad/crosshair-focus-E;
+  Ammo1row/head0/cache/reloadRUEN-measured-RBalign;
+  fade.15/.3/reverse/gamepad/crosshair-focus-E;
   F8legacy0/Alt:toolbar-enemyHP-count-controls/result-reset-menu;
-  pause-modal-transition0/reset-disable clear/cacheframe/0rays;art§15a.
+  pause-modal-transition0/reset-disable/cacheframe0rays;art§15a.
 
 - **Accepted — 2026-10-15, continuous mouse look and cursor ownership:**
-  Ordinary/seated orbit unheld;RMBaim;Alt cursor/mouse-look-combat0.
-  Return:fresh presses;gameplay locked-hidden/menus free/focus delta0/authored wins.
-  `GameCursor`:leases base0/modal5/context10/cap32/prune dead/mode updates;
-  cleanup releases/stale snapshots0.
+  Unheld ordinary-seated orbit/RMBaim/Alt cursor-lookcombat0/freshpress;
+  gameplay locked-hidden/menu free/focusdelta0/authoredwins.
+  `GameCursor`:leases0/5/10/cap32/prune/update/cleanup/stalesnapshots0.
 
 - **Accepted exception — 2026-10-15, warehouse bulb failure:**
   Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
@@ -38,37 +43,35 @@
   event-lifecycle/Reset-Newkeep/newgame-invreset freshdelay.
 
 - **Accepted exception — 2026-10-15, warehouse fish assembly:**
-  §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-spitkey1/shared receipt/retry;
-  standing-modal-camera/Esc-Reset-Newkeep progress/newgame-invreset0/fishorganic-only.
+  §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-key1/sharedreceipt/retry;
+  standing-modal-camera/Esc-Reset-Newkeep/newgame-invreset0/fishorganic.
 
 - **Accepted exception — 2026-10-15, warehouse final-can power:**
-  White cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure.
-  Fanlight-lens/vent-mechstrain5s-grind→0;musicsync tapechew/wow-pitch-LP-volume0;
+  White cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure;
+  fanlens/vent-mechstrain5s-grind→0;music tapechew/wow-pitch-LP-volume0;
   pause-cleanup/Reset-Newsilent/cache-hotload-strobe0.
 
 - **Accepted — 2026-10-15, inspection framing:**
   Shared compact text-buttons/cans;Examine centred/innerframe0/actions.
 
 - **Accepted exception — 2026-10-15, hand-free refrigerators:**
-  Home/warehouse hand0/door-handle-camera-modal/visibilitylease-exactrestore;
+  Home-warehouse hand0/door-camera-modal/exactvisibilityrestore;
   cached forceRenderingOff/rig-light-damage kept.
 
 - **Accepted exception — 2026-10-15, warehouse fish finds:**
-  Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms.
+  Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms;
   RedTake→fade-humclick/6off/gateonuntilburst;
   rustenamel/stains/openscraps/cream tail-belly-head/bottom→top/text-brand0.
-  Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nestedfreeze/endrestore.
+  Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nested/endrestore.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
-  Chase:right.5/back1.9m ext/int;free aim:.5/1.4m;stable1.4m.
-  Focus1.6/1.5m ext/int;firearm shoulder+.4m/melee+.2m.
-  Root delta×(1-override weight) before focus damping;travel0lag;
-  override lag≤.45m/teleport snap>1.75m;FOV-blends-handoff/clearance-dolly kept.
-  Hit buffer24→1024 retry/cap SphereCastAll;normal2 cached queries/0alloc,
-  overflow may allocate. Reticle arms3×2/dot2×2px;moving gap+6pistol/+10shotgun.
-  Rig/HUD expand smoothly/2s still settle;look-reaim keep/pause0/reset clear.
-  Slow drift/moving4×/muzzle-shotgun centre authoritative/recoil kept;
-  bounded state/assets-story kept;novice exception §7.
+  ChaseR.5/back1.9m ext-int;aim.5/1.4m/stable1.4;focus1.6/1.5m;
+  firearm shoulder+.4m/melee+.2m. Before focusdamp:rootdelta×(1-override);
+  travel0lag/override≤.45m/teleport>1.75m snap/FOV-handoff-clearance kept.
+  Hitbuffer24→1024retry/cap SphereCastAll/normal2cached0alloc/overflow alloc.
+  Reticle arms3×2/dot2×2px/movinggap+6pistol/+10shotgun;
+  rig-HUD expand/2sstill settle/look-reaim keep/pause0/resetclear.
+  Slowdrift/moving4×/muzzle-shotguncentre/recoil/bounded/assets-story/novice§7 kept.
 
 - **Accepted 2026-10-14, warehouse goal:**
   9wallplates.44×.5/1–9/3floor/seedfixed.
@@ -107,9 +110,9 @@
   bounded1hero/resetkeep/cleanup/MPB-clones-newpass0/costunmeasured/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
-  `PlayerClothPhysicsPolicy`:user/fabriconly;CombatTest jacket-scarf-sling0live-bake,
-  hair/rig/hand-opening/anchors kept;solve-contact-wind-request0;
-  pause-drop-reset-dispose/world on/fresh resume.
+  `PlayerClothPhysicsPolicy`:CombatTest jacket-scarf-sling0live-bake;
+  hair/rig/hand-opening/anchors kept;solve-contact-wind0;
+  pause-drop-reset-dispose/worldon/freshresume.
 
 - **Accepted — 2026-10-14, corpse traversal:**
   CombatTest:auto corpsestep/rigcache;livefall≠corpse/world-weapon phys-lifecycle.
@@ -135,8 +138,8 @@
   All3/1held-2stowed/3mount-action-ammo/drop-recover-reset/0story.
 
 - **Accepted exception 2026-10-13, novice firearms:**
-  Hero nonmilitary:sway/settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
-  NPC/rig;muzzle reticle/shotguncentre/stablecam/intent legs/0assets-lore;§7.
+  Hero:sway-settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
+  NPC-rig/muzzle-reticle/shotguncentre/stablecam/intentlegs/0assets-lore;§7.
 
 - **Accepted — 2026-10-13, bounded world presentation:**
   Litter:root palette/0MPB;forest48m/chunks/samegeometry-UV-wind-shadows/

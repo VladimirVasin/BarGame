@@ -4243,19 +4243,19 @@ cargo/workdisgust§6/metricwet-rust-scuff/rarewear;
 D7fan/guardedlift-drum-pusher↔SFX/gatedrive-backdoor;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
 4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
-`2026-10-15`:prep/toprear;3rustfridges/seedfloor;redTake→fade-humclick/gateon;
-cans/scraps/cream tail-belly-head.
-Whitebulb/3→Homeflicker-crackle;keyreceipt-stairs↓→heat2s/riseSFX/popglass/8phys;
-bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/strobe0.
-Fanlens-light/vent-mech0grind/fog-sky0/heavySFXecho/dryUI/music.8-mechsync-tapechew0/exitrestore.
-Toptrough-rimsfill/belowbulb/pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;
-Key→chainlockfall/holdE-gatelift/slots/upperkept.
-Fishorganic/§6.
-Undead/pale-darkeyes;
-docker:hugefishcrate/midfusedcrushwarptorso/headback-kinkneck/asymshoulders-arms/lowlimphands;
-skinneck-shoulders-legs/low-widefeet/kneesfront/jerky stomp/heave/headjerks/restgazehero;
-slatswhole→holes/corefused/fishspill-anyfall/asyncspasm→still;
-prep-ram-return/groan-hiss/resetreuse.
+`2026-10-15`:toprear prep/trough/cordbulb;
+3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;
+3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;
+pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;
+Key→chainlockfall/holdE-gatelift/gallerykept;
+keyreceipt-stairs↓→heat2s/riseSFX/popglass/8phys;
+bulb0/socketcord/fixedlights-lenses-ambient0/Lchestonly/fog-sky-strobe0/§6.
+Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;
+skinneck-shoulders-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;
+slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-return.
+Mimics:room-wallfishcrates;folded rig→near/hit→arms-legs-head
+break boards→combat/freecamera;
+Woodcrack/wetshift/inhale/steps/breath/fall→silence;Fishorganic.
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
 coat-scarf rig/slinganchors;physics0/hairkept.
 Lchest/look→;nearfill→far0/beam↑.

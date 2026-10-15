@@ -22,7 +22,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(zombie.Weapon, Is.Null, "Production opponents have no hidden crowbar.");
             Assert.That(zombie.State.Settings, Is.EqualTo(MeleeCombatSettings.ZombieUnarmed));
             Assert.That(zombie.NpcAnimationGraphBuilds, Is.EqualTo(1));
-            Assert.That(CombatZombieAssetProvider.ClipNames, Has.Length.EqualTo(7));
+            Assert.That(CombatZombieAssetProvider.ClipNames, Has.Length.EqualTo(9));
             foreach (var action in new[] { ("ZombieLoadAdjust", 2.4f), ("ZombieWatch", 2.8f) })
             {
                 AnimationClip clip = CombatZombieAssetProvider.LoadClip(action.Item1);
@@ -438,7 +438,7 @@ namespace BarPromenade.Tests.PlayMode
             root.ResetRound();
             root.SetSparring(false);
             PlacePair(4f);
-            Assert.That(load.BoardCount, Is.EqualTo(30));
+            Assert.That(load.BoardCount, Is.EqualTo(36));
             int boardCount = load.BoardCount, graphBuilds = load.CatchGraphBuildCount;
             int woodMeshInstances = CountLoaderMeshInstances(load.Model);
             var boardBones = new Transform[boardCount];

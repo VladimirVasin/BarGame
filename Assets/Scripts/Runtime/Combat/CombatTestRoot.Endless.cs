@@ -115,6 +115,7 @@ namespace BarPromenade
             Vector3 facing = Hero.transform.position - spawn; facing.y = 0f;
             started = System.Diagnostics.Stopwatch.GetTimestamp();
             using (SpawnResetMarker.Auto()) actor.ResetActor(spawn, facing.normalized);
+            PlaceSpawnedMimic(available, spawn);
             LastSpawnResetTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             available.Spawned = true;
             available.DefeatCounted = false;
@@ -143,6 +144,7 @@ namespace BarPromenade
 
         private bool TryNextOpponentSpawn(CombatActor recycled, out Vector3 spawn)
         {
+            if (WarehousePlan != null) return TryNextMimicSpawn(recycled, out spawn);
             spawn = default;
             validSpawnPoints.Clear();
             float minimumSquared = EncounterSettings.MinimumHeroDistance * EncounterSettings.MinimumHeroDistance;

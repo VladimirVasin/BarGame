@@ -12,6 +12,7 @@ namespace BarPromenade
         /// <summary>A burdened porter pauses for his load, then rams with his fused torso.</summary>
         private void AdvanceZombieOpponent(float seconds)
         {
+            if (AdvanceMimicPerception(seconds)) return;
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
             AiOpponent.SetBlock(false);
             if (AiOpponent.IsBodyGrounded)

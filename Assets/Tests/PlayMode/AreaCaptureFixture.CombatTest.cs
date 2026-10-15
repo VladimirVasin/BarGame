@@ -15,11 +15,11 @@ namespace BarPromenade.Tests.PlayMode
         public void Setup()
         {
 #if UNITY_EDITOR
+            // Runtime verification can reuse a previously validated bank.
+            // Unity still imports dirty assets during its normal startup refresh.
+            if (Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets")) return;
             Type.GetType("BarPromenade.Editor.CombatZombieAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
-            // A runtime-only retry may reuse the exact assets already authored
-            // and validated by this setup in the preceding focused run.
-            if (Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets")) return;
             Type.GetType("BarPromenade.Editor.ProjectSceneSetup, BarPromenade.Editor", true)
                 .GetMethod("ConfigureCombatTestScene", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor", true)

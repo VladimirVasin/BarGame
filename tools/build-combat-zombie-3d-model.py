@@ -8,13 +8,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
-import io
 import json
 import math
 from pathlib import Path
-import struct
 import sys
-import wave
 
 import bpy
 from mathutils import Matrix, Quaternion, Vector
@@ -28,6 +25,7 @@ sys.modules[spec.name] = combat
 spec.loader.exec_module(combat)
 common = combat.common
 from atlas_kit import PixelCanvas, read_generated_png
+import combat_zombie_audio
 
 FPS = 100
 CATCH_SECONDS=6.4
@@ -37,7 +35,18 @@ CATCH_STARTS=(.19,.83,1.46,2.13,2.89,3.61,4.39,5.22)
 CLIPS = (("ZombieIdle", 4., True), ("ZombieWalk", 1.6, True),
          ("ZombieAttackRight", 1.77, False), ("ZombieAttackLeft", 1.77, False),
          ("ZombieHit", .45, False), ("ZombieLoadAdjust", 2.4, False),
-         ("ZombieWatch", 2.8, False))
+         ("ZombieWatch", 2.8, False), ("ZombieDormant", 1., True),
+         ("ZombieReveal", 1.4, False))
+REVEAL_SECONDS = 1.4
+MIMIC_BREAKS = ((.24,(6,31),"foot.L",(-.15,0.,-1.)),
+                (.30,(36,),"shin.R",(0.,1.,0.)),
+                (.35,(2,32),"foot.R",(.15,0.,-1.)),
+                (.59,(20,33),"hand.L",(1.,-.25,0.)),
+                (.70,(10,34),"hand.R",(-1.,-.25,0.)),
+                (.91,(35,),"head",(0.,-1.,0.)))
+# A closed bodily curl below the fish. -local Z is the crate's open top.
+# This is an actual chest matrix, not an object-root offset or a visibility trick.
+DORMANT_CHEST = Matrix.Translation((0., 0., .214)) @ Matrix.Rotation(math.pi, 4, "X")
 WALK_DISTANCE = .72
 WALK_SECONDS = 1.6
 WALK_ROOT_KEYS=((0.,0.),(.10,.03),(.30,.17),(.42,.44),(.50,.50),(.60,.53),(.80,.67),(.92,.94),(1.,1.))
@@ -62,9 +71,16 @@ CATCH = ((-.17,.00,-.22,.85,13.,-12.),(.12,.51,-.31,.91,-16.,14.),
          (-.04,.47,-.77,.94,-9.,-16.),(.05,.05,-.80,.92,12.,18.))
 CATCH = tuple((x,y-.52,z,length,yaw,roll) for x,y,z,length,yaw,roll in CATCH)
 CATCH = tuple((x,y+.08,z+.35,length,yaw,roll) for x,y,z,length,yaw,roll in CATCH)
+CATCH = ((0., .29, .005, 1.08, 0., 8.),
+         (-.12,.18,-.285,1.05,-5.,12.),(.14,-.04,-.325,1.02,5.,-8.),
+         (-.13,-.26,-.340,1.08,-7.,7.),(.11,-.48,-.300,1.02,9.,-8.),
+         (-.10,-.66,-.235,1.02,-3.,9.),(.40,0.,-.490,1.04,88.,-8.),
+         (-.38,-.30,-.490,1.05,-88.,12.))
 FUSION_PATHS = (((-.18,.16,.025),(-.23,.25,.060),(-.32,.34,.070),(-.42,.38,.055)),
                 ((.18,.14,.015),(.25,.26,.080),(.34,.34,.095),(.43,.38,.060)),
                 ((0.,-.23,.050),(.05,-.35,.140),(-.04,-.46,.240),(0.,-.54,.265)))
+FUSION_PATHS = tuple(tuple((x*.9, -.22+(y+.22)*.65, z-.10) for x,y,z in path)
+                     for path in FUSION_PATHS)
 
 
 def smooth(value):
@@ -82,7 +98,9 @@ def load_builder():
     rig = bpy.data.objects["RIG_Player"]
     bpy.context.view_layer.objects.active=rig
     bpy.ops.object.mode_set(mode="EDIT")
-    for name in ("spine","chest","neck","head","clavicle.L","clavicle.R"):
+    for name in ("spine","chest","neck","head","clavicle.L","clavicle.R",
+                 "upper_arm.L","upper_arm.R","forearm.L","forearm.R","hand.L","hand.R",
+                 "thigh.L","thigh.R","shin.L","shin.R","foot.L","foot.R"):
         rig.data.edit_bones[name].use_connect=False
     bpy.ops.object.mode_set(mode="OBJECT")
     config = common.BuildConfig(None, None, None, None, None, None, None, 1.75, 20261013, "apose")
@@ -131,7 +149,7 @@ def score(seconds, keys):
 
 def head_burst(kind,seconds):
     result=Vector((0.,0.,0.))
-    for start,rotation_degrees in HEAD_BURSTS[kind]:
+    for start,rotation_degrees in HEAD_BURSTS.get(kind, ()):
         weight=score(seconds,((start,0.),(start+.04,1.),(start+.13,1.),(start+.19,0.)))
         result+=Vector(rotation_degrees)*weight
     return result
@@ -196,7 +214,153 @@ def attack_foot(builder, side, name, seconds):
     return ankle, stance, lift
 
 
+def dormant_pose(builder):
+    """Fold the retained full-size worker inside the actual fish box.
+
+    All renderer/rig objects and scales survive. Only the anatomical pose changes;
+    the same chest socket carries the same conserved boards through the reveal.
+    """
+    rig = builder.result.rig
+    rig.animation_data.action = None
+    builder._reset_pose()
+    def place(name, position, direction, scale=None):
+        bone = rig.pose.bones[name]
+        rest = bone.bone
+        q = (rest.tail_local-rest.head_local).normalized().rotation_difference(Vector(direction).normalized()) @ rest.matrix_local.to_quaternion()
+        bone.matrix = Matrix.Translation(Vector(position)) @ q.to_matrix().to_4x4()
+        if scale is not None: bone.scale = scale
+        bpy.context.view_layer.update()
+    place("pelvis", (0., .36, .17), (0., -1., -.15))
+    place("spine", (0., .18, .20), (0., -1., -.25))
+    rig.pose.bones["chest"].matrix = DORMANT_CHEST
+    bpy.context.view_layer.update()
+    place("neck", (0., -.12, .20), (0., .25, -.9))
+    rig.pose.bones["head"].matrix=Matrix.Translation((0., .34, .15))@Matrix.Rotation(math.pi,4,"X")
+    bpy.context.view_layer.update()
+    for side, sign in (("L", 1.), ("R", -1.)):
+        # Humeri lie along the ribs, forearms fold inward across the belly.
+        place("clavicle."+side, (sign*.07, -.12, .14), (sign, 0., -.1))
+        shoulder = Vector((sign*.16, -.12, .10))
+        wrist = Vector((sign*.19, .28, .07))
+        upper, fore = (rig.pose.bones[n+"."+side] for n in ("upper_arm", "forearm"))
+        a, b = upper.bone.length, fore.bone.length
+        axis=(wrist-shoulder).normalized();distance=(wrist-shoulder).length
+        along=(a*a-b*b+distance*distance)/(2.*distance)
+        pole=Vector((sign, 0., .0));pole=(pole-axis*pole.dot(axis)).normalized()
+        elbow=shoulder+axis*along+pole*math.sqrt(max(0.,a*a-along*along))
+        place(upper.name, shoulder, elbow-shoulder)
+        place(fore.name, elbow, wrist-elbow)
+        place("hand."+side, wrist, (-sign*.25, .8, -.1))
+        # Knees turn outward; shins return under the body instead of entering floor.
+        hip=Vector((sign*.105, .35, .18));ankle=Vector((sign*.29, .34, .145))
+        thigh, shin = (rig.pose.bones[n+"."+side] for n in ("thigh", "shin"))
+        a,b=thigh.bone.length,shin.bone.length
+        axis=(ankle-hip).normalized();distance=(ankle-hip).length
+        along=(a*a-b*b+distance*distance)/(2.*distance)
+        pole=Vector((0., 1., .1));pole=(pole-axis*pole.dot(axis)).normalized()
+        knee=hip+axis*along+pole*math.sqrt(max(0.,a*a-along*along))
+        place(thigh.name, hip, knee-hip)
+        place(shin.name, knee, ankle-knee)
+        place("foot."+side, ankle, (-sign*.15, -.9, -.05))
+    return builder.snapshot_pose()
+
+
+def mimic_pose(builder, kind, seconds):
+    dormant_pose(builder)
+    rig=builder.result.rig
+    folded={b.name:b.matrix.copy() for b in rig.pose.bones}
+    if kind=="ZombieDormant":return builder.snapshot_pose()
+    pose(builder, "ZombieIdle", 0.)
+    standing={b.name:b.matrix.copy() for b in rig.pose.bones}
+    if seconds>=REVEAL_SECONDS-.00000001:return builder.snapshot_pose()
+    # Unfold in world space: the feet leave the box first, then the torso rises.
+    # Smooth phase ends give exact endpoints and no final pop into ZombieIdle.
+    progress=score(seconds,((0.,0.),(.07,0.),(.18,.18),(.24,.28),(.35,.42),
+                           (.59,.58),(.91,.85),(REVEAL_SECONDS,1.)))
+    rig.animation_data.action=None
+    builder._reset_pose()
+    for bone in rig.pose.bones:
+        a,b=folded[bone.name],standing[bone.name]
+        location=a.translation.lerp(b.translation,progress)
+        rotation=a.to_quaternion().slerp(b.to_quaternion(),progress)
+        scale=a.to_scale().lerp(b.to_scale(),progress)
+        bone.matrix=Matrix.Translation(location)@rotation.to_matrix().to_4x4()@Matrix.Diagonal(Vector((*scale,1.)))
+        bpy.context.view_layer.update()
+    chest=rig.pose.bones["chest"].matrix.copy()
+    inverse_folded=folded["chest"].inverted()
+    def path(keys):
+        if seconds<=keys[0][0]:return Vector(keys[0][1])
+        for (a,p),(b,q) in zip(keys,keys[1:]):
+            if seconds<=b:return Vector(p).lerp(Vector(q),smooth((seconds-a)/(b-a)))
+        return Vector(keys[-1][1])
+    def put(name,point):
+        bone=rig.pose.bones[name];matrix=bone.matrix.copy();matrix.translation=point;bone.matrix=matrix
+        bpy.context.view_layer.update()
+    def solve(first,second,end,target,pole):
+        upper,lower,tip=(rig.pose.bones[n] for n in (first,second,end))
+        shoulder=upper.head.copy();a=upper.bone.length*upper.matrix.to_scale().y
+        b=lower.bone.length*lower.matrix.to_scale().y
+        delta=target-shoulder;distance=min(a+b-.001,max(abs(a-b)+.001,delta.length))
+        axis=delta.normalized();bend=Vector(pole)-axis*Vector(pole).dot(axis)
+        if bend.length<.001:bend=Vector((0.,1.,.1))-axis*axis.y
+        along=(a*a-b*b+distance*distance)/(2.*distance)
+        elbow=shoulder+axis*along+bend.normalized()*math.sqrt(max(0.,a*a-along*along))
+        for bone,start,finish in ((upper,shoulder,elbow),(lower,elbow,target)):
+            rest=bone.bone;scale=bone.matrix.to_scale()
+            q=(rest.tail_local-rest.head_local).normalized().rotation_difference((finish-start).normalized())@rest.matrix_local.to_quaternion()
+            bone.matrix=Matrix.Translation(start)@q.to_matrix().to_4x4()@Matrix.Diagonal(Vector((*scale,1.)))
+            bpy.context.view_layer.update()
+        put(end,target)
+    # Independent planted kick-throughs. Each sole first loads its actual bottom
+    # plank, then passes it only after the corresponding runtime fracture event.
+    for side,sign,release,settled in (("L",1.,.24,.62),("R",-1.,.35,.73)):
+        start=inverse_folded@folded["foot."+side].translation
+        contact=(sign*.325,-.32,.188);burst=(sign*.34,-.32,.285)
+        local=path(((0.,start),(release-.08,(sign*.31,-.32,.15)),
+                    (release,contact),(release+.05,burst)))
+        target=chest@local
+        plant=smooth((seconds-release-.05)/(settled-release-.05))
+        target=target.lerp(standing["foot."+side].translation,plant)
+        # Feet cannot go through the floor while the box is raised off them.
+        target.z=max(standing["foot."+side].translation.z,target.z)
+        weight=1.-smooth((seconds-settled)/(.98-settled))
+        target=rig.pose.bones["foot."+side].head.lerp(target,weight)
+        solve("thigh."+side,"shin."+side,"foot."+side,target,(0.,1.,.1))
+    # The rear knee bows its own cheek before the second foot is pulled down.
+    knee_weight=score(seconds,((0.,0.),(.22,0.),(.30,1.),(.36,1.),(.48,0.),(1.4,0.)))
+    if knee_weight>0.:
+        knee=rig.pose.bones["shin.R"].head.copy()
+        put("shin.R",knee.lerp(chest@Vector((-.17,-.70,.11)),knee_weight))
+    # Hands press the side cheeks, tear through, then fold around the front rim
+    # to the original loose, downward porter arms. They do not share a clock.
+    for side,sign,release,settled in (("L",1.,.59,1.04),("R",-1.,.70,1.15)):
+        start=inverse_folded@folded["hand."+side].translation
+        local=path(((0.,start),(release-.13,(sign*.48,.12,.10)),
+                    (release-.035,(sign*.515,.16,.13)),
+                    (release,(sign*.552,.17,.15)),
+                    (release+.055,(sign*.70,.22,.15))))
+        target=chest@local
+        finish=smooth((seconds-release-.055)/(settled-release-.055))
+        target=target.lerp(standing["hand."+side].translation,finish)
+        weight=1.-smooth((seconds-settled)/(REVEAL_SECONDS-settled))
+        target=rig.pose.bones["hand."+side].head.lerp(target,weight)
+        solve("upper_arm."+side,"forearm."+side,"hand."+side,target,(sign,.15,.2))
+    # The forehead loads the closed front panel, holds the pressure briefly,
+    # then drives the face through after its own timber event.
+    start=inverse_folded@folded["head"].translation
+    local=path(((0.,start),(.72,(0.,.04,.055)),(.875,(0.,.22,.015)),
+                (.91,(0.,.235,.005)),(.975,(0.,.45,-.005))))
+    target=chest@local
+    finish=smooth((seconds-.975)/(1.28-.975))
+    target=target.lerp(standing["head"].translation,finish)
+    weight=1.-smooth((seconds-1.28)/(.12))
+    put("head",rig.pose.bones["head"].head.lerp(target,weight))
+    return builder.snapshot_pose()
+
+
 def pose(builder, kind, seconds):
+    if kind in ("ZombieDormant", "ZombieReveal"):
+        return mimic_pose(builder,kind,seconds)
     rig = builder.result.rig
     rig.animation_data.action = None
     builder._reset_pose()
@@ -376,6 +540,15 @@ def crate_geometry():
         box((0.,y+side*(h/2-.030),z-d/2+.030),(w-.060,.060,.060))
         for end in (-1.,1.):
             box((side*(w/2+.002),y+end*(h/2-.082),z),(.012,.050,d+.008),True)
+    # All disguise closures are conserved detachable timber. No permanent tray
+    # remains over the body after the limbs have broken their own openings.
+    # Appending here preserves every original Board01--30/Core01--08 identity.
+    box((.16,-.14,.238),(.32,.98,.026))   # Board31: left sole
+    box((-.16,-.14,.238),(.32,.98,.026))  # Board32: right sole
+    box((.56,-.23,.015),(.016,1.06,.41))  # Board33: left hand side
+    box((-.56,-.23,.015),(.016,1.06,.41)) # Board34: right hand side
+    box((0.,.335,-.005),(.68,.026,.17))   # Board35: head/front
+    box((0.,-.77,.015),(1.11,.016,.41))  # Board36: knee/rear
     for fish_index,(px,py,pz,length,yaw,roll) in enumerate(CATCH):
         rotation=Quaternion(Vector((0.,0.,1.)),math.radians(yaw))@Quaternion(Vector((1.,0.,0.)),math.radians(roll))
         origin=Vector((px,py,pz))
@@ -529,7 +702,7 @@ def crate_payload(builder, parts, texture):
             part["pivot_chest_local_blender"][i]+part["bounds_max_bone_local_blender"][i]+.00001 for v in (a,b) for i in range(3))]
         if len(matches)!=1:raise ValueError("Ram rail does not belong to one real board: "+str(matches))
         ram_owners.append(matches[0])
-    return dict(generator="tools/build-combat-zombie-3d-model.py",version="1.5.0",test_only=True,
+    return dict(generator="tools/build-combat-zombie-3d-model.py",version="1.6.0",test_only=True,
         units="metres",attachment_bone="chest",socket="ChestSocket",mesh="ZombieCrateMesh",
         mesh_count=3,meshes=meshes,fish_count=len(CATCH),fusion_bridge_count=len(FUSION_PATHS),
         fused_to_body=True,detachable=False,fish_state="eight conserved skinned fish islands, asynchronous flops with separate physics motion roots",
@@ -868,11 +1041,40 @@ def preview(builder,crate_root,directory,source,motion=False):
         obj.rotation_euler=(Vector((0.,0.,.8))-obj.location).to_track_quat("-Z","Y").to_euler()
     source.mkdir(parents=True,exist_ok=True)
     for name,clip,seconds,location in (("LoaderFront","ZombieWatch",1.3,(2.5,-3.4,1.8)),
-        ("LoaderBack","ZombieIdle",1.72,(2.8,2.7,1.8)),("LoaderRam","ZombieAttackRight",.78,(4.4,-.8,1.95))):
+        ("LoaderBack","ZombieIdle",1.72,(2.8,2.7,1.8)),("LoaderRam","ZombieAttackRight",.78,(4.4,-.8,1.95)),
+        ("MimicDormantFront","ZombieDormant",0.,(2.5,-3.4,1.8)),
+        ("MimicDormantBack","ZombieDormant",0.,(2.5,3.4,1.6)),
+        ("MimicDormantTop","ZombieDormant",0.,(1.3,-1.7,3.5)),
+        ("MimicRevealStart","ZombieReveal",.35,(2.5,-3.4,1.8)),
+        ("MimicRevealMiddle","ZombieReveal",.7,(2.5,-3.4,1.8)),
+        ("MimicRevealLate","ZombieReveal",1.05,(2.5,-3.4,1.8)),
+        ("MimicRevealFinish","ZombieReveal",1.4,(2.5,-3.4,1.8))):
         rig.animation_data.action=builder.result.actions[clip].action
         scene.frame_set(round(seconds*FPS));bpy.context.view_layer.update()
+        # Runtime releases these very skin bones to the existing retained physics
+        # parts. Review them with the same finite event map, rather than leaving
+        # the disguise panels in front of the already unfolded body.
+        crate_rig=next(o for o in crate_root.children_recursive if o.type=="ARMATURE")
+        for bone in crate_rig.pose.bones:
+            if bone.name.startswith("Board"):bone.matrix_basis=Matrix.Identity(4)
+        elapsed=seconds if clip=="ZombieReveal" else 0. if clip=="ZombieDormant" else REVEAL_SECONDS+seconds
+        for at,numbers,_,direction in MIMIC_BREAKS:
+            age=elapsed-at
+            if age<=0.:continue
+            for number in numbers:
+                bone=crate_rig.pose.bones[f"Board{number:02}"]
+                world=crate_rig.matrix_world@bone.matrix
+                world.translation+=Vector(direction)*age*1.8+Vector((0.,0.,-2.4))*age*age
+                bone.matrix=crate_rig.matrix_world.inverted()@world
+        bpy.context.view_layer.update()
         camera.location=location;camera.rotation_euler=(Vector((0.,-.22,.79))-camera.location).to_track_quat("-Z","Y").to_euler()
         scene.render.filepath=str(source/(name+".png"));bpy.ops.render.render(write_still=True)
+        if clip=="ZombieDormant":
+            # A review-only control image makes any exposed human surface obvious.
+            # The production bank contains no visibility or object-scale keys.
+            for obj in meshes:obj.hide_render=True
+            scene.render.filepath=str(source/(name+"CargoControl.png"));bpy.ops.render.render(write_still=True)
+            for obj in meshes:obj.hide_render=False
     if motion:
         frames=directory/"LoaderWalkFrames";frames.mkdir(parents=True,exist_ok=True)
         scene.render.resolution_x=384;scene.render.resolution_y=384
@@ -897,6 +1099,26 @@ def measure(builder):
             signature.update(json.dumps([name, curve.data_path, curve.array_index,
                 [[round(v, 7) for v in key.co] for key in curve.keyframe_points]], separators=(",", ":")).encode())
         rig.animation_data.action = action
+        if name in ("ZombieDormant", "ZombieReveal"):
+            first=None;endpoint_error=0.;minimum_scale=100.;maximum_step=0.;previous=None
+            for f in range(round(duration*FPS)+1):
+                bpy.context.scene.frame_set(f);bpy.context.view_layer.update()
+                current={b.name:b.matrix_basis.copy() for b in rig.pose.bones}
+                if first is None:first=current
+                minimum_scale=min(minimum_scale,min(min(b.scale) for b in rig.pose.bones))
+                if previous is not None:
+                    maximum_step=max(maximum_step,max((current[n].translation-previous[n].translation).length for n in current))
+                previous=current
+            expected=first if name=="ZombieDormant" else idle_endpoint
+            endpoint_error=max(abs(b.matrix_basis[i][j]-expected[b.name][i][j]) for b in rig.pose.bones for i in range(4) for j in range(4))
+            if endpoint_error>.00002 or minimum_scale<.5:
+                raise ValueError(f"Mimic continuity/scales failed {name}: {endpoint_error}/{minimum_scale}")
+            records.append(dict(name=name,duration_seconds=duration,loop=loop,
+                maximum_endpoint_error=endpoint_error,minimum_bone_scale=minimum_scale,
+                maximum_local_translation_step_m=maximum_step,renderer_visibility_keys=0,
+                dormant_chest_blender_matrix=[list(row) for row in DORMANT_CHEST],
+                reveal_endpoint="ZombieIdle/0" if name=="ZombieReveal" else "same physical folded pose"))
+            continue
         support_error = loop_error = 0.
         first = None
         minimum_leg_gap = 100.
@@ -956,8 +1178,8 @@ def measure(builder):
             maximum_cervical_arch_degrees=cervical_arch,maximum_head_angular_speed_degrees_per_second=head_speed,
             forearm_lengths_m={s:[min(v),max(v)] for s,v in forearm_lengths.items()},
             head_bursts=[dict(start_seconds=start,snap_seconds=.04,hold_seconds=.09,return_seconds=.06,
-                pitch_yaw_roll_degrees=list(rotation)) for start,rotation in HEAD_BURSTS[name]]))
-    return dict(generator="tools/build-combat-zombie-3d-model.py", version="1.5.0", test_only=True,
+                pitch_yaw_roll_degrees=list(rotation)) for start,rotation in HEAD_BURSTS.get(name, ())]))
+    return dict(generator="tools/build-combat-zombie-3d-model.py", version="1.6.0", test_only=True,
         rig="NpcHumanV2", topology="retained_ordinary_worker", root_motion=False, animation_events=0,
         source_fps=FPS, walk_cycle_distance_m=WALK_DISTANCE, prepare_seconds=PREPARE,
         walk_duration_seconds=WALK_SECONDS,walk_double_support_fraction=.36,
@@ -967,7 +1189,12 @@ def measure(builder):
         role="human_fused_through_fish_crate",attack_contact="two real front crossbar capsules",
         body_torso_compression_m=.115,neck_head_compression_m=.075,foot_centre_spacing_m=.65,
         arm_pose="retained asymmetric elongated forearms and limp downward hands, no crate grip",
-        authoring_connections="torso/neck/head/clavicles disconnected for translation; production parents/rest matrices unchanged",
+        authoring_connections="major articulated joints disconnected for authored fold translation; production parents/rest matrices unchanged",
+        mimic=dict(dormant="ZombieDormant",reveal="ZombieReveal",reveal_seconds=REVEAL_SECONDS,
+            renderer_visibility_keys=0,object_scale_keys=0,same_rig_and_crate=True,
+            release_events=[dict(seconds=t,board_numbers=list(boards),escape_bone=bone,
+                impulse_blender=list(direction)) for t,boards,bone,direction in MIMIC_BREAKS],
+            dormant_chest_blender_matrix=[list(row) for row in DORMANT_CHEST]),
         head_pose="hyperextended cervical arch; human rest face basis points world-forward between authored jerks",
         crate_attachment="ZombieCrate/ChestSocket aligned to production chest",signature=signature.hexdigest(), clips=records)
 
@@ -1007,25 +1234,6 @@ def atlas(variant):
     canvas.line(x,y,x+6,y+13,(105,79,72,255),2)
     canvas.line(x+1,y+1,x+7,y+12,(127,102,86,255))
     return canvas.png_bytes()
-
-
-def audio(lunge):
-    rate, duration = 22050, (.36 if lunge else 1.15)
-    count = round(rate*duration)
-    pcm = bytearray()
-    for i in range(count):
-        t = i/rate
-        envelope = math.sin(math.pi*i/count)**2
-        pitch = (79.-23.*t/duration if lunge else 60.+4.*math.sin(t*7.))
-        voiced = sum(math.sin(math.tau*pitch*t*h)/h for h in (1.,2.,3.,5.,7.))*.35
-        noise = (((i*1103515245+12345)&65535)/32767.5-1.)
-        rasp = noise*.14*math.sin(math.tau*43.*t)**2
-        value = (voiced+rasp)*envelope*(.55 if lunge else .42)
-        pcm.extend(struct.pack("<h", round(min(1.,max(-1.,value))*32767)))
-    output = io.BytesIO()
-    with wave.open(output,"wb") as writer:
-        writer.setnchannels(1);writer.setsampwidth(2);writer.setframerate(rate);writer.writeframes(pcm)
-    return output.getvalue()
 
 
 def main():
@@ -1169,7 +1377,7 @@ def main():
     repeated = measure(builder)
     if payload != repeated: raise ValueError("Zombie action generation is nondeterministic")
     files = {f"ZombieFace{i+1}.png": atlas(i) for i in range(3)}
-    files.update({"ZombieGroan.wav":audio(False),"ZombieLunge.wav":audio(True)})
+    files.update(combat_zombie_audio.audio_files())
     files["ZombieCrateAtlas.png"]=crate_atlas()
     parts=crate_geometry()
     crate_manifest=crate_payload(builder,parts,files["ZombieCrateAtlas.png"])

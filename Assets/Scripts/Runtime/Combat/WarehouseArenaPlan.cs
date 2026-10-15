@@ -104,10 +104,24 @@ namespace BarPromenade
         public WarehouseArenaEdge(int from, int to) { From = from; To = to; }
     }
 
+    /// <summary>A fish crate's floor origin. Actor roots add their own grounded offset exactly once.</summary>
+    public readonly struct WarehouseFishCrateAnchor
+    {
+        public const float RevealRadius = 1f, RevealHeight = 2.1f;
+        public readonly int Id;
+        public readonly Vector3 Position;
+        public readonly float Yaw;
+        public Vector3 Approach => Position + Quaternion.Euler(0f, Yaw, 0f) * Vector3.forward * 1.6f;
+        public Bounds RevealBounds => new Bounds(Position + Vector3.up * (RevealHeight * .5f + .02f),
+            new Vector3(RevealRadius * 2f, RevealHeight, RevealRadius * 2f));
+        public WarehouseFishCrateAnchor(int id, Vector3 position, float yaw)
+        { Id = id; Position = position; Yaw = yaw; }
+    }
+
     /// <summary>Metre-space authority for imported geometry, all storeys, guarded machinery and safe routes.</summary>
     public sealed class WarehouseArenaPlan
     {
-        public const string GeneratorVersion = "warehouse-v3";
+        public const string GeneratorVersion = "warehouse-v4";
         public const float LevelRise = 3.2f, TopHeight = 6.4f, TileSize = 3f, DeckThickness = .18f;
         public const float HalfWidth = 15f, HalfDepth = 12f, CeilingHeight = 10.2f;
         // Compatibility for clients that capture the first gallery. Storey logic uses LevelRise/TopHeight.
@@ -137,6 +151,7 @@ namespace BarPromenade
         public IReadOnlyList<Vector3> RoomCenters { get; }
         public IReadOnlyList<Vector3> AmmoAnchors { get; }
         public IReadOnlyList<WarehouseRefrigeratorPlacement> Refrigerators { get; }
+        public IReadOnlyList<WarehouseFishCrateAnchor> FishCrateAnchors { get; }
         public IReadOnlyList<Vector3> NavigationNodes { get; private set; }
         public IReadOnlyList<WarehouseArenaEdge> NavigationEdges { get; private set; }
 
@@ -144,7 +159,7 @@ namespace BarPromenade
             WarehouseArenaSurface[] surfaces, WarehouseArenaStair[] stairs, WarehouseArenaObstacle[] obstacles,
             WarehouseArenaPlacement[] modules, WarehouseArenaRailSpan[] rails, WarehouseArenaLamp[] lamps,
             WarehouseArenaMechanism[] mechanisms, Vector3[] rooms, Vector3[] ammo, Vector3[] spawns,
-            WarehouseRefrigeratorPlacement[] refrigerators)
+            WarehouseRefrigeratorPlacement[] refrigerators, WarehouseFishCrateAnchor[] fishCrates)
         {
             Seed = seed; Template = template; Platforms = Array.AsReadOnly(platforms);
             Surfaces = Array.AsReadOnly(surfaces); Stairs = Array.AsReadOnly(stairs); Obstacles = Array.AsReadOnly(obstacles);
@@ -152,6 +167,7 @@ namespace BarPromenade
             Lamps = Array.AsReadOnly(lamps); Mechanisms = Array.AsReadOnly(mechanisms);
             RoomCenters = Array.AsReadOnly(rooms); AmmoAnchors = Array.AsReadOnly(ammo); SpawnPoints = Array.AsReadOnly(spawns);
             Refrigerators = Array.AsReadOnly(refrigerators);
+            FishCrateAnchors = Array.AsReadOnly(fishCrates);
             NavigationNodes = Array.Empty<Vector3>(); NavigationEdges = Array.Empty<WarehouseArenaEdge>();
         }
 
@@ -285,12 +301,37 @@ namespace BarPromenade
                 spawns.Add(new Vector3(-12f,y,4.5f)); spawns.Add(new Vector3(0f,y,7.5f));
                 spawns.Add(new Vector3(0f,y,-7.5f));
             }
+            // Independent variation never moves cargo, refrigerators or their existing seed channels.
+            WarehouseFishCrateAnchor[] fishCrates = BuildFishCrateAnchors(seed, rooms);
             var plan = new WarehouseArenaPlan(seed, template, platforms.ToArray(), surfaces.ToArray(), stairs,
                 obstacles.ToArray(), modules.ToArray(), rails.ToArray(), lamps.ToArray(), mechanisms, rooms.ToArray(), ammo,
-                spawns.ToArray(), refrigerators);
+                spawns.ToArray(), refrigerators, fishCrates);
             BuildNavigation(plan);
             WarehouseArenaValidator.ValidateOrThrow(plan);
             return plan;
+        }
+
+        private static WarehouseFishCrateAnchor[] BuildFishCrateAnchors(int seed, List<Vector3> rooms)
+        {
+            uint state = unchecked((uint)seed) ^ 0x43524154u;
+            var anchors = new List<WarehouseFishCrateAnchor>(18);
+            for (int room = 0; room < rooms.Count; room++)
+            {
+                float yaw = room % 3 == 0 ? 0f : 180f;
+                // Opposite the refrigerator wall and beside, rather than across, the door-to-furniture route.
+                Vector3 local = new Vector3(.4f + Phase(ref state) * .35f, 0f, -1.55f - Phase(ref state) * .2f);
+                anchors.Add(new WarehouseFishCrateAnchor(anchors.Count, rooms[room] + RotateRoom(local, yaw), yaw));
+            }
+            for (int level = 0; level < 3; level++)
+            {
+                float y = level * WarehouseArenaPlan.LevelRise;
+                // The service wall pockets clear room doorways, stairs and the guarded moving machinery.
+                float drift = (Phase(ref state) - .5f) * .3f;
+                anchors.Add(new WarehouseFishCrateAnchor(anchors.Count, new Vector3(-13.85f, y, -3.9f + drift), 90f));
+                anchors.Add(new WarehouseFishCrateAnchor(anchors.Count, new Vector3(13.85f, y, -3.9f - drift), 270f));
+                anchors.Add(new WarehouseFishCrateAnchor(anchors.Count, new Vector3(13.85f, y, 3.9f + drift), 270f));
+            }
+            return anchors.ToArray();
         }
 
         private static void AddRoom(Vector3 center, float yaw, int level, List<Vector3> rooms,
@@ -400,6 +441,7 @@ namespace BarPromenade
             foreach (Vector3 spawn in plan.SpawnPoints) AddNode(spawn, nodes, unique);
             foreach (Vector3 ammo in plan.AmmoAnchors) AddNode(ammo, nodes, unique);
             foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators) AddNode(fridge.Approach, nodes, unique);
+            foreach (WarehouseFishCrateAnchor crate in plan.FishCrateAnchors) AddNode(crate.Approach, nodes, unique);
             AddNode(plan.GateApproach, nodes, unique);
             AddNode(plan.GateControlApproach, nodes, unique);
             // Only spatial neighbours can form a short valid edge; avoid an all-pairs graph build.
@@ -439,7 +481,7 @@ namespace BarPromenade
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (plan.Stairs.Count != 4 || plan.RoomCenters.Count != 9 || plan.Platforms.Count < 100 ||
                 plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
-                plan.Refrigerators.Count != 3)
+                plan.Refrigerators.Count != 3 || plan.FishCrateAnchors.Count != 18)
                 throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, four ammo anchors and sparse light.");
             WarehouseArenaLamp stationLamp = plan.Lamps[4];
             if (stationLamp.Kind != "FishStationLamp" ||
@@ -459,6 +501,7 @@ namespace BarPromenade
                     if (a.Bounds.Intersects(b.Bounds)) throw new InvalidOperationException("Warehouse cargo and rack footprints intersect.");
                 }
             var route = new List<Vector3>();
+            ValidateFishCrates(plan, area, route);
             foreach (Vector3 spawn in plan.SpawnPoints) RequireRoute(area, plan.HeroSpawn, spawn, route);
             foreach (Vector3 ammo in plan.AmmoAnchors) RequireRoute(area, plan.HeroSpawn, ammo, route);
             for (int floor = 0; floor < 3; floor++)
@@ -479,6 +522,32 @@ namespace BarPromenade
                 RequireRoute(area, stair.Foot + Vector3.back * .6f, stair.Top + Vector3.forward * .6f, route);
             if (area.CanTraverse(plan.GateApproach, new Vector3(0f,0f,11.9f), .36f))
                 throw new InvalidOperationException("The future goal gate must remain closed and solid.");
+        }
+
+        private static void ValidateFishCrates(WarehouseArenaPlan plan, WarehouseArenaArea area, List<Vector3> route)
+        {
+            var ids = new HashSet<int>();
+            foreach (WarehouseFishCrateAnchor crate in plan.FishCrateAnchors)
+            {
+                if (!ids.Add(crate.Id) || crate.Id < 0 ||
+                    !area.TryGetHeight(crate.Position, out float height, WarehouseFishCrateAnchor.RevealRadius) ||
+                    Mathf.Abs(height - crate.Position.y) > .02f || Vector3.Distance(crate.Position, plan.HeroSpawn) < 3.5f)
+                    throw new InvalidOperationException("Fish crates need unique IDs, a safe floor and a clear reveal footprint.");
+                Bounds reveal = crate.RevealBounds;
+                foreach (WarehouseArenaObstacle obstacle in plan.Obstacles)
+                    if (reveal.Intersects(obstacle.Bounds))
+                        throw new InvalidOperationException($"Fish crate {crate.Id} reveal intersects {obstacle.Kind}.");
+                foreach (WarehouseArenaStair stair in plan.Stairs)
+                    if (Mathf.Abs(stair.Foot.y - crate.Position.y) < .02f &&
+                        stair.Bounds.Overlaps(new Rect(reveal.min.x, reveal.min.z, reveal.size.x, reveal.size.z)))
+                        throw new InvalidOperationException("Fish crates cannot occupy a stair run.");
+                foreach (WarehouseFishCrateAnchor other in plan.FishCrateAnchors)
+                    if (other.Id < crate.Id && reveal.Intersects(other.RevealBounds))
+                        throw new InvalidOperationException("Fish crate reveal volumes cannot overlap.");
+                RequireRoute(area, plan.HeroSpawn, crate.Approach, route);
+                if (!area.CanTraverse(crate.Position, crate.Approach, .36f))
+                    throw new InvalidOperationException("Each fish crate needs a clear exit toward its aisle.");
+            }
         }
 
         private static void RequireRoute(WarehouseArenaArea area, Vector3 from, Vector3 to, List<Vector3> route)

@@ -14,7 +14,7 @@ namespace BarPromenade
         private bool zombieContactPoseValid;
         private float zombieWalkClock, zombieGroanRemaining, zombieWorkClock;
         private bool zombieWalkingRequested;
-        private AudioSource zombieVoice;
+        private CombatZombieAudio zombieAudio;
         private NpcFootstepProfile zombieFootsteps;
         public bool ZombieAttackUsesLeftSide { get; private set; }
         internal bool ZombieWorkPause => IsZombie && State.Phase == MeleePhase.Ready && !roundEnded &&
@@ -23,6 +23,8 @@ namespace BarPromenade
 
         private void LoadZombieClips()
         {
+            zombieDormant = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.DormantClip);
+            zombieReveal = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.RevealClip);
             ready = rest = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.IdleClip);
             zombieWalk = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.WalkClip);
             zombieAttackRight = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.AttackRightClip);
@@ -48,18 +50,15 @@ namespace BarPromenade
             zombieFootsteps = npc.gameObject.AddComponent<NpcFootstepProfile>();
             zombieFootsteps.Configure(CombatZombieAssetProvider.WalkCycleDistance * .5f, .08f, 1f, true);
             handPose.SetGrip(false, .12f); handPose.SetGrip(true, .12f);
-            CombatZombieAssetProvider.LoadGroan(); CombatZombieAssetProvider.LoadLunge();
-            zombieVoice = gameObject.AddComponent<AudioSource>();
-            zombieVoice.playOnAwake = false; zombieVoice.spatialBlend = 1f;
-            zombieVoice.rolloffMode = AudioRolloffMode.Linear;
-            zombieVoice.minDistance = 1f; zombieVoice.maxDistance = 14f;
-            GameAudioMixer.Route(zombieVoice, GameAudioGroup.SfxGameplay);
+            zombieAudio = gameObject.AddComponent<CombatZombieAudio>();
+            zombieAudio.Initialize(zombieLoad.Model);
+            zombieLoad.BindMaterialAudio(zombieAudio);
             ResetZombieAttack();
         }
 
         public bool TryZombieAttack()
         {
-            if (!IsZombie || roundEnded || State.Phase != MeleePhase.Ready || !IsAvailable ||
+            if (!IsZombie || !ZombieAwake || roundEnded || State.Phase != MeleePhase.Ready || !IsAvailable ||
                 !CanAttemptBodyAction || !HasAttackBalance || !GameInput.CanRead(GameInputContext.Gameplay) ||
                 !(BodyDamage.CanUseRightHand || BodyDamage.CanUseLeftHand)) return false;
             if (!State.RequestAttack()) return false;
@@ -84,16 +83,13 @@ namespace BarPromenade
             if (zombieGroanRemaining <= 0f && State.Phase == MeleePhase.Ready && !roundEnded)
             {
                 zombieGroanRemaining = 7f + (JournalActorId % 3) * 2f;
-                if (zombieVoice != null && !zombieVoice.isPlaying)
-                { zombieVoice.clip = CombatZombieAssetProvider.LoadGroan(); zombieVoice.volume = .3f; zombieVoice.Play(); }
+                zombieAudio?.AliveGroan();
             }
         }
 
         private void PlayZombieLunge()
         {
-            if (zombieVoice == null) return;
-            zombieVoice.clip = CombatZombieAssetProvider.LoadLunge();
-            zombieVoice.volume = .6f; zombieVoice.Play();
+            zombieAudio?.Attack();
         }
 
         private void PresentZombie()
@@ -298,6 +294,7 @@ namespace BarPromenade
 
         private void ResetZombieAttack()
         {
+            ResetZombieMimic();
             zombieLoad?.EndRam();
             zombieContactPoseValid = false;
             zombieContactFrom = zombieContactTo = default;
@@ -307,7 +304,8 @@ namespace BarPromenade
             zombieFootsteps?.ResetContacts();
             zombieWorkClock = JournalActorId % 3;
             ZombieAttackUsesLeftSide = false;
-            if (zombieVoice != null) zombieVoice.Stop();
+            zombieAudio?.Reset();
+            zombieAudio?.Activate();
         }
     }
 }

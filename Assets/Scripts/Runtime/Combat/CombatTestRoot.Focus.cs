@@ -8,7 +8,7 @@ namespace BarPromenade
 
         public bool IsOpponentFocused => isActiveAndEnabled && IsInitialized &&
             Hero != null && Hero.CombatFocused && !RoundFinished && CameraFollow.TargetLockActive &&
-            Opponent.gameObject.activeInHierarchy && !Opponent.State.IsDefeated;
+            Opponent.gameObject.activeInHierarchy && Opponent.ZombieAwake && !Opponent.State.IsDefeated;
         public bool FocusMarkerVisible => TryGetFocusMarkerScreenPosition(out _);
 
         /// <summary>Only the hero leaves focus; the opponent and duel retain their live state.</summary>
@@ -31,6 +31,7 @@ namespace BarPromenade
 
         private bool TryFocusOpponent()
         {
+            if (Mode == CombatTestMode.Standard && !Opponent.ZombieAwake) return false;
             if (Mode == CombatTestMode.Endless)
             {
                 CombatActor best = BestLiveOpponent();
@@ -57,7 +58,7 @@ namespace BarPromenade
             foreach (OpponentSlot slot in opponentSlots)
             {
                 CombatActor actor = slot.Actor;
-                if (!slot.Spawned || actor.State.IsDefeated) continue;
+                if (!slot.Spawned || !actor.ZombieAwake || actor.State.IsDefeated) continue;
                 Vector3 chest = actor.Ragdoll.PhysicsController.ChestBody.position;
                 Vector3 ray = chest - camera.transform.position;
                 float length = ray.magnitude;
@@ -82,7 +83,7 @@ namespace BarPromenade
 
         private void UpdateEndlessFocus()
         {
-            if (Opponent.gameObject.activeInHierarchy && !Opponent.State.IsDefeated) return;
+            if (Opponent.gameObject.activeInHierarchy && Opponent.ZombieAwake && !Opponent.State.IsDefeated) return;
             bool refocus = Hero.CombatFocused && CameraFollow.TargetLockActive;
             CombatActor next = BestLiveOpponent();
             if (next != null)
@@ -95,7 +96,7 @@ namespace BarPromenade
             ClearFocusTracking(preserveCameraPose: Hero.IsFirearm);
             Hero.SetCombatFocused(false, preservePistolAim: Hero.IsFirearm);
             Hero.SetContactTarget(null);
-            focusNextArrival = !Hero.IsFirearm;
+            focusNextArrival = WarehousePlan == null && !Hero.IsFirearm;
         }
 
         private void ClearFocusTracking(bool preserveCameraPose = false)

@@ -12,6 +12,7 @@ namespace BarPromenade
             internal bool Spawned, DefeatCounted;
             internal int Generation;
             internal long DefeatOrder;
+            internal int CrateAnchorId = -1;
         }
 
         private readonly List<OpponentSlot> opponentSlots = new List<OpponentSlot>(5);
@@ -108,7 +109,7 @@ namespace BarPromenade
             Opponent = actor;
             opponentObject = actor.gameObject;
             opponentChest = actor.Ragdoll.PhysicsController.ChestBody.transform;
-            Hero.SetContactTarget(actor.gameObject.activeInHierarchy ? actor : null);
+            Hero.SetContactTarget(actor.gameObject.activeInHierarchy && actor.ZombieAwake ? actor : null);
             RestoreSelectedOpponentContext();
         }
 
@@ -121,21 +122,31 @@ namespace BarPromenade
         private void ResetCombatOpponents()
         {
             opponentDefeatOrder = 0;
+            PrepareMimicPlacement();
+            int slotIndex = 0;
             foreach (OpponentSlot slot in opponentSlots)
             {
+                Vector3 position = WarehousePlan != null
+                    ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset : opponentSpawn;
+                slot.CrateAnchorId = -1;
+                if (WarehousePlan != null) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
                 slot.Actor.gameObject.SetActive(true);
-                slot.Actor.ResetActor(opponentSpawn, Vector3.back);
+                slot.Actor.ResetActor(position, Vector3.back);
                 ResetOpponentDecisions(slot.Actor, slot.Ai);
-                slot.Spawned = Mode == CombatTestMode.Standard;
+                slot.Spawned = Mode == CombatTestMode.Standard || WarehousePlan != null && !WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
+                if (slot.Spawned && WarehousePlan != null) PlaceSpawnedMimic(slot, position);
+                else if (WarehousePlan != null) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, false);
                 slot.DefeatCounted = false;
                 slot.Generation = 0;
                 slot.DefeatOrder = 0;
                 slot.Actor.gameObject.SetActive(slot.Spawned);
+                slotIndex++;
             }
             SelectCombatOpponent(combatOpponents[0]);
-            focusNextArrival = Mode == CombatTestMode.Endless && !Hero.IsFirearm;
+            focusNextArrival = WarehousePlan == null && Mode == CombatTestMode.Endless && !Hero.IsFirearm;
             int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
             endless.Reset(EncounterSettings, seed);
+            endless.Observe(false, LiveOpponentCount);
             RefreshEndlessSpawnGate();
             spawnPointSeed = unchecked((uint)seed ^ 0x91e10da5u);
             if (spawnPointSeed == 0) spawnPointSeed = 1;

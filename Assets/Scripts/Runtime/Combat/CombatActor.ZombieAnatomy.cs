@@ -53,7 +53,7 @@ namespace BarPromenade
 
         private bool IsAuthoredZombieClip(AnimationClip clip) =>
             clip == ready || clip == zombieWalk || clip == zombieAttackRight || clip == zombieAttackLeft ||
-            clip == hit || clip == zombieLoadAdjust || clip == zombieWatch;
+            clip == hit || clip == zombieLoadAdjust || clip == zombieWatch || clip == zombieDormant || clip == zombieReveal;
 
         private void ApplyZombieGenericAnatomy()
         {
