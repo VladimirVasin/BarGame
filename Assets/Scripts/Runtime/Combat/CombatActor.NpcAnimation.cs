@@ -18,6 +18,7 @@ namespace BarPromenade
         internal void InitializeNpcAnimation()
         {
             if (npc == null || npc.Animator == null || npcAnimationGraph.IsValid()) return;
+            CacheZombieOriginalAnatomy();
             // The resident hands this same Animator to combat. A manual graph
             // retains native clip bindings without adding an animation clock.
             npc.ReleaseAnimation();
@@ -25,7 +26,8 @@ namespace BarPromenade
             NpcAnimationGraphBuilds++;
             npcAnimationGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
-            foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft, hit, defeat })
+            foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft,
+                zombieLoadAdjust, zombieWatch, hit, defeat })
                 NpcAnimationClip(clip);
             Prepare(CombatAssetProvider.RecoveryClipNames);
             npcAnimationGraph.Play();
@@ -53,6 +55,9 @@ namespace BarPromenade
             if (clip == null) throw new ArgumentNullException(nameof(clip));
             InitializeNpcAnimation();
             if (!npcAnimationGraph.IsValid()) return;
+            // The normal entry presents ready first. Keep a direct generic sample
+            // correct too, without deriving anatomical offsets from a rise pose.
+            if (IsZombie && !zombieAnatomyCaptured && clip != ready) SampleNpcClip(ready, 0f);
             if (!npcAnimationGraph.IsPlaying()) npcAnimationGraph.Play();
             AnimationClipPlayable playable = NpcAnimationClip(clip);
             if (npcSampledClip != clip)
@@ -62,6 +67,11 @@ namespace BarPromenade
             }
             playable.SetTime(absoluteTime);
             npcAnimationGraph.Evaluate(0f);
+            if (IsZombie)
+            {
+                if (clip == ready) CaptureZombieAuthoredAnatomy();
+                else if (!IsAuthoredZombieClip(clip)) ApplyZombieGenericAnatomy();
+            }
         }
 
         internal void SuspendNpcAnimation()

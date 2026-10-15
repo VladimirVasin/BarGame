@@ -15,11 +15,17 @@ namespace BarPromenade
         private void InitializeCombatAttention()
         {
             combatAttentionHead = hero != null ? hero.Registry.Anchors.Head : npc.Head;
-            if (npc != null) combatNpcAttention.Bind(transform, npc.Head, npc.Animator);
+            if (npc != null)
+            {
+                // Preserve the porter's authored broken neck; only the exposed
+                // face follows the target through the shared additive head layer.
+                if (IsZombie) combatNpcAttention.Bind(transform, npc.Head, (Transform)null, 75f);
+                else combatNpcAttention.Bind(transform, npc.Head, npc.Animator);
+            }
             combatAttentionNotice.Reset();
         }
 
-        private bool CanAttendCombat => !IsZombie && CombatFocused && isActiveAndEnabled && IsAvailable && !roundEnded &&
+        private bool CanAttendCombat => CombatFocused && isActiveAndEnabled && IsAvailable && !roundEnded &&
             !winnerPresentationReleased && !State.IsDefeated && !IsKnockedDown && !IsRagdollActive;
 
         private void RefreshCombatAttention()

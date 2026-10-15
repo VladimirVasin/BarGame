@@ -11,19 +11,27 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string BankPath = Folder + "ZombieActions.fbx";
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 3;
         private bool IsBank => assetPath == BankPath;
         private bool IsZombie => assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
 
         private void OnPreprocessModel()
         {
-            if (!IsBank || !(assetImporter is ModelImporter importer)) return;
+            bool isCrate = assetPath == Folder + "ZombieCrate.fbx";
+            if ((!IsBank && !isCrate) || !(assetImporter is ModelImporter importer)) return;
             importer.globalScale = 1f; importer.useFileScale = true; importer.bakeAxisConversion = true;
             importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.importCameras = false; importer.importLights = false; importer.addCollider = false;
             importer.importBlendShapes = false; importer.materialImportMode = ModelImporterMaterialImportMode.None;
-            importer.importAnimation = true; importer.animationType = ModelImporterAnimationType.Generic;
+            importer.importAnimation = true;
+            importer.animationType = ModelImporterAnimationType.Generic;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
+            if (isCrate)
+            {
+                importer.avatarSetup = ModelImporterAvatarSetup.NoAvatar;
+                importer.sourceAvatar = null;
+                return;
+            }
             Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(Player3DV2AssetSetup.ModelPath).OfType<Avatar>().FirstOrDefault();
             importer.avatarSetup = avatar != null ? ModelImporterAvatarSetup.CopyFromOther : ModelImporterAvatarSetup.CreateFromThisModel;
             importer.sourceAvatar = avatar;
@@ -31,15 +39,19 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessAnimation()
         {
-            if (!IsBank || !(assetImporter is ModelImporter importer)) return;
+            bool isCrate = assetPath == Folder + "ZombieCrate.fbx";
+            if ((!IsBank && !isCrate) || !(assetImporter is ModelImporter importer)) return;
             ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;
+            if (isCrate && clips.Length != 1)
+                throw new InvalidOperationException("The fused catch requires exactly one authored presentation take.");
             foreach (ModelImporterClipAnimation clip in clips)
             {
                 int separator = clip.name.LastIndexOf('|');
                 if (separator >= 0) clip.name = clip.name.Substring(separator + 1);
-                if (Array.IndexOf(CombatZombieAssetProvider.ClipNames, clip.name) < 0)
+                if (isCrate) clip.name = CombatZombieAssetProvider.CatchClip;
+                else if (Array.IndexOf(CombatZombieAssetProvider.ClipNames, clip.name) < 0)
                     throw new InvalidOperationException("Unexpected zombie action " + clip.name);
-                clip.loopTime = CombatZombieAssetProvider.IsLoop(clip.name); clip.loopPose = false;
+                clip.loopTime = isCrate || CombatZombieAssetProvider.IsLoop(clip.name); clip.loopPose = false;
                 clip.keepOriginalOrientation = true; clip.keepOriginalPositionXZ = true; clip.keepOriginalPositionY = true;
                 clip.lockRootRotation = true; clip.lockRootPositionXZ = true; clip.lockRootHeightY = true;
                 clip.events = Array.Empty<AnimationEvent>();
@@ -55,7 +67,25 @@ namespace BarPromenade.Editor
             importer.filterMode = FilterMode.Point; importer.wrapMode = TextureWrapMode.Clamp;
             importer.mipmapEnabled = true; importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.sRGBTexture = true; importer.maxTextureSize = 512; importer.isReadable = false;
+            if (assetPath.EndsWith("ZombieCrateAtlas.png", StringComparison.Ordinal))
+            { importer.wrapMode = TextureWrapMode.Repeat; importer.textureCompression = TextureImporterCompression.CompressedHQ; }
             importer.alphaSource = TextureImporterAlphaSource.None;
+        }
+
+        private void OnPostprocessAnimation(GameObject rootObject, AnimationClip clip)
+        {
+            if (assetPath != Folder + "ZombieCrate.fbx") return;
+            // FBX baking may add constant curves to the wooden skeleton and
+            // motion roots. Their world poses belong solely to part physics.
+            foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
+            {
+                int slash = binding.path.LastIndexOf('/');
+                string bone = slash >= 0 ? binding.path.Substring(slash + 1) : binding.path;
+                bool animated = bone.StartsWith("Catch", StringComparison.Ordinal) &&
+                    (bone.EndsWith("Body", StringComparison.Ordinal) || bone.EndsWith("Head", StringComparison.Ordinal) ||
+                    bone.EndsWith("Tail", StringComparison.Ordinal));
+                if (!animated) AnimationUtility.SetEditorCurve(clip, binding, null);
+            }
         }
 
         private void OnPreprocessAudio()
@@ -73,7 +103,8 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Combat Test/Validate Zombie Assets")]
         public static void BuildOrThrow()
         {
-            foreach (string file in new[] { "ZombieActions.fbx", "Zombie3D.json", "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav" })
+            foreach (string file in new[] { "ZombieActions.fbx", "Zombie3D.json", "ZombieCrate.fbx", "ZombieCrateAtlas.png",
+                "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + "Zombie3D.json"));
             if (manifest == null || !manifest.test_only || manifest.root_motion || manifest.animation_events != 0 ||
@@ -93,6 +124,8 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Zombie appearance requires retained 512px atlas layout.");
             }
             CombatZombieAssetProvider.LoadGroan(); CombatZombieAssetProvider.LoadLunge();
+            CombatZombieAssetProvider.LoadCrate();
+            CombatZombieAssetProvider.LoadCatchClip();
             Debug.Log("COMBAT ZOMBIE IMPORTED ACTIONS AND PALETTES OK");
         }
 

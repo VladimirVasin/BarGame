@@ -319,6 +319,11 @@ namespace BarPromenade
                 {
                     p.Position = worldHit.Point;
                     ImpactCount++; LastImpactPoint = worldHit.Point;
+                    float distance = p.Distance + Vector3.Distance(from, worldHit.Point);
+                    float damage = p.Shotgun != null ? p.Shotgun.ResolvePelletDamage(distance) : 25f;
+                    float momentum = p.Shotgun != null ? p.Shotgun.ResolvePelletMomentum(distance) : 32f;
+                    CombatZombieLoad.TryReceiveHit(worldHit.Surface, worldHit.Point,
+                        p.Velocity.normalized * momentum, damage);
                     SurfaceEffects.Emit(worldHit.Surface, worldHit.Point, worldHit.Normal, p.Velocity);
                     Retire(p);
                 }
@@ -486,7 +491,7 @@ namespace BarPromenade
         internal static bool IsWorld(Collider shape, CombatActor source) => shape != null &&
             shape.GetComponentInParent<CombatBodyFragment>() == null &&
             !shape.isTrigger && (source == null || !shape.transform.IsChildOf(source.transform)) &&
-            shape.GetComponentInParent<CombatActor>() == null;
+            (CombatZombieLoad.IsLoadCollider(shape) || shape.GetComponentInParent<CombatActor>() == null);
         private static bool Finite(Vector3 value) => !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
             !float.IsNaN(value.y) && !float.IsInfinity(value.y) && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
     }

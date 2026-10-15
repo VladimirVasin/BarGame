@@ -1,0 +1,1660 @@
+{
+  "generator": "tools/build-combat-zombie-3d-model.py",
+  "version": "1.5.0",
+  "test_only": true,
+  "units": "metres",
+  "attachment_bone": "chest",
+  "socket": "ChestSocket",
+  "mesh": "ZombieCrateMesh",
+  "mesh_count": 3,
+  "meshes": [
+    {
+      "name": "ZombieCrateMesh",
+      "vertex_count": 608,
+      "triangle_count": 1064,
+      "bounds_min": [
+        -0.6390428,
+        0.373988,
+        -0.2693305
+      ],
+      "bounds_max": [
+        0.6390428,
+        1.6037942,
+        0.491465
+      ]
+    },
+    {
+      "name": "ZombieCatchMesh",
+      "vertex_count": 4160,
+      "triangle_count": 7808,
+      "bounds_min": [
+        -0.7279991,
+        0.4225553,
+        -0.1951164
+      ],
+      "bounds_max": [
+        0.5506469,
+        1.5625929,
+        0.6465911
+      ]
+    },
+    {
+      "name": "ZombieFusionMesh",
+      "vertex_count": 396,
+      "triangle_count": 756,
+      "bounds_min": [
+        -0.495,
+        0.5877664,
+        -0.2922935
+      ],
+      "bounds_max": [
+        0.505,
+        1.6468325,
+        0.0572426
+      ]
+    }
+  ],
+  "fish_count": 8,
+  "fusion_bridge_count": 3,
+  "fused_to_body": true,
+  "detachable": false,
+  "fish_state": "eight conserved skinned fish islands, asynchronous flops with separate physics motion roots",
+  "wood_skinned": true,
+  "skinned_mesh_count": 2,
+  "board_parts": [
+    {
+      "name": "Board01",
+      "bone": "Board01",
+      "collision_frame": "Board01",
+      "pivot_chest_local_blender": [
+        -0.5314285755157471,
+        -0.2200000137090683,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142114639282,
+        -0.5910000205039978,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142114639282,
+        0.5910000205039978,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board01BoundsMin",
+      "bounds_max_marker": "Board01BoundsMax",
+      "vertex_start": 0,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board01Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board02",
+      "bone": "Board02",
+      "collision_frame": "Board02",
+      "pivot_chest_local_blender": [
+        -0.35428571701049805,
+        -0.2200000137090683,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142114639282,
+        -0.5910000205039978,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142114639282,
+        0.5910000205039978,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board02BoundsMin",
+      "bounds_max_marker": "Board02BoundsMax",
+      "vertex_start": 16,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board02Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board03",
+      "bone": "Board03",
+      "collision_frame": "Board03",
+      "pivot_chest_local_blender": [
+        -0.17714285850524902,
+        -0.6850000023841858,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142114639282,
+        -0.13499999046325684,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142859697342,
+        0.13499999046325684,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board03BoundsMin",
+      "bounds_max_marker": "Board03BoundsMax",
+      "vertex_start": 32,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board03Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board04",
+      "bone": "Board04",
+      "collision_frame": "Board04",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.6850000023841858,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142859697342,
+        -0.13499999046325684,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142859697342,
+        0.13499999046325684,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board04BoundsMin",
+      "bounds_max_marker": "Board04BoundsMax",
+      "vertex_start": 48,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board04Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board05",
+      "bone": "Board05",
+      "collision_frame": "Board05",
+      "pivot_chest_local_blender": [
+        0.17714285850524902,
+        -0.6850000023841858,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142859697342,
+        -0.13499999046325684,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142114639282,
+        0.13499999046325684,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board05BoundsMin",
+      "bounds_max_marker": "Board05BoundsMax",
+      "vertex_start": 64,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board05Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board06",
+      "bone": "Board06",
+      "collision_frame": "Board06",
+      "pivot_chest_local_blender": [
+        0.35428571701049805,
+        -0.2200000137090683,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142114639282,
+        -0.5910000205039978,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142114639282,
+        0.5910000205039978,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board06BoundsMin",
+      "bounds_max_marker": "Board06BoundsMax",
+      "vertex_start": 80,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board06Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board07",
+      "bone": "Board07",
+      "collision_frame": "Board07",
+      "pivot_chest_local_blender": [
+        0.5314285755157471,
+        -0.2200000137090683,
+        0.22499999403953552
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.08457142114639282,
+        -0.5910000205039978,
+        -0.025000005960464478
+      ],
+      "bounds_max_bone_local_blender": [
+        0.08457142114639282,
+        0.5910000205039978,
+        0.025000005960464478
+      ],
+      "bounds_min_marker": "Board07BoundsMin",
+      "bounds_max_marker": "Board07BoundsMax",
+      "vertex_start": 96,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board07Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board08",
+      "bone": "Board08",
+      "collision_frame": "Board08",
+      "pivot_chest_local_blender": [
+        -0.3930000066757202,
+        -0.07999999821186066,
+        0.21199999749660492
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.046000003814697266,
+        -0.14499999582767487,
+        -0.02699999511241913
+      ],
+      "bounds_max_bone_local_blender": [
+        0.046000003814697266,
+        0.14499999582767487,
+        0.02699999511241913
+      ],
+      "bounds_min_marker": "Board08BoundsMin",
+      "bounds_max_marker": "Board08BoundsMax",
+      "vertex_start": 112,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board08Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board09",
+      "bone": "Board09",
+      "collision_frame": "Board09",
+      "pivot_chest_local_blender": [
+        0.3930000066757202,
+        -0.07999999821186066,
+        0.21199999749660492
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.046000003814697266,
+        -0.14499999582767487,
+        -0.02699999511241913
+      ],
+      "bounds_max_bone_local_blender": [
+        0.046000003814697266,
+        0.14499999582767487,
+        0.02699999511241913
+      ],
+      "bounds_min_marker": "Board09BoundsMin",
+      "bounds_max_marker": "Board09BoundsMax",
+      "vertex_start": 128,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board09Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board10",
+      "bone": "Board10",
+      "collision_frame": "Board10",
+      "pivot_chest_local_blender": [
+        -0.6010000109672546,
+        -0.2199999988079071,
+        0.1679999977350235
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.018999993801116943,
+        -0.5674999952316284,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.018999993801116943,
+        0.5674999952316284,
+        0.0559999942779541
+      ],
+      "bounds_min_marker": "Board10BoundsMin",
+      "bounds_max_marker": "Board10BoundsMax",
+      "vertex_start": 176,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board10Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board11",
+      "bone": "Board11",
+      "collision_frame": "Board11",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.8009999990463257,
+        0.1679999977350235
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5870000123977661,
+        -0.01900005340576172,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5870000123977661,
+        0.018999993801116943,
+        0.0559999942779541
+      ],
+      "bounds_min_marker": "Board11BoundsMin",
+      "bounds_max_marker": "Board11BoundsMax",
+      "vertex_start": 192,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board11Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board12",
+      "bone": "Board12",
+      "collision_frame": "Board12",
+      "pivot_chest_local_blender": [
+        -0.6010000109672546,
+        -0.2199999988079071,
+        -0.005000008270144463
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.018999993801116943,
+        -0.5674999952316284,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.018999993801116943,
+        0.5674999952316284,
+        0.0560000017285347
+      ],
+      "bounds_min_marker": "Board12BoundsMin",
+      "bounds_max_marker": "Board12BoundsMax",
+      "vertex_start": 208,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board12Outward",
+      "outward_bone_local_blender": [
+        -0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board13",
+      "bone": "Board13",
+      "collision_frame": "Board13",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.8009999990463257,
+        -0.005000008270144463
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5870000123977661,
+        -0.01900005340576172,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5870000123977661,
+        0.018999993801116943,
+        0.0560000017285347
+      ],
+      "bounds_min_marker": "Board13BoundsMin",
+      "bounds_max_marker": "Board13BoundsMax",
+      "vertex_start": 224,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board13Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        -0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board14",
+      "bone": "Board14",
+      "collision_frame": "Board14",
+      "pivot_chest_local_blender": [
+        -0.603383481502533,
+        -0.2199999988079071,
+        -0.1789228767156601
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.02064645290374756,
+        -0.5671380758285522,
+        -0.056991204619407654
+      ],
+      "bounds_max_bone_local_blender": [
+        0.02064645290374756,
+        0.5671380758285522,
+        0.056991204619407654
+      ],
+      "bounds_min_marker": "Board14BoundsMin",
+      "bounds_max_marker": "Board14BoundsMax",
+      "vertex_start": 240,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board14Outward",
+      "outward_bone_local_blender": [
+        -0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board15",
+      "bone": "Board15",
+      "collision_frame": "Board15",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.7998896837234497,
+        -0.178292378783226
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5908153653144836,
+        -0.019719600677490234,
+        -0.05636224150657654
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5908153653144836,
+        0.01971954107284546,
+        0.05636224150657654
+      ],
+      "bounds_min_marker": "Board15BoundsMin",
+      "bounds_max_marker": "Board15BoundsMax",
+      "vertex_start": 256,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board15Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        -0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board16",
+      "bone": "Board16",
+      "collision_frame": "Board16",
+      "pivot_chest_local_blender": [
+        -0.6085169911384583,
+        -0.2200000137090683,
+        -0.3528897762298584
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.020875871181488037,
+        -0.5647295713424683,
+        -0.05849546194076538
+      ],
+      "bounds_max_bone_local_blender": [
+        0.020875871181488037,
+        0.5647295713424683,
+        0.05849549174308777
+      ],
+      "bounds_min_marker": "Board16BoundsMin",
+      "bounds_max_marker": "Board16BoundsMax",
+      "vertex_start": 272,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board16Outward",
+      "outward_bone_local_blender": [
+        -0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board17",
+      "bone": "Board17",
+      "collision_frame": "Board17",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.7973722815513611,
+        -0.3514402508735657
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5958926677703857,
+        -0.019637227058410645,
+        -0.05705949664115906
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5958926677703857,
+        0.019637227058410645,
+        0.057059526443481445
+      ],
+      "bounds_min_marker": "Board17BoundsMin",
+      "bounds_max_marker": "Board17BoundsMax",
+      "vertex_start": 288,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board17Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        -0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board18",
+      "bone": "Board18",
+      "collision_frame": "Board18",
+      "pivot_chest_local_blender": [
+        -0.5992574691772461,
+        -0.2199999839067459,
+        -0.422090083360672
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.03142249584197998,
+        -0.5960917472839355,
+        -0.03290984034538269
+      ],
+      "bounds_max_bone_local_blender": [
+        0.031422436237335205,
+        0.5960917472839355,
+        0.03290984034538269
+      ],
+      "bounds_min_marker": "Board18BoundsMin",
+      "bounds_max_marker": "Board18BoundsMax",
+      "vertex_start": 304,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board18Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        -0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board19",
+      "bone": "Board19",
+      "collision_frame": "Board19",
+      "pivot_chest_local_blender": [
+        0.0,
+        -0.7853959798812866,
+        -0.420212984085083
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.600183367729187,
+        -0.03013235330581665,
+        -0.03142613172531128
+      ],
+      "bounds_max_bone_local_blender": [
+        0.600183367729187,
+        0.030132293701171875,
+        0.03142613172531128
+      ],
+      "bounds_min_marker": "Board19BoundsMin",
+      "bounds_max_marker": "Board19BoundsMax",
+      "vertex_start": 320,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board19Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        -0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board20",
+      "bone": "Board20",
+      "collision_frame": "Board20",
+      "pivot_chest_local_blender": [
+        0.6010000109672546,
+        -0.2199999988079071,
+        0.1679999977350235
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.018999993801116943,
+        -0.5674999952316284,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.018999993801116943,
+        0.5674999952316284,
+        0.0559999942779541
+      ],
+      "bounds_min_marker": "Board20BoundsMin",
+      "bounds_max_marker": "Board20BoundsMax",
+      "vertex_start": 400,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board20Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board21",
+      "bone": "Board21",
+      "collision_frame": "Board21",
+      "pivot_chest_local_blender": [
+        0.0,
+        0.3610000014305115,
+        0.1679999977350235
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5870000123977661,
+        -0.018999993801116943,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5870000123977661,
+        0.018999993801116943,
+        0.0559999942779541
+      ],
+      "bounds_min_marker": "Board21BoundsMin",
+      "bounds_max_marker": "Board21BoundsMax",
+      "vertex_start": 416,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board21Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board22",
+      "bone": "Board22",
+      "collision_frame": "Board22",
+      "pivot_chest_local_blender": [
+        0.6010000109672546,
+        -0.2199999988079071,
+        -0.005000008270144463
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.018999993801116943,
+        -0.5674999952316284,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.018999993801116943,
+        0.5674999952316284,
+        0.0560000017285347
+      ],
+      "bounds_min_marker": "Board22BoundsMin",
+      "bounds_max_marker": "Board22BoundsMax",
+      "vertex_start": 432,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board22Outward",
+      "outward_bone_local_blender": [
+        0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board23",
+      "bone": "Board23",
+      "collision_frame": "Board23",
+      "pivot_chest_local_blender": [
+        -0.4635000228881836,
+        0.3610000014305115,
+        -0.005000008270144463
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.12349998950958252,
+        -0.018999993801116943,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.12350001931190491,
+        0.018999993801116943,
+        0.0560000017285347
+      ],
+      "bounds_min_marker": "Board23BoundsMin",
+      "bounds_max_marker": "Board23BoundsMax",
+      "vertex_start": 448,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board23Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board24",
+      "bone": "Board24",
+      "collision_frame": "Board24",
+      "pivot_chest_local_blender": [
+        0.4635000228881836,
+        0.3610000014305115,
+        -0.005000008270144463
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.12350001931190491,
+        -0.018999993801116943,
+        -0.0560000017285347
+      ],
+      "bounds_max_bone_local_blender": [
+        0.12349998950958252,
+        0.018999993801116943,
+        0.0560000017285347
+      ],
+      "bounds_min_marker": "Board24BoundsMin",
+      "bounds_max_marker": "Board24BoundsMax",
+      "vertex_start": 464,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board24Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board25",
+      "bone": "Board25",
+      "collision_frame": "Board25",
+      "pivot_chest_local_blender": [
+        0.603383481502533,
+        -0.2199999988079071,
+        -0.17893385887145996
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.02064645290374756,
+        -0.5671380758285522,
+        -0.056916892528533936
+      ],
+      "bounds_max_bone_local_blender": [
+        0.02064645290374756,
+        0.5671380758285522,
+        0.05691688507795334
+      ],
+      "bounds_min_marker": "Board25BoundsMin",
+      "bounds_max_marker": "Board25BoundsMax",
+      "vertex_start": 480,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board25Outward",
+      "outward_bone_local_blender": [
+        0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board26",
+      "bone": "Board26",
+      "collision_frame": "Board26",
+      "pivot_chest_local_blender": [
+        0.0,
+        0.3449999988079071,
+        -0.17800000309944153
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5870000123977661,
+        -0.034999996423721313,
+        -0.04800000786781311
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5870000123977661,
+        0.034999996423721313,
+        0.047999992966651917
+      ],
+      "bounds_min_marker": "Board26BoundsMin",
+      "bounds_max_marker": "Board26BoundsMax",
+      "vertex_start": 496,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board26Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board27",
+      "bone": "Board27",
+      "collision_frame": "Board27",
+      "pivot_chest_local_blender": [
+        0.6085169911384583,
+        -0.2200000137090683,
+        -0.3531952500343323
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.020875871181488037,
+        -0.5647295713424683,
+        -0.058044880628585815
+      ],
+      "bounds_max_bone_local_blender": [
+        0.020875871181488037,
+        0.5647295713424683,
+        0.058044880628585815
+      ],
+      "bounds_min_marker": "Board27BoundsMin",
+      "bounds_max_marker": "Board27BoundsMax",
+      "vertex_start": 512,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board27Outward",
+      "outward_bone_local_blender": [
+        0.10000000149011612,
+        0.0,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board28",
+      "bone": "Board28",
+      "collision_frame": "Board28",
+      "pivot_chest_local_blender": [
+        0.0,
+        0.3449999988079071,
+        -0.35100001096725464
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5870000123977661,
+        -0.034999996423721313,
+        -0.04800000786781311
+      ],
+      "bounds_max_bone_local_blender": [
+        0.5870000123977661,
+        0.034999996423721313,
+        0.04800000786781311
+      ],
+      "bounds_min_marker": "Board28BoundsMin",
+      "bounds_max_marker": "Board28BoundsMax",
+      "vertex_start": 528,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board28Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board29",
+      "bone": "Board29",
+      "collision_frame": "Board29",
+      "pivot_chest_local_blender": [
+        0.5992574691772461,
+        -0.2199999839067459,
+        -0.42285841703414917
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.031422436237335205,
+        -0.5960917472839355,
+        -0.03210043907165527
+      ],
+      "bounds_max_bone_local_blender": [
+        0.03142249584197998,
+        0.5960917472839355,
+        0.03210043907165527
+      ],
+      "bounds_min_marker": "Board29BoundsMin",
+      "bounds_max_marker": "Board29BoundsMax",
+      "vertex_start": 544,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board29Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        -0.10000000149011612
+      ],
+      "detachable": true
+    },
+    {
+      "name": "Board30",
+      "bone": "Board30",
+      "collision_frame": "Board30",
+      "pivot_chest_local_blender": [
+        0.0,
+        0.3453960120677948,
+        -0.42432618141174316
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.6000837683677673,
+        -0.030132323503494263,
+        -0.03066381812095642
+      ],
+      "bounds_max_bone_local_blender": [
+        0.6000837683677673,
+        0.030132323503494263,
+        0.030663788318634033
+      ],
+      "bounds_min_marker": "Board30BoundsMin",
+      "bounds_max_marker": "Board30BoundsMax",
+      "vertex_start": 560,
+      "vertex_count": 16,
+      "triangle_count": 28,
+      "outward_marker": "Board30Outward",
+      "outward_bone_local_blender": [
+        0.0,
+        0.0,
+        -0.10000000149011612
+      ],
+      "detachable": true
+    }
+  ],
+  "core_parts": [
+    {
+      "name": "Core01",
+      "bone": "CrateCore",
+      "collision_frame": "Core01",
+      "pivot_chest_local_blender": [
+        -0.5883399844169617,
+        -0.7804358005523682,
+        -0.10015194118022919
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.042339980602264404,
+        -0.03956425189971924,
+        -0.3501519560813904
+      ],
+      "bounds_max_bone_local_blender": [
+        0.042339980602264404,
+        0.03956425189971924,
+        0.3501519560813904
+      ],
+      "bounds_min_marker": "Core01BoundsMin",
+      "bounds_max_marker": "Core01BoundsMax",
+      "vertex_start": 144,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core02",
+      "bone": "CrateCore",
+      "collision_frame": "Core02",
+      "pivot_chest_local_blender": [
+        -0.5883255004882812,
+        0.34043580293655396,
+        -0.10249996185302734
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.042325496673583984,
+        -0.03956425189971924,
+        -0.35249996185302734
+      ],
+      "bounds_max_bone_local_blender": [
+        0.042325496673583984,
+        0.03956422209739685,
+        0.35249996185302734
+      ],
+      "bounds_min_marker": "Core02BoundsMin",
+      "bounds_max_marker": "Core02BoundsMax",
+      "vertex_start": 160,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core03",
+      "bone": "CrateCore",
+      "collision_frame": "Core03",
+      "pivot_chest_local_blender": [
+        -0.6275138854980469,
+        -0.735496461391449,
+        -0.09972085058689117
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.011513948440551758,
+        -0.027503550052642822,
+        -0.35372084379196167
+      ],
+      "bounds_max_bone_local_blender": [
+        0.011513888835906982,
+        0.027503550052642822,
+        0.35372084379196167
+      ],
+      "bounds_min_marker": "Core03BoundsMin",
+      "bounds_max_marker": "Core03BoundsMax",
+      "vertex_start": 336,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core04",
+      "bone": "CrateCore",
+      "collision_frame": "Core04",
+      "pivot_chest_local_blender": [
+        -0.6275213956832886,
+        0.29549646377563477,
+        -0.10245810449123383
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.011521399021148682,
+        -0.02750357985496521,
+        -0.35645806789398193
+      ],
+      "bounds_max_bone_local_blender": [
+        0.011521399021148682,
+        0.027503550052642822,
+        0.35645806789398193
+      ],
+      "bounds_min_marker": "Core04BoundsMin",
+      "bounds_max_marker": "Core04BoundsMax",
+      "vertex_start": 352,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core05",
+      "bone": "CrateCore",
+      "collision_frame": "Core05",
+      "pivot_chest_local_blender": [
+        0.5883399844169617,
+        -0.7804358005523682,
+        -0.10122916102409363
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.042339980602264404,
+        -0.03956425189971924,
+        -0.35122916102409363
+      ],
+      "bounds_max_bone_local_blender": [
+        0.042339980602264404,
+        0.03956425189971924,
+        0.35122916102409363
+      ],
+      "bounds_min_marker": "Core05BoundsMin",
+      "bounds_max_marker": "Core05BoundsMax",
+      "vertex_start": 368,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core06",
+      "bone": "CrateCore",
+      "collision_frame": "Core06",
+      "pivot_chest_local_blender": [
+        0.5883255004882812,
+        0.34043580293655396,
+        -0.10247942805290222
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.042325496673583984,
+        -0.03956425189971924,
+        -0.3524794280529022
+      ],
+      "bounds_max_bone_local_blender": [
+        0.042325496673583984,
+        0.03956422209739685,
+        0.3524794280529022
+      ],
+      "bounds_min_marker": "Core06BoundsMin",
+      "bounds_max_marker": "Core06BoundsMax",
+      "vertex_start": 384,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core07",
+      "bone": "CrateCore",
+      "collision_frame": "Core07",
+      "pivot_chest_local_blender": [
+        0.6275138854980469,
+        -0.735496461391449,
+        -0.09988009929656982
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.011513888835906982,
+        -0.027503550052642822,
+        -0.3538800776004791
+      ],
+      "bounds_max_bone_local_blender": [
+        0.011513948440551758,
+        0.027503550052642822,
+        0.3538800776004791
+      ],
+      "bounds_min_marker": "Core07BoundsMin",
+      "bounds_max_marker": "Core07BoundsMax",
+      "vertex_start": 576,
+      "vertex_count": 16,
+      "triangle_count": 28
+    },
+    {
+      "name": "Core08",
+      "bone": "CrateCore",
+      "collision_frame": "Core08",
+      "pivot_chest_local_blender": [
+        0.6275213956832886,
+        0.29549646377563477,
+        -0.1024157702922821
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.011521399021148682,
+        -0.02750357985496521,
+        -0.3564157485961914
+      ],
+      "bounds_max_bone_local_blender": [
+        0.011521399021148682,
+        0.027503550052642822,
+        0.3564157485961914
+      ],
+      "bounds_min_marker": "Core08BoundsMin",
+      "bounds_max_marker": "Core08BoundsMax",
+      "vertex_start": 592,
+      "vertex_count": 16,
+      "triangle_count": 28
+    }
+  ],
+  "fish_parts": [
+    {
+      "name": "Fish01",
+      "bone": "Fish01",
+      "collision_frame": "Fish01",
+      "pivot_chest_local_blender": [
+        -0.17000000178813934,
+        -0.4399999976158142,
+        0.12999999523162842
+      ],
+      "rest_rotation_quaternion": [
+        0.9881290197372437,
+        -0.10385654121637344,
+        -0.011832953430712223,
+        0.11258303374052048
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.48450008034706116,
+        -0.17425000667572021,
+        -0.17424999177455902
+      ],
+      "bounds_max_bone_local_blender": [
+        0.416500061750412,
+        0.1742500215768814,
+        0.08245659619569778
+      ],
+      "bounds_min_marker": "Fish01BoundsMin",
+      "bounds_max_marker": "Fish01BoundsMax",
+      "animated_bones": [
+        "Catch1Body",
+        "Catch1Tail",
+        "Catch1Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish02",
+      "bone": "Fish02",
+      "collision_frame": "Fish02",
+      "pivot_chest_local_blender": [
+        0.11999999731779099,
+        0.07000000029802322,
+        0.03999999910593033
+      ],
+      "rest_rotation_quaternion": [
+        0.9828867316246033,
+        0.12068333476781845,
+        -0.01696094311773777,
+        -0.13813577592372894
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.518700122833252,
+        -0.18655003607273102,
+        -0.18655003607273102
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4459001123905182,
+        0.1865500509738922,
+        0.08827709406614304
+      ],
+      "bounds_min_marker": "Fish02BoundsMin",
+      "bounds_max_marker": "Fish02BoundsMax",
+      "animated_bones": [
+        "Catch2Body",
+        "Catch2Tail",
+        "Catch2Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish03",
+      "bone": "Fish03",
+      "collision_frame": "Fish03",
+      "pivot_chest_local_blender": [
+        0.029999999329447746,
+        -0.6100000143051147,
+        -0.07000000029802322
+      ],
+      "rest_rotation_quaternion": [
+        0.9951341152191162,
+        -0.06958651542663574,
+        0.004865960218012333,
+        -0.06958651542663574
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5187000632286072,
+        -0.18655003607273102,
+        -0.1865500509738922
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4459000825881958,
+        0.18655000627040863,
+        0.08827707916498184
+      ],
+      "bounds_min_marker": "Fish03BoundsMin",
+      "bounds_max_marker": "Fish03BoundsMax",
+      "animated_bones": [
+        "Catch3Body",
+        "Catch3Tail",
+        "Catch3Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish04",
+      "bone": "Fish04",
+      "collision_frame": "Fish04",
+      "pivot_chest_local_blender": [
+        -0.029999999329447746,
+        0.1599999964237213,
+        -0.17000000178813934
+      ],
+      "rest_rotation_quaternion": [
+        0.9832451939582825,
+        0.07738310843706131,
+        0.01294949185103178,
+        0.16453883051872253
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5358000993728638,
+        -0.19270002841949463,
+        -0.19270004332065582
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4606001377105713,
+        0.19270004332065582,
+        0.09118731319904327
+      ],
+      "bounds_min_marker": "Fish04BoundsMin",
+      "bounds_max_marker": "Fish04BoundsMax",
+      "animated_bones": [
+        "Catch4Body",
+        "Catch4Tail",
+        "Catch4Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish05",
+      "bone": "Fish05",
+      "collision_frame": "Fish05",
+      "pivot_chest_local_blender": [
+        -0.18000000715255737,
+        -0.23999999463558197,
+        -0.30000001192092896
+      ],
+      "rest_rotation_quaternion": [
+        0.9816439151763916,
+        -0.1467076539993286,
+        0.01801343820989132,
+        -0.12053073197603226
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5301000475883484,
+        -0.19065004587173462,
+        -0.19065003097057343
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4557000994682312,
+        0.19065004587173462,
+        0.09021725505590439
+      ],
+      "bounds_min_marker": "Fish05BoundsMin",
+      "bounds_max_marker": "Fish05BoundsMax",
+      "animated_bones": [
+        "Catch5Body",
+        "Catch5Tail",
+        "Catch5Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish06",
+      "bone": "Fish06",
+      "collision_frame": "Fish06",
+      "pivot_chest_local_blender": [
+        0.23000000417232513,
+        -0.3100000023841858,
+        -0.28999999165534973
+      ],
+      "rest_rotation_quaternion": [
+        0.8224495053291321,
+        0.13763085007667542,
+        0.09109590202569962,
+        0.5443676114082336
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.478799968957901,
+        -0.17219996452331543,
+        -0.17219999432563782
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4116000235080719,
+        0.17219999432563782,
+        0.0814865306019783
+      ],
+      "bounds_min_marker": "Fish06BoundsMin",
+      "bounds_max_marker": "Fish06BoundsMax",
+      "animated_bones": [
+        "Catch6Body",
+        "Catch6Tail",
+        "Catch6Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish07",
+      "bone": "Fish07",
+      "collision_frame": "Fish07",
+      "pivot_chest_local_blender": [
+        -0.03999999910593033,
+        0.029999999329447746,
+        -0.41999998688697815
+      ],
+      "rest_rotation_quaternion": [
+        0.9872153401374817,
+        -0.13874411582946777,
+        0.010919404216110706,
+        -0.0776955708861351
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.5358001589775085,
+        -0.1927000731229782,
+        -0.1927000731229782
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4606001675128937,
+        0.19270004332065582,
+        0.09118732810020447
+      ],
+      "bounds_min_marker": "Fish07BoundsMin",
+      "bounds_max_marker": "Fish07BoundsMax",
+      "animated_bones": [
+        "Catch7Body",
+        "Catch7Tail",
+        "Catch7Head"
+      ],
+      "vertex_count": 520
+    },
+    {
+      "name": "Fish08",
+      "bone": "Fish08",
+      "collision_frame": "Fish08",
+      "pivot_chest_local_blender": [
+        0.05000000074505806,
+        -0.38999998569488525,
+        -0.44999998807907104
+      ],
+      "rest_rotation_quaternion": [
+        0.9822777509689331,
+        0.15557745099067688,
+        0.0163518488407135,
+        0.10324154794216156
+      ],
+      "bounds_min_bone_local_blender": [
+        -0.524399995803833,
+        -0.18860000371932983,
+        -0.18860001862049103
+      ],
+      "bounds_max_bone_local_blender": [
+        0.4508000314235687,
+        0.18860001862049103,
+        0.08924713730812073
+      ],
+      "bounds_min_marker": "Fish08BoundsMin",
+      "bounds_max_marker": "Fish08BoundsMax",
+      "animated_bones": [
+        "Catch8Body",
+        "Catch8Tail",
+        "Catch8Head"
+      ],
+      "vertex_count": 520
+    }
+  ],
+  "board_count": 30,
+  "core_count": 8,
+  "skeleton_bone_count": 63,
+  "physical_root_animation": "BoardNN/FishNN/CrateCore have no source keys; importer retains only CatchNBody/Tail/Head curves",
+  "body_embedded_in_centre": true,
+  "ram_contact": "two capsules inside the two actual straight front crossbars",
+  "ram_segments": [
+    {
+      "a": "RamBar1A",
+      "b": "RamBar1B",
+      "radius_anchor": "RamRadius1",
+      "chest_local_blender_a": [
+        -0.3799999952316284,
+        0.3479999899864197,
+        -0.17800000309944153
+      ],
+      "chest_local_blender_b": [
+        0.3799999952316284,
+        0.3479999899864197,
+        -0.17800000309944153
+      ],
+      "radius_m": 0.032,
+      "owner_board": "Board26"
+    },
+    {
+      "a": "RamBar2A",
+      "b": "RamBar2B",
+      "radius_anchor": "RamRadius2",
+      "chest_local_blender_a": [
+        -0.3799999952316284,
+        0.3479999899864197,
+        -0.35100001096725464
+      ],
+      "chest_local_blender_b": [
+        0.3799999952316284,
+        0.3479999899864197,
+        -0.35100001096725464
+      ],
+      "radius_m": 0.032,
+      "owner_board": "Board28"
+    }
+  ],
+  "ram_capsules_inside_wood": true,
+  "overloaded": true,
+  "collider_chest_local_blender_center": [
+    0.0,
+    -0.2199999988079071,
+    -0.10000000149011612
+  ],
+  "collider_chest_local_blender_size": [
+    1.2400000095367432,
+    1.2000000476837158,
+    0.699999988079071
+  ],
+  "collider_scope": "whole wooden envelope; body apertures approximated solid; catch and fusion have no separate collision",
+  "lowest_front_board": "initially unbroken across the wedged torso; conserved detachable plank",
+  "catch_animation": {
+    "clip": "ZombieCatchFlop",
+    "duration_seconds": 6.4,
+    "loop": true,
+    "rig": "RIG_ZombieCatch",
+    "bone_count": 32,
+    "animated_bone_count": 24,
+    "source_fps": 30,
+    "mesh": "ZombieCatchMesh",
+    "bounds_frame": "CatchBounds",
+    "signature": "f5f9100ab6e99b0eb5f022b530579c65f06d3e796782dfaae06a49561bb4f75e",
+    "bounds_min_chest_local_blender": [
+      -0.7289808988571167,
+      -0.8027129173278809,
+      -0.6753627061843872
+    ],
+    "bounds_max_chest_local_blender": [
+      0.5511316061019897,
+      0.3628900647163391,
+      0.25603988766670227
+    ],
+    "maximum_vertex_motion_m": 0.22374981808380306,
+    "loop_seam_m": 0.0,
+    "renderer_count": 1,
+    "skin_bones": 24,
+    "bounds_measurement_fps": 100,
+    "bounds_min_marker": "BBoxMin",
+    "bounds_max_marker": "BBoxMax",
+    "motion_root_count": 8
+  },
+  "atlas_size": [
+    512,
+    256
+  ],
+  "surface_roles": [
+    "FishBelly",
+    "FishDark",
+    "FishEyeCloud",
+    "FishEyeDark",
+    "FishFin",
+    "FishSide",
+    "FusionSkin",
+    "Metal",
+    "Timber"
+  ],
+  "texture": "ZombieCrateAtlas",
+  "material": "ZombieCrateTimber",
+  "triangle_count": 9628,
+  "bounds_min": [
+    -0.7279991,
+    0.373988,
+    -0.2922935
+  ],
+  "bounds_max": [
+    0.6390428,
+    1.6468325,
+    0.6465911
+  ],
+  "chest_local_blender_bounds_min": [
+    -0.7279990911483765,
+    -0.8200000524520874,
+    -0.6306486129760742
+  ],
+  "chest_local_blender_bounds_max": [
+    0.6390427947044373,
+    0.4449796974658966,
+    0.3182026147842407
+  ],
+  "chest_rest_blender_matrix": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      -0.048722576,
+      -0.998812318,
+      -0.0
+    ],
+    [
+      0.0,
+      0.998812497,
+      -0.048722576,
+      1.205000043
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "socket_alignment": "Align imported ChestSocket world matrix to live chest; preserve imported model scale and parent with worldPositionStays true",
+  "collision_box": "CollisionBox; BoundsMin/BoundsMax are real imported corners in its own frame",
+  "hands": "retained rig forearms and limp hands; no carrying grip or lock markers",
+  "geometry_signature": "fe6324a78eb4948cc0316a7538272650a4431aa80c3187a7ed9f2dd57153b328",
+  "uv_signature": "650d6f4e291c5911e5f3bcec020a07e6dd5baf2216abf9746c4c7b6d587c1cea",
+  "texture_sha256": "0f6a7e134f566a6428b5bb4f46f5aa56e40069df21dcbfe4dac9f6d567476d38",
+  "winding": "all individual bevelled solids positive",
+  "determinism": "two independent geometry builds match"
+}

@@ -2,18 +2,23 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-15, docker:**
+  User:CombatTest/art§15a/story§6;
+  Eachslat detach→hole/corekept/nextbullet0pierce;
+  fish8worldroots/1skin/holes-anyfallspill/finiteasync;
+  ram:head/livewood/skinclamp/CCpairsrestore
+
 - **Accepted — 2026-10-15, contextual CombatTest HUD:**
-  CombatTest:contextual HUD.
-  Ammo:one-row/no heading/value-widthcache;reloadRUEN measured/RB-aligned.
-  Fade.15/.3 reversible/state/gamepad;crosshair-focus-E kept.
-  F8legacy0/Alt:toolbar/enemyHP/counters/controls;result-reset-menu.
-  Pause-modal-transition0/reset-disable clear/cacheframe/0rays;art§15a.
+  Ammo1row/head0/widthcache;reloadRUEN measured/RBalign.
+  Fade.15/.3 reverse/state-gamepad/crosshair-focus-E;
+  F8legacy0/Alt:toolbar-enemyHP-count-controls/result-reset-menu;
+  pause-modal-transition0/reset-disable clear/cacheframe/0rays;art§15a.
 
 - **Accepted — 2026-10-15, continuous mouse look and cursor ownership:**
-  Ordinary/seated orbit:no button;RMB aim;Alt free cursor/no mouse look-combat.
-  Release-return:fresh presses;gameplay locked-hidden/menus free/focus drops delta;
-  authored cameras win. `GameCursor`:leases base0/modal5/context10/cap32/prune dead;
-  mode updates;cleanup releases/no stale snapshots.
+  Ordinary/seated orbit unheld;RMBaim;Alt cursor/mouse-look-combat0.
+  Return:fresh presses;gameplay locked-hidden/menus free/focus delta0/authored wins.
+  `GameCursor`:leases base0/modal5/context10/cap32/prune dead/mode updates;
+  cleanup releases/stale snapshots0.
 
 - **Accepted exception — 2026-10-15, warehouse bulb failure:**
   Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
@@ -76,8 +81,8 @@
   URP2048:keyHigh1024/6practicalLow256/chestMed512.
 
 - **Accepted exception 2026-10-14, warehouse otherworld:**
-  Portwork monotony-exhaustion-disgust/wet-rust/futilemech;§6.
-  Blender/seed/Reset-Newkeep/flat:testonly/clear/pause/hazard-falldmg0.
+  Portwork monotony-exhaustion-disgust/wet-rust/futilemech/§6;
+  Blender/seed/Reset-Newkeep/flat testonly/clear/pause/hazard-falldmg0.
 
 - **Accepted 2026-10-14, warehouse audio:**
   Heavy lowsteps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
@@ -102,16 +107,12 @@
   bounded1hero/resetkeep/cleanup/MPB-clones-newpass0/costunmeasured/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
-  User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.
-  Rig/hand-opening/anchors;0solve-contact-wind-request;pause/drop/reset/dispose;
-  world on/fresh resume;`PlayerClothPhysicsPolicy`.
+  `PlayerClothPhysicsPolicy`:user/fabriconly;CombatTest jacket-scarf-sling0live-bake,
+  hair/rig/hand-opening/anchors kept;solve-contact-wind-request0;
+  pause-drop-reset-dispose/world on/fresh resume.
 
 - **Accepted — 2026-10-14, corpse traversal:**
-  CombatTest:auto remains step/rig/cache;livefall≠corpse;
-  world-weapon physics/lifecycle.
-
-- **Accepted exception — 2026-10-13, zombie duel:**
-  CombatTest:unarmed dead/slow→lunge/0world-infection;human duel retired.
+  CombatTest:auto corpsestep/rigcache;livefall≠corpse/world-weapon phys-lifecycle.
 
 - **Accepted — 2026-10-13, simple crowbar strike:**
   User:2actions/bat/RaboveL/end85mm/hook→/shoulder→accent→return/block.

@@ -4237,30 +4237,31 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 9checks;`architecture-notes.md`.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
-wetconcrete/rust-bentsteel/peelingpaint/swollenwood-cardboard/wornrubber;
+wetconcrete/rustbentsteel/peelpaint/swollenwood-cardboard/wornrubber;
 cargo/workdisgust§6/metricwet-rust-scuff/rarewear;
 9sets faceentry/doorclear/plates1-9/seedfixed.
 D7fan/guardedlift-drum-pusher↔SFX/gatedrive-backdoor;
-spokedvalve/yellowchain/graylock/no-key E2tugs-keyUI/Pusherleft-clear.
+spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
 4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
 `2026-10-15`:prep/toprear;3rustfridges/seedfloor;redTake→fade-humclick/gateon;
-cans/scraps/cream tail-belly-head/Take.
+cans/scraps/cream tail-belly-head.
 Whitebulb/3→Homeflicker-crackle;keyreceipt-stairs↓→heat2s/riseSFX/popglass/8phys;
-bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/pause-ResetNewkeep/strobe0.
+bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/strobe0.
 Fanlens-light/vent-mech0grind/fog-sky0/heavySFXecho/dryUI/music.8-mechsync-tapechew0/exitrestore.
 Toptrough-rimsfill/belowbulb/pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;
 Key→chainlockfall/holdE-gatelift/slots/upperkept.
-Fishonlyorganic/§6.
-Endless1–5/IDs/≥3m/AIstairs-spacing/heroend/3src→new0-livekept.
-Undead-only/lore-infection0/3worn/pale-darkeyes;
-slump/heavy-asymgait/palms/idle-walk/RLlunge/telegraph→rush→return/groan-hiss.
+Fishorganic/§6.
+Undead/pale-darkeyes;
+docker:hugefishcrate/midfusedcrushwarptorso/headback-kinkneck/asymshoulders-arms/lowlimphands;
+skinneck-shoulders-legs/low-widefeet/kneesfront/jerky stomp/heave/headjerks/restgazehero;
+slatswhole→holes/corefused/fishspill-anyfall/asyncspasm→still;
+prep-ram-return/groan-hiss/resetreuse.
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
-coat-scarf rig/sling anchors;physics0/hair kept.
-Lchestlamp/look→;nearfill→far0/beam↑.
+coat-scarf rig/slinganchors;physics0/hairkept.
+Lchest/look→;nearfill→far0/beam↑.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:all3/1held-2stowed/finiteammo/Eshared;
-endless12active s/pause-modal-focus-defeat0/resetpool.
 Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 Hero:drift/recoil/overshoot/finger regrip/blink;

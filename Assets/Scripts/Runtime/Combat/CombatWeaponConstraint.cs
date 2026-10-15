@@ -100,6 +100,7 @@ namespace BarPromenade
         internal float WorldContactFraction { get; private set; } = float.PositiveInfinity;
         internal Vector3 WorldContactPoint { get; private set; }
         internal Vector3 WorldContactNormal { get; private set; }
+        internal Collider WorldContactCollider { get; private set; }
         internal bool SupportBlocked { get; private set; }
         internal float PenetrationDepth { get; private set; }
         internal float DesiredPoseDepth => journalDesiredDepth;
@@ -316,6 +317,7 @@ namespace BarPromenade
             escapeAngle = 0f;
             WorldBlocked = false;
             WorldContactFraction = float.PositiveInfinity;
+            WorldContactCollider = null;
             checkingDesiredPath = true;
             RequestedWeaponPose = WeaponPose;
             BeginOwnForearmDiagnostic();
@@ -647,7 +649,8 @@ namespace BarPromenade
 
         private bool WorldObstacle(Collider hit) => hit != null && hit != probe && !hit.isTrigger &&
             !(hit is CharacterController) && !hit.transform.IsChildOf(actor.transform) &&
-            !hit.transform.IsChildOf(weapon) && hit.GetComponentInParent<CombatActor>() == null;
+            !hit.transform.IsChildOf(weapon) &&
+            (CombatZombieLoad.IsLoadCollider(hit) || hit.GetComponentInParent<CombatActor>() == null);
 
         private float CandidateDepth()
         {
@@ -725,7 +728,7 @@ namespace BarPromenade
                     {
                         if (AllowsRecoveryFloorContact(index, shape.Collider, depth) &&
                             RecoveryCoreClear(segment, a, b, shape.Collider)) continue;
-                        if (shape.WorldObstacle) RecordWorldContact(1f, center - direction * radius, direction);
+                        if (shape.WorldObstacle) RecordWorldContact(1f, center - direction * radius, direction, shape.Collider);
                         if (depth > maximum)
                         { maximum = depth; BlockingShape = shape.Collider.name;
                             BlockingCollider = shape.Collider; BlockingActor = shape.Owner;
@@ -1037,7 +1040,7 @@ namespace BarPromenade
                                 BlockingShape = sweeps[h].collider.name;
                                 if (!checkingDesiredPath) return false;
                                 RecordWorldContact((step - 1f + sweeps[h].distance / delta.magnitude) / steps,
-                                    sweeps[h].point, sweeps[h].normal);
+                                    sweeps[h].point, sweeps[h].normal, sweeps[h].collider);
                                 sampleWorldBlocked = true;
                             }
                     }
@@ -1284,11 +1287,12 @@ namespace BarPromenade
 
         internal PreviewScope BeginContactPreview() => new PreviewScope(this);
 
-        private void RecordWorldContact(float fraction, Vector3 point, Vector3 normal)
+        private void RecordWorldContact(float fraction, Vector3 point, Vector3 normal, Collider collider = null)
         {
             WorldBlocked = true;
             if (fraction >= WorldContactFraction) return;
             WorldContactFraction = fraction; WorldContactPoint = point; WorldContactNormal = normal;
+            WorldContactCollider = collider;
         }
 
         internal readonly struct PreviewScope : IDisposable
@@ -1298,6 +1302,7 @@ namespace BarPromenade
             private readonly float penetration;
             private readonly float worldFraction;
             private readonly Vector3 worldPoint, worldNormal;
+            private readonly Collider worldCollider;
             private readonly string shape;
             private readonly CombatSupportGrip.ContactPreviewScope supportPreview;
             internal PreviewScope(CombatWeaponConstraint constraint)
@@ -1307,6 +1312,7 @@ namespace BarPromenade
                 owner.ClearAnatomyReuse();
                 worldBlocked = owner.WorldBlocked;
                 worldFraction = owner.WorldContactFraction; worldPoint = owner.WorldContactPoint; worldNormal = owner.WorldContactNormal;
+                worldCollider = owner.WorldContactCollider;
                 supportBlocked = owner.SupportBlocked;
                 penetration = owner.PenetrationDepth; shape = owner.BlockingShape; owner.contactPreview = true;
             }
@@ -1316,6 +1322,7 @@ namespace BarPromenade
                 owner.contactPreview = false; owner.Blocked = blocked; owner.MotionBlocked = motionBlocked;
                 owner.WorldBlocked = worldBlocked;
                 owner.WorldContactFraction = worldFraction; owner.WorldContactPoint = worldPoint; owner.WorldContactNormal = worldNormal;
+                owner.WorldContactCollider = worldCollider;
                 owner.SupportBlocked = supportBlocked;
                 owner.PenetrationDepth = penetration; owner.BlockingShape = shape;
                 supportPreview.Dispose();

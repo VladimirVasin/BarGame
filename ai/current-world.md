@@ -135,46 +135,27 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
-  valve/Pusherleft;nokeyE2pulls1.2s;keykept→insert-open/phys chainlockfall.
-  HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch-close;
-  doorfull silentstub/0travel;2galleryslots/upperkept/area-progress-headroom.
-  3rustfridges/floor-tail-belly-head/labels-scraps/Take1x/fullkeep/redfade-humclick;
+  valve/PusherL;nokeyE2pulls1.2s;keykept→insert-open/physchainlockfall. HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch-close;
+  doorfull silentstub/0travel;2galleryslots/upperkept/area-progress-headroom. 3rustfloorfridges/tail-belly-head labels-scraps/Take1x/fullkeep/redfade-humclick;
   3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-livekept;
-  toprear/troughfill/belowbulb/atomic3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-spitkey1/receipt;
-  keyreceiptclosed+eitherstairs↓→heat2s/swell-riseSFX→popglass/8phys;
-  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild.
-  Esc-pause/Reset-Newkeep;newgame-invreset0.
-  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0.
-  SFX/dryUI/theme.8/echo-wow-LP-volume/mechsync;
-  Reset-Newkeep playhead-stop/0replay;pause-disable-resume/exitfade.
-  Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
-  2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
-  Survivors:injury-action-ammo-flights kept/refill0;unused→oldest/excess retire;
-  body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/defaultbar/1-2-3/DpadR/stow-draw/mounts/reloadfirst/fallcancel/pose-ammo-slot/Erecord.
-  Zombies:3worn/clips/groan-lunge;
-  slowchase→telegraph→latchedlunge→missrecovery/hand firstsurface/1hit/0metal;
-  guard-counter-retreat-stamina0/onehand→other/both0-grounded0attack;
-  Rearhead0finisher/0world-infection.
-  Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
-  Rise:tread/pose→Rising/retry/blockers.
-  Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
-  camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
-  Hero:drift/moving aim4×/settle2s/recoil-yaw-overshoot/regrip/blink-chin;
-  reticle:3×2px arms/2×2dot/moving gap+6pistol/+10shotgun/muzzle direction;
-  Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
-  shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
-  Partialreload/physicalspend/empty refusal;
-  Ammo:4slots/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes;
-  12active s endless/pause-modal-focus-disable-defeat0/resetpool/win live.
+  toprear/troughfill/belowbulb/atomic3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-spitkey1/receipt; keyUIclosed+stairs↓→heat2s/swell-riseSFX→popglass/8phys;
+  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
+  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
+  Reset-Newkeep playhead-stop/0replay;pause-disable-resume/exitfade. Std1/Ebody;Endless1–5/corpses0–2(default2each)/settings;
+  2–4→3–7active s/≥3m-freepath/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend. Survivors:injury-action-ammo-flights/refill0;unused→oldest/excess retire;
+  body-drop0/focus≠hits/shotgun-victim/Tab-E0. All3/defaultbar/1-2-3/DpadR/stow-draw/mounts/reload1st/fallcancel/pose-ammo-slot/Erecord.
+  Docker:30slats40HP→holes/corefused/livewoodram;8worldfish/1skin/holes-anyfallspill/finiteasync;art§15a;
+  .45m/s/plantcurve/low-widefeet/kneesfront/adjust-watch stop→prep→latchedhead-boxram→missreturn; firstsurface/1hit/metal-guard-counter-retreat-stamina0;
+  grounded0attack/rearhead0finish/infection0;nextbullet/pool-pause-resetreuse. Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
+  Rise:tread/pose/retry/blockers. Guns:RMBaim/LMBedge/RXreload/8gaits/0run/FOV-IK; camplane normdiag/Space1m-4way-back/tankreturn/barfreefocus/injury.
+  Hero:drift/movingaim4×/2sstill/recoil-yaw-overshoot/regrip/blink-chin; reticle:3×2pxarms/2×2dot/movinggap+6pistol/+10shotgun/muzzledir;
+  Init/reset:Pistol8+0/48cap/slideemptylock/mag-rack/cases; shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire. Partreload/phys-spend/empty0;
+  Ammo:4slots/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes; 12active s endless/pause-modal-focus-disable-defeat0/resetpool/win live.
   Nearlaunch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
-  Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol.
-  Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset.
-  Remains:passable/rig foot lift/floor-walls/pool reset.
-  Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
-  standard taunt/Eshared/0grant.
-  Jacket-scarf-sling:rig/anchors/hand-opening/physics0/hair;pause-drop-reset cleanup.
-  HUD:F8legacy0/Alt/result-reset-menu;pause-modal0/reset-disable clear;art§15a
+  Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
+  Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
+  Bar:bat/hook→/shoulder+block/charge/free;8seg/firstsurface/1hit/recoil/6zones; standard taunt/Eshared/0grant.
+  Jacket-scarf-sling:rig/anchors/hand-opening/physics0/hair;pause-drop-reset cleanup. HUD:F8legacy0/Alt/result-reset-menu;pause-modal0/reset-disable clear;art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.

@@ -151,7 +151,7 @@ Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 test:--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;others:--validate-only;CombatGore:hero/NPC body-skull.
-zombie:ZombieActions/3faces/2SFX;NPCrig/anatomy/loops/determinism.
+zombie:7clips+fishloop/.72m-1.6swalk/fusedcrate/3faces/2SFX;1mat.
 Hero:bat grip/hook→/strike-block/Ready.
 
 ```powershell

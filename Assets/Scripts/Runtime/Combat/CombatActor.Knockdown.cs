@@ -82,7 +82,8 @@ namespace BarPromenade
                 RecoverySoleRendererCount = knockdownRigBindings.LeftSoles.Length + knockdownRigBindings.RightSoles.Length;
             }
             knockdownPose = new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose,
-                hero == null, Weapon != null ? Weapon.transform : null, knockdownRigBindings);
+                hero == null, Weapon != null ? Weapon.transform : null, knockdownRigBindings,
+                IsZombie ? ApplyZombieGenericAnatomy : null);
             RecoveryPreparationCount++;
             RecoveryPreparationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
         }

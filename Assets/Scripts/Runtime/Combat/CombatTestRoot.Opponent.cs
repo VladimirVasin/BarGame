@@ -618,7 +618,7 @@ namespace BarPromenade
         private void ResetOpponentTravel()
         {
             opponentContext.opponentMoveRequest = opponentContext.opponentMoveVelocity = Vector3.zero;
-            if (AiOpponent != null) AiOpponent.SetLocomotion(0f);
+            if (AiOpponent != null) { AiOpponent.SetLocomotion(0f); AiOpponent.SetZombieWalking(false); }
         }
 
         private void ResetOpponentMovement()
@@ -651,6 +651,7 @@ namespace BarPromenade
             float maximumSpeed = (AiOpponent.IsZombie ? ZombieWalkSpeed : 1.8f) * AiOpponent.MovementScale;
             Vector3 desiredVelocity = Vector3.ClampMagnitude(opponentContext.opponentMoveRequest, maximumSpeed);
             desiredVelocity = SeparateOpponentVelocity(AiOpponent.transform.position, desiredVelocity, maximumSpeed);
+            if (AiOpponent.IsZombie) { AdvanceZombieWalkMovement(desiredVelocity, seconds); return; }
             opponentContext.opponentMoveVelocity = Vector3.ClampMagnitude(opponentContext.opponentMoveVelocity, maximumSpeed);
             bool braking = desiredVelocity.sqrMagnitude < opponentContext.opponentMoveVelocity.sqrMagnitude ||
                 (opponentContext.opponentMoveVelocity.sqrMagnitude > .0004f &&
@@ -660,6 +661,7 @@ namespace BarPromenade
             Vector3 before = AiOpponent.transform.position;
             Vector3 travel = LimitOpponentApproach(before, velocity * seconds);
             travel = LimitOpponentCrowdTravel(before, travel);
+            if (AiOpponent.IsZombie) travel = AiOpponent.LimitZombieLoadTravel(travel);
             Vector3 desired = before + travel;
             if (WarehousePlan != null)
                 desired = arenaBounds.Constrain(before, desired, AiOpponent.Body.radius);

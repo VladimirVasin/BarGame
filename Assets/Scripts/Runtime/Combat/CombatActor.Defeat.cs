@@ -39,6 +39,7 @@ namespace BarPromenade
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
+            zombieLoad?.EndRam();
             if (zombieVoice != null) zombieVoice.Stop();
             CancelWeaponCarry(retainPose: true);
             roundEnded = true;
@@ -92,6 +93,8 @@ namespace BarPromenade
 
         internal void AdvanceRoundEnd(float seconds)
         {
+            zombieLoad?.EndRam();
+            if (!presentationFrozen) zombieLoad?.AdvanceCatch(seconds);
             roundEnded = true;
             AdvanceWeaponCarry(seconds);
             if (IsSwitchingWeapon) { AdvanceVisualClock(seconds); Present(); return; }

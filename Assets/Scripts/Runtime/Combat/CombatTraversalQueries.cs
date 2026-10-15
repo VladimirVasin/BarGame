@@ -59,6 +59,26 @@ namespace BarPromenade
             }
         }
 
+        internal static RaycastHit[] BoxCast(Vector3 centre, Vector3 halfExtents, Vector3 direction,
+            Quaternion orientation, ref RaycastHit[] scratch, float distance,
+            int mask, QueryTriggerInteraction triggers, out int count)
+        {
+            while (true)
+            {
+                count = Physics.BoxCastNonAlloc(centre, halfExtents, direction, scratch,
+                    orientation, distance, mask, triggers);
+                if (count < scratch.Length) return scratch;
+                if (scratch.Length >= MaximumScratch)
+                {
+                    RaycastHit[] all = Physics.BoxCastAll(centre, halfExtents, direction,
+                        orientation, distance, mask, triggers);
+                    count = all.Length;
+                    return all;
+                }
+                Array.Resize(ref scratch, Math.Min(MaximumScratch, scratch.Length * 2));
+            }
+        }
+
         internal static Collider[] OverlapSphere(Vector3 point, float radius, ref Collider[] scratch,
             int mask, QueryTriggerInteraction triggers, out int count)
         {

@@ -139,10 +139,19 @@ namespace BarPromenade
         internal static bool SweepAnatomy(CombatHurtboxes anatomy, Pose from, Pose to,
             float seconds, Vector3 fallbackDirection, out CombatHurtboxes.Hit nearest,
             out float fraction, out float speed)
+            => SweepAnatomy(anatomy, Segments, from, to, seconds, fallbackDirection,
+                out nearest, out fraction, out speed);
+
+        /// <summary>Reuses the same frozen anatomical sweep for a bounded set of
+        /// authored solid segments, in metres about their supplied pose.</summary>
+        internal static bool SweepAnatomy(CombatHurtboxes anatomy, IReadOnlyList<Segment> segments,
+            Pose from, Pose to, float seconds, Vector3 fallbackDirection, out CombatHurtboxes.Hit nearest,
+            out float fraction, out float speed)
         {
             nearest = default; fraction = float.PositiveInfinity; speed = 0f;
-            foreach (Segment segment in Segments)
+            for (int index = 0; index < segments.Count; index++)
             {
+                Segment segment = segments[index];
                 float radius = segment.Radius + ContactSkin;
                 Vector3 a = to.position + to.rotation * segment.A;
                 Vector3 b = to.position + to.rotation * segment.B;

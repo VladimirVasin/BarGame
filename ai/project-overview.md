@@ -83,7 +83,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 - CombatTest:warehouse/key-valve-gate/doorstub;
   3fridges/Take→redoff;all3→whitebulb/mechgrind-musicchew0/newspawns0-livekept;
-  overhead fish/cansgone→key/receipt/keep;Lchest Spot/torso/fill→black;zombies/lunge;Standard1/Endless1–5/≤2corpses/≤5pool.
+  fish/cans0→key/receipt/keep;Lchest Spot/torso/fill→black;crateholes/fishspill/dockerram;Std1/Endless1–5/≤2corpses/≤5pool.
   All3/1-2-3/finiteammo+4packs/safe rise/novice aim/corpse step;
   gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,

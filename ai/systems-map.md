@@ -48,7 +48,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Zombies/Endless1–5/≤2corpses/all3;context HUD/F8 legacy;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatFirearmAimMotion`, `CombatAmmoPickup` | Partial |
+| Combat | Fused docker/boards→holes/fish physics-spill/head-woodram/Endless1–5/≤2corpses/all3;context HUD/F8;gap:pierce/balance. | `Combat{TestRoot,Actor,ZombieLoad,AmmoPickup}` | Partial |
 | Warehouse | Fish/key;descent→bulbburst/torchonly;valve gate/door stub;session keep;all3 spawn0/livekept. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |

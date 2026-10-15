@@ -20,6 +20,7 @@ namespace BarPromenade
         private readonly CharacterController capsule;
         private readonly CombatRagdoll ragdoll;
         private readonly NpcHandPose hands;
+        private readonly Action applyAnatomy;
         private readonly GameObject sampler;
         private readonly bool npc;
         private readonly List<BoneBinding> bindings = new List<BoneBinding>();
@@ -154,10 +155,12 @@ namespace BarPromenade
         }
 
         internal CombatRecoveryPose(Transform actorRoot, Transform rig, CharacterController body,
-            CombatRagdoll physics, NpcHandPose handPose, bool isNpc, Transform weapon, RigBindings preparedRig = null)
+            CombatRagdoll physics, NpcHandPose handPose, bool isNpc, Transform weapon, RigBindings preparedRig = null,
+            Action anatomy = null)
         {
             using var marker = PrepareMarker.Auto();
             actor = actorRoot; ownedWeapon = weapon; capsule = body; ragdoll = physics; hands = handPose; npc = isNpc;
+            applyAnatomy = anatomy;
             RigBindings rigBindings = preparedRig ?? new RigBindings(rig, npc);
             Transform Bone(string name) => rigBindings.Targets.TryGetValue(name, out Transform bone) ? bone :
                 throw new InvalidOperationException("Combat recovery requires " + name);
@@ -593,6 +596,7 @@ namespace BarPromenade
                 bone.Target.localRotation = bone.Source.localRotation;
                 bone.Target.localPosition = bone.TargetRest + bone.Source.localPosition - bone.SourceRest;
             }
+            applyAnatomy?.Invoke();
         }
 
         private static Transform CopyTransform(Transform source, Transform parent)

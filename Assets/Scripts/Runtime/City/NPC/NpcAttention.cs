@@ -106,6 +106,7 @@ namespace BarPromenade
         private float yawVelocity;
         private float pitchVelocity;
         private float weight;
+        private float maximumUpPitchDegrees = PlayerAttentionRules.MaxHeadUpPitchDegrees;
         private Quaternion headBase = Quaternion.identity;
         private Quaternion neckBase = Quaternion.identity;
         private Quaternion headWritten = Quaternion.identity;
@@ -126,12 +127,14 @@ namespace BarPromenade
         /// bones the turn is shared between. A missing neck turns the
         /// head alone; a missing head leaves the layer inert.
         /// </summary>
-        public void Bind(Transform bodyFacing, Transform head, Transform neck)
+        public void Bind(Transform bodyFacing, Transform head, Transform neck,
+            float maximumUpPitchDegrees = PlayerAttentionRules.MaxHeadUpPitchDegrees)
         {
             Restore();
             facing = bodyFacing;
             headBone = head;
             neckBone = head != null ? neck : null;
+            this.maximumUpPitchDegrees = maximumUpPitchDegrees;
             Clear();
         }
 
@@ -142,14 +145,16 @@ namespace BarPromenade
         public void Bind(
             Transform bodyFacing,
             Transform head,
-            Animator animator)
+            Animator animator,
+            float maximumUpPitchDegrees = PlayerAttentionRules.MaxHeadUpPitchDegrees)
         {
             Bind(
                 bodyFacing,
                 head,
                 head != null && animator != null
                     ? FindBone(animator.transform, "neck")
-                    : null);
+                    : null,
+                maximumUpPitchDegrees);
         }
 
         public void Unbind()
@@ -253,6 +258,7 @@ namespace BarPromenade
                     headBone.position,
                     facing.eulerAngles.y,
                     focus.Value,
+                    maximumUpPitchDegrees,
                     out float targetYaw,
                     out float targetPitch);
                 if (weight <= 0.001f)

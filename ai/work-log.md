@@ -3,46 +3,46 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-15 - Warehouse fish, mouse look and HUD
+## 2026-10-15 - Warehouse, cursor, HUD and loader
 
-- Top-rear fish station: low corded bulb; seeded Home fridge per floor,
-  rust/scraps and tail/belly/head labels. Untaken rooms spill red;
-  other rooms stay dark, gate lit until bulb failure.
-- Hand-free refrigerator: camera/door, atomic pickup/capacity refusal;
-  sources stay empty through Reset/New Layout, which recomputes rooms.
-  Renderer flags restore the hidden hero. Chest beam follows cursor/torso lag;
-  pause/nested inspection freeze it. Held orientation ignores room yaw;
-  nested focus stays sharp. Compact panels/smaller previews keep shared actions.
-- Take fades its indicator with hum/click. Last can activates Home white
-  flicker/crackle; metal grinding stops mechanisms, fan light/lens/ventilation
-  fade, music tape-chews to silence. Pause freezes; rebuilt state stays silent.
-  Pending/new Endless arrivals stop, live zombies remain; Reset/New retain cutoff.
-- Shared standing table frames the trough below the bulb; poured cans vanish.
-  Atomic transfer releases flat fish sections; matching seams join a movable
-  group, then continuous skin convulses, dies and spits one key into shared
-  receipt. Cancellation/rebuild retain progress.
-- Kept key releases chain/lock; held valve raises leaf/collision. Release/Escape
-  keeps travel, maximum latches/exits; gallery slots clear leaf. Door is a
-  silent stub; Reset/New retain state.
-- After key receipt closes, descent on either upper stair heats the filament
-  with electrical rise, then pop/glass and physical shards. Bulb hides,
-  socket/cord stay; fixed lights/lenses/ambient go dark, chest torch remains.
-  Pause freezes; session retains burnt state without replay.
-- Mouse orbit needs no RMB; Alt releases the pointer and suppresses mouse combat
-  until fresh presses. Cursor leases replace stale aim/context snapshots;
-  modal/focus return drops delta. Independent gamepad input remains live.
-- CombatTest:context HUD/fades;ammo one row/no heading/cached text widths;
-  reload RU/EN widthcached/aligned. F8legacy/Alt;result-reset-menu kept.
-  Pause hide/freeze;modal-reset-disable clear.
-  `Range_GameplayHudRespondsToAimDamageAndDebugToggle` passed;GameView frames reviewed.
+- Top-rear fish station/corded bulb; seeded rusty Home fridges by floor,
+  scraps/tail-belly-head labels. Untaken rooms red, others dark, gate lit.
+  Hand-free camera/door/atomic pickup/capacity refusal; Reset keeps empty
+  sources, New recomputes rooms. Hidden hero restores; chest beam follows
+  cursor/torso lag, pause/nested freeze. Held yaw independent; compact shared
+  inspection keeps sharp nested focus/smaller previews.
+- Take fades red with hum/click; final can starts white flicker/crackle,
+  grinding/mechanism-fan-lens-vent fade, tape-chewed music stop/new arrivals off;
+  live enemies remain. Pause freezes; Reset/New retain cutoff/silent state.
+- Standing tabletop/trough below bulb: poured cans vanish; atomic transfer,
+  flat physical sections/drag/seams join into convulsing skin, death/key/shared
+  receipt. Cancel/rebuild keep progress. Key drops chain/lock; held valve raises
+  leaf/collision, release/Escape retains travel, max latches/exits. Gallery
+  clearance/door silent stub; Reset/New keep.
+- After key receipt, either upper stair descent heats filament/electrical rise,
+  pop/glass/shards; socket/cord stay, fixed lights/lenses/ambient dark,
+  chest torch remains. Pause/retention/silent rebuild.
+- Mouse orbit unheld/Alt free pointer/mouse combat waits fresh presses;
+  cursor leases replace stale snapshots, modal/focus delta discarded;
+  gamepad independent. Context HUD/fades/ammo row/cached widths/RU-EN reload
+  alignment; F8legacy/Alt/result-reset-menu; pause hides/freezes,
+  modal-reset-disable clears. GameView reviewed.
+- Loader: fused warped torso/head back/limp hands/knees forward/head bursts;
+  planted jerky gait follows achieved root travel. Each slat takes hits/detaches:
+  real holes admit next bullet; no added penetration, frame stays fused.
+  Catch retains shared skin/world physics roots; bounded exit steering through holes;
+  any fall cancels steering/releases remainder. Asynchronous spasms settle;
+  bounded pooled bodies/clocks, pause/reset/disable restore. CombatTest-only canon exception.
+- `build-combat-zombie-3d-model.py` / `Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`: passed; frames reviewed.
+- `Range_GameplayHudRespondsToAimDamageAndDebugToggle` passed.
 - Proof: `CombatWarehouseFishProps`, `CombatWarehouseFishAssembly`,
   `build-combat-warehouse-fish-props.py`,
   `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay`,
   `build-warehouse-fish-assembly-3d-model.py`,
   `build-warehouse-gate-chain-3d-model.py`,
   `build-warehouse-fish-lamp-burst-3d-model.py` passed.
-  Room/item/fan/trough, pouring/fish/key, chain/gate/door and lamp/glass frames:
-  cleanup/cutoff/retention/hold/pause/reset/clearance/descent/torch-only passed.
+  World/item/fish/gate/lamp frames reviewed; cleanup/cutoff/retention/hold/
+  pause/reset/clearance/descent/torch-only passed.
   `ExteriorCamera_VerticalOrbitConsumesMouseInputAndClamps`,
   `ExteriorCamera_CursorOwnersAltAndFocusResumeWithoutStaleLook` and
   `Range_MouseLookKeepsAimAndCursorHandoffsIndependent` passed.

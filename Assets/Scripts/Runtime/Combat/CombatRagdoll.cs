@@ -452,7 +452,11 @@ namespace BarPromenade
             RefreshTraversalCollisions();
         }
 
-        private void RefreshTraversalCollisions() => CombatCorpseTraversal.RefreshActor(combatActor);
+        private void RefreshTraversalCollisions()
+        {
+            combatActor?.RefreshZombieLoadPhysics();
+            CombatCorpseTraversal.RefreshActor(combatActor);
+        }
 
         private void RestoreOwners()
         {

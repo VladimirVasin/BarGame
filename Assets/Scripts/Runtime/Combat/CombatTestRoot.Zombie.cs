@@ -4,12 +4,12 @@ namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
-        private const float ZombieWalkSpeed = 1.3f;
-        private const float ZombieAttackRange = 1.5f;
-        private const float ZombieApproachSpacing = 1.4f;
+        private const float ZombieWalkSpeed = CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds;
+        private const float ZombieAttackRange = 1.3f;
+        private const float ZombieApproachSpacing = 1.25f;
         private const float ZombieLungeDistance = .7f;
 
-        /// <summary>One slow pursuit and one committed attack; no human duel policy.</summary>
+        /// <summary>A burdened porter pauses for his load, then rams with his fused torso.</summary>
         private void AdvanceZombieOpponent(float seconds)
         {
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
@@ -41,6 +41,12 @@ namespace BarPromenade
                 return;
             }
             opponentContext.decisionElapsed = Mathf.Min(DecisionSeconds, opponentContext.decisionElapsed + seconds);
+            if (AiOpponent.ZombieWorkPause)
+            {
+                ResetOpponentMovement();
+                OpponentIntent = CombatOpponentIntent.Recover;
+                return;
+            }
             if (AdvanceWarehouseOpponentPursuit(seconds)) return;
             Vector3 delta = Hero.BodyWorldPosition - AiOpponent.BodyWorldPosition;
             delta.y = 0f;
@@ -73,10 +79,17 @@ namespace BarPromenade
 
         /// <summary>Only the portion of this shared-clock tick inside the active phase
         /// moves the capsule. Windup and recovery are planted, with no braking tail.
-        /// The body's ordinary collision, arena bounds and crowd retain authority.</summary>
+        /// World collision, the target's actual skin, arena bounds and crowd
+        /// constrain the committed line.</summary>
         private void AdvanceZombieLunge(float seconds)
         {
             MeleeCombatant state = AiOpponent.State;
+            if (state.AttackOutcome is MeleeAttackOutcome.Hit or MeleeAttackOutcome.Blocked or MeleeAttackOutcome.Parried)
+            {
+                ResetOpponentTravel();
+                opponentContext.zombieLungeBlocked = true;
+                return;
+            }
             float from = Mathf.Max(state.AttackElapsed, state.AttackWindupSeconds);
             float to = Mathf.Min(state.AttackElapsed + seconds, state.AttackActiveEnd);
             ResetOpponentTravel();
@@ -88,8 +101,9 @@ namespace BarPromenade
             Vector3 requested = opponentContext.committedDirection *
                 (ZombieLungeDistance * (Mathf.SmoothStep(0f, 1f, activeTo) - Mathf.SmoothStep(0f, 1f, activeFrom)));
             Vector3 travel = LimitOpponentCrowdTravel(before, requested);
-            travel = LimitZombieHeroTravel(before, travel);
             travel = LimitZombieSolidTravel(travel);
+            travel = AiOpponent.LimitZombieRamTravel(travel, Hero, seconds);
+            travel = AiOpponent.LimitZombieLoadTravel(travel);
             Vector3 desired = arenaBounds.Constrain(before, before + travel, AiOpponent.Body.radius);
             Vector3 constrained = desired - before;
             // A constrained axis slide changes the lunge's committed line.
@@ -101,10 +115,32 @@ namespace BarPromenade
             moved.y = 0f;
             JournalOpponentMovement(AiOpponent, desired - before, moved);
             AiOpponent.SetLocomotion(moved / seconds);
-            // Body collision only stops travel. The hand's final contact still
+            // Body collision only stops travel. The rim's final contact still
             // advances this tick; its own sweep owns attack cancellation.
             if (moved.sqrMagnitude + .00000001f < requested.sqrMagnitude * .99f)
                 opponentContext.zombieLungeBlocked = true;
+        }
+
+        private void AdvanceZombieWalkMovement(Vector3 desiredVelocity, float seconds)
+        {
+            float speed = desiredVelocity.magnitude;
+            if (speed < .0001f) { ResetOpponentTravel(); return; }
+            float elapsed = seconds * Mathf.Clamp01(speed / ZombieWalkSpeed);
+            float distance = AiOpponent.PreviewZombieWalkDistance(elapsed);
+            Vector3 before = AiOpponent.transform.position;
+            Vector3 requested = desiredVelocity / speed * distance;
+            Vector3 travel = LimitOpponentApproach(before, requested);
+            travel = LimitOpponentCrowdTravel(before, travel);
+            travel = AiOpponent.LimitZombieLoadTravel(travel);
+            Vector3 desired = arenaBounds.Constrain(before, before + travel, AiOpponent.Body.radius);
+            AiOpponent.Body.Move(desired - before);
+            Vector3 moved = AiOpponent.transform.position - before; moved.y = 0f;
+            AiOpponent.AdvanceZombieWalkClock(elapsed, distance, moved.magnitude);
+            AiOpponent.SetZombieWalking(distance < .000001f || moved.sqrMagnitude > .0000000001f);
+            opponentContext.opponentMoveVelocity = moved / seconds;
+            AiOpponent.SetLocomotion(opponentContext.opponentMoveVelocity);
+            JournalOpponentMovement(AiOpponent, desired - before, moved);
+            ObserveWarehouseOpponentTravel(travel, moved, seconds);
         }
 
         private Vector3 LimitZombieSolidTravel(Vector3 travel)
@@ -147,22 +183,5 @@ namespace BarPromenade
             return travel * (allowed / length);
         }
 
-        private Vector3 LimitZombieHeroTravel(Vector3 before, Vector3 travel)
-        {
-            float length = travel.magnitude;
-            if (length <= .000001f || Hero.Body == null || !Hero.Body.enabled ||
-                Mathf.Abs(Hero.transform.position.y - before.y) > WarehouseMeleeHeight) return travel;
-            Vector3 toHero = Hero.transform.position - before;
-            toHero.y = 0f;
-            float toward = Vector3.Dot(toHero, travel / length);
-            if (toward <= 0f) return travel;
-            float spacing = Hero.Body.radius + AiOpponent.Body.radius + .04f;
-            float spacingSquared = spacing * spacing;
-            if (toHero.sqrMagnitude <= spacingSquared) return Vector3.zero;
-            float closestSquared = Mathf.Max(0f, toHero.sqrMagnitude - toward * toward);
-            if (closestSquared >= spacingSquared) return travel;
-            float allowed = Mathf.Max(0f, toward - Mathf.Sqrt(spacingSquared - closestSquared));
-            return travel * Mathf.Min(1f, allowed / length);
-        }
     }
 }

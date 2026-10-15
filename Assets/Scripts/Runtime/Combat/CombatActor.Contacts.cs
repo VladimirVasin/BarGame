@@ -21,6 +21,7 @@ namespace BarPromenade
         private int frozenWeaponSequence;
         private float previewWorldFraction;
         private Vector3 previewWorldPoint, previewWorldNormal;
+        private Collider previewWorldCollider;
         internal int ContactPoseSamples { get; private set; }
         internal bool HasPendingWeaponContact => collectSweep;
         internal int WeaponClashCount { get; private set; }
@@ -49,7 +50,7 @@ namespace BarPromenade
             // restoring a guard still waits for the next presented duel step.
             if (guardHeld && State.IsBlocking && GuardSupportRejection != null) RefreshBlock();
             if (captureAnatomy) Hurtboxes?.Capture();
-            if (IsZombie) { CaptureZombieHandPose(); return; }
+            if (IsZombie) { CaptureZombieContactPose(); return; }
             Pose pose = new Pose(Weapon.transform.position, Weapon.transform.rotation);
             frozenWeaponFrom = frozenWeaponValid ? frozenWeaponTo : pose;
             frozenWeaponTo = pose; frozenWeaponValid = true;
@@ -71,7 +72,7 @@ namespace BarPromenade
             ContactPoseSamples = 0;
             if (!collectSweep) return false;
             collectSweep = false;
-            if (IsZombie) { SweepZombieHand(sweepFrom, sweepTo, pendingSequence, pending); return true; }
+            if (IsZombie) { SweepZombieContact(sweepFrom, sweepTo, pendingSequence, pending); return true; }
             SweepWeapon(sweepFrom, sweepTo, pendingSequence, pending);
             return true;
         }
@@ -98,6 +99,7 @@ namespace BarPromenade
             private readonly float time;
             private readonly bool constraintFailure;
             private readonly string constraintShape;
+            private readonly Collider worldCollider;
 
             internal bool IsSolid => solid;
             internal float Time => time;
@@ -127,20 +129,22 @@ namespace BarPromenade
                 this.bodyRegion = bodyRegion; this.bodyPatch = bodyPatch; this.detachedPart = detachedPart;
                 guarded = false;
                 constraintFailure = false; constraintShape = null;
+                worldCollider = null;
                 Vector3 incoming = source.transform.position - target.transform.position;
                 incoming.y = 0f;
                 fromFront = Vector3.Dot(target.transform.forward, incoming.normalized) >= .35f;
             }
 
             private Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
-                float time, bool metal, bool otherActive)
+                float time, bool metal, bool otherActive, Collider worldCollider, float weaponSpeed)
             {
                 this.source = source; this.target = target; this.point = point; this.normal = normal; this.direction = direction;
                 sourceGeneration = source.ContactGeneration; targetGeneration = target != null ? target.ContactGeneration : 0;
                 this.time = time; this.metal = metal; this.otherActive = otherActive; solid = true;
                 attackSequence = source.State.AttackSequence; otherSequence = target != null ? target.frozenWeaponSequence : 0;
                 request = source.journalActionRequest;
-                damage = weaponSpeed = 0f; blockCost = source.State.AttackBlockCost; power = source.State.AttackPower;
+                damage = source.State.AttackDamage; this.weaponSpeed = weaponSpeed;
+                blockCost = source.State.AttackBlockCost; power = source.State.AttackPower;
                 fromFront = target != null && Vector3.Dot(target.transform.forward,
                     (source.transform.position - target.transform.position).normalized) >= .35f;
                 guarded = metal && target != null && target.State.IsBlocking && fromFront;
@@ -148,6 +152,7 @@ namespace BarPromenade
                 bodyRegion = null; bodyPatch = -1; detachedPart = false;
                 location = default; part = default; localPoint = default;
                 constraintFailure = false; constraintShape = null;
+                this.worldCollider = worldCollider;
             }
 
             private Contact(CombatActor source, int sequence, string shape)
@@ -163,8 +168,9 @@ namespace BarPromenade
                 new Contact(source, sequence, shape);
 
             internal static Contact Obstacle(CombatActor source, CombatActor target, Vector3 point, Vector3 normal,
-                Vector3 direction, float time, bool metal, bool otherActive = false) =>
-                new Contact(source, target, point, normal, direction, time, metal, otherActive);
+                Vector3 direction, float time, bool metal, bool otherActive = false,
+                Collider worldCollider = null, float weaponSpeed = 0f) =>
+                new Contact(source, target, point, normal, direction, time, metal, otherActive, worldCollider, weaponSpeed);
 
             private bool StopsSource(CombatActor actor, int sequence) => solid &&
                 ((source == actor && attackSequence == sequence) ||
@@ -183,6 +189,9 @@ namespace BarPromenade
                 }
                 if (solid)
                 {
+                    if (!metal && worldCollider != null)
+                        CombatZombieLoad.TryReceiveHit(worldCollider, point,
+                            CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, MeleeHitResult.Hit), damage);
                     source.StopWeaponOnSolid(attackSequence, point, normal, metal);
                     if (metal && target != null)
                     {
@@ -313,6 +322,7 @@ namespace BarPromenade
                     previewRequestedWeapon = weaponConstraint.RequestedWeaponPose;
                     previewWorldFraction = weaponConstraint.WorldContactFraction;
                     previewWorldPoint = weaponConstraint.WorldContactPoint; previewWorldNormal = weaponConstraint.WorldContactNormal;
+                    previewWorldCollider = weaponConstraint.WorldContactCollider;
                 }
                 else
                 {
@@ -343,10 +353,12 @@ namespace BarPromenade
                 }
                 float sampleSeconds = Mathf.Max(.0001f, (to - from) / samples);
                 float sampleStart = Mathf.Max(0f, (i - 1f) / samples), sampleEnd = i / (float)samples;
-                bool world = GatherWorldContact(currentWeapon, out float solidFraction, out Vector3 solidPoint, out Vector3 solidNormal);
+                bool world = GatherWorldContact(currentWeapon, out float solidFraction, out Vector3 solidPoint,
+                    out Vector3 solidNormal, out Collider solidCollider);
                 if (previewWorldBlocked && previewWorldFraction < solidFraction)
                 {
                     world = true; solidFraction = previewWorldFraction; solidPoint = previewWorldPoint; solidNormal = previewWorldNormal;
+                    solidCollider = previewWorldCollider;
                 }
                 bool metal = false;
                 CombatActor metalTarget = null;
@@ -361,6 +373,7 @@ namespace BarPromenade
                             out float metalFraction, out Vector3 metalPoint, out Vector3 metalNormal) || metalFraction > solidFraction) continue;
                     metalTarget = target;
                     metal = true; world = false; solidFraction = metalFraction; solidPoint = metalPoint; solidNormal = metalNormal;
+                    solidCollider = null;
                 }
                 bool body = FindAnatomicalContact(currentWeapon, travel.normalized, sequence, sampleSeconds,
                     out CombatActor bodyTarget, out CombatHurtboxes.Hit nearest, out float bodyFraction, out float weaponSpeed);
@@ -381,11 +394,16 @@ namespace BarPromenade
                 {
                     world = true; metal = false; solidFraction = bodyFraction;
                     solidPoint = nearest.Point; solidNormal = nearest.Normal;
+                    solidCollider = null;
                 }
                 if (world || metal)
                 {
+                    Vector3 localPoint = Quaternion.Inverse(currentWeapon.rotation) * (solidPoint - currentWeapon.position);
+                    float solidSpeed = sweepValid ? Vector3.Distance(solidPoint,
+                        previousWeapon.position + previousWeapon.rotation * localPoint) / sampleSeconds : 0f;
                     pending.Add(Contact.Obstacle(this, metal ? metalTarget : null, solidPoint, solidNormal, travel.normalized,
-                        Mathf.Lerp(sampleStart, sampleEnd, solidFraction), metal, metal && metalTarget.frozenWeaponActive));
+                        Mathf.Lerp(sampleStart, sampleEnd, solidFraction), metal, metal && metalTarget.frozenWeaponActive,
+                        solidCollider, solidSpeed));
                     sweepValid = false; return;
                 }
                 if (previewMotionBlocked)
@@ -432,31 +450,41 @@ namespace BarPromenade
                 GameLog.Field("reason", reason), GameLog.Field("phase", (int)State.Phase), GameLog.Field("elapsed", State.AttackElapsed));
         }
 
-        private bool GatherWorldContact(Pose currentWeapon, out float fraction, out Vector3 point, out Vector3 normal)
+        private bool GatherWorldContact(Pose currentWeapon, out float fraction, out Vector3 point, out Vector3 normal,
+            out Collider collider)
         {
             fraction = float.PositiveInfinity; point = normal = Vector3.zero;
+            collider = null;
             foreach (CombatWeaponGeometry.Segment segment in CombatWeaponGeometry.Segments)
             {
                 Vector3 a = currentWeapon.position + currentWeapon.rotation * segment.A;
                 Vector3 b = currentWeapon.position + currentWeapon.rotation * segment.B;
                 float radius = segment.Radius + CombatWeaponGeometry.ContactSkin;
-                GatherWorldSegment(a, b, radius, ref fraction, ref point, ref normal);
+                GatherWorldSegment(a, b, radius, ref fraction, ref point, ref normal, ref collider);
                 if (!sweepValid) continue;
                 int intervals = Mathf.CeilToInt(Vector3.Distance(segment.A, segment.B) / radius);
                 for (int i = 0; i <= intervals; i++)
                 {
                     Vector3 local = Vector3.Lerp(segment.A, segment.B, intervals == 0 ? 0f : i / (float)intervals);
                     GatherWorldSweep(previousWeapon.position + previousWeapon.rotation * local,
-                        currentWeapon.position + currentWeapon.rotation * local, radius, ref fraction, ref point, ref normal);
+                        currentWeapon.position + currentWeapon.rotation * local, radius, ref fraction, ref point, ref normal, ref collider);
                 }
             }
             return fraction <= 1f;
         }
 
         private bool IsContactWorld(Collider candidate) => candidate != null && !candidate.isTrigger &&
-            !candidate.transform.IsChildOf(transform) && candidate.GetComponentInParent<CombatActor>() == null;
+            !candidate.transform.IsChildOf(transform) &&
+            (CombatZombieLoad.IsLoadCollider(candidate) || candidate.GetComponentInParent<CombatActor>() == null);
 
         private void GatherWorldSegment(Vector3 a, Vector3 b, float radius, ref float fraction, ref Vector3 point, ref Vector3 normal)
+        {
+            Collider collider = null;
+            GatherWorldSegment(a, b, radius, ref fraction, ref point, ref normal, ref collider);
+        }
+
+        private void GatherWorldSegment(Vector3 a, Vector3 b, float radius, ref float fraction, ref Vector3 point,
+            ref Vector3 normal, ref Collider collider)
         {
             int count;
             while (true)
@@ -473,10 +501,18 @@ namespace BarPromenade
                 {
                     fraction = 1f; point = contactBuffer[i].ClosestPoint((a + b) * .5f);
                     normal = ((a + b) * .5f - point).normalized;
+                    collider = contactBuffer[i];
                 }
         }
 
         private void GatherWorldSweep(Vector3 from, Vector3 to, float radius, ref float fraction, ref Vector3 point, ref Vector3 normal)
+        {
+            Collider collider = null;
+            GatherWorldSweep(from, to, radius, ref fraction, ref point, ref normal, ref collider);
+        }
+
+        private void GatherWorldSweep(Vector3 from, Vector3 to, float radius, ref float fraction, ref Vector3 point,
+            ref Vector3 normal, ref Collider collider)
         {
             Vector3 delta = to - from;
             float distance = delta.magnitude;
@@ -497,6 +533,7 @@ namespace BarPromenade
                 float t = hit.distance / distance;
                 if (!IsContactWorld(hit.collider) || t >= fraction) continue;
                 fraction = t; point = hit.point; normal = hit.normal;
+                collider = hit.collider;
             }
         }
     }

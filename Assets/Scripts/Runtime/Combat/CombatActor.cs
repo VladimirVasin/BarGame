@@ -312,6 +312,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            if (!presentationFrozen) zombieLoad?.AdvanceCatch(seconds);
             AdvanceWeaponCarry(seconds);
             AdvancePistol(seconds);
             simulationPosePending = false;
@@ -504,6 +505,7 @@ namespace BarPromenade
             RestoreCombatAttention();
             RefreshCombatAttention();
             previewWorldBlocked = false;
+            previewWorldCollider = null;
             using var weaponPreview = weaponConstraint.BeginContactPreview();
             supportGrip?.Restore();
             weaponConstraint?.Restore();
@@ -554,6 +556,7 @@ namespace BarPromenade
             previewRequestedWeapon = weaponConstraint.RequestedWeaponPose;
             previewWorldFraction = weaponConstraint.WorldContactFraction;
             previewWorldPoint = weaponConstraint.WorldContactPoint; previewWorldNormal = weaponConstraint.WorldContactNormal;
+            previewWorldCollider = weaponConstraint.WorldContactCollider;
             return true;
         }
 
@@ -562,6 +565,7 @@ namespace BarPromenade
         internal void SetPresentationFrozen(bool frozen)
         {
             presentationFrozen = frozen;
+            zombieLoad?.SetSimulationFrozen(frozen);
             if (zombieVoice != null)
             { if (frozen) zombieVoice.Pause(); else zombieVoice.UnPause(); }
             motor?.SetOwnedMovementFrozen(this, frozen);
@@ -776,6 +780,7 @@ namespace BarPromenade
                 Body.enabled = true;
             }
             transform.rotation = Quaternion.LookRotation(facing);
+            zombieLoad?.ResetLoad();
             ResetWeaponContacts();
             ResetCombatFacing();
             bodyMotion?.Reset();
@@ -820,7 +825,7 @@ namespace BarPromenade
         {
             ClearWarehouseTorsoLook();
             CombatCorpseTraversal.RefreshActor(this);
-            if (IsZombie) { State.CancelAction(); ResetZombieAttack(); }
+            if (IsZombie) { State.CancelAction(); ResetZombieAttack(); zombieLoad?.Suspend(); }
             bool releasedTransientCarry = CancelWeaponCarry();
             UnregisterWeaponEquipment();
             SuspendNpcAnimation();

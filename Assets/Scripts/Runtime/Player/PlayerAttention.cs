@@ -99,6 +99,18 @@ namespace BarPromenade
             Vector3 focus,
             out float yawDegrees,
             out float pitchDegrees)
+            => ResolveHeadAngles(headPosition, bodyYawDegrees, focus,
+                MaxHeadUpPitchDegrees, out yawDegrees, out pitchDegrees);
+
+        /// <summary>Uses an owner's authored upward limit while retaining the
+        /// ordinary yaw and downward limits.</summary>
+        public static void ResolveHeadAngles(
+            Vector3 headPosition,
+            float bodyYawDegrees,
+            Vector3 focus,
+            float maximumUpPitchDegrees,
+            out float yawDegrees,
+            out float pitchDegrees)
         {
             Vector3 delta = focus - headPosition;
             var planar = new Vector2(delta.x, delta.z);
@@ -112,7 +124,7 @@ namespace BarPromenade
             pitchDegrees = Mathf.Clamp(
                 Mathf.Atan2(delta.y, planarDistance) * Mathf.Rad2Deg,
                 -MaxHeadDownPitchDegrees,
-                MaxHeadUpPitchDegrees);
+                maximumUpPitchDegrees);
         }
     }
 

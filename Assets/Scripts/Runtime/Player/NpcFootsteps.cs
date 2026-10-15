@@ -92,7 +92,7 @@ namespace BarPromenade
         /// Advances by the walker's position this frame. True when a step
         /// falls in this frame.
         /// </summary>
-        public bool Advance(Vector3 position, float deltaTime)
+        public bool Advance(Vector3 position, float deltaTime, NpcFootstepProfile profile = null)
         {
             if (!hasPosition || deltaTime <= 0f)
             {
@@ -112,10 +112,12 @@ namespace BarPromenade
             }
 
             float speed = travelled / deltaTime;
-            float stride = speed > RunSpeed
+            float stride = profile != null ? profile.Stride : speed > RunSpeed
                 ? PlayerMotor.RunFootstepStride
                 : PlayerMotor.FootstepStride;
-            if (speed * speed < PlayerMotor.FootstepMinimumSpeedSquared)
+            float minimumSquared = profile != null ? profile.MinimumSpeed * profile.MinimumSpeed
+                : PlayerMotor.FootstepMinimumSpeedSquared;
+            if (speed * speed < minimumSquared)
             {
                 distance = Mathf.Min(distance, stride * 0.35f);
                 return false;
@@ -153,6 +155,7 @@ namespace BarPromenade
         private sealed class Walker
         {
             public readonly NpcStrideTracker Stride = new NpcStrideTracker();
+            public NpcFootstepProfile Profile;
             public bool Silent;
             public int LastSeenTick;
         }
@@ -207,18 +210,20 @@ namespace BarPromenade
 
                 if (!walkers.TryGetValue(root, out Walker walker))
                 {
-                    walker = new Walker { Silent = IsSilent(root) };
+                    walker = new Walker { Silent = IsSilent(root), Profile = root.GetComponent<NpcFootstepProfile>() };
                     walkers.Add(root, walker);
                 }
 
                 walker.LastSeenTick = tick;
-                if (!walker.Stride.Advance(position, deltaTime) ||
+                bool contact = walker.Profile != null && walker.Profile.UsesAuthoredContacts
+                    ? walker.Profile.ConsumeFootfall() : walker.Stride.Advance(position, deltaTime, walker.Profile);
+                if (!contact ||
                     walker.Silent)
                 {
                     continue;
                 }
 
-                TryStep(root, position);
+                TryStep(root, position, walker.Profile != null ? walker.Profile.VolumeScale : VolumeScale);
             }
 
             foreach (KeyValuePair<Transform, Walker> pair in walkers)
@@ -248,7 +253,7 @@ namespace BarPromenade
                    null;
         }
 
-        private void TryStep(Transform root, Vector3 feet)
+        private void TryStep(Transform root, Vector3 feet, float volumeScale)
         {
             double now = AudioSettings.dspTime;
             if (now < nextStepDspTime)
@@ -270,7 +275,7 @@ namespace BarPromenade
             if (RetroAudio.PlayAt(
                     HeroFootstepGround.ToSfx(kind),
                     contact,
-                    VolumeScale))
+                    volumeScale))
             {
                 nextStepDspTime = now + GlobalMinimumInterval;
             }
