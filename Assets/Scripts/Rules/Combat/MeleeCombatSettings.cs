@@ -2,16 +2,16 @@ using System;
 
 namespace BarPromenade
 {
-    /// <summary>Immutable timings for a weapon fighter or a slow unarmed zombie.
+    /// <summary>Immutable timings for a weapon fighter or a fused crate mimic.
     /// Human strikes are free; the meter pays for guard, steps, shoves, kicks and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
         public static MeleeCombatSettings ZombieUnarmed { get; } = new MeleeCombatSettings(
-            damage: 18f, blockCost: 14f, windupSeconds: .60f, activeSeconds: .22f,
-            recoverySeconds: .95f, hitRecoverySeconds: .95f, blockRecoverySeconds: .95f,
-            obstacleRecoverySeconds: .95f, parriedRecoverySeconds: .95f,
-            animationRecoverySeconds: .95f, isUnarmedZombie: true);
+            damage: 32f, blockCost: 28f, windupSeconds: .25f, activeSeconds: .18f,
+            recoverySeconds: 2.4f, hitRecoverySeconds: 2.4f, blockRecoverySeconds: 2.4f,
+            obstacleRecoverySeconds: 2.4f, parriedRecoverySeconds: 2.4f,
+            animationRecoverySeconds: 2.4f, isUnarmedZombie: true);
 
         public MeleeCombatSettings(float maxHealth = 100f, float maxStamina = 100f,
             float damage = 25f, float attackCost = 0f, float blockCost = 20f,

@@ -40,7 +40,7 @@ namespace BarPromenade
             npcAnimationGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
             foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft,
-                zombieLoadAdjust, zombieWatch, zombieDormant, zombieReveal, hit, defeat })
+                zombieLoadAdjust, zombieWatch, zombieDormant, zombieReveal, zombieFrenzy, hit, defeat })
                 NpcAnimationClip(clip);
             Prepare(CombatAssetProvider.RecoveryClipNames);
             npcAnimationGraph.Play();
@@ -87,12 +87,21 @@ namespace BarPromenade
                 npcAnimationOutput.SetSourcePlayable(playable);
                 npcSampledClip = clip;
             }
+            bool genericZombie = IsZombie && !IsAuthoredZombieClip(clip);
+            if (genericZombie)
+            {
+                // Generic import may omit bind-constant translations. Rebuild
+                // the base before each sample so the anatomical offset below
+                // cannot accumulate when the same take is evaluated again.
+                for (int i = 0; i < zombieAnatomyBones.Length; i++)
+                    zombieAnatomyBones[i].localPosition = zombieOriginalPositions[i];
+            }
             playable.SetTime(absoluteTime);
             npcAnimationGraph.Evaluate(0f);
             if (IsZombie)
             {
                 if (clip == ready) CaptureZombieAuthoredAnatomy();
-                else if (!IsAuthoredZombieClip(clip)) ApplyZombieGenericAnatomy();
+                else if (genericZombie) ApplyZombieGenericAnatomy();
             }
         }
 

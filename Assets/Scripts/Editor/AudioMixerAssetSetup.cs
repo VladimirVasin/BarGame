@@ -675,10 +675,10 @@ namespace BarPromenade.Editor
                 "Octave range");
             SetRequiredEffectParameter(
                 api, lowMid, controller, snapshot,
-                warehouse ? 1.65f : 1f, "Frequency gain");
+                warehouse ? 1.45f : 1f, "Frequency gain");
             SetRequiredEffectParameter(
                 api, lowpass, controller, snapshot,
-                warehouse ? 5200f : 22000f, "Cutoff freq");
+                warehouse ? 6800f : 22000f, "Cutoff freq");
             SetRequiredEffectParameter(
                 api, lowpass, controller, snapshot, 1f,
                 "Resonance");

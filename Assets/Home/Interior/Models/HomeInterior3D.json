@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "design_id": "home_interior_v1",
-  "generator_version": "1.4.0",
-  "signature": "e7ca52b6264b0ff073b1aa747216f64951641c8bfdead0d560d28b07f4453489",
+  "generator_version": "1.5.0",
+  "signature": "10f41703cb688ec6ca38d34feeaf863b55c1bdf103de6024813c2e7c652d584d",
   "coordinates": "Unity local metres +X east +Y up +Z north",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "report": {
-    "part_count": 422,
-    "triangle_count": 47020,
+    "part_count": 432,
+    "triangle_count": 51124,
     "day_decor_counts": [
       24,
       31,
@@ -28,6 +28,8 @@
     "shower_valves_use_shared_sink_resource": true,
     "shower_drain_open_grate_and_recess": true,
     "shower_basin_and_water_drain_apertures": true,
+    "entry_door_real_panels_and_leaf_clearance": true,
+    "entry_door_joinery_closed": true,
     "no_coincident_cumulative_decor": true
   },
   "parts": [
@@ -459,17 +461,17 @@
         0
       ],
       "size": [
-        0.5,
+        0.64,
         2.64,
         0.24
       ],
       "bounds_min": [
-        -0.25,
+        -0.32,
         -1.32,
         -0.12
       ],
       "bounds_max": [
-        0.25,
+        0.32,
         1.32,
         0.12
       ],
@@ -509,17 +511,17 @@
         0
       ],
       "size": [
-        0.5,
+        0.64,
         2.64,
         0.24
       ],
       "bounds_min": [
-        -0.25,
+        -0.32,
         -1.32,
         -0.12
       ],
       "bounds_max": [
-        0.25,
+        0.32,
         1.32,
         0.12
       ],
@@ -559,17 +561,17 @@
         0
       ],
       "size": [
-        1.6,
+        1.32,
         0.34,
         0.24
       ],
       "bounds_min": [
-        -0.8,
+        -0.66,
         -0.17,
         -0.12
       ],
       "bounds_max": [
-        0.8,
+        0.66,
         0.17,
         0.12
       ],
@@ -622,56 +624,6 @@
         0.775,
         0.015,
         0.675
-      ],
-      "triangles": 28,
-      "collider": false,
-      "grid_columns": 0,
-      "grid_rows": 0,
-      "max_depth": 0,
-      "grid_top_heights": [],
-      "grid_bottom_heights": []
-    },
-    {
-      "name": "Home Exit Door",
-      "semantic_name": "Home Exit Door",
-      "aliases": [],
-      "patterns": [],
-      "role": "binding",
-      "group": "shell",
-      "sheet": "DarkWood",
-      "tint": [
-        0.2,
-        0.105,
-        0.055,
-        1
-      ],
-      "fit": "fixed",
-      "min_day": 1,
-      "max_day": 7,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "size": [
-        1.6,
-        2.3,
-        0.12
-      ],
-      "bounds_min": [
-        -0.8,
-        -1.15,
-        -0.06
-      ],
-      "bounds_max": [
-        0.8,
-        1.15,
-        0.06
       ],
       "triangles": 28,
       "collider": false,
@@ -4032,6 +3984,606 @@
       "grid_bottom_heights": []
     },
     {
+      "name": "Home Exit Door",
+      "semantic_name": "Home Exit Door",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.245,
+        0.145,
+        0.078,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        1.1150000000000002,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.12,
+        2.16,
+        0.052
+      ],
+      "bounds_min": [
+        -0.56,
+        -1.0800000000000003,
+        -0.026
+      ],
+      "bounds_max": [
+        0.56,
+        1.08,
+        0.026
+      ],
+      "triangles": 168,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Recessed Panels",
+      "semantic_name": "Home Entry Door Recessed Panels",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.214,
+        0.121,
+        0.064,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        1.135,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.8400000000000001,
+        1.8400000000000003,
+        0.02
+      ],
+      "bounds_min": [
+        -0.42000000000000004,
+        -0.92,
+        -0.01
+      ],
+      "bounds_max": [
+        0.42000000000000004,
+        0.9200000000000002,
+        0.01
+      ],
+      "triangles": 112,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Panel Mouldings",
+      "semantic_name": "Home Entry Door Panel Mouldings",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.27,
+        0.164,
+        0.09,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        1.135,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.8400000000000001,
+        1.8400000000000003,
+        0.052
+      ],
+      "bounds_min": [
+        -0.42000000000000004,
+        -0.92,
+        -0.026
+      ],
+      "bounds_max": [
+        0.42000000000000004,
+        0.9200000000000002,
+        0.026
+      ],
+      "triangles": 896,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Frame",
+      "semantic_name": "Home Entry Door Frame",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.18,
+        0.104,
+        0.057,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0,
+        1.15,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.32,
+        2.3,
+        0.22
+      ],
+      "bounds_min": [
+        -0.66,
+        -1.15,
+        -0.11
+      ],
+      "bounds_max": [
+        0.66,
+        1.1500000000000004,
+        0.11
+      ],
+      "triangles": 84,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Architraves",
+      "semantic_name": "Home Entry Door Architraves",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.23,
+        0.136,
+        0.073,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        1.15,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.52,
+        2.3,
+        0.30000000000000004
+      ],
+      "bounds_min": [
+        -0.76,
+        -1.15,
+        -0.15000000000000002
+      ],
+      "bounds_max": [
+        0.76,
+        1.15,
+        0.15000000000000002
+      ],
+      "triangles": 168,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Threshold",
+      "semantic_name": "Home Entry Door Threshold",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.16,
+        0.105,
+        0.066,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        0.018,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.132,
+        0.036,
+        0.24
+      ],
+      "bounds_min": [
+        -0.566,
+        -0.018,
+        -0.12
+      ],
+      "bounds_max": [
+        0.566,
+        0.018,
+        0.12
+      ],
+      "triangles": 28,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Hinges",
+      "semantic_name": "Home Entry Door Hinges",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.29,
+        0.265,
+        0.2,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        -0.567,
+        1.115,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.06499999999999995,
+        1.646,
+        0.096
+      ],
+      "bounds_min": [
+        -0.03249999999999997,
+        -0.823,
+        -0.048
+      ],
+      "bounds_max": [
+        0.03249999999999997,
+        0.823,
+        0.048
+      ],
+      "triangles": 1248,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Handle Plates",
+      "semantic_name": "Home Entry Door Handle Plates",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.29,
+        0.265,
+        0.2,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.475,
+        1.015,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.05499999999999999,
+        0.21399999999999997,
+        0.082
+      ],
+      "bounds_min": [
+        -0.027500000000000024,
+        -0.10699999999999998,
+        -0.041
+      ],
+      "bounds_max": [
+        0.02749999999999997,
+        0.10699999999999998,
+        0.041
+      ],
+      "triangles": 232,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Levers",
+      "semantic_name": "Home Entry Door Levers",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.35,
+        0.32,
+        0.25,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.4125,
+        1.06975,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.15100000000000002,
+        0.03550000000000009,
+        0.22599999999999998
+      ],
+      "bounds_min": [
+        -0.07550000000000001,
+        -0.017749999999999932,
+        -0.11299999999999999
+      ],
+      "bounds_max": [
+        0.07550000000000001,
+        0.017750000000000155,
+        0.11299999999999999
+      ],
+      "triangles": 360,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Peephole",
+      "semantic_name": "Home Entry Door Peephole",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.29,
+        0.265,
+        0.2,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.0,
+        1.58,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.035,
+        0.03500000000000014,
+        0.078
+      ],
+      "bounds_min": [
+        -0.0175,
+        -0.01750000000000007,
+        -0.039
+      ],
+      "bounds_max": [
+        0.0175,
+        0.01750000000000007,
+        0.039
+      ],
+      "triangles": 152,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Hardware Insets",
+      "semantic_name": "Home Entry Door Hardware Insets",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "Plain",
+      "tint": [
+        0.035,
+        0.03,
+        0.022,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0.23625,
+        1.256575,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.4905,
+        0.6648499999999999,
+        0.084
+      ],
+      "bounds_min": [
+        -0.24525,
+        -0.33242499999999997,
+        -0.042
+      ],
+      "bounds_max": [
+        0.24525,
+        0.33242499999999997,
+        0.042
+      ],
+      "triangles": 376,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Entry Door Edge Wear",
+      "semantic_name": "Home Entry Door Edge Wear",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "DarkWood",
+      "tint": [
+        0.31,
+        0.205,
+        0.118,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        -0.004500000000000004,
+        0.55575,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.0859999999999999,
+        0.9965,
+        0.0545
+      ],
+      "bounds_min": [
+        -0.5429999999999999,
+        -0.49824999999999997,
+        -0.02725
+      ],
+      "bounds_max": [
+        0.5429999999999999,
+        0.4982500000000001,
+        0.02725
+      ],
+      "triangles": 336,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
       "name": "Home Bathroom Shower Drain",
       "semantic_name": "Home Bathroom Shower Drain",
       "aliases": [],
@@ -4954,6 +5506,56 @@
       "grid_bottom_heights": []
     },
     {
+      "name": "Home Bathroom Shower Head",
+      "semantic_name": "Home Bathroom Shower Head",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "Plain",
+      "tint": [
+        0.3,
+        0.27,
+        0.21,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.15,
+        0.12,
+        0.15
+      ],
+      "bounds_min": [
+        -0.075,
+        -0.06,
+        -0.075
+      ],
+      "bounds_max": [
+        0.075,
+        0.06,
+        0.075
+      ],
+      "triangles": 92,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
       "name": "Handle",
       "semantic_name": "Handle",
       "aliases": [],
@@ -5508,56 +6110,6 @@
       "grid_bottom_heights": []
     },
     {
-      "name": "Home Bathroom Shower Head",
-      "semantic_name": "Home Bathroom Shower Head",
-      "aliases": [],
-      "patterns": [],
-      "role": "binding",
-      "group": "shell",
-      "sheet": "Plain",
-      "tint": [
-        0.3,
-        0.27,
-        0.21,
-        1
-      ],
-      "fit": "fixed",
-      "min_day": 1,
-      "max_day": 7,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "size": [
-        0.15,
-        0.12,
-        0.15
-      ],
-      "bounds_min": [
-        -0.075,
-        -0.06,
-        -0.075
-      ],
-      "bounds_max": [
-        0.075,
-        0.06,
-        0.075
-      ],
-      "triangles": 92,
-      "collider": false,
-      "grid_columns": 0,
-      "grid_rows": 0,
-      "max_depth": 0,
-      "grid_top_heights": [],
-      "grid_bottom_heights": []
-    },
-    {
       "name": "Home Bathroom Shower Spout",
       "semantic_name": "Home Bathroom Shower Spout",
       "aliases": [],
@@ -5708,56 +6260,6 @@
       "grid_bottom_heights": []
     },
     {
-      "name": "Home Exit Door Patch",
-      "semantic_name": "Home Exit Door Patch",
-      "aliases": [],
-      "patterns": [],
-      "role": "binding",
-      "group": "shell",
-      "sheet": "Plain",
-      "tint": [
-        0.3,
-        0.27,
-        0.21,
-        1
-      ],
-      "fit": "fixed",
-      "min_day": 1,
-      "max_day": 7,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "size": [
-        0.54,
-        0.72,
-        0.025
-      ],
-      "bounds_min": [
-        -0.27,
-        -0.36,
-        -0.0125
-      ],
-      "bounds_max": [
-        0.27,
-        0.36,
-        0.0125
-      ],
-      "triangles": 28,
-      "collider": false,
-      "grid_columns": 0,
-      "grid_rows": 0,
-      "max_depth": 0,
-      "grid_top_heights": [],
-      "grid_bottom_heights": []
-    },
-    {
       "name": "Profile.Box",
       "semantic_name": "",
       "aliases": [
@@ -5807,6 +6309,7 @@
         "Home Bathroom Shower Soap",
         "Home Bathroom Toilet Flush",
         "Home Bathroom Tube Halo",
+        "Home Entrance Door",
         "Home Entry Door Lamp",
         "Home Entry Door Lamp Halo",
         "Home Entry Door Lamp Housing",
@@ -5998,6 +6501,7 @@
         "Home Bathroom Shower Soap",
         "Home Bathroom Toilet Flush",
         "Home Bathroom Tube Halo",
+        "Home Entrance Door",
         "Home Entry Door Lamp",
         "Home Entry Door Lamp Halo",
         "Home Entry Door Lamp Housing",
@@ -21746,6 +22250,11 @@
       0.2135,
       2.925
     ],
+    "EntryDoorFloor": [
+      0,
+      0,
+      -4
+    ],
     "LockedRoomDoor": [
       0.68,
       1.1,
@@ -21758,6 +22267,52 @@
     "external_bindings": {
       "Home Bathroom Shower Mixer Handle Hot": "HomeBrushingAction/Models/FaucetHandle",
       "Home Bathroom Shower Mixer Handle Cold": "HomeBrushingAction/Models/FaucetHandle"
+    },
+    "entry_door": {
+      "parts": [
+        "Home Exit Door",
+        "Home Entry Door Recessed Panels",
+        "Home Entry Door Panel Mouldings",
+        "Home Entry Door Frame",
+        "Home Entry Door Architraves",
+        "Home Entry Door Threshold",
+        "Home Entry Door Hinges",
+        "Home Entry Door Handle Plates",
+        "Home Entry Door Levers",
+        "Home Entry Door Peephole",
+        "Home Entry Door Hardware Insets",
+        "Home Entry Door Edge Wear"
+      ],
+      "origin": "floor at wall centre; +Z occupied-room face",
+      "outer_frame": [
+        1.32,
+        2.3,
+        0.22
+      ],
+      "architrave_bounds": [
+        [
+          -0.76,
+          0,
+          -0.15
+        ],
+        [
+          0.76,
+          2.3,
+          0.15
+        ]
+      ],
+      "leaf": [
+        1.12,
+        2.16,
+        0.052
+      ],
+      "leaf_position": [
+        0,
+        1.115,
+        0
+      ],
+      "panel_count": 4,
+      "minimum_recess": 0.016
     },
     "shower_water": {
       "basin_top_y": 0.2125,

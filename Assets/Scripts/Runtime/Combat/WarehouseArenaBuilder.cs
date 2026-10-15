@@ -29,6 +29,7 @@ namespace BarPromenade
                 }
                 WarehouseValveInspection.Create(control, plan, owner);
                 control.GetComponent<WarehouseGateController>().BindWorld(gate, door, plan, owner);
+                WarehouseEntranceDoor.Create(plan, host.transform, owner);
                 foreach (WarehouseArenaStair stair in plan.Stairs)
                     WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity);
                 foreach (WarehouseArenaRailSpan span in plan.RailSpans)

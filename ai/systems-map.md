@@ -48,8 +48,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Crate mimic/reveal/SFX;holes/fish-spill/ram/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,ZombieLoad,ZombieAudio,AmmoPickup}` | Partial |
-| Warehouse | 18crate anchors/metre CPU-read bake;fish/key/bulbburst/torch/valve gate;keep;all3 refill0/livekept. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
+| Combat | Mimic reveal/heavy ram/kneel/knockdown Frenzy;debris pass/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,ZombieLoad,ZombieAudio,AmmoPickup}` | Partial |
+| Warehouse | 18crates/CPU bake;fish/key/bulbburst/torch/valve gate;Home entry/E/no return;all3 refill0/livekept. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -186,7 +186,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Imported bar shell/service assets keep plan-owned collision, entrance geometry and shared resources. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |
-| Player home interior | Blender `home_interior_v1` parts fill the validated apartment and balcony; Unity keeps collision, contacts and cameras. | `HomeInteriorModelLibrary`, `HomeAuthoredVisualFactory` | Current |
+| Player home interior | Blender apartment/balcony;shared framed entry with warehouse;Unity collision/contacts/cameras. | `HomeInteriorModelLibrary`, `ApartmentEntranceDoor` | Current |
 | Apartment calendar appearance | Exact days `1–7` accumulate domestic neglect; later days keep state seven. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | A shared ramp/step plan joins street and home with height-selected cameras and an authored atmosphere. | `StairwellLayout*` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |

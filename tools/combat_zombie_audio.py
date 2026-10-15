@@ -14,16 +14,25 @@ import struct
 import wave
 
 SAMPLE_RATE = 24000
-REVEAL_SECONDS = 1.4
+REVEAL_SECONDS = .65
+ATTACK_PREPARE_SECONDS = .25
+FRENZY_SECONDS = 5.
+# One authored impulse score is shared with the skeleton generator. The last
+# diminished doublet exhausts itself before the loaded rise at 4.55 seconds.
+FRENZY_IMPULSES = ((.48, -1., .80), (1.06, 1., .95), (1.58, -1., 1.),
+                  (1.81, 1., .68), (2.45, -1., .90), (3.12, 1., 1.),
+                  (3.55, -1., 1.12), (4.02, 1., .58), (4.28, -1., .30))
 AUDIO_NAMES = (
     "ZombieReveal", "ZombieGroan", "ZombieGroan2", "ZombieGroan3",
     "ZombieLunge", "ZombieLunge2", "ZombieHurtWood", "ZombieHurtWood2",
     "ZombieHurtFlesh", "ZombieHurtFlesh2", "ZombieDeath", "ZombieDeath2",
+    "ZombieFrenzy", "ZombieFrenzy2",
 )
 _SPECS = (
     ("reveal", REVEAL_SECONDS, 0), ("groan", 1.15, 0), ("groan", 1.29, 1), ("groan", 1.08, 2),
-    ("attack", .42, 0), ("attack", .46, 1), ("wood", .31, 0), ("wood", .35, 1),
+    ("attack", .62, 0), ("attack", .64, 1), ("wood", .31, 0), ("wood", .35, 1),
     ("flesh", .32, 0), ("flesh", .37, 1), ("death", 1.18, 0), ("death", 1.31, 1),
+    ("frenzy", FRENZY_SECONDS, 0), ("frenzy", FRENZY_SECONDS, 1),
 )
 
 
@@ -96,30 +105,47 @@ def _samples(kind: str, duration: float, variant: int) -> list[float]:
         damp += .17 * (noise - damp)
         if kind == "reveal":
             # Exact limb contacts in the authored reveal: feet, knee, hands, head.
-            tension = _window(time, .015, .30) * (
-                math.sin(math.tau * (184. * time + 121. * time * time)) * .14 + damp * .15)
+            tension = _window(time, .005, .12) * (
+                math.sin(math.tau * (184. * time + 365. * time * time)) * .14 + damp * .15)
             value = tension
-            for onset, timber, gain in ((.24, 0, .55), (.30, 1, .32), (.35, 2, .71),
-                                        (.59, 1, .65), (.70, 2, .64), (.91, 0, .82)):
+            for onset, timber, gain in ((.11, 0, .55), (.15, 1, .32), (.19, 2, .71),
+                                        (.28, 1, .65), (.34, 2, .64), (.44, 0, .82)):
                 value += _wood(time, onset, timber, noise, damp) * gain
-            value += _wet(time, .36, 0, low, damp) * .63 + _wet(time, .71, 1, low, damp) * .42
-            value += _wet(time, .92, 0, low, damp) * .47
-            value += _throat(time, .94, .43, 1, low, damp, True) * .93
-            value += (noise - damp) * _window(time, .91, .31) * .10
+            value += _wet(time, .20, 0, low, damp) * .63 + _wet(time, .35, 1, low, damp) * .42
+            value += _wet(time, .45, 0, low, damp) * .47
+            value += _throat(time, .455, .18, 1, low, damp, True) * 1.05
+            value += (noise - damp) * _window(time, .44, .19) * .14
         elif kind == "groan":
             value = _throat(time, .025, duration - .05, variant, low, damp)
             value += _wet(time, .62 + variant * .04, variant, low, damp) * .12
         elif kind == "attack":
-            value = _throat(time, .008, duration - .025, variant + 1, low, damp, True) * .93
-            value += damp * _pulse(time, .015, .012, .075) * .34
-            # Timber strain follows the loaded torso, not a fictitious floor impact.
-            value += _wood(time, .07, variant, noise, damp) * .17
+            # Playback begins with the visible windup. The compressed intake and
+            # timber tension precede the same .25 s boundary that launches the
+            # real body; only physical contacts may supply an impact thud.
+            value = _throat(time, .008, .23, variant, low, damp, True) * .30
+            value += _window(time, .015, .25) * (damp * .20 + low * .8)
+            value += _wood(time, .10, variant, noise, damp) * .10
+            value += _throat(time, ATTACK_PREPARE_SECONDS,
+                             duration - ATTACK_PREPARE_SECONDS - .012,
+                             variant + 1, low, damp, True) * 1.12
+            value += damp * _pulse(time, ATTACK_PREPARE_SECONDS, .004, .065) * .48
+            value += _wood(time, ATTACK_PREPARE_SECONDS + .012, variant, noise, damp) * .22
         elif kind == "wood":
             value = _wood(time, .005, variant, noise, damp)
             value += _wood(time, .048 + variant * .012, variant + 2, noise, damp) * .29
         elif kind == "flesh":
             value = _wet(time, .006, variant, low, damp)
             value += damp * _pulse(time, .017, .005, .052) * .27
+        elif kind == "frenzy":
+            # A finite dry performance: material strain and interrupted air,
+            # never words, music, room echo or an invented second hit.
+            value = _throat(time, .015, .39, variant + 2, low, damp, True) * .43
+            for onset, side, gain in FRENZY_IMPULSES:
+                value += _wood(time, onset, variant + int(side > 0.), noise, damp) * .46 * gain
+                value += _wet(time, onset + .026, variant, low, damp) * .40 * gain
+                value += _throat(time, onset + .008, .29, variant + 3, low, damp, True) * .96 * gain
+                value += _throat(time, onset + .32, .27, variant + 1, low, damp, True) * .25 * gain
+            value += _throat(time, 4.57, .40, variant + 2, low, damp, True) * .44
         else:
             # Air escapes and weight loses tension. No baked floor thud: the
             # physical body may die in a fall, and its contacts own those sounds.
@@ -168,6 +194,10 @@ def validate(files: dict[str, bytes]) -> None:
     with wave.open(io.BytesIO(files["ZombieReveal.wav"]), "rb") as reader:
         if reader.getnframes() != round(REVEAL_SECONDS * SAMPLE_RATE):
             raise ValueError("The unfolding sound must retain the reveal timeline.")
+    for name in ("ZombieFrenzy.wav", "ZombieFrenzy2.wav"):
+        with wave.open(io.BytesIO(files[name]), "rb") as reader:
+            if reader.getnframes() != round(FRENZY_SECONDS * SAMPLE_RATE):
+                raise ValueError("The frenzy sound must retain its five-second impulse score.")
 
 
 def main() -> None:

@@ -9,12 +9,12 @@ namespace BarPromenade
     {
         public const int MaximumGroans = 2;
         private const int RevealIndex = 0, GroanIndex = 1, AttackIndex = 4,
-            WoodIndex = 6, FleshIndex = 8, DeathIndex = 10;
+            WoodIndex = 6, FleshIndex = 8, DeathIndex = 10, FrenzyIndex = 12;
         private static readonly string[] ClipNames =
         {
             "ZombieReveal", "ZombieGroan", "ZombieGroan2", "ZombieGroan3",
             "ZombieLunge", "ZombieLunge2", "ZombieHurtWood", "ZombieHurtWood2",
-            "ZombieHurtFlesh", "ZombieHurtFlesh2", "ZombieDeath", "ZombieDeath2"
+            "ZombieHurtFlesh", "ZombieHurtFlesh2", "ZombieDeath", "ZombieDeath2", "ZombieFrenzy", "ZombieFrenzy2"
         };
         private static readonly CombatZombieAudio[] GroanOwners = new CombatZombieAudio[MaximumGroans];
         private static AudioClip[] clips;
@@ -22,7 +22,7 @@ namespace BarPromenade
         private AudioSource body, effect;
         private Transform sourceAnchor;
         private bool initialized, alive, dead, revealed, frozen, ownsGroan, revealing;
-        private int lastGroan = -1, lastAttack = -1, lastWood = -1, lastFlesh = -1, lastDeath = -1;
+        private int lastGroan = -1, lastAttack = -1, lastWood = -1, lastFlesh = -1, lastDeath = -1, lastFrenzy = -1;
         private double nextHurtTime;
 
         public AudioSource BodySource => body;
@@ -30,6 +30,7 @@ namespace BarPromenade
         public int RevealPlayCount { get; private set; }
         public int DeathPlayCount { get; private set; }
         public int AcceptedGroanCount { get; private set; }
+        public int FrenzyPlayCount { get; private set; }
         public static int ActiveGroanCount
         {
             get
@@ -106,6 +107,24 @@ namespace BarPromenade
             if (!CanStart || !alive || dead || revealing) return;
             ReleaseGroan();
             Play(body, Select(AttackIndex, 2, ref lastAttack), .61f, 1f, 82);
+        }
+
+        public void Frenzy()
+        {
+            // A confirmed fall can arrive during the strike's hit-stop. Commit
+            // its cue now; Play retains it paused until the shared clock resumes.
+            if (!initialized || !isActiveAndEnabled || !alive || dead || revealing) return;
+            ReleaseGroan();
+            Play(body, Select(FrenzyIndex, 2, ref lastFrenzy), .7f, 1f, 78);
+            FrenzyPlayCount++;
+        }
+
+        public void EndFrenzy()
+        {
+            // Manual simulation can finish before the audio device does. Stop
+            // only our cue; a death or another reaction may already own this voice.
+            if (body != null && clips != null &&
+                (body.clip == clips[FrenzyIndex] || body.clip == clips[FrenzyIndex + 1])) StopVoice(body);
         }
 
         public void Hurt(bool wood)
@@ -226,8 +245,8 @@ namespace BarPromenade
             if (gameObject.activeInHierarchy) ReturnEffectToAnchor();
             alive = dead = revealed = frozen = revealing = false;
             nextHurtTime = 0d;
-            lastGroan = lastAttack = lastWood = lastFlesh = lastDeath = -1;
-            RevealPlayCount = DeathPlayCount = AcceptedGroanCount = 0;
+            lastGroan = lastAttack = lastWood = lastFlesh = lastDeath = lastFrenzy = -1;
+            RevealPlayCount = DeathPlayCount = AcceptedGroanCount = FrenzyPlayCount = 0;
         }
 
         private static void StopVoice(AudioSource source)

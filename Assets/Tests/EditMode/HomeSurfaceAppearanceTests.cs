@@ -128,7 +128,7 @@ namespace BarPromenade.Tests.EditMode
         private static readonly HashSet<string> FlatTintExemptNames =
             new HashSet<string>(StringComparer.Ordinal)
             {
-                "Home Exit Door Patch",
+                "Home Entry Door Hardware Insets",
                 "Home Main Lamp Shade",
                 "Home Main Lamp Socket",
                 "Home Main Lamp Wire",

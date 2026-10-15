@@ -101,7 +101,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(sound.RevealPlayCount, Is.EqualTo(1));
             Assert.That(zombie.TryZombieAttack(), Is.False);
             Assert.That(root.IsOpponentFocused, Is.False);
-            yield return AdvanceMimicTo(zombie, .4f);
+            yield return AdvanceMimicTo(zombie, .22f);
             Assert.That(load.DetachedBoardCount, Is.EqualTo(5), "Feet and knee break their retained wooden panels first.");
             Assert.That(load.IsBoardDetached(30) && load.IsBoardDetached(31) && load.IsBoardDetached(35), Is.True);
             Assert.That(load.IsBoardDetached(32) || load.IsBoardDetached(33) || load.IsBoardDetached(34), Is.False);
@@ -113,7 +113,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(zombie.ZombieRevealElapsed, Is.EqualTo(pausedReveal));
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the reveal.");
-            yield return AdvanceMimicTo(zombie, .85f);
+            yield return AdvanceMimicTo(zombie, .40f);
             Assert.That(load.DetachedBoardCount, Is.EqualTo(9), "Both hands punch through their own side panels.");
             Assert.That(load.IsBoardDetached(32) && load.IsBoardDetached(33), Is.True);
             Assert.That(load.IsBoardDetached(34), Is.False, "The head panel stays solid until the authored head contact.");
@@ -143,6 +143,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(load.Model, Is.SameAs(originalCrate));
             Assert.That(zombie.NpcAnimationGraphBuilds, Is.EqualTo(bodyGraphs));
             Assert.That(load.CatchGraphBuildCount, Is.EqualTo(fishGraphs));
+            yield return VerifyMimicOwnDebrisTraversal(zombie, load);
 
             root.ResetRound();
             zombie = root.Opponents[0];
@@ -150,14 +151,19 @@ namespace BarPromenade.Tests.PlayMode
             sound = zombie.GetComponent<CombatZombieAudio>();
             Assert.That(zombie.ZombieDormant, Is.True);
             Assert.That(load.DetachedBoardCount, Is.Zero, "Reset returns the same finite boards to the closed crate.");
+            zombie.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
+            zombie.SetZombieDormant();
             BoxCollider board = load.GetBoardCollider(0);
             Assert.That(CombatZombieLoad.TryReceiveHit(board, board.bounds.center, Vector3.zero, 25f), Is.True);
             Assert.That(zombie.ZombieRevealing, Is.True, "A real registered wooden contact also wakes the actor.");
-            root.Tick(1.5f);
+            yield return AdvanceMimicTo(zombie, CombatZombieAssetProvider.RevealSeconds);
             Assert.That(load.IsBoardDetached(0), Is.False);
             Assert.That(CombatZombieLoad.TryReceiveHit(board, board.bounds.center, Vector3.zero, 25f), Is.True);
             Assert.That(load.IsBoardDetached(0), Is.True, "The first contact's damage survives reveal without a second transaction.");
             Assert.That(sound.RevealPlayCount, Is.EqualTo(1));
+            yield return VerifyMimicOwnDebrisTraversal(zombie, load);
+            yield return VerifyMimicFlashlightNearExposure();
+            yield return CaptureMimicCombatMotion();
 
             root.ResetRound();
             zombie = root.Opponents[0];
@@ -186,6 +192,70 @@ namespace BarPromenade.Tests.PlayMode
             root.ResetRound();
             Assert.That(root.LiveOpponentCount, Is.Zero, "A completed warehouse cannot repopulate on Reset.");
             Assert.That(CombatZombieAudio.ActiveGroanCount, Is.Zero);
+        }
+
+        private IEnumerator VerifyMimicOwnDebrisTraversal(CombatActor actor, CombatZombieLoad load)
+        {
+            Assert.That(actor.ZombieAwake, Is.True);
+            Assert.That(actor.Body.height, Is.EqualTo(1.75f).Within(.00001f),
+                "The regression must run after the final reveal capsule resize.");
+            actor.State.CancelAction();
+            Vector3 front = actor.transform.forward;
+            root.Hero.ResetActor(actor.transform.position + front * 5f, -front);
+            root.Hero.SetCombatFocused(false);
+            // Finish scheduled exits before placing two retained physical shapes
+            // across the lane. Kinematic blockers cannot be pushed out of the way.
+            root.Tick(.2f);
+            int fishIndex = 0;
+            while (fishIndex < 8 && !load.IsFishReleased(fishIndex)) fishIndex++;
+            Assert.That(fishIndex, Is.LessThan(8), "Reveal must spill its original fish.");
+            Rigidbody panel = load.GetBoardBody(30), fish = load.GetFishBody(fishIndex);
+            Assert.That(load.IsBoardDetached(30), Is.True);
+            Collider panelShape = panel.GetComponent<Collider>(), fishShape = fish.GetComponent<Collider>();
+            Vector3 start = actor.transform.position;
+            PlaceMimicTraversalBlocker(panel, panelShape, start + front * .65f + Vector3.up * .9f, front);
+            PlaceMimicTraversalBlocker(fish, fishShape, start + front * 1.2f + Vector3.up * .9f, front);
+            Physics.SyncTransforms();
+            Assert.That(panelShape.enabled && fishShape.enabled, Is.True);
+            Assert.That(CombatCorpseTraversal.IsCorpse(panelShape) && CombatCorpseTraversal.IsCorpse(fishShape), Is.True);
+            Assert.That(Physics.GetIgnoreCollision(actor.Body, panelShape), Is.True,
+                "The final growing capsule must retain its own board exclusion.");
+            Assert.That(Physics.GetIgnoreCollision(actor.Body, fishShape), Is.True,
+                "The final growing capsule must retain its own fish exclusion.");
+            yield return null;
+            float maximumSideways = 0f;
+            float speed = CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds;
+            int steps = Mathf.CeilToInt((2.2f / speed + 4f) * 60f);
+            for (int step = 0; step < steps && Vector3.Dot(actor.transform.position - start, front) < 1.9f; step++)
+            {
+                root.Tick(1f / 60f);
+                Vector3 moved = actor.transform.position - start; moved.y = 0f;
+                maximumSideways = Mathf.Max(maximumSideways, Vector3.ProjectOnPlane(moved, front).magnitude);
+            }
+            Assert.That(Vector3.Dot(actor.transform.position - start, front), Is.GreaterThanOrEqualTo(1.9f),
+                "Actual pursuit must cross its own broken board and released fish after reveal and pool Reset.");
+            Assert.That(maximumSideways, Is.LessThan(.15f), "Pursuit must cross the debris rather than detour around it.");
+        }
+
+        private static void PlaceMimicTraversalBlocker(Rigidbody body, Collider shape, Vector3 centre, Vector3 front)
+        {
+            body.isKinematic = true;
+            Vector3 localCentre;
+            if (shape is BoxCollider board)
+            {
+                Vector3 size = Vector3.Scale(board.size, board.transform.lossyScale);
+                Vector3 thin = size.x <= size.y && size.x <= size.z ? Vector3.right : size.y <= size.z ? Vector3.up : Vector3.forward;
+                body.rotation = Quaternion.FromToRotation(thin, front);
+                localCentre = board.center;
+            }
+            else
+            {
+                var fish = (CapsuleCollider)shape;
+                Vector3 length = fish.direction == 0 ? Vector3.right : fish.direction == 1 ? Vector3.up : Vector3.forward;
+                body.rotation = Quaternion.FromToRotation(length, Vector3.up);
+                localCentre = fish.center;
+            }
+            body.position = centre - body.rotation * Vector3.Scale(localCentre, body.transform.lossyScale);
         }
 
         private void AssertPassiveCrateScaleAndRoomEntries(CombatZombieLoad liveLoad)
@@ -239,6 +309,84 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(Mathf.Min(.02f, seconds - actor.ZombieRevealElapsed));
                 yield return new WaitForFixedUpdate();
             }
+        }
+
+        private IEnumerator VerifyMimicFlashlightNearExposure()
+        {
+            root.ResetRound();
+            CombatActor actor = root.Opponents[0];
+            Vector3 origin = Vector3.up * PlayerFactory.GroundedRootOffset;
+            root.Hero.ResetActor(origin, Vector3.forward);
+            CombatChestFlashlight flashlight = root.Flashlight;
+            Assert.That(flashlight, Is.Not.Null);
+            Light spot = flashlight.SpotLight;
+            Vector3 direction = Vector3.ProjectOnPlane(spot.transform.forward, Vector3.up).normalized;
+            actor.ResetActor(origin + direction * 6f, -direction);
+            Physics.SyncTransforms();
+            for (int step = 0; step < 60; step++) flashlight.AdvanceExposure(1f / 60f);
+            float distantPower = spot.intensity;
+            yield return null;
+            CaptureMimicView(actor, "mimic-flashlight-distant");
+
+            actor.ResetActor(origin + direction * 1.5f, -direction);
+            Physics.SyncTransforms();
+            for (int step = 0; step < 60; step++) flashlight.AdvanceExposure(1f / 60f);
+            float nearPower = spot.intensity;
+            Assert.That(nearPower, Is.LessThan(distantPower * .4f),
+                "A nearby real enemy must receive less beam power than the distant one, preserving pale skin and wood detail.");
+            Assert.That(nearPower, Is.GreaterThan(0f));
+            Assert.That(spot.shadows, Is.EqualTo(LightShadows.Hard));
+            TestContext.WriteLine($"Chest flashlight: distant={distantPower:F3}, close={nearPower:F3}, surface={flashlight.NearSurfaceDistance:F3} m.");
+            yield return null;
+            spot.intensity = CombatChestFlashlight.Intensity;
+            CaptureMimicView(actor, "mimic-flashlight-close-before");
+            spot.intensity = nearPower;
+            CaptureMimicView(actor, "mimic-flashlight-close-after");
+
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            flashlight.AdvanceExposure(1f);
+            Assert.That(spot.intensity, Is.EqualTo(nearPower), "Pause must freeze beam adaptation.");
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release flashlight exposure.");
+            flashlight.enabled = false;
+            Assert.That(spot.enabled, Is.False);
+            flashlight.enabled = true;
+            Assert.That(spot.intensity, Is.EqualTo(CombatChestFlashlight.Intensity));
+        }
+
+        private IEnumerator CaptureMimicCombatMotion()
+        {
+            root.ResetRound();
+            CombatActor actor = root.Opponents[0];
+            Vector3 origin = Vector3.up * PlayerFactory.GroundedRootOffset;
+            actor.ResetActor(origin, Vector3.forward);
+            actor.SetZombieDormant();
+            root.Hero.ResetActor(origin + Vector3.forward * 2.5f, Vector3.back);
+            Physics.SyncTransforms();
+            root.CameraFollow.Snap();
+            root.CameraFollow.RotateYaw(Mathf.DeltaAngle(root.CameraFollow.Camera.transform.eulerAngles.y, 180f));
+            const string folder = "CombatTest/mimic-motion";
+            float captureDelta = Time.captureDeltaTime;
+            try
+            {
+                // One continuous gameplay view, with physics and the manual
+                // combat clock receiving the same time as each rendered frame.
+                Time.captureDeltaTime = 1f / 30f;
+                for (int frame = 0; frame < 120; frame++)
+                {
+                    root.Tick(1f / 30f);
+                    root.CameraFollow.Snap();
+                    yield return null;
+                    string name = "frame" + frame.ToString("D3");
+                    string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", folder, name + ".png");
+                    LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                    AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, folder, name);
+                }
+                Assert.That(actor.ZombieAwake, Is.True);
+                Assert.That(root.Hero.ReceivedImpactCount, Is.GreaterThan(0),
+                    "The continuous reveal-to-pursuit capture must reach a real ram contact.");
+            }
+            finally { Time.captureDeltaTime = captureDelta; }
         }
 
         private void CaptureMimicView(CombatActor actor, string name, float side = 1f)

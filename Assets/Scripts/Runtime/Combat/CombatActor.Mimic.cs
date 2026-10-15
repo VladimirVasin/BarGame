@@ -18,6 +18,7 @@ namespace BarPromenade
         internal void SetZombieDormant()
         {
             if (!IsZombie || State.IsDefeated) return;
+            ResetZombieFrenzy();
             mimicPhase = MimicPhase.Dormant;
             mimicClock = 0f;
             mimicBreakIndex = 0;
@@ -56,9 +57,11 @@ namespace BarPromenade
         {
             if (Body == null) return;
             float height = Mathf.Lerp(.7f, 1.75f, progress);
-            if (Mathf.Abs(Body.height - height) < .00001f) return;
+            Vector3 centre = Vector3.up * (height * .5f);
+            if (Mathf.Abs(Body.height - height) < .00001f && Body.center == centre) return;
             Body.height = height;
-            Body.center = Vector3.up * (height * .5f);
+            Body.center = centre;
+            zombieLoad?.RefreshMotorCollisionExclusions();
         }
 
         // The existing shared combat clock owns this action, including pause and

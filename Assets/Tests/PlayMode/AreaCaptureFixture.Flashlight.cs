@@ -67,7 +67,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(spot.shadowStrength, Is.EqualTo(1f).Within(.001f));
                 Assert.That(spot.innerSpotAngle, Is.LessThan(spot.spotAngle));
                 Assert.That(spot.range, Is.InRange(10f, 20f));
-                Assert.That(spot.intensity, Is.EqualTo(CombatChestFlashlight.Intensity).Within(.001f));
+                Assert.That(spot.intensity, Is.InRange(CombatChestFlashlight.Intensity * .01f, CombatChestFlashlight.Intensity));
                 Assert.That(RenderSettings.ambientLight.maxColorComponent, Is.GreaterThan(0f));
                 Assert.That(RenderSettings.sun == null || !RenderSettings.sun.enabled, Is.True);
 

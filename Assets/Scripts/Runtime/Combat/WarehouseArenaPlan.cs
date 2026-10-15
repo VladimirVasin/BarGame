@@ -132,6 +132,8 @@ namespace BarPromenade
         public Bounds InteriorBounds => new Bounds(new Vector3(0f, CeilingHeight * .5f, 0f),
             new Vector3(HalfWidth * 2f, CeilingHeight, HalfDepth * 2f));
         public Vector3 HeroSpawn => new Vector3(0f, 0f, -9f);
+        public Vector3 EntranceDoorPosition => new Vector3(0f, 0f, -11.85f);
+        public Vector3 EntranceDoorApproach => new Vector3(0f, 0f, -10.65f);
         public Vector3 OpponentSpawn => new Vector3(0f, 0f, 3.4f);
         public Vector3 GatePosition => new Vector3(0f, 0f, 11.6f);
         public Vector3 GoalDoorPosition => new Vector3(0f, 0f, 11.9f);

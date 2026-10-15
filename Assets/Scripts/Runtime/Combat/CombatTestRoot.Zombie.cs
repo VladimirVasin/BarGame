@@ -7,14 +7,20 @@ namespace BarPromenade
         private const float ZombieWalkSpeed = CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds;
         private const float ZombieAttackRange = 1.3f;
         private const float ZombieApproachSpacing = 1.25f;
-        private const float ZombieLungeDistance = .7f;
+        private const float ZombieLungeDistance = .9f;
 
-        /// <summary>A burdened porter pauses for his load, then rams with his fused torso.</summary>
+        /// <summary>The awakened load pursues without work pauses, then rams with its fused torso.</summary>
         private void AdvanceZombieOpponent(float seconds)
         {
             if (AdvanceMimicPerception(seconds)) return;
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
             AiOpponent.SetBlock(false);
+            if (AiOpponent.IsZombieFrenzied)
+            {
+                ResetOpponentMovement();
+                OpponentIntent = CombatOpponentIntent.Recover;
+                return;
+            }
             if (AiOpponent.IsBodyGrounded)
             {
                 Vector3 crawl = Hero.BodyWorldPosition - AiOpponent.BodyWorldPosition;

@@ -875,7 +875,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(light.intensity, Is.LessThanOrEqualTo(18f));
                 }
                 else if (light.color.r < light.color.g * 3f)
-                    Assert.That(light.intensity, Is.LessThan(root.Flashlight.SpotLight.intensity * .12f));
+                    Assert.That(light.intensity, Is.LessThan(CombatChestFlashlight.Intensity * .12f));
                 Assert.That(light.GetComponent<UniversalAdditionalLightData>().additionalLightsShadowResolutionTier,
                     Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }

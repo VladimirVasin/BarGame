@@ -26,6 +26,7 @@ namespace BarPromenade
 
         /// <summary>Includes physical fall, lying, recovery and the actual supporting regrip.</summary>
         public bool IsKnockedDown => knockedDown;
+        public event System.Action<CombatImpact> KnockedDown;
 
         internal bool TryBeginKnockdown(CombatImpact impact, Vector3 linearVelocity, Vector3 angularVelocity)
         {
@@ -67,6 +68,9 @@ namespace BarPromenade
             collectShove = false;
             ImpactMotion.CancelRecoveryStep();
             ImpactMotion.ClearHandSupport();
+            EndZombieFrenzy();
+            if (impact.Target == this) impact.Source?.ReactToZombieKnockdown(impact);
+            KnockedDown?.Invoke(impact);
             return true;
         }
 

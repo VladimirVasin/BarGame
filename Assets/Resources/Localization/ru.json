@@ -21,6 +21,7 @@
     {"key":"combat.warehouse.valve.exit","value":"Esc — выйти"},
     {"key":"interaction.warehouse_door","value":"E — осмотреть дверь"},
     {"key":"combat.warehouse.door.placeholder","value":"Дальше пока нет прохода."},
+    {"key":"combat.warehouse.entrance_door.closed","value":"Обратно уже не выйти."},
     {"key":"interaction.lodge_cellar","value":"E — осмотреть люк"},
     {"key":"lodge.cellar.open_question","value":"Открыть люк?"},
     {"key":"lodge.cellar.locked","value":"Заперто. Похоже... изнутри?"},

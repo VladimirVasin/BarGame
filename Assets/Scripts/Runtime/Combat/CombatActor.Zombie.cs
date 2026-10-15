@@ -6,6 +6,7 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
+        private const float ZombieRamImpulse = 85f, ZombieBlockedRamImpulse = 26f;
         private AnimationClip zombieWalk, zombieAttackRight, zombieAttackLeft, zombieLoadAdjust, zombieWatch;
         private CombatZombieLoad zombieLoad;
         private Pose zombieContactFrom, zombieContactTo;
@@ -17,8 +18,8 @@ namespace BarPromenade
         private CombatZombieAudio zombieAudio;
         private NpcFootstepProfile zombieFootsteps;
         public bool ZombieAttackUsesLeftSide { get; private set; }
-        internal bool ZombieWorkPause => IsZombie && State.Phase == MeleePhase.Ready && !roundEnded &&
-            (contactTarget == null || (contactTarget.BodyWorldPosition - BodyWorldPosition).sqrMagnitude > 2.3f * 2.3f) &&
+        internal bool ZombieWorkPause => IsZombie && !IsZombieFrenzied && State.Phase == MeleePhase.Ready && !roundEnded &&
+            !zombieWalkingRequested && (contactTarget == null || contactTarget.State.IsDefeated) &&
             (zombieWorkClock >= 4f && zombieWorkClock < 6.4f || zombieWorkClock >= 9f && zombieWorkClock < 11.8f);
 
         private void LoadZombieClips()
@@ -31,6 +32,7 @@ namespace BarPromenade
             zombieAttackLeft = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.AttackLeftClip);
             zombieLoadAdjust = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.LoadAdjustClip);
             zombieWatch = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.WatchClip);
+            zombieFrenzy = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.FrenzyClip);
             hit = guardBreak = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.HitClip);
             // Keep the deformed proportions through the short physical handoff.
             // The ordinary death bank carries normal limb scales and translations.
@@ -53,6 +55,7 @@ namespace BarPromenade
             zombieAudio = gameObject.AddComponent<CombatZombieAudio>();
             zombieAudio.Initialize(zombieLoad.Model);
             zombieLoad.BindMaterialAudio(zombieAudio);
+            InitializeZombieFrenzyEntry();
             ResetZombieAttack();
         }
 
@@ -62,6 +65,7 @@ namespace BarPromenade
                 !CanAttemptBodyAction || !HasAttackBalance || !GameInput.CanRead(GameInputContext.Gameplay) ||
                 !(BodyDamage.CanUseRightHand || BodyDamage.CanUseLeftHand)) return false;
             if (!State.RequestAttack()) return false;
+            zombieAudio?.Attack();
             ZombieAttackUsesLeftSide = State.Swing == MeleeSwing.Backhand;
             reaction = null;
             zombieContactPoseValid = false;
@@ -75,6 +79,7 @@ namespace BarPromenade
 
         private void AdvanceZombiePresentation(float seconds)
         {
+            if (IsZombieFrenzied) { AdvanceZombieFrenzy(seconds); return; }
             if (State.Phase == MeleePhase.Ready)
             {
                 zombieWorkClock = Mathf.Repeat(zombieWorkClock + seconds, 14f);
@@ -87,26 +92,21 @@ namespace BarPromenade
             }
         }
 
-        private void PlayZombieLunge()
-        {
-            zombieAudio?.Attack();
-        }
-
         private void PresentZombie()
         {
             RestoreCorpseStepPose();
             footwork?.Restore(); damagePose?.Restore(); bodyMotion?.Restore();
             bool stagger = State.IsStunned;
-            AnimationClip chosen = State.IsDefeated ? defeat : stagger ? hit : State.IsAttacking
+            AnimationClip chosen = State.IsDefeated ? defeat : stagger ? hit : IsZombieFrenzied ? zombieFrenzy : State.IsAttacking
                 ? ZombieAttackUsesLeftSide ? zombieAttackLeft : zombieAttackRight
                 : ZombieWorkPause ? zombieWorkClock < 9f ? zombieLoadAdjust : zombieWatch
                 : zombieWalkingRequested && !roundEnded ? zombieWalk : ready;
             float time = State.IsDefeated ? Mathf.Min(defeatClock, chosen.length) : stagger
-                ? State.PhaseProgress * chosen.length : State.IsAttacking ? State.AttackProgress * chosen.length
+                ? State.PhaseProgress * chosen.length : IsZombieFrenzied ? ZombieFrenzySampleTime : State.IsAttacking ? State.AttackProgress * chosen.length
                 : chosen == zombieLoadAdjust ? zombieWorkClock - 4f : chosen == zombieWatch ? zombieWorkClock - 9f
                 : Mathf.Repeat(chosen == zombieWalk ? zombieWalkClock : poseClock, chosen.length);
-            if (visibleClip != chosen.name || visibleAttackSequence != State.AttackSequence)
-            { BeginPoseBlend(); visibleClip = chosen.name; }
+            if (visibleClip != chosen.name || !IsZombieFrenzied && visibleAttackSequence != State.AttackSequence)
+            { BeginPoseBlend(IsZombieFrenzied ? .1f : State.IsAttacking ? .045f : .08f); visibleClip = chosen.name; }
             SampleNpcClip(chosen, time);
             // Corpse clips own their slouch and loose arms; a living fighter's
             // gait/breath layer must not straighten that authored silhouette.
@@ -115,7 +115,8 @@ namespace BarPromenade
             bool recoveryFeet = footwork != null &&
                 (footwork.RecoveryEpisodeActive || (ImpactMotion?.IsActive ?? false));
             if (recoveryFeet) footwork.Apply();
-            ApplyCombatAttention(); ApplyNpcPoseBlend();
+            if (!IsZombieFrenzied) ApplyCombatAttention();
+            ApplyNpcPoseBlend();
             if (recoveryFeet) footwork.ConstrainContacts();
             ApplyCorpseStepPose();
             zombieLoad.RefreshRamProxyState();
@@ -165,7 +166,7 @@ namespace BarPromenade
 
         private void SweepZombieContact(float from, float to, int sequence, List<Contact> pending)
         {
-            if (to < State.AttackWindupSeconds || from >= State.AttackActiveEnd ||
+            if (IsZombieFrenzied || to < State.AttackWindupSeconds || from >= State.AttackActiveEnd ||
                 sequence != State.AttackSequence || !zombieContactPoseValid ||
                 !(ZombieAttackUsesLeftSide ? BodyDamage.CanUseLeftHand : BodyDamage.CanUseRightHand)) return;
             float fraction = float.PositiveInfinity;
@@ -294,6 +295,7 @@ namespace BarPromenade
 
         private void ResetZombieAttack()
         {
+            ResetZombieFrenzy();
             ResetZombieMimic();
             zombieLoad?.EndRam();
             zombieContactPoseValid = false;

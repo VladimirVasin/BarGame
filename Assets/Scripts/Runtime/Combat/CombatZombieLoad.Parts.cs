@@ -239,6 +239,7 @@ namespace BarPromenade
         private void Update()
         {
             if (owner == null || Model == null || !Model.gameObject.activeInHierarchy) return;
+            RefreshChangedMotorCollisionExclusions();
             FreezeParts(simulationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
         }
 

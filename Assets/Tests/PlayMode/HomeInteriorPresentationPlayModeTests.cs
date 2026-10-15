@@ -614,7 +614,7 @@ namespace BarPromenade.Tests.PlayMode
             Renderer door =
                 AssertRequiredObject(
                     home.Room,
-                    "Home Exit Door")
+                    "Home Entry Door Frame")
                     .GetComponent<Renderer>();
             Renderer rightInfill =
                 AssertRequiredObject(

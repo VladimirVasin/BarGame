@@ -12,8 +12,8 @@ namespace BarPromenade
         public const string IdleClip = "ZombieIdle", WalkClip = "ZombieWalk",
             AttackRightClip = "ZombieAttackRight", AttackLeftClip = "ZombieAttackLeft", HitClip = "ZombieHit",
             LoadAdjustClip = "ZombieLoadAdjust", WatchClip = "ZombieWatch",
-            DormantClip = "ZombieDormant", RevealClip = "ZombieReveal";
-        public const float RevealSeconds = 1.4f;
+            DormantClip = "ZombieDormant", RevealClip = "ZombieReveal", FrenzyClip = "ZombieFrenzy";
+        public const float RevealSeconds = .65f;
         private const float DormantChestHeight = .214f;
         internal readonly struct MimicBreak
         {
@@ -26,14 +26,14 @@ namespace BarPromenade
         }
         internal static readonly MimicBreak[] RevealBreaks =
         {
-            new MimicBreak(.24f, new[] { 6, 31 }, "foot.L", new Vector3(-.15f, -1f, 0f)),
-            new MimicBreak(.30f, new[] { 36 }, "shin.R", Vector3.back),
-            new MimicBreak(.35f, new[] { 2, 32 }, "foot.R", new Vector3(.15f, -1f, 0f)),
-            new MimicBreak(.59f, new[] { 20, 33 }, "hand.L", new Vector3(-1f, 0f, .25f)),
-            new MimicBreak(.70f, new[] { 10, 34 }, "hand.R", new Vector3(1f, 0f, .25f)),
-            new MimicBreak(.91f, new[] { 35 }, "head", Vector3.forward)
+            new MimicBreak(.11f, new[] { 6, 31 }, "foot.L", new Vector3(-.15f, -1f, 0f)),
+            new MimicBreak(.15f, new[] { 36 }, "shin.R", Vector3.back),
+            new MimicBreak(.19f, new[] { 2, 32 }, "foot.R", new Vector3(.15f, -1f, 0f)),
+            new MimicBreak(.28f, new[] { 20, 33 }, "hand.L", new Vector3(-1f, 0f, .25f)),
+            new MimicBreak(.34f, new[] { 10, 34 }, "hand.R", new Vector3(1f, 0f, .25f)),
+            new MimicBreak(.44f, new[] { 35 }, "head", Vector3.forward)
         };
-        public const float WalkCycleDistance = .72f, WalkCycleSeconds = 1.6f;
+        public const float WalkCycleDistance = .85f, WalkCycleSeconds = .5f;
         private static readonly Vector2[] WalkTravelKeys =
         {
             new Vector2(0f, 0f), new Vector2(.10f, .03f), new Vector2(.30f, .17f),
@@ -56,9 +56,9 @@ namespace BarPromenade
         }
         public const string CatchClip = "ZombieCatchFlop";
         public const float CatchCycleSeconds = 6.4f;
-        public static readonly string[] ClipNames = { IdleClip, WalkClip, AttackRightClip, AttackLeftClip, HitClip, LoadAdjustClip, WatchClip, DormantClip, RevealClip };
-        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(9);
-        private static readonly Dictionary<string, AudioClip> Audio = new Dictionary<string, AudioClip>(12);
+        public static readonly string[] ClipNames = { IdleClip, WalkClip, AttackRightClip, AttackLeftClip, HitClip, LoadAdjustClip, WatchClip, DormantClip, RevealClip, FrenzyClip };
+        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(10);
+        private static readonly Dictionary<string, AudioClip> Audio = new Dictionary<string, AudioClip>(14);
         private static Mesh dormantCrateMesh;
         private static Bounds dormantCrateCollision;
         private static readonly Texture2D[] Faces = new Texture2D[3];
@@ -72,8 +72,9 @@ namespace BarPromenade
         public static float ClipDuration(string name) => name switch
         {
             IdleClip => 4f, WalkClip => WalkCycleSeconds, DormantClip => 1f, RevealClip => RevealSeconds,
-            AttackRightClip or AttackLeftClip => 1.77f, HitClip => .45f,
+            AttackRightClip or AttackLeftClip => MeleeCombatSettings.ZombieUnarmed.AnimationAttackDurationSeconds, HitClip => .45f,
             LoadAdjustClip => 2.4f, WatchClip => 2.8f,
+            FrenzyClip => CombatActor.ZombieFrenzyDurationSeconds,
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown zombie action.")
         };
 

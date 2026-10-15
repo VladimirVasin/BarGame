@@ -77,6 +77,7 @@ namespace BarPromenade
                     GameLog.Field("pellet_index", impact.PelletIndex), GameLog.Field("primary_response", impact.PrimaryResponse),
                     GameLog.Field("head_feedback", impact.HeadFeedback), GameLog.Field("wound_damage", impact.WoundDamage));
             ReceivedImpactCount++;
+            InterruptZombieFrenzyIfNeeded();
             NotifyZombieBodyHit(impact);
             ApplyPhysicalImpact(impact);
             ImpactReceived?.Invoke(impact);

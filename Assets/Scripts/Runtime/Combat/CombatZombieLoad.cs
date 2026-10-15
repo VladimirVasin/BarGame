@@ -18,6 +18,9 @@ namespace BarPromenade
         private Vector3 attachedPosition, attachedScale;
         private Quaternion attachedRotation;
         private Collider[] ownColliders;
+        private Vector3 motorCentre;
+        private float motorHeight, motorRadius;
+        private bool motorCollisionsCurrent;
         private RaycastHit[] travelHits = new RaycastHit[16];
         private readonly List<CombatWeaponGeometry.Segment> contactSegments = new List<CombatWeaponGeometry.Segment>(2);
         private readonly CombatWeaponGeometry.Segment[] authoredSegments = new CombatWeaponGeometry.Segment[2];
@@ -130,6 +133,37 @@ namespace BarPromenade
             // exclusions. Reapply at that lifecycle edge, before simulation.
             foreach (Part part in core) IgnoreOwn(part.Attached);
             foreach (Part part in boards) IgnoreOwn(part.Detached ? part.Loose : part.Attached);
+            foreach (Fish fish in fishParts) if (fish != null && fish.Released) IgnoreOwn(fish.Shape);
+            RefreshMotorCollisionExclusions();
+        }
+
+        // Capsule resizing can replace its native shape. Reconcile only this
+        // motor's cached pairs, rather than every anatomical pair each frame.
+        internal void RefreshMotorCollisionExclusions()
+        {
+            CharacterController motor = owner != null ? owner.Body : null;
+            motorCollisionsCurrent = motor != null && motor.enabled && motor.gameObject.activeInHierarchy;
+            if (!motorCollisionsCurrent) return;
+            motorCentre = motor.center; motorHeight = motor.height; motorRadius = motor.radius;
+            foreach (Part part in core) IgnoreMotor(part.Attached, motor);
+            foreach (Part part in boards) IgnoreMotor(part.Detached ? part.Loose : part.Attached, motor);
+            foreach (Fish fish in fishParts) if (fish != null && fish.Released) IgnoreMotor(fish.Shape, motor);
+            CombatCorpseTraversal.NotifyColliderEnabled(motor);
+        }
+
+        private static void IgnoreMotor(Collider shape, CharacterController motor)
+        {
+            if (shape != null && shape.enabled && shape.gameObject.activeInHierarchy)
+                Physics.IgnoreCollision(shape, motor);
+        }
+
+        private void RefreshChangedMotorCollisionExclusions()
+        {
+            CharacterController motor = owner != null ? owner.Body : null;
+            if (motor == null || !motor.enabled || !motor.gameObject.activeInHierarchy)
+            { motorCollisionsCurrent = false; return; }
+            if (!motorCollisionsCurrent || motor.center != motorCentre || motor.height != motorHeight || motor.radius != motorRadius)
+                RefreshMotorCollisionExclusions();
         }
 
         private void InitializeCatch()
@@ -263,7 +297,7 @@ namespace BarPromenade
 
         internal void RefreshRamProxyState()
         {
-            if (owner.State.Phase != MeleePhase.Active || owner.IsKnockedDown || owner.IsRagdollActive)
+            if (owner.State.Phase != MeleePhase.Active || owner.IsZombieFrenzied || owner.IsKnockedDown || owner.IsRagdollActive)
                 RestoreRamProxy();
         }
 

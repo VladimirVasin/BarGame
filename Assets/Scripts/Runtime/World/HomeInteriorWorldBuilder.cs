@@ -345,8 +345,8 @@ namespace BarPromenade
                 HomeSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxXY);
             const float entryOpeningHalfWidth = 1.30f;
-            const float exitDoorWidth = 1.60f;
-            const float exitDoorHeight = 2.30f;
+            const float exitDoorWidth = ApartmentEntranceDoor.FrameWidth;
+            const float exitDoorHeight = ApartmentEntranceDoor.FrameHeight;
             const float entryLintelBottom = 2.64f;
             float sideInfillWidth =
                 entryOpeningHalfWidth -
@@ -413,28 +413,7 @@ namespace BarPromenade
                     SurfaceProjection.BoxXZ,
                     false),
                 FootstepGroundKind.Carpet);
-            HomeSurfacePrimitives.CreateBox(
-                "Home Exit Door",
-                room,
-                new Vector3(
-                    0f,
-                    exitDoorHeight * 0.5f,
-                    -3.86f),
-                new Vector3(
-                    exitDoorWidth,
-                    exitDoorHeight,
-                    0.12f),
-                DarkWood,
-                HomeSurfaceKind.DarkWood,
-                SurfaceProjection.BoxXY,
-                false);
-            HomeAuthoredVisualFactory.CreateBox(
-                "Home Exit Door Patch",
-                room,
-                new Vector3(-0.26f, 1.22f, -3.785f),
-                new Vector3(0.54f, 0.72f, 0.025f),
-                new Color(0.21f, 0.125f, 0.072f),
-                false);
+            ApartmentEntranceDoor.Create(room, new Vector3(0f, 0f, -halfDepth), "Home Entrance Door");
         }
 
         private static void BuildBalconyFacadeWall(

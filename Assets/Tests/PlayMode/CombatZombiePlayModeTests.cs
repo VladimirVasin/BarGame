@@ -21,9 +21,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(zombie.IsZombie, Is.True);
             Assert.That(zombie.Weapon, Is.Null, "Production opponents have no hidden crowbar.");
             Assert.That(zombie.State.Settings, Is.EqualTo(MeleeCombatSettings.ZombieUnarmed));
+            AssertLoaderRecoveryRules();
             Assert.That(zombie.NpcAnimationGraphBuilds, Is.EqualTo(1));
-            Assert.That(CombatZombieAssetProvider.ClipNames, Has.Length.EqualTo(9));
-            foreach (var action in new[] { ("ZombieLoadAdjust", 2.4f), ("ZombieWatch", 2.8f) })
+            Assert.That(CombatZombieAssetProvider.ClipNames, Has.Length.EqualTo(10));
+            foreach (var action in new[] { ("ZombieLoadAdjust", 2.4f), ("ZombieWatch", 2.8f),
+                ("ZombieFrenzy", CombatActor.ZombieFrenzyDurationSeconds) })
             {
                 AnimationClip clip = CombatZombieAssetProvider.LoadClip(action.Item1);
                 Assert.That(clip.length, Is.EqualTo(action.Item2).Within(.003f));
@@ -45,6 +47,9 @@ namespace BarPromenade.Tests.PlayMode
             // and the temporary exclusion of the recipient's broad motor capsule.
             root.SetSparring(true);
             PlaceZombieChasePair(1.5f);
+
+            float readyPelvisHeight = FindAnatomicalBone(zombie, "pelvis").position.y - zombie.transform.position.y;
+            int recoveryFrame = 0;
             root.CameraFollow.Snap();
             for (int frame = 0; frame < 8; frame++) yield return null;
             CombatZombieLoad load = zombie.GetComponent<CombatZombieLoad>();
@@ -71,6 +76,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return CaptureEndlessGameView("zombie-ready", "ru");
 
             PlaceZombieChasePair(4.5f);
+            zombie.Step(4.1f);
+            Assert.That(zombie.ZombieWorkPause, Is.False, "A live target keeps the awakened crate pursuing through its old work-pause clock.");
             Vector3 walkStart = zombie.transform.position;
             bool sampledWalk = false;
             for (int frame = 0; frame < 32; frame++)
@@ -78,11 +85,12 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(.05f);
                 yield return null;
                 sampledWalk |= zombie.ActiveClipName == "ZombieWalk";
+                Assert.That(zombie.ZombieWorkPause, Is.False);
                 CaptureLoaderView(zombie, "loader-walk" + frame.ToString("00"), false);
             }
             Assert.That(sampledWalk, Is.True);
             Assert.That(Vector3.ProjectOnPlane(zombie.transform.position - walkStart, Vector3.up).magnitude,
-                Is.InRange(.55f, .85f), "A shared-clock gait cycle advances the real body with its authored .72 m stride.");
+                Is.InRange(2.5f, 2.9f), "The supported gait must achieve the authored 1.7 m/s pursuit speed.");
             Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Ready));
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero);
             PlaceZombieChasePair(1.5f);
@@ -93,7 +101,19 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Windup));
             Vector3 committedRamRoot = zombie.transform.position;
-            root.Tick(zombie.State.Settings.WindupSeconds * .55f);
+            float recoveryCaptureDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 30f;
+            CaptureLoaderCooldownFrame(recoveryFrame++);
+            for (int step = 0; step < Mathf.CeilToInt(zombie.State.Settings.WindupSeconds * .55f / CombatTestRoot.SimulationStep); step++)
+            {
+                root.Tick(CombatTestRoot.SimulationStep);
+                if (step % 4 == 3)
+                {
+                    root.CameraFollow.Snap();
+                    yield return null;
+                    CaptureLoaderCooldownFrame(recoveryFrame++);
+                }
+            }
             Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Windup));
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero,
                 "The visible preparation cannot damage the target.");
@@ -115,6 +135,12 @@ namespace BarPromenade.Tests.PlayMode
                     CaptureLoaderView(zombie, "loader-active", false);
                     capturedActive = true;
                 }
+                if (step % 4 == 0)
+                {
+                    root.CameraFollow.Snap();
+                    yield return null;
+                    CaptureLoaderCooldownFrame(recoveryFrame++);
+                }
             }
             CaptureLoaderView(zombie, "loader-contact", false);
             Vector3 contactPoint = LoaderContactPoint(load);
@@ -129,14 +155,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(ignoredBodyProxy, Is.True,
                 "The attacker's motor capsule must also yield to the real fused body's first contact.");
             Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            Assert.That(root.Hero.LastImpact.Damage, Is.GreaterThan(0f));
+            Assert.That(root.Hero.LastImpact.Damage, Is.EqualTo(32f).Within(.001f),
+                "A committed crate ram now removes almost a third of the hero's health.");
+            Assert.That(root.Hero.LastImpact.Impulse.magnitude, Is.EqualTo(85f).Within(.001f),
+                "The heavy ram's physical momentum is independent from anatomical damage.");
+            Assert.That(zombie.IsZombieFrenzied, Is.EqualTo(root.Hero.IsKnockedDown),
+                "A standing hit cannot celebrate; a genuine physical fall starts the reaction.");
             Assert.That(float.IsFinite(root.Hero.LastImpact.Point.sqrMagnitude), Is.True);
             Assert.That(float.IsFinite(root.Hero.LastImpact.Direction.sqrMagnitude), Is.True);
             Assert.That(root.Hero.State.IsDefeated, Is.False);
             float hitHealth = root.Hero.State.Health;
             yield return CaptureEndlessGameView("zombie-contact", "ru");
-            for (int step = 0; step < 360 && zombie.State.Phase != MeleePhase.Ready; step++)
-                root.Tick(CombatTestRoot.SimulationStep);
+            yield return VerifyLoaderRecovery(zombie, load, readyPelvisHeight, recoveryFrame, allowFrenzy: true);
+            Time.captureDeltaTime = recoveryCaptureDelta;
             Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Ready));
             Assert.That(Physics.GetIgnoreCollision(load.Collider, root.Hero.Body), Is.False,
                 "Completing recovery must restore the motor pair before another action.");
@@ -164,6 +195,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Physics.GetIgnoreCollision(zombie.Body, root.Hero.Body), Is.False);
             CaptureLoaderView(zombie, "loader-recovery", false);
             yield return CaptureEndlessGameView("zombie-miss", "ru");
+            yield return VerifyLoaderRecovery(zombie, load, readyPelvisHeight, 0);
 
             GameObject wall = null;
             try
@@ -214,6 +246,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The real shared-clock ram must reach the prepared guard.");
             Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth));
             Assert.That(root.Hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
+            Assert.That(root.Hero.LastImpact.Impulse.magnitude, Is.EqualTo(26f).Within(.001f));
             Assert.That(root.Hero.State.Stamina,
                 Is.EqualTo(root.Hero.State.Settings.MaxStamina - zombie.State.Settings.BlockCost).Within(.001f));
             Assert.That(root.SparkEffects.EmissionCount, Is.Zero);
@@ -250,6 +283,7 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(catchBones, catchSkin.bones);
             AssertLoaderCatchPose(catchBones, initialCatchPose);
             PlacePair(3f);
+            zombie.SetContactTarget(null);
             bool adjustedLoad = false, watched = false;
             for (int step = 0; step < 160 && !(adjustedLoad && watched); step++)
             {
@@ -260,6 +294,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(adjustedLoad && watched, Is.True,
                 "A waiting loader must actually play both bounded non-looping work habits.");
+            zombie.SetContactTarget(root.Hero);
             AssertLoaderSideClearance(zombie, load);
             zombie.enabled = false;
             Assert.That(load.PhysicsBody.isKinematic, Is.True,
@@ -338,7 +373,7 @@ namespace BarPromenade.Tests.PlayMode
             for (int step = 0; step < 360 && zombie.State.Phase != MeleePhase.Windup; step++)
                 root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Windup),
-                "The slow chase must commit to its close attack.");
+                "The chase must commit to its close attack.");
             Vector3 lungeStart = zombie.transform.position;
             for (int step = 0; step < 240 && root.Hero.ReceivedImpactCount == 0; step++)
                 root.Tick(CombatTestRoot.SimulationStep);
@@ -364,6 +399,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero);
             yield return CaptureEndlessGameView("zombie-dodge", "ru");
 
+            yield return VerifyLoaderFrenzy(zombie, load);
             yield return VerifyLoaderBreakage(zombie, load);
 
             // Re-enter the real warehouse in Endless: a single prepared body is recycled.
@@ -425,12 +461,394 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.EndlessKills, Is.EqualTo(1), "Reusing a body cannot credit its previous death twice.");
             root.ResetRound();
             Assert.That(root.EndlessKills, Is.Zero);
-            Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(1), "Warehouse Reset restores its selected sleeping population.");
+            Assert.That(zombie.ZombieDormant, Is.True);
             Assert.That(load.Model, Is.SameAs(crate));
             Assert.That(load.PhysicsBody.isKinematic, Is.True);
             Assert.That(load.CatchClockSeconds, Is.Zero);
             Assert.That(load.CatchGraphBuildCount, Is.EqualTo(catchGraphBuilds));
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator VerifyLoaderFrenzy(CombatActor actor, CombatZombieLoad load)
+        {
+            // Attribution must survive the real physical handoff, rather than
+            // treating any hit, stale swing or unrelated fall as a celebration.
+            foreach (string rejected in new[] { "weapon contact", "stale swing", "other source", "other victim" })
+            {
+                root.SetSparring(true);
+                PlaceZombieChasePair(4f);
+                Assert.That(actor.TryZombieAttack(), Is.True);
+                actor.Step(actor.State.Settings.WindupSeconds + .02f);
+                CombatActor source = rejected == "other source" ? root.Hero : actor;
+                CombatActor victim = rejected == "other victim" ? actor : root.Hero;
+                int sequence = actor.State.AttackSequence - (rejected == "stale swing" ? 1 : 0);
+                CombatImpact fall = LoaderFallImpact(source, victim, sequence,
+                    rejected == "weapon contact" ? CombatImpactKind.Weapon : CombatImpactKind.Unarmed);
+                Assert.That(victim.TryBeginKnockdown(fall, actor.transform.forward * .8f, Vector3.zero), Is.True, rejected);
+                Assert.That(victim.IsKnockedDown, Is.True, "The negative control still performs a real physical fall.");
+                Assert.That(actor.IsZombieFrenzied, Is.False, rejected + " cannot start the porter's frenzy.");
+                Assert.That(actor.GetComponent<CombatZombieAudio>().FrenzyPlayCount, Is.Zero, rejected);
+            }
+
+            root.SetSparring(true);
+            PlaceZombieChasePair(1.5f);
+            int bodyGraphs = actor.NpcAnimationGraphBuilds, fishGraphs = load.CatchGraphBuildCount;
+            float readyPelvis = FindAnatomicalBone(actor, "pelvis").position.y - actor.transform.position.y;
+            var sound = actor.GetComponent<CombatZombieAudio>();
+            int knockdowns = 0;
+            CombatImpact attributedFall = default;
+            void RecordFall(CombatImpact impact) { knockdowns++; attributedFall = impact; }
+            root.Hero.KnockedDown += RecordFall;
+            float previousDelta = Time.captureDeltaTime;
+            try
+            {
+                for (int step = 0; step < 480 && root.Hero.ReceivedImpactCount == 0; step++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+                CombatImpact realRam = root.Hero.LastImpact;
+                Assert.That(realRam.Source, Is.SameAs(actor));
+                Assert.That(realRam.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
+                Assert.That(realRam.Damage, Is.GreaterThan(0f));
+                if (!root.Hero.IsKnockedDown)
+                    Assert.That(root.Hero.TryBeginKnockdown(realRam, realRam.Direction * .8f, Vector3.zero), Is.True,
+                        "The genuine ram contact must enter the production physical fall before celebration.");
+                Assert.That(knockdowns, Is.EqualTo(1));
+                Assert.That(attributedFall.Source, Is.SameAs(actor));
+                Assert.That(attributedFall.Target, Is.SameAs(root.Hero));
+                Assert.That(attributedFall.AttackSequence, Is.EqualTo(realRam.AttackSequence));
+                Assert.That(actor.IsZombieFrenzied, Is.True);
+                Assert.That(actor.ZombieFrenzySecondsElapsed, Is.Zero.Within(.001f));
+                Assert.That(sound.FrenzyPlayCount, Is.EqualTo(1));
+                Assert.That(sound.BodySource.clip.name, Does.StartWith("ZombieFrenzy"));
+                Assert.That(sound.BodySource.loop, Is.False);
+                string captureDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest,
+                    "Test mimic - Knockdown frenzy");
+                Directory.CreateDirectory(captureDirectory);
+                File.WriteAllText(Path.Combine(captureDirectory, "Test frenzy audio.txt"), sound.BodySource.clip.name);
+                TestContext.Out.WriteLine("Frenzy capture cue: " + sound.BodySource.clip.name);
+
+                Vector3 plantedRoot = actor.transform.position;
+                Quaternion plantedFacing = actor.transform.rotation;
+                int attackSequence = actor.State.AttackSequence;
+                Transform head = FindAnatomicalBone(actor, "head"), hand = FindAnatomicalBone(actor, "hand.R");
+                Quaternion firstHead = head.localRotation, firstHand = hand.localRotation;
+                float maximumHeadChange = 0f, maximumHandChange = 0f;
+                bool sampledKneel = false, sampledLater = false, checkedDuplicate = false;
+                Time.captureDeltaTime = .1f;
+                root.CameraFollow.Snap();
+                yield return null;
+                CaptureLoaderFrenzyFrame(0);
+                for (int frame = 0; frame < 80 && actor.IsZombieFrenzied; frame++)
+                {
+                    Assert.That(actor.TryZombieAttack(), Is.False, "The frenzy owns the whole five-second opening.");
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(attackSequence));
+                    Assert.That(Vector3.Distance(actor.transform.position, plantedRoot), Is.LessThan(.003f));
+                    Assert.That(Quaternion.Angle(actor.transform.rotation, plantedFacing), Is.LessThan(.1f));
+                    Assert.That(sound.FrenzyPlayCount, Is.EqualTo(1));
+                    if (!checkedDuplicate && actor.ZombieFrenzySecondsElapsed >= .4f)
+                    {
+                        float duplicateClock = actor.ZombieFrenzySecondsElapsed;
+                        Assert.That(root.Hero.TryBeginKnockdown(realRam, realRam.Direction, Vector3.zero), Is.False);
+                        Assert.That(knockdowns, Is.EqualTo(1), "Repeated contact with the same fallen hero emits no new fall.");
+                        Assert.That(actor.ZombieFrenzySecondsElapsed, Is.EqualTo(duplicateClock));
+                        Assert.That(sound.FrenzyPlayCount, Is.EqualTo(1));
+                        checkedDuplicate = true;
+                    }
+                    if (actor.ZombieFrenzySecondsElapsed >= 1f && actor.ZombieFrenzySecondsElapsed < 4f)
+                    {
+                        Assert.That(actor.ActiveClipName, Is.EqualTo("ZombieFrenzy"));
+                        AssertLoaderKneeling(actor, load, readyPelvis);
+                        if (!sampledKneel)
+                        {
+                            firstHead = head.localRotation;
+                            firstHand = hand.localRotation;
+                            CaptureLoaderView(actor, "Test mimic - Knockdown frenzy", false);
+                            sampledKneel = true;
+                        }
+                        maximumHeadChange = Mathf.Max(maximumHeadChange, Quaternion.Angle(firstHead, head.localRotation));
+                        maximumHandChange = Mathf.Max(maximumHandChange, Quaternion.Angle(firstHand, hand.localRotation));
+                        if (!sampledLater && actor.ZombieFrenzySecondsElapsed >= 2.5f)
+                        {
+                            CaptureLoaderView(actor, "Test mimic - Frenzy convulsion", true);
+                            sampledLater = true;
+                        }
+                    }
+                    float remaining = CombatActor.ZombieFrenzyDurationSeconds - actor.ZombieFrenzySecondsElapsed;
+                    if (remaining <= .1001f) actor.Step(remaining);
+                    else root.Tick(.1f);
+                    root.CameraFollow.Snap();
+                    yield return null;
+                    CaptureLoaderFrenzyFrame(frame + 1);
+                }
+                Assert.That(sampledKneel && sampledLater && checkedDuplicate, Is.True);
+                Assert.That(maximumHeadChange, Is.GreaterThan(8f), "The trapped head visibly jerks throughout the frenzy.");
+                Assert.That(maximumHandChange, Is.GreaterThan(8f), "The shared hand rig participates in the outburst.");
+                Assert.That(actor.IsZombieFrenzied, Is.False);
+                Assert.That(actor.ZombieFrenzySecondsElapsed, Is.EqualTo(CombatActor.ZombieFrenzyDurationSeconds).Within(.001f));
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(attackSequence));
+                Assert.That(sound.BodySource.clip == null || !sound.BodySource.clip.name.StartsWith("ZombieFrenzy"), Is.True,
+                    "Simulation expiry explicitly ends the cue even if DSP playback has not caught up.");
+                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(bodyGraphs));
+                Assert.That(load.CatchGraphBuildCount, Is.EqualTo(fishGraphs));
+                root.Hero.ResetActor(root.Hero.transform.position, Vector3.forward);
+                Assert.That(root.Hero.TryBeginKnockdown(realRam, realRam.Direction * .8f, Vector3.zero), Is.True);
+                Assert.That(knockdowns, Is.EqualTo(2), "The control performs another genuine fall after recovery.");
+                Assert.That(actor.IsZombieFrenzied, Is.False, "The same old strike cannot celebrate twice.");
+                Assert.That(sound.FrenzyPlayCount, Is.EqualTo(1));
+                root.Hero.ResetActor(root.Hero.transform.position, Vector3.forward);
+                actor.Step(.1f);
+                Assert.That(actor.TryZombieAttack(), Is.True, "A fresh ram is admitted after the complete frenzy.");
+                root.Hero.ResetActor(actor.transform.position + actor.transform.forward * 4f, -actor.transform.forward);
+                Physics.SyncTransforms();
+                actor.Step(.95f);
+                float kneelingPelvis = FindAnatomicalBone(actor, "pelvis").position.y;
+                Assert.That(root.Hero.TryBeginKnockdown(LoaderFallImpact(actor, root.Hero,
+                    actor.State.AttackSequence, CombatImpactKind.Unarmed), actor.transform.forward * .8f, Vector3.zero), Is.True);
+                Assert.That(actor.IsZombieFrenzied, Is.True);
+                actor.Present();
+                Assert.That(FindAnatomicalBone(actor, "pelvis").position.y, Is.LessThanOrEqualTo(kneelingPelvis + .03f),
+                    "A delayed fall cannot lift the already kneeling porter on frenzy entry.");
+                actor.Step(.12f);
+                Assert.That(actor.IsZombieFrenzied, Is.True);
+                Assert.That(FindAnatomicalBone(actor, "pelvis").position.y, Is.LessThanOrEqualTo(kneelingPelvis + .03f),
+                    "The first frenzy frames retain the existing loaded knee support.");
+                actor.Step(1f); actor.Step(.1f);
+                float heldClock = actor.ZombieFrenzySecondsElapsed;
+                Quaternion heldHead = head.localRotation, heldHand = hand.localRotation;
+                Vector3 heldLoad = load.Model.position;
+                int heldPlayCount = sound.FrenzyPlayCount;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(2f); actor.Step(2f);
+                yield return null;
+                int heldSamples = sound.BodySource.timeSamples;
+                yield return null;
+                Assert.That(actor.ZombieFrenzySecondsElapsed, Is.EqualTo(heldClock));
+                Assert.That(Quaternion.Angle(head.localRotation, heldHead), Is.LessThan(.01f));
+                Assert.That(Quaternion.Angle(hand.localRotation, heldHand), Is.LessThan(.01f));
+                Assert.That(load.Model.position, Is.EqualTo(heldLoad));
+                Assert.That(sound.BodySource.timeSamples, Is.EqualTo(heldSamples));
+                Assert.That(sound.FrenzyPlayCount, Is.EqualTo(heldPlayCount));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay),
+                    "Pause did not release the frenzy.");
+                root.ResetRound();
+                Assert.That(actor.IsZombieFrenzied, Is.False);
+                Assert.That(actor.ZombieFrenzySecondsElapsed, Is.Zero);
+                Assert.That(sound.FrenzyPlayCount, Is.Zero);
+                Assert.That(sound.BodySource.clip, Is.Null);
+                Assert.That(sound.EffectSource.clip, Is.Null);
+
+                PlaceZombieChasePair(4f);
+                Assert.That(actor.TryZombieAttack(), Is.True);
+                Assert.That(root.Hero.TryBeginKnockdown(LoaderFallImpact(actor, root.Hero,
+                    actor.State.AttackSequence, CombatImpactKind.Unarmed), actor.transform.forward * .8f, Vector3.zero), Is.True);
+                Assert.That(actor.IsZombieFrenzied, Is.True);
+                actor.enabled = false;
+                Assert.That(actor.IsZombieFrenzied, Is.False);
+                Assert.That(sound.BodySource.clip, Is.Null);
+                Assert.That(sound.EffectSource.clip, Is.Null);
+                actor.enabled = true;
+                VerifyLoaderFrenzyInterruptions(actor);
+            }
+            finally
+            {
+                root.Hero.KnockedDown -= RecordFall;
+                Time.captureDeltaTime = previousDelta;
+                root.ResetRound();
+            }
+        }
+
+        private static CombatImpact LoaderFallImpact(CombatActor source, CombatActor victim, int sequence, CombatImpactKind kind)
+        {
+            Vector3 direction = source.transform.forward;
+            return new CombatImpact(source, victim, sequence, FindAnatomicalBone(victim, "chest").position,
+                -direction, direction, victim.State.Health, victim.State.Health, MeleeHitResult.Hit,
+                impulse: direction * 85f, kind: kind);
+        }
+
+        private void VerifyLoaderFrenzyInterruptions(CombatActor actor)
+        {
+            foreach (string interruption in new[] { "stun", "own fall", "defeat" })
+            {
+                root.SetSparring(true);
+                PlaceZombieChasePair(4f);
+                Assert.That(actor.TryZombieAttack(), Is.True);
+                Assert.That(root.Hero.TryBeginKnockdown(LoaderFallImpact(actor, root.Hero,
+                    actor.State.AttackSequence, CombatImpactKind.Unarmed), actor.transform.forward * .8f, Vector3.zero), Is.True);
+                Assert.That(actor.IsZombieFrenzied, Is.True, interruption);
+                actor.Step(1f); actor.Step(.1f);
+                if (interruption == "own fall")
+                    Assert.That(actor.TryBeginKnockdown(LoaderFallImpact(root.Hero, actor, 1,
+                        CombatImpactKind.Weapon), -actor.transform.forward * .8f, Vector3.zero), Is.True);
+                else if (interruption == "defeat") DefeatBodyTargetWithProjectile(actor, root.Hero, 1);
+                else
+                {
+                    actor.CaptureContactPose();
+                    Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Torso, out Vector3 centre,
+                        out Vector3 outward, out _), Is.True);
+                    Assert.That(actor.Hurtboxes.SweepProjectile(centre + outward * .5f, centre - outward * .5f,
+                        CombatProjectilePool.Radius, -outward, out CombatHurtboxes.Hit hit), Is.True);
+                    Assert.That(hit.Location.Region, Is.EqualTo(MeleeBodyRegion.Torso));
+                    actor.ReceiveProjectile(root.Hero, 1, hit, -outward * CombatProjectilePool.MuzzleSpeed);
+                    Assert.That(actor.State.IsStunned, Is.True);
+                }
+                Assert.That(actor.IsZombieFrenzied, Is.False, interruption + " must immediately yield the frenzy.");
+                var sound = actor.GetComponent<CombatZombieAudio>();
+                Assert.That(sound.BodySource.clip == null || !sound.BodySource.clip.name.StartsWith("ZombieFrenzy"), Is.True);
+                actor.Step(CombatActor.ZombieFrenzyDurationSeconds);
+                Assert.That(actor.IsZombieFrenzied, Is.False, interruption + " cannot resume a suspended celebration.");
+                Assert.That(sound.FrenzyPlayCount, Is.EqualTo(1));
+            }
+        }
+
+        private void CaptureLoaderFrenzyFrame(int frame)
+        {
+            string folder = Path.Combine(SceneIds.CombatTest, "Test mimic - Knockdown frenzy");
+            string name = "Test frame " + frame.ToString("D3");
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", folder, name + ".png");
+            LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+            AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, folder, name);
+        }
+
+        private static void AssertLoaderRecoveryRules()
+        {
+            MeleeCombatSettings settings = MeleeCombatSettings.ZombieUnarmed;
+            Assert.That(settings.Damage, Is.EqualTo(32f));
+            Assert.That(settings.BlockCost, Is.EqualTo(28f));
+            Assert.That(settings.AnimationAttackDurationSeconds, Is.EqualTo(2.83f).Within(.001f));
+            foreach (MeleeAttackOutcome outcome in new[] { MeleeAttackOutcome.Hit, MeleeAttackOutcome.Miss,
+                MeleeAttackOutcome.Blocked, MeleeAttackOutcome.Obstacle, MeleeAttackOutcome.Parried })
+            {
+                var state = new MeleeCombatant(settings);
+                Assert.That(state.RequestAttack(), Is.True, outcome.ToString());
+                state.Advance(settings.WindupSeconds + settings.ActiveSeconds * .5f);
+                if (outcome == MeleeAttackOutcome.Obstacle)
+                    Assert.That(state.CancelAttackOnObstacle(), Is.True);
+                else if (outcome != MeleeAttackOutcome.Miss)
+                    Assert.That(state.RecordAttackOutcome(outcome == MeleeAttackOutcome.Blocked ? MeleeHitResult.Blocked :
+                        outcome == MeleeAttackOutcome.Parried ? MeleeHitResult.Parried : MeleeHitResult.Hit,
+                        state.AttackSequence), Is.True);
+                if (state.Phase == MeleePhase.Active)
+                    state.Advance(settings.ActiveSeconds * .5f + .001f);
+                Assert.That(state.Phase, Is.EqualTo(MeleePhase.Recovery), outcome.ToString());
+                Assert.That(state.AttackOutcome, Is.EqualTo(outcome));
+                Assert.That(state.AttackRecoverySeconds, Is.EqualTo(2.4f).Within(.001f),
+                    outcome + ": every outcome carries the full loaded recovery.");
+                int sequence = state.AttackSequence;
+                Assert.That(state.RequestAttack(true), Is.False);
+                Assert.That(state.HasBufferedAttack, Is.False);
+                state.Advance(state.RecoveryRemaining - .001f);
+                Assert.That(state.Phase, Is.EqualTo(MeleePhase.Recovery));
+                Assert.That(state.CanTransitionTo(MeleeBufferedAction.Attack, true), Is.False);
+                Assert.That(state.RequestAttack(true), Is.False,
+                    outcome + ": even the last recovery millisecond cannot chain or buffer a ram.");
+                Assert.That(state.AttackSequence, Is.EqualTo(sequence));
+                Assert.That(state.HasBufferedAttack, Is.False);
+                state.Advance(.002f);
+                Assert.That(state.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(state.RequestAttack(), Is.True,
+                    outcome + ": a fresh attack becomes possible only after the loaded rise ends.");
+            }
+        }
+
+        private IEnumerator VerifyLoaderRecovery(CombatActor actor, CombatZombieLoad load,
+            float readyPelvisHeight, int frame, bool allowFrenzy = false)
+        {
+            int sequence = actor.State.AttackSequence;
+            bool sawRecovery = false, sampledKneel = false, sampledHeldKneel = false, sawFrenzy = false;
+            Vector3 plantedRoot = default;
+            Quaternion plantedFacing = default;
+            for (int step = 0; step < (allowFrenzy ? 1000 : 440) &&
+                (actor.State.Phase != MeleePhase.Ready || actor.IsZombieFrenzied); step++)
+            {
+                sawFrenzy |= actor.IsZombieFrenzied;
+                Assert.That(actor.IsZombieFrenzied && !allowFrenzy, Is.False,
+                    "Only a successful fall may replace ordinary loaded recovery with a frenzy.");
+                if (actor.State.Phase == MeleePhase.Recovery)
+                {
+                    if (!sawRecovery)
+                    {
+                        sawRecovery = true;
+                        plantedRoot = actor.transform.position;
+                        plantedFacing = actor.transform.rotation;
+                    }
+                    Assert.That(actor.TryZombieAttack(), Is.False,
+                        "The loaded kneel cannot be interrupted by another ram.");
+                    Assert.That(actor.State.HasBufferedAttack, Is.False);
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence));
+                    Assert.That(Vector3.Distance(actor.transform.position, plantedRoot), Is.LessThan(.003f),
+                        "The recovering worker stays planted beneath the crate.");
+                    Assert.That(Quaternion.Angle(actor.transform.rotation, plantedFacing), Is.LessThan(.1f));
+                    Assert.That(Physics.GetIgnoreCollision(load.Collider, root.Hero.Body), Is.False,
+                        "The ram's motor exclusions end before the long kneeling recovery.");
+                    Assert.That(Physics.GetIgnoreCollision(actor.Body, root.Hero.Body), Is.False);
+                    float recoveryTime = actor.State.AttackElapsed - actor.State.AttackActiveEnd;
+                    if (!sampledKneel && recoveryTime >= .65f && !actor.IsZombieFrenzied)
+                    {
+                        AssertLoaderKneeling(actor, load, readyPelvisHeight);
+                        CaptureLoaderView(actor, "Test mimic - Kneeling under the crate", false);
+                        sampledKneel = true;
+                    }
+                    if (!sampledHeldKneel && recoveryTime >= 1.5f && !actor.IsZombieFrenzied)
+                    {
+                        AssertLoaderKneeling(actor, load, readyPelvisHeight);
+                        CaptureLoaderView(actor, "Test mimic - Held loaded recovery", false);
+                        sampledHeldKneel = true;
+                    }
+                }
+                root.Tick(CombatTestRoot.SimulationStep);
+                if (step % 4 == 0)
+                {
+                    root.CameraFollow.Snap();
+                    yield return null;
+                    CaptureLoaderCooldownFrame(frame++, missed: !allowFrenzy);
+                }
+            }
+            Assert.That(sawRecovery && (sawFrenzy || sampledKneel && sampledHeldKneel), Is.True,
+                "The real attack must enter and hold its kneeling vulnerability before rising.");
+            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+            actor.Step(.1f); // Complete only the existing ready-pose blend, without an AI decision.
+            float restoredPelvis = FindAnatomicalBone(actor, "pelvis").position.y - actor.transform.position.y;
+            Assert.That(restoredPelvis, Is.EqualTo(readyPelvisHeight).Within(.06f),
+                "The worker regains the original loaded standing silhouette before another ram.");
+            CaptureLoaderView(actor, "Test mimic - Standing after recovery", false);
+            root.CameraFollow.Snap();
+            yield return null;
+            CaptureLoaderCooldownFrame(frame, missed: !allowFrenzy);
+        }
+
+        private static void AssertLoaderKneeling(CombatActor actor, CombatZombieLoad load, float readyPelvisHeight)
+        {
+            float floor = actor.transform.position.y - PlayerFactory.GroundedRootOffset;
+            Transform pelvis = FindAnatomicalBone(actor, "pelvis");
+            Assert.That(pelvis.position.y - actor.transform.position.y, Is.LessThan(readyPelvisHeight - .18f),
+                "The pelvis descends visibly instead of merely pitching the standing torso.");
+            foreach (string side in new[] { "L", "R" })
+            {
+                Transform knee = FindAnatomicalBone(actor, "shin." + side);
+                Assert.That(knee.position.y - floor, Is.InRange(.04f, .20f),
+                    side + ": the real knee bears the weight close to the physical floor.");
+            }
+            Transform spine = FindAnatomicalBone(actor, "spine");
+            Transform neck = FindAnatomicalBone(actor, "neck");
+            Vector3 torso = neck.position - spine.position;
+            Assert.That(Vector3.Dot(torso, actor.transform.forward), Is.GreaterThan(.1f),
+                "The torso remains hunched forward beneath the fused load.");
+            Assert.That(Vector3.Angle(torso, Vector3.up), Is.GreaterThan(85f),
+                "The held recovery must deepen the standing hunch (authored 75.46 to 90.79 degrees).");
+            AssertLoaderAttached(actor, load);
+        }
+
+        private void CaptureLoaderCooldownFrame(int frame, bool missed = false)
+        {
+            string folder = Path.Combine(SceneIds.CombatTest,
+                missed ? "Test mimic - Missed strike recovery" : "Test mimic - Heavy strike recovery");
+            string name = "Test frame " + frame.ToString("D3");
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", folder, name + ".png");
+            LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+            AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, folder, name);
         }
 
         private IEnumerator VerifyLoaderBreakage(CombatActor actor, CombatZombieLoad load)
@@ -502,6 +920,14 @@ namespace BarPromenade.Tests.PlayMode
                 $"fishCentre={fishBodies[firstFish].worldCenterOfMass:F5}, maxExit={furthestExit:F5}\n" + spillDiagnostic);
             Assert.That(load.DetachedBoardCount, Is.EqualTo(1));
             Assert.That(load.ReleasedFishCount, Is.EqualTo(1));
+            for (int i = 0; i < boardCount; i++)
+            {
+                if (load.IsBoardDetached(i)) continue;
+                BoxCollider timber = load.GetBoardCollider(i);
+                Assert.That(timber.enabled, Is.True, timber.name + ": spilling cannot disable the remaining wood.");
+                Assert.That(Physics.GetIgnoreCollision(spillingShape, timber), Is.False,
+                    timber.name + ": the original fish must find the opening while intact timber keeps contact.");
+            }
 
             // The actual front flights above prove interception. This separate
             // dispatch contract covers every finite plank, including timber
@@ -716,6 +1142,16 @@ namespace BarPromenade.Tests.PlayMode
             Renderer[] renderers = load.Model.GetComponentsInChildren<Renderer>();
             Assert.That(renderers, Is.Not.Empty,
                 "A collision-only placeholder does not fulfil the carried-load silhouette.");
+            var surface = new MaterialPropertyBlock();
+            foreach (Renderer renderer in renderers)
+            {
+                Assert.That(renderer.sharedMaterial, Is.SameAs(CombatZombieAssetProvider.CrateMaterial));
+                renderer.GetPropertyBlock(surface);
+                Texture overrideAtlas = surface.GetTexture("_BaseMap");
+                Assert.That(overrideAtlas == null || overrideAtlas == renderer.sharedMaterial.GetTexture("_BaseMap"), Is.True,
+                    renderer.name + ": corpse appearance must preserve the wood/fish atlas instead of painting it with the face atlas.");
+                surface.Clear();
+            }
             Mesh box = FindLoaderMesh(load.Model, "ZombieCrateMesh", out Renderer woodRenderer);
             Assert.That(box.vertexCount, Is.GreaterThan(24));
             Bounds visibleBounds = woodRenderer.bounds;
@@ -811,6 +1247,8 @@ namespace BarPromenade.Tests.PlayMode
             var positions = new Vector3[names.Length];
             var scales = new Vector3[names.Length];
             var rotations = new Quaternion[names.Length];
+            var sampledPositions = new Vector3[names.Length];
+            var sampledScales = new Vector3[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 bones[i] = FindAnatomicalBone(actor, names[i]);
@@ -831,9 +1269,21 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         if (i < 4)
                             Assert.That(bones[i].parent.TransformVector(bones[i].localPosition - positions[i]).magnitude,
-                                Is.LessThan(.001f), names[i] + ": generic recovery retains the compressed anatomy.");
+                                Is.LessThan(.001f), names[i] + ": generic recovery sample " + sample + " retains the compressed anatomy.");
                         Assert.That(Vector3.Distance(bones[i].localScale, scales[i]), Is.LessThan(.0001f),
-                            names[i] + ": generic recovery retains the deformed proportions.");
+                            names[i] + ": generic recovery sample " + sample + " retains the deformed proportions.");
+                        if (sample == 0)
+                        {
+                            sampledPositions[i] = bones[i].localPosition;
+                            sampledScales[i] = bones[i].localScale;
+                        }
+                        else
+                        {
+                            Assert.That(bones[i].parent.TransformVector(bones[i].localPosition - sampledPositions[i]).magnitude,
+                                Is.LessThan(.0001f), names[i] + ": repeated generic sampling cannot accumulate anatomical translation.");
+                            Assert.That(Vector3.Distance(bones[i].localScale, sampledScales[i]), Is.LessThan(.0001f),
+                                names[i] + ": repeated generic sampling cannot accumulate anatomical scale.");
+                        }
                         rotated |= Quaternion.Angle(bones[i].localRotation, rotations[i]) > 1f;
                     }
                     Assert.That(rotated, Is.True, "The ordinary rise still supplies its own recovery rotations.");
@@ -860,7 +1310,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             NpcFootstepProfile profile = actor.GetComponentInChildren<NpcFootstepProfile>();
             Assert.That(profile, Is.Not.Null);
-            Assert.That(profile.Stride, Is.EqualTo(.36f).Within(.001f));
+            Assert.That(profile.Stride, Is.EqualTo(.425f).Within(.001f));
             Assert.That(profile.MinimumSpeed, Is.EqualTo(.08f).Within(.001f));
             Assert.That(profile.VolumeScale, Is.EqualTo(1f));
             Assert.That(profile.UsesAuthoredContacts, Is.True);
@@ -878,15 +1328,15 @@ namespace BarPromenade.Tests.PlayMode
                 "Small pose drift and standing still cannot make heavy footfalls.");
             tracker.Reset();
             tracker.Advance(Vector3.zero, .1f, profile);
-            const float speed = .72f / 1.6f, delta = .1f;
-            for (int sample = 1; sample <= 7; sample++)
+            const float speed = 1.7f, delta = .05f;
+            for (int sample = 1; sample <= 4; sample++)
                 Assert.That(tracker.Advance(Vector3.forward * (speed * delta * sample), delta, profile), Is.False);
             int footfalls = 0;
-            for (int sample = 8; sample <= 9; sample++)
+            for (int sample = 5; sample <= 6; sample++)
                 if (tracker.Advance(Vector3.forward * (speed * delta * sample), delta, profile)) footfalls++;
             Assert.That(footfalls, Is.EqualTo(1),
-                "A loader moving at .72 m per 1.6 s must sound after its .36 m achieved stride.");
-            Assert.That(tracker.Distance, Is.EqualTo(speed * delta * 9f - profile.Stride).Within(.001f));
+                "The faster load must sound once at its achieved half-cycle stride.");
+            Assert.That(tracker.Distance, Is.EqualTo(speed * delta * 6f - profile.Stride).Within(.001f));
         }
 
         private void AssertLoaderSideClearance(CombatActor actor, CombatZombieLoad load)

@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string BankPath = Folder + "ZombieActions.fbx";
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6;
         private bool IsBank => assetPath == BankPath;
         private bool IsZombie => assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
 
@@ -110,13 +110,16 @@ namespace BarPromenade.Editor
                 "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav",
                 "ZombieGroan2.wav", "ZombieGroan3.wav", "ZombieLunge2.wav", "ZombieReveal.wav",
                 "ZombieHurtWood.wav", "ZombieHurtWood2.wav", "ZombieHurtFlesh.wav", "ZombieHurtFlesh2.wav",
-                "ZombieDeath.wav", "ZombieDeath2.wav" })
+                "ZombieDeath.wav", "ZombieDeath2.wav", "ZombieFrenzy.wav", "ZombieFrenzy2.wav" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + "Zombie3D.json"));
             if (manifest == null || !manifest.test_only || manifest.root_motion || manifest.animation_events != 0 ||
                 manifest.rig != "NpcHumanV2" || manifest.clips == null || manifest.clips.Length != CombatZombieAssetProvider.ClipNames.Length ||
                 Mathf.Abs(manifest.walk_cycle_distance_m - CombatZombieAssetProvider.WalkCycleDistance) > .0001f ||
-                Mathf.Abs(manifest.prepare_seconds - .6f) > .0001f || Mathf.Abs(manifest.active_seconds - .22f) > .0001f || Mathf.Abs(manifest.recovery_seconds - .95f) > .0001f)
+                Mathf.Abs(manifest.walk_duration_seconds - CombatZombieAssetProvider.WalkCycleSeconds) > .0001f ||
+                Mathf.Abs(manifest.prepare_seconds - MeleeCombatSettings.ZombieUnarmed.WindupSeconds) > .0001f ||
+                Mathf.Abs(manifest.active_seconds - MeleeCombatSettings.ZombieUnarmed.ActiveSeconds) > .0001f ||
+                Mathf.Abs(manifest.recovery_seconds - MeleeCombatSettings.ZombieUnarmed.RecoverySeconds) > .0001f)
                 throw new InvalidOperationException("Zombie manifest violates the isolated grounded action contract.");
             foreach (string name in CombatZombieAssetProvider.ClipNames)
             {
@@ -130,6 +133,9 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Zombie appearance requires retained 512px atlas layout.");
             }
             CombatZombieAssetProvider.LoadGroan(); CombatZombieAssetProvider.LoadLunge();
+            foreach (string name in new[] { "ZombieFrenzy", "ZombieFrenzy2" })
+                if (Mathf.Abs(CombatZombieAssetProvider.LoadAudio(name).length - CombatActor.ZombieFrenzyDurationSeconds) > .003f)
+                    throw new InvalidOperationException("Porter frenzy sound must match the authored action clock.");
             CombatZombieAssetProvider.LoadCrate();
             CombatZombieAssetProvider.LoadCatchClip();
             Debug.Log("COMBAT ZOMBIE IMPORTED ACTIONS AND PALETTES OK");
@@ -141,7 +147,7 @@ namespace BarPromenade.Editor
             public bool test_only, root_motion;
             public int animation_events;
             public string rig;
-            public float walk_cycle_distance_m, prepare_seconds, active_seconds, recovery_seconds;
+            public float walk_cycle_distance_m, walk_duration_seconds, prepare_seconds, active_seconds, recovery_seconds;
             public Clip[] clips;
         }
         [Serializable] private sealed class Clip { public string name; public float duration_seconds; public bool loop; }

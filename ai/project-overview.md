@@ -83,8 +83,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 - CombatTest:warehouse/key-valve-gate/doorstub;3fridges/redTake0;
   all3→bulb-mech-music-newspawns0/livekept;fish→key/receipt/keep.
-  Dormant Std1/Endless1–5/18crates;near-hit→rig1.4s reveal;
-  unseenrefill/cutoff;holes/fishspill/ram/SFX.
+  Dormant Std1/Endless1–5/18crates;near-hit→rig.65s reveal;
+  chase1.7m/s/ram.9m/hero↓5sFrenzy/refill0/SFX.
   ChestSpot/black;all3/finiteammo+4packs/rise/corpse step/≤2corpses/≤5pool;
   gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,

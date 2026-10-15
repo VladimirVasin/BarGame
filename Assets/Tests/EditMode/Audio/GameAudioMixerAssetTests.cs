@@ -400,10 +400,10 @@ namespace BarPromenade.Tests.EditMode
                 AssertValue(GetEffectParameter(worldLowMid, mixer, snapshot,
                     "Center freq"), 165f, snapshotName + " impact low-mid centre");
                 AssertValue(GetEffectParameter(worldLowMid, mixer, snapshot,
-                    "Frequency gain"), warehouse ? 1.65f : 1f,
+                    "Frequency gain"), warehouse ? 1.45f : 1f,
                     snapshotName + " impact low-mid gain");
                 AssertValue(GetEffectParameter(worldLowpass, mixer, snapshot,
-                    "Cutoff freq"), warehouse ? 5200f : 22000f,
+                    "Cutoff freq"), warehouse ? 6800f : 22000f,
                     snapshotName + " impact high-frequency cutoff");
                 AssertValue(GetEffectMixLevel(FindSendTo(music, echoReceive),
                     mixer, snapshot), warehouse ? -7f : -80f,

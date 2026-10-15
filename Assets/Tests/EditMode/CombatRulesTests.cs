@@ -10,6 +10,7 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(MeleeHitResult.Hit)]
         [TestCase(MeleeHitResult.Blocked)]
+        [TestCase(MeleeHitResult.Parried)]
         public void ZombieCannotChainOrShortenItsLongReturn(MeleeHitResult result)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(hitRecoverySeconds: .95f),
@@ -22,11 +23,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(zombie.RecordAttackOutcome(result, zombie.AttackSequence), Is.True);
             zombie.Advance(Math.Max(0f, zombie.AttackActiveEnd - zombie.AttackElapsed) + .001f);
             Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Recovery));
-            Assert.That(zombie.AttackRecoverySeconds, Is.EqualTo(.95f).Within(Eps));
+            Assert.That(zombie.AttackRecoverySeconds, Is.EqualTo(2.4f).Within(Eps));
             Assert.That(zombie.RequestAttack(true), Is.False);
             Assert.That(zombie.TryStartRecoveryAttack(), Is.False);
             Assert.That(zombie.HasBufferedAttack || zombie.IsChained, Is.False);
-            zombie.Advance(.94f);
+            zombie.Advance(2.39f);
             Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Recovery));
             zombie.Advance(.02f);
             Assert.That(zombie.Phase, Is.EqualTo(MeleePhase.Ready));

@@ -32,25 +32,29 @@ CATCH_SECONDS=6.4
 CATCH_FPS=30
 CATCH_CLIP="ZombieCatchFlop"
 CATCH_STARTS=(.19,.83,1.46,2.13,2.89,3.61,4.39,5.22)
-CLIPS = (("ZombieIdle", 4., True), ("ZombieWalk", 1.6, True),
-         ("ZombieAttackRight", 1.77, False), ("ZombieAttackLeft", 1.77, False),
+CLIPS = (("ZombieIdle", 4., True), ("ZombieWalk", .5, True),
+         ("ZombieAttackRight", 2.83, False), ("ZombieAttackLeft", 2.83, False),
          ("ZombieHit", .45, False), ("ZombieLoadAdjust", 2.4, False),
          ("ZombieWatch", 2.8, False), ("ZombieDormant", 1., True),
-         ("ZombieReveal", 1.4, False))
-REVEAL_SECONDS = 1.4
-MIMIC_BREAKS = ((.24,(6,31),"foot.L",(-.15,0.,-1.)),
-                (.30,(36,),"shin.R",(0.,1.,0.)),
-                (.35,(2,32),"foot.R",(.15,0.,-1.)),
-                (.59,(20,33),"hand.L",(1.,-.25,0.)),
-                (.70,(10,34),"hand.R",(-1.,-.25,0.)),
-                (.91,(35,),"head",(0.,-1.,0.)))
+         ("ZombieReveal", .65, False), ("ZombieFrenzy", combat_zombie_audio.FRENZY_SECONDS, False))
+REVEAL_SECONDS = .65
+MIMIC_BREAKS = ((.11,(6,31),"foot.L",(-.15,0.,-1.)),
+                (.15,(36,),"shin.R",(0.,1.,0.)),
+                (.19,(2,32),"foot.R",(.15,0.,-1.)),
+                (.28,(20,33),"hand.L",(1.,-.25,0.)),
+                (.34,(10,34),"hand.R",(-1.,-.25,0.)),
+                (.44,(35,),"head",(0.,-1.,0.)))
 # A closed bodily curl below the fish. -local Z is the crate's open top.
 # This is an actual chest matrix, not an object-root offset or a visibility trick.
 DORMANT_CHEST = Matrix.Translation((0., 0., .214)) @ Matrix.Rotation(math.pi, 4, "X")
-WALK_DISTANCE = .72
-WALK_SECONDS = 1.6
+WALK_DISTANCE = .85
+WALK_SECONDS = .5
 WALK_ROOT_KEYS=((0.,0.),(.10,.03),(.30,.17),(.42,.44),(.50,.50),(.60,.53),(.80,.67),(.92,.94),(1.,1.))
-PREPARE, ACTIVE, RECOVER = .6, .22, .95
+PREPARE, ACTIVE, RECOVER = .25, .18, 2.4
+KNEEL_SINK, KNEEL_RISE = .35, .45
+FRENZY_SECONDS = combat_zombie_audio.FRENZY_SECONDS
+FRENZY_IMPULSES = combat_zombie_audio.FRENZY_IMPULSES
+ATTACK_DISTANCE = .9
 OUT = ROOT / "Assets/Resources/Combat"
 SOURCE = ROOT / "ArtSource/CombatZombie"
 # Actual bone-local coordinates (Y follows the chest, -Z is the worker's back).
@@ -60,11 +64,12 @@ CRATE_SIZE = Vector((1.24, 1.20, .70))
 RAMS=((Vector((-.38,.348,-.178)),Vector((.38,.348,-.178)),.032),
       (Vector((-.38,.348,-.351)),Vector((.38,.348,-.351)),.032))
 HEAD_BURSTS={"ZombieIdle":((1.05,(12.,22.,-8.)),(2.53,(-10.,-24.,7.))),
-    "ZombieWalk":((.47,(11.,-21.,8.)),(1.275,(-12.,23.,-7.))),
+    "ZombieWalk":((.09,(13.,-22.,9.)),(.30,(-13.,24.,-8.))),
     "ZombieLoadAdjust":((.96,(-12.,22.,7.)),),
     "ZombieWatch":((1.05,(13.,-24.,-8.)),(1.22,(-6.,10.,4.))),
-    "ZombieAttackRight":((.25,(-10.,18.,6.)),),"ZombieAttackLeft":((.25,(-10.,-18.,-6.)),),
-    "ZombieHit":((.11,(12.,-18.,7.)),)}
+    "ZombieAttackRight":((.045,(-12.,21.,8.)),),"ZombieAttackLeft":((.045,(-12.,-21.,-8.)),),
+    "ZombieHit":((.11,(12.,-18.,7.)),),
+    "ZombieFrenzy":tuple((t,(11.*gain,sign*25.*gain,-sign*8.*gain)) for t,sign,gain in FRENZY_IMPULSES)}
 CATCH = ((-.17,.00,-.22,.85,13.,-12.),(.12,.51,-.31,.91,-16.,14.),
          (.03,-.17,-.42,.91,-8.,-8.),(-.03,.60,-.52,.94,19.,9.),
          (-.18,.20,-.65,.93,-14.,-17.),(.23,.13,-.64,.84,67.,19.),
@@ -155,13 +160,19 @@ def head_burst(kind,seconds):
     return result
 
 
-def pose_limp_arm(builder, side):
+def pose_limp_arm(builder, side, lag=0., kneel=0., frenzy=0.):
     rig = builder.result.rig
     upper, fore, hand = (rig.pose.bones[n+"."+side] for n in ("upper_arm", "forearm", "hand"))
     chest = rig.pose.bones["chest"].matrix
     shoulder=upper.head.copy()
     sign=1. if side=="L" else -1.
-    target=chest@Vector((sign*(.38 if side=="L" else .39),.425,.075 if side=="L" else .105))
+    # The upper arm trails the torso's surge while the long forearm and hand
+    # remain loose and downward. No gripping pose or extra limb scale is added.
+    target=chest@Vector((sign*(.38 if side=="L" else .39),.425-.075*lag,
+                         (.075 if side=="L" else .105)-.045*lag))
+    # The elbows gather under the sinking load. Loose hands stay above the
+    # floor rather than spearing through it when the chest drops to knee level.
+    target.z+=.16*kneel+.10*abs(frenzy)+.035*frenzy*(1. if side=="L" else -.7)
     axis=(target-shoulder).normalized()
     rest=upper.bone
     q=(rest.tail_local-rest.head_local).normalized().rotation_difference(axis)@rest.matrix_local.to_quaternion()
@@ -175,7 +186,8 @@ def pose_limp_arm(builder, side):
     bpy.context.view_layer.update()
     wrist=fore.tail.copy()
     rest=hand.bone
-    q=Quaternion(down,math.radians(18. if side=="L" else -24.))@(rest.tail_local-rest.head_local).normalized().rotation_difference(down)@rest.matrix_local.to_quaternion()
+    hand_down=Quaternion(Vector((0.,1.,0.)),math.radians(13.*frenzy*sign))@down
+    q=Quaternion(hand_down,math.radians(18. if side=="L" else -24.))@(rest.tail_local-rest.head_local).normalized().rotation_difference(hand_down)@rest.matrix_local.to_quaternion()
     hand.matrix=Matrix.Translation(wrist)@q.to_matrix().to_4x4();bpy.context.view_layer.update()
 
 
@@ -187,26 +199,67 @@ def foot_target(builder, side, seconds):
     lift=math.sin(swing*math.pi)**2 if not stance else 0.
     ankle = builder.support(side)
     # Long planted support, then a short low drag. Root metres cancel exactly
-    # throughout stance; both soles bear the load for 36% of the slow cycle.
+    # throughout stance; both soles bear the load for 36% of the rapid cycle.
     ankle.y += WALK_DISTANCE*(score(t,WALK_ROOT_KEYS)-smooth(swing))+(-.16 if side=="L" else .11)
     ankle.z += (.023 if side == "L" else .030)*lift
     return ankle, stance, lift
 
 
+def attack_kneel(seconds):
+    recovery=seconds-PREPARE-ACTIVE
+    return smooth(recovery/KNEEL_SINK)*(1.-smooth((recovery-(RECOVER-KNEEL_RISE))/KNEEL_RISE))
+
+
+def frenzy_kneel(seconds):
+    return smooth(seconds/KNEEL_SINK)*(1.-smooth((seconds-(FRENZY_SECONDS-KNEEL_RISE))/KNEEL_RISE))
+
+
+def frenzy_impulse(seconds):
+    return sum(sign*gain*score(seconds,((t,0.),(t+.06,1.),(t+.14,1.),(t+.32,0.)))
+               for t,sign,gain in FRENZY_IMPULSES)
+
+
+def frenzy_foot(builder,side,seconds):
+    ankle=builder.support(side)
+    # Sequential short lifts settle each boot behind its knee; throughout the
+    # convulsions both supports stay in the same exact world-space position.
+    enter=(0.,KNEEL_SINK*.5) if side=="R" else (KNEEL_SINK*.5,KNEEL_SINK)
+    leave=(4.55,4.775) if side=="L" else (4.775,FRENZY_SECONDS)
+    if seconds<KNEEL_SINK:
+        progress=min(1.,max(0.,(seconds-enter[0])/(enter[1]-enter[0])))
+        planted=not enter[0]<seconds<enter[1]
+        settle=smooth(progress)
+    elif seconds>FRENZY_SECONDS-KNEEL_RISE:
+        progress=min(1.,max(0.,(seconds-leave[0])/(leave[1]-leave[0])))
+        planted=not leave[0]<seconds<leave[1]
+        settle=1.-smooth(progress)
+    else:
+        progress=0.;planted=True;settle=1.
+    ankle.x*=1.-.25*settle;ankle.y+=.28*settle
+    lift=math.sin(progress*math.pi)**2 if not planted else 0.
+    ankle.z+=.035*lift
+    return ankle,planted,lift
+
+
 def attack_foot(builder, side, name, seconds):
     ankle = builder.support(side)
     if not PREPARE < seconds < PREPARE+ACTIVE:
+        # Both boots settle behind their knees as the pelvis sinks. This is
+        # skeletal footwork on a fixed actor root, not gameplay root motion.
+        kneel=attack_kneel(seconds)
+        ankle.x*=1.-.25*kneel
+        ankle.y+=.28*kneel
         return ankle, True, 0.
     t = (seconds-PREPARE)/ACTIVE
-    root = .7*surge(t)
+    root = ATTACK_DISTANCE*surge(t)
     leading = side == ("L" if name == "ZombieAttackLeft" else "R")
     if leading:
         swing = min(1.,t/.5)
-        travelled = .7*smooth(swing)
+        travelled = ATTACK_DISTANCE*smooth(swing)
         stance = t >= .5
     else:
         swing = max(0.,(t-.5)/.5)
-        travelled = .7*smooth(swing)
+        travelled = ATTACK_DISTANCE*smooth(swing)
         stance = t <= .5
     ankle.y += root-travelled
     lift = math.sin(swing*math.pi)**2
@@ -273,10 +326,12 @@ def mimic_pose(builder, kind, seconds):
     pose(builder, "ZombieIdle", 0.)
     standing={b.name:b.matrix.copy() for b in rig.pose.bones}
     if seconds>=REVEAL_SECONDS-.00000001:return builder.snapshot_pose()
-    # Unfold in world space: the feet leave the box first, then the torso rises.
-    # Smooth phase ends give exact endpoints and no final pop into ZombieIdle.
-    progress=score(seconds,((0.,0.),(.07,0.),(.18,.18),(.24,.28),(.35,.42),
-                           (.59,.58),(.91,.85),(REVEAL_SECONDS,1.)))
+    # A brief loaded brace, two violent upward bursts and a heavy catch of the
+    # weight. Independent limbs tear their own panels below. This is authored
+    # acceleration, not a faster sample of the former uniform unfolding.
+    progress=score(seconds,((0.,0.),(.045,.015),(.10,.11),(.15,.26),(.20,.40),
+                           (.25,.41),(.34,.62),(.44,.86),(.49,.91),
+                           (.56,.94),(REVEAL_SECONDS,1.)))
     rig.animation_data.action=None
     builder._reset_pose()
     for bone in rig.pose.bones:
@@ -313,34 +368,34 @@ def mimic_pose(builder, kind, seconds):
         put(end,target)
     # Independent planted kick-throughs. Each sole first loads its actual bottom
     # plank, then passes it only after the corresponding runtime fracture event.
-    for side,sign,release,settled in (("L",1.,.24,.62),("R",-1.,.35,.73)):
+    for side,sign,release,settled in (("L",1.,.11,.30),("R",-1.,.19,.36)):
         start=inverse_folded@folded["foot."+side].translation
         contact=(sign*.325,-.32,.188);burst=(sign*.34,-.32,.285)
-        local=path(((0.,start),(release-.08,(sign*.31,-.32,.15)),
-                    (release,contact),(release+.05,burst)))
+        local=path(((0.,start),(release-.04,(sign*.31,-.32,.15)),
+                    (release,contact),(release+.025,burst)))
         target=chest@local
-        plant=smooth((seconds-release-.05)/(settled-release-.05))
+        plant=smooth((seconds-release-.025)/(settled-release-.025))
         target=target.lerp(standing["foot."+side].translation,plant)
         # Feet cannot go through the floor while the box is raised off them.
         target.z=max(standing["foot."+side].translation.z,target.z)
-        weight=1.-smooth((seconds-settled)/(.98-settled))
+        weight=1.-smooth((seconds-settled)/(.48-settled))
         target=rig.pose.bones["foot."+side].head.lerp(target,weight)
         solve("thigh."+side,"shin."+side,"foot."+side,target,(0.,1.,.1))
     # The rear knee bows its own cheek before the second foot is pulled down.
-    knee_weight=score(seconds,((0.,0.),(.22,0.),(.30,1.),(.36,1.),(.48,0.),(1.4,0.)))
+    knee_weight=score(seconds,((0.,0.),(.105,0.),(.15,1.),(.18,1.),(.24,0.),(REVEAL_SECONDS,0.)))
     if knee_weight>0.:
         knee=rig.pose.bones["shin.R"].head.copy()
         put("shin.R",knee.lerp(chest@Vector((-.17,-.70,.11)),knee_weight))
     # Hands press the side cheeks, tear through, then fold around the front rim
     # to the original loose, downward porter arms. They do not share a clock.
-    for side,sign,release,settled in (("L",1.,.59,1.04),("R",-1.,.70,1.15)):
+    for side,sign,release,settled in (("L",1.,.28,.46),("R",-1.,.34,.52)):
         start=inverse_folded@folded["hand."+side].translation
-        local=path(((0.,start),(release-.13,(sign*.48,.12,.10)),
-                    (release-.035,(sign*.515,.16,.13)),
+        local=path(((0.,start),(release-.06,(sign*.48,.12,.10)),
+                    (release-.018,(sign*.515,.16,.13)),
                     (release,(sign*.552,.17,.15)),
-                    (release+.055,(sign*.70,.22,.15))))
+                    (release+.025,(sign*.70,.22,.15))))
         target=chest@local
-        finish=smooth((seconds-release-.055)/(settled-release-.055))
+        finish=smooth((seconds-release-.025)/(settled-release-.025))
         target=target.lerp(standing["hand."+side].translation,finish)
         weight=1.-smooth((seconds-settled)/(REVEAL_SECONDS-settled))
         target=rig.pose.bones["hand."+side].head.lerp(target,weight)
@@ -348,12 +403,12 @@ def mimic_pose(builder, kind, seconds):
     # The forehead loads the closed front panel, holds the pressure briefly,
     # then drives the face through after its own timber event.
     start=inverse_folded@folded["head"].translation
-    local=path(((0.,start),(.72,(0.,.04,.055)),(.875,(0.,.22,.015)),
-                (.91,(0.,.235,.005)),(.975,(0.,.45,-.005))))
+    local=path(((0.,start),(.31,(0.,.04,.055)),(.42,(0.,.22,.015)),
+                (.44,(0.,.235,.005)),(.465,(0.,.45,-.005))))
     target=chest@local
-    finish=smooth((seconds-.975)/(1.28-.975))
+    finish=smooth((seconds-.465)/(.58-.465))
     target=target.lerp(standing["head"].translation,finish)
-    weight=1.-smooth((seconds-1.28)/(.12))
+    weight=1.-smooth((seconds-.58)/(.07))
     put("head",rig.pose.bones["head"].head.lerp(target,weight))
     return builder.snapshot_pose()
 
@@ -372,29 +427,37 @@ def pose(builder, kind, seconds):
     # through the torso only after each dragging step has found its floor.
     gait = score(phase, ((0.,0.),(.10,-.4),(.42,-.8),(.50,-1.),(.60,-.2),(.92,-.8),(1.,0.))) if kind == "ZombieWalk" else 0.
     sway = math.sin(phase*math.tau) if kind == "ZombieWalk" else 0.
-    prep = follow = hit = shoulder = 0.
+    prep = follow = hit = shoulder = kneel = frenzy = 0.
     if kind.startswith("ZombieAttack"):
-        prep = smooth(seconds/PREPARE)*(1.-smooth((seconds-PREPARE)/ACTIVE))
-        follow = smooth((seconds-PREPARE)/ACTIVE)*(1.-smooth((seconds-PREPARE-ACTIVE)/RECOVER))
+        prep = score(seconds,((0.,0.),(.05,.10),(.18,.85),(PREPARE,1.))) * (1.-smooth((seconds-PREPARE)/.09))
+        # The shoulders overtake the planted hips abruptly. The thrown load
+        # then forces both knees down before the slow loaded rise to readiness.
+        follow = score(seconds,((0.,0.),(PREPARE,0.),(PREPARE+.035,.10),
+            (PREPARE+.125,.94),(PREPARE+ACTIVE,1.))) * (1.-smooth((seconds-PREPARE-ACTIVE-.045)/KNEEL_SINK))
         shoulder = 1. if kind == "ZombieAttackLeft" else -1.
+        kneel=attack_kneel(seconds)
+    if kind=="ZombieFrenzy":
+        kneel=frenzy_kneel(seconds)
+        follow=1.-smooth(seconds/KNEEL_SINK)
+        frenzy=frenzy_impulse(seconds)
     if kind == "ZombieHit":
         hit = smooth(seconds/.09)*(1.-smooth((seconds-.09)/.36))
     pelvis = rig.pose.bones["pelvis"]
     matrix = pelvis.matrix.copy()
     walking_drop = .025 if kind == "ZombieWalk" else 0.
     step_load = .100*math.sin(min(1.,max(0.,(seconds-PREPARE)/ACTIVE))*math.pi)**2 if kind.startswith("ZombieAttack") else 0.
-    matrix.translation += Vector((.012*sway+.018*shoulder*follow, -.020*follow+.035*hit,
-        -.195-walking_drop-step_load+.018*load+.012*gait-.012*prep-.025*follow+
+    matrix.translation += Vector((.018*sway+.027*shoulder*follow, -.030*follow+.035*hit,
+        -.195-walking_drop-step_load+.018*load+.016*gait-.030*prep-.035*follow-.22*kneel+
         (.003*math.sin(phase*math.tau*4.) if kind=="ZombieWalk" else 0.)))
     pelvis.matrix = matrix
     bpy.context.view_layer.update()
     # Retain the production rest rig and skin. Translations compress the real
     # weighted human torso without scaling the crate or its inherited frame.
     translate(rig.pose.bones["spine"],(rig.pose.bones["spine"].head-pelvis.head).normalized()*-.045)
-    rotation(rig.pose.bones["spine"], Quaternion(Vector((1., 0., 0.)), math.radians(65.-5.*load-3.*gait-7.*prep+6.*follow-6.*hit)))
+    rotation(rig.pose.bones["spine"], Quaternion(Vector((1., 0., 0.)), math.radians(65.-5.*load-3.*gait-13.*prep+14.*follow-6.*hit+12.*kneel+6.*abs(frenzy))))
     translate(rig.pose.bones["chest"],(rig.pose.bones["chest"].head-rig.pose.bones["spine"].head).normalized()*-.070)
-    rotation(rig.pose.bones["chest"], Quaternion(Vector((0., 1., 0.)), math.radians(4.+2.*sway+9.*shoulder*(prep+follow))))
-    rotation(rig.pose.bones["chest"], Quaternion(Vector((1., 0., 0.)), math.radians(15.-2.*load+3.*follow)))
+    rotation(rig.pose.bones["chest"], Quaternion(Vector((0., 1., 0.)), math.radians(4.+3.*sway+16.*shoulder*(prep+.65*follow)+7.*frenzy)))
+    rotation(rig.pose.bones["chest"], Quaternion(Vector((1., 0., 0.)), math.radians(15.-2.*load+5.*follow+6.*kneel)))
     translate(rig.pose.bones["neck"],(rig.pose.bones["neck"].head-rig.pose.bones["chest"].head).normalized()*-.055)
     rotation(rig.pose.bones["neck"],Quaternion(Vector((1.,0.,0.)),math.radians(-28.)))
     translate(rig.pose.bones["head"],(rig.pose.bones["head"].head-rig.pose.bones["neck"].head).normalized()*-.020)
@@ -413,7 +476,8 @@ def pose(builder, kind, seconds):
     head.matrix=Matrix.Translation(head.head.copy())@target.to_matrix().to_4x4()
     bpy.context.view_layer.update()
     for side in ("L", "R"):
-        pose_limp_arm(builder, side)
+        lag=.8*follow if kind.startswith("ZombieAttack") else .32*sway*(1. if side=="L" else -1.)
+        pose_limp_arm(builder, side,lag,kneel,frenzy)
     for side in ("L", "R"):
         ankle = builder.support(side)
         foot_rotation = builder.footwork_support_rotations[side]
@@ -423,6 +487,9 @@ def pose(builder, kind, seconds):
         elif kind.startswith("ZombieAttack"):
             ankle, _, lift = attack_foot(builder, side, kind, seconds)
             foot_rotation = Quaternion(Vector((1., 0., 0.)), math.radians(-7.*lift)) @ foot_rotation
+        elif kind=="ZombieFrenzy":
+            ankle,_,lift=frenzy_foot(builder,side,seconds)
+            foot_rotation=Quaternion(Vector((1.,0.,0.)),math.radians(-4.*lift))@foot_rotation
         builder.recovery_leg(side, ankle, (0., -1., 0.), foot_rotation)
     return builder.snapshot_pose()
 
@@ -1006,7 +1073,7 @@ def verify_crate_fbx(builder,directory,payload,bank=None):
     print(f"LOADER FBX SOCKET/BOUNDS/RAM CONTACTS OK {frame_error:.8f}",flush=True)
 
 
-def preview(builder,crate_root,directory,source,motion=False):
+def preview(builder,crate_root,directory,source,motion=False,frenzy_only=False):
     """Review the actual unchanged worker skin deformed by the new actions."""
     rig=builder.result.rig
     with bpy.data.libraries.load(str(ROOT/"ArtSource/VillageLife/StationWorker.blend"),link=False) as (data,loaded):
@@ -1040,15 +1107,20 @@ def preview(builder,crate_root,directory,source,motion=False):
         obj=bpy.data.objects.new(name,data);bpy.context.collection.objects.link(obj);obj.location=location
         obj.rotation_euler=(Vector((0.,0.,.8))-obj.location).to_track_quat("-Z","Y").to_euler()
     source.mkdir(parents=True,exist_ok=True)
-    for name,clip,seconds,location in (("LoaderFront","ZombieWatch",1.3,(2.5,-3.4,1.8)),
-        ("LoaderBack","ZombieIdle",1.72,(2.8,2.7,1.8)),("LoaderRam","ZombieAttackRight",.78,(4.4,-.8,1.95)),
+    reviews=(("LoaderFront","ZombieWatch",1.3,(2.5,-3.4,1.8)),
+        ("LoaderBack","ZombieIdle",1.72,(2.8,2.7,1.8)),("LoaderRam","ZombieAttackRight",PREPARE+ACTIVE*.8,(4.4,-.8,1.95)),
         ("MimicDormantFront","ZombieDormant",0.,(2.5,-3.4,1.8)),
         ("MimicDormantBack","ZombieDormant",0.,(2.5,3.4,1.6)),
         ("MimicDormantTop","ZombieDormant",0.,(1.3,-1.7,3.5)),
-        ("MimicRevealStart","ZombieReveal",.35,(2.5,-3.4,1.8)),
-        ("MimicRevealMiddle","ZombieReveal",.7,(2.5,-3.4,1.8)),
-        ("MimicRevealLate","ZombieReveal",1.05,(2.5,-3.4,1.8)),
-        ("MimicRevealFinish","ZombieReveal",1.4,(2.5,-3.4,1.8))):
+        ("MimicRevealStart","ZombieReveal",.19,(2.5,-3.4,1.8)),
+        ("MimicRevealMiddle","ZombieReveal",.34,(2.5,-3.4,1.8)),
+        ("MimicRevealLate","ZombieReveal",.49,(2.5,-3.4,1.8)),
+        ("MimicRevealFinish","ZombieReveal",REVEAL_SECONDS,(2.5,-3.4,1.8)))
+    if frenzy_only:
+        reviews=(("FrenzySettled","ZombieFrenzy",.8,(2.8,-3.2,1.3)),
+                 ("FrenzyLastJerk","ZombieFrenzy",3.61,(2.8,-3.2,1.3)),
+                 ("FrenzyJerkSide","ZombieFrenzy",3.61,(3.4,.9,1.2)))
+    for name,clip,seconds,location in reviews:
         rig.animation_data.action=builder.result.actions[clip].action
         scene.frame_set(round(seconds*FPS));bpy.context.view_layer.update()
         # Runtime releases these very skin bones to the existing retained physics
@@ -1126,6 +1198,12 @@ def measure(builder):
         head_base_error=head_speed=0.;previous_head=None
         forearm_lengths={s:[] for s in ("L","R")}
         minimum_supports = 2
+        kneel_knee_min=100.;kneel_knee_max=0.;kneel_pelvis_min=100.;kneel_pelvis_max=0.
+        kneel_hand_min=100.;kneel_wood_min=100.;ready_pelvis=None
+        attack=name.startswith("ZombieAttack");frenzy=name=="ZombieFrenzy"
+        held_supports=None;held_support_error=0.
+        wood_vertices=[Vector(v) for (vertices,_),role in crate_geometry()
+            if role.split("@")[0] in ("Timber","Metal") for v in vertices] if attack or frenzy else ()
         for f in range(round(duration*FPS)+1):
             second = f/FPS
             bpy.context.scene.frame_set(f)
@@ -1133,15 +1211,19 @@ def measure(builder):
             if f == 0:
                 first = {b.name: b.matrix_basis.copy() for b in rig.pose.bones}
                 if name=="ZombieIdle":idle_endpoint=first
-            if name in ("ZombieLoadAdjust","ZombieWatch") and f in (0,round(duration*FPS)):
+                ready_pelvis=rig.pose.bones["pelvis"].head.z
+            if (name in ("ZombieLoadAdjust","ZombieWatch") or attack) and f in (0,round(duration*FPS)):
                 endpoint_error=max(abs(b.matrix_basis[i][j]-idle_endpoint[b.name][i][j]) for b in rig.pose.bones for i in range(4) for j in range(4))
                 if endpoint_error>.00001:raise ValueError(f"Loader action no longer returns to idle: {name}/{endpoint_error}")
+            if frenzy and f==round(duration*FPS):
+                endpoint_error=max(abs(b.matrix_basis[i][j]-idle_endpoint[b.name][i][j]) for b in rig.pose.bones for i in range(4) for j in range(4))
+                if endpoint_error>.00001:raise ValueError(f"Frenzy no longer returns through loaded rise to idle: {endpoint_error}")
             if loop and f == round(duration*FPS):
                 loop_error = max(abs(b.matrix_basis[i][j]-first[b.name][i][j]) for b in rig.pose.bones for i in range(4) for j in range(4))
             supports = 0
             for side in ("L", "R"):
                 thigh, shin, foot = (rig.pose.bones[n+"."+side] for n in ("thigh", "shin", "foot"))
-                target, stance = (foot_target(builder, side, second)[:2] if name == "ZombieWalk" else attack_foot(builder,side,name,second)[:2] if name.startswith("ZombieAttack") else (builder.support(side),True))
+                target, stance = (foot_target(builder, side, second)[:2] if name == "ZombieWalk" else attack_foot(builder,side,name,second)[:2] if attack else frenzy_foot(builder,side,second)[:2] if frenzy else (builder.support(side),True))
                 if stance:
                     support_error = max(support_error, (foot.head-target).length)
                     supports += 1
@@ -1151,6 +1233,19 @@ def measure(builder):
                 hand_down_error=max(hand_down_error,math.degrees((hand.tail-hand.head).angle(Vector((0.,0.,-1.)))))
                 fore=rig.pose.bones["forearm."+side]
                 forearm_lengths[side].append((fore.tail-fore.head).length)
+            if (attack and PREPARE+ACTIVE+KNEEL_SINK+.05<=second<=duration-KNEEL_RISE or
+                    frenzy and KNEEL_SINK<=second<=duration-KNEEL_RISE):
+                knees=[rig.pose.bones["shin."+s].head.z for s in ("L","R")]
+                kneel_knee_min=min(kneel_knee_min,*knees);kneel_knee_max=max(kneel_knee_max,*knees)
+                height=rig.pose.bones["pelvis"].head.z
+                kneel_pelvis_min=min(kneel_pelvis_min,height);kneel_pelvis_max=max(kneel_pelvis_max,height)
+                kneel_hand_min=min(kneel_hand_min,*(rig.pose.bones["hand."+s].tail.z for s in ("L","R")))
+                chest=rig.pose.bones["chest"].matrix
+                kneel_wood_min=min(kneel_wood_min,min((chest@v).z for v in wood_vertices))
+                if frenzy:
+                    landmarks={n:rig.pose.bones[n].head.copy() for n in ("shin.L","shin.R","foot.L","foot.R")}
+                    if held_supports is None:held_supports=landmarks
+                    held_support_error=max(held_support_error,max((held_supports[n]-p).length for n,p in landmarks.items()))
             head=rig.pose.bones["head"];neck=rig.pose.bones["neck"]
             face=head.matrix.to_quaternion()@head.bone.matrix_local.to_quaternion().inverted()@Vector((0.,-1.,0.))
             head_facing_error=max(head_facing_error,math.degrees(face.angle(Vector((0.,-1.,0.)))))
@@ -1166,10 +1261,16 @@ def measure(builder):
             cervical_arch=max(cervical_arch,math.degrees(rest_relative.rotation_difference(posed_relative).angle))
             minimum_leg_gap = min(minimum_leg_gap, (rig.pose.bones["foot.L"].head-rig.pose.bones["foot.R"].head).length)
             minimum_supports = min(minimum_supports,supports)
-        if hand_down_error>.1 or head_facing_error>55. or head_base_error>12. or head_speed<350.:
+        if hand_down_error>(16. if frenzy else .1) or head_facing_error>55. or head_base_error>12. or head_speed<350.:
             raise ValueError(f"Loader limp hands/head facing failed {name}: {hand_down_error}, {head_facing_error}")
-        if support_error > .001 or loop_error > .00001 or max_knee > 115. or minimum_leg_gap < .15 or minimum_supports < 1:
+        if support_error > .001 or loop_error > .00001 or max_knee > (120. if frenzy else 115.) or minimum_leg_gap < .15 or minimum_supports < 1:
             raise ValueError(f"Zombie supports/anatomy failed {name}: {support_error}, {loop_error}, {max_knee}, {minimum_leg_gap}")
+        if attack and (not .085<kneel_knee_min<=kneel_knee_max<.14 or ready_pelvis-kneel_pelvis_max<.21 or
+                       kneel_pelvis_max-kneel_pelvis_min>.0001 or kneel_hand_min<.10 or kneel_wood_min<.18):
+            raise ValueError(f"Zombie recovery no longer bears its load on knees: {name}, knees={kneel_knee_min}/{kneel_knee_max}, pelvis={kneel_pelvis_min}/{kneel_pelvis_max}, hands={kneel_hand_min}, wood={kneel_wood_min}")
+        if frenzy and (not .085<kneel_knee_min<=kneel_knee_max<.14 or kneel_pelvis_max-kneel_pelvis_min>.0001 or
+                       held_support_error>.00001 or kneel_hand_min<.07 or kneel_wood_min<.10):
+            raise ValueError(f"Frenzy lost planted knee/boot supports or ground clearance: knees={kneel_knee_min}/{kneel_knee_max}, drift={held_support_error}, hands={kneel_hand_min}, wood={kneel_wood_min}")
         records.append(dict(name=name, duration_seconds=duration, loop=loop, maximum_ground_support_error_m=support_error,
             maximum_loop_seam_error=loop_error, maximum_knee_flexion_degrees=max_knee,
             minimum_foot_separation_m=minimum_leg_gap, maximum_wrist_reach_m=max_wrist_reach,
@@ -1179,13 +1280,29 @@ def measure(builder):
             forearm_lengths_m={s:[min(v),max(v)] for s,v in forearm_lengths.items()},
             head_bursts=[dict(start_seconds=start,snap_seconds=.04,hold_seconds=.09,return_seconds=.06,
                 pitch_yaw_roll_degrees=list(rotation)) for start,rotation in HEAD_BURSTS.get(name, ())]))
-    return dict(generator="tools/build-combat-zombie-3d-model.py", version="1.6.0", test_only=True,
+        if attack:
+            records[-1]["kneeling_recovery"]=dict(knee_height_range_m=[kneel_knee_min,kneel_knee_max],
+                pelvis_drop_m=ready_pelvis-kneel_pelvis_max,minimum_hand_tip_height_m=kneel_hand_min,
+                minimum_intact_wood_height_m=kneel_wood_min,ready_endpoint_error=endpoint_error)
+        if frenzy:
+            records[-1]["planted_frenzy"]=dict(knee_height_range_m=[kneel_knee_min,kneel_knee_max],
+                pelvis_height_m=kneel_pelvis_max,maximum_knee_boot_support_drift_m=held_support_error,
+                minimum_hand_tip_height_m=kneel_hand_min,minimum_intact_wood_height_m=kneel_wood_min,
+                ready_endpoint_error=endpoint_error,entry_pose="neutral ram follow-through; runtime blends from retained current attack pose")
+    return dict(generator="tools/build-combat-zombie-3d-model.py", version="1.9.0", test_only=True,
         rig="NpcHumanV2", topology="retained_ordinary_worker", root_motion=False, animation_events=0,
         source_fps=FPS, walk_cycle_distance_m=WALK_DISTANCE, prepare_seconds=PREPARE,
         walk_duration_seconds=WALK_SECONDS,walk_double_support_fraction=.36,
         gait_root_travel=dict(interpolation="quintic_smootherstep",normalized_keys=[list(v) for v in WALK_ROOT_KEYS],
             right_swing=[.10,.42],left_swing=[.60,.92],owner_clock="advance phase by achieved authored root travel; no uniform clip speed substitute"),
-        active_seconds=ACTIVE, recovery_seconds=RECOVER,attack_root_travel_m=.7,
+        active_seconds=ACTIVE, recovery_seconds=RECOVER,attack_root_travel_m=ATTACK_DISTANCE,
+        attack_recovery=dict(sink_seconds=KNEEL_SINK,hold_seconds=RECOVER-KNEEL_SINK-KNEEL_RISE,
+            rise_seconds=KNEEL_RISE,pose="both knees near floor; pelvis lowered; spine hunched under retained crate; boots settle backward; elbows gather, hands loose"),
+        frenzy=dict(clip="ZombieFrenzy",duration_seconds=FRENZY_SECONDS,sink_seconds=KNEEL_SINK,
+            rise_start_seconds=FRENZY_SECONDS-KNEEL_RISE,root_motion=False,
+            impulse_score=[dict(seconds=t,side=sign,gain=gain) for t,sign,gain in FRENZY_IMPULSES],
+            audio=["ZombieFrenzy.wav","ZombieFrenzy2.wav"],
+            supports="sequential lifted boot settling; both knees and boots fixed during convulsions; loaded ready return"),
         role="human_fused_through_fish_crate",attack_contact="two real front crossbar capsules",
         body_torso_compression_m=.115,neck_head_compression_m=.075,foot_centre_spacing_m=.65,
         arm_pose="retained asymmetric elongated forearms and limp downward hands, no crate grip",
@@ -1252,6 +1369,7 @@ def main():
     parser.add_argument("--inspect-contact",action="store_true")
     parser.add_argument("--pose-preview",action="store_true")
     parser.add_argument("--motion-preview",action="store_true")
+    parser.add_argument("--frenzy-preview",action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     args.output_dir=args.output_dir.resolve();args.source_dir=args.source_dir.resolve()
     builder = load_builder()
@@ -1260,12 +1378,14 @@ def main():
         texture=args.output_dir/"ZombieCrateAtlas.png";texture.write_bytes(crate_atlas())
         for name,duration,loop in CLIPS:
             times=sorted(set((0.,duration*.5,min(.78,duration),min(1.3,duration),min(1.72,duration),duration)))
+            if name=="ZombieFrenzy":
+                times=sorted(set((0.,.35,.8,3.61,5.,*(t+d for t,_,_ in FRENZY_IMPULSES for d in (0.,.04,.06,.13,.14,.19,.32)))))
             keys=[(t/duration,pose(builder,name,t)) for t in times]
             builder._create_action(name,"combat_zombie",duration,loop,round(duration*FPS),FPS,keys)
         root,socket=build_crate(builder,crate_geometry(),texture)
         constraint=socket.constraints.new("COPY_TRANSFORMS");constraint.target=builder.result.rig;constraint.subtarget="chest"
         common.save_blend(args.source_dir/"LoaderPosePreview.blend")
-        preview(builder,root,args.output_dir,args.source_dir)
+        preview(builder,root,args.output_dir,args.source_dir,frenzy_only=args.frenzy_preview)
         return
     if args.inspect_contact:
         bpy.ops.wm.open_mainfile(filepath=str(args.source_dir/"ZombieActions.blend"))
@@ -1341,7 +1461,7 @@ def main():
                 node.image.pack()
         constraint=socket.constraints.new("COPY_TRANSFORMS");constraint.target=builder.result.rig;constraint.subtarget="chest"
         if args.refresh_source:common.save_blend(args.source_dir/"ZombieActions.blend")
-        preview(builder,crate_root,args.output_dir,(args.preview_dir or args.source_dir).resolve(),args.motion_preview)
+        preview(builder,crate_root,args.output_dir,(args.preview_dir or args.source_dir).resolve(),args.motion_preview,args.frenzy_preview)
         return
     if args.inspect_attachment:
         pose(builder,"ZombieIdle",0.)
@@ -1369,6 +1489,20 @@ def main():
         print("CLAVICLES",[(b.name,b.parent.name) for b in builder.result.rig.data.bones if "clavicle" in b.name],flush=True)
         for name,duration,_ in CLIPS:
             for t in (0.,duration*.25,duration*.5,duration*.75,duration):pose(builder,name,t)
+        for t in (0.,PREPARE+ACTIVE,PREPARE+ACTIVE+KNEEL_SINK,1.5,PREPARE+ACTIVE+RECOVER-KNEEL_RISE,PREPARE+ACTIVE+RECOVER):
+            pose(builder,"ZombieAttackRight",t)
+            rig=builder.result.rig
+            print("KNEEL LANDMARKS",t,json.dumps({n:[round(v,6) for v in rig.pose.bones[n].head] for n in
+                ("pelvis","chest","head","shin.L","shin.R","foot.L","foot.R","hand.L","hand.R")}),flush=True)
+            print("KNEEL TORSO ANGLE FROM UP",math.degrees((rig.pose.bones["neck"].head-rig.pose.bones["spine"].head).angle(Vector((0.,0.,1.)))),flush=True)
+            chest=rig.pose.bones["chest"].matrix
+            print("KNEEL WOOD MIN Z",min((chest@Vector(v)).z for (vertices,_),role in crate_geometry()
+                if role.split("@")[0] in ("Timber","Metal") for v in vertices),flush=True)
+        for t in (0.,.35,.8,2.5,3.61,4.5,5.):
+            pose(builder,"ZombieFrenzy",t);rig=builder.result.rig
+            print("FRENZY LANDMARKS",t,json.dumps({n:[round(v,6) for v in rig.pose.bones[n].head] for n in
+                ("pelvis","chest","head","shin.L","shin.R","foot.L","foot.R","hand.L","hand.R")}),flush=True)
+            print("FRENZY TORSO ANGLE FROM UP",math.degrees((rig.pose.bones["neck"].head-rig.pose.bones["spine"].head).angle(Vector((0.,0.,1.)))),flush=True)
         print("LOADER SOURCE POSES OK",flush=True)
         return
     author(builder)

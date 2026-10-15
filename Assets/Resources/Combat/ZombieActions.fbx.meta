@@ -36,7 +36,7 @@ ModelImporter:
       takeName: RIG_Player|ZombieAttackLeft
       internalID: 791868483208054485
       firstFrame: 0
-      lastFrame: 177
+      lastFrame: 283
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -65,7 +65,7 @@ ModelImporter:
       takeName: RIG_Player|ZombieAttackRight
       internalID: 7862778811257373412
       firstFrame: 0
-      lastFrame: 177
+      lastFrame: 283
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -102,6 +102,35 @@ ModelImporter:
       loop: 0
       hasAdditiveReferencePose: 0
       loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000u
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: ZombieFrenzy
+      takeName: RIG_Player|ZombieFrenzy
+      internalID: 3042319016827636959
+      firstFrame: 0
+      lastFrame: 500
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
@@ -210,7 +239,7 @@ ModelImporter:
       takeName: RIG_Player|ZombieReveal
       internalID: -4853873296602408562
       firstFrame: 0
-      lastFrame: 140
+      lastFrame: 65
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -239,7 +268,7 @@ ModelImporter:
       takeName: RIG_Player|ZombieWalk
       internalID: -8720375594097700019
       firstFrame: 0
-      lastFrame: 160
+      lastFrame: 50
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

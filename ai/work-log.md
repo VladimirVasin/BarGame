@@ -6,17 +6,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-10-15 - Warehouse, cursor, HUD and loader
 
 - Top-rear station/corded bulb; seeded rusty fridges/floor/scraps/labels.
-  Untaken rooms red, gate lit; hand-free camera/door/atomic pickup/full refusal.
-  Reset keeps empty sources/New recomputes rooms; hero restores; chest beam
-  cursor/torso lag/pause/nested freeze. Compact sharp inspection/held yaw.
-- Take fades red with hum/click; final can starts white flicker/crackle,
-  grinding/mechanism-fan-lens-vent fade, tape-chewed music stop/new arrivals off;
-  live enemies remain. Pause freezes; Reset/New retain cutoff/silent state.
+  Untaken red/gate lit;hand-free camera/door/atomic pickup/full refusal.
+  Reset keeps empty sources/New rooms;chest beam cursor/torso lag/pause/nested freeze;
+  compact sharp inspection/held yaw/hero restored.
+- Take:red fade/humclick;final:white flicker/crackle/grind/mech-fan-lens-vent fade;
+  tape-chewed music/newspawns0/livekept;pause/Reset-New cutoff/silence kept.
+- SFX clearer/music kept;passed: `BarPromenade.Editor.csproj` + warehouse SFX mixer diff.
 - Tabletop below bulb: poured cans vanish; atomic transfer/flat sections/drag/
-  seams→convulsing skin/death/key/shared receipt. Cancel/rebuild keep progress.
-  Key drops chain-lock; held valve raises leaf/collision/release-Esc keeps/max
-  latches; gallery clearance/silent door stub/Reset-New keep.
-- After key receipt, either upper stair descent heats filament/electrical rise,
+  seams→skin/death/key/receipt; cancel/rebuild keeps progress.
+  Key→chainlock↓;holdvalve→leafCOL↑/release-Esc keeps/max latch;
+  Home+warehouse:shared panel/frame entry;warehouse return closed/reset kept.
+  Passed: `build-home-interior-3d-model.py`, `AreaCaptureFixture.CombatWarehouseEntranceDoor`.
+- Key receipt+upper descent heats filament/electrical rise,
   pop/glass/shards; socket/cord stay, fixed lights/lenses/ambient dark,
   chest torch remains. Pause/retention/silent rebuild.
 - Mouse orbit unheld/Alt free pointer/mouse combat waits fresh presses;
@@ -24,16 +25,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   gamepad independent. Context HUD/fades/ammo row/cached widths/RU-EN reload
   alignment; F8legacy/Alt/result-reset-menu; pause hides/freezes,
   modal-reset-disable clears. GameView reviewed.
-- Loader: fused warped torso/head back/limp hands/knees forward/head bursts;
-  planted jerky gait follows achieved travel; slats detach/holes admit next
-  bullet/frame fused. Shared catch skin/world physics roots; bounded hole-exit
-  steering/any fall releases remainder/async spasms settle/pool cleanup.
-- Mimics: seeded sleepers/same rig-load/limbs-head break wood near-hit;
-  HP/free camera/unseen refill/fish cutoff/sleepers kept/Endless Reset0.
-  Wood/wet contacts/body cues share bounded voices/mix/pause/reset.
-  Metre-scale crate/shared CPU-read bake; real room entries clear; CombatTest-only.
+- Loader:fused warped torso/backhead/limp hands/frontknees/head bursts;
+  planted gait follows travel/slats detach→next bullet/frame fused;
+  shared catch skin/world bodies/aligned physical hole-exit/anyfall spill;
+  async spasms settle/pool cleanup.
+- Mimics: stronger ram/block;own-source new hero fall→rig/audio frenzy replaces Recovery;
+  own debris CC restored on resize/reset;cargo atlas kept.
+  Generic local positions reset/no recovery drift.
+  HP/input/refill/reset kept;SFX sync/pause. Near beam detail kept.
+  Metre bake/clear entries/CombatTest.
   Passed: `Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle`.
-- `build-combat-zombie-3d-model.py` / `Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`: passed; frames reviewed.
+- Passed: `build-combat-zombie-3d-model.py`, `Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`.
 - `Range_GameplayHudRespondsToAimDamageAndDebugToggle` passed.
 - Proof: `CombatWarehouseFishProps`, `CombatWarehouseFishAssembly`, `build-combat-warehouse-fish-props.py`,
   `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay`,

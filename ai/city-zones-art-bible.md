@@ -740,11 +740,12 @@ Bed — вентиляция, электрический фон и далёки�
 
 ### Квартира героя
 
-По прямому решению пользователя `2026-09-05` вся видимая начальная квартира
-использует детерминированное Blender-авторство: оболочка, мебель, санузел,
-балкон и бытовые предметы сохраняют реальные размеры и функциональные точки.
-Unity владеет коллизией, взаимодействиями, светом, камерами и живыми
-деформациями; пассивная модель не подменяет эти системы.
+Вся квартира собрана детерминированно в Blender (`2026-09-05`), в метрах
+и с функциональными точками. Unity сохраняет коллизию, действия, свет,
+камеры и живые деформации.
+Вход (`2026-10-15`, также полигон): старое дерево, четыре утопленные филёнки,
+коробка с откосами и наличниками, порог, петли, ручка, замок и глазок.
+Износ сдержанный, на кромках.
 
 Прикроватный будильник имеет корпус шириной `27,6 см`; цифры читаются в
 начальном крупном плане. Подушка — выпуклый тканевый объём с тонким краем,
@@ -4240,7 +4241,7 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 wetconcrete/rustbentsteel/peelpaint/swollenwood-cardboard/wornrubber;
 cargo/workdisgust§6/metricwet-rust-scuff/rarewear;
 9sets faceentry/doorclear/plates1-9/seedfixed.
-D7fan/guardedlift-drum-pusher↔SFX/gatedrive-backdoor;
+D7fan/guardedlift-drum-pusher↔SFX/gate-backdoor/entry=Homeleaf;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
 4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;
@@ -4253,12 +4254,12 @@ bulb0/socketcord/fixedlights-lenses-ambient0/Lchestonly/fog-sky-strobe0/§6.
 Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;
 skinneck-shoulders-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;
 slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-return.
-Mimics:room-wallfishcrates;folded rig→near/hit→arms-legs-head
-break boards→combat/freecamera;
-Woodcrack/wetshift/inhale/steps/breath/fall→silence;Fishorganic.
+Mimic:near-hit→rigburst/planted/gaze/limblag;
+ram:compress→throw→kneel-rise;fell hero→loaded uneven spasms→rise;
+wood-wet inhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
 coat-scarf rig/slinganchors;physics0/hairkept.
-Lchest/look→;nearfill→far0/beam↑.
+Lchest/look→/far0/near-detail/beam↑.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:all3/1held-2stowed/finiteammo/Eshared;

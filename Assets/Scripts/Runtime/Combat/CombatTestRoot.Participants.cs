@@ -91,9 +91,11 @@ namespace BarPromenade
                 body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
                 VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
                     obj.transform, DefaultNpcPopulation.CombatTestOpponentId(i));
+                // Body/wardrobe scans must finish before the fused cargo is
+                // attached beneath this same skeleton with its own atlas.
+                CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
                 CombatActor actor = obj.AddComponent<CombatActor>();
                 actor.InitializeOpponent(presentation, body);
-                CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
                 actor.SetContactTarget(Hero);
                 actor.JournalActorId = i + 2;
                 combatOpponents.Add(actor);

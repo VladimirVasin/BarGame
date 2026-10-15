@@ -9,6 +9,7 @@ namespace BarPromenade
         {
             internal Transform Root;
             internal Vector3 RestPosition, RestScale, Centre, Size, Velocity, AngularVelocity, Exit, Normal, GapUp;
+            internal Vector3 PreviousExitOpening, PreviousExitNormal;
             internal Quaternion RestRotation;
             internal readonly Transform[] Bones = new Transform[3];
             internal readonly Vector3[] RestPositions = new Vector3[3], SamplePositions = new Vector3[3];
@@ -16,8 +17,8 @@ namespace BarPromenade
             internal Rigidbody Body;
             internal CombatZombieMaterialContact Sound;
             internal CapsuleCollider Shape;
-            internal bool Released, Pending, Retired, Exiting;
-            internal float Delay, Age;
+            internal bool Released, Pending, Retired, Exiting, ExitAligned;
+            internal float Delay, Age, ExitAlignmentTolerance;
             internal int Pulse = -1;
         }
 
@@ -77,7 +78,7 @@ namespace BarPromenade
                 fish.Sound?.ResetContacts();
                 fish.Body.isKinematic = true; fish.Body.useGravity = true; fish.Body.constraints = RigidbodyConstraints.None;
                 fish.Shape.enabled = false;
-                fish.Released = fish.Pending = fish.Retired = fish.Exiting = false; fish.Age = fish.Delay = 0f; fish.Pulse = -1;
+                fish.Released = fish.Pending = fish.Retired = fish.Exiting = fish.ExitAligned = false; fish.Age = fish.Delay = 0f; fish.Pulse = -1;
                 fish.Root.SetLocalPositionAndRotation(fish.RestPosition, fish.RestRotation); fish.Root.localScale = fish.RestScale;
             }
         }
@@ -102,7 +103,6 @@ namespace BarPromenade
             }
             if (nearest == null) return;
             nearest.Pending = true; nearest.Delay = .12f;
-            nearest.Exit = Model.InverseTransformPoint(opening);
             nearest.Normal = Model.InverseTransformDirection(outward);
             // The longest tangential board axis spans the opening. Keep the
             // fish's thinner body axis across its short edge while it squeezes
@@ -116,7 +116,48 @@ namespace BarPromenade
                 if (Mathf.Abs(Vector3.Dot(direction, outward)) > .5f || Mathf.Abs(size[axis]) <= longest) continue;
                 longAxis = direction; longest = Mathf.Abs(size[axis]);
             }
-            nearest.GapUp = Model.InverseTransformDirection(Vector3.Cross(outward, longAxis).normalized);
+            Vector3 gapUp = Vector3.Cross(outward, longAxis).normalized;
+            nearest.GapUp = Model.InverseTransformDirection(gapUp);
+            // Adjacent slats need not be symmetric about the removed board:
+            // the head closure narrows one side of the first front rail's hole.
+            // Centre the trunk in the actual free interval, not the old timber.
+            float halfFishLength = nearest.Shape.height * .5f * Mathf.Abs(nearest.Root.lossyScale[nearest.Shape.direction]);
+            float below = float.NegativeInfinity, above = float.PositiveInfinity;
+            foreach (Part other in boards) if (other != board && !other.Detached)
+                BoundSpillOpening(other, board, opening, outward, longAxis, gapUp, halfFishLength, ref below, ref above);
+            foreach (Part other in core)
+                BoundSpillOpening(other, board, opening, outward, longAxis, gapUp, halfFishLength, ref below, ref above);
+            nearest.ExitAlignmentTolerance = .006f;
+            if (float.IsFinite(below) && float.IsFinite(above))
+            {
+                opening += gapUp * ((below + above) * .5f);
+                Vector3 scale = nearest.Root.lossyScale;
+                int axis = nearest.Shape.direction;
+                float radius = nearest.Shape.radius * Mathf.Max(Mathf.Abs(scale[(axis + 1) % 3]), Mathf.Abs(scale[(axis + 2) % 3]));
+                nearest.ExitAlignmentTolerance = Mathf.Clamp(((above - below) * .5f - radius) * .5f, .0005f, .006f);
+            }
+            nearest.Exit = Model.InverseTransformPoint(opening);
+        }
+
+        private static void BoundSpillOpening(Part other, Part removed, Vector3 opening, Vector3 outward,
+            Vector3 across, Vector3 up, float halfFishLength, ref float below, ref float above)
+        {
+            BoxCollider shape = other.Attached;
+            Vector3 offset = shape.transform.TransformPoint(shape.center) - opening;
+            if (Mathf.Abs(Vector3.Dot(offset, across)) > halfFishLength + PartHalfSpan(shape, across) ||
+                Mathf.Abs(Vector3.Dot(offset, outward)) > PartHalfSpan(shape, outward) + PartHalfSpan(removed.Attached, outward) + .025f) return;
+            float centre = Vector3.Dot(offset, up), half = PartHalfSpan(shape, up);
+            if (centre + half < 0f) below = Mathf.Max(below, centre + half);
+            else if (centre - half > 0f) above = Mathf.Min(above, centre - half);
+        }
+
+        private static float PartHalfSpan(BoxCollider shape, Vector3 direction)
+        {
+            Transform frame = shape.transform;
+            Vector3 half = shape.size * .5f;
+            return Mathf.Abs(Vector3.Dot(frame.TransformVector(Vector3.right * half.x), direction)) +
+                Mathf.Abs(Vector3.Dot(frame.TransformVector(Vector3.up * half.y), direction)) +
+                Mathf.Abs(Vector3.Dot(frame.TransformVector(Vector3.forward * half.z), direction));
         }
 
         private void ReleaseFish(Fish fish, Vector3 opening, Vector3 outward, bool throughHole = false)
@@ -129,6 +170,9 @@ namespace BarPromenade
             fish.Body.position = fish.Root.position; fish.Body.rotation = fish.Root.rotation;
             fish.Body.isKinematic = false; fish.Shape.enabled = true;
             fish.Exiting = throughHole;
+            fish.ExitAligned = false;
+            fish.PreviousExitOpening = opening;
+            fish.PreviousExitNormal = outward;
             fish.Body.useGravity = !throughHole;
             fish.Body.constraints = throughHole ? RigidbodyConstraints.FreezeRotation : RigidbodyConstraints.None;
             if (throughHole)
@@ -192,16 +236,28 @@ namespace BarPromenade
                 if (fish.Exiting)
                 {
                     Vector3 opening = Model.TransformPoint(fish.Exit), normal = Model.TransformDirection(fish.Normal);
+                    Vector3 openingVelocity = (opening - fish.PreviousExitOpening) / seconds;
+                    Vector3 normalVelocity = (normal - fish.PreviousExitNormal) / seconds;
+                    fish.PreviousExitOpening = opening; fish.PreviousExitNormal = normal;
                     Vector3 centre = fish.Body.worldCenterOfMass;
                     if (Vector3.Dot(centre - opening, normal) > .23f || fish.Age >= .9f)
                         FinishFishExit(fish);
                     else if (!fish.Body.isKinematic)
                     {
-                        // Drive the original physical body through the real
-                        // opening before gravity/tumbling can snag it on the
-                        // next slat. Remaining timber keeps full collision.
-                        Vector3 target = opening + normal * .28f;
-                        fish.Body.linearVelocity = Vector3.ClampMagnitude((target - centre) * 12f, 3.2f);
+                        // Align inside the crate before pushing out. A diagonal
+                        // escape from a lower fish root otherwise wedges its
+                        // rounded trunk against the still-solid slat below.
+                        // Both stages move the same body with full wood contact.
+                        Vector3 offset = centre - opening;
+                        if (!fish.ExitAligned && Vector3.ProjectOnPlane(offset, normal).sqrMagnitude < fish.ExitAlignmentTolerance * fish.ExitAlignmentTolerance &&
+                            Vector3.Dot(offset, normal) < -.16f) fish.ExitAligned = true;
+                        float stageOffset = fish.ExitAligned ? .28f : -.24f;
+                        Vector3 target = opening + normal * stageOffset;
+                        // Track measured rig motion without a spring's steady
+                        // lag, even while the owner walks. Use the same stage
+                        // for both frames so changing stages adds no impulse.
+                        Vector3 targetVelocity = Vector3.ClampMagnitude(openingVelocity + normalVelocity * stageOffset, 3.2f);
+                        fish.Body.linearVelocity = Vector3.ClampMagnitude(targetVelocity + (target - centre) * 12f, 3.2f);
                         fish.Body.angularVelocity = Vector3.zero;
                     }
                 }

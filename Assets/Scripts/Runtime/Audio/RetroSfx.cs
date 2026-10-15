@@ -1099,7 +1099,7 @@ namespace BarPromenade
                 ((uint)variant * 0xC2B2AE35u);
             float detune = VariantDetune(variant);
             float lowPassAmount = 1f - Mathf.Exp(-2f * Mathf.PI *
-                (gunshot ? 4200f : 2000f) / SampleRate);
+                (gunshot ? 5400f : 2600f) / SampleRate);
             float filtered = 0f;
             for (int index = 0; index < samples.Length; index++)
             {

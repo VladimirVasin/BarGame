@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 SHOWER_CURTAIN_FRONT_Z = 2.384
@@ -57,6 +57,14 @@ EXTERNAL_BINDINGS = {
     "Home Bathroom Shower Mixer Handle Hot": "HomeBrushingAction/Models/FaucetHandle",
     "Home Bathroom Shower Mixer Handle Cold": "HomeBrushingAction/Models/FaucetHandle",
 }
+ENTRY_DOOR_PARTS = (
+    "Home Exit Door", "Home Entry Door Recessed Panels",
+    "Home Entry Door Panel Mouldings", "Home Entry Door Frame",
+    "Home Entry Door Architraves", "Home Entry Door Threshold",
+    "Home Entry Door Hinges", "Home Entry Door Handle Plates",
+    "Home Entry Door Levers", "Home Entry Door Peephole",
+    "Home Entry Door Hardware Insets", "Home Entry Door Edge Wear",
+)
 
 
 def swap(v):
@@ -324,6 +332,108 @@ def shower_side_position(index):
             SHOWER_CURTAIN_FRONT_Z - SHOWER_CURTAIN_END_OVERLAP + SHOWER_CURTAIN_SIDE_WIDTH * .5 + index * step)
 
 
+def add_entry_door(b):
+    """A fixed-metre joinery assembly, shared by Home and the warehouse.
+
+    The floor origin is the wall centre, with +Z facing the occupied room.
+    Stiles and rails surround actual thin inset panels: there is no slab or
+    contrasting rectangular patch masquerading as door construction.
+    """
+    def placed(name, geometry, sheet="DarkWood", tint=None):
+        lo, hi = kit.bounds(geometry)
+        centre = tuple((a+c)*.5 for a,c in zip(lo,hi))
+        local = kit.translated(geometry, tuple(-v for v in centre))
+        return b.add(name, tuple(c-a for a,c in zip(lo,hi)), sheet,
+                     position=centre, geometry=bp.to_source(local), tint=tint)
+
+    def cuboid(centre, size, bevel=.004):
+        return bp.u_box(centre, size, bevel)
+
+    def rod(centre, diameter, length, axis="y", sides=16):
+        geometry = bp.u_cylinder((0,0,0), (diameter,length*.5,diameter), sides)
+        if axis=="x": geometry=bp.u_rotated(geometry,(0,0,90))
+        if axis=="z": geometry=bp.u_rotated(geometry,(90,0,0))
+        return kit.translated(geometry,centre)
+
+    # The familiar four-panel proportions keep the grip on a solid lock stile.
+    # Every panel has a physical recess on both faces and a bevelled moulding.
+    stiles=[cuboid((side*.49,1.115,0),(.14,2.16,.052)) for side in (-1,1)]
+    # The muntin extends beneath both adjacent rails. Butt-ending a bevelled
+    # member at the upper panel edge left a small through-notch in the leaf.
+    stiles.append(cuboid((0,1.135,0),(.075,1.88,.052)))
+    for y, height in ((.125,.18),(.825,.14),(2.125,.14)):
+        stiles.append(cuboid((0,y,0),(.84,height,.052)))
+    placed("Home Exit Door",kit.merge_all(stiles),tint=(.245,.145,.078,1))
+    panels=[]; mouldings=[]
+    for x in (-.22875,.22875):
+        for y, height in ((.485,.54),(1.475,1.16)):
+            width=.3825
+            panels.append(cuboid((x,y,0),(width,height,.020),.005))
+            for side in (-1,1):
+                z=side*.018
+                for sx in (-1,1):
+                    mouldings.append(cuboid((x+sx*(width*.5-.010),y,z),(.020,height,.016),.003))
+                for sy in (-1,1):
+                    mouldings.append(cuboid((x,y+sy*(height*.5-.010),z),(width-.040,.020,.016),.003))
+    placed("Home Entry Door Recessed Panels",kit.merge_all(panels),tint=(.214,.121,.064,1))
+    placed("Home Entry Door Panel Mouldings",kit.merge_all(mouldings),tint=(.27,.164,.09,1))
+
+    # Lining occupies the existing wall thickness, with a small dark reveal
+    # around the leaf. The broad old opening is closed by Home's wall infills.
+    frame_geometry=kit.door_frame(1.132,2.206,.22,jamb=.094,chamfer=.006)
+    b.add("Home Entry Door Frame",(1.32,2.30,.22),"DarkWood",
+          position=(0,1.15,0),geometry=kit.translated(frame_geometry,(0,0,-1.15)),
+          tint=(.18,.104,.057,1))
+    architraves=[]
+    for side in (-1,1):
+        for sx in (-1,1):
+            architraves.append(cuboid((sx*.698,1.15,side*.133),(.124,2.30,.034),.006))
+        architraves.append(cuboid((0,2.255,side*.133),(1.272,.09,.034),.006))
+    placed("Home Entry Door Architraves",kit.merge_all(architraves),tint=(.23,.136,.073,1))
+    placed("Home Entry Door Threshold",cuboid((0,.018,0),(1.132,.036,.24),.004),
+           tint=(.16,.105,.066,1))
+
+    hinges=[]
+    for y in (.34,1.115,1.89):
+        for side in (-1,1):
+            # A restrained two-leaf hinge: seated plates, three real knuckles.
+            hinges.append(cuboid((-.567,y,side*.031),(.065,.096,.008),.002))
+            for offset in (-.033,0,.033):
+                hinges.append(rod((-.569,y+offset,side*.039),.018,.030))
+    metal=(.29,.265,.20,1)
+    placed("Home Entry Door Hinges",kit.merge_all(hinges),"PaintedMetal",metal)
+    plates=[];levers=[];insets=[];peepholes=[]
+    for side in (-1,1):
+        z=side*.032
+        plates.append(cuboid((.475,1.015,z),(.055,.214,.010),.010))
+        for y in (.925,1.105):
+            plates.append(rod((.475,y,side*.039),.009,.004,"z",12))
+            insets.append(cuboid((.475,y,side*.0415),(.006,.0017,.001),.0003))
+        levers.append(rod((.475,1.065,side*.065),.026,.062,"z"))
+        # The lever runs towards the centre, with a rounded terminal and an
+        # upward bent end. It reads as working hardware from either side.
+        levers.append(rod((.414,1.065,side*.103),.020,.136,"x"))
+        levers.append(rod((.347,1.074,side*.103),.020,.027))
+        insets.append(rod((.475,.985,side*.038),.013,.003,"z",12))
+        insets.append(cuboid((.475,.976,side*.039),(.007,.017,.002),.001))
+        peepholes.append(rod((0,1.58,side*.032),.035,.014,"z",20))
+        insets.append(rod((0,1.58,side*.0395),.018,.002,"z",16))
+    placed("Home Entry Door Handle Plates",kit.merge_all(plates),"PaintedMetal",metal)
+    placed("Home Entry Door Levers",kit.merge_all(levers),"PaintedMetal",(.35,.32,.25,1))
+    placed("Home Entry Door Peephole",kit.merge_all(peepholes),"PaintedMetal",metal)
+    placed("Home Entry Door Hardware Insets",kit.merge_all(insets),"Plain",(.035,.030,.022,1))
+
+    # Small worn edges concentrate where the grip and floor would touch them.
+    # They do not turn the household object into a marked or symbolic prop.
+    wear=[]
+    for side in (-1,1):
+        for x,y,width,height in ((.526,1.03,.006,.048),(.508,.945,.004,.028),
+                                 (-.41,.059,.052,.003),(.31,.063,.085,.0025),
+                                 (.537,.19,.003,.061),(-.546,.37,.003,.037)):
+            wear.append(cuboid((x,y,side*.0265),(width,height,.0015),.0004))
+    placed("Home Entry Door Edge Wear",kit.merge_all(wear),"DarkWood",(.31,.205,.118,1))
+
+
 def add_bindings(b):
     # Broad structural masses and furniture are fixed-metre meshes. Chamfers
     # are authored in metres and never inflated by a GameObject size scale.
@@ -336,11 +446,10 @@ def add_bindings(b):
         "Home Entry Wall Left":((3.70,3.4,.24),"Wallpaper"),
         "Home Entry Wall Right":((3.70,3.4,.24),"Wallpaper"),
         "Home Entry Lintel":((2.60,.76,.24),"Wallpaper"),
-        "Home Entry Wall Left Door Infill":((.5,2.64,.24),"Wallpaper"),
-        "Home Entry Wall Right Door Infill":((.5,2.64,.24),"Wallpaper"),
-        "Home Entry Door Transom Infill":((1.60,.34,.24),"Wallpaper"),
+        "Home Entry Wall Left Door Infill":((.64,2.64,.24),"Wallpaper"),
+        "Home Entry Wall Right Door Infill":((.64,2.64,.24),"Wallpaper"),
+        "Home Entry Door Transom Infill":((1.32,.34,.24),"Wallpaper"),
         "Home Entry Rug":((1.55,.03,1.35),"Rug"),
-        "Home Exit Door":((1.60,2.30,.12),"DarkWood"),
         "Home Right Wall South Pier":((.24,3.4,.91),"Wallpaper"),
         "Home Right Wall Middle Pier":((.24,3.4,.43),"Wallpaper"),
         "Home Right Wall North Pier":((.24,3.4,3.82),"Wallpaper"),
@@ -416,6 +525,7 @@ def add_bindings(b):
             geom=cylinder(size,((1,-.5),(1,-.46),(.62,-.42),(.52,.38),(.70,.45),(1,.5)))
         if name=="Home Bathroom Shower Basin":geom=rectangular_drain_surface(size,.060,.012)
         b.add(name,size,sheet,geometry=geom)
+    add_entry_door(b)
     b.add("Home Bathroom Shower Drain",(.15,.012,.15),"PaintedMetal",
           position=SHOWER_DRAIN_POSITION,tint=(.38,.39,.34,1),geometry=shower_drain_grille())
     b.add("Home Bathroom Shower Drain Well",(.12,.030,.12),"Plain",
@@ -443,6 +553,9 @@ def add_bindings(b):
           geometry=cylinder((.54,.05,.506),((1,-.5),(1,.5),(.70,.5),(.70,-.5))))
     b.add("Home Bathroom Sink Pedestal",(.26,.72,.26),"Enamel",
           geometry=cylinder((.26,.72,.26),((1,-.5),(1,-.44),(.68,-.36),(.62,.26),(.84,.5))))
+    # This existing literal moved to a constant-position call; retain its
+    # fixed shape instead of letting the two-vector scanner drop the binding.
+    b.add("Home Bathroom Shower Head",(.15,.12,.15),geometry=cylinder((.15,.12,.15)))
     # Contextual hand/mouth props keep the exact short semantic names used
     # beneath their existing socket-owned roots.
     for name,size,kind in (("Handle",(.012,.22,.012),"Cylinder"),
@@ -719,6 +832,48 @@ def add_decor(b):
 
 def validate(b):
     errors=[];triangles=0
+    # Inspect the actual exported front surfaces. A full flat slab behind
+    # applique trim would pass bounds/count checks while losing the recess.
+    def door_depths(x,y):
+        depths=[]
+        for name in ENTRY_DOOR_PARTS[:3]:
+            p=next(part for part in b.parts if part["name"]==name)
+            vertices,faces=b.geometry[name]
+            vertices=[tuple(a+c for a,c in zip(swap(v),p["position"])) for v in vertices]
+            for face in faces:
+                for i in range(1,len(face)-1):
+                    a,c,d=(vertices[j] for j in (face[0],face[i],face[i+1]))
+                    dx,dy=c[0]-a[0],c[1]-a[1];ex,ey=d[0]-a[0],d[1]-a[1]
+                    determinant=dx*ey-dy*ex
+                    if abs(determinant)<1e-12:continue
+                    u=((x-a[0])*ey-(y-a[1])*ex)/determinant
+                    v=(dx*(y-a[1])-dy*(x-a[0]))/determinant
+                    if u>=-1e-8 and v>=-1e-8 and u+v<=1+1e-8:
+                        depths.append(a[2]+u*(c[2]-a[2])+v*(d[2]-a[2]))
+        return depths
+    for x in (-.22875,.22875):
+        for y,height in ((.485,.54),(1.475,1.16)):
+            panel=door_depths(x,y);stile=door_depths(.49,y)
+            if not panel or not stile or max(stile)-max(panel)<.015:
+                errors.append("entry door has no real recessed panel")
+            # Probe inside each visible aperture corner, where a bevelled
+            # panel alone might leave daylight. The seated mouldings close
+            # these joints on both sides without filling the visible recess.
+            for sx in (-1,1):
+                for sy in (-1,1):
+                    corner=door_depths(x+sx*(.3825*.5-.0005),y+sy*(height*.5-.0005))
+                    if not corner or min(corner)>=0 or max(corner)<=0:
+                        errors.append("entry door has an open panel corner")
+    for x,y in ((0,2.04),(0,.22)):
+        seam=door_depths(x,y)
+        if not seam or min(seam)>-.025 or max(seam)<.025:
+            errors.append("entry door centre stile leaves an open rail joint")
+    if door_depths(.563,1.5):errors.append("entry door leaf blocks its jamb clearance")
+    for name in ENTRY_DOOR_PARTS:
+        p=next(part for part in b.parts if part["name"]==name)
+        if p["fit"]!="fixed" or p["role"]!="binding":errors.append("entry door is not a fixed shared binding")
+        if p["bounds_min"][2]+p["position"][2]<-.15001 or p["bounds_max"][2]+p["position"][2]>.15001:
+            errors.append("entry door exceeds its wall-depth contract")
     def vertical_hits(name,x,z):
         vertices,faces=b.geometry[name];vertices=[swap(v) for v in vertices];heights=[]
         for face in faces:
@@ -844,6 +999,8 @@ def validate(b):
             "shower_valves_use_shared_sink_resource":True,
             "shower_drain_open_grate_and_recess":True,
             "shower_basin_and_water_drain_apertures":True,
+            "entry_door_real_panels_and_leaf_clearance":True,
+            "entry_door_joinery_closed":True,
             "no_coincident_cumulative_decor":True}
 
 
@@ -908,6 +1065,8 @@ def compose_source_preview(b,render=False):
     }
     poses.update({f"Home Bathroom Shower Curtain Side {i + 1}":shower_side_position(i)
                   for i in range(SHOWER_CURTAIN_SIDE_COUNT)})
+    poses.update({part["name"]:(part["position"][0],part["position"][1],part["position"][2]-4)
+                  for part in b.parts if part["name"] in ENTRY_DOOR_PARTS})
     collection=bpy.data.collections.new("COMPOSED_PREVIEW_Frames_1_to_7")
     bpy.context.scene.collection.children.link(collection)
     for part in b.parts:
@@ -977,9 +1136,17 @@ def main():
                         "ShowerCurtainPivot":[3.40,0,2.384],
                         "ShowerDrain":list(SHOWER_DRAIN_POSITION),
                         "ShowerCollectedWater":list(SHOWER_WATER_POSITION),
+                        "EntryDoorFloor":[0,0,-4],
                         "LockedRoomDoor":[.68,1.1,.855]},
              "import_contract":{"fixed_mesh_scale":1,"parametric_size":"full metre envelope; cylinder caller Y is half-height",
                                 "external_bindings":EXTERNAL_BINDINGS,
+                                "entry_door":{"parts":list(ENTRY_DOOR_PARTS),
+                                              "origin":"floor at wall centre; +Z occupied-room face",
+                                              "outer_frame":[1.32,2.30,.22],
+                                              "architrave_bounds":[[-.76,0,-.15],[.76,2.30,.15]],
+                                              "leaf":[1.12,2.16,.052],
+                                              "leaf_position":[0,1.115,0],
+                                              "panel_count":4,"minimum_recess":.016},
                                 "shower_water":{"basin_top_y":.2125,"water_top_y":.2145,
                                                 "drain_xz":[SHOWER_DRAIN_POSITION[0],SHOWER_DRAIN_POSITION[2]],
                                                 "basin_hole_radius":.060,"water_hole_radius":.075,

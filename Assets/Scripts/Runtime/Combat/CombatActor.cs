@@ -47,7 +47,7 @@ namespace BarPromenade
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => !BodyDamage.CanStand || IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+        public float MovementScale => !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
@@ -168,7 +168,7 @@ namespace BarPromenade
         // a catching step, but can never cancel an already committed fall.
         internal bool HasAttackBalance => BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        private bool CanAttemptBodyAction => !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => !IsZombieFrenzied && !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
         internal bool CanAttemptUpperBodyAttack => !HasWeaponSwitchRequest && BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
         private string UpperBodyAttackRejection => !BodyDamage.CanUseRightHand ? "right_hand_unavailable" : weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
@@ -320,6 +320,7 @@ namespace BarPromenade
             collectShove = false;
             collectKick = false;
             if (AdvanceZombieMimic(seconds)) return;
+            InterruptZombieFrenzyIfNeeded();
             CancelInterruptedShoveContact();
             if (AdvanceKnockdown(seconds)) { CancelPendingKick("knocked_down"); return; }
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
@@ -365,10 +366,9 @@ namespace BarPromenade
             if (previousPhase == MeleePhase.Windup && State.Phase != MeleePhase.Windup && State.IsAttacking &&
                 sequence == State.AttackSequence)
             {
-                if (IsZombie) PlayZombieLunge();
-                else RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
+                if (!IsZombie) RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
             }
-            if ((State.IsAttacking && !IsRecoil(reaction)) || (elapsed.HasActiveWindow && !elapsed.IsKick))
+            if (!IsZombieFrenzied && ((State.IsAttacking && !IsRecoil(reaction)) || (elapsed.HasActiveWindow && !elapsed.IsKick)))
             {
                 collectSweep = true;
                 sweepFrom = from;
@@ -390,7 +390,7 @@ namespace BarPromenade
             if (IsSwitchingWeapon) return;
             if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
-            if (!IsZombie || !State.IsAttacking) AdvanceCombatFacing(seconds);
+            if (!IsZombieFrenzied && (!IsZombie || !State.IsAttacking)) AdvanceCombatFacing(seconds);
             if (!IsZombie) UpdateAttackReach(true);
             footwork?.SetFirearmWalkLocomotion(UsesFirearmWalkLocomotion);
             footwork?.Advance(seconds, State);
@@ -457,7 +457,7 @@ namespace BarPromenade
             if (!postmortem && !detachedPart) reactionClock = 0f;
             var impact = new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                unarmed ? direction * (result == MeleeHitResult.Blocked ? 12f : 28f) :
+                unarmed ? direction * (result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse) :
                     CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
                 kind: unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
                 woundDamage: unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);

@@ -2,63 +2,74 @@
 
 ## Current facts
 
-- **Accepted exception — 2026-10-15, mimics:**
-  CombatTest/§6/art§15a;Dormant/same rig-load→near-hit/reveal1.4s;
-  HP-kept/freeinput/Awakefocus/18crates/unseenrefill/3src0/dormantkept;
-  Arms/legs/head break wood;cached TRS resets on clip changes.
-  Wood-wet SFX/EndlessReset0init.
+- **Accepted 2026-10-15, shared entry door design:**
+  Home/CombatTest `ApartmentEntranceDoor`;
+  aged wood/4recessedpanels/frame-reveals-architraves/threshold/3hinges/levers-keyhole-peephole/edgewear;
+  leaf1.12×2.16×.052/frame1.32×2.3×.22/opening1.32/Patch0;
+  Home COL-docks-travel/text kept;warehouse COL=frame/closed.
 
-- **Accepted exception — 2026-10-15, docker:**
-  User:CombatTest/art§15a/story§6;
-  Eachslat detach→hole/corekept/nextbullet0pierce;
+- **Accepted 2026-10-15, entrance:**
+  CombatTest entry=ordinary→corrupted/return0;silent/travel0;§6/§21.
+
+- **Accepted exception 2026-10-15, mimics:**
+  CombatTest/§6/art§15a;reveal/chase/ram/kneel-rise;
+  OwnSource-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
+  entry=depth;attack-move-buffer0/hurt-state stop/pause pose+audio/reset→chase;
+  HP/input/focus/refill/TRS/atlas/debris kept.
+
+- **Accepted 2026-10-15, beam:**
+  ChestSpot:d²/4m/5rays10Hz/centre|2side/.045↓.22↑/pause-reset.
+
+- **Accepted exception 2026-10-15, docker:**
+  CombatTest;slat detach→hole/corekept/nextbullet0pierce;
   fish8worldroots/1skin/holes-anyfallspill/finiteasync;
-  ram:head/livewood/skinclamp/CCpairsrestore
+  ram:head/livewood/skinclamp
 
-- **Accepted — 2026-10-15, contextual CombatTest HUD:**
+- **Accepted 2026-10-15, contextual CombatTest HUD:**
   Ammo1row/head0/cache/reloadRUEN-measured-RBalign;
   fade.15/.3/reverse/gamepad/crosshair-focus-E;
   F8legacy0/Alt:toolbar-enemyHP-count-controls/result-reset-menu;
   pause-modal-transition0/reset-disable/cacheframe0rays;art§15a.
 
-- **Accepted — 2026-10-15, continuous mouse look and cursor ownership:**
+- **Accepted 2026-10-15, continuous mouse look and cursor ownership:**
   Unheld ordinary-seated orbit/RMBaim/Alt cursor-lookcombat0/freshpress;
   gameplay locked-hidden/menu free/focusdelta0/authoredwins.
   `GameCursor`:leases0/5/10/cap32/prune/update/cleanup/stalesnapshots0.
 
-- **Accepted exception — 2026-10-15, warehouse bulb failure:**
+- **Accepted exception 2026-10-15, warehouse bulb failure:**
   Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly;
   pause0/Reset-Newkeep/silent;newgame-invreset0/camera-input-text-damage-story0;§6.
 
-- **Accepted exception — 2026-10-15, warehouse gate:**
-  Keykept→chainlockfall;holdE→wheel-leafCOL↑;release-pause-Esckeep/maxlatch-close.
-  Sharedstanding/authoredbounds/Reset-Newkeep/newgame-invreset0;
-  Slots/upperkept/area-headroom;doorfull silentstub/travel0;§6.
+- **Accepted exception 2026-10-15, warehouse gate:**
+  Key→chainlock↓;holdE→wheel-leafCOL↑;release-pause-Esckeep/maxlatch.
+  Sharedstanding/bounds/Reset-Newkeep/newgame-invreset0;
+  Gallery/upper/headroom;goaldoor silentstub;§6.
 
-- **Accepted — 2026-10-15, warehouse tabletop:**
-  WorkSurfaceCloseUp7.95<bulb8.011;trough-rimsfill/pourcans0.
+- **Accepted 2026-10-15, warehouse tabletop:**
+  WorkSurfaceCloseUp<bulb;trough-rimsfill/pourcans0.
 
-- **Accepted — 2026-10-15, warehouse spawn cutoff:**
+- **Accepted 2026-10-15, warehouse spawn cutoff:**
   3fishsourceIDs→Endless pending-spawns0/livefight/autowin0;
-  event-lifecycle/Reset-Newkeep/newgame-invreset freshdelay.
+  events/Reset-Newkeep/newgame-invreset freshdelay.
 
-- **Accepted exception — 2026-10-15, warehouse fish assembly:**
+- **Accepted exception 2026-10-15, warehouse fish assembly:**
   §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-key1/sharedreceipt/retry;
   standing-modal-camera/Esc-Reset-Newkeep/newgame-invreset0/fishorganic.
 
-- **Accepted exception — 2026-10-15, warehouse final-can power:**
-  White cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure;
+- **Accepted exception 2026-10-15, warehouse final-can power:**
+  Cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure;
   fanlens/vent-mechstrain5s-grind→0;music tapechew/wow-pitch-LP-volume0;
   pause-cleanup/Reset-Newsilent/cache-hotload-strobe0.
 
-- **Accepted — 2026-10-15, inspection framing:**
+- **Accepted 2026-10-15, inspection framing:**
   Shared compact text-buttons/cans;Examine centred/innerframe0/actions.
 
-- **Accepted exception — 2026-10-15, hand-free refrigerators:**
-  Home-warehouse hand0/door-camera-modal/exactvisibilityrestore;
-  cached forceRenderingOff/rig-light-damage kept.
+- **Accepted exception 2026-10-15, hand-free refrigerators:**
+  Home-warehouse hand0/door-camera-modal/visibilityrestore;
+  cached hiddenflags/rig-light-damage kept.
 
-- **Accepted exception — 2026-10-15, warehouse fish finds:**
+- **Accepted exception 2026-10-15, warehouse fish finds:**
   Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms;
   RedTake→fade-humclick/6off/gateonuntilburst;
   rustenamel/stains/openscraps/cream tail-belly-head/bottom→top/text-brand0.
@@ -88,9 +99,9 @@
   Blender/seed/Reset-Newkeep/flat testonly/clear/pause/hazard-falldmg0.
 
 - **Accepted 2026-10-14, warehouse audio:**
-  Heavy lowsteps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
-  warehouse_theme WAV-OGG-MP3/MusicMix;playhead/Reset-New pre-finalcan;
-  pause-disable-resume/exit/empty0/cachedlowSFX/sharedmix/cleanup.
+  SFX:clearer/EQ165Hz×1.45/LP6800/stepsLP2600/gunsLP5400;
+  pitch.84/.88/echo-room/dryUI;warehouse_theme WAV-OGG-MP3/MusicMix kept;
+  playhead/Reset-New pre-finalcan/pause-disable-resume/exit/cache/cleanup
 
 - **Accepted 2026-10-14, warehouse UV:**
   3×1024 propUV/metric tiles-macro/raredecals/stretch→triplanar/joint-contact-load wear.
@@ -104,10 +115,10 @@
   cleanup-hotalloc0/Advance-repeatApply0timebend.
 
 - **Accepted exception 2026-10-14, warehouse chest light:**
-  LM65Chest/on/Spot60/16m/60–28°hard;
-  fog-sky-camera0/GIhero3D3→SmoothStep-black12m/Ps1Lit bakedGI-only;
-  LateUpdate/off outside-disable-unload-subsystem;
-  bounded1hero/resetkeep/cleanup/MPB-clones-newpass0/costunmeasured/input-battery-inventory-story0.
+  LM65Chest/on/Spot≤60/16m/60–28°hard;
+  fog-sky-camera0/GIhero3D3→black12m/Ps1Lit bakedGI-only;
+  outside-disable-unload0;
+  1hero/resetkeep/cleanup/noMPB-clone-pass/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   `PlayerClothPhysicsPolicy`:CombatTest jacket-scarf-sling0live-bake;
@@ -4938,8 +4949,7 @@
   shadowless warm ForcePixel Spot is co-located with the compact amber fixture
   above the entrance and aims its full-strength cone over the door and entry
   floor, for at most five atmosphere-owned local realtime lights in addition
-  to the scene Directional light. The exit door's
-  geometry and material remain unchanged. Exiting sends
+  to the scene Directional light. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
   approach, without altering cash or drinking progress.
@@ -4948,16 +4958,13 @@
   into `Assets/Home/Interior/Models/HomeInterior3D.fbx` plus its JSON manifest.
   `HomeInteriorModelAssetSetup` builds
   `Resources/Home/HomeInteriorModels.asset`; `HomeAuthoredVisualFactory`
-  resolves named imported parts into the existing runtime hierarchy. Large
-  forms retain authored metre dimensions, while only explicitly declared
-  thin hardware profiles permit parameterized fitting. Imported geometry owns
+  resolves named imported parts into the existing runtime hierarchy.
+  Metre dimensions stay authored; only declared thin hardware permits fitting.
+  Imported geometry owns
   visible shape, not colliders, Lights, cameras or gameplay components.
   Existing plans keep collision, contacts, routes and contextual-action
-  ownership; the bed keeps its live deformation contract. The bookcase moves
-  to `X[-4.55,-3.90], Z[1.05,2.15]` on the west wall between bed and kitchen,
-  leaving the locked-room pocket and balcony route clear.
-  The user's furniture adjustment on `2026-09-06` supersedes that placement:
-  the cupboard occupies `X[-4.86,-4.21], Z[2.76,3.86]`, and the bed starts at
+  ownership; the bed keeps its live deformation contract.
+  The `2026-09-06` placement: cupboard `X[-4.86,-4.21], Z[2.76,3.86]`; bed starts at
   `X=-4.86`, two centimetres from the inner wall. Furniture validation uses
   physical inner wall bounds; player walking clearance is unchanged. The
   shortened left counter preserves the refrigerator's right-side inset.

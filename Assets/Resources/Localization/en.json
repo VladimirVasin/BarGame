@@ -21,6 +21,7 @@
     {"key":"combat.warehouse.valve.exit","value":"Esc — leave"},
     {"key":"interaction.warehouse_door","value":"E — inspect the door"},
     {"key":"combat.warehouse.door.placeholder","value":"There is no way through yet."},
+    {"key":"combat.warehouse.entrance_door.closed","value":"There is no way back."},
     {"key":"interaction.lodge_cellar","value":"E — inspect the hatch"},
     {"key":"lodge.cellar.open_question","value":"Open the hatch?"},
     {"key":"lodge.cellar.locked","value":"Locked. Seems... from the inside?"},

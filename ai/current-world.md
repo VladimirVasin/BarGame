@@ -136,29 +136,34 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   inside closes it; no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
   valve/PusherL;nokeyE2pulls1.2s;keykept→physchainlockfall;HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch;
-  door silentstub/0travel;2galleryslots/upperkept/progress-headroom.3rustfloorfridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
+  Homeentry↔gate/return0/E/silent/goalstub/0travel;gallery2/upper-progress;3fridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
   3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-livekept;
   toprear/troughfill/belowbulb/3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIclosed+stairs↓→heat2s/riseSFX→popglass/8phys;
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
-  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
+  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0/near detail. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   Reset-Newkeep playhead-stop/0replay/pause-disable-resume/exitfade.
-  Std1/Ebody;Endless1–5/corpses0–2(default2each)/pool≤5;initial Dormant.
-  18room-wallanchors/shared bake-COL/occupied0decor;
-  2.7m/samefloor/LOS/.12s or hit→same rig-load/reveal1.4s/arms-legs-head break boards→combat;
-  HP-kept/Awakefocus/freeinput;unseenrefill3–7active s/≥3m/freepath/0backlog;
+  Std1;Endless1–5/corpses0–2(default2)/pool≤5;Dormant.
+  18anchors/shared COLbake/occupied0decor;
+  2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
+  HP/Awakefocus/freeinput;unseenrefill3–7active s/≥3m/freepath/0backlog;
   3sources→refill0/dormant-livekept/EndlessReset0initial/Std separate.
-  Audio12cues/2voices/≤2groans/SfxWorld/reveal-life-hit-death/debriscontacts;
-  pause-reset-disable/prewarm0hotload. IDs/stairs/kill1x/heroend;
-  live:injury-action-ammo-flights kept;unused→oldest/excess retire;
+  Audio14/2voices/≤2groans/SfxWorld/wood-wet-contact sync;
+  pause-reset-disable/prewarm/IDs-stairs/kill1x/heroend;
+  Injury-action-ammo-flights kept;unused→oldest/excess retire;
   body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/defaultbar/1-2-3/DpadR/stow-draw/mounts/reload1st/fallcancel/pose-ammo-slot/Erecord.
-  Docker:30slats40HP→holes/corefused/livewoodram;8worldfish/1skin/holes-anyfallspill/finiteasync;art§15a;
-  .45m/s/plantcurve/adjust-watch→prep→head-boxram→missreturn;firstsurface/1hit/metal-guard-counter-retreat-stamina0;
-  grounded0attack/rearhead0finish/infection0;nextbullet/pool-pause-resetreuse;freecam/dummy/Tabfight/MMBfocus;
+  All3/defaultbar/stow-draw/mounts/reload1st/fallcancel/pose-ammo-slot/Erecord.
+  Docker:30slats40HP→holes/corefused/livewoodram;8fish/1skin/holes-anyfallspill/finiteasync;
+  1.7m/s/plantbursts/chase0pause;ram.25prep/.18active/2.4Recovery/.9m;
+  alloutcomes/kneel-rise/attack-move-buffer0;
+  ownSource-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
+  unarmed:dmg32/guardCost28/impulse85Ns-block26Ns/region-gore0;
+  head-boxram/firstsurface1hit/guard-counter-retreat0;
+  own debris0CC/resize-reset/floor kept;
+  grounded0attack/rearhead0finish/infection0;pool-pause-resetreuse;freecam/dummy/Tabfight/MMBfocus;
   Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/art§15a;
   Init/reset:Pistol8+0/48cap/slideemptylock/mag-rack/cases; shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire. Partreload/phys-spend/empty0;
   Ammo4slots/+8Magazine/+4Shells/Eshared1x/fullrefusal/partialconsumes;
-  12active s endless/pause-modal-focus-disable-defeat0/resetpool/winlive.
+  Endless12active s/pause-modal-focus-disable-defeat0/resetpool/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
@@ -2225,17 +2230,16 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Closed stew is
   a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
   therefore cannot satisfy the stairwell cat's feeding requirement;
-- one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
-  and bathroom zones, clear entry/main/bathroom paths, six main-room furniture
-  groups and separate toilet, shower and sink footprints. Its shell, furniture,
-  bathroom, balcony and dressing use the deterministic Blender
-  `home_interior_v1` library; Unity retains collision, interaction hierarchies,
-  lighting, cameras and deformable bed support. One closed room occupies the
-  north-central pocket. The cupboard stands in the north-west corner at
-  `X[-4.86,-4.21], Z[2.76,3.86]`; the bed's head is also two centimetres from
-  the west wall. A shorter left kitchen counter leaves the refrigerator in
-  place, and the compact south-west storage pile clears the bed approach.
-  Its ordinary day-one interaction reports the missing key without opening,
+- one validated `10 x 8 x 3.4 m` Home main room/bathroom with clear routes,
+  six furniture groups and separate toilet/shower/sink footprints.
+  Blender `home_interior_v1` owns shell/furniture/bathroom/balcony/dressing;
+  Unity keeps collision/actions/lights/cameras/live bed.
+  `ApartmentEntranceDoor` shares aged timber/four recessed panels, deep frame,
+  architraves/threshold/hardware with CombatTest; opening `1.32 m`.
+  The closed room stays north-central; cupboard `X[-4.86,-4.21], Z[2.76,3.86]`
+  is north-west; bed head is two centimetres from the west wall. The shorter
+  left counter keeps the refrigerator in place; the south-west pile clears bed access.
+  The closed room's day-one interaction reports the missing key without opening,
   revealing contents or consuming the player's apartment keys;
 - seven calendar apartment appearances through `HomeApartmentDayRules` and
   `HomeApartmentDayController`: day one is relatively kept, days two through
