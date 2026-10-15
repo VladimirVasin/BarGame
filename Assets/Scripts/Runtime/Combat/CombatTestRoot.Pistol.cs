@@ -10,8 +10,7 @@ namespace BarPromenade
         private Vector3 firearmCrosshairOrigin, firearmCrosshairDirection, firearmCrosshairPoint;
         internal int FreeAimQueryCount { get; private set; }
         internal long FreeAimQueryTicks { get; private set; }
-        private bool pistolCursorOwned, pistolCursorVisible, pistolApplicationFocused = true, requirePistolAimRelease;
-        private CursorLockMode pistolCursorLock;
+        private bool pistolApplicationFocused = true, requirePistolAimRelease;
         private const float CrosshairExpandSeconds = .035f, CrosshairReturnSeconds = .165f;
         private float pistolCrosshairElapsed = CrosshairExpandSeconds + CrosshairReturnSeconds;
         private float pistolCrosshairFrom;
@@ -76,24 +75,12 @@ namespace BarPromenade
             if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused) ResetPistolCrosshair();
             if (CameraFollow != null) CameraFollow.ClearFreeAim(this);
             if (Player.Motor != null) Player.Motor.ClearMovementBasis(this);
-            if (!pistolCursorOwned) return;
-            Cursor.lockState = pistolCursorLock;
-            Cursor.visible = pistolCursorVisible;
-            pistolCursorOwned = false;
         }
 
         private Vector3 PrepareFreePistolAim()
         {
             CameraFollow.PrepareFreeAimFrame(this);
             Player.Motor.SetMovementBasis(this, CameraFollow.Camera.transform.forward);
-            if (!pistolCursorOwned)
-            {
-                pistolCursorLock = Cursor.lockState;
-                pistolCursorVisible = Cursor.visible;
-                pistolCursorOwned = true;
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
             Ray ray = CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
             return ResolveFreePistolAim(ray);
         }
@@ -171,7 +158,7 @@ namespace BarPromenade
         private bool UpdatePistolInput(bool held)
         {
             Hero.SetBlock(false);
-            bool trigger = GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay);
+            bool trigger = ReadCombatPointerAction(GameInputAction.MeleeAttack, false);
             if (RoundFinished && Hero.State.IsDefeated)
             {
                 if (trigger) Hero.RejectPistolInput("defeated");
@@ -180,7 +167,7 @@ namespace BarPromenade
                 requireAttackRelease |= held;
                 return true;
             }
-            bool aimHeld = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
+            bool aimHeld = ReadCombatPointerAction(GameInputAction.MeleeBlock, true);
             if (!aimHeld) requirePistolAimRelease = false;
             bool aim = aimHeld && !requirePistolAimRelease;
             bool freeAim = aim && !IsOpponentFocused && Hero.PistolAimBodyAvailable && CameraFollow.SetFreeAim(this, heroChest);

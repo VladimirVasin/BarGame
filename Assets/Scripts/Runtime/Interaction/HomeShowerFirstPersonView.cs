@@ -46,9 +46,6 @@ namespace BarPromenade
         private Player3DAssetRegistry registry;
         private Transform actor;
         private Player3DHeadVisibility hiddenHead;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
-        private bool cursorCaptured;
         private bool wasLookAllowed;
         private float lookYaw;
         private float lookPitch;
@@ -119,11 +116,7 @@ namespace BarPromenade
                     "The shower view requires the production hero rig.");
             }
 
-            previousCursorLock = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            cursorCaptured = true;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.Locked, false);
             lookYaw = InitialLookYawDegrees;
             lookPitch = 0f;
             wasLookAllowed = false;
@@ -206,8 +199,7 @@ namespace BarPromenade
         {
             if (!IsActive || IsPointerMode == enabled) return;
             IsPointerMode = enabled;
-            Cursor.lockState = enabled ? CursorLockMode.Confined : CursorLockMode.Locked;
-            Cursor.visible = enabled;
+            GameCursor.Capture(this, enabled ? CursorLockMode.Confined : CursorLockMode.Locked, enabled);
             wasLookAllowed = false;
         }
 
@@ -266,17 +258,7 @@ namespace BarPromenade
             hiddenHead = null;
         }
 
-        private void RestoreCursor()
-        {
-            if (!cursorCaptured)
-            {
-                return;
-            }
-
-            Cursor.lockState = previousCursorLock;
-            Cursor.visible = previousCursorVisible;
-            cursorCaptured = false;
-        }
+        private void RestoreCursor() => GameCursor.Release(this);
 
         private static bool IsFinite(float value)
         {

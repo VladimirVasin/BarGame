@@ -25,9 +25,7 @@ namespace BarPromenade
         private Player3DCharacterPresentation visual;
         private GameObject toothbrush, foam;
         private Transform brushTip;
-        private bool committed, ownsHandoff, previousHandoff, cursorCaptured, discardMouse;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
+        private bool committed, ownsHandoff, previousHandoff, discardMouse;
         private PlayerFacialExpression previousExpression;
         private float pendingSpitSeconds, scrubDistance;
         private float presentedFaucetOpen;
@@ -112,8 +110,7 @@ namespace BarPromenade
             armPose.Capture();
             valvePose.Capture();
             firstPerson.Begin();
-            previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible;
-            Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; cursorCaptured = true;
+            GameCursor.Capture(this, CursorLockMode.Locked, false);
             timeline.Begin(); progress.Reset(); spit.Begin(); faucet.SetOpen(0f);
             pendingSpitSeconds = scrubDistance = 0f; committed = false; discardMouse = true;
             presentedFaucetOpen = 0f; valveSoundDirection = 0;
@@ -241,7 +238,7 @@ namespace BarPromenade
             brushingPromptVisible = false;
             if (toothbrush != null) toothbrush.SetActive(false);
             if (foam != null) foam.SetActive(false);
-            if (cursorCaptured) { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; cursorCaptured = false; }
+            GameCursor.Release(this);
         }
 
         private void EnsureProps(Player3DAssetRegistry registry)

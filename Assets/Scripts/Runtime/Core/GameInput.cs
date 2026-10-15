@@ -25,6 +25,7 @@ namespace BarPromenade
         internal static void HandleApplicationFocus(bool focused)
         {
             MovementFocused = focused;
+            GameCursor.SetApplicationFocused(focused);
             if (!focused) MovementAwaitingNeutral = true;
         }
 

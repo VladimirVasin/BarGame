@@ -129,9 +129,6 @@ namespace BarPromenade
         private Quaternion entryRotation;
         private Quaternion cameraRotation;
         private Vector3 cameraPosition;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
-        private bool cursorCaptured;
         private bool occlusionCaptured;
         private bool previousOcclusionEnabled;
         private bool poseApplied;
@@ -296,11 +293,7 @@ namespace BarPromenade
             neutralHead = head.localRotation;
             handAttachment = new SeatedArmHandAttachment(
                 hand, registry.Anchors.RightGrip);
-            previousCursorLock = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            cursorCaptured = true;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.Locked, false);
             HomePlayerOcclusionController occlusion = host.PlayerOcclusion;
             if (occlusion != null)
             {
@@ -645,17 +638,7 @@ namespace BarPromenade
             hiddenHead = null;
         }
 
-        private void RestoreCursor()
-        {
-            if (!cursorCaptured)
-            {
-                return;
-            }
-
-            Cursor.lockState = previousCursorLock;
-            Cursor.visible = previousCursorVisible;
-            cursorCaptured = false;
-        }
+        private void RestoreCursor() => GameCursor.Release(this);
 
         private Transform ResolveBone(Player3DAnatomicalPart part)
         {

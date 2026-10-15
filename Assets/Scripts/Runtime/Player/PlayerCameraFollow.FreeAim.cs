@@ -148,7 +148,12 @@ namespace BarPromenade
             aimTransitionFrame = -1;
         }
 
-        private void OnDisable() => CancelAimTransition();
+        private void OnDisable()
+        {
+            CancelAimTransition();
+            GameCursor.Release(this);
+            mouseLookResetPending = true;
+        }
 
         private void ApplyAimTransition(Vector3 position, Quaternion rotation, float fieldOfView, Vector3 origin)
         {

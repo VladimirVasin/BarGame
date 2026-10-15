@@ -2,6 +2,15 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-15, continuous mouse look and cursor ownership:**
+  User accepted the plan: ordinary/shared seated mouse orbit needs no button;
+  RMB retains firearm aim. Hold Alt: visible free cursor, no mouse look/combat
+  clicks; release/return requires fresh mouse-button presses. Gameplay cursor
+  locked/hidden; menus release it; focus return discards delta. Fixed/authored
+  cameras retain priority. `GameCursor`:owner leases, base0/modal5/context10;
+  stale destroyed owners pruned, bounded32. Context mode changes update their
+  lease; cleanup releases ownership instead of restoring stale cursor snapshots.
+
 - **Accepted exception — 2026-10-15, warehouse bulb failure:**
   Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly;
@@ -3033,32 +3042,23 @@
   shadow are disabled. `CityBusRideController` runs after the director and
   late-synchronizes that root to the stable actor-local seat pose; this preserves
   moving-frame alignment without making Player a child of a slot that may be
-  deactivated. A seated camera follows the sprung seat position from a fixed,
-  safe aisle-side offset, but derives orientation from actor forward and world
-  up so suspension pitch/roll cannot tilt its horizon or couple its axes. Its
-  zero-input direction is derived from the selected seat's lateral side and
-  looks through the nearest window instead of inward or down. Entry and exit
-  rotation blends interpolate look directions and reconstruct against world up,
-  avoiding transient quaternion roll. While riding, the controller consumes
-  the shared orbit sample: RMB
-  mouse movement, the gamepad right stick and the arrow keys rotate bounded
-  yaw and pitch in place, while the existing orbit-input flag remains a
-  modal-lock gate rather than bus ownership. Entry/exit blends and exact ordinary-camera restoration
-  remain fixed-pose transactions.
-  The actor records one passenger owner and cannot be pooled or released while
-  that owner remains. The director owns a passenger-cleanup callback for forced
-  disable/shutdown. The exit prompt is unavailable until the service ordinal is
-  strictly greater than its boarding value, which permits the next or any later
-  stop but rejects the same dwell. Exiting reacquires the service hold, detaches
-  the logical moving-frame binding, freezes the moving seat target and requests
-  the independent `BusAlightExit` pose through the same selected live door
-  waypoint onto a walkable grounded roadside dock. The camera blends to the
-  ordinary resolved chase pose. Normal completion and every
-  cancellation/lifecycle path restore motor, collider, contact shadow and
-  camera exactly once without Transform hierarchy mutation, release
-  service/passenger ownership and use the last safe exterior dock when an
-  authored exit cannot finish. Fare/payment, destination selection, passenger
-  persistence, traffic-signal simulation and live bus tracking remain deferred.
+  deactivated. The seated camera follows the sprung seat at a safe aisle-side
+  offset; actor-forward/world-up orientation excludes suspension pitch/roll
+  and axis coupling. Its lateral-side default looks through the nearest window.
+  Entry/exit interpolate look directions reconstructed with world up, without
+  roll. Shared mouse orbit (no button), right stick and arrows rotate bounded
+  yaw/pitch; the orbit-input flag gates modals, not bus ownership. Fixed-pose
+  entry/exit transactions restore the ordinary camera exactly.
+  One passenger owner prevents pooling/release; the director's cleanup callback
+  handles forced disable/shutdown. Exit requires service ordinal greater than
+  at boarding (next/later stop). It reacquires the service hold, detaches the
+  moving-frame binding, freezes the seat target and runs `BusAlightExit` through
+  the selected live door to its independent grounded roadside dock; camera
+  blends to resolved chase. Completion/cancellation/lifecycle cleanup restores
+  motor/collider/contact shadow/camera once, without hierarchy mutation,
+  releases service/passenger ownership and falls back to the last safe exterior
+  dock if exit fails. Fare/payment, destinations, passenger persistence,
+  traffic signals and live bus tracking remain deferred.
 - **Accepted — A three-place cabin counting the hero, with declared seated
   riders:** `CityBusActor` owns `CabinCapacity = 3` occupants and a shared
   per-owner service hold. Both replace single-owner fields, and both had to:
@@ -4326,7 +4326,7 @@
   so an imported page basis can produce neither an overhead jump nor roll.
   World-space TMP uses its local `-Z` readable face toward that focus and
   aligns glyph-right with camera-right, preventing mirrored or inverted rows.
-  Every arrow, right-mouse, right-stick
+  Every arrow, mouse, right-stick
   and other look source is suppressed while that focus has weight; `W/S`,
   D-pad, `Space`/West and `E`/`Enter`/South remain live, so this is an
   interactive inspection rather than an unbounded cutscene.
@@ -5551,7 +5551,7 @@
   to the contextual-animation standard.
 - **Accepted — Bounded cinematic chase camera:** Profiles:
   FOV53°/57° ext/int;arm/focus/tracking:camera tuning above.
-  RMB mouse/right stick/arrows:yaw/pitch (`-20°..55°`);
+  Mouse/right stick/arrows:yaw/pitch (`-20°..55°`);
   `150°/120°/s` arrows;WASD walks.
   Seated park chess owns arrows. Yaw/pitch/focus damping:
   `.20/.18/.18 s`;teleport snap>`1.75 m`.

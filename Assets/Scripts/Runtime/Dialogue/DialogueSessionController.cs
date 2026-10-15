@@ -41,9 +41,7 @@ namespace BarPromenade
         private ISpeechFaceActor heroFace, npcFace;
         private Action<bool> setNpcSpeaking;
         private Action finished;
-        private bool cameraStarted, confirmArmed, cursorCaptured, preparingTalk, exitingAnimation;
-        private CursorLockMode savedCursorLock;
-        private bool savedCursorVisible;
+        private bool cameraStarted, confirmArmed, preparingTalk, exitingAnimation;
         private float clock;
         private int choiceFrame, animationFinishedFrame;
         private GUIStyle optionStyle, selectedStyle;
@@ -82,8 +80,7 @@ namespace BarPromenade
             Staging = staging; cursor = new DialogueCursor(graph); clock = 0f;
             Phase = DialoguePhase.Positioning; cameraStarted = preparingTalk = exitingAnimation = false;
             animationFinishedFrame = -1;
-            savedCursorLock = Cursor.lockState; savedCursorVisible = Cursor.visible; cursorCaptured = true;
-            Cursor.lockState = CursorLockMode.None; Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.None, false);
             try
             {
                 if (bubbles == null)
@@ -124,7 +121,7 @@ namespace BarPromenade
             if (!IsActive || Phase == DialoguePhase.Exiting) return;
             bubbles?.DismissAll(); setNpcSpeaking?.Invoke(false);
             ReleaseFaces();
-            Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.None, false);
             Phase = DialoguePhase.Exiting;
             if (animation != null && animation.Phase == PlayerAnimatedInteractionPhase.Positioning)
             { animation.CancelActiveInteraction(); }
@@ -196,13 +193,13 @@ namespace BarPromenade
             director.Focus(node.Speaker == DialogueSpeaker.Hero);
             if (node.Kind == DialogueNodeKind.Choice)
             {
-                Cursor.visible = true;
+                GameCursor.Capture(this, CursorLockMode.None, true);
                 Phase = DialoguePhase.Choosing; SelectedChoice = 0;
                 choiceFrame = Time.frameCount; confirmArmed = false;
                 return;
             }
             Phase = DialoguePhase.PreparingLine;
-            Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.None, false);
             if (node.Speaker == DialogueSpeaker.Hero)
             {
                 preparingTalk = animation.BeginNestedLoopAction(PlayerDialogueActions.CreateTalkingDefinition(), holdLoop: true);
@@ -280,8 +277,7 @@ namespace BarPromenade
             setNpcSpeaking?.Invoke(false); setNpcSpeaking = null;
             animation?.CancelActiveInteraction();
             director.RestoreImmediate(); cameraStarted = false;
-            if (cursorCaptured)
-            { Cursor.lockState = savedCursorLock; Cursor.visible = savedCursorVisible; cursorCaptured = false; }
+            GameCursor.Release(this);
             modal.Restore();
             listener = null; hero = npc = default; cursor = null;
             callback?.Invoke();

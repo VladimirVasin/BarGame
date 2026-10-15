@@ -1,16 +1,19 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
         private bool attackInputOwned, requireAttackRelease, inputSuspended, releasedWhileSuspended;
+        private bool requireMouseAttackRelease, requireMouseAimRelease;
 
         public bool ChargeMeterVisible => isActiveAndEnabled && IsInitialized && Hero.State.IsCharging &&
             !PauseMenuController.IsAnyPaused && !SceneTransitionService.IsTransitioning;
 
         private bool UpdateCombatInput()
         {
+            UpdateCombatMouseOwnership();
             if ((Hero.IsFirearm || Hero.IsSwitchingWeapon) && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
             {
                 if (Hero.IsFirearm && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
@@ -25,7 +28,7 @@ namespace BarPromenade
                     releasedWhileSuspended = true;
                 return false;
             }
-            bool held = GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.Gameplay);
+            bool held = ReadCombatPointerAction(GameInputAction.MeleeAttack, true);
             JournalAttackInput(held);
             if (inputSuspended)
             {
@@ -40,7 +43,7 @@ namespace BarPromenade
             if (!held) requireAttackRelease = false;
             if (Mode == CombatTestMode.Standard && GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
             { SetSparring(!Sparring); return false; }
-            if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
+            if (GameCursor.GameplayMouseInputAllowed && GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
             ReadWeaponSelectionInput();
             if (Hero.IsSwitchingWeapon)
@@ -52,7 +55,7 @@ namespace BarPromenade
                 return true;
             }
             if (Hero.IsFirearm) return UpdatePistolInput(held);
-            bool blocking = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
+            bool blocking = ReadCombatPointerAction(GameInputAction.MeleeBlock, true);
             Hero.SetBlock(blocking);
             bool stepping = !RoundFinished && IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
             bool kicking = !RoundFinished && IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatKick, GameInputContext.Gameplay);
@@ -78,9 +81,9 @@ namespace BarPromenade
                     attackInputOwned = false;
                 }
                 if (!requireAttackRelease && !PointerOverToolbar() &&
-                    GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay))
+                    ReadCombatPointerAction(GameInputAction.MeleeAttack, false))
                     attackInputOwned = Hero.RequestCharge();
-                else if (duelJournal != null && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay))
+                else if (duelJournal != null && ReadCombatPointerAction(GameInputAction.MeleeAttack, false))
                     duelJournal.Record("input_rejected", actor: 1,
                         f0: GameLog.Field("reason", requireAttackRelease ? "AwaitingRelease" : "PointerOverToolbar"));
                 if (attackInputOwned && !held)
@@ -90,6 +93,53 @@ namespace BarPromenade
                 }
             }
             return true;
+        }
+
+        private void UpdateCombatMouseOwnership()
+        {
+            Mouse mouse = Mouse.current;
+            bool attackHeld = mouse != null && mouse.leftButton.isPressed;
+            bool aimHeld = mouse != null && mouse.rightButton.isPressed;
+            if (!GameCursor.FreeCursorRequested)
+            {
+                if (!attackHeld) requireMouseAttackRelease = false;
+                if (!aimHeld) requireMouseAimRelease = false;
+                return;
+            }
+
+            // UI clicks never become combat commands on Alt release. Keep the
+            // gamepad independent so its triggers still work with a free pointer.
+            requireMouseAttackRelease |= attackHeld;
+            requireMouseAimRelease |= aimHeld;
+            Gamepad pad = Gamepad.current;
+            if (pad == null || !pad.rightTrigger.isPressed)
+            {
+                CancelHeldHeroCharge();
+                attackInputOwned = false;
+                Hero.CancelPendingPistolShot("free_cursor");
+            }
+            if (pad == null || !pad.leftTrigger.isPressed)
+            {
+                ReleaseFreePistolAim();
+                Hero.SetPistolAim(false);
+                Hero.SetBlock(false);
+            }
+        }
+
+        private bool ReadCombatPointerAction(GameInputAction action, bool held)
+        {
+            bool requested = held ? GameInput.IsHeld(action, GameInputContext.Gameplay) :
+                GameInput.WasPressed(action, GameInputContext.Gameplay);
+            if (!requested) return false;
+            bool attack = action == GameInputAction.MeleeAttack;
+            Gamepad pad = Gamepad.current;
+            if (pad != null)
+            {
+                var trigger = attack ? pad.rightTrigger : pad.leftTrigger;
+                if (held ? trigger.isPressed : trigger.wasPressedThisFrame) return true;
+            }
+            return GameCursor.GameplayMouseInputAllowed &&
+                !(attack ? requireMouseAttackRelease : requireMouseAimRelease);
         }
 
         private void ResetChargeInput()
@@ -106,6 +156,7 @@ namespace BarPromenade
         private void OnApplicationFocus(bool focused)
         {
             pistolApplicationFocused = focused;
+            GameCursor.SetApplicationFocused(focused);
             AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated);
             JournalApplicationFocus(focused);
             if (focused) return;

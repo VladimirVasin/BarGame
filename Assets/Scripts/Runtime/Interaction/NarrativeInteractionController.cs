@@ -15,9 +15,7 @@ namespace BarPromenade
         private PlayerAnimatedInteractionController animation;
         private PlayerCameraFollow follow;
         private InteractionPromptView view;
-        private bool ownsAnimation, cameraStarted, exitingAnimation, confirmArmed, cursorCaptured;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
+        private bool ownsAnimation, cameraStarted, exitingAnimation, confirmArmed;
         private int pageFrame, animationFinishedFrame;
         private bool completed;
         private bool playerPrepared;
@@ -65,8 +63,7 @@ namespace BarPromenade
             ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = activityStarted = false;
             completed = false;
             animationFinishedFrame = -1;
-            previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible; cursorCaptured = true;
-            Cursor.lockState = CursorLockMode.None; Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.None, false);
             try
             {
                 playerPrepared = true;
@@ -120,7 +117,7 @@ namespace BarPromenade
             if (Target != null) Target.SampleAttempt(0f);
             if (view != null) view.ReleaseHeldPage(this);
             Phase = NarrativeInteractionPhase.Exiting;
-            Cursor.visible = false;
+            GameCursor.Capture(this, CursorLockMode.None, false);
             if (ownsAnimation && animation != null && animation.Phase == PlayerAnimatedInteractionPhase.Positioning)
                 animation.CancelActiveInteraction();
             AdvanceExit();
@@ -167,7 +164,7 @@ namespace BarPromenade
                     break;
                 case NarrativeInteractionPhase.Activity:
                     Target.Activity.TickActivity(Time.deltaTime);
-                    Cursor.visible = Target.Activity.ActivityCursorVisible;
+                    GameCursor.Capture(this, CursorLockMode.None, Target.Activity.ActivityCursorVisible);
                     if (Target.Activity.IsActivityComplete) { Cancel(); completed = true; }
                     break;
                 case NarrativeInteractionPhase.Reading:
@@ -203,7 +200,7 @@ namespace BarPromenade
 
         private void BeginAttempt(float seconds, bool beforeFirstPage)
         {
-            view.ReleaseHeldPage(this); Cursor.visible = false;
+            view.ReleaseHeldPage(this); GameCursor.Capture(this, CursorLockMode.None, false);
             inspectionAttempt = beforeFirstPage; attemptSeconds = seconds;
             Phase = NarrativeInteractionPhase.Attempting;
             attemptElapsed = 0f; Target.SampleAttempt(0f);
@@ -226,7 +223,7 @@ namespace BarPromenade
             if (!held) { Cancel(); return; }
             SelectedAnswerYes = false;
             Phase = NarrativeInteractionPhase.Reading; pageFrame = Time.frameCount;
-            confirmArmed = false; Cursor.visible = true;
+            confirmArmed = false; GameCursor.Capture(this, CursorLockMode.None, true);
         }
 
         private void ShowOutcome()
@@ -237,7 +234,7 @@ namespace BarPromenade
                 "narrative.controls.close", Confirm, compact: true,
                 requiresRunningGameTime: Target.Definition.RequiresRunningGameTime)) { Cancel(); return; }
             Phase = NarrativeInteractionPhase.Outcome; pageFrame = Time.frameCount;
-            confirmArmed = false; Cursor.visible = true;
+            confirmArmed = false; GameCursor.Capture(this, CursorLockMode.None, true);
         }
 
         private void AdvanceExit()
@@ -281,8 +278,7 @@ namespace BarPromenade
             if (ownsAnimation && animation != null) animation.CancelActiveInteraction();
             ownsAnimation = false;
             director.RestoreImmediate(); cameraStarted = false;
-            if (cursorCaptured)
-            { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; cursorCaptured = false; }
+            GameCursor.Release(this);
             try
             {
                 if (playerPrepared)

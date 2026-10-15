@@ -8,8 +8,8 @@
 - Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`;versions:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- One active PC quality/pipeline profile applies the PS1 composite after URP
-  post-processing. Keyboard, mouse and gamepad retain their existing controls.
+- One PC quality/pipeline profile applies the PS1 composite after URP
+  post-processing.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -50,10 +50,11 @@ returns ride leases that cannot affect a later session. Persistent journey
 progression is distinct from this temporary ownership. Disk save/load is not
 implemented.
 
-`GameInput`: shared bindings/device reads; `GameInputPolicy`: pause/transition/
-modal priority, balance recovery stays live. Unfocused movement input=0;
-return waits for neutral WASD+left stick. Impulses remain. Look/debug stay local;
-rebinding UI is not implemented.
+`GameInput`/`GameInputPolicy`: bindings; pause/transition/modal priority.
+Balance recovery live; unfocused movement=0; return:neutral WASD/stick.
+Mouse orbit: no button; RMB aims; Alt frees cursor/pauses mouse look/combat.
+`GameCursor`: leases; UI frees cursor; focus return drops delta.
+Impulses kept; local look/debug; no rebind UI.
 
 Area travel uses Single loading; City/Village doors retain one dormant exterior.
 Builders share incremental/synchronous entry points. Overlay: 20% loading/80%

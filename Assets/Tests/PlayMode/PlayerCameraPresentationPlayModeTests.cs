@@ -91,7 +91,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 Camera camera = CreateCamera(Vector3.zero);
                 GameObject player = CreateObject(
-                    "Vertical Orbit Camera Target");
+                    "Test vertical orbit camera target");
                 player.transform.position = new Vector3(0f, 100f, 0f);
                 player.transform.rotation = Quaternion.Euler(0f, 35f, 0f);
 
@@ -113,9 +113,6 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(14f).Within(0.001f));
 
                 follow.SetOrbitInputEnabled(false);
-                inputFixture.Press(
-                    mouse.rightButton,
-                    queueEventOnly: true);
                 inputFixture.Set(
                     mouse.delta,
                     new Vector2(0f, 60f),
@@ -129,6 +126,8 @@ namespace BarPromenade.Tests.PlayMode
                     "A modal orbit lock must suppress vertical input too.");
 
                 follow.SetOrbitInputEnabled(true);
+                // Reacquiring look deliberately drops the first mouse sample.
+                yield return null;
                 inputFixture.Set(
                     mouse.delta,
                     new Vector2(0f, 60f),
@@ -162,6 +161,27 @@ namespace BarPromenade.Tests.PlayMode
                     Is.LessThan(0.001f));
                 AssertCameraAimsAtFocus(camera, player.transform, 1.6f, 1.9f);
 
+                float pitchAfterVertical = follow.TargetOrbitPitch;
+                inputFixture.Set(
+                    mouse.delta,
+                    new Vector2(80f, 0f),
+                    queueEventOnly: true);
+                yield return null;
+                yield return null;
+                follow.Snap();
+
+                Assert.That(mouse.rightButton.isPressed, Is.False,
+                    "Ordinary mouse look must not require the aim button.");
+                Assert.That(
+                    Vector3.Angle(initialPlanarForward,
+                        Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up).normalized),
+                    Is.GreaterThan(5f),
+                    "Horizontal mouse input must turn the ordinary chase view.");
+                Assert.That(follow.TargetOrbitPitch,
+                    Is.EqualTo(pitchAfterVertical).Within(.001f));
+                Assert.That(Quaternion.Angle(player.transform.rotation, playerHeading),
+                    Is.LessThan(.001f), "Looking must preserve the player's heading.");
+
                 follow.RotatePitch(10000f);
                 follow.Snap();
                 Assert.That(
@@ -193,8 +213,113 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator ExteriorCamera_CursorOwnersAltAndFocusResumeWithoutStaleLook()
+        {
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            Keyboard keyboard = null;
+            Gamepad gamepad = null;
+            object contextOwner = new object(), menuOwner = new object();
+            try
+            {
+                input.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                gamepad = InputSystem.AddDevice<Gamepad>();
+                GameCursor.SetApplicationFocused(true);
+                Camera camera = CreateCamera(Vector3.zero);
+                GameObject player = CreateObject("Test cursor handoff camera target");
+                player.transform.position = new Vector3(0f, 100f, 0f);
+                PlayerCameraFollow follow = camera.gameObject.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(camera, player.transform, false);
+                follow.SetCinematicMotionEnabled(false);
+                yield return null;
 
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.True);
+                GameCursor.Capture(contextOwner, CursorLockMode.Locked, false, 10);
+                GameCursor.Capture(menuOwner, CursorLockMode.None, true, 100);
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False,
+                    "The menu must release the pointer above a contextual owner.");
+                Assert.That(Cursor.visible, Is.True);
+                GameCursor.Release(contextOwner);
+                GameCursor.Capture(contextOwner, CursorLockMode.Locked, false, 10);
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False,
+                    "A later contextual capture cannot steal the menu pointer.");
+                Assert.That(Cursor.visible, Is.True);
+                GameCursor.Release(menuOwner);
+                Assert.That(Cursor.visible, Is.False,
+                    "Releasing the menu must expose the surviving context's capture.");
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False,
+                    "The surviving context must retain its exclusive input ownership.");
+                GameCursor.Release(contextOwner);
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.True,
+                    "Ending a context must retain the ordinary gameplay capture.");
+                yield return null;
 
+                float pitch = follow.TargetOrbitPitch;
+                input.Press(keyboard.leftAltKey, queueEventOnly: true);
+                input.Set(mouse.delta, new Vector2(0f, 90f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(GameCursor.FreeCursorRequested, Is.True);
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False);
+                Assert.That(follow.TargetOrbitPitch, Is.EqualTo(pitch).Within(.001f));
+                input.Set(gamepad.rightStick, Vector2.right, queueEventOnly: true);
+                input.Set(mouse.delta, new Vector2(90f, 90f), queueEventOnly: true);
+                InputSystem.Update();
+                Vector2 padLook = follow.SampleOrbitInputDegrees(1f);
+                Assert.That(padLook.x, Is.EqualTo(150f).Within(.001f),
+                    "Alt must leave the independent gamepad look axis available.");
+                Assert.That(padLook.y, Is.Zero,
+                    "The simultaneous mouse delta must remain suppressed.");
+                input.Set(gamepad.rightStick, Vector2.zero, queueEventOnly: true);
+                input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                InputSystem.Update();
+
+                input.Release(keyboard.leftAltKey, queueEventOnly: true);
+                input.Set(mouse.delta, new Vector2(0f, 90f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.True);
+                Assert.That(follow.TargetOrbitPitch, Is.EqualTo(pitch).Within(.001f),
+                    "Releasing Alt must discard the cursor-warp mouse sample.");
+                input.Set(mouse.delta, new Vector2(0f, 30f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(follow.TargetOrbitPitch, Is.LessThan(pitch - 1f),
+                    "The next deliberate mouse movement must work immediately.");
+
+                pitch = follow.TargetOrbitPitch;
+                GameCursor.SetApplicationFocused(false);
+                input.Set(mouse.delta, new Vector2(0f, 90f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False);
+                Assert.That(follow.TargetOrbitPitch, Is.EqualTo(pitch).Within(.001f));
+                GameCursor.SetApplicationFocused(true);
+                input.Set(mouse.delta, new Vector2(0f, 90f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(follow.TargetOrbitPitch, Is.EqualTo(pitch).Within(.001f),
+                    "Returning from Alt+Tab must discard the stale mouse sample.");
+                input.Set(mouse.delta, new Vector2(0f, -30f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(follow.TargetOrbitPitch, Is.GreaterThan(pitch + 1f));
+            }
+            finally
+            {
+                GameCursor.Release(menuOwner);
+                GameCursor.Release(contextOwner);
+                GameCursor.SetApplicationFocused(true);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
+                input.TearDown();
+                GameCursor.Refresh();
+            }
+        }
 
         [UnityTest]
         public IEnumerator ExteriorCamera_ArrowKeysOrbitAndRespectModalLock()

@@ -82,6 +82,7 @@ namespace BarPromenade
                     return true;
                 }
 
+                GameCursor.Release(activeLock);
                 activeLock.IsLocked = false;
                 activeLock = null;
                 return false;
@@ -92,6 +93,7 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetActiveLock()
         {
+            if (activeLock != null) GameCursor.Release(activeLock);
             activeLock = null;
         }
 
@@ -151,6 +153,7 @@ namespace BarPromenade
             interactor.SetInputEnabled(false);
             if (options.DisableOrbitInput)
             {
+                GameCursor.Capture(this, CursorLockMode.None, true, 5);
                 cameraFollow?.SetOrbitInputEnabled(false);
             }
 
@@ -188,6 +191,7 @@ namespace BarPromenade
             }
 
             motor = null;
+            GameCursor.Release(this);
             interactor = null;
             cameraFollow = null;
             hud = null;

@@ -118,6 +118,8 @@ namespace BarPromenade
         private float dollyDistance;
         private float dollyFieldOfView;
         private float dollyAppliedExponent;
+        private int mouseLookRevision = -1, mouseLookResumeFrame = -1;
+        private bool mouseLookResetPending = true;
 
         /// <summary>The camera this follow drives. Anything that has to
         /// project a world point onto the frame the player is looking at needs
@@ -196,6 +198,7 @@ namespace BarPromenade
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
+            mouseLookResetPending = true;
             ClearFreeAim(freeAimOwner);
             CancelAimTransition();
             freeAimOrbitFrame = -1;
@@ -232,10 +235,12 @@ namespace BarPromenade
             lastFreeDollyFieldOfView = dollyFieldOfView;
             ConfigureCamera();
             Snap();
+            RefreshCursor();
         }
 
         public void SetOrbitInputEnabled(bool enabled)
         {
+            if (enabled && !OrbitInputEnabled) mouseLookResetPending = true;
             OrbitInputEnabled = enabled;
         }
 
@@ -514,14 +519,23 @@ namespace BarPromenade
             float unscaledDeltaTime,
             bool includeKeyboard = true)
         {
-            if (!OrbitInputEnabled || TargetLockActive)
+            GameCursor.Refresh();
+            if (mouseLookRevision != GameCursor.MouseLookRevision || mouseLookResetPending)
+            {
+                mouseLookRevision = GameCursor.MouseLookRevision;
+                mouseLookResetPending = false;
+                // Ownership may change after this frame's input update. The
+                // cursor-warp delta can therefore arrive on the following frame.
+                mouseLookResumeFrame = Time.frameCount + 1;
+            }
+            if (!OrbitInputEnabled || TargetLockActive || !GameCursor.ApplicationFocused)
             {
                 return Vector2.zero;
             }
 
             Vector2 degrees = Vector2.zero;
             Mouse mouse = Mouse.current;
-            if (mouse != null && mouse.rightButton.isPressed)
+            if (mouse != null && GameCursor.GameplayMouseInputAllowed && Time.frameCount > mouseLookResumeFrame)
             {
                 Vector2 delta = mouse.delta.ReadValue();
                 degrees.x += delta.x * mouseYawSensitivity;
@@ -663,6 +677,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            RefreshCursor();
             if (controlledCamera == null || followTarget == null)
             {
                 return;
@@ -769,6 +784,17 @@ namespace BarPromenade
             ApplyAimTransition(
                 cameraPivot - desiredRotation * Vector3.forward * dollyDistance,
                 desiredRotation, dollyFieldOfView, focusPoint);
+        }
+
+        private void OnEnable() => RefreshCursor();
+
+        private void OnApplicationFocus(bool focused) => GameCursor.SetApplicationFocused(focused);
+
+        private void RefreshCursor()
+        {
+            if (isActiveAndEnabled && controlledCamera != null && followTarget != null)
+                GameCursor.Capture(this, CursorLockMode.Locked, false, 0);
+            else GameCursor.Release(this);
         }
 
         private void UpdateFixedPose(float deltaTime)

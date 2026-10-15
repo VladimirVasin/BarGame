@@ -1035,12 +1035,10 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   collision and the contact patch. After each bus update it late-synchronizes
   the root's world pose to that actor-local seat, keeps the two-second
   `BusRideLoop` aligned to the live seat and owns a seat-relative seated camera.
-  Its position follows suspension, but its world-level horizon and independent
-  yaw/pitch axes do not inherit body roll. The default aisle-side pose looks
-  through the nearest window, while
-  the same RMB mouse input, gamepad right stick and arrow keys as ordinary
-  orbit control rotate a bounded yaw/pitch view in place inside the cabin. The exit prompt is
-  withheld until
+  Its sprung position keeps a level horizon/independent yaw-pitch, without body
+  roll. The aisle-side default looks through the nearest window; shared mouse
+  orbit (no button), right stick and arrows rotate within cabin bounds.
+  The exit prompt is withheld until
   `ServiceOrdinal` exceeds the boarding value, so it is available at the next
   or any later stop. A second service hold keeps the doors open while the
   three-second `BusAlightExit` uses the same selected live doorway waypoint and
@@ -1748,17 +1746,20 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Accel/brake `6.5/11 m/s²`; release coasts; modal/transition/teleport stop;
   constraints retain no momentum. Camera-plane only in CombatTest aim.
   Intoxication scales walk/run; fatigue no debuff; scripted approaches walk;
-- City/Bar/ordinary Supermarket:orbiting third-person chase `1.9 m` ext/int;
+- City/Bar/Supermarket:third-person chase `1.9 m` ext/int;
   FOV `53°/57°`,focus `1.6/1.5 m`,hero low.
   Camera-right `.5 m` matches free aim;aim `1.4 m` back/FOV kept.
   Free/stable gun origin:shoulder+`.4 m`;melee lock+`.2 m`.
   Stable gun lock:same distance/handoff;side/back collision/dolly align.
-  Root travel is direct; authored focus overrides damp/cap `.45 m`.
-  Yaw/pitch damping,`-20°..55°`,teleport snap/idle-walk motion remain.
-  Collision contracts immediately/recovers smoothly. RMB mouse, right stick and
-  arrow keys drive orbit; arrows are per-second axes, WASD alone walks.
-  The seated park board game reserves arrows for its cursor. Fullscreen modals
-  fade cinematic motion; balance lock retains intoxication/fall reactions;
+  Direct root travel; focus overrides damp/cap `.45 m`.
+  Damped yaw/pitch `-20°..55°`;teleport snap/idle-walk motion.
+  Collision:immediate contraction/smooth return. Mouse (no button), right
+  stick/arrows orbit, including seats; arrows:per-second;
+  WASD walks. RMB:firearm aim; park chess owns arrows.
+  Cursor:locked/hidden; Alt releases/shows, stops mouse look/combat; return
+  needs fresh presses. Menus free cursor; focus return drops delta.
+  `GameCursor` leases; authored cameras keep control. Fullscreen modals
+  fade cinematics; balance keeps intoxication/falls;
 - Home keeps its three authored fixed shots and now protects the player from
   foreground occlusion through one explicit registry of logical furniture,
   dressing, door and balcony-rail groups. Five 3D presentation samples cover

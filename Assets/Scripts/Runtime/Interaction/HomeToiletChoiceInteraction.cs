@@ -20,9 +20,6 @@ namespace BarPromenade
         private readonly BarMinigameModalLock modalLock = new BarMinigameModalLock();
         private HomeInteriorRoot home;
         private PlayerInteractor sourceInteractor;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
-        private bool cursorCaptured;
         private bool confirmArmed;
         private int inputUnlockFrame;
         private GUIStyle optionStyle;
@@ -63,11 +60,7 @@ namespace BarPromenade
 
             sourceInteractor = interactor;
             SelectedChoice = HomeToiletChoice.Small;
-            previousCursorLock = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            cursorCaptured = true;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            GameCursor.Capture(this, CursorLockMode.None, true);
             inputUnlockFrame = Time.frameCount + 1;
             confirmArmed = false;
             IsOpen = true;
@@ -88,7 +81,7 @@ namespace BarPromenade
                 ? (HomeBathroomSceneInteraction)home.ToiletScene : home.ToiletPlunge;
             PlayerInteractor interactor = sourceInteractor;
             // Release and acquire synchronously: bathroom actions reject an existing
-            // modal owner, and must capture the original cursor/input state themselves.
+            // modal owner, and must acquire their own cursor/input ownership.
             Close();
             if (action == null || !action.CanInteract(interactor)) return false;
             action.Interact(interactor);
@@ -99,16 +92,11 @@ namespace BarPromenade
 
         private bool Close()
         {
-            bool hadState = IsOpen || modalLock.IsLocked || cursorCaptured;
+            bool hadState = IsOpen || modalLock.IsLocked;
             IsOpen = false;
             sourceInteractor = null;
             confirmArmed = false;
-            if (cursorCaptured)
-            {
-                Cursor.lockState = previousCursorLock;
-                Cursor.visible = previousCursorVisible;
-                cursorCaptured = false;
-            }
+            GameCursor.Release(this);
             modalLock.Restore();
             return hadState;
         }

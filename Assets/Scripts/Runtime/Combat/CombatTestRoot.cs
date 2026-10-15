@@ -439,8 +439,7 @@ namespace BarPromenade
             // Focus-to-free aim must inherit the exact accepted camera pose;
             // snapping through chase here made the winning shot jump sideways.
             bool keepAim = Hero.Firearm.AimRequested && pistolApplicationFocused && !requirePistolAimRelease &&
-                GameInput.CanRead(GameInputContext.Gameplay) &&
-                GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
+                ReadCombatPointerAction(GameInputAction.MeleeBlock, true);
             ClearFocusTracking(keepAim);
             Hero.SetCombatFocused(false, keepAim);
             if (keepAim && CameraFollow.SetFreeAim(this, heroChest, preserveCurrentPose: true))
@@ -544,8 +543,9 @@ namespace BarPromenade
 
         private bool PointerOverToolbar()
         {
+            if (Gamepad.current != null && Gamepad.current.rightTrigger.isPressed) return false;
             Mouse mouse = Mouse.current;
-            if (mouse == null) return false;
+            if (mouse == null || !GameCursor.FreeCursorRequested) return false;
             // Update has no IMGUI Event.current. Input System uses a bottom-left
             // origin; the shared UI canvas takes top-left screen coordinates.
             Vector2 screenPosition = mouse.position.ReadValue();
@@ -603,10 +603,12 @@ namespace BarPromenade
 
         private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text, bool enabled = true)
         {
-            RetroUiTheme.DrawSelection(rect, enabled && (rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control));
+            bool pointerAvailable = GameCursor.FreeCursorRequested;
+            RetroUiTheme.DrawSelection(rect, enabled && pointerAvailable &&
+                (rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control));
             GUI.SetNextControlName(control);
             bool previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && enabled;
+            GUI.enabled = previousEnabled && enabled && pointerAvailable;
             bool pressed = GUI.Button(rect, text, button);
             GUI.enabled = previousEnabled;
             return pressed;

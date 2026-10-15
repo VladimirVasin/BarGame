@@ -2968,8 +2968,6 @@ namespace BarPromenade.Tests.PlayMode
             PlacePair(6f);
             root.SendMessage("OnApplicationFocus", true);
             Assert.That(root.SetOpponentFocus(false), Is.True);
-            CursorLockMode cursorLock = Cursor.lockState;
-            bool cursorVisible = Cursor.visible;
             root.AutomaticSimulation = true;
             input.Press(mouse.rightButton, queueEventOnly: true);
             yield return null;
@@ -3054,8 +3052,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.PauseMenu.Open(), Is.True);
             yield return null;
             Assert.That(root.CameraFollow.FreeAimActive || root.Hero.Pistol.AimRequested, Is.False);
-            Assert.That(Cursor.lockState, Is.EqualTo(cursorLock));
-            Assert.That(Cursor.visible, Is.EqualTo(cursorVisible));
+            Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False);
+            Assert.That(Cursor.lockState, Is.EqualTo(CursorLockMode.None));
+            Assert.That(Cursor.visible, Is.True);
             input.Release(mouse.rightButton, queueEventOnly: true);
             yield return null;
             Assert.That(root.PauseMenu.Cancel(), Is.True);
@@ -3068,7 +3067,9 @@ namespace BarPromenade.Tests.PlayMode
             root.SendMessage("OnApplicationFocus", false);
             yield return null;
             Assert.That(root.CameraFollow.FreeAimActive || root.Hero.Pistol.AimRequested, Is.False);
-            Assert.That(Cursor.lockState, Is.EqualTo(cursorLock));
+            Assert.That(GameCursor.GameplayMouseInputAllowed, Is.False);
+            Assert.That(Cursor.lockState, Is.EqualTo(CursorLockMode.None));
+            Assert.That(Cursor.visible, Is.True);
             root.SendMessage("OnApplicationFocus", true);
             yield return null;
             Assert.That(root.Hero.Pistol.AimRequested, Is.False, "Returning focus with RMB held must wait for its release.");
@@ -3080,7 +3081,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.SetOpponentFocus(true), Is.True);
             Assert.That(root.CameraFollow.FreeAimActive, Is.False);
             Assert.That(root.CameraFollow.TargetLockActive, Is.True);
-            Assert.That(Cursor.lockState, Is.EqualTo(cursorLock));
+            Assert.That(GameCursor.GameplayMouseInputAllowed, Is.True,
+                "Target focus retains the shared ordinary gameplay cursor capture.");
+            Assert.That(Cursor.visible, Is.False);
             input.Release(mouse.rightButton, queueEventOnly: true);
             yield return null;
             root.AutomaticSimulation = false;
