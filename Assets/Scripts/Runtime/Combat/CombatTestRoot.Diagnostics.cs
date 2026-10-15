@@ -143,6 +143,7 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();
             ReleaseWarehouseAcoustics();
             GameLog.BeforeShutdown -= WriteMovementSummary;

@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-15 - Warehouse fish, refrigerator and mouse look
+## 2026-10-15 - Warehouse fish, mouse look and HUD
 
 - Top-rear fish station: low corded bulb; seeded Home fridge per floor,
   rust/scraps and tail/belly/head labels. Untaken rooms spill red;
@@ -31,15 +31,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Mouse orbit needs no RMB; Alt releases the pointer and suppresses mouse combat
   until fresh presses. Cursor leases replace stale aim/context snapshots;
   modal/focus return drops delta. Independent gamepad input remains live.
+- CombatTest:context HUD/fades;ammo one row/no heading/cached text widths;
+  reload RU/EN widthcached/aligned. F8legacy/Alt;result-reset-menu kept.
+  Pause hide/freeze;modal-reset-disable clear.
+  `Range_GameplayHudRespondsToAimDamageAndDebugToggle` passed;GameView frames reviewed.
 - Proof: `CombatWarehouseFishProps`, `CombatWarehouseFishAssembly`,
   `build-combat-warehouse-fish-props.py`,
   `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay`,
   `build-warehouse-fish-assembly-3d-model.py`,
   `build-warehouse-gate-chain-3d-model.py`,
   `build-warehouse-fish-lamp-burst-3d-model.py` passed.
-  Reviewed room/item/fan/trough, pouring/convulsion/key, chain/gate/door and
-  lamp/glass frames: cleanup, cutoff, retention, hold/pause/reset, clearance,
-  descent, physical glass and silent torch-only blackout passed.
+  Room/item/fan/trough, pouring/fish/key, chain/gate/door and lamp/glass frames:
+  cleanup/cutoff/retention/hold/pause/reset/clearance/descent/torch-only passed.
   `ExteriorCamera_VerticalOrbitConsumesMouseInputAndClamps`,
   `ExteriorCamera_CursorOwnersAltAndFocusResumeWithoutStaleLook` and
   `Range_MouseLookKeepsAimAndCursorHandoffsIndependent` passed.

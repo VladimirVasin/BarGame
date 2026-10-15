@@ -160,6 +160,7 @@ namespace BarPromenade
             AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated);
             JournalApplicationFocus(focused);
             if (focused) return;
+            ResetHudPresentation();
             ResetPistolCrosshair();
             requirePistolAimRelease = true;
             ReleaseFreePistolAim();
@@ -172,6 +173,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();
             SuspendWarehouseMusic();
             ReleaseWarehouseAcoustics();

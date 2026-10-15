@@ -10,7 +10,8 @@ Player dev/release:`verbose`/`basic`,`Application.persistentDataPath/Logs/debug.
 Batch tests:`off`,no file.
 
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
-`F8`:`diagnostics/snapshot`+CombatTest mark;`Shift+F8`:CombatLogs or general log directory.
+`F8`:snapshot;CombatTest:legacy HUD only. `Shift+F8`:log directory.
+Snapshot API keeps duel marks.
 
 ## General format
 

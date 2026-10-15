@@ -2,14 +2,18 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-15, contextual CombatTest HUD:**
+  CombatTest:contextual HUD.
+  Ammo:one-row/no heading/value-widthcache;reloadRUEN measured/RB-aligned.
+  Fade.15/.3 reversible/state/gamepad;crosshair-focus-E kept.
+  F8legacy0/Alt:toolbar/enemyHP/counters/controls;result-reset-menu.
+  Pause-modal-transition0/reset-disable clear/cacheframe/0rays;art§15a.
+
 - **Accepted — 2026-10-15, continuous mouse look and cursor ownership:**
-  User accepted the plan: ordinary/shared seated mouse orbit needs no button;
-  RMB retains firearm aim. Hold Alt: visible free cursor, no mouse look/combat
-  clicks; release/return requires fresh mouse-button presses. Gameplay cursor
-  locked/hidden; menus release it; focus return discards delta. Fixed/authored
-  cameras retain priority. `GameCursor`:owner leases, base0/modal5/context10;
-  stale destroyed owners pruned, bounded32. Context mode changes update their
-  lease; cleanup releases ownership instead of restoring stale cursor snapshots.
+  Ordinary/seated orbit:no button;RMB aim;Alt free cursor/no mouse look-combat.
+  Release-return:fresh presses;gameplay locked-hidden/menus free/focus drops delta;
+  authored cameras win. `GameCursor`:leases base0/modal5/context10/cap32/prune dead;
+  mode updates;cleanup releases/no stale snapshots.
 
 - **Accepted exception — 2026-10-15, warehouse bulb failure:**
   Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
@@ -51,18 +55,15 @@
   Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nestedfreeze/endrestore.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
-  User:chase .5m camera-right/1.9m back(ext/int);free aim .5/1.4m;stable lock1.4m.
-  Focus1.6/1.5m ext/int;free-stable firearm shoulder+.4m,melee+.2m kept.
-  Root delta×(1-override weight) before focus damping;routine travel0lag.
-  Authored focus override lag≤.45m;teleport snap>1.75m.
-  FOV/blends/handoff;side-back clearance/dolly aligned.
-  Hit buffer24→1024 retry/cap SphereCastAll;
-  Normal2 cached queries/0alloc;overflow can allocate.
-  HUD arms3×2/dot2×2 logicalpx;movement gap+6pistol/+10shotgun;
-  Rig/HUD:smooth expand/2s continuous still settle.
-  Look/reaim keep state;pause0/reset clears;slow drift.
-  Moving4×/muzzle-shotgun centre authoritative/recoil kept.
-  Bounded state/assets-story kept;novice exception §7.
+  Chase:right.5/back1.9m ext/int;free aim:.5/1.4m;stable1.4m.
+  Focus1.6/1.5m ext/int;firearm shoulder+.4m/melee+.2m.
+  Root delta×(1-override weight) before focus damping;travel0lag;
+  override lag≤.45m/teleport snap>1.75m;FOV-blends-handoff/clearance-dolly kept.
+  Hit buffer24→1024 retry/cap SphereCastAll;normal2 cached queries/0alloc,
+  overflow may allocate. Reticle arms3×2/dot2×2px;moving gap+6pistol/+10shotgun.
+  Rig/HUD expand smoothly/2s still settle;look-reaim keep/pause0/reset clear.
+  Slow drift/moving4×/muzzle-shotgun centre authoritative/recoil kept;
+  bounded state/assets-story kept;novice exception §7.
 
 - **Accepted 2026-10-14, warehouse goal:**
   9wallplates.44×.5/1–9/3floor/seedfixed.

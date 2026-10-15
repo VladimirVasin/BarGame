@@ -151,8 +151,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
   Survivors:injury-action-ammo-flights kept/refill0;unused→oldest/excess retire;
   body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/held(defaultbar)/1-2-3/DpadR/physical stow-draw/mounts/reloadfirst;
-  fallcancel/pose-ammo-slot/Erecord.
+  All3/defaultbar/1-2-3/DpadR/stow-draw/mounts/reloadfirst/fallcancel/pose-ammo-slot/Erecord.
   Zombies:3worn/clips/groan-lunge;
   slowchase→telegraph→latchedlunge→missrecovery/hand firstsurface/1hit/0metal;
   guard-counter-retreat-stamina0/onehand→other/both0-grounded0attack;
@@ -161,8 +160,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Rise:tread/pose→Rising/retry/blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
-  Hero:smooth drift/moving aim4×/stillsettle2s/recoil-yaw-overshoot/regrip/blink-chin;
-  HUD-rig movement/look-aim keep settle/pause0;
+  Hero:drift/moving aim4×/settle2s/recoil-yaw-overshoot/regrip/blink-chin;
   reticle:3×2px arms/2×2dot/moving gap+6pistol/+10shotgun/muzzle direction;
   Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
   shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire.
@@ -176,6 +174,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
   standard taunt/Eshared/0grant.
   Jacket-scarf-sling:rig/anchors/hand-opening/physics0/hair;pause-drop-reset cleanup.
+  HUD:F8legacy0/Alt/result-reset-menu;pause-modal0/reset-disable clear;art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.

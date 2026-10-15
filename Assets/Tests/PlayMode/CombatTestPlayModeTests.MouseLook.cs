@@ -84,6 +84,12 @@ namespace BarPromenade.Tests.PlayMode
                 MethodInfo pointerOverToolbar = typeof(CombatTestRoot).GetMethod(
                     "PointerOverToolbar", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.That(pointerOverToolbar, Is.Not.Null);
+                Assert.That((bool)pointerOverToolbar.Invoke(root, null), Is.False,
+                    "The default gameplay HUD has no invisible toolbar hitbox.");
+                input.Press(keyboard.f8Key, queueEventOnly: true);
+                yield return ConsumeMouseLookInput();
+                input.Release(keyboard.f8Key, queueEventOnly: true);
+                yield return ConsumeMouseLookInput();
                 Assert.That((bool)pointerOverToolbar.Invoke(root, null), Is.True);
                 input.Press(gamepad.rightTrigger, queueEventOnly: true);
                 InputSystem.Update();

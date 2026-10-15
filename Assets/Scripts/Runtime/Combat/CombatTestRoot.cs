@@ -211,6 +211,7 @@ namespace BarPromenade
             CameraFollow.Snap();
             SetDuelFrozen(false);
             BeginJournalRound();
+            ResetHudPresentation();
         }
 
         /// <summary>The duel owns the shoulder camera and target-facing movement; a reset takes them back.</summary>
@@ -268,9 +269,14 @@ namespace BarPromenade
         private void Update()
         {
             BeginJournalFrame();
-            if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
-            TickFrame(Time.deltaTime);
-            if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
+            if (!IsInitialized) return;
+            UpdateHudInput();
+            if (AutomaticSimulation && UpdateCombatInput())
+            {
+                TickFrame(Time.deltaTime);
+                if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
+            }
+            if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
         }
 
         /// <summary>Drop excess wall time after a hitch instead of feeding an ever
@@ -541,8 +547,9 @@ namespace BarPromenade
             return SceneTransitionService.RequestLoad(SceneIds.MainMenu);
         }
 
-        private bool PointerOverToolbar()
+        internal bool PointerOverToolbar()
         {
+            if (!HudCanRender || !DebugHudVisible) return false;
             if (Gamepad.current != null && Gamepad.current.rightTrigger.isPressed) return false;
             Mouse mouse = Mouse.current;
             if (mouse == null || !GameCursor.FreeCursorRequested) return false;
@@ -555,108 +562,5 @@ namespace BarPromenade
             return ToolbarRect.Contains(position);
         }
 
-        private void OnGUI()
-        {
-            if (!IsInitialized || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning ||
-                (Taunt != null && Taunt.IsActive) || BarMinigameModalLock.IsAnyLocked) return;
-            if (small == null)
-            {
-                small = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleLeft, RetroUiTheme.Text);
-                controls = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Muted);
-                button = RetroUiTheme.CreateButtonStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Text, false);
-                button.padding = new RectOffset(2, 2, 0, 0);
-            }
-            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-            Matrix4x4 matrix = RetroUiTheme.BeginCanvas(canvas);
-            try
-            {
-                RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-                if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
-                    LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
-                if (Opponent.IsZombie)
-                    GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18), LocalizationService.Get("combat.zombie"), small);
-                else if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
-                    LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
-                    Mode != CombatTestMode.Endless || EndlessRunFinished))
-                    SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
-                DrawWarehouseButton(canvas);
-                if (Mode == CombatTestMode.Endless)
-                    GUI.Label(new Rect(392, 12, 102, 18), endlessKillsLabel.Get(LocalizationService.Get("combat.kills"), EndlessKills), small);
-                else if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
-                    ModeHudText())) SetSparring(!Sparring);
-                if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",
-                    LocalizationService.Get(Mode == CombatTestMode.Endless ? "combat.new_run" : "combat.reset"))) ResetRound();
-                if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
-                    LocalizationService.Get("combat.menu"))) ReturnToMenu();
-                DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
-                if (Opponent.gameObject.activeInHierarchy)
-                    DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
-                DrawChargeMeter();
-                DrawPistolHud(canvas);
-                DrawFocusMarker(canvas);
-                DrawEndlessStatus();
-                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsShotgun ? "combat.controls.shotgun" :
-                    Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
-            }
-            finally { RetroUiTheme.EndCanvas(matrix); }
-        }
-
-        private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text, bool enabled = true)
-        {
-            bool pointerAvailable = GameCursor.FreeCursorRequested;
-            RetroUiTheme.DrawSelection(rect, enabled && pointerAvailable &&
-                (rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control));
-            GUI.SetNextControlName(control);
-            bool previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && enabled && pointerAvailable;
-            bool pressed = GUI.Button(rect, text, button);
-            GUI.enabled = previousEnabled;
-            return pressed;
-        }
-
-        private void DrawFighterHud(Rect rect, string healthKey, CombatActor actor)
-        {
-            RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - (actor.IsHero ? 32f : 12f), 14f), healthKey,
-                actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f,
-                actor.IsHero ? heroHealthLabel : opponentHealthLabel);
-            if (!actor.IsZombie) DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
-                actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f,
-                actor.IsHero ? heroStaminaLabel : opponentStaminaLabel);
-            if (actor.IsHero) DrawGuardReadiness(new Rect(rect.xMax - 22f, rect.y + 2f, 15f, 15f), actor);
-        }
-
-        private static void DrawGuardReadiness(Rect rect, CombatActor actor)
-        {
-            // A closed shield means the stance can guard; its centre lights only
-            // while the raised two-hand guard actually protects the actor.
-            bool ready = actor.GuardReady;
-            bool requested = actor.GuardRequested && !ready;
-            Color color = ready ? RetroUiTheme.Text : requested ? RetroUiTheme.Accent : RetroUiTheme.BorderMuted;
-            RetroUiTheme.FillRect(new Rect(rect.x, rect.y, 2f, 9f), color);
-            RetroUiTheme.FillRect(new Rect(rect.xMax - 2f, rect.y, 2f, 9f), color);
-            if (ready) RetroUiTheme.FillRect(new Rect(rect.x, rect.y, rect.width, 1f), color);
-            else if (requested)
-            {
-                // Two separated shoulders show a held request; the shield stays
-                // open and empty until both hands actually protect the fighter.
-                RetroUiTheme.FillRect(new Rect(rect.x + 2f, rect.y, 3f, 1f), color);
-                RetroUiTheme.FillRect(new Rect(rect.xMax - 5f, rect.y, 3f, 1f), color);
-            }
-            RetroUiTheme.FillRect(new Rect(rect.x + 2f, rect.y + 9f, rect.width - 4f, 2f), color);
-            RetroUiTheme.FillRect(new Rect(rect.x + 4f, rect.y + 11f, rect.width - 8f, 2f), color);
-            RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + 13f, rect.width - 12f, 2f), color);
-            if (actor.State.IsBlocking && ready)
-                RetroUiTheme.FillRect(new Rect(rect.x + 4f, rect.y + 3f, rect.width - 8f, 5f), RetroUiTheme.AccentPale);
-        }
-
-        private void DrawMeter(Rect rect, string key, float value, float max, Color color, float thickness, HudCounterLabel label)
-        {
-            var track = new Rect(rect.x, rect.yMax - thickness, rect.width, thickness);
-            RetroUiTheme.FillRect(track, RetroUiTheme.Shadow);
-            RetroUiTheme.FillRect(new Rect(track.x, track.y, track.width * Mathf.Clamp01(value / max), thickness), color);
-            GUI.Label(new Rect(rect.x, rect.y - 2f, rect.width, 12f),
-                label.Get(LocalizationService.Get(key), Mathf.CeilToInt(value)), small);
-        }
     }
 }

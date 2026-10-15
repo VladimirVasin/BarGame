@@ -215,7 +215,7 @@ namespace BarPromenade
             return true;
         }
 
-        private void DrawPistolHud(RetroUiCanvas canvas)
+        private void DrawFirearmCrosshair(RetroUiCanvas canvas)
         {
             if (!Hero.IsFirearm || Hero.Firearm == null) return;
             if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive && GameInput.CanRead(GameInputContext.Gameplay) &&
@@ -234,6 +234,11 @@ namespace BarPromenade
                     RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 2f, 2f), colour);
                 }
             }
+        }
+
+        private void DrawLegacyPistolHud()
+        {
+            if (!Hero.IsFirearm || Hero.Firearm == null) return;
             var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             string[] keys = Hero.IsShotgun ? ShotgunHudKeys : PistolHudKeys;

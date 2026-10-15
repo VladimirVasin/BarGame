@@ -4228,12 +4228,10 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 - Карта — угольно-бумажная схема. Районы, вода, дороги, маршрут и точки
   различаются прежде всего значением, толщиной, штрихом и силуэтом; цвет не
   должен быть нужен для чтения текущей вкладки, игрока или выбранной точки.
-- Пауза и старт дня — самые пустые экраны системы: один центр
-  внимания, короткий вертикальный набор действий или одна шкала.
+- Пауза/старт дня: один центр, короткий вертикальный набор действий/одна шкала.
 - Загрузка между большими областями следует отдельному принятому исключению
   ниже: одна неподвижная иллюстрация и одна полоса прогресса внизу.
-- HUD и мини-игры остаются приборами поверх мира: минимум площади, одна
-  измеряемая величина и тот же рамочный/светлотный язык.
+- HUD/мини-игры — приборы: минимум площади, одна величина, тот же рамочный/светлотный язык.
 
 ### Принятое исключение — боевой полигон
 
@@ -4289,7 +4287,10 @@ Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Chest contrast;wall-edge-end→hide.
 Win:walk/gun fire-reload;barE:toilet §7 FP/barL/body-floorR/0reaction.
-Charge/shield:dim0/amber=request/closed=ready/filled=block/0story.
+`2026-10-15` HUD:charcoal/bone;aim ammo1row/reload meter/HP damage3s-≤25%/staminafull+1s;
+charge-block/fade.15-.3/F8legacy0/Alt;
+enemyHP-counters-controls legacy/result-reset-menu.
+Shield:amber=request/closed=ready/filled=block.
 
 ### Принятое исключение — иллюстрации загрузки
 
