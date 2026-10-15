@@ -24,7 +24,8 @@ namespace BarPromenade
         CombatShotgunAmmo = 16,
         RottenFishTailCan = 17,
         RottenFishBellyCan = 18,
-        RottenFishHeadCan = 19
+        RottenFishHeadCan = 19,
+        WarehouseGateKey = 20
     }
 
     public enum InventoryItemCategory
@@ -176,7 +177,9 @@ namespace BarPromenade
             new InventoryItemDefinition(InventoryItemId.RottenFishBellyCan, InventoryItemCategory.KeyItem,
                 "inventory.item.rotten_fish_belly_can.name", "inventory.item.rotten_fish_belly_can.description", 1),
             new InventoryItemDefinition(InventoryItemId.RottenFishHeadCan, InventoryItemCategory.KeyItem,
-                "inventory.item.rotten_fish_head_can.name", "inventory.item.rotten_fish_head_can.description", 1)
+                "inventory.item.rotten_fish_head_can.name", "inventory.item.rotten_fish_head_can.description", 1),
+            new InventoryItemDefinition(InventoryItemId.WarehouseGateKey, InventoryItemCategory.KeyItem,
+                "inventory.item.warehouse_gate_key.name", "inventory.item.warehouse_gate_key.description", 1)
         };
 
         private static readonly IReadOnlyList<InventoryItemDefinition>

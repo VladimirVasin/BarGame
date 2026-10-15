@@ -36,7 +36,8 @@ namespace BarPromenade
             Vector3 facing = bounds.center - floor;
             facing.y = 0f;
             var staging = NarrativeStagingPlan.Standing(floor, Quaternion.LookRotation(facing), bounds,
-                Vector3.right, NarrativeCameraMode.ObjectCloseUp, new Vector3(.12f, .12f, -1f).normalized);
+                Vector3.right, NarrativeCameraMode.ObjectCloseUp, new Vector3(.12f, .12f, -1f).normalized,
+                authoredFocusBoundsOnly: true);
             var definition = new NarrativeInteractionDefinition("warehouse-valve", PromptKey,
                 new[] { new NarrativePage(LockedKey, compact: true) }, requiresRunningGameTime: false);
             var host = new GameObject("Warehouse Valve Inspection");
@@ -44,13 +45,15 @@ namespace BarPromenade
             var inspection = host.AddComponent<NarrativeInteraction>();
             inspection.Configure(definition, subject.transform, staging, floor + Vector3.up * .85f);
             inspection.InspectionAttemptSeconds = AttemptSeconds;
-            BindAttempt(control, subject.transform, inspection);
+            var gate = control.AddComponent<WarehouseGateController>();
+            BindAttempt(control, subject.transform, inspection, gate);
             inspection.Admission = interactor => owner != null && owner.IsInitialized &&
                 owner.Player.Interactor == interactor &&
-                owner.Hero != null && owner.Hero.CanBeginStandingInspection;
+                owner.Hero != null && owner.Hero.CanBeginStandingInspection && !gate.IsOpen;
             bool ownsFocus = false, previousFocus = false;
             inspection.PreparingPlayer += interactor =>
             {
+                inspection.Activity = gate.IsUnlocked || GameSessionState.HasInventoryItem(InventoryItemId.WarehouseGateKey) ? gate : null;
                 previousFocus = owner.Hero.CombatFocused;
                 ownsFocus = true;
                 owner.Hero.PrepareStandingInspection();
@@ -65,7 +68,7 @@ namespace BarPromenade
             return inspection;
         }
 
-        private static void BindAttempt(GameObject control, Transform subject, NarrativeInteraction inspection)
+        private static void BindAttempt(GameObject control, Transform subject, NarrativeInteraction inspection, WarehouseGateController gate)
         {
             Transform wheelAnchor = WarehouseArenaAssetProvider.FindAnchor(control, "Wheel");
             Transform lockAnchor = WarehouseArenaAssetProvider.FindAnchor(control, "Lock");
@@ -97,8 +100,12 @@ namespace BarPromenade
             var restWheel = new RestPose(wheel);
             var restChain = new RestPose(chain);
             var restLock = new RestPose(padlock);
-            inspection.AttemptProgress += progress => SampleAttempt(progress, restWheel, restChain, restLock);
+            inspection.AttemptProgress += progress =>
+            {
+                if (!gate.IsUnlocked) SampleAttempt(progress, restWheel, restChain, restLock);
+            };
             SampleAttempt(0f, restWheel, restChain, restLock);
+            gate.Initialize(inspection, wheel, chain, padlock);
         }
 
         private static Transform CreatePivot(Transform parent, string name, Vector3 position, Quaternion rotation)

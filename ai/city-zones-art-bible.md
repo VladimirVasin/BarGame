@@ -4237,25 +4237,24 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-PS1/0story/9checks;`architecture-notes.md`.
+9checks;`architecture-notes.md`.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
-Wet concrete/rust-bent steel/peeling paint/swollen wood-cardboard/worn rubber;
-cargo/work disgust§6/metric wet-rust-scuff/rare wear;
-9sets opposite entry/front→door/clear;
-9wall plaques/print1-9/seed-fixed.
-D7fan/guarded lift-drums-pusher↔/SFX;gate-frame/drive/backdoor;
-spoked stem-valve/yellow chain/gray lock;E:close/2locked tugs→silent key§21/§6;
-Pusher left/clear/open0.
-4dim/red/bulb;fanSpot/blade shadows/roof-deck/chestbeam.
-`2026-10-15`:prep/toprear;3rustfridges/seed/floor;roomreds/Take→fade+dyinghum-click/gate on;
-cans/scraps/cream tail-belly-head print/Take/Reset-New keep.
-Low white bulb/socket/long ceiling cord;
-all3/anyorder→Home flicker-crackle;fan light-lens/vent0/mechanisms0/grind;
-Reset-New stopped/noreplay;pause0/cleanup/pendant-only strobe0;
-fog-sky0/low heavySFX/echo/dryUI/theme.8→mech-sync tapechew-stop/exitrestore.
-0dream-transition/organic/siren/mystics/clues/infection.
-Endless1–5/poolIDs/≥3m/AI-spacing-stairs/heroend.
-Undead-only/0lore-infection/3worn/pale-darkeyes;
+wetconcrete/rust-bentsteel/peelingpaint/swollenwood-cardboard/wornrubber;
+cargo/workdisgust§6/metricwet-rust-scuff/rarewear;
+9sets faceentry/doorclear/plates1-9/seedfixed.
+D7fan/guardedlift-drum-pusher↔SFX/gatedrive-backdoor;
+spokedvalve/yellowchain/graylock/no-key E2tugs-keyUI/Pusherleft-clear.
+4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
+`2026-10-15`:prep/toprear;3rustfridges/seedfloor;redTake→fade-humclick/gateon;
+cans/scraps/cream tail-belly-head/Take.
+Whitebulb/3→Homeflicker-crackle;keyreceipt-stairs↓→heat2s/riseSFX/popglass/8phys;
+bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/pause-ResetNewkeep/strobe0.
+Fanlens-light/vent-mech0grind/fog-sky0/heavySFXecho/dryUI/music.8-mechsync-tapechew0/exitrestore.
+Toptrough-rimsfill/belowbulb/pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;
+Key→chainlockfall/holdE-gatelift/slots/upperkept.
+Fishonlyorganic/§6.
+Endless1–5/IDs/≥3m/AIstairs-spacing/heroend/3src→new0-livekept.
+Undead-only/lore-infection0/3worn/pale-darkeyes;
 slump/heavy-asymgait/palms/idle-walk/RLlunge/telegraph→rush→return/groan-hiss.
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
 coat-scarf rig/sling anchors;physics0/hair kept.

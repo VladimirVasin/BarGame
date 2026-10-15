@@ -5,31 +5,46 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-15 - Warehouse fish and shared refrigerator
 
-- City fish-preparation model on the top rear gallery has a low bare bulb on
-  a visible ceiling cord; seeded Home fridges occupy one room per floor. Rusty finishes;
-  open rotten cans have small scraps and large tail/belly/head label drawings.
-  Room indicators mark uncollected fridge rooms with red surface spill;
-  other entrance lenses and sources stay off, the gate indicator stays on.
-- Shared refrigerator: hand-free camera/door flow, atomic inventory pickup and
-  capacity refusal. Stable item sources keep collected shelves empty through
-  Reset and New Layout; only New Layout recomputes rooms. Owned renderer flags
-  hide the complete warehouse hero during closeup and restore exactly.
-- Browsing chest beam follows the cursor through existing torso lag; pause and
-  nested inspection freeze the aim, closing releases it. Held item orientation
-  is independent of room yaw; nested focus stays sharp. Compact panels and
-  smaller can previews retain shared inspection and inventory actions.
-- Successful Take fades its room indicator with local dying hum/click. The last
-  unique source activates Home bathroom white flicker/crackle and slows every
-  mechanism and working sound to a halt. Fan light/lens and ventilation fade
-  with metal grinding; music follows the same clock through tape-chew shutdown.
-  Pause freezes the sequence; rebuilt collected/stopped state stays silent.
+- Top-rear fish station: low corded bulb; seeded Home fridge per floor,
+  rust, rotten scraps and large tail/belly/head labels. Untaken rooms spill red;
+  other room lights stay off, gate remains lit until the bulb fails.
+- Shared hand-free refrigerator: camera/door, atomic pickup/capacity refusal;
+  stable sources stay empty through Reset/New Layout, which recomputes rooms.
+  Owned renderer flags hide the warehouse hero and restore exactly.
+- Chest beam follows cursor/torso lag; pause/nested inspection freeze aim,
+  closing releases it. Held orientation ignores room yaw; nested focus stays
+  sharp. Compact panels/smaller can previews retain shared inventory actions.
+- Take fades its indicator with dying hum/click. The last unique can activates
+  Home white flicker/crackle and halts mechanisms/sound with metal grinding;
+  fan light/lens/ventilation fade, music follows through tape-chew shutdown.
+  Pause freezes; rebuilt stopped state stays silent. Endless pending/new arrivals
+  stop while existing zombies keep fighting; Reset/New retain the cutoff.
+- Shared standing table activity frames the whole trough below the bulb;
+  poured cans vanish. Atomic transfer releases flat physical fish sections;
+  matching seams join a movable group, then continuous skin convulses, dies and
+  spits one key into shared receipt. Cancellation/rebuild retain progress.
+- Kept key releases physical chain/lock; held valve raises leaf/collision.
+  Release/Escape keeps travel, maximum latches/exits; gallery slots clear the leaf.
+  Opened door is a silent stub; Reset/New retain state.
+- After key receipt closes, actual descent on either upper stair triggers one
+  continuous filament heat/electrical rise, then pop/glass and physical shards.
+  Bulb hides, socket/cord stay; fixed lights/lenses/ambient go dark, chest torch
+  remains. Pause freezes; session retains heat/burnt state without replay.
 - Proof: `AreaCaptureFixture.CombatWarehouseFishProps` passed, including
   pickup order/capacity, room fade/audio, white work-surface spill, synchronized
   mechanism/music shutdown, pause, rebuild and cleanup.
   `build-combat-warehouse-fish-props.py` contract passed.
   `OpenInspectClose_UsesFirstPersonCameraAndRestoresGameplay` passed for Home.
-  Fresh room, inspection, inventory, pendant and stopped-fan frames reviewed;
-  `check-docs.py` and `git diff --check` passed.
+  `AreaCaptureFixture.CombatWarehouseFishAssembly` and
+  `build-warehouse-fish-assembly-3d-model.py` passed.
+  `build-warehouse-gate-chain-3d-model.py` contract passed.
+  `build-warehouse-fish-lamp-burst-3d-model.py` passed.
+  Reviewed room, item, pendant, fan, trough, pouring, convulsion, key, fallen-chain,
+  partial/full gate, door-UI, filament heat and falling-glass frames. It passed
+  framing, can cleanup, spawn cutoff, key retention, hold/release/pause, reset/reentry,
+  latched clearance, door stub, actual stair descent, heat/pause, physical glass,
+  torch-only blackout and retained silent state.
+  `check-docs.py` and scoped source/docs `git diff --check` passed.
 
 ## 2026-10-14 - Combat and warehouse
 

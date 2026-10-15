@@ -13,6 +13,7 @@ namespace BarPromenade
         internal static int? WarehouseSeedForTests;
         private GameObject combatLocation;
         public WarehouseArenaPlan WarehousePlan { get; private set; }
+        internal WarehouseArenaArea WarehouseArea => arenaBounds as WarehouseArenaArea;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetWarehouseSelection()
@@ -35,7 +36,7 @@ namespace BarPromenade
             WarehouseSeedForTests = null;
             WarehousePlan = WarehouseArenaPlanner.Create(seed);
             combatLocation = WarehouseArenaBuilder.Create(WarehousePlan, transform);
-            arenaBounds = new WarehouseArenaArea(WarehousePlan);
+            arenaBounds = new WarehouseArenaArea(WarehousePlan, GameSessionState.WarehouseGate);
             UpdateWarehouseSpawns();
         }
 

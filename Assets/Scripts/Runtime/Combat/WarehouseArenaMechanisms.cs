@@ -275,7 +275,7 @@ namespace BarPromenade
 
         private void ApplyFanPower()
         {
-            float factor = FanSpeedFactor;
+            float factor = GameSessionState.WarehouseFishLamp.Phase == WarehouseFishLampPhase.Burst ? 0f : FanSpeedFactor;
             if (lastFanFactor == factor) return;
             lastFanFactor = factor;
             if (FanLight != null)

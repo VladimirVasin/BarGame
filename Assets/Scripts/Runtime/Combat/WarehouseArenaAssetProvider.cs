@@ -145,7 +145,7 @@ namespace BarPromenade
                     renderer.sharedMaterial = Surface("EmergencyRoomLamp", enabled ? "SignalRed" : "SignalRedOff");
         }
 
-        private static Material Surface(string kind, string role)
+        internal static Material Surface(string kind, string role)
         {
             string atlas = AtlasForModel(kind);
             string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Structure";

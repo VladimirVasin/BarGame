@@ -7,6 +7,7 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private readonly EndlessCombatState endless = new EndlessCombatState();
+        private bool endlessSpawnGateSubscribed, endlessSpawnsBlockedByFish;
         private RaycastHit[] spawnGroundHits = new RaycastHit[16];
         private Collider[] spawnOverlapHits = new Collider[32];
         private readonly List<Vector3> warehouseSpawnRoute = new List<Vector3>(64);
@@ -33,6 +34,31 @@ namespace BarPromenade
         public bool WaitingForNextOpponent => Mode == CombatTestMode.Endless && endless.IsWaiting;
         public bool EndlessRunFinished => Mode == CombatTestMode.Endless && endless.IsFinished;
         public float NextOpponentSeconds => Mode == CombatTestMode.Endless ? endless.RemainingSeconds : 0f;
+        public bool EndlessSpawnsBlockedByFish => Mode == CombatTestMode.Endless && endlessSpawnsBlockedByFish;
+
+        private void SubscribeEndlessSpawnGate()
+        {
+            if (!endlessSpawnGateSubscribed)
+            {
+                GameSessionState.WorldItemsChanged += RefreshEndlessSpawnGate;
+                endlessSpawnGateSubscribed = true;
+            }
+            RefreshEndlessSpawnGate();
+        }
+
+        private void UnsubscribeEndlessSpawnGate()
+        {
+            if (!endlessSpawnGateSubscribed) return;
+            GameSessionState.WorldItemsChanged -= RefreshEndlessSpawnGate;
+            endlessSpawnGateSubscribed = false;
+        }
+
+        private void RefreshEndlessSpawnGate()
+        {
+            if (!IsInitialized) return;
+            endlessSpawnsBlockedByFish = WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
+            endless.SetSpawningEnabled(!endlessSpawnsBlockedByFish, LiveOpponentCount);
+        }
 
         private void ObserveEndlessOutcome()
         {
@@ -55,10 +81,11 @@ namespace BarPromenade
                 duelJournal?.Record("endless_finished", f0: GameLog.Field("kills", endless.Kills));
         }
 
-        private bool AdvanceEndlessInterval(float seconds)
+        internal bool AdvanceEndlessInterval(float seconds)
         {
             if (Mode != CombatTestMode.Endless) return false;
             ObserveEndlessOutcome();
+            if (endlessSpawnsBlockedByFish) return false;
             int live = LiveOpponentCount;
             if (!endless.Advance(seconds, live)) return false;
             OpponentSlot available = null;

@@ -134,20 +134,19 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:30×24×10.2/fanwell12.22/levels0-3.2-6.4/9rooms6×6/hall12×12;
-  2stairs-4flights/3seeds/resetkeep/New/9sets→entry/9signs.44x.5m/1–9.
-  gate-drive/backdoor/spoked valve/yellow chain/gray lock/Pusher left/clear.
-  E:2pulls/1.2s→silent key RU-EN;E-Esc/pause/disable restore/clock0/open0.
-  prep/toprear;low bulb;all3anyorder→white flicker-crackle+mechanisms stop/fan grind;
-  3rustfridges;tail-belly-head/labels/scraps/Take1x/full keeps;
-  roomreds/Take→fade-hum-click/gate on/6practicals;beam lag/modal0/close reset.
-  D7fan/topSpot/blade shadows→hall-galleries/roof-deck block/lift-drums-pusher/pause;
-  SFX/dryUI/theme?/.8speed-pitch/echo;
-  finalcan→same tape-chew/wow-pitch-LP-volume→stop;
-  Reset-New:playhead before/stopped after/no replay;pause-disable-resume/exitfade.
-  LM65Chest Spot60/16m/60–28°/hard/on/torso-look;
-  fog-sky0/ambient hero3D3→black12m/camera0.
-  NPCgraph/gravity/LOS;flat:test-only.
+- CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
+  valve/Pusherleft;nokeyE2pulls1.2s;keykept→insert-open/phys chainlockfall.
+  HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch-close;
+  doorfull silentstub/0travel;2galleryslots/upperkept/area-progress-headroom.
+  3rustfridges/floor-tail-belly-head/labels-scraps/Take1x/fullkeep/redfade-humclick;
+  3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-livekept;
+  toprear/troughfill/belowbulb/atomic3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-spitkey1/receipt;
+  keyreceiptclosed+eitherstairs↓→heat2s/swell-riseSFX→popglass/8phys;
+  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild.
+  Esc-pause/Reset-Newkeep;newgame-invreset0.
+  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0.
+  SFX/dryUI/theme.8/echo-wow-LP-volume/mechsync;
+  Reset-Newkeep playhead-stop/0replay;pause-disable-resume/exitfade.
   Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2)/settings;
   2–4→3–7active s/≥3m-free-route/0backlog/pool=livecap≤5/IDs/stairs/kill1x/heroend.
   Survivors:injury-action-ammo-flights kept/refill0;unused→oldest/excess retire;

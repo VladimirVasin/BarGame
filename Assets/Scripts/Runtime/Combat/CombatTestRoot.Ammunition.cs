@@ -10,6 +10,7 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            SubscribeEndlessSpawnGate();
             AcquireWarehouseAcoustics();
             if (Flashlight != null) Flashlight.enabled = true;
             AmmoSpawns?.SetInteractionEnabled(Hero != null && !Hero.State.IsDefeated && pistolApplicationFocused);

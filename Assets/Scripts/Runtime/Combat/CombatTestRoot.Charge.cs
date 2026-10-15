@@ -121,6 +121,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            UnsubscribeEndlessSpawnGate();
             SuspendWarehouseMusic();
             ReleaseWarehouseAcoustics();
             Hero?.ClearWarehouseTorsoLook();

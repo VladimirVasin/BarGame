@@ -123,6 +123,17 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>Preflights a fixed three-item transfer before any mutation; no callbacks observe a partial debit.</summary>
+        public bool TryRemoveThreeDistinct(InventoryItemId first, InventoryItemId second, InventoryItemId third)
+        {
+            if (first == second || first == third || second == third ||
+                GetCount(first) < 1 || GetCount(second) < 1 || GetCount(third) < 1) return false;
+            TryRemove(first);
+            TryRemove(second);
+            TryRemove(third);
+            return true;
+        }
+
         public int GetCount(InventoryItemId itemId)
         {
             int index = FindIndex(itemId);

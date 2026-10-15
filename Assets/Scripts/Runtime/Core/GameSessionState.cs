@@ -92,11 +92,15 @@ namespace BarPromenade
         public const int DefaultFatigue = 0;
         public const int FirstDebugGameDayNumber = 1;
         public const int LastDebugGameDayNumber = 7;
+        public const string WarehouseFishKeySourceId = "warehouse.fish.key";
 
         private static readonly HashSet<string> collectedWorldItems =
             new HashSet<string>(StringComparer.Ordinal);
         private static readonly InventoryState inventory =
             new InventoryState();
+        private static readonly WarehouseFishAssemblyState warehouseFishAssembly = new WarehouseFishAssemblyState();
+        private static readonly WarehouseGateState warehouseGate = new WarehouseGateState();
+        private static readonly WarehouseFishLampState warehouseFishLamp = new WarehouseFishLampState();
         private static readonly QuestLogState questLog =
             new QuestLogState();
         private static readonly HashSet<GameDayEventId> firedDayEvents =
@@ -116,6 +120,9 @@ namespace BarPromenade
         private static long nextDrinkOrderSequence;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
+        public static WarehouseFishAssemblyState WarehouseFishAssembly => warehouseFishAssembly;
+        public static WarehouseGateState WarehouseGate => warehouseGate;
+        public static WarehouseFishLampState WarehouseFishLamp => warehouseFishLamp;
         public static VillageHouseholdProgress VillageHousehold => villageHousehold;
         public static string CityBlueprintId { get; private set; } =
             DefaultCityBlueprintId;
@@ -554,6 +561,9 @@ namespace BarPromenade
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            warehouseFishAssembly.Reset();
+            warehouseGate.Reset();
+            warehouseFishLamp.Reset();
             WorldItemsChanged?.Invoke();
             InventoryEquipmentChanged?.Invoke();
             questLog.ResetWithStarterQuests();
@@ -857,6 +867,37 @@ namespace BarPromenade
             }
 
             return removed;
+        }
+
+        /// <summary>The prepared table takes all three finite cans together, once per game.</summary>
+        public static bool TryBeginWarehouseFishAssembly()
+        {
+            if (warehouseFishAssembly.HasTransferredCans || !inventory.TryRemoveThreeDistinct(
+                InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan,
+                InventoryItemId.RottenFishHeadCan)) return false;
+            warehouseFishAssembly.BeginPouring();
+            GameLog.Info("inventory", "warehouse_fish_cans_transferred");
+            return true;
+        }
+
+        /// <summary>Completion grants the unique key before its receipt, which can be retried independently.</summary>
+        public static bool TryGrantWarehouseFishKey()
+        {
+            if (warehouseFishAssembly.Phase != WarehouseFishAssemblyPhase.Complete) return false;
+            if (warehouseFishAssembly.RewardGranted) return true;
+            if (!IsWorldItemCollected(WarehouseFishKeySourceId) &&
+                !TryCollectWorldItem(WarehouseFishKeySourceId, InventoryItemId.WarehouseGateKey)) return false;
+            warehouseFishAssembly.MarkRewardGranted();
+            return true;
+        }
+
+        /// <summary>The fish key unlocks this session's valve without consuming or duplicating the key.</summary>
+        public static bool TryUnlockWarehouseGate()
+        {
+            bool alreadyUnlocked = warehouseGate.Unlocked;
+            if (!warehouseGate.TryUnlock(inventory.GetCount(InventoryItemId.WarehouseGateKey) > 0)) return false;
+            if (!alreadyUnlocked) GameLog.Info("combat", "warehouse_gate_unlocked");
+            return true;
         }
 
         public static bool IsInventoryItemEquipped(InventoryItemId itemId)
@@ -1266,6 +1307,9 @@ namespace BarPromenade
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            warehouseFishAssembly.Reset();
+            warehouseGate.Reset();
+            warehouseFishLamp.Reset();
             WorldItemsChanged?.Invoke();
             ScarfRestingLowered = false;
             InventoryEquipmentChanged?.Invoke();

@@ -1,0 +1,290 @@
+{
+  "generator": "tools/build-warehouse-fish-assembly-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "a1f0bc842c0d293b6ebbf3f802b60095be96fcc243d351219695c31e7c174b0b",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": false,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 4212,
+  "materials": {
+    "SpoiledFish": [
+      0.38,
+      0.42,
+      0.29
+    ],
+    "SpoiledFishFlesh": [
+      0.43,
+      0.34,
+      0.25
+    ],
+    "SpoiledFishDark": [
+      0.075,
+      0.085,
+      0.055
+    ],
+    "WornSteel": [
+      0.42,
+      0.44,
+      0.39
+    ],
+    "ConcreteDark": [
+      0.3,
+      0.32,
+      0.29
+    ]
+  },
+  "models": [
+    {
+      "name": "FishTail",
+      "bounds_min": [
+        -0.06,
+        0.003,
+        -0.048
+      ],
+      "bounds_max": [
+        0.0604,
+        0.047,
+        0.048
+      ],
+      "triangle_count": 548,
+      "solid_count": 4,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "AssemblyOrigin",
+          "position": [
+            0.12,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "MateHead",
+          "position": [
+            0.06,
+            0.025,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "FishBelly",
+      "bounds_min": [
+        -0.0604,
+        0.0,
+        -0.069
+      ],
+      "bounds_max": [
+        0.0604,
+        0.05,
+        0.069
+      ],
+      "triangle_count": 996,
+      "solid_count": 9,
+      "mesh_count": 5,
+      "anchors": [
+        {
+          "name": "AssemblyOrigin",
+          "position": [
+            -0.0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "MateTail",
+          "position": [
+            -0.06,
+            0.025,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "MateHead",
+          "position": [
+            0.06,
+            0.025,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "FishHead",
+      "bounds_min": [
+        -0.0604,
+        0.003,
+        -0.042
+      ],
+      "bounds_max": [
+        0.061,
+        0.047999,
+        0.042
+      ],
+      "triangle_count": 1076,
+      "solid_count": 10,
+      "mesh_count": 7,
+      "anchors": [
+        {
+          "name": "AssemblyOrigin",
+          "position": [
+            -0.12,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "MateTail",
+          "position": [
+            -0.06,
+            0.025,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "WarehouseGateKey",
+      "bounds_min": [
+        -0.043,
+        -0.001,
+        -0.0205
+      ],
+      "bounds_max": [
+        0.037,
+        0.009,
+        0.014
+      ],
+      "triangle_count": 236,
+      "solid_count": 5,
+      "mesh_count": 5,
+      "anchors": [
+        {
+          "name": "InspectionCenter",
+          "position": [
+            0,
+            0.004,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "FishPlaySurface",
+      "bounds_min": [
+        -1.002,
+        0.76,
+        -0.472
+      ],
+      "bounds_max": [
+        1.002,
+        1.02,
+        0.472
+      ],
+      "triangle_count": 140,
+      "solid_count": 5,
+      "mesh_count": 3,
+      "anchors": [
+        {
+          "name": "PlaySurface",
+          "position": [
+            0,
+            0.78,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "AssembledFish",
+      "bounds_min": [
+        -0.18,
+        0.0,
+        -0.069
+      ],
+      "bounds_max": [
+        0.181,
+        0.05,
+        0.069
+      ],
+      "triangle_count": 1216,
+      "solid_count": 14,
+      "mesh_count": 8,
+      "anchors": [
+        {
+          "name": "KeySpit",
+          "position": [
+            0.181,
+            0.029,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "AssemblyOrigin",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "contract": {
+    "part_order": [
+      "Tail",
+      "Belly",
+      "Head"
+    ],
+    "part_centres": [
+      -0.12,
+      0.0,
+      0.12
+    ],
+    "seam_x": [
+      -0.06,
+      0.06
+    ],
+    "head_forward": "+X",
+    "rest_bottom": 0.0,
+    "play_surface_height": 0.78,
+    "play_area_half_extents": [
+      0.88,
+      0.38
+    ],
+    "fish_length": 0.36,
+    "key_model": "WarehouseGateKey",
+    "key_spit": [
+      0.181,
+      0.029,
+      0
+    ],
+    "shared_rest_geometry": true,
+    "joined_skin": "continuous cross-section mesh / shared bone weights",
+    "clips": {
+      "FishConvulse": 4.0,
+      "FishDeath": 1.0
+    },
+    "animation": "bone-only/in-place/no events/exact neutral endpoints",
+    "maximum_skin_radius": 0.191914,
+    "animation_signature": "047b5a56d99237c273db6761944dcba83d502ccc8923ae59e2c358803b732253"
+  }
+}

@@ -143,6 +143,7 @@ namespace BarPromenade
 
         private void ApplyFactor(float factor)
         {
+            if (GameSessionState.WarehouseFishLamp.Phase == WarehouseFishLampPhase.Burst) factor = 0f;
             bool lightEnabled = isActiveAndEnabled && factor > 0f;
             if (CurrentFactor == factor && Light.enabled == lightEnabled) return;
             CurrentFactor = factor;

@@ -142,6 +142,36 @@ namespace BarPromenade
             return Pressed(gamepad?.dpad.down) ? 1 : 0;
         }
 
+        /// <summary>Continuous planar input for a modal world activity, independent of locomotion.</summary>
+        public static Vector2 ReadModalMovement()
+        {
+            if (!CanRead(GameInputContext.Menu)) return Vector2.zero;
+            Keyboard keys = Keyboard.current;
+            Vector2 result = keys == null ? Vector2.zero : new Vector2(
+                (keys.dKey.isPressed || keys.rightArrowKey.isPressed ? 1f : 0f) -
+                (keys.aKey.isPressed || keys.leftArrowKey.isPressed ? 1f : 0f),
+                (keys.wKey.isPressed || keys.upArrowKey.isPressed ? 1f : 0f) -
+                (keys.sKey.isPressed || keys.downArrowKey.isPressed ? 1f : 0f));
+            Vector2 stick = Gamepad.current != null ? Gamepad.current.leftStick.ReadValue() : Vector2.zero;
+            return Vector2.ClampMagnitude(stick.sqrMagnitude > result.sqrMagnitude ? stick : result, 1f);
+        }
+
+        public static float ReadModalRotationDelta(float seconds)
+        {
+            if (!CanRead(GameInputContext.Menu)) return 0f;
+            Keyboard keys = Keyboard.current;
+            Gamepad pad = Gamepad.current;
+            float turn = (keys != null && keys.rKey.isPressed || pad != null && pad.rightShoulder.isPressed ? 1f : 0f) -
+                (keys != null && keys.qKey.isPressed || pad != null && pad.leftShoulder.isPressed ? 1f : 0f);
+            float wheel = Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
+            return turn * 100f * Mathf.Max(0f, seconds) + Mathf.Clamp(wheel / 120f, -4f, 4f) * 15f;
+        }
+
+        public static Vector2 ModalPointerPosition => CanRead(GameInputContext.Menu) && Mouse.current != null
+            ? Mouse.current.position.ReadValue() : Vector2.zero;
+        public static bool ModalPointerPressed => CanRead(GameInputContext.Menu) && Pressed(Mouse.current?.leftButton);
+        public static bool ModalPointerHeld => CanRead(GameInputContext.Menu) && Read(Mouse.current?.leftButton, true);
+
         private static bool ReadAction(GameInputAction action, bool held)
         {
             Keyboard keyboard = Keyboard.current;

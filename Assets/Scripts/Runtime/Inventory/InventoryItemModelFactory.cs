@@ -85,6 +85,8 @@ namespace BarPromenade
 
             switch (itemId)
             {
+                case InventoryItemId.WarehouseGateKey:
+                    return WarehouseFishAssemblyAssets.CreateKey(parent).transform;
                 case InventoryItemId.RottenFishTailCan:
                 case InventoryItemId.RottenFishBellyCan:
                 case InventoryItemId.RottenFishHeadCan:

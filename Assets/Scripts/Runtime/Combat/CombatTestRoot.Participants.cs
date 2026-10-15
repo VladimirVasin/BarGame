@@ -136,6 +136,7 @@ namespace BarPromenade
             focusNextArrival = Mode == CombatTestMode.Endless && !Hero.IsFirearm;
             int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
             endless.Reset(EncounterSettings, seed);
+            RefreshEndlessSpawnGate();
             spawnPointSeed = unchecked((uint)seed ^ 0x91e10da5u);
             if (spawnPointSeed == 0) spawnPointSeed = 1;
         }

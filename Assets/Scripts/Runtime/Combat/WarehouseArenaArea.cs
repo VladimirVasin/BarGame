@@ -16,8 +16,10 @@ namespace BarPromenade
         private int[] routePrevious = Array.Empty<int>(), routeHeap = Array.Empty<int>(), heapIndex = Array.Empty<int>();
         private bool[] routeClosed = Array.Empty<bool>();
         private int heapCount;
+        private readonly WarehouseGateState gateState;
         public WarehouseArenaPlan Plan { get; private set; }
-        public WarehouseArenaArea(WarehouseArenaPlan plan) { ReplacePlan(plan); }
+        public WarehouseArenaArea(WarehouseArenaPlan plan, WarehouseGateState gateState = null)
+        { this.gateState = gateState; ReplacePlan(plan); }
 
         public void ReplacePlan(WarehouseArenaPlan plan)
         {
@@ -126,6 +128,8 @@ namespace BarPromenade
                     foreach (int index in indices)
                     {
                         Bounds bounds = Plan.Obstacles[index].Bounds;
+                        if (Plan.Obstacles[index].Kind == WarehouseArenaObstacleKind.Gate && gateState != null)
+                            bounds.center += Vector3.up * (gateState.Progress * WarehouseGateController.MaximumLift);
                         if (floor >= bounds.max.y - .01f || floor + Headroom <= bounds.min.y) continue;
                         if (x > bounds.min.x - radius && x < bounds.max.x + radius &&
                             z > bounds.min.z - radius && z < bounds.max.z + radius) return true;

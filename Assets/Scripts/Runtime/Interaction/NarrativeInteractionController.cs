@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum NarrativeInteractionPhase { Idle, Positioning, Framing, Reading, Attempting, Outcome, Exiting }
+    public enum NarrativeInteractionPhase { Idle, Positioning, Framing, Reading, Attempting, Outcome, Exiting, Activity }
 
     /// <summary>One owner of an inspection's rig, camera, pages, optional reply and input.</summary>
     [DefaultExecutionOrder(310)]
@@ -24,6 +24,7 @@ namespace BarPromenade
         private float attemptElapsed;
         private float attemptSeconds;
         private bool inspectionAttempt;
+        private bool activityStarted;
         public bool SelectedAnswerYes { get; private set; }
         public NarrativeInteraction Target { get; private set; }
         public NarrativeInteractionPhase Phase { get; private set; }
@@ -61,7 +62,7 @@ namespace BarPromenade
             attemptElapsed = attemptSeconds = 0f; inspectionAttempt = false; SelectedAnswerYes = false;
             LastFailureReason = string.Empty;
             Phase = NarrativeInteractionPhase.Positioning;
-            ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = false;
+            ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = activityStarted = false;
             completed = false;
             animationFinishedFrame = -1;
             previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible; cursorCaptured = true;
@@ -115,6 +116,7 @@ namespace BarPromenade
         {
             completed = false;
             if (!IsActive || Phase == NarrativeInteractionPhase.Exiting) return;
+            EndActivity();
             if (Target != null) Target.SampleAttempt(0f);
             if (view != null) view.ReleaseHeldPage(this);
             Phase = NarrativeInteractionPhase.Exiting;
@@ -142,7 +144,8 @@ namespace BarPromenade
                     if (animation.Phase == PlayerAnimatedInteractionPhase.Entering || animation.Phase == PlayerAnimatedInteractionPhase.Looping)
                     {
                         cameraStarted = director.BeginObject(follow, Target.SubjectRoot, Target.Staging.FocusBounds,
-                            listener.transform, Target.Staging.CameraSideHint, Target.Staging.CameraMode, Target.Staging.CameraFront);
+                            listener.transform, Target.Staging.CameraSideHint, Target.Staging.CameraMode,
+                            Target.Staging.CameraFront, Target.Staging.MaximumCameraHeight, Target.Staging.AuthoredFocusBoundsOnly);
                         if (!cameraStarted)
                         { LastFailureReason = "Object framing rejected: " + director.LastRejectedShotReason; Cancel(); return; }
                         Phase = NarrativeInteractionPhase.Framing;
@@ -151,9 +154,21 @@ namespace BarPromenade
                 case NarrativeInteractionPhase.Framing:
                     if (director.IsSettled && animation.Phase == PlayerAnimatedInteractionPhase.Looping)
                     {
-                        if (Target.InspectionAttemptSeconds > 0f) BeginAttempt(Target.InspectionAttemptSeconds, true);
+                        if (Target.Activity != null)
+                        {
+                            activityStarted = true;
+                            if (!Target.Activity.BeginActivity(listener))
+                            { LastFailureReason = "World activity admission refused"; Cancel(); break; }
+                            Phase = NarrativeInteractionPhase.Activity;
+                        }
+                        else if (Target.InspectionAttemptSeconds > 0f) BeginAttempt(Target.InspectionAttemptSeconds, true);
                         else ShowPage();
                     }
+                    break;
+                case NarrativeInteractionPhase.Activity:
+                    Target.Activity.TickActivity(Time.deltaTime);
+                    Cursor.visible = Target.Activity.ActivityCursorVisible;
+                    if (Target.Activity.IsActivityComplete) { Cancel(); completed = true; }
                     break;
                 case NarrativeInteractionPhase.Reading:
                 case NarrativeInteractionPhase.Outcome:
@@ -260,6 +275,7 @@ namespace BarPromenade
             PlayerInteractor completedListener = listener;
             completed = false;
             if (Target != null) Target.SampleAttempt(0f);
+            EndActivity();
             Phase = NarrativeInteractionPhase.Idle;
             if (view != null) view.ReleaseHeldPage(this);
             if (ownsAnimation && animation != null) animation.CancelActiveInteraction();
@@ -286,6 +302,14 @@ namespace BarPromenade
         }
 
         private bool Paused => IsPausedFor(Target);
+        private void EndActivity()
+        {
+            if (!activityStarted) return;
+            activityStarted = false;
+            // A faulty optional adapter must not strand the shared camera/input lease.
+            try { Target?.Activity?.EndActivity(); }
+            catch (System.Exception exception) { Debug.LogException(exception); }
+        }
         private static bool IsPausedFor(NarrativeInteraction target) =>
             PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
             (target == null || target.Definition == null || target.Definition.RequiresRunningGameTime) &&

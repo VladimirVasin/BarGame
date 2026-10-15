@@ -2,33 +2,44 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-15, warehouse bulb failure:**
+  Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
+  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly;
+  pause0/Reset-Newkeep/silent;newgame-invreset0/camera-input-text-damage-story0;§6.
+
+- **Accepted exception — 2026-10-15, warehouse gate:**
+  Keykept→chainlockfall;holdE→wheel-leafCOL↑;release-pause-Esckeep/maxlatch-close.
+  Sharedstanding/authoredbounds/Reset-Newkeep/newgame-invreset0;
+  Slots/upperkept/area-headroom;doorfull silentstub/travel0;§6.
+
+- **Accepted — 2026-10-15, warehouse tabletop:**
+  WorkSurfaceCloseUp7.95<bulb8.011;trough-rimsfill/pourcans0.
+
+- **Accepted — 2026-10-15, warehouse spawn cutoff:**
+  3fishsourceIDs→Endless pending-spawns0/livefight/autowin0;
+  event-lifecycle/Reset-Newkeep/newgame-invreset freshdelay.
+
+- **Accepted exception — 2026-10-15, warehouse fish assembly:**
+  §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-spitkey1/shared receipt/retry;
+  standing-modal-camera/Esc-Reset-Newkeep progress/newgame-invreset0/fishorganic-only.
+
 - **Accepted exception — 2026-10-15, warehouse final-can power:**
-  Blender bare white bulb/socket/~2m ceiling cord/.83m over worktop/replaces practical.
-  Off until3unique fish takes/anyorder.
-  Home rhythm→white spill/emission/crackle;fan light-lens/vent→0/all mechanisms+strain5s→0/fangrind.
-  Music→same tape-chew/wow-pitch-LP-volume stop.
-  Pause0/teardown;Reset-New stopped/silent.
-  Cached/no hotload;pendant-only strobe0/§6/art§15a/9checks/0story.
+  White cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure.
+  Fanlight-lens/vent-mechstrain5s-grind→0;musicsync tapechew/wow-pitch-LP-volume0;
+  pause-cleanup/Reset-Newsilent/cache-hotload-strobe0.
 
 - **Accepted — 2026-10-15, inspection framing:**
-  User:compact shared text-buttons/smaller cans;
-  Inventory Examine compact/centred/no inner frame;actions kept.
+  Shared compact text-buttons/cans;Examine centred/innerframe0/actions.
 
 - **Accepted exception — 2026-10-15, hand-free refrigerators:**
-  User:Home/warehouse remove camera-local hand;door-handle-camera-modal kept.
-  Contextual exception:closeup owns world-visibility lease/no subset/exact restore.
-  Cached hero renderers/forceRenderingOff restore;enabled-damage-light-rig kept.
+  Home/warehouse hand0/door-handle-camera-modal/visibilitylease-exactrestore;
+  cached forceRenderingOff/rig-light-damage kept.
 
 - **Accepted exception — 2026-10-15, warehouse fish finds:**
-  CombatTest/§6/art§15a:passive City prep/toprear over locked door/front→hall.
-  Home fridge1seedroom/floor;Reset keep/New recompute;9gate-type reds:
-  uncollected fridge rooms on/Take→fadeoff/local dyinghum-click/6off/gate on.
-  Warehouse-only rust-peel/enamel-steel/
-  streaks/stained shelves;Home-City kept.
-  Rotten open tail-belly-head cans bottom→top/small dark scraps/large cream drawings/no text-brand.
-  Shared item standard/Inspect-Take/full keeps;floor sources/Reset-New/session keep/room change≠refill.
-  Browse beam:cursor-plane/torso lag/mount pitch;pause-nested suspend/close-cancel restore/0light.
-  Routes/modal/§21/9checks;action-speech-consume-quest-lore-clue0.
+  Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms.
+  RedTake→fade-humclick/6off/gateonuntilburst;
+  rustenamel/stains/openscraps/cream tail-belly-head/bottom→top/text-brand0.
+  Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nestedfreeze/endrestore.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
   User:chase .5m camera-right/1.9m back(ext/int);free aim .5/1.4m;stable lock1.4m.
@@ -45,47 +56,40 @@
   Bounded state/assets-story kept;novice exception §7.
 
 - **Accepted 2026-10-14, warehouse goal:**
-  Gate-frame/drive/red goal source;spoked valve/yellow chain/gray lock;
-  9thin wall plaques.44×.5/print1–9/3floor/seed-fixed.
+  9wallplates.44×.5/1–9/3floor/seedfixed.
 
 - **Accepted exception 2026-10-14, valve inspection:**
-  User§21:CombatTest/E/NarrativeInteraction;
-  close→1.2s/2locked pulls/chain-lock→compact silent RU-EN key;
-  E-Esc-disable/rest/focus/clock0/pause/grant-unlock-open0;§6/art§15a.
+  No-key E:1.2s/2locked tugs→silent RU-EN key/shared inspection;§6/§21.
 
 - **Accepted exception 2026-10-14, warehouse fan:**
   Spot11.8/shadows/cap12.1–12.22/roof-deck block/pause/cookie-strobe0;
   URP2048:keyHigh1024/6practicalLow256/chestMed512.
 
 - **Accepted exception 2026-10-14, warehouse otherworld:**
-  CombatTest:port-work monotony-exhaustion-disgust→wet-rust/routes/futile machines.
-  City job-wage-quest/monologue-dream-organic-siren-mystics-clues-infection0.
-  Blender/seed/resetkeep/New/flat:test-only;clear/pause/hazard-falldmg0.
+  Portwork monotony-exhaustion-disgust/wet-rust/futilemech;§6.
+  Blender/seed/Reset-Newkeep/flat:testonly/clear/pause/hazard-falldmg0.
 
 - **Accepted 2026-10-14, warehouse audio:**
-  Low heavy steps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
-  Optional warehouse_theme WAV-OGG-MP3/MusicMix stream;
-  playhead/reset-New before finalcan/pause-disable-resume/exit/empty0;
-  11mono/steps×.84/guns×.88/5World/prewarm-cache/resetkeep/teardown/hotalloc0.
+  Heavy lowsteps-guns/.8speed-pitch/echo-reverb/EQ-LP-room/dryUI.
+  warehouse_theme WAV-OGG-MP3/MusicMix;playhead/Reset-New pre-finalcan;
+  pause-disable-resume/exit/empty0/cachedlowSFX/sharedmix/cleanup.
 
 - **Accepted 2026-10-14, warehouse UV:**
-  3×1024 propUV/metric tiles-macro/rare decals/stretch→triplanar;
-  Joint-contact-load wear.
+  3×1024 propUV/metric tiles-macro/raredecals/stretch→triplanar/joint-contact-load wear.
 
 - **Accepted 2026-10-14, warehouse rooms:**
-  9Technical-Locker-Break/opposite entry/front→door/turned collision/entryclear.
+  9Technical-Locker-Break/oppositeentry/front→door/turnedCOL/entryclear.
 
 - **Accepted 2026-10-14, warehouse look:**
-  Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35/up20/yaw20/roll6°;
-  orbit≤35full→90zero/root-legs/Llight/action priority/pause-modal.
-  Cleanup/hotalloc0;Advance/repeat Apply0time-bend
+  Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;
+  orbit≤35full→90zero/rootlegs/Llight/actionpriority/pausemodal;
+  cleanup-hotalloc0/Advance-repeatApply0timebend.
 
 - **Accepted exception 2026-10-14, warehouse chest light:**
-  LM65Chest/on/Spot60/16m/60–28°/hard;
-  fog-sky0/GIhero3D3→SmoothStep→black12m/camera0.
-  Ps1Lit:bakedGI-only/rest unchanged;
+  LM65Chest/on/Spot60/16m/60–28°hard;
+  fog-sky-camera0/GIhero3D3→SmoothStep-black12m/Ps1Lit bakedGI-only;
   LateUpdate/off outside-disable-unload-subsystem;
-  1hero/resetkeep/bounds/teardown/MPB-clones-newpass0/cost unmeasured/input-battery-inventory-story0.
+  bounded1hero/resetkeep/cleanup/MPB-clones-newpass0/costunmeasured/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   User:fabric only;CombatTest jacket-scarf-sling0live-bake/hair kept.

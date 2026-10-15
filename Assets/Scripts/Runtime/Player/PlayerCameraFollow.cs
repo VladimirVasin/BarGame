@@ -278,6 +278,13 @@ namespace BarPromenade
             Vector3 position,
             Quaternion rotation,
             float fieldOfView)
+            => SetFixedPose(position, rotation, fieldOfView, 100f);
+
+        /// <summary>A close overhead work surface can require a wider lens under a low practical.</summary>
+        internal void SetWideAngleFixedPose(Vector3 position, Quaternion rotation, float fieldOfView)
+            => SetFixedPose(position, rotation, fieldOfView, 140f);
+
+        private void SetFixedPose(Vector3 position, Quaternion rotation, float fieldOfView, float maximumFieldOfView)
         {
             if (!IsFinite(position))
             {
@@ -295,11 +302,11 @@ namespace BarPromenade
 
             if (!IsFinite(fieldOfView) ||
                 fieldOfView < 20f ||
-                fieldOfView > 100f)
+                fieldOfView > maximumFieldOfView)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(fieldOfView),
-                    "Fixed camera field of view must be between 20 and 100 degrees.");
+                    "Fixed camera field of view is outside its authored lens range.");
             }
 
             CancelAimTransition();

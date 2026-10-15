@@ -80,9 +80,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:3floor/9room/UV-wear/1–9;fan/movers/red goal/valve E-tug/0open;
-  3fridges/Take→redoff;all3→white bulb/mechanisms0-fangrind/music chew-stop;SFX/theme.8;
-  Lchest Spot/torso/fill→black;zombies/lunge;Standard1/Endless1–5/≤2corpses/≤5pool.
+- CombatTest:warehouse/key-valve-gate/doorstub;
+  3fridges/Take→redoff;all3→whitebulb/mechgrind-musicchew0/newspawns0-livekept;
+  overhead fish/cansgone→key/receipt/keep;Lchest Spot/torso/fill→black;zombies/lunge;Standard1/Endless1–5/≤2corpses/≤5pool.
   All3/1-2-3/finiteammo+4packs/safe rise/novice aim/corpse step;
   gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,

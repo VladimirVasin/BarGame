@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>One corded practical, powered by the three committed warehouse finds.</summary>
     [DisallowMultipleComponent]
-    public sealed class WarehouseFishLamp : MonoBehaviour
+    public sealed partial class WarehouseFishLamp : MonoBehaviour
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -45,6 +45,7 @@ namespace BarPromenade
             CityWorkAudio.Configure(Source, true, HomeSoundscape.BathroomLightCrackleCutoff, 8f, false);
             Source.minDistance = 1.05f;
             Source.volume = HomeSoundscape.BathroomLightCrackleVolume;
+            InitializeBurst(fixture);
             initialized = true;
             Subscribe();
             RefreshCollected();
@@ -67,7 +68,10 @@ namespace BarPromenade
         private void RefreshCollected()
         {
             if (!initialized) return;
-            bool complete = AllSourcesCollected(owner.WarehousePlan);
+            if (Phase == WarehouseFishLampPhase.Waiting)
+            { burstAudio.Stop(); downwardTravel = 0f; hasPreviousFeet = false; }
+            if (Phase != WarehouseFishLampPhase.Burst && blackoutApplied) RestoreWarehouseLighting();
+            bool complete = AllSourcesCollected(owner.WarehousePlan) && Phase != WarehouseFishLampPhase.Burst;
             if (complete != IsLit)
             {
                 IsLit = complete;
@@ -83,7 +87,7 @@ namespace BarPromenade
                 crackle.SetData(samples, 0);
                 Source.clip = crackle;
             }
-            ApplyFactor(IsLit ? HomeBathroomLightFlicker.EvaluateFactor(elapsed) : 0f, false);
+            ApplyRetainedPhase();
         }
 
         public static bool AllSourcesCollected(WarehouseArenaPlan plan)
@@ -100,13 +104,16 @@ namespace BarPromenade
         public void Advance(float deltaSeconds)
         {
             if (!initialized || !isActiveAndEnabled) return;
+            if (float.IsNaN(deltaSeconds) || float.IsInfinity(deltaSeconds) || deltaSeconds < 0f)
+                throw new ArgumentOutOfRangeException(nameof(deltaSeconds));
             bool suspended = GameTimeScaleRuntime.IsPaused || owner == null || !owner.isActiveAndEnabled;
             if (suspended)
             {
-                if (!audioPaused) { Source.Pause(); audioPaused = true; }
+                if (!audioPaused) { Source.Pause(); burstAudio.SetPaused(true); audioPaused = true; }
                 return;
             }
-            if (audioPaused) { Source.UnPause(); audioPaused = false; }
+            if (audioPaused) { Source.UnPause(); burstAudio.SetPaused(false); audioPaused = false; }
+            if (AdvanceBurst(deltaSeconds)) return;
             if (!IsLit) return;
             elapsed = Mathf.Repeat(elapsed + Mathf.Max(0f, deltaSeconds), HomeBathroomLightFlicker.CycleSeconds);
             ApplyFactor(HomeBathroomLightFlicker.EvaluateFactor(elapsed), true);
@@ -124,8 +131,9 @@ namespace BarPromenade
             if (changed || !IsLit)
             {
                 bulb.GetPropertyBlock(properties);
-                properties.SetColor(BaseColorId, Color.Lerp(new Color(.12f, .12f, .12f), Color.white, factor));
-                properties.SetColor(EmissionColorId, Color.white * (1.4f * factor));
+                Color tint = Phase == WarehouseFishLampPhase.Heating ? new Color(1f, .88f, .66f) : Color.white;
+                properties.SetColor(BaseColorId, Color.Lerp(new Color(.12f, .12f, .12f), tint, Mathf.Clamp01(factor)));
+                properties.SetColor(EmissionColorId, tint * (1.4f * factor));
                 bulb.SetPropertyBlock(properties);
             }
             if (changed && playCrackle && crackle != null)
@@ -140,6 +148,7 @@ namespace BarPromenade
             if (!initialized) return;
             Subscribe();
             RefreshCollected();
+            ResumeBurst();
         }
 
         private void OnDisable()
@@ -147,6 +156,7 @@ namespace BarPromenade
             Unsubscribe();
             if (!initialized) return;
             Source.Stop();
+            SuspendBurst();
             audioPaused = false;
             ApplyFactor(0f, false);
         }
@@ -156,6 +166,7 @@ namespace BarPromenade
             Unsubscribe();
             if (Source != null) { Source.Stop(); Source.clip = null; }
             if (crackle != null) Destroy(crackle);
+            ReleaseBlackout();
         }
     }
 }

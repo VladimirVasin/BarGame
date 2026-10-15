@@ -10,12 +10,14 @@ namespace BarPromenade
         private CombatEncounterSettings settings;
         private Random random;
         private bool atCapacity;
+        private bool spawningEnabled = true;
         private double remaining;
         private bool legacyOpponentDefeated;
         private int legacyLiveCount;
 
         public long Kills { get; private set; }
-        public bool IsWaiting => !IsFinished && !atCapacity;
+        public bool IsWaiting => spawningEnabled && !IsFinished && !atCapacity;
+        public bool SpawningEnabled => spawningEnabled;
         public bool IsFinished { get; private set; }
         public float RemainingSeconds => (float)remaining;
 
@@ -26,6 +28,7 @@ namespace BarPromenade
             random = new Random(seed);
             Kills = 0;
             IsFinished = false;
+            spawningEnabled = true;
             atCapacity = false;
             remaining = Sample(settings.FirstSpawnMinSeconds, settings.FirstSpawnMaxSeconds);
         }
@@ -38,6 +41,7 @@ namespace BarPromenade
             if (IsFinished) return;
             Kills += newlyDefeatedCount;
             if (heroDefeated) { IsFinished = true; remaining = 0d; return; }
+            if (!spawningEnabled) return;
             UpdateCapacity(liveCount);
         }
 
@@ -45,11 +49,25 @@ namespace BarPromenade
         {
             ValidateSeconds(seconds);
             ValidateLiveCount(liveCount);
-            if (IsFinished) return false;
+            if (IsFinished || !spawningEnabled) return false;
             UpdateCapacity(liveCount);
             if (!IsWaiting) return false;
             remaining = Math.Max(0d, remaining - seconds);
             return remaining <= .0000001d;
+        }
+
+        /// <summary>Clears pending arrivals without finishing combat; reopening starts a fresh interval.</summary>
+        public void SetSpawningEnabled(bool enabled, int liveCount)
+        {
+            ValidateLiveCount(liveCount);
+            if (spawningEnabled == enabled) return;
+            spawningEnabled = enabled;
+            remaining = 0d;
+            if (!enabled || IsFinished) return;
+            atCapacity = liveCount >= settings.MaximumLiveOpponents;
+            if (!atCapacity)
+                remaining = liveCount == 0 ? Sample(settings.FirstSpawnMinSeconds, settings.FirstSpawnMaxSeconds) :
+                    Sample(settings.SpawnIntervalMinSeconds, settings.SpawnIntervalMaxSeconds);
         }
 
         /// <summary>A successful creation consumes readiness and starts a fresh interval without carrying excess time.</summary>

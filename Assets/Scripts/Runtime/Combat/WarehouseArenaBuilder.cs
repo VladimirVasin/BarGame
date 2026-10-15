@@ -13,12 +13,22 @@ namespace BarPromenade
             try
             {
                 CombatTestRoot owner = parent.GetComponent<CombatTestRoot>();
+                GameObject gate = null, door = null, control = null;
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
                 {
-                    GameObject model = WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position,
-                        Quaternion.Euler(0f, part.Yaw, 0f));
-                    if (part.Kind == "GateControl") WarehouseValveInspection.Create(model, plan, owner);
+                    bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
+                        Mathf.Abs(part.Position.z - 10.5f) < .01f && Mathf.Abs(Mathf.Abs(part.Position.x) - 1.5f) < .01f;
+                    GameObject model = gateDeck
+                        ? WarehouseGateAssets.Create(part.Position.x < 0f ? "GatePlatformLeft" : "GatePlatformRight",
+                            host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f))
+                        : WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f));
+                    if (part.Kind == "GateControl") control = model;
+                    if (part.Kind == "Gate") gate = model;
+                    if (part.Kind == "MainDoor") door = model;
+                    if (part.Kind == "FishPreparationStation") WarehouseFishAssembly.Create(model, plan, owner);
                 }
+                WarehouseValveInspection.Create(control, plan, owner);
+                control.GetComponent<WarehouseGateController>().BindWorld(gate, door, plan, owner);
                 foreach (WarehouseArenaStair stair in plan.Stairs)
                     WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity);
                 foreach (WarehouseArenaRailSpan span in plan.RailSpans)
@@ -49,6 +59,7 @@ namespace BarPromenade
                     WarehouseRefrigeratorFactory.Create(host.transform, owner, fridge.Floor, fridge.Position,
                         fridge.Yaw, fridge.SourceId);
                 host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
+                host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform);
                 return host;
             }
             catch

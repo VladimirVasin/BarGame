@@ -15,6 +15,8 @@ namespace BarPromenade
         private float inspectionAttemptSeconds;
         public NarrativeInteractionDefinition Definition { get; private set; }
         public NarrativeStagingPlan Staging { get; private set; }
+        /// <summary>An optional world activity shares this inspection's approach, camera and cleanup.</summary>
+        public INarrativeActivity Activity { get; set; }
         public Transform SubjectRoot { get; private set; }
         public string PromptKey => Definition?.PromptKey ?? string.Empty;
         public Vector3 InteractionPosition => interactionPosition;
@@ -101,5 +103,14 @@ namespace BarPromenade
 
         private void OnDisable() { if (IsPresenting) session.RestoreImmediate(); }
         private void OnDestroy() { if (IsPresenting) session.RestoreImmediate(); }
+    }
+
+    public interface INarrativeActivity
+    {
+        bool BeginActivity(PlayerInteractor interactor);
+        void TickActivity(float seconds);
+        bool IsActivityComplete { get; }
+        bool ActivityCursorVisible { get; }
+        void EndActivity();
     }
 }

@@ -37,6 +37,8 @@ namespace BarPromenade
         private Bounds objectBounds;
         private CharacterController objectShotHeroBody;
         private NarrativeCameraMode objectMode;
+        private float maximumObjectCameraHeight;
+        private bool authoredObjectBoundsOnly;
         private Vector3 documentFront, documentUp;
         private Vector3 closeUpCenter, closeUpExtents, closeUpUp;
         private readonly List<Vector3> closeUpCorners = new List<Vector3>();
@@ -104,7 +106,7 @@ namespace BarPromenade
         /// <summary>Fits a real object from the hero's accessible side; no invented speaker or head.</summary>
         public bool BeginObject(PlayerCameraFollow cameraFollow, Transform subject, Bounds bounds,
             Transform playerRoot, Vector3 preferredSide, NarrativeCameraMode mode = NarrativeCameraMode.ObjectSide,
-            Vector3 cameraFront = default)
+            Vector3 cameraFront = default, float maximumCameraHeight = float.PositiveInfinity, bool authoredFocusBoundsOnly = false)
         {
             LastRejectedShotReason = string.Empty;
             if (active || activeOwner != null || cameraFollow == null || !cameraFollow.isActiveAndEnabled || cameraFollow.Camera == null ||
@@ -114,10 +116,12 @@ namespace BarPromenade
             npcRoot = subject; heroRoot = playerRoot; objectBounds = bounds; objectShot = true;
             objectShotHeroBody = playerRoot.GetComponent<CharacterController>();
             objectMode = mode;
+            maximumObjectCameraHeight = maximumCameraHeight;
+            authoredObjectBoundsOnly = authoredFocusBoundsOnly;
             documentFront = (cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward).normalized;
             documentUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
             if (documentUp.sqrMagnitude < .01f) documentUp = subject.up;
-            if (objectMode == NarrativeCameraMode.ObjectCloseUp) MeasureObjectCloseUp(subject);
+            if (objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot) MeasureObjectCloseUp(subject);
             Vector3 towardHero = Vector3.ProjectOnPlane(playerRoot.position - bounds.center, Vector3.up);
             axis = towardHero.sqrMagnitude > .01f ? towardHero.normalized : -subject.forward;
             Vector3 naturalSide = Vector3.Cross(Vector3.up, axis);
@@ -304,7 +308,7 @@ namespace BarPromenade
         private bool TryResolveObjectShot(int variant, out Pose pose, out float fov)
         {
             if (objectMode == NarrativeCameraMode.DocumentCloseUp) return TryResolveDocumentShot(variant, out pose, out fov);
-            if (objectMode == NarrativeCameraMode.ObjectCloseUp) return TryResolveObjectCloseUpShot(variant, out pose, out fov);
+            if (objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot) return TryResolveObjectCloseUpShot(variant, out pose, out fov);
             fov = 42f;
             // Around a small subject an over-the-shoulder angle makes the nearby
             // hero enormous. Start at fifty degrees and keep him beside the thing.
@@ -331,7 +335,8 @@ namespace BarPromenade
 
         private bool TryResolveObjectCloseUpShot(int variant, out Pose pose, out float fov)
         {
-            fov = variant == 0 ? 58f : variant == 1 ? 68f : 78f;
+            fov = IsSurfaceShot ? (variant == 0 ? 116f : variant == 1 ? 126f : 136f) :
+                (variant == 0 ? 58f : variant == 1 ? 68f : 78f);
             float tangent = Mathf.Tan(fov * .5f * Mathf.Deg2Rad);
             float aspect = Mathf.Max(.5f, camera.aspect);
             Vector3 right = Vector3.Cross(closeUpUp, documentFront).normalized;
@@ -343,16 +348,19 @@ namespace BarPromenade
                 Vector3 delta = corner - closeUpCenter;
                 float x = Vector3.Dot(delta, right), y = Vector3.Dot(delta, closeUpUp);
                 float z = Vector3.Dot(delta, documentFront);
-                distance = Mathf.Max(distance, Mathf.Max(Mathf.Abs(x) / (.90f * tangent * aspect) + z,
-                    Mathf.Max(y / (.92f * tangent) + z, -y / (.60f * tangent) + z)));
+                distance = Mathf.Max(distance, Mathf.Max(Mathf.Abs(x) / ((IsSurfaceShot ? .94f : .90f) * tangent * aspect) + z,
+                    Mathf.Max(y / (.92f * tangent) + z, -y / ((IsSurfaceShot ? .78f : .60f) * tangent) + z)));
             }
             // The optical axis passes through the authored subject centre.
             // Keep the lower panel clear by fitting depth, never by panning
             // the object off-centre or translating the authored orbit sideways.
             Vector3 position = closeUpCenter + documentFront * distance;
             pose = new Pose(position, Quaternion.LookRotation(-documentFront, closeUpUp));
+            if (IsSurfaceShot && position.y > maximumObjectCameraHeight)
+            { LastRejectedShotReason = "Work-surface lens exceeds its authored height ceiling"; return false; }
             float capsulePlaneSupport = 0f;
-            if (!CloseUpCornersFit(pose, fov) || !HeroOutsideCloseUpFrame(pose, fov, out capsulePlaneSupport))
+            if (!CloseUpCornersFit(pose, fov) ||
+                !(IsSurfaceShot ? HeroLeavesObjectClear(pose, fov) : HeroOutsideCloseUpFrame(pose, fov, out capsulePlaneSupport)))
             {
                 Bounds hero = HeroBounds();
                 LastRejectedShotReason = "Hero remains in the object close-up; variant=" + variant +
@@ -379,7 +387,7 @@ namespace BarPromenade
                 if (point.z <= .1f) return false;
                 float x = .5f + point.x / (2f * tangent * camera.aspect * point.z);
                 float y = .5f + point.y / (2f * tangent * point.z);
-                if (x < .03f || x > .97f || y < .195f || y > .965f) return false;
+                if (x < .03f || x > .97f || y < (IsSurfaceShot ? .105f : .195f) || y > .965f) return false;
             }
             return true;
         }
@@ -405,7 +413,7 @@ namespace BarPromenade
             Vector3 maximum = Vector3.one * float.NegativeInfinity;
             bool measured = false;
             closeUpCorners.Clear();
-            foreach (MeshFilter filter in subject.GetComponentsInChildren<MeshFilter>())
+            if (!IsSurfaceShot && !authoredObjectBoundsOnly) foreach (MeshFilter filter in subject.GetComponentsInChildren<MeshFilter>())
             {
                 if (filter.sharedMesh == null) continue;
                 Bounds local = filter.sharedMesh.bounds;
@@ -423,6 +431,8 @@ namespace BarPromenade
             if (!measured)
             {
                 closeUpCenter = objectBounds.center;
+                // Keep the entire authored work surface above its small control strip.
+                if (IsSurfaceShot) closeUpCenter -= closeUpUp * (ProjectExtent(closeUpUp) * .09f);
                 closeUpExtents = new Vector3(ProjectExtent(right), ProjectExtent(closeUpUp), ProjectExtent(documentFront));
                 for (int index = 0; index < 8; index++)
                     closeUpCorners.Add(objectBounds.center + Vector3.Scale(objectBounds.extents,
@@ -647,14 +657,16 @@ namespace BarPromenade
 
         private void Apply(Pose pose, float fov)
         {
-            follow.SetFixedPose(pose.position, pose.rotation, fov);
+            if (IsSurfaceShot) follow.SetWideAngleFixedPose(pose.position, pose.rotation, fov);
+            else follow.SetFixedPose(pose.position, pose.rotation, fov);
             CurrentShotPose = pose; CurrentShotFieldOfView = fov;
         }
 
         private void UpdateFocusDistance() => CinematicDepthOfField.SetOwnedFocusDistance(this, FocusDistance);
 
         private bool IsDocumentShot => objectShot && objectMode == NarrativeCameraMode.DocumentCloseUp;
-        private bool IsCloseUpShot => IsDocumentShot || objectShot && objectMode == NarrativeCameraMode.ObjectCloseUp;
+        private bool IsSurfaceShot => objectShot && objectMode == NarrativeCameraMode.WorkSurfaceCloseUp;
+        private bool IsCloseUpShot => IsDocumentShot || IsSurfaceShot || objectShot && objectMode == NarrativeCameraMode.ObjectCloseUp;
         // URP focuses a plane at eye depth. The note sits above the optical
         // centre to leave room for the reading panel; radial distance would
         // place that plane behind the paper and blur its small lettering.
@@ -664,7 +676,7 @@ namespace BarPromenade
 
         private Transform ActiveHead => CurrentSpeakerIsHero ? heroHead : npcHead;
         private Vector3 FocusPoint => objectShot
-            ? objectMode == NarrativeCameraMode.ObjectCloseUp ? closeUpCenter : objectBounds.center
+            ? objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot ? closeUpCenter : objectBounds.center
             : ActiveHead.position + Vector3.up * .1f;
 
         private bool ParticipantsExist() => follow != null && camera != null &&

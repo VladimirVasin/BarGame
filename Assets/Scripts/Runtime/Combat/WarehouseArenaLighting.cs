@@ -14,6 +14,7 @@ namespace BarPromenade
         private static readonly int OriginId = Shader.PropertyToID(OriginPropertyName);
         private static readonly int FalloffId = Shader.PropertyToID("_WarehouseAmbientFalloff");
         private static Transform visibilityOwner;
+        private static Transform blackoutOwner;
         private static Vector3 lastOrigin;
         // Unity's ambient colour is gamma-space. This remains faint after the
         // dark painted-metal albedo and the final PS1 composite are applied.
@@ -37,6 +38,15 @@ namespace BarPromenade
             RenderSettings.sun = null;
             RenderSettings.skybox = null;
             RenderSettings.fog = false;
+            if (blackoutOwner != null)
+            {
+                RenderSettings.ambientMode = AmbientMode.Skybox;
+                RenderSettings.ambientIntensity = 0f;
+                RenderSettings.ambientLight = Color.black;
+                RenderSettings.ambientProbe = new SphericalHarmonicsL2();
+                RenderSettings.reflectionIntensity = 0f;
+                return;
+            }
             // Skybox mode also supports an explicitly authored ambient probe.
             // Flat mode regenerates native probe data from the gamma-space colour.
             RenderSettings.ambientMode = AmbientMode.Skybox;
@@ -48,6 +58,22 @@ namespace BarPromenade
             var diffuse = new SphericalHarmonicsL2();
             diffuse.AddAmbientLight(AmbientColor);
             RenderSettings.ambientProbe = diffuse;
+        }
+
+        internal static void SetBlackout(Transform owner, bool value)
+        {
+            if (value)
+            {
+                if (owner == null) return;
+                blackoutOwner = owner;
+            }
+            else
+            {
+                // An outgoing layout cannot restore ambient over its already-built replacement.
+                if (blackoutOwner != owner) return;
+                blackoutOwner = null;
+            }
+            ApplyAmbient();
         }
 
         public static Light CreatePractical(WarehouseArenaLamp lamp, Transform sourceAnchor, Transform parent)
@@ -135,6 +161,7 @@ namespace BarPromenade
         private static void ResetHeroVisibility()
         {
             visibilityOwner = null;
+            blackoutOwner = null;
             lastOrigin = default;
             Shader.SetGlobalVector(OriginId, Vector4.zero);
         }
