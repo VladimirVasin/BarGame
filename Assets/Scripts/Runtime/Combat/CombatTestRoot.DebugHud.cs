@@ -11,7 +11,8 @@ namespace BarPromenade
             if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
                 LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
             if (Opponent.IsZombie)
-                GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18), LocalizationService.Get("combat.zombie"), small);
+                GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18),
+                    LocalizationService.Get(Opponent.IsCrane ? "combat.mode.crane" : "combat.zombie"), small);
             else if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
                 LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
                 Mode != CombatTestMode.Endless || EndlessRunFinished))

@@ -278,6 +278,9 @@ namespace BarPromenade
                 int end = patchAt < 0 ? label.Length : patchAt;
                 if (!int.TryParse(label.Substring(start, end - start), out int region) || region < 1 || region > 16)
                     throw new InvalidOperationException("Invalid body region: " + label);
+                // This actor has an authored metal wrist instead of a human
+                // hand. Neither damage derivatives nor reset may recreate it.
+                if (actor.IsCrane && (region == (int)BodyDamageRegion.RightHand || actor.IsCraneReplacedHandSurface(source))) continue;
                 int patch = patchAt < 0 ? 0 : int.Parse(label.Substring(patchAt + 5));
                 var host = new GameObject("Body " + template.name);
                 host.transform.SetParent(source.transform, false);

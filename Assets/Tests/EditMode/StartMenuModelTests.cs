@@ -242,6 +242,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Crane));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless),
+                "Highlighting the crane prototype must not change the active mode.");
+            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.OpponentLimit));
             Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents,
                 Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents));
@@ -276,6 +280,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(CombatWeaponId.Pistol, CombatTestMode.Endless)]
         [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Endless)]
         [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Pistol, CombatTestMode.Crane)]
+        [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Crane)]
+        [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Crane)]
         public void CombatPreparation_ThreeWeaponsAndInitialHandSurviveBackAndRefusedLaunch(
             CombatWeaponId initialHeld, CombatTestMode mode)
         {
@@ -289,8 +296,12 @@ namespace BarPromenade.Tests.EditMode
                 CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
                 _ => CombatPreparationOption.Crowbar
             });
-            model.FocusCombatOption(mode == CombatTestMode.Endless ?
-                CombatPreparationOption.Endless : CombatPreparationOption.Standard);
+            model.FocusCombatOption(mode switch
+            {
+                CombatTestMode.Endless => CombatPreparationOption.Endless,
+                CombatTestMode.Crane => CombatPreparationOption.Crane,
+                _ => CombatPreparationOption.Standard
+            });
             model.Confirm();
             Assert.That(model.SelectedCombatSelection, Is.EqualTo(expectedSelection));
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(expected));

@@ -145,17 +145,18 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 
 `build-player-3d-model-v2.py`: 31 body/12 hair bones; `--surfaces-only`: UVs.
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
-Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
+`Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie}-3d-model.py`:
-test:--actions-only+--kick-only/--recovery-only/--footwork-only;
+`build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
+test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
-blood:--texture-only;others:--validate-only;CombatGore:hero/NPC body-skull.
+blood:--texture-only;else:--validate-only;CombatGore:hero/NPC body-skull.
 zombie:10clips+fishloop/.85m-.5swalk/fusedcrate/3faces/14SFX;1mat.
-Hero:bat grip/hook→/strike-block/Ready.
+crane:10clips/Rails-Bridge-Hook-WristSocket/--hook-only/TRS/bounds.
+Hero:batgrip/hook→/strike-block/Ready.
 
 ```powershell
-python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-strike-only --output-dir Captures/Tooling/Strike --source-dir Captures/Tooling/Strike/Source
+python tools/run-blender.py tools/build-combat-crane-3d-model.py -- --validate-only
 ```
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;

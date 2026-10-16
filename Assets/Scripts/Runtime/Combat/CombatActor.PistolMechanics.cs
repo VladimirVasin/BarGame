@@ -22,6 +22,13 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            if (IsCrane)
+            {
+                if (CraneHookPhase == CombatCraneHookPhase.Released) PresentCraneCuff();
+                SetCraneAudioFrozen(presentationFrozen || PauseMenuController.IsAnyPaused ||
+                    !GameInput.CanRead(GameInputContext.Gameplay));
+                return;
+            }
             BindGroundedFirearm();
             // ReleaseWeapon opens both hands for the shared crowbar path. A
             // suspended exchange still has a real magazine in the other palm,

@@ -54,6 +54,8 @@ namespace BarPromenade
         private void UpdateWarehouseSpawns()
         {
             heroSpawn = WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset;
+            if (Mode == CombatTestMode.Crane)
+                heroSpawn = CraneGround + Vector3.back * 4.4f + Vector3.up * PlayerFactory.GroundedRootOffset;
             opponentSpawn = WarehousePlan.OpponentSpawn + Vector3.up * PlayerFactory.GroundedRootOffset;
             GameLog.Info("combat", "warehouse_layout", GameLog.Field("seed", WarehousePlan.Seed),
                 GameLog.Field("generator_version", WarehouseArenaPlan.GeneratorVersion),

@@ -4021,14 +4021,12 @@ materials, chunk batching, ограниченные realtime lights и та же
 Итерация `2026-09-02` заменила уличный парад диковин обычными жителями;
 состав и последующие сокращения пула описаны ниже.
 
-Решение `2026-09-15`: общий рабочий (`ordinary-worker-v1`) детален как герой:
-четыре рисованных лица, кисти/тело, объёмные швы/застёжки/обувь; волосы,
-брови/усы/борода — седые, брюнет или блондин. Три сочетаемых набора
-(повседневный/рабочий/тёплый): 18 вещей, восемь слотов — рубашка, верх, брюки,
-обувь, шапка, шарф, перчатки, фартук. Слои без дыр закрывают тело/нижнюю одежду.
-Глобальная система закрепляет внешность без повторов, рабочую/зимнюю одежду
-по роли. Приглушённая палитра; рост/жесты/скелет прежних 13 людей сохранены.
-Нет новых реплик/смысла/§6 исключений или карикатурной детализации.
+`2026-09-15`: `ordinary-worker-v1` детален как герой: четыре рисованных лица,
+кисти/тело/объёмные швы-застёжки-обувь; седые/тёмные/светлые волосы-брови-усы-борода.
+Три набора (повседневный/рабочий/тёплый), 18 вещей/8 слотов:
+рубашка/верх/брюки/обувь/шапка/шарф/перчатки/фартук. Слои закрывают тело/низ без дыр.
+Глобальная внешность без повторов/одежда по роли; приглушённая палитра.
+Рост/жесты/скелет прежних 13 людей сохранены; новых реплик/смысла/§6/карикатурности нет.
 
 Решение `2026-09-29`: рыбак, мать, обычные бармен, кассир и водитель автобуса
 получают объёмную анатомию, отдельные пальцы, крой/обувь и сдержанную фактуру.
@@ -4236,14 +4234,20 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
+`2026-10-16`:Crane:asymworker/face-workwear/Rfist→metalcuff-hook;
++6m3Dhookline/launch-return;
+pendulum/6steel:head-pelvis-hands-feet/slackcap/liveinertia/yawcassette;
+gantry/centralvoidpatrol/clearance/fan-stairskept;
+worn/worldSFX/deathragdoll;§6.
+
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
 wetconcrete/bentsteel/peelpaint/swollenwood-cardboard/wornrubber;
 workdisgust§6;
 9sets→entry/doorclear/plates1-9/seedfixed;
-`2026-10-16`:4096/2048response/uniqueUV/untiled;joined wear continuous;warmglow.
+`2026-10-16`:4096/2048response/uniqueUV/untiled;joinedwearcontinuous;warmglow.
 D7fan/guardedlift-drum-pusher↔SFX/gate-backdoor/entry=Homeleaf;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
-4dim/red;fanSpot/blades;roof-deck block red/chestbeam.
+4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;
 3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;
 3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;
@@ -4255,41 +4259,41 @@ Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;
 skinneck-shoulders-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;
 slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-return.
 Mimic:near-hit→rigburst/planted/gaze/limblag;
-ram:compress→throw→kneel-rise;fell hero→loaded uneven spasms→rise;
+ram:compress→throw→kneel-rise;fell hero→loaded unevenspasms→rise;
 wood-wet inhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
-`2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
-coat-scarf rig/slinganchors;physics0/hairkept.
+`2026-10-14`:remains step/rig-contour;livefall≠corpse/physicskept;
+coat-scarfrig/slinganchors;physics0/hairkept.
 Lchest/look/far0/near/beam↑.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:all3/1held-2stowed/finiteammo/Eshared;
-Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
-Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
+Gun:worn unbrandeddarkmetal/Rpalm gait/2handaim/crossflash;
+Aim:8gaits/×.85/facing/Step/uppercam/FOV-gripreturn.
 Hero:drift/recoil/overshoot/finger regrip/blink;
 muzzlereticle/shotguncentre/stablecam/intentlegs.
 `2026-10-08`:streak/impulse-SFX;pistol head0HP→ragdoll.
-Shotgun:worn darksteel-wood/2barrels/shoulder-stock/Lforeend;
-heavy recoil/flash-smoke/deepthud;2shots/break/spent eject/load/close.
-`2026-10-12`:Draw Ropen barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown
+Shotgun:worndarksteel-wood/2barrels/shoulder-stock/Lforeend;
+heavyrecoil/flash-smoke/deepthud;2shots/break/spenteject/load/close.
+`2026-10-12`:Draw Ropenbarrels↓;Loutside/Lshoulder→vertical stocktop/palmdown
 →outer shoulder/chest→Rgrip/Lforeend;0crossing;stow-model-rig-sling/2×.
-`2026-10-09`:nearmax/body launch/head≤14/fast debris-blood/falloff.
+`2026-10-09`:nearmax/bodylaunch/head≤14/fast debris-blood/falloff.
 Rig:chest-abdomen/arm-hand/leg-catch/skin-fabric-glove-boot/wet-dry/repeat.
-`2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finite parts;
+`2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finiteparts;
 Survivor-corpse/crawl/reset.
-Pistol3-5/16/low eject;brain8:full/wetmuted jelly/squash/bone-tissue/cam-hide/loss.
+Pistol3-5/16/loweject;brain8:full/wetmuted jelly/squash/bone-tissue/cam-hide/loss.
 Dark blood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;
-convulsions≤2.35s/corpse HP-pose-impulse;volley1reaction/terminal.
+convulsions≤2.35s/corpseHP-pose-impulse;volley1reaction/terminal.
 Case/slide-emptylock/mag-stash-seat-rack/SFX/Eshared.
-World:chips-sparks/finite holes/freeze-reset-exit-head0;
+World:chips-sparks/finiteholes/freeze-reset-exit-head0;
 Shoulders↑/chin-in/breath-tremor/tightswing/awkwardreturn;
-softknees/pelvis-grip-elbows↓/step/face block-flex.
+softknees/pelvis-grip-elbows↓/step/faceblock-flex.
 ≤2steps/crouch-brace/floor→hand→drop/return≠parry.
-Bar:bat grip/end/hook→/shoulder+block/charge/free;wall sparks/recoil.
+Bar:batgrip/end/hook→/shoulder+block/charge/free;wall sparks/recoil.
 Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
-near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
+nearknee/barkept/torso mirror/L-shove←/palm-bar-body.
 Chest contrast;wall-edge-end→hide.
 Win:walk/gun fire-reload;barE:toilet §7 FP/barL/body-floorR/0reaction.
-`2026-10-15` HUD:charcoal/bone;aim ammo1row/reload meter/HP damage3s-≤25%/staminafull+1s;
+`2026-10-15` HUD:charcoal/bone;aim ammo1row/reloadmeter/HP damage3s-≤25%/staminafull+1s;
 charge-block/fade.15-.3/F8legacy0/Alt;
 enemyHP-counters-controls legacy/result-reset-menu.
 Shield:amber=request/closed=ready/filled=block.

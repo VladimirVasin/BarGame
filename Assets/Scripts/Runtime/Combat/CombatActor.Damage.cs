@@ -91,6 +91,7 @@ namespace BarPromenade
             // Detached anatomy has its own fragment body. Its contact must not
             // wake or move the former owner's retained body as a second target.
             if (impact.DetachedPart) return;
+            if (CraneAttached && !State.IsDefeated) { ReceiveCraneImpulse(impact); return; }
             JournalImpactEvent("impulse_requested", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("impulse_x", impact.Impulse.x), GameLog.Field("impulse_y", impact.Impulse.y), GameLog.Field("impulse_z", impact.Impulse.z),
                 GameLog.Field("knocked_down", IsKnockedDown));

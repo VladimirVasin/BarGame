@@ -90,12 +90,13 @@ namespace BarPromenade
                 body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
                 body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
                 VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
-                    obj.transform, DefaultNpcPopulation.CombatTestOpponentId(i));
+                    obj.transform, Mode == CombatTestMode.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(i));
                 // Body/wardrobe scans must finish before the fused cargo is
                 // attached beneath this same skeleton with its own atlas.
-                CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
+                if (Mode == CombatTestMode.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
+                else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
                 CombatActor actor = obj.AddComponent<CombatActor>();
-                actor.InitializeOpponent(presentation, body);
+                actor.InitializeOpponent(presentation, body, suspendedCrane: Mode == CombatTestMode.Crane);
                 actor.SetContactTarget(Hero);
                 actor.JournalActorId = i + 2;
                 combatOpponents.Add(actor);
@@ -128,6 +129,16 @@ namespace BarPromenade
             int slotIndex = 0;
             foreach (OpponentSlot slot in opponentSlots)
             {
+                if (slot.Actor.IsCrane)
+                {
+                    slot.Actor.gameObject.SetActive(true);
+                    slot.Actor.ResetActor(CraneGround, Vector3.forward);
+                    slot.Actor.ConfigureCraneSuspension(CraneGround, new Vector3(CraneGround.x, 9.15f, CraneGround.z));
+                    ResetOpponentDecisions(slot.Actor, slot.Ai);
+                    slot.Spawned = true; slot.DefeatCounted = false;
+                    slot.Generation = 0; slot.DefeatOrder = 0; slot.CrateAnchorId = -1;
+                    continue;
+                }
                 Vector3 position = WarehousePlan != null
                     ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset : opponentSpawn;
                 slot.CrateAnchorId = -1;

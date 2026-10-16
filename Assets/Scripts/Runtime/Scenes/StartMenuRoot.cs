@@ -30,8 +30,8 @@ namespace BarPromenade
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
         internal static Rect CombatOptionRect(int index) => new Rect(166f,
-            index < 3 ? 106f + index * 22f : index < 5 ? 197f + (index - 3) * 22f :
-                247f + (index - 5) * 26f, 308f, 20f);
+            index < 3 ? 106f + index * 22f : index < 6 ? 197f + (index - 3) * 21f :
+                263f + (index - 6) * 22f, 308f, 20f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -347,6 +347,7 @@ namespace BarPromenade
                     CombatPreparationOption.Shotgun => "combat.weapon.shotgun",
                     CombatPreparationOption.Standard => "combat.mode.standard",
                     CombatPreparationOption.Endless => "combat.mode.endless",
+                    CombatPreparationOption.Crane => "combat.mode.crane",
                     CombatPreparationOption.OpponentLimit => "combat.endless.limit",
                     CombatPreparationOption.Start => "combat.start",
                     _ => "opening.back"
@@ -359,6 +360,7 @@ namespace BarPromenade
                     CombatPreparationOption.Pistol => model.SelectedCombatLoadout.InitialHeld == CombatWeaponId.Pistol,
                     CombatPreparationOption.Standard => model.SelectedCombatMode == CombatTestMode.Standard,
                     CombatPreparationOption.Endless => model.SelectedCombatMode == CombatTestMode.Endless,
+                    CombatPreparationOption.Crane => model.SelectedCombatMode == CombatTestMode.Crane,
                     _ => false
                 };
                 string mark = choice ? chosen ? "[x] " : "[ ] " : string.Empty;
@@ -373,7 +375,7 @@ namespace BarPromenade
                     break;
                 }
             }
-            GUI.Label(new Rect(166f, 329f, 308f, 14f),
+            GUI.Label(new Rect(166f, 333f, 308f, 14f),
                 LocalizationService.Get("combat.switch.controls"), descriptionStyle);
         }
 

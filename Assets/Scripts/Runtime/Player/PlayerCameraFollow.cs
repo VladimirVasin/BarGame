@@ -487,6 +487,18 @@ namespace BarPromenade
                 rotation);
         }
 
+        /// <summary>Scene-owned vertical reach; ordinary scenes retain their serialized limits.</summary>
+        public void ConfigureOrbitPitchLimits(float minimumDegrees, float maximumDegrees)
+        {
+            if (!float.IsFinite(minimumDegrees) || !float.IsFinite(maximumDegrees) ||
+                minimumDegrees < -80f || maximumDegrees > 80f || minimumDegrees >= maximumDegrees)
+                throw new System.ArgumentOutOfRangeException(nameof(minimumDegrees));
+            minimumOrbitPitch = minimumDegrees;
+            maximumOrbitPitch = maximumDegrees;
+            targetPitch = ClampOrbitPitch(targetPitch);
+            currentPitch = ClampOrbitPitch(currentPitch);
+        }
+
         public void RotateYaw(float degrees)
         {
             if (fixedPoseActive || TargetLockActive)

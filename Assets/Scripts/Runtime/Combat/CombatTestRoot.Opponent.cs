@@ -90,6 +90,13 @@ namespace BarPromenade
 
         private void AdvanceOpponent(float seconds)
         {
+            if (AiOpponent.IsCrane)
+            {
+                ResetOpponentMovement();
+                AiOpponent.TryBeginCraneCycle(Hero);
+                OpponentIntent = AiOpponent.CranePhase == CombatCranePhase.Waiting ? CombatOpponentIntent.Recover : CombatOpponentIntent.Attack;
+                return;
+            }
             if (AiOpponent.IsZombie) { AdvanceZombieOpponent(seconds); return; }
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
             opponentContext.guardMemorySeconds = Mathf.Max(0f, opponentContext.guardMemorySeconds - seconds);
@@ -629,6 +636,7 @@ namespace BarPromenade
         /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
         private void AdvanceOpponentMovement(float seconds)
         {
+            if (AiOpponent != null && AiOpponent.IsCrane) return;
             if (seconds <= 0f) return;
             if (!Sparring || AiOpponent == null || !AiOpponent.ZombieAwake || AiOpponent.IsZombieFrenzied || Hero == null || AiOpponent.IsKnockedDown || HeroIsOnGround && !Hero.IsBodyGrounded || !AiOpponent.IsAvailable ||
                 (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising) ||

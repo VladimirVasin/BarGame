@@ -48,7 +48,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Mimic reveal/heavy ram/kneel/knockdown Frenzy;debris pass/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,ZombieLoad,ZombieAudio,AmmoPickup}` | Partial |
+| Combat | Mimic reveal/heavy ram/kneel/fall Frenzy;passable debris/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,Zombie*,AmmoPickup}` | Partial |
+| Crane | XYZaxis/3floors/6tethers/pendulum/6m3Dhook/clearance/ragdoll/reset | `Combat*.Crane*` | Current |
 | Warehouse | 4096master/uniqueUV;joined wear;red shadows/deck block;chest/fish/key/gate/power. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
@@ -221,7 +222,7 @@ rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded sna
 
 ```text
 build index 0 -> MainMenu -> New Game / Combat Test / Quit card
-  -> Combat Test -> crowbar/pistol/shotgun picker -> Start -> duel -> reset/weapons/menu
+  -> Combat Test -> kit + Standard/Endless/Crane -> Start -> reset/kit/menu
   -> New Game -> twelve locations / Back -> confirmed choice
   -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
      -> chosen root (City: docks/cannery; village: ski lodge)

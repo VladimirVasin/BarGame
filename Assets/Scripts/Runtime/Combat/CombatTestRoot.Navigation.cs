@@ -135,6 +135,7 @@ namespace BarPromenade
         /// <summary>After ordinary and owned Step travel, ground the capsule on the shared duel clock.</summary>
         private void AdvanceWarehouseOpponentGrounding(float seconds)
         {
+            if (AiOpponent != null && AiOpponent.IsCrane) return;
             if (WarehousePlan == null || seconds <= 0f || AiOpponent == null || AiOpponent.Body == null ||
                 !AiOpponent.Body.enabled || !AiOpponent.ZombieAwake || AiOpponent.IsKnockedDown || AiOpponent.IsBodyGrounded || AiOpponent.IsRagdollActive)
             {

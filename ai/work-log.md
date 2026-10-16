@@ -3,22 +3,20 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-16 - Warehouse detail, materials and chest source
+## 2026-10-16 - Warehouse, chest source and crane prototype
 
-- Warehouse kit gains deeper drive housings, gussets, guide seats, folded cargo,
-  real louvres and furniture joints. Detail stays in existing surface groups;
-  original bounds, collision, anchors and routes remain intact.
-- JSON provenance uses LF so Git checkout retains its hashes; gate validation proves it.
-- One master colour painting and registered slope/roughness/cavity response
-  replace repeated runtime bases. Deterministic planner placements own authored
-  UV slots; equivalent small fittings share only a placement-local face chart.
+- Warehouse kit:deep drive housings/gussets/guide seats/folded cargo/louvres/
+  furniture joints;same surface groups/bounds/collision/anchors/routes.
+- JSON provenance uses LF;gate validation proves checkout-safe hashes.
+- Colour/registered slope-roughness-cavity master replaces runtime bases;
+  planner placements own UV slots;equivalent small fittings share a placement-local chart.
   Joined structures use planner metres and shared wear causes for colour and
   response: slot seeds no longer cut rust at module edges. Source ingredients
   mirror continuously; gate decks reuse reserved Platform charts. Imported
   mesh variants share materials.
   The master is now 4096 with a 2048 response: visible walls, floors, platform
   tops and near props receive more atlas area; hidden backs and sparse rails less.
-  Native source averaging is removed. The user-approved bank cap is 28 MiB.
+  No source averaging;accepted bank cap28MiB.
 - Proof: `build-combat-warehouse-3d-model.py` checks deterministic geometry,
   placement charts, seam continuity, stretch and FBX round trips.
   `warehouse_master_continuity.py` reproduces the prior texture cuts and accepts
@@ -40,6 +38,14 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   block their wash. Point range, colour and intensity stay; the existing shadow
   atlas fits the bounded sources. Proof: `CombatWarehouseIndicatorFloorOcclusion`
   passed; blocked upper-deck and local entrance-wash comparison frames reviewed.
+- Crane: own axis/storey patrol;head/pelvis/hands/feet tethered to yaw cassette.
+  Cuff-hook:6m/3DLOS/locked launch/one hit out/world stop-return.
+  Pendulum/accel-brake/live limb inertia;slack cap.
+  Crane-only gantry;fan/cargo/routes kept.
+  Shared hit/death/pause/reset;nonconvex clearance.
+  Proof:`build-combat-crane-3d-model.py` deterministic contract;
+  `Range_CraneSuspensionKeepsContactOcclusionPauseAndReset` passed;
+  world/motion reviewed.
 
 ## 2026-10-15 - Warehouse, cursor, HUD and loader
 

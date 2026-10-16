@@ -21,7 +21,7 @@ namespace BarPromenade
         ChooseCombatWeapon = 6
     }
 
-    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Standard, Endless, OpponentLimit, Start, Back, Count }
+    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Standard, Endless, Crane, OpponentLimit, Start, Back, Count }
 
     /// <summary>
     /// The launch card and its location and weapon pickers. Committing is one-shot: the
@@ -153,6 +153,8 @@ namespace BarPromenade
                 SelectedCombatMode = CombatTestMode.Standard;
             else if (option == CombatPreparationOption.Endless)
                 SelectedCombatMode = CombatTestMode.Endless;
+            else if (option == CombatPreparationOption.Crane)
+                SelectedCombatMode = CombatTestMode.Crane;
             else if (option == CombatPreparationOption.OpponentLimit)
                 SelectedCombatEncounterSettings = SelectedCombatEncounterSettings.WithMaximumLiveOpponents(
                     SelectedCombatEncounterSettings.MaximumLiveOpponents % CombatEncounterSettings.OpponentCapacity + 1);

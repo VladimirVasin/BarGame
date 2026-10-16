@@ -5,7 +5,7 @@ namespace BarPromenade
     /// <summary>The bounded weapon choices offered by the isolated combat test.</summary>
     public enum CombatWeaponId { Crowbar, Pistol, Shotgun }
 
-    public enum CombatTestMode { Standard, Endless }
+    public enum CombatTestMode { Standard, Endless, Crane }
 
     /// <summary>The complete isolated combat launch selection, consumed as one session value.</summary>
     public readonly struct CombatTestSelection : IEquatable<CombatTestSelection>
@@ -18,7 +18,7 @@ namespace BarPromenade
         public CombatTestSelection(CombatLoadoutSelection loadout, CombatTestMode mode = CombatTestMode.Standard,
             CombatEncounterSettings? encounterSettings = null)
         {
-            if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless)
+            if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless && mode != CombatTestMode.Crane)
                 throw new ArgumentOutOfRangeException(nameof(mode));
             Loadout = loadout;
             Mode = mode;

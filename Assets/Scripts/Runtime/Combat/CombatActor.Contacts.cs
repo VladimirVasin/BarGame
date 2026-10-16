@@ -50,6 +50,7 @@ namespace BarPromenade
             // restoring a guard still waits for the next presented duel step.
             if (guardHeld && State.IsBlocking && GuardSupportRejection != null) RefreshBlock();
             if (captureAnatomy) Hurtboxes?.Capture();
+            if (IsCrane) { CaptureCraneContactPose(); return; }
             if (IsZombie) { CaptureZombieContactPose(); return; }
             Pose pose = new Pose(Weapon.transform.position, Weapon.transform.rotation);
             frozenWeaponFrom = frozenWeaponValid ? frozenWeaponTo : pose;
@@ -72,6 +73,7 @@ namespace BarPromenade
             ContactPoseSamples = 0;
             if (!collectSweep) return false;
             collectSweep = false;
+            if (IsCrane) { SweepCraneContact(sweepFrom, sweepTo, pendingSequence, pending); return true; }
             if (IsZombie) { SweepZombieContact(sweepFrom, sweepTo, pendingSequence, pending); return true; }
             SweepWeapon(sweepFrom, sweepTo, pendingSequence, pending);
             return true;
@@ -211,6 +213,7 @@ namespace BarPromenade
                     GameLog.Field("result", (int)result), GameLog.Field("impact_seq", target.LastJournalImpactSequence),
                     GameLog.Field("from_front", fromFront), GameLog.Field("damage_requested", damage));
                 source.State.RecordAttackOutcome(result, attackSequence);
+                source.PlayCraneContactSound(result);
                 if (result == MeleeHitResult.Parried) source.ShowParried(point, direction);
             }
         }
@@ -260,6 +263,7 @@ namespace BarPromenade
 
         private void StopWeaponOnSolid(int sequence, Vector3 point, Vector3 normal, bool metal)
         {
+            if (IsCrane) { if (State.AttackSequence == sequence) StopCraneStrike(); return; }
             if (IsZombie) { if (State.AttackSequence == sequence) StopZombieAttack(); return; }
             if (State.AttackSequence != sequence || !State.CancelAttackOnObstacle()) return;
             reaction = Current.Recoil; reactionClock = 0f; sweepValid = collectSweep = false;
@@ -499,9 +503,16 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
                 if (fraction > 1f && IsContactWorld(contactBuffer[i]))
                 {
-                    fraction = 1f; point = contactBuffer[i].ClosestPoint((a + b) * .5f);
-                    normal = ((a + b) * .5f - point).normalized;
                     collider = contactBuffer[i];
+                    Vector3 centre = (a + b) * .5f;
+                    bool supportsClosestPoint = collider is BoxCollider || collider is SphereCollider ||
+                        collider is CapsuleCollider || collider is MeshCollider mesh && mesh.convex;
+                    // The exact overlap above already established the obstruction.
+                    // Non-convex meshes/terrain do not support ClosestPoint; their
+                    // bounds supply contact metadata only, never a collision test.
+                    fraction = 1f;
+                    point = supportsClosestPoint ? collider.ClosestPoint(centre) : collider.bounds.ClosestPoint(centre);
+                    normal = (centre - point).normalized;
                 }
         }
 

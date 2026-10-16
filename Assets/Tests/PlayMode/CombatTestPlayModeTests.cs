@@ -58,6 +58,7 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_MouseLookKeepsAimAndCursorHandoffsIndependent) &&
                 method != nameof(Range_GameplayHudRespondsToAimDamageAndDebugToggle) &&
                 method != nameof(Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle) &&
+                method != nameof(Range_CraneSuspensionKeepsContactOcclusionPauseAndReset) &&
                 method != nameof(Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies))
                 Assert.Ignore("Retired human duel fixture: this legacy scenario has not been migrated to zombie-only combat.");
             zombieFixtureStarted = true;

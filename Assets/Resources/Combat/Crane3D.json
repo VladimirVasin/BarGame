@@ -1,0 +1,1570 @@
+{
+  "generator": "tools/build-combat-crane-3d-model.py",
+  "generator_version": "crane-v3",
+  "rig": "NpcHumanV2",
+  "test_only": true,
+  "root_motion": false,
+  "animation_events": 0,
+  "retained_rest_skeleton": true,
+  "contact_start_seconds": 0.35,
+  "contact_end_seconds": 0.55,
+  "suspension_bones": [
+    "hand.L",
+    "hand.R",
+    "pelvis",
+    "foot.L",
+    "foot.R",
+    "head"
+  ],
+  "suspension_local_offsets_m": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0.25,
+      0
+    ]
+  ],
+  "cable_length_m": 1.0,
+  "cable_axis_unity": [
+    0,
+    1,
+    0
+  ],
+  "signature": "b497d4c4237379d940b0d6d5e21e410c8e186bcac955de34ccd284972005ebb0",
+  "clips": [
+    {
+      "name": "CraneIdle",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.7,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.279775,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 1.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 2.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneSignal",
+      "duration_seconds": 0.65,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.2275,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.275249,
+              1.22128,
+              -0.557439
+            ]
+          }
+        },
+        {
+          "seconds": 0.325,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.277725,
+              1.23,
+              -0.54
+            ]
+          }
+        },
+        {
+          "seconds": 0.65,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.320225,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneDescend",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.35,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.980708,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.279775,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.5,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 1.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneStrike",
+      "duration_seconds": 1.1,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.385,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.283467,
+              1.09897,
+              -0.763788
+            ]
+          }
+        },
+        {
+          "seconds": 0.55,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.307725,
+              1.03,
+              -0.85
+            ]
+          }
+        },
+        {
+          "seconds": 1.1,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.285305,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneRecover",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.6712
+            ]
+          }
+        },
+        {
+          "seconds": 0.35,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.279775,
+              1.15,
+              -0.679314
+            ]
+          }
+        },
+        {
+          "seconds": 0.5,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.6856
+            ]
+          }
+        },
+        {
+          "seconds": 1.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneAscend",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.35,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.980708,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.279775,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.5,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 1.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneTransport",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.3,
+              0.96,
+              -0.48
+            ]
+          }
+        },
+        {
+          "seconds": 0.7,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.323776,
+              0.96,
+              -0.48
+            ]
+          }
+        },
+        {
+          "seconds": 1.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.3,
+              0.96,
+              -0.48
+            ]
+          }
+        },
+        {
+          "seconds": 2.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.3,
+              0.96,
+              -0.48
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneStart",
+      "duration_seconds": 0.6,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.21,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.943372,
+              0.138036
+            ],
+            "head": [
+              0.07,
+              1.295475,
+              -0.291825
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.313373,
+              -0.151825
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.313373,
+              -0.151825
+            ],
+            "hand.R": [
+              -0.159954,
+              1.096467,
+              -0.638015
+            ]
+          }
+        },
+        {
+          "seconds": 0.3,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.915,
+              0.1675
+            ],
+            "head": [
+              0.07,
+              1.23,
+              -0.27
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.285,
+              -0.13
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.285,
+              -0.13
+            ],
+            "hand.R": [
+              -0.146224,
+              1.055,
+              -0.59
+            ]
+          }
+        },
+        {
+          "seconds": 0.6,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.314695,
+              0.96,
+              -0.48
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneBrake",
+      "duration_seconds": 0.7,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.85,
+              0.235
+            ],
+            "head": [
+              0.07,
+              1.08,
+              -0.22
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.22,
+              -0.08
+            ],
+            "hand.R": [
+              -0.3,
+              0.96,
+              -0.48
+            ]
+          }
+        },
+        {
+          "seconds": 0.245,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.886628,
+              0.196964
+            ],
+            "head": [
+              0.07,
+              1.164525,
+              -0.248175
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.256628,
+              -0.108175
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.256628,
+              -0.108175
+            ],
+            "hand.R": [
+              -0.417573,
+              1.013532,
+              -0.541985
+            ]
+          }
+        },
+        {
+          "seconds": 0.35,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.915,
+              0.1675
+            ],
+            "head": [
+              0.07,
+              1.23,
+              -0.27
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.285,
+              -0.13
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.285,
+              -0.13
+            ],
+            "hand.R": [
+              -0.439775,
+              1.055,
+              -0.59
+            ]
+          }
+        },
+        {
+          "seconds": 0.7,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.323776,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CraneHurt",
+      "duration_seconds": 0.55,
+      "loop": false,
+      "samples": [
+        {
+          "seconds": 0.0,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.3,
+              1.15,
+              -0.7
+            ]
+          }
+        },
+        {
+          "seconds": 0.1925,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.012649,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.276614,
+              1.233187,
+              -0.579841
+            ]
+          }
+        },
+        {
+          "seconds": 0.275,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.020365,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.275308,
+              1.213348,
+              -0.608497
+            ]
+          }
+        },
+        {
+          "seconds": 0.55,
+          "bones_unity_axis_swap": {
+            "pelvis": [
+              0.045,
+              0.98,
+              0.1
+            ],
+            "head": [
+              0.07,
+              1.38,
+              -0.32
+            ],
+            "clavicle.L": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "clavicle.R": [
+              -0.015,
+              1.35,
+              -0.18
+            ],
+            "hand.R": [
+              -0.307725,
+              1.15,
+              -0.7
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "name": "CraneSuspensionHead",
+      "bounds_min": [
+        -0.65,
+        -0.21,
+        -0.29
+      ],
+      "bounds_max": [
+        0.65,
+        0.22,
+        0.49
+      ],
+      "triangles": 388,
+      "signature": "ca8b93c0ed1c2a9055293cb85bd81389b942f573ada21b5e3f04c6abe60013a8",
+      "anchors": [
+        {
+          "name": "PIVOT_CableSwivel",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_CableFootLeft",
+          "position": [
+            -0.55,
+            -0.17,
+            0.2
+          ]
+        },
+        {
+          "name": "ANCHOR_CableFootRight",
+          "position": [
+            0.55,
+            -0.17,
+            0.2
+          ]
+        },
+        {
+          "name": "ANCHOR_CableHead",
+          "position": [
+            0.0,
+            -0.17,
+            0.42
+          ]
+        },
+        {
+          "name": "ANCHOR_CableLeft",
+          "position": [
+            -0.3,
+            -0.17,
+            -0.1
+          ]
+        },
+        {
+          "name": "ANCHOR_CableRear",
+          "position": [
+            0.0,
+            -0.17,
+            0.16
+          ]
+        },
+        {
+          "name": "ANCHOR_CableRight",
+          "position": [
+            0.3,
+            -0.17,
+            -0.1
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CraneCableSegment",
+      "bounds_min": [
+        -0.012124,
+        0.0,
+        -0.014
+      ],
+      "bounds_max": [
+        0.012124,
+        1.0,
+        0.014
+      ],
+      "triangles": 20,
+      "signature": "3a1b05c45d4b6ae5a636331d65d69d03c39dfe4226eb3a6f8a95ed222c036518",
+      "anchors": []
+    },
+    {
+      "name": "CraneRails",
+      "bounds_min": [
+        -5.98,
+        -0.075,
+        -5.85
+      ],
+      "bounds_max": [
+        5.98,
+        0.72,
+        5.85
+      ],
+      "triangles": 704,
+      "signature": "c665bc7661a64abe87c045c65829ac81732295f6c4df0aa4a33dd20d4a65a6f8",
+      "anchors": []
+    },
+    {
+      "name": "CraneBridge",
+      "bounds_min": [
+        -5.9,
+        -0.03,
+        -0.37
+      ],
+      "bounds_max": [
+        5.9,
+        0.25,
+        0.37
+      ],
+      "triangles": 84,
+      "signature": "b0c8cc12625cecddf7c42b12d362efaa281a10a3b0afe1d599947788b03aa99a",
+      "anchors": [
+        {
+          "name": "ANCHOR_Carriage",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CraneHook",
+      "bounds_min": [
+        -0.177359,
+        0.0,
+        -0.062
+      ],
+      "bounds_max": [
+        0.180517,
+        0.60633,
+        0.062
+      ],
+      "triangles": 436,
+      "signature": "b17e902f6311dcb1842f02e956e90569d68e4d09ea2ee36d64253ca065eee291",
+      "anchors": [
+        {
+          "name": "ANCHOR_Cable",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Impact",
+          "position": [
+            0.0,
+            0.48,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CraneWristSocket",
+      "bounds_min": [
+        -0.09,
+        -0.075,
+        -0.087744
+      ],
+      "bounds_max": [
+        0.09,
+        0.12,
+        0.087744
+      ],
+      "triangles": 248,
+      "signature": "80db16ee95b77c62ab0585e098586e4b7b10acf7a03922b07f79cd02e0bd38c4",
+      "anchors": [
+        {
+          "name": "ANCHOR_CableExit",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    }
+  ],
+  "transport_right_grip": 1.0,
+  "transport_left_grip": 0.82,
+  "hook": {
+    "axis_unity": [
+      0,
+      1,
+      0
+    ],
+    "impact_offset_m": 0.48,
+    "impact_radius_m": 0.18,
+    "mass_kg": 9.0,
+    "wrist_exit_m": 0.11,
+    "contact_points": [
+      [
+        0,
+        0.18,
+        0
+      ],
+      [
+        -0.1,
+        0.36,
+        0
+      ],
+      [
+        -0.08,
+        0.5,
+        0
+      ],
+      [
+        0.06,
+        0.54,
+        0
+      ],
+      [
+        0.14,
+        0.43,
+        0
+      ]
+    ],
+    "contact_radii": [
+      0.05,
+      0.065,
+      0.07,
+      0.06,
+      0.07
+    ],
+    "core_length_m": 0.2,
+    "core_radius_m": 0.07,
+    "maximum_cable_m": 6.0
+  }
+}

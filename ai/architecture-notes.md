@@ -2,6 +2,14 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-16, crane:**
+  Own3floorXYZ1axis;§6/15a. Rfist→cuff-hook/+6m360LOSline:anyfloor;
+  fixedlaunch/1outboundhit/worldstop-return;bodycentralvoid.
+  Pendulum/accel-brake/6steel:head-pelvis-hands-feet/slackcap/livegravity-inertia;
+  yawcassette/fullclearance/ragdoll;
+  Move≤9.43/mount9.87/fanmin9.6;2frames→gantry/look-70..55°;
+  Std-Endlesskept/City-story-grab-lift0.
+
 - **Accepted 2026-10-16, warehouse detail:**
   9sets/opposite-entry/face→door/COLclear;
   4096+2048response+2×512/BC7mips27.34≤28MiB.
@@ -13,18 +21,18 @@
   switch-hide-cleanup/exposure-independent/Spotkept.
 
 - **Accepted 2026-10-15, shared entry door design:**
-  Home/CombatTest `ApartmentEntranceDoor`;
-  aged wood/4recessedpanels/frame-reveals-architraves/threshold/3hinges/levers-keyhole-peephole/edgewear;
+  Home/CombatTest:`ApartmentEntranceDoor`;
+  agedwood/4recessedpanels/frame-reveals-architraves/threshold/3hinges/levers-keyhole-peephole/edgewear;
   leaf1.12×2.16×.052/frame1.32×2.3×.22/opening1.32/Patch0;
-  Home COL-docks-travel/text kept;warehouse COL=frame/closed.
+  Home COL-docks-travel-text kept;warehouse frameCOL/closed.
 
 - **Accepted 2026-10-15, entrance:**
   CombatTest entry=ordinary→corrupted/return0;silent/travel0;§6/§21.
 
 - **Accepted exception 2026-10-15, mimics:**
-  CombatTest/§6/art§15a;reveal/chase/ram/kneel-rise;
-  OwnSource-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
-  entry=depth;attack-move-buffer0/hurt-state stop/pause pose+audio/reset→chase;
+  CombatTest/§6/art§15a:reveal/chase/ram/kneel-rise;
+  own-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
+  depthentry/attack-move-buffer0/hurtstop/pause-pose-audio/resetchase;
   HP/input/focus/refill/TRS/atlas/debris kept.
 
 - **Accepted 2026-10-15, beam:**
@@ -86,13 +94,13 @@
   Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nested/endrestore.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
-  ChaseR.5/back1.9m ext-int;aim.5/1.4m/stable1.4;focus1.6/1.5m;
-  firearm shoulder+.4m/melee+.2m. Before focusdamp:rootdelta×(1-override);
+  ChaseR.5/back1.9m;aim.5/1.4m/stable1.4;focus1.6/1.5m;ext=int.
+  Shoulder:gun+.4m/bar+.2m;prefocusdamp:rootdelta×(1-override).
   travel0lag/override≤.45m/teleport>1.75m snap/FOV-handoff-clearance kept.
   Hitbuffer24→1024retry/cap SphereCastAll/normal2cached0alloc/overflow alloc.
-  Reticle arms3×2/dot2×2px/movinggap+6pistol/+10shotgun;
-  rig-HUD expand/2sstill settle/look-reaim keep/pause0/resetclear.
-  Slowdrift/moving4×/muzzle-shotguncentre/recoil/bounded/assets-story/novice§7 kept.
+  Reticle arms3×2/dot2×2px/movegap+6pistol/+10shotgun;
+  rig-HUD expand/2sstill settle/look-reaim kept/pause0/resetclear.
+  Slowdrift/move4×/muzzle-shotguncentre/recoil/bounds/assets-story/novice§7 kept.
 
 - **Accepted 2026-10-14, warehouse goal:**
   9wallplates.44×.5/1–9/3floor/seedfixed.
@@ -494,39 +502,34 @@
   §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;W-Swalk/A-Dstrafe.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
-  User: default-only, new models join immediately. `DefaultNpcPopulation`:
-  `city.pedestrian.00..12`, one/City slot, first eight/Home. `AnyCatalogModel`:
-  least-used `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes,
-  no apron; optional hat/scarf/gloves. `CityPedestrianResources.Archetypes`:
-  one/model. `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:
-  aligned, village graph released, one footstep root; own village `Idle`/`Walk`,
-  no palette bindings; boot soles feed legs, person-keyed insult voice.
-  Weigher donates seated/guard/shove, same rig/paths; default trousers
-  seat lift `0.076`. Six `OrdinaryResidentArchetypes`: placed roles/balcony
-  smokers/donor; library designs never roam (`pool_eligible=false`,
-  resolvable prefab side).
+  User:default-only/new models join. `DefaultNpcPopulation`:
+  `city.pedestrian.00..12`/City slot/first8 Home;`AnyCatalogModel`:
+  least-used `DefaultNpcCatalog.ModelIds`→face/hair/streetwear;
+  apron0/optional hat-scarf-gloves. `CityPedestrianResources.Archetypes`:one/model.
+  `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:alignment/villagegraph released/
+  one footstep root/own village Idle-Walk/palette0/bootsole→legs/person-keyed insult voice.
+  Weigher seated-guard-shove/same rig-paths;trouser seatlift.076.
+  Six `OrdinaryResidentArchetypes`:placed/balcony/donor;
+  library never roams (`pool_eligible=false`,resolvable prefab).
 
 - **Accepted — 2026-09-15, default NPC catalog:**
-  `DefaultNpcCatalog` allowlists models; bespoke/pool extensions need user
-  requests. `DefaultNpcPopulation`: permanent IDs/model/garment constraints,
-  sorted whole-world assignment before spawns. Stable hash avoids repeated
-  model/face/hair/clothes until exhaustion, then balances; loads/order preserve
-  looks, no local randomness. Register actors, use
-  `DefaultNpcFactory.CreateForCharacter`; raw `Create`: authoring/legacy.
-  `ordinary-worker-v1` (`VillageLife/OrdinaryWorker`): four fair/five port/two
-  factory/driver/village workers. Prefab/GUID retained; resource address differs
-  from the source FBX. Factory sets rig/footsteps.
+  `DefaultNpcCatalog`:allowlist;bespoke/pool extensions:user request.
+  `DefaultNpcPopulation`:permanent IDs/model/garments;sorted global pre-spawn
+  assignment;stable hash/no repeated model-face-hair-clothes until exhausted,
+  then balanced;load/order-independent/no local RNG.
+  `DefaultNpcFactory.CreateForCharacter`;raw Create:authoring/legacy;rig/footsteps set.
+  `ordinary-worker-v1` (`VillageLife/OrdinaryWorker`):4fair/5port/2factory/driver/
+  village workers;same prefab/GUID;resource address≠source FBX.
 
 - **Accepted — 2026-09-15, modular default worker:**
-  Same prefab/GUID, 31 bones/grips/actions. Hero/NPC hands: +20% reach/width,
-  slim depth/girth, fixed wrists. `NpcWardrobe`: eight slots/18 items/three
-  presets, coverage/restoration, 8,000 worn triangles. `DefaultNpcAppearance`:
-  four faces, gray/brunette/blond hair/brows/beards, twelve shared atlases.
-  Body owners: `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup`.
-  Art §15; cast/lore/speech/§6 unchanged. Truck/bench cache trouser seat fits.
-  Arm IK elbows down/out in rig frame (lateral poles stretched sleeves).
-  `NpcHandPose`: authored bare/gloved cylindrical grips, action reset;
-  prefab binds shapes/frames. Truck rim/column: driver-facing axis, opposed palms.
+  Prefab/GUID/31bones/grips/actions kept;Hero/NPChands:+20% reach-width,
+  slimdepth-girth/wristsfixed. `NpcWardrobe`:8slots/18items/3presets/
+  coverage-restore/8000worntris. `DefaultNpcAppearance`:4faces/
+  gray-brunette-blond hair-brows-beards/12sharedatlases.
+  `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup`;art§15/cast-lore-speech-§6 kept.
+  Truck/bench trouser-seat cache;armIK elbows rig-down/out(lateral poles stretch sleeves).
+  `NpcHandPose`:bare-glovedcylindergrips/reset/prefabshapes-frames;
+  truckrim-column:driver-facingaxis/opposedpalms.
 
 - **Accepted — 2026-09-15, Nightlife fair:**
   Art §9/story §18: four staffed displays, organ/bell, two seats/three garlands;

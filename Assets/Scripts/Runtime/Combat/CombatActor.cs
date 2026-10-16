@@ -110,20 +110,23 @@ namespace BarPromenade
             Present();
         }
 
-        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body)
+        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body, bool suspendedCrane = false)
         {
             IsZombie = true;
-            State = new MeleeCombatant(MeleeCombatSettings.ZombieUnarmed);
+            IsCrane = suspendedCrane;
+            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : MeleeCombatSettings.ZombieUnarmed);
             npc = presentation;
             Body = body;
             npc.ReleaseAnimation();
-            LoadZombieClips();
+            if (IsCrane) LoadCraneClips();
+            else LoadZombieClips();
             InitializeNpcAnimation();
             InitializeNpcPoseBlend();
             LoadStepClips(true);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body);
-            InitializeZombieHands();
+            if (IsCrane) InitializeCraneSuspension();
+            else InitializeZombieHands();
             InitializeDamagePose();
             InitializeCombatAttention();
             CombatCorpseTraversal.RegisterActor(this);
@@ -312,6 +315,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            if (IsCrane && !State.IsDefeated) { AdvanceCraneSimulation(seconds); return; }
             if (!presentationFrozen && !ZombieDormant) zombieLoad?.AdvanceCatch(seconds);
             AdvanceWeaponCarry(seconds);
             AdvancePistol(seconds);
@@ -476,6 +480,7 @@ namespace BarPromenade
         /// <summary>The parried swing stops where it was met: the recoil clip and a short shove back.</summary>
         internal void ShowParried(Vector3 point, Vector3 direction)
         {
+            if (IsCrane) { StopCraneStrike(); return; }
             if (IsZombie) { StopZombieAttack(); return; }
             reaction = Current.Recoil;
             reactionClock = 0f;
@@ -566,6 +571,7 @@ namespace BarPromenade
         internal void SetPresentationFrozen(bool frozen)
         {
             presentationFrozen = frozen;
+            SetCraneAudioFrozen(frozen);
             zombieLoad?.SetSimulationFrozen(frozen);
             zombieAudio?.SetFrozen(frozen);
             motor?.SetOwnedMovementFrozen(this, frozen);
@@ -600,6 +606,7 @@ namespace BarPromenade
             if (PresentZombieMimic()) return;
             BindGroundedFirearm();
             if (PresentKnockdown() || IsRagdollActive) return;
+            if (IsCrane) { PresentCrane(); return; }
             if (IsZombie) { PresentZombie(); return; }
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
@@ -786,6 +793,7 @@ namespace BarPromenade
             ResetCombatFacing();
             bodyMotion?.Reset();
             footwork?.Reset();
+            if (IsCrane) ResetCraneSuspension();
             CombatCorpseTraversal.RegisterActor(this);
             Present();
         }
@@ -824,6 +832,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            SuspendCrane();
             ClearWarehouseTorsoLook();
             CombatCorpseTraversal.RefreshActor(this);
             if (IsZombie) { State.CancelAction(); ResetZombieAttack(); zombieLoad?.Suspend(); }
@@ -851,6 +860,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            DisposeCrane();
             ClearWarehouseTorsoLook();
             CombatCorpseTraversal.UnregisterActor(this);
             DisposeWeaponCarry();

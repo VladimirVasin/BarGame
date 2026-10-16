@@ -18,7 +18,8 @@ namespace BarPromenade
         private void CacheZombieOriginalAnatomy()
         {
             if (!IsZombie || zombieAnatomyBones != null) return;
-            int count = ZombieAnatomyBoneNames.Length;
+            string[] names = IsCrane ? CraneAnatomyBoneNames : ZombieAnatomyBoneNames;
+            int count = names.Length;
             zombieAnatomyBones = new Transform[count];
             zombieOriginalPositions = new Vector3[count];
             zombieOriginalScales = new Vector3[count];
@@ -26,8 +27,8 @@ namespace BarPromenade
             zombieAnatomyScaleRatios = new Vector3[count];
             for (int i = 0; i < count; i++)
             {
-                Transform bone = CityPedestrianHandProps.FindSocket(DamageRigRoot, ZombieAnatomyBoneNames[i]);
-                if (bone == null) throw new InvalidOperationException("Porter anatomy requires " + ZombieAnatomyBoneNames[i]);
+                Transform bone = CityPedestrianHandProps.FindSocket(DamageRigRoot, names[i]);
+                if (bone == null) throw new InvalidOperationException("Combat anatomy requires " + names[i]);
                 zombieAnatomyBones[i] = bone;
                 zombieOriginalPositions[i] = bone.localPosition;
                 zombieOriginalScales[i] = bone.localScale;
@@ -52,7 +53,7 @@ namespace BarPromenade
         }
 
         private bool IsAuthoredZombieClip(AnimationClip clip) =>
-            clip == ready || clip == zombieWalk || clip == zombieAttackRight || clip == zombieAttackLeft ||
+            IsCrane && IsCraneClip(clip) || clip == ready || clip == zombieWalk || clip == zombieAttackRight || clip == zombieAttackLeft ||
             clip == hit || clip == zombieLoadAdjust || clip == zombieWatch || clip == zombieDormant || clip == zombieReveal || clip == zombieFrenzy;
 
         private void ApplyZombieGenericAnatomy()

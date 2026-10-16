@@ -249,6 +249,7 @@
     { "key": "combat.mode.title", "value": "Режим" },
     { "key": "combat.mode.standard", "value": "Обычный полигон" },
     { "key": "combat.mode.endless", "value": "Бесконечный бой" },
+    { "key": "combat.mode.crane", "value": "Кран" },
     { "key": "combat.endless.limit", "value": "Максимум в бесконечном: {0}" },
     { "key": "combat.enemies.live", "value": "Противники: {0}/{1}" },
     { "key": "combat.kills", "value": "Побеждено" },

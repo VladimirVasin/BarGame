@@ -88,7 +88,7 @@ namespace BarPromenade
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
         public bool Sparring { get; private set; }
-        public bool RoundFinished => Hero.State.IsDefeated || Mode == CombatTestMode.Standard && Opponent.State.IsDefeated;
+        public bool RoundFinished => Hero.State.IsDefeated || Mode != CombatTestMode.Endless && Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
@@ -111,6 +111,8 @@ namespace BarPromenade
         private void Awake()
         {
             GameLog.SetScene(gameObject.scene.name);
+            CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
+            Mode = selection.Mode;
             Camera camera;
             if (UseLegacyArenaForTests)
             {
@@ -128,8 +130,8 @@ namespace BarPromenade
             gameObject.AddComponent<PlayerClothPhysicsPolicy>().SetSimulationEnabled(false);
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
-            CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
-            Mode = selection.Mode;
+            if (Mode == CombatTestMode.Crane && WarehousePlan != null)
+                heroSpawn = CraneGround + Vector3.back * 4.4f + Vector3.up * PlayerFactory.GroundedRootOffset;
             EncounterSettings = selection.EncounterSettings;
             Sparring = true;
             Hero.InitializeHero(Player, selection.Loadout);
@@ -142,6 +144,7 @@ namespace BarPromenade
             InitializeAmmoPickups();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
+            if (Mode == CombatTestMode.Crane) CameraFollow.ConfigureOrbitPitchLimits(-70f, 55f);
             if (WarehousePlan != null)
             {
                 Inventory = ui.AddComponent<InventoryController>();
@@ -350,6 +353,7 @@ namespace BarPromenade
                 pendingShoves.Clear();
                 pendingKicks.Clear();
                 Hero.AdvanceSimulation(SimulationStep, true);
+                if (Opponent.IsCrane) Opponent.CranePatrolEnabled = Sparring;
                 Opponent.AdvanceSimulation(SimulationStep, true);
                 AdvanceWarehouseOpponentGrounding(SimulationStep);
                 Hero.CompleteSimulationPose(SimulationStep);

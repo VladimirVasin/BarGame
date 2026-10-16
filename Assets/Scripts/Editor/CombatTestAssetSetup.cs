@@ -28,7 +28,8 @@ namespace BarPromenade.Editor
         private readonly Dictionary<string, AnimationClip> importedClips = new Dictionary<string, AnimationClip>();
         private bool? simpleStrikeImport;
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal) &&
-            !assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
+            !assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal) &&
+            !assetPath.StartsWith(Folder + "Crane", StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
         private bool IsHumanBank => assetPath.EndsWith("CombatNpcActions.fbx", StringComparison.Ordinal);
 

@@ -124,16 +124,14 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   pool is spent. The bag: ten domestic lines plus a scarf request retired when
   worn; a separate first request raises the quest. Door reload keeps the bag.
   Empty hands, silent hero, no branch/choice; Cat/dinner/news outside this MVP;
-- `MainMenu`: build index `0`, Editor Play boundary; black New Game/
-  Combat Test/Quit;12 starts: 9 story scenes, City docks/cannery,
-  ski lodge;village first/default;Back;mouse/keyboard/gamepad select.
-  `NewGameStartService`:day `1`/`07:40`;areas via `AreaLoading`,six interiors
-  direct;no door travel/prologue/ride/cabin/arrival/travel illustration.
-- Default village: lane foot, 2 m above station threshold toward mother's house.
-  Lodge: 3 m outside entry toward door. Others: root spawn; City home's return,
-  docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
-  later spawns stay. Day one mother's-house quest/map marker; door/map/start
-  inside closes it; no village signpost;
+- `MainMenu`:index0/EditorPlay;black New Game/Combat Test/Quit;
+  12starts:9story,City docks-cannery,lodge;village first/default;Back;mouse-keys-pad.
+  `NewGameStartService`:day1/07:40;areas AreaLoading/6interiors direct;
+  no door-prologue-ride-cabin-arrival-travelart.
+- Village:lane foot/2m above stationthreshold→mother;Lodge:3m beforeentry→door.
+  Else rootspawn;City home-return/docks-cannery pedestrian-clear.
+  City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
+  door-map-start inside closes/no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
   Midforms/4096+2048response/uniqueUV;worldmetre joinedwear;runtimeUV+matclone0.
   valve/PusherL;nokeyE2pulls1.2s;keykept→physchainlockfall;HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch;
@@ -144,6 +142,8 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
   Std1;Endless1–5/corpses0–2(default2)/pool≤5;Dormant.
+  Crane:ownXYZ1axis/3floors/void-clearance;6head-pelvis-hands-feetropes/yawcassette;
+  pendulum/liveinertia/slackcap/6m3DLOShook/fixedlaunch/1hitout/stop-return/ragdoll.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
   HP/Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;

@@ -41,7 +41,9 @@ namespace BarPromenade
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
             foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft,
                 zombieLoadAdjust, zombieWatch, zombieDormant, zombieReveal, zombieFrenzy, hit, defeat })
-                NpcAnimationClip(clip);
+                if (clip != null) NpcAnimationClip(clip);
+            if (IsCrane)
+                foreach (string name in CombatCraneAssetProvider.ClipNames) NpcAnimationClip(CombatCraneAssetProvider.LoadClip(name));
             Prepare(CombatAssetProvider.RecoveryClipNames);
             npcAnimationGraph.Play();
 

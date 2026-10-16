@@ -6,7 +6,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-16 — Склад и фонарь
+### 2026-10-16 — Склад, фонарь и кран
 
 - У механизмов появились корпуса, усиления и направляющие; у шкафов — объёмные
   жалюзи, у мебели и тары — соединения и складки. Детали сохраняют проходы.
@@ -21,6 +21,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   `build-combat-warehouse-textures.py`, `CombatWarehouseDetailVisuals`;
   кадры при рабочем свете и после отключения проверены.
   `CombatWarehouseFlashlightGlow`: ракурсы, перекрытие и выключение проверены.
+- «Кран»: голова, таз и конечности на тросах; тело качается.
+  Крюк до 6 м во все стороны; без наведения, со столкновениями.
+  Пауза/падение/сброс сохранены.
+  `Range_CraneSuspensionKeepsContactOcclusionPauseAndReset` пройден; кадры/видео проверены.
 
 ### 2026-10-15 — Склад, обзор, HUD и грузчик
 
