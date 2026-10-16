@@ -23,12 +23,13 @@ sys.dont_write_bytecode = True
 import bar_parts as bp
 import interior_kit as interior
 import warehouse_surface_authoring as appearance
+import warehouse_detail_geometry as constructive_detail
 
 # Reuse the established passive metric exporter, not a second export convention.
 spec = importlib.util.spec_from_file_location("warehouse_passive_export", ROOT / "tools/build-city-fair-3d-model.py")
 passive = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(passive)
-VERSION = "2.3.0"
+VERSION = "2.4.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse"
 FAN_HOUSING_WORLD_Y = 10.2
@@ -917,7 +918,7 @@ def make_twisted_frame():
 
 
 def make_items():
-    return [make_shell(), make_platform(), make_stair(), make_rail(), make_rack(),
+    items = [make_shell(), make_platform(), make_stair(), make_rail(), make_rack(),
             make_cargo(), make_pipes(), make_lamp(), make_pipe_straight(),
             make_pipe_elbow(), make_pipe_end(), make_room_shell(), make_main_door(),
             make_gate(), make_fan_housing(), make_fan_rotor(), make_lift_frame(),
@@ -925,6 +926,7 @@ def make_items():
             make_pusher_head(), make_locker_props(), make_break_props(),
             make_technical_props(), make_twisted_frame(), make_gate_control(),
             make_emergency_lamp(), *(make_room_sign(number) for number in range(1, 10))]
+    return constructive_detail.enrich_items(items, passive.rod, annular_profile)
 
 
 def manifest(items, checksum):

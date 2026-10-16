@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SIZE = 1024
 BAKE_MARGIN = 2
 PACK_MARGIN = 4 / SIZE
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 FAMILIES = {
     "WarehouseMechanismsAtlas": ("Gate", "FanHousing", "FanRotor", "LiftFrame", "LiftPlatform",
         "ChainDrum", "PusherFrame", "PusherHead", "TwistedFrame", "PipeStraight", "PipeElbow", "PipeEnd", "Pipes", "GateControl"),
@@ -30,7 +30,7 @@ TILED = ("Shell", "RoomShell", "Platform", "Stair", "Rail")
 # Allocate the fixed atlas by actual viewing distance. Large ceiling/shaft
 # members must not consume the texels needed by the reachable working parts.
 UV_IMPORTANCE = {
-    "ChainDrum": 4., "PusherHead": 3., "PusherFrame": 2., "LiftPlatform": 2., "Gate": 1., "GateControl": 2.,
+    "ChainDrum": 4., "PusherHead": 3., "PusherFrame": 2., "LiftPlatform": 2., "Gate": 1.5, "GateControl": 3.,
     "FanHousing": .65, "FanRotor": .65, "LiftFrame": .70, "TwistedFrame": .65,
     "Pipes": .70, "PipeStraight": .80, "PipeElbow": .80, "PipeEnd": .80,
 }
@@ -233,6 +233,22 @@ def colour_multiply(tree, colour, factor):
     return result.outputs[0]
 
 
+def clamp_node(tree, value, label):
+    result = node(tree, "ShaderNodeClamp", label)
+    tree.links.new(value, result.inputs[0])
+    return result.outputs[0]
+
+
+def surface_blend(tree, first, second, factor, label):
+    result = node(tree, "ShaderNodeMixRGB", label)
+    for index, value in ((0, factor), (1, first), (2, second)):
+        if isinstance(value, (float, int)):
+            result.inputs[index].default_value = value
+        else:
+            tree.links.new(value, result.inputs[index])
+    return result.outputs[0]
+
+
 def source_images():
     provenance = json.loads((ROOT / "ArtSource/CombatWarehouse/Textures/generation.json").read_text(encoding="utf8"))
     images, sources = {}, []
@@ -305,19 +321,47 @@ def bake_material(root, obj, target, sources):
     damp_node = node(tree, "ShaderNodeClamp", "Damp rises from lowest contact")
     tree.links.new(damp, damp_node.inputs[0])
     colour = colour_multiply(tree, colour, math_node(tree, "SUBTRACT", 1, math_node(tree, "MULTIPLY", damp_node.outputs[0], .28)))
-    if role in ("Steel", "WornSteel", "Rust"):
-        geometry = node(tree, "ShaderNodeNewGeometry", "Mesh curvature wear on bevels")
-        edge = math_node(tree, "MULTIPLY", math_node(tree, "SUBTRACT", geometry.outputs["Pointiness"], .49), 7)
-        clamp = node(tree, "ShaderNodeClamp", "Restrained edge wear")
-        tree.links.new(edge, clamp.inputs[0])
+    geometry = node(tree, "ShaderNodeNewGeometry", "Physical face orientation and contact curvature")
+    normal = node(tree, "ShaderNodeSeparateXYZ", "Upward handling surfaces versus vertical runoff")
+    tree.links.new(geometry.outputs["Normal"], normal.inputs[0])
+    upward = clamp_node(tree, normal.outputs["Z"], "Horizontal surfaces receive rubbed load wear")
+    vertical = math_node(tree, "SUBTRACT", 1, math_node(tree, "ABSOLUTE", normal.outputs["Z"]))
+    streak_vector = node(tree, "ShaderNodeVectorMath", "Gravity aligns fine runoff instead of isotropic dirt")
+    streak_vector.operation = "MULTIPLY"
+    streak_vector.inputs[1].default_value = (5.2, 5.2, .22)
+    tree.links.new(coordinates.outputs["Object"], streak_vector.inputs[0])
+    streaks = node(tree, "ShaderNodeTexNoise", "Narrow drainage paths with fixed module coordinates")
+    streaks.inputs["Scale"].default_value = 2.1
+    streaks.inputs["Detail"].default_value = 2
+    tree.links.new(streak_vector.outputs[0], streaks.inputs["Vector"])
+    run = clamp_node(tree, math_node(tree, "MULTIPLY", math_node(tree, "SUBTRACT", streaks.outputs["Fac"], .53), 3.5),
+        "Sparse streaks retain broad quiet surfaces")
+    runoff = math_node(tree, "MULTIPLY", run, vertical)
+    if role in ("Concrete", "ConcreteDark", "Steel", "WornSteel", "Rust", "Timber"):
+        colour = colour_multiply(tree, colour, math_node(tree, "SUBTRACT", 1,
+            math_node(tree, "MULTIPLY", runoff, .11 if role.startswith("Concrete") else .065)))
+    if role in ("Steel", "WornSteel", "Rust", "LockSteel"):
+        edge = clamp_node(tree, math_node(tree, "MULTIPLY",
+            math_node(tree, "SUBTRACT", geometry.outputs["Pointiness"], .495), 10), "Exposed bevels polish rather than rust uniformly")
+        sheltered = clamp_node(tree, math_node(tree, "MULTIPLY",
+            math_node(tree, "SUBTRACT", .495, geometry.outputs["Pointiness"]), 12), "Oxide remains in protected joints")
+        moisture = math_node(tree, "ADD", math_node(tree, "MULTIPLY", damp_node.outputs[0], .65),
+            math_node(tree, "MULTIPLY", runoff, .35))
+        oxide = clamp_node(tree, math_node(tree, "MULTIPLY", math_node(tree, "ADD", sheltered, moisture),
+            noise.outputs["Fac"]), "Joint contact and water determine corrosion")
         corrosion = node(tree, "ShaderNodeTexImage", "Oxide follows edges and damp patches")
         corrosion.image = sources["WarehouseRust"]
         tree.links.new(metric.outputs[0], corrosion.inputs["Vector"])
-        blend = node(tree, "ShaderNodeMixRGB", "Edge-corrosion albedo")
-        tree.links.new(math_node(tree, "MULTIPLY", clamp.outputs[0], .26), blend.inputs[0])
-        tree.links.new(colour, blend.inputs[1])
-        tree.links.new(corrosion.outputs["Color"], blend.inputs[2])
-        colour = blend.outputs[0]
+        colour = surface_blend(tree, colour, corrosion.outputs["Color"],
+            math_node(tree, "MULTIPLY", oxide, .34 if role == "Rust" else .24), "Protected oxide, not a second overall rust wash")
+        bare = node(tree, "ShaderNodeTexImage", "Abrasion reveals the existing steel under paint")
+        bare.image = sources["WarehouseSteel"]
+        tree.links.new(metric.outputs[0], bare.inputs["Vector"])
+        handling = math_node(tree, "ADD", edge, math_node(tree, "MULTIPLY", upward, .25))
+        handling = math_node(tree, "MULTIPLY", handling, math_node(tree, "SUBTRACT", 1,
+            math_node(tree, "MULTIPLY", damp_node.outputs[0], .7)))
+        colour = surface_blend(tree, colour, bare.outputs["Color"],
+            math_node(tree, "MULTIPLY", handling, .20 if role != "Rust" else .09), "Dry reachable edges carry restrained handling wear")
     tree.links.new(colour, emission.inputs["Color"])
     target_node = node(tree, "ShaderNodeTexImage", "Family atlas bake target")
     target_node.image = target
@@ -478,7 +522,8 @@ def validate_layout(roots, cache, directory=None):
             print("WAREHOUSE PRIORITY DENSITY", json.dumps(summary["model_density"]), flush=True)
     return {"version": VERSION, "size": SIZE, "UV0": "unique nonoverlapping prop family atlas / tiled structural metres / authored cutout cells",
         "UV1": "object-anchored metre face projection", "uv_signature": uv_signature(cache),
-        "bake": "Cycles EMIT only; unchanged ImageGen albedo sources with module-anchored macro, damp and mesh-curvature wear",
+        "bake": "Cycles EMIT only; unchanged ImageGen albedo with module-anchored contact damp, gravity runoff, sheltered oxide and dry bevel/load abrasion",
+        "runtime_detail": "UV0 unique causal albedo; UV1 existing metre albedo and shared physical response; derivative UV1 normal frame",
         "bake_margin_px": BAKE_MARGIN, "pack_margin_px": round(PACK_MARGIN * SIZE),
         "uv_importance": UV_IMPORTANCE,
         "tiled_models": list(TILED), "families": families,

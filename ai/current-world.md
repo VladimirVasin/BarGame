@@ -135,17 +135,18 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
+  Room variants/UV0 wear/UV1 grain-relief.
   valve/PusherL;nokeyE2pulls1.2s;keykept→physchainlockfall;HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch;
   Homeentry↔gate/return0/E/silent/goalstub/0travel;gallery2/upper-progress;3fridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
   3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-livekept;
   toprear/troughfill/belowbulb/3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIclosed+stairs↓→heat2s/riseSFX→popglass/8phys;
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
-  D7fan/shadows/guardedmech;LM65chest/torso-look/black12m/fog-sky0/near detail. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
-  Reset-Newkeep playhead-stop/0replay/pause-disable-resume/exitfade.
+  D7fan/shadows/guardedmech;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
+  playhead-stop/0replay/exitfade.
   Std1;Endless1–5/corpses0–2(default2)/pool≤5;Dormant.
-  18anchors/shared COLbake/occupied0decor;
+  18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
-  HP/Awakefocus/freeinput;unseenrefill3–7active s/≥3m/freepath/0backlog;
+  HP/Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
   3sources→refill0/dormant-livekept/EndlessReset0initial/Std separate.
   Audio14/2voices/≤2groans/SfxWorld/wood-wet-contact sync;
   pause-reset-disable/prewarm/IDs-stairs/kill1x/heroend;

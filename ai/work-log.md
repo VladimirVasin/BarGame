@@ -3,6 +3,30 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-16 - Warehouse detail, materials and chest source
+
+- Blender kit gains structural joints, cable supports, machine bearings/drives,
+  rack/cargo anatomy and deeper room hardware. Seeded room dressing uses an
+  independent selection; original bounds, collision, anchors and routes stay.
+  Repeated decks remain cheap; static details share existing surface meshes.
+- Unique UV wear is separated from metre-space material grain. Contact damp,
+  runoff, sheltered oxide and rubbed edges are baked; shared linear response
+  adds roughness and restrained near relief through a UV-derived normal frame.
+  Moving parts retain their texture; all resident maps, including fish labels,
+  now participate in the existing memory budget.
+- Passed: `build-combat-warehouse-3d-model.py`,
+  `build-combat-warehouse-textures.py`, `build-combat-warehouse-shader.py --check`,
+  `build-warehouse-gate-chain-3d-model.py` (split chain retains the repacked UVs).
+  `CombatWarehouseDetailVisuals` passed; powered and chest-only close frames
+  reviewed. Composite metre checks now exclude separately imported attachments.
+- Fish inspection capture uses `FindObjectsByType<Volume>()`; deprecated
+  sort-mode references removed. Proof: `BarPromenade.PlayModeTests.csproj` compilation.
+- Chest lamp now has warm emissive glass and a fixed source halo with angular
+  falloff and depth occlusion. Shared surfaces follow source and hero visibility;
+  near-wall beam exposure leaves the visible source bright. Existing Spot kept.
+  Proof: `CombatWarehouseFlashlightGlow` passed; front/oblique/profile/rear,
+  off, reduced beam, cargo and hidden-hero frames reviewed; reset/exit cleanup.
+
 ## 2026-10-15 - Warehouse, cursor, HUD and loader
 
 - Top-rear station/corded bulb; seeded rusty fridges/floor/scraps/labels.

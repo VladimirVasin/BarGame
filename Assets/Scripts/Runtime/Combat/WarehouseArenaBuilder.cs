@@ -14,6 +14,7 @@ namespace BarPromenade
             {
                 CombatTestRoot owner = parent.GetComponent<CombatTestRoot>();
                 GameObject gate = null, door = null, control = null;
+                int roomDetailIndex = (int)(unchecked((uint)plan.Seed) % 3u);
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
                 {
                     bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
@@ -22,6 +23,8 @@ namespace BarPromenade
                         ? WarehouseGateAssets.Create(part.Position.x < 0f ? "GatePlatformLeft" : "GatePlatformRight",
                             host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f))
                         : WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f));
+                    if (part.Kind == "TechnicalProps" || part.Kind == "LockerProps" || part.Kind == "BreakProps")
+                        SelectRoomDetails(model.transform, roomDetailIndex++ % 3);
                     if (part.Kind == "GateControl") control = model;
                     if (part.Kind == "Gate") gate = model;
                     if (part.Kind == "MainDoor") door = model;
@@ -71,6 +74,16 @@ namespace BarPromenade
                 else UnityEngine.Object.DestroyImmediate(host);
                 throw;
             }
+        }
+
+        private static void SelectRoomDetails(Transform root, int variant)
+        {
+            // Only room dressing varies. This independent stream leaves cargo,
+            // refrigerators, navigation and the eighteen mimic slots unchanged.
+            string selected = "RoomVariant" + variant + "__";
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+                if (renderer.name.StartsWith("RoomVariant", StringComparison.Ordinal))
+                    renderer.gameObject.SetActive(renderer.name.StartsWith(selected, StringComparison.Ordinal));
         }
     }
 }

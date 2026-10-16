@@ -155,7 +155,7 @@ namespace BarPromenade.Tests.PlayMode
                     AssertFishLampPowered(pendant, false);
                     Assert.That(machines.FanShutdownStarted, Is.False);
                     yield return null;
-                    foreach (Volume volume in Object.FindObjectsByType<Volume>(FindObjectsSortMode.None))
+                    foreach (Volume volume in Object.FindObjectsByType<Volume>())
                         if (volume.name == "Cinematic Depth Of Field" && volume.profile.TryGet(out DepthOfField focus))
                         {
                             Assert.That(focus.focusDistance.value, Is.LessThan(1f), "Focus must follow the held can rather than the shelf.");

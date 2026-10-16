@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Mimic reveal/heavy ram/kneel/knockdown Frenzy;debris pass/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,ZombieLoad,ZombieAudio,AmmoPickup}` | Partial |
-| Warehouse | 18crates/CPU bake;fish/key/bulbburst/torch/valve gate;Home entry/E/no return;all3 refill0/livekept. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
+| Warehouse | Detailed kit/rooms;UV0 wear/UV1 grain+response;chest source glow;fish/key/gate/power. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |

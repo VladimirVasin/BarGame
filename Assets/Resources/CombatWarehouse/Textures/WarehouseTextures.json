@@ -1,14 +1,19 @@
 {
-  "design_id": "warehouse_uv_surfaces_v3",
+  "design_id": "warehouse_uv_surfaces_v4",
   "mipmaps": true,
   "windows_compression": "BC7",
   "gpu_budget_bytes": 8388608,
-  "estimated_gpu_bytes": 7340352,
+  "estimated_gpu_bytes": 8039456,
   "sheets": [
     {
       "name": "WarehouseConcrete",
       "sha256": "adf1e3da406392136b605d2940ead1ed2a2dd2baef4044265cf27015df670dfd",
       "mean_linear_luminance": 0.21547,
+      "mean_linear_rgb": [
+        0.218314,
+        0.218929,
+        0.172827
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -18,6 +23,11 @@
       "name": "WarehousePaint",
       "sha256": "ac9e9a6e01394e4a3c3c173360ca008e15ccab1fc76b0154c1af2a57a449f4a4",
       "mean_linear_luminance": 0.14528,
+      "mean_linear_rgb": [
+        0.149454,
+        0.148479,
+        0.101305
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -27,6 +37,11 @@
       "name": "WarehouseSteel",
       "sha256": "e7c1cd9e37c445c2d4856712384e4909e35728ed458a70521bb7bda64b1720c5",
       "mean_linear_luminance": 0.040143,
+      "mean_linear_rgb": [
+        0.049036,
+        0.038464,
+        0.030583
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -36,6 +51,11 @@
       "name": "WarehouseRust",
       "sha256": "f278812ca44507346fd1bf60e20b8c772304e5e55cd786eae39508437ac3300e",
       "mean_linear_luminance": 0.06672,
+      "mean_linear_rgb": [
+        0.118531,
+        0.055085,
+        0.029409
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -45,6 +65,11 @@
       "name": "WarehouseTimber",
       "sha256": "8884d6f78a99c54a4cb69ae8f1270541a3480f39b0991750390afcc2ccdbad9f",
       "mean_linear_luminance": 0.117248,
+      "mean_linear_rgb": [
+        0.135814,
+        0.114521,
+        0.089585
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -54,6 +79,11 @@
       "name": "WarehouseCardboard",
       "sha256": "da4bd3c9458146bd0d72e3601724a25becab200fb95f45170d16f051c3a4f1ad",
       "mean_linear_luminance": 0.151625,
+      "mean_linear_rgb": [
+        0.237773,
+        0.134857,
+        0.064046
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -63,6 +93,11 @@
       "name": "WarehouseRubber",
       "sha256": "ad9247dfac17f3eb9cfb376bc1d6aee4ef3880b1aab891d0aa6a7f7a381bdda6",
       "mean_linear_luminance": 0.045721,
+      "mean_linear_rgb": [
+        0.048553,
+        0.045329,
+        0.041269
+      ],
       "size": 512,
       "mode": "RGB",
       "sRGB": true,
@@ -70,8 +105,8 @@
     },
     {
       "name": "WarehouseMechanismsAtlas",
-      "sha256": "bba8d147f6a54cd35c2d4c1db708e17fc8710865fed9f5883319cebbe6a9bdf9",
-      "source_sha256": "ed92ec755ab3d8eb1ac138dbc969913a8d99f284ea2726df1e660226af6443c6",
+      "sha256": "649282e6b5674a2130db752c3fbaa8494e3ba518a2b456023a5b8f829f3e8eef",
+      "source_sha256": "5e5fbb540ff528f14dc0483644cf9586e0f9248f26a5a3e474fab649644aae21",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,
@@ -80,8 +115,8 @@
     },
     {
       "name": "WarehouseFurnishingsAtlas",
-      "sha256": "b377899edd12a880de4752890a32f08d1032815ef5ec57c4f03b585805057a66",
-      "source_sha256": "a1fe5aa6e3bf3dfaf9a610630f7a68fd6bbc2fa34ff2e3836966ca00efd24a6a",
+      "sha256": "953a2746b9a773ec45a2be1ebb80e6006f8c48fb680c6833cd632cb92e3d5943",
+      "source_sha256": "af9f07d4a5dd1115399f14660706372d1e87f1ef48e2b13168b455e9e82ef3d7",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,
@@ -90,8 +125,8 @@
     },
     {
       "name": "WarehouseCargoAtlas",
-      "sha256": "5556344d66856c762357809843d41760d331a2d876d1250b364b9b7875756430",
-      "source_sha256": "d76bbd16cf0d948d7f469bac3bf17dc0d032441586a23fa0ba78d4bd9531447f",
+      "sha256": "9cc525658a7dd745bfcfc87e81a3d521740c8f22726ddf887ac223134816d0e3",
+      "source_sha256": "7d76b86b77a167892f32ce6ae7811c81ea64918992495a2afd4bc6935970ad2d",
       "size": 1024,
       "mode": "RGB",
       "sRGB": true,
@@ -113,6 +148,28 @@
       ]
     },
     {
+      "name": "WarehouseMaterialResponse",
+      "sha256": "74f801830d16418006b6b85f54e50811ba915ae1e3d66f46ae29bbb02c093e47",
+      "size": 512,
+      "mode": "RGBA",
+      "sRGB": false,
+      "wrap": "Clamp",
+      "authoring": "periodic physical material fields v1",
+      "channels": [
+        "height slope U",
+        "height slope V",
+        "roughness",
+        "micro cavity"
+      ],
+      "cells": [
+        "concrete",
+        "metal",
+        "timber",
+        "fibre"
+      ],
+      "padding_px": 8
+    },
+    {
       "name": "WarehouseWearDecals",
       "sha256": "9a8b4792d0c80fa3a1f0759a69b832db20ee61735b9837eba437c137348a65e3",
       "source_sha256": "dccea822efd60fa348dd1065eb3f9807023647602d92a875d12caee6702d1c7e",
@@ -121,6 +178,15 @@
       "sRGB": true,
       "wrap": "Clamp",
       "authoring": "image_gen fixed transparent 2x2 source"
+    },
+    {
+      "name": "WarehouseFishLabels",
+      "sha256": "9082088a62266a9fb2092da4bd622ecdb53503ea445153f0104aeacb8deca4e4",
+      "size": 512,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "tools/build-combat-warehouse-fish-props.py; accounted external sheet"
     }
   ]
 }

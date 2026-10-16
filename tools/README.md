@@ -160,9 +160,9 @@ python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-stri
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.
-`build-combat-warehouse-{3d-model,textures,shader,fish-props}.py`:kit;
+`build-combat-warehouse-{3d-model,textures,shader,fish-props}.py`;
 `build-warehouse-{fish-assembly,gate-chain,fish-lamp-burst}-3d-model.py`:fish/key/chain/glass.
-`--prepare-signs`→Blender→textures→shader;`--validate-only`,shader `--check`.
+`--prepare-signs`→kit→chain→maps→shader;`--validate-only`/`--check`;≤8MiB.
 `build-player-flashlight-3d-model.py`:clip/lens/metres;
 `CombatFlashlight{AssetSetup,AssetProvider}`;CombatTest Lchest.
 

@@ -234,13 +234,31 @@ namespace BarPromenade.Editor
 
         private static void ValidateTextures()
         {
+            TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(Folder + "Textures/WarehouseTextures.json");
+            TextureManifest manifest = source == null ? null : JsonUtility.FromJson<TextureManifest>(source.text);
+            if (manifest == null || manifest.design_id != "warehouse_uv_surfaces_v4" ||
+                manifest.gpu_budget_bytes != 8 * 1024 * 1024 || manifest.sheets == null ||
+                manifest.sheets.Length != WarehouseArenaAssetProvider.TextureNames.Length)
+                throw new InvalidOperationException("Warehouse texture manifest must account for every resident sheet, including fish labels.");
+            var sheetNames = new HashSet<string>(StringComparer.Ordinal);
+            long measuredBytes = 0;
+            foreach (TextureSheet sheet in manifest.sheets)
+            {
+                if (sheet == null || !sheetNames.Add(sheet.name) ||
+                    Array.IndexOf(WarehouseArenaAssetProvider.TextureNames, sheet.name) < 0)
+                    throw new InvalidOperationException("Warehouse texture manifest contains an unrecognized/repeated sheet.");
+                measuredBytes += Bc7MipBytes(sheet.size);
+            }
+            if (measuredBytes != manifest.estimated_gpu_bytes || measuredBytes > manifest.gpu_budget_bytes)
+                throw new InvalidOperationException("Warehouse full resident texture set exceeds its measured 8 MiB BC7/mip budget.");
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
                 bool atlas = Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,name) >= 0;
                 bool label = name == "WarehouseFishLabels";
-                bool mask = name == "WarehouseMacroMask", decals = name == "WarehouseWearDecals";
+                bool mask = name == "WarehouseMacroMask" || name == "WarehouseMaterialResponse";
+                bool response = name == "WarehouseMaterialResponse", decals = name == "WarehouseWearDecals";
                 int size = atlas ? 1024 : 512;
-                TextureWrapMode wrap = atlas || decals || label ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+                TextureWrapMode wrap = atlas || decals || label || response ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                 string path = Folder + "Textures/" + name + ".png";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
@@ -253,7 +271,38 @@ namespace BarPromenade.Editor
                 TextureImporterPlatformSettings windows = importer.GetPlatformTextureSettings("Standalone");
                 if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != size)
                     throw new InvalidOperationException("Warehouse surface must retain the Windows BC7 profile: " + name);
+                TextureSheet sheet = Array.Find(manifest.sheets, item => item.name == name);
+                if (sheet.size != size || sheet.sRGB == mask || sheet.wrap != wrap.ToString())
+                    throw new InvalidOperationException("Warehouse measured texture profile differs from its imported sheet: " + name);
             }
+        }
+
+        private static long Bc7MipBytes(int size)
+        {
+            if (size != 512 && size != 1024)
+                throw new InvalidOperationException("Warehouse texture dimensions escaped the bounded base/atlas profiles.");
+            long result = 0;
+            for (;;)
+            {
+                long blocks = Math.Max(1, (size + 3) / 4);
+                result += blocks * blocks * 16;
+                if (size == 1) return result;
+                size /= 2;
+            }
+        }
+
+        [Serializable] private sealed class TextureManifest
+        {
+            public string design_id;
+            public int gpu_budget_bytes, estimated_gpu_bytes;
+            public TextureSheet[] sheets;
+        }
+
+        [Serializable] private sealed class TextureSheet
+        {
+            public string name, wrap;
+            public int size;
+            public bool sRGB;
         }
 
         [Serializable] private sealed class Manifest

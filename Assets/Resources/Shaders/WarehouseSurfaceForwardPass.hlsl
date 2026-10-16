@@ -35,6 +35,7 @@ struct Attributes
 struct Varyings
 {
     float2 uv                       : TEXCOORD0;
+    float2 warehouseMetres          : TEXCOORD11;
 
 #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
     float3 positionWS               : TEXCOORD1;
@@ -183,6 +184,7 @@ Varyings LitPassVertex(Attributes input)
     #endif
 
     output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);
+    output.warehouseMetres = input.staticLightmapUV;
 
     // already normalized from normal transform to WS.
     output.normalWS = normalInput.normalWS;
@@ -248,7 +250,8 @@ void LitPassFragment(
 
     SurfaceData surfaceData;
     InitializeStandardLitSurfaceData(input.uv, surfaceData);
-    ApplyWarehouseSurface(input.positionWS, input.normalWS, surfaceData);
+    half2 warehouseSlope;
+    ApplyWarehouseSurface(input.positionWS, input.normalWS, input.warehouseMetres, surfaceData, warehouseSlope);
 
 #ifdef LOD_FADE_CROSSFADE
     LODFadeCrossFade(input.positionCS);
@@ -256,6 +259,7 @@ void LitPassFragment(
 
     InputData inputData;
     InitializeInputData(input, surfaceData.normalTS, inputData);
+    ApplyWarehouseNormal(input.positionWS, input.warehouseMetres, warehouseSlope, inputData.normalWS);
     SETUP_DEBUG_TEXTURE_DATA(inputData, UNDO_TRANSFORM_TEX(input.uv, _BaseMap));
 
 #if defined(_DBUFFER)

@@ -2,6 +2,13 @@
 
 ## Current facts
 
+- **Accepted 2026-10-16, warehouse detail:**
+  Joints/rooms;UV0wear/UV1grain-response-relief≤8MiB;routes/light kept.
+
+- **Accepted 2026-10-16, chest glow:**
+  Warm lens/halo;20→80°/depth/shared2particles;
+  switch-hide-cleanup/exposure-independent/Spotkept.
+
 - **Accepted 2026-10-15, shared entry door design:**
   Home/CombatTest `ApartmentEntranceDoor`;
   aged wood/4recessedpanels/frame-reveals-architraves/threshold/3hinges/levers-keyhole-peephole/edgewear;
@@ -102,9 +109,6 @@
   SFX:clearer/EQ165Hz×1.45/LP6800/stepsLP2600/gunsLP5400;
   pitch.84/.88/echo-room/dryUI;warehouse_theme WAV-OGG-MP3/MusicMix kept;
   playhead/Reset-New pre-finalcan/pause-disable-resume/exit/cache/cleanup
-
-- **Accepted 2026-10-14, warehouse UV:**
-  3×1024 propUV/metric tiles-macro/raredecals/stretch→triplanar/joint-contact-load wear.
 
 - **Accepted 2026-10-14, warehouse rooms:**
   9Technical-Locker-Break/oppositeentry/front→door/turnedCOL/entryclear.
@@ -8038,7 +8042,7 @@
   (art §15a/retired hints). Screen moves item/no hero/contextual exception.
 
 - **Accepted — 2026-10-14, always-lit item examination:**
-  User: pickup-screen items always illuminated. Shared presenter, refrigerator
-  included: two cached camera-local Point lights/no shadows; held renderers
-  temporarily use bit5. Exact original masks restored on Restore/Detach/Dispose.
-  Shared model materials/MPBs retained; world lighting/ambient unchanged.
+  Pickup/fridge lit;shared presenter:
+  2cached camera-local Points/shadows0/held bit5;
+  Restore-Detach-Dispose restore exact masks;
+  shared materials/MPBs/worldlight/ambient kept.

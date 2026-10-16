@@ -65,6 +65,22 @@ namespace BarPromenade
 
         public static Transform FindLens(GameObject root) => FindAuthoredAnchor(root, RuntimeLensName);
 
+        public static Renderer FindLensRenderer(GameObject root)
+        {
+            if (root != null)
+                foreach (MeshRenderer renderer in root.GetComponentsInChildren<MeshRenderer>(true))
+                    if (renderer.name.EndsWith("__Glass", StringComparison.Ordinal)) return renderer;
+            throw new InvalidOperationException("Chest lamp lacks its authored glass surface.");
+        }
+
+        /// <summary>Two cached surfaces keep a stopped lamp dark without cloning a material per hero.</summary>
+        public static void SetLensLit(Renderer renderer, bool lit)
+        {
+            if (renderer == null) return;
+            Material material = Surface(lit ? "Glass" : "GlassOff");
+            if (renderer.sharedMaterial != material) renderer.sharedMaterial = material;
+        }
+
         public static Transform FindAuthoredAnchor(GameObject root, string name)
         {
             if (root != null)
@@ -85,6 +101,7 @@ namespace BarPromenade
                 "WornSteel" => new Color(.40f, .415f, .38f),
                 "Rubber" => new Color(.115f, .125f, .105f),
                 "Glass" => new Color(.74f, .76f, .65f),
+                "GlassOff" => new Color(.21f, .235f, .20f),
                 _ => throw new ArgumentOutOfRangeException(nameof(role))
             };
             Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
@@ -92,12 +109,12 @@ namespace BarPromenade
             var material = new Material(shader) { name = "Chest Lamp " + role + " Shared", hideFlags = HideFlags.HideAndDontSave };
             material.SetTexture("_BaseMap", Texture2D.whiteTexture);
             material.SetColor("_BaseColor", color.linear);
-            material.SetFloat("_Smoothness", role == "Glass" ? .24f : .07f);
+            material.SetFloat("_Smoothness", role == "Glass" || role == "GlassOff" ? .24f : .07f);
             material.SetFloat("_Metallic", role == "Steel" || role == "WornSteel" ? .3f : 0f);
             if (role == "Glass")
             {
                 material.EnableKeyword("_EMISSION");
-                material.SetColor("_EmissionColor", color.linear * .35f);
+                material.SetColor("_EmissionColor", new Color(2.6f, 2.25f, 1.65f));
             }
             Materials[role] = material;
             return material;

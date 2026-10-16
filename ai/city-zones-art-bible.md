@@ -4236,11 +4236,11 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-9checks;`architecture-notes.md`.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
-wetconcrete/rustbentsteel/peelpaint/swollenwood-cardboard/wornrubber;
-cargo/workdisgust§6/metricwet-rust-scuff/rarewear;
-9sets faceentry/doorclear/plates1-9/seedfixed.
+wetconcrete/bentsteel/peelpaint/swollenwood-cardboard/wornrubber;
+workdisgust§6/metricwet-rust-scuff/rarewear;
+9sets faceentry/doorclear/plates1-9/seedfixed;
+`2026-10-16`:joints/rooms;wear/grain/relief;warmglow.
 D7fan/guardedlift-drum-pusher↔SFX/gate-backdoor/entry=Homeleaf;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
 4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
@@ -4259,7 +4259,7 @@ ram:compress→throw→kneel-rise;fell hero→loaded uneven spasms→rise;
 wood-wet inhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
 coat-scarf rig/slinganchors;physics0/hairkept.
-Lchest/look→/far0/near-detail/beam↑.
+Lchest/look/far0/near/beam↑.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:all3/1held-2stowed/finiteammo/Eshared;

@@ -25,6 +25,8 @@ NAMES = tuple("Warehouse" + name for name in
 SIZE = 512
 ATLAS_NAMES = ("WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas")
 GPU_BUDGET_BYTES = 8 * 1024 * 1024
+RESPONSE_CELLS = ("concrete", "metal", "timber", "fibre")
+RESPONSE_PADDING = 8
 
 
 def prepare_room_numbers():
@@ -123,6 +125,43 @@ def bc7_mip_bytes(size):
         size //= 2
 
 
+def packed_material_response():
+    """Four periodic physical height fields, never normals inferred from colour.
+
+    RG stores signed height slopes, B stores roughness and A stores shallow
+    material cavities. Wrapped padding protects each cell's bilinear/mip edge;
+    the shader uses explicit metre-UV gradients before applying frac().
+    """
+    cell_size = SIZE // 2
+    inner = cell_size - 2 * RESPONSE_PADDING
+    yy, xx = np.mgrid[0:inner, 0:inner].astype(np.float64) * (2 * math.pi / inner)
+    broad = .50 + .18 * np.sin(xx * 3 + np.sin(yy * 2)) + .14 * np.cos(yy * 5 - xx * 2)
+    fine = np.sin(xx * 23 + yy * 17) * np.cos(yy * 19 - xx * 11)
+    pore = np.maximum(0, np.sin(xx * 13 + np.cos(yy * 7)) * np.cos(yy * 17 - xx * 5) - .42)
+    heights = (
+        .16 * fine + .12 * np.sin(xx * 9 - yy * 11) - pore * 1.1,
+        .075 * fine - pore * .75 + .08 * np.sin(xx * 37 + np.sin(yy * 3)),
+        .26 * np.sin(xx * 31 + .8 * np.sin(yy * 2)) + .10 * np.sin(xx * 61 + np.sin(yy * 5)),
+        .12 * np.sin(xx * 47) + .08 * np.sin(yy * 39) + .06 * fine,
+    )
+    result = np.empty((SIZE, SIZE, 4), dtype=np.uint8)
+    for index, height in enumerate(heights):
+        # Derivatives are generated in material space. Runtime reconstructs
+        # their world frame from UV1, including reflected/rotating meshes.
+        slope_x = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * 1.6
+        # PNG row order runs opposite to the shader's increasing texture V.
+        slope_y = (np.roll(height, 1, axis=0) - np.roll(height, -1, axis=0)) * 1.6
+        roughness = np.clip((.72, .59, .77, .84)[index] + (broad - .5) * .22 + pore * .22, .28, .98)
+        cavity = np.clip(.94 - pore * .75 - np.maximum(0, -height) * .15, .45, 1)
+        packed = np.stack((np.clip(.5 + slope_x * .5, 0, 1),
+                           np.clip(.5 + slope_y * .5, 0, 1), roughness, cavity), axis=2)
+        packed = np.rint(packed * 255).astype(np.uint8)
+        padded = np.pad(packed, ((RESPONSE_PADDING, RESPONSE_PADDING), (RESPONSE_PADDING, RESPONSE_PADDING), (0, 0)), mode="wrap")
+        y, x = divmod(index, 2)
+        result[y*cell_size:(y+1)*cell_size, x*cell_size:(x+1)*cell_size] = padded
+    return Image.fromarray(result)
+
+
 def add_detail_sheets(textures, measures):
     uv_manifest = json.loads((OUTPUT.parent / "CombatWarehouse3D.json").read_text(encoding="utf8"))["surfaces"]
     authored = {record["name"]: record["sha256"] for record in uv_manifest["atlases"]}
@@ -146,6 +185,13 @@ def add_detail_sheets(textures, measures):
     measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), size=SIZE,
                          mode="RGB", sRGB=False, wrap="Repeat", authoring="periodic packed channel data v1",
                          channels=["moisture", "oxide", "rubbed patches"]))
+    name = "WarehouseMaterialResponse"
+    encoded = encode_png(packed_material_response())
+    textures[name] = (encoded, dict(linear=True, clamp=True))
+    measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), size=SIZE,
+                         mode="RGBA", sRGB=False, wrap="Clamp", authoring="periodic physical material fields v1",
+                         channels=["height slope U", "height slope V", "roughness", "micro cavity"],
+                         cells=list(RESPONSE_CELLS), padding_px=RESPONSE_PADDING))
     provenance = json.loads((SOURCE / "wear-generation.json").read_text(encoding="utf8"))
     assert provenance["generator"] == "image_gen (built-in)"
     row = provenance["images"][0]
@@ -199,12 +245,23 @@ def build(validate_only):
         textures[row["name"]] = (encoded, {})
         measures.append(dict(name=row["name"], sha256=hashlib.sha256(encoded).hexdigest(),
                              mean_linear_luminance=round(float(luminance.mean()), 6),
+                             mean_linear_rgb=[round(float(channel), 6) for channel in linear.mean(axis=(0, 1))],
                              size=SIZE, mode="RGB", sRGB=True, wrap="Repeat"))
     assert len({row["sha256"] for row in measures}) == len(NAMES)
     add_detail_sheets(textures, measures)
+    # The fish generator owns this published sheet; nevertheless it remains
+    # resident alongside this kit and must be charged to the SAME budget.
+    label_path = OUTPUT / "WarehouseFishLabels.png"
+    label_bytes = label_path.read_bytes()
+    with Image.open(io.BytesIO(label_bytes)) as label:
+        assert label.size == (SIZE, SIZE), "Fish labels changed their runtime texture size"
+        label_mode = label.mode
+    measures.append(dict(name="WarehouseFishLabels", sha256=hashlib.sha256(label_bytes).hexdigest(),
+                         size=SIZE, mode=label_mode, sRGB=True, wrap="Clamp",
+                         authoring="tools/build-combat-warehouse-fish-props.py; accounted external sheet"))
     estimated_gpu_bytes = sum(bc7_mip_bytes(row["size"]) for row in measures)
     assert estimated_gpu_bytes <= GPU_BUDGET_BYTES, "Warehouse texture memory budget exceeded"
-    manifest = json.dumps(dict(design_id="warehouse_uv_surfaces_v3", mipmaps=True,
+    manifest = json.dumps(dict(design_id="warehouse_uv_surfaces_v4", mipmaps=True,
                               windows_compression="BC7", gpu_budget_bytes=GPU_BUDGET_BYTES,
                               estimated_gpu_bytes=estimated_gpu_bytes, sheets=measures), indent=2) + "\n"
     if validate_only:
@@ -221,7 +278,7 @@ def build(validate_only):
         path = OUTPUT / "WarehouseTextures.json"
         path.write_text(manifest, encoding="utf8")
         meta(path)
-    print("WAREHOUSE TEXTURES OK: fixed bases, 3 UV atlases, packed macro data and RGBA decals; "
+    print("WAREHOUSE TEXTURES OK: bases, 3 unique atlases, macro/physical response, decals and fish labels; "
           f"BC7/mips {estimated_gpu_bytes} bytes <= {GPU_BUDGET_BYTES}")
 
 

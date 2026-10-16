@@ -2,7 +2,7 @@
   "generator": "tools/build-warehouse-gate-chain-3d-model.py",
   "generator_version": "1.0.0",
   "blender_version": "5.0.1",
-  "build_signature": "805a4f44009b1b147c0eacc425a4b37d9f97419eae405e85a2a443ce439d1371",
+  "build_signature": "cd308ef16ce827d57cefb147d13f13378ff22c46b71c7823ec1e33aed420088e",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -957,9 +957,9 @@
   ],
   "source": {
     "fbx": "Assets/Resources/CombatWarehouse/GateControl.fbx",
-    "sha256": "4d400a6f76bc7562ae4d962eb0ec114f2540c74dfecddff98731cc68e69662ce"
+    "sha256": "c730a9fdff81b5e8532315f794b530f5c1e3275a8ad006fa2ff60fb5e527adfe"
   },
-  "chain_signature": "0da18253111ed8eb64554de9995eac5c5a2002d323070b8bc952dc38f818eaf8",
+  "chain_signature": "b09f53ba8ca1a80750c4afe7355a10fbca437a2ad606eb69d312f530113b6a59",
   "contract": {
     "chain_count": 28,
     "original_geometry_and_uvs": true,

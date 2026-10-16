@@ -23,6 +23,207 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("The real chest lens reads as a source, with angular falloff, depth occlusion and shared visibility cleanup.")]
+        [PrebuildSetup(typeof(CombatFlashlightCaptureSetup))]
+        public IEnumerator CombatWarehouseFlashlightGlow()
+        {
+            float previousCaptureDelta = Time.captureDeltaTime;
+            CombatTestRoot root = null;
+            GameObject blocker = null;
+            Renderer[] hiddenRenderers = null;
+            bool[] originalForcedOff = null;
+            Time.captureDeltaTime = 1f / 60f;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            try
+            {
+                GameSessionState.BeginNewGame();
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized && root.WarehousePlan != null, Is.True);
+                root.AutomaticSimulation = false;
+                root.SetDuelLogging(false);
+                root.SetSparring(false);
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+
+                CombatChestFlashlight flashlight = root.Flashlight;
+                Assert.That(flashlight, Is.Not.Null);
+                CombatFlashlightGlow glow = flashlight.ModelRoot.GetComponentInChildren<CombatFlashlightGlow>(true);
+                Assert.That(glow, Is.Not.Null);
+                Light spot = flashlight.SpotLight;
+                var presentation = (Player3DCharacterPresentation)root.Player.Visual;
+                Assert.That(presentation.Renderers, Does.Contain(glow.GlowRenderer),
+                    "The source halo must participate in the same world-hero visibility as the imported lamp.");
+                Assert.That(glow.GetComponentsInChildren<Light>(true).Length, Is.Zero,
+                    "The source presentation must not add another world light.");
+                Assert.That(flashlight.ModelRoot.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(1));
+                Assert.That(spot.type, Is.EqualTo(LightType.Spot));
+                Assert.That(spot.range, Is.EqualTo(CombatChestFlashlight.Range));
+                Assert.That(spot.spotAngle, Is.EqualTo(60f));
+                Assert.That(spot.innerSpotAngle, Is.EqualTo(28f));
+                Assert.That(spot.shadows, Is.Not.EqualTo(LightShadows.None));
+
+                // The existing pistol pose exposes the left-chest lens without
+                // moving the imported attachment or any production rig bone.
+                root.Hero.ResetActor(root.WarehousePlan.HeroSpawn + Vector3.forward * 4f +
+                    Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
+                root.Opponent.ResetActor(new Vector3(-8.8f, PlayerFactory.GroundedRootOffset, -6.8f), Vector3.right);
+                root.Hero.SetCombatFocused(false);
+                Assert.That(root.Hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
+                for (int frame = 0; frame < 150 && (root.Hero.IsSwitchingWeapon ||
+                    !root.Hero.HasWeaponInHand || root.Hero.WeaponId != CombatWeaponId.Pistol); frame++)
+                {
+                    root.Tick(1f / 30f);
+                    yield return null;
+                }
+                Assert.That(root.Hero.WeaponId, Is.EqualTo(CombatWeaponId.Pistol));
+                Assert.That(root.Hero.IsSwitchingWeapon, Is.False);
+                root.Hero.SetPistolAim(true, root.Hero.transform.position + Vector3.forward * 20f + Vector3.up * 1.3f);
+                for (int frame = 0; frame < 24; frame++) { root.Tick(1f / 30f); yield return null; }
+                Assert.That(root.Hero.Firearm.IsAiming, Is.True);
+                Physics.SyncTransforms();
+                Camera camera = root.CameraFollow.Camera;
+                root.CameraFollow.enabled = false;
+                SetFlashlightSourceView(camera, root, 0f);
+                yield return null;
+
+                float frontOn = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Front full body", 1);
+                Assert.That(glow.AngularVisibility, Is.GreaterThan(.8f));
+                Material litLens = glow.LensRenderer.sharedMaterial;
+                spot.enabled = false;
+                float frontOff = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Front switched off", 1);
+                Assert.That(glow.LensRenderer.sharedMaterial, Is.Not.SameAs(litLens),
+                    "Switching the real source off must also restore the unlit glass.");
+                Assert.That(frontOn, Is.GreaterThan(frontOff + .04f),
+                    "The lens must visibly read as switched on at the ordinary full-body scale after the PS1 composite.");
+                spot.enabled = true;
+
+                Vector3 close = flashlight.Lens.position + flashlight.Lens.forward * .9f;
+                camera.transform.SetPositionAndRotation(close, Quaternion.LookRotation(flashlight.Lens.position - close,
+                    root.Hero.transform.up));
+                camera.fieldOfView = 44f;
+                float closeOn = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Lens close view", 1);
+                spot.intensity = CombatChestFlashlight.Intensity * .01f;
+                float reducedBeam = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Reduced near-surface beam", 1);
+                Assert.That(reducedBeam, Is.EqualTo(closeOn).Within(.025f),
+                    "Near-surface beam exposure must not dim the visible source glass and halo.");
+                spot.enabled = false;
+                float closeOff = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Lens switched off", 1);
+                Assert.That(closeOn, Is.GreaterThan(closeOff + .08f));
+                spot.enabled = true;
+                spot.intensity = CombatChestFlashlight.Intensity;
+
+                SetFlashlightSourceView(camera, root, 40f);
+                SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Oblique full body", 1);
+                Assert.That(glow.AngularVisibility, Is.InRange(.05f, .95f),
+                    "An oblique view must soften the source rather than abruptly hiding it.");
+                SetFlashlightSourceView(camera, root, 90f);
+                SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Profile full body", 1);
+                Assert.That(glow.AngularVisibility, Is.Zero.Within(.001f));
+                SetFlashlightSourceView(camera, root, 180f);
+                SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Rear full body", 1);
+                Assert.That(glow.AngularVisibility, Is.Zero.Within(.001f),
+                    "There must be no glowing billboard through the back of the hero.");
+
+                SetFlashlightSourceView(camera, root, 0f);
+                Vector3 middle = Vector3.Lerp(camera.transform.position, flashlight.Lens.position, .5f);
+                blocker = WarehouseArenaAssetProvider.Create("Cargo", root.transform,
+                    middle - Vector3.up * .625f + camera.transform.right * .22f, Quaternion.identity);
+                blocker.name = "Test flashlight source - Cargo occluder";
+                Physics.SyncTransforms();
+                Vector3 lensRay = flashlight.Lens.position - camera.transform.position;
+                Assert.That(Physics.Raycast(camera.transform.position, lensRay.normalized, out RaycastHit blocked,
+                    lensRay.magnitude, ~0, QueryTriggerInteraction.Ignore), Is.True);
+                Assert.That(blocked.collider.transform.IsChildOf(blocker.transform), Is.True,
+                    "The source comparison must actually be hidden by the authored warehouse cargo.");
+                float blockedOn = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Occluded by cargo", 1);
+                spot.enabled = false;
+                float blockedOff = SampleFlashlightReceiver(camera, flashlight.Lens.position, sampleRadius: 1);
+                Assert.That(blockedOn, Is.EqualTo(blockedOff).Within(.025f),
+                    "The source halo must depth-test against real cargo instead of shining through it.");
+                spot.enabled = true;
+                blocker.SetActive(false);
+                Object.Destroy(blocker);
+                blocker = null;
+
+                // Match the forceRenderingOff mask used by real world-hero
+                // inspection views, including every registered accessory.
+                hiddenRenderers = new Renderer[presentation.Renderers.Count];
+                originalForcedOff = new bool[hiddenRenderers.Length];
+                for (int index = 0; index < hiddenRenderers.Length; index++)
+                {
+                    hiddenRenderers[index] = presentation.Renderers[index];
+                    originalForcedOff[index] = hiddenRenderers[index].forceRenderingOff;
+                    hiddenRenderers[index].forceRenderingOff = true;
+                }
+                float hidden = SampleFlashlightReceiver(camera, flashlight.Lens.position,
+                    "Test flashlight source - Hidden world hero", 1);
+                Assert.That(glow.GlowRenderer.forceRenderingOff, Is.True);
+                Assert.That(hidden, Is.LessThan(frontOn * .5f),
+                    "Hiding the world hero must not leave a detached luminous chest spot.");
+                RestoreFlashlightSourceVisibility(hiddenRenderers, originalForcedOff);
+                hiddenRenderers = null;
+
+                flashlight.enabled = false;
+                yield return null;
+                Assert.That(spot.isActiveAndEnabled || glow.GlowRenderer.gameObject.activeInHierarchy, Is.False);
+                flashlight.enabled = true;
+                yield return null;
+                Assert.That(spot.isActiveAndEnabled && glow.GlowRenderer.gameObject.activeInHierarchy, Is.True);
+                Material sharedGlow = glow.GlowRenderer.sharedMaterial;
+                root.ResetRound();
+                yield return null;
+                Assert.That(root.Flashlight, Is.SameAs(flashlight));
+                Assert.That(flashlight.ModelRoot.GetComponentsInChildren<CombatFlashlightGlow>(true).Length, Is.EqualTo(1));
+                Assert.That(glow.GlowRenderer.sharedMaterial, Is.SameAs(sharedGlow),
+                    "Resetting a round must reuse the owned source effect and shared material.");
+                Debug.Log($"Test flashlight source: front={frontOn:F5}, off={frontOff:F5}, close={closeOn:F5}, " +
+                    $"closeOff={closeOff:F5}, reducedBeam={reducedBeam:F5}, blocked={blockedOn:F5}, blockedOff={blockedOff:F5}, hidden={hidden:F5}");
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(flashlight == null && glow == null && spot == null, Is.True);
+                Assert.That(Object.FindObjectsByType<CombatFlashlightGlow>().Length, Is.Zero,
+                    "Leaving the warehouse must release the attached effect and its camera callbacks.");
+            }
+            finally
+            {
+                RestoreFlashlightSourceVisibility(hiddenRenderers, originalForcedOff);
+                if (blocker != null) Object.Destroy(blocker);
+                if (root != null) root.AutomaticSimulation = false;
+                Time.captureDeltaTime = previousCaptureDelta;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+            }
+        }
+
+        private static void SetFlashlightSourceView(Camera camera, CombatTestRoot root, float yaw)
+        {
+            Vector3 direction = Quaternion.AngleAxis(yaw, Vector3.up) * root.Hero.transform.forward;
+            Vector3 target = root.Hero.transform.position + Vector3.up * .95f;
+            // The side rack occupies the distant profile-camera position.
+            // Keep this view inside the walkable aisle and widen it to fit the body.
+            bool profile = Mathf.Abs(yaw - 90f) < .01f;
+            Vector3 position = root.Hero.transform.position + direction * (profile ? 1.4f : 4.1f) + Vector3.up * 1.1f;
+            camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
+            camera.fieldOfView = profile ? 75f : 40f;
+        }
+
+        private static void RestoreFlashlightSourceVisibility(Renderer[] renderers, bool[] originalForcedOff)
+        {
+            if (renderers == null) return;
+            for (int index = 0; index < renderers.Length; index++)
+                if (renderers[index] != null) renderers[index].forceRenderingOff = originalForcedOff[index];
+        }
+
+        [UnityTest]
         [Explicit("One real warehouse flashlight, rendered light and shadows, rig motion and ownership cleanup.")]
         [PrebuildSetup(typeof(CombatFlashlightCaptureSetup))]
         public IEnumerator CombatWarehouseFlashlight()
@@ -446,7 +647,8 @@ namespace BarPromenade.Tests.PlayMode
             CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
         }
 
-        private static float SampleFlashlightReceiver(Camera camera, Vector3 worldPoint, string shotName = null)
+        private static float SampleFlashlightReceiver(Camera camera, Vector3 worldPoint, string shotName = null,
+            int sampleRadius = 6)
         {
             var target = new RenderTexture(Width, Height, 24);
             var frame = new Texture2D(Width, Height, TextureFormat.RGB24, false);
@@ -475,13 +677,14 @@ namespace BarPromenade.Tests.PlayMode
                 int x = Mathf.RoundToInt(viewport.x * (Width - 1));
                 int y = Mathf.RoundToInt(viewport.y * (Height - 1));
                 float total = 0f;
-                for (int dy = -6; dy <= 6; dy++)
-                    for (int dx = -6; dx <= 6; dx++)
+                for (int dy = -sampleRadius; dy <= sampleRadius; dy++)
+                    for (int dx = -sampleRadius; dx <= sampleRadius; dx++)
                     {
                         Color color = frame.GetPixel(x + dx, y + dy);
                         total += color.r * .2126f + color.g * .7152f + color.b * .0722f;
                     }
-                return total / 169f;
+                int sampleDiameter = sampleRadius * 2 + 1;
+                return total / (sampleDiameter * sampleDiameter);
             }
             finally
             {

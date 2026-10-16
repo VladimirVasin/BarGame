@@ -22,6 +22,7 @@ namespace BarPromenade
         public GameObject ModelRoot { get; private set; }
         public Transform Lens { get; private set; }
         public Light SpotLight { get; private set; }
+        public CombatFlashlightGlow Glow { get; private set; }
         private Player3DCharacterPresentation presentation;
         private PlayerEquipmentContacts equipment;
         private Renderer[] renderers;
@@ -118,8 +119,6 @@ namespace BarPromenade
             exposureOwnerRoot = transform;
             ModelRoot = CombatFlashlightAssetProvider.Create(hero.Registry);
             Lens = CombatFlashlightAssetProvider.FindLens(ModelRoot);
-            renderers = ModelRoot.GetComponentsInChildren<Renderer>(true);
-            presentation.RegisterAccessoryRenderers(renderers);
             equipment = hero.Registry.GetComponentInParent<PlayerEquipmentContacts>();
             if (equipment == null) equipment = hero.Registry.gameObject.AddComponent<PlayerEquipmentContacts>();
             SpotLight = Lens.gameObject.AddComponent<Light>();
@@ -136,6 +135,11 @@ namespace BarPromenade
             SpotLight.shadowNearPlane = .025f;
             UniversalAdditionalLightData data = Lens.gameObject.AddComponent<UniversalAdditionalLightData>();
             data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium;
+            Glow = CombatFlashlightGlow.Create(Lens, SpotLight);
+            // Include the source glow in the same visibility lease as the
+            // physical lamp, so inspection and hero hiding cannot leave a halo.
+            renderers = ModelRoot.GetComponentsInChildren<Renderer>(true);
+            presentation.RegisterAccessoryRenderers(renderers);
             SetActive(isActiveAndEnabled);
         }
 
@@ -144,6 +148,7 @@ namespace BarPromenade
             if (ModelRoot == null) return;
             ModelRoot.SetActive(active);
             SpotLight.enabled = active;
+            Glow.Synchronize();
             ResetExposure();
             if (active && !contactsRegistered)
             {

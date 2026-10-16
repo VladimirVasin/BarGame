@@ -761,12 +761,68 @@ namespace BarPromenade.Tests.PlayMode
                     if (child.name == "Warehouse " + kind) { wrapper = child.gameObject; break; }
                 if (kind == "PipeStraight" || kind == "PipeElbow" || kind == "PipeEnd" || kind == "TwistedFrame") continue;
                 Assert.That(wrapper, Is.Not.Null, "The real built warehouse must contain " + kind + ".");
+                if (kind == "GateControl" || kind == "FishPreparationStation" || kind == "FishStationLamp")
+                {
+                    // These owners attach independent authored chain/key/fish/shard
+                    // assets after Create. Only the source module defines its bounds.
+                    AssertWarehouseSourceMetres(kind, wrapper);
+                    continue;
+                }
                 // Its metre vertices are measured below; a rotating wrapper's
                 // world AABB cannot be inverse-rotated into its authored bounds.
                 if (kind != "FanRotor" && kind != "LiftPlatform" && kind != "ChainDrum" && kind != "Lamp" &&
                     kind != "PusherHead" && kind != "Rail")
                     WarehouseArenaAssetProvider.ValidatePlacedModel(kind, wrapper);
             }
+        }
+
+        private static void AssertWarehouseSourceMetres(string kind, GameObject wrapper)
+        {
+            GameObject source = Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind);
+            var sourceMeshes = new Dictionary<Mesh,int>();
+            Bounds expected = default, actual = default;
+            bool hasExpected = false, hasActual = false;
+            foreach (MeshRenderer renderer in source.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (renderer.name.StartsWith("Collision_",System.StringComparison.Ordinal)) continue;
+                Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                sourceMeshes.TryGetValue(mesh, out int count);
+                sourceMeshes[mesh] = count + 1;
+                foreach (Vector3 vertex in mesh.vertices)
+                {
+                    // Keep the imported root's centimetre-to-metre factor.
+                    Vector3 point = renderer.transform.TransformPoint(vertex);
+                    if (!hasExpected) { expected = new Bounds(point,Vector3.zero); hasExpected = true; }
+                    else expected.Encapsulate(point);
+                }
+            }
+            var placedMeshes = new Dictionary<Mesh,int>();
+            foreach (MeshRenderer renderer in wrapper.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                if (!sourceMeshes.ContainsKey(mesh)) continue;
+                placedMeshes.TryGetValue(mesh, out int count);
+                placedMeshes[mesh] = count + 1;
+                foreach (Vector3 vertex in mesh.vertices)
+                {
+                    // Source meshes can be reparented into interaction pivots;
+                    // shared-mesh identity follows that boundary without admitting
+                    // separately imported owner attachments or their hidden parts.
+                    Vector3 point = wrapper.transform.InverseTransformPoint(renderer.transform.TransformPoint(vertex));
+                    if (!hasActual) { actual = new Bounds(point,Vector3.zero); hasActual = true; }
+                    else actual.Encapsulate(point);
+                }
+            }
+            Assert.That(hasExpected && hasActual, Is.True, kind);
+            foreach (KeyValuePair<Mesh,int> pair in sourceMeshes)
+            {
+                Assert.That(placedMeshes.TryGetValue(pair.Key, out int count), Is.True, kind + "/" + pair.Key.name);
+                Assert.That(count, Is.EqualTo(pair.Value), "The placed module retains every original source mesh exactly once.");
+            }
+            Assert.That(Vector3.Distance(actual.min,expected.min), Is.LessThan(.03f),
+                kind + " source minimum must retain authored metres after runtime composition.");
+            Assert.That(Vector3.Distance(actual.max,expected.max), Is.LessThan(.03f),
+                kind + " source maximum must retain authored metres after runtime composition.");
         }
 
         private static void AssertWarehouseSurfaceMaterials(CombatTestRoot root)
@@ -782,7 +838,8 @@ namespace BarPromenade.Tests.PlayMode
                 string family = WarehouseArenaAssetProvider.AtlasForModel(kind);
                 foreach (MeshRenderer renderer in wrapper.GetComponentsInChildren<MeshRenderer>(true))
                 {
-                    if (!renderer.enabled || renderer.name.StartsWith("Collision_",System.StringComparison.Ordinal)) continue;
+                    if (!renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                        renderer.name.StartsWith("Collision_",System.StringComparison.Ordinal)) continue;
                     Material material = renderer.sharedMaterial;
                     Assert.That(material, Is.Not.Null);
                     Assert.That(material.shader.isSupported, Is.True);
@@ -792,6 +849,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (reused.TryGetValue(material.name,out Material first))
                         Assert.That(material, Is.SameAs(first), "Instances must reuse their atlas-family and role material.");
                     else reused.Add(material.name,material);
+                    string role = renderer.name.Substring(renderer.name.LastIndexOf("__",System.StringComparison.Ordinal) + 2);
                     bool decal = renderer.name.EndsWith("__WearDecal",System.StringComparison.Ordinal);
                     if (decal)
                     {
@@ -808,11 +866,6 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(material.GetColor("_BaseColor"), Is.EqualTo(Color.white));
                         continue;
                     }
-                    if (family == null && renderer.name.EndsWith("__SignalRed", System.StringComparison.Ordinal))
-                    {
-                        Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
-                        continue;
-                    }
                     if (family != null)
                     {
                         families.Add(family);
@@ -825,15 +878,41 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(uv.y, Is.InRange(-.0001f,1.0001f));
                         }
                     }
-                    else
+                    bool layered = role != "Lamp" && role != "Glass" && role != "NumberPlate" &&
+                        role != "SignalRed" && role != "SignalRedOff";
+                    if (layered)
                     {
-                        structural++;
+                        if (family == null) structural++;
                         Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/Warehouse Surface"));
                         Assert.That(material.GetTexture("_WarehouseMacroMask").name, Is.EqualTo("WarehouseMacroMask"));
-                        Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.GreaterThan(0f));
+                        if (family == null)
+                            Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.GreaterThan(0f));
+                        else Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.Zero,
+                            "Prop macro wear is baked into its unique atlas, so it must not swim in world space.");
                         Assert.That(material.GetFloat("_WarehouseTriplanarStrength"), Is.Zero,
                             "The clean authored UV does not justify extra triplanar samples.");
+                        bool physical = role == "Concrete" || role == "ConcreteDark" || role == "Steel" ||
+                            role == "WornSteel" || role == "LockSteel" || role == "SafetyYellow" || role == "Rust" ||
+                            role == "Timber" || role == "Cardboard" || role == "Rubber";
+                        if (physical)
+                        {
+                            Texture response = material.GetTexture("_WarehouseMaterialResponse");
+                            Assert.That(response, Is.Not.Null);
+                            Assert.That(response.name, Is.EqualTo("WarehouseMaterialResponse"));
+                            Assert.That(material.GetFloat("_WarehouseResponseStrength"), Is.GreaterThan(0f));
+                            Assert.That(material.GetFloat("_WarehouseNormalStrength"), Is.GreaterThan(0f));
+                            if (family != null)
+                            {
+                                Assert.That(material.GetTexture("_WarehouseDetailMap"), Is.Not.Null);
+                                Assert.That(material.GetFloat("_WarehouseDetailStrength"), Is.GreaterThan(0f));
+                                Assert.That(material.GetFloat("_WarehouseDetailScale"), Is.GreaterThan(0f));
+                                Vector4 mean = material.GetVector("_WarehouseDetailMean");
+                                Assert.That(Mathf.Min(mean.x,Mathf.Min(mean.y,mean.z)), Is.GreaterThan(0f),
+                                    "Metre-space detail must use the published linear mean rather than darken the atlas twice.");
+                            }
+                        }
                     }
+                    else Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
                 }
             }
             Assert.That(families.Count, Is.EqualTo(3));
@@ -1001,7 +1080,8 @@ namespace BarPromenade.Tests.PlayMode
                 "A stair step may briefly descend under gravity, but cannot hover above or cut below its surface.");
         }
 
-        private static IEnumerator CaptureWarehouseEnvironment(CombatTestRoot root)
+        private static IEnumerator CaptureWarehouseEnvironment(CombatTestRoot root, string lightingState = null,
+            bool includeUvChecker = true, bool closeViewsOnly = false)
         {
             root.SetSparring(false);
             Camera camera = root.CameraFollow.Camera;
@@ -1017,7 +1097,8 @@ namespace BarPromenade.Tests.PlayMode
             WarehouseArenaPlan plan = root.WarehousePlan;
             string template = plan.Template == WarehouseArenaTemplate.LeftGallery ? "Left gallery" :
                 plan.Template == WarehouseArenaTemplate.UShape ? "Looped storage" : "Straight layout";
-            string caption = "Test warehouse - " + template + " - ";
+            string caption = "Test warehouse - " + template + " - " +
+                (string.IsNullOrEmpty(lightingState) ? "" : lightingState + " - ");
             WarehouseArenaStair stair = plan.Stairs[0], topStair = plan.Stairs[2];
             Vector3 room = plan.RoomCenters[0], corridorRoom = plan.RoomCenters[3];
             Vector3 fan = plan.Mechanisms[0].Position, lift = plan.Mechanisms[1].Position,
@@ -1071,6 +1152,10 @@ namespace BarPromenade.Tests.PlayMode
                 var visual = (Player3DCharacterPresentation)root.Player.Visual;
                 foreach (Shot shot in shots)
                 {
+                    // The real blackout has no distant fill. Photograph nearby
+                    // surfaces inside the chest beam, rather than an unlit ceiling.
+                    if (closeViewsOnly && !shot.Name.Contains("wear close view") &&
+                        !shot.Name.Contains("Concrete and floor wear")) continue;
                     Vector3 facing = shot.Target - shot.Position; facing.y = 0f; facing.Normalize();
                     Vector3 foot = shot.Position - Vector3.up * 1.7f - facing * .65f;
                     // The imported doors face the clear aisle toward the
@@ -1098,7 +1183,7 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (Renderer renderer in heroRenderers)
                         if (renderer != null) renderer.forceRenderingOff = true;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest, shot.Name);
-                    if (plan.Seed == 0 && shot.Name.Contains("wear close view"))
+                    if (includeUvChecker && plan.Seed == 0 && shot.Name.Contains("wear close view"))
                         yield return CaptureWarehouseUvChecker(root,camera,shot.Name + " - Test UV checker");
                 }
             }
