@@ -29,7 +29,7 @@ import warehouse_detail_geometry as constructive_detail
 spec = importlib.util.spec_from_file_location("warehouse_passive_export", ROOT / "tools/build-city-fair-3d-model.py")
 passive = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(passive)
-VERSION = "2.4.0"
+VERSION = "3.0.0"
 MODEL_DIR = ROOT / "Assets/Resources/CombatWarehouse"
 SOURCE_DIR = ROOT / "ArtSource/CombatWarehouse"
 FAN_HOUSING_WORLD_Y = 10.2
@@ -1019,7 +1019,8 @@ def main():
             root = passive.build_objects([item])[0]
             appearance.apply_uvs(root, uv_cache)
             passive.export(root, args.model_dir / (root.name + ".fbx"))
-        (args.model_dir / "CombatWarehouse3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
+        (args.model_dir / "CombatWarehouse3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8", newline="\n")
+        appearance.export_variants(items, passive, args.model_dir, uv_cache)
         roots = passive.build_objects(items)
         for root in roots:
             appearance.apply_uvs(root, uv_cache)

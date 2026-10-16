@@ -703,7 +703,7 @@ namespace BarPromenade.Tests.PlayMode
                     WarehouseRoomIndicator indicator = light.GetComponentInParent<WarehouseRoomIndicator>();
                     Assert.That(indicator, Is.Not.Null);
                     Assert.That(light.isActiveAndEnabled, Is.EqualTo(indicator.CurrentFactor > 0f));
-                    Assert.That(light.shadows, Is.EqualTo(LightShadows.None));
+                    AssertWarehouseIndicatorShadowProfile(light);
                 }
             Assert.That(fixtures, Is.EqualTo(9)); Assert.That(on, Is.EqualTo(expectedOnCount)); Assert.That(off, Is.EqualTo(9 - expectedOnCount));
             Assert.That(sources, Is.EqualTo(3));

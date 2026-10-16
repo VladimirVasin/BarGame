@@ -1,173 +1,40 @@
 {
-  "design_id": "warehouse_uv_surfaces_v4",
+  "design_id": "warehouse_unique_surface_v5",
   "mipmaps": true,
   "windows_compression": "BC7",
-  "gpu_budget_bytes": 8388608,
-  "estimated_gpu_bytes": 8039456,
+  "gpu_budget_bytes": 29360128,
+  "estimated_gpu_bytes": 28661184,
   "sheets": [
     {
-      "name": "WarehouseConcrete",
-      "sha256": "adf1e3da406392136b605d2940ead1ed2a2dd2baef4044265cf27015df670dfd",
-      "mean_linear_luminance": 0.21547,
-      "mean_linear_rgb": [
-        0.218314,
-        0.218929,
-        0.172827
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehousePaint",
-      "sha256": "ac9e9a6e01394e4a3c3c173360ca008e15ccab1fc76b0154c1af2a57a449f4a4",
-      "mean_linear_luminance": 0.14528,
-      "mean_linear_rgb": [
-        0.149454,
-        0.148479,
-        0.101305
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseSteel",
-      "sha256": "e7c1cd9e37c445c2d4856712384e4909e35728ed458a70521bb7bda64b1720c5",
-      "mean_linear_luminance": 0.040143,
-      "mean_linear_rgb": [
-        0.049036,
-        0.038464,
-        0.030583
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseRust",
-      "sha256": "f278812ca44507346fd1bf60e20b8c772304e5e55cd786eae39508437ac3300e",
-      "mean_linear_luminance": 0.06672,
-      "mean_linear_rgb": [
-        0.118531,
-        0.055085,
-        0.029409
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseTimber",
-      "sha256": "8884d6f78a99c54a4cb69ae8f1270541a3480f39b0991750390afcc2ccdbad9f",
-      "mean_linear_luminance": 0.117248,
-      "mean_linear_rgb": [
-        0.135814,
-        0.114521,
-        0.089585
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseCardboard",
-      "sha256": "da4bd3c9458146bd0d72e3601724a25becab200fb95f45170d16f051c3a4f1ad",
-      "mean_linear_luminance": 0.151625,
-      "mean_linear_rgb": [
-        0.237773,
-        0.134857,
-        0.064046
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseRubber",
-      "sha256": "ad9247dfac17f3eb9cfb376bc1d6aee4ef3880b1aab891d0aa6a7f7a381bdda6",
-      "mean_linear_luminance": 0.045721,
-      "mean_linear_rgb": [
-        0.048553,
-        0.045329,
-        0.041269
-      ],
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Repeat"
-    },
-    {
-      "name": "WarehouseMechanismsAtlas",
-      "sha256": "649282e6b5674a2130db752c3fbaa8494e3ba518a2b456023a5b8f829f3e8eef",
-      "source_sha256": "5e5fbb540ff528f14dc0483644cf9586e0f9248f26a5a3e474fab649644aae21",
-      "size": 1024,
+      "name": "WarehouseMasterAtlas",
+      "sha256": "84f66ec1cb75c59d6ee16cf556e9e31468b9e89ef0bcb4ca2fa6e7520a3b103c",
+      "source_sha256": "f00f6bac5d1a362506677ae1e9bff913df0e2015ffb1fef61570ec5c602ff0bf",
+      "size": 4096,
       "mode": "RGB",
       "sRGB": true,
       "wrap": "Clamp",
-      "authoring": "Blender EMIT UV bake"
-    },
-    {
-      "name": "WarehouseFurnishingsAtlas",
-      "sha256": "953a2746b9a773ec45a2be1ebb80e6006f8c48fb680c6833cd632cb92e3d5943",
-      "source_sha256": "af9f07d4a5dd1115399f14660706372d1e87f1ef48e2b13168b455e9e82ef3d7",
-      "size": 1024,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Clamp",
-      "authoring": "Blender EMIT UV bake"
-    },
-    {
-      "name": "WarehouseCargoAtlas",
-      "sha256": "9cc525658a7dd745bfcfc87e81a3d521740c8f22726ddf887ac223134816d0e3",
-      "source_sha256": "7d76b86b77a167892f32ce6ae7811c81ea64918992495a2afd4bc6935970ad2d",
-      "size": 1024,
-      "mode": "RGB",
-      "sRGB": true,
-      "wrap": "Clamp",
-      "authoring": "Blender EMIT UV bake"
-    },
-    {
-      "name": "WarehouseMacroMask",
-      "sha256": "e25d0671e0d1af1e5b43da45ccf24eeb96f2962c718a4f92cf3aef3bb1583d2e",
-      "size": 512,
-      "mode": "RGB",
-      "sRGB": false,
-      "wrap": "Repeat",
-      "authoring": "periodic packed channel data v1",
+      "authoring": "registered unique placement master bake v5",
       "channels": [
-        "moisture",
-        "oxide",
-        "rubbed patches"
+        "albedo R",
+        "albedo G",
+        "albedo B"
       ]
     },
     {
       "name": "WarehouseMaterialResponse",
-      "sha256": "74f801830d16418006b6b85f54e50811ba915ae1e3d66f46ae29bbb02c093e47",
-      "size": 512,
+      "sha256": "da709c591da03ddd7408224da50c8921fb7d632fc2298cdf43fb7cc9371a7cef",
+      "source_sha256": "8938e8a1ef75ff3ec0674d4d3fba1c107ae8c5c96f77a3898783718d6a9da7e8",
+      "size": 2048,
       "mode": "RGBA",
       "sRGB": false,
       "wrap": "Clamp",
-      "authoring": "periodic physical material fields v1",
+      "authoring": "registered unique placement master bake v5",
       "channels": [
         "height slope U",
         "height slope V",
         "roughness",
-        "micro cavity"
-      ],
-      "cells": [
-        "concrete",
-        "metal",
-        "timber",
-        "fibre"
-      ],
-      "padding_px": 8
+        "cavity"
+      ]
     },
     {
       "name": "WarehouseWearDecals",
@@ -177,7 +44,7 @@
       "mode": "RGBA",
       "sRGB": true,
       "wrap": "Clamp",
-      "authoring": "image_gen fixed transparent 2x2 source"
+      "authoring": "unchanged authored sparse wear cutouts"
     },
     {
       "name": "WarehouseFishLabels",
@@ -186,7 +53,7 @@
       "mode": "RGB",
       "sRGB": true,
       "wrap": "Clamp",
-      "authoring": "tools/build-combat-warehouse-fish-props.py; accounted external sheet"
+      "authoring": "accounted external fish-label drawing"
     }
   ]
 }

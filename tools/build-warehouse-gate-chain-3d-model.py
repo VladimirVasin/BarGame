@@ -28,13 +28,133 @@ spec = importlib.util.spec_from_file_location("gate_chain_warehouse", ROOT / "to
 warehouse = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(warehouse)
 passive = warehouse.passive
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 OUT = ROOT / "Assets/Resources/CombatWarehouse/GateChain"
 SOURCE = ROOT / "ArtSource/CombatWarehouse/GateChain"
 ORIGINAL = ROOT / "Assets/Resources/CombatWarehouse/GateControl.fbx"
-ATLAS = ROOT / "Assets/Resources/CombatWarehouse/Textures/WarehouseMechanismsAtlas.png"
+ATLAS = ROOT / "Assets/Resources/CombatWarehouse/Textures/WarehouseMasterAtlas.png"
+MASTER_MANIFEST = ROOT / "Assets/Resources/CombatWarehouse/CombatWarehouse3D.json"
+LAYOUT = ROOT / "ArtSource/CombatWarehouse/WarehouseLayout.json"
+DECK_POSITIONS = {"GatePlatformLeft": (-1.5, 3.2, 10.5),
+                  "GatePlatformRight": (1.5, 3.2, 10.5)}
+PROJECTION_AXES = ((1, 2), (0, 2), (0, 1))
 PATH = ((.23, 1.86, -.245), (-.24, 1.13, -.385), (-.05, .99, -.395),
         (.23, 1.10, -.395), (.30, 1.48, -.27), (.23, 1.86, -.245))
+
+
+def deck_surface_source():
+    """Reuse the unused normal-deck charts at the two real cutout placements."""
+    # Git stores these JSON files with LF, including on a Windows checkout.
+    # Provenance must survive newline normalization without changing meaning.
+    layout_bytes = LAYOUT.read_text(encoding="utf8").encode("utf8")
+    master_bytes = MASTER_MANIFEST.read_text(encoding="utf8").encode("utf8")
+    layout, master = json.loads(layout_bytes), json.loads(master_bytes)
+    authority = layout["authority"]
+    source_path = "Assets/Scripts/Runtime/Combat/WarehouseArenaPlan.cs"
+    if authority.get("source") != source_path or authority.get("source_sha256") != \
+            hashlib.sha256((ROOT / source_path).read_bytes()).hexdigest():
+        raise RuntimeError("Gate deck placement authority is stale; rerun the warehouse layout exporter")
+    surfaces = master["surfaces"]
+    if surfaces.get("size") != 4096 or surfaces.get("placement_authority") != authority:
+        raise RuntimeError("Gate decks require the current 4096 warehouse placement painting")
+    slots = {}
+    for template in layout["templates"]:
+        ordinal, found = 0, {}
+        for placement in template["modules"]:
+            if placement["kind"] != "Platform":
+                continue
+            for name, position in DECK_POSITIONS.items():
+                if math.dist(placement["position"], position) < .00001:
+                    if name in found or abs(placement["yaw"]) > .00001:
+                        raise RuntimeError("Gate deck placement must have one unrotated Platform slot")
+                    found[name] = ordinal
+            ordinal += 1
+        if set(found) != set(DECK_POSITIONS) or (slots and found != slots):
+            raise RuntimeError("Gate deck surface slots disagree between warehouse templates")
+        slots = found
+    if len(set(slots.values())) != len(DECK_POSITIONS):
+        raise RuntimeError("Each gate deck requires its own warehouse placement chart")
+    charts = {}
+    for row in surfaces["projection_density"]["charts"]:
+        chart_key = tuple(row["key"])
+        if chart_key in charts:
+            raise RuntimeError("Repeated warehouse projection chart")
+        charts[chart_key] = row
+    selected = {}
+    for name, slot in slots.items():
+        source_root = "Platform" + ("~" + str(slot) if slot else "")
+        selected[name] = {key: row for key, row in charts.items() if key[0] == source_root}
+        if not selected[name]:
+            raise RuntimeError("Gate deck lacks its reserved warehouse projection charts")
+        for row in selected[name].values():
+            numbers = (*row["local_origin_m"], *row["atlas_origin_px"],
+                       *row["extent_m"], row["texels_per_metre"])
+            if not all(math.isfinite(value) for value in numbers) or row["texels_per_metre"] <= 0:
+                raise RuntimeError("Gate deck projection chart is not finite")
+            for origin, extent in zip(row["atlas_origin_px"], row["extent_m"], strict=True):
+                if origin < 0 or origin + extent * row["texels_per_metre"] > surfaces["size"] + .001:
+                    raise RuntimeError("Gate deck projection chart leaves the master atlas")
+    proof = {"master_manifest": str(MASTER_MANIFEST.relative_to(ROOT)).replace("\\", "/"),
+        "master_sha256": hashlib.sha256(master_bytes).hexdigest(),
+        "layout": str(LAYOUT.relative_to(ROOT)).replace("\\", "/"),
+        "layout_sha256": hashlib.sha256(layout_bytes).hexdigest(),
+        "uv_signature": surfaces["uv_signature"], "size": surfaces["size"],
+        "placements": [{"name": name, "surface_slot": slot, "position": list(DECK_POSITIONS[name])}
+                       for name, slot in slots.items()],
+        "projection": "original Platform placement chart; colour and response retain their world field"}
+    return selected, slots, proof
+
+
+def assign_deck_uvs(roots, charts, slots, size):
+    """Map cut faces into their normal Platform charts without changing UV1."""
+    result = {}
+    for root in roots:
+        warehouse.appearance.preserve_metre_uv(root)
+        source_root = "Platform" + ("~" + str(slots[root.name]) if slots[root.name] else "")
+        for obj in root.children_recursive:
+            if obj.type != "MESH" or obj.name.startswith("Collision_"):
+                continue
+            mesh = obj.data
+            transform = root.matrix_world.inverted() @ obj.matrix_world
+            normal_matrix = transform.to_3x3().inverted().transposed()
+            points = [transform @ vertex.co for vertex in mesh.vertices]
+            for polygon in mesh.polygons:
+                normal = normal_matrix @ polygon.normal
+                axis = max(range(3), key=lambda i: abs(normal[i]))
+                sign = 1 if normal[axis] >= 0 else -1
+                chart_key = (source_root, obj["bp_surface"], axis, sign, "regular")
+                if chart_key not in charts[root.name]:
+                    raise RuntimeError("Gate deck face lacks its original Platform chart: " + str(chart_key))
+                row = charts[root.name][chart_key]
+                axes = PROJECTION_AXES[axis]
+                for loop_index in polygon.loop_indices:
+                    point = points[mesh.loops[loop_index].vertex_index]
+                    projected = [point[i] for i in axes]
+                    uv = tuple((origin + (value - low) * row["texels_per_metre"]) / size
+                               for origin, value, low in zip(row["atlas_origin_px"], projected,
+                                                             row["local_origin_m"], strict=True))
+                    if not all(math.isfinite(value) and 0 <= value <= 1 for value in uv):
+                        raise RuntimeError("Gate deck UV leaves the warehouse atlas")
+                    for value, low, extent in zip(projected, row["local_origin_m"], row["extent_m"], strict=True):
+                        # The original thin seam clamps its bevel to .92 mm;
+                        # the cut seam has a 1 mm bevel. Their diagonal faces
+                        # can choose different dominant axes at the tie. Keep
+                        # the same affine physical coordinates: this sub-mm
+                        # continuation is under .01 texel inside the existing
+                        # one-pixel dilation, rather than stretching the paint.
+                        overflow = max(low - value, value - low - extent, 0.)
+                        seam_bevel = obj["bp_surface"] == "WornSteel" and \
+                            overflow <= .00101 and overflow * row["texels_per_metre"] <= .01
+                        if overflow > .00001 and not seam_bevel:
+                            raise RuntimeError(f"Gate deck geometry leaves its reserved Platform chart: "
+                                f"{root.name}/{obj.name} axis={axis} sign={sign} "
+                                f"point={tuple(point)} projected={projected} "
+                                f"bounds={row['local_origin_m']}+{row['extent_m']}")
+                    mesh.uv_layers[0].data[loop_index].uv = uv
+            obj["bp_atlas"] = "WarehouseMasterAtlas"
+            result.setdefault(root.name, {})[obj.name] = [
+                [tuple(loop.uv) for loop in layer.data] for layer in mesh.uv_layers]
+    return result
 
 
 def centres():
@@ -182,7 +302,7 @@ def chain_model(records):
         "solid_count": 28, "mesh_count": 28, "anchors": anchors}
 
 
-def verify_pack(directory, payload, records):
+def verify_pack(directory, payload, records, deck_uvs):
     passive.verify_fbx(directory, payload)
     # Confirm the atlas values survived split/export, not merely the link positions.
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -198,6 +318,16 @@ def verify_pack(directory, payload, records):
     for name in ("GatePlatformLeft", "GatePlatformRight"):
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.ops.import_scene.fbx(filepath=str(directory/(name+".fbx")), use_anim=False)
+        imported = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == "MESH"}
+        for renderer_name, expected_layers in deck_uvs[name].items():
+            obj = imported.get(renderer_name)
+            if obj is None or len(obj.data.uv_layers) != 2:
+                raise RuntimeError("Slotted deck lost its atlas or metre UV channel")
+            for layer, expected in zip(obj.data.uv_layers, expected_layers, strict=True):
+                actual = [tuple(loop.uv) for loop in layer.data]
+                if len(actual) != len(expected) or any(abs(a-b) > .000001
+                        for pair, other in zip(actual, expected) for a, b in zip(pair, other)):
+                    raise RuntimeError("Slotted deck changed its original Platform chart or metre UVs")
         left = name.endswith("Left")
         x = .2 if left else -.2
         # A centre ray through the real exported collision must miss the slot.
@@ -210,7 +340,7 @@ def verify_pack(directory, payload, records):
             hit, _, _, _ = tree.ray_cast(Vector((x, 1.02, 1)), Vector((0, 0, -1)), 2)
             if hit is not None:
                 raise RuntimeError("Slotted platform collision still fills the gate aperture")
-    print("GATE CHAIN ORIGINAL ATLAS UVS / SLOT COLLISION APERTURES OK", flush=True)
+    print("GATE CHAIN / DECK PLACEMENT ATLAS UVS / SLOT COLLISION APERTURES OK", flush=True)
 
 
 def preview(roots, path):
@@ -249,6 +379,7 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--no-preview", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
+    charts, slots, deck_proof = deck_surface_source()
     records = source_links()
     repeated = source_links()
     if records != repeated:
@@ -264,25 +395,27 @@ def main():
         source={"fbx": str(ORIGINAL.relative_to(ROOT)).replace("\\", "/"), "sha256": hashlib.sha256(ORIGINAL.read_bytes()).hexdigest()},
         chain_signature=hashlib.sha256(json.dumps(records, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         contract={"chain_count": 28, "original_geometry_and_uvs": True, "root_frame": "GateControl local metres",
+            "deck_surfaces": deck_proof,
             "open_joint_between": [18, 19], "joint_order": list(range(19, 29))+list(range(1, 19)),
             "links": [{"name": r["name"], "position": r["position"], "bounds_min": r["bounds_min"], "bounds_max": r["bounds_max"]} for r in records],
             "gate_lift": 3.05, "slot_world_bounds": {"min": [-2.32, 2.88, 11.32], "max": [2.32, 3.205, 11.72]},
-            "replace_platforms": [{"name": "GatePlatformLeft", "position": [-1.5, 3.2, 10.5]},
-                {"name": "GatePlatformRight", "position": [1.5, 3.2, 10.5]}], "upper_gallery_unchanged": True})
+            "replace_platforms": [{"name": name, "position": list(position)}
+                                  for name, position in DECK_POSITIONS.items()], "upper_gallery_unchanged": True})
+    roots = passive.build_objects(platforms)
+    deck_uvs = assign_deck_uvs(roots, charts, slots, deck_proof["size"])
+    deck_proof["assigned_uv_signature"] = hashlib.sha256(
+        json.dumps(deck_uvs, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     payload = json.loads(json.dumps(payload))
     manifest = args.output_dir/"WarehouseGateChain3D.json"
     if args.validate_only and json.loads(manifest.read_text(encoding="utf8")) != payload:
         raise RuntimeError("Published gate supplement differs from deterministic source")
-    roots = passive.build_objects(platforms)
-    for root in roots:
-        warehouse.appearance.preserve_metre_uv(root)
     roots.append(create_chain(records))
     if not args.validate_only:
         args.output_dir.mkdir(parents=True, exist_ok=True)
         args.source_dir.mkdir(parents=True, exist_ok=True)
         for root in roots:
             passive.export(root, args.output_dir/(root.name+".fbx"))
-        manifest.write_text(json.dumps(payload, indent=2)+"\n", encoding="utf8")
+        manifest.write_text(json.dumps(payload, indent=2)+"\n", encoding="utf8", newline="\n")
         for image in bpy.data.images:
             if image.source == "FILE":
                 image.pack()
@@ -290,7 +423,7 @@ def main():
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"WarehouseGateChain3D.blend"), check_existing=False)
         if not args.no_preview:
             preview(roots, args.source_dir/"WarehouseGateChain3D.png")
-    verify_pack(args.output_dir, payload, records)
+    verify_pack(args.output_dir, payload, records, deck_uvs)
     print("WAREHOUSE GATE CHAIN / SLOTTED DECK ART CONTRACT OK "+payload["chain_signature"], flush=True)
 
 

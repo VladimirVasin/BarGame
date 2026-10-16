@@ -33,17 +33,10 @@ half _ClearCoatSmoothness;
 half _DetailAlbedoMapScale;
 half _DetailNormalMapScale;
 UNITY_TEXTURE_STREAMING_DEBUG_VARS;
-float _WarehouseMacroScale;
-half _WarehouseMacroStrength;
-half _WarehouseRustStrength;
-half4 _WarehouseDetailMean;
-float4 _WarehouseResponseRect;
-float _WarehouseDetailScale;
-half _WarehouseDetailStrength;
 half _WarehouseResponseStrength;
 half _WarehouseNormalStrength;
-half _WarehouseTriplanarStrength;
-float _WarehouseObjectMetres;
+float4 _WarehouseAuxRect;
+half _WarehouseAuxiliary;
 CBUFFER_END
 
 // NOTE: Do not ifdef the properties for dots instancing, but ifdef the actual usage.

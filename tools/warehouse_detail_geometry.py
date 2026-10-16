@@ -47,8 +47,27 @@ class Detail:
         self.solids += 1
         self.triangles += kit.triangle_count(geometry)
 
-    def box(self, role, p, size, group=None, chamfer=0):
-        self.add(role, bp.u_box(p, size, min(chamfer, min(size) * .23)), group)
+    def box(self, role, p, size, group=None, chamfer=0, angles=None):
+        bevel = min(chamfer, min(size) * .23)
+        geometry = bp.u_box(p if angles is None else (0, 0, 0), size, bevel)
+        if angles is not None:
+            geometry = kit.translated(bp.u_rotated(geometry, angles), p)
+        self.add(role, geometry, group)
+
+    def gusset(self, role, corners, thickness, group, normal=(0, 0, 1)):
+        # A closed triangular plate expresses a real knee/cleat without an
+        # opaque diagonal box filling the space between supported members.
+        vertices = [tuple(point[axis] + sign * normal[axis] * thickness * .5
+                          for axis in range(3))
+                    for sign in (-1, 1) for point in corners]
+        faces = [(2, 1, 0), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)]
+        geometry = vertices, faces
+        volume = bp.signed_volume(geometry)
+        if abs(volume) < 1e-12:
+            raise RuntimeError("Warehouse gusset requires a closed nondegenerate plate")
+        if volume < 0:
+            geometry = vertices, [tuple(reversed(face)) for face in faces]
+        self.add(role, geometry, group)
 
     def rod(self, role, a, b, radius, group=None, sides=6):
         self.add(role, self.rod_geometry(a, b, radius, sides), group)
@@ -99,11 +118,26 @@ def shell(d):
         for offset in (-.065, .065):
             d.rod("Steel", (side * (14.54 + offset), 9.69, -11.3),
                   (side * (14.54 + offset), 9.69, 11.3), .022, "Structure")
+        for z in (-9, -3, 3, 9):
+            # Broad knee plates meet both the stanchion and its existing shoe;
+            # their open triangular outline reads below the chest beam.
+            d.box("Steel", (side * 14.60, .035, z), (.50, .07, .36), "Structure")
+            for dz in (-.11, .11):
+                d.gusset("Steel", ((side * 14.79, .055, z + dz),
+                         (side * 14.43, .055, z + dz),
+                         (side * 14.79, .68, z + dz)), .045, "Structure")
     # Beam end cleats read from the upper gallery without filling the central void.
     for x in (-14.7, 14.7):
         for z in (-9, -5.5, 5.5, 9):
             d.box("Rust", (x, 9.90, z), (.23, .25, .32), "Joists")
             d.beam("Steel", (x, 9.81, z), (x * .94, 10.03, z), .055, .075, "Joists")
+    for x in (-6, 6):
+        # The flush drain acquires a folded rim, retaining its original clear
+        # slots and leaving the authoritative floor entirely untouched.
+        for z in (-7.84, -7.56):
+            d.box("Steel", (x, .015, z), (.84, .018, .025), "FlushDrain")
+        for dx in (-.407, .407):
+            d.box("Steel", (x + dx, .015, -7.7), (.025, .018, .28), "FlushDrain")
 
 
 def platform(d):
@@ -141,12 +175,23 @@ def rack(d):
             for z in (-.51, .51):
                 d.box("Steel", (x, y - .095, z), (.21, .15, .045), "ShelfLips")
         d.box("Timber", (0, y - .065, 0), (.13, .08, 1.10), "Shelves")
+        for x in (-1.30, 1.30):
+            for z in (-.51, .51):
+                d.gusset("Steel", ((x, y - .015, z),
+                         (x - math.copysign(.25, x), y - .015, z),
+                         (x, max(.035, y - .25), z)), .045, "ShelfLips")
     # Folded label holders are blank hardware, not a new readable sign.
     for x in (-.86, .16, 1.04):
         d.box("Steel", (x, .965, -.586), (.30, .09, .018), "ShelfLips")
-    for x, y in ((-.95, .51), (.1, .51), (.95, 1.33), (-.5, 1.33)):
+    for x, y, z in ((-.95, .51, -.06), (.1, .51, .05), (.95, 1.33, -.02), (-.5, 1.33, .07)):
         for dx in (-.25, .25):
             d.box("Timber", (x + dx, y + .281, 0), (.024, .004, .82), "CartonSeams")
+        # Separate folded lid halves and compressed front corners interrupt
+        # the carton silhouette at a useful scale instead of adding labels.
+        for dx in (-.19, .19):
+            d.box("Cardboard", (x + dx, y + .286, z), (.34, .014, .79), "Load")
+        for dx in (-.35, .35):
+            d.box("Cardboard", (x + dx, y, z - .428), (.038, .49, .022), "Load")
 
 
 def cargo(d):
@@ -161,6 +206,17 @@ def cargo(d):
     for x in (-.91, .91):
         for z in (-.62, .62):
             d.box("Cardboard", (x, 1.14, z), (.05, .16, .09), "Load")
+    # Continuous folded corner boards bear under the two taut straps. Their
+    # paired faces stay within the original load/collision footprint.
+    for x in (-.94, .94):
+        for z in (-.65, .65):
+            d.box("Cardboard", (x, .71, z), (.035, .94, .10), "Load")
+            d.box("Cardboard", (x - math.copysign(.04, x), .71, z), (.10, .94, .025), "Load")
+    for z in (-.61, .61):
+        d.box("Timber", (0, .115, z), (1.82, .065, .14), "PalletSkids")
+    for x in (-.47, .47):
+        for z in (-.34, .34):
+            d.box("Cardboard", (x, 1.235, z), (.83, .012, .22), "Load", angles=(2, 0, 0))
 
 
 def pipes(d):
@@ -189,6 +245,15 @@ def room(d):
     for z in (-2.77, 2.77):
         for x in (-2., 0, 2.):
             d.box("ConcreteDark", (x, .29, z), (.14, .52, .035), "LowerGuard")
+        d.box("ConcreteDark", (0, .565, z), (5.65, .05, .085), "LowerGuard")
+    # Folded jamb returns stop outside the clear 2.4m opening. A supported
+    # bearer and a shallow junction cover explain the existing service feed.
+    for z in (-1.32, 1.32):
+        d.box("Steel", (2.75, 1.3, z), (.12, 2.58, .16), "EntryFrame")
+    d.box("Steel", (2.75, 2.655, 0), (.12, .15, 2.76), "EntryFrame")
+    d.box("Steel", (-2.75, 1.39, -2.2), (.15, .26, .29), "EntryFrame", chamfer=.015)
+    d.gusset("Steel", ((-2.62, 2.39, -1.8), (-2.62, 2.83, -1.8),
+             (-2.18, 2.83, -1.8)), .07, "SaggedBearer")
 
 
 def door(d):
@@ -211,6 +276,25 @@ def gate(d):
     for x in (-1.78, 1.78):
         for dx in (-.085, .085):
             d.rod("WornSteel", (x + dx, 3.19, -.247), (x + dx, 3.19, -.258), .019, "ShaftBearings")
+    for x in (-2.08, 2.08):
+        d.box("Steel", (x + math.copysign(.07, x), 1.55, -.075),
+              (.045, 2.95, .29), "GuideSlots")
+        for y in (.66, 2.34):
+            for dy in (-.105, .105):
+                d.box("Steel", (x, y + dy, -.19), (.20, .055, .07), "GuideSlots")
+    d.box("Steel", (0, 3.19, -.225), (3.34, .23, .07), "DriveHeader")
+
+
+def gate_control(d):
+    # The reduction housing has a split case and bearing neck; all wheel
+    # additions retain their existing animated group, never the fixed chain.
+    for x in (-.145, .145):
+        d.box("Rust", (x, 1.36, -.08), (.035, .28, .20), "Gearbox")
+    d.box("Rust", (0, 1.535, -.08), (.30, .04, .21), "Gearbox")
+    d.ring("Steel", (0, 1.36, -.205), .10, .071, .06, "Z", "WheelHub", sides=12)
+    for y in (1.86, 2.62):
+        d.gusset("WornSteel", ((0, y - .075, .025), (0, y - .075, -.10),
+                 (0, y + .075, .025)), .14, "RiserBrackets", normal=(1, 0, 0))
 
 
 def fan_rotor(d):
@@ -222,6 +306,18 @@ def fan_rotor(d):
         for distance in (.65, 1.34):
             geometry = d.rod_geometry((distance, .074, 0), (distance, .10, 0), .027, 6)
             d.add("WornSteel" if index % 2 else "Rust", bp.u_rotated(geometry, (0, angle, 0)), "Blades")
+        # A broad folded root saddle gives each blade a reinforced attachment;
+        # its underside remains readable from the hall, below the old rib.
+        geometry = bp.u_box((.80, -.065, 0), (.62, .11, .30), .008)
+        d.add("WornSteel" if index % 2 else "Rust", bp.u_rotated(geometry, (0, angle, 0)), "Blades")
+
+
+def fan_housing(d):
+    # Only the existing central motor grows cooling ribs and its lower case.
+    # The annular aperture, practical and broad light cone remain untouched.
+    for y in (.17, .29, .41, .53):
+        d.ring("Steel", (0, y, 0), .31, .23, .035, group="Motor", sides=12)
+    d.box("Steel", (.24, .35, 0), (.19, .30, .27), "Motor", chamfer=.025)
 
 
 def lift_frame(d):
@@ -237,6 +333,14 @@ def lift_frame(d):
     d.box("Steel", (0, 8.49, .72), (.67, .32, .57), "HoistDeck")
     for x in (-.24, 0, .24):
         d.box("Steel", (x, 8.48, 1.02), (.055, .27, .025), "HoistDeck")
+    for x in (-1.43, 1.43):
+        for y in (.58, 3.1, 6.3, 8.40):
+            # Short open guide saddles terminate against the upright rather
+            # than introducing a second continuous wall inside the cage.
+            d.box("Steel", (x, y, 0), (.12, .14, .32), "CarriageGuides")
+            for z in (-.14, .14):
+                d.gusset("Steel", ((x, y - .07, z), (x, y + .16, z),
+                         (x - math.copysign(.23, x), y - .07, z)), .035, "Uprights")
 
 
 def lift_platform(d):
@@ -245,6 +349,10 @@ def lift_platform(d):
     for x in (-.90, .90):
         for z in (-.85, .85):
             d.box("Rust", (x, .18, z), (.18, .12, .18), "CarriageLip")
+    # Three inset bearing strips articulate the load bed without changing its
+    # envelope or adding recurring detail to the ordinary gallery modules.
+    for x in (-.63, 0, .63):
+        d.box("Steel", (x, .113, 0), (.11, .026, 1.86), "Carriage")
 
 
 def drum(d):
@@ -263,6 +371,16 @@ def drum(d):
     d.box("Steel", (0, .31, -.72), (2.82, .09, .08), "Frame")
     for x in (-1.32, 1.32):
         d.beam("Steel", (x, .25, -.70), (x, .80, -.45), .07, .08, "Frame")
+    for x in (-.73, .73):
+        for index in range(4):
+            angle = math.pi * .25 + index * math.pi * .5
+            d.beam("Steel", (x, 1.1 + .18 * math.cos(angle), .18 * math.sin(angle)),
+                   (x, 1.1 + .61 * math.cos(angle), .61 * math.sin(angle)), .07, .07, "DrumRotor")
+    for x in (-.96, .96):
+        d.box("Steel", (x, 1.32, 0), (.31, .09, .44), "Supports", chamfer=.015)
+        for dx in (-.06, .06):
+            d.gusset("Rust", ((x + dx, .095, -.60), (x + dx, .095, .60),
+                     (x + dx, .63, 0)), .035, "Feet", normal=(1, 0, 0))
 
 
 def pusher_frame(d):
@@ -279,6 +397,14 @@ def pusher_frame(d):
         d.rod("Steel", (x, .41, .55), (x, .72, .55), .027, "LoadRails")
     for y in (.63, .85, 1.08):
         d.box("WornSteel", (0, y, -1.267), (.48, .035, .025), "Drive")
+    d.box("WornSteel", (0, .51, -.90), (.54, .20, .28), "Drive", chamfer=.022)
+    for x in (-.48, .48):
+        d.box("Steel", (x, .56, -.87), (.30, .23, .34), "LoadRails")
+        d.ring("Rust", (x, .89, -.66), .12, .086, .07, "Z", "Cylinders")
+        for dx in (-.068, .068):
+            for dy in (-.068, .068):
+                d.rod("Rust", (x + dx, .89 + dy, -1.025),
+                      (x + dx, .89 + dy, -.665), .012, "Cylinders")
 
 
 def pusher_head(d):
@@ -290,6 +416,13 @@ def pusher_head(d):
         d.box("Timber", (x, .395, .32), (.11, .07, .44), "EndlessLoad")
     for x in (-.50, .50):
         d.box("Cardboard", (x, 1.49, .32), (.06, .07, .37), "EndlessLoad")
+    # Back ribs belong to the moving plate; a folded side stiffener carries
+    # force from each polished rod without entering the carried carton.
+    for x in (-.48, .48):
+        d.gusset("Steel", ((x, .46, -.035), (x, 1.30, -.035),
+                 (x, .89, -.34)), .07, "PushPlate", normal=(1, 0, 0))
+    for y in (.48, 1.30):
+        d.box("Steel", (0, y, -.075), (1.28, .075, .09), "PushPlate")
 
 
 def lockers(d):
@@ -302,6 +435,12 @@ def lockers(d):
             d.box("Rust", (x - .285, y, -.317), (.035, .13, .028), "CorrodedHinge")
         d.box("WornSteel", (x + .21, .92, -.316), (.075, .24, .026), "LockerDoors")
         d.box("Steel", (x, 1.79, -.12), (.55, .065, .25), "LockerBodies")
+        for y in (.155, 1.755):
+            d.box("WornSteel", (x, y, -.318), (.53, .045, .018), "LockerDoors")
+        for y in (.27, 1.60):
+            for row in range(3):
+                d.box("WornSteel", (x, y + row * .05 + .014, -.328),
+                      (.385, .018, .036), "LockerDoors", angles=(24, 0, 0))
     # Natural differences: extra door patches, spare peg caps, or a braced repair.
     for variant in range(3):
         group = f"RoomVariant{variant}"
@@ -322,11 +461,20 @@ def break_room(d):
     for x in (-.79, .79):
         d.beam("Steel", (x, .28, .065), (x, .28, .49), .05, .05, "TableLegs")
     d.box("Steel", (0, .35, .29), (1.6, .08, .055), "TableLegs")
+    for z in (.025, .535):
+        d.box("Timber", (0, .704, z), (1.73, .12, .045), "TableTop")
+    for x in (-.80, .80):
+        d.box("Timber", (x, .704, .28), (.045, .12, .48), "TableTop")
+        d.gusset("Steel", ((x, .53, .12), (x, .755, .12),
+                 (x - math.copysign(.23, x), .755, .12)), .055, "TableLegs")
     for x in (-.58, .58):
         for dx in (-.14, .14):
             d.box("Steel", (x + dx, .24, -.44), (.035, .04, .30), "StoolLegs")
         for dx in (-.15, .15):
             d.rod("Steel", (x + dx, .499, -.44), (x + dx, .509, -.44), .013, "TinCup")
+        for z in (-.60, -.28):
+            d.box("Timber", (x, .398, z), (.36, .055, .035), "StoolSeats")
+    d.ring("Steel", (.47, 1.017, .24), .073, .061, .020, group="TinCup", sides=12)
     # Empty wrappers, folded tray or a compressed stack stay on the table.
     for variant in range(3):
         group = f"RoomVariant{variant}"
@@ -357,6 +505,11 @@ def technical_room(d):
         d.box("Steel", (x, .17, .39), (width * .62, .19, .13), "ControlBodies")
         for dx in (-.14, .14):
             d.rod("Steel", (x + dx, .16, .39), (x + dx, .47, .39), .022, "ControlBodies")
+        for yy in (y - height * .5 + .11, y + height * .5 - .11):
+            d.box("WornSteel", (x, yy, -.179), (width - .12, .045, .055), "ControlDoors")
+        for row in range(4):
+            d.box("WornSteel", (x, y - .186 + row * .09, -.185),
+                  (width * .60, .026, .055), "ControlDoors", angles=(25, 0, 0))
     for x in (-.93, .88):
         for y in (.48, 1.08, 1.69):
             d.box("Steel", (x, y, .43), (.12, .06, .13), "PipeFeed")
@@ -381,7 +534,8 @@ def technical_room(d):
 
 DETAILS = {"Shell": shell, "Platform": platform, "Stair": stair, "Rail": rail,
            "Rack": rack, "Cargo": cargo, "Pipes": pipes, "RoomShell": room,
-           "MainDoor": door, "Gate": gate, "FanRotor": fan_rotor,
+           "MainDoor": door, "Gate": gate, "GateControl": gate_control,
+           "FanRotor": fan_rotor, "FanHousing": fan_housing,
            "LiftFrame": lift_frame, "LiftPlatform": lift_platform, "ChainDrum": drum,
            "PusherFrame": pusher_frame, "PusherHead": pusher_head,
            "LockerProps": lockers, "BreakProps": break_room, "TechnicalProps": technical_room}

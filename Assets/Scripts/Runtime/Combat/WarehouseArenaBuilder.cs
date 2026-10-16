@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -15,14 +16,17 @@ namespace BarPromenade
                 CombatTestRoot owner = parent.GetComponent<CombatTestRoot>();
                 GameObject gate = null, door = null, control = null;
                 int roomDetailIndex = (int)(unchecked((uint)plan.Seed) % 3u);
+                var surfaceOrdinals = new Dictionary<string, int>(StringComparer.Ordinal);
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
                 {
+                    int surfaceSlot = NextSurfaceSlot(part.Kind, surfaceOrdinals);
                     bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
                         Mathf.Abs(part.Position.z - 10.5f) < .01f && Mathf.Abs(Mathf.Abs(part.Position.x) - 1.5f) < .01f;
                     GameObject model = gateDeck
                         ? WarehouseGateAssets.Create(part.Position.x < 0f ? "GatePlatformLeft" : "GatePlatformRight",
                             host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f))
-                        : WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position, Quaternion.Euler(0f, part.Yaw, 0f));
+                        : WarehouseArenaAssetProvider.Create(part.Kind, host.transform, part.Position,
+                            Quaternion.Euler(0f, part.Yaw, 0f), surfaceSlot);
                     if (part.Kind == "TechnicalProps" || part.Kind == "LockerProps" || part.Kind == "BreakProps")
                         SelectRoomDetails(model.transform, roomDetailIndex++ % 3);
                     if (part.Kind == "GateControl") control = model;
@@ -34,10 +38,12 @@ namespace BarPromenade
                 control.GetComponent<WarehouseGateController>().BindWorld(gate, door, plan, owner);
                 WarehouseEntranceDoor.Create(plan, host.transform, owner);
                 foreach (WarehouseArenaStair stair in plan.Stairs)
-                    WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity);
+                    WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity,
+                        NextSurfaceSlot("Stair", surfaceOrdinals));
                 foreach (WarehouseArenaRailSpan span in plan.RailSpans)
                 {
-                    GameObject rail = WarehouseArenaAssetProvider.Create("Rail", host.transform, span.Position, Quaternion.Euler(0f, span.Yaw, 0f));
+                    GameObject rail = WarehouseArenaAssetProvider.Create("Rail", host.transform, span.Position,
+                        Quaternion.Euler(0f, span.Yaw, 0f), NextSurfaceSlot("Rail", surfaceOrdinals));
                     // Only the metre wrapper changes; the imported root retains its FBX unit factor.
                     rail.transform.localScale = new Vector3(span.Length, 1f, 1f);
                 }
@@ -45,7 +51,7 @@ namespace BarPromenade
                 {
                     WarehouseArenaLamp lamp = plan.Lamps[lampIndex];
                     GameObject fixture = WarehouseArenaAssetProvider.Create(lamp.Kind, host.transform,
-                        lamp.Position, lamp.ModelRotation);
+                        lamp.Position, lamp.ModelRotation, NextSurfaceSlot(lamp.Kind, surfaceOrdinals));
                     if (lamp.Kind == "EmergencyRoomLamp") WarehouseArenaAssetProvider.SetSignalLight(fixture, lamp.Enabled);
                     if (lamp.Enabled)
                     {
@@ -74,6 +80,17 @@ namespace BarPromenade
                 else UnityEngine.Object.DestroyImmediate(host);
                 throw;
             }
+        }
+
+        private static int NextSurfaceSlot(string kind, Dictionary<string, int> ordinals)
+        {
+            ordinals.TryGetValue(kind, out int ordinal);
+            ordinals[kind] = ordinal + 1;
+            if (Array.IndexOf(WarehouseArenaAssetProvider.FishModelNames, kind) >= 0) return 0;
+            int count = WarehouseArenaAssetProvider.SurfaceSlotCount(kind);
+            if (ordinal >= count)
+                throw new InvalidOperationException("Warehouse surface layout is stale for " + kind + "; export and author its placement slots again.");
+            return ordinal;
         }
 
         private static void SelectRoomDetails(Transform root, int variant)

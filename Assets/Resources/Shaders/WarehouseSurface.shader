@@ -3,21 +3,11 @@ Shader "Bar Promenade/Warehouse Surface"
 {
     Properties
     {
-        _WarehouseMacroMask("Damp / rust / scuff macro mask", 2D) = "black" {}
-        _WarehouseMacroScale("Macro repeats per metre", Float) = 0.073
-        _WarehouseMacroStrength("Macro variation", Range(0,1)) = 0.7
-        _WarehouseRustStrength("Rust response", Range(0,1)) = 0.3
-        _WarehouseDetailMap("Metre-space material albedo", 2D) = "gray" {}
-        _WarehouseDetailMean("Measured linear detail mean", Vector) = (0.2,0.2,0.2,1)
-        _WarehouseDetailScale("Detail repeats per metre", Float) = 2
-        _WarehouseDetailStrength("Unique atlas material detail", Range(0,1)) = 0
-        _WarehouseMaterialResponse("Height slopes / roughness / cavity", 2D) = "gray" {}
-        _WarehouseResponseRect("Padded material response cell", Vector) = (0.46875,0.46875,0.015625,0.015625)
+        _WarehouseMaterialResponse("Unique slopes / roughness / cavity", 2D) = "gray" {}
         _WarehouseResponseStrength("Physical material response", Range(0,1)) = 0
         _WarehouseNormalStrength("Near material relief", Range(0,1)) = 0
-        _WarehouseTriplanarMap("Object anchored deformation texture", 2D) = "white" {}
-        _WarehouseTriplanarStrength("Selective triplanar blend", Range(0,1)) = 0
-        _WarehouseObjectMetres("Imported object unit factor", Float) = 100
+        _WarehouseAuxRect("Bounded auxiliary surface patch", Vector) = (1,1,0,0)
+        _WarehouseAuxiliary("Auxiliary surface coordinates", Float) = 0
         // Specular vs Metallic workflow
         _WorkflowMode("WorkflowMode", Float) = 1.0
 

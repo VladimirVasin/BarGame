@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish warehouse bases, Blender UV bakes, packed masks and fixed decals."""
+"""Publish one unique warehouse painting, registered response and fixed cutouts."""
 from __future__ import annotations
 
 import argparse
@@ -23,10 +23,10 @@ OUTPUT = ROOT / "Assets/Resources/CombatWarehouse/Textures"
 NAMES = tuple("Warehouse" + name for name in
               ("Concrete", "Paint", "Steel", "Rust", "Timber", "Cardboard", "Rubber"))
 SIZE = 512
-ATLAS_NAMES = ("WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas")
-GPU_BUDGET_BYTES = 8 * 1024 * 1024
-RESPONSE_CELLS = ("concrete", "metal", "timber", "fibre")
-RESPONSE_PADDING = 8
+ATLAS_NAMES = ("WarehouseMasterAtlas", "WarehouseMaterialResponse")
+MASTER_SIZE = 4096
+RESPONSE_SIZE = 2048
+GPU_BUDGET_BYTES = 28 * 1024 * 1024
 
 
 def prepare_room_numbers():
@@ -95,28 +95,6 @@ def encode_png(image):
     return buffer.getvalue()
 
 
-def packed_macro_mask():
-    """Periodic low frequency channel data, rather than an albedo painting.
-
-    R = moisture, G = oxide deposits, B = rubbed transport patches. The
-    harmonics are fixed and periodic so the large-scale repeated map has
-    continuous gradients; all costly construction occurs at publication.
-    """
-    yy, xx = np.mgrid[0:SIZE, 0:SIZE].astype(np.float64) * (2 * math.pi / SIZE)
-    channels = []
-    modes = (((1, 0, .52, .37), (0, 1, .31, 1.13), (1, 2, .17, 2.17), (3, -1, .10, .53)),
-             ((1, 1, .47, 1.67), (2, -1, .28, .23), (0, 3, .16, 2.81), (4, 2, .07, .37)),
-             ((2, 0, .45, .83), (0, 2, .29, 2.33), (2, 3, .18, 1.23), (5, -2, .08, 2.73)))
-    for channel in modes:
-        field = sum(weight * np.sin(xx * x + yy * y + phase) for x, y, weight, phase in channel)
-        channels.append(np.clip(.5 + field * .45, 0, 1))
-    data = np.rint(np.stack(channels, axis=2) * 255).astype(np.uint8)
-    # The last pixel and first pixel are neighbours in a periodic texture.
-    assert max(np.abs(data[0].astype(int) - data[-1].astype(int)).max(),
-               np.abs(data[:, 0].astype(int) - data[:, -1].astype(int)).max()) <= 8
-    return Image.fromarray(data)
-
-
 def bc7_mip_bytes(size):
     total = 0
     while True:
@@ -125,152 +103,53 @@ def bc7_mip_bytes(size):
         size //= 2
 
 
-def packed_material_response():
-    """Four periodic physical height fields, never normals inferred from colour.
-
-    RG stores signed height slopes, B stores roughness and A stores shallow
-    material cavities. Wrapped padding protects each cell's bilinear/mip edge;
-    the shader uses explicit metre-UV gradients before applying frac().
-    """
-    cell_size = SIZE // 2
-    inner = cell_size - 2 * RESPONSE_PADDING
-    yy, xx = np.mgrid[0:inner, 0:inner].astype(np.float64) * (2 * math.pi / inner)
-    broad = .50 + .18 * np.sin(xx * 3 + np.sin(yy * 2)) + .14 * np.cos(yy * 5 - xx * 2)
-    fine = np.sin(xx * 23 + yy * 17) * np.cos(yy * 19 - xx * 11)
-    pore = np.maximum(0, np.sin(xx * 13 + np.cos(yy * 7)) * np.cos(yy * 17 - xx * 5) - .42)
-    heights = (
-        .16 * fine + .12 * np.sin(xx * 9 - yy * 11) - pore * 1.1,
-        .075 * fine - pore * .75 + .08 * np.sin(xx * 37 + np.sin(yy * 3)),
-        .26 * np.sin(xx * 31 + .8 * np.sin(yy * 2)) + .10 * np.sin(xx * 61 + np.sin(yy * 5)),
-        .12 * np.sin(xx * 47) + .08 * np.sin(yy * 39) + .06 * fine,
-    )
-    result = np.empty((SIZE, SIZE, 4), dtype=np.uint8)
-    for index, height in enumerate(heights):
-        # Derivatives are generated in material space. Runtime reconstructs
-        # their world frame from UV1, including reflected/rotating meshes.
-        slope_x = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * 1.6
-        # PNG row order runs opposite to the shader's increasing texture V.
-        slope_y = (np.roll(height, 1, axis=0) - np.roll(height, -1, axis=0)) * 1.6
-        roughness = np.clip((.72, .59, .77, .84)[index] + (broad - .5) * .22 + pore * .22, .28, .98)
-        cavity = np.clip(.94 - pore * .75 - np.maximum(0, -height) * .15, .45, 1)
-        packed = np.stack((np.clip(.5 + slope_x * .5, 0, 1),
-                           np.clip(.5 + slope_y * .5, 0, 1), roughness, cavity), axis=2)
-        packed = np.rint(packed * 255).astype(np.uint8)
-        padded = np.pad(packed, ((RESPONSE_PADDING, RESPONSE_PADDING), (RESPONSE_PADDING, RESPONSE_PADDING), (0, 0)), mode="wrap")
-        y, x = divmod(index, 2)
-        result[y*cell_size:(y+1)*cell_size, x*cell_size:(x+1)*cell_size] = padded
-    return Image.fromarray(result)
-
-
-def add_detail_sheets(textures, measures):
-    uv_manifest = json.loads((OUTPUT.parent / "CombatWarehouse3D.json").read_text(encoding="utf8"))["surfaces"]
-    authored = {record["name"]: record["sha256"] for record in uv_manifest["atlases"]}
-    assert set(authored) == set(ATLAS_NAMES)
+def build(validate_only):
+    manifest_source = json.loads((OUTPUT.parent / "CombatWarehouse3D.json").read_text(encoding="utf8"))["surfaces"]
+    authored = {row["name"]: row for row in manifest_source["atlases"]}
+    if set(authored) != set(ATLAS_NAMES) or manifest_source["size"] != MASTER_SIZE or manifest_source["tiled_models"]:
+        raise RuntimeError("Republish the unique master UV/physical bake before its runtime textures")
+    textures, measures = {}, []
     for name in ATLAS_NAMES:
         path = SOURCE / "Atlases" / (name + ".source.png")
-        source_checksum = hashlib.sha256(path.read_bytes()).hexdigest()
-        assert source_checksum == authored[name], "UV manifest and baked source differ: " + name
-        original = Image.open(path)
-        assert original.size == (1024, 1024), "Blender atlas must retain its authored UV resolution"
-        output = original.convert("RGB")
-        assert float(np.asarray(output).std()) > 3, "Atlas bake is empty: " + name
-        encoded = encode_png(output)
-        textures[name] = (encoded, dict(size=1024, clamp=True))
-        measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(),
-                             source_sha256=source_checksum,
-                             size=1024, mode="RGB", sRGB=True, wrap="Clamp", authoring="Blender EMIT UV bake"))
-    name = "WarehouseMacroMask"
-    encoded = encode_png(packed_macro_mask())
-    textures[name] = (encoded, dict(linear=True))
-    measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), size=SIZE,
-                         mode="RGB", sRGB=False, wrap="Repeat", authoring="periodic packed channel data v1",
-                         channels=["moisture", "oxide", "rubbed patches"]))
-    name = "WarehouseMaterialResponse"
-    encoded = encode_png(packed_material_response())
-    textures[name] = (encoded, dict(linear=True, clamp=True))
-    measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), size=SIZE,
-                         mode="RGBA", sRGB=False, wrap="Clamp", authoring="periodic physical material fields v1",
-                         channels=["height slope U", "height slope V", "roughness", "micro cavity"],
-                         cells=list(RESPONSE_CELLS), padding_px=RESPONSE_PADDING))
+        raw = path.read_bytes()
+        checksum = hashlib.sha256(raw).hexdigest()
+        assert checksum == authored[name]["sha256"], "Changed registered warehouse bake " + name
+        linear = name == "WarehouseMaterialResponse"
+        size = RESPONSE_SIZE if linear else MASTER_SIZE
+        image = Image.open(io.BytesIO(raw)).convert("RGBA" if linear else "RGB")
+        assert image.size == (size, size)
+        assert np.asarray(image)[..., :3].std() > 3, "Empty master bake"
+        encoded = encode_png(image)
+        textures[name] = (encoded, dict(size=size, clamp=True, linear=linear))
+        measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), source_sha256=checksum,
+            size=size, mode=image.mode, sRGB=not linear, wrap="Clamp",
+            authoring="registered unique placement master bake v5",
+            channels=["height slope U", "height slope V", "roughness", "cavity"] if linear else ["albedo R", "albedo G", "albedo B"]))
     provenance = json.loads((SOURCE / "wear-generation.json").read_text(encoding="utf8"))
-    assert provenance["generator"] == "image_gen (built-in)"
     row = provenance["images"][0]
-    assert row["name"] == "WarehouseWearDecals" and row["prompt"] and row["layout_edit"]
-    path = ROOT / row["source"]
-    assert path.resolve().is_relative_to(SOURCE.resolve())
-    raw = path.read_bytes()
+    assert provenance["generator"] == "image_gen (built-in)" and row["name"] == "WarehouseWearDecals"
+    raw = (ROOT / row["source"]).read_bytes()
     assert hashlib.sha256(raw).hexdigest() == row["sha256"]
-    original = Image.open(io.BytesIO(raw))
-    assert original.mode == "RGBA" and original.width == original.height
-    output = original.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
-    alpha = np.asarray(output)[:, :, 3]
-    assert alpha.min() == 0 and alpha.max() == 255
-    assert max(alpha[SIZE//2-4:SIZE//2+4].max(), alpha[:, SIZE//2-4:SIZE//2+4].max()) < 16, \
-        "Decal designs crossed their UV cells"
-    for y in range(2):
-        for x in range(2):
-            cell = alpha[y*SIZE//2:(y+1)*SIZE//2, x*SIZE//2:(x+1)*SIZE//2]
-            assert float((cell > 40).mean()) > .015, "A decal cell is empty"
-    encoded = encode_png(output)
+    image = Image.open(io.BytesIO(raw)).convert("RGBA").resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+    encoded = encode_png(image)
     textures[row["name"]] = (encoded, dict(clamp=True, alpha=True))
     measures.append(dict(name=row["name"], sha256=hashlib.sha256(encoded).hexdigest(),
-                         source_sha256=row["sha256"], size=SIZE, mode="RGBA", sRGB=True,
-                         wrap="Clamp", authoring="image_gen fixed transparent 2x2 source"))
-
-
-def build(validate_only):
-    provenance = json.loads((SOURCE / "generation.json").read_text(encoding="utf8"))
-    assert provenance["generator"] == "image_gen (built-in)"
-    assert tuple(row["name"] for row in provenance["images"]) == NAMES
-    textures = {}
-    measures = []
-    for row in provenance["images"]:
-        path = ROOT / row["source"]
-        assert path.resolve().is_relative_to(SOURCE.resolve())
-        raw = path.read_bytes()
-        assert hashlib.sha256(raw).hexdigest() == row["sha256"], "Changed source " + row["name"]
-        assert row["prompt"]
-        original = Image.open(io.BytesIO(raw))
-        assert original.width == original.height and original.width >= SIZE
-        # Asset publication only: keep the drawing intact, convert and downsample.
-        output = original.convert("RGB").resize((SIZE, SIZE), Image.Resampling.LANCZOS)
-        values = np.asarray(output).astype(np.float64) / 255
-        linear = np.where(values <= .04045, values / 12.92, ((values + .055) / 1.055) ** 2.4)
-        luminance = linear @ np.array([.2126, .7152, .0722])
-        assert .002 < float(luminance.mean()) < .65, "Lost matte albedo range"
-        assert float(values.std()) > .015, "Empty surface"
-        buffer = io.BytesIO()
-        output.save(buffer, format="PNG", optimize=False)
-        encoded = buffer.getvalue()
-        textures[row["name"]] = (encoded, {})
-        measures.append(dict(name=row["name"], sha256=hashlib.sha256(encoded).hexdigest(),
-                             mean_linear_luminance=round(float(luminance.mean()), 6),
-                             mean_linear_rgb=[round(float(channel), 6) for channel in linear.mean(axis=(0, 1))],
-                             size=SIZE, mode="RGB", sRGB=True, wrap="Repeat"))
-    assert len({row["sha256"] for row in measures}) == len(NAMES)
-    add_detail_sheets(textures, measures)
-    # The fish generator owns this published sheet; nevertheless it remains
-    # resident alongside this kit and must be charged to the SAME budget.
-    label_path = OUTPUT / "WarehouseFishLabels.png"
-    label_bytes = label_path.read_bytes()
-    with Image.open(io.BytesIO(label_bytes)) as label:
-        assert label.size == (SIZE, SIZE), "Fish labels changed their runtime texture size"
-        label_mode = label.mode
+        source_sha256=row["sha256"], size=SIZE, mode="RGBA", sRGB=True, wrap="Clamp", authoring="unchanged authored sparse wear cutouts"))
+    label_bytes = (OUTPUT / "WarehouseFishLabels.png").read_bytes()
+    label = Image.open(io.BytesIO(label_bytes))
+    assert label.size == (SIZE, SIZE)
     measures.append(dict(name="WarehouseFishLabels", sha256=hashlib.sha256(label_bytes).hexdigest(),
-                         size=SIZE, mode=label_mode, sRGB=True, wrap="Clamp",
-                         authoring="tools/build-combat-warehouse-fish-props.py; accounted external sheet"))
-    estimated_gpu_bytes = sum(bc7_mip_bytes(row["size"]) for row in measures)
-    assert estimated_gpu_bytes <= GPU_BUDGET_BYTES, "Warehouse texture memory budget exceeded"
-    manifest = json.dumps(dict(design_id="warehouse_uv_surfaces_v4", mipmaps=True,
-                              windows_compression="BC7", gpu_budget_bytes=GPU_BUDGET_BYTES,
-                              estimated_gpu_bytes=estimated_gpu_bytes, sheets=measures), indent=2) + "\n"
+        size=SIZE, mode=label.mode, sRGB=True, wrap="Clamp", authoring="accounted external fish-label drawing"))
+    estimated = sum(bc7_mip_bytes(row["size"]) for row in measures)
+    assert estimated <= GPU_BUDGET_BYTES
+    manifest = json.dumps(dict(design_id="warehouse_unique_surface_v5", mipmaps=True,
+        windows_compression="BC7", gpu_budget_bytes=GPU_BUDGET_BYTES, estimated_gpu_bytes=estimated,
+        sheets=measures), indent=2) + "\n"
     if validate_only:
         for name, (data, _) in textures.items():
-            assert (OUTPUT / (name + ".png")).read_bytes() == data, "Stale surface " + name
+            assert (OUTPUT / (name + ".png")).read_bytes() == data, "Stale warehouse map " + name
         assert (OUTPUT / "WarehouseTextures.json").read_text(encoding="utf8") == manifest
     else:
-        OUTPUT.mkdir(parents=True, exist_ok=True)
-        meta(OUTPUT, True)
         for name, (data, profile) in textures.items():
             path = OUTPUT / (name + ".png")
             path.write_bytes(data)
@@ -278,8 +157,15 @@ def build(validate_only):
         path = OUTPUT / "WarehouseTextures.json"
         path.write_text(manifest, encoding="utf8")
         meta(path)
-    print("WAREHOUSE TEXTURES OK: bases, 3 unique atlases, macro/physical response, decals and fish labels; "
-          f"BC7/mips {estimated_gpu_bytes} bytes <= {GPU_BUDGET_BYTES}")
+        # Old maps remain preserved as authoring sources. Remove obsolete
+        # published resources so a packaging/load cannot retain the old bank.
+        obsolete = (*NAMES, "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas", "WarehouseMacroMask")
+        for name in obsolete:
+            for suffix in (".png", ".png.meta"):
+                path = OUTPUT / (name + suffix)
+                if path.exists():
+                    path.unlink()
+    print(f"WAREHOUSE MASTER TEXTURES OK: {MASTER_SIZE} albedo / {RESPONSE_SIZE} unique response / two {SIZE} detail sheets; BC7+mips {estimated} <= {GPU_BUDGET_BYTES}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-warehouse-gate-chain-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "1.1.0",
   "blender_version": "5.0.1",
-  "build_signature": "cd308ef16ce827d57cefb147d13f13378ff22c46b71c7823ec1e33aed420088e",
+  "build_signature": "4e6b4af5b84beb0090886eb4b036848771006f522330032fbfd716db3225a496",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -957,13 +957,43 @@
   ],
   "source": {
     "fbx": "Assets/Resources/CombatWarehouse/GateControl.fbx",
-    "sha256": "c730a9fdff81b5e8532315f794b530f5c1e3275a8ad006fa2ff60fb5e527adfe"
+    "sha256": "437cc1d1a460e405d188c1d73bf22075a34ca45efab60a4ae86ced5683831a83"
   },
-  "chain_signature": "b09f53ba8ca1a80750c4afe7355a10fbca437a2ad606eb69d312f530113b6a59",
+  "chain_signature": "b0eda6d35dbcdae097305bc32fb9abc779057867e7b10a137e15bd3a6d7cc6bc",
   "contract": {
     "chain_count": 28,
     "original_geometry_and_uvs": true,
     "root_frame": "GateControl local metres",
+    "deck_surfaces": {
+      "master_manifest": "Assets/Resources/CombatWarehouse/CombatWarehouse3D.json",
+      "master_sha256": "51f36897a8b4e2ff0e01454443aef85b92e53326346b3d7a375373fdfb2d2fd7",
+      "layout": "ArtSource/CombatWarehouse/WarehouseLayout.json",
+      "layout_sha256": "638f6118f39b319438c54095af51e6b4d64814f28432c122147252e4a938d1c7",
+      "uv_signature": "2fe99a84cec10d176e75c55eb45244f48d1c8bb4a05d9a201694a6a1d1370722",
+      "size": 4096,
+      "placements": [
+        {
+          "name": "GatePlatformLeft",
+          "surface_slot": 53,
+          "position": [
+            -1.5,
+            3.2,
+            10.5
+          ]
+        },
+        {
+          "name": "GatePlatformRight",
+          "surface_slot": 54,
+          "position": [
+            1.5,
+            3.2,
+            10.5
+          ]
+        }
+      ],
+      "projection": "original Platform placement chart; colour and response retain their world field",
+      "assigned_uv_signature": "39478e483edd0d70461246737ec925fbd7f6d849bda52f9ac2b1e2a8e17ef759"
+    },
     "open_joint_between": [
       18,
       19

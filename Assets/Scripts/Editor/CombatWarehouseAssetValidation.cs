@@ -71,7 +71,7 @@ namespace BarPromenade.Editor
                 manifest.generator != "tools/build-combat-warehouse-3d-model.py" ||
                 string.IsNullOrWhiteSpace(manifest.build_signature) || manifest.models == null ||
                 manifest.models.Length != WarehouseArenaAssetProvider.CoreModelCount ||
-                manifest.surfaces == null || manifest.surfaces.size != 1024 ||
+                manifest.surfaces == null || manifest.surfaces.size != 4096 ||
                 string.IsNullOrWhiteSpace(manifest.surfaces.uv_signature))
                 throw new InvalidOperationException("Warehouse manifest violates its passive metric module contract.");
 
@@ -101,6 +101,7 @@ namespace BarPromenade.Editor
                 RequireVector(model.bounds_min, model.name + " minimum");
                 RequireVector(model.bounds_max, model.name + " maximum");
             }
+            ValidateSurfaceVariants();
 
             Scene preview = EditorSceneManager.NewPreviewScene();
             GameObject root = null;
@@ -223,6 +224,94 @@ namespace BarPromenade.Editor
         private static bool Finite(Vector2 value) => !float.IsNaN(value.x) && !float.IsNaN(value.y) &&
             !float.IsInfinity(value.x) && !float.IsInfinity(value.y);
 
+        private static void ValidateSurfaceVariants()
+        {
+            TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(Folder + "WarehouseSurfaceVariants.json");
+            GameObject library = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "WarehouseSurfaceVariants.fbx");
+            SurfaceVariantManifest manifest = source == null ? null : JsonUtility.FromJson<SurfaceVariantManifest>(source.text);
+            if (library == null || manifest?.variants == null || manifest.counts == null || manifest.auxiliary == null ||
+                source != Resources.Load<TextAsset>(WarehouseArenaAssetProvider.ResourceFolder + "WarehouseSurfaceVariants") ||
+                library != Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + "WarehouseSurfaceVariants") ||
+                manifest.counts.Length != WarehouseArenaAssetProvider.CoreModelCount ||
+                library.GetComponentsInChildren<Collider>(true).Length != 0 ||
+                library.GetComponentsInChildren<Rigidbody>(true).Length != 0 ||
+                library.GetComponentsInChildren<Animator>(true).Length != 0 ||
+                library.GetComponentsInChildren<Light>(true).Length != 0)
+                throw new InvalidOperationException("Warehouse surface variants require a passive, measured library.");
+            var nodes = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+            foreach (MeshFilter filter in library.GetComponentsInChildren<MeshFilter>(true))
+                if (filter.sharedMesh == null || !filter.sharedMesh.isReadable || !nodes.TryAdd(filter.name, filter.sharedMesh))
+                    throw new InvalidOperationException("Warehouse surface library mesh is empty, unreadable or repeated.");
+            var usedNodes = new HashSet<string>(StringComparer.Ordinal);
+            var slots = new HashSet<string>(StringComparer.Ordinal);
+            foreach (SurfaceVariant variant in manifest.variants)
+            {
+                if (variant == null || variant.slot <= 0 || Array.IndexOf(WarehouseArenaAssetProvider.ModelNames, variant.kind) < 0 ||
+                    !slots.Add(variant.kind + "/" + variant.slot) || variant.meshes == null || variant.meshes.Length == 0)
+                    throw new InvalidOperationException("Warehouse surface library contains an invalid or repeated slot.");
+                GameObject original = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + variant.kind + ".fbx");
+                if (original == null) throw new InvalidOperationException("Warehouse surface slot source is missing: " + variant.kind);
+                var originals = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+                foreach (MeshFilter filter in original.GetComponentsInChildren<MeshFilter>(true))
+                    if (!filter.name.StartsWith("Collision_", StringComparison.Ordinal) &&
+                        !filter.name.Contains("__WearDecal")) originals.Add(SourceName(filter.name), filter.sharedMesh);
+                var replacementNames = new HashSet<string>(StringComparer.Ordinal);
+                foreach (SurfaceVariantMesh part in variant.meshes)
+                {
+                    if (part == null || !replacementNames.Add(part.source) || !usedNodes.Add(part.node) ||
+                        !nodes.TryGetValue(part.node, out Mesh replacement) || !originals.TryGetValue(part.source, out Mesh originalMesh))
+                        throw new InvalidOperationException("Warehouse surface slot references an absent or repeated source/node.");
+                    ValidateSurfaceCoordinates(variant.kind, part.node, replacement);
+                    if (replacement.vertexCount != originalMesh.vertexCount || replacement.subMeshCount != originalMesh.subMeshCount ||
+                        Vector3.Distance(replacement.bounds.min, originalMesh.bounds.min) > .00001f ||
+                        Vector3.Distance(replacement.bounds.max, originalMesh.bounds.max) > .00001f)
+                        throw new InvalidOperationException("Warehouse surface slot changed source geometry: " + part.node);
+                    for (int submesh = 0; submesh < replacement.subMeshCount; submesh++)
+                        if (replacement.GetIndexCount(submesh) != originalMesh.GetIndexCount(submesh))
+                            throw new InvalidOperationException("Warehouse surface slot changed source topology: " + part.node);
+                    Vector2[] variantUv = replacement.uv, originalUv = originalMesh.uv;
+                    Vector2[] variantMetres = replacement.uv2, originalMetres = originalMesh.uv2;
+                    bool changed = false;
+                    for (int vertex = 0; vertex < variantUv.Length; vertex++)
+                    {
+                        changed |= (variantUv[vertex] - originalUv[vertex]).sqrMagnitude > .00000001f;
+                        if ((variantMetres[vertex] - originalMetres[vertex]).sqrMagnitude > .00000001f)
+                            throw new InvalidOperationException("Warehouse surface slot changed metre-space UV1: " + part.node);
+                    }
+                    if (!changed) throw new InvalidOperationException("Warehouse surface copy must own distinct UV0: " + part.node);
+                }
+                if (replacementNames.Count != originals.Count)
+                    throw new InvalidOperationException("Warehouse surface slot must cover every ordinary source renderer: " + variant.kind);
+            }
+            if (usedNodes.Count != nodes.Count)
+                throw new InvalidOperationException("Warehouse surface library contains an unreferenced mesh.");
+            var kinds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (SurfaceSlotCount count in manifest.counts)
+            {
+                if (count == null || !kinds.Add(count.kind) || count.count < 1 ||
+                    count.count != WarehouseArenaAssetProvider.SurfaceSlotCount(count.kind))
+                    throw new InvalidOperationException("Warehouse surface slot population differs from runtime: " + count?.kind);
+                for (int slot = 1; slot < count.count; slot++)
+                    if (!slots.Remove(count.kind + "/" + slot))
+                        throw new InvalidOperationException("Warehouse surface slot population has a gap: " + count.kind);
+            }
+            if (slots.Count != 0) throw new InvalidOperationException("Warehouse surface variant exceeds its declared population.");
+            var roles = new HashSet<string>(StringComparer.Ordinal);
+            foreach (AuxiliarySurface surface in manifest.auxiliary)
+            {
+                if (surface == null || !roles.Add(surface.role) || surface.rect == null || surface.rect.Length != 4 ||
+                    surface.rect[0] <= 0f || surface.rect[1] <= 0f || surface.rect[2] < 0f || surface.rect[3] < 0f ||
+                    surface.rect[0] + surface.rect[2] > 1f || surface.rect[1] + surface.rect[3] > 1f)
+                    throw new InvalidOperationException("Warehouse auxiliary surface patch escaped its clamped master sheet.");
+            }
+        }
+
+        private static string SourceName(string name)
+        {
+            int suffix = name.LastIndexOf('.');
+            return suffix >= 0 && int.TryParse(name.Substring(suffix + 1), out _) ? name.Substring(0, suffix) : name;
+        }
+
         private static void RequireVector(float[] value, string label)
         {
             if (value == null || value.Length != 3)
@@ -236,8 +325,8 @@ namespace BarPromenade.Editor
         {
             TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(Folder + "Textures/WarehouseTextures.json");
             TextureManifest manifest = source == null ? null : JsonUtility.FromJson<TextureManifest>(source.text);
-            if (manifest == null || manifest.design_id != "warehouse_uv_surfaces_v4" ||
-                manifest.gpu_budget_bytes != 8 * 1024 * 1024 || manifest.sheets == null ||
+            if (manifest == null || manifest.design_id != "warehouse_unique_surface_v5" ||
+                manifest.gpu_budget_bytes != 28 * 1024 * 1024 || manifest.sheets == null ||
                 manifest.sheets.Length != WarehouseArenaAssetProvider.TextureNames.Length)
                 throw new InvalidOperationException("Warehouse texture manifest must account for every resident sheet, including fish labels.");
             var sheetNames = new HashSet<string>(StringComparer.Ordinal);
@@ -250,21 +339,19 @@ namespace BarPromenade.Editor
                 measuredBytes += Bc7MipBytes(sheet.size);
             }
             if (measuredBytes != manifest.estimated_gpu_bytes || measuredBytes > manifest.gpu_budget_bytes)
-                throw new InvalidOperationException("Warehouse full resident texture set exceeds its measured 8 MiB BC7/mip budget.");
+                throw new InvalidOperationException("Warehouse full resident texture set exceeds its measured 28 MiB BC7/mip budget.");
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
                 bool atlas = Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,name) >= 0;
-                bool label = name == "WarehouseFishLabels";
-                bool mask = name == "WarehouseMacroMask" || name == "WarehouseMaterialResponse";
                 bool response = name == "WarehouseMaterialResponse", decals = name == "WarehouseWearDecals";
-                int size = atlas ? 1024 : 512;
-                TextureWrapMode wrap = atlas || decals || label || response ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+                int size = atlas ? 4096 : response ? 2048 : 512;
+                TextureWrapMode wrap = TextureWrapMode.Clamp;
                 string path = Folder + "Textures/" + name + ".png";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 if (texture == null || importer == null || texture.width != size || texture.height != size ||
                     texture != Resources.Load<Texture2D>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name) ||
-                    importer.sRGBTexture == mask || !importer.mipmapEnabled || importer.isReadable ||
+                    importer.sRGBTexture == response || !importer.mipmapEnabled || importer.isReadable ||
                     importer.wrapMode != wrap || importer.maxTextureSize != size ||
                     (decals && importer.alphaSource != TextureImporterAlphaSource.FromInput))
                     throw new InvalidOperationException("Warehouse texture violates its bounded atlas/base/mask import profile: " + name);
@@ -272,14 +359,14 @@ namespace BarPromenade.Editor
                 if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != size)
                     throw new InvalidOperationException("Warehouse surface must retain the Windows BC7 profile: " + name);
                 TextureSheet sheet = Array.Find(manifest.sheets, item => item.name == name);
-                if (sheet.size != size || sheet.sRGB == mask || sheet.wrap != wrap.ToString())
+                if (sheet.size != size || sheet.sRGB == response || sheet.wrap != wrap.ToString())
                     throw new InvalidOperationException("Warehouse measured texture profile differs from its imported sheet: " + name);
             }
         }
 
         private static long Bc7MipBytes(int size)
         {
-            if (size != 512 && size != 1024)
+            if (size != 512 && size != 2048 && size != 4096)
                 throw new InvalidOperationException("Warehouse texture dimensions escaped the bounded base/atlas profiles.");
             long result = 0;
             for (;;)
@@ -297,6 +384,24 @@ namespace BarPromenade.Editor
             public int gpu_budget_bytes, estimated_gpu_bytes;
             public TextureSheet[] sheets;
         }
+
+        [Serializable] private sealed class SurfaceVariantManifest
+        {
+            public SurfaceVariant[] variants;
+            public SurfaceSlotCount[] counts;
+            public AuxiliarySurface[] auxiliary;
+        }
+
+        [Serializable] private sealed class SurfaceVariant
+        {
+            public string kind;
+            public int slot;
+            public SurfaceVariantMesh[] meshes;
+        }
+
+        [Serializable] private sealed class SurfaceVariantMesh { public string source, node; }
+        [Serializable] private sealed class SurfaceSlotCount { public string kind; public int count; }
+        [Serializable] private sealed class AuxiliarySurface { public string role; public float[] rect; }
 
         [Serializable] private sealed class TextureSheet
         {

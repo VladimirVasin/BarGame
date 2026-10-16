@@ -96,9 +96,12 @@ namespace BarPromenade
             light.range = lamp.Range;
             light.spotAngle = lamp.OuterAngle;
             light.innerSpotAngle = lamp.InnerAngle;
-            light.shadows = roomIndicator ? LightShadows.None : LightShadows.Hard;
-            light.shadowBias = .035f;
-            light.shadowNormalBias = .12f;
+            // The red point source is close to the next deck. Its six bounded
+            // low-tier faces must respect that deck and the room's solid roof.
+            light.shadows = LightShadows.Hard;
+            light.shadowBias = roomIndicator ? .012f : .035f;
+            light.shadowNormalBias = roomIndicator ? .025f : .12f;
+            if (roomIndicator) light.shadowNearPlane = .03f;
             UniversalAdditionalLightData data = host.AddComponent<UniversalAdditionalLightData>();
             data.usePipelineSettings = false;
             data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;

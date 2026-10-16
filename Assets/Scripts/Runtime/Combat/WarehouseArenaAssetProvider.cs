@@ -18,27 +18,34 @@ namespace BarPromenade
         public static readonly string[] FishModelNames = { "FishPreparationStation", "EmergencyRoomLamp",
             "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan", "FishStationLamp" };
         public const int CoreModelCount = 36;
-        public static readonly string[] TextureNames = { "WarehouseConcrete", "WarehousePaint", "WarehouseSteel",
-            "WarehouseRust", "WarehouseTimber", "WarehouseCardboard", "WarehouseRubber",
-            "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas", "WarehouseCargoAtlas",
-            "WarehouseMacroMask", "WarehouseMaterialResponse", "WarehouseWearDecals", "WarehouseFishLabels" };
-        public static readonly string[] AtlasTextureNames = { "WarehouseMechanismsAtlas", "WarehouseFurnishingsAtlas",
-            "WarehouseCargoAtlas" };
+        public static readonly string[] TextureNames = { "WarehouseMasterAtlas", "WarehouseMaterialResponse",
+            "WarehouseWearDecals", "WarehouseFishLabels" };
+        public static readonly string[] AtlasTextureNames = { "WarehouseMasterAtlas" };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
         private static readonly HashSet<string> Measured = new HashSet<string>();
         private static Manifest manifest;
         private static Manifest fishManifest;
-        private static TextureManifest textureManifest;
+        private static readonly Dictionary<string, Dictionary<int, Dictionary<string, Mesh>>> SurfaceVariants =
+            new Dictionary<string, Dictionary<int, Dictionary<string, Mesh>>>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, Vector4> AuxiliaryRects = new Dictionary<string, Vector4>(StringComparer.Ordinal);
+        private static bool variantsLoaded;
 
         [Serializable] private sealed class Manifest { public Model[] models; }
         [Serializable] private sealed class Model { public string name; public float[] bounds_min, bounds_max; }
-        [Serializable] private sealed class TextureManifest { public TextureSheet[] sheets; }
-        [Serializable] private sealed class TextureSheet { public string name; public float[] mean_linear_rgb; }
+        [Serializable] private sealed class SurfaceVariantManifest { public SurfaceVariant[] variants; public AuxiliarySurface[] auxiliary; }
+        [Serializable] private sealed class SurfaceVariant { public string kind; public int slot; public SurfaceMesh[] meshes; }
+        [Serializable] private sealed class SurfaceMesh { public string source, node; }
+        [Serializable] private sealed class AuxiliarySurface { public string role; public float[] rect; }
 
-        public static GameObject Create(string kind, Transform parent, Vector3 position, Quaternion rotation)
+        public static GameObject Create(string kind, Transform parent, Vector3 position, Quaternion rotation, int surfaceSlot = 0)
         {
             if (Array.IndexOf(ModelNames,kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
+            int slotCount = SurfaceSlotCount(kind);
+            if (surfaceSlot < 0 || surfaceSlot >= slotCount) throw new ArgumentOutOfRangeException(nameof(surfaceSlot));
+            Dictionary<string, Mesh> surfaceMeshes = null;
+            if (SurfaceVariants.TryGetValue(kind, out Dictionary<int, Dictionary<string, Mesh>> slots))
+                slots.TryGetValue(surfaceSlot, out surfaceMeshes);
             if (!Templates.TryGetValue(kind,out GameObject template) || template == null)
             {
                 template = Resources.Load<GameObject>(ResourceFolder + kind);
@@ -61,9 +68,11 @@ namespace BarPromenade
                         FootstepGroundKind.Metal : FootstepGroundKind.Concrete);
                     continue;
                 }
+                if (surfaceMeshes != null && surfaceMeshes.TryGetValue(SurfaceSourceName(renderer.name), out Mesh variant))
+                    renderer.GetComponent<MeshFilter>().sharedMesh = variant;
                 int separator = renderer.name.LastIndexOf("__",StringComparison.Ordinal);
                 if (separator < 0) throw new InvalidOperationException("Warehouse mesh lacks a surface role: " + renderer.name);
-                string role = renderer.name.Substring(separator + 2);
+                string role = SurfaceSourceName(renderer.name.Substring(separator + 2));
                 renderer.sharedMaterial = Surface(kind,role);
                 renderer.shadowCastingMode = role == "Lamp" || role == "SignalRed" || role == "SignalRedOff" || role == "Glass" || role == "WearDecal" ?
                     ShadowCastingMode.Off : ShadowCastingMode.On;
@@ -124,22 +133,68 @@ namespace BarPromenade
         public static string AtlasForModel(string kind)
         {
             if (Array.IndexOf(FishModelNames, kind) >= 0) return null;
-            switch (kind)
-            {
-                case "Shell": case "RoomShell": case "Platform": case "Stair": case "Rail": return null;
-                case "MainDoor": case "LockerProps": case "BreakProps": case "TechnicalProps": case "Lamp":
-                case "EmergencyLamp":
-                case "RoomSign1": case "RoomSign2": case "RoomSign3": case "RoomSign4": case "RoomSign5":
-                case "RoomSign6": case "RoomSign7": case "RoomSign8": case "RoomSign9":
-                    return "WarehouseFurnishingsAtlas";
-                case "Rack": case "Cargo": return "WarehouseCargoAtlas";
-                default:
-                    if (Array.IndexOf(ModelNames,kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
-                    return "WarehouseMechanismsAtlas";
-            }
+            if (Array.IndexOf(ModelNames,kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
+            return "WarehouseMasterAtlas";
         }
 
-        public static Material GetPropSurface(string role) => Surface("Shell", role);
+        public static Material GetPropSurface(string role) => Surface("Auxiliary", role);
+
+        public static int SurfaceSlotCount(string kind)
+        {
+            if (Array.IndexOf(ModelNames, kind) < 0) throw new ArgumentOutOfRangeException(nameof(kind));
+            if (Array.IndexOf(FishModelNames, kind) >= 0) return 1;
+            LoadSurfaceVariants();
+            return SurfaceVariants.TryGetValue(kind, out Dictionary<int, Dictionary<string, Mesh>> slots) ? slots.Count : 1;
+        }
+
+        private static string SurfaceSourceName(string name)
+        {
+            int suffix = name.LastIndexOf('.');
+            return suffix >= 0 && int.TryParse(name.Substring(suffix + 1), out _) ? name.Substring(0, suffix) : name;
+        }
+
+        private static void LoadSurfaceVariants()
+        {
+            if (variantsLoaded) return;
+            TextAsset source = Resources.Load<TextAsset>(ResourceFolder + "WarehouseSurfaceVariants");
+            GameObject library = Resources.Load<GameObject>(ResourceFolder + "WarehouseSurfaceVariants");
+            SurfaceVariantManifest records = source == null ? null : JsonUtility.FromJson<SurfaceVariantManifest>(source.text);
+            if (library == null || records?.variants == null)
+                throw new InvalidOperationException("Warehouse requires its bounded authored surface variant library.");
+            var meshes = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+            foreach (MeshFilter filter in library.GetComponentsInChildren<MeshFilter>(true))
+                if (filter.sharedMesh == null || !meshes.TryAdd(filter.name, filter.sharedMesh))
+                    throw new InvalidOperationException("Warehouse surface library contains an empty or repeated mesh: " + filter.name);
+            foreach (SurfaceVariant record in records.variants)
+            {
+                if (record == null || Array.IndexOf(ModelNames, record.kind) < 0 || record.slot < 0 || record.meshes == null)
+                    throw new InvalidOperationException("Warehouse surface variant record is invalid.");
+                if (!SurfaceVariants.TryGetValue(record.kind, out Dictionary<int, Dictionary<string, Mesh>> slots))
+                {
+                    slots = new Dictionary<int, Dictionary<string, Mesh>> { [0] = null };
+                    SurfaceVariants.Add(record.kind, slots);
+                }
+                var replacements = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+                foreach (SurfaceMesh part in record.meshes)
+                    if (part == null || !meshes.TryGetValue(part.node, out Mesh mesh) ||
+                        !replacements.TryAdd(part.source, mesh))
+                        throw new InvalidOperationException("Warehouse surface variant mesh is absent or repeated: " + record.kind);
+                if (record.slot == 0 && slots[0] == null) slots[0] = replacements;
+                else if (!slots.TryAdd(record.slot, replacements))
+                    throw new InvalidOperationException("Warehouse surface variant slot is repeated: " + record.kind);
+            }
+            foreach (KeyValuePair<string, Dictionary<int, Dictionary<string, Mesh>>> pair in SurfaceVariants)
+                for (int slot = 0; slot < pair.Value.Count; slot++)
+                    if (!pair.Value.ContainsKey(slot))
+                        throw new InvalidOperationException("Warehouse surface slots must be contiguous: " + pair.Key);
+            foreach (AuxiliarySurface surface in records.auxiliary ?? Array.Empty<AuxiliarySurface>())
+            {
+                if (surface?.rect == null || surface.rect.Length != 4 ||
+                    !AuxiliaryRects.TryAdd(surface.role, new Vector4(surface.rect[0], surface.rect[1], surface.rect[2], surface.rect[3])))
+                    throw new InvalidOperationException("Warehouse auxiliary material patch is invalid or repeated.");
+            }
+            variantsLoaded = true;
+        }
 
         public static void SetSignalLight(GameObject fixture, bool enabled)
         {
@@ -150,8 +205,9 @@ namespace BarPromenade
 
         internal static Material Surface(string kind, string role)
         {
-            string atlas = AtlasForModel(kind);
-            string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Structure";
+            bool auxiliary = kind == "Auxiliary" || Array.IndexOf(FishModelNames, kind) >= 0;
+            string atlas = auxiliary ? null : AtlasForModel(kind);
+            string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Props";
             bool fanLens = kind == "FanHousing" && role == "Lamp";
             bool fishBulb = kind == "FishStationLamp" && role == "Lamp";
             string key = family + "/" + (fishBulb ? "FishBulb" : fanLens ? "FanLens" : role);
@@ -159,49 +215,51 @@ namespace BarPromenade
             string texture = null; Color color;
             switch (role)
             {
-                case "Concrete": color = new Color(.84f,.88f,.83f); texture = "WarehouseConcrete"; break;
-                case "ConcreteDark": color = new Color(.57f,.63f,.58f); texture = "WarehouseConcrete"; break;
-                case "Steel": color = new Color(.72f,.77f,.70f); texture = "WarehousePaint"; break;
-                case "WornSteel": color = new Color(.88f,.88f,.82f); texture = "WarehouseSteel"; break;
-                case "Rust": color = new Color(.90f,.83f,.72f); texture = "WarehouseRust"; break;
-                case "Timber": color = new Color(.80f,.77f,.68f); texture = "WarehouseTimber"; break;
-                case "Cardboard": color = new Color(.88f,.82f,.72f); texture = "WarehouseCardboard"; break;
+                case "Concrete": color = new Color(.84f,.88f,.83f); break;
+                case "ConcreteDark": color = new Color(.57f,.63f,.58f); break;
+                case "Steel": color = new Color(.72f,.77f,.70f); break;
+                case "WornSteel": color = new Color(.88f,.88f,.82f); break;
+                case "Rust": color = new Color(.90f,.83f,.72f); break;
+                case "Timber": color = new Color(.80f,.77f,.68f); break;
+                case "Cardboard": color = new Color(.88f,.82f,.72f); break;
                 case "Glass": color = new Color(.22f,.30f,.28f); break;
                 case "Lamp": color = new Color(.38f,.37f,.31f); break;
                 case "SignalRed": color = new Color(.90f,.045f,.02f); break;
                 case "SignalRedOff": color = new Color(.12f,.018f,.014f); break;
-                case "SpoiledFish": color = new Color(.38f,.42f,.29f); texture = "WarehouseConcrete"; break;
-                case "SpoiledFishFlesh": color = new Color(.43f,.34f,.25f); texture = "WarehouseConcrete"; break;
-                case "SpoiledFishDark": color = new Color(.075f,.085f,.055f); texture = "WarehouseRubber"; break;
+                case "SpoiledFish": color = new Color(.38f,.42f,.29f); break;
+                case "SpoiledFishFlesh": color = new Color(.43f,.34f,.25f); break;
+                case "SpoiledFishDark": color = new Color(.075f,.085f,.055f); break;
                 case "FishLabelPaper": color = Color.white; texture = "WarehouseFishLabels"; break;
                 case "FishLabelInk": color = new Color(.065f,.085f,.070f); break;
                 case "SafetyYellow": color = new Color(.82f,.62f,.12f); break;
                 case "NumberPlate": color = new Color(.83f,.79f,.64f); break;
                 case "LockSteel": color = new Color(.44f,.46f,.45f); break;
-                case "Rubber": color = new Color(.70f,.73f,.69f); texture = "WarehouseRubber"; break;
+                case "Rubber": color = new Color(.70f,.73f,.69f); break;
                 case "WearDecal": color = Color.white; texture = "WarehouseWearDecals"; break;
                 default: throw new InvalidOperationException("Unknown warehouse surface " + role);
             }
-            string detailTexture = texture;
-            if (role == "LockSteel") detailTexture = "WarehouseSteel";
-            if (role == "SafetyYellow") detailTexture = "WarehousePaint";
             // Role properties remain shared within each atlas family. A copied
             // cargo or mechanism never allocates another instance material.
             if (atlas != null && role != "WearDecal")
             {
                 texture = atlas;
-                // The EMIT bake already includes each role's authored tint.
+                // The master painting already includes each role's authored tint.
                 // Tinting again would square that darkness on the props.
                 color = Color.white;
             }
             bool layered = role != "WearDecal" && role != "Lamp" && role != "Glass" && role != "NumberPlate" &&
                 role != "SignalRed" && role != "SignalRedOff";
-            if (role == "FishLabelPaper") layered = false;
+            if (role == "FishLabelPaper" || role == "FishLabelInk") layered = false;
+            if (auxiliary && layered)
+            {
+                texture = "WarehouseMasterAtlas";
+                color = Color.white;
+            }
             Shader shader = Resources.Load<Shader>(layered ? "Shaders/WarehouseSurface" : "Shaders/Ps1Lit");
             if (shader == null) throw new InvalidOperationException("Warehouse requires its PS1 surface shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>(ResourceFolder + "Textures/" + texture);
             if (sheet == null) throw new InvalidOperationException("Warehouse is missing its shared surface " + texture);
-            var material = new Material(shader) { name = "Warehouse " + family + " " + role + " Shared", hideFlags = HideFlags.HideAndDontSave,
+            var material = new Material(shader) { name = "Warehouse " + key.Replace('/', ' ') + " Shared", hideFlags = HideFlags.HideAndDontSave,
                 enableInstancing = true };
             material.SetTexture("_BaseMap",sheet); material.SetColor("_BaseColor",color.linear);
             material.SetFloat("_Smoothness",role == "Glass" ? .35f : .12f);
@@ -224,16 +282,15 @@ namespace BarPromenade
             }
             if (layered)
             {
-                Texture2D mask = Resources.Load<Texture2D>(ResourceFolder + "Textures/WarehouseMacroMask");
-                if (mask == null) throw new InvalidOperationException("Warehouse requires its shared macro variation mask.");
-                material.SetTexture("_WarehouseMacroMask",mask);
-                // Props already own a unique causal macro bake. Repeating it
-                // in world space would make a rotating rotor swim through dirt.
-                material.SetFloat("_WarehouseMacroStrength",atlas == null ? .72f : 0f);
-                material.SetFloat("_WarehouseRustStrength",atlas == null ?
-                    (role == "Steel" || role == "WornSteel" || role == "Rust" ? .46f : .12f) : 0f);
-                material.SetFloat("_WarehouseTriplanarStrength",0f);
-                ConfigureMaterialDetail(material, role, detailTexture, atlas != null);
+                ConfigureMaterialResponse(material, role);
+                if (auxiliary)
+                {
+                    LoadSurfaceVariants();
+                    if (!AuxiliaryRects.TryGetValue(role, out Vector4 rect))
+                        throw new InvalidOperationException("Warehouse lacks its bounded auxiliary material patch: " + role);
+                    material.SetVector("_WarehouseAuxRect", rect);
+                    material.SetFloat("_WarehouseAuxiliary", 1f);
+                }
             }
             if (role == "WearDecal")
             {
@@ -250,54 +307,33 @@ namespace BarPromenade
             return material;
         }
 
-        private static void ConfigureMaterialDetail(Material material, string role, string textureName, bool atlas)
+        private static void ConfigureMaterialResponse(Material material, string role)
         {
-            int cell;
-            float normal, scale;
+            float normal;
             switch (role)
             {
-                case "Concrete": case "ConcreteDark": cell = 0; normal = .24f; scale = 1.6f; break;
+                case "Concrete": case "ConcreteDark": normal = .24f; break;
                 case "Steel": case "WornSteel": case "LockSteel": case "SafetyYellow":
-                    cell = 1; normal = .18f; scale = 2f; break;
-                case "Rust": cell = 1; normal = .26f; scale = 2f; break;
-                case "Timber": cell = 2; normal = .28f; scale = 1.3f; break;
-                case "Cardboard": cell = 3; normal = .12f; scale = 2f; break;
-                case "Rubber": cell = 3; normal = .09f; scale = 2.5f; break;
-                default: return;
+                    normal = .18f; break;
+                case "Rust": normal = .26f; break;
+                case "Timber": normal = .28f; break;
+                case "Cardboard": normal = .12f; break;
+                case "Rubber": normal = .09f; break;
+                default: normal = .12f; break;
             }
             Texture2D response = Resources.Load<Texture2D>(ResourceFolder + "Textures/WarehouseMaterialResponse");
             if (response == null) throw new InvalidOperationException("Warehouse is missing its shared material response.");
             material.SetTexture("_WarehouseMaterialResponse", response);
-            material.SetVector("_WarehouseResponseRect", new Vector4(240f / 512f, 240f / 512f,
-                (cell % 2) * .5f + 8f / 512f, (cell < 2 ? .5f : 0f) + 8f / 512f));
-            material.SetFloat("_WarehouseResponseStrength", .65f);
+            material.SetFloat("_WarehouseResponseStrength", .9f);
             material.SetFloat("_WarehouseNormalStrength", normal);
-            material.SetFloat("_WarehouseDetailScale", scale);
-            material.SetFloat("_WarehouseDetailStrength", atlas ? .72f : 0f);
-            if (!atlas) return;
-            Texture2D detail = Resources.Load<Texture2D>(ResourceFolder + "Textures/" + textureName);
-            if (detail == null) throw new InvalidOperationException("Warehouse is missing metre-space detail " + textureName);
-            material.SetTexture("_WarehouseDetailMap", detail);
-            if (textureManifest == null)
-            {
-                TextAsset source = Resources.Load<TextAsset>(ResourceFolder + "Textures/WarehouseTextures");
-                if (source == null) throw new InvalidOperationException("Warehouse lacks its measured material texture manifest.");
-                textureManifest = JsonUtility.FromJson<TextureManifest>(source.text);
-            }
-            if (textureManifest?.sheets == null)
-                throw new InvalidOperationException("Warehouse material texture manifest has no measured sheets.");
-            TextureSheet sheet = Array.Find(textureManifest.sheets, item => item.name == textureName);
-            if (sheet?.mean_linear_rgb == null || sheet.mean_linear_rgb.Length != 3)
-                throw new InvalidOperationException("Republish warehouse measured detail means: " + textureName);
-            material.SetVector("_WarehouseDetailMean", new Vector4(sheet.mean_linear_rgb[0],
-                sheet.mean_linear_rgb[1], sheet.mean_linear_rgb[2], 1f));
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
             foreach (Material material in Materials.Values) if (material != null) UnityEngine.Object.Destroy(material);
-            Materials.Clear(); Templates.Clear(); Measured.Clear(); manifest = null; fishManifest = null; textureManifest = null;
+            Materials.Clear(); Templates.Clear(); Measured.Clear(); SurfaceVariants.Clear(); AuxiliaryRects.Clear();
+            manifest = null; fishManifest = null; variantsLoaded = false;
         }
     }
 }

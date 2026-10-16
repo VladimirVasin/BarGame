@@ -1,0 +1,6333 @@
+{
+  "version": "2.2.0",
+  "atlas": "WarehouseMasterAtlas",
+  "uv_signature": "2fe99a84cec10d176e75c55eb45244f48d1c8bb4a05d9a201694a6a1d1370722",
+  "counts": [
+    {
+      "kind": "BreakProps",
+      "count": 3
+    },
+    {
+      "kind": "Cargo",
+      "count": 4
+    },
+    {
+      "kind": "ChainDrum",
+      "count": 1
+    },
+    {
+      "kind": "EmergencyLamp",
+      "count": 1
+    },
+    {
+      "kind": "FanHousing",
+      "count": 1
+    },
+    {
+      "kind": "FanRotor",
+      "count": 1
+    },
+    {
+      "kind": "Gate",
+      "count": 1
+    },
+    {
+      "kind": "GateControl",
+      "count": 1
+    },
+    {
+      "kind": "Lamp",
+      "count": 4
+    },
+    {
+      "kind": "LiftFrame",
+      "count": 1
+    },
+    {
+      "kind": "LiftPlatform",
+      "count": 1
+    },
+    {
+      "kind": "LockerProps",
+      "count": 3
+    },
+    {
+      "kind": "MainDoor",
+      "count": 1
+    },
+    {
+      "kind": "PipeElbow",
+      "count": 1
+    },
+    {
+      "kind": "PipeEnd",
+      "count": 1
+    },
+    {
+      "kind": "PipeStraight",
+      "count": 1
+    },
+    {
+      "kind": "Pipes",
+      "count": 1
+    },
+    {
+      "kind": "Platform",
+      "count": 118
+    },
+    {
+      "kind": "PusherFrame",
+      "count": 1
+    },
+    {
+      "kind": "PusherHead",
+      "count": 1
+    },
+    {
+      "kind": "Rack",
+      "count": 2
+    },
+    {
+      "kind": "Rail",
+      "count": 138
+    },
+    {
+      "kind": "RoomShell",
+      "count": 9
+    },
+    {
+      "kind": "RoomSign1",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign2",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign3",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign4",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign5",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign6",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign7",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign8",
+      "count": 1
+    },
+    {
+      "kind": "RoomSign9",
+      "count": 1
+    },
+    {
+      "kind": "Shell",
+      "count": 1
+    },
+    {
+      "kind": "Stair",
+      "count": 4
+    },
+    {
+      "kind": "TechnicalProps",
+      "count": 3
+    },
+    {
+      "kind": "TwistedFrame",
+      "count": 2
+    }
+  ],
+  "auxiliary": [
+    {
+      "role": "Concrete",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.001953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "ConcreteDark",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.126953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "Steel",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.251953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "WornSteel",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.376953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "Rust",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.501953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "Timber",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.626953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "Cardboard",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.751953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "Rubber",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.876953125,
+        0.001953125
+      ]
+    },
+    {
+      "role": "LockSteel",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.001953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "SafetyYellow",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.126953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "SpoiledFish",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.251953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "SpoiledFishFlesh",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.376953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "SpoiledFishDark",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.501953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "Glass",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.626953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "Lamp",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.751953125,
+        0.033203125
+      ]
+    },
+    {
+      "role": "SignalRed",
+      "rect": [
+        0.12109375,
+        0.02734375,
+        0.876953125,
+        0.033203125
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "kind": "Platform",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_1_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_1_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_1_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_2_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_2_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_2_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_3_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_3_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_3_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 4,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_4_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_4_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_4_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 5,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_5_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_5_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_5_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 6,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_6_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_6_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_6_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 7,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_7_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_7_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_7_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 8,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_8_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_8_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_8_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 9,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_9_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_9_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_9_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 10,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_10_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_10_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_10_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 11,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_11_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_11_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_11_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 12,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_12_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_12_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_12_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 13,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_13_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_13_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_13_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 14,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_14_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_14_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_14_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 15,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_15_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_15_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_15_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 16,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_16_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_16_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_16_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 17,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_17_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_17_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_17_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 18,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_18_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_18_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_18_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 19,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_19_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_19_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_19_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 20,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_20_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_20_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_20_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 21,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_21_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_21_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_21_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 22,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_22_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_22_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_22_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 23,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_23_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_23_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_23_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 24,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_24_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_24_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_24_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 25,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_25_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_25_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_25_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 26,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_26_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_26_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_26_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 27,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_27_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_27_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_27_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 28,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_28_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_28_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_28_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 29,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_29_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_29_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_29_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 30,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_30_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_30_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_30_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 31,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_31_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_31_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_31_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 32,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_32_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_32_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_32_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 33,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_33_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_33_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_33_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 34,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_34_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_34_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_34_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 35,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_35_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_35_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_35_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 36,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_36_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_36_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_36_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 37,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_37_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_37_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_37_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 38,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_38_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_38_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_38_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 39,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_39_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_39_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_39_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 40,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_40_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_40_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_40_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 41,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_41_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_41_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_41_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 42,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_42_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_42_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_42_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 43,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_43_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_43_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_43_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 44,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_44_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_44_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_44_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 45,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_45_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_45_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_45_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 46,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_46_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_46_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_46_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 47,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_47_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_47_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_47_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 48,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_48_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_48_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_48_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 49,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_49_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_49_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_49_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 50,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_50_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_50_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_50_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 51,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_51_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_51_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_51_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 52,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_52_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_52_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_52_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 53,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_53_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_53_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_53_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 54,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_54_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_54_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_54_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 55,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_55_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_55_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_55_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 56,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_56_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_56_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_56_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 57,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_57_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_57_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_57_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 58,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_58_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_58_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_58_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 59,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_59_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_59_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_59_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 60,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_60_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_60_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_60_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 61,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_61_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_61_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_61_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 62,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_62_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_62_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_62_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 63,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_63_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_63_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_63_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 64,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_64_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_64_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_64_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 65,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_65_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_65_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_65_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 66,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_66_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_66_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_66_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 67,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_67_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_67_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_67_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 68,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_68_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_68_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_68_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 69,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_69_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_69_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_69_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 70,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_70_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_70_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_70_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 71,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_71_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_71_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_71_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 72,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_72_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_72_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_72_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 73,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_73_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_73_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_73_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 74,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_74_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_74_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_74_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 75,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_75_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_75_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_75_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 76,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_76_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_76_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_76_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 77,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_77_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_77_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_77_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 78,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_78_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_78_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_78_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 79,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_79_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_79_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_79_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 80,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_80_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_80_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_80_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 81,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_81_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_81_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_81_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 82,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_82_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_82_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_82_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 83,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_83_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_83_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_83_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 84,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_84_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_84_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_84_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 85,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_85_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_85_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_85_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 86,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_86_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_86_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_86_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 87,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_87_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_87_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_87_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 88,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_88_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_88_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_88_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 89,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_89_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_89_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_89_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 90,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_90_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_90_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_90_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 91,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_91_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_91_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_91_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 92,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_92_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_92_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_92_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 93,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_93_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_93_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_93_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 94,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_94_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_94_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_94_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 95,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_95_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_95_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_95_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 96,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_96_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_96_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_96_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 97,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_97_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_97_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_97_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 98,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_98_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_98_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_98_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 99,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_99_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_99_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_99_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 100,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_100_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_100_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_100_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 101,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_101_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_101_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_101_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 102,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_102_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_102_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_102_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 103,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_103_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_103_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_103_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 104,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_104_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_104_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_104_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 105,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_105_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_105_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_105_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 106,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_106_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_106_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_106_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 107,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_107_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_107_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_107_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 108,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_108_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_108_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_108_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 109,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_109_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_109_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_109_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 110,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_110_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_110_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_110_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 111,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_111_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_111_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_111_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 112,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_112_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_112_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_112_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 113,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_113_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_113_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_113_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 114,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_114_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_114_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_114_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 115,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_115_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_115_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_115_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 116,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_116_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_116_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_116_2"
+        }
+      ]
+    },
+    {
+      "kind": "Platform",
+      "slot": 117,
+      "meshes": [
+        {
+          "source": "Deck__Steel",
+          "node": "V_Platform_117_0"
+        },
+        {
+          "source": "DeckBearers__Steel",
+          "node": "V_Platform_117_1"
+        },
+        {
+          "source": "DeckSeams__WornSteel",
+          "node": "V_Platform_117_2"
+        }
+      ]
+    },
+    {
+      "kind": "Stair",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "FootShoes__Steel",
+          "node": "V_Stair_1_0"
+        },
+        {
+          "source": "Guard__Steel",
+          "node": "V_Stair_1_1"
+        },
+        {
+          "source": "Stringers__Steel",
+          "node": "V_Stair_1_2"
+        },
+        {
+          "source": "TreadGrip__ConcreteDark",
+          "node": "V_Stair_1_3"
+        },
+        {
+          "source": "TreadNosing__Rust",
+          "node": "V_Stair_1_4"
+        },
+        {
+          "source": "Treads__Steel",
+          "node": "V_Stair_1_5"
+        }
+      ]
+    },
+    {
+      "kind": "Stair",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "FootShoes__Steel",
+          "node": "V_Stair_2_0"
+        },
+        {
+          "source": "Guard__Steel",
+          "node": "V_Stair_2_1"
+        },
+        {
+          "source": "Stringers__Steel",
+          "node": "V_Stair_2_2"
+        },
+        {
+          "source": "TreadGrip__ConcreteDark",
+          "node": "V_Stair_2_3"
+        },
+        {
+          "source": "TreadNosing__Rust",
+          "node": "V_Stair_2_4"
+        },
+        {
+          "source": "Treads__Steel",
+          "node": "V_Stair_2_5"
+        }
+      ]
+    },
+    {
+      "kind": "Stair",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "FootShoes__Steel",
+          "node": "V_Stair_3_0"
+        },
+        {
+          "source": "Guard__Steel",
+          "node": "V_Stair_3_1"
+        },
+        {
+          "source": "Stringers__Steel",
+          "node": "V_Stair_3_2"
+        },
+        {
+          "source": "TreadGrip__ConcreteDark",
+          "node": "V_Stair_3_3"
+        },
+        {
+          "source": "TreadNosing__Rust",
+          "node": "V_Stair_3_4"
+        },
+        {
+          "source": "Treads__Steel",
+          "node": "V_Stair_3_5"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_1_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_1_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_1_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_1_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_2_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_2_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_2_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_2_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_3_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_3_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_3_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_3_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 4,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_4_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_4_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_4_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_4_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 5,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_5_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_5_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_5_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_5_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 6,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_6_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_6_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_6_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_6_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 7,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_7_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_7_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_7_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_7_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 8,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_8_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_8_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_8_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_8_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 9,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_9_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_9_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_9_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_9_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 10,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_10_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_10_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_10_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_10_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 11,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_11_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_11_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_11_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_11_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 12,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_12_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_12_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_12_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_12_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 13,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_13_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_13_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_13_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_13_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 14,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_14_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_14_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_14_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_14_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 15,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_15_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_15_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_15_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_15_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 16,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_16_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_16_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_16_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_16_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 17,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_17_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_17_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_17_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_17_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 18,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_18_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_18_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_18_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_18_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 19,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_19_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_19_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_19_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_19_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 20,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_20_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_20_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_20_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_20_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 21,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_21_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_21_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_21_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_21_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 22,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_22_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_22_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_22_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_22_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 23,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_23_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_23_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_23_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_23_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 24,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_24_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_24_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_24_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_24_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 25,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_25_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_25_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_25_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_25_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 26,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_26_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_26_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_26_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_26_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 27,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_27_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_27_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_27_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_27_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 28,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_28_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_28_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_28_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_28_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 29,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_29_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_29_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_29_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_29_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 30,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_30_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_30_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_30_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_30_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 31,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_31_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_31_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_31_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_31_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 32,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_32_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_32_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_32_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_32_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 33,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_33_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_33_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_33_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_33_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 34,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_34_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_34_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_34_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_34_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 35,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_35_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_35_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_35_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_35_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 36,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_36_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_36_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_36_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_36_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 37,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_37_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_37_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_37_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_37_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 38,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_38_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_38_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_38_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_38_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 39,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_39_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_39_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_39_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_39_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 40,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_40_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_40_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_40_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_40_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 41,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_41_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_41_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_41_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_41_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 42,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_42_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_42_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_42_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_42_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 43,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_43_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_43_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_43_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_43_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 44,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_44_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_44_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_44_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_44_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 45,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_45_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_45_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_45_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_45_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 46,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_46_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_46_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_46_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_46_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 47,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_47_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_47_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_47_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_47_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 48,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_48_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_48_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_48_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_48_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 49,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_49_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_49_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_49_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_49_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 50,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_50_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_50_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_50_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_50_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 51,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_51_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_51_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_51_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_51_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 52,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_52_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_52_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_52_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_52_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 53,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_53_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_53_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_53_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_53_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 54,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_54_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_54_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_54_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_54_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 55,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_55_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_55_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_55_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_55_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 56,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_56_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_56_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_56_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_56_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 57,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_57_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_57_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_57_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_57_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 58,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_58_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_58_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_58_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_58_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 59,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_59_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_59_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_59_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_59_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 60,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_60_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_60_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_60_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_60_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 61,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_61_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_61_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_61_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_61_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 62,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_62_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_62_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_62_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_62_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 63,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_63_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_63_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_63_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_63_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 64,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_64_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_64_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_64_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_64_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 65,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_65_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_65_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_65_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_65_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 66,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_66_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_66_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_66_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_66_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 67,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_67_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_67_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_67_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_67_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 68,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_68_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_68_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_68_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_68_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 69,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_69_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_69_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_69_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_69_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 70,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_70_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_70_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_70_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_70_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 71,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_71_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_71_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_71_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_71_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 72,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_72_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_72_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_72_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_72_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 73,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_73_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_73_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_73_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_73_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 74,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_74_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_74_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_74_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_74_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 75,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_75_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_75_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_75_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_75_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 76,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_76_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_76_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_76_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_76_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 77,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_77_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_77_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_77_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_77_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 78,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_78_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_78_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_78_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_78_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 79,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_79_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_79_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_79_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_79_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 80,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_80_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_80_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_80_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_80_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 81,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_81_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_81_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_81_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_81_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 82,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_82_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_82_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_82_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_82_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 83,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_83_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_83_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_83_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_83_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 84,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_84_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_84_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_84_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_84_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 85,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_85_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_85_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_85_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_85_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 86,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_86_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_86_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_86_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_86_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 87,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_87_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_87_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_87_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_87_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 88,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_88_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_88_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_88_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_88_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 89,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_89_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_89_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_89_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_89_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 90,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_90_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_90_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_90_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_90_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 91,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_91_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_91_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_91_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_91_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 92,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_92_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_92_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_92_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_92_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 93,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_93_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_93_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_93_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_93_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 94,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_94_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_94_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_94_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_94_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 95,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_95_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_95_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_95_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_95_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 96,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_96_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_96_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_96_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_96_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 97,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_97_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_97_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_97_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_97_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 98,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_98_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_98_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_98_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_98_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 99,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_99_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_99_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_99_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_99_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 100,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_100_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_100_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_100_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_100_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 101,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_101_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_101_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_101_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_101_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 102,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_102_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_102_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_102_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_102_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 103,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_103_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_103_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_103_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_103_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 104,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_104_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_104_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_104_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_104_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 105,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_105_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_105_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_105_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_105_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 106,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_106_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_106_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_106_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_106_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 107,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_107_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_107_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_107_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_107_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 108,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_108_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_108_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_108_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_108_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 109,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_109_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_109_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_109_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_109_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 110,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_110_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_110_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_110_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_110_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 111,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_111_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_111_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_111_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_111_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 112,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_112_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_112_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_112_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_112_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 113,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_113_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_113_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_113_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_113_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 114,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_114_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_114_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_114_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_114_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 115,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_115_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_115_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_115_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_115_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 116,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_116_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_116_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_116_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_116_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 117,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_117_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_117_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_117_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_117_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 118,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_118_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_118_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_118_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_118_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 119,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_119_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_119_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_119_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_119_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 120,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_120_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_120_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_120_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_120_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 121,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_121_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_121_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_121_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_121_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 122,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_122_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_122_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_122_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_122_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 123,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_123_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_123_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_123_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_123_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 124,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_124_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_124_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_124_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_124_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 125,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_125_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_125_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_125_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_125_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 126,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_126_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_126_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_126_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_126_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 127,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_127_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_127_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_127_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_127_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 128,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_128_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_128_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_128_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_128_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 129,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_129_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_129_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_129_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_129_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 130,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_130_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_130_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_130_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_130_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 131,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_131_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_131_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_131_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_131_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 132,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_132_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_132_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_132_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_132_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 133,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_133_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_133_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_133_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_133_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 134,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_134_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_134_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_134_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_134_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 135,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_135_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_135_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_135_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_135_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 136,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_136_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_136_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_136_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_136_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rail",
+      "slot": 137,
+      "meshes": [
+        {
+          "source": "Bars__Steel",
+          "node": "V_Rail_137_0"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rail_137_1"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rail_137_2"
+        },
+        {
+          "source": "ToeGuard__Steel",
+          "node": "V_Rail_137_3"
+        }
+      ]
+    },
+    {
+      "kind": "Rack",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "BackBrace__Steel",
+          "node": "V_Rack_1_0"
+        },
+        {
+          "source": "CartonHandholds__ConcreteDark",
+          "node": "V_Rack_1_1"
+        },
+        {
+          "source": "CartonSeams__Timber",
+          "node": "V_Rack_1_2"
+        },
+        {
+          "source": "Load__Cardboard",
+          "node": "V_Rack_1_3"
+        },
+        {
+          "source": "Posts__Steel",
+          "node": "V_Rack_1_4"
+        },
+        {
+          "source": "ShelfLips__Steel",
+          "node": "V_Rack_1_5"
+        },
+        {
+          "source": "Shelves__Timber",
+          "node": "V_Rack_1_6"
+        },
+        {
+          "source": "Shoes__WornSteel",
+          "node": "V_Rack_1_7"
+        }
+      ]
+    },
+    {
+      "kind": "Cargo",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "CartonHandholds__ConcreteDark",
+          "node": "V_Cargo_1_0"
+        },
+        {
+          "source": "CartonSeams__Timber",
+          "node": "V_Cargo_1_1"
+        },
+        {
+          "source": "Load__Cardboard",
+          "node": "V_Cargo_1_2"
+        },
+        {
+          "source": "LoadStraps__Rubber",
+          "node": "V_Cargo_1_3"
+        },
+        {
+          "source": "PalletSkids__Timber",
+          "node": "V_Cargo_1_4"
+        },
+        {
+          "source": "PalletSlats__Timber",
+          "node": "V_Cargo_1_5"
+        }
+      ]
+    },
+    {
+      "kind": "Cargo",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "CartonHandholds__ConcreteDark",
+          "node": "V_Cargo_2_0"
+        },
+        {
+          "source": "CartonSeams__Timber",
+          "node": "V_Cargo_2_1"
+        },
+        {
+          "source": "Load__Cardboard",
+          "node": "V_Cargo_2_2"
+        },
+        {
+          "source": "LoadStraps__Rubber",
+          "node": "V_Cargo_2_3"
+        },
+        {
+          "source": "PalletSkids__Timber",
+          "node": "V_Cargo_2_4"
+        },
+        {
+          "source": "PalletSlats__Timber",
+          "node": "V_Cargo_2_5"
+        }
+      ]
+    },
+    {
+      "kind": "Cargo",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "CartonHandholds__ConcreteDark",
+          "node": "V_Cargo_3_0"
+        },
+        {
+          "source": "CartonSeams__Timber",
+          "node": "V_Cargo_3_1"
+        },
+        {
+          "source": "Load__Cardboard",
+          "node": "V_Cargo_3_2"
+        },
+        {
+          "source": "LoadStraps__Rubber",
+          "node": "V_Cargo_3_3"
+        },
+        {
+          "source": "PalletSkids__Timber",
+          "node": "V_Cargo_3_4"
+        },
+        {
+          "source": "PalletSlats__Timber",
+          "node": "V_Cargo_3_5"
+        }
+      ]
+    },
+    {
+      "kind": "Lamp",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "GuardRim__WornSteel",
+          "node": "V_Lamp_1_0"
+        },
+        {
+          "source": "Hangers__Steel",
+          "node": "V_Lamp_1_1"
+        },
+        {
+          "source": "Housing__Steel",
+          "node": "V_Lamp_1_2"
+        },
+        {
+          "source": "Lens__Lamp",
+          "node": "V_Lamp_1_3"
+        },
+        {
+          "source": "LensGuard__Steel",
+          "node": "V_Lamp_1_4"
+        },
+        {
+          "source": "Mounts__Steel",
+          "node": "V_Lamp_1_5"
+        }
+      ]
+    },
+    {
+      "kind": "Lamp",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "GuardRim__WornSteel",
+          "node": "V_Lamp_2_0"
+        },
+        {
+          "source": "Hangers__Steel",
+          "node": "V_Lamp_2_1"
+        },
+        {
+          "source": "Housing__Steel",
+          "node": "V_Lamp_2_2"
+        },
+        {
+          "source": "Lens__Lamp",
+          "node": "V_Lamp_2_3"
+        },
+        {
+          "source": "LensGuard__Steel",
+          "node": "V_Lamp_2_4"
+        },
+        {
+          "source": "Mounts__Steel",
+          "node": "V_Lamp_2_5"
+        }
+      ]
+    },
+    {
+      "kind": "Lamp",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "GuardRim__WornSteel",
+          "node": "V_Lamp_3_0"
+        },
+        {
+          "source": "Hangers__Steel",
+          "node": "V_Lamp_3_1"
+        },
+        {
+          "source": "Housing__Steel",
+          "node": "V_Lamp_3_2"
+        },
+        {
+          "source": "Lens__Lamp",
+          "node": "V_Lamp_3_3"
+        },
+        {
+          "source": "LensGuard__Steel",
+          "node": "V_Lamp_3_4"
+        },
+        {
+          "source": "Mounts__Steel",
+          "node": "V_Lamp_3_5"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_1_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_1_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_1_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_1_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_1_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_1_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_1_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_1_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_1_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_2_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_2_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_2_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_2_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_2_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_2_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_2_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_2_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_2_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 3,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_3_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_3_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_3_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_3_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_3_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_3_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_3_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_3_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_3_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 4,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_4_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_4_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_4_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_4_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_4_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_4_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_4_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_4_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_4_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 5,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_5_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_5_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_5_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_5_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_5_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_5_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_5_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_5_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_5_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 6,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_6_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_6_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_6_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_6_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_6_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_6_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_6_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_6_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_6_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 7,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_7_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_7_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_7_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_7_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_7_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_7_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_7_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_7_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_7_8"
+        }
+      ]
+    },
+    {
+      "kind": "RoomShell",
+      "slot": 8,
+      "meshes": [
+        {
+          "source": "CableTray__Rust",
+          "node": "V_RoomShell_8_0"
+        },
+        {
+          "source": "EntryFrame__Steel",
+          "node": "V_RoomShell_8_1"
+        },
+        {
+          "source": "LowerGuard__ConcreteDark",
+          "node": "V_RoomShell_8_2"
+        },
+        {
+          "source": "RoomBack__Concrete",
+          "node": "V_RoomShell_8_3"
+        },
+        {
+          "source": "RoomEntry__Concrete",
+          "node": "V_RoomShell_8_4"
+        },
+        {
+          "source": "RoomFront__Concrete",
+          "node": "V_RoomShell_8_5"
+        },
+        {
+          "source": "RoomLeft__Concrete",
+          "node": "V_RoomShell_8_6"
+        },
+        {
+          "source": "RoomRoof__ConcreteDark",
+          "node": "V_RoomShell_8_7"
+        },
+        {
+          "source": "SaggedBearer__Steel",
+          "node": "V_RoomShell_8_8"
+        }
+      ]
+    },
+    {
+      "kind": "LockerProps",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "CorrodedHinge__Rust",
+          "node": "V_LockerProps_1_0"
+        },
+        {
+          "source": "Handles__Rust",
+          "node": "V_LockerProps_1_1"
+        },
+        {
+          "source": "LockerBodies__Steel",
+          "node": "V_LockerProps_1_2"
+        },
+        {
+          "source": "LockerDoors__WornSteel",
+          "node": "V_LockerProps_1_3"
+        },
+        {
+          "source": "RoomVariant0__WornSteel",
+          "node": "V_LockerProps_1_4"
+        },
+        {
+          "source": "RoomVariant1__WornSteel",
+          "node": "V_LockerProps_1_5"
+        },
+        {
+          "source": "RoomVariant2__WornSteel",
+          "node": "V_LockerProps_1_6"
+        },
+        {
+          "source": "Vents__ConcreteDark",
+          "node": "V_LockerProps_1_7"
+        }
+      ]
+    },
+    {
+      "kind": "LockerProps",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "CorrodedHinge__Rust",
+          "node": "V_LockerProps_2_0"
+        },
+        {
+          "source": "Handles__Rust",
+          "node": "V_LockerProps_2_1"
+        },
+        {
+          "source": "LockerBodies__Steel",
+          "node": "V_LockerProps_2_2"
+        },
+        {
+          "source": "LockerDoors__WornSteel",
+          "node": "V_LockerProps_2_3"
+        },
+        {
+          "source": "RoomVariant0__WornSteel",
+          "node": "V_LockerProps_2_4"
+        },
+        {
+          "source": "RoomVariant1__WornSteel",
+          "node": "V_LockerProps_2_5"
+        },
+        {
+          "source": "RoomVariant2__WornSteel",
+          "node": "V_LockerProps_2_6"
+        },
+        {
+          "source": "Vents__ConcreteDark",
+          "node": "V_LockerProps_2_7"
+        }
+      ]
+    },
+    {
+      "kind": "BreakProps",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "EmptyLunchWrapper__Cardboard",
+          "node": "V_BreakProps_1_0"
+        },
+        {
+          "source": "RoomVariant0__Cardboard",
+          "node": "V_BreakProps_1_1"
+        },
+        {
+          "source": "RoomVariant1__Cardboard",
+          "node": "V_BreakProps_1_2"
+        },
+        {
+          "source": "RoomVariant2__Cardboard",
+          "node": "V_BreakProps_1_3"
+        },
+        {
+          "source": "StoolLegs__Steel",
+          "node": "V_BreakProps_1_4"
+        },
+        {
+          "source": "StoolSeats__Timber",
+          "node": "V_BreakProps_1_5"
+        },
+        {
+          "source": "TableLegs__Steel",
+          "node": "V_BreakProps_1_6"
+        },
+        {
+          "source": "TableTop__Timber",
+          "node": "V_BreakProps_1_7"
+        },
+        {
+          "source": "TinCup__Steel",
+          "node": "V_BreakProps_1_8"
+        }
+      ]
+    },
+    {
+      "kind": "BreakProps",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "EmptyLunchWrapper__Cardboard",
+          "node": "V_BreakProps_2_0"
+        },
+        {
+          "source": "RoomVariant0__Cardboard",
+          "node": "V_BreakProps_2_1"
+        },
+        {
+          "source": "RoomVariant1__Cardboard",
+          "node": "V_BreakProps_2_2"
+        },
+        {
+          "source": "RoomVariant2__Cardboard",
+          "node": "V_BreakProps_2_3"
+        },
+        {
+          "source": "StoolLegs__Steel",
+          "node": "V_BreakProps_2_4"
+        },
+        {
+          "source": "StoolSeats__Timber",
+          "node": "V_BreakProps_2_5"
+        },
+        {
+          "source": "TableLegs__Steel",
+          "node": "V_BreakProps_2_6"
+        },
+        {
+          "source": "TableTop__Timber",
+          "node": "V_BreakProps_2_7"
+        },
+        {
+          "source": "TinCup__Steel",
+          "node": "V_BreakProps_2_8"
+        }
+      ]
+    },
+    {
+      "kind": "TechnicalProps",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "ControlBodies__Steel",
+          "node": "V_TechnicalProps_1_0"
+        },
+        {
+          "source": "ControlDoors__WornSteel",
+          "node": "V_TechnicalProps_1_1"
+        },
+        {
+          "source": "Handles__Rust",
+          "node": "V_TechnicalProps_1_2"
+        },
+        {
+          "source": "PipeFeed__Steel",
+          "node": "V_TechnicalProps_1_3"
+        },
+        {
+          "source": "PipeFeed__WornSteel",
+          "node": "V_TechnicalProps_1_4"
+        },
+        {
+          "source": "Plinth__Rust",
+          "node": "V_TechnicalProps_1_5"
+        },
+        {
+          "source": "RoomVariant0__Steel",
+          "node": "V_TechnicalProps_1_6"
+        },
+        {
+          "source": "RoomVariant1__Steel",
+          "node": "V_TechnicalProps_1_7"
+        },
+        {
+          "source": "RoomVariant2__Steel",
+          "node": "V_TechnicalProps_1_8"
+        },
+        {
+          "source": "VentSlots__ConcreteDark",
+          "node": "V_TechnicalProps_1_9"
+        }
+      ]
+    },
+    {
+      "kind": "TechnicalProps",
+      "slot": 2,
+      "meshes": [
+        {
+          "source": "ControlBodies__Steel",
+          "node": "V_TechnicalProps_2_0"
+        },
+        {
+          "source": "ControlDoors__WornSteel",
+          "node": "V_TechnicalProps_2_1"
+        },
+        {
+          "source": "Handles__Rust",
+          "node": "V_TechnicalProps_2_2"
+        },
+        {
+          "source": "PipeFeed__Steel",
+          "node": "V_TechnicalProps_2_3"
+        },
+        {
+          "source": "PipeFeed__WornSteel",
+          "node": "V_TechnicalProps_2_4"
+        },
+        {
+          "source": "Plinth__Rust",
+          "node": "V_TechnicalProps_2_5"
+        },
+        {
+          "source": "RoomVariant0__Steel",
+          "node": "V_TechnicalProps_2_6"
+        },
+        {
+          "source": "RoomVariant1__Steel",
+          "node": "V_TechnicalProps_2_7"
+        },
+        {
+          "source": "RoomVariant2__Steel",
+          "node": "V_TechnicalProps_2_8"
+        },
+        {
+          "source": "VentSlots__ConcreteDark",
+          "node": "V_TechnicalProps_2_9"
+        }
+      ]
+    },
+    {
+      "kind": "TwistedFrame",
+      "slot": 1,
+      "meshes": [
+        {
+          "source": "BentBearers__Steel",
+          "node": "V_TwistedFrame_1_0"
+        },
+        {
+          "source": "BuckledPosts__Steel",
+          "node": "V_TwistedFrame_1_1"
+        },
+        {
+          "source": "DeadChain__Rust",
+          "node": "V_TwistedFrame_1_2"
+        }
+      ]
+    }
+  ]
+}

@@ -159,10 +159,23 @@ namespace BarPromenade.Tests.PlayMode
             // fish-label atlas, rather than counting only the nearby visible props.
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
-                Texture texture = Resources.Load<Texture>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name);
+                Texture2D texture = Resources.Load<Texture2D>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name);
                 Assert.That(texture, Is.Not.Null, name);
+                int size = name == "WarehouseMasterAtlas" ? 4096 : name == "WarehouseMaterialResponse" ? 2048 : 512;
+                Assert.That(texture.width, Is.EqualTo(size), name);
+                Assert.That(texture.height, Is.EqualTo(size), name);
+                Assert.That(texture.mipmapCount, Is.EqualTo((int)Math.Log(size, 2) + 1), name);
+                for (int mipSize = size; ; mipSize /= 2)
+                {
+                    long blocks = Math.Max(1, (mipSize + 3) / 4);
+                    result.declaredTextureBc7MipBytes += blocks * blocks * 16;
+                    if (mipSize == 1) break;
+                }
                 textures.Add(texture);
             }
+            Assert.That(result.declaredTextureBc7MipBytes, Is.EqualTo(28661184L),
+                "The complete 4096/2048/two 512 bank must retain its BC7 mip accounting.");
+            Assert.That(result.declaredTextureBc7MipBytes, Is.LessThanOrEqualTo(28L * 1024 * 1024));
             foreach (Mesh mesh in meshes)
             {
                 result.uniqueVertices += mesh.vertexCount;
@@ -212,6 +225,96 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(rooms, Is.EqualTo(9));
         }
+
+        private static void AssertWarehouseSurfaceSlots(CombatTestRoot root)
+        {
+            TextAsset source = Resources.Load<TextAsset>(WarehouseArenaAssetProvider.ResourceFolder + "WarehouseSurfaceVariants");
+            Assert.That(source, Is.Not.Null);
+            WarehouseSurfaceManifest manifest = JsonUtility.FromJson<WarehouseSurfaceManifest>(source.text);
+            GameObject library = Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + "WarehouseSurfaceVariants");
+            Assert.That(library, Is.Not.Null);
+            var nodes = new Dictionary<string, Mesh>();
+            foreach (MeshFilter filter in library.GetComponentsInChildren<MeshFilter>(true)) nodes.Add(filter.name, filter.sharedMesh);
+            var replacements = new Dictionary<string, Dictionary<string, Mesh>>();
+            foreach (WarehouseSurfaceVariant variant in manifest.variants)
+            {
+                var meshes = new Dictionary<string, Mesh>();
+                foreach (WarehouseSurfaceMesh mesh in variant.meshes) meshes.Add(mesh.source, nodes[mesh.node]);
+                replacements.Add(variant.kind + "/" + variant.slot, meshes);
+            }
+            var counts = new Dictionary<string, int>();
+            foreach (WarehouseSurfaceCount count in manifest.counts)
+            {
+                counts.Add(count.kind, count.count);
+                Assert.That(WarehouseArenaAssetProvider.SurfaceSlotCount(count.kind), Is.EqualTo(count.count));
+            }
+            var ordinals = new Dictionary<string, int>();
+            Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+            void AssertPlacement(string kind, Vector3 position, Quaternion rotation, bool substituted = false)
+            {
+                ordinals.TryGetValue(kind, out int ordinal);
+                ordinals[kind] = ordinal + 1;
+                int count = counts.TryGetValue(kind, out int authored) ? authored : 1;
+                if (counts.ContainsKey(kind)) Assert.That(ordinal, Is.LessThan(count),
+                    "Every supported plan occurrence must retain its own authored surface slot: " + kind + ".");
+                if (substituted || !counts.ContainsKey(kind)) return;
+                int slot = ordinal % count;
+                Transform wrapper = Array.Find(transforms, item => item.name == "Warehouse " + kind &&
+                    Vector3.Distance(item.localPosition, position) < .001f && Quaternion.Angle(item.localRotation, rotation) < .01f);
+                Assert.That(wrapper, Is.Not.Null, "The planned surface copy must exist: " + kind + ".");
+                Dictionary<string, Mesh> expected;
+                if (slot == 0)
+                {
+                    GameObject original = Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind);
+                    expected = new Dictionary<string, Mesh>();
+                    foreach (MeshFilter filter in original.GetComponentsInChildren<MeshFilter>(true))
+                        if (!filter.name.StartsWith("Collision_", StringComparison.Ordinal) && !filter.name.Contains("__WearDecal"))
+                            expected.Add(WarehouseSurfaceSourceName(filter.name), filter.sharedMesh);
+                }
+                else expected = replacements[kind + "/" + slot];
+                int checkedSources = 0;
+                foreach (MeshFilter filter in wrapper.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (!expected.TryGetValue(WarehouseSurfaceSourceName(filter.name), out Mesh mesh)) continue;
+                    checkedSources++;
+                    Assert.That(filter.sharedMesh, Is.SameAs(mesh),
+                        "Each copy must receive its deterministic shared UV0 variant: " + kind + ".");
+                }
+                Assert.That(checkedSources, Is.EqualTo(expected.Count));
+            }
+            foreach (WarehouseArenaPlacement part in root.WarehousePlan.ModulePlacements)
+            {
+                bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
+                    Mathf.Abs(part.Position.z - 10.5f) < .01f && Mathf.Abs(Mathf.Abs(part.Position.x) - 1.5f) < .01f;
+                AssertPlacement(part.Kind, part.Position, Quaternion.Euler(0f, part.Yaw, 0f), gateDeck);
+            }
+            foreach (WarehouseArenaStair stair in root.WarehousePlan.Stairs)
+                AssertPlacement("Stair", stair.Foot, Quaternion.identity);
+            foreach (WarehouseArenaRailSpan rail in root.WarehousePlan.RailSpans)
+                AssertPlacement("Rail", rail.Position, Quaternion.Euler(0f, rail.Yaw, 0f));
+            foreach (WarehouseArenaLamp lamp in root.WarehousePlan.Lamps)
+                AssertPlacement(lamp.Kind, lamp.Position, lamp.ModelRotation);
+        }
+
+        private static string WarehouseSurfaceSourceName(string name)
+        {
+            int suffix = name.LastIndexOf('.');
+            return suffix >= 0 && int.TryParse(name.Substring(suffix + 1), out _) ? name.Substring(0, suffix) : name;
+        }
+
+        [Serializable] private sealed class WarehouseSurfaceManifest
+        {
+            public WarehouseSurfaceVariant[] variants;
+            public WarehouseSurfaceCount[] counts;
+        }
+        [Serializable] private sealed class WarehouseSurfaceVariant
+        {
+            public string kind;
+            public int slot;
+            public WarehouseSurfaceMesh[] meshes;
+        }
+        [Serializable] private sealed class WarehouseSurfaceMesh { public string source, node; }
+        [Serializable] private sealed class WarehouseSurfaceCount { public string kind; public int count; }
 
         private static IEnumerator MeasureWarehouseDetailFrames(CombatTestRoot root, string phase,
             List<WarehouseDetailPhase> phases)
@@ -304,6 +407,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             public int rendererCount, uniqueMeshCount, sharedMaterialCount;
             public long placedVertices, placedTriangles, uniqueVertices, uniqueTriangles, meshRuntimeBytes, textureRuntimeBytes;
+            public long declaredTextureBc7MipBytes;
             public WarehouseDetailTexture[] textures;
         }
 

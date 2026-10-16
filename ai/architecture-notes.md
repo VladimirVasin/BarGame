@@ -3,7 +3,10 @@
 ## Current facts
 
 - **Accepted 2026-10-16, warehouse detail:**
-  Joints/rooms;UV0wear/UV1grain-response-relief≤8MiB;routes/light kept.
+  9sets/opposite-entry/face→door/COLclear;
+  4096+2048response+2×512/BC7mips27.34≤28MiB.
+  UVslots;structure colour+response:worldmetres/sharedcauses;
+  gate=PlatformUV;runtimeUV+matclone0
 
 - **Accepted 2026-10-16, chest glow:**
   Warm lens/halo;20→80°/depth/shared2particles;
@@ -98,8 +101,8 @@
   No-key E:1.2s/2locked tugs→silent RU-EN key/shared inspection;§6/§21.
 
 - **Accepted exception 2026-10-14, warehouse fan:**
-  Spot11.8/shadows/cap12.1–12.22/roof-deck block/pause/cookie-strobe0;
-  URP2048:keyHigh1024/6practicalLow256/chestMed512.
+  Spot11.8/cap12.1–12.22/roof-deck shadows/pause/strobe0;
+  URP2048:key1024/chest512/rest256;redPoint6hardfaces;≤49/64.
 
 - **Accepted exception 2026-10-14, warehouse otherworld:**
   Portwork monotony-exhaustion-disgust/wet-rust/futilemech/§6;
@@ -109,9 +112,6 @@
   SFX:clearer/EQ165Hz×1.45/LP6800/stepsLP2600/gunsLP5400;
   pitch.84/.88/echo-room/dryUI;warehouse_theme WAV-OGG-MP3/MusicMix kept;
   playhead/Reset-New pre-finalcan/pause-disable-resume/exit/cache/cleanup
-
-- **Accepted 2026-10-14, warehouse rooms:**
-  9Technical-Locker-Break/oppositeentry/front→door/turnedCOL/entryclear.
 
 - **Accepted 2026-10-14, warehouse look:**
   Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;

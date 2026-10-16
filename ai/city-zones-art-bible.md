@@ -4238,12 +4238,12 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
 wetconcrete/bentsteel/peelpaint/swollenwood-cardboard/wornrubber;
-workdisgust§6/metricwet-rust-scuff/rarewear;
-9sets faceentry/doorclear/plates1-9/seedfixed;
-`2026-10-16`:joints/rooms;wear/grain/relief;warmglow.
+workdisgust§6;
+9sets→entry/doorclear/plates1-9/seedfixed;
+`2026-10-16`:4096/2048response/uniqueUV/untiled;joined wear continuous;warmglow.
 D7fan/guardedlift-drum-pusher↔SFX/gate-backdoor/entry=Homeleaf;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
-4dim/red;fanSpot/bladeshadow/roof-deck/chestbeam.
+4dim/red;fanSpot/blades;roof-deck block red/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;
 3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;
 3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;

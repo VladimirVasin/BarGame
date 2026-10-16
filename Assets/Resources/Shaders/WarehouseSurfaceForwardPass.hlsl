@@ -249,9 +249,10 @@ void LitPassFragment(
 #endif
 
     SurfaceData surfaceData;
-    InitializeStandardLitSurfaceData(input.uv, surfaceData);
+    float2 warehouseSurfaceUv = WarehouseSurfaceUv(input.uv, input.warehouseMetres);
+    InitializeStandardLitSurfaceData(warehouseSurfaceUv, surfaceData);
     half2 warehouseSlope;
-    ApplyWarehouseSurface(input.positionWS, input.normalWS, input.warehouseMetres, surfaceData, warehouseSlope);
+    ApplyWarehouseSurface(input.positionWS, warehouseSurfaceUv, surfaceData, warehouseSlope);
 
 #ifdef LOD_FADE_CROSSFADE
     LODFadeCrossFade(input.positionCS);
@@ -259,7 +260,7 @@ void LitPassFragment(
 
     InputData inputData;
     InitializeInputData(input, surfaceData.normalTS, inputData);
-    ApplyWarehouseNormal(input.positionWS, input.warehouseMetres, warehouseSlope, inputData.normalWS);
+    ApplyWarehouseNormal(input.positionWS, warehouseSurfaceUv, warehouseSlope, inputData.normalWS);
     SETUP_DEBUG_TEXTURE_DATA(inputData, UNDO_TRANSFORM_TEX(input.uv, _BaseMap));
 
 #if defined(_DBUFFER)

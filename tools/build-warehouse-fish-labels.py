@@ -95,11 +95,11 @@ def meta():
     sidecar = Path(str(TEXTURE) + ".meta")
     if sidecar.exists():
         return
-    source = ROOT / "Assets/Resources/CombatWarehouse/Textures/WarehouseMechanismsAtlas.png.meta"
+    source = ROOT / "Assets/Resources/CombatWarehouse/Textures/WarehouseMasterAtlas.png.meta"
     settings = source.read_text(encoding="utf8")
     guid = uuid.uuid5(uuid.NAMESPACE_URL, "bar-promenade/Assets/Resources/CombatWarehouse/Textures/WarehouseFishLabels.png").hex
     settings = re.sub(r"^guid: [0-9a-f]+$", "guid: " + guid, settings, flags=re.MULTILINE)
-    settings = settings.replace("maxTextureSize: 1024", "maxTextureSize: 512")
+    settings = re.sub(r"(?m)^(\s*maxTextureSize:) \d+$", r"\1 512", settings)
     sidecar.write_text(settings, encoding="utf8")
 
 

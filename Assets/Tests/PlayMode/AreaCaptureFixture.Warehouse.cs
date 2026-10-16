@@ -345,7 +345,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(renderer.GetComponent<MeshFilter>().sharedMesh.triangles.Length, Is.EqualTo(6),
                         "Each numeral is printed on a single flat quad, without digit geometry.");
                     Material material = renderer.sharedMaterial;
-                    Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseFurnishingsAtlas"));
+                    Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseMasterAtlas"));
                     if (plateMaterial == null) plateMaterial = material;
                     else Assert.That(material, Is.SameAs(plateMaterial), "All printed plates share one atlas material.");
                 }
@@ -827,6 +827,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehouseSurfaceMaterials(CombatTestRoot root)
         {
+            AssertWarehouseSurfaceSlots(root);
             var reused = new Dictionary<string,Material>();
             var families = new HashSet<string>();
             int overlays = 0, structural = 0;
@@ -834,6 +835,16 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (!wrapper.name.StartsWith("Warehouse ",System.StringComparison.Ordinal)) continue;
                 string kind = wrapper.name.Substring("Warehouse ".Length);
+                if (kind == "GatePlatformLeft" || kind == "GatePlatformRight")
+                {
+                    foreach (MeshRenderer deck in wrapper.GetComponentsInChildren<MeshRenderer>(true))
+                    {
+                        if (!deck.enabled || deck.name.StartsWith("Collision_", System.StringComparison.Ordinal)) continue;
+                        Assert.That(deck.sharedMaterial.GetFloat("_WarehouseAuxiliary"), Is.Zero,
+                            "Cut gate decks must retain the adjoining Platform painting, rather than an auxiliary patch.");
+                        Assert.That(deck.sharedMaterial.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseMasterAtlas"));
+                    }
+                }
                 if (System.Array.IndexOf(WarehouseArenaAssetProvider.ModelNames,kind) < 0) continue;
                 string family = WarehouseArenaAssetProvider.AtlasForModel(kind);
                 foreach (MeshRenderer renderer in wrapper.GetComponentsInChildren<MeshRenderer>(true))
@@ -869,7 +880,10 @@ namespace BarPromenade.Tests.PlayMode
                     if (family != null)
                     {
                         families.Add(family);
-                        Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo(family));
+                        Texture master = material.GetTexture("_BaseMap");
+                        Assert.That(master.name, Is.EqualTo(family));
+                        Assert.That(master.width, Is.EqualTo(4096));
+                        Assert.That(master.height, Is.EqualTo(4096));
                         Assert.That(material.GetColor("_BaseColor"), Is.EqualTo(Color.white),
                             "Baked role tint must be applied once, rather than darkened again at runtime.");
                         foreach (Vector2 uv in mesh.uv)
@@ -879,18 +893,17 @@ namespace BarPromenade.Tests.PlayMode
                         }
                     }
                     bool layered = role != "Lamp" && role != "Glass" && role != "NumberPlate" &&
-                        role != "SignalRed" && role != "SignalRedOff";
+                        role != "SignalRed" && role != "SignalRedOff" && role != "FishLabelInk";
                     if (layered)
                     {
-                        if (family == null) structural++;
+                        if (kind == "Shell" || kind == "RoomShell" || kind == "Platform" || kind == "Stair" || kind == "Rail") structural++;
                         Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/Warehouse Surface"));
-                        Assert.That(material.GetTexture("_WarehouseMacroMask").name, Is.EqualTo("WarehouseMacroMask"));
-                        if (family == null)
-                            Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.GreaterThan(0f));
-                        else Assert.That(material.GetFloat("_WarehouseMacroStrength"), Is.Zero,
-                            "Prop macro wear is baked into its unique atlas, so it must not swim in world space.");
-                        Assert.That(material.GetFloat("_WarehouseTriplanarStrength"), Is.Zero,
-                            "The clean authored UV does not justify extra triplanar samples.");
+                        Assert.That(material.HasProperty("_WarehouseMacroMask"), Is.False);
+                        Assert.That(material.HasProperty("_WarehouseDetailMap"), Is.False);
+                        Assert.That(material.HasProperty("_WarehouseResponseRect"), Is.False,
+                            "Roughness and relief must describe the same unique UV0 wear, without repeated material cells.");
+                        Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("WarehouseMasterAtlas"));
+                        Assert.That(material.GetFloat("_WarehouseAuxiliary"), Is.EqualTo(family == null ? 1f : 0f));
                         bool physical = role == "Concrete" || role == "ConcreteDark" || role == "Steel" ||
                             role == "WornSteel" || role == "LockSteel" || role == "SafetyYellow" || role == "Rust" ||
                             role == "Timber" || role == "Cardboard" || role == "Rubber";
@@ -901,21 +914,14 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(response.name, Is.EqualTo("WarehouseMaterialResponse"));
                             Assert.That(material.GetFloat("_WarehouseResponseStrength"), Is.GreaterThan(0f));
                             Assert.That(material.GetFloat("_WarehouseNormalStrength"), Is.GreaterThan(0f));
-                            if (family != null)
-                            {
-                                Assert.That(material.GetTexture("_WarehouseDetailMap"), Is.Not.Null);
-                                Assert.That(material.GetFloat("_WarehouseDetailStrength"), Is.GreaterThan(0f));
-                                Assert.That(material.GetFloat("_WarehouseDetailScale"), Is.GreaterThan(0f));
-                                Vector4 mean = material.GetVector("_WarehouseDetailMean");
-                                Assert.That(Mathf.Min(mean.x,Mathf.Min(mean.y,mean.z)), Is.GreaterThan(0f),
-                                    "Metre-space detail must use the published linear mean rather than darken the atlas twice.");
-                            }
+                            Assert.That(response.width, Is.EqualTo(2048));
+                            Assert.That(response.height, Is.EqualTo(2048));
                         }
                     }
                     else Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
                 }
             }
-            Assert.That(families.Count, Is.EqualTo(3));
+            Assert.That(families.Count, Is.EqualTo(1));
             Assert.That(structural, Is.GreaterThan(0));
             Assert.That(overlays, Is.EqualTo(1 + root.WarehousePlan.RoomCenters.Count),
                 "Only authored Shell and RoomShell overlay meshes add wear draw calls.");
@@ -936,7 +942,7 @@ namespace BarPromenade.Tests.PlayMode
                 active++;
                 if (light.name == "Warehouse Room Indicator Light")
                 {
-                    Assert.That(light.shadows, Is.EqualTo(LightShadows.None));
+                    AssertWarehouseIndicatorShadowProfile(light);
                     continue;
                 }
                 if (light.gameObject.name != "Warehouse Work Lamp")
@@ -1115,6 +1121,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(hasTechnical, Is.True);
             Quaternion lockerRotation = Quaternion.Euler(0f,locker.Yaw,0f);
             Quaternion technicalRotation = Quaternion.Euler(0f,technical.Yaw,0f);
+            Vector3 rearGallery = new Vector3(0f, WarehouseArenaPlan.LevelRise, plan.GatePosition.z - 3.6f);
             var shots = new[]
             {
                 // The entry is beneath the front gallery. Step into the actual
@@ -1143,7 +1150,13 @@ namespace BarPromenade.Tests.PlayMode
                 Shot.At(caption + "Drum wear close view", drum + new Vector3(.55f, 1.7f, -2f),
                     drum + Vector3.up * 1.1f, 44f),
                 Shot.At(caption + "Concrete and floor wear", room + new Vector3(1.1f, 1.7f, 1.1f),
-                    room + new Vector3(-1f, .3f, 2.5f), 54f)
+                    room + new Vector3(-1f, .3f, 2.5f), 54f),
+                // Keep several adjoining deck modules in the real chest beam,
+                // with the hero on the landing beyond the stair opening.
+                Shot.At(caption + "Gallery floor joins", stair.Top + new Vector3(0f, 1.7f, 1.05f),
+                    stair.Top + new Vector3(1.3f, 0f, 4.2f), 62f),
+                Shot.At(caption + "Gate floor joins", rearGallery + new Vector3(-2.4f, 1.7f, -.8f),
+                    rearGallery + new Vector3(.8f, 0f, 1.9f), 62f)
             };
             try
             {
@@ -1155,7 +1168,7 @@ namespace BarPromenade.Tests.PlayMode
                     // The real blackout has no distant fill. Photograph nearby
                     // surfaces inside the chest beam, rather than an unlit ceiling.
                     if (closeViewsOnly && !shot.Name.Contains("wear close view") &&
-                        !shot.Name.Contains("Concrete and floor wear")) continue;
+                        !shot.Name.Contains("Concrete and floor wear") && !shot.Name.Contains("floor joins")) continue;
                     Vector3 facing = shot.Target - shot.Position; facing.y = 0f; facing.Normalize();
                     Vector3 foot = shot.Position - Vector3.up * 1.7f - facing * .65f;
                     // The imported doors face the clear aisle toward the
