@@ -14,6 +14,7 @@ namespace BarPromenade
         private bool previousCombatFocus;
         private Func<bool> inspectionBrowsing;
         private Func<bool> pointerSelection;
+        private Func<bool> inspectionAimSuspended;
         private readonly List<Renderer> heroWorldRenderers = new List<Renderer>(256);
         private readonly List<bool> originalWorldForcedOff = new List<bool>(256);
         private bool worldVisibilityCaptured;
@@ -70,10 +71,13 @@ namespace BarPromenade
             inspectionBrowsing = () => Interaction.OwnsInteraction &&
                 Interaction.Phase == HomeRefrigeratorInteractionPhase.Inspecting && !Interaction.ItemInspection.IsActive;
             pointerSelection = () => Interaction.ItemInspection.UsesPointerSelection;
+            inspectionAimSuspended = () => Interaction.ItemInspection.IsActive;
             var context = new RefrigeratorInteractionContext(transform, owner.Player, owner.CameraFollow, owner.Prompt)
             {
                 Admission = CanBegin,
                 PreparingPlayer = PreparePlayer,
+                PositionPlayerAtEntry = true,
+                EntryPoseReady = BeginFlashlightAim,
                 RestoringPlayer = RestorePlayer,
                 PlayCue = (cue, position) => RetroAudio.PlayAt(cue, position)
             };
@@ -101,8 +105,12 @@ namespace BarPromenade
             previousCombatFocus = owner.Hero.CombatFocused;
             owner.Hero.PrepareStandingInspection();
             CaptureWorldVisibility();
+        }
+
+        private void BeginFlashlightAim()
+        {
             owner.Flashlight?.BeginInspectionAim(this, owner.Hero, owner.CameraFollow.Camera, View.InteriorRoot,
-                Plan.CavitySize, inspectionBrowsing, pointerSelection);
+                Plan.CavitySize, inspectionBrowsing, pointerSelection, inspectionAimSuspended);
         }
 
         private void RestorePlayer()

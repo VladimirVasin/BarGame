@@ -3,49 +3,64 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-17 - Warehouse storage and inspection
+
+- Each leaf owns its target/timeline; E moves only that leaf. Several leaves
+  can stay open; ammunition requires its own open bay and retains Take priority.
+- Held E acts once; pause freezes motion; reset/disable closes the leaves and
+  releases presenting stock. Seeded stock and respawn positions stay unchanged.
+- `CombatWarehouseLockers` passed;independent-leaf frames reviewed.
+- Warehouse refrigerator entry guides the real hero through the shared motor,
+  aligns facing and holds neutral before its door/camera timeline; blocked or
+  wrong-level entry cancels. The chest Lens aims inside from opening, switches
+  to cursor browsing and freezes for nested inspection/pause; cleanup restores.
+- `CombatWarehouseRefrigeratorEntryLightsCavity` passed;final-pose cavity frames reviewed.
+
 ## 2026-10-16 - Warehouse, chest source and crane prototype
 
 - Warehouse kit:deep drive housings/gussets/guide seats/folded cargo/louvres/
   furniture joints;same surface groups/bounds/collision/anchors/routes.
 - JSON provenance uses LF;gate validation proves checkout-safe hashes.
-- Colour/registered slope-roughness-cavity master replaces runtime bases;
-  planner placements own UV slots;equivalent small fittings share a placement-local chart.
-  Joined structures use planner metres and shared wear causes for colour and
-  response: slot seeds no longer cut rust at module edges. Source ingredients
-  mirror continuously; gate decks reuse reserved Platform charts. Imported
-  mesh variants share materials.
-  The master is now 4096 with a 2048 response: visible walls, floors, platform
-  tops and near props receive more atlas area; hidden backs and sparse rails less.
-  No source averaging;accepted bank cap28MiB.
+- Colour/slope-roughness-cavity master replaces runtime bases;planner UV slots,
+  shared fitting charts/materials. World-metre wear/response cross module edges;
+  source ingredients mirror continuously;gate decks reuse Platform charts.
+  Master4096/response2048:visible surfaces gain area,hidden backs/rails less;
+  no averaging;bank cap28MiB.
 - Proof: `build-combat-warehouse-3d-model.py` checks deterministic geometry,
   placement charts, seam continuity, stretch and FBX round trips.
   `warehouse_master_continuity.py` reproduces the prior texture cuts and accepts
   the corrected bank; `build-combat-warehouse-textures.py` validates BC7/mips.
   `build-warehouse-gate-chain-3d-model.py`
   retains the split chain's new master UVs and clear gallery slots.
-- `CombatWarehouseDetailVisuals` passed with powered and chest-only frames
-  reviewed. Imported UV variants retain source geometry and metre coordinates;
-  the finite library trades additional mesh storage for unique placement paint.
-  Material cache names now distinguish the fan lens from ordinary lamp surfaces.
+- `CombatWarehouseDetailVisuals` passed;powered/chest-only frames reviewed.
+  UV variants retain geometry/metres;additional mesh storage buys placement paint.
+  Fan lens/ordinary lamp material cache names differ.
 - Fish inspection capture uses `FindObjectsByType<Volume>()`; deprecated
   sort-mode references removed. Proof: `BarPromenade.PlayModeTests.csproj` compilation.
-- Chest lamp now has warm emissive glass and a fixed source halo with angular
-  falloff and depth occlusion. Shared surfaces follow source and hero visibility;
-  near-wall beam exposure leaves the visible source bright. Existing Spot kept.
+- Chest lamp:warm emissive glass/source halo/angular falloff/depth occlusion.
+  Shared surfaces follow hero visibility;near-wall exposure keeps source bright;
+  existing Spot kept.
   Proof: `CombatWarehouseFlashlightGlow` passed; front/oblique/profile/rear,
   off, reduced beam, cargo and hidden-hero frames reviewed; reset/exit cleanup.
 - Red entrance bulbs now cast low-tier hard point shadows: decks and room roofs
   block their wash. Point range, colour and intensity stay; the existing shadow
   atlas fits the bounded sources. Proof: `CombatWarehouseIndicatorFloorOcclusion`
   passed; blocked upper-deck and local entrance-wash comparison frames reviewed.
-- Crane: own axis/storey patrol;head/pelvis/hands/feet tethered to yaw cassette.
-  Cuff-hook:6m/3DLOS/locked launch/one hit out/world stop-return.
-  Pendulum/accel-brake/live limb inertia;slack cap.
-  Crane-only gantry;fan/cargo/routes kept.
-  Shared hit/death/pause/reset;nonconvex clearance.
-  Proof:`build-combat-crane-3d-model.py` deterministic contract;
-  `Range_CraneSuspensionKeepsContactOcclusionPauseAndReset` passed;
-  world/motion reviewed.
+- Crane:axis/storey patrol/6tethers/yaw/pendulum/slackcap;
+  cuff-hook:3DLOS/lockedlaunch/1hitout/worldstop-return;
+  gantry/nonconvexclearance/ragdoll;fan/cargo/routes kept.
+  Own-hook fall→suspendedspasm;nullable porter rig no longer read.
+  Crown offset stays in metres as head scale changes.
+  Patrol/attack hold;duplicate/pause/reset-disable-death cleanup.
+  Proof:`build-combat-crane-3d-model.py`;world/motion reviewed.
+  `Range_CraneOwnHookKnockdownTriggersOneSuspendedFrenzy` passed.
+- Lockers:hollow Blender/shared/fridgecurve/FBX-basis-safe hingeCOL;
+  larger ammo/closed gate/Take priority;seeded shelves cover all floors;
+  reset-respawn keep places;newseed moves/cargo-fridges kept/resetshut.
+  Shared pickup cancel/full/onecredit.
+  Proof:`build-warehouse-locker-3d-model.py` FBX round-trip;
+  `CombatWarehouseLockers` passed;frames reviewed.
+  Layout exporter:provenance only;UV/atlas unchanged.
 
 ## 2026-10-15 - Warehouse, cursor, HUD and loader
 

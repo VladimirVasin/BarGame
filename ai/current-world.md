@@ -133,7 +133,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
-  Midforms/4096+2048response/uniqueUV;worldmetre joinedwear;runtimeUV+matclone0.
+  Midforms/4K+2Kresp/uniqueUV/worldmetrewearjoins;runtimeUV-matclone0.
   valve/PusherL;nokeyE2pulls1.2s;keykept→physchainlockfall;HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch;
   Homeentry↔gate/return0/E/silent/goalstub/0travel;gallery2/upper-progress;3fridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
   3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-live-dormantkept;
@@ -142,8 +142,9 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
   Std1;Endless1–5/corpses0–2(default2)/pool≤5;Dormant.
-  Crane:ownXYZ1axis/3floors/void-clearance;6head-pelvis-hands-feetropes/yawcassette;
-  pendulum/liveinertia/slackcap/6m3DLOShook/fixedlaunch/1hitout/stop-return/ragdoll.
+  Crane:3floorXYZ1axis/6tethers;pendulum/slackcap;
+  6m3DLOS/locked1hitout/return/voidCOL/ragdoll;
+  ownfall→5s tetheredFrenzy/holdAI/pause/reset-disable-deathclear.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
   HP/Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
@@ -156,20 +157,19 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Docker:30slats40HP→holes/corefused/livewoodram;8fish/1skin/holes-anyfallspill/finiteasync;
   1.7m/s/plantbursts/chase0pause;ram.25prep/.18active/2.4Recovery/.9m;
   alloutcomes/kneel-rise/attack-move-buffer0;
-  ownSource-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
+  ownSource-newfall→5sFrenzy/2SFX/rigspasm-rise/Recovery0;
   unarmed:dmg32/guardCost28/impulse85Ns-block26Ns/region-gore0;
   head-boxram/firstsurface1hit/guard-counter-retreat0;
-  own debris0CC/resize-reset/floor kept;
-  grounded0attack/rearhead0finish/infection0;pool-pause-resetreuse;freecam/dummy/Tabfight/MMBfocus;
-  Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/art§15a;
-  Init/reset:Pistol8+0/48cap/slideemptylock/mag-rack/cases; shotgun2+0(cap16)/breakload/stageammo/atomicspend/winfire. Partreload/phys-spend/empty0;
-  Ammo4slots/+8Magazine/+4Shells/Eshared1x/fullrefusal/partialconsumes;
-  Endless12active s/pause-modal-focus-disable-defeat0/resetpool/winlive.
+  ownDebris0CC/resize-reset/floor;ground0attack/rearhead0finish/infection0;pause-resetpool;freecam/dummy/Tabfight/MMBfocus;
+  Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
+  Init/reset:Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/stageatomic;winfire/partreload/physspend/empty0;
+  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloEhinges/fridgecurve/hollowCOL;shared/full0/part1/ownbayopen/resetshut;
+  Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
   Bar:bat/hook→/shoulder-block/charge/free/8seg/1hit/recoil/6zones;taunt/Eshared/0grant.
-  Cloth:rig-anchors/hand-opening/physics0/hair;pause-drop-reset cleanup.
+  Cloth:rig-anchors/hand-opening/physics0/hair;pause-drop-resetclean.
   HUD:F8legacy0/Alt/result-reset-menu/pause-modal0/reset-disable;art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
@@ -2259,20 +2259,17 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   registered renderers and a tight non-blocking selection trigger. A successful `Take`
   now transfers the item into the run inventory, removes the physical model
   and persists the stable collected slot across scene round trips;
-- one localized modal refrigerator interaction: the Home camera follows an
-  unscaled first-person Bezier approach while the ordinary 3D hero remains
-  visible, then the handle turns and the sealed door opens to `102°` without a
-  separate camera-local hand model. Home and warehouse share this presentation.
-  The open
-  inspection persists until the clickable close prompt, a second
-  keyboard/gamepad interaction or cancel requests the same guarded close path,
-  then closes and seals; world mesh and contact-shadow states restore as camera
-  return begins, while input and HUD restore on
-  completion at the fixed Home shot. A cold emissive strip and halo reveal the
-  contents without adding another realtime `Light`; generated seal, hinge and
-  closing-thunk
-  cues accompany an equal-power crossfade between synchronized closed-door
-  and open-door spatial refrigerator loops;
+- one shared modal refrigerator presentation: Home's unscaled first-person
+  Bezier approach keeps the hero visible until the handle turns and the sealed
+  door opens to `102°`, without a camera-local hand. Warehouse first guides
+  the real hero to authored entry/facing through the constrained motor;
+  wrong-level or stalled entry cancels, and a rendered neutral settle precedes
+  the door/camera timeline. Its chest Lens lights the cavity from opening;
+  cursor aim starts only while browsing and freezes during pause/nested views.
+  Clickable Close, interaction or cancel share the guarded close/seal path.
+  World meshes/contact shadows restore as camera return begins; input/HUD at
+  completion, Home at its fixed shot. Home's cold strip/halo add no realtime
+  `Light`; seal/hinge/thunk cues crossfade synchronized closed/open spatial loops;
 - while the outer refrigerator interaction holds the lit open state, one
   nested PS1-style item browser highlights the vodka, egg or open stew can and
   shows its localized name beside the pointer; keyboard/gamepad cycling and

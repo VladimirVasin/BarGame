@@ -121,6 +121,8 @@ namespace BarPromenade.Tests.PlayMode
                     input.Set(pointerMouse.position, camera.pixelRect.center);
                     for (int frame = 0; frame < 4; frame++) yield return null;
                     Assert.That(fridge.BeginInteraction(), Is.True);
+                    for (int frame = 0; frame < 360 && fridge.Interaction.IsPositioning; frame++) yield return null;
+                    Assert.That(fridge.Interaction.IsPositioning, Is.False, "The refrigerator dock must settle before its opening timeline advances.");
                     fridge.Interaction.AdvanceInteraction(HomeRefrigeratorInteractionTimeline.OpenSequenceDurationSeconds + .1f);
                     Assert.That(fridge.Interaction.Phase, Is.EqualTo(HomeRefrigeratorInteractionPhase.Inspecting));
                     Assert.That(fridge.View.DoorOpenAmount, Is.EqualTo(1f));
@@ -141,6 +143,8 @@ namespace BarPromenade.Tests.PlayMode
                         fridge.gameObject.SetActive(true);
                         yield return null;
                         Assert.That(fridge.BeginInteraction(), Is.True, "A cancelled cabinet can be opened again.");
+                        for (int frame = 0; frame < 360 && fridge.Interaction.IsPositioning; frame++) yield return null;
+                        Assert.That(fridge.Interaction.IsPositioning, Is.False);
                         fridge.Interaction.AdvanceInteraction(HomeRefrigeratorInteractionTimeline.OpenSequenceDurationSeconds + .1f);
                     }
                     yield return null;

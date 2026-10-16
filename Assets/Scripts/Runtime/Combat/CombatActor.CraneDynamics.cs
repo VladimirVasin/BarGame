@@ -12,7 +12,8 @@ namespace BarPromenade
         private Vector3 craneAcceleration, cranePreviousVelocity;
         public Vector3 CraneSwingOffset => CraneLoadOffset;
         public float CraneLimbMotionEnergy { get; private set; }
-        private bool CraneAiming => CranePhase is CombatCranePhase.Signal or CombatCranePhase.Striking or CombatCranePhase.Recovering;
+        private bool CraneAiming => !IsCraneFrenzied &&
+            CranePhase is CombatCranePhase.Signal or CombatCranePhase.Striking or CombatCranePhase.Recovering;
         private float CranePendulumLength => Mathf.Clamp(CraneAnchorPosition.y - craneCommand.y - 1.15f, .65f, 8f);
         private Vector3 CraneLoadOffset
         {
@@ -67,6 +68,7 @@ namespace BarPromenade
             Vector3 tilt = new Vector3(craneSway.z, 0f, -craneSway.x) * (Mathf.Rad2Deg / length * .7f);
             craneClearanceBones[0].rotation = Quaternion.Euler(tilt) * craneClearanceBones[0].rotation;
             if (CraneAiming) AimCraneHookArm();
+            RefreshCraneAttachmentSockets();
             for (int i = 0; i < craneAttachments.Length; i++)
                 craneTetherLengths[i] = Vector3.Distance(craneFeeds[i].position, craneAttachments[i].position);
             for (int i = 0; i < craneLooseBones.Length; i++)
@@ -110,6 +112,19 @@ namespace BarPromenade
         }
 
         private Vector3 CraneRopePoint(int index, float t) => CraneRopePoint(index, t, craneFeeds[index].position, craneAttachments[index].position);
+
+        private void RefreshCraneAttachmentSockets()
+        {
+            // Imported clips can change a head's scale. Its crown attachment
+            // is authored in metres, so a bind-time local offset cannot own it.
+            for (int i = 0; i < craneAttachments.Length; i++)
+            {
+                Vector3 offset = CombatCraneAssetProvider.SuspensionLocalOffsets[i];
+                if (offset.sqrMagnitude <= 0f) continue;
+                Transform socket = craneAttachments[i], bone = socket.parent;
+                socket.position = bone.position + bone.rotation * offset;
+            }
+        }
         private Vector3 CraneRopePoint(int index, float t, Vector3 feed, Vector3 end)
         {
             float bow = Mathf.Min(.16f, Mathf.Sqrt(craneRopeSlack[index] * Mathf.Max(.1f, Vector3.Distance(feed, end))) * .35f);

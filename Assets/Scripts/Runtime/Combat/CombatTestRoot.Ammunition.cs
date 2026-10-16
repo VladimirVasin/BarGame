@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private readonly Vector3[] ammoPositions = new Vector3[CombatAmmoSpawner.Capacity];
+        private WarehouseLocker[] warehouseLockers = Array.Empty<WarehouseLocker>();
         internal CombatAmmoSpawner AmmoSpawns { get; private set; }
 
         private void OnEnable()
@@ -20,12 +21,14 @@ namespace BarPromenade
         {
             ResolveAmmoPositions();
             AmmoSpawns = new CombatAmmoSpawner(transform, Hero, ammoPositions);
+            BindAmmoStorage();
         }
 
         private void ResetAmmoPickups()
         {
             ResolveAmmoPositions();
             AmmoSpawns.Reset(ammoPositions);
+            BindAmmoStorage();
             AmmoSpawns.SetInteractionEnabled(isActiveAndEnabled && !Hero.State.IsDefeated && pistolApplicationFocused);
         }
 
@@ -46,27 +49,25 @@ namespace BarPromenade
                 ammoPositions[3] = new Vector3(4f, floor, 4f);
                 return;
             }
-            var area = (WarehouseArenaArea)arenaBounds;
-            // The plan owns anchors on all three storeys. Resolve only at initialization/reset/layout changes.
+            // These are support contacts, not navigation nodes: snapping to the floor discards the shelf.
+            for (int slot = 0; slot < ammoPositions.Length; slot++)
+                ammoPositions[slot] = WarehousePlan.AmmoAnchors[slot];
+        }
+
+        private void BindAmmoStorage()
+        {
+            if (WarehousePlan == null) return;
+            // Bounded lookup only on composition/reset. Replacement layouts cannot retain old door predicates.
+            warehouseLockers = combatLocation.GetComponentsInChildren<WarehouseLocker>();
+            foreach (WarehouseLocker locker in warehouseLockers) locker.ResetState();
             for (int slot = 0; slot < ammoPositions.Length; slot++)
             {
-                Vector3 target = WarehousePlan.AmmoAnchors[slot];
-                float best = float.PositiveInfinity;
-                bool found = false;
-                foreach (Vector3 node in WarehousePlan.NavigationNodes)
-                {
-                    if (Mathf.Abs(node.y - target.y) > .1f || !area.TryGetHeight(node, out float floor, .5f) ||
-                        Mathf.Abs(node.y - floor) > .05f) continue;
-                    bool separated = true;
-                    for (int previous = 0; previous < slot; previous++)
-                        if ((node - ammoPositions[previous]).sqrMagnitude < 2.25f) { separated = false; break; }
-                    float distance = (node - target).sqrMagnitude;
-                    if (!separated || distance >= best) continue;
-                    best = distance;
-                    ammoPositions[slot] = new Vector3(node.x, floor, node.z);
-                    found = true;
-                }
-                if (!found) throw new InvalidOperationException("The validated arena has no walkable ammunition position.");
+                WarehouseLocker source = null;
+                foreach (WarehouseLocker locker in warehouseLockers)
+                    if ((locker.ShelfPosition() - ammoPositions[slot]).sqrMagnitude < .0001f)
+                    { source = locker; break; }
+                if (source == null) throw new InvalidOperationException("Ammunition needs its authored locker shelf.");
+                source.BindAmmo(AmmoSpawns.GetSlot(slot));
             }
         }
     }

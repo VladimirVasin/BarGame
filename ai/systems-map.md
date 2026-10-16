@@ -49,8 +49,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Mimic reveal/heavy ram/kneel/fall Frenzy;passable debris/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,Zombie*,AmmoPickup}` | Partial |
-| Crane | XYZaxis/3floors/6tethers/pendulum/6m3Dhook/clearance/ragdoll/reset | `Combat*.Crane*` | Current |
-| Warehouse | 4096master/uniqueUV;joined wear;red shadows/deck block;chest/fish/key/gate/power. | `WarehouseArena*`, `WarehouseFish*`, `WarehouseGate*` | Current |
+| Crane | 3floors/6tethers/pendulum/6mhook;ownfall→frenzy/pause/reset. | `Combat*.Crane*` | Current |
+| Warehouse | 4096UV/wear;deck shadows;chest/fish/key/gate/power;solo doors/seeded ammo. | `Warehouse{Arena,Fish,Gate,Locker}*`, `CombatAmmoPickup` | Current |
 | Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -166,7 +166,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
 | Home bed sleep | One trigger on the door-side bed edge; guided walk, neutral settle, then enter/loop/exit through a real bedside sit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
 | Home balcony smoking | One modal balcony smoking sequence owns its prop, sound, camera and completion-only stress relief. | `HomeBalconySmoking{Plan,Interaction,Timeline,CameraDrift,ExhaleEffect}`, `HomeBalconyWorldBuilder` | Current |
-| Shared refrigerator | Home/warehouse door-camera without hand; shelf browsing/atomic Take. Gap: `Use` unavailable. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
+| Shared refrigerator | Hand-free Home/warehouse;warehouse entry/chest aim;atomic Take. Gap: `Use` unavailable. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
 | Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |

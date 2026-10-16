@@ -46,6 +46,16 @@ namespace BarPromenade
                 zombieFrenzySequenceValid && zombieFrenzySequence == impact.AttackSequence) return;
             zombieFrenzySequenceValid = true;
             zombieFrenzySequence = impact.AttackSequence;
+            if (IsCrane)
+            {
+                // The suspended worker has neither the porter's loaded pelvis
+                // nor its planted kneel. Its retained crane rig owns the reaction.
+                zombieFrenzied = true;
+                ZombieFrenzySecondsElapsed = 0f;
+                BeginCraneFrenzy(impact.AttackSequence);
+                JournalEvent("zombie_frenzy_started", impact.Target.JournalActorId, impact.AttackSequence);
+                return;
+            }
             // A delayed loss of balance may find the attacker already kneeling.
             // Enter at that depth, keeping the cue's later impulse times intact.
             float depth = Mathf.InverseLerp(zombieFrenzyEntryHeight, zombieFrenzyKneelHeight,
@@ -86,7 +96,7 @@ namespace BarPromenade
             // an old kneeling recovery or resume the pre-attack walk phase.
             poseClock = zombieWorkClock = zombieWalkClock = 0f;
             visibleClip = null;
-            CancelPoseBlend();
+            if (!IsCrane) CancelPoseBlend();
         }
 
         private void EndZombieFrenzy()
@@ -94,6 +104,7 @@ namespace BarPromenade
             if (!zombieFrenzied) return;
             zombieFrenzied = false;
             zombieAudio?.EndFrenzy();
+            if (IsCrane) EndCraneFrenzy();
         }
 
         private void ResetZombieFrenzy()

@@ -13,6 +13,8 @@ namespace BarPromenade
         public IntoxicationHudView Hud { get; }
         public Func<bool> Admission { get; set; }
         public Action PreparingPlayer { get; set; }
+        public bool PositionPlayerAtEntry { get; set; }
+        public Action EntryPoseReady { get; set; }
         public Action RestoringPlayer { get; set; }
         public Action RestoreCamera { get; set; }
         public Action<float> DoorAmountChanged { get; set; }

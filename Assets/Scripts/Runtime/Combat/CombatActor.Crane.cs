@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatCranePhase { Waiting, Signal, Descending, Striking, Recovering, Ascending, Released }
+    public enum CombatCranePhase { Waiting, Signal, Descending, Striking, Recovering, Ascending, Released, Frenzied }
 
     public sealed partial class CombatActor
     {
@@ -70,6 +70,7 @@ namespace BarPromenade
         {
             for (int i = 0; i < craneClips.Length; i++) craneClips[i] = CombatCraneAssetProvider.LoadClip(CombatCraneAssetProvider.ClipNames[i]);
             ready = rest = defeat = craneClips[0]; hit = guardImpact = guardBreak = craneClips[9];
+            zombieFrenzy = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.FrenzyClip);
         }
 
         private bool IsCraneClip(AnimationClip clip)
@@ -123,6 +124,7 @@ namespace BarPromenade
             craneRailVoice = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadRailSound(), .24f);
             craneRelease = CreateCraneVoice(craneSuspensionHead, false, CombatCraneAssetProvider.LoadBrakeSound(), .38f);
             craneBodyVoice = CreateCraneVoice(gameObject, false, CombatCraneAssetProvider.LoadBodySound(), .20f);
+            InitializeCraneFrenzy();
         }
 
         private Transform RequireCraneBone(string name) => CityPedestrianHandProps.FindSocket(DamageRigRoot, name)
@@ -148,6 +150,7 @@ namespace BarPromenade
         private void ResetCraneSuspension()
         {
             if (!IsCrane || craneSuspensionHead == null) return;
+            ResetZombieFrenzy(); CraneFrenzyPlayCount = 0;
             craneClock = cranePerceptionWait = craneHurtHold = craneHurtClock = craneBreathWait = 0f; craneCooldown = .6f;
             craneFloor = craneDestinationFloor = 2; cranePatrolStop = CraneArrivedStops = 0;
             craneChangingFloors = craneTravelling = craneStarting = CraneTravelBlocked = false;
@@ -206,12 +209,18 @@ namespace BarPromenade
         {
             collectSweep = collectShove = collectKick = false; simulationPosePending = false;
             if (!CraneAttached || presentationFrozen || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            InterruptZombieFrenzyIfNeeded();
             poseClock += seconds;
             craneCooldown = Mathf.Max(0f, craneCooldown - seconds); cranePerceptionWait = Mathf.Max(0f, cranePerceptionWait - seconds);
             if (poseBlendRemaining > 0f) poseBlendRemaining = Mathf.Max(0f, poseBlendRemaining - seconds);
             State.Advance(seconds, false);
             if (!CranePatrolEnabled || roundEnded || contactTarget != null && contactTarget.State.IsDefeated)
-            { StopCraneVoices(); return; }
+            { EndZombieFrenzy(); StopCraneVoices(); return; }
+            if (IsCraneFrenzied)
+            {
+                AdvanceCraneFrenzy(seconds);
+                return;
+            }
             craneBreathWait -= seconds;
             if (craneBreathWait <= 0f && !craneBodyVoice.isPlaying)
             { craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound(); craneBodyVoice.Play(); craneBreathWait = 2f; }
@@ -389,17 +398,20 @@ namespace BarPromenade
                 npcAnimationBaseBones[i].SetLocalPositionAndRotation(npcAnimationBasePositions[i], npcAnimationBaseRotations[i]);
                 npcAnimationBaseBones[i].localScale = npcAnimationBaseScales[i];
             }
-            SampleNpcClip(clip, time);
-            handPose?.SetGrip(false, CombatCraneAssetProvider.RightHookGrip); handPose?.SetGrip(true, CombatCraneAssetProvider.LeftHookGrip); visibleClip = clipName;
+            if (IsCraneFrenzied) PresentCraneFrenzy();
+            else SampleNpcClip(clip, time);
+            handPose?.SetGrip(false, CombatCraneAssetProvider.RightHookGrip); handPose?.SetGrip(true, CombatCraneAssetProvider.LeftHookGrip);
+            visibleClip = IsCraneFrenzied ? CombatZombieAssetProvider.FrenzyClip : clipName;
             ApplyNpcPoseBlend();
             ApplyCraneDynamicPose();
-            if (index == 0 && contactTarget != null)
+            if (!IsCraneFrenzied && index == 0 && contactTarget != null)
             {
                 Vector3 look = Vector3.ProjectOnPlane(contactTarget.transform.position - craneHeadBone.position, Vector3.up);
                 float turn = Mathf.Clamp(Vector3.SignedAngle(transform.forward, look, Vector3.up), -28f, 28f);
                 craneHeadBone.rotation = Quaternion.AngleAxis(turn * Mathf.SmoothStep(0f, 1f, craneClock / 1.8f), Vector3.up) * craneHeadBone.rotation;
             }
-            KeepCranePoseClear(); PresentCraneHook(); RememberNpcPresentedPose(); PresentCraneRopes();
+            KeepCranePoseClear(); RefreshCraneAttachmentSockets();
+            PresentCraneHook(); RememberNpcPresentedPose(); PresentCraneRopes();
         }
 
         private void ReceiveCraneImpulse(CombatImpact impact)
@@ -440,6 +452,7 @@ namespace BarPromenade
         private void SuspendCrane()
         {
             if (!IsCrane || craneSuspensionHead == null) return;
+            EndZombieFrenzy();
             StopCraneVoices();
             craneSuspensionHost.SetActive(false);
         }

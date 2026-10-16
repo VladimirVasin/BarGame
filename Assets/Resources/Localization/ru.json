@@ -752,6 +752,14 @@
       "value": "E — закрыть холодильник"
     },
     {
+      "key": "interaction.open_locker",
+      "value": "E — открыть шкафчик"
+    },
+    {
+      "key": "interaction.close_locker",
+      "value": "E — закрыть шкафчик"
+    },
+    {
       "key": "home.lockedRoomDoor.prompt",
       "value": "Открыть дверь"
     },

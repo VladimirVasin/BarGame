@@ -228,18 +228,30 @@ namespace BarPromenade.Tests.PlayMode
 
         private void ApproachAmmo(CombatAmmoPickup pickup)
         {
-            root.Hero.Body.enabled = false;
-            root.Hero.transform.position = pickup.transform.position + Vector3.up * PlayerFactory.GroundedRootOffset;
-            root.Hero.Body.enabled = true;
+            int slot = Array.IndexOf(new[] { root.AmmoSpawns.GetSlot(0), root.AmmoSpawns.GetSlot(1),
+                root.AmmoSpawns.GetSlot(2), root.AmmoSpawns.GetSlot(3) }, pickup);
+            Assert.That(slot, Is.GreaterThanOrEqualTo(0));
+            WarehouseLocker locker = Array.Find(root.GetComponentsInChildren<WarehouseLocker>(),
+                candidate => Vector3.Distance(candidate.ShelfPosition(), pickup.transform.position) < .01f);
+            Assert.That(locker, Is.Not.Null);
+            Vector3 approach = root.WarehousePlan.AmmoApproaches[slot];
+            root.Hero.ResetActor(approach + Vector3.up * PlayerFactory.GroundedRootOffset,
+                Vector3.ProjectOnPlane(pickup.transform.position - approach, Vector3.up).normalized);
             Physics.SyncTransforms();
             ForceAmmoFocus();
+            if (!locker.IsOpen)
+            {
+                Assert.That(locker.BeginOpen(), Is.True);
+                locker.Advance(2f);
+                Physics.SyncTransforms();
+            }
             Assert.That(pickup.CanInteract(root.Player.Interactor), Is.True);
         }
 
         private void AssertWarehouseAmmoPlacement(CombatAmmoPickup[] pickups, Transform[] models)
         {
             var area = new WarehouseArenaArea(root.WarehousePlan);
-            int lower = 0, upper = 0;
+            var floors = new int[3];
             for (int slot = 0; slot < pickups.Length; slot++)
             {
                 CombatAmmoPickup pickup = root.AmmoSpawns.GetSlot(slot);
@@ -248,15 +260,18 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(pickup.Model.parent, Is.SameAs(pickup.transform));
                 Assert.That(pickup.IsAvailable && pickup.Model.gameObject.activeSelf, Is.True);
                 Assert.That(pickup.RespawnRemaining, Is.Zero);
-                Assert.That(area.TryGetHeight(pickup.transform.position, out float floor, .5f), Is.True);
-                Assert.That(pickup.transform.position.y, Is.EqualTo(floor).Within(.01f));
+                Assert.That(area.TryGetHeight(root.WarehousePlan.AmmoApproaches[slot], out float floor, .5f), Is.True);
+                Assert.That(pickup.transform.position, Is.EqualTo(root.WarehousePlan.AmmoAnchors[slot]));
+                Assert.That(pickup.transform.position.y - floor, Is.EqualTo(1.065f).Within(.01f));
                 Bounds bounds = WorldItemInspectionPresenter.CalculateWorldBounds(pickup.Model);
-                Assert.That(bounds.min.y, Is.EqualTo(floor + .015f).Within(.01f));
-                Assert.That(bounds.size.sqrMagnitude, Is.GreaterThan(.001f), "Each pack retains a visible authored model at its floor contact.");
-                if (floor < 1f) lower++; else upper++;
+                Assert.That(bounds.min.y, Is.EqualTo(pickup.transform.position.y + .015f).Within(.01f));
+                Assert.That(bounds.size.sqrMagnitude, Is.GreaterThan(.001f), "Each pack retains a visible authored model at its shelf contact.");
+                int storey = Mathf.RoundToInt(floor / WarehouseArenaPlan.LevelRise);
+                Assert.That(storey, Is.InRange(0, 2));
+                floors[storey]++;
             }
-            Assert.That(lower, Is.EqualTo(2));
-            Assert.That(upper, Is.EqualTo(2));
+            foreach (int count in floors)
+                Assert.That(count, Is.GreaterThanOrEqualTo(1), "Seeded stock remains available on every floor.");
         }
 
         private void CaptureAmmoPreview(string name)

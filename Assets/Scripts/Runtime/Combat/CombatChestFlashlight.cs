@@ -38,13 +38,15 @@ namespace BarPromenade
         private Transform inspectionAimFrame;
         private Vector3 inspectionCavitySize;
         private float inspectionNeutralPitch;
+        private Vector3 inspectionNeutralOriginLocal;
         private Func<bool> inspectionBrowsing;
         private Func<bool> inspectionPointerSelection;
+        private Func<bool> inspectionAimSuspended;
         public bool HasInspectionAim => inspectionAimOwner != null;
         public Vector3 InspectionAimTarget { get; private set; }
 
         public bool BeginInspectionAim(object owner, CombatActor actor, Camera camera, Transform frame,
-            Vector3 cavitySize, Func<bool> browsing, Func<bool> pointerSelection)
+            Vector3 cavitySize, Func<bool> browsing, Func<bool> pointerSelection, Func<bool> suspended = null)
         {
             if (!isActiveAndEnabled || SpotLight == null || owner == null || actor == null || camera == null || frame == null ||
                 browsing == null || inspectionAimOwner != null || !actor.BeginInspectionTorsoLook(owner)) return false;
@@ -58,8 +60,10 @@ namespace BarPromenade
             // so the additive torso solver does not apply that downward angle twice.
             Vector3 rest = actor.transform.InverseTransformDirection(SpotLight.transform.forward);
             inspectionNeutralPitch = Mathf.Atan2(-rest.y, Mathf.Sqrt(rest.x * rest.x + rest.z * rest.z)) * Mathf.Rad2Deg;
+            inspectionNeutralOriginLocal = actor.transform.InverseTransformPoint(Lens.position);
             inspectionBrowsing = browsing;
             inspectionPointerSelection = pointerSelection;
+            inspectionAimSuspended = suspended;
             InspectionAimTarget = frame.position;
             return true;
         }
@@ -73,8 +77,10 @@ namespace BarPromenade
             inspectionCamera = null;
             inspectionAimFrame = null;
             inspectionNeutralPitch = 0f;
+            inspectionNeutralOriginLocal = Vector3.zero;
             inspectionBrowsing = null;
             inspectionPointerSelection = null;
+            inspectionAimSuspended = null;
             InspectionAimTarget = Vector3.zero;
         }
 
@@ -89,7 +95,15 @@ namespace BarPromenade
                 return;
             }
             if (GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused ||
-                !GameInput.CanRead(GameInputContext.Menu) || !inspectionBrowsing()) return;
+                !GameInput.CanRead(GameInputContext.Menu) || (inspectionAimSuspended?.Invoke() ?? false)) return;
+            // Establish the cavity direction as the door opens. Cursor following
+            // belongs only to shelf browsing, never to the moving camera path.
+            if (!inspectionBrowsing())
+            {
+                InspectionAimTarget = inspectionAimFrame.position;
+                ApplyInspectionTorsoLook(seconds);
+                return;
+            }
             Rect pixels = inspectionCamera.pixelRect;
             Vector2 pointer = pixels.center;
             Mouse mouse = Mouse.current;
@@ -106,8 +120,13 @@ namespace BarPromenade
             local.y = Mathf.Clamp(local.y, -inspectionCavitySize.y * .47f, inspectionCavitySize.y * .47f);
             local.z = 0f;
             InspectionAimTarget = inspectionAimFrame.TransformPoint(local);
+            ApplyInspectionTorsoLook(seconds);
+        }
+
+        private void ApplyInspectionTorsoLook(float seconds)
+        {
             // Root-relative origin avoids feedback as the same real chest bends.
-            Vector3 origin = inspectionActor.transform.position + inspectionActor.transform.up * 1.4f;
+            Vector3 origin = inspectionActor.transform.TransformPoint(inspectionNeutralOriginLocal);
             inspectionActor.SetInspectionTorsoLook(inspectionAimOwner, InspectionAimTarget - origin, inspectionNeutralPitch, seconds);
         }
 

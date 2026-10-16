@@ -20,6 +20,13 @@ namespace BarPromenade
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
                 {
                     int surfaceSlot = NextSurfaceSlot(part.Kind, surfaceOrdinals);
+                    if (part.Kind == "LockerProps")
+                    {
+                        WarehouseLockerFactory.Create(host.transform, owner, part.Position, part.Yaw);
+                        // Keep the room detail stream independent of which passive models are replaced.
+                        roomDetailIndex++;
+                        continue;
+                    }
                     // The bridge crane replaces the two decorative bent frames
                     // only in its isolated encounter; all cargo/routes stay put.
                     if (owner != null && owner.Mode == CombatTestMode.Crane && part.Kind == "TwistedFrame") continue;
@@ -71,6 +78,8 @@ namespace BarPromenade
                 foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators)
                     WarehouseRefrigeratorFactory.Create(host.transform, owner, fridge.Floor, fridge.Position,
                         fridge.Yaw, fridge.SourceId);
+                foreach (WarehouseLockerPlacement locker in plan.HallwayLockers)
+                    WarehouseLockerFactory.Create(host.transform, owner, locker.Position, locker.Yaw);
                 host.AddComponent<WarehouseFishCratePopulation>().Initialize(plan);
                 host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
                 host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform);

@@ -105605,8 +105605,8 @@
     ],
     "placement_authority": {
       "source": "Assets/Scripts/Runtime/Combat/WarehouseArenaPlan.cs",
-      "source_sha256": "341428935dd2ea2996c16ceefc18f5d98ab510f7939811fe2a8ff684addbb5d2",
-      "projection_sha256": "049a7fa48c1cd8707a30fa144770e2b4ea09e321be2cd7ad90c281aedbf33df6",
+      "source_sha256": "4a43ec423f8852fafc05603d056eb23cb794fb61b2f16ad42d8a220470ffca5d",
+      "projection_sha256": "726b94629515a00f3682e12aae87fc0f3f8fd6c0050a9cf2df610ca0c6b16250",
       "unity_version": "6000.6.4f1",
       "scope": "placement-only; native lamp rotations, navigation and runtime validation are omitted",
       "omissions": [
@@ -105619,6 +105619,14 @@
           "sha256": "8968bc570b975dc54d2f09b84084545780d99a792fe7785a84b6a7205d342eac"
         },
         {
+          "anchor": "Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f)",
+          "sha256": "ee857519c959aba8fd54c94b69e7e3f266c7b8127466cab3805e380106ccbfb7"
+        },
+        {
+          "anchor": "Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f)",
+          "sha256": "6a67f989162b6e236edb0700d24b5b437f1d18b66c3f81c8b252121e3c457852"
+        },
+        {
           "anchor": "BuildNavigation(plan);",
           "sha256": "bb0f4cd32b78b759dc706e011cef382c1f62a47e1696645d0c7bbdbfd3d91861"
         },
@@ -105628,11 +105636,11 @@
         },
         {
           "anchor": "private static void BuildNavigation(WarehouseArenaPlan plan)",
-          "sha256": "30d95a99c0b54a60661b6b504fcff91f93817b317382946ed67d38dfcf228471"
+          "sha256": "3ed6085136675f00b91f9c66fedcbcb74873bf09aa29ad6bdfdfc811d6dadf6b"
         },
         {
           "anchor": "public static class WarehouseArenaValidator",
-          "sha256": "25cf1d45d63ff5a84b3d8867033adb961df99d3500e2c0b9cd734b9fbe0d7156"
+          "sha256": "3e2860442e15c4dad228e6a985502fb40b4815ad78bf51832267cb5b359fba76"
         }
       ]
     },

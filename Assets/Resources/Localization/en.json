@@ -752,6 +752,14 @@
       "value": "E — close refrigerator"
     },
     {
+      "key": "interaction.open_locker",
+      "value": "E — open locker"
+    },
+    {
+      "key": "interaction.close_locker",
+      "value": "E — close locker"
+    },
+    {
       "key": "home.lockedRoomDoor.prompt",
       "value": "Open door"
     },

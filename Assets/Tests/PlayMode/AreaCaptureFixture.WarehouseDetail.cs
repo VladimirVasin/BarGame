@@ -206,10 +206,19 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (placement.Kind != "TechnicalProps" && placement.Kind != "LockerProps" &&
                     placement.Kind != "BreakProps") continue;
+                int selected = index++ % 3;
+                // The middle-floor banks are now interactive authored cabinets,
+                // rather than a passive module with three furnishing variants.
+                if (placement.Kind == "LockerProps")
+                {
+                    Assert.That(Array.Exists(root.GetComponentsInChildren<WarehouseLocker>(),
+                        locker => Vector3.Distance(locker.transform.position, placement.Position) < .001f), Is.True);
+                    rooms++;
+                    continue;
+                }
                 Transform wrapper = Array.Find(transforms, item => item.name == "Warehouse " + placement.Kind &&
                     Vector3.Distance(item.localPosition, placement.Position) < .001f);
                 Assert.That(wrapper, Is.Not.Null);
-                int selected = index++ % 3;
                 var authored = new HashSet<int>();
                 foreach (Renderer renderer in wrapper.GetComponentsInChildren<Renderer>(true))
                 {
@@ -286,7 +295,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
                     Mathf.Abs(part.Position.z - 10.5f) < .01f && Mathf.Abs(Mathf.Abs(part.Position.x) - 1.5f) < .01f;
-                AssertPlacement(part.Kind, part.Position, Quaternion.Euler(0f, part.Yaw, 0f), gateDeck);
+                AssertPlacement(part.Kind, part.Position, Quaternion.Euler(0f, part.Yaw, 0f),
+                    gateDeck || part.Kind == "LockerProps");
             }
             foreach (WarehouseArenaStair stair in root.WarehousePlan.Stairs)
                 AssertPlacement("Stair", stair.Foot, Quaternion.identity);

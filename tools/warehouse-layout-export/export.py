@@ -71,6 +71,13 @@ def project_source(text):
         ("ModelRotation = modelRotation ?? Quaternion.FromToRotation(Vector3.down, Direction);",
          "ModelRotation = default; // Native rotation omitted from placement projection."),
         ("Quaternion.Euler(0f, yaw - 90f, 0f)", "default(Quaternion)"),
+        # Shelf/approach positions are now evaluated by the planner itself.
+        # Quaternion.Euler needs Unity native code; these exact yaw-only
+        # replacements retain their metre offsets in the managed projection.
+        ("Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f)",
+         "new Vector3(-1.45f * Mathf.Sin(Yaw * Mathf.Deg2Rad), 0f, -1.45f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
+        ("Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f)",
+         "new Vector3(-.08f * Mathf.Sin(Yaw * Mathf.Deg2Rad), ShelfHeight, -.08f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
     ):
         once(text, original)
         omissions.append({"anchor": original, "sha256": digest(original)})
@@ -79,8 +86,8 @@ def project_source(text):
         once(text, call)
         omissions.append({"anchor": call, "sha256": digest(call)})
         text = text.replace(call, "// Omitted by placement-only exporter.")
-    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "30d95a99c0b54a60661b6b504fcff91f93817b317382946ed67d38dfcf228471")
-    omit_block("public static class WarehouseArenaValidator", "25cf1d45d63ff5a84b3d8867033adb961df99d3500e2c0b9cd734b9fbe0d7156")
+    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "3ed6085136675f00b91f9c66fedcbcb74873bf09aa29ad6bdfdfc811d6dadf6b")
+    omit_block("public static class WarehouseArenaValidator", "3e2860442e15c4dad228e6a985502fb40b4815ad78bf51832267cb5b359fba76")
     return text, omissions
 
 

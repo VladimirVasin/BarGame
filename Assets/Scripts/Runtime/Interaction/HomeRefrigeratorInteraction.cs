@@ -43,6 +43,12 @@ namespace BarPromenade
         private Quaternion cameraTargetRotation;
         private float cameraTargetFieldOfView;
         private bool ownsInteraction;
+        private bool isPositioning;
+        private int entrySettledFrame = -1;
+        private bool entryHandoffLocked;
+        private bool previousEntryHandoff;
+        private Vector3 entryPosition;
+        private Quaternion entryRotation;
         private bool playerVisualStateCaptured;
         private bool playerVisualHidden;
         private IDisposable playerVisualHideLease;
@@ -58,6 +64,7 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool OwnsInteraction => ownsInteraction;
+        public bool IsPositioning => isPositioning;
         public HomeRefrigeratorInteractionPhase Phase =>
             timeline != null
                 ? timeline.Phase
@@ -184,6 +191,10 @@ namespace BarPromenade
                 return false;
             }
 
+            if (context.PositionPlayerAtEntry && (context.Player.Motor == null ||
+                Mathf.Abs(context.Player.GameObject.transform.position.y -
+                    context.Space.TransformPoint(plan.ApproachPosition).y) > .65f)) return false;
+
             if (!modalLock.TryCaptureAndDisable(
                     context.Player.Interactor,
                     context.CameraFollow,
@@ -197,18 +208,20 @@ namespace BarPromenade
                 preparedPlayer = true;
                 context.PreparingPlayer?.Invoke();
                 CapturePlayerVisualState();
-                CaptureCameraPath();
                 ResetCueState();
-                if (!timeline.BeginOpen())
+                ownsInteraction = true;
+                if (context.PositionPlayerAtEntry)
                 {
-                    RestoreOwnedState();
-                    return false;
+                    // The same physical move used by authored actions keeps the
+                    // chest light and its hero at the cabinet's actual dock.
+                    entryPosition = context.Space.TransformPoint(plan.ApproachPosition);
+                    entryRotation = Quaternion.LookRotation(context.Space.forward, context.Space.up);
+                    isPositioning = true;
+                    entrySettledFrame = -1;
+                    return true;
                 }
 
-                ownsInteraction = true;
-                ApplyCurrentPresentation();
-                PhaseChanged?.Invoke(timeline.Phase);
-                return true;
+                return BeginPreparedOpen();
             }
             catch
             {
@@ -245,6 +258,18 @@ namespace BarPromenade
         {
             if (!ownsInteraction || timeline == null)
             {
+                return;
+            }
+
+            if (SceneTransitionService.IsTransitioning)
+            {
+                CancelInteraction();
+                return;
+            }
+            if (GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused) return;
+            if (isPositioning)
+            {
+                AdvanceEntryPose(deltaTime);
                 return;
             }
 
@@ -302,6 +327,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (isPositioning && GameInput.WasPressed(GameInputAction.Cancel))
+            {
+                CancelInteraction();
+                return;
+            }
+
             bool nestedInputConsumed =
                 timeline.IsInspecting &&
                 itemInspection != null &&
@@ -318,7 +349,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (ownsInteraction && timeline != null)
+            if (ownsInteraction && !isPositioning && timeline != null)
             {
                 ApplyCamera(timeline.CurrentFrame.CameraBlend);
             }
@@ -333,6 +364,64 @@ namespace BarPromenade
         {
             CancelInteraction();
             PhaseChanged = null;
+        }
+
+        private void AdvanceEntryPose(float seconds)
+        {
+            if (context.Player.Motor == null || context.Player.GameObject == null ||
+                Mathf.Abs(context.Player.GameObject.transform.position.y - entryPosition.y) > .65f)
+            {
+                CancelInteraction();
+                return;
+            }
+            if (entrySettledFrame >= 0)
+            {
+                if (Time.frameCount <= entrySettledFrame) return;
+                ReleaseEntryHandoff();
+                isPositioning = false;
+                BeginPreparedOpen();
+                return;
+            }
+            if (context.Player.Motor.MoveTowardsInteractionPose(entryPosition, entryRotation, seconds))
+            {
+                previousEntryHandoff = context.Player.Visual.InteractionHandoffLocked;
+                context.Player.Visual.SetInteractionHandoffLocked(true);
+                entryHandoffLocked = true;
+                entrySettledFrame = Time.frameCount;
+            }
+            else if (context.Player.Motor.InteractionPoseMoveStalled) CancelInteraction();
+        }
+
+        private bool BeginPreparedOpen()
+        {
+            try
+            {
+                context.EntryPoseReady?.Invoke();
+                CaptureCameraPath();
+                if (!timeline.BeginOpen())
+                {
+                    ownsInteraction = false;
+                    RestoreOwnedState();
+                    return false;
+                }
+                ApplyCurrentPresentation();
+                PhaseChanged?.Invoke(timeline.Phase);
+                return true;
+            }
+            catch
+            {
+                timeline?.Cancel();
+                ownsInteraction = false;
+                RestoreOwnedState();
+                throw;
+            }
+        }
+
+        private void ReleaseEntryHandoff()
+        {
+            if (!entryHandoffLocked) return;
+            entryHandoffLocked = false;
+            context?.Player.Visual.SetInteractionHandoffLocked(previousEntryHandoff);
         }
 
         private void CaptureCameraPath()
@@ -497,6 +586,10 @@ namespace BarPromenade
 
         private void RestoreOwnedState()
         {
+            if (isPositioning) context?.Player.Motor?.CancelInteractionPoseMove();
+            isPositioning = false;
+            entrySettledFrame = -1;
+            ReleaseEntryHandoff();
             CinematicDepthOfField.End();
             itemInspection?.SetBrowsingEnabled(false);
             itemInspection?.CancelAndRestore();

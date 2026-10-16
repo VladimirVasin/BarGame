@@ -4234,18 +4234,16 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-16`:Crane:asymworker/face-workwear/Rfist→metalcuff-hook;
-+6m3Dhookline/launch-return;
-pendulum/6steel:head-pelvis-hands-feet/slackcap/liveinertia/yawcassette;
-gantry/centralvoidpatrol/clearance/fan-stairskept;
-worn/worldSFX/deathragdoll;§6.
+`2026-10-16`:Crane:asymworker/face-workwear/Rfist→steelcuff-hook;
+6m3DLOS/out-return;ownfall→5s suspendedspasm/2SFX;
+pendulum/6steel:head-pelvis-hands-feet/slackcap/inertia/yaw;
+gantry/voidpatrol/COL/fan-stairskept/worn/worldSFX/ragdoll;§6.
 
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
 wetconcrete/bentsteel/peelpaint/swollenwood-cardboard/wornrubber;
 workdisgust§6;
-9sets→entry/doorclear/plates1-9/seedfixed;
-`2026-10-16`:4096/2048response/uniqueUV/untiled;joinedwearcontinuous;warmglow.
-D7fan/guardedlift-drum-pusher↔SFX/gate-backdoor/entry=Homeleaf;
+9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27soloEhinges/4ammo↑/seed9banks/allfloors/keep/shut0take-lamp0.
+D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;
 spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
 4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;

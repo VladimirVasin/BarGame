@@ -98,6 +98,19 @@ namespace BarPromenade
         { Kind = kind; Position = position; Yaw = yaw; Phase = phase; }
     }
 
+    /// <summary>Wall storage faces -Z; its approach stays on the floor, its stock rests on a shelf.</summary>
+    public readonly struct WarehouseLockerPlacement
+    {
+        public const float ShelfHeight = 1.065f;
+        public readonly int Floor;
+        public readonly Vector3 Position;
+        public readonly float Yaw;
+        public Vector3 Approach => Position + Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f);
+        public Vector3 Shelf => Position + Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f);
+        public WarehouseLockerPlacement(int floor, Vector3 position, float yaw)
+        { Floor = floor; Position = position; Yaw = yaw; }
+    }
+
     public readonly struct WarehouseArenaEdge
     {
         public readonly int From, To;
@@ -152,6 +165,8 @@ namespace BarPromenade
         public IReadOnlyList<WarehouseArenaMechanism> Mechanisms { get; }
         public IReadOnlyList<Vector3> RoomCenters { get; }
         public IReadOnlyList<Vector3> AmmoAnchors { get; }
+        public IReadOnlyList<Vector3> AmmoApproaches { get; }
+        public IReadOnlyList<WarehouseLockerPlacement> HallwayLockers { get; }
         public IReadOnlyList<WarehouseRefrigeratorPlacement> Refrigerators { get; }
         public IReadOnlyList<WarehouseFishCrateAnchor> FishCrateAnchors { get; }
         public IReadOnlyList<Vector3> NavigationNodes { get; private set; }
@@ -161,7 +176,8 @@ namespace BarPromenade
             WarehouseArenaSurface[] surfaces, WarehouseArenaStair[] stairs, WarehouseArenaObstacle[] obstacles,
             WarehouseArenaPlacement[] modules, WarehouseArenaRailSpan[] rails, WarehouseArenaLamp[] lamps,
             WarehouseArenaMechanism[] mechanisms, Vector3[] rooms, Vector3[] ammo, Vector3[] spawns,
-            WarehouseRefrigeratorPlacement[] refrigerators, WarehouseFishCrateAnchor[] fishCrates)
+            WarehouseRefrigeratorPlacement[] refrigerators, WarehouseFishCrateAnchor[] fishCrates,
+            WarehouseLockerPlacement[] hallwayLockers, Vector3[] ammoApproaches)
         {
             Seed = seed; Template = template; Platforms = Array.AsReadOnly(platforms);
             Surfaces = Array.AsReadOnly(surfaces); Stairs = Array.AsReadOnly(stairs); Obstacles = Array.AsReadOnly(obstacles);
@@ -170,6 +186,8 @@ namespace BarPromenade
             RoomCenters = Array.AsReadOnly(rooms); AmmoAnchors = Array.AsReadOnly(ammo); SpawnPoints = Array.AsReadOnly(spawns);
             Refrigerators = Array.AsReadOnly(refrigerators);
             FishCrateAnchors = Array.AsReadOnly(fishCrates);
+            HallwayLockers = Array.AsReadOnly(hallwayLockers);
+            AmmoApproaches = Array.AsReadOnly(ammoApproaches);
             NavigationNodes = Array.Empty<Vector3>(); NavigationEdges = Array.Empty<WarehouseArenaEdge>();
         }
 
@@ -290,11 +308,20 @@ namespace BarPromenade
             }
             var rails = new List<WarehouseArenaRailSpan>();
             BuildRails(platforms, stairs, rails, obstacles);
-            var ammo = new[]
+            var hallwayLockers = new WarehouseLockerPlacement[6];
+            for (int floor = 0; floor < 3; floor++)
             {
-                new Vector3(-12f,0f,-9f), new Vector3(12f,0f,-9f),
-                new Vector3(0f,3.2f,10.5f), new Vector3(12f,6.4f,9f)
-            };
+                // The loading wall has two clear pockets between the rooms and the central entrance.
+                // Doors swing into those pockets, away from stairs, machinery and room thresholds.
+                for (int side = 0; side < 2; side++)
+                {
+                    Vector3 position = new Vector3(side == 0 ? -4f : 4f, floor * WarehouseArenaPlan.LevelRise, -11.45f);
+                    hallwayLockers[floor * 2 + side] = new WarehouseLockerPlacement(floor, position, 180f);
+                    obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Furniture, position,
+                        180f, new Vector3(2.2f, 1.9f, .82f)));
+                }
+            }
+            BuildAmmoStorage(seed, hallwayLockers, modules, out Vector3[] ammo, out Vector3[] ammoApproaches);
             var spawns = new List<Vector3> { new Vector3(0f,0f,-9f), new Vector3(0f,0f,3.4f) };
             spawns.AddRange(rooms);
             for (int level = 0; level <= 2; level++)
@@ -307,10 +334,61 @@ namespace BarPromenade
             WarehouseFishCrateAnchor[] fishCrates = BuildFishCrateAnchors(seed, rooms);
             var plan = new WarehouseArenaPlan(seed, template, platforms.ToArray(), surfaces.ToArray(), stairs,
                 obstacles.ToArray(), modules.ToArray(), rails.ToArray(), lamps.ToArray(), mechanisms, rooms.ToArray(), ammo,
-                spawns.ToArray(), refrigerators, fishCrates);
+                spawns.ToArray(), refrigerators, fishCrates, hallwayLockers, ammoApproaches);
             BuildNavigation(plan);
             WarehouseArenaValidator.ValidateOrThrow(plan);
             return plan;
+        }
+
+        private static void BuildAmmoStorage(int seed, WarehouseLockerPlacement[] hallwayLockers,
+            List<WarehouseArenaPlacement> modules, out Vector3[] ammo, out Vector3[] approaches)
+        {
+            // A separate seed channel changes stock only, leaving cargo, fish and machines intact.
+            uint state = unchecked((uint)seed) ^ 0x414D4D4Fu;
+            var candidates = new List<WarehouseLockerPlacement>(9);
+            candidates.AddRange(hallwayLockers);
+            foreach (WarehouseArenaPlacement part in modules)
+                if (part.Kind == "LockerProps")
+                    candidates.Add(new WarehouseLockerPlacement((int)(part.Position.y / WarehouseArenaPlan.LevelRise),
+                        part.Position, part.Yaw));
+            for (int index = candidates.Count - 1; index > 0; index--)
+            {
+                int other = (int)(Next(ref state) % (uint)(index + 1));
+                WarehouseLockerPlacement swap = candidates[index];
+                candidates[index] = candidates[other]; candidates[other] = swap;
+            }
+
+            var selected = new WarehouseLockerPlacement[4];
+            int floorMask = 0, selectedMask = 0, count = 0;
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                int floorBit = 1 << candidates[index].Floor;
+                if ((floorMask & floorBit) != 0) continue;
+                selected[count++] = candidates[index];
+                floorMask |= floorBit; selectedMask |= 1 << index;
+            }
+            if (floorMask != 7 || count != 3)
+                throw new InvalidOperationException("Ammunition storage needs a reachable locker on every storey.");
+            for (int index = 0; index < candidates.Count; index++)
+                if ((selectedMask & (1 << index)) == 0)
+                { selected[count++] = candidates[index]; break; }
+            if (count != selected.Length)
+                throw new InvalidOperationException("Ammunition packs require four distinct locker banks.");
+
+            // Shuffling assignments also varies which storeys carry pistol magazines and shells.
+            for (int index = selected.Length - 1; index > 0; index--)
+            {
+                int other = (int)(Next(ref state) % (uint)(index + 1));
+                WarehouseLockerPlacement swap = selected[index];
+                selected[index] = selected[other]; selected[other] = swap;
+            }
+            ammo = new Vector3[selected.Length];
+            approaches = new Vector3[selected.Length];
+            for (int slot = 0; slot < selected.Length; slot++)
+            {
+                ammo[slot] = selected[slot].Shelf;
+                approaches[slot] = selected[slot].Approach;
+            }
         }
 
         private static WarehouseFishCrateAnchor[] BuildFishCrateAnchors(int seed, List<Vector3> rooms)
@@ -441,7 +519,8 @@ namespace BarPromenade
                 AddNode(stair.Top + Vector3.forward * .6f, nodes, unique);
             }
             foreach (Vector3 spawn in plan.SpawnPoints) AddNode(spawn, nodes, unique);
-            foreach (Vector3 ammo in plan.AmmoAnchors) AddNode(ammo, nodes, unique);
+            foreach (Vector3 approach in plan.AmmoApproaches) AddNode(approach, nodes, unique);
+            foreach (WarehouseLockerPlacement locker in plan.HallwayLockers) AddNode(locker.Approach, nodes, unique);
             foreach (WarehouseRefrigeratorPlacement fridge in plan.Refrigerators) AddNode(fridge.Approach, nodes, unique);
             foreach (WarehouseFishCrateAnchor crate in plan.FishCrateAnchors) AddNode(crate.Approach, nodes, unique);
             AddNode(plan.GateApproach, nodes, unique);
@@ -483,7 +562,8 @@ namespace BarPromenade
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (plan.Stairs.Count != 4 || plan.RoomCenters.Count != 9 || plan.Platforms.Count < 100 ||
                 plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
-                plan.Refrigerators.Count != 3 || plan.FishCrateAnchors.Count != 18)
+                plan.Refrigerators.Count != 3 || plan.FishCrateAnchors.Count != 18 ||
+                plan.HallwayLockers.Count != 6 || plan.AmmoApproaches.Count != 4)
                 throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, four ammo anchors and sparse light.");
             WarehouseArenaLamp stationLamp = plan.Lamps[4];
             if (stationLamp.Kind != "FishStationLamp" ||
@@ -505,7 +585,14 @@ namespace BarPromenade
             var route = new List<Vector3>();
             ValidateFishCrates(plan, area, route);
             foreach (Vector3 spawn in plan.SpawnPoints) RequireRoute(area, plan.HeroSpawn, spawn, route);
-            foreach (Vector3 ammo in plan.AmmoAnchors) RequireRoute(area, plan.HeroSpawn, ammo, route);
+            foreach (Vector3 approach in plan.AmmoApproaches) RequireRoute(area, plan.HeroSpawn, approach, route);
+            foreach (WarehouseLockerPlacement locker in plan.HallwayLockers)
+            {
+                if (locker.Floor < 0 || locker.Floor > 2 ||
+                    Mathf.Abs(locker.Position.y - locker.Floor * WarehouseArenaPlan.LevelRise) > .001f)
+                    throw new InvalidOperationException("Wall lockers must remain on their authored storeys.");
+                RequireRoute(area, plan.HeroSpawn, locker.Approach, route);
+            }
             for (int floor = 0; floor < 3; floor++)
             {
                 WarehouseRefrigeratorPlacement fridge = plan.Refrigerators[floor];

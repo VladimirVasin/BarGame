@@ -96,7 +96,12 @@ namespace BarPromenade
         internal void AdvanceRoundEnd(float seconds)
         {
             if (CraneAttached && !State.IsDefeated)
-            { State.CancelAction(); craneWinch.Stop(); craneRelease.Stop(); return; }
+            {
+                roundEnded = true;
+                EndZombieFrenzy();
+                State.CancelAction(); StopCraneVoices();
+                return;
+            }
             EndZombieFrenzy();
             zombieLoad?.EndRam();
             if (!presentationFrozen) zombieLoad?.AdvanceCatch(seconds);

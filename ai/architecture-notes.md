@@ -2,29 +2,32 @@
 
 ## Current facts
 
+- **Accepted 2026-10-16, warehouse storage:**
+  3room+6wall/27leaves/soloE/fridgecurve/hollowCOL;
+  multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell;
+  reset-respawnkeep/Endlessrespawn/resetshut;
+  8/2+0/reserveonly/wave-story0/lamp-matclone0.
+
 - **Accepted exception 2026-10-16, crane:**
-  Own3floorXYZ1axis;§6/15a. Rfist→cuff-hook/+6m360LOSline:anyfloor;
-  fixedlaunch/1outboundhit/worldstop-return;bodycentralvoid.
-  Pendulum/accel-brake/6steel:head-pelvis-hands-feet/slackcap/livegravity-inertia;
-  yawcassette/fullclearance/ragdoll;
-  Move≤9.43/mount9.87/fanmin9.6;2frames→gantry/look-70..55°;
-  Std-Endlesskept/City-story-grab-lift0.
+  XYZ1axis/3floors/void;§6/15a;Rfist→cuff-hook/6m3DLOS;
+  fixed1hitout/stop-return;ownnewfall→5s Frenzy on tethers;
+  holdAI;pause/reset-disable-deathclear.
+  6steel:head/pelvis/4limbs/yaw/pendulum/accel-brake/gravity-inertia/slackcap;
+  COL/ragdoll;Move≤9.43/mount9.87/fanmin9.6;2frames→gantry/look-70..55°;
+  Std-Endless/City-story-grab-lift0.
 
 - **Accepted 2026-10-16, warehouse detail:**
-  9sets/opposite-entry/face→door/COLclear;
-  4096+2048response+2×512/BC7mips27.34≤28MiB.
-  UVslots;structure colour+response:worldmetres/sharedcauses;
-  gate=PlatformUV;runtimeUV+matclone0
+  9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;
+  UVslots/worldmetres/sharedwear;gate=PlatformUV/runtimeUV-matclone0.
 
 - **Accepted 2026-10-16, chest glow:**
-  Warm lens/halo;20→80°/depth/shared2particles;
-  switch-hide-cleanup/exposure-independent/Spotkept.
+  Warmlens-halo/20→80°/depth/2sharedparticles;
+  switch-hide-cleanup/exposure-free/Spotkept.
 
 - **Accepted 2026-10-15, shared entry door design:**
-  Home/CombatTest:`ApartmentEntranceDoor`;
-  agedwood/4recessedpanels/frame-reveals-architraves/threshold/3hinges/levers-keyhole-peephole/edgewear;
-  leaf1.12×2.16×.052/frame1.32×2.3×.22/opening1.32/Patch0;
-  Home COL-docks-travel-text kept;warehouse frameCOL/closed.
+  Home/CombatTest:`ApartmentEntranceDoor`:agedwood/4panels/reveals-trim-threshold/
+  3hinges/levers-keyhole-peephole/wear;leaf1.12×2.16×.052/frame1.32×2.3×.22/
+  opening1.32/Patch0;Home COL-docks-travel-text kept;warehouse frameCOL/closed.
 
 - **Accepted 2026-10-15, entrance:**
   CombatTest entry=ordinary→corrupted/return0;silent/travel0;§6/§21.
@@ -152,10 +155,6 @@
   adaptive detail-essential/forced urgent-terminal quotas;sampling≠loss;
   32-action tail≠solver/original envelopes/clip-loss/flush/end/reset.
   `ai/debug-log.md`.
-
-- **Accepted exception — 2026-10-13, finite combat ammunition:**
-  User:finite ammo/0wave refill-story/start-reset8/2+0reserve.
-  4slots/Eshared/reserve-only/endless respawn.
 
 - **Accepted — 2026-10-13, three-weapon carry:**
   All3/1held-2stowed/3mount-action-ammo/drop-recover-reset/0story.

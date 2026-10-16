@@ -966,9 +966,9 @@
     "root_frame": "GateControl local metres",
     "deck_surfaces": {
       "master_manifest": "Assets/Resources/CombatWarehouse/CombatWarehouse3D.json",
-      "master_sha256": "51f36897a8b4e2ff0e01454443aef85b92e53326346b3d7a375373fdfb2d2fd7",
+      "master_sha256": "669810f7161241f87624e3301415f3072c96c93406619d38c38cfbdee19bae01",
       "layout": "ArtSource/CombatWarehouse/WarehouseLayout.json",
-      "layout_sha256": "638f6118f39b319438c54095af51e6b4d64814f28432c122147252e4a938d1c7",
+      "layout_sha256": "aeef281ba27faa634b7c1e07acb27f5b4459a133bede4017e65b68b849d08a15",
       "uv_signature": "2fe99a84cec10d176e75c55eb45244f48d1c8bb4a05d9a201694a6a1d1370722",
       "size": 4096,
       "placements": [

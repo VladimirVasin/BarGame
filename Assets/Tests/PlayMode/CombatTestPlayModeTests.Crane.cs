@@ -32,6 +32,196 @@ namespace BarPromenade.Tests.PlayMode
         private Vector3 craneOriginalAnchor, craneMinimumCommand, craneMaximumCommand;
 
         [UnityTest]
+        public IEnumerator Range_CraneOwnHookKnockdownTriggersOneSuspendedFrenzy()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                CombatLoadoutSelection.Default, CombatTestMode.Crane)), Is.True);
+            yield return WaitFor(() =>
+            {
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                return root != null && root.IsInitialized && !SceneTransitionService.IsTransitioning &&
+                    GameInput.CanRead(GameInputContext.Gameplay);
+            }, "The crane knockdown regression did not reach live gameplay.");
+            root.AutomaticSimulation = false;
+            root.SetSparring(true);
+            CombatActor crane = root.Opponent, hero = root.Hero;
+            Assert.That(crane.IsCrane, Is.True);
+            Assert.That(crane.GetComponent<CombatZombieLoad>(), Is.Null,
+                "The suspended actor must reach the fall callback without a porter's loaded pelvis state.");
+            preparedCraneCables = new Transform[crane.CraneCableCount, CombatActor.CraneCableSegments];
+            for (int i = 0; i < crane.CraneCableCount; i++)
+                for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
+                    preparedCraneCables[i, segment] = crane.GetCraneCableTransform(i, segment);
+            preparedCraneHook = crane.GetCraneHookTransform();
+            preparedCraneHookCable = crane.GetCraneHookCableTransform();
+            observedCraneThrows = crane.CraneHookThrowCount;
+            craneOriginalAnchor = crane.CraneAnchorPosition;
+            craneOriginalYaw = crane.transform.eulerAngles.y;
+            craneMinimumCommand = craneMaximumCommand = crane.CraneCarriagePosition;
+            var cableStarts = new Vector3[crane.CraneCableCount];
+            for (int i = 0; i < cableStarts.Length; i++) cableStarts[i] = crane.GetCraneCableStart(i);
+            int animationGraphs = crane.NpcAnimationGraphBuilds, knockdowns = 0;
+            void RecordFall(CombatImpact impact) { knockdowns++; }
+            hero.KnockedDown += RecordFall;
+            try
+            {
+                yield return BeginCraneHookKnockdown(crane);
+                CombatImpact realHit = hero.LastImpact;
+                Assert.That(knockdowns, Is.EqualTo(1));
+                Assert.That(crane.IsCraneFrenzied, Is.True);
+                Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
+                Assert.That(crane.CraneFrenzySecondsElapsed, Is.LessThanOrEqualTo(CombatTestRoot.SimulationStep));
+                AudioSource sound = Array.Find(crane.GetComponentsInChildren<AudioSource>(true),
+                    voice => voice.clip != null && voice.clip.name.StartsWith("ZombieFrenzy", StringComparison.Ordinal));
+                Assert.That(sound, Is.Not.Null, "The physical knockdown starts the shared organic frenzy cue.");
+                Assert.That(sound.loop || sound.ignoreListenerPause, Is.False);
+                Vector3 heldCommand = crane.CraneCarriagePosition;
+                int heldThrows = crane.CraneHookThrowCount, attack = crane.State.AttackSequence;
+                Transform head = FindAnatomicalBone(crane, "head"), hand = FindAnatomicalBone(crane, "hand.L");
+                Quaternion firstHead = head.localRotation, firstHand = hand.localRotation;
+                float headMotion = 0f, handMotion = 0f;
+                bool sampledEarly = false, sampledLate = false, paused = false;
+                for (int frame = 0; frame < 80 && crane.IsCraneFrenzied; frame++)
+                {
+                    Assert.That(crane.TryBeginCraneCycle(hero), Is.False, "The outburst owns the attack and patrol opening.");
+                    Assert.That(crane.State.AttackSequence, Is.EqualTo(attack));
+                    Assert.That(crane.CraneHookThrowCount, Is.EqualTo(heldThrows));
+                    Assert.That(crane.CraneCarriagePosition, Is.EqualTo(heldCommand));
+                    Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
+                    Assert.That(hero.ReceivedImpactCount, Is.EqualTo(1), "The returning hook remains harmless.");
+                    AssertCraneCablesFollowRig(crane, cableStarts);
+                    if (crane.CraneFrenzySecondsElapsed >= 1f)
+                    {
+                        headMotion = Mathf.Max(headMotion, Quaternion.Angle(firstHead, head.localRotation));
+                        handMotion = Mathf.Max(handMotion, Quaternion.Angle(firstHand, hand.localRotation));
+                        if (!sampledEarly)
+                        {
+                            CaptureCraneFrenzyView(crane, "Test crane - Knockdown frenzy");
+                            sampledEarly = true;
+                        }
+                        if (!sampledLate && crane.CraneFrenzySecondsElapsed >= 2.5f)
+                        {
+                            CaptureCraneFrenzyView(crane, "Test crane - Suspended frenzy motion");
+                            sampledLate = true;
+                        }
+                    }
+                    if (!paused && crane.CraneFrenzySecondsElapsed >= .5f)
+                    {
+                        float clock = crane.CraneFrenzySecondsElapsed;
+                        Assert.That(hero.TryBeginKnockdown(realHit, realHit.Direction, Vector3.zero), Is.False);
+                        Assert.That(knockdowns, Is.EqualTo(1));
+                        Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(clock));
+                        Quaternion heldHead = head.localRotation, heldHand = hand.localRotation;
+                        Vector3 heldBody = crane.transform.position, heldHook = crane.CraneHookPosition;
+                        Assert.That(root.PauseMenu.Open(), Is.True);
+                        TickCrane(crane, 1f);
+                        yield return null;
+                        int samples = sound.timeSamples;
+                        yield return null;
+                        Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(clock));
+                        Assert.That(crane.transform.position, Is.EqualTo(heldBody));
+                        Assert.That(crane.CraneHookPosition, Is.EqualTo(heldHook));
+                        Assert.That(Quaternion.Angle(head.localRotation, heldHead), Is.LessThan(.01f));
+                        Assert.That(Quaternion.Angle(hand.localRotation, heldHand), Is.LessThan(.01f));
+                        Assert.That(sound.timeSamples, Is.EqualTo(samples));
+                        AssertCraneCablesFollowRig(crane, cableStarts);
+                        Assert.That(root.PauseMenu.Cancel(), Is.True);
+                        yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the crane frenzy.");
+                        paused = true;
+                    }
+                    float remaining = CombatActor.ZombieFrenzyDurationSeconds - crane.CraneFrenzySecondsElapsed;
+                    if (remaining <= .1001f) crane.Step(remaining);
+                    else TickCrane(crane, .1f);
+                }
+                Assert.That(sampledEarly && sampledLate && paused, Is.True);
+                Assert.That(headMotion, Is.GreaterThan(5f), "The suspended head visibly participates in the outburst.");
+                Assert.That(handMotion, Is.GreaterThan(5f), "The same continuous suspended rig drives the arm motion.");
+                Assert.That(crane.IsCraneFrenzied, Is.False);
+                Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(CombatActor.ZombieFrenzyDurationSeconds).Within(.001f));
+                Assert.That(sound.isPlaying, Is.False, "Simulation expiry stops the cue even when DSP playback has not caught up.");
+                Assert.That(crane.NpcAnimationGraphBuilds, Is.EqualTo(animationGraphs));
+                PlaceCraneHero(new Vector3(0f, WarehouseArenaPlan.TopHeight, -6.6f), Vector3.forward);
+                Assert.That(hero.TryBeginKnockdown(realHit, realHit.Direction * .8f, Vector3.zero), Is.True);
+                Assert.That(crane.IsCraneFrenzied, Is.False, "A new physical fall attributed to the same old strike cannot restart the cue.");
+                Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
+                PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
+                TickCrane(crane, 3.2f);
+                Assert.That(crane.CranePatrolTravelling, Is.True, "The ordinary independent patrol resumes after the complete outburst.");
+
+                root.ResetRound();
+                observedCraneThrows = crane.CraneHookThrowCount;
+                yield return BeginCraneHookKnockdown(crane);
+                TickCrane(crane, .4f);
+                Assert.That(crane.IsCraneFrenzied, Is.True);
+                root.ResetRound();
+                observedCraneThrows = crane.CraneHookThrowCount;
+                Assert.That(crane.IsCraneFrenzied, Is.False);
+                Assert.That(crane.CraneFrenzySecondsElapsed, Is.Zero);
+                Assert.That(crane.CraneFrenzyPlayCount, Is.Zero);
+                Assert.That(sound.isPlaying, Is.False, "Reset stops the retained voice immediately.");
+                Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
+                AssertCraneCablesFollowRig(crane, cableStarts);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (hero != null) hero.KnockedDown -= RecordFall;
+            }
+        }
+
+        private IEnumerator BeginCraneHookKnockdown(CombatActor crane)
+        {
+            // The initial top stop can reach this real gallery without a long patrol setup.
+            PlaceCraneHero(new Vector3(0f, WarehouseArenaPlan.TopHeight, -6.6f), Vector3.forward);
+            for (int step = 0; step < 480 && root.Hero.ReceivedImpactCount == 0; step++)
+            {
+                TickCrane(crane, CombatTestRoot.SimulationStep);
+                if (step % 120 == 119) yield return null;
+            }
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1),
+                "The genuine hook must hit before the physical fall; phase=" + crane.CranePhase +
+                ", hook=" + crane.CraneHookPhase + ", actor=" + crane.transform.position + ".");
+            CombatImpact impact = root.Hero.LastImpact;
+            Assert.That(impact.Source, Is.SameAs(crane));
+            Assert.That(impact.Target, Is.SameAs(root.Hero));
+            Assert.That(impact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
+            // A balance-preserving hit is followed through the same production
+            // physical handoff as the porter regression; the callback is never invoked directly.
+            if (!root.Hero.IsKnockedDown)
+            {
+                Assert.That(impact.AttackSequence, Is.EqualTo(crane.State.AttackSequence));
+                Assert.That(root.Hero.TryBeginKnockdown(impact, impact.Direction * .8f, Vector3.zero), Is.True);
+            }
+            Assert.That(root.Hero.IsKnockedDown && root.Hero.IsRagdollActive, Is.True);
+            Assert.That(crane.State.AttackSequence, Is.EqualTo(impact.AttackSequence + 1),
+                "Entering frenzy invalidates the old strike before harmless hook return.");
+        }
+
+        private void CaptureCraneFrenzyView(CombatActor crane, string name)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                Vector3 focus = crane.transform.position + Vector3.up * 1.1f;
+                camera.transform.SetPositionAndRotation(focus + new Vector3(3.2f, 1.1f, 3.5f),
+                    Quaternion.LookRotation(-new Vector3(3.2f, 1.1f, 3.5f)));
+                camera.fieldOfView = 55f;
+                CaptureCraneView(crane, name, gameplayCamera: true);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+            }
+        }
+
+        [UnityTest]
         [PrebuildSetup(typeof(CombatCraneAssetsSetup))]
         public IEnumerator Range_CraneSuspensionKeepsContactOcclusionPauseAndReset()
         {
@@ -394,7 +584,9 @@ namespace BarPromenade.Tests.PlayMode
                 if (root.Hero.ReceivedImpactCount > beforeImpacts)
                 {
                     Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(beforeImpacts + 1));
-                    Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Outbound).Or.EqualTo(CombatCraneHookPhase.Holding),
+                    Assert.That(crane.CraneHookPhase == CombatCraneHookPhase.Outbound ||
+                        crane.CraneHookPhase == CombatCraneHookPhase.Holding ||
+                        crane.IsCraneFrenzied && crane.CraneHookPhase == CombatCraneHookPhase.Returning, Is.True,
                         "Only the outbound hook can transact damage, never the fist or returning cable.");
                     Vector3 sweep = crane.CraneHookPosition - hookBefore;
                     float t = sweep.sqrMagnitude > .000001f ? Mathf.Clamp01(Vector3.Dot(root.Hero.LastImpact.Point - hookBefore, sweep) / sweep.sqrMagnitude) : 0f;

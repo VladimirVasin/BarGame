@@ -7,6 +7,8 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CombatAmmoPickup : MonoBehaviour, IInteractable
     {
+        private const float WorldModelScale = 1.6f;
+        private const float ShellSpacing = .045f;
         private CombatActor owner;
         private PlayerInteractor ownerInteractor;
         private IFirearmState state;
@@ -14,6 +16,7 @@ namespace BarPromenade
         private SphereCollider interactionTrigger;
         private RaycastHit[] sightHits = new RaycastHit[24];
         private Func<bool> commit;
+        private Func<bool> sourceAvailable;
         private Action<bool> finish;
         private Vector3 position, modelOffset, modelScale;
         private Quaternion modelRotation;
@@ -40,10 +43,13 @@ namespace BarPromenade
             finish = Finish;
             InventoryItemId item = id == CombatWeaponId.Pistol ? InventoryItemId.CombatPistolAmmo : InventoryItemId.CombatShotgunAmmo;
             Model = InventoryItemModelFactory.BuildWorldModel(item, transform, new Vector3(.2f, .2f, .2f));
-            Model.localRotation = id == CombatWeaponId.Pistol ? Quaternion.Euler(90f, 0f, 16f) : Quaternion.identity;
+            ConfigureWorldModel();
             Bounds bounds = WorldItemInspectionPresenter.CalculateWorldBounds(Model);
-            // Root positions are ground contacts, including the warehouse's upper floor.
-            modelOffset = new Vector3(0f, transform.position.y - bounds.min.y + .015f, 0f);
+            // The root is a support contact: shelf/table height is kept through inspection and respawn.
+            modelOffset = transform.InverseTransformVector(new Vector3(
+                transform.position.x - bounds.center.x,
+                transform.position.y - bounds.min.y + .015f,
+                transform.position.z - bounds.center.z));
             modelRotation = Model.localRotation;
             modelScale = Model.localScale;
             interactionTrigger = gameObject.AddComponent<SphereCollider>();
@@ -53,12 +59,45 @@ namespace BarPromenade
             ResetPickup(worldPosition);
         }
 
+        private void ConfigureWorldModel()
+        {
+            // Combat models retain their authored metric size rather than using the factory's fit box.
+            // Enlarge only the pickup wrapper; imported FBX roots keep their original unit factors.
+            Model.localScale *= WorldModelScale;
+            Model.localRotation = WeaponId == CombatWeaponId.Pistol
+                ? Quaternion.Euler(90f, 16f, 0f)
+                : Quaternion.identity;
+            if (WeaponId == CombatWeaponId.Shotgun)
+            {
+                // Keep the same four authored shells and make their silhouette readable on a shelf.
+                for (int index = 0; index < Model.childCount; index++)
+                    Model.GetChild(index).localPosition = new Vector3(
+                        (index - (Model.childCount - 1) * .5f) * ShellSpacing, 0f, 0f);
+            }
+            foreach (Renderer renderer in Model.GetComponentsInChildren<Renderer>(true))
+            {
+                Color color;
+                if (renderer.name.EndsWith("__Steel", StringComparison.Ordinal))
+                    color = new Color(.47f, .50f, .43f);
+                else if (renderer.name.EndsWith("__WornSteel", StringComparison.Ordinal))
+                    color = new Color(.65f, .67f, .58f);
+                else if (renderer.name.EndsWith("__Brass", StringComparison.Ordinal))
+                    color = new Color(.72f, .57f, .31f);
+                else if (renderer.name.EndsWith("__Shell", StringComparison.Ordinal))
+                    color = new Color(.54f, .25f, .16f);
+                else continue;
+                // Per-renderer base colour leaves shared firearm materials and lighting unchanged.
+                RuntimePrimitiveFactory.SetColor(renderer, color.linear);
+            }
+        }
+
         public bool CanInteract(PlayerInteractor interactor)
         {
             if (!isActiveAndEnabled || !interactionEnabled || !available || inspecting || owner == null ||
                 !owner.isActiveAndEnabled || owner.State.IsDefeated || interactor == null || interactor != ownerInteractor ||
                 !interactor.InputEnabled || interactor.InteractKeyClaimed || !GameInput.CanRead(GameInputContext.Contextual) ||
-                CounterMenuInput.IsBlockedByOtherUi() || SceneTransitionService.IsTransitioning) return false;
+                CounterMenuInput.IsBlockedByOtherUi() || SceneTransitionService.IsTransitioning ||
+                (sourceAvailable != null && !sourceAvailable())) return false;
             Vector3 from = interactor.transform.position + Vector3.up * .8f;
             Vector3 ray = InteractionPosition - from;
             if (ray.sqrMagnitude > PlayerInteractor.InteractionRadius * PlayerInteractor.InteractionRadius) return false;
@@ -102,7 +141,7 @@ namespace BarPromenade
         private bool Commit()
         {
             if (accepted || !available || !interactionEnabled || owner == null || !owner.isActiveAndEnabled ||
-                owner.State.IsDefeated) return false;
+                owner.State.IsDefeated || (sourceAvailable != null && !sourceAvailable())) return false;
             int before = state.ReserveRounds;
             int granted = state.AddReserveRounds(RoundsPerPickup);
             owner.JournalAmmunitionPickup(WeaponId, before, granted);
@@ -157,6 +196,8 @@ namespace BarPromenade
             if (!enabled) CancelPickup();
             if (interactionTrigger != null) interactionTrigger.enabled = enabled && available && !inspecting && isActiveAndEnabled;
         }
+
+        internal void SetSourceAvailability(Func<bool> availability) => sourceAvailable = availability;
 
         internal void CancelPickup()
         {

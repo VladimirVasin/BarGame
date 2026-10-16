@@ -1,0 +1,176 @@
+{
+  "generator": "tools/build-warehouse-locker-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "c139b31555ec85e17104f10eb5eb6ebb4e83f16a32bac8193c7403edd25da412",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 2480,
+  "materials": {
+    "Steel": [
+      0.2,
+      0.24,
+      0.22
+    ],
+    "WornSteel": [
+      0.36,
+      0.39,
+      0.32
+    ],
+    "Rust": [
+      0.39,
+      0.23,
+      0.13
+    ],
+    "ConcreteDark": [
+      0.2,
+      0.23,
+      0.21
+    ]
+  },
+  "models": [
+    {
+      "name": "WarehouseLocker",
+      "bounds_min": [
+        -1.1,
+        0.0,
+        -0.422
+      ],
+      "bounds_max": [
+        1.1,
+        1.9,
+        0.325
+      ],
+      "triangle_count": 2480,
+      "solid_count": 92,
+      "mesh_count": 18,
+      "anchors": [
+        {
+          "name": "LockerDoor0",
+          "position": [
+            -1.07,
+            0.985,
+            -0.3425
+          ],
+          "parent": null
+        },
+        {
+          "name": "Collision_Door0",
+          "position": [
+            -1.07,
+            0.985,
+            -0.3425
+          ],
+          "parent": "LockerDoor0"
+        },
+        {
+          "name": "Shelf0",
+          "position": [
+            -0.74,
+            1.065,
+            -0.08
+          ],
+          "parent": null
+        },
+        {
+          "name": "LockerDoor1",
+          "position": [
+            -0.33,
+            0.985,
+            -0.3425
+          ],
+          "parent": null
+        },
+        {
+          "name": "Collision_Door1",
+          "position": [
+            -0.33,
+            0.985,
+            -0.3425
+          ],
+          "parent": "LockerDoor1"
+        },
+        {
+          "name": "Shelf1",
+          "position": [
+            0.0,
+            1.065,
+            -0.08
+          ],
+          "parent": null
+        },
+        {
+          "name": "LockerDoor2",
+          "position": [
+            0.41,
+            0.985,
+            -0.3425
+          ],
+          "parent": null
+        },
+        {
+          "name": "Collision_Door2",
+          "position": [
+            0.41,
+            0.985,
+            -0.3425
+          ],
+          "parent": "LockerDoor2"
+        },
+        {
+          "name": "Shelf2",
+          "position": [
+            0.74,
+            1.065,
+            -0.08
+          ],
+          "parent": null
+        },
+        {
+          "name": "Approach",
+          "position": [
+            0,
+            0,
+            -1.45
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "contract": {
+    "bank_dimensions": [
+      2.2,
+      1.9,
+      0.65
+    ],
+    "front": "-Z",
+    "door_open_angle": 102,
+    "door_count": 3,
+    "shelf_contacts": [
+      [
+        -0.74,
+        1.065,
+        -0.08
+      ],
+      [
+        0.0,
+        1.065,
+        -0.08
+      ],
+      [
+        0.74,
+        1.065,
+        -0.08
+      ]
+    ],
+    "materials": "shared warehouse auxiliary atlas; no new painting",
+    "collision": "hollow shell and separate hinge-parented leaves"
+  }
+}
