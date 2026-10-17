@@ -113,6 +113,7 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
             Mode = selection.Mode;
+            EncounterSettings = selection.EncounterSettings;
             Camera camera;
             if (UseLegacyArenaForTests)
             {
@@ -132,7 +133,6 @@ namespace BarPromenade
             Hero = Player.GameObject.AddComponent<CombatActor>();
             if (Mode == CombatTestMode.Crane && WarehousePlan != null)
                 heroSpawn = CraneGround + Vector3.back * 4.4f + Vector3.up * PlayerFactory.GroundedRootOffset;
-            EncounterSettings = selection.EncounterSettings;
             Sparring = true;
             Hero.InitializeHero(Player, selection.Loadout);
             if (WarehousePlan != null)
@@ -144,7 +144,7 @@ namespace BarPromenade
             InitializeAmmoPickups();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
-            if (Mode == CombatTestMode.Crane) CameraFollow.ConfigureOrbitPitchLimits(-70f, 55f);
+            if (HasCraneOpponent) CameraFollow.ConfigureOrbitPitchLimits(-70f, 55f);
             if (WarehousePlan != null)
             {
                 Inventory = ui.AddComponent<InventoryController>();

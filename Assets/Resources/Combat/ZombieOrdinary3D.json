@@ -1,0 +1,83 @@
+{
+  "generator": "tools/build-combat-ordinary-zombie-3d-model.py",
+  "version": "1.0.0",
+  "test_only": true,
+  "rig": "NpcHumanV2",
+  "topology": "retained_ordinary_worker",
+  "root_motion": false,
+  "animation_events": 0,
+  "source_fps": 100,
+  "walk_cycle_distance_m": 1.2,
+  "walk_duration_seconds": 1.6,
+  "prepare_seconds": 0.6,
+  "active_seconds": 0.22,
+  "recovery_seconds": 0.95,
+  "signature": "f5badfbe21b18c76995686fc8683af08c21fc3d0144eea78abbd87d071613778",
+  "clips": [
+    {
+      "name": "ZombieOrdinaryIdle",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "maximum_ground_support_error_m": 2.2183845676763755e-06,
+      "maximum_loop_seam_error": 1.7881393432617188e-07,
+      "maximum_knee_flexion_degrees": 36.87036859263141,
+      "minimum_foot_separation_m": 0.19534494637265568,
+      "maximum_wrist_reach_m": 0.5136924651025226,
+      "minimum_grounded_feet": 2,
+      "maximum_bone_scale_error": 1.1086463928222656e-05,
+      "maximum_limb_translation_m": 2.149686182756992e-06
+    },
+    {
+      "name": "ZombieOrdinaryWalk",
+      "duration_seconds": 1.6,
+      "loop": true,
+      "maximum_ground_support_error_m": 2.3941302035467408e-06,
+      "maximum_loop_seam_error": 2.980232238769531e-07,
+      "maximum_knee_flexion_degrees": 82.64425759858962,
+      "minimum_foot_separation_m": 0.1973442772712803,
+      "maximum_wrist_reach_m": 0.51930328683803,
+      "minimum_grounded_feet": 1,
+      "maximum_bone_scale_error": 1.2278556823730469e-05,
+      "maximum_limb_translation_m": 3.243023006921989e-06
+    },
+    {
+      "name": "ZombieOrdinaryAttackRight",
+      "duration_seconds": 1.77,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.142297817577069e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 72.28085255206429,
+      "minimum_foot_separation_m": 0.19250318781448786,
+      "maximum_wrist_reach_m": 0.5102705286024379,
+      "minimum_grounded_feet": 1,
+      "maximum_bone_scale_error": 1.2218952178955078e-05,
+      "maximum_limb_translation_m": 2.1969494866069082e-06
+    },
+    {
+      "name": "ZombieOrdinaryAttackLeft",
+      "duration_seconds": 1.77,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.3409529789275506e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 69.49066563460072,
+      "minimum_foot_separation_m": 0.19534484178715186,
+      "maximum_wrist_reach_m": 0.5108777217617553,
+      "minimum_grounded_feet": 1,
+      "maximum_bone_scale_error": 1.1026859283447266e-05,
+      "maximum_limb_translation_m": 2.897164755743508e-06
+    },
+    {
+      "name": "ZombieOrdinaryHit",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "maximum_ground_support_error_m": 2.2316199097429348e-06,
+      "maximum_loop_seam_error": 0.0,
+      "maximum_knee_flexion_degrees": 36.9446912960849,
+      "minimum_foot_separation_m": 0.19534497348781926,
+      "maximum_wrist_reach_m": 0.5102705463976944,
+      "minimum_grounded_feet": 2,
+      "maximum_bone_scale_error": 1.0967254638671875e-05,
+      "maximum_limb_translation_m": 2.1713753371652382e-06
+    }
+  ]
+}

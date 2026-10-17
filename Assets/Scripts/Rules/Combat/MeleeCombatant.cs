@@ -1036,7 +1036,7 @@ namespace BarPromenade
             if (IsDefeated || IsKnockedDown || damage == 0f) return MeleeHitResult.Ignored;
             bool guardBroken = Phase == MeleePhase.GuardBroken;
             double remaining = Math.Max(stunRemaining, staggerSeconds);
-            Health = Math.Max(0f, Health - damage);
+            Health = Math.Max(0f, Health - damage * Settings.IncomingDamageScale);
             CancelAction();
             if (Health == 0f)
             {
@@ -1094,7 +1094,7 @@ namespace BarPromenade
         /// parries a light swing for free. An affordable block pays the whole cost, even
         /// down to zero. An unaffordable block breaks: half damage, a longer stun, the
         /// meter and its regeneration untouched. Anatomical damage is resolved before
-        /// guard reduction; a rear head finisher defeats only after protection fails.
+        /// guard reduction; a rear head finisher spends a full-health wound only after protection fails.
         /// A received hit never delays breath.</summary>
         public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f,
             MeleeHitLocation location = default)
@@ -1152,8 +1152,13 @@ namespace BarPromenade
             double swingRemaining = Math.Max(kickRemaining,
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d);
             float resolvedDamage = profile.ResolveDamage(damage, Settings.MaxHealth, location);
-            Health = profile.RearHeadFinisher && location.IsFinisher ? 0f : Math.Max(0f,
-                Health - (guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage));
+            // A former instant finisher is a full-health wound before the victim's
+            // resistance. This preserves its old effect on the hero while durable
+            // opponents can survive the same confirmed anatomical contact.
+            bool finisher = profile.RearHeadFinisher && location.IsFinisher;
+            float healthDamage = finisher ? Settings.MaxHealth :
+                guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage;
+            Health = Math.Max(0f, Health - healthDamage * Settings.IncomingDamageScale);
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             chained = false;
             if (Health == 0f)
@@ -1179,7 +1184,7 @@ namespace BarPromenade
         }
 
         /// <summary>One projectile wound bypasses melee guard/parry and the crowbar damage table;
-        /// the supplied profile decides whether a head wound defeats immediately.
+        /// the supplied profile defines regional damage and full-health head wounds before victim resistance.
         /// Runtime owns the projectile's first contact and supplies its separate physical impulse.</summary>
         public MeleeHitResult ReceiveProjectileHit(float damage, MeleeHitLocation location = default,
             float staggerSeconds = .14f, ProjectileDamageProfile profile = null)
@@ -1194,9 +1199,11 @@ namespace BarPromenade
             double previousStun = stunRemaining;
             double committedReturn = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) :
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
-            // A positive pistol wound to the head is terminal at contact, regardless
-            // of the target's health pool or its standing/fallen presentation.
-            Health = profile.TerminalHeadHit && location.Region == MeleeBodyRegion.Head ? 0f : Math.Max(0f, Health - resolvedDamage);
+            // Normalize the old terminal-head policy before resistance: a healthy
+            // opponent takes two pistol head wounds without changing the hero.
+            if (profile.TerminalHeadHit && location.Region == MeleeBodyRegion.Head)
+                resolvedDamage = Settings.MaxHealth;
+            Health = Math.Max(0f, Health - resolvedDamage * Settings.IncomingDamageScale);
             CancelAction();
             if (Health == 0f)
             {

@@ -267,7 +267,8 @@ namespace BarPromenade
                 f6: GameLog.Field("animation_asset_revision", actor.IsHero ? journalIdentity.HeroAnimation : journalIdentity.NpcAnimation),
                 f7: GameLog.Field("intoxication", actor.IsHero ? GameSessionState.IntoxicationLevel : 0));
             duelJournal.Record("character", actor: actor.JournalActorId,
-                f0: GameLog.Field("id", actor.IsHero ? "hero" : DefaultNpcPopulation.CombatTestOpponentId(combatOpponents.IndexOf(actor))));
+                f0: GameLog.Field("id", actor.IsHero ? "hero" : actor.IsCrane
+                    ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(combatOpponents.IndexOf(actor))));
         }
 
         private void EndJournalRound(string reason)

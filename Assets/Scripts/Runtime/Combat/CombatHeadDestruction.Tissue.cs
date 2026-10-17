@@ -6,6 +6,8 @@ namespace BarPromenade
 {
     public sealed partial class CombatHeadDestruction
     {
+        private const float OuterTissueReplacementThreshold = .25f;
+
         public int ExposedSkullSectorCountFor(CombatActor actor)
         {
             int count = 0;
@@ -34,7 +36,7 @@ namespace BarPromenade
             if (!piece.Visible) return false;
             float loss = head.Actor.BodyDamage.TissueLoss(BodyDamageRegion.Head, piece.TissuePatch);
             if (piece.Bone) return loss >= 1f;
-            return piece.Interior ? loss < 1f : loss < .25f;
+            return piece.Interior ? loss < 1f : loss < OuterTissueReplacementThreshold;
         }
 
         private static List<Piece> VisiblePieces(Head head, Sector sector)
@@ -77,10 +79,15 @@ namespace BarPromenade
         {
             long stamp = System.Diagnostics.Stopwatch.GetTimestamp();
             Head head = RequireHead(actor);
-            bool changed = !actor.BodyDamage.IsAttached(BodyDamageRegion.Head);
-            for (int p = 0; p < 4; p++) changed |= actor.BodyDamage.TissueLoss(BodyDamageRegion.Head, p) > 0f;
+            bool requiresDerivedSurface = !actor.BodyDamage.IsAttached(BodyDamageRegion.Head);
+            for (int p = 0; p < CombatBodyDamageState.PatchCount; p++)
+                requiresDerivedSurface |= actor.BodyDamage.TissueLoss(BodyDamageRegion.Head, p) >= OuterTissueReplacementThreshold;
             TissueRequireTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
-            if (!changed && !head.Active) return;
+            // A shallow surviving wound still belongs to the original visible
+            // head. Activating sectors early suppresses that source and therefore
+            // hides its projected wound despite leaving the outer tissue intact.
+            // Lethal fracture already activates its own derived surfaces in Apply.
+            if (!requiresDerivedSurface && !head.Active) return;
             if (!head.Active)
             {
                 stamp = System.Diagnostics.Stopwatch.GetTimestamp();

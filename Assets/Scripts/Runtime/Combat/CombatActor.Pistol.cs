@@ -693,7 +693,8 @@ namespace BarPromenade
             bool postmortem = State.IsDefeated && IsRagdollActive;
             BodyDamageRegion region = hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hit.Part);
             float requestedDamage = ProjectileDamageProfile.Pistol.ResolveDamage(25f, hit.Location);
-            float healthDamage = postmortem || hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(region, requestedDamage);
+            float healthDamage = postmortem || hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(region,
+                requestedDamage, State.Settings.IncomingDamageScale);
             MeleeHitResult result = postmortem || hit.IsDetached || healthDamage <= 0f ? MeleeHitResult.Hit :
                 hit.Location.Region == MeleeBodyRegion.Head ? State.ReceiveProjectileHit(25f, hit.Location, stagger) :
                     State.ReceiveProjectileHit(healthDamage, default, stagger, ProjectileDamageProfile.Shotgun);

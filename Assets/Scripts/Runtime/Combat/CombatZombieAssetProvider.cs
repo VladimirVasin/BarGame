@@ -34,6 +34,13 @@ namespace BarPromenade
             new MimicBreak(.44f, new[] { 35 }, "head", Vector3.forward)
         };
         public const float WalkCycleDistance = .85f, WalkCycleSeconds = .5f;
+        public const float OrdinaryWalkCycleDistance = 1.2f, OrdinaryWalkCycleSeconds = 1.6f;
+        public const string OrdinaryIdleClip = "ZombieOrdinaryIdle", OrdinaryWalkClip = "ZombieOrdinaryWalk",
+            OrdinaryAttackRightClip = "ZombieOrdinaryAttackRight", OrdinaryAttackLeftClip = "ZombieOrdinaryAttackLeft",
+            OrdinaryHitClip = "ZombieOrdinaryHit";
+        public static readonly string[] OrdinaryClipNames = { OrdinaryIdleClip, OrdinaryWalkClip,
+            OrdinaryAttackRightClip, OrdinaryAttackLeftClip, OrdinaryHitClip };
+        private static readonly Dictionary<string, AnimationClip> OrdinaryClips = new Dictionary<string, AnimationClip>(5);
         private static readonly Vector2[] WalkTravelKeys =
         {
             new Vector2(0f, 0f), new Vector2(.10f, .03f), new Vector2(.30f, .17f),
@@ -69,6 +76,30 @@ namespace BarPromenade
         private static bool loaded;
 
         public static bool IsLoop(string name) => name == IdleClip || name == WalkClip || name == DormantClip;
+        public static bool IsOrdinaryLoop(string name) => name == OrdinaryIdleClip || name == OrdinaryWalkClip;
+        public static float OrdinaryClipDuration(string name) => name switch
+        {
+            OrdinaryIdleClip => 4f, OrdinaryWalkClip => OrdinaryWalkCycleSeconds,
+            OrdinaryAttackRightClip or OrdinaryAttackLeftClip => CombatActor.OrdinaryZombieCombatSettings.AnimationAttackDurationSeconds,
+            OrdinaryHitClip => .45f,
+            _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown ordinary zombie action.")
+        };
+
+        public static AnimationClip LoadOrdinaryClip(string name)
+        {
+            if (OrdinaryClips.Count == 0)
+                foreach (AnimationClip clip in Resources.LoadAll<AnimationClip>(ResourceFolder + "ZombieOrdinaryActions"))
+                {
+                    if (Array.IndexOf(OrdinaryClipNames, clip.name) < 0) continue;
+                    if (clip.events.Length != 0 || clip.isLooping != IsOrdinaryLoop(clip.name) ||
+                        Mathf.Abs(clip.length - OrdinaryClipDuration(clip.name)) > .003f)
+                        throw new InvalidOperationException("Invalid in-place ordinary zombie action " + clip.name);
+                    OrdinaryClips.Add(clip.name, clip);
+                }
+            if (OrdinaryClips.Count != OrdinaryClipNames.Length || !OrdinaryClips.TryGetValue(name, out AnimationClip result) || result == null)
+                throw new InvalidOperationException("Missing ordinary zombie action " + name);
+            return result;
+        }
         public static float ClipDuration(string name) => name switch
         {
             IdleClip => 4f, WalkClip => WalkCycleSeconds, DormantClip => 1f, RevealClip => RevealSeconds,
@@ -227,6 +258,7 @@ namespace BarPromenade
         private static void ResetCache()
         {
             Clips.Clear(); Array.Clear(Faces, 0, Faces.Length);
+            OrdinaryClips.Clear();
             Audio.Clear();
             loaded = false; groan = lunge = null; catchClip = null;
             crate = null;

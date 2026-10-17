@@ -81,12 +81,10 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/key-valve-gate/doorstub;3fridges/redTake0;
-  all3→bulb-mech-music-newspawns0/livekept;fish→key/receipt/keep.
-  Dormant Std1/Endless1–5/18crates;near-hit→rig.65s reveal;
-  chase1.7m/s/ram.9m/hero↓5sFrenzy/refill0/SFX.
-  ChestSpot/black;all3/finiteammo+4packs/rise/corpse step/≤2corpses/≤5pool;
-  gap:pierce/balance. [World](current-world.md).
+- CombatTest:warehouse/fish-key-gate;all3fish→power-music-spawn0.
+  Endless1–5(default3:Zombie/Docker/Crane),≤5pool.
+  Enemy resistance2/head2/wounds;3weapons/finiteammo.
+  Gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

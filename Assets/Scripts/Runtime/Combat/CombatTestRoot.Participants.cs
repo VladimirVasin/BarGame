@@ -23,6 +23,14 @@ namespace BarPromenade
         private bool focusNextArrival;
         public IReadOnlyList<CombatActor> Opponents => combatOpponents;
         public CombatEncounterSettings EncounterSettings { get; private set; }
+        public bool HasCraneOpponent => Mode == CombatTestMode.Crane ||
+            Mode == CombatTestMode.Endless && !UseLegacyArenaForTests && !UseDockerPopulationForTests &&
+            EncounterSettings.MaximumLiveOpponents >= 3;
+
+        private CombatEnemyKind OpponentKind(int index) => Mode == CombatTestMode.Crane
+            ? CombatEnemyKind.Crane : Mode != CombatTestMode.Endless || UseLegacyArenaForTests || UseDockerPopulationForTests
+                ? CombatEnemyKind.Docker : index == 2 ? CombatEnemyKind.Crane
+                    : index % 2 == 0 ? CombatEnemyKind.Zombie : CombatEnemyKind.Docker;
         public int LiveOpponentCount
         {
             get
@@ -83,6 +91,7 @@ namespace BarPromenade
             int count = Mode == CombatTestMode.Endless ? EncounterSettings.MaximumLiveOpponents : 1;
             for (int i = 0; i < count; i++)
             {
+                CombatEnemyKind kind = OpponentKind(i);
                 var obj = new GameObject(i == 0 ? "Combat Opponent" : "Combat Opponent " + (i + 1));
                 obj.transform.SetParent(transform, false);
                 var body = obj.AddComponent<CharacterController>();
@@ -90,13 +99,13 @@ namespace BarPromenade
                 body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
                 body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
                 VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
-                    obj.transform, Mode == CombatTestMode.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(i));
+                    obj.transform, kind == CombatEnemyKind.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(i));
                 // Body/wardrobe scans must finish before the fused cargo is
                 // attached beneath this same skeleton with its own atlas.
-                if (Mode == CombatTestMode.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
+                if (kind == CombatEnemyKind.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
                 else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
                 CombatActor actor = obj.AddComponent<CombatActor>();
-                actor.InitializeOpponent(presentation, body, suspendedCrane: Mode == CombatTestMode.Crane);
+                actor.InitializeOpponent(presentation, body, kind: kind);
                 actor.SetContactTarget(Hero);
                 actor.JournalActorId = i + 2;
                 combatOpponents.Add(actor);
@@ -125,30 +134,35 @@ namespace BarPromenade
         private void ResetCombatOpponents()
         {
             opponentDefeatOrder = 0;
+            // Release old motor/corpse shapes before finding any initial ground place.
+            foreach (OpponentSlot slot in opponentSlots) slot.Actor.gameObject.SetActive(false);
             PrepareMimicPlacement();
             int slotIndex = 0;
             foreach (OpponentSlot slot in opponentSlots)
             {
+                bool spawn = Mode != CombatTestMode.Endless || WarehousePlan != null && !WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
                 if (slot.Actor.IsCrane)
                 {
                     slot.Actor.gameObject.SetActive(true);
                     slot.Actor.ResetActor(CraneGround, Vector3.forward);
                     slot.Actor.ConfigureCraneSuspension(CraneGround, new Vector3(CraneGround.x, 9.15f, CraneGround.z));
                     ResetOpponentDecisions(slot.Actor, slot.Ai);
-                    slot.Spawned = true; slot.DefeatCounted = false;
+                    slot.Spawned = spawn; slot.DefeatCounted = false;
                     slot.Generation = 0; slot.DefeatOrder = 0; slot.CrateAnchorId = -1;
+                    slot.Actor.gameObject.SetActive(spawn);
                     continue;
                 }
-                Vector3 position = WarehousePlan != null
-                    ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset : opponentSpawn;
+                Vector3 position = WarehousePlan == null ? opponentSpawn : slot.Actor.IsDocker
+                    ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset
+                    : InitialGroundOpponentSpawn(slotIndex);
                 slot.CrateAnchorId = -1;
-                if (WarehousePlan != null) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
+                if (WarehousePlan != null && slot.Actor.IsDocker) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
                 slot.Actor.gameObject.SetActive(true);
                 slot.Actor.ResetActor(position, Vector3.back);
                 ResetOpponentDecisions(slot.Actor, slot.Ai);
-                slot.Spawned = Mode == CombatTestMode.Standard || WarehousePlan != null && !WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
+                slot.Spawned = spawn;
                 if (slot.Spawned && WarehousePlan != null) PlaceSpawnedMimic(slot, position);
-                else if (WarehousePlan != null) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, false);
+                else if (WarehousePlan != null && slot.Actor.IsDocker) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, false);
                 slot.DefeatCounted = false;
                 slot.Generation = 0;
                 slot.DefeatOrder = 0;
@@ -163,6 +177,17 @@ namespace BarPromenade
             RefreshEndlessSpawnGate();
             spawnPointSeed = unchecked((uint)seed ^ 0x91e10da5u);
             if (spawnPointSeed == 0) spawnPointSeed = 1;
+        }
+
+        private Vector3 InitialGroundOpponentSpawn(int index)
+        {
+            var points = WarehousePlan.SpawnPoints;
+            int first = (int)((uint)WarehousePlan.Seed % (uint)points.Count);
+            for (int i = 0; i < points.Count; i++)
+                if (TrySpawnGround(points[(first + index * 5 + i) % points.Count], null, out Vector3 grounded))
+                    return grounded;
+            // Validated plans retain this open approach even if a transient body owns a candidate.
+            return opponentSpawn;
         }
 
         private void ResetAllOpponentMovement()

@@ -10,7 +10,7 @@ namespace BarPromenade
 
         private bool AdvanceMimicPerception(float seconds)
         {
-            if (AiOpponent.ZombieAwake) return false;
+            if (!AiOpponent.IsDocker || AiOpponent.ZombieAwake) return false;
             ResetOpponentMovement();
             OpponentIntent = CombatOpponentIntent.Recover;
             if (!AiOpponent.ZombieDormant) return true;
@@ -79,7 +79,7 @@ namespace BarPromenade
 
         private void PlaceSpawnedMimic(OpponentSlot slot, Vector3 position)
         {
-            if (WarehousePlan == null || fishCrates == null || !fishCrates.TryAnchorAt(position, out int id)) return;
+            if (!slot.Actor.IsDocker || WarehousePlan == null || fishCrates == null || !fishCrates.TryAnchorAt(position, out int id)) return;
             WarehouseFishCrateAnchor anchor = WarehousePlan.FishCrateAnchors[id];
             slot.CrateAnchorId = id;
             fishCrates.SetOccupied(id, true);

@@ -32,6 +32,8 @@ namespace BarPromenade
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
         public MeleeCombatant State { get; private set; } = new MeleeCombatant();
         public bool IsZombie { get; private set; }
+        public CombatEnemyKind EnemyKind { get; private set; }
+        public bool IsDocker => IsZombie && EnemyKind == CombatEnemyKind.Docker;
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
         public CombatWeaponId WeaponId { get; private set; }
@@ -110,11 +112,14 @@ namespace BarPromenade
             Present();
         }
 
-        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body, bool suspendedCrane = false)
+        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body,
+            bool suspendedCrane = false, CombatEnemyKind kind = CombatEnemyKind.Docker)
         {
             IsZombie = true;
-            IsCrane = suspendedCrane;
-            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : MeleeCombatSettings.ZombieUnarmed);
+            EnemyKind = suspendedCrane ? CombatEnemyKind.Crane : kind;
+            IsCrane = EnemyKind == CombatEnemyKind.Crane;
+            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : IsDocker
+                ? MeleeCombatSettings.ZombieUnarmed : OrdinaryZombieCombatSettings);
             npc = presentation;
             Body = body;
             npc.ReleaseAnimation();
@@ -423,7 +428,7 @@ namespace BarPromenade
             // the crowbar rules still own their anatomical damage profile.
             if (!structuralOnly && (physicalBody || !front || !State.IsBlocking))
             {
-                float allowed = BodyDamage.ResolveHealthDamage(region, requested);
+                float allowed = BodyDamage.ResolveHealthDamage(region, requested, State.Settings.IncomingDamageScale);
                 structuralOnly = allowed <= 0f;
                 if (requested > 0f) damage *= allowed / requested;
             }
@@ -461,7 +466,9 @@ namespace BarPromenade
             if (!postmortem && !detachedPart) reactionClock = 0f;
             var impact = new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                unarmed ? direction * (result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse) :
+                unarmed ? direction * (source.IsDocker
+                    ? result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse
+                    : result == MeleeHitResult.Blocked ? 10f : 25f) :
                     CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
                 kind: unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
                 woundDamage: unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);

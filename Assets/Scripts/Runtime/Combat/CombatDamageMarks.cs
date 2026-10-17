@@ -266,7 +266,7 @@ namespace BarPromenade
             public Vector3 ProjectionPoint, ProjectionNormal;
             public Vector2 Uv;
             public Vector2 DirectionUv;
-            public float Radius, Stretch, Seed, AgeSeconds, Spread = 1f;
+            public float Radius, Stretch, Seed, AgeSeconds, Spread = 1f, OpeningScale = 1f, RepeatSpread;
             public float RayDistance = float.PositiveInfinity;
             public int HitCount = 1, Slot;
             public BodyDamageRegion Region;
@@ -276,7 +276,7 @@ namespace BarPromenade
             public ProjectileLayer Layer;
             public float Wetness => Mathf.Pow(Mathf.Clamp01(1f - AgeSeconds / ProjectileWoundDrySeconds), .75f);
             public float TargetSpread => 1f + (Surface == ProjectileWoundSurface.Fabric ? 1.05f :
-                Surface == ProjectileWoundSurface.Skin ? .48f : .30f) + (HitCount - 1) * .10f;
+                Surface == ProjectileWoundSurface.Skin ? .48f : .30f) + RepeatSpread;
             public Vector3 Position => Sample(false);
             public Vector3 Direction => Sample(true).normalized;
             public ProjectileWound CopyForHistory() => (ProjectileWound)MemberwiseClone();
@@ -556,9 +556,16 @@ namespace BarPromenade
             {
                 // Reopen and damage this same entry; neither a second overlay nor
                 // a new bleed source is fabricated over an existing opening.
-                closest.HitCount = Mathf.Min(4, closest.HitCount + 1);
+                closest.HitCount = Mathf.Min(ushort.MaxValue, closest.HitCount + 1);
                 closest.AgeSeconds = 0f;
                 closest.Stretch = Mathf.Max(closest.Stretch, wound.Stretch);
+                closest.Seed = Mathf.Repeat(closest.Seed + .73f, Mathf.PI * 2f);
+                float repeat = Mathf.Log(1f + (closest.HitCount - 1) * .35f);
+                closest.RepeatSpread = Mathf.Min(.9f, repeat * .45f);
+                closest.OpeningScale = 1f + Mathf.Min(.9f, repeat * (.28f / .69314718f));
+                // Fresh contacts enlarge the existing opening immediately. Blood
+                // age and body resistance cannot hide a fifth or later entry.
+                closest.Spread = Mathf.Max(closest.Spread, closest.TargetSpread * .8f);
                 last = closest.Patch; lastProjectile = closest;
                 StoreProjectile(closest);
                 UploadProjectileLayer(closest.Layer);
@@ -605,7 +612,7 @@ namespace BarPromenade
             ProjectileLayer layer = wound.Layer;
             layer.Holes[wound.Slot] = new Vector4(wound.Uv.x, wound.Uv.y, wound.Retained ? wound.Radius : 0f, (float)wound.Surface);
             layer.Shapes[wound.Slot] = new Vector4(wound.DirectionUv.x, wound.DirectionUv.y, wound.Stretch, wound.Seed);
-            layer.States[wound.Slot] = new Vector4(wound.AgeSeconds, wound.Wetness, wound.Spread, wound.HitCount);
+            layer.States[wound.Slot] = new Vector4(wound.AgeSeconds, wound.Wetness, wound.Spread, wound.OpeningScale);
             layer.Dirty = true;
         }
 

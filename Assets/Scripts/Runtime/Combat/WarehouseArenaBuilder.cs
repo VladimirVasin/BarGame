@@ -28,8 +28,8 @@ namespace BarPromenade
                         continue;
                     }
                     // The bridge crane replaces the two decorative bent frames
-                    // only in its isolated encounter; all cargo/routes stay put.
-                    if (owner != null && owner.Mode == CombatTestMode.Crane && part.Kind == "TwistedFrame") continue;
+                    // wherever the encounter includes it; all cargo/routes stay put.
+                    if (owner != null && owner.HasCraneOpponent && part.Kind == "TwistedFrame") continue;
                     bool gateDeck = part.Kind == "Platform" && Mathf.Abs(part.Position.y - 3.2f) < .01f &&
                         Mathf.Abs(part.Position.z - 10.5f) < .01f && Mathf.Abs(Mathf.Abs(part.Position.x) - 1.5f) < .01f;
                     GameObject model = gateDeck

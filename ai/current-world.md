@@ -141,36 +141,35 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
-  Std1;Endless1–5/corpses0–2(default2)/pool≤5;Dormant.
+  Std1Docker;Endless1–5(default3:Zombie/Docker/Crane),≤1Crane;
+  corpses0–2(default2)/pool≤5/fixedroles. Zombie:normalrig/hands/.75m/s;
+  Shared refill-kills-reset;Crane unseen3Dspawn.
+  Enemy HP/structure×.5;head50/torso12.5/hero1;wounds grow/woodfirsthit hole-chips.
   Crane:3floorXYZ1axis/6tethers;pendulum/slackcap;
   6m3DLOS/locked1hitout/return/voidCOL/ragdoll;
   ownfall→5s tetheredFrenzy/holdAI/pause/reset-disable-deathclear.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
-  HP/Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
-  EndlessReset0initial/Std.
-  Audio14/2voices/≤2groans/SfxWorld/wood-wet-contact sync;
-  pause-reset-disable/prewarm/IDs-stairs/kill1x/heroend;
-  Injury-action-ammo-flights kept;unused→oldest/excess retire;
-  body-drop0/focus≠hits/shotgun-victim/Tab-E0.
-  All3/defaultbar/stow-draw/mounts/reload1st/fallcancel/pose-ammo-slot/Erecord.
-  Docker:30slats40HP→holes/corefused/livewoodram;8fish/1skin/holes-anyfallspill/finiteasync;
-  1.7m/s/plantbursts/chase0pause;ram.25prep/.18active/2.4Recovery/.9m;
-  alloutcomes/kneel-rise/attack-move-buffer0;
-  ownSource-newfall→5sFrenzy/2SFX/rigspasm-rise/Recovery0;
-  unarmed:dmg32/guardCost28/impulse85Ns-block26Ns/region-gore0;
-  head-boxram/firstsurface1hit/guard-counter-retreat0;
-  ownDebris0CC/resize-reset/floor;ground0attack/rearhead0finish/infection0;pause-resetpool;freecam/dummy/Tabfight/MMBfocus;
+  Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
+  reset:Endless unseen/Std initial. Audio14/2voices/≤2groans/SfxWorld/wood-wet sync;
+  Kill1x/heroend;injury-action-ammo-flights kept;
+  unused→oldest/excess retire;
+  body-drop0/focus≠hits/Tab-E0.
+  All3/defaultbar/stow-draw/fallcancel/pose-ammo/sharedE.
+  Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;
+  1.7m/s/plantbursts;ram.9m(.25/.18/2.4)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
+  dmg32/guard28/impulse85-block26/firstsurface1hit/guard-counter-retreat0;
+  ownDebris0CC/resize-reset/floor;ground0attack/infection0;freecam/dummy/Tabfight/MMBfocus;
   Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
-  Init/reset:Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/stageatomic;winfire/partreload/physspend/empty0;
-  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloEhinges/fridgecurve/hollowCOL;shared/full0/part1/ownbayopen/resetshut;
+  Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/atomic;winfire/partreload/physspend/empty0;
+  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloE/fridgecurve/hollowCOL/shared/full0/part1/ownbayopen/resetshut;
   Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
   Bar:bat/hook→/shoulder-block/charge/free/8seg/1hit/recoil/6zones;taunt/Eshared/0grant.
   Cloth:rig-anchors/hand-opening/physics0/hair;pause-drop-resetclean.
-  HUD:F8legacy0/Alt/result-reset-menu/pause-modal0/reset-disable;art§15a
+  HUD:art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.

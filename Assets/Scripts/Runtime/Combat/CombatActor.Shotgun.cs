@@ -137,7 +137,8 @@ namespace BarPromenade
             {
                 float regional = ProjectileDamageProfile.Shotgun.ResolveDamage(hits[i].Damage, hits[i].Hit.Location);
                 healthDamage[i] = State.IsDefeated || hits[i].Hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(
-                    hits[i].Hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hits[i].Hit.Part), regional);
+                    hits[i].Hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hits[i].Hit.Part), regional,
+                    State.Settings.IncomingDamageScale);
                 damage += healthDamage[i];
                 Vector3 launch = (hits[i].Velocity.normalized + Vector3.up * .35f).normalized;
                 if (!hits[i].Hit.IsDetached) impulse += launch * hits[i].Momentum;
@@ -173,7 +174,7 @@ namespace BarPromenade
             {
                 int i = (primary + n) % hits.Count;
                 var pellet = hits[i];
-                float nextHealth = Mathf.Max(0f, allocatedHealth - healthDamage[i]);
+                float nextHealth = Mathf.Max(0f, allocatedHealth - healthDamage[i] * State.Settings.IncomingDamageScale);
                 var impact = new CombatImpact(source, this, sequence, pellet.Hit.Point, pellet.Hit.Normal,
                     pellet.Velocity.normalized, allocatedHealth, nextHealth, result, pellet.Hit.Location, 0f,
                     pellet.Hit.Part, pellet.Hit.LocalPoint, pellet.Velocity.magnitude,

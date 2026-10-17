@@ -3,7 +3,19 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-17 - Warehouse storage and inspection
+## 2026-10-17 - Warehouse storage, inspection and mixed combat
+
+- Endless shares ordinary zombies, loaded dockers and the suspended crane;
+  permanent roles reuse prepared rigs, common kills/refill/reset and fish cutoff.
+  The ordinary zombie has its own undeformed authored hand/walk action bank.
+- Enemy health/structural resistance preserves wound strength and momentum;
+  repeats keep changing the same opening, and wood retains shared contact marks.
+  Intact head tissue now keeps its source surface until outer tissue is lost:
+  premature core activation had hidden the first surviving head wound.
+- Proof: `COMBAT ORDINARY ZOMBIE ART CONTRACT OK`,
+  `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` and
+  `Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle` passed;
+  live head wounds and repeated contacts reviewed visually.
 
 - Each leaf owns its target/timeline; E moves only that leaf. Several leaves
   can stay open; ammunition requires its own open bay and retains Take priority.
@@ -15,6 +27,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   wrong-level entry cancels. The chest Lens aims inside from opening, switches
   to cursor browsing and freezes for nested inspection/pause; cleanup restores.
 - `CombatWarehouseRefrigeratorEntryLightsCavity` passed;final-pose cavity frames reviewed.
+- Capture output is disposable by user decision: inspect, then delete at task
+  completion. Removed accumulated evidence/staging and durable capture citations.
+  Proof: capture-policy audit and `check-docs.py`; `check-workspace.py` reports
+  unrelated existing test-scene, log, cache and sibling-worktree leftovers.
 
 ## 2026-10-16 - Warehouse, chest source and crane prototype
 

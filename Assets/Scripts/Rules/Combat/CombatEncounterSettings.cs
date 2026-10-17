@@ -6,7 +6,7 @@ namespace BarPromenade
     public readonly struct CombatEncounterSettings : IEquatable<CombatEncounterSettings>
     {
         public const int OpponentCapacity = 5;
-        public const int DefaultMaximumLiveOpponents = 2;
+        public const int DefaultMaximumLiveOpponents = 3;
         public const int CorpseCapacity = 2;
         public int MaximumLiveOpponents { get; }
         public int MaximumCorpses { get; }

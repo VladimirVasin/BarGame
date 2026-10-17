@@ -108,10 +108,10 @@ ignored path with no row is an error. What used to be advice here — do not cle
 an active series, check the running processes first — is now the sweep's own
 precondition, and it refuses on it.
 
-`Captures/`, `TestResults/` and `Art/` are `declared`: documents cite files
-inside them, so the sweep never reaches them and the judgement stays yours. Keep
-the latest complete verified set per subject with its report, finished video and
-referenced audio; a newer partial run does not replace a complete set. Discard
-superseded attempts and duplicate copies whole. Raw motion frames may go once
-the finished video is verified; keep the stills needed to inspect the subject.
-Reusable capture and analysis tools belong in `tools/`.
+`Captures/` is temporary (`never`): generate what the current task needs, review
+it, then delete all frames, videos, reports and staging at task completion.
+Recapture when needed; do not keep evidence sets or cite them as durable
+references. Reusable tools belong in `tools/`; record named checks in the log.
+
+`TestResults/` and `Art/` remain `declared`; document references protect them
+from the sweep. Art contains authored, non-reproducible assets.

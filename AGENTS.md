@@ -121,13 +121,13 @@ loading from design onward; performance is a standing constraint.
 
 ## Workspace retention
 
-Every ignored path needs a keep-policy in `tools/workspace-budget.json`:
-`never`, `retain` days, `idle` regenerable-cache days, `declared` curated output,
-or `allowed`. `python tools/check-workspace.py` checks all sibling worktrees
-from `git worktree list`; **a missing policy is an error**.
-`--sweep` lists manifest-declared removals; `--sweep --apply` refuses busy
-Unity/Blender checkouts, tracked files and live document references. For an
-ever-growing ephemeral path, fix its writer or shorten retention; never raise it.
+Declare every ignored path in `tools/workspace-budget.json`: `never`, `retain`
+days, `idle` cache days, `declared` or `allowed`. `python tools/check-workspace.py`
+checks all worktrees; missing policies fail. `--sweep --apply` refuses busy
+Unity/Blender checkouts, tracked files and live document references.
+`Captures/` is temporary (`never`): generate, inspect, delete outputs at task end,
+including videos/reports/staging. Record named checks without capture links.
+Fix growing writers or shorten retention; never raise it.
 
 ## Quality and documentation
 

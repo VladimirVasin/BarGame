@@ -7,6 +7,9 @@ namespace BarPromenade
 
     public enum CombatTestMode { Standard, Endless, Crane }
 
+    /// <summary>Permanent role of a pooled combat opponent, independent of the encounter mode.</summary>
+    public enum CombatEnemyKind { Zombie, Docker, Crane }
+
     /// <summary>The complete isolated combat launch selection, consumed as one session value.</summary>
     public readonly struct CombatTestSelection : IEquatable<CombatTestSelection>
     {

@@ -371,6 +371,10 @@ namespace BarPromenade.Tests.PlayMode
                 new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Front),
                 Player3DAnatomicalPart.Head, Vector3.zero);
             crane.ReceiveProjectile(root.Hero, 1, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
+            Assert.That(crane.State.Health, Is.EqualTo(crane.State.Settings.MaxHealth * .5f));
+            Assert.That(crane.State.IsDefeated, Is.False);
+            Assert.That(crane.CraneAttached, Is.True, "The first head wound retains the continuous suspended rig.");
+            crane.ReceiveProjectile(root.Hero, 2, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
             Assert.That(crane.State.IsDefeated, Is.True, "The suspended worker keeps common anatomical damage.");
             root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(crane.IsRagdollActive, Is.True);

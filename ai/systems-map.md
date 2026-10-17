@@ -48,10 +48,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Mimic reveal/heavy ram/kneel/fall Frenzy;passable debris/Endless1–5/all3/HUD. Gap:pierce/balance. | `Combat{TestRoot,Actor,Zombie*,AmmoPickup}` | Partial |
-| Crane | 3floors/6tethers/pendulum/6mhook;ownfall→frenzy/pause/reset. | `Combat*.Crane*` | Current |
-| Warehouse | 4096UV/wear;deck shadows;chest/fish/key/gate/power;solo doors/seeded ammo. | `Warehouse{Arena,Fish,Gate,Locker}*`, `CombatAmmoPickup` | Current |
-| Body destruction | Torso→skeleton/sever/crawl/reset;passable remains/rig foot clearance. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatCorpseStepPose` | Current |
+| Combat | Endless3/≤5;resistance2/head2/wounds. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
+| Crane | Endless/3floors/6tethers/6mhook/fallFrenzy/refill. | `Combat*.Crane*` | Current |
+| Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
+| Body destruction | Torso skeleton/sever/crawl/reset;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -222,7 +222,7 @@ rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded sna
 
 ```text
 build index 0 -> MainMenu -> New Game / Combat Test / Quit card
-  -> Combat Test -> kit + Standard/Endless/Crane -> Start -> reset/kit/menu
+  -> Combat Test -> kit + Standard/Endless -> Start -> reset/kit/menu
   -> New Game -> twelve locations / Back -> confirmed choice
   -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
      -> chosen root (City: docks/cannery; village: ski lodge)

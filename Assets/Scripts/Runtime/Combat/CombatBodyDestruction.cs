@@ -357,6 +357,7 @@ namespace BarPromenade
                 (impact.IsPellet ? Mathf.Clamp(impact.WoundDamage / 24f, 0f, 1.1f) * .50f : .18f) :
                 Mathf.Lerp(.10f, .24f, Mathf.Clamp01(impact.AttackPower));
             float tissueTrauma = trauma;
+            trauma *= impact.Target.State.Settings.IncomingDamageScale;
             if (region == BodyDamageRegion.Head)
             {
                 // The existing sixteen-sector fracture system owns skull continuity,

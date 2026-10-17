@@ -12,7 +12,7 @@ namespace BarPromenade
             damage: 28f, blockCost: 24f, windupSeconds: .01f, activeSeconds: 1.4f,
             recoverySeconds: .55f, hitRecoverySeconds: .55f, blockRecoverySeconds: .55f,
             obstacleRecoverySeconds: .55f, parriedRecoverySeconds: .55f,
-            animationRecoverySeconds: .55f, isUnarmedZombie: true);
+            animationRecoverySeconds: .55f, isUnarmedZombie: true, incomingDamageScale: .5f);
         private static readonly string[] CraneAnatomyBoneNames = {
             "pelvis", "spine", "chest", "neck", "head", "clavicle.L", "clavicle.R",
             "upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R", "hand.L", "hand.R",

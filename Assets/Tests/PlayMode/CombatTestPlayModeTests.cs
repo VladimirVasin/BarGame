@@ -49,6 +49,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator SetUp()
         {
             zombieFixtureStarted = false;
+            CombatTestRoot.UseDockerPopulationForTests = false;
             string method = TestContext.CurrentContext.Test.MethodName;
             if (method != nameof(Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads) &&
                 method != nameof(Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus) &&
@@ -58,6 +59,7 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_MouseLookKeepsAimAndCursorHandoffsIndependent) &&
                 method != nameof(Range_GameplayHudRespondsToAimDamageAndDebugToggle) &&
                 method != nameof(Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle) &&
+                method != nameof(Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate) &&
                 method != nameof(Range_CraneSuspensionKeepsContactOcclusionPauseAndReset) &&
                 method != nameof(Range_CraneOwnHookKnockdownTriggersOneSuspendedFrenzy) &&
                 method != nameof(Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies))
@@ -81,6 +83,7 @@ namespace BarPromenade.Tests.PlayMode
             if (!zombieFixtureStarted) yield break;
             zombieFixtureStarted = false;
             CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.UseDockerPopulationForTests = false;
             if (root != null) root.AutomaticSimulation = false;
             // Contact voices are pooled under DontDestroyOnLoad. End them before
             // removing the scene's ear, then keep the synthetic cleanup scene valid

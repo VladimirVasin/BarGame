@@ -2,6 +2,12 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-17, mixed endless endurance:**
+  Endless3=Zombie/Docker/Crane,≤5/1Crane/fixedrolesIDs;normalZombiehands.
+  Crane3Drefill/sharedlife/fishcutoff.
+  EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1.
+  Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
+
 - **Accepted 2026-10-16, warehouse storage:**
   3room+6wall/27leaves/soloE/fridgecurve/hollowCOL;
   multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell;
@@ -9,12 +15,11 @@
   8/2+0/reserveonly/wave-story0/lamp-matclone0.
 
 - **Accepted exception 2026-10-16, crane:**
-  XYZ1axis/3floors/void;§6/15a;Rfist→cuff-hook/6m3DLOS;
-  fixed1hitout/stop-return;ownnewfall→5s Frenzy on tethers;
-  holdAI;pause/reset-disable-deathclear.
-  6steel:head/pelvis/4limbs/yaw/pendulum/accel-brake/gravity-inertia/slackcap;
-  COL/ragdoll;Move≤9.43/mount9.87/fanmin9.6;2frames→gantry/look-70..55°;
-  Std-Endless/City-story-grab-lift0.
+  XYZ1axis/3floors/void;Rcuff-hook/6m3DLOS/1hit-return.
+  Ownfall→5s tetherFrenzy/holdAI;pause/reset-disable-death0.
+  6steel:head-pelvis-limbs/pendulum/yaw/accel-brake/gravity-inertia/slack;
+  COL/ragdoll/Move≤9.43/mount9.87/fanmin9.6/2frames/look-70..55°.
+  §6/15a;story-grab-lift0.
 
 - **Accepted 2026-10-16, warehouse detail:**
   9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;
@@ -33,18 +38,15 @@
   CombatTest entry=ordinary→corrupted/return0;silent/travel0;§6/§21.
 
 - **Accepted exception 2026-10-15, mimics:**
-  CombatTest/§6/art§15a:reveal/chase/ram/kneel-rise;
-  own-newfall→5sFrenzy/2SFX/rigspasm-rise replacesRecovery;
-  depthentry/attack-move-buffer0/hurtstop/pause-pose-audio/resetchase;
-  HP/input/focus/refill/TRS/atlas/debris kept.
+  Reveal/chase/ram/kneel-rise;ownfall→5s rigFrenzy/2SFX/Recovery0;
+  depthentry/attack-move-buffer0/hurtstop/pause-reset;§6/art§15a.
 
 - **Accepted 2026-10-15, beam:**
   ChestSpot:d²/4m/5rays10Hz/centre|2side/.045↓.22↑/pause-reset.
 
 - **Accepted exception 2026-10-15, docker:**
-  CombatTest;slat detach→hole/corekept/nextbullet0pierce;
-  fish8worldroots/1skin/holes-anyfallspill/finiteasync;
-  ram:head/livewood/skinclamp
+  Slat→hole/corekept/0pierce;8fish/1skin/anyfallspill/finiteasync;
+  head-livewoodram/skinclamp.
 
 - **Accepted 2026-10-15, contextual CombatTest HUD:**
   Ammo1row/head0/cache/reloadRUEN-measured-RBalign;
@@ -160,8 +162,8 @@
   All3/1held-2stowed/3mount-action-ammo/drop-recover-reset/0story.
 
 - **Accepted exception 2026-10-13, novice firearms:**
-  Hero:sway-settle/recoil-yaw-overshoot/regrip/blink-chin-breath;
-  NPC-rig/muzzle-reticle/shotguncentre/stablecam/intentlegs/0assets-lore;§7.
+  Hero sway-recoil/regrip/blink-breath/novice§7;
+  rig-reticle/shotguncentre/stablecam/intentlegs;assets-lore0.
 
 - **Accepted — 2026-10-13, bounded world presentation:**
   Litter:root palette/0MPB;forest48m/chunks/samegeometry-UV-wind-shadows/
@@ -171,9 +173,8 @@
   0world-story/FPSunmeasured.
 
 - **Accepted exception — 2026-10-13, bounded combat population:**
-  User:Endless1–5(default2)/corpses0–2(default2)/pool=livecap≤5.
-  Oldest defeat retires;unused→oldest;others/flights kept;Standard1/Ebody.
-  0hardware max/60FPS/gain;`debug-log.md`.
+  Corpses0–2(default2)/unused→oldest defeat;otherskept;Std1/Ebody;
+  FPSunmeasured.
 - **Accepted — 2026-10-10, carry mounts:**
   CombatTest:pistol Lchest/M65/holster0cloth/storedhidden-else seen;
   bar Rbelt/shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
@@ -469,7 +470,7 @@
 - **Accepted 2026-10-09, aim gait:**
   CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;Step1m/15/noinputback/wall-pause/tankreturn/0handoff/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Dummy/freecam/focus/Q-Step/firstworld-anatomy/regional SFX-force;stablecam/hitkick/recoil-streak/head0HP-ragdoll/cases:port-delay-gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/E/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward/stage-win-pause:art§15a.
+  Dummy/freecam/focus/Q-Step/firstworld-anatomy/regionSFX-force;stablecam/hitkick/recoil-streak;cases:port-delay-gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/E-Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward/stage-win-pause:art§15a.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso. 1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
 - **Accepted exception 2026-10-09, body destruction:**
@@ -490,7 +491,7 @@
 - **Accepted 2026-09-26, recovery:**
   Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
-  6bone zones/first seq;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll. C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;Hold:breath0/regen delay;thud/bar pool grows10s/stays.
+  6zones/firstseq;barhead×2(50/80,cap.99MaxHP);torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll. C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
   Ready low/Block high;Hit-GuardBreak-Defeat release;L opposed.16→.42m/breath4s/blend/injury;Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
@@ -1324,8 +1325,8 @@
   Half-thawed pixels exactly match 50% growth; fully thawed pixels match the
   clear source. Both house 16:9 and 4:3 keep the protected centre exactly
   unchanged and black bars black. The fixture pins ordinary presentation
-  without changing saved preferences. Current A/B and staged stills are
-  `Captures/MothersHouseInterior/diffusion-*.png`.
+  without changing saved preferences. A/B and staged stills are temporary
+  review output, removed after inspection.
   `AlpineFrostJourney` checks the village/house round trip, warm cue timing,
   pause, repeat intervals and cold re-entry.
 
@@ -1346,16 +1347,15 @@
   the tightest palm/sleeve contact is `-0.359 mm`, not strictly positive
   separation everywhere. Shiver shoulder travel measures `15.8/13.8 mm`
   and chest rotation `0.98°`.
-  Evidence: the cold-hero case in `TestResults/alpine-shiver-frost.xml`,
-  `Captures/ColdHeroVerification/arm-separation.json`, and the eight-second
-  `Captures/AlpineVillage/cold-{idle,run}.mp4` videos, plus the `2.3 s`
-  `cold-shiver.mp4`. Actual cabin travel and
+  Evidence: the cold-hero case in `TestResults/alpine-shiver-frost.xml` and
+  `AreaCaptureFixture.AlpineVillageColdHero`; its reports and motion captures
+  are temporary review output, removed after inspection. Actual cabin travel and
   broad suites/player builds were not part of this focused check.
   The subsequent `ColdShiver` source publication contains `48` actions and
   preserves all previous `47` source curves and exported FBX tracks. Half-frame
   source SAT reports minimum separation `+1.849 mm`, no intersections, matching
-  Hold-zero endpoints and neutral root/pelvis/legs. This source-only evidence
-  is in `Captures/Tooling/cold-shiver-20260908/cold-shiver-validation.json`;
+  Hold-zero endpoints and neutral root/pelvis/legs. Source verification uses
+  `tools/player_cold_actions.py --validate-only`;
   runtime, screen and sound verification are recorded separately in the work log.
 
 - **Accepted and verified 2026-09-06 — recovery follows the lying body and
@@ -2217,8 +2217,8 @@
   picture. And the shot could not stay OUTSIDE the east wall as it always
   had: `MothersHouseWindowCutaway` hides that wall's upper half for it, so
   the moment the focus panned it north its right edge swung past the hidden
-  wall and a THIRD of the frame was the empty outside
-  (`Captures/MothersHouseInterior/04-pan-north-*` is that frame). From
+  wall and a THIRD of the frame was the empty outside, as inspected in the
+  temporary north-pan review frame. From
   inside the room every ray ends on a wall, which is what makes a `30°` pan
   safe. The composition the room still owes — hearth, both north windows,
   table, rocker, sofa, stair foot — is all still in the resting frame; only
@@ -7899,8 +7899,8 @@
   took (the bar shop returns to the live pose it captured at entry), easing
   it out over `0.45 s`; an authored shot lens cuts to base as it always did.
   Seeded from the city seed; `ReseedDollyZoom` is the test seam, and
-  `IntoxicationDollyZoomCapturePlayModeTests` writes twelve seconds of the
-  city's own camera at level 100 to `Captures/DollyZoom` for the eye.
+  `IntoxicationDollyZoomCapturePlayModeTests` generates twelve seconds of the
+  city's own camera at level 100 for visual review, then deletion.
 - **Accepted and implemented 2026-09-05 — the vertigo whirlpool is wound
   around the HERO, not around the middle of the screen:** every drunk
   distortion until now measured itself from `uv - 0.5`. This one takes a
@@ -7952,8 +7952,8 @@
   world at 100. This satisfies the art bible's «Тест опьянения» — a district's
   large landmarks have to survive maximum distortion, which is exactly why
   the calm disc and the corner-normalised profile exist. `ReseedVertigo` is
-  the test seam, and `IntoxicationVertigoCapturePlayModeTests` writes
-  twenty-four seconds at level 100 to `Captures/Vertigo` for the eye.
+  the test seam, and `IntoxicationVertigoCapturePlayModeTests` generates
+  twenty-four seconds at level 100 for visual review, then deletion.
 - **Accepted and implemented 2026-09-04 — the fall is fought for, the rise is
   staged:** above `60` a lost capture point still became a ragdoll on the spot,
   and the rise was a fixed `1.2 s`, a `0.16 s` lerp and the clip at its

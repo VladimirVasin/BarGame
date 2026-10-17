@@ -115,6 +115,7 @@ namespace BarPromenade
             Vector3 facing = Hero.transform.position - spawn; facing.y = 0f;
             started = System.Diagnostics.Stopwatch.GetTimestamp();
             using (SpawnResetMarker.Auto()) actor.ResetActor(spawn, facing.normalized);
+            if (actor.IsCrane) actor.ConfigureCraneSuspension(CraneGround, new Vector3(CraneGround.x, 9.15f, CraneGround.z));
             PlaceSpawnedMimic(available, spawn);
             LastSpawnResetTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             available.Spawned = true;
@@ -144,9 +145,11 @@ namespace BarPromenade
 
         private bool TryNextOpponentSpawn(CombatActor recycled, out Vector3 spawn)
         {
-            if (WarehousePlan != null) return TryNextMimicSpawn(recycled, out spawn);
+            if (recycled.IsCrane) return TryNextCraneSpawn(out spawn);
+            if (WarehousePlan != null && recycled.IsDocker) return TryNextMimicSpawn(recycled, out spawn);
             spawn = default;
             validSpawnPoints.Clear();
+            if (WarehousePlan != null) GeometryUtility.CalculateFrustumPlanes(CameraFollow.Camera, mimicViewPlanes);
             float minimumSquared = EncounterSettings.MinimumHeroDistance * EncounterSettings.MinimumHeroDistance;
             IReadOnlyList<Vector3> candidates = WarehousePlan != null ? WarehousePlan.SpawnPoints : NextOpponentCandidates;
             foreach (Vector3 candidate in candidates)
@@ -158,6 +161,9 @@ namespace BarPromenade
                     if (!(arenaBounds is WarehouseArenaArea area) ||
                         !area.TryGetHeight(grounded, out float height, recycled.Body.radius) ||
                         Mathf.Abs(grounded.y - PlayerFactory.GroundedRootOffset - height) > .15f) continue;
+                    Bounds silhouette = new Bounds(grounded + Vector3.up * .9f, new Vector3(.9f, 1.8f, .9f));
+                    if (GeometryUtility.TestPlanesAABB(mimicViewPlanes, silhouette) &&
+                        WarehouseTargetVisible(grounded, Hero.transform.position)) continue;
                 }
                 validSpawnPoints.Add(grounded);
             }
@@ -180,6 +186,18 @@ namespace BarPromenade
             return false;
         }
 
+        private bool TryNextCraneSpawn(out Vector3 spawn)
+        {
+            spawn = CraneGround;
+            Vector3 bodyPosition = CraneGround + Vector3.up * (2f * WarehouseArenaPlan.LevelRise + .65f);
+            if ((bodyPosition - Hero.transform.position).sqrMagnitude <
+                EncounterSettings.MinimumHeroDistance * EncounterSettings.MinimumHeroDistance) return false;
+            GeometryUtility.CalculateFrustumPlanes(CameraFollow.Camera, mimicViewPlanes);
+            Bounds silhouette = new Bounds(bodyPosition + Vector3.up * .85f, new Vector3(1.8f, 2.2f, 1.8f));
+            return !GeometryUtility.TestPlanesAABB(mimicViewPlanes, silhouette) ||
+                !WarehouseTargetVisible(bodyPosition, Hero.transform.position);
+        }
+
         private bool TrySpawnGround(Vector3 candidate, CombatActor recycled, out Vector3 grounded)
         {
             grounded = default;
@@ -200,7 +218,7 @@ namespace BarPromenade
                 grounded + Vector3.up * 1.43f, .32f, ref spawnOverlapHits,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore, out count);
             for (int i = 0; i < count; i++)
-                if (overlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;
+                if (recycled == null || overlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;
             return true;
         }
 

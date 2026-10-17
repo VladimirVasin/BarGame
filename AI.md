@@ -154,7 +154,8 @@ repository evidence. This does not require running every test layer.
 - **Look at what you changed.** `Assets/Tests/PlayMode/AreaCaptureFixture.cs`
   renders any world scene to `Captures/<area>/`. Run it for any scene whose
   appearance changed and open the frames. Numbers cannot see an object in the
-  wrong place or a mesh at a hundredth of its size.
+  wrong place or a mesh at a hundredth of its size. Delete all capture output
+  after review and task completion; recapture when needed.
 - Update the maps and work log when implementation changes project reality.
 - **Every document has a type and a byte budget** in `tools/docs-budget.json`.
   Run `python tools/check-docs.py` after any documentation change; it is the

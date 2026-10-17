@@ -11,8 +11,10 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string BankPath = Folder + "ZombieActions.fbx";
-        public override uint GetVersion() => 6;
-        private bool IsBank => assetPath == BankPath;
+        public const string OrdinaryBankPath = Folder + "ZombieOrdinaryActions.fbx";
+        public override uint GetVersion() => 7;
+        private bool IsOrdinaryBank => assetPath == OrdinaryBankPath;
+        private bool IsBank => assetPath == BankPath || IsOrdinaryBank;
         private bool IsZombie => assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
 
         private void OnPreprocessModel()
@@ -52,9 +54,11 @@ namespace BarPromenade.Editor
                 int separator = clip.name.LastIndexOf('|');
                 if (separator >= 0) clip.name = clip.name.Substring(separator + 1);
                 if (isCrate) clip.name = CombatZombieAssetProvider.CatchClip;
-                else if (Array.IndexOf(CombatZombieAssetProvider.ClipNames, clip.name) < 0)
+                else if (Array.IndexOf(IsOrdinaryBank ? CombatZombieAssetProvider.OrdinaryClipNames :
+                    CombatZombieAssetProvider.ClipNames, clip.name) < 0)
                     throw new InvalidOperationException("Unexpected zombie action " + clip.name);
-                clip.loopTime = isCrate || CombatZombieAssetProvider.IsLoop(clip.name); clip.loopPose = false;
+                clip.loopTime = isCrate || (IsOrdinaryBank ? CombatZombieAssetProvider.IsOrdinaryLoop(clip.name) :
+                    CombatZombieAssetProvider.IsLoop(clip.name)); clip.loopPose = false;
                 clip.keepOriginalOrientation = true; clip.keepOriginalPositionXZ = true; clip.keepOriginalPositionY = true;
                 clip.lockRootRotation = true; clip.lockRootPositionXZ = true; clip.lockRootHeightY = true;
                 clip.events = Array.Empty<AnimationEvent>();
@@ -106,7 +110,8 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Combat Test/Validate Zombie Assets")]
         public static void BuildOrThrow()
         {
-            foreach (string file in new[] { "ZombieActions.fbx", "Zombie3D.json", "ZombieCrate.fbx", "ZombieCrateAtlas.png",
+            foreach (string file in new[] { "ZombieActions.fbx", "Zombie3D.json", "ZombieOrdinaryActions.fbx", "ZombieOrdinary3D.json",
+                "ZombieCrate.fbx", "ZombieCrateAtlas.png",
                 "ZombieFace1.png", "ZombieFace2.png", "ZombieFace3.png", "ZombieGroan.wav", "ZombieLunge.wav",
                 "ZombieGroan2.wav", "ZombieGroan3.wav", "ZombieLunge2.wav", "ZombieReveal.wav",
                 "ZombieHurtWood.wav", "ZombieHurtWood2.wav", "ZombieHurtFlesh.wav", "ZombieHurtFlesh2.wav",
@@ -126,6 +131,18 @@ namespace BarPromenade.Editor
                 AnimationClip clip = CombatZombieAssetProvider.LoadClip(name);
                 CombatTestAssetSetup.ValidateInPlaceClip(clip);
             }
+            Manifest ordinary = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + "ZombieOrdinary3D.json"));
+            MeleeCombatSettings ordinarySettings = CombatActor.OrdinaryZombieCombatSettings;
+            if (ordinary == null || !ordinary.test_only || ordinary.root_motion || ordinary.animation_events != 0 ||
+                ordinary.rig != "NpcHumanV2" || ordinary.clips == null || ordinary.clips.Length != CombatZombieAssetProvider.OrdinaryClipNames.Length ||
+                Mathf.Abs(ordinary.walk_cycle_distance_m - CombatZombieAssetProvider.OrdinaryWalkCycleDistance) > .0001f ||
+                Mathf.Abs(ordinary.walk_duration_seconds - CombatZombieAssetProvider.OrdinaryWalkCycleSeconds) > .0001f ||
+                Mathf.Abs(ordinary.prepare_seconds - ordinarySettings.WindupSeconds) > .0001f ||
+                Mathf.Abs(ordinary.active_seconds - ordinarySettings.ActiveSeconds) > .0001f ||
+                Mathf.Abs(ordinary.recovery_seconds - ordinarySettings.RecoverySeconds) > .0001f)
+                throw new InvalidOperationException("Ordinary zombie manifest violates its undeformed grounded action contract.");
+            foreach (string name in CombatZombieAssetProvider.OrdinaryClipNames)
+                CombatTestAssetSetup.ValidateInPlaceClip(CombatZombieAssetProvider.LoadOrdinaryClip(name));
             for (int i = 0; i < 3; i++)
             {
                 Texture2D atlas = CombatZombieAssetProvider.LoadFace(i);

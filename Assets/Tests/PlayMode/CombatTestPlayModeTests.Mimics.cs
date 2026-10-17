@@ -19,6 +19,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(source.sharedMesh.isReadable, Is.True,
                     source.name + " must allow the runtime CombineMeshes bake in a player.");
             CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.UseDockerPopulationForTests = true;
             CombatTestRoot.WarehouseSeedForTests = 0;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             var selection = new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless,
@@ -33,9 +34,11 @@ namespace BarPromenade.Tests.PlayMode
             root.AutomaticSimulation = false;
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "The complete selected population exists immediately.");
             Assert.That(root.Opponents.Count, Is.EqualTo(3));
+            Assert.That(root.HasCraneOpponent, Is.False, "This isolated disguise fixture explicitly retains only porters.");
             Assert.That(root.WarehousePlan.FishCrateAnchors.Count, Is.EqualTo(18));
             foreach (CombatActor actor in root.Opponents)
             {
+                Assert.That(actor.IsDocker, Is.True);
                 Assert.That(actor.ZombieDormant, Is.True);
                 Assert.That(actor.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.DormantClip));
                 Assert.That(actor.TryZombieAttack(), Is.False);
@@ -158,8 +161,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(zombie.ZombieRevealing, Is.True, "A real registered wooden contact also wakes the actor.");
             yield return AdvanceMimicTo(zombie, CombatZombieAssetProvider.RevealSeconds);
             Assert.That(load.IsBoardDetached(0), Is.False);
-            Assert.That(CombatZombieLoad.TryReceiveHit(board, board.bounds.center, Vector3.zero, 25f), Is.True);
-            Assert.That(load.IsBoardDetached(0), Is.True, "The first contact's damage survives reveal without a second transaction.");
+            for (int contact = 2; contact <= 4; contact++)
+            {
+                Assert.That(CombatZombieLoad.TryReceiveHit(board, board.bounds.center, Vector3.zero, 25f), Is.True);
+                Assert.That(load.IsBoardDetached(0), Is.EqualTo(contact == 4),
+                    "The first contact's scaled damage survives reveal; the fourth pistol contact breaks the board.");
+            }
             Assert.That(sound.RevealPlayCount, Is.EqualTo(1));
             yield return VerifyMimicOwnDebrisTraversal(zombie, load);
             yield return VerifyMimicFlashlightNearExposure();
@@ -173,10 +180,16 @@ namespace BarPromenade.Tests.PlayMode
             var hit = new CombatHurtboxes.Hit(head, Vector3.up, Vector3.down, 0f,
                 new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Front), Player3DAnatomicalPart.Head, Vector3.zero);
             zombie.ReceiveProjectile(root.Hero, 1, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
-            Assert.That(zombie.State.IsDefeated, Is.True);
-            Assert.That(sound.RevealPlayCount, Is.Zero, "A lethal hidden-body contact does not open a dead actor.");
-            Assert.That(sound.DeathPlayCount, Is.EqualTo(1));
+            Assert.That(zombie.State.Health, Is.EqualTo(zombie.State.Settings.MaxHealth * .5f));
+            Assert.That(zombie.State.IsDefeated, Is.False);
+            Assert.That(zombie.ZombieRevealing, Is.True, "A surviving hidden-body contact starts the real reveal.");
+            Assert.That(sound.RevealPlayCount, Is.EqualTo(1));
+            Assert.That(sound.DeathPlayCount, Is.Zero);
             zombie.ReceiveProjectile(root.Hero, 2, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
+            Assert.That(zombie.State.IsDefeated, Is.True);
+            Assert.That(sound.RevealPlayCount, Is.EqualTo(1));
+            Assert.That(sound.DeathPlayCount, Is.EqualTo(1));
+            zombie.ReceiveProjectile(root.Hero, 3, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
             Assert.That(sound.DeathPlayCount, Is.EqualTo(1));
 
             root.ResetRound();

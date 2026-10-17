@@ -66,12 +66,15 @@ namespace BarPromenade
         /// <summary>Deliberate gameplay model: an entire arm can cost at most 35 HP,
         /// a leg at most 45 HP. Regional structural loss remains independent, allowing
         /// actual projectile contacts to remove limbs without always killing first.
-        /// The caller supplies zero for an already defeated actor.</summary>
-        public float ResolveHealthDamage(BodyDamageRegion region, float requested)
+        /// The caller supplies zero for an already defeated actor. Health budgets
+        /// use effective HP; the result remains in units before healthScale.</summary>
+        public float ResolveHealthDamage(BodyDamageRegion region, float requested, float healthScale = 1f)
         {
             RegionIndex(region);
             if (float.IsNaN(requested) || float.IsInfinity(requested) || requested < 0f)
                 throw new ArgumentOutOfRangeException(nameof(requested));
+            if (float.IsNaN(healthScale) || float.IsInfinity(healthScale) || healthScale <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(healthScale));
             int group = region switch
             {
                 BodyDamageRegion.LeftUpperArm or BodyDamageRegion.LeftForearm or BodyDamageRegion.LeftHand => 0,
@@ -81,9 +84,12 @@ namespace BarPromenade
                 _ => -1
             };
             if (group < 0) return requested;
-            float resolved = Math.Min(requested, Math.Max(0f, (group < 2 ? 35f : 45f) - limbHealthSpent[group]));
+            float resolved = (float)Math.Min((double)requested * healthScale,
+                Math.Max(0f, (group < 2 ? 35f : 45f) - limbHealthSpent[group]));
             limbHealthSpent[group] += resolved;
-            return resolved;
+            // The combatant applies resistance once, after its anatomical profile.
+            // Debit actual HP here, then return that caller's pre-resistance units.
+            return resolved / healthScale;
         }
 
         public bool Apply(BodyDamageRegion region, int patch, float amount, int source, int sequence, int pellet)

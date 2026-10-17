@@ -59,7 +59,7 @@ namespace BarPromenade
                 !float.IsFinite(damage) || damage <= 0f) return false;
             part.Owner.owner.NotifyZombieWoodHit();
             if (part.Core) return true;
-            part.Health -= damage;
+            part.Health -= damage * part.Owner.owner.State.Settings.IncomingDamageScale;
             if (part.Health <= 0f) part.Owner.DetachBoard(part, point, impulse);
             return true;
         }

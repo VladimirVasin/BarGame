@@ -10,14 +10,14 @@ namespace BarPromenade
         private float mimicClock;
         private int mimicBreakIndex;
         private bool dormantPoseSampled;
-        public bool ZombieDormant => IsZombie && mimicPhase == MimicPhase.Dormant;
-        public bool ZombieRevealing => IsZombie && mimicPhase == MimicPhase.Revealing;
-        public bool ZombieAwake => !IsZombie || mimicPhase == MimicPhase.Awake;
+        public bool ZombieDormant => IsDocker && mimicPhase == MimicPhase.Dormant;
+        public bool ZombieRevealing => IsDocker && mimicPhase == MimicPhase.Revealing;
+        public bool ZombieAwake => !IsDocker || mimicPhase == MimicPhase.Awake;
         internal float ZombieRevealElapsed => mimicClock;
 
         internal void SetZombieDormant()
         {
-            if (!IsZombie || State.IsDefeated) return;
+            if (!IsDocker || State.IsDefeated) return;
             ResetZombieFrenzy();
             mimicPhase = MimicPhase.Dormant;
             mimicClock = 0f;
@@ -50,7 +50,7 @@ namespace BarPromenade
             mimicClock = 0f;
             mimicBreakIndex = 0;
             dormantPoseSampled = false;
-            if (IsZombie) SetMimicCapsule(1f);
+            if (IsDocker) SetMimicCapsule(1f);
         }
 
         private void SetMimicCapsule(float progress)
@@ -68,7 +68,7 @@ namespace BarPromenade
         // hit-stop. A dormant rig is sampled once; no breathing/fish/AI clocks run.
         private bool AdvanceZombieMimic(float seconds)
         {
-            if (!IsZombie || ZombieAwake || State.IsDefeated) return false;
+            if (!IsDocker || ZombieAwake || State.IsDefeated) return false;
             if (IsKnockedDown || IsRagdollActive)
             {
                 AdvanceMimicBreaks(CombatZombieAssetProvider.RevealSeconds, false);
@@ -113,7 +113,7 @@ namespace BarPromenade
 
         private bool PresentZombieMimic()
         {
-            if (!IsZombie || ZombieAwake || State.IsDefeated || IsKnockedDown || IsRagdollActive) return false;
+            if (!IsDocker || ZombieAwake || State.IsDefeated || IsKnockedDown || IsRagdollActive) return false;
             if (ZombieDormant && dormantPoseSampled) return true;
             footwork?.Restore(); damagePose?.Restore(); bodyMotion?.Restore();
             AnimationClip clip = ZombieDormant ? zombieDormant : zombieReveal;
@@ -129,7 +129,7 @@ namespace BarPromenade
 
         internal void NotifyZombieWoodHit()
         {
-            if (!IsZombie || State.IsDefeated) return;
+            if (!IsDocker || State.IsDefeated) return;
             TryAwakenZombie();
             zombieAudio?.Hurt(true);
         }

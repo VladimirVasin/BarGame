@@ -10,6 +10,7 @@ namespace BarPromenade
         // Explicit fixture selection preserves the original weapon-contact laboratory.
         // Player starts and direct scene loads always use the warehouse.
         internal static bool UseLegacyArenaForTests;
+        internal static bool UseDockerPopulationForTests;
         internal static int? WarehouseSeedForTests;
         private GameObject combatLocation;
         public WarehouseArenaPlan WarehousePlan { get; private set; }
@@ -19,6 +20,7 @@ namespace BarPromenade
         private static void ResetWarehouseSelection()
         {
             UseLegacyArenaForTests = false;
+            UseDockerPopulationForTests = false;
             WarehouseSeedForTests = null;
         }
 

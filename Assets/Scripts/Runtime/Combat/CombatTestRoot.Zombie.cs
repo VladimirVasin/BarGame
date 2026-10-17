@@ -4,7 +4,9 @@ namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
-        private const float ZombieWalkSpeed = CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds;
+        private float ZombieWalkSpeed => AiOpponent.IsDocker
+            ? CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds
+            : CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
         private const float ZombieAttackRange = 1.3f;
         private const float ZombieApproachSpacing = 1.25f;
         private const float ZombieLungeDistance = .9f;
@@ -106,11 +108,15 @@ namespace BarPromenade
             float activeFrom = (from - state.AttackWindupSeconds) / state.Settings.ActiveSeconds;
             float activeTo = (to - state.AttackWindupSeconds) / state.Settings.ActiveSeconds;
             Vector3 requested = opponentContext.committedDirection *
-                (ZombieLungeDistance * (Mathf.SmoothStep(0f, 1f, activeTo) - Mathf.SmoothStep(0f, 1f, activeFrom)));
+                ((AiOpponent.IsDocker ? ZombieLungeDistance : .7f) *
+                    (Mathf.SmoothStep(0f, 1f, activeTo) - Mathf.SmoothStep(0f, 1f, activeFrom)));
             Vector3 travel = LimitOpponentCrowdTravel(before, requested);
             travel = LimitZombieSolidTravel(travel);
-            travel = AiOpponent.LimitZombieRamTravel(travel, Hero, seconds);
-            travel = AiOpponent.LimitZombieLoadTravel(travel);
+            if (AiOpponent.IsDocker)
+            {
+                travel = AiOpponent.LimitZombieRamTravel(travel, Hero, seconds);
+                travel = AiOpponent.LimitZombieLoadTravel(travel);
+            }
             Vector3 desired = arenaBounds.Constrain(before, before + travel, AiOpponent.Body.radius);
             Vector3 constrained = desired - before;
             // A constrained axis slide changes the lunge's committed line.

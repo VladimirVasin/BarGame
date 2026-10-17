@@ -97,7 +97,7 @@ Shader "Bar Promenade/Combat Wound"
                     float2 entry = float2(dot(delta, axis), dot(delta, crossAxis));
                     // The actual surface-projected shot direction owns the long
                     // axis; compact glove/boot splits differ from torn cloth.
-                    float damage = 1.0 + min(3.0, state.w - 1.0) * .12;
+                    float damage = state.w;
                     float2 opening = entry / damage;
                     opening.x /= max(1.0, shape.z) * lerp(1.0, 1.22, glove);
                     opening.y *= lerp(1.0, 1.22, glove);

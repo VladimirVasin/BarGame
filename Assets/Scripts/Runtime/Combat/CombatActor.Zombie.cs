@@ -7,7 +7,15 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private const float ZombieRamImpulse = 85f, ZombieBlockedRamImpulse = 26f;
+        public static MeleeCombatSettings OrdinaryZombieCombatSettings { get; } = new MeleeCombatSettings(
+            damage: 18f, blockCost: 14f, windupSeconds: .6f, activeSeconds: .22f,
+            recoverySeconds: .95f, hitRecoverySeconds: .95f, blockRecoverySeconds: .95f,
+            obstacleRecoverySeconds: .95f, parriedRecoverySeconds: .95f,
+            animationRecoverySeconds: .95f, isUnarmedZombie: true, incomingDamageScale: .5f);
+        private const float ZombiePalmRadius = .065f;
         private AnimationClip zombieWalk, zombieAttackRight, zombieAttackLeft, zombieLoadAdjust, zombieWatch;
+        private Transform zombieLeftShoulder, zombieRightShoulder;
+        private Vector3 zombieHandFrom, zombieHandTo;
         private CombatZombieLoad zombieLoad;
         private Pose zombieContactFrom, zombieContactTo;
         private Collider zombieHeadShape;
@@ -18,12 +26,23 @@ namespace BarPromenade
         private CombatZombieAudio zombieAudio;
         private NpcFootstepProfile zombieFootsteps;
         public bool ZombieAttackUsesLeftSide { get; private set; }
-        internal bool ZombieWorkPause => IsZombie && !IsZombieFrenzied && State.Phase == MeleePhase.Ready && !roundEnded &&
+        internal bool ZombieWorkPause => IsDocker && !IsZombieFrenzied && State.Phase == MeleePhase.Ready && !roundEnded &&
             !zombieWalkingRequested && (contactTarget == null || contactTarget.State.IsDefeated) &&
             (zombieWorkClock >= 4f && zombieWorkClock < 6.4f || zombieWorkClock >= 9f && zombieWorkClock < 11.8f);
 
         private void LoadZombieClips()
         {
+            if (!IsDocker)
+            {
+                ready = rest = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryIdleClip);
+                zombieWalk = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryWalkClip);
+                zombieAttackRight = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryAttackRightClip);
+                zombieAttackLeft = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryAttackLeftClip);
+                hit = guardBreak = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryHitClip);
+                // The shared death/recovery bank uses this same undeformed skeleton.
+                defeat = CombatAssetProvider.LoadClip("CombatDefeat", true);
+                return;
+            }
             zombieDormant = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.DormantClip);
             zombieReveal = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.RevealClip);
             ready = rest = CombatZombieAssetProvider.LoadClip(CombatZombieAssetProvider.IdleClip);
@@ -43,19 +62,30 @@ namespace BarPromenade
         {
             handPose = npc.RightGrip.GetComponentInParent<NpcHandPose>();
             if (handPose == null) throw new InvalidOperationException("A zombie requires the shared anatomical hands.");
-            zombieLoad = gameObject.AddComponent<CombatZombieLoad>();
-            zombieLoad.Initialize(this);
+            if (IsDocker)
+            {
+                zombieLoad = gameObject.AddComponent<CombatZombieLoad>();
+                zombieLoad.Initialize(this);
+            }
+            else
+            {
+                zombieLeftShoulder = CityPedestrianHandProps.FindSocket(DamageRigRoot, "upper_arm.L");
+                zombieRightShoulder = CityPedestrianHandProps.FindSocket(DamageRigRoot, "upper_arm.R");
+                if (zombieLeftShoulder == null || zombieRightShoulder == null)
+                    throw new InvalidOperationException("An ordinary zombie requires both retained shoulders.");
+            }
             foreach (var shape in Ragdoll.PhysicsController.AnatomicalColliders)
                 if (shape.Value == Player3DAnatomicalPart.Head) { zombieHeadShape = shape.Key; break; }
             if (zombieHeadShape == null)
-                throw new InvalidOperationException("A fused porter requires his original physical head shape.");
+                throw new InvalidOperationException("A zombie requires his original physical head shape.");
             zombieFootsteps = npc.gameObject.AddComponent<NpcFootstepProfile>();
-            zombieFootsteps.Configure(CombatZombieAssetProvider.WalkCycleDistance * .5f, .08f, 1f, true);
-            handPose.SetGrip(false, .12f); handPose.SetGrip(true, .12f);
+            zombieFootsteps.Configure((IsDocker ? CombatZombieAssetProvider.WalkCycleDistance :
+                CombatZombieAssetProvider.OrdinaryWalkCycleDistance) * .5f, .08f, 1f, true);
+            handPose.SetGrip(false, IsDocker ? .12f : 0f); handPose.SetGrip(true, IsDocker ? .12f : 0f);
             zombieAudio = gameObject.AddComponent<CombatZombieAudio>();
-            zombieAudio.Initialize(zombieLoad.Model);
-            zombieLoad.BindMaterialAudio(zombieAudio);
-            InitializeZombieFrenzyEntry();
+            zombieAudio.Initialize(zombieLoad != null ? zombieLoad.Model : npc.transform);
+            zombieLoad?.BindMaterialAudio(zombieAudio);
+            if (IsDocker) InitializeZombieFrenzyEntry();
             ResetZombieAttack();
         }
 
@@ -66,11 +96,13 @@ namespace BarPromenade
                 !(BodyDamage.CanUseRightHand || BodyDamage.CanUseLeftHand)) return false;
             if (!State.RequestAttack()) return false;
             zombieAudio?.Attack();
-            ZombieAttackUsesLeftSide = State.Swing == MeleeSwing.Backhand;
+            // Alternate when both hands work; a surviving hand remains usable.
+            ZombieAttackUsesLeftSide = !BodyDamage.CanUseRightHand ||
+                BodyDamage.CanUseLeftHand && State.Swing == MeleeSwing.Backhand;
             reaction = null;
             zombieContactPoseValid = false;
             Present();
-            // Both the exposed head and front timber belong to the fused torso.
+            // Capture the visible palm or the fused head/timber at strike entry.
             CaptureZombieContactPose();
             JournalEvent("zombie_attack_started", contactTarget?.JournalActorId ?? 0, State.AttackSequence,
                 f0: GameLog.Field("left_side", ZombieAttackUsesLeftSide));
@@ -119,9 +151,9 @@ namespace BarPromenade
             ApplyNpcPoseBlend();
             if (recoveryFeet) footwork.ConstrainContacts();
             ApplyCorpseStepPose();
-            zombieLoad.RefreshRamProxyState();
-            handPose.SetGrip(false, .12f);
-            handPose.SetGrip(true, .12f);
+            zombieLoad?.RefreshRamProxyState();
+            handPose.SetGrip(false, IsDocker ? .12f : 0f);
+            handPose.SetGrip(true, IsDocker ? .12f : 0f);
             visibleAttackSequence = State.AttackSequence;
             RememberNpcPresentedPose();
             footwork?.CapturePresentedContacts();
@@ -129,6 +161,14 @@ namespace BarPromenade
 
         private void CaptureZombieContactPose()
         {
+            if (!IsDocker)
+            {
+                Vector3 palm = handPose.CylinderCentre(ZombieAttackUsesLeftSide);
+                zombieHandFrom = zombieContactPoseValid ? zombieHandTo : palm;
+                zombieHandTo = palm;
+                zombieContactPoseValid = true;
+                return;
+            }
             Pose pose = zombieLoad.ContactPose;
             zombieContactFrom = zombieContactPoseValid ? zombieContactTo : pose;
             Vector3 head = ZombieRamHeadPoint;
@@ -169,6 +209,7 @@ namespace BarPromenade
             if (IsZombieFrenzied || to < State.AttackWindupSeconds || from >= State.AttackActiveEnd ||
                 sequence != State.AttackSequence || !zombieContactPoseValid ||
                 !(ZombieAttackUsesLeftSide ? BodyDamage.CanUseLeftHand : BodyDamage.CanUseRightHand)) return;
+            if (!IsDocker) { SweepOrdinaryZombieHand(from, to, sequence, pending); return; }
             float fraction = float.PositiveInfinity;
             CombatActor nearest = null; CombatHurtboxes.Hit bodyHit = default;
             for (int i = 0; i < ContactParticipantCount; i++)
@@ -237,10 +278,55 @@ namespace BarPromenade
                 bodyPatch: bodyHit.DamagePatch));
         }
 
+        private void SweepOrdinaryZombieHand(float from, float to, int sequence, List<Contact> pending)
+        {
+            Vector3 a = zombieHandFrom, b = zombieHandTo;
+            float fraction = float.PositiveInfinity;
+            CombatActor nearest = null; CombatHurtboxes.Hit bodyHit = default;
+            for (int i = 0; i < ContactParticipantCount; i++)
+            {
+                CombatActor candidate = ContactParticipantAt(i);
+                if (candidate == this || !HasPhysicalBody(candidate) ||
+                    candidate.IsKnockedDown && candidate.State.Phase != MeleePhase.Rising ||
+                    !candidate.Hurtboxes.SweepSphere(a, b, ZombiePalmRadius, transform.forward, out var found) ||
+                    found.Fraction >= fraction) continue;
+                nearest = candidate; bodyHit = found; fraction = found.Fraction;
+            }
+            float wallFraction = float.PositiveInfinity;
+            Vector3 wallPoint = default, wallNormal = default;
+            // Shared grow-and-retry buffers also cover a hand already inside a wall.
+            GatherWorldSegment(a, a, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
+            if (wallFraction <= 1f) wallFraction = 0f;
+            GatherWorldSweep(a, b, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
+            GatherWorldSegment(b, b, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
+            Transform shoulder = ZombieAttackUsesLeftSide ? zombieLeftShoulder : zombieRightShoulder;
+            float armWall = float.PositiveInfinity;
+            GatherWorldSweep(shoulder.position, b, .035f, ref armWall, ref wallPoint, ref wallNormal);
+            if (armWall <= 1f) wallFraction = 0f;
+            if (wallFraction <= 1f && (nearest == null || wallFraction <= fraction))
+            {
+                pending.Add(Contact.Obstacle(this, null, wallPoint, wallNormal, transform.forward,
+                    Mathf.Lerp(from, to, wallFraction), false));
+                return;
+            }
+            if (nearest == null) return;
+            if (!CanDamageParticipant(nearest) || nearest.State.IsDefeated)
+            {
+                pending.Add(Contact.Obstacle(this, nearest, bodyHit.Point, bodyHit.Normal,
+                    transform.forward, Mathf.Lerp(from, to, fraction), false));
+                return;
+            }
+            if (!State.TryRegisterHit(nearest.GetEntityId().GetHashCode(), sequence)) return;
+            pending.Add(new Contact(this, nearest, bodyHit.Point, bodyHit.Normal, transform.forward,
+                bodyHit.Location, bodyHit.Part, bodyHit.LocalPoint,
+                time: Mathf.Lerp(from, to, fraction), bodyRegion: bodyHit.DamageRegion,
+                bodyPatch: bodyHit.DamagePatch));
+        }
+
         private void StopZombieAttack()
         {
             if (!State.CancelAttackOnObstacle()) return;
-            zombieLoad.EndRam();
+            zombieLoad?.EndRam();
             collectSweep = false; zombieContactPoseValid = false;
         }
 
@@ -251,8 +337,9 @@ namespace BarPromenade
 
         internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking;
 
-        internal float PreviewZombieWalkDistance(float seconds) =>
-            CombatZombieAssetProvider.WalkTravel(zombieWalkClock + seconds) - CombatZombieAssetProvider.WalkTravel(zombieWalkClock);
+        internal float PreviewZombieWalkDistance(float seconds) => IsDocker
+            ? CombatZombieAssetProvider.WalkTravel(zombieWalkClock + seconds) - CombatZombieAssetProvider.WalkTravel(zombieWalkClock)
+            : seconds * CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
 
         internal void AdvanceZombieWalkClock(float seconds, float requested, float achieved)
         {
@@ -270,15 +357,17 @@ namespace BarPromenade
                 elapsed = low;
             }
             float end = zombieWalkClock + elapsed;
-            float rightContact = CombatZombieAssetProvider.WalkCycleSeconds * .42f;
-            float leftContact = CombatZombieAssetProvider.WalkCycleSeconds * .92f;
+            float cycle = IsDocker ? CombatZombieAssetProvider.WalkCycleSeconds : CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
+            float rightContact = cycle * (IsDocker ? .42f : .5f);
+            float leftContact = cycle * (IsDocker ? .92f : 1f);
             if (zombieWalkClock < rightContact && end >= rightContact || zombieWalkClock < leftContact && end >= leftContact)
                 zombieFootsteps?.NotifyFootfall();
-            zombieWalkClock = Mathf.Repeat(end, CombatZombieAssetProvider.WalkCycleSeconds);
+            zombieWalkClock = Mathf.Repeat(end, cycle);
         }
 
         internal Vector3 LimitZombieRamTravel(Vector3 travel, CombatActor target, float seconds)
         {
+            if (!IsDocker) return travel;
             zombieLoad.BeginRamAgainst(target.Body);
             Pose from = zombieLoad.ContactPose;
             Pose to = new Pose(from.position + travel, from.rotation);
@@ -301,6 +390,7 @@ namespace BarPromenade
             zombieContactPoseValid = false;
             zombieContactFrom = zombieContactTo = default;
             zombieHeadFrom = zombieHeadTo = default;
+            zombieHandFrom = zombieHandTo = default;
             zombieWalkClock = 0f; zombieGroanRemaining = 3f + (JournalActorId % 3) * 2f;
             zombieWalkingRequested = false;
             zombieFootsteps?.ResetContacts();

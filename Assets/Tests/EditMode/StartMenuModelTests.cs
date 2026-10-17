@@ -242,10 +242,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Crane));
-            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless),
-                "Highlighting the crane prototype must not change the active mode.");
-            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.OpponentLimit));
             Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents,
                 Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents));
@@ -280,9 +276,6 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(CombatWeaponId.Pistol, CombatTestMode.Endless)]
         [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Endless)]
         [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Endless)]
-        [TestCase(CombatWeaponId.Pistol, CombatTestMode.Crane)]
-        [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Crane)]
-        [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Crane)]
         public void CombatPreparation_ThreeWeaponsAndInitialHandSurviveBackAndRefusedLaunch(
             CombatWeaponId initialHeld, CombatTestMode mode)
         {
@@ -299,7 +292,6 @@ namespace BarPromenade.Tests.EditMode
             model.FocusCombatOption(mode switch
             {
                 CombatTestMode.Endless => CombatPreparationOption.Endless,
-                CombatTestMode.Crane => CombatPreparationOption.Crane,
                 _ => CombatPreparationOption.Standard
             });
             model.Confirm();
@@ -342,8 +334,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents),
                 "Focus does not change the selected capacity.");
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
-            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
-            for (int expectedCapacity = 4; expectedCapacity <= CombatEncounterSettings.OpponentCapacity; expectedCapacity++)
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(4));
+            for (int expectedCapacity = 5; expectedCapacity <= CombatEncounterSettings.OpponentCapacity; expectedCapacity++)
             {
                 model.Confirm();
                 Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(expectedCapacity));
@@ -369,6 +361,23 @@ namespace BarPromenade.Tests.EditMode
             model.Confirm();
             Assert.That(model.SelectCombatOption(CombatPreparationOption.OpponentLimit), Is.False);
             Assert.That(model.SelectedCombatSelection, Is.EqualTo(expected));
+        }
+
+        [TestCase(CombatWeaponId.Pistol)]
+        [TestCase(CombatWeaponId.Crowbar)]
+        [TestCase(CombatWeaponId.Shotgun)]
+        public void CombatPreparation_LegacyCraneReturnsToCombinedEndlessMode(CombatWeaponId initialHeld)
+        {
+            var model = new StartMenuModel();
+            var loadout = new CombatLoadoutSelection(initialHeld);
+            model.OpenCombatPreparation(new CombatTestSelection(loadout, CombatTestMode.Crane));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
+            Assert.That(model.SelectedCombatLoadout, Is.EqualTo(loadout));
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
+            Assert.That(Enum.GetNames(typeof(CombatPreparationOption)), Does.Not.Contain("Crane"));
+            model.SelectCombatOption(CombatPreparationOption.Start);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.CombatTest));
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(new CombatTestSelection(loadout, CombatTestMode.Endless)));
         }
 
         [TestCase(CombatWeaponId.Pistol, CombatWeaponId.Pistol)]

@@ -11,7 +11,7 @@ namespace BarPromenade
             damage: 32f, blockCost: 28f, windupSeconds: .25f, activeSeconds: .18f,
             recoverySeconds: 2.4f, hitRecoverySeconds: 2.4f, blockRecoverySeconds: 2.4f,
             obstacleRecoverySeconds: 2.4f, parriedRecoverySeconds: 2.4f,
-            animationRecoverySeconds: 2.4f, isUnarmedZombie: true);
+            animationRecoverySeconds: 2.4f, isUnarmedZombie: true, incomingDamageScale: .5f);
 
         public MeleeCombatSettings(float maxHealth = 100f, float maxStamina = 100f,
             float damage = 25f, float attackCost = 0f, float blockCost = 20f,
@@ -38,9 +38,11 @@ namespace BarPromenade
             float kickHitRecoverySeconds = .40f, float kickMissRecoverySeconds = .55f,
             float kickObstacleRecoverySeconds = .55f, float kickCost = 15f,
             float kickDamage = 5f, float kickStaggerSeconds = .24f,
-            float shoveContactWindowSeconds = .08f, bool isUnarmedZombie = false)
+            float shoveContactWindowSeconds = .08f, bool isUnarmedZombie = false,
+            float incomingDamageScale = 1f)
         {
             IsUnarmedZombie = isUnarmedZombie;
+            IncomingDamageScale = Positive(incomingDamageScale, nameof(incomingDamageScale));
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
             Damage = Positive(damage, nameof(damage));
@@ -129,6 +131,8 @@ namespace BarPromenade
         }
 
         public float MaxHealth { get; }
+        /// <summary>Health and structural resistance only; visible wounds and momentum retain their source strength.</summary>
+        public float IncomingDamageScale { get; }
         public bool IsUnarmedZombie { get; }
         public float MaxStamina { get; }
         public float Damage { get; }

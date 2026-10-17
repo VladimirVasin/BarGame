@@ -36,6 +36,338 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
+        [PrebuildSetup(typeof(CombatCraneAssetsSetup))]
+        public IEnumerator Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
+            var selection = new CombatTestSelection(new CombatLoadoutSelection(CombatWeaponId.Pistol),
+                CombatTestMode.Endless, settings);
+            Assert.That(CombatTestStartService.TryStart(selection), Is.True);
+            yield return AwaitSelectedCombatRange();
+            // Close views inspect local geometry independently of the warehouse's
+            // intentionally dark distant rooms. This light belongs only to the fixture.
+            var inspectionLight = new GameObject("Test wound inspection light");
+            inspectionLight.transform.SetParent(root.CameraFollow.Camera.transform, false);
+            Light detailLight = inspectionLight.AddComponent<Light>();
+            detailLight.type = LightType.Point;
+            detailLight.range = 4f;
+            detailLight.intensity = .5f;
+            detailLight.shadows = LightShadows.None;
+            Assert.That(root.WarehousePlan, Is.Not.Null);
+            Assert.That(CombatEncounterSettings.Default.MaximumLiveOpponents, Is.EqualTo(3));
+            Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Endless));
+            Assert.That(root.Opponents.Count, Is.EqualTo(3));
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Every initial role is present on entering the shared warehouse.");
+            CombatActor zombie = root.Opponents[0], docker = root.Opponents[1], crane = root.Opponents[2];
+            Assert.That(zombie.EnemyKind, Is.EqualTo(CombatEnemyKind.Zombie));
+            Assert.That(docker.EnemyKind, Is.EqualTo(CombatEnemyKind.Docker));
+            Assert.That(crane.EnemyKind, Is.EqualTo(CombatEnemyKind.Crane));
+            Assert.That(zombie.IsZombie && zombie.ZombieAwake, Is.True);
+            Assert.That(zombie.GetComponent<CombatZombieLoad>(), Is.Null, "The ordinary zombie has no borrowed cargo or disguise.");
+            Assert.That(docker.IsDocker && docker.ZombieDormant, Is.True);
+            CombatZombieLoad load = docker.GetComponent<CombatZombieLoad>();
+            Assert.That(load, Is.Not.Null);
+            Assert.That(crane.IsCrane && crane.CraneAttached, Is.True);
+            Assert.That(crane.GetComponent<CombatZombieLoad>(), Is.Null);
+            Assert.That(root.Sparring, Is.True);
+            foreach (CombatActor actor in root.Opponents)
+            {
+                Assert.That(actor.State.Settings.IncomingDamageScale, Is.EqualTo(.5f));
+                AssertMixedRegionalDamage(actor.State.Settings);
+            }
+            Assert.That(root.Hero.State.Settings.IncomingDamageScale, Is.EqualTo(1f), "Enemy endurance does not change incoming hero damage.");
+            yield return CaptureMixedPopulationView("Test mixed encounter - Initial population");
+
+            // Run the ordinary palm through the production AI, planted windup,
+            // authored lunge and anatomical sweep in the actual mixed roster.
+            Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
+            root.Hero.ResetActor(ground, Vector3.forward);
+            zombie.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
+            int attackSequence = zombie.State.AttackSequence;
+            Vector3 attackStart = zombie.transform.position;
+            for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
+                root.Tick(CombatTestRoot.SimulationStep);
+            Assert.That(zombie.State.AttackSequence, Is.EqualTo(attackSequence + 1));
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1), "The ordinary authored palm must reach the hero without cargo collision.");
+            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(zombie));
+            Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
+            Assert.That(Vector3.Distance(attackStart, zombie.transform.position), Is.InRange(.01f, .71f));
+            Assert.That(zombie.GetComponent<CombatZombieLoad>(), Is.Null);
+            root.CameraFollow.Snap();
+            CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test ordinary zombie - Hand contact");
+            root.ResetRound();
+
+            zombie.ResetActor(ground, Vector3.forward);
+            yield return VerifyMixedRepeatedArmWound(zombie);
+            zombie.ResetActor(zombie.transform.position, zombie.transform.forward);
+
+            // The first protected contact must already alter the retained wood,
+            // even while the board and its owner are both still alive.
+            docker.ResetActor(ground + Vector3.right * 2.5f, Vector3.forward);
+            docker.SetZombieDormant();
+            int boardIndex = LoaderRamBoard(load, 1);
+            Ray boardRay = LoaderBoardRay(load, boardIndex, out _);
+            int surfaces = root.Projectiles.SurfaceEffects.EmissionCount, holes = root.Projectiles.SurfaceEffects.HoleCount;
+            FireLoaderProjectile(boardRay, new[] { root.Hero, docker }, 1);
+            Assert.That(root.Projectiles.SurfaceEffects.EmissionCount, Is.EqualTo(surfaces + 1));
+            Assert.That(root.Projectiles.SurfaceEffects.HoleCount, Is.EqualTo(holes + 1));
+            Assert.That(load.IsBoardDetached(boardIndex), Is.False);
+            Assert.That(docker.State.Health, Is.EqualTo(docker.State.Settings.MaxHealth));
+            Assert.That(docker.ZombieRevealing, Is.True);
+            yield return AdvanceMimicTo(docker, CombatZombieAssetProvider.RevealSeconds);
+            CaptureMimicView(docker, "Test mixed encounter - First board damage");
+
+            int[] graphBuilds = new int[root.Opponents.Count];
+            for (int i = 0; i < graphBuilds.Length; i++) graphBuilds[i] = root.Opponents[i].NpcAnimationGraphBuilds;
+            IFirearmState pistol = root.Hero.CarriedFirearm(CombatWeaponId.Pistol);
+            SpendEndlessRound(pistol);
+            int rounds = pistol.Rounds, reserves = pistol.ReserveRounds;
+            root.Hero.State.ReceiveProjectileHit(13f);
+            float heroHealth = root.Hero.State.Health;
+            Assert.That(heroHealth, Is.EqualTo(root.Hero.State.Settings.MaxHealth - 13f));
+            ApplyKnownBodyContact(docker, root.Hero, BodyDamageRegion.LeftForearm, 0, .1f, 90);
+            float survivingTrauma = docker.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0);
+
+            yield return VerifyMixedEnemyHeadContacts(zombie, "Test ordinary zombie", pauseOnFirst: true);
+            root.Tick(0f);
+            Assert.That(root.EndlessKills, Is.EqualTo(1));
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
+            Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
+            Assert.That(root.WaitingForNextOpponent, Is.True);
+            root.CameraFollow.enabled = false;
+            root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            // The terminal contact owns a short hit hold before the replacement
+            // interval can advance; do not bypass the production clock.
+            for (int step = 0; step < 120 && root.LiveOpponentCount != 3; step++) root.Tick(CombatTestRoot.SimulationStep);
+            root.CameraFollow.enabled = true;
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+            Assert.That(root.Opponents[0], Is.SameAs(zombie), "A replacement reuses its prepared role and appearance.");
+            Assert.That(zombie.EnemyKind, Is.EqualTo(CombatEnemyKind.Zombie));
+            Assert.That(zombie.State.Health, Is.EqualTo(zombie.State.Settings.MaxHealth));
+            Assert.That(root.BloodEffects.ProjectileWoundCountFor(zombie), Is.Zero);
+            Assert.That(docker.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.EqualTo(survivingTrauma));
+            Assert.That(crane.CraneAttached && !crane.State.IsDefeated, Is.True);
+            Assert.That(root.Hero.State.Health, Is.EqualTo(heroHealth));
+            Assert.That(pistol.Rounds, Is.EqualTo(rounds));
+            Assert.That(pistol.ReserveRounds, Is.EqualTo(reserves));
+
+            yield return VerifyMixedEnemyHeadContacts(docker, "Test docker");
+            root.Tick(0f);
+            Assert.That(root.EndlessKills, Is.EqualTo(2));
+            yield return VerifyMixedEnemyHeadContacts(crane, "Test crane operator");
+            root.Tick(0f);
+            Assert.That(root.EndlessKills, Is.EqualTo(3));
+            Assert.That(root.CorpseCount, Is.LessThanOrEqualTo(settings.MaximumCorpses));
+            Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
+
+            root.ResetRound();
+            Assert.That(root.EndlessKills, Is.Zero);
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+            Assert.That(root.CorpseCount, Is.Zero);
+            for (int i = 0; i < root.Opponents.Count; i++)
+            {
+                CombatActor actor = root.Opponents[i];
+                Assert.That(actor.State.Health, Is.EqualTo(actor.State.Settings.MaxHealth));
+                Assert.That(actor.ReceivedImpactCount, Is.Zero);
+                Assert.That(root.BloodEffects.ProjectileWoundCountFor(actor), Is.Zero);
+                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(graphBuilds[i]), "Reset reuses the prepared animation graph.");
+            }
+            Assert.That(docker.ZombieDormant, Is.True);
+            Assert.That(load.DetachedBoardCount, Is.Zero);
+            Assert.That(root.Projectiles.SurfaceEffects.HoleCount, Is.Zero);
+            Assert.That(crane.CraneAttached, Is.True);
+            Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
+            Assert.That(root.GetComponentsInChildren<CombatActor>(true).Length, Is.EqualTo(4));
+
+            var fish = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan, InventoryItemId.RottenFishHeadCan };
+            for (int i = 0; i < fish.Length; i++)
+            {
+                Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[i].SourceId, fish[i]), Is.True);
+                Assert.That(root.EndlessSpawnsBlockedByFish, Is.EqualTo(i == fish.Length - 1));
+            }
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Collecting the final fish source retains all living roles.");
+            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
+            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
+            root.Tick(.6f);
+            Assert.That(root.EndlessKills, Is.EqualTo(1));
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
+            Assert.That(root.WaitingForNextOpponent, Is.False, "The fish cutoff stops replacement of every role.");
+            Assert.That(docker.gameObject.activeInHierarchy && crane.gameObject.activeInHierarchy, Is.True);
+            root.ResetRound();
+            Assert.That(root.EndlessSpawnsBlockedByFish, Is.True);
+            Assert.That(root.LiveOpponentCount, Is.Zero, "Reset cannot restore a mixed population after the finite warehouse cutoff.");
+            Assert.That(root.CorpseCount, Is.Zero);
+            Assert.That(root.EndlessKills, Is.Zero);
+            Assert.That(root.ReturnToWeapons(), Is.True);
+            yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu && !SceneTransitionService.IsTransitioning,
+                "The mixed encounter did not return to preparation.");
+            Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
+            Assert.That(Object.FindAnyObjectByType<StartMenuRoot>().SelectedCombatSelection, Is.EqualTo(selection));
+            Assert.That(PauseMenuController.IsAnyPaused, Is.False);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertMixedRegionalDamage(MeleeCombatSettings settings)
+        {
+            foreach (var contact in new[] { (MeleeBodyRegion.Torso, 12.5f), (MeleeBodyRegion.LeftArm, 6.25f),
+                (MeleeBodyRegion.RightLeg, 9.375f) })
+            {
+                var victim = new MeleeCombatant(settings);
+                victim.ReceiveProjectileHit(25f, new MeleeHitLocation(contact.Item1, MeleeHitSide.Front));
+                Assert.That(settings.MaxHealth - victim.Health, Is.EqualTo(contact.Item2).Within(.001f));
+            }
+            var torso = new MeleeCombatant(settings);
+            for (int shot = 1; shot <= 8; shot++)
+            {
+                torso.ReceiveProjectileHit(25f, new MeleeHitLocation(MeleeBodyRegion.Torso, MeleeHitSide.Front));
+                Assert.That(torso.IsDefeated, Is.EqualTo(shot == 8), "Eight separate torso wounds scale the former four-hit health budget.");
+            }
+        }
+
+        private IEnumerator VerifyMixedRepeatedArmWound(CombatActor actor)
+        {
+            actor.CaptureContactPose();
+            Vector3 centre = FindAnatomicalBone(actor, "forearm.L").position;
+            CombatHurtboxes.Hit hit = default;
+            bool exposed = false;
+            foreach (Vector3 outward in new[] { -actor.transform.right, actor.transform.forward, -actor.transform.forward, Vector3.up })
+            {
+                if (!actor.Hurtboxes.SweepProjectile(centre + outward * .4f, centre - outward * .4f,
+                    CombatProjectilePool.Radius, -outward, out hit) || hit.Part != Player3DAnatomicalPart.LeftForearm) continue;
+                exposed = true;
+                break;
+            }
+            Assert.That(exposed, Is.True, "The repeat proof needs the ordinary zombie's exposed original forearm.");
+            float spreadAtFourth = 0f;
+            for (int shot = 1; shot <= 6; shot++)
+            {
+                // Reuse the same confirmed anatomical entry without advancing
+                // simulation, so every contact addresses the same surface hole.
+                actor.ReceiveProjectile(root.Hero, 200 + shot, hit, -hit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(actor.State.Health, Is.EqualTo(actor.State.Settings.MaxHealth - Mathf.Min(35f, 6.25f * shot)).Within(.001f));
+                Assert.That(actor.State.IsDefeated, Is.False);
+                Assert.That(actor.BodyDamage.IsAttached(BodyDamageRegion.LeftForearm), Is.True);
+                Assert.That(root.BloodEffects.TryGetProjectilePresentation(actor, 0, out var wound), Is.True);
+                Assert.That(wound.HitCount, Is.EqualTo(shot), "A repeat must keep counting after the former four-contact plateau.");
+                if (shot == 1) yield return CapturePistolWoundNearView(actor, "Test ordinary zombie - First arm wound");
+                if (shot == 4) spreadAtFourth = wound.Spread;
+                if (shot == 6)
+                {
+                    Assert.That(wound.Spread, Is.GreaterThan(spreadAtFourth));
+                    yield return CapturePistolWoundNearView(actor, "Test ordinary zombie - Repeated arm wound");
+                }
+            }
+        }
+
+        private IEnumerator VerifyMixedEnemyHeadContacts(CombatActor actor, string subject, bool pauseOnFirst = false)
+        {
+            yield return CaptureMixedEnemyHead(actor, subject + " - Before damage");
+            FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
+            Assert.That(actor.State.Health, Is.EqualTo(actor.State.Settings.MaxHealth * .5f).Within(.001f), subject);
+            Assert.That(actor.State.IsDefeated || actor.IsRagdollActive, Is.False, subject + ": one headshot leaves a live continuous rig.");
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(actor), Is.Zero, subject + ": the first shot cannot bypass endurance with terminal geometry.");
+            Assert.That(root.BloodEffects.TryGetProjectilePresentation(actor, 0, out var firstWound), Is.True, subject);
+            Assert.That(firstWound.HitCount, Is.EqualTo(1));
+            Assert.That(root.BloodEffects.TryGetProjectileWound(actor, 0, out _, out _), Is.True);
+            yield return CapturePistolWoundNearView(actor, subject + " - First head wound");
+            if (pauseOnFirst)
+            {
+                Vector3 heldHook = root.Opponents[2].CraneHookPosition;
+                float heldHealth = actor.State.Health;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(1f);
+                yield return null;
+                Assert.That(actor.State.Health, Is.EqualTo(heldHealth));
+                Assert.That(root.Opponents[2].CraneHookPosition, Is.EqualTo(heldHook));
+                Assert.That(root.BloodEffects.TryGetProjectilePresentation(actor, 0, out var paused), Is.True);
+                Assert.That(paused.AgeSeconds, Is.EqualTo(firstWound.AgeSeconds));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the mixed encounter.");
+            }
+            FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
+            Assert.That(actor.State.IsDefeated && actor.IsRagdollActive, Is.True, subject + ": the second confirmed head contact defeats the same body.");
+            Assert.That(actor.State.Health, Is.Zero);
+            Assert.That(actor.ReceivedImpactCount, Is.EqualTo(2));
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(actor), Is.GreaterThan(0), subject + ": the second shot adds visible structural damage.");
+            yield return CapturePistolWoundNearView(actor, subject + " - Second head wound");
+        }
+
+        private void FireMixedEnemyProjectile(CombatActor actor, Player3DAnatomicalPart part)
+        {
+            actor.CaptureContactPose();
+            Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 center, out Vector3 outward, out _), Is.True);
+            Assert.That(actor.Hurtboxes.SweepProjectile(center + outward * .4f, center - outward * .4f,
+                CombatProjectilePool.Radius, -outward, out CombatHurtboxes.Hit hit), Is.True);
+            Assert.That(hit.Part, Is.EqualTo(part), "The fixture must confirm the exposed anatomical contact before applying it.");
+            int impacts = actor.ReceivedImpactCount;
+            actor.ReceiveProjectile(root.Hero, 100 + impacts, hit, -outward * CombatProjectilePool.MuzzleSpeed);
+            Assert.That(actor.ReceivedImpactCount, Is.EqualTo(impacts + 1));
+            Assert.That(actor.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Projectile));
+            Assert.That(actor.LastImpact.Part, Is.EqualTo(part));
+        }
+
+        private IEnumerator CaptureMixedEnemyHead(CombatActor actor, string name)
+        {
+            actor.CaptureContactPose();
+            Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 point, out Vector3 outward, out _), Is.True);
+            Camera camera = root.CameraFollow.Camera;
+            bool following = root.CameraFollow.enabled;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                camera.transform.SetPositionAndRotation(point + outward * .8f + Vector3.up * .04f,
+                    Quaternion.LookRotation(-outward));
+                camera.fieldOfView = 34f;
+                CaptureMixedCameraFrame(camera, name);
+                yield return null;
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                root.CameraFollow.enabled = following;
+            }
+        }
+
+        private IEnumerator CaptureMixedPopulationView(string name)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            bool following = root.CameraFollow.enabled;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                Vector3 eye = new Vector3(-10.8f, 4.8f, -7.8f);
+                camera.transform.SetPositionAndRotation(eye,
+                    Quaternion.LookRotation(new Vector3(0f, 2.2f, 2.5f) - eye));
+                camera.fieldOfView = 68f;
+                CaptureMixedCameraFrame(camera, name);
+                yield return null;
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                root.CameraFollow.enabled = following;
+            }
+        }
+
+        private static void CaptureMixedCameraFrame(Camera camera, string name)
+        {
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, name + ".png");
+            LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+            AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+        }
+
+        [UnityTest]
         public IEnumerator Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit()
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);

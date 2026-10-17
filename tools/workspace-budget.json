@@ -31,9 +31,10 @@
       "regenerated_by": "Unity"
     },
     "Captures/": {
-      "policy": "declared",
-      "sweep": false,
-      "note": "Curated by hand under ai/README.md Workspace retention. Documents cite files here, so the sweep must never reach it."
+      "policy": "never",
+      "sweep": true,
+      "regenerated_by": "capture tests and generators when the next task needs review",
+      "note": "Temporary review and staging only. Delete all output at task completion; durable inputs belong outside Captures."
     },
     "TestResults/": {
       "policy": "declared",
