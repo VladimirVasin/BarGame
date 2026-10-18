@@ -257,7 +257,7 @@ namespace BarPromenade
         internal void PrepareActor(CombatActor actor)
         {
             if (bodies.ContainsKey(actor)) return;
-            GameObject model = Resources.Load<GameObject>("CombatGore/Body" + (actor.IsHero ? "Hero" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Body" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat body model.");
             var body = new Body { Actor = actor, ProxyPose = new ProxyPoseSnapshot(this) };
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);

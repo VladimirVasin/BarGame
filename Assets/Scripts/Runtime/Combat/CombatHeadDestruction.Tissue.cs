@@ -48,7 +48,7 @@ namespace BarPromenade
 
         private void PrepareSkull(Head head, SkinnedMeshRenderer source)
         {
-            GameObject model = Resources.Load<GameObject>("CombatGore/Skull" + (head.Actor.IsHero ? "Hero" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Skull" + (head.Actor.IsHero ? "Hero" : head.Actor.IsCrane ? "Crane" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat skull.");
             if (bone == null)
             {

@@ -7,8 +7,10 @@ namespace BarPromenade
     {
         // Anatomical capsules cover the complete retained rig, including the
         // otherwise non-damaging folded leg, left hand and extended hook arm.
-        private static readonly int[] CraneLimbParents = { -1, 0, 1, 2, 3, 2, 2, 5, 6, 7, 8, 9, 10, 0, 0, 13, 14, 15, 16 };
-        private static readonly float[] CraneLimbRadii = { .23f, .23f, .24f, .13f, .34f, .13f, .13f, .12f, .12f, .11f, .11f, .12f, .12f, .15f, .15f, .12f, .12f, .10f, .10f };
+        // The independent shield head fits its authored .40m bind-scale sphere.
+        // Reusing the old elongated worker skull envelope locks it at the gantry.
+        private static readonly int[] CraneLimbParents = { -1, 0, 1, 2, -1, 2, 2, 5, 6, 7, 8, 9, 10, 0, 0, 13, 14, 15, 16 };
+        private static readonly float[] CraneLimbRadii = { .23f, .23f, .24f, .13f, .40f, .13f, .13f, .12f, .12f, .11f, .11f, .12f, .12f, .15f, .15f, .12f, .12f, .10f, .10f };
         private readonly Transform[] craneClearanceBones = new Transform[19];
         private readonly Vector3[] craneCandidateBones = new Vector3[19];
         private readonly Vector3[] craneSafePositions = new Vector3[19], craneSafeScales = new Vector3[19];
@@ -17,11 +19,14 @@ namespace BarPromenade
         private Bounds craneHeadBounds, craneBridgeBounds;
         private bool craneMachineBoundsReady;
         private bool craneSafePoseReady;
+        internal string CraneBlockedAnatomy { get; private set; }
 
         private void InitializeCraneClearance()
         {
             for (int i = 0; i < craneClearanceBones.Length; i++) craneClearanceBones[i] = RequireCraneBone(CraneAnatomyBoneNames[i]);
         }
+
+        private static float CraneLimbRadius(int index) => CraneLimbRadii[index] * CombatCraneAssetProvider.BodyPoseScale;
 
         private void KeepCranePoseClear()
         {
@@ -106,6 +111,7 @@ namespace BarPromenade
 
         private bool CraneSuspensionClear(Vector3 wanted, Quaternion rotation, Vector3 carriage)
         {
+            CraneBlockedAnatomy = null;
             Quaternion turn = rotation * Quaternion.Inverse(transform.rotation);
             Vector3 headDelta = new Vector3(carriage.x - CraneAnchorPosition.x, 0f, carriage.z - CraneAnchorPosition.z);
             Bounds broad = new Bounds(wanted + Vector3.up, Vector3.one * .1f);
@@ -113,11 +119,17 @@ namespace BarPromenade
             {
                 Vector3 point = wanted + turn * (craneClearanceBones[i].position - transform.position);
                 craneCandidateBones[i] = point;
-                broad.Encapsulate(new Bounds(point, Vector3.one * (CraneLimbRadii[i] * 2f)));
+                broad.Encapsulate(new Bounds(point, Vector3.one * (CraneLimbRadius(i) * 2f)));
                 broad.Encapsulate(craneClearanceBones[i].position);
             }
             for (int i = 0; i < craneFeeds.Length; i++)
-                broad.Encapsulate(CraneAnchorPosition + headDelta + turn * (craneFeeds[i].position - CraneAnchorPosition));
+            {
+                Vector3 feed = CraneAnchorPosition + headDelta + turn * (craneFeeds[i].position - CraneAnchorPosition);
+                Vector3 end = wanted + turn * (craneAttachments[i].position - transform.position);
+                if (end.y >= feed.y - .03f)
+                { CraneBlockedAnatomy = CombatCraneAssetProvider.SuspensionBoneNames[i]; return false; }
+                broad.Encapsulate(feed);
+            }
             Vector3 hook = wanted + turn * (craneHookCentre.position - transform.position);
             Vector3 leftHook = wanted + turn * (craneLeftHookCentre.position - transform.position);
             broad.Encapsulate(new Bounds(hook, Vector3.one * .36f)); broad.Encapsulate(new Bounds(leftHook, Vector3.one * .28f));
@@ -141,8 +153,9 @@ namespace BarPromenade
                 {
                     int parent = CraneLimbParents[i];
                     Vector3 a = parent < 0 ? craneCandidateBones[i] : craneCandidateBones[parent];
-                    if (CraneWorldOverlap(a, craneCandidateBones[i], CraneLimbRadii[i]) ||
-                        CraneWorldSweep(craneClearanceBones[i].position, craneCandidateBones[i], CraneLimbRadii[i])) return false;
+                    if (CraneWorldOverlap(a, craneCandidateBones[i], CraneLimbRadius(i)) ||
+                        CraneWorldSweep(craneClearanceBones[i].position, craneCandidateBones[i], CraneLimbRadius(i)))
+                    { CraneBlockedAnatomy = CraneAnatomyBoneNames[i]; return false; }
                 }
                 for (int i = 0; i < craneFeeds.Length; i++)
                 {
@@ -169,8 +182,9 @@ namespace BarPromenade
             {
                 int parent = CraneLimbParents[i];
                 Vector3 from = parent < 0 ? craneCandidateBones[i] : craneCandidateBones[parent], delta = craneCandidateBones[i] - from;
-                if (CombatHurtboxes.IntersectsSegment(head, from, delta, CraneLimbRadii[i]) ||
-                    CombatHurtboxes.IntersectsSegment(bridge, from, delta, CraneLimbRadii[i])) return false;
+                if (CombatHurtboxes.IntersectsSegment(head, from, delta, CraneLimbRadius(i)) ||
+                    CombatHurtboxes.IntersectsSegment(bridge, from, delta, CraneLimbRadius(i)))
+                { CraneBlockedAnatomy = CraneAnatomyBoneNames[i]; return false; }
             }
             if (CraneHookPhase is CombatCraneHookPhase.Outbound or CombatCraneHookPhase.Holding or CombatCraneHookPhase.Returning)
             {

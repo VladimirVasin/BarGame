@@ -106,7 +106,7 @@ def make_mesh(name, source, vertices, faces, source_vertices=None, source_faces=
     return obj
 
 
-def measure(obj):
+def measure(obj, envelope=None):
     mesh = obj.data
     world = [obj.matrix_world @ vertex.co for vertex in mesh.vertices]
     weights = [[[obj.vertex_groups[group.group].name, round(group.weight, 6)]
@@ -119,9 +119,12 @@ def measure(obj):
     if any(not math.isfinite(value) for point in world for value in point):
         raise RuntimeError("Nonfinite head fragment: " + obj.name)
     measured_bounds = bounds(world)
-    if (measured_bounds["min"][1] < 1.2 or measured_bounds["max"][1] > 2.1 or
+    if envelope is None and (measured_bounds["min"][1] < 1.2 or measured_bounds["max"][1] > 2.1 or
             max(measured_bounds["size"]) > .7):
         raise RuntimeError("Head fragment is outside metre-scale head bounds: " + obj.name)
+    if envelope is not None and any(measured_bounds["min"][a]<envelope["min"][a]-.005 or
+                                    measured_bounds["max"][a]>envelope["max"][a]+.005 for a in range(3)):
+        raise RuntimeError("Head fragment escaped its measured source envelope: " + obj.name)
     payload = {"vertices": [rounded(vertex.co) for vertex in mesh.vertices],
                "faces": [list(face.vertices) for face in mesh.polygons],
                "uv_layers": {layer.name: [rounded(loop.uv) for loop in layer.data]
@@ -451,7 +454,8 @@ def build(kind, out, publish=False):
                            str(next(entry for entry in renderers if entry["name"] == "GEO_Head")))
     brain_pieces, brain_contract = brain(skull, skull_sources, centre, half_extent)
     outputs.extend(brain_pieces)
-    measurements = [measure(obj) for obj in sorted(outputs, key=lambda obj: obj.name)]
+    envelope=bounds([obj.matrix_world@v.co for obj in family for v in obj.data.vertices]) if kind=="Crane" else None
+    measurements = [measure(obj,envelope) for obj in sorted(outputs, key=lambda obj: obj.name)]
     for obj in originals:
         bpy.data.objects.remove(obj, do_unlink=True)
     for arm in (obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"):

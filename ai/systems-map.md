@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Endless3/≤5;resistance2/head2/wounds. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
-| Crane | Endless/3floors/6tethers/6mhook/fallFrenzy/refill. | `Combat*.Crane*` | Current |
+| Crane | Sculpt2K+1K/InsectRig/3floors/6tethers/6mhook/fallFrenzy/refill. | `CombatCraneAppearance`,`Combat*.Crane*` | Current |
 | Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
 | Body destruction | Torso skeleton/sever/crawl/reset;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |

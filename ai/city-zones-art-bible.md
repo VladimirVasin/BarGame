@@ -4234,10 +4234,13 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-17`:Endless Zombie/Docker/Crane;normal Zombie/hands;
+`2026-10-17`:Crane:independent industrial flesh/carapace/embedded6cables;
+longfoldlimbs/uprighthead/mantis yaw±100°;body-skull banks.
+2K+1Kresp/WarehouseSurface/flesh-shell/steel hooks;CLO-HAIR-Rhand0.
+Endless Z/D/C;normal Zombie/hands;
 everyhit/repeatwounds/woodhole-chips;finite;§6.
 
-`2026-10-16`:Crane:asymworker/face-workwear/Rcuff-hook/6m3DLOS;
+`2026-10-16`:Crane:Rcuff-hook/6m3DLOS;
 fall→5s suspendedspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;
 worn gantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
 

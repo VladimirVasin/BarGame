@@ -19,7 +19,8 @@ namespace BarPromenade
             "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"
         };
         private const float CraneSignalSeconds = .65f, CraneStrikeSeconds = 1.1f;
-        private const float CraneRestHeight = .65f, CraneWellHalfWidth = 5f;
+        // The enlarged head keeps clear of the lower gantry cassette upstairs.
+        private const float CraneRestHeight = .40f, CraneWellHalfWidth = 5f;
         internal const int CraneCableSegments = 4;
         private const float CraneFloorDwellSeconds = 2.5f, CraneStartSeconds = .6f, CraneBrakeSeconds = .7f;
         private readonly AnimationClip[] craneClips = new AnimationClip[10];
@@ -29,7 +30,7 @@ namespace BarPromenade
         private readonly float[] craneRopeSlack = new float[6], craneTetherLengths = new float[6];
         private readonly Vector3[] craneWaypoints = new Vector3[4];
         private RaycastHit[] craneVisibilityHits = new RaycastHit[16];
-        private Transform craneHand, craneElbow, craneChest, craneHeadBone, craneHookCentre, craneLeftHookCentre;
+        private Transform craneHand, craneHookCentre, craneLeftHookCentre;
         private GameObject craneSuspensionHost, craneSuspensionHead, craneRails, craneBridge;
         private Transform craneFeedSwivel;
         private Quaternion craneFeedSwivelRest;
@@ -82,8 +83,7 @@ namespace BarPromenade
         private void InitializeCraneSuspension()
         {
             handPose = npc.RightGrip.GetComponentInParent<NpcHandPose>();
-            craneHand = RequireCraneBone("hand.R"); craneElbow = RequireCraneBone("forearm.R");
-            craneChest = RequireCraneBone("chest"); craneHeadBone = RequireCraneBone("head");
+            craneHand = RequireCraneBone("hand.R");
             foreach (NpcHandPose.HandBinding binding in handPose.Hands)
                 if (binding.IsLeft) craneLeftHookCentre = binding.CentreAnchor;
                 else craneHookCentre = binding.CentreAnchor;
@@ -277,8 +277,10 @@ namespace BarPromenade
             // open hall, with floor decisions completely independent of hero Y.
             int stop = cranePatrolStop++ % 5;
             craneDestinationFloor = stop switch { 0 => 1, 1 => 0, 2 => 1, _ => 2 };
-            float x = stop switch { 0 or 3 => 4.5f, 1 or 2 => -4.5f, _ => 0f };
-            float z = stop switch { 0 or 1 => 4.5f, 2 or 3 => -4.5f, _ => CraneGroundPosition.z };
+            // Leave the stretched limbs and their pendulum envelope inside
+            // the open well while the body turns through a full attack circle.
+            float x = stop switch { 0 or 3 => 3.8f, 1 or 2 => -3.8f, _ => 0f };
+            float z = stop switch { 0 or 1 => 3.8f, 2 or 3 => -3.8f, _ => CraneGroundPosition.z };
             craneChangingFloors = true;
             SetCranePhase(craneDestinationFloor > craneFloor ? CombatCranePhase.Ascending : CombatCranePhase.Descending);
             BeginCraneTravel(new Vector3(x, CraneGroundPosition.y + craneDestinationFloor * WarehouseArenaPlan.LevelRise + CraneRestHeight, z));
@@ -404,12 +406,6 @@ namespace BarPromenade
             visibleClip = IsCraneFrenzied ? CombatZombieAssetProvider.FrenzyClip : clipName;
             ApplyNpcPoseBlend();
             ApplyCraneDynamicPose();
-            if (!IsCraneFrenzied && index == 0 && contactTarget != null)
-            {
-                Vector3 look = Vector3.ProjectOnPlane(contactTarget.transform.position - craneHeadBone.position, Vector3.up);
-                float turn = Mathf.Clamp(Vector3.SignedAngle(transform.forward, look, Vector3.up), -28f, 28f);
-                craneHeadBone.rotation = Quaternion.AngleAxis(turn * Mathf.SmoothStep(0f, 1f, craneClock / 1.8f), Vector3.up) * craneHeadBone.rotation;
-            }
             KeepCranePoseClear(); RefreshCraneAttachmentSockets();
             PresentCraneHook(); RememberNpcPresentedPose(); PresentCraneRopes();
         }

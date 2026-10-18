@@ -8,6 +8,21 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Endless shares ordinary zombies, loaded dockers and the suspended crane;
   permanent roles reuse prepared rigs, common kills/refill/reset and fish cutoff.
   The ordinary zombie has its own undeformed authored hand/walk action bank.
+- Crane uses its own industrial mutant sculpt: flesh, embedded carapace and
+  cable attachments on the shared anatomical rig. Civilian outfit and hair
+  stay hidden; dedicated body/skull banks keep wounds on the new silhouette.
+  Left hand/feet end in steel crane hooks; flesh, carapace and steel use separate
+  shared surfaces.
+- The upright head now yaws left/right; previous long-axis roll tipped it like
+  a pendant. Moderate torso twist and folded limbs retain readable weight.
+  The focused fixture distinguishes anatomical yaw and adds optional close
+  scene captures with the existing chest light. Lower suspension keeps the
+  upright head below the gantry.
+- Proof: `CRANE UNIQUE SURFACES OK` and the independent rebuild in
+  `build-combat-crane-damage-3d-model.py` passed;
+  source coverage, closed tissue and head containment agree with the sculpt.
+- `Range_CraneSuspensionKeepsContactOcclusionPauseAndReset` passed;
+  head and front scene views reviewed under the existing chest light.
 - Enemy health/structural resistance preserves wound strength and momentum;
   repeats keep changing the same opening, and wood retains shared contact marks.
   Intact head tissue now keeps its source surface until outer tissue is lost:

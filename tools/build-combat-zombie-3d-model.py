@@ -98,7 +98,7 @@ def surge(value):
     return t*t*(3.-2.*t)
 
 
-def load_builder():
+def load_builder(retain_meshes=False):
     bpy.ops.wm.open_mainfile(filepath=str(ROOT / "ArtSource/VillageLife/StationWorker.blend"))
     rig = bpy.data.objects["RIG_Player"]
     bpy.context.view_layer.objects.active=rig
@@ -124,7 +124,7 @@ def load_builder():
     # export. Removing scene copies avoids reevaluating the worker's modular
     # garments and authored joint modifiers on every dense IK sample.
     for obj in list(bpy.data.objects):
-        if obj not in (rig, rig.parent): bpy.data.objects.remove(obj, do_unlink=True)
+        if not retain_meshes and obj not in (rig, rig.parent): bpy.data.objects.remove(obj, do_unlink=True)
     bpy.context.view_layer.update()
     for action in list(bpy.data.actions):
         bpy.data.actions.remove(action)

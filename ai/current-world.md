@@ -145,8 +145,10 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   corpses0–2(default2)/pool≤5/fixedroles. Zombie:normalrig/hands/.75m/s;
   Shared refill-kills-reset;Crane unseen3Dspawn.
   Enemy HP/structure×.5;head50/torso12.5/hero1;wounds grow/woodfirsthit hole-chips.
-  Crane:3floorXYZ1axis/6tethers;pendulum/slackcap;
-  6m3DLOS/locked1hitout/return/voidCOL/ragdoll;
+  Crane:own flesh/carapace sculpt/6embeddedcables;
+  sharedrig/longfoldlimbs/uprighthead/yaw±100°/hang↓.25;
+  UV0/2K+1Kresp/WarehouseSurface/ownbody-skull banks;
+  3floorXYZ1axis/6tethers/pendulum-slack;6m3DLOS1hit-return/voidCOL/ragdoll;
   ownfall→5s tetheredFrenzy/holdAI/pause/reset-disable-deathclear.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;

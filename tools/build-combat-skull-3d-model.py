@@ -24,14 +24,16 @@ def blender(point):
     return Vector((point[0],point[2],point[1]))
 
 
-def build(kind,out,publish=False):
+def build(kind,out,publish=False,head_contract=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     source_path=ROOT/body.SOURCES[kind]
     bpy.ops.import_scene.fbx(filepath=str(source_path),use_anim=False)
     originals=[o for o in bpy.context.scene.objects if o.type=="MESH"]
     source=next(o for o in originals if o.name=="GEO_Head")
     arm=next(o for o in bpy.context.scene.objects if o.type=="ARMATURE")
-    head_contract=json.loads((ROOT/"Assets/Resources/CombatGore/CombatGore3D.json").read_text(encoding="utf-8"))
+    head_contract_path=ROOT/"Assets/Resources/CombatGore/CombatGore3D.json"
+    supplied_contract=head_contract is not None
+    if head_contract is None:head_contract=json.loads(head_contract_path.read_text(encoding="utf-8"))
     head=head_contract["models"][kind]
     centre=blender(head["head_center_unity_m"])
     low=blender(head["head_bounds_unity_m"]["min"]);high=blender(head["head_bounds_unity_m"]["max"])
@@ -125,7 +127,7 @@ def build(kind,out,publish=False):
             bake_anim=False,use_armature_deform_only=False,use_mesh_modifiers=False,mesh_smooth_type="FACE")
     print("SKULL ANATOMY",kind,"16 closed source-bound sectors",flush=True)
     return {"source":body.SOURCES[kind],"source_sha256":body.digest(source_path.read_bytes()),
-            "head_contract_sha256":body.digest((ROOT/"Assets/Resources/CombatGore/CombatGore3D.json").read_bytes()),
+            "head_contract_sha256":body.digest(json.dumps(head_contract,sort_keys=True,separators=(",",":")).encode() if supplied_contract else head_contract_path.read_bytes()),
             "head_center_unity_m":head["head_center_unity_m"],"band_height_unity_m":band,
             "head_bounds_unity_m":head["head_bounds_unity_m"],"meshes":measurements}
 

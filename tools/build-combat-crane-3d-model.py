@@ -1,7 +1,7 @@
 """Deterministic CombatTest-only suspended crane poses on the ordinary worker rig.
 
 The retained rest skeleton and production skin are unchanged. Root travel and
-three cable endpoints belong to the runtime suspension controller. Generate via
+six cable endpoints belong to the runtime suspension controller. Generate via
 run-blender.py with both output directories staged.
 """
 from __future__ import annotations
@@ -26,6 +26,9 @@ sys.modules[spec.name] = zombie
 spec.loader.exec_module(zombie)
 common = zombie.common
 FPS = 100
+BODY_SCALE = 1.22
+BODY_PIVOT = Vector((0., 0., .85))
+POSE_HZ = 40
 CLIPS = (("CraneIdle", 2., True), ("CraneSignal", .65, False),
          ("CraneDescend", 1., True), ("CraneStrike", 1.1, False),
          ("CraneRecover", 1., False), ("CraneAscend", 1., True),
@@ -42,7 +45,9 @@ def smooth(value):
 
 def place(rig, name, start, end, width=1., roll=0.):
     bone = rig.pose.bones[name]
-    start, end = Vector(start), Vector(end)
+    start, end = (BODY_PIVOT + (Vector(point)-BODY_PIVOT)*BODY_SCALE for point in (start,end))
+    width_x,width_z=(width,width) if isinstance(width,(int,float)) else width
+    width_x *= BODY_SCALE; width_z *= BODY_SCALE
     rest = bone.bone
     direction = end-start
     # A world matrix with uniform width needs shear under a stretched parent.
@@ -56,21 +61,32 @@ def place(rig, name, start, end, width=1., roll=0.):
     if roll:q=q@Quaternion(Vector((0.,1.,0.)),math.radians(roll))
     bone.location=frame.inverted()@start
     bone.rotation_quaternion=q
-    bone.scale=(width/(linear@(q@Vector((1.,0.,0.)))).length,
+    bone.scale=(width_x/(linear@(q@Vector((1.,0.,0.)))).length,
         direction.length/rest.length/(linear@(q@Vector((0.,1.,0.)))).length,
-        width/(linear@(q@Vector((0.,0.,1.)))).length)
+        width_z/(linear@(q@Vector((0.,0.,1.)))).length)
     bpy.context.view_layer.update()
     if (bone.head-start).length>.0001 or (bone.tail-end).length>.0001:
         raise ValueError("Crane local TRS lost an authored endpoint: "+name)
+
+
+def twitch(phase, start, strength=1.):
+    """A fast pull, brief lock and slower release; zero at loop boundaries."""
+    elapsed=phase-start
+    return strength*smooth(elapsed/.025)*(1.-smooth((elapsed-.055)/.12))
 
 
 def pose(builder, kind, seconds):
     rig = builder.result.rig
     rig.animation_data.action = None
     builder._reset_pose()
-    # The skin, topology, bind matrices and skeleton are unchanged. Broader
-    # local cross-sections keep the long boom a mangled arm with a real elbow
-    # and hand rather than a zero-volume point between stretched sleeves.
+    # The enlarged silhouette lives in authored bone TRS, retaining the skin,
+    # topology and bind skeleton. Four folded limbs pull in separate bursts.
+    duration=next(duration for name,duration,_ in CLIPS if name==kind)
+    phase=(seconds/duration)%1. if kind in ("CraneIdle","CraneTransport","CraneDescend","CraneAscend") else seconds/duration
+    left_arm=twitch(phase,.06)+twitch(phase,.56,.65)
+    right_arm=twitch(phase,.28)+twitch(phase,.72,.75)
+    left_leg=twitch(phase,.18)+twitch(phase,.65,.70)
+    right_leg=twitch(phase,.40)+twitch(phase,.80,.55)
     sway = math.sin(seconds*math.tau/(2. if kind == "CraneIdle" else 1.))
     signal = math.sin(min(1., seconds/.65)*math.pi) if kind == "CraneSignal" else 0.
     strike = smooth((seconds-.25)/.30)*(1.-smooth((seconds-.55)/.55)) if kind == "CraneStrike" else 0.
@@ -82,44 +98,46 @@ def pose(builder, kind, seconds):
     hoist = .035*math.sin(seconds*math.tau) if kind in ("CraneDescend","CraneAscend") else 0.
     lag = .025*sway + hitch
     p = Vector((.045-.035*hurt, .10+.035*takeup, .98+.025*hoist))
-    place(rig,"pelvis",p,p+Vector((-.10,-.075,.15)),1.02,roll=-21.-8.*hurt)
-    place(rig,"spine",(-.055,.025,1.13),(.015,-.09,1.25),1.05,roll=16.+14.*hurt)
-    place(rig,"chest",(.015,-.09,1.25),(-.04,-.22,1.41-.04*takeup),1.12,roll=23.-17.*hurt)
-    place(rig,"neck",(-.04,-.22,1.41-.04*takeup),(.07,-.32,1.38-.04*takeup),.92)
-    # A compressed neck folds the human face into the collar. Slow inspection
-    # belongs to the head alone; machinery does not track the hero each frame.
-    look=math.sin(seconds*math.pi)*.34 if kind=="CraneIdle" else .11*sway if kind=="CraneTransport" else -.15*hurt
-    head=(.07,-.32,1.38-.17*takeup)
-    place(rig,"head",head,(.10,-.34,1.57-.17*takeup),1.03,roll=math.degrees(look)-12.)
+    place(rig,"pelvis",p,p+Vector((-.10,-.075,.15)),.88,roll=-8.-3.*hurt)
+    place(rig,"spine",(-.055,.025,1.13),(.015,-.09,1.25),1.05,roll=6.+4.*hurt)
+    place(rig,"chest",(.015,-.09,1.25),(-.04,-.22,1.41-.04*takeup),1.12,roll=8.-5.*hurt)
+    head=(.04,-.36,1.43-.06*takeup+.02*hoist)
+    place(rig,"neck",(-.04,-.22,1.41-.04*takeup),head,.78)
+    # The head bone stands upright, so its long-axis turn is anatomical yaw.
+    # Rolling the previous diagonal bone made the face tip like a pendant.
+    look=(smooth((phase-.12)/.035)-smooth((phase-.43)/.045))*math.radians(100.)
+    look-=(smooth((phase-.53)/.03)-smooth((phase-.85)/.065))*math.radians(100.)
+    cant=twitch(phase,.08)+twitch(phase,.51,-.85)
+    place(rig,"head",head,Vector(head)+Vector((.018*cant,-.012*abs(cant),.25)),(1.12,.73),roll=math.degrees(look))
     for side, sign in (("L",1.),("R",-1.)):
         shoulder=(sign*(.21 if side=="L" else .19),-.17,1.30 if side=="L" else 1.43-.04*takeup)
         place(rig,"clavicle."+side,(-.015,-.18,1.35),shoulder,1.05)
         if side == "R":
             # The mechanical hook owns reach. The flesh arm now winds up and
             # reels a short wrist socket instead of telescoping like a rod.
-            elbow=(-.36-.035*hurt,-.43+.10*signal-.04*strike+.08*takeup+.08*hurt,1.49+.04*signal-.19*takeup-.05*strike)
-            wrist=(-.30+lag,-.70+.16*signal-.15*strike+.12*recoil+.12*takeup+.13*hurt,1.15-.12*strike+.08*signal-.06*takeup+.09*hurt)
+            elbow=(-.63-.035*hurt-.06*right_arm,-.35+.10*signal-.04*strike+.08*takeup+.08*hurt,1.49+.04*signal-.19*takeup-.05*strike+.05*right_arm)
+            wrist=(-.40+lag+.04*right_arm,-1.02+.16*signal-.15*strike+.12*recoil+.12*takeup+.13*hurt,.95-.12*strike+.08*signal-.06*takeup+.09*hurt+.10*right_arm)
             tip=(wrist[0],wrist[1]+.015,wrist[2]-.17)
             place(rig,"upper_arm."+side,shoulder,elbow,1.12,roll=-9.)
-            place(rig,"forearm."+side,elbow,wrist,1.10,roll=12.)
+            place(rig,"forearm."+side,elbow,wrist,.95,roll=12.)
             place(rig,"hand."+side,wrist,tip,1.38,roll=-14.)
         else:
-            elbow=(.55,.10,1.0+.025*hurt)
-            wrist=(.48,.05,1.35+.02*signal)
+            elbow=(.90+.07*left_arm,.10+.04*left_arm,1.05+.025*hurt+.08*left_arm)
+            wrist=(.60-.06*left_arm,-.66-.08*left_arm,1.45+.02*signal+.08*left_arm)
             place(rig,"upper_arm."+side,shoulder,elbow,1.02)
-            place(rig,"forearm."+side,elbow,wrist,1.05,roll=-18.)
-            place(rig,"hand."+side,wrist,(.49,.06,1.19+.02*signal),1.12)
+            place(rig,"forearm."+side,elbow,wrist,.92,roll=-18.)
+            place(rig,"hand."+side,wrist,(wrist[0]-.04,wrist[1]-.04,wrist[2]-.28),.95,roll=-28.)
         hip=(sign*.105,.10,.99)
         if side=="L":
-            knee=(.22,.34,.70)
-            ankle=(.27,.52,1.03)
-            foot=(.28,.69,.99)
+            knee=(.67+.06*left_leg,.38,.43-.07*left_leg)
+            ankle=(.77,-.23-.10*left_leg,.96+.08*left_leg)
+            foot=(.85,-.40-.10*left_leg,.78+.08*left_leg)
         else:
-            knee=(-.15,.17,.49+.03*takeup)
-            ankle=(-.12+.015*sway,.22,.055+.08*takeup)
-            foot=(-.12+.015*sway,.055,-.035+.08*takeup)
-        place(rig,"thigh."+side,hip,knee,.99,roll=12. if side=="L" else -8.)
-        place(rig,"shin."+side,knee,ankle,1.01)
+            knee=(-.56-.07*right_leg,.48,.70+.03*takeup+.06*right_leg)
+            ankle=(-.47+.015*sway,-.03-.07*right_leg,.14+.08*takeup+.10*right_leg)
+            foot=(-.68+.015*sway,-.30-.07*right_leg,.04+.08*takeup+.10*right_leg)
+        place(rig,"thigh."+side,hip,knee,.90,roll=12. if side=="L" else -8.)
+        place(rig,"shin."+side,knee,ankle,.86)
         place(rig,"foot."+side,ankle,foot,1.03)
     # Production fingers are the existing authored cylindrical-grip blendshape,
     # applied after body sampling by NpcHandPose (right=1, left=.82).
@@ -134,9 +152,8 @@ def author(builder):
         if name in builder.result.actions:
             bpy.data.actions.remove(builder.result.actions.pop(name).action)
         count=round(seconds*FPS)
-        # Sample at 20 Hz; all authored takes are exported at the shared 100 Hz.
-        # Enough samples resolve the .20s contact sweep without a dense IK job.
-        samples=max(2,round(seconds*20))
+        # Bounded 40 Hz TRS keys resolve short pulls without a runtime solver.
+        samples=max(2,round(seconds*POSE_HZ))
         keys=[(i/samples,pose(builder,name,seconds*i/samples)) for i in range(samples+1)]
         builder._create_action(name,"combat_crane",seconds,loop,count,FPS,keys)
         print("Authored "+name,flush=True)
@@ -155,10 +172,13 @@ def measure(builder):
             samples.append(dict(seconds=round(t,5),bones_unity_axis_swap={n:[round(v,6) for v in (b.head.x,b.head.z,b.head.y)]
                 for n,b in builder.result.rig.pose.bones.items() if n in ("pelvis","clavicle.L","clavicle.R","hand.R","head")}))
         records.append(dict(name=name,duration_seconds=seconds,loop=loop,samples=samples))
-    return dict(generator="tools/build-combat-crane-3d-model.py",generator_version="crane-v3",rig="NpcHumanV2",
+    return dict(generator="tools/build-combat-crane-3d-model.py",generator_version="crane-v5-upright-yaw",rig="NpcHumanV2",
+        body_pose_scale=BODY_SCALE,pose_samples_hz=POSE_HZ,head_motion="upright_anatomical_yaw_snap_hold",
+        head_yaw_degrees=[-100.,100.],head_up_unity=[0.,1.,0.],head_forward_unity=[0.,0.,-1.],
+        deformation="elongated_head_neck_forearms_shins",
         test_only=True,root_motion=False,animation_events=0,retained_rest_skeleton=True,
         contact_start_seconds=.35,contact_end_seconds=.55,suspension_bones=["hand.L","hand.R","pelvis","foot.L","foot.R","head"],
-        suspension_local_offsets_m=[[0,0,0]]*5+[[0,.25,0]],cable_length_m=1.,cable_axis_unity=[0,1,0],
+        suspension_local_offsets_m=[[0,0,0]]*5+[[0,.25*BODY_SCALE,0]],cable_length_m=1.,cable_axis_unity=[0,1,0],
         signature=signature.hexdigest(),clips=records)
 
 
@@ -377,7 +397,7 @@ def preview(directory,source,measure_only=False,single=False):
     for name,duration,_ in (() if single else CLIPS):
         rig.animation_data.action=actions[name]
         minimum=Vector((float("inf"),)*3);maximum=-minimum;extreme={};head_radius=0.
-        times=sorted(set([min(duration,i/20.) for i in range(math.ceil(duration*20)+1)]+[duration]))
+        times=sorted(set([min(duration,i/POSE_HZ) for i in range(math.ceil(duration*POSE_HZ)+1)]+[duration]))
         for time in times:
             scene.render.fps=FPS;scene.frame_set(round(time*FPS));bpy.context.view_layer.update()
             depsgraph=bpy.context.evaluated_depsgraph_get()
@@ -391,7 +411,7 @@ def preview(directory,source,measure_only=False,single=False):
                         if point[i]>maximum[i]:maximum[i]=point[i];extreme["max_"+str(i)]=obj.name
         # These conservative evaluated bounds include every visible garment,
         # joint surface, hair and the closed existing hand shape at each key.
-        envelopes.append(dict(clip=name,keys_hz=20,bounds_min_unity=[round(minimum[i],5) for i in (0,2,1)],
+        envelopes.append(dict(clip=name,keys_hz=POSE_HZ,bounds_min_unity=[round(minimum[i],5) for i in (0,2,1)],
             bounds_max_unity=[round(maximum[i],5) for i in (0,2,1)],ordinary_worker_scale=1.0171429,extreme_objects=extreme,
             head_bone_radius=round(head_radius,5)))
         print("Measured full worker envelope "+name,flush=True)
@@ -437,7 +457,7 @@ def preview(directory,source,measure_only=False,single=False):
         for i,tether in enumerate(tethers):
             top=next(obj for obj in preview_head.children_recursive if obj.name.startswith(feed_names[i])).matrix_world.translation
             end=rig.pose.bones[bones[i]].head.copy()
-            if i==5:end+=rig.pose.bones["head"].matrix.to_quaternion()@Vector((0.,.25,0.))
+            if i==5:end+=rig.pose.bones["head"].matrix.to_quaternion()@Vector((0.,.25*BODY_SCALE,0.))
             delta=end-top;tether.location=top;tether.rotation_mode="QUATERNION"
             tether.rotation_quaternion=Vector((0,0,1)).rotation_difference(delta.normalized());tether.scale=(1,1,delta.length)
         bpy.context.view_layer.update()

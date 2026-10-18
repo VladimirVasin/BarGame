@@ -22,9 +22,9 @@ namespace BarPromenade.Editor
         private static bool sourceSkinBootstrapQueued;
         public override uint GetVersion() => 2;
         private bool IsGore => assetPath.StartsWith(Folder, StringComparison.Ordinal);
-        private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx";
+        private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx" || assetPath == Folder + "HeadCrane.fbx";
         private static string SourceFor(string path) => path.EndsWith("HeadHero.fbx", StringComparison.Ordinal)
-            ? HeroSource : NpcSource;
+            ? HeroSource : path.EndsWith("HeadCrane.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/CraneBody.fbx" : NpcSource;
 
         [InitializeOnLoadMethod]
         private static void QueueSourceSkinBootstrap()
@@ -228,6 +228,7 @@ namespace BarPromenade.Editor
                 mesh.normals = normals;
                 mesh.boneWeights = weights;
                 mesh.bindposes = skin.bindposes;
+                if (!inner && assetPath.EndsWith("Crane.fbx", StringComparison.Ordinal)) RestoreSourceMaterialSlots(mesh, skin);
                 mesh.RecalculateBounds();
                 Transform[] ordered = new Transform[original.bones.Length];
                 for (int i = 0; i < ordered.Length; i++)
@@ -240,9 +241,47 @@ namespace BarPromenade.Editor
             }
         }
 
+        // FBX may discard unused material slots from a cut piece. Restore the
+        // source's slot ordinals explicitly so its shared flesh/plate/steel
+        // array still addresses the same surfaces after fracture or tissue loss.
+        internal static void RestoreSourceMaterialSlots(Mesh mesh, Mesh source)
+        {
+            if (source.subMeshCount == 1 && mesh.subMeshCount == 1) return;
+            Vector3[] vertices = mesh.vertices, sourceVertices = source.vertices;
+            Vector2[] uv = mesh.uv, sourceUv = source.uv;
+            int[] triangles = mesh.triangles, sourceTriangles = source.triangles;
+            var sourceSlots = new int[sourceTriangles.Length / 3];
+            int triangleOffset = 0;
+            for (int slot = 0; slot < source.subMeshCount; slot++)
+                for (int triangle = 0; triangle < source.GetIndexCount(slot) / 3; triangle++) sourceSlots[triangleOffset++] = slot;
+            var slots = new List<int>[source.subMeshCount];
+            for (int slot = 0; slot < slots.Length; slot++) slots[slot] = new List<int>();
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                int a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+                Vector3 point = (vertices[a] + vertices[b] + vertices[c]) / 3f;
+                Vector2 targetUv = (uv[a] + uv[b] + uv[c]) / 3f;
+                float best = float.PositiveInfinity, bestUv = float.PositiveInfinity;
+                int closest = -1;
+                for (int j = 0; j < sourceTriangles.Length; j += 3)
+                {
+                    int x = sourceTriangles[j], y = sourceTriangles[j + 1], z = sourceTriangles[j + 2];
+                    Vector3 bary = CombatBodyAssetSetup.ClosestBarycentric(point, sourceVertices[x], sourceVertices[y], sourceVertices[z]);
+                    float distance = (sourceVertices[x] * bary.x + sourceVertices[y] * bary.y + sourceVertices[z] * bary.z - point).sqrMagnitude;
+                    float uvDistance = (sourceUv[x] * bary.x + sourceUv[y] * bary.y + sourceUv[z] * bary.z - targetUv).sqrMagnitude;
+                    if (distance > best + 1e-16f || Mathf.Abs(distance - best) <= 1e-16f && uvDistance >= bestUv) continue;
+                    best = distance; bestUv = uvDistance; closest = j / 3;
+                }
+                if (closest < 0) throw new InvalidOperationException("Crane exterior lost its source material slot: " + mesh.name);
+                slots[sourceSlots[closest]].Add(a); slots[sourceSlots[closest]].Add(b); slots[sourceSlots[closest]].Add(c);
+            }
+            mesh.subMeshCount = slots.Length;
+            for (int slot = 0; slot < slots.Length; slot++) mesh.SetTriangles(slots[slot], slot, false);
+        }
+
         public static void BuildOrThrow()
         {
-            foreach (string kind in new[] { "Hero", "Npc" })
+            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
             {
                 string path = Folder + "Head" + kind + ".fbx";
                 string sourcePath = SourceFor(path);

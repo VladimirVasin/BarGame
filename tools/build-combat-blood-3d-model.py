@@ -50,7 +50,7 @@ def selected(name, hero):
                            "CLO_Trousers_workUpper", "CLO_Trousers_workLower", "CLO_Glove"))
 
 
-def mesh_measurement(obj, wound=False):
+def mesh_measurement(obj, wound=False, envelope=None):
     """Semantic geometry, independent of FBX headers/export timestamps."""
     mesh = obj.data
     def rounded(values):
@@ -65,10 +65,12 @@ def mesh_measurement(obj, wound=False):
     size = [high[axis] - low[axis] for axis in range(3)]
     if not all(math.isfinite(value) for point in points for value in point):
         raise RuntimeError("Nonfinite blood mesh: " + obj.name)
-    if wound and (max(size) > 1.2 or max(size) < .001 or
+    if wound and envelope is None and (max(size) > 1.2 or max(size) < .001 or
                   low[1] < -.1 or high[1] > 2.2 or
                   max(abs(value) for point in points for value in point) > 2.2):
         raise RuntimeError("Wound patch is outside metre-scale actor bounds: " + obj.name + str(size))
+    if wound and envelope is not None and any(low[a]<envelope[0][a]-.003 or high[a]>envelope[1][a]+.003 for a in range(3)):
+        raise RuntimeError("Wound patch escaped its measured source envelope: " + obj.name)
     weights = [[[obj.vertex_groups[group.group].name, round(group.weight, 6)]
                 for group in sorted(vertex.groups, key=lambda item: obj.vertex_groups[item.group].name)]
                for vertex in mesh.vertices]
@@ -88,8 +90,8 @@ def mesh_measurement(obj, wound=False):
             "semantic_sha256": hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
 
 
-def model_measurement(wound=False):
-    meshes = [mesh_measurement(obj, wound) for obj in sorted(bpy.context.scene.objects, key=lambda item: item.name)
+def model_measurement(wound=False, envelope=None):
+    meshes = [mesh_measurement(obj, wound, envelope) for obj in sorted(bpy.context.scene.objects, key=lambda item: item.name)
               if obj.type == "MESH"]
     low = [min(mesh["bounds_unity_m"]["min"][axis] for mesh in meshes) for axis in range(3)]
     high = [max(mesh["bounds_unity_m"]["max"][axis] for mesh in meshes) for axis in range(3)]
@@ -100,13 +102,16 @@ def model_measurement(wound=False):
             "semantic_sha256": hashlib.sha256(json.dumps(meshes, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
 
 
-def wounds(kind, out, publish=True):
+def wounds(kind, out, publish=True, surface_filter=None, required_palms=None):
     clean()
     bpy.ops.import_scene.fbx(filepath=str(ROOT / SOURCES[kind]), use_anim=False)
     originals = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    source_points=[obj.matrix_world@v.co for obj in originals if obj.name.startswith("GEO_") for v in obj.data.vertices] if kind=="Crane" else None
+    envelope=([min(p[a] for p in source_points) for a in (0,2,1)],
+              [max(p[a] for p in source_points) for a in (0,2,1)]) if source_points else None
     patches = []
     for obj in sorted(originals, key=lambda o: o.name):
-        if not selected(obj.name, kind == "Hero"):
+        if not (surface_filter(obj.name) if surface_filter else selected(obj.name, kind == "Hero")):
             continue
         vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
         normal_matrix = obj.matrix_world.to_3x3().inverted().transposed()
@@ -168,13 +173,14 @@ def wounds(kind, out, publish=True):
         arm.animation_data_clear()
         for bone in arm.pose.bones:
             bone.matrix_basis.identity()
-    required_palms = {"GEO_Hand.L", "GEO_Hand.R"} if kind == "Hero" else {"CLO_GlovePalm.L", "CLO_GlovePalm.R"}
+    if required_palms is None:
+        required_palms = {"GEO_Hand.L", "GEO_Hand.R"} if kind == "Hero" else {"CLO_GlovePalm.L", "CLO_GlovePalm.R"}
     missing_palms = required_palms - {patch["source_renderer"] for patch in patches}
     if missing_palms:
         raise RuntimeError("Combat wound coverage lost its production palms: " + ", ".join(sorted(missing_palms)))
     if len(patches) < 16:
         raise RuntimeError("Too few authored surface patches: " + kind)
-    measurements = model_measurement(wound=True)
+    measurements = model_measurement(wound=True,envelope=envelope)
     if publish:
         export(out / ("Wounds" + kind + ".fbx"))
     return patches, measurements

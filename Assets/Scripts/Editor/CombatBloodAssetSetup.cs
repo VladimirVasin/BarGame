@@ -9,6 +9,8 @@ namespace BarPromenade.Editor
     public sealed class CombatBloodAssetSetup : AssetPostprocessor
     {
         private const string Folder = "Assets/Resources/CombatBlood/";
+        private static string SourceFor(string path) => path.Contains("Hero") ? "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx" :
+            path.Contains("Crane") ? "Assets/Resources/Combat/CraneBody.fbx" : "Assets/Resources/VillageLife/StationWorker.fbx";
         public override uint GetVersion() => 3;
         private bool IsBlood => assetPath.StartsWith(Folder, StringComparison.Ordinal);
 
@@ -36,6 +38,7 @@ namespace BarPromenade.Editor
             // None discards FBX skin bindings; these are passive meshes but
             // still require the production Generic skeleton for import.
             bool wounds = assetPath.Contains("Wounds");
+            if (wounds) context.DependsOnArtifact(SourceFor(assetPath));
             importer.animationType = wounds ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.None;
             if (wounds) importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             importer.isReadable = true; importer.meshCompression = ModelImporterMeshCompression.Off;
@@ -46,9 +49,7 @@ namespace BarPromenade.Editor
         private void OnPostprocessModel(GameObject model)
         {
             if (!IsBlood || !assetPath.Contains("Wounds")) return;
-            string sourcePath = assetPath.Contains("Hero")
-                ? "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx"
-                : "Assets/Resources/VillageLife/StationWorker.fbx";
+            string sourcePath = SourceFor(assetPath);
             context.DependsOnSourceAsset(sourcePath);
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
             if (source == null) throw new InvalidOperationException("Blood surface source is not imported: " + sourcePath);
@@ -117,9 +118,9 @@ namespace BarPromenade.Editor
 
         public static void BuildOrThrow()
         {
-            foreach (string file in new[] { "WoundsHero.fbx", "WoundsNpc.fbx", "BloodShapes.fbx", "BloodSurface.png" })
+            foreach (string file in new[] { "WoundsHero.fbx", "WoundsNpc.fbx", "WoundsCrane.fbx", "BloodShapes.fbx", "BloodSurface.png" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
-            foreach (string kind in new[] { "Hero", "Npc" })
+            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
             {
                 GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "Wounds" + kind + ".fbx");
                 int skinnedCount = model != null ? model.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length : 0;
@@ -132,7 +133,7 @@ namespace BarPromenade.Editor
                     if (mesh == null || mesh.boneWeights.Length != mesh.vertexCount || mesh.uv.Length != mesh.vertexCount ||
                         mesh.bindposes.Length != renderer.bones.Length)
                         throw new InvalidOperationException("Invalid wound skin/UV contract: " + renderer.name);
-                    if ((renderer.name.Contains("Hand") || renderer.name.Contains("Finger") || renderer.name.Contains("Thumb") ||
+                    if (kind != "Crane" && (renderer.name.Contains("Hand") || renderer.name.Contains("Finger") || renderer.name.Contains("Thumb") ||
                         renderer.name.Contains("Glove")) && mesh.blendShapeCount == 0)
                         throw new InvalidOperationException("The hand wound lost its production grip shape: " + renderer.name);
                 }

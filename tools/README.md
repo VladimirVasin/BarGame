@@ -152,7 +152,7 @@ test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;else:--validate-only;CombatGore:hero/NPC body-skull.
 zombie:10clips+fishloop/.85m-.5swalk/fusedcrate/3faces/14SFX;1mat.
-crane:10clips/Rails-Bridge-Hook-WristSocket/--hook-only/TRS/bounds.
+crane:10clips/kit;build-combat-crane-surfaces.py:sculpt/2K+1K.
 Hero:batgrip/hook→/strike-block/Ready.
 
 ```powershell

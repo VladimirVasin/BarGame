@@ -115,6 +115,16 @@ namespace BarPromenade
             ApplyAppearance();
         }
 
+        /// <summary>A bespoke surface owner retains this presentation's palette through enable and graph rebuilds.</summary>
+        public void ConfigureSurfacePalette(Texture2D configuredAtlas, Color tint)
+        {
+            if (configuredAtlas == null) throw new ArgumentNullException(nameof(configuredAtlas));
+            atlas = configuredAtlas;
+            colors = new Color[renderers.Length];
+            for (int i = 0; i < colors.Length; i++) colors[i] = tint;
+            ApplyAppearance();
+        }
+
         public void Initialize()
         {
             if (graph.IsValid()) return;

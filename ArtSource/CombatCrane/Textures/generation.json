@@ -1,0 +1,15 @@
+{
+  "generator": "image_gen (built-in)",
+  "image": {
+    "name": "CraneSurface",
+    "source": "ArtSource/CombatCrane/Textures/CraneSurface.source.png",
+    "prompt": "Use case: stylized-concept.\nAsset type: square production source material atlas for an unnaturally elongated insect-like crane horror enemy in an early-3D industrial warehouse game.\nPrimary request: a flat 2 by 2 sheet of FOUR raw material surface swatches, each filling exactly its own quarter edge to edge. This is a texture source sheet to be baked onto a 3D character, not a picture of the character.\nTop left: pallid dirty ivory desiccated organic shell, taut fibrous leathery membrane, subtle thin branching charcoal fissures, fine wrinkling, mineral mottling, slightly translucent dead yellow gray.\nTop right: dark charcoal brown insect carapace, worn laminated keratin, broad overlapping irregular fibrous grain and sparse fine scuffs, muted ashy edges, very dark brown gray.\nBottom left: deeply creased dark umber tendon and shriveled organic membrane, narrow dirty burgundy crevices, fibrous stretched tissue, restrained wet-looking color variation without highlights.\nBottom right: old oily forged iron, near-black gray, small rubbed steel marks and brown oxidation, sparse embedded dirty ivory organic fibers.\nStyle: frightening tactile physical materials, restrained hand-painted early-3D game detail, natural irregularity at several scales, medium-low contrast, no repetitive dots.\nComposition: perfectly orthographic flat surface, four exact equally sized square quarters, no drawn grid, no gutters, no labels, no border. No objects, face, eyes, mouth, limbs, costume, hair, buttons, seams of clothing or text. No lighting, shadows, specular highlights, perspective, vignette, glow, logos. Neutral flat diffuse albedo only. Opaque background.",
+    "regions": [
+      "ivory fibrous shell",
+      "charcoal carapace",
+      "umber tendon",
+      "oily forged iron"
+    ],
+    "sha256": "2891c293b4c277ebf8aeb2377b211730a7ed67861d4286dbed84a019045b5bbc"
+  }
+}

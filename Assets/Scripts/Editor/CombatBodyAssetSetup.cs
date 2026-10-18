@@ -12,9 +12,14 @@ namespace BarPromenade.Editor
         private const string Folder = "Assets/Resources/CombatGore/";
         private const string HeroSource = "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string NpcSource = "Assets/Resources/VillageLife/StationWorker.fbx";
+        private const string CraneSource = "Assets/Resources/Combat/CraneBody.fbx";
         private bool IsBody => assetPath == Folder + "BodyHero.fbx" || assetPath == Folder + "BodyNpc.fbx" ||
-            assetPath == Folder + "SkullHero.fbx" || assetPath == Folder + "SkullNpc.fbx";
-        private static string SourceFor(string path) => path.EndsWith("Hero.fbx", StringComparison.Ordinal) ? HeroSource : NpcSource;
+            assetPath == Folder + "BodyCrane.fbx" || assetPath == Folder + "SkullHero.fbx" ||
+            assetPath == Folder + "SkullNpc.fbx" || assetPath == Folder + "SkullCrane.fbx";
+        private static string KindFor(string path) => path.EndsWith("Hero.fbx", StringComparison.Ordinal) ? "Hero" :
+            path.EndsWith("Crane.fbx", StringComparison.Ordinal) ? "Crane" : "Npc";
+        private static string SourceFor(string path) => KindFor(path) == "Hero" ? HeroSource : KindFor(path) == "Crane" ? CraneSource : NpcSource;
+        private static string ManifestFor(string path) => Folder + (KindFor(path) == "Crane" ? "CombatCraneDamage3D.json" : "CombatBody3D.json");
         public override uint GetVersion() => 8;
 
         [Serializable]
@@ -36,7 +41,7 @@ namespace BarPromenade.Editor
             if (!IsBody || !(assetImporter is ModelImporter importer)) return;
             context.DependsOnCustomDependency(CombatGoreAssetSetup.SourceSkinRecipe);
             context.DependsOnArtifact(SourceFor(assetPath));
-            if (assetPath.Contains("Body")) context.DependsOnSourceAsset(Folder + "CombatBody3D.json");
+            if (assetPath.Contains("Body")) context.DependsOnSourceAsset(ManifestFor(assetPath));
             importer.globalScale = 1f; importer.useFileScale = true; importer.bakeAxisConversion = true;
             importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.importCameras = importer.importLights = importer.addCollider = false;
@@ -74,10 +79,10 @@ namespace BarPromenade.Editor
             var bones = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (Transform bone in model.GetComponentsInChildren<Transform>(true)) bones[bone.name] = bone;
             var allowances = new Dictionary<string, float>(StringComparer.Ordinal);
-            if (assetPath.Contains("Body") && File.Exists(Folder + "CombatBody3D.json"))
+            if (assetPath.Contains("Body") && File.Exists(ManifestFor(assetPath)))
             {
-                TessellationManifest manifest = JsonUtility.FromJson<TessellationManifest>(File.ReadAllText(Folder + "CombatBody3D.json"));
-                string kind = assetPath.EndsWith("Hero.fbx", StringComparison.Ordinal) ? "Hero" : "Npc";
+                TessellationManifest manifest = JsonUtility.FromJson<TessellationManifest>(File.ReadAllText(ManifestFor(assetPath)));
+                string kind = KindFor(assetPath);
                 if (manifest.source_tessellation_tolerances != null)
                     foreach (TessellationTolerance value in manifest.source_tessellation_tolerances)
                         if (value.kind == kind) allowances[value.source] = value.maximum_cut_tessellation_deviation_m;
@@ -91,6 +96,7 @@ namespace BarPromenade.Editor
                 float measuredWarp = allowances.TryGetValue(original.name, out float value) ? value : 0f;
                 RestoreSkin(piece, original, bones, exterior, Mathf.Max(.0007f, measuredWarp * 1.05f + .0001f),
                     torsoFrames.TryGetValue(original.name, out Matrix4x4 torsoFrame) ? torsoFrame : Matrix4x4.identity);
+                if (exterior && KindFor(assetPath) == "Crane") CombatGoreAssetSetup.RestoreSourceMaterialSlots(piece.sharedMesh, original.sharedMesh);
             }
         }
 
@@ -334,7 +340,7 @@ namespace BarPromenade.Editor
 
         // Ericson's closest-point regions; handles new vertices on triangle edges
         // as well as interior flesh/bone samples outside the exterior surface.
-        private static Vector3 ClosestBarycentric(Vector3 p, Vector3 a, Vector3 b, Vector3 c)
+        internal static Vector3 ClosestBarycentric(Vector3 p, Vector3 a, Vector3 b, Vector3 c)
         {
             Vector3 ab = b - a, ac = c - a, ap = p - a;
             float d1 = Vector3.Dot(ab, ap), d2 = Vector3.Dot(ac, ap);
@@ -364,7 +370,8 @@ namespace BarPromenade.Editor
         {
             if (!File.Exists(Folder + "CombatBody3D.json")) throw new InvalidOperationException("Missing body anatomy manifest.");
             if (!File.Exists(Folder + "CombatSkull3D.json")) throw new InvalidOperationException("Missing skull anatomy manifest.");
-            foreach (string kind in new[] { "Hero", "Npc" })
+            if (!File.Exists(Folder + "CombatCraneDamage3D.json")) throw new InvalidOperationException("Missing Crane anatomy manifest.");
+            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
             {
                 string path = Folder + "Body" + kind + ".fbx";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path)) == null)
@@ -372,6 +379,14 @@ namespace BarPromenade.Editor
                 var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
                 foreach (SkinnedMeshRenderer original in AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path))
                     .GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(original.name, original);
+                Bounds sourceEnvelope = default; bool measuredSource = false;
+                if (kind == "Crane")
+                    foreach (SkinnedMeshRenderer original in originals.Values)
+                    {
+                        if (!measuredSource) { sourceEnvelope = original.bounds; measuredSource = true; }
+                        else sourceEnvelope.Encapsulate(original.bounds);
+                    }
+                sourceEnvelope.Expand(.01f);
                 if (reimport) AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
                 GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (model == null) throw new InvalidOperationException("Missing authored combat body " + kind);
@@ -391,7 +406,8 @@ namespace BarPromenade.Editor
                         renderer.name.StartsWith("FleshRegion3Patch", StringComparison.Ordinal) ||
                         renderer.name.StartsWith("FleshRegion4Patch", StringComparison.Ordinal))
                         ValidateTorsoCells(renderer, originals[renderer.name.Substring(renderer.name.IndexOf("__", StringComparison.Ordinal) + 2)].transform);
-                    if (renderer.bounds.size.magnitude > 3f || renderer.bounds.center.y > 2.2f)
+                    if (kind == "Crane" ? !sourceEnvelope.Contains(renderer.bounds.min) || !sourceEnvelope.Contains(renderer.bounds.max) :
+                        renderer.bounds.size.magnitude > 3f || renderer.bounds.center.y > 2.2f)
                         throw new InvalidOperationException("Body derivative lost imported metre scale: " + renderer.name);
                 }
                 if (flesh.Count != 64 || boneCount != 16)

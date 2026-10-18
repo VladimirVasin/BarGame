@@ -8,6 +8,7 @@ namespace BarPromenade
         private static readonly string[] CraneLooseBones = { "upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R", "thigh.L", "shin.L", "thigh.R", "shin.R" };
         private static readonly string[] CraneLooseTips = { "forearm.L", "hand.L", "forearm.R", "hand.R", "shin.L", "foot.L", "shin.R", "foot.R" };
         private readonly Transform[] craneLooseBones = new Transform[8], craneLooseTips = new Transform[8];
+        private readonly Quaternion[] craneAuthoredJointRotations = new Quaternion[8];
         private readonly Vector3[] craneJointAngles = new Vector3[8], craneJointSpeeds = new Vector3[8], craneRestDirections = new Vector3[8];
         private Vector3 craneAcceleration, cranePreviousVelocity;
         public Vector3 CraneSwingOffset => CraneLoadOffset;
@@ -67,12 +68,16 @@ namespace BarPromenade
             float length = CranePendulumLength;
             Vector3 tilt = new Vector3(craneSway.z, 0f, -craneSway.x) * (Mathf.Rad2Deg / length * .7f);
             craneClearanceBones[0].rotation = Quaternion.Euler(tilt) * craneClearanceBones[0].rotation;
-            if (CraneAiming) AimCraneHookArm();
+            // Retain the authored insect folds. The mechanical cuff swivels
+            // toward the shot; human reach IK distorts this stretched chain.
             RefreshCraneAttachmentSockets();
             for (int i = 0; i < craneAttachments.Length; i++)
                 craneTetherLengths[i] = Vector3.Distance(craneFeeds[i].position, craneAttachments[i].position);
             for (int i = 0; i < craneLooseBones.Length; i++)
+            {
                 craneRestDirections[i] = (craneLooseTips[i].position - craneLooseBones[i].position).normalized;
+                craneAuthoredJointRotations[i] = craneLooseBones[i].localRotation;
+            }
             for (int i = 0; i < craneLooseBones.Length; i++)
             {
                 if (CraneAiming && i is 2 or 3) continue;
@@ -94,21 +99,24 @@ namespace BarPromenade
             Transform tip = craneLooseTips[lowerIndex], upper = craneLooseBones[upperIndex], lower = craneLooseBones[lowerIndex];
             Vector3 feed = craneFeeds[cable].position, delta = tip.position - feed;
             float maximum = craneTetherLengths[cable] + .015f;
-            if (delta.sqrMagnitude <= maximum * maximum) return;
-            Vector3 target = feed + delta.normalized * maximum;
-            LimbTwoBoneIk.Solve(upper, lower, tip, target, tip.rotation, lower.position, 1f, .995f, false);
+            if (delta.sqrMagnitude <= maximum * maximum && tip.position.y < feed.y - .03f) return;
+            // Blend inertial rotations back toward the authored folded chain.
+            // Reach IK on its stretched, nonuniform parents can change segment
+            // lengths and fling a wrist/ankle above the suspension cassette.
+            Quaternion upperDriven = upper.localRotation, lowerDriven = lower.localRotation;
+            float accepted = 0f, rejected = 1f;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                float weight = (accepted + rejected) * .5f;
+                upper.localRotation = Quaternion.Slerp(craneAuthoredJointRotations[upperIndex], upperDriven, weight);
+                lower.localRotation = Quaternion.Slerp(craneAuthoredJointRotations[lowerIndex], lowerDriven, weight);
+                if ((tip.position - feed).sqrMagnitude <= maximum * maximum && tip.position.y < feed.y - .03f)
+                    accepted = weight;
+                else rejected = weight;
+            }
+            upper.localRotation = Quaternion.Slerp(craneAuthoredJointRotations[upperIndex], upperDriven, accepted);
+            lower.localRotation = Quaternion.Slerp(craneAuthoredJointRotations[lowerIndex], lowerDriven, accepted);
             craneJointSpeeds[upperIndex] *= .75f; craneJointSpeeds[lowerIndex] *= .75f;
-        }
-
-        private void AimCraneHookArm()
-        {
-            Transform upper = craneLooseBones[2], lower = craneLooseBones[3];
-            Vector3 direction = craneDirection.sqrMagnitude > .01f ? craneDirection.normalized : transform.forward;
-            float reach = LimbTwoBoneIk.ChainLength(upper, lower, craneHand);
-            Vector3 wrist = upper.position + direction * (reach * .86f);
-            Quaternion handRotation = Quaternion.FromToRotation(craneHand.TransformDirection(Vector3.up), direction) * craneHand.rotation;
-            Vector3 side = Vector3.Cross(Vector3.up, direction).normalized;
-            LimbTwoBoneIk.Solve(upper, lower, craneHand, wrist, handRotation, upper.position + side * .45f + Vector3.down * .28f, 1f, .98f, true);
         }
 
         private Vector3 CraneRopePoint(int index, float t) => CraneRopePoint(index, t, craneFeeds[index].position, craneAttachments[index].position);

@@ -737,10 +737,16 @@ def measure(obj, closed=False):
     return result
 
 
-def build(kind,out,publish=False):
+def build(kind,out,publish=False,source_filter=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(ROOT/SOURCES[kind]),use_anim=False)
     originals=sorted((o for o in bpy.context.scene.objects if o.type=="MESH"),key=lambda o:o.name)
+    if source_filter is not None:
+        kept=[]
+        for obj in originals:
+            if source_filter(obj):kept.append(obj)
+            else:bpy.data.objects.remove(obj,do_unlink=True)
+        originals=kept
     arm=next(o for o in bpy.context.scene.objects if o.type=="ARMATURE")
     frames,low,high=region_frames(arm)
     fit_terminal_frames(originals,arm,frames,low,high)

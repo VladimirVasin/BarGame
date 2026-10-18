@@ -269,7 +269,33 @@ namespace BarPromenade.Tests.PlayMode
             for (int i = 0; i < cableStarts.Length; i++) cableStarts[i] = crane.GetCraneCableStart(i);
             AssertCraneCablesFollowRig(crane, cableStarts);
             AssertCraneHookGeometry(crane);
+            AssertCraneAppearance(crane, intact: true);
+            Transform leftElbow = FindAnatomicalBone(crane, "forearm.L"), rightElbow = FindAnatomicalBone(crane, "forearm.R");
+            Assert.That(Vector3.Distance(leftElbow.position, rightElbow.position), Is.GreaterThan(1.6f),
+                "The folded insect silhouette must be visibly broader than the ordinary worker.");
+            Assert.That(Vector3.Distance(leftElbow.position, FindAnatomicalBone(crane, "hand.L").position), Is.GreaterThan(.9f),
+                "The forearm must be deliberately elongated, beyond uniform worker enlargement.");
+            Assert.That(Vector3.Distance(FindAnatomicalBone(crane, "shin.L").position,
+                FindAnatomicalBone(crane, "foot.L").position), Is.GreaterThan(.8f),
+                "The reverse-folded shin retains its stretched insect proportion.");
+            CraneAnatomicalFrame headFrame = CraneAnatomicalFrame.Create(crane, "GEO_Head", "head");
+            CraneAnatomicalFrame torsoFrame = CraneAnatomicalFrame.Create(crane, "GEO_Torso", "chest");
+            float previousHeadYaw = CraneAnatomicalHeadYaw(headFrame, torsoFrame), headYaw = 0f;
+            float minimumHeadYaw = 0f, maximumHeadYaw = 0f, fastestHeadTurn = 0f;
+            for (int frame = 0; frame < 105; frame++)
+            {
+                TickCrane(crane, 1f / 60f);
+                float yaw = CraneAnatomicalHeadYaw(headFrame, torsoFrame), turn = Mathf.DeltaAngle(previousHeadYaw, yaw);
+                headYaw += turn;
+                minimumHeadYaw = Mathf.Min(minimumHeadYaw, headYaw);
+                maximumHeadYaw = Mathf.Max(maximumHeadYaw, headYaw);
+                fastestHeadTurn = Mathf.Max(fastestHeadTurn, Mathf.Abs(turn));
+                previousHeadYaw = yaw;
+            }
             CaptureCraneView(crane, "crane-01-suspended");
+            Assert.That(maximumHeadYaw - minimumHeadYaw, Is.GreaterThan(150f),
+                "The face must look left and right around the anatomical torso-up axis; long-axis bone roll cannot substitute for yaw.");
+            Assert.That(fastestHeadTurn, Is.GreaterThan(12f), "Mantis face yaw needs short snaps between held stares.");
             Assert.That(crane.CraneFloorIndex, Is.EqualTo(2));
             PlaceCraneHero(crane.CraneGroundPosition + Vector3.forward * 1.2f, Vector3.back);
             root.CameraFollow.RotatePitch(-60f - root.CameraFollow.TargetOrbitPitch);
@@ -311,7 +337,9 @@ namespace BarPromenade.Tests.PlayMode
             CaptureCraneView(crane, "crane-patrol-ground");
 
             Vector3 ringCenter = new Vector3(crane.CraneCarriagePosition.x, 0f, crane.CraneCarriagePosition.z);
-            yield return VerifyCraneHookOcclusionAndPause(crane, ringCenter + Vector3.right * 2.2f, cableStarts);
+            // Leave real cable payout between the enlarged folded arm and the
+            // target so pause/inserted-wall checks precede an actual body hit.
+            yield return VerifyCraneHookOcclusionAndPause(crane, ringCenter + Vector3.right * 4f, cableStarts);
             PlaceCraneHero(ringCenter + Vector3.right * 2.2f, Vector3.left);
             yield return AdvanceCraneTo(crane, CombatCranePhase.Striking, cableStarts);
             int lockedThrow = crane.CraneHookThrowCount;
@@ -347,7 +375,9 @@ namespace BarPromenade.Tests.PlayMode
             foreach (WarehouseArenaStair stair in root.WarehousePlan.Stairs)
                 if (stair.Foot.x < 0f && stair.Foot.y > 0f) upperStair = stair;
             Assert.That(upperStair.Foot.y, Is.GreaterThan(0f));
-            yield return VerifyCraneHookHit(crane, new Vector3(-6.95f, upperStair.HeightAt(0f), 0f),
+            // Use a nearer real tread: the longer authored wrist offset and
+            // inset patrol must still keep this upward shot within six metres.
+            yield return VerifyCraneHookHit(crane, new Vector3(-6.95f, upperStair.HeightAt(-.6f), -.6f),
                 cableStarts, "crane-hook-upward");
             Assert.That(observedCraneAim.y, Is.GreaterThan(.05f), "The actual throw must aim upward at the supported stair tread.");
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
@@ -361,10 +391,12 @@ namespace BarPromenade.Tests.PlayMode
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
             yield return AdvanceCraneFloor(crane, 0, cableStarts);
             Vector3 coverage = craneMaximumCommand - craneMinimumCommand;
-            Assert.That(coverage.x, Is.GreaterThan(8f));
-            Assert.That(coverage.z, Is.GreaterThan(8f));
+            Assert.That(coverage.x, Is.GreaterThan(7f));
+            Assert.That(coverage.z, Is.GreaterThan(7f));
             Assert.That(coverage.y, Is.GreaterThan(6f));
             CaptureCraneView(crane, "crane-return-ground");
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-craneAppearanceCapture") >= 0)
+                yield return CaptureCraneAppearance(crane);
             crane.CaptureContactPose();
             Assert.That(crane.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 head, out _, out _), Is.True);
             var hit = new CombatHurtboxes.Hit(head, Vector3.up, Vector3.down, 0f,
@@ -374,6 +406,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.State.Health, Is.EqualTo(crane.State.Settings.MaxHealth * .5f));
             Assert.That(crane.State.IsDefeated, Is.False);
             Assert.That(crane.CraneAttached, Is.True, "The first head wound retains the continuous suspended rig.");
+            AssertCraneAppearance(crane, intact: false);
             crane.ReceiveProjectile(root.Hero, 2, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
             Assert.That(crane.State.IsDefeated, Is.True, "The suspended worker keeps common anatomical damage.");
             root.Tick(CombatTestRoot.SimulationStep);
@@ -394,6 +427,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
             AssertCraneCablesFollowRig(crane, cableStarts);
             AssertCraneHookGeometry(crane);
+            AssertCraneAppearance(crane, intact: true);
             Assert.That(crane.NpcAnimationGraphBuilds, Is.EqualTo(animationGraphs));
             CaptureCraneView(crane, "crane-09-reset");
             if (recordCraneMotion)
@@ -419,7 +453,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(CombatActor.CraneHookMaximumLength), "The supported test target must be in actual three-dimensional cable reach.");
             yield return AdvanceCraneTo(crane, CombatCranePhase.Striking, starts);
             Assert.That(crane.CraneHookThrowCount, Is.EqualTo(throws + 1));
-            Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Outbound));
+            Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Outbound).Or.EqualTo(CombatCraneHookPhase.Holding));
+            if (crane.CraneHookPhase == CombatCraneHookPhase.Holding)
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1),
+                    "A close target may stop the released hook in its first contact substep, through one real hit. " +
+                    $"Target={heroPosition}, blocked anatomy={crane.CraneBlockedAnatomy}, cuff={crane.CraneHookCableExit}.");
             if (captureMotion && recordCraneMotion)
                 yield return CaptureCraneMotion(crane, starts, 96, transport: false);
             else
@@ -451,7 +489,7 @@ namespace BarPromenade.Tests.PlayMode
             var wall = new GameObject("Test suspended worker partition");
             wall.transform.SetParent(root.transform, false);
             BoxCollider barrier = wall.AddComponent<BoxCollider>();
-            barrier.size = new Vector3(2f, 2f, .16f);
+            barrier.size = new Vector3(4f, 3f, .16f);
             Vector3 target = root.Hero.transform.position + Vector3.up * 1.2f;
             Vector3 source = crane.CraneHookCableExit;
             wall.transform.SetPositionAndRotation((source + target) * .5f, Quaternion.LookRotation(target - source));
@@ -459,8 +497,20 @@ namespace BarPromenade.Tests.PlayMode
             int throws = crane.CraneHookThrowCount;
             try
             {
-                TickCrane(crane, .8f);
-                Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+                for (int step = 0; step < 96; step++)
+                {
+                    source = crane.CraneHookCableExit;
+                    target = root.Hero.transform.position + Vector3.up * 1.2f;
+                    Vector3 delta = target - source;
+                    Assert.That(barrier.Raycast(new Ray(source, delta.normalized), out _, delta.magnitude), Is.True,
+                        "The fixed partition must cover the current cuff-to-target ray before testing acquisition: " +
+                        $"step={step}, from={source}, target={target}, phase={crane.CranePhase}, " +
+                        $"localFrom={wall.transform.InverseTransformPoint(source)}, localTarget={wall.transform.InverseTransformPoint(target)}.");
+                    TickCrane(crane, CombatTestRoot.SimulationStep);
+                    Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting),
+                        "A partition covering the acquisition ray must keep the crane waiting: " +
+                        $"step={step}, from={source}, target={target}, currentFrom={crane.CraneHookCableExit}, phase={crane.CranePhase}.");
+                }
                 Assert.That(crane.CraneHookThrowCount, Is.EqualTo(throws), "A solid wall must prevent initial hook acquisition.");
                 barrier.enabled = false;
                 Physics.SyncTransforms();
@@ -504,6 +554,14 @@ namespace BarPromenade.Tests.PlayMode
                 wall.transform.SetPositionAndRotation(Vector3.Lerp(source, target, .55f), Quaternion.LookRotation(target - source));
                 barrier.enabled = true;
                 Physics.SyncTransforms();
+                for (int part = -1; part < CombatCraneAssetProvider.HookContactPoints.Length; part++)
+                {
+                    Vector3 local = part < 0 ? Vector3.up * .1f : CombatCraneAssetProvider.HookContactPoints[part];
+                    float radius = part < 0 ? .08f : CombatCraneAssetProvider.HookContactRadii[part];
+                    Vector3 centre = crane.GetCraneHookTransform().TransformPoint(local);
+                    Assert.That(Vector3.Distance(centre, barrier.ClosestPoint(centre)), Is.GreaterThan(radius + .01f),
+                        "The inserted wall must start ahead of the whole released hook, without spawning inside it.");
+                }
                 yield return AdvanceCraneTo(crane, CombatCranePhase.Waiting, starts);
                 Assert.That(root.Hero.ReceivedImpactCount, Is.Zero, "An obstacle inserted during flight must stop the actual hook and its damage.");
                 Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth));
@@ -569,7 +627,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
             Assert.That(crane.CranePhase, Is.EqualTo(phase),
-                $"The crane did not reach {phase}; current phase={crane.CranePhase}, elapsed={crane.CranePhaseElapsed:F3}.");
+                $"The crane did not reach {phase}; current phase={crane.CranePhase}, elapsed={crane.CranePhaseElapsed:F3}, " +
+                $"hook={crane.CraneHookPhase}, eye={crane.CraneHookEyePosition}, cuff={crane.CraneHookCableExit}.");
             Assert.That(crane.CranePatrolTravelling, Is.False);
             AssertCraneCablesFollowRig(crane, cableStarts);
         }
@@ -730,7 +789,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.CranePatrolTravelling, Is.False);
             Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
             Assert.That(crane.CraneCarriagePosition.y,
-                Is.EqualTo(floor * WarehouseArenaPlan.LevelRise + .65f).Within(.02f));
+                Is.EqualTo(floor * WarehouseArenaPlan.LevelRise + .40f).Within(.02f));
             AssertCraneCablesFollowRig(crane, cableStarts);
         }
 
@@ -812,7 +871,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(offset, rotatedOffset), Is.LessThan(.002f),
                     "The cable swivel must follow the body's yaw below the fixed overhead case.");
                 Assert.That(float.IsFinite(end.sqrMagnitude), Is.True);
-                Assert.That(feed.y - end.y, Is.GreaterThan(.01f));
+                Assert.That(feed.y - end.y, Is.GreaterThan(.01f), bones[i] + " must hang below its cable feed.");
                 float visibleLength = 0f;
                 for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
                 {
@@ -829,6 +888,206 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(visibleLength + .001f, Is.GreaterThanOrEqualTo(Vector3.Distance(feed, end)));
             }
             AssertCraneHookGeometry(crane);
+        }
+
+        private readonly struct CraneAnatomicalFrame
+        {
+            internal readonly Transform Bone;
+            private readonly Vector3 localForward, localUp;
+            internal Vector3 Forward => Bone.TransformVector(localForward).normalized;
+            internal Vector3 Up => Vector3.ProjectOnPlane(Bone.TransformVector(localUp), Forward).normalized;
+
+            private CraneAnatomicalFrame(Transform bone, Vector3 forward, Vector3 up)
+            { Bone = bone; localForward = forward; localUp = up; }
+
+            internal static CraneAnatomicalFrame Create(CombatActor actor, string rendererName, string boneName)
+            {
+                SkinnedMeshRenderer canonical = CombatCraneAssetProvider.LoadBodyRenderer(rendererName);
+                int index = Array.FindIndex(canonical.bones, bone => bone != null && bone.name == boneName);
+                Assert.That(index, Is.GreaterThanOrEqualTo(0));
+                Matrix4x4 bind = canonical.transform.localToWorldMatrix * canonical.sharedMesh.bindposes[index].inverse;
+                // The sculpt faces Blender -Y, which reaches Unity as -Z.
+                // Calibrate against the imported asset's original bind frame,
+                // never a collider or a frame captured from the starting pose.
+                Vector3 forward = canonical.transform.root.TransformVector(Vector3.back);
+                Vector3 up = canonical.transform.root.TransformVector(Vector3.up);
+                return new CraneAnatomicalFrame(FindAnatomicalBone(actor, boneName),
+                    bind.inverse.MultiplyVector(forward).normalized, bind.inverse.MultiplyVector(up).normalized);
+            }
+        }
+
+        private static float CraneAnatomicalHeadYaw(CraneAnatomicalFrame head, CraneAnatomicalFrame torso)
+        {
+            Vector3 headForward = head.Forward, headUp = head.Up, torsoForward = torso.Forward, torsoUp = torso.Up;
+            Vector3 heading = Vector3.ProjectOnPlane(headForward, torsoUp);
+            Assert.That(heading.sqrMagnitude, Is.GreaterThan(.05f), "Head heading must remain readable through its held glances.");
+            Assert.That(Vector3.Dot(headUp, torsoUp), Is.GreaterThan(.25f),
+                "A sideways or inverted mask is a head roll, not an anatomical look-left/right.");
+            return Vector3.SignedAngle(Vector3.ProjectOnPlane(torsoForward, torsoUp), heading, torsoUp);
+        }
+
+        private IEnumerator CaptureCraneAppearance(CombatActor crane)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            float fov = camera.fieldOfView;
+            Vector3 cameraPosition = camera.transform.position;
+            Quaternion cameraRotation = camera.transform.rotation;
+            float orbitPitch = root.CameraFollow.TargetOrbitPitch, orbitYaw = camera.transform.eulerAngles.y;
+            Vector3 heroPosition = root.Hero.transform.position, heroForward = root.Hero.transform.forward;
+            CombatCranePhase phase = crane.CranePhase;
+            float phaseTime = crane.CranePhaseElapsed;
+            Vector3 carriage = crane.CraneCarriagePosition;
+            int throws = crane.CraneHookThrowCount;
+            var flashlight = root.Hero.GetComponentInChildren<CombatChestFlashlight>(true);
+            Assert.That(flashlight, Is.Not.Null);
+            Assert.That(flashlight.SpotLight.enabled, Is.True);
+            CraneAnatomicalFrame torsoFrame = CraneAnatomicalFrame.Create(crane, "GEO_Torso", "chest");
+            Vector3 forward = Vector3.ProjectOnPlane(torsoFrame.Forward, Vector3.up).normalized;
+            CraneAnatomicalFrame headFrame = CraneAnatomicalFrame.Create(crane, "GEO_Head", "head");
+            Vector3 floor = crane.CraneCarriagePosition; floor.y = crane.CraneGroundPosition.y;
+            try
+            {
+                foreach (int view in new[] { 0, 1 })
+                {
+                    Vector3 direction = forward;
+                    Vector3 standingCenter = floor;
+                    if (view == 0)
+                    {
+                        crane.CaptureContactPose();
+                        Assert.That(crane.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 head, out _, out _), Is.True);
+                        direction = Vector3.ProjectOnPlane(headFrame.Forward, Vector3.up);
+                        Assert.That(direction.sqrMagnitude, Is.GreaterThan(.05f));
+                        direction.Normalize();
+                        standingCenter = new Vector3(head.x, floor.y, head.z);
+                    }
+                    PlaceCraneHero(standingCenter + direction * 3.2f, -direction);
+                    Vector3 focus = Vector3.zero;
+                    for (int frame = 0; frame < 4; frame++)
+                    {
+                        crane.CaptureContactPose();
+                        Assert.That(crane.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 head, out _, out _), Is.True);
+                        focus = view == 0 ? head : crane.transform.position + Vector3.up * .95f;
+                        Vector3 delta = focus - (root.Hero.transform.position + Vector3.up * 1.5f);
+                        float yaw = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg;
+                        float pitch = -Mathf.Atan2(delta.y, new Vector2(delta.x, delta.z).magnitude) * Mathf.Rad2Deg;
+                        root.CameraFollow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, yaw));
+                        root.CameraFollow.RotatePitch(Mathf.Clamp(pitch, root.CameraFollow.MinimumOrbitPitch,
+                            root.CameraFollow.MaximumOrbitPitch) - root.CameraFollow.TargetOrbitPitch);
+                        root.CameraFollow.Snap();
+                        root.Hero.AdvanceSimulation(.1f);
+                        root.Hero.Present();
+                        yield return null;
+                    }
+                    string name = view == 0 ? "Test crane - Close head" : "Test crane - Front body";
+                    Vector3 eye = focus + direction * 2.8f + Vector3.up * .1f;
+                    camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                    camera.fieldOfView = view == 0 ? 22f : 56f;
+                    CaptureCraneView(crane, name, gameplayCamera: true);
+                }
+            }
+            finally
+            {
+                PlaceCraneHero(heroPosition - Vector3.up * PlayerFactory.GroundedRootOffset, heroForward);
+                root.CameraFollow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, orbitYaw));
+                root.CameraFollow.RotatePitch(orbitPitch - root.CameraFollow.TargetOrbitPitch);
+                root.CameraFollow.Snap();
+                camera.transform.SetPositionAndRotation(cameraPosition, cameraRotation);
+                camera.fieldOfView = fov;
+            }
+            Assert.That(crane.CranePhase, Is.EqualTo(phase));
+            Assert.That(crane.CranePhaseElapsed, Is.EqualTo(phaseTime));
+            Assert.That(crane.CraneCarriagePosition, Is.EqualTo(carriage));
+            Assert.That(crane.CraneHookThrowCount, Is.EqualTo(throws), "Appearance capture cannot advance the encounter.");
+        }
+
+        private static void AssertCraneAppearance(CombatActor crane, bool intact)
+        {
+            Assert.That(crane.GetComponentInChildren<CombatCraneAppearance>(true), Is.Not.Null);
+            Assert.That(crane.GetComponentInChildren<CombatZombieAppearance>(true), Is.Null,
+                "The crane owns its surface restoration independently of the docker's civilian outfit.");
+            CombatCraneAssetProvider.BodyManifest manifest = CombatCraneAssetProvider.LoadBodyManifest();
+            Assert.That(manifest.geometry_owner, Is.EqualTo("independent_sculpt"));
+            Assert.That(manifest.bounds_space, Is.EqualTo("unity_metres"));
+            Texture2D atlas = CombatCraneAssetProvider.LoadBodyAtlas();
+            Material material = CombatCraneAssetProvider.LoadBodyMaterial();
+            Shader shader = Resources.Load<Shader>("Shaders/WarehouseSurface");
+            Texture2D response = Resources.Load<Texture2D>("Combat/CraneMaterialResponse");
+            Assert.That(atlas.width, Is.EqualTo(2048));
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.width, Is.EqualTo(1024));
+            Assert.That(material.shader, Is.SameAs(shader));
+            Assert.That(material.GetTexture("_BaseMap"), Is.SameAs(atlas));
+            Assert.That(material.GetTexture("_WarehouseMaterialResponse"), Is.SameAs(response));
+            Assert.That(manifest.estimated_gpu_bytes, Is.LessThan(7L * 1024 * 1024));
+            SkinnedMeshRenderer[] skins = crane.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var properties = new MaterialPropertyBlock();
+            bool fleshSeen = false, carapaceSeen = false;
+            foreach (CombatCraneAssetProvider.BodyMesh part in manifest.meshes)
+            {
+                SkinnedMeshRenderer skin = Array.Find(skins, candidate => candidate.name == part.name);
+                Assert.That(skin, Is.Not.Null, "The retained damage source must keep its authored name: " + part.name);
+                Assert.That(skin.sharedMesh, Is.SameAs(CombatCraneAssetProvider.LoadBodyRenderer(part.name).sharedMesh),
+                    "Wounds and reset must retain the authored crane skin: " + part.name);
+                Material[] assigned = skin.sharedMaterials;
+                Assert.That(assigned, Has.Length.EqualTo(part.surfaces.Length));
+                for (int slot = 0; slot < assigned.Length; slot++)
+                {
+                    Assert.That(assigned[slot], Is.SameAs(CombatCraneAssetProvider.LoadBodyMaterial(part.surfaces[slot])),
+                        "Each sculpt region retains its own shared material role: " + part.name);
+                    if (part.visible)
+                    {
+                        fleshSeen |= part.surfaces[slot] == "flesh";
+                        carapaceSeen |= part.surfaces[slot] == "carapace";
+                    }
+                }
+                if (intact || !part.visible)
+                    Assert.That(skin.enabled && skin.gameObject.activeInHierarchy, Is.EqualTo(part.visible),
+                        "Only the authored anatomical surface set may return on reset: " + part.name);
+            }
+            Assert.That(fleshSeen && carapaceSeen, Is.True, "The industrial mutant needs separate flesh and embedded carapace surfaces.");
+            int paintedSurfaces = 0;
+            foreach (SkinnedMeshRenderer skin in skins)
+            {
+                bool visible = skin.enabled && skin.gameObject.activeInHierarchy;
+                if (skin.name.StartsWith("CLO_", StringComparison.Ordinal) || skin.name.StartsWith("HAIR_", StringComparison.Ordinal))
+                    Assert.That(visible, Is.False, "Civilian clothes and hair cannot reappear on the insect body.");
+                if (!visible || skin.sharedMaterial == null || skin.sharedMaterial.shader != shader) continue;
+                skin.GetPropertyBlock(properties);
+                Assert.That(properties.GetTexture("_BaseMap") ?? skin.sharedMaterial.GetTexture("_BaseMap"), Is.SameAs(atlas),
+                    "Live exterior wounds must keep the crane atlas instead of the original worker painting.");
+                Assert.That(skin.sharedMaterial.GetTexture("_WarehouseMaterialResponse"), Is.SameAs(response));
+                properties.Clear(); paintedSurfaces++;
+            }
+            Assert.That(paintedSurfaces, Is.GreaterThan(0));
+            MeshFilter[] passive = crane.GetCraneHookTransform().parent.GetComponentsInChildren<MeshFilter>(true);
+            foreach (CombatCraneAssetProvider.PassiveMesh part in manifest.passive_meshes)
+            {
+                int matches = 0;
+                foreach (MeshFilter surface in passive)
+                {
+                    if (surface.name != part.name) continue;
+                    matches++;
+                    Assert.That(surface.sharedMesh, Is.SameAs(CombatCraneAssetProvider.LoadPassiveSurface(part.name).sharedMesh));
+                    Material metal = surface.GetComponent<Renderer>().sharedMaterial;
+                    Assert.That(metal.shader, Is.SameAs(shader));
+                    Assert.That(metal.GetTexture("_BaseMap"), Is.SameAs(atlas));
+                    Assert.That(metal.GetTexture("_WarehouseMaterialResponse"), Is.SameAs(response));
+                }
+                Assert.That(matches, Is.GreaterThan(0), "The mechanical kit must use the same authored painting: " + part.name);
+            }
+            if (manifest.hardware != null)
+            {
+                MeshFilter[] fittings = crane.DamageRigRoot.GetComponentsInChildren<MeshFilter>(true);
+                foreach (CombatCraneAssetProvider.HardwareMesh part in manifest.hardware)
+                {
+                    MeshFilter fitting = Array.Find(fittings, candidate => candidate.name == part.name);
+                    Assert.That(fitting, Is.Not.Null, "The sculpt must retain its embedded cable fitting: " + part.name);
+                    Assert.That(fitting.transform.parent.name, Is.EqualTo(part.bone));
+                    Assert.That(fitting.sharedMesh, Is.SameAs(CombatCraneAssetProvider.LoadPassiveSurface(part.name).sharedMesh));
+                    Assert.That(fitting.GetComponent<Renderer>().sharedMaterial, Is.SameAs(CombatCraneAssetProvider.LoadBodyMaterial("steel")));
+                    Assert.That(fitting.GetComponent<Renderer>().enabled, Is.True, "Surviving anatomy and reset retain their cable fittings.");
+                }
+            }
         }
 
         private void AssertCraneHookGeometry(CombatActor crane)

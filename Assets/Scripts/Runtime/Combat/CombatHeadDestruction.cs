@@ -265,7 +265,7 @@ namespace BarPromenade
         private Head RequireHead(CombatActor actor)
         {
             if (heads.TryGetValue(actor, out Head existing)) return existing;
-            GameObject model = Resources.Load<GameObject>("CombatGore/Head" + (actor.IsHero ? "Hero" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Head" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat fracture model.");
             var head = new Head { Actor = actor };
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);

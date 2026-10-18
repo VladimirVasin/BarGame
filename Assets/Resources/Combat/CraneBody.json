@@ -1,0 +1,599 @@
+{
+  "design_id": "crane_body_surface_v1",
+  "generator": "build-combat-crane-surfaces.py",
+  "rig": "NpcHumanV2",
+  "geometry_owner": "independent_sculpt",
+  "bounds_space": "unity_metres",
+  "retained_rest_skeleton": true,
+  "uv_channel": 0,
+  "source_uv_channel": 1,
+  "source_sha256": "2891c293b4c277ebf8aeb2377b211730a7ed67861d4286dbed84a019045b5bbc",
+  "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
+  "signature": "d66e191bdf4d15d575fe45126a2be6744377f5c5c53210f45e06b4f5605a4a51",
+  "meshes": [
+    {
+      "name": "GEO_Arm.L",
+      "visible": true,
+      "vertices": 156,
+      "triangles": 308,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        0.1798903,
+        1.0544769,
+        -0.0803178
+      ],
+      "bounds_max": [
+        0.6959625,
+        1.4677478,
+        0.0567776
+      ]
+    },
+    {
+      "name": "GEO_Arm.R",
+      "visible": true,
+      "vertices": 156,
+      "triangles": 308,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.6939625,
+        1.0484768,
+        -0.0727749
+      ],
+      "bounds_max": [
+        -0.1778903,
+        1.4617478,
+        0.0642409
+      ]
+    },
+    {
+      "name": "GEO_Ear.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.005,
+        1.6,
+        0.02
+      ],
+      "bounds_max": [
+        0.005,
+        1.608,
+        0.03
+      ]
+    },
+    {
+      "name": "GEO_Ear.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.005,
+        1.6,
+        0.02
+      ],
+      "bounds_max": [
+        0.005,
+        1.608,
+        0.03
+      ]
+    },
+    {
+      "name": "GEO_EarFold.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.005,
+        1.6,
+        0.02
+      ],
+      "bounds_max": [
+        0.005,
+        1.608,
+        0.03
+      ]
+    },
+    {
+      "name": "GEO_EarFold.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.005,
+        1.6,
+        0.02
+      ],
+      "bounds_max": [
+        0.005,
+        1.608,
+        0.03
+      ]
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "visible": true,
+      "vertices": 48,
+      "triangles": 92,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.042,
+        1.493,
+        -0.098
+      ],
+      "bounds_max": [
+        0.042,
+        1.572,
+        -0.051
+      ]
+    },
+    {
+      "name": "GEO_FootShoe.L",
+      "visible": true,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.0175042,
+        -0.0003231,
+        -0.2755814
+      ],
+      "bounds_max": [
+        0.1814319,
+        0.1252501,
+        -0.0140394
+      ]
+    },
+    {
+      "name": "GEO_FootShoe.R",
+      "visible": true,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.2094718,
+        0.0008074,
+        -0.2398756
+      ],
+      "bounds_max": [
+        -0.0105898,
+        0.1252902,
+        0.0218067
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.679226,
+        1.0704471,
+        -0.022338
+      ],
+      "bounds_max": [
+        0.6886529,
+        1.0788546,
+        -0.017662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.6851048,
+        1.0618774,
+        -0.018338
+      ],
+      "bounds_max": [
+        -0.6756779,
+        1.070285,
+        -0.013662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.67871,
+        1.0695906,
+        -0.022338
+      ],
+      "bounds_max": [
+        0.6881369,
+        1.077998,
+        -0.017662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.6856208,
+        1.0627339,
+        -0.018338
+      ],
+      "bounds_max": [
+        -0.6761939,
+        1.0711415,
+        -0.013662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.6781939,
+        1.0687339,
+        -0.022338
+      ],
+      "bounds_max": [
+        0.6876208,
+        1.0771414,
+        -0.017662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.6861369,
+        1.0635905,
+        -0.018338
+      ],
+      "bounds_max": [
+        -0.6767099,
+        1.0719981,
+        -0.013662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.6776779,
+        1.0678774,
+        -0.022338
+      ],
+      "bounds_max": [
+        0.6871048,
+        1.0762849,
+        -0.017662
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.6866529,
+        1.064447,
+        -0.018338
+      ],
+      "bounds_max": [
+        -0.6772259,
+        1.0728546,
+        -0.013662
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.L",
+      "visible": true,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.6597723,
+        0.868909,
+        -0.0664592
+      ],
+      "bounds_max": [
+        0.9282201,
+        1.108578,
+        0.0132916
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.R",
+      "visible": false,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.9412156,
+        0.8792906,
+        -0.0624592
+      ],
+      "bounds_max": [
+        -0.6577723,
+        1.102578,
+        0.0172916
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        0.6763879,
+        1.0657359,
+        -0.022398
+      ],
+      "bounds_max": [
+        0.6858148,
+        1.0741434,
+        -0.017602
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "steel"
+      ],
+      "bounds_min": [
+        -0.6879429,
+        1.0665885,
+        -0.018398
+      ],
+      "bounds_max": [
+        -0.678516,
+        1.0749961,
+        -0.013602
+      ]
+    },
+    {
+      "name": "GEO_Head",
+      "visible": true,
+      "vertices": 216,
+      "triangles": 428,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.22788,
+        1.473,
+        -0.081
+      ],
+      "bounds_max": [
+        0.22788,
+        1.735,
+        0.0904
+      ]
+    },
+    {
+      "name": "GEO_LegsLower.L",
+      "visible": true,
+      "vertices": 84,
+      "triangles": 164,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        0.0257735,
+        0.0944194,
+        -0.0704109
+      ],
+      "bounds_max": [
+        0.1537465,
+        0.4862117,
+        0.0309502
+      ]
+    },
+    {
+      "name": "GEO_LegsLower.R",
+      "visible": true,
+      "vertices": 84,
+      "triangles": 164,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.1537465,
+        0.0945054,
+        -0.0437795
+      ],
+      "bounds_max": [
+        -0.0257735,
+        0.4860322,
+        0.0575975
+      ]
+    },
+    {
+      "name": "GEO_LegsUpper",
+      "visible": true,
+      "vertices": 196,
+      "triangles": 384,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.1765956,
+        0.482545,
+        -0.0861169
+      ],
+      "bounds_max": [
+        0.1765956,
+        0.8818189,
+        0.080389
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "visible": true,
+      "vertices": 96,
+      "triangles": 188,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.055,
+        1.36,
+        -0.055
+      ],
+      "bounds_max": [
+        0.055,
+        1.49,
+        0.062
+      ]
+    },
+    {
+      "name": "GEO_Torso",
+      "visible": true,
+      "vertices": 432,
+      "triangles": 860,
+      "surfaces": [
+        "carapace"
+      ],
+      "bounds_min": [
+        -0.2,
+        0.91,
+        -0.1633
+      ],
+      "bounds_max": [
+        0.2,
+        1.419,
+        0.143
+      ]
+    }
+  ],
+  "hardware": [
+    {
+      "name": "CraneFerrule_head",
+      "bone": "head"
+    },
+    {
+      "name": "CraneFerrule_hand.L",
+      "bone": "hand.L"
+    },
+    {
+      "name": "CraneFerrule_hand.R",
+      "bone": "hand.R"
+    },
+    {
+      "name": "CraneFerrule_pelvis",
+      "bone": "pelvis"
+    },
+    {
+      "name": "CraneFerrule_foot.L",
+      "bone": "foot.L"
+    },
+    {
+      "name": "CraneFerrule_foot.R",
+      "bone": "foot.R"
+    }
+  ],
+  "passive_meshes": [
+    {
+      "name": "CraneSuspensionHeadUpperVisible",
+      "model": "CraneSuspensionHead"
+    },
+    {
+      "name": "CraneSuspensionHeadSwivelVisible",
+      "model": "CraneSuspensionHead"
+    },
+    {
+      "name": "CraneCableVisible",
+      "model": "CraneCableSegment"
+    },
+    {
+      "name": "CraneRailsVisible",
+      "model": "CraneRails"
+    },
+    {
+      "name": "CraneBridgeVisible",
+      "model": "CraneBridge"
+    },
+    {
+      "name": "CraneHookVisible",
+      "model": "CraneHook"
+    },
+    {
+      "name": "CraneWristSocketVisible",
+      "model": "CraneWristSocket"
+    }
+  ],
+  "textures": [
+    {
+      "name": "CraneBodyAtlas",
+      "size": 2048,
+      "sRGB": true,
+      "sha256": "96373fe74d1730a8be193737d76f5053a2e0c33e5cb532176d62a35221dd7ef4"
+    },
+    {
+      "name": "CraneMaterialResponse",
+      "size": 1024,
+      "sRGB": false,
+      "sha256": "acc86fdbc65a11703f726d4e454bd2f13d4372fc990bc6e2b9456defaca32d83"
+    }
+  ],
+  "estimated_gpu_bytes": 6990560
+}

@@ -2,6 +2,15 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-17, crane insect:**
+  User:independent industrial flesh/carapace sculpt/embedded6cables/steelhooks;
+  sharedrig/longfoldlimbs/uprighthead/mantis yaw±100°;
+  CraneBody:geometry/UV0;Crane-only body/skull damage banks;
+  ImageGen/2048sRGB+1024linear RGslope-Brough-Acavity;
+  WarehouseSurface/3shared materials/BC7mips6.67<7MiB.
+  3floors/insetvoid/6steel/inertia-slack/6m3DLOShook/5sFrenzy;
+  pause-reset-ragdoll/hang↓.25/rootkept;§6/art§15a/story0.
+
 - **Accepted exception 2026-10-17, mixed endless endurance:**
   Endless3=Zombie/Docker/Crane,≤5/1Crane/fixedrolesIDs;normalZombiehands.
   Crane3Drefill/sharedlife/fishcutoff.
@@ -13,13 +22,6 @@
   multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell;
   reset-respawnkeep/Endlessrespawn/resetshut;
   8/2+0/reserveonly/wave-story0/lamp-matclone0.
-
-- **Accepted exception 2026-10-16, crane:**
-  XYZ1axis/3floors/void;Rcuff-hook/6m3DLOS/1hit-return.
-  Ownfall→5s tetherFrenzy/holdAI;pause/reset-disable-death0.
-  6steel:head-pelvis-limbs/pendulum/yaw/accel-brake/gravity-inertia/slack;
-  COL/ragdoll/Move≤9.43/mount9.87/fanmin9.6/2frames/look-70..55°.
-  §6/15a;story-grab-lift0.
 
 - **Accepted 2026-10-16, warehouse detail:**
   9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;
