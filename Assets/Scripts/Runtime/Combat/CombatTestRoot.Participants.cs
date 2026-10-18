@@ -138,7 +138,19 @@ namespace BarPromenade
             string identity = kind == CombatEnemyKind.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy :
                 kind is CombatEnemyKind.Room or CombatEnemyKind.Imprint or CombatEnemyKind.LongExposure ? DefaultNpcPopulation.CombatTestAuthoredEnemyId(kind, index) :
                 DefaultNpcPopulation.CombatTestOpponentId(IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index);
-            VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(obj.transform, identity);
+            Transform presentationParent = obj.transform;
+            if (kind == CombatEnemyKind.Room)
+            {
+                var scaleRoot = new GameObject("Room body scale");
+                scaleRoot.transform.SetParent(obj.transform, false);
+                scaleRoot.transform.localScale = Vector3.one * CombatRoomAssetProvider.PresentationScale;
+                presentationParent = scaleRoot.transform;
+                body.height = CombatRoomAssetProvider.ControllerHeight();
+                body.center = Vector3.up * (body.height * .5f);
+                body.radius *= CombatRoomAssetProvider.PresentationScale;
+                body.stepOffset *= CombatRoomAssetProvider.PresentationScale;
+            }
+            VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(presentationParent, identity);
             // Finish wardrobe scans before adding bespoke attachments to this rig.
             if (kind == CombatEnemyKind.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
             else if (kind == CombatEnemyKind.Room) CombatRoomAssetProvider.ApplyAppearance(presentation.gameObject, identity);
@@ -224,7 +236,7 @@ namespace BarPromenade
                 }
                 Vector3 position = WarehousePlan == null ? opponentSpawn : slot.Actor.IsDocker
                     ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset
-                    : InitialGroundOpponentSpawn(slotIndex);
+                    : InitialGroundOpponentSpawn(slotIndex, slot.Actor);
                 slot.CrateAnchorId = -1;
                 if (WarehousePlan != null && slot.Actor.IsDocker) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
                 slot.Actor.gameObject.SetActive(true);
@@ -248,12 +260,13 @@ namespace BarPromenade
             if (spawnPointSeed == 0) spawnPointSeed = 1;
         }
 
-        private Vector3 InitialGroundOpponentSpawn(int index)
+        private Vector3 InitialGroundOpponentSpawn(int index, CombatActor actor)
         {
             var points = WarehousePlan.SpawnPoints;
             int first = (int)((uint)WarehousePlan.Seed % (uint)points.Count);
             for (int i = 0; i < points.Count; i++)
-                if (TrySpawnGround(points[(first + index * 5 + i) % points.Count], null, out Vector3 grounded))
+                if (TrySpawnGround(points[(first + index * 5 + i) % points.Count], actor, out Vector3 grounded,
+                    actor.Body.radius, actor.Body.height))
                     return grounded;
             // Validated plans retain this open approach even if a transient body owns a candidate.
             return opponentSpawn;

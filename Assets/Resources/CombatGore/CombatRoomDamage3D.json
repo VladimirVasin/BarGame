@@ -4,7 +4,7 @@
   "test_only": true,
   "source": {
     "path": "Assets/Resources/Combat/RoomBody.fbx",
-    "sha256": "5c8d5cd306214d91fb5c44a0354ea99625f09e680e8cb717e9ed3f5affa75eb6"
+    "sha256": "68a2007e1b0124cdcc171072695cbcb4c32ee340e7fbe87ec449617aefeb542f"
   },
   "body_region_count": 16,
   "patch_count": 4,
@@ -145,6 +145,257 @@
       "clear_distance_m": 0.472
     }
   ],
+  "retained_head_strain_proof": {
+    "source_renderer": "GEO_Head",
+    "inward_source_scale": 0.78,
+    "source_bounds_unity_m": {
+      "min": [
+        -0.07695,
+        1.46975,
+        -0.0954985
+      ],
+      "max": [
+        0.07695,
+        1.8194,
+        0.0603594
+      ],
+      "size": [
+        0.1539,
+        0.34965,
+        0.1558579
+      ]
+    },
+    "strain_center_unity_m": [
+      -0.0006048,
+      1.6992934,
+      -0.0134285
+    ],
+    "retained_strain_limit": 0.025,
+    "normalized_axial_diagonal_extrema": 26,
+    "sample_count": 5200,
+    "minimum_rest_clearance_m": 0.002239,
+    "minimum_strained_clearance_m": 0.0014264,
+    "containment": "vertices, edge midpoints and triangle centres inside actual inward source skull",
+    "strain_frame": "common renderer-local Brain mesh bounds; volume-normalized scale"
+  },
+  "arm_stretch_proof": {
+    "upper_arm_length_scale": 1.3,
+    "forearm_length_scale": 1.8,
+    "pose": "canonical rest rig with the runtime four child-joint translations",
+    "stretch_fractions": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "piece_count": 30,
+    "sample_count": 319248,
+    "containment": "vertices, edge midpoints and triangle centres inside actual same-side source solids",
+    "projection": "internal UV0/skin from actual source triangles; authored fragment correspondence or closest triangle",
+    "source_bound_fragment_regions": {
+      "flesh": [
+        6,
+        7,
+        9,
+        10
+      ],
+      "structural": [
+        5,
+        7,
+        8,
+        10
+      ]
+    },
+    "hidden_clipping_slivers": {
+      "minimum_edge_m": 1e-06,
+      "skipped_fragment_inputs": 34,
+      "skipped_source_area_m2": 4.229489e-08,
+      "maximum_count": 64,
+      "maximum_total_source_area_m2": 1e-07,
+      "exterior_triangles": "retained without sliver filtering"
+    },
+    "projected_pieces": {
+      "BoneRegion10__GEO_HandPalm.R": {
+        "source": "GEO_HandPalm.R",
+        "vertices": 288,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "BoneRegion5__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 288,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "BoneRegion6__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 236,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0467204
+      },
+      "BoneRegion7__GEO_HandPalm.L": {
+        "source": "GEO_HandPalm.L",
+        "vertices": 222,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "BoneRegion8__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 288,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "BoneRegion9__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 236,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0467204
+      },
+      "FleshRegion10Patch0__GEO_HandPalm.R": {
+        "source": "GEO_HandPalm.R",
+        "vertices": 972,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion10Patch1__GEO_HandPalm.R": {
+        "source": "GEO_HandPalm.R",
+        "vertices": 516,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion10Patch2__GEO_HandPalm.R": {
+        "source": "GEO_HandPalm.R",
+        "vertices": 996,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion10Patch3__GEO_HandPalm.R": {
+        "source": "GEO_HandPalm.R",
+        "vertices": 552,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion5Patch0__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 108,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.050578
+      },
+      "FleshRegion5Patch1__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 100,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.050578
+      },
+      "FleshRegion5Patch2__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 108,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.050578
+      },
+      "FleshRegion5Patch3__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 98,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.050578
+      },
+      "FleshRegion6Patch0__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 894,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion6Patch1__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 960,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion6Patch2__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 918,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion6Patch3__GEO_Arm.L": {
+        "source": "GEO_Arm.L",
+        "vertices": 972,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion7Patch0__GEO_HandPalm.L": {
+        "source": "GEO_HandPalm.L",
+        "vertices": 702,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion7Patch1__GEO_HandPalm.L": {
+        "source": "GEO_HandPalm.L",
+        "vertices": 912,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion7Patch2__GEO_HandPalm.L": {
+        "source": "GEO_HandPalm.L",
+        "vertices": 816,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion7Patch3__GEO_HandPalm.L": {
+        "source": "GEO_HandPalm.L",
+        "vertices": 810,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion8Patch0__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 106,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0505093
+      },
+      "FleshRegion8Patch1__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 108,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0505095
+      },
+      "FleshRegion8Patch2__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 98,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0505093
+      },
+      "FleshRegion8Patch3__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 106,
+        "skin": "closest actual source triangle",
+        "maximum_source_projection_m": 0.0505095
+      },
+      "FleshRegion9Patch0__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 990,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion9Patch1__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 936,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion9Patch2__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 996,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      },
+      "FleshRegion9Patch3__GEO_Arm.R": {
+        "source": "GEO_Arm.R",
+        "vertices": 972,
+        "skin": "authored source-triangle correspondence",
+        "maximum_source_projection_m": 0.0
+      }
+    }
+  },
   "models": {
     "HeadRoom": {
       "source_renderers": [
@@ -152,15 +403,15 @@
           "name": "GEO_Ear.L",
           "polygons": 60,
           "sector_polygons": [
-            34,
+            58,
             0,
             0,
             0,
             0,
             0,
             0,
-            6,
-            20,
+            2,
+            0,
             0,
             0,
             0,
@@ -177,15 +428,15 @@
             0,
             0,
             0,
-            34,
-            6,
+            58,
+            2,
             0,
             0,
             0,
             0,
             0,
             0,
-            20,
+            0,
             0,
             0,
             0,
@@ -203,7 +454,7 @@
             0,
             0,
             0,
-            13,
+            14,
             0,
             0,
             0,
@@ -211,7 +462,7 @@
             0,
             0,
             0,
-            1
+            0
           ]
         },
         {
@@ -222,7 +473,7 @@
             0,
             0,
             0,
-            13,
+            14,
             0,
             0,
             0,
@@ -230,7 +481,7 @@
             0,
             0,
             0,
-            1,
+            0,
             0,
             0,
             0
@@ -244,18 +495,18 @@
             0,
             0,
             0,
-            11,
-            25,
-            25,
-            11,
-            3,
+            14,
+            28,
+            28,
+            14,
+            5,
             0,
             0,
-            3,
-            13,
-            14,
-            14,
-            13
+            5,
+            11,
+            8,
+            8,
+            11
           ]
         },
         {
@@ -283,84 +534,84 @@
       ],
       "head_center_unity_m": [
         0.0,
-        1.6045,
-        -0.015348
+        1.644575,
+        -0.01757
       ],
       "head_bounds_unity_m": {
         "min": [
-          -0.057,
-          1.475,
-          -0.073073
+          -0.07695,
+          1.46975,
+          -0.095498
         ],
         "max": [
-          0.057,
-          1.734,
-          0.042377
+          0.07695,
+          1.8194,
+          0.060359
         ],
         "size": [
-          0.114,
-          0.259,
-          0.11545
+          0.1539,
+          0.34965,
+          0.155857
         ]
       },
-      "band_height_unity_m": 1.61486,
+      "band_height_unity_m": 1.658561,
       "shell_volumes_m3": {
-        "0": 4.33184e-05,
-        "1": 9.75472e-05,
-        "2": 1.66923e-05,
-        "3": 4.35612e-05,
-        "4": 5.12683e-05,
-        "5": 4.99301e-05,
-        "6": 7.6222e-05,
-        "7": 5.14146e-05,
-        "8": 6.46493e-05,
-        "9": 9.9942e-05,
-        "10": 7.11395e-05,
-        "11": 6.47388e-05,
-        "12": 4.98715e-05,
-        "13": 2.37533e-05,
-        "14": 4.82967e-05,
-        "15": 4.99648e-05
+        "0": 0.0001065796,
+        "1": 0.0002400025,
+        "2": 4.10693e-05,
+        "3": 0.0001071769,
+        "4": 0.0001261391,
+        "5": 0.0001228466,
+        "6": 0.0001875346,
+        "7": 0.0001264991,
+        "8": 0.0001590616,
+        "9": 0.000245895,
+        "10": 0.0001750299,
+        "11": 0.0001592817,
+        "12": 0.0001227027,
+        "13": 5.84421e-05,
+        "14": 0.0001188282,
+        "15": 0.0001229322
       },
       "brain": {
         "partition": "eight matching closed octants of one filled cranial hull",
         "octant_bits_unity": "bit0=+X, bit1=+Z, bit2=+Y relative to brain center",
         "center_unity_m": [
           0.0,
-          1.64594,
-          -0.015348
+          1.700519,
+          -0.01757
         ],
         "bounds_unity_m": {
           "min": [
-            -0.039633,
-            1.58896,
-            -0.049548
+            -0.054615,
+            1.623596,
+            -0.064754
           ],
           "max": [
-            0.038746,
-            1.701104,
-            0.024914
+            0.053405,
+            1.774991,
+            0.037897
           ],
           "size": [
-            0.078379,
-            0.112144,
-            0.074462
+            0.10802,
+            0.151395,
+            0.102651
           ]
         },
-        "volume_m3": 0.0003120279,
+        "volume_m3": 0.0007944974,
         "piece_volumes_m3": {
-          "0": 4.1744e-05,
-          "1": 4.16008e-05,
-          "2": 4.90305e-05,
-          "3": 4.89585e-05,
-          "4": 1.8186e-05,
-          "5": 1.80809e-05,
-          "6": 4.72092e-05,
-          "7": 4.72182e-05
+          "0": 0.0001052665,
+          "1": 0.0001049309,
+          "2": 0.000123891,
+          "3": 0.0001236758,
+          "4": 4.83686e-05,
+          "5": 4.80866e-05,
+          "6": 0.0001201026,
+          "7": 0.0001201755
         },
         "shared_cap_triangle_pairs": 96,
-        "partition_volume_error_m3": 1.96e-10,
-        "minimum_skull_clearance_m": 0.002235,
+        "partition_volume_error_m3": 6.6e-11,
+        "minimum_skull_clearance_m": 0.002239,
         "source_end_rings_closed_for_containment": 0,
         "submillimetre_source_seams_closed_for_containment": 0,
         "containment": "vertices, edge midpoints and triangle centers inside actual inward source skull"
@@ -373,22 +624,22 @@
           "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.038762,
-              1.58896,
-              -0.049548
+              -0.053426,
+              1.623596,
+              -0.064754
             ],
             "max": [
               0.0,
-              1.64594,
-              -0.015348
+              1.700519,
+              -0.01757
             ],
             "size": [
-              0.038762,
-              0.05698,
-              0.0342
+              0.053426,
+              0.076923,
+              0.047184
             ]
           },
-          "semantic_sha256": "8a4f4a2f5a05369e9619a8d4eea0deaa59f903805fc49b15cebcf1546a4de8d8"
+          "semantic_sha256": "47ee76bbf00ad1735f394babf111f7ba758c984bb3a8850ad9bf744d57250d1f"
         },
         {
           "name": "Brain01__GEO_Head",
@@ -398,21 +649,21 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.58896,
-              -0.049548
+              1.623596,
+              -0.064754
             ],
             "max": [
-              0.038746,
-              1.64594,
-              -0.015348
+              0.053405,
+              1.700519,
+              -0.01757
             ],
             "size": [
-              0.038746,
-              0.05698,
-              0.0342
+              0.053405,
+              0.076923,
+              0.047184
             ]
           },
-          "semantic_sha256": "b642294d7af414069b264b10596d75d5a63a2628b47eb43e1f816a5db6e5ad5b"
+          "semantic_sha256": "632a9d6ef8aa474feb8be83f888574b7287ca7d065348ff4005a9239775c58e1"
         },
         {
           "name": "Brain02__GEO_Head",
@@ -421,22 +672,22 @@
           "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.039633,
-              1.58896,
-              -0.015348
+              -0.054615,
+              1.623596,
+              -0.01757
             ],
             "max": [
               0.0,
-              1.64594,
-              0.024212
+              1.700519,
+              0.037062
             ],
             "size": [
-              0.039633,
-              0.05698,
-              0.03956
+              0.054615,
+              0.076923,
+              0.054632
             ]
           },
-          "semantic_sha256": "838ff4f9d9e8e741dd0e35e964330a307073ce50ab4d567df19aded772c7ada5"
+          "semantic_sha256": "09b6feca8cb71140c8c4cb03963681cd7300165080f93619c99c218bff9af2e4"
         },
         {
           "name": "Brain03__GEO_Head",
@@ -446,21 +697,21 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.58896,
-              -0.015348
+              1.623596,
+              -0.01757
             ],
             "max": [
-              0.038746,
-              1.64594,
-              0.024212
+              0.053405,
+              1.700519,
+              0.037062
             ],
             "size": [
-              0.038746,
-              0.05698,
-              0.03956
+              0.053405,
+              0.076923,
+              0.054632
             ]
           },
-          "semantic_sha256": "593128c197ac3d16c1923efad178ee31f70bea89982633f4040d8f1063bac745"
+          "semantic_sha256": "ce77e70081c6b332512064e50df2b54eff531317dc4a07ee9cb2ce7049aef909"
         },
         {
           "name": "Brain04__GEO_Head",
@@ -469,22 +720,22 @@
           "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.035317,
-              1.64594,
-              -0.041655
+              -0.048836,
+              1.700519,
+              -0.054309
             ],
             "max": [
               0.0,
-              1.697994,
-              -0.015348
+              1.772017,
+              -0.01757
             ],
             "size": [
-              0.035317,
-              0.052054,
-              0.026307
+              0.048836,
+              0.071498,
+              0.036739
             ]
           },
-          "semantic_sha256": "8eeb61255695d6d1f9bd114d11d279adf9f265a24d2aefcf9c0578f60ca20517"
+          "semantic_sha256": "3d99bba0592821e9fe82d4c25151da753b39fc8238754f0cca0fe9a825475c50"
         },
         {
           "name": "Brain05__GEO_Head",
@@ -494,21 +745,21 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.64594,
-              -0.041655
+              1.700519,
+              -0.054309
             ],
             "max": [
-              0.035324,
-              1.697994,
-              -0.015348
+              0.048845,
+              1.772017,
+              -0.01757
             ],
             "size": [
-              0.035324,
-              0.052054,
-              0.026307
+              0.048845,
+              0.071498,
+              0.036739
             ]
           },
-          "semantic_sha256": "47a595f84ccb02345925a7d1faf50b61aebc472c18ba7e1030eef2fe2421224f"
+          "semantic_sha256": "16ad89331e584d6d456af852e9aecb29b6d90f85a4f5c423b95219ac68cc20c5"
         },
         {
           "name": "Brain06__GEO_Head",
@@ -517,22 +768,22 @@
           "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.038028,
-              1.64594,
-              -0.015348
+              -0.052519,
+              1.700519,
+              -0.01757
             ],
             "max": [
               0.0,
-              1.701046,
-              0.024914
+              1.77497,
+              0.037897
             ],
             "size": [
-              0.038028,
-              0.055106,
-              0.040262
+              0.052519,
+              0.074451,
+              0.055467
             ]
           },
-          "semantic_sha256": "251841bf05def8051a6abcf9d9e6b5fc21657e46aa6fafde0e40ac587f8f85ac"
+          "semantic_sha256": "0a53b757bd9e7f979b69249ffd9ce6b68e5704185209f854f5a470d1f8218726"
         },
         {
           "name": "Brain07__GEO_Head",
@@ -542,45 +793,45 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.64594,
-              -0.015348
+              1.700519,
+              -0.01757
             ],
             "max": [
-              0.038024,
-              1.701104,
-              0.024914
+              0.052514,
+              1.774991,
+              0.037897
             ],
             "size": [
-              0.038024,
-              0.055164,
-              0.040262
+              0.052514,
+              0.074472,
+              0.055467
             ]
           },
-          "semantic_sha256": "868179075091b60ece49ef6f1371df5f6e97c8cf9a0cda2ac221caa3ee1ceba9"
+          "semantic_sha256": "ff3df0da791e5bb0d4fd061e8f12ffdb008e299a4f2ecf11cbcd3313a1003cd6"
         },
         {
           "name": "Sector00__GEO_Ear.L",
-          "vertices": 37,
-          "polygons": 34,
-          "triangles": 58,
+          "vertices": 52,
+          "polygons": 58,
+          "triangles": 96,
           "bounds_unity_m": {
             "min": [
               0.085,
               1.561,
-              -0.01912
+              -0.021923
             ],
             "max": [
               0.125,
-              1.6165,
+              1.635,
               0.019924
             ],
             "size": [
               0.04,
-              0.0555,
-              0.039044
+              0.074,
+              0.041847
             ]
           },
-          "semantic_sha256": "9f047b596408217ab6e9fad9d29c266f6034eb10555c2e366fd016e99e53dd28"
+          "semantic_sha256": "204074112a711b5743951c2b5ce61751bcc50fbc95facc646f68bfbb4c8b9134"
         },
         {
           "name": "Sector00__GEO_Head",
@@ -589,22 +840,22 @@
           "triangles": 14,
           "bounds_unity_m": {
             "min": [
-              0.0215,
-              1.475,
-              -0.025
+              0.029025,
+              1.46975,
+              -0.0306
             ],
             "max": [
-              0.057,
-              1.596,
-              0.023302
+              0.07695,
+              1.6331,
+              0.034607
             ],
             "size": [
-              0.0355,
-              0.121,
-              0.048302
+              0.047925,
+              0.16335,
+              0.065207
             ]
           },
-          "semantic_sha256": "0b236a6ef3b1890ef4a6f99eb86a29fa5788679e6bfe9ccde19f550d66cf40c7"
+          "semantic_sha256": "94a655557c4efbbb6b9d564f67bf217d08f60c8db88ec891d70ceb20afab684d"
         },
         {
           "name": "Sector00__Interior",
@@ -613,22 +864,22 @@
           "triangles": 42,
           "bounds_unity_m": {
             "min": [
-              0.01677,
-              1.475,
-              -0.025
+              0.02264,
+              1.46975,
+              -0.0306
             ],
             "max": [
-              0.057,
-              1.59787,
-              0.023302
+              0.07695,
+              1.635624,
+              0.034607
             ],
             "size": [
-              0.04023,
-              0.12287,
-              0.048302
+              0.05431,
+              0.165874,
+              0.065207
             ]
           },
-          "semantic_sha256": "52e07e0d5d1cc0f58244d65569f86a28aae1be63bc7e4814fb87fa32190869ac"
+          "semantic_sha256": "24607439f4e34fdc46a10bba25456b4cf879fbe2d63f6f380f02f79b6b231b89"
         },
         {
           "name": "Sector01__GEO_Head",
@@ -637,22 +888,22 @@
           "triangles": 30,
           "bounds_unity_m": {
             "min": [
-              -0.031,
-              1.475,
-              -0.040529
+              -0.04185,
+              1.46975,
+              -0.051564
             ],
             "max": [
-              0.03294,
-              1.596,
-              0.029241
+              0.044469,
+              1.6331,
+              0.042625
             ],
             "size": [
-              0.06394,
-              0.121,
-              0.06977
+              0.086319,
+              0.16335,
+              0.094189
             ]
           },
-          "semantic_sha256": "ab6d4d32d735867406bbaef92e79cc5d6220dcecd7bd40052cc6f0336729ae56"
+          "semantic_sha256": "d14f1bb21cd3a49751f9f3ddb250da5eaeb2b9c0d61c3d6678dbb03ed5da3aa1"
         },
         {
           "name": "Sector01__Interior",
@@ -661,22 +912,22 @@
           "triangles": 78,
           "bounds_unity_m": {
             "min": [
-              -0.031,
-              1.475,
-              -0.040529
+              -0.04185,
+              1.46975,
+              -0.051564
             ],
             "max": [
-              0.03294,
-              1.59787,
-              0.029241
+              0.044469,
+              1.635624,
+              0.042625
             ],
             "size": [
-              0.06394,
-              0.12287,
-              0.06977
+              0.086319,
+              0.165874,
+              0.094189
             ]
           },
-          "semantic_sha256": "146256fdfab7e1758c0f7472a907ae9fd1694ab6f8436ed43eaa0089e0fe3a21"
+          "semantic_sha256": "6b0265275fa26dcdf7feab312463c601d6c7f5cb251f7d144024edc508cfb3df"
         },
         {
           "name": "Sector02__GEO_Head",
@@ -685,22 +936,22 @@
           "triangles": 8,
           "bounds_unity_m": {
             "min": [
-              -0.03294,
-              1.475,
-              0.002712
+              -0.044469,
+              1.46975,
+              0.006811
             ],
             "max": [
-              -0.005383,
-              1.596,
-              0.029241
+              -0.007267,
+              1.6331,
+              0.042625
             ],
             "size": [
-              0.027557,
-              0.121,
-              0.026529
+              0.037202,
+              0.16335,
+              0.035814
             ]
           },
-          "semantic_sha256": "c02379284dcba8a5483136d6da63ae8cff6a8f1791693b2a005ad8b441389fde"
+          "semantic_sha256": "9feb5cbd8d5d8f65d8a4c83c35d2c52be3171938afb809b7633cb9516ac46596"
         },
         {
           "name": "Sector02__Interior",
@@ -709,46 +960,46 @@
           "triangles": 28,
           "bounds_unity_m": {
             "min": [
-              -0.03294,
-              1.475,
-              -0.001261
+              -0.044469,
+              1.46975,
+              0.001447
             ],
             "max": [
-              -0.004199,
-              1.59787,
-              0.029241
+              -0.005668,
+              1.635624,
+              0.042625
             ],
             "size": [
-              0.028741,
-              0.12287,
-              0.030502
+              0.038801,
+              0.165874,
+              0.041178
             ]
           },
-          "semantic_sha256": "40c9422897f4366922a1a0576e66e42551f7c9a20274e49f7a574eca0348f741"
+          "semantic_sha256": "14596857472e41efbf3df6d8b7829e6d981dec9deea3577eb295491f621a857b"
         },
         {
           "name": "Sector03__GEO_Ear.R",
-          "vertices": 37,
-          "polygons": 34,
-          "triangles": 58,
+          "vertices": 52,
+          "polygons": 58,
+          "triangles": 96,
           "bounds_unity_m": {
             "min": [
               -0.125,
               1.561,
-              -0.01912
+              -0.021923
             ],
             "max": [
               -0.085,
-              1.6165,
+              1.635,
               0.019924
             ],
             "size": [
               0.04,
-              0.0555,
-              0.039044
+              0.074,
+              0.041847
             ]
           },
-          "semantic_sha256": "dd985364ee66adf32f3a8fd322ba1265f295bcd28c1a1d094c6b08ffdf1fdc1e"
+          "semantic_sha256": "ada24217097142de30fb5ab9f41bab685a28badc08d501ca414bace3ea946994"
         },
         {
           "name": "Sector03__GEO_Head",
@@ -757,22 +1008,22 @@
           "triangles": 14,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.025
+              -0.07695,
+              1.46975,
+              -0.0306
             ],
             "max": [
-              -0.0215,
-              1.596,
-              0.023302
+              -0.029025,
+              1.6331,
+              0.034607
             ],
             "size": [
-              0.0355,
-              0.121,
-              0.048302
+              0.047925,
+              0.16335,
+              0.065207
             ]
           },
-          "semantic_sha256": "0c8efae1a592dfd7bf52f5862bf40b4b870f8d28a14ddc06234730ea20ebe930"
+          "semantic_sha256": "b8fba412dfa9fae7815249749361ec2f210d42f2a504e2dc33491b8dfdd6b016"
         },
         {
           "name": "Sector03__Interior",
@@ -781,52 +1032,52 @@
           "triangles": 42,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.025
+              -0.07695,
+              1.46975,
+              -0.0306
             ],
             "max": [
-              -0.01677,
-              1.59787,
-              0.023302
+              -0.022639,
+              1.635624,
+              0.034607
             ],
             "size": [
-              0.04023,
-              0.12287,
-              0.048302
+              0.054311,
+              0.165874,
+              0.065207
             ]
           },
-          "semantic_sha256": "2c023e495fab16130f76d597db090a60d18cbfd91cc2d0435b4e36edd0df487a"
+          "semantic_sha256": "b690206314b36ee8ffc8dbaf3c891de50a543f52d3c2305942618a20fbbcb479"
         },
         {
           "name": "Sector04__GEO_Ear.R",
-          "vertices": 12,
-          "polygons": 6,
-          "triangles": 12,
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
           "bounds_unity_m": {
             "min": [
-              -0.12118,
+              -0.11118,
               1.5795,
               -0.021923
             ],
             "max": [
-              -0.08882,
+              -0.09882,
               1.6165,
-              -0.012199
+              -0.01912
             ],
             "size": [
-              0.03236,
+              0.01236,
               0.037,
-              0.009724
+              0.002803
             ]
           },
-          "semantic_sha256": "6633841fec8e5775cb5a35914b8d753dfdcd6d64893d1511301b81d5e706b60c"
+          "semantic_sha256": "406606c62ae5214b56b3de25f0d7384910bdd86b4e6e46b8234196cfdc303adb"
         },
         {
           "name": "Sector04__GEO_EarFold.R",
           "vertices": 18,
-          "polygons": 13,
-          "triangles": 28,
+          "polygons": 14,
+          "triangles": 32,
           "bounds_unity_m": {
             "min": [
               -0.124333,
@@ -844,13 +1095,13 @@
               0.012765
             ]
           },
-          "semantic_sha256": "052210742205f3f8ec2ec1fa4c0b6be291ec8979abe7cece5085a9aef012683d"
+          "semantic_sha256": "b120e8cb33fcb5a1f91f2821053e8ee193ef2bf860342bfcb97725a8e1ba6f92"
         },
         {
           "name": "Sector04__GEO_FaceSurface",
-          "vertices": 20,
-          "polygons": 11,
-          "triangles": 22,
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
           "bounds_unity_m": {
             "min": [
               -0.099861,
@@ -858,17 +1109,17 @@
               -0.089731
             ],
             "max": [
-              -0.030311,
-              1.625,
+              -0.02601,
+              1.654,
               -0.034596
             ],
             "size": [
-              0.06955,
-              0.16,
+              0.073851,
+              0.189,
               0.055135
             ]
           },
-          "semantic_sha256": "fbd93e601a3d28c184df4717a65d7709f392e855acf38c168941d4e195b3a537"
+          "semantic_sha256": "ffdf979a0e15e21638394a0f6bf833ee95f1a7b1c915e692dfc8f8482f202a94"
         },
         {
           "name": "Sector04__GEO_Head",
@@ -877,22 +1128,22 @@
           "triangles": 14,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.055227
+              -0.07695,
+              1.46975,
+              -0.071407
             ],
             "max": [
-              -0.023747,
-              1.596,
-              -0.008925
+              -0.032059,
+              1.6331,
+              -0.008899
             ],
             "size": [
-              0.033253,
-              0.121,
-              0.046302
+              0.044891,
+              0.16335,
+              0.062508
             ]
           },
-          "semantic_sha256": "cd3d1d213e694308f958955879e7d9abde92e5a59edc5df8bd72854ed31d13ed"
+          "semantic_sha256": "0232905dbe8c47de0c683b5aa4ab0abb3047e061b522322541092a3cb8fcd28b"
         },
         {
           "name": "Sector04__Interior",
@@ -901,28 +1152,28 @@
           "triangles": 38,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.055227
+              -0.07695,
+              1.46975,
+              -0.071407
             ],
             "max": [
-              -0.018523,
-              1.59787,
-              -0.008925
+              -0.025006,
+              1.635624,
+              -0.008899
             ],
             "size": [
-              0.038477,
-              0.12287,
-              0.046302
+              0.051944,
+              0.165874,
+              0.062508
             ]
           },
-          "semantic_sha256": "868b44b1e14d38fd667c957d55382dd729c5f746eeb15ac183a4938f9cfde583"
+          "semantic_sha256": "55a3a46722ca11170d4a54a1eb37a7ec57d1f2996c1e240f744fad9811bf1e8b"
         },
         {
           "name": "Sector05__GEO_FaceSurface",
-          "vertices": 37,
-          "polygons": 25,
-          "triangles": 50,
+          "vertices": 40,
+          "polygons": 28,
+          "triangles": 56,
           "bounds_unity_m": {
             "min": [
               -0.07803,
@@ -931,16 +1182,16 @@
             ],
             "max": [
               0.0,
-              1.625,
-              -0.043
+              1.654,
+              -0.050441
             ],
             "size": [
               0.07803,
-              0.16,
-              0.104039
+              0.189,
+              0.096598
             ]
           },
-          "semantic_sha256": "b2805f83900dd66af36656fa3197601942f4f0e2647d5ca5b0a92c921c60b080"
+          "semantic_sha256": "08b417c235fc9634dade6102085347b89bdeede90fc8287648eac637919cf0d7"
         },
         {
           "name": "Sector05__GEO_Head",
@@ -949,22 +1200,22 @@
           "triangles": 12,
           "bounds_unity_m": {
             "min": [
-              -0.043688,
-              1.475,
-              -0.073073
+              -0.058979,
+              1.46975,
+              -0.095498
             ],
             "max": [
-              -0.005383,
-              1.596,
-              -0.029926
+              -0.007267,
+              1.6331,
+              -0.03725
             ],
             "size": [
-              0.038305,
-              0.121,
-              0.043147
+              0.051712,
+              0.16335,
+              0.058248
             ]
           },
-          "semantic_sha256": "8847642dc2960c696faf3c0d506d2771cdfbea5e23c0f2a2622b444cfbd37688"
+          "semantic_sha256": "28f172ee01a88092b10b6c08e2fc7b2d5e060bedbeeee56b50713c4fd2db8b26"
         },
         {
           "name": "Sector05__Interior",
@@ -973,28 +1224,28 @@
           "triangles": 32,
           "bounds_unity_m": {
             "min": [
-              -0.043688,
-              1.475,
-              -0.073073
+              -0.058979,
+              1.46975,
+              -0.095498
             ],
             "max": [
-              -0.004199,
-              1.59787,
-              -0.026719
+              -0.005668,
+              1.635624,
+              -0.032921
             ],
             "size": [
-              0.039489,
-              0.12287,
-              0.046354
+              0.053311,
+              0.165874,
+              0.062577
             ]
           },
-          "semantic_sha256": "daf48958df9cf4898d8780f4a1a6355b1d25c27cdb86f59dedffde3bc8af3910"
+          "semantic_sha256": "c9e159281a227a9894f2a9f1e664571d4d5a2f2eafb7606eac556dca0e1f308d"
         },
         {
           "name": "Sector06__GEO_FaceSurface",
-          "vertices": 37,
-          "polygons": 25,
-          "triangles": 50,
+          "vertices": 40,
+          "polygons": 28,
+          "triangles": 56,
           "bounds_unity_m": {
             "min": [
               0.0,
@@ -1003,16 +1254,16 @@
             ],
             "max": [
               0.07803,
-              1.625,
-              -0.043
+              1.654,
+              -0.050441
             ],
             "size": [
               0.07803,
-              0.16,
-              0.104039
+              0.189,
+              0.096598
             ]
           },
-          "semantic_sha256": "185dcf298490a69c9532f74d3060f63f43ac23f2593e79c0e8c114e81d048818"
+          "semantic_sha256": "8f19072380bde7f305bc560f8f4799abeb29349d64cdca3f56edc53c0e539150"
         },
         {
           "name": "Sector06__GEO_Head",
@@ -1021,22 +1272,22 @@
           "triangles": 18,
           "bounds_unity_m": {
             "min": [
-              -0.01028,
-              1.475,
-              -0.073073
+              -0.013878,
+              1.46975,
+              -0.095498
             ],
             "max": [
-              0.043688,
-              1.596,
-              -0.029926
+              0.058979,
+              1.6331,
+              -0.03725
             ],
             "size": [
-              0.053968,
-              0.121,
-              0.043147
+              0.072857,
+              0.16335,
+              0.058248
             ]
           },
-          "semantic_sha256": "456f8374bc686da30286957437aa30d8569614a642369d7ff81e58f6b9dbbba2"
+          "semantic_sha256": "29614564ebe58936e720e9c6ba5a0e8bbbf3973e3afdb175e428339b58ca0856"
         },
         {
           "name": "Sector06__Interior",
@@ -1045,52 +1296,52 @@
           "triangles": 42,
           "bounds_unity_m": {
             "min": [
-              -0.01028,
-              1.475,
-              -0.073073
+              -0.013878,
+              1.46975,
+              -0.095498
             ],
             "max": [
-              0.043688,
-              1.59787,
-              -0.026719
+              0.058979,
+              1.635624,
+              -0.032921
             ],
             "size": [
-              0.053968,
-              0.12287,
-              0.046354
+              0.072857,
+              0.165874,
+              0.062577
             ]
           },
-          "semantic_sha256": "f94f27cf1e340830435eb6986ba1b92b9c44a436df967101bfd986c4ceafb282"
+          "semantic_sha256": "0ed8f0470e7479c9037a0b7dd0563275596c1df67f1cf860860b6f3de3b08020"
         },
         {
           "name": "Sector07__GEO_Ear.L",
-          "vertices": 12,
-          "polygons": 6,
-          "triangles": 12,
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
           "bounds_unity_m": {
             "min": [
-              0.08882,
+              0.09882,
               1.5795,
               -0.021923
             ],
             "max": [
-              0.12118,
+              0.11118,
               1.6165,
-              -0.012199
+              -0.01912
             ],
             "size": [
-              0.03236,
+              0.01236,
               0.037,
-              0.009724
+              0.002803
             ]
           },
-          "semantic_sha256": "478b78c6e2102f22fd5686be33308a1bb118ec1fd397717f604c1aaa7e2d3488"
+          "semantic_sha256": "8289e50664d6a6177c6d22f4d2a9e173e3903614fab35e7c6d486a214a9f876a"
         },
         {
           "name": "Sector07__GEO_EarFold.L",
           "vertices": 18,
-          "polygons": 13,
-          "triangles": 28,
+          "polygons": 14,
+          "triangles": 32,
           "bounds_unity_m": {
             "min": [
               0.113361,
@@ -1108,31 +1359,31 @@
               0.012765
             ]
           },
-          "semantic_sha256": "d9f71a22a08648a309e49e981ad2961363d3071918c0cd66ef8462e2436b9f7c"
+          "semantic_sha256": "9013fea34cfbc6fe1200a989b02110a7d56e55e3d2000c572962566c4e6e6b64"
         },
         {
           "name": "Sector07__GEO_FaceSurface",
-          "vertices": 20,
-          "polygons": 11,
-          "triangles": 22,
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
           "bounds_unity_m": {
             "min": [
-              0.030311,
+              0.02601,
               1.465,
               -0.089731
             ],
             "max": [
               0.099861,
-              1.625,
+              1.654,
               -0.034596
             ],
             "size": [
-              0.06955,
-              0.16,
+              0.073851,
+              0.189,
               0.055135
             ]
           },
-          "semantic_sha256": "9aeb4e5c208f2f18f72c5e511433a7267a04bb54487eeb75d36320635ff6fde8"
+          "semantic_sha256": "9f3ca5f40075b56326add9b375d49368c948176952a81e7bbd7a8ea1711f0db5"
         },
         {
           "name": "Sector07__GEO_Head",
@@ -1141,22 +1392,22 @@
           "triangles": 14,
           "bounds_unity_m": {
             "min": [
-              0.023747,
-              1.475,
-              -0.055227
+              0.032059,
+              1.46975,
+              -0.071407
             ],
             "max": [
-              0.057,
-              1.596,
-              -0.008925
+              0.07695,
+              1.6331,
+              -0.008899
             ],
             "size": [
-              0.033253,
-              0.121,
-              0.046302
+              0.044891,
+              0.16335,
+              0.062508
             ]
           },
-          "semantic_sha256": "1f2ea97afc9737b93e8a317df044adc7bc2469dda716cc3048fb9a32c7d3857a"
+          "semantic_sha256": "f6edd372d16d2fbe72485833f2b3b3d7696830d44d2da98da425eef2e8f420b9"
         },
         {
           "name": "Sector07__Interior",
@@ -1165,57 +1416,33 @@
           "triangles": 38,
           "bounds_unity_m": {
             "min": [
-              0.018523,
-              1.475,
-              -0.055227
+              0.025006,
+              1.46975,
+              -0.071407
             ],
             "max": [
-              0.057,
-              1.59787,
-              -0.008925
+              0.07695,
+              1.635624,
+              -0.008899
             ],
             "size": [
-              0.038477,
-              0.12287,
-              0.046302
+              0.051944,
+              0.165874,
+              0.062508
             ]
           },
-          "semantic_sha256": "8b1ed7be5b30fba6c0273f6fc61d4b2ee1b54d7b03a285f40d86b380e6650984"
-        },
-        {
-          "name": "Sector08__GEO_Ear.L",
-          "vertices": 21,
-          "polygons": 20,
-          "triangles": 30,
-          "bounds_unity_m": {
-            "min": [
-              0.087679,
-              1.6165,
-              -0.01912
-            ],
-            "max": [
-              0.122321,
-              1.635,
-              0.01712
-            ],
-            "size": [
-              0.034642,
-              0.0185,
-              0.03624
-            ]
-          },
-          "semantic_sha256": "90c59260470a3252f3ab98c42a93562eef5017942af36adcf0d30904cfb33235"
+          "semantic_sha256": "8e1ecee1ca1fd8d244071efc55102c041e3382a95914a76fe252a98cf6c6dcfa"
         },
         {
           "name": "Sector08__GEO_FaceSurface",
-          "vertices": 8,
-          "polygons": 3,
-          "triangles": 6,
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
           "bounds_unity_m": {
             "min": [
-              0.002939,
+              0.00104,
               1.728,
-              -0.028551
+              -0.035147
             ],
             "max": [
               0.039944,
@@ -1223,12 +1450,12 @@
               0.003146
             ],
             "size": [
-              0.037005,
+              0.038904,
               0.007,
-              0.031697
+              0.038293
             ]
           },
-          "semantic_sha256": "1f9ba61dd32f1f7e1cc120a6f7477972b1b12b3804bfadb397e4b82bbfda971c"
+          "semantic_sha256": "6d0bcd343cf0579304e424d66367be3016595ecc2a645fed271783fee5d6099c"
         },
         {
           "name": "Sector08__GEO_Head",
@@ -1237,22 +1464,22 @@
           "triangles": 18,
           "bounds_unity_m": {
             "min": [
-              0.0015,
-              1.596,
-              -0.024417
+              0.002025,
+              1.6331,
+              -0.029813
             ],
             "max": [
-              0.057,
-              1.734,
-              0.028355
+              0.07695,
+              1.8194,
+              0.041429
             ],
             "size": [
-              0.0555,
-              0.138,
-              0.052772
+              0.074925,
+              0.1863,
+              0.071242
             ]
           },
-          "semantic_sha256": "dcaebb05f07bebaff2bb95349f404dc595455fa72d71959f28bb058488454089"
+          "semantic_sha256": "fa61722eecbe05d2139fc01820bb3e465de135d714a489a977989667aa84ee23"
         },
         {
           "name": "Sector08__Interior",
@@ -1261,22 +1488,22 @@
           "triangles": 54,
           "bounds_unity_m": {
             "min": [
-              0.00117,
-              1.596,
-              -0.024417
+              0.00158,
+              1.6331,
+              -0.029813
             ],
             "max": [
-              0.057,
-              1.734,
-              0.028355
+              0.07695,
+              1.8194,
+              0.041429
             ],
             "size": [
-              0.05583,
-              0.138,
-              0.052772
+              0.07537,
+              0.1863,
+              0.071242
             ]
           },
-          "semantic_sha256": "a291d5f4ff6c931a998d39c7b272105d36dc7a8bf129fdb5890f1905c5ff0dbc"
+          "semantic_sha256": "62f0c8a46a3e3208e0474bbe8fe5e8c93fb41ac07fb5605695a87eac82dee884"
         },
         {
           "name": "Sector09__GEO_Head",
@@ -1285,22 +1512,22 @@
           "triangles": 54,
           "bounds_unity_m": {
             "min": [
-              -0.009898,
-              1.596,
-              -0.021605
+              -0.013362,
+              1.6331,
+              -0.026016
             ],
             "max": [
-              0.044166,
-              1.734,
-              0.042377
+              0.059623,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.054064,
-              0.138,
-              0.063982
+              0.072985,
+              0.1863,
+              0.086375
             ]
           },
-          "semantic_sha256": "d892964967530c72f6024eca2688b69a3cf0091c2a27c20d39387d255fef1c0e"
+          "semantic_sha256": "32faaac22f0cec0741c2d4402f4ff8c461818789d4c64747014c7198aa3fa6ea"
         },
         {
           "name": "Sector09__Interior",
@@ -1309,22 +1536,22 @@
           "triangles": 110,
           "bounds_unity_m": {
             "min": [
-              -0.009898,
-              1.596,
-              -0.021605
+              -0.013362,
+              1.6331,
+              -0.026016
             ],
             "max": [
-              0.044166,
-              1.734,
-              0.042377
+              0.059623,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.054064,
-              0.138,
-              0.063982
+              0.072985,
+              0.1863,
+              0.086375
             ]
           },
-          "semantic_sha256": "e1def3f0a27b8ffa77a3e1738f6900f216460ba0b93dc8b628a1a0b224b9f2a4"
+          "semantic_sha256": "484be00f634ebe5f6a8dc725dd9c39c14f4715040dd15a04cc3ebdc5655f6e4b"
         },
         {
           "name": "Sector10__GEO_Head",
@@ -1333,22 +1560,22 @@
           "triangles": 28,
           "bounds_unity_m": {
             "min": [
-              -0.044166,
-              1.596,
-              -0.021605
+              -0.059623,
+              1.6331,
+              -0.026016
             ],
             "max": [
-              -0.000521,
-              1.734,
-              0.042377
+              -0.000703,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.043645,
-              0.138,
-              0.063982
+              0.05892,
+              0.1863,
+              0.086375
             ]
           },
-          "semantic_sha256": "b89aa817f90de91e19f991f68277f3effb8e6e64d7e983b6d926069842e291da"
+          "semantic_sha256": "9d8f2f0f7506c262a8f1b8b5b01ebb2340be55c9e3869e65cb024121cb2135bb"
         },
         {
           "name": "Sector10__Interior",
@@ -1357,70 +1584,46 @@
           "triangles": 76,
           "bounds_unity_m": {
             "min": [
-              -0.044166,
-              1.596,
-              -0.021605
+              -0.059623,
+              1.6331,
+              -0.026016
             ],
             "max": [
-              -0.000406,
-              1.734,
-              0.042377
+              -0.000549,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.04376,
-              0.138,
-              0.063982
+              0.059074,
+              0.1863,
+              0.086375
             ]
           },
-          "semantic_sha256": "a3553b014035f79b6e3299baae9f6404ad265d565157ba36004ed1c839e31c0c"
-        },
-        {
-          "name": "Sector11__GEO_Ear.R",
-          "vertices": 21,
-          "polygons": 20,
-          "triangles": 30,
-          "bounds_unity_m": {
-            "min": [
-              -0.122321,
-              1.6165,
-              -0.01912
-            ],
-            "max": [
-              -0.087679,
-              1.635,
-              0.01712
-            ],
-            "size": [
-              0.034642,
-              0.0185,
-              0.03624
-            ]
-          },
-          "semantic_sha256": "ced857de87e741c4ddc968e56e7cc3be054bfa7b4ea275e0c654293278a21b44"
+          "semantic_sha256": "afa3891532f308ecaf1266273e4fbcf69f0ed5d809e08135beff7e140cb9dbc4"
         },
         {
           "name": "Sector11__GEO_FaceSurface",
-          "vertices": 8,
-          "polygons": 3,
-          "triangles": 6,
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
           "bounds_unity_m": {
             "min": [
               -0.039944,
               1.728,
-              -0.028551
+              -0.035147
             ],
             "max": [
-              -0.002939,
+              -0.00104,
               1.735,
               0.003146
             ],
             "size": [
-              0.037005,
+              0.038904,
               0.007,
-              0.031697
+              0.038293
             ]
           },
-          "semantic_sha256": "55b26c60b9914114272ed113d709b8b598a2a38912ddce2af498b29147f7bd44"
+          "semantic_sha256": "dc3eb76ebf879e1a48e09df5ab6adfd3c8c76723ff332d0ed068a28cd5b4e87d"
         },
         {
           "name": "Sector11__GEO_Head",
@@ -1429,22 +1632,22 @@
           "triangles": 18,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.596,
-              -0.024417
+              -0.07695,
+              1.6331,
+              -0.029813
             ],
             "max": [
-              -0.0015,
-              1.734,
-              0.028355
+              -0.002025,
+              1.8194,
+              0.041429
             ],
             "size": [
-              0.0555,
-              0.138,
-              0.052772
+              0.074925,
+              0.1863,
+              0.071242
             ]
           },
-          "semantic_sha256": "0a88c70af37c290893478ef662077898792237bed57eaa2ab3d55ba609922602"
+          "semantic_sha256": "92b52f7a0f7468bc0c008851867fa9da211d3f504f949249e106f560f9a64ea4"
         },
         {
           "name": "Sector11__Interior",
@@ -1453,70 +1656,46 @@
           "triangles": 54,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.596,
-              -0.024417
+              -0.07695,
+              1.6331,
+              -0.029813
             ],
             "max": [
-              -0.00117,
-              1.734,
-              0.028355
+              -0.001579,
+              1.8194,
+              0.041429
             ],
             "size": [
-              0.05583,
-              0.138,
-              0.052772
+              0.075371,
+              0.1863,
+              0.071242
             ]
           },
-          "semantic_sha256": "befcabc48f52ff7e86d561d86f14b2fd1cef609d957637e948c793f965b8012b"
-        },
-        {
-          "name": "Sector12__GEO_EarFold.R",
-          "vertices": 6,
-          "polygons": 1,
-          "triangles": 4,
-          "bounds_unity_m": {
-            "min": [
-              -0.118639,
-              1.616655,
-              -0.02079
-            ],
-            "max": [
-              -0.113361,
-              1.619345,
-              -0.01521
-            ],
-            "size": [
-              0.005278,
-              0.00269,
-              0.00558
-            ]
-          },
-          "semantic_sha256": "ff01cd5bac3f9120409c4059603369ecf3149a74a888773edeca499dee855c0a"
+          "semantic_sha256": "a83345f4cd8d52ec711b664e3ed74337aaba1ade7404ea59fd4e0c7384954d34"
         },
         {
           "name": "Sector12__GEO_FaceSurface",
-          "vertices": 24,
-          "polygons": 13,
-          "triangles": 26,
+          "vertices": 22,
+          "polygons": 11,
+          "triangles": 22,
           "bounds_unity_m": {
             "min": [
-              -0.09891,
-              1.625,
+              -0.096057,
+              1.654,
               -0.08862
             ],
             "max": [
-              -0.00104,
+              0.0,
               1.735,
-              0.000146
+              -0.000869
             ],
             "size": [
-              0.09787,
-              0.11,
-              0.088766
+              0.096057,
+              0.081,
+              0.087751
             ]
           },
-          "semantic_sha256": "343ce2131d0bbc9c864b828ac91c8178f4780e8326698a664ebd0ae70cb50557"
+          "semantic_sha256": "a22afbffe8cdcddfdb5c43378cdf9eba2700d3ca3dfa71e3999b4189bbad6a00"
         },
         {
           "name": "Sector12__GEO_Head",
@@ -1525,22 +1704,22 @@
           "triangles": 12,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.596,
-              -0.063763
+              -0.07695,
+              1.6331,
+              -0.082931
             ],
             "max": [
-              -0.013,
-              1.727,
-              -0.008
+              -0.01755,
+              1.80995,
+              -0.00765
             ],
             "size": [
-              0.044,
-              0.131,
-              0.055763
+              0.0594,
+              0.17685,
+              0.075281
             ]
           },
-          "semantic_sha256": "fa6336fdff6ec1659bceee97a4b08cb85de354c12e44f9f83f6e24cd890d7d48"
+          "semantic_sha256": "f018a39217ba47da9e10bb3fd654b1ac4ef54ac74383bfc94bdfb266d6106f7d"
         },
         {
           "name": "Sector12__Interior",
@@ -1549,46 +1728,46 @@
           "triangles": 36,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.596,
-              -0.063763
+              -0.07695,
+              1.6331,
+              -0.082931
             ],
             "max": [
-              -0.01014,
-              1.727,
-              -0.008
+              -0.013689,
+              1.80995,
+              -0.00765
             ],
             "size": [
-              0.04686,
-              0.131,
-              0.055763
+              0.063261,
+              0.17685,
+              0.075281
             ]
           },
-          "semantic_sha256": "7b941eec7cc6d2bb2571778cd114cfb2bc5835239ac06c9fb94a924b7ee26314"
+          "semantic_sha256": "0b9a79e85566c6d404ffa751389b1bfa82f39f8506358c2524d823a2c94c8a82"
         },
         {
           "name": "Sector13__GEO_FaceSurface",
-          "vertices": 24,
-          "polygons": 14,
-          "triangles": 28,
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
           "bounds_unity_m": {
             "min": [
-              -0.077287,
-              1.625,
-              -0.118
+              -0.059366,
+              1.654,
+              -0.106
             ],
             "max": [
               0.0,
-              1.735,
-              -0.000869
+              1.728,
+              -0.032628
             ],
             "size": [
-              0.077287,
-              0.11,
-              0.117131
+              0.059366,
+              0.074,
+              0.073372
             ]
           },
-          "semantic_sha256": "ffd01d5a7c8c26662518f8b1cea5326a255a4bb1fa9b99c312f518bfaf02ddbb"
+          "semantic_sha256": "1c84645e9e33e99a18db7642d1b6f060d1bfea2fe2cb6f0e8e5edeb28e072541"
         },
         {
           "name": "Sector13__GEO_Head",
@@ -1597,22 +1776,22 @@
           "triangles": 6,
           "bounds_unity_m": {
             "min": [
-              -0.028804,
-              1.596,
-              -0.071141
+              -0.038886,
+              1.6331,
+              -0.092891
             ],
             "max": [
-              -0.004515,
-              1.727,
-              -0.018516
+              -0.006095,
+              1.80995,
+              -0.021847
             ],
             "size": [
-              0.024289,
-              0.131,
-              0.052625
+              0.032791,
+              0.17685,
+              0.071044
             ]
           },
-          "semantic_sha256": "b5e322994f539ee71ba17f7b04ed63a6f1084ef7c1c6069a5b1df9ee1f947e4e"
+          "semantic_sha256": "d3d770326f7efdfba211e11abbd30f918835dbf8e6ae99ac39dde94e20503c36"
         },
         {
           "name": "Sector13__Interior",
@@ -1621,46 +1800,46 @@
           "triangles": 22,
           "bounds_unity_m": {
             "min": [
-              -0.028804,
-              1.596,
-              -0.071141
+              -0.038886,
+              1.6331,
+              -0.092891
             ],
             "max": [
-              -0.003522,
-              1.727,
-              -0.017819
+              -0.004754,
+              1.80995,
+              -0.020906
             ],
             "size": [
-              0.025282,
-              0.131,
-              0.053322
+              0.034132,
+              0.17685,
+              0.071985
             ]
           },
-          "semantic_sha256": "09f449c2ab48a4d34ab3ef8c1d1f8d0a3a9008cd21d800dd80faeb7400823394"
+          "semantic_sha256": "dc361511d99777a601a958464d3aa265a5894f13d1263c36f073affd7bfce6cf"
         },
         {
           "name": "Sector14__GEO_FaceSurface",
-          "vertices": 24,
-          "polygons": 14,
-          "triangles": 28,
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.625,
-              -0.118
+              1.654,
+              -0.106
             ],
             "max": [
-              0.077287,
-              1.735,
-              -0.000869
+              0.059366,
+              1.728,
+              -0.032628
             ],
             "size": [
-              0.077287,
-              0.11,
-              0.117131
+              0.059366,
+              0.074,
+              0.073372
             ]
           },
-          "semantic_sha256": "6fa14614a9429c1567db7a53848703ef39c9acfd2bab264aea6ea2b17807806d"
+          "semantic_sha256": "77e0d6fee9846732c92ff6a22b4ee48b5389f74cd4c0183d082d69140341dc1e"
         },
         {
           "name": "Sector14__GEO_Head",
@@ -1669,22 +1848,22 @@
           "triangles": 12,
           "bounds_unity_m": {
             "min": [
-              -0.01028,
-              1.596,
-              -0.071141
+              -0.013878,
+              1.6331,
+              -0.092891
             ],
             "max": [
-              0.028804,
-              1.727,
-              -0.018516
+              0.038886,
+              1.80995,
+              -0.021847
             ],
             "size": [
-              0.039084,
-              0.131,
-              0.052625
+              0.052764,
+              0.17685,
+              0.071044
             ]
           },
-          "semantic_sha256": "40eaedd3c16b9a3fa612c5a3e052db43b2a2ed7568380ad218b8c4a46c76834d"
+          "semantic_sha256": "ba3982070097b1b936e16f4f682e2d56c2e0313ba924d307402afc9ed9fff4ef"
         },
         {
           "name": "Sector14__Interior",
@@ -1693,70 +1872,46 @@
           "triangles": 32,
           "bounds_unity_m": {
             "min": [
-              -0.01028,
-              1.596,
-              -0.071141
+              -0.013878,
+              1.6331,
+              -0.092891
             ],
             "max": [
-              0.028804,
-              1.727,
-              -0.017819
+              0.038886,
+              1.80995,
+              -0.020906
             ],
             "size": [
-              0.039084,
-              0.131,
-              0.053322
+              0.052764,
+              0.17685,
+              0.071985
             ]
           },
-          "semantic_sha256": "02171e4e7a3470812e27005ec030e6662f577decaf2282c8b78d29c1db1c4743"
-        },
-        {
-          "name": "Sector15__GEO_EarFold.L",
-          "vertices": 6,
-          "polygons": 1,
-          "triangles": 4,
-          "bounds_unity_m": {
-            "min": [
-              0.113361,
-              1.616655,
-              -0.02079
-            ],
-            "max": [
-              0.118639,
-              1.619345,
-              -0.01521
-            ],
-            "size": [
-              0.005278,
-              0.00269,
-              0.00558
-            ]
-          },
-          "semantic_sha256": "e2d68a915f157d226225f3bb24cf1e8285f03d3de03ea370ee04f960f33af28a"
+          "semantic_sha256": "ebf0eed02785530bf4f94863e63859cf25dcc8a09d6890cfdb101f764c3512e7"
         },
         {
           "name": "Sector15__GEO_FaceSurface",
-          "vertices": 24,
-          "polygons": 13,
-          "triangles": 26,
+          "vertices": 22,
+          "polygons": 11,
+          "triangles": 22,
           "bounds_unity_m": {
             "min": [
-              0.00104,
-              1.625,
+              0.0,
+              1.654,
               -0.08862
             ],
             "max": [
-              0.09891,
+              0.096057,
               1.735,
-              0.000146
+              -0.000869
             ],
             "size": [
-              0.09787,
-              0.11,
-              0.088766
+              0.096057,
+              0.081,
+              0.087751
             ]
           },
-          "semantic_sha256": "85e6e44040d92700b1cf0b85ecdb76a5cd55ce1c22bcd3bfe5feedbcfe43cbc0"
+          "semantic_sha256": "4403a30f62f77f5d37bc2bc8f9670dfbefbadd65af4aeef5c322fd2fa49ab82b"
         },
         {
           "name": "Sector15__GEO_Head",
@@ -1765,22 +1920,22 @@
           "triangles": 12,
           "bounds_unity_m": {
             "min": [
-              0.013,
-              1.596,
-              -0.063763
+              0.01755,
+              1.6331,
+              -0.082931
             ],
             "max": [
-              0.057,
-              1.727,
-              -0.008
+              0.07695,
+              1.80995,
+              -0.00765
             ],
             "size": [
-              0.044,
-              0.131,
-              0.055763
+              0.0594,
+              0.17685,
+              0.075281
             ]
           },
-          "semantic_sha256": "3da18084f28f72df9ba5e9d26024e46d254b90c835eb54a8f1eaf1593ffdee18"
+          "semantic_sha256": "a6d62329ec9b265f7d0683f379ac1af4274156777a6d19fb56f0a76538f1e917"
         },
         {
           "name": "Sector15__Interior",
@@ -1789,51 +1944,51 @@
           "triangles": 36,
           "bounds_unity_m": {
             "min": [
-              0.01014,
-              1.596,
-              -0.063763
+              0.013689,
+              1.6331,
+              -0.082931
             ],
             "max": [
-              0.057,
-              1.727,
-              -0.008
+              0.07695,
+              1.80995,
+              -0.00765
             ],
             "size": [
-              0.04686,
-              0.131,
-              0.055763
+              0.063261,
+              0.17685,
+              0.075281
             ]
           },
-          "semantic_sha256": "04beca170c3ace0fdaffe285367d27e30bc17e1cfa2a825a217cb292b6fadebb"
+          "semantic_sha256": "8b0f24fbadd5c147414e504cbe5426351828d5ea025b04e90c8e7e3dd22816e8"
         }
       ],
-      "semantic_sha256": "4cafbe728bbf893ff5a0b7283eabf5772c0d546d0062abba975a8c65acb6cabf"
+      "semantic_sha256": "1e1a650c02798d994540bf075ef12eb7edecf9787dd748fd2c838acaa0be7ba0"
     },
     "SkullRoom": {
       "source": "Assets/Resources/Combat/RoomBody.fbx",
-      "source_sha256": "5c8d5cd306214d91fb5c44a0354ea99625f09e680e8cb717e9ed3f5affa75eb6",
-      "head_contract_sha256": "d8002d9553cb3cb36fe9d454fa7d9f034d0add8b6c0d84c978936282f4aa5d79",
+      "source_sha256": "68a2007e1b0124cdcc171072695cbcb4c32ee340e7fbe87ec449617aefeb542f",
+      "head_contract_sha256": "48c1bd0bab5ded22753d1dd848f388eae33a72b69358ddd627144728dbdfbe21",
       "head_center_unity_m": [
         0.0,
-        1.6045,
-        -0.015348
+        1.644575,
+        -0.01757
       ],
-      "band_height_unity_m": 1.61486,
+      "band_height_unity_m": 1.658561,
       "head_bounds_unity_m": {
         "min": [
-          -0.057,
-          1.475,
-          -0.073073
+          -0.07695,
+          1.46975,
+          -0.095498
         ],
         "max": [
-          0.057,
-          1.734,
-          0.042377
+          0.07695,
+          1.8194,
+          0.060359
         ],
         "size": [
-          0.114,
-          0.259,
-          0.11545
+          0.1539,
+          0.34965,
+          0.155857
         ]
       },
       "meshes": [
@@ -1843,23 +1998,23 @@
           "triangles": 208,
           "bounds_unity_m": {
             "min": [
-              0.0173202,
-              1.5484616,
-              -0.0191596
+              0.0233823,
+              1.5689232,
+              -0.0227156
             ],
             "max": [
-              0.0493182,
-              1.6166083,
-              0.0199688
+              0.0665796,
+              1.6609211,
+              0.0301076
             ],
             "size": [
-              0.031998,
-              0.0681467,
-              0.0391284
+              0.0431973,
+              0.0919979,
+              0.0528232
             ]
           },
-          "closed_volume_m3": 1.28523e-05,
-          "semantic_sha256": "ccefcf064f07beaf819307b18401ce89bb27162f0f4053cb3c5e7a3dc0b464f3"
+          "closed_volume_m3": 3.16211e-05,
+          "semantic_sha256": "504e590d016c8d2cd95afcba677d5ebe697f9126893ce144883836a045a7f29e"
         },
         {
           "name": "SkullSector1__GEO_Head",
@@ -1868,22 +2023,22 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.5518454,
-              0.0021925
+              1.5734912,
+              0.0061097
             ],
             "max": [
-              0.0348733,
-              1.6166083,
-              0.0345975
+              0.0470789,
+              1.6609211,
+              0.0498562
             ],
             "size": [
-              0.0348733,
-              0.0647629,
-              0.032405
+              0.0470789,
+              0.0874299,
+              0.0437465
             ]
           },
-          "closed_volume_m3": 1.11354e-05,
-          "semantic_sha256": "64814e56ba6f4381cd0badd37c786a4c0d6fab1528eed86a410be29bbd40326c"
+          "closed_volume_m3": 2.7397e-05,
+          "semantic_sha256": "f8e4bcaa4a8d93ee9404023d9824b4d68cb62ac2f4d7685a8f30012aa0ac734b"
         },
         {
           "name": "SkullSector2__GEO_Head",
@@ -1891,23 +2046,23 @@
           "triangles": 180,
           "bounds_unity_m": {
             "min": [
-              -0.0348733,
-              1.5518454,
-              0.0021925
+              -0.0470789,
+              1.5734912,
+              0.0061097
             ],
             "max": [
               0.0,
-              1.6166083,
-              0.0345975
+              1.6609211,
+              0.0498562
             ],
             "size": [
-              0.0348733,
-              0.0647629,
-              0.032405
+              0.0470789,
+              0.0874299,
+              0.0437465
             ]
           },
-          "closed_volume_m3": 1.11353e-05,
-          "semantic_sha256": "08fda7ee235bde038a4fe8ce5303a0869f1fa457b13e674589e1670ced59608a"
+          "closed_volume_m3": 2.73972e-05,
+          "semantic_sha256": "9fc930167ffb29062bbb4ba87e6074467109770d64338aef192fc0f60bde1500"
         },
         {
           "name": "SkullSector3__GEO_Head",
@@ -1915,23 +2070,23 @@
           "triangles": 208,
           "bounds_unity_m": {
             "min": [
-              -0.0493182,
-              1.5484616,
-              -0.0191596
+              -0.0665796,
+              1.5689232,
+              -0.0227156
             ],
             "max": [
-              -0.0173202,
-              1.6166083,
-              0.0199688
+              -0.0233823,
+              1.6609211,
+              0.0301076
             ],
             "size": [
-              0.031998,
-              0.0681467,
-              0.0391284
+              0.0431973,
+              0.0919979,
+              0.0528232
             ]
           },
-          "closed_volume_m3": 1.28522e-05,
-          "semantic_sha256": "da959e0383940f30c6d318d0a722a58a0f55b4b07982b22fbf861466f3d250e5"
+          "closed_volume_m3": 3.16211e-05,
+          "semantic_sha256": "abc9ec68bdf7d2a80428684aa18847481884a9f21dd364d2d4b3c21b12c40bd3"
         },
         {
           "name": "SkullSector4__GEO_Head",
@@ -1939,23 +2094,23 @@
           "triangles": 548,
           "bounds_unity_m": {
             "min": [
-              -0.0493182,
-              1.519289,
-              -0.0624753
+              -0.0665796,
+              1.5295402,
+              -0.0811917
             ],
             "max": [
-              -0.0173202,
-              1.6166083,
-              -0.0091545
+              -0.0233823,
+              1.6609211,
+              -0.0092088
             ],
             "size": [
-              0.031998,
-              0.0973193,
-              0.0533208
+              0.0431973,
+              0.1313809,
+              0.0719829
             ]
           },
-          "closed_volume_m3": 1.6609e-05,
-          "semantic_sha256": "a360fda0f09119fa6b7b75a89dff74e6324ffcd47eb83b78741aca378422176e"
+          "closed_volume_m3": 4.0866e-05,
+          "semantic_sha256": "33a7f88914a8a2339d912f49d48359e7f401c4496936a4c3a80922509b8fe00a"
         },
         {
           "name": "SkullSector5__GEO_Head",
@@ -1963,23 +2118,23 @@
           "triangles": 792,
           "bounds_unity_m": {
             "min": [
-              -0.0387893,
-              1.5007654,
-              -0.0696365
+              -0.0523655,
+              1.5045334,
+              -0.0908593
             ],
             "max": [
-              0.0006724,
-              1.6331401,
-              -0.0376034
+              0.0009078,
+              1.683239,
+              -0.0476146
             ],
             "size": [
-              0.0394617,
-              0.1323747,
-              0.0320331
+              0.0532733,
+              0.1787056,
+              0.0432447
             ]
           },
-          "closed_volume_m3": 6.4418e-06,
-          "semantic_sha256": "74aef0009cdf4da712e68dad8e6d24e684fa879fb3e130c3bb4ca0b1fde3de7d"
+          "closed_volume_m3": 1.585e-05,
+          "semantic_sha256": "e4af30f78fa8282fab82d950017e4cadab7b35efa4bc5a5ac5b2d8c98d97d7cc"
         },
         {
           "name": "SkullSector6__GEO_Head",
@@ -1987,23 +2142,23 @@
           "triangles": 792,
           "bounds_unity_m": {
             "min": [
-              -0.0006724,
-              1.5007654,
-              -0.0696365
+              -0.0009078,
+              1.5045334,
+              -0.0908593
             ],
             "max": [
-              0.0387893,
-              1.6331401,
-              -0.0376034
+              0.0523655,
+              1.683239,
+              -0.0476146
             ],
             "size": [
-              0.0394617,
-              0.1323747,
-              0.0320331
+              0.0532733,
+              0.1787056,
+              0.0432447
             ]
           },
-          "closed_volume_m3": 6.4422e-06,
-          "semantic_sha256": "3d7c9787d474c5e6292f89a8a11716e99dfcebabb53ba91d73eb0daf8487d8cc"
+          "closed_volume_m3": 1.58508e-05,
+          "semantic_sha256": "d512f13ccd12007a11b0dfee2f51c5981cacfcb34fff4abe23ce30b53e57ca3d"
         },
         {
           "name": "SkullSector7__GEO_Head",
@@ -2011,23 +2166,23 @@
           "triangles": 548,
           "bounds_unity_m": {
             "min": [
-              0.0173202,
-              1.519289,
-              -0.0624753
+              0.0233823,
+              1.5295402,
+              -0.0811917
             ],
             "max": [
-              0.0493182,
-              1.6166083,
-              -0.0091545
+              0.0665796,
+              1.6609211,
+              -0.0092088
             ],
             "size": [
-              0.031998,
-              0.0973193,
-              0.0533208
+              0.0431973,
+              0.1313809,
+              0.0719829
             ]
           },
-          "closed_volume_m3": 1.66092e-05,
-          "semantic_sha256": "077f8b5faf1ecef092c2fd5ecf83597fa8a638cdc47cad0f6fbdcd622b18d1af"
+          "closed_volume_m3": 4.08659e-05,
+          "semantic_sha256": "26007da52dd96678fb3478bc8c2fa98826cd0d456b18066abcf115b3fe61bd71"
         },
         {
           "name": "SkullSector8__GEO_Head",
@@ -2035,47 +2190,47 @@
           "triangles": 480,
           "bounds_unity_m": {
             "min": [
-              0.0055082,
-              1.6148601,
-              -0.015348
+              0.0074361,
+              1.658561,
+              -0.01757
             ],
             "max": [
-              0.0501497,
-              1.7267351,
-              0.0205642
+              0.0677021,
+              1.8095924,
+              0.0309114
             ],
             "size": [
-              0.0446415,
-              0.111875,
-              0.0359122
+              0.060266,
+              0.1510314,
+              0.0484814
             ]
           },
-          "closed_volume_m3": 1.98714e-05,
-          "semantic_sha256": "4a8d2961be6b28cf14698567db919209be8986a030217cb35865ea99033d464c"
+          "closed_volume_m3": 4.88906e-05,
+          "semantic_sha256": "126d99df4dee6368d7f46ec5cc24c343c46f6af27476653dc140ab6272d1c2e5"
         },
         {
           "name": "SkullSector9__GEO_Head",
-          "vertices": 320,
-          "triangles": 480,
+          "vertices": 370,
+          "triangles": 576,
           "bounds_unity_m": {
             "min": [
-              0.0,
-              1.6148601,
-              -0.0097697
+              -0.0117094,
+              1.658561,
+              -0.0294283
             ],
             "max": [
-              0.0354612,
-              1.7267351,
-              0.0354396
+              0.0478726,
+              1.8115329,
+              0.050993
             ],
             "size": [
-              0.0354612,
-              0.111875,
-              0.0452093
+              0.059582,
+              0.1529719,
+              0.0804213
             ]
           },
-          "closed_volume_m3": 1.98712e-05,
-          "semantic_sha256": "0b60a7f6720203a40d48bdfe260efcec66f6daee920aac30becfcb492a0b4c80"
+          "closed_volume_m3": 5.14053e-05,
+          "semantic_sha256": "02769e6349282f218930fc2087fc0e721d0fe018770539a3a90d36a917b0e7f6"
         },
         {
           "name": "SkullSector10__GEO_Head",
@@ -2083,23 +2238,23 @@
           "triangles": 480,
           "bounds_unity_m": {
             "min": [
-              -0.0354612,
-              1.6148601,
-              -0.0097697
+              -0.0478726,
+              1.658561,
+              -0.0100394
             ],
             "max": [
               0.0,
-              1.7267351,
-              0.0354396
+              1.8095924,
+              0.050993
             ],
             "size": [
-              0.0354612,
-              0.111875,
-              0.0452093
+              0.0478726,
+              0.1510314,
+              0.0610324
             ]
           },
-          "closed_volume_m3": 1.9871e-05,
-          "semantic_sha256": "e4a959fa248324ef4411163c950208c96996dfb3425b071ecaab6f2637b28b27"
+          "closed_volume_m3": 4.88901e-05,
+          "semantic_sha256": "662b53979e38fe24ce14c7d8a9104ae7ffc6600c53d9330f67e328948e725c78"
         },
         {
           "name": "SkullSector11__GEO_Head",
@@ -2107,23 +2262,23 @@
           "triangles": 480,
           "bounds_unity_m": {
             "min": [
-              -0.0501497,
-              1.6148601,
-              -0.015348
+              -0.0677021,
+              1.658561,
+              -0.01757
             ],
             "max": [
-              -0.0055082,
-              1.7267351,
-              0.0205642
+              -0.0074361,
+              1.8095924,
+              0.0309114
             ],
             "size": [
-              0.0446415,
-              0.111875,
-              0.0359122
+              0.060266,
+              0.1510314,
+              0.0484814
             ]
           },
-          "closed_volume_m3": 1.9871e-05,
-          "semantic_sha256": "a29805ce5df270d4680f95bddc02272cbf727f278eb5f939bf00414812fcc478"
+          "closed_volume_m3": 4.88906e-05,
+          "semantic_sha256": "4d2a90a93d105915f93fe756a9da39501afce37c0f3104df3d3d65b8f84c055a"
         },
         {
           "name": "SkullSector12__GEO_Head",
@@ -2131,47 +2286,47 @@
           "triangles": 480,
           "bounds_unity_m": {
             "min": [
-              -0.0501497,
-              1.6148601,
-              -0.0512602
+              -0.0677021,
+              1.658561,
+              -0.0660514
             ],
             "max": [
-              -0.0055082,
-              1.7267351,
-              -0.015348
+              -0.0074361,
+              1.8095924,
+              -0.01757
             ],
             "size": [
-              0.0446415,
-              0.111875,
-              0.0359122
+              0.060266,
+              0.1510314,
+              0.0484814
             ]
           },
-          "closed_volume_m3": 1.98721e-05,
-          "semantic_sha256": "6a6cb28756c6902c3c01831640e275ef27d0924f3f778bffecd5fcad936205ef"
+          "closed_volume_m3": 4.88909e-05,
+          "semantic_sha256": "bc17f15f9736bcf2b6aff8f1340d22c39cc6705bd6d657a98aefb33f592f4ffa"
         },
         {
           "name": "SkullSector13__GEO_Head",
-          "vertices": 418,
-          "triangles": 680,
+          "vertices": 368,
+          "triangles": 584,
           "bounds_unity_m": {
             "min": [
-              -0.0387893,
-              1.6131647,
-              -0.0681871
+              -0.0523655,
+              1.6562723,
+              -0.0889026
             ],
             "max": [
-              0.0086736,
-              1.7281725,
-              -0.006564
+              0.0,
+              1.8095924,
+              -0.0251007
             ],
             "size": [
-              0.0474629,
-              0.1150078,
-              0.0616231
+              0.0523655,
+              0.1533201,
+              0.0638019
             ]
           },
-          "closed_volume_m3": 1.8828e-05,
-          "semantic_sha256": "a1a7e8ab83448e1968b23844c731474945a037d739c5ebfa8eb288092a8cb066"
+          "closed_volume_m3": 4.38088e-05,
+          "semantic_sha256": "1f3b517353dee49b9bb1a476730214b21485e40a9494338f9dbc99be915e344a"
         },
         {
           "name": "SkullSector14__GEO_Head",
@@ -2180,22 +2335,22 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              1.6131647,
-              -0.0681871
+              1.6562723,
+              -0.0889026
             ],
             "max": [
-              0.0387893,
-              1.7267351,
-              -0.0209263
+              0.0523655,
+              1.8095924,
+              -0.0251007
             ],
             "size": [
-              0.0387893,
-              0.1135704,
-              0.0472608
+              0.0523655,
+              0.1533201,
+              0.0638019
             ]
           },
-          "closed_volume_m3": 1.78065e-05,
-          "semantic_sha256": "ab2e483e20b91b1c6d0b28d9f96916e7161c57730bd75d78e7f89176c2105fbc"
+          "closed_volume_m3": 4.38082e-05,
+          "semantic_sha256": "a93dab19d315b601450f8effd2778e23cce2678976fa4ee2f57d007376ea7b64"
         },
         {
           "name": "SkullSector15__GEO_Head",
@@ -2203,28 +2358,28 @@
           "triangles": 480,
           "bounds_unity_m": {
             "min": [
-              0.0055082,
-              1.6148601,
-              -0.0512602
+              0.0074361,
+              1.658561,
+              -0.0660514
             ],
             "max": [
-              0.0501497,
-              1.7267351,
-              -0.015348
+              0.0677021,
+              1.8095924,
+              -0.01757
             ],
             "size": [
-              0.0446415,
-              0.111875,
-              0.0359122
+              0.060266,
+              0.1510314,
+              0.0484814
             ]
           },
-          "closed_volume_m3": 1.98706e-05,
-          "semantic_sha256": "95143a336b66df0997f4cef542757acfeb3ca509fe895872fa035aab7a37df8c"
+          "closed_volume_m3": 4.88897e-05,
+          "semantic_sha256": "20e1d73a86270534f2b445f7f9f4bc3b305ff739fd435798b499cf6ad400a280"
         }
       ]
     },
     "BodyRoom": {
-      "source_sha256": "5c8d5cd306214d91fb5c44a0354ea99625f09e680e8cb717e9ed3f5affa75eb6",
+      "source_sha256": "68a2007e1b0124cdcc171072695cbcb4c32ee340e7fbe87ec449617aefeb542f",
       "coverage": [
         {
           "source": "GEO_Arm.L",
@@ -2342,8 +2497,8 @@
         },
         {
           "source": "GEO_Neck",
-          "source_area_m2": 0.0264513,
-          "body_area_m2": 0.0264513,
+          "source_area_m2": 0.03175113,
+          "body_area_m2": 0.03175113,
           "head_excluded": false
         },
         {
@@ -2472,7 +2627,7 @@
           "source": "GEO_Neck",
           "maximum_nonplanarity_m": 0.00028073,
           "nonplanar_polygon_count": 36,
-          "maximum_cut_tessellation_deviation_m": 8.943e-05
+          "maximum_cut_tessellation_deviation_m": 3.781e-05
         },
         {
           "source": "GEO_Torso",
@@ -2521,19 +2676,19 @@
           },
           "bare_bounds_unity_m": {
             "min": [
-              -0.033,
+              -0.044,
               1.4194999,
-              -0.0392225
+              -0.0489718
             ],
             "max": [
-              0.033,
+              0.044,
               1.49,
               0.0339928
             ],
             "size": [
-              0.066,
+              0.088,
               0.0705001,
-              0.0732153
+              0.0829646
             ]
           }
         },
@@ -3366,27 +3521,27 @@
       "meshes": [
         {
           "name": "BoneRegion10__GEO_HandPalm.R",
-          "vertices": 1214,
-          "triangles": 2304,
+          "vertices": 288,
+          "triangles": 384,
           "bounds_unity_m": {
             "min": [
-              -0.7787678,
-              1.0005543,
-              -0.0357779
+              -0.7486135,
+              1.0188997,
+              -0.055261
             ],
             "max": [
-              -0.669295,
-              1.0945568,
-              0.0022644
+              -0.6710449,
+              1.0781822,
+              0.0190741
             ],
             "size": [
-              0.1094728,
-              0.0940025,
-              0.0380423
+              0.0775686,
+              0.0592825,
+              0.0743351
             ]
           },
-          "closed_volume_m3": 5.75022e-05,
-          "semantic_sha256": "3ac167c49c64825a49dee6f3db1450424d7805a542d124540ea9e98550e3e550"
+          "closed_volume_m3": 1.30234e-05,
+          "semantic_sha256": "0af9d94e339e97f8c131f2363962f4876c7e453c2e9c299ffe123d3356e810a3"
         },
         {
           "name": "BoneRegion11__GEO_LegsUpper",
@@ -3578,7 +3733,7 @@
             ]
           },
           "closed_volume_m3": 3.42006e-05,
-          "semantic_sha256": "f7d13b12b221c28cdfd8cab343e6acb9e947287f8987494168c459a1d937e30c"
+          "semantic_sha256": "e9f3f94259075132fef0849100123255c2a79dfdfd3b4ddd19696be702252b72"
         },
         {
           "name": "BoneRegion3__GEO_Torso",
@@ -3602,7 +3757,7 @@
             ]
           },
           "closed_volume_m3": 4.01797e-05,
-          "semantic_sha256": "8d715b846202c988d06936e64d88b6fe6cbfe46c50553c24480a46f9233dde8e"
+          "semantic_sha256": "8767d06e3c2bb5d7c9503b139058d2d183ccfd1b5d2a073669fe454558205109"
         },
         {
           "name": "BoneRegion4__GEO_Torso",
@@ -3626,31 +3781,31 @@
             ]
           },
           "closed_volume_m3": 4.26559e-05,
-          "semantic_sha256": "bbf1eed501ee608569f3a1696811dd58329ec27ddd1b3999c0d6864edb0f5a9f"
+          "semantic_sha256": "2bf609290de9eabd4ef83e11559ecade43abd5ba7046b0a3fa1f5e5505334fc7"
         },
         {
           "name": "BoneRegion5__GEO_Arm.L",
-          "vertices": 118,
-          "triangles": 224,
+          "vertices": 288,
+          "triangles": 384,
           "bounds_unity_m": {
             "min": [
-              0.2029322,
-              1.2380297,
-              -0.0310345
+              0.1824496,
+              1.2155988,
+              -0.0671802
             ],
             "max": [
-              0.4628061,
-              1.4360298,
-              0.0161031
+              0.4854289,
+              1.4646348,
+              0.0555506
             ],
             "size": [
-              0.2598739,
-              0.1980001,
-              0.0471376
+              0.3029793,
+              0.249036,
+              0.1227308
             ]
           },
-          "closed_volume_m3": 0.0001823415,
-          "semantic_sha256": "75618a42a29ef788735f7e4c7ca176f805b2fcf7939bdc015434f10a7146c4a7"
+          "closed_volume_m3": 4.76724e-05,
+          "semantic_sha256": "c7ba2f24ab44394f738fff949d1331dd49f3d383aa4025a5b0900d00858d9d25"
         },
         {
           "name": "BoneRegion6__GEO_Arm.L",
@@ -3674,55 +3829,55 @@
             ]
           },
           "closed_volume_m3": 0.000111048,
-          "semantic_sha256": "2397a02875e742a6151bbbab6b944ba70b97e0789a0c4dcc895088c8fd96195f"
+          "semantic_sha256": "da6fd6003248918cffa206fff11864db032bcbc138f7af2cfd36bcaf97baefbc"
         },
         {
           "name": "BoneRegion7__GEO_HandPalm.L",
-          "vertices": 1214,
-          "triangles": 2304,
+          "vertices": 222,
+          "triangles": 296,
           "bounds_unity_m": {
             "min": [
-              0.673001,
-              1.0065545,
-              -0.0397778
+              0.673222,
+              1.0249,
+              -0.0592622
             ],
             "max": [
-              0.7807677,
-              1.0850056,
-              -0.0017355
+              0.7499841,
+              1.0842943,
+              0.0150754
             ],
             "size": [
-              0.1077667,
-              0.0784511,
-              0.0380423
+              0.0767621,
+              0.0593943,
+              0.0743376
             ]
           },
-          "closed_volume_m3": 4.72354e-05,
-          "semantic_sha256": "6501a0c9ca56f0c2f24d893e86373c2c127267fa921948a1d306c021eff6c89a"
+          "closed_volume_m3": 1.2255e-05,
+          "semantic_sha256": "b7d8d48fe905d5cfc50f99069d0a0f7154751f92e0785b7a1a11f8aaf6c3ab69"
         },
         {
           "name": "BoneRegion8__GEO_Arm.R",
-          "vertices": 118,
-          "triangles": 224,
+          "vertices": 288,
+          "triangles": 384,
           "bounds_unity_m": {
             "min": [
-              -0.460806,
-              1.2320298,
-              -0.0267982
+              -0.4816038,
+              1.2166684,
+              -0.0605911
             ],
             "max": [
-              -0.2009322,
-              1.4300297,
-              0.024828
+              -0.1834405,
+              1.4610013,
+              0.0646295
             ],
             "size": [
-              0.2598738,
-              0.1979999,
-              0.0516262
+              0.2981633,
+              0.2443329,
+              0.1252206
             ]
           },
-          "closed_volume_m3": 0.0001824136,
-          "semantic_sha256": "418c1ddf0ed07f22319c67a67407844ec69bc534a9ad58b1fd2878a5a82d5285"
+          "closed_volume_m3": 3.94912e-05,
+          "semantic_sha256": "4d9f06d7dc846817a7e284a5b4ba395a1d37a1c85b2ea3b244e6d1a3fec3d96a"
         },
         {
           "name": "BoneRegion9__GEO_Arm.R",
@@ -3746,103 +3901,103 @@
             ]
           },
           "closed_volume_m3": 0.0001110461,
-          "semantic_sha256": "80686257c7e924ede300de8f41657678a5222562334854f4e19efc4fd3eda31e"
+          "semantic_sha256": "3e498f159056e25574285fad742333c9a9f43add2ab659a15c9e6ac654924946"
         },
         {
           "name": "FleshRegion10Patch0__GEO_HandPalm.R",
-          "vertices": 266,
-          "triangles": 504,
+          "vertices": 972,
+          "triangles": 1296,
           "bounds_unity_m": {
             "min": [
-              -0.7816598,
-              0.9995049,
-              -0.0723743
+              -0.7803525,
+              0.9992281,
+              -0.0750312
             ],
             "max": [
-              -0.6609023,
-              1.0735512,
-              -0.0252849
+              -0.670008,
+              1.0727069,
+              -0.0255665
             ],
             "size": [
-              0.1207575,
-              0.0740463,
-              0.0470894
+              0.1103445,
+              0.0734788,
+              0.0494647
             ]
           },
-          "closed_volume_m3": 4.65276e-05,
-          "semantic_sha256": "d0d5bf2727b76da413328912f04af96687508d35b9c5a730e78b3e170cd5aeb3"
+          "closed_volume_m3": 6.744e-06,
+          "semantic_sha256": "c3d8c8d2f53844e4bb7e4e881785e0841204385ed9be64d2f375ea8ccfa89b90"
         },
         {
           "name": "FleshRegion10Patch1__GEO_HandPalm.R",
-          "vertices": 180,
-          "triangles": 332,
+          "vertices": 516,
+          "triangles": 688,
           "bounds_unity_m": {
             "min": [
-              -0.7731572,
-              1.0161533,
-              -0.0670813
+              -0.7727416,
+              1.0151774,
+              -0.0692746
             ],
             "max": [
-              -0.6804145,
-              1.0950172,
-              -0.0231636
+              -0.6805144,
+              1.0802933,
+              -0.0239899
             ],
             "size": [
-              0.0927427,
-              0.0788639,
-              0.0439177
+              0.0922272,
+              0.0651159,
+              0.0452847
             ]
           },
-          "closed_volume_m3": 1.49311e-05,
-          "semantic_sha256": "ccae9eb7555337d5e789ee11f9cd108cdcb7aeb1601c88b82558f2508dfee7f6"
+          "closed_volume_m3": 2.6929e-06,
+          "semantic_sha256": "ed89b0fd6f1c4dda409dea9941dc128899ed2d2c2886f12d871b40802ceae0d5"
         },
         {
           "name": "FleshRegion10Patch2__GEO_HandPalm.R",
-          "vertices": 276,
-          "triangles": 520,
+          "vertices": 996,
+          "triangles": 1328,
           "bounds_unity_m": {
             "min": [
-              -0.7816269,
-              0.9993407,
-              -0.0308046
+              -0.780149,
+              0.9990525,
+              -0.0309855
             ],
             "max": [
-              -0.6595367,
-              1.0716547,
-              0.0185261
+              -0.6695397,
+              1.0693235,
+              0.0208081
             ],
             "size": [
-              0.1220902,
-              0.072314,
-              0.0493307
+              0.1106093,
+              0.070271,
+              0.0517936
             ]
           },
-          "closed_volume_m3": 5.60896e-05,
-          "semantic_sha256": "7fc3a15edfaec493898304a3944c74c7f9c62a67c32b6a9df495751d7ae37fd8"
+          "closed_volume_m3": 6.438e-06,
+          "semantic_sha256": "6521166a4748af2847483f38ef31ebae220913c4df0e559366f21b8887ad0335"
         },
         {
           "name": "FleshRegion10Patch3__GEO_HandPalm.R",
-          "vertices": 206,
-          "triangles": 376,
+          "vertices": 552,
+          "triangles": 736,
           "bounds_unity_m": {
             "min": [
-              -0.7739503,
-              1.0142676,
-              -0.0294425
+              -0.7735251,
+              1.013173,
+              -0.0298034
             ],
             "max": [
-              -0.6794059,
-              1.0965255,
-              0.0182071
+              -0.6795931,
+              1.0802479,
+              0.0204688
             ],
             "size": [
-              0.0945444,
-              0.0822579,
-              0.0476496
+              0.093932,
+              0.0670749,
+              0.0502722
             ]
           },
-          "closed_volume_m3": 3.36174e-05,
-          "semantic_sha256": "73f2f6c4f021cc18dffedffc60c6204b1ba3f0430bb2cfac58439a2655cf1bbe"
+          "closed_volume_m3": 4.0508e-06,
+          "semantic_sha256": "7ab470690b579505e1fd4fe8c052d997d27b3f67fecffaecde39537ce1a15b46"
         },
         {
           "name": "FleshRegion11Patch0__GEO_LegsUpper",
@@ -4422,8 +4577,8 @@
         },
         {
           "name": "FleshRegion1Patch0__GEO_Neck",
-          "vertices": 88,
-          "triangles": 172,
+          "vertices": 86,
+          "triangles": 168,
           "bounds_unity_m": {
             "min": [
               0.0,
@@ -4431,18 +4586,18 @@
               -0.0259998
             ],
             "max": [
-              0.03102,
+              0.04136,
               1.49,
               0.0313451
             ],
             "size": [
-              0.03102,
+              0.04136,
               0.0765014,
               0.0573449
             ]
           },
-          "closed_volume_m3": 6.4579e-05,
-          "semantic_sha256": "a8904abc5695ad48138ad2fc8fad582c3e317dc46812e8cad4548a98f19ffb19"
+          "closed_volume_m3": 8.80204e-05,
+          "semantic_sha256": "c9c2f3a40192b18c0ae74d208dbb80a2299b6455db586e6187592fe5d2a7434e"
         },
         {
           "name": "FleshRegion1Patch1__GEO_Neck",
@@ -4450,7 +4605,7 @@
           "triangles": 176,
           "bounds_unity_m": {
             "min": [
-              -0.03102,
+              -0.04136,
               1.4134986,
               -0.0259998
             ],
@@ -4460,61 +4615,61 @@
               0.0313451
             ],
             "size": [
-              0.03102,
+              0.04136,
               0.0765014,
               0.0573449
             ]
           },
-          "closed_volume_m3": 6.47521e-05,
-          "semantic_sha256": "26e51643d9be808b3bf26c7ccb45ac877744c862cec5d8f127beaa19b8aeeabd"
+          "closed_volume_m3": 8.8313e-05,
+          "semantic_sha256": "60957528b2fa4f74b6643c0e56d5bf6b51012a42739be68856c21d83fcbc811a"
         },
         {
           "name": "FleshRegion1Patch2__GEO_Neck",
-          "vertices": 56,
-          "triangles": 108,
+          "vertices": 60,
+          "triangles": 116,
           "bounds_unity_m": {
             "min": [
               0.0,
               1.4194999,
-              -0.0384597
+              -0.0476465
             ],
             "max": [
-              0.0251155,
-              1.491729,
+              0.0374458,
+              1.4930038,
               -0.0118998
             ],
             "size": [
-              0.0251155,
-              0.0722291,
-              0.0265599
+              0.0374458,
+              0.0735039,
+              0.0357467
             ]
           },
-          "closed_volume_m3": 9.5689e-06,
-          "semantic_sha256": "61a0c0806b400ff6c2504c4a575c6da9865b674c8084320166b32185f8a9a0d2"
+          "closed_volume_m3": 2.025e-05,
+          "semantic_sha256": "a14da56ee9f2023e7a4de75afb39fd4cf00e48626637e4d529c86f79dde1cefc"
         },
         {
           "name": "FleshRegion1Patch3__GEO_Neck",
-          "vertices": 58,
-          "triangles": 112,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_unity_m": {
             "min": [
-              -0.0251155,
+              -0.0374458,
               1.4194999,
-              -0.0384597
+              -0.0476465
             ],
             "max": [
               0.0,
-              1.491729,
+              1.4930038,
               -0.0118998
             ],
             "size": [
-              0.0251155,
-              0.0722291,
-              0.0265599
+              0.0374458,
+              0.0735039,
+              0.0357467
             ]
           },
-          "closed_volume_m3": 9.6159e-06,
-          "semantic_sha256": "6540eeb3d2ce54a22a85d1b1c4614f4deff6749d2ba692d2c47a7be0beaf7feb"
+          "closed_volume_m3": 2.03129e-05,
+          "semantic_sha256": "ef4ecb590eaeddb0ef799b866ccfba7ae0f184c246f4d1b0f0796f7e4f24065f"
         },
         {
           "name": "FleshRegion2Patch0__GEO_Torso",
@@ -4538,7 +4693,7 @@
             ]
           },
           "closed_volume_m3": 0.0014956649,
-          "semantic_sha256": "8953e691bae59f968da6c2444086c582a2d7d7a60e07f3bcccc71978d5f68c77",
+          "semantic_sha256": "760c666578682198d10d6bcbdbe56b82687761c2c9be27330ccd3d83a4d699a8",
           "torso_cells": {
             "count": 2578,
             "maximum_outer_edge_m": 0.04492442,
@@ -4567,7 +4722,7 @@
             ]
           },
           "closed_volume_m3": 0.0014961248,
-          "semantic_sha256": "d31365f5ff34d65bccab229181c04004908970fbf9308c40ff50c4030b6cddff",
+          "semantic_sha256": "b8bfc4b9e736a7dff789c383574e14b9ef09508f1f716882ef74fe86a825515b",
           "torso_cells": {
             "count": 2492,
             "maximum_outer_edge_m": 0.04492441,
@@ -4596,7 +4751,7 @@
             ]
           },
           "closed_volume_m3": 0.001915331,
-          "semantic_sha256": "b196858d9a13634df9547e93608df434a0eb487c0f33dfeae9fe70f1f182432f",
+          "semantic_sha256": "e4512082df5e16a9358bcbddb0badefdf6322ae1dfd5eb758f760288c2a3402d",
           "torso_cells": {
             "count": 3506,
             "maximum_outer_edge_m": 0.04495556,
@@ -4625,7 +4780,7 @@
             ]
           },
           "closed_volume_m3": 0.0019147815,
-          "semantic_sha256": "69eba5a369ea44d3c8503c1801a09c89d37119d1f9c36048c5d8bb3226050f7c",
+          "semantic_sha256": "02e58241abc8a2b9dc4c7291829e132d805266dc8e043318d2a6168c48c649dc",
           "torso_cells": {
             "count": 3541,
             "maximum_outer_edge_m": 0.04495556,
@@ -4654,7 +4809,7 @@
             ]
           },
           "closed_volume_m3": 0.0003380844,
-          "semantic_sha256": "5b43c1a4df5c14b0fbb887f457618c4bb7f6ff740fcc9e12d07f2818bfd86ba2",
+          "semantic_sha256": "20f5baba09ed4ea2a04314d30204e3efaee61a66f53dd7abb823624e19be41f2",
           "torso_cells": {
             "count": 501,
             "maximum_outer_edge_m": 0.04499456,
@@ -4683,7 +4838,7 @@
             ]
           },
           "closed_volume_m3": 0.0003381778,
-          "semantic_sha256": "6b4874aad44836ac48cb88197393011781818326fc05a3bea9e3c8ccbad06136",
+          "semantic_sha256": "c0ae070553ea0824ce1b3f71a0c03aa70218f3419c46ead5074b77a171b70ac7",
           "torso_cells": {
             "count": 517,
             "maximum_outer_edge_m": 0.04499451,
@@ -4712,7 +4867,7 @@
             ]
           },
           "closed_volume_m3": 0.0010253865,
-          "semantic_sha256": "54450033d8dd5c680e96a06d54f71098ce82ab9ff80b35251c590608748b59d4",
+          "semantic_sha256": "15ffb18723739b37fb892600c138bb45769f897ec1fc147236026e3b25e3ceca",
           "torso_cells": {
             "count": 1615,
             "maximum_outer_edge_m": 0.04499451,
@@ -4741,7 +4896,7 @@
             ]
           },
           "closed_volume_m3": 0.0010254321,
-          "semantic_sha256": "08b3b1976972a094e95571a77b3959c23c2300a1d36b675386bafb1457a6d16b",
+          "semantic_sha256": "c98fa523a84e7c536e0163654f9f293bd3c0960a6e233480cbe39b027e2ad64e",
           "torso_cells": {
             "count": 1575,
             "maximum_outer_edge_m": 0.0449945,
@@ -4770,7 +4925,7 @@
             ]
           },
           "closed_volume_m3": 0.0004222334,
-          "semantic_sha256": "1898db355caa898fbc4123009884d1e4334083a68e1f4684e6c3f1037bee6adb",
+          "semantic_sha256": "55673f0a7c5b997c287696d3375a0d2555632053f85312d8db36857fd58d0697",
           "torso_cells": {
             "count": 446,
             "maximum_outer_edge_m": 0.04341157,
@@ -4799,7 +4954,7 @@
             ]
           },
           "closed_volume_m3": 0.0004222327,
-          "semantic_sha256": "1493f2441a7481d9d4701d99a366d6fe8c4079c7f0fb94db0289e88013b4ec7c",
+          "semantic_sha256": "726b64c56694cfee281560bf9da49d02fafb00c7db2d5d58cd415ef547f25010",
           "torso_cells": {
             "count": 454,
             "maximum_outer_edge_m": 0.04341158,
@@ -4828,7 +4983,7 @@
             ]
           },
           "closed_volume_m3": 0.0007685386,
-          "semantic_sha256": "f409eb488a26de058a5a45d140ad6bd859df115ce7b92f75ea56f32390012ca0"
+          "semantic_sha256": "913951da38f9dbabd27e600309da00c460c2180b035723af726156be0ed40f16"
         },
         {
           "name": "FleshRegion5Patch1__GEO_Arm.L",
@@ -4852,7 +5007,7 @@
             ]
           },
           "closed_volume_m3": 0.0007525316,
-          "semantic_sha256": "4982f7b7c33d53b127ce4436596da3b935bb3afde3004a02e4162773675b5085"
+          "semantic_sha256": "6446e8d4c4ca3db0eff04cbbc29cecba2ea33f1b7be5085bd0b6bc9514bf8c00"
         },
         {
           "name": "FleshRegion5Patch2__GEO_Arm.L",
@@ -4876,7 +5031,7 @@
             ]
           },
           "closed_volume_m3": 0.0007573843,
-          "semantic_sha256": "9727107e50072f62ef37eb8affac259ae210531d8f75a8734bd3fd749c4cf904"
+          "semantic_sha256": "7bf5be9b985abcde51ec4455ed22d9ff136eb8bf5e1f07661401342efcf9daaf"
         },
         {
           "name": "FleshRegion5Patch3__GEO_Arm.L",
@@ -4900,199 +5055,199 @@
             ]
           },
           "closed_volume_m3": 0.0007639235,
-          "semantic_sha256": "ce3a20e99726d64ed8da6373782a7b399e6cda721433281995b1ddd7f34e0d5b"
+          "semantic_sha256": "ee7e3bc418748ff4b04736a5d0f1a43d65e333183d07b1427fb27f8583af23b4"
         },
         {
           "name": "FleshRegion6Patch0__GEO_Arm.L",
-          "vertices": 148,
-          "triangles": 288,
+          "vertices": 894,
+          "triangles": 1192,
           "bounds_unity_m": {
             "min": [
-              0.4550001,
-              1.0749998,
-              -0.062165
+              0.4546561,
+              1.0738354,
+              -0.0644581
             ],
             "max": [
-              0.7013531,
-              1.2908397,
-              -0.0101554
+              0.7021852,
+              1.2928282,
+              -0.0102759
             ],
             "size": [
-              0.246353,
-              0.2158399,
-              0.0520096
+              0.2475291,
+              0.2189928,
+              0.0541822
             ]
           },
-          "closed_volume_m3": 0.0004116304,
-          "semantic_sha256": "adf8009a33b521bf2de9fe8e8f4e60b642460651cf0b3f599a000197dcccb042"
+          "closed_volume_m3": 7.48101e-05,
+          "semantic_sha256": "4da15033795eca4060f83513ad9cd1cbb353714b05fcf1f1b111bab788f9569d"
         },
         {
           "name": "FleshRegion6Patch1__GEO_Arm.L",
-          "vertices": 164,
-          "triangles": 316,
+          "vertices": 960,
+          "triangles": 1280,
           "bounds_unity_m": {
             "min": [
-              0.4234196,
-              1.0478729,
-              -0.0625647
+              0.4217397,
+              1.0466324,
+              -0.0648834
             ],
             "max": [
-              0.6800003,
-              1.2520144,
-              -0.0126304
+              0.6817982,
+              1.2519706,
+              -0.0127807
             ],
             "size": [
-              0.2565807,
-              0.2041415,
-              0.0499343
+              0.2600585,
+              0.2053382,
+              0.0521027
             ]
           },
-          "closed_volume_m3": 0.0004056973,
-          "semantic_sha256": "84ff0ac624aae323162aedf154547dcadad807e8bb0cb0dcd3cbd9b6ff5964f3"
+          "closed_volume_m3": 7.42707e-05,
+          "semantic_sha256": "c4c0a1279fa324afee0d040e32a6c060331c997e06cae0e2f781715ee5a5488e"
         },
         {
           "name": "FleshRegion6Patch2__GEO_Arm.L",
-          "vertices": 156,
-          "triangles": 304,
+          "vertices": 918,
+          "triangles": 1224,
           "bounds_unity_m": {
             "min": [
-              0.4550002,
-              1.0736443,
-              -0.0199998
+              0.4549617,
+              1.0722477,
+              -0.0199774
             ],
             "max": [
-              0.7011432,
-              1.290346,
-              0.0344051
+              0.7019515,
+              1.292303,
+              0.0367223
             ],
             "size": [
-              0.246143,
-              0.2167017,
-              0.0544049
+              0.2469898,
+              0.2200553,
+              0.0566997
             ]
           },
-          "closed_volume_m3": 0.0004103991,
-          "semantic_sha256": "467a60dd8e40844c606e610fc25e8c71fe96c0660df842989d531312301f852e"
+          "closed_volume_m3": 7.42627e-05,
+          "semantic_sha256": "37c2dd3607637bf68d3e5f5979c5ae3d551f5b145b892dbf79bed6b3990db9a8"
         },
         {
           "name": "FleshRegion6Patch3__GEO_Arm.L",
-          "vertices": 166,
-          "triangles": 320,
+          "vertices": 972,
+          "triangles": 1296,
           "bounds_unity_m": {
             "min": [
-              0.4230991,
-              1.0475465,
-              -0.0212399
+              0.4213881,
+              1.046285,
+              -0.0212966
             ],
             "max": [
-              0.6800002,
-              1.2493137,
-              0.0340054
+              0.6821589,
+              1.2489891,
+              0.0362971
             ],
             "size": [
-              0.2569011,
-              0.2017672,
-              0.0552453
+              0.2607708,
+              0.2027041,
+              0.0575937
             ]
           },
-          "closed_volume_m3": 0.0004113145,
-          "semantic_sha256": "3db68144772bd0903bc125fa1cbdaf5c2c44998f25d67c00d09af806af1a598d"
+          "closed_volume_m3": 7.47595e-05,
+          "semantic_sha256": "3680013650beb75a381ac3d5f2f3e62f9710b4ae7ee0ac7652038e5f511efcc0"
         },
         {
           "name": "FleshRegion7Patch0__GEO_HandPalm.L",
-          "vertices": 202,
-          "triangles": 388,
+          "vertices": 702,
+          "triangles": 936,
           "bounds_unity_m": {
             "min": [
-              0.6796001,
-              1.0129153,
-              -0.0744081
+              0.6797272,
+              1.0123554,
+              -0.0769599
             ],
             "max": [
-              0.7827032,
-              1.0861946,
-              -0.0276627
+              0.7823527,
+              1.0862826,
+              -0.0276043
             ],
             "size": [
-              0.1031031,
-              0.0732793,
-              0.0467454
+              0.1026255,
+              0.0739272,
+              0.0493556
             ]
           },
-          "closed_volume_m3": 2.81282e-05,
-          "semantic_sha256": "cf0bd3a10d63434f07a04145a56fbef6d361680b67d2bc3910aae9ce1573de5c"
+          "closed_volume_m3": 4.2295e-06,
+          "semantic_sha256": "9234a999be3f75d6ce7f9b92cb1f954db6bf254919775fbcf7b278785b29dc91"
         },
         {
           "name": "FleshRegion7Patch1__GEO_HandPalm.L",
-          "vertices": 240,
-          "triangles": 460,
+          "vertices": 912,
+          "triangles": 1216,
           "bounds_unity_m": {
             "min": [
-              0.6717679,
-              1.0051014,
-              -0.0763522
+              0.671912,
+              1.0050523,
+              -0.0790312
             ],
             "max": [
-              0.7814663,
-              1.0756125,
-              -0.028817
+              0.7810513,
+              1.0756625,
+              -0.0288281
             ],
             "size": [
-              0.1096984,
-              0.0705111,
-              0.0475352
+              0.1091393,
+              0.0706102,
+              0.0502031
             ]
           },
-          "closed_volume_m3": 3.46171e-05,
-          "semantic_sha256": "ccb59374ebc29b4392a213d2212df9adafeac24d2613ea1121a8a62b4f00e548"
+          "closed_volume_m3": 5.343e-06,
+          "semantic_sha256": "ea5f2b0161bef7025c27d53c14439032096b81ddafed9df92c31991b4d76ee9a"
         },
         {
           "name": "FleshRegion7Patch2__GEO_HandPalm.L",
-          "vertices": 246,
-          "triangles": 464,
+          "vertices": 816,
+          "triangles": 1088,
           "bounds_unity_m": {
             "min": [
-              0.6786736,
-              1.0126015,
-              -0.0335238
+              0.6791053,
+              1.0122377,
+              -0.0337688
             ],
             "max": [
-              0.7825556,
-              1.0861799,
-              0.0145482
+              0.7820624,
+              1.0862365,
+              0.0168081
             ],
             "size": [
-              0.103882,
-              0.0735784,
-              0.048072
+              0.1029571,
+              0.0739988,
+              0.0505769
             ]
           },
-          "closed_volume_m3": 4.87773e-05,
-          "semantic_sha256": "9fe2c90df99b6739c9ed946bf4ee98ed9068e59521fad83571c4dd09b7b16f3f"
+          "closed_volume_m3": 5.4176e-06,
+          "semantic_sha256": "942f4119a07370273c001d7eeb0b3131bb4918b9f21bb20c87fdc4a2efee7518"
         },
         {
           "name": "FleshRegion7Patch3__GEO_HandPalm.L",
-          "vertices": 240,
-          "triangles": 464,
+          "vertices": 810,
+          "triangles": 1080,
           "bounds_unity_m": {
             "min": [
-              0.6714148,
-              1.0051712,
-              -0.0341433
+              0.6715402,
+              1.005131,
+              -0.0345472
             ],
             "max": [
-              0.7814397,
-              1.073974,
-              0.0120807
+              0.7811256,
+              1.0724258,
+              0.0141831
             ],
             "size": [
-              0.1100249,
-              0.0688028,
-              0.046224
+              0.1095854,
+              0.0672948,
+              0.0487303
             ]
           },
-          "closed_volume_m3": 3.84171e-05,
-          "semantic_sha256": "926afddc24000f5355df21d689e8310b864374d2333410d3a0ab2e6d5e6dde6d"
+          "closed_volume_m3": 4.9142e-06,
+          "semantic_sha256": "bae3641fbb8933b3903c68ee0cf6dd88305a1ccb7c7e980183bb7fa33afe9176"
         },
         {
           "name": "FleshRegion8Patch0__GEO_Arm.R",
@@ -5116,7 +5271,7 @@
             ]
           },
           "closed_volume_m3": 0.0007506597,
-          "semantic_sha256": "93ab756e2ad6d8ca6de4a52353ab72b05a34664247fbafd7fe3fa95760756866"
+          "semantic_sha256": "4548a5c7b5d1869b5e84cf74e0ea5154c7f352cdac61387f7b855ad88ebea853"
         },
         {
           "name": "FleshRegion8Patch1__GEO_Arm.R",
@@ -5140,7 +5295,7 @@
             ]
           },
           "closed_volume_m3": 0.0007733792,
-          "semantic_sha256": "2a57b559caab0b797e9c7976fdc8e32c131904dcec8838834a153a9cdce73b5b"
+          "semantic_sha256": "6d6040d2fec0c61b9718a6ea80909df4707a562bca22bda332568091a567b553"
         },
         {
           "name": "FleshRegion8Patch2__GEO_Arm.R",
@@ -5164,7 +5319,7 @@
             ]
           },
           "closed_volume_m3": 0.0007667999,
-          "semantic_sha256": "e4154330b97ffd6d1cee0a266d96e8c91cc42897f1b70e880e3d937319db9f19"
+          "semantic_sha256": "c4e5fb660b28dc1e67cc74f4aaf882d03561e838ccbfcfe3738d2ce2a8abb294"
         },
         {
           "name": "FleshRegion8Patch3__GEO_Arm.R",
@@ -5188,103 +5343,103 @@
             ]
           },
           "closed_volume_m3": 0.0007562302,
-          "semantic_sha256": "9141a1aa64844fdd987ed8aee0bbdf04c12b9b14424bfafbbf770aa01fea3786"
+          "semantic_sha256": "7245697237a8f641fa354586b7dd5dd7f39185998cc57461507238b0c65b233a"
         },
         {
           "name": "FleshRegion9Patch0__GEO_Arm.R",
-          "vertices": 174,
-          "triangles": 340,
+          "vertices": 990,
+          "triangles": 1320,
           "bounds_unity_m": {
             "min": [
-              -0.6779999,
-              1.041873,
-              -0.0585647
+              -0.67974,
+              1.0406324,
+              -0.0608834
             ],
             "max": [
-              -0.4214255,
-              1.246015,
-              -0.0086303
+              -0.4197493,
+              1.2459722,
+              -0.0087738
             ],
             "size": [
-              0.2565744,
-              0.204142,
-              0.0499344
+              0.2599907,
+              0.2053398,
+              0.0521096
             ]
           },
-          "closed_volume_m3": 0.000410176,
-          "semantic_sha256": "58dfa90c4fef835943647688498d690fd98a7d8fb31646e083c54eb3e52e08ae"
+          "closed_volume_m3": 7.42612e-05,
+          "semantic_sha256": "161a803132ec660383bf59abaf3de02629d07e22e4fbfb1d9fb2231ffb5929aa"
         },
         {
           "name": "FleshRegion9Patch1__GEO_Arm.R",
-          "vertices": 160,
-          "triangles": 308,
+          "vertices": 936,
+          "triangles": 1248,
           "bounds_unity_m": {
             "min": [
-              -0.6993529,
-              1.0689999,
-              -0.0581651
+              -0.7001849,
+              1.0676948,
+              -0.0604582
             ],
             "max": [
-              -0.453,
-              1.2848397,
-              -0.0061555
+              -0.4526484,
+              1.2868284,
+              -0.006276
             ],
             "size": [
-              0.2463529,
-              0.2158398,
-              0.0520096
+              0.2475365,
+              0.2191336,
+              0.0541822
             ]
           },
-          "closed_volume_m3": 0.0004114902,
-          "semantic_sha256": "45e065e1862314a20e7430356f2cde2dc0b7477e581c0fc3b74f01e6078880a8"
+          "closed_volume_m3": 7.48184e-05,
+          "semantic_sha256": "69a2c13a63a8fcf4a582fcf9d91505f3c09b8b7248fd68b893a3ce0cc322f020"
         },
         {
           "name": "FleshRegion9Patch2__GEO_Arm.R",
-          "vertices": 168,
-          "triangles": 324,
+          "vertices": 996,
+          "triangles": 1328,
           "bounds_unity_m": {
             "min": [
-              -0.678,
-              1.0415466,
-              -0.01724
+              -0.6802221,
+              1.0402851,
+              -0.0172967
             ],
             "max": [
-              -0.4210996,
-              1.2433128,
-              0.0380054
+              -0.4193853,
+              1.2430067,
+              0.0402971
             ],
             "size": [
-              0.2569004,
-              0.2017662,
-              0.0552454
+              0.2608368,
+              0.2027216,
+              0.0575938
             ]
           },
-          "closed_volume_m3": 0.0004119342,
-          "semantic_sha256": "b9d418651b502aab29a748f994a07e30664b3afce656bd6dcc33f9ecb1e8ee60"
+          "closed_volume_m3": 7.47542e-05,
+          "semantic_sha256": "ee3b4d15b90f5c8207009a0ef6f62dc5af4d9e1ccef893ce0467f36911959b86"
         },
         {
           "name": "FleshRegion9Patch3__GEO_Arm.R",
-          "vertices": 176,
-          "triangles": 340,
+          "vertices": 972,
+          "triangles": 1296,
           "bounds_unity_m": {
             "min": [
-              -0.6991431,
-              1.0676442,
-              -0.0159999
+              -0.6999512,
+              1.0663886,
+              -0.0159774
             ],
             "max": [
-              -0.453,
-              1.2843456,
-              0.0384051
+              -0.4529331,
+              1.2863028,
+              0.0407223
             ],
             "size": [
-              0.2461431,
-              0.2167014,
-              0.054405
+              0.2470181,
+              0.2199142,
+              0.0566997
             ]
           },
-          "closed_volume_m3": 0.0004058287,
-          "semantic_sha256": "268d04241ca6ad29e45d5bae00581eb9dc82663c9496f3d6739b3522cc92e929"
+          "closed_volume_m3": 7.42759e-05,
+          "semantic_sha256": "7f1e614231709baefc45c713c831642bc243c382faf9db46e8f2e4a85d769f16"
         },
         {
           "name": "Region10Patch0__GEO_Arm.R",
@@ -5308,7 +5463,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f4dc935e023170f7af0f0c0f336e51a1ff6ecad3d78e388f1e4dd444ca2e073d"
+          "semantic_sha256": "fb37baa13bcbfcafa30756a4de97ec054702af825a5738de5d0841fd07150064"
         },
         {
           "name": "Region10Patch0__GEO_HandFinger0.R",
@@ -5428,7 +5583,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "3a278b657d09b305318f9090eac27901aaee86d57cfeeb10877a0e56fa375b62"
+          "semantic_sha256": "041ce28e086d616493301ab4346353e7ea615822e23d85874c6b60d50ed984c7"
         },
         {
           "name": "Region10Patch1__GEO_HandFinger0.R",
@@ -5548,7 +5703,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "4b8b3cd893e760f8bcafffb8d2c942fddca1fea0ea3b7674d46fbd364b2f5f1c"
+          "semantic_sha256": "b6af46eaad9f3cbbb47c44861fe73547dda54c5566f3a9d3070cd209e871150c"
         },
         {
           "name": "Region10Patch2__GEO_HandFinger1.R",
@@ -5668,7 +5823,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "d76572b6c5f281d6b8d7cba464b5e652093e448555d4ac869abd651cdd84f4c6"
+          "semantic_sha256": "7b52ff8ae4edd55d6750998b05f1c69ca0fc76f569b57998f7fe075248d9f7e8"
         },
         {
           "name": "Region10Patch3__GEO_HandFinger1.R",
@@ -6704,8 +6859,8 @@
         },
         {
           "name": "Region1Patch0__GEO_Neck",
-          "vertices": 57,
-          "triangles": 55,
+          "vertices": 58,
+          "triangles": 54,
           "bounds_unity_m": {
             "min": [
               0.0,
@@ -6713,26 +6868,26 @@
               -0.0259997
             ],
             "max": [
-              0.033,
+              0.044,
               1.49,
               0.0339928
             ],
             "size": [
-              0.033,
+              0.044,
               0.0705001,
               0.0599925
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "46e62908c16daa4f1e04775541b2b81359b115a60764cd81c1f9b66d39ce4901"
+          "semantic_sha256": "350906ea300be291ded9b265a73664f18f75f937acebe30f13501eecb80d3680"
         },
         {
           "name": "Region1Patch1__GEO_Neck",
-          "vertices": 62,
+          "vertices": 59,
           "triangles": 55,
           "bounds_unity_m": {
             "min": [
-              -0.033,
+              -0.044,
               1.4194999,
               -0.0259997
             ],
@@ -6742,47 +6897,47 @@
               0.0339928
             ],
             "size": [
-              0.033,
+              0.044,
               0.0705001,
               0.0599925
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0ce864e373b5c77ac5b738cd37f8b2944f11aa80f57f2b16722fb645f6832156"
+          "semantic_sha256": "4104e590c7292fc4c1cc800429eee619918ab7eb02fd16c0831bee2ef8b947c4"
         },
         {
           "name": "Region1Patch2__GEO_Neck",
           "vertices": 39,
-          "triangles": 31,
+          "triangles": 34,
           "bounds_unity_m": {
             "min": [
               0.0,
               1.4194999,
-              -0.0392225
+              -0.0489718
             ],
             "max": [
-              0.0267186,
+              0.039836,
               1.49,
               -0.0118998
             ],
             "size": [
-              0.0267186,
+              0.039836,
               0.0705001,
-              0.0273227
+              0.037072
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0378b1aa5c240d709c192ca656cfcb946de69801c0a05a06f3ff1cae59dd37b3"
+          "semantic_sha256": "cdf8e0a03fca02f4b7b35f6c8e147e4259a9c38669b3089e05e46feebebb85a2"
         },
         {
           "name": "Region1Patch3__GEO_Neck",
-          "vertices": 35,
-          "triangles": 31,
+          "vertices": 40,
+          "triangles": 35,
           "bounds_unity_m": {
             "min": [
-              -0.0267186,
+              -0.0398359,
               1.4194999,
-              -0.0392225
+              -0.0489718
             ],
             "max": [
               0.0,
@@ -6790,13 +6945,13 @@
               -0.0118998
             ],
             "size": [
-              0.0267186,
+              0.0398359,
               0.0705001,
-              0.0273227
+              0.037072
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "2ec23bcd4dc5f69cf8dc38db0d8544fa448ecd76108297477172e9c9561a2126"
+          "semantic_sha256": "19fe686f45fdbe25cd97e4ccc7886b8739cc1af82bcb918c0e84379ebc080f7e"
         },
         {
           "name": "Region2Patch0__GEO_Neck",
@@ -6820,7 +6975,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "929665fa4d142f6b03534350286ac3ed27fa09ed100ff89c69528b67625c2b38",
+          "semantic_sha256": "a092e7e4d899d6be0e440409c5f474e3dde7263c10dbb056aff2535221b96f2b",
           "torso_cells": {
             "count": 35,
             "maximum_outer_edge_m": 0.03781214,
@@ -6849,7 +7004,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "a13324ef24dbe8ca2212fad6919deae8df08c041b9ceccbba78992c1aeb2b1a8",
+          "semantic_sha256": "e35f344dc7d12a3acdd5098b80b55f64f9ab23b109518c5ca65710c726a6a388",
           "torso_cells": {
             "count": 2640,
             "maximum_outer_edge_m": 0.04492442,
@@ -6878,7 +7033,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "9e9db4cb8cdc040cf5023173e205beda7f7be56ab5db0272ad26a7fd20a88fcf",
+          "semantic_sha256": "a6f322669cbde41eb5872f928cf0fa29fe9bd83f9fbc63d50b510cda7efa440f",
           "torso_cells": {
             "count": 38,
             "maximum_outer_edge_m": 0.03513766,
@@ -6907,7 +7062,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c347f2070a47a41fa3c1a61f9088a99bac1282e53906940eac0e045e2923479b",
+          "semantic_sha256": "d6300d231c7be2d2ddb226859933ed06b1c2a67af30c0cdc7375bee50b9195e8",
           "torso_cells": {
             "count": 2456,
             "maximum_outer_edge_m": 0.04492441,
@@ -6936,7 +7091,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "64b057303e6433c2111148f84fc5aa0d9a281bafdba3fd6aa2aa583f24570534",
+          "semantic_sha256": "49069ab56591b627cd050fc584419286140ed8ff529cae1dc0b09e9486b2e524",
           "torso_cells": {
             "count": 23,
             "maximum_outer_edge_m": 0.02673911,
@@ -6965,7 +7120,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "cef9227567b1468d60b6d2649902a8286622d317f8d6a672c414c3951a42eb85",
+          "semantic_sha256": "e0b805262e25f1991dec55851784bb2dae76dc35106168def1ba776529b463b0",
           "torso_cells": {
             "count": 3495,
             "maximum_outer_edge_m": 0.04495556,
@@ -6994,7 +7149,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "a53870c4bdfa3b1cc06e8b3449c8ee241d72641d660ed1d98a8ef527dcb066df",
+          "semantic_sha256": "ececb6aa75ab9921c270ecd9a48c88778dc221da2daa41076351087b3b2876d3",
           "torso_cells": {
             "count": 18,
             "maximum_outer_edge_m": 0.03329344,
@@ -7023,7 +7178,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "70e9b8a8e5734db508782b29445262bab6792cfdce3b24ea57455fb63e7b2e75",
+          "semantic_sha256": "b0b13c2d26d18660eb2160aa67b6f301022eb1f0a9360922c9202be794ad5025",
           "torso_cells": {
             "count": 3523,
             "maximum_outer_edge_m": 0.04495556,
@@ -7052,7 +7207,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c6243a7b434d686dae55c2d6052c3ff264476358051e91a0517991d1509af721",
+          "semantic_sha256": "408cfb62fc595dc12a78ac71080ef0d2eed60c43ed85aad1646f3cb5ce33c1ed",
           "torso_cells": {
             "count": 513,
             "maximum_outer_edge_m": 0.04499451,
@@ -7081,7 +7236,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "8fd6939691af3058ee604c78a22fed4b9ee45ee6a059c5d7807bff8c3628c897",
+          "semantic_sha256": "723b0257d20587210a160176be2c39f8c1a6fb8f60c0c9f5757babf2f9fd7ccb",
           "torso_cells": {
             "count": 517,
             "maximum_outer_edge_m": 0.04499451,
@@ -7110,7 +7265,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "d78854329e5569386de0c17389763b3ac4efeebdeee63ade42a49394b8595145",
+          "semantic_sha256": "b48700b921fd8c7b364a777c290515f799ef970d6f72418aac0bb816ad754860",
           "torso_cells": {
             "count": 1627,
             "maximum_outer_edge_m": 0.04499445,
@@ -7139,7 +7294,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "102b3f13e3d62049bb47b5cbc156d94f8d6dd14ccee0139653b3b2f424ff93b6",
+          "semantic_sha256": "627e5f4e7bb1f4b984554d49baa6bfef1dcdbea88c88a9e10afd4bd9a9d5c2af",
           "torso_cells": {
             "count": 1575,
             "maximum_outer_edge_m": 0.0449945,
@@ -7168,7 +7323,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "323e85dad94cb948a66ed0e8e6d972db775e14ee52ab5e87de62edde97c753f5",
+          "semantic_sha256": "86adac179c2b69aa1b248a2b65e14808a202d009de96025dfffa96bb4f25af37",
           "torso_cells": {
             "count": 446,
             "maximum_outer_edge_m": 0.04341157,
@@ -7197,7 +7352,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "548a5cd838a9880eb316b44a4250ba0c1125ebdaed91d5a141f0e9664c7eaebd",
+          "semantic_sha256": "9fde1d5cd63ce3dffc8205141dfcec83dfcf527ca8c4cf24183e67e5da65245f",
           "torso_cells": {
             "count": 454,
             "maximum_outer_edge_m": 0.04341158,
@@ -7226,7 +7381,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "7f256916a55c448af34e44f7761feec0ceaf7fa9c8fbefb45959103014252d83"
+          "semantic_sha256": "be6bbcc29e06ce3717f091cb18b6d88c3cf07cb283b98d6b1c7049fb570af1f1"
         },
         {
           "name": "Region5Patch1__GEO_Arm.L",
@@ -7250,7 +7405,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "15d2fe981d0ed7566fa6f75e76c1d6ead56f7805aaa5b7330cc55097647d6545"
+          "semantic_sha256": "7d2e34e84bfc63b8dfc34b4247460f49e5618c0d5d877e74cb02f3ca0433bf3d"
         },
         {
           "name": "Region5Patch2__GEO_Arm.L",
@@ -7274,7 +7429,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "7da892bf12e605ca06f6a55b633340e498c34432ffa6f805b405340a73b19dac"
+          "semantic_sha256": "fcb4370e45437c0ee780a8aa689e06dd6111adc75da471eada9f76c970523897"
         },
         {
           "name": "Region5Patch3__GEO_Arm.L",
@@ -7298,7 +7453,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6863a4dab85d7e5b4bb6a469392b5b80375dea693a3fcf2ca9144155a1eea102"
+          "semantic_sha256": "97e11980e3c3adf013331209ae51003950165dfaf8c788758693a3c7022d7db0"
         },
         {
           "name": "Region6Patch0__GEO_Arm.L",
@@ -7322,7 +7477,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "e4866c3040bfb3d3d8050d5fdca5e228f6331fe9e56503712bee9e0bbb5b3874"
+          "semantic_sha256": "eef02bd07705ced30b4f20c0201196e8c1865be0c367385758cb94e0c50327dc"
         },
         {
           "name": "Region6Patch0__GEO_HandPalm.L",
@@ -7370,7 +7525,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "7a4d801aa5573f74e072169c7d6a046986c52f8c57d31c118516944590764151"
+          "semantic_sha256": "09fefb96aa4f745cc7bfc67d91916d8d13016581cee9b62d33110b1f61a346a7"
         },
         {
           "name": "Region6Patch1__GEO_HandPalm.L",
@@ -7418,7 +7573,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "de72f5b8ee88f1f9f787fcd18d86e149a7000239e7ac735136af472912598c80"
+          "semantic_sha256": "1c7671f2b39731ff3ebbc5ff0caa4720ad24a4eb545f1eb4f40db925b0ef86c3"
         },
         {
           "name": "Region6Patch2__GEO_HandPalm.L",
@@ -7466,7 +7621,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "cbb41339e04c368342cc1ff658fde4a700ca367c96704192e42058d327d4f972"
+          "semantic_sha256": "fdc4a16cb03a10a5c14b3f4767d4dc46250c62e9d6d388ea5c339f50fd3c7460"
         },
         {
           "name": "Region6Patch3__GEO_HandPalm.L",
@@ -7898,7 +8053,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0582648ffb974df6dbb5f78c514ce2fededc3cdfd4bf6274ad0641b88a0e9ef2"
+          "semantic_sha256": "4b5a9c95a3afa91f43efd3739adf6f72c71f39351d569f8679cf558a6e4a5e8f"
         },
         {
           "name": "Region8Patch1__GEO_Arm.R",
@@ -7922,7 +8077,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "371449482351730432e24da9492c79f75671bdc079644aee1282ee1d584ba448"
+          "semantic_sha256": "06434add84e4aeb151715512cc6e3cb75323e6b94fa05a01e6ccfcc5d16a36a1"
         },
         {
           "name": "Region8Patch2__GEO_Arm.R",
@@ -7946,7 +8101,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6590a6df8b7844fffc032a0042e24b1da9d07c20db46fea428c0c270f148d80a"
+          "semantic_sha256": "4d4b801a539c8182141e8c91e7dccb5167368ad5177be46f51b9f18f610ef526"
         },
         {
           "name": "Region8Patch3__GEO_Arm.R",
@@ -7970,7 +8125,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "cc62cfec0aa7f655e7e2d856cb8d51f4e237ef8208e534c1455eef53a1968745"
+          "semantic_sha256": "e29bc642cbb43419b12aff59cdb56f6e15a1b22480ed472742393aaa47b60b4c"
         },
         {
           "name": "Region9Patch0__GEO_Arm.R",
@@ -7994,7 +8149,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "2ea258622e333e7dbfb05b3b17d8c6f36a7c40b44ed3146de9a3f858f50208b3"
+          "semantic_sha256": "60172930ce40d52c67c6abd646ca7401cbfaa218cdcabee05ede25cd50ff5d27"
         },
         {
           "name": "Region9Patch0__GEO_HandPalm.R",
@@ -8042,7 +8197,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "16aa27c89248bedff1bf14951932882939e72975465a32924869ee0e71487e5b"
+          "semantic_sha256": "afaa148b42d4c0182749b20e48ccccc8aecb0c5f64f90d77157fab3a7f6cc58e"
         },
         {
           "name": "Region9Patch1__GEO_HandPalm.R",
@@ -8090,7 +8245,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "69df009c73e861fded3659629c544ebbd975b0106174855d23830f800f914c08"
+          "semantic_sha256": "98625ed6e3bf2b230bfb7a16dccfa4043d27585ec932ffe90ab64830a9ad7008"
         },
         {
           "name": "Region9Patch2__GEO_HandPalm.R",
@@ -8138,7 +8293,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "3e0dfd1775d4f45983f7c93c696e0b8f13e6ac8f71b99d89003b2da40c1cac15"
+          "semantic_sha256": "c06ae51ae99e3b8598b958cd289c05ef8389e48bd2be84b0a9ff38dfdef277d8"
         },
         {
           "name": "Region9Patch3__GEO_HandPalm.R",
@@ -8165,7 +8320,7 @@
           "semantic_sha256": "9a6414e6ffa21e822db3ff62773fc55f056d5afda803b66ef8bfcae2e569c6be"
         }
       ],
-      "semantic_sha256": "cf6e93b35089579047006a1d0f7ff02d90a2dce919c8cd006152a416f974bac7",
+      "semantic_sha256": "aeae9ae86efa4f67d32687eb5101b135f7ec0a7b7c5560f32504655a9059a335",
       "empty_flesh_patches": [
         {
           "region": 4,
@@ -8205,7 +8360,7 @@
               0.069776
             ]
           },
-          "semantic_sha256": "ef523a2d093b081d64d36c02ed576870a03e454ffededafc1b6cfa07f07c053e"
+          "semantic_sha256": "bb975756d9025d4794c19cee6dd768fd809625540496016824711db6543ccef5"
         },
         {
           "name": "Wound__GEO_Arm.L__1",
@@ -8231,7 +8386,7 @@
               0.081397
             ]
           },
-          "semantic_sha256": "b4d5e09b7a1abc72b6abb2a52570e8cc733cfcbc02ac9682cf4f0e34e5d5838c"
+          "semantic_sha256": "046e0483313bfd0ba7f82001b7a513a006ab4f23683d700fa952969fff2a696e"
         },
         {
           "name": "Wound__GEO_Arm.L__2",
@@ -8257,7 +8412,7 @@
               0.102074
             ]
           },
-          "semantic_sha256": "fe4d9e0f80ed94174f41c8e2eca97d61d7095123441c48ed4b92d67f1f23b7a3"
+          "semantic_sha256": "779a4cba588e75353a415637906c674383fa2a848ea14f8089483e79dd3f5c9c"
         },
         {
           "name": "Wound__GEO_Arm.L__3",
@@ -8283,7 +8438,7 @@
               0.102075
             ]
           },
-          "semantic_sha256": "26b2ba5814be7ca02cac51f523fe8d0063415230af241db5da2eb570638bbc14"
+          "semantic_sha256": "02983cdea407b8ef4ef708908ee277184d0a00a59f5641ed00e87bbbcd5d5f64"
         },
         {
           "name": "Wound__GEO_Arm.R__0",
@@ -8309,7 +8464,7 @@
               0.071437
             ]
           },
-          "semantic_sha256": "cf4489d01ef654d02e918b825b9904eb3a55dbd4e76ce7f8c40d000e80da6b43"
+          "semantic_sha256": "e9f8e1ea7d93e9c547ee3445588c9f87c820eba02fbce8139bc0d301ab1aaa8a"
         },
         {
           "name": "Wound__GEO_Arm.R__1",
@@ -8335,7 +8490,7 @@
               0.085858
             ]
           },
-          "semantic_sha256": "5f193b25943f33a848b39a9423ce07180d61ddfa15cb8e22a5f5bec02d9ba1b8"
+          "semantic_sha256": "e4d2b589afbcec03b50fab4d4a1b98311f5f4e08ed536d33ff83bcf51e634ee7"
         },
         {
           "name": "Wound__GEO_Arm.R__2",
@@ -8361,7 +8516,7 @@
               0.106169
             ]
           },
-          "semantic_sha256": "cda70db6f2fb4bc4fdc499507c9feda2f93e6ce693646c592ba58c85d543fdad"
+          "semantic_sha256": "ae41b6299bb0eb639a330dd1242b032891e55a340a20d6d750a9e15f3cadf40a"
         },
         {
           "name": "Wound__GEO_Arm.R__3",
@@ -8387,7 +8542,7 @@
               0.106169
             ]
           },
-          "semantic_sha256": "f9a1c3a7ace1752d3307fa2a2fd1a416cfffea63f415f3ccee30f44842782c44"
+          "semantic_sha256": "44e3730bd93b997fd354cc9f7b04bcbf72402ba9d2b2743273c4935d90a1186b"
         },
         {
           "name": "Wound__GEO_FootShoe.L__0",
@@ -9854,22 +10009,22 @@
           "weighted_vertices": 88,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.073073
+              -0.07695,
+              1.46975,
+              -0.095498
             ],
             "max": [
-              0.053563,
-              1.734,
-              0.020713
+              0.072309,
+              1.8194,
+              0.031112
             ],
             "size": [
-              0.110563,
-              0.259,
-              0.093786
+              0.149259,
+              0.34965,
+              0.126611
             ]
           },
-          "semantic_sha256": "33f889c0981349c119fa5f6d90f4f0935a921d001160ee2fa8769ce98483d882"
+          "semantic_sha256": "4010c068dd8f6918d7e2813391d5bdad8fcddaab8409131f4ecfd5e168cbe7cd"
         },
         {
           "name": "Wound__GEO_Head__1",
@@ -9880,22 +10035,22 @@
           "weighted_vertices": 78,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.040529
+              -0.07695,
+              1.46975,
+              -0.051564
             ],
             "max": [
-              0.057,
-              1.734,
-              0.042377
+              0.07695,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.114,
-              0.259,
-              0.082906
+              0.1539,
+              0.34965,
+              0.111923
             ]
           },
-          "semantic_sha256": "d1d507ef59f5e95d0ac8dccec3e2b37f99e900b713c631788baebf06b2a91bd0"
+          "semantic_sha256": "bb5a609bf6e0db56baddb7d3105b0eadd5c0fa3b02384a04a696d7385936ab72"
         },
         {
           "name": "Wound__GEO_Head__2",
@@ -9906,22 +10061,22 @@
           "weighted_vertices": 77,
           "bounds_unity_m": {
             "min": [
-              -0.057,
-              1.475,
-              -0.048711
+              -0.07695,
+              1.46975,
+              -0.06261
             ],
             "max": [
-              0.043665,
-              1.734,
-              0.042377
+              0.058947,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.100665,
-              0.259,
-              0.091089
+              0.135897,
+              0.34965,
+              0.12297
             ]
           },
-          "semantic_sha256": "fbf9547a7bced916137c4cddfc2fb0e265d76894e2f2770d5cfe2f2f15cc1acc"
+          "semantic_sha256": "4287fdfb6d7949a030b0e643bf778222a6af6a75203fbde62bbf38af15f2d3aa"
         },
         {
           "name": "Wound__GEO_Head__3",
@@ -9932,22 +10087,22 @@
           "weighted_vertices": 77,
           "bounds_unity_m": {
             "min": [
-              -0.043665,
-              1.475,
-              -0.048711
+              -0.058947,
+              1.46975,
+              -0.06261
             ],
             "max": [
-              0.057,
-              1.734,
-              0.042377
+              0.07695,
+              1.8194,
+              0.060359
             ],
             "size": [
-              0.100665,
-              0.259,
-              0.091089
+              0.135897,
+              0.34965,
+              0.12297
             ]
           },
-          "semantic_sha256": "4d31a4c2c3b8916ca034c704b05c96b2253cc6759e36a42ffc354f5b95994d91"
+          "semantic_sha256": "1a56d59a10793f15c9d1200898c2bd20c7af22d20d3e17ccd1f5d69ecd68a16f"
         },
         {
           "name": "Wound__GEO_LegsLower.L__0",
@@ -10263,6 +10418,32 @@
         },
         {
           "name": "Wound__GEO_Neck__0",
+          "vertices": 38,
+          "polygons": 20,
+          "triangles": 50,
+          "uv_loops": 90,
+          "weighted_vertices": 38,
+          "bounds_unity_m": {
+            "min": [
+              -0.044,
+              1.397,
+              -0.048972
+            ],
+            "max": [
+              0.044,
+              1.49,
+              0.045047
+            ],
+            "size": [
+              0.088,
+              0.093,
+              0.094019
+            ]
+          },
+          "semantic_sha256": "a4f350bd9045bd7e03ce06cbf7ffad796432405b95d920ce00ec16464f6ee6da"
+        },
+        {
+          "name": "Wound__GEO_Neck__1",
           "vertices": 32,
           "polygons": 21,
           "triangles": 42,
@@ -10270,35 +10451,35 @@
           "weighted_vertices": 32,
           "bounds_unity_m": {
             "min": [
-              -0.042,
+              -0.044,
               1.397,
-              -0.039223
+              -0.009
             ],
             "max": [
-              0.042,
+              0.044,
               1.49,
-              0.008
+              0.045047
             ],
             "size": [
-              0.084,
+              0.088,
               0.093,
-              0.047223
+              0.054047
             ]
           },
-          "semantic_sha256": "599ebd1501d588e366e600ca8ed016940463d4661ea5812c88d8f41a69f8dd4b"
+          "semantic_sha256": "19ae054b6b3bd890b5295486c650b24be4f3b3931d5a26cac9f7b21ea195043b"
         },
         {
-          "name": "Wound__GEO_Neck__1",
+          "name": "Wound__GEO_Neck__2",
           "vertices": 38,
-          "polygons": 22,
-          "triangles": 54,
-          "uv_loops": 98,
+          "polygons": 21,
+          "triangles": 52,
+          "uv_loops": 94,
           "weighted_vertices": 38,
           "bounds_unity_m": {
             "min": [
-              -0.042,
+              -0.044,
               1.397,
-              -0.039223
+              -0.048972
             ],
             "max": [
               0.042,
@@ -10306,64 +10487,38 @@
               0.045047
             ],
             "size": [
-              0.084,
+              0.086,
               0.093,
-              0.08427
+              0.094019
             ]
           },
-          "semantic_sha256": "f8ab64674bb17a65310ebed698ab31ad305c65a2381224496454772f43112dbb"
+          "semantic_sha256": "8436bfd94bdb6537408050906e752be7866af97ea3f8cd4ede65a3e9ba8d75b6"
         },
         {
-          "name": "Wound__GEO_Neck__2",
-          "vertices": 32,
+          "name": "Wound__GEO_Neck__3",
+          "vertices": 38,
           "polygons": 21,
-          "triangles": 42,
-          "uv_loops": 84,
-          "weighted_vertices": 32,
+          "triangles": 52,
+          "uv_loops": 94,
+          "weighted_vertices": 38,
           "bounds_unity_m": {
             "min": [
               -0.042,
               1.397,
-              -0.039223
+              -0.048972
             ],
             "max": [
-              0.037841,
+              0.044,
               1.49,
-              0.024488
+              0.045047
             ],
             "size": [
-              0.079841,
+              0.086,
               0.093,
-              0.06371
+              0.094019
             ]
           },
-          "semantic_sha256": "6ca4f08cd40a52b561a9e42895522dfcf7ec669288eac03bb737de64c835afd4"
-        },
-        {
-          "name": "Wound__GEO_Neck__3",
-          "vertices": 32,
-          "polygons": 21,
-          "triangles": 42,
-          "uv_loops": 84,
-          "weighted_vertices": 32,
-          "bounds_unity_m": {
-            "min": [
-              -0.037841,
-              1.397,
-              -0.039223
-            ],
-            "max": [
-              0.042,
-              1.49,
-              0.024488
-            ],
-            "size": [
-              0.079841,
-              0.093,
-              0.06371
-            ]
-          },
-          "semantic_sha256": "f39db4bcf79e2f1bc2fcd1dedc50aa779419491e2812be82a10f54c8a096e427"
+          "semantic_sha256": "35c32a7b8572ec28d57f7e86d427a6b62c659e163f7bf90c7f8c9cd9c2fc7361"
         },
         {
           "name": "Wound__GEO_Torso__0",
@@ -10470,8 +10625,8 @@
           "semantic_sha256": "7be51dc0d14864e5945809c79bdd3f9f7d498403d5192b820e183783f70b986d"
         }
       ],
-      "vertices": 3082,
-      "triangles": 3968,
+      "vertices": 3094,
+      "triangles": 3984,
       "bounds_unity_m": {
         "min": [
           -0.780768,
@@ -10480,16 +10635,16 @@
         ],
         "max": [
           0.782768,
-          1.734,
+          1.8194,
           0.22
         ],
         "size": [
           1.563536,
-          1.7304,
+          1.8158,
           0.453
         ]
       },
-      "semantic_sha256": "915311774a3cdc4ced2d615163ccfa9184b1accc3ed6d4ffadade9e5a6c2dbdd"
+      "semantic_sha256": "89500414405424e95801545918bc755c008afd908ce34dde6d24340a8613a3f5"
     }
   },
   "wound_patches": [
@@ -10976,25 +11131,25 @@
     {
       "name": "Wound__GEO_Neck__0",
       "source_renderer": "GEO_Neck",
-      "vertices": 32,
-      "polygons": 21
+      "vertices": 38,
+      "polygons": 20
     },
     {
       "name": "Wound__GEO_Neck__1",
       "source_renderer": "GEO_Neck",
-      "vertices": 38,
-      "polygons": 22
+      "vertices": 32,
+      "polygons": 21
     },
     {
       "name": "Wound__GEO_Neck__2",
       "source_renderer": "GEO_Neck",
-      "vertices": 32,
+      "vertices": 38,
       "polygons": 21
     },
     {
       "name": "Wound__GEO_Neck__3",
       "source_renderer": "GEO_Neck",
-      "vertices": 32,
+      "vertices": 38,
       "polygons": 21
     },
     {
@@ -11161,7 +11316,7 @@
       "source": "GEO_Neck",
       "maximum_nonplanarity_m": 0.00028073,
       "nonplanar_polygon_count": 36,
-      "maximum_cut_tessellation_deviation_m": 8.943e-05
+      "maximum_cut_tessellation_deviation_m": 3.781e-05
     },
     {
       "kind": "Room",
@@ -11172,9 +11327,56 @@
     }
   ],
   "files": {
-    "CombatGore/BodyRoom.fbx": "9de5c7551c720dab6e634ce1e312c2187e8eae08aca49d17d497102302cc6d6f",
-    "CombatGore/HeadRoom.fbx": "3dd98fd6e3c0d206e744f997965c486929af910cb21f684380ccdfcc82a1784d",
-    "CombatGore/SkullRoom.fbx": "eed711e5cb9d363178d7b9739d2f1325b5e741b80036985202f3fd34e57fcbc8",
-    "CombatBlood/WoundsRoom.fbx": "cfa4afaa41d2d63fc9ce0bd10e290989179aef2dd279d9f2c15a9637f49b40c7"
+    "CombatGore/BodyRoom.fbx": "bcefa0a32b8702e62d080f5946220abfd3a3d235a7be7322ed8ca05293f66e16",
+    "CombatGore/HeadRoom.fbx": "d05a7658d05b58fb1e0f09110a9a63ca6094eab266ae83cc33925034c24136b9",
+    "CombatGore/SkullRoom.fbx": "018dac310adb9dc63ebeb5b7b1a8ad976135e457ae5494d1cff2d3d7657e2689",
+    "CombatBlood/WoundsRoom.fbx": "373ea3198a6f13b65d595694b32cf4bdcf43884ffb7d87332fcaafed9ae813f9"
+  },
+  "hand_length_proof": {
+    "source_sha256": "68a2007e1b0124cdcc171072695cbcb4c32ee340e7fbe87ec449617aefeb542f",
+    "body_bank_sha256": "bcefa0a32b8702e62d080f5946220abfd3a3d235a7be7322ed8ca05293f66e16",
+    "native_bank_files": "unchanged; actual FBX vertices, UV0, raw skin and bind skeleton",
+    "upper_arm_length_scale": 1.3,
+    "forearm_length_scale": 1.8,
+    "hand_length_scale": 1.5,
+    "hand_longitudinal_axis": "local_y",
+    "checked_hand_scales": [
+      1.0,
+      1.25,
+      1.5
+    ],
+    "matrix": "T(upper+forearm extension) * M_hand * diag(1,handScale,1) * inverse(M_hand); inherited by descendants",
+    "rest_hand_basis": {
+      "L": {
+        "rest_pivot_unity_m": [
+          0.6800001,
+          1.0749997,
+          -0.0199998
+        ],
+        "rest_longitudinal_axis_unity": [
+          0.8558512,
+          -0.515575,
+          -0.0412458
+        ]
+      },
+      "R": {
+        "rest_pivot_unity_m": [
+          -0.678,
+          1.069,
+          -0.0159999
+        ],
+        "rest_longitudinal_axis_unity": [
+          -0.8558521,
+          -0.5155736,
+          -0.041246
+        ]
+      }
+    },
+    "piece_count": 30,
+    "sample_count": 205308,
+    "maximum_skin_influences": 3,
+    "containment": "actual exported vertices, unique edge midpoints and triangle centres inside actual same-side source solids",
+    "tolerance_m": 2e-07,
+    "actor_uniform_scale": 1.2
   }
 }

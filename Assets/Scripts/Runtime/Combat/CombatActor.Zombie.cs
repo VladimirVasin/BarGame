@@ -12,7 +12,7 @@ namespace BarPromenade
             recoverySeconds: .95f, hitRecoverySeconds: .95f, blockRecoverySeconds: .95f,
             obstacleRecoverySeconds: .95f, parriedRecoverySeconds: .95f,
             animationRecoverySeconds: .95f, isUnarmedZombie: true, incomingDamageScale: .5f);
-        private const float ZombiePalmRadius = .065f;
+        private float ZombiePalmRadius => .065f * PresentationScale;
         private AnimationClip zombieWalk, zombieAttackRight, zombieAttackLeft, zombieLoadAdjust, zombieWatch;
         private Transform zombieLeftShoulder, zombieRightShoulder;
         private Vector3 zombieHandFrom, zombieHandTo;
@@ -62,6 +62,7 @@ namespace BarPromenade
         {
             handPose = npc.RightGrip.GetComponentInParent<NpcHandPose>();
             if (handPose == null) throw new InvalidOperationException("A zombie requires the shared anatomical hands.");
+            InitializeRoomHandContacts();
             if (IsDocker)
             {
                 zombieLoad = gameObject.AddComponent<CombatZombieLoad>();
@@ -80,7 +81,7 @@ namespace BarPromenade
                 throw new InvalidOperationException("A zombie requires his original physical head shape.");
             zombieFootsteps = npc.gameObject.AddComponent<NpcFootstepProfile>();
             zombieFootsteps.Configure((IsDocker ? CombatZombieAssetProvider.WalkCycleDistance :
-                CombatZombieAssetProvider.OrdinaryWalkCycleDistance) * .5f, .08f, 1f, true);
+                CombatZombieAssetProvider.OrdinaryWalkCycleDistance * PresentationScale) * .5f, .08f, 1f, true);
             handPose.SetGrip(false, IsDocker ? .12f : 0f); handPose.SetGrip(true, IsDocker ? .12f : 0f);
             zombieAudio = gameObject.AddComponent<CombatZombieAudio>();
             zombieAudio.Initialize(zombieLoad != null ? zombieLoad.Model : npc.transform);
@@ -166,6 +167,12 @@ namespace BarPromenade
                 Vector3 palm = handPose.CylinderCentre(ZombieAttackUsesLeftSide);
                 zombieHandFrom = zombieContactPoseValid ? zombieHandTo : palm;
                 zombieHandTo = palm;
+                if (IsRoom)
+                {
+                    Vector3 distal = RoomDistalHandContactPoint(ZombieAttackUsesLeftSide);
+                    roomHandTipFrom = zombieContactPoseValid ? roomHandTipTo : distal;
+                    roomHandTipTo = distal;
+                }
                 zombieContactPoseValid = true;
                 return;
             }
@@ -283,22 +290,34 @@ namespace BarPromenade
             Vector3 a = zombieHandFrom, b = zombieHandTo;
             float fraction = float.PositiveInfinity;
             CombatActor nearest = null; CombatHurtboxes.Hit bodyHit = default;
-            for (int i = 0; i < ContactParticipantCount; i++)
+            for (int path = 0; path < (IsRoom ? 2 : 1); path++)
             {
-                CombatActor candidate = ContactParticipantAt(i);
-                if (candidate == this || !HasPhysicalBody(candidate) ||
-                    candidate.IsKnockedDown && candidate.State.Phase != MeleePhase.Rising ||
-                    !candidate.Hurtboxes.SweepSphere(a, b, ZombiePalmRadius, transform.forward, out var found) ||
-                    found.Fraction >= fraction) continue;
-                nearest = candidate; bodyHit = found; fraction = found.Fraction;
+                Vector3 start = path == 0 ? a : roomHandTipFrom, end = path == 0 ? b : roomHandTipTo;
+                for (int i = 0; i < ContactParticipantCount; i++)
+                {
+                    CombatActor candidate = ContactParticipantAt(i);
+                    if (candidate == this || !HasPhysicalBody(candidate) ||
+                        candidate.IsKnockedDown && candidate.State.Phase != MeleePhase.Rising ||
+                        !candidate.Hurtboxes.SweepSphere(start, end, ZombiePalmRadius, transform.forward, out var found) ||
+                        found.Fraction >= fraction) continue;
+                    nearest = candidate; bodyHit = found; fraction = found.Fraction;
+                }
             }
             float wallFraction = float.PositiveInfinity;
             Vector3 wallPoint = default, wallNormal = default;
             // Shared grow-and-retry buffers also cover a hand already inside a wall.
-            GatherWorldSegment(a, a, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
-            if (wallFraction <= 1f) wallFraction = 0f;
-            GatherWorldSweep(a, b, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
-            GatherWorldSegment(b, b, ZombiePalmRadius, ref wallFraction, ref wallPoint, ref wallNormal);
+            for (int path = 0; path < (IsRoom ? 2 : 1); path++)
+            {
+                Vector3 start = path == 0 ? a : roomHandTipFrom, end = path == 0 ? b : roomHandTipTo;
+                float pathWall = float.PositiveInfinity;
+                Vector3 pathPoint = default, pathNormal = default;
+                GatherWorldSegment(start, start, ZombiePalmRadius, ref pathWall, ref pathPoint, ref pathNormal);
+                if (pathWall <= 1f) pathWall = 0f;
+                GatherWorldSweep(start, end, ZombiePalmRadius, ref pathWall, ref pathPoint, ref pathNormal);
+                GatherWorldSegment(end, end, ZombiePalmRadius, ref pathWall, ref pathPoint, ref pathNormal);
+                if (pathWall < wallFraction)
+                { wallFraction = pathWall; wallPoint = pathPoint; wallNormal = pathNormal; }
+            }
             Transform shoulder = ZombieAttackUsesLeftSide ? zombieLeftShoulder : zombieRightShoulder;
             float armWall = float.PositiveInfinity;
             GatherWorldSweep(shoulder.position, b, .035f, ref armWall, ref wallPoint, ref wallNormal);
@@ -339,7 +358,7 @@ namespace BarPromenade
 
         internal float PreviewZombieWalkDistance(float seconds) => IsDocker
             ? CombatZombieAssetProvider.WalkTravel(zombieWalkClock + seconds) - CombatZombieAssetProvider.WalkTravel(zombieWalkClock)
-            : seconds * CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
+            : seconds * CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds * PresentationScale;
 
         internal void AdvanceZombieWalkClock(float seconds, float requested, float achieved)
         {

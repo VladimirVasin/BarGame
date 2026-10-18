@@ -9,7 +9,7 @@
   "source_uv_channel": 1,
   "source_sha256": "e25c2ae26ee83de8e4a448a0170cc8fa0de474d3d3799e240ca371b888bc7126",
   "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
-  "signature": "54bfff85b8884c63423e6d3bd8aa5f3b3fcdea9e719fe9eacfc792f0ffd810d5",
+  "signature": "62f561b990d890bad668272670ab4df8de81896985eab3fabaeae09175b526b1",
   "corridor": {
     "mouth": {
       "depth": -0.182,
@@ -36,6 +36,223 @@
     "open_far_end": true,
     "original_torso_removed": true,
     "source_bound_tissue_depth_m": 0.004
+  },
+  "proportions": {
+    "space": "blender_metres",
+    "presentation_scale": 1.2,
+    "head_scale": 1.35,
+    "head_anchor_blender": [
+      0.0,
+      -0.009,
+      1.49
+    ],
+    "upper_arm_length_scale": 1.3,
+    "forearm_length_scale": 1.8,
+    "hand_length_scale": 1.5,
+    "hand_longitudinal_axis": "local_y",
+    "head_bounds_blender": {
+      "min": [
+        -0.07695,
+        -0.0954988,
+        1.46975
+      ],
+      "max": [
+        0.07695,
+        0.0603591,
+        1.8194
+      ]
+    },
+    "head_size_blender": [
+      0.1539,
+      0.1558579,
+      0.3496499
+    ],
+    "head_neck_overlap_m": 0.02025,
+    "canonical_bind_rig": true
+  },
+  "arm_continuity": {
+    "space": "blender_metres",
+    "endpoint_linear_skin": true,
+    "canonical_rest_vertices": true,
+    "poses": [
+      {
+        "clip": "ZombieOrdinaryIdle",
+        "side": "L",
+        "shoulder_root_error_m": 0.0,
+        "elbow_endpoint_error_m": 1e-07,
+        "hand_endpoint_error_m": 0.0,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.8
+      },
+      {
+        "clip": "ZombieOrdinaryIdle",
+        "side": "R",
+        "shoulder_root_error_m": 1e-07,
+        "elbow_endpoint_error_m": 3e-07,
+        "hand_endpoint_error_m": 2e-07,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.799999
+      },
+      {
+        "clip": "ZombieOrdinaryWalk",
+        "side": "L",
+        "shoulder_root_error_m": 2e-07,
+        "elbow_endpoint_error_m": 1e-07,
+        "hand_endpoint_error_m": 2e-07,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.8
+      },
+      {
+        "clip": "ZombieOrdinaryWalk",
+        "side": "R",
+        "shoulder_root_error_m": 1e-07,
+        "elbow_endpoint_error_m": 3e-07,
+        "hand_endpoint_error_m": 2e-07,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.800001
+      },
+      {
+        "clip": "ZombieOrdinaryAttackRight",
+        "side": "L",
+        "shoulder_root_error_m": 2e-07,
+        "elbow_endpoint_error_m": 2e-07,
+        "hand_endpoint_error_m": 1e-07,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.8
+      },
+      {
+        "clip": "ZombieOrdinaryAttackRight",
+        "side": "R",
+        "shoulder_root_error_m": 1e-07,
+        "elbow_endpoint_error_m": 1e-07,
+        "hand_endpoint_error_m": 2e-07,
+        "upper_arm_length_ratio": 1.3,
+        "forearm_length_ratio": 1.8
+      }
+    ]
+  },
+  "hand_continuity": {
+    "space": "canonical_hand_local_metres",
+    "longitudinal_axis": "local_y",
+    "hand_length_scale": 1.5,
+    "native_hands": {
+      "L": {
+        "min": [
+          -0.0339206,
+          -0.011,
+          -0.0370202
+        ],
+        "max": [
+          0.0478768,
+          0.1196803,
+          0.0262893
+        ],
+        "grip_centre": [
+          -0.0154804,
+          0.0630001,
+          -0.0256973
+        ]
+      },
+      "R": {
+        "min": [
+          -0.0478768,
+          -0.0110004,
+          -0.0370205
+        ],
+        "max": [
+          0.0339206,
+          0.11968,
+          0.026289
+        ],
+        "grip_centre": [
+          0.0154802,
+          0.0629999,
+          -0.0256975
+        ]
+      }
+    },
+    "poses": [
+      {
+        "clip": "ZombieOrdinaryIdle",
+        "side": "L",
+        "affine_error_m": 2e-07,
+        "longitudinal_ratio": 1.5,
+        "transverse_ratios": [
+          1.0,
+          1.0
+        ],
+        "tip_y_before_m": 0.1196802,
+        "tip_y_after_m": 0.1795203,
+        "wrist_ring_distance_m": 0.0165
+      },
+      {
+        "clip": "ZombieOrdinaryIdle",
+        "side": "R",
+        "affine_error_m": 3e-07,
+        "longitudinal_ratio": 1.500001,
+        "transverse_ratios": [
+          1.0,
+          1.0
+        ],
+        "tip_y_before_m": 0.1196801,
+        "tip_y_after_m": 0.1795204,
+        "wrist_ring_distance_m": 0.0164999
+      },
+      {
+        "clip": "ZombieOrdinaryWalk",
+        "side": "L",
+        "affine_error_m": 3e-07,
+        "longitudinal_ratio": 1.5,
+        "transverse_ratios": [
+          0.999999,
+          1.0
+        ],
+        "tip_y_before_m": 0.1196802,
+        "tip_y_after_m": 0.1795204,
+        "wrist_ring_distance_m": 0.0165001
+      },
+      {
+        "clip": "ZombieOrdinaryWalk",
+        "side": "R",
+        "affine_error_m": 3e-07,
+        "longitudinal_ratio": 1.499999,
+        "transverse_ratios": [
+          1.0,
+          1.0
+        ],
+        "tip_y_before_m": 0.1196801,
+        "tip_y_after_m": 0.1795203,
+        "wrist_ring_distance_m": 0.0165
+      },
+      {
+        "clip": "ZombieOrdinaryAttackRight",
+        "side": "L",
+        "affine_error_m": 2e-07,
+        "longitudinal_ratio": 1.5,
+        "transverse_ratios": [
+          0.999999,
+          0.999999
+        ],
+        "tip_y_before_m": 0.1196802,
+        "tip_y_after_m": 0.1795202,
+        "wrist_ring_distance_m": 0.0165
+      },
+      {
+        "clip": "ZombieOrdinaryAttackRight",
+        "side": "R",
+        "affine_error_m": 2e-07,
+        "longitudinal_ratio": 1.5,
+        "transverse_ratios": [
+          1.0,
+          0.999998
+        ],
+        "tip_y_before_m": 0.1196801,
+        "tip_y_after_m": 0.1795203,
+        "wrist_ring_distance_m": 0.0165001
+      }
+    ],
+    "canonical_source_unchanged": true,
+    "width_and_depth_preserved": true
   },
   "meshes": [
     {
@@ -446,14 +663,14 @@
         "flesh"
       ],
       "bounds_min": [
-        -0.057,
-        1.475,
-        -0.0730732
+        -0.07695,
+        1.46975,
+        -0.0954988
       ],
       "bounds_max": [
-        0.057,
-        1.734,
-        0.0423771
+        0.07695,
+        1.8194,
+        0.0603591
       ]
     },
     {
@@ -522,12 +739,12 @@
         "flesh"
       ],
       "bounds_min": [
-        -0.042,
+        -0.044,
         1.397,
-        -0.0392228
+        -0.048972
       ],
       "bounds_max": [
-        0.042,
+        0.044,
         1.49,
         0.0450473
       ]
@@ -560,13 +777,13 @@
       "name": "RoomBodyAtlas",
       "size": 2048,
       "sRGB": true,
-      "sha256": "de3226ac991455008b1b523a41c41d145403f3c2476713d6a480dc13d1e76db6"
+      "sha256": "cf822263741b5d27af184ef009671be51a18c6b635f9e39635446cc09c04ebb8"
     },
     {
       "name": "RoomMaterialResponse",
       "size": 1024,
       "sRGB": false,
-      "sha256": "ecb7e770574c3c33780cbe9c81010bd03272350547c0b985aebb63d66a8bc275"
+      "sha256": "75858978015e07a398e836524ea775af8baf68940b6319ba07029c4331e76522"
     }
   ],
   "estimated_gpu_bytes": 6990560

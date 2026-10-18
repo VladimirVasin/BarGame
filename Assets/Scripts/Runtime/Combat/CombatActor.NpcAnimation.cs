@@ -98,6 +98,7 @@ namespace BarPromenade
                 for (int i = 0; i < zombieAnatomyBones.Length; i++)
                     zombieAnatomyBones[i].localPosition = zombieOriginalPositions[i];
             }
+            RestoreRoomArmSampleBase();
             playable.SetTime(absoluteTime);
             npcAnimationGraph.Evaluate(0f);
             if (IsZombie)
@@ -105,6 +106,7 @@ namespace BarPromenade
                 if (clip == ready) CaptureZombieAuthoredAnatomy();
                 else if (genericZombie) ApplyZombieGenericAnatomy();
             }
+            ApplyRoomArmProportionsToFreshPose();
         }
 
         internal void SuspendNpcAnimation()

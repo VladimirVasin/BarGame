@@ -143,8 +143,23 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
             room.ResetActor(ground, Vector3.forward);
             AssertAuthoredBodyAppearance(room, bank, true);
+            if (room.IsRoom) AssertRoomScaleAndHeadContacts(room);
             if (room.IsLongExposure) AssertAuthoredTrailingProjectileContact(room, bank);
+            if (room.IsRoom)
+            {
+                AssertRoomAuthoredArmSkin();
+                foreach (string clip in new[] { CombatZombieAssetProvider.OrdinaryWalkClip,
+                    CombatZombieAssetProvider.OrdinaryAttackRightClip, CombatZombieAssetProvider.OrdinaryAttackLeftClip })
+                {
+                    room.SampleNpcClip(CombatZombieAssetProvider.LoadOrdinaryClip(clip), .5f);
+                    AssertRoomArmPose(room);
+                    room.SampleNpcClip(CombatZombieAssetProvider.LoadOrdinaryClip(clip), .5f);
+                    AssertRoomArmPose(room);
+                }
+                room.ResetActor(ground, Vector3.forward);
+            }
             yield return CaptureAuthoredBodyAppearance(room, bank);
+            if (room.IsRoom) yield return CaptureRoomHeroScaleComparison(room, bank);
 
             // Exercise the normal visible hand sweep without an attached prop.
             // Other roles stay prepared away from this focused contact.
@@ -152,14 +167,20 @@ namespace BarPromenade.Tests.PlayMode
             foreach (CombatActor actor in root.Opponents)
                 if (actor != room && !actor.IsCrane)
                     actor.ResetActor(ground + Vector3.right * 12f, Vector3.back);
-            room.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
+            room.ResetActor(ground + Vector3.forward * (1.25f * room.PresentationScale + room.AdditionalArmReach), Vector3.back);
             int graphBuilds = room.NpcAnimationGraphBuilds;
+            float initialContactDistance = Vector3.Distance(room.transform.position, root.Hero.transform.position);
             for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
                 root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
             Assert.That(root.Hero.LastImpact.Source, Is.SameAs(room));
             Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
             Assert.That(room.ActiveClipName, Does.StartWith("ZombieOrdinary"));
+            if (room.IsRoom)
+            {
+                Assert.That(initialContactDistance, Is.GreaterThan(1.75f), "The real long palm must reach from its added arm spacing.");
+                AssertRoomArmPose(room);
+            }
 
             room.ResetActor(ground, Vector3.forward);
             yield return AimAuthoredInspectionHero(room, bank, room.transform.position + Vector3.up * 1.2f);
@@ -182,8 +203,36 @@ namespace BarPromenade.Tests.PlayMode
             }
             else
             {
-                ApplyKnownBodyContact(room, root.Hero, BodyDamageRegion.LeftForearm, 0, .3f, 201);
-                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.GreaterThan(0f));
+                CombatHurtboxes.Hit fingertip = AuthoredSurfaceContact(room, bank, "GEO_HandFinger1.L", BodyDamageRegion.LeftHand, distalHand: true);
+                Vector3 fromTip = fingertip.Point + fingertip.Normal * .08f, toTip = fingertip.Point - fingertip.Normal * .025f;
+                Assert.That(room.Hurtboxes.SweepProjectile(fromTip, toTip, CombatProjectilePool.Radius, -fingertip.Normal, out var extendedHandHit), Is.True);
+                Assert.That(extendedHandHit.Part, Is.EqualTo(Player3DAnatomicalPart.LeftHand));
+                Assert.That(Vector3.Distance(extendedHandHit.Point, fingertip.Point), Is.LessThan(.015f));
+                Transform longHand = FindAnatomicalBone(room, "hand.L");
+                Vector3 handAxis = longHand.TransformVector(Vector3.up).normalized;
+                float oldTip = Vector3.Dot(room.RoomHandTipWorld(true) - longHand.position, handAxis) / CombatRoomAssetProvider.HandLengthScale;
+                Assert.That(Vector3.Dot(extendedHandHit.Point - longHand.position, handAxis), Is.GreaterThan(oldTip + .01f));
+                room.ReceiveProjectile(root.Hero, 190, extendedHandHit, -extendedHandHit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftHand, extendedHandHit.DamagePatch), Is.GreaterThan(0f));
+                Assert.That(root.BloodEffects.TryGetProjectileWound(room, 0, out _, out _), Is.True);
+                var handInspection = new GameObject("Test Room long hand inspection light");
+                handInspection.transform.SetParent(root.CameraFollow.Camera.transform, false);
+                Light handFill = handInspection.AddComponent<Light>();
+                handFill.type = LightType.Point; handFill.intensity = .5f; handFill.range = 3f; handFill.shadows = LightShadows.None;
+                try { yield return CapturePistolWoundNearView(room, "Test Room enemy - Long fingertip wound"); }
+                finally { Object.Destroy(handInspection); }
+                room.ResetActor(ground, Vector3.forward);
+                AssertRoomArmPose(room);
+                CombatHurtboxes.Hit forearmHit = AuthoredSurfaceContact(room, bank, "GEO_Arm.L", BodyDamageRegion.LeftForearm);
+                room.ReceiveProjectile(root.Hero, 201, forearmHit, -forearmHit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, forearmHit.DamagePatch), Is.GreaterThan(0f));
+                Assert.That(root.BloodEffects.TryGetProjectileWound(room, 0, out _, out _), Is.True);
+                // One ordinary projectile removes .09 of this protected patch;
+                // the third reaches the existing .25 exterior-replacement boundary.
+                for (int shot = 1; shot < 3; shot++)
+                    room.ReceiveProjectile(root.Hero, 201 + shot, forearmHit, -forearmHit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, forearmHit.DamagePatch), Is.GreaterThanOrEqualTo(.25f));
+                CaptureBodyDestruction(room, "Test Room enemy - Damaged long forearm", forearmHit.Normal);
             }
             AssertAuthoredBodyAppearance(room, bank, false);
             AssertAuthoredBodyDerivativeSources(room, bank);
@@ -193,6 +242,7 @@ namespace BarPromenade.Tests.PlayMode
             // Actor disable deliberately resets damage for pooled reuse.
             Assert.That(TotalBodyTissueLoss(room), Is.Zero);
             AssertAuthoredBodyAppearance(room, bank, true);
+            if (room.IsRoom) AssertRoomScaleAndHeadContacts(room);
             room.ResetActor(ground, Vector3.forward);
             AssertAuthoredBodyAppearance(room, bank, true);
 
@@ -226,8 +276,219 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(room.ReceivedImpactCount, Is.Zero);
             Assert.That(root.BloodEffects.ProjectileWoundCountFor(room), Is.Zero);
             AssertAuthoredBodyAppearance(room, bank, true);
+            if (room.IsRoom) AssertRoomScaleAndHeadContacts(room);
             if (room.IsLongExposure) AssertAuthoredTrailingProjectileContact(room, bank);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        [Serializable] private sealed class RoomScaleManifest { public RoomScaleProportions proportions; }
+        [Serializable] private sealed class RoomScaleProportions
+        { public float presentation_scale, head_scale, upper_arm_length_scale, forearm_length_scale, hand_length_scale; public float[] head_anchor_blender; public string space, hand_longitudinal_axis; }
+
+        private static void AssertRoomScaleAndHeadContacts(CombatActor room)
+        {
+            const float scale = 1.2f;
+            Assert.That(CombatRoomAssetProvider.PresentationScale, Is.EqualTo(scale));
+            Assert.That(room.transform.localScale, Is.EqualTo(Vector3.one));
+            Transform[] wrappers = Array.FindAll(room.GetComponentsInChildren<Transform>(true), part => part.name == "Room body scale");
+            Assert.That(wrappers, Has.Length.EqualTo(1));
+            Assert.That(wrappers[0].parent, Is.SameAs(room.transform));
+            Assert.That(wrappers[0].localScale, Is.EqualTo(Vector3.one * scale));
+            Assert.That(room.DamageRigRoot.IsChildOf(wrappers[0]), Is.True);
+            Assert.That(room.Body.radius, Is.EqualTo(.32f * scale).Within(.00001f));
+            Assert.That(room.Body.stepOffset, Is.EqualTo(PlayerFactory.StepOffset * scale).Within(.00001f));
+            Assert.That(room.Body.center.y, Is.EqualTo(room.Body.height * .5f).Within(.00001f));
+            Assert.That(room.PreviewZombieWalkDistance(CombatZombieAssetProvider.OrdinaryWalkCycleSeconds),
+                Is.EqualTo(CombatZombieAssetProvider.OrdinaryWalkCycleDistance * scale).Within(.00001f));
+            RoomScaleProportions proportions = JsonUtility.FromJson<RoomScaleManifest>(
+                Resources.Load<TextAsset>("Combat/RoomBody").text).proportions;
+            Assert.That(proportions, Is.Not.Null);
+            Assert.That(proportions.presentation_scale, Is.EqualTo(scale));
+            Assert.That(proportions.head_scale, Is.EqualTo(1.35f));
+            Assert.That(proportions.upper_arm_length_scale, Is.EqualTo(CombatRoomAssetProvider.UpperArmLengthScale));
+            Assert.That(proportions.forearm_length_scale, Is.EqualTo(CombatRoomAssetProvider.ForearmLengthScale));
+            Assert.That(proportions.hand_length_scale, Is.EqualTo(CombatRoomAssetProvider.HandLengthScale));
+            Assert.That(proportions.hand_longitudinal_axis, Is.EqualTo("local_y"));
+            Assert.That(proportions.space, Is.EqualTo("blender_metres"));
+            Assert.That(proportions.head_anchor_blender, Is.EqualTo(new[] { 0f, -.009f, 1.490f }).Within(.00001f));
+            var nativeHead = Array.Find(CombatRoomAssetProvider.LoadBodyManifest().meshes, part => part.name == "GEO_Head");
+            Assert.That(nativeHead.bounds_max[0] - nativeHead.bounds_min[0], Is.EqualTo(.114f * 1.35f).Within(.00002f));
+            Assert.That(nativeHead.bounds_max[1] - nativeHead.bounds_min[1], Is.EqualTo(.259f * 1.35f).Within(.00002f));
+            Assert.That(room.Body.height, Is.GreaterThanOrEqualTo(nativeHead.bounds_max[1] * scale));
+            AssertRoomArmPose(room);
+            foreach (CombatActor other in room.transform.parent.GetComponentsInChildren<CombatActor>(true))
+                if (other != room && !other.IsRoom)
+                {
+                    Assert.That(other.transform.localScale, Is.EqualTo(Vector3.one));
+                    Assert.That(Array.Exists(other.GetComponentsInChildren<Transform>(true), part => part.name == "Room body scale"), Is.False);
+                }
+
+            room.CaptureContactPose();
+            CapsuleCollider capsule = null;
+            foreach (var shape in room.Ragdoll.PhysicsController.AnatomicalColliders)
+                if (shape.Value == Player3DAnatomicalPart.Head) capsule = shape.Key as CapsuleCollider;
+            Assert.That(capsule, Is.Not.Null);
+            SkinnedMeshRenderer skin = Array.Find(room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true), part => part.name == "GEO_Head");
+            var baked = new Mesh { name = "Test Room enlarged head contact" };
+            try
+            {
+                skin.BakeMesh(baked, true);
+                Vector3[] vertices = baked.vertices;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    vertices[i] = skin.transform.TransformPoint(vertices[i]);
+                    Vector3 offset = capsule.transform.InverseTransformPoint(vertices[i]) - capsule.center;
+                    float halfLine = Mathf.Max(0f, capsule.height * .5f - capsule.radius);
+                    offset[capsule.direction] -= Mathf.Clamp(offset[capsule.direction], -halfLine, halfLine);
+                    Assert.That(offset.magnitude, Is.LessThanOrEqualTo(capsule.radius + .001f),
+                        "The enlarged actual head must remain inside its melee and ragdoll capsule.");
+                }
+                int[] triangles = baked.triangles;
+                float mostLateral = float.NegativeInfinity;
+                Vector3 point = default, normal = default;
+                for (int i = 0; i < triangles.Length; i += 3)
+                {
+                    Vector3 a = vertices[triangles[i]], b = vertices[triangles[i + 1]], c = vertices[triangles[i + 2]];
+                    Vector3 faceNormal = Vector3.Cross(b - a, c - a);
+                    if (faceNormal.sqrMagnitude < 1e-12f) continue;
+                    Vector3 centre = (a + b + c) / 3f;
+                    float lateral = capsule.transform.InverseTransformPoint(centre).x;
+                    if (lateral <= mostLateral) continue;
+                    mostLateral = lateral; point = centre; normal = faceNormal.normalized;
+                }
+                Assert.That(float.IsFinite(mostLateral), Is.True);
+                Vector3 from = point + normal * .12f, to = point - normal * .02f;
+                Assert.That(room.Hurtboxes.SweepProjectile(from, to, CombatProjectilePool.Radius, -normal, out var bullet), Is.True);
+                Assert.That(bullet.Part, Is.EqualTo(Player3DAnatomicalPart.Head));
+                Assert.That(Vector3.Distance(bullet.Point, point), Is.LessThan(.015f));
+                Assert.That(room.Hurtboxes.SweepSphere(from, to, .01f, -normal, out var melee), Is.True);
+                Assert.That(melee.Part, Is.EqualTo(Player3DAnatomicalPart.Head));
+                Assert.That(room.ReceivedImpactCount, Is.Zero);
+            }
+            finally { Object.Destroy(baked); }
+        }
+
+        private static void AssertRoomArmPose(CombatActor room, bool measureSleeves = true)
+        {
+            Assert.That(room.AdditionalArmReach, Is.GreaterThan(.3f));
+            foreach (string side in new[] { "L", "R" })
+            {
+                Transform upper = FindAnatomicalBone(room, "upper_arm." + side);
+                Transform elbow = FindAnatomicalBone(room, "forearm." + side);
+                Transform hand = FindAnatomicalBone(room, "hand." + side);
+                SkinnedMeshRenderer reference = CombatRoomAssetProvider.LoadBodyRenderer("GEO_Arm." + side);
+                Transform nativeElbow = Array.Find(reference.bones, bone => bone.name == elbow.name);
+                Transform nativeHand = Array.Find(reference.bones, bone => bone.name == hand.name);
+                Assert.That(elbow.localPosition.magnitude, Is.EqualTo(nativeElbow.localPosition.magnitude *
+                    CombatRoomAssetProvider.UpperArmLengthScale).Within(.0001f));
+                Assert.That(hand.localPosition.magnitude, Is.EqualTo(nativeHand.localPosition.magnitude *
+                    CombatRoomAssetProvider.ForearmLengthScale).Within(.0001f));
+                Vector3 expectedHandScale = nativeHand.localScale;
+                expectedHandScale.y *= CombatRoomAssetProvider.HandLengthScale;
+                Assert.That(Vector3.Distance(hand.localScale, expectedHandScale), Is.LessThan(.00001f));
+                if (!measureSleeves) continue;
+                foreach (var shape in room.Ragdoll.PhysicsController.AnatomicalColliders)
+                {
+                    bool upperPart = shape.Value == (side == "L" ? Player3DAnatomicalPart.LeftUpperArm : Player3DAnatomicalPart.RightUpperArm);
+                    bool lowerPart = shape.Value == (side == "L" ? Player3DAnatomicalPart.LeftForearm : Player3DAnatomicalPart.RightForearm);
+                    if (!upperPart && !lowerPart) continue;
+                    var capsule = (CapsuleCollider)shape.Key;
+                    Vector3 start = upperPart ? upper.position : elbow.position, end = upperPart ? elbow.position : hand.position;
+                    Assert.That(Vector3.Distance(capsule.transform.TransformPoint(capsule.center), (start + end) * .5f), Is.LessThan(.01f));
+                    Assert.That(capsule.height, Is.GreaterThanOrEqualTo(Vector3.Distance(start, end) - .001f));
+                }
+                SkinnedMeshRenderer[] skins = room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                SkinnedMeshRenderer sleeve = Array.Find(skins, skin => skin.name == "GEO_Arm." + side);
+                SkinnedMeshRenderer palm = Array.Find(skins, skin => skin.name == "GEO_HandPalm." + side);
+                NpcHandPose hands = room.GetComponentInChildren<NpcHandPose>(true);
+                Vector3 palmCentre = hands.CylinderCentre(side == "L"), tipCentre = room.RoomDistalHandContactPoint(side == "L");
+                Assert.That(Vector3.Distance(palmCentre, tipCentre), Is.LessThanOrEqualTo(.13f * CombatRoomAssetProvider.PresentationScale),
+                    "Palm and distal contact spheres must overlap without increasing hand width.");
+                var scratch = new Mesh { name = "Test Room sleeve and wrist continuity" };
+                try
+                {
+                    Vector3[] sleevePoints = BakeAuthoredWorldVertices(sleeve, scratch);
+                    Vector3[] palmPoints = BakeAuthoredWorldVertices(palm, scratch);
+                    Bounds baselinePalmBounds = default, posedPalmBounds = default;
+                    Vector3 savedHandScale = hand.localScale;
+                    Vector3[] baselinePalmPoints;
+                    Matrix4x4 baselineFrame;
+                    Vector3 metresPerUnit;
+                    try
+                    {
+                        Vector3 baselineScale = savedHandScale;
+                        baselineScale.y /= CombatRoomAssetProvider.HandLengthScale;
+                        hand.localScale = baselineScale;
+                        baselineFrame = hand.worldToLocalMatrix;
+                        metresPerUnit = new Vector3(hand.TransformVector(Vector3.right).magnitude,
+                            hand.TransformVector(Vector3.up).magnitude, hand.TransformVector(Vector3.forward).magnitude);
+                        // Same live mesh, pose, grip and parent matrices. Only
+                        // the requested hand-local Y scale differs between bakes.
+                        baselinePalmPoints = BakeAuthoredWorldVertices(palm, scratch);
+                    }
+                    finally { hand.localScale = savedHandScale; }
+                    for (int i = 0; i < baselinePalmPoints.Length; i++)
+                    {
+                        Vector3 point = Vector3.Scale(baselineFrame.MultiplyPoint3x4(baselinePalmPoints[i]), metresPerUnit);
+                        if (i == 0) baselinePalmBounds = new Bounds(point, Vector3.zero); else baselinePalmBounds.Encapsulate(point);
+                    }
+                    for (int i = 0; i < palmPoints.Length; i++)
+                    {
+                        Vector3 point = Vector3.Scale(baselineFrame.MultiplyPoint3x4(palmPoints[i]), metresPerUnit);
+                        if (i == 0) posedPalmBounds = new Bounds(point, Vector3.zero); else posedPalmBounds.Encapsulate(point);
+                    }
+                    Vector3 expectedPalmSize = Vector3.Scale(baselinePalmBounds.size,
+                        new Vector3(1f, CombatRoomAssetProvider.HandLengthScale, 1f));
+                    Assert.That(Vector3.Distance(posedPalmBounds.size, expectedPalmSize), Is.LessThan(.001f),
+                        "The actual palm must grow only along its longitudinal axis; its transverse width stays at the accepted body scale.");
+                    BoneWeight[] weights = sleeve.sharedMesh.boneWeights;
+                    int handIndex = Array.FindIndex(sleeve.bones, bone => bone == hand);
+                    Assert.That(handIndex, Is.GreaterThanOrEqualTo(0));
+                    int wristVertices = 0;
+                    for (int i = 0; i < weights.Length; i++)
+                    {
+                        BoneWeight weight = weights[i];
+                        if (weight.boneIndex0 != handIndex || weight.weight0 < .999f) continue;
+                        float nearest = float.PositiveInfinity;
+                        foreach (Vector3 point in palmPoints) nearest = Mathf.Min(nearest, Vector3.Distance(sleevePoints[i], point));
+                        Assert.That(nearest, Is.LessThan(.035f), "The long source sleeve must end at the actual retained hand.");
+                        wristVertices++;
+                    }
+                    Assert.That(wristVertices, Is.GreaterThanOrEqualTo(12));
+                }
+                finally { Object.Destroy(scratch); }
+            }
+        }
+
+        private static void AssertRoomAuthoredArmSkin()
+        {
+            GameObject body = Resources.Load<GameObject>("CombatGore/BodyRoom");
+            Assert.That(body, Is.Not.Null);
+            foreach (string side in new[] { "L", "R" })
+            {
+                string prefix = side == "L" ? "FleshRegion6Patch" : "FleshRegion9Patch";
+                bool retainedEndpointBlend = false;
+                foreach (SkinnedMeshRenderer piece in body.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (!piece.name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                    int forearm = Array.FindIndex(piece.bones, bone => bone.name == "forearm." + side);
+                    int hand = Array.FindIndex(piece.bones, bone => bone.name == "hand." + side);
+                    Assert.That(forearm, Is.GreaterThanOrEqualTo(0));
+                    Assert.That(hand, Is.GreaterThanOrEqualTo(0));
+                    foreach (BoneWeight row in piece.sharedMesh.boneWeights)
+                    {
+                        bool elbowBound = row.boneIndex0 == forearm && row.weight0 > .01f ||
+                            row.boneIndex1 == forearm && row.weight1 > .01f || row.boneIndex2 == forearm && row.weight2 > .01f ||
+                            row.boneIndex3 == forearm && row.weight3 > .01f;
+                        bool wristBound = row.boneIndex0 == hand && row.weight0 > .01f ||
+                            row.boneIndex1 == hand && row.weight1 > .01f || row.boneIndex2 == hand && row.weight2 > .01f ||
+                            row.boneIndex3 == hand && row.weight3 > .01f;
+                        retainedEndpointBlend |= elbowBound && wristBound;
+                    }
+                }
+                Assert.That(retainedEndpointBlend, Is.True,
+                    "Internal forearm tissue must retain the actual sleeve's elbow-to-wrist skin field as the real chain lengthens.");
+            }
         }
 
         private static void AssertAuthoredTrailingProjectileContact(CombatActor actor, CombatAuthoredBodyBank bank)
@@ -248,7 +509,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static CombatHurtboxes.Hit AuthoredSurfaceContact(CombatActor room, CombatAuthoredBodyBank bank,
-            string sourceName, BodyDamageRegion? requiredRegion = null, bool outsideBaseline = false)
+            string sourceName, BodyDamageRegion? requiredRegion = null, bool outsideBaseline = false, bool distalHand = false)
         {
             room.CaptureContactPose();
             SkinnedMeshRenderer torso = Array.Find(room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true),
@@ -265,6 +526,7 @@ namespace BarPromenade.Tests.PlayMode
                 torso.BakeMesh(baked, true);
                 Vector3[] vertices = baked.vertices;
                 int[] triangles = outsideBaseline ? baked.triangles : baked.GetTriangles(clothSlot);
+                CombatHurtboxes.Hit distal = default; float furthest = float.NegativeInfinity;
                 for (int i = 0; i < vertices.Length; i++) vertices[i] = torso.transform.TransformPoint(vertices[i]);
                 for (int offset = 0; offset + 2 < triangles.Length; offset += 3)
                 {
@@ -279,6 +541,8 @@ namespace BarPromenade.Tests.PlayMode
                     if (!head && (!CombatBodyDestruction.TryClassifySurface(room, torso, point, out region, out patch) ||
                         (requiredRegion.HasValue ? region != requiredRegion.Value : region is not (BodyDamageRegion.Chest or BodyDamageRegion.Abdomen)))) continue;
                     normal.Normalize();
+                    if (distalHand && point.y + normal.y * .42f < room.transform.position.y - PlayerFactory.GroundedRootOffset + .1f)
+                        continue; // Keep the existing wound close-view camera above the supporting floor.
                     if (outsideBaseline)
                     {
                         if (!room.Hurtboxes.MeasureSweepSurfaceGap(point, point, 0f, out var pointGap) || pointGap.Gap <= .115f ||
@@ -286,10 +550,14 @@ namespace BarPromenade.Tests.PlayMode
                                 CombatProjectilePool.Radius, out var sweepGap) || sweepGap.Gap <= .005f) continue;
                     }
                     Transform bone = FindAnatomicalBone(room, CombatBodyAnatomy.BoneName(region));
-                    return new CombatHurtboxes.Hit(point, normal, -normal, 0f,
+                    var contact = new CombatHurtboxes.Hit(point, normal, -normal, 0f,
                         new MeleeHitLocation(CombatBodyAnatomy.CombatRegion(region), MeleeHitSide.Front), CombatBodyAnatomy.ToPart(region),
                         bone.InverseTransformPoint(point), bone.InverseTransformDirection(-normal).normalized, region, patch);
+                    if (!distalHand) return contact;
+                    float along = bone.InverseTransformPoint(point).y;
+                    if (along > furthest) { furthest = along; distal = contact; }
                 }
+                if (distalHand && float.IsFinite(furthest)) return distal;
                 Assert.Fail("The visible authored source needs an anatomically classified triangle: " + sourceName);
                 return default;
             }
@@ -430,14 +698,51 @@ namespace BarPromenade.Tests.PlayMode
             var posed = new Mesh { name = "Test authored surface framing" };
             try
             {
-                source.BakeMesh(posed, true);
-                posed.RecalculateBounds();
-                return source.transform.TransformPoint(posed.bounds.center);
+                Vector3[] vertices = BakeAuthoredWorldVertices(source, posed);
+                Bounds bounds = new Bounds(vertices[0], Vector3.zero);
+                foreach (Vector3 point in vertices) bounds.Encapsulate(point);
+                return bounds.center;
             }
             finally { Object.Destroy(posed); }
         }
 
-        private IEnumerator CaptureAuthoredBodyAppearance(CombatActor room, CombatAuthoredBodyBank bank, bool afterTorsoDamage = false)
+        private static Vector3[] BakeAuthoredWorldVertices(SkinnedMeshRenderer skin, Mesh scratch)
+        {
+            // Compensate the imported renderer scale before applying its full
+            // local-to-world frame, including the Room presentation wrapper.
+            skin.BakeMesh(scratch, true);
+            Vector3[] points = scratch.vertices;
+            for (int i = 0; i < points.Length; i++) points[i] = skin.transform.TransformPoint(points[i]);
+            return points;
+        }
+
+        private static Bounds AuthoredPosedBodyBounds(CombatActor actor)
+        {
+            Bounds bounds = default;
+            bool measured = false;
+            var scratch = new Mesh { name = "Test authored body framing" };
+            try
+            {
+                foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (!skin.enabled || !skin.gameObject.activeInHierarchy || !skin.name.StartsWith("GEO_", StringComparison.Ordinal)) continue;
+                    foreach (Vector3 point in BakeAuthoredWorldVertices(skin, scratch))
+                    {
+                        if (!measured) { bounds = new Bounds(point, Vector3.zero); measured = true; }
+                        else bounds.Encapsulate(point);
+                    }
+                }
+            }
+            finally { Object.Destroy(scratch); }
+            Assert.That(measured, Is.True);
+            return bounds;
+        }
+
+        private IEnumerator CaptureRoomHeroScaleComparison(CombatActor room, CombatAuthoredBodyBank bank) =>
+            CaptureAuthoredBodyAppearance(room, bank, heroComparison: true);
+
+        private IEnumerator CaptureAuthoredBodyAppearance(CombatActor room, CombatAuthoredBodyBank bank,
+            bool afterTorsoDamage = false, bool heroComparison = false)
         {
             Camera camera = root.CameraFollow.Camera;
             bool following = root.CameraFollow.enabled;
@@ -464,6 +769,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(room.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 headCenter, out _, out _), Is.True);
             Vector3 headForward = forward;
             if (bank.Name != "Room") AuthoredHeadFrame(room, bank, out headCenter, out headForward);
+            Bounds roomBounds = room.IsRoom ? AuthoredPosedBodyBounds(room) : default;
             var inspection = new GameObject("Test " + bank.Name + " neutral inspection light");
             inspection.transform.SetParent(camera.transform, false);
             Light fill = inspection.AddComponent<Light>();
@@ -471,26 +777,38 @@ namespace BarPromenade.Tests.PlayMode
             fill.enabled = false;
             try
             {
-                foreach (int view in afterTorsoDamage ? new[] { 2, 3 } :
-                    bank.Name != "Room" ? new[] { 0, 1, 4, 5, 6 } : new[] { 0, 1, 2, 3 })
+                foreach (int view in heroComparison ? new[] { 8 } : afterTorsoDamage ? new[] { 2, 3 } :
+                    bank.Name != "Room" ? new[] { 0, 1, 4, 5, 6 } : new[] { 0, 1, 2, 3, 4, 5 })
                 {
-                    Vector3 viewForward = view >= 4 ? headForward : forward;
+                    Vector3 viewForward = view >= 4 && view < 8 ? headForward : forward;
                     Vector3 direction = view == 1 || view == 5 ? Quaternion.AngleAxis(bank.Name == "Room" ? 70f : 90f, Vector3.up) * viewForward :
                         view == 4 ? Quaternion.AngleAxis(40f, Vector3.up) * viewForward : viewForward;
                     // Keep the lamp on the clear centre aisle while the camera
                     // orbits. A side-standing hero intersects the warehouse rack;
                     // sharing the camera position would also put it inside his coat.
-                    Vector3 focus = view < 2 ? room.transform.position + Vector3.up * .95f : view >= 4 ? headCenter : corridorCenter;
+                    Vector3 focus = view < 2 || view == 8 ? room.IsRoom ? roomBounds.center : room.transform.position + Vector3.up * .95f
+                        : view >= 4 ? headCenter : corridorCenter;
                     yield return AimAuthoredInspectionHero(room, bank, focus);
+                    if (view == 8)
+                    {
+                        Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
+                        Vector3 floor = room.transform.position - Vector3.up * PlayerFactory.GroundedRootOffset;
+                        PlaceCraneHero(floor + side * .95f, forward);
+                        focus += side * .475f;
+                        for (int frame = 0; frame < 4; frame++)
+                        { root.Hero.AdvanceSimulation(.1f); root.Hero.Present(); yield return null; }
+                    }
                     root.CameraFollow.enabled = false;
                     bool closeProfile = bank.Name != "Room" && view == 1;
-                    Vector3 eye = focus + direction * (view < 2 ? (closeProfile ? 2f : 2.8f) : 1.0f) + Vector3.up * .04f;
+                    bool fullBody = view < 2 || view == 8;
+                    float bodyDistance = room.IsRoom ? Mathf.Max(2.8f, roomBounds.size.y * .62f / Mathf.Tan(24f * Mathf.Deg2Rad)) : closeProfile ? 2f : 2.8f;
+                    Vector3 eye = focus + direction * (fullBody ? bodyDistance : 1.0f) + Vector3.up * .04f;
                     camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
-                    camera.fieldOfView = view < 2 ? (closeProfile ? 58f : 48f) : 34f;
-                    fill.enabled = view == 3 || view == 6;
-                    string headSubject = bank.Name == "Imprint" ? "Concave face" : "Fused head sweep";
+                    camera.fieldOfView = fullBody ? (closeProfile ? 58f : 48f) : 34f;
+                    fill.enabled = view == 3 || view == 6 || view == 8;
+                    string headSubject = bank.Name == "Room" ? "Enlarged head" : bank.Name == "Imprint" ? "Concave face" : "Fused head sweep";
                     string name = "Test " + bank.Name + " enemy - " + (view == 0 ? "Front body with chest light" :
-                        view == 1 ? "Profile body with chest light" : view == 4 ? headSubject + " three quarter with chest light" :
+                        view == 8 ? "Hero and enemy scale comparison" : view == 1 ? "Profile body with chest light" : view == 4 ? headSubject + " three quarter with chest light" :
                         view == 5 ? headSubject + " profile with chest light" : view == 6 ? headSubject + " neutral inspection" :
                         view == 2 ? "Torso with chest light" : "Torso neutral inspection");
                     CaptureMixedCameraFrame(camera, name + (afterTorsoDamage ? " - After torso damage" : string.Empty));
@@ -568,7 +886,7 @@ namespace BarPromenade.Tests.PlayMode
             // authored lunge and anatomical sweep in the actual mixed roster.
             Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
             root.Hero.ResetActor(ground, Vector3.forward);
-            authored.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
+            authored.ResetActor(ground + Vector3.forward * (1.25f * authored.PresentationScale + authored.AdditionalArmReach), Vector3.back);
             int attackSequence = authored.State.AttackSequence;
             Vector3 attackStart = authored.transform.position;
             for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
@@ -577,7 +895,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1), "The authored palm must reach the hero without cargo collision.");
             Assert.That(root.Hero.LastImpact.Source, Is.SameAs(authored));
             Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            Assert.That(Vector3.Distance(attackStart, authored.transform.position), Is.InRange(.01f, .71f));
+            Assert.That(Vector3.Distance(attackStart, authored.transform.position), Is.InRange(.01f, .71f * authored.PresentationScale));
             Assert.That(authored.GetComponent<CombatZombieLoad>(), Is.Null);
             root.CameraFollow.Snap();
             CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room enemy - Hand contact");
@@ -861,6 +1179,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Inactive variants also keep one prepared animation graph.");
                 if (!actor.IsAuthoredEnemy) continue;
                 rooms += actor.IsRoom ? 1 : 0;
+                if (actor.IsRoom)
+                {
+                    Assert.That(actor.transform.localScale, Is.EqualTo(Vector3.one));
+                    Assert.That(actor.Body.radius, Is.EqualTo(.32f * CombatRoomAssetProvider.PresentationScale).Within(.00001f));
+                    AssertRoomArmPose(actor, measureSleeves: false);
+                }
                 imprints += actor.IsImprint ? 1 : 0;
                 longExposures += actor.IsLongExposure ? 1 : 0;
                 Assert.That(actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey, Is.EqualTo(identities[i]));

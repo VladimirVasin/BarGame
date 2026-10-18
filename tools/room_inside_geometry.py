@@ -16,6 +16,15 @@ MOUTH = dict(depth=-.182, half_width=.155, bottom=1.015, top=1.385)
 FAR = dict(depth=.22, half_width=.035, bottom=1.165, top=1.265)
 MIN_TORSO_THICKNESS = .018
 FRAME_DEPTHS = (-.17, -.065, .045, .15)
+HEAD_SCALE = 1.35
+HEAD_ANCHOR_BLENDER = (0., -.009, 1.490)
+PRESENTATION_SCALE = 1.2
+UPPER_ARM_LENGTH_SCALE = 1.3
+FOREARM_LENGTH_SCALE = 1.8
+HAND_LENGTH_SCALE = 1.5
+HAND_LONGITUDINAL_AXIS = 'local_y'
+ARM_UPPER_SAMPLES = (0., .10, .34, .65, .90, 1.)
+ARM_FOREARM_SAMPLES = (.08, .26, .53, .78, .94, 1.)
 
 
 def outward(vertices, faces):
@@ -139,12 +148,15 @@ def sculpt(builder):
                  (1.548, 0., -.025, .052, .047), (1.596, 0., -.020, .057, .050),
                  (1.648, 0., -.008, .056, .048), (1.699, 0., .002, .047, .041),
                  (1.727, 0., .004, .026, .026), (1.734, 0., .005, .003, .003)]
-    head = kit.replace(builder, 'GEO_Head', kit.shell(head_rows, 18,
-        lambda row, a: 1. + (.045 * max(0., -math.sin(a)) ** 10 if row in (2, 3, 4) else 0.)), {'head': 1.})
+    head_vertices, head_faces = kit.shell(head_rows, 18,
+        lambda row, a: 1. + (.045 * max(0., -math.sin(a)) ** 10 if row in (2, 3, 4) else 0.))
+    anchor = Vector(HEAD_ANCHOR_BLENDER)
+    head_vertices = [anchor + (Vector(point) - anchor) * HEAD_SCALE for point in head_vertices]
+    head = kit.replace(builder, 'GEO_Head', (head_vertices, head_faces), {'head': 1.})
     head['room_surface_roles'] = ['flesh']
     neck = kit.replace(builder, 'GEO_Neck', kit.shell([
         (1.397, 0., .008, .042, .038), (1.423, 0., .004, .031, .029),
-        (1.455, 0., -.001, .028, .027), (1.490, 0., -.009, .033, .031)], 14),
+        (1.455, 0., -.001, .036, .034), (1.490, 0., -.009, .044, .041)], 14),
         lambda p: {'neck': max(0., min(1., (p[2] - 1.397) / .045)),
                    'chest': max(0., 1. - (p[2] - 1.397) / .045)})
     neck['room_surface_roles'] = ['flesh']
@@ -152,17 +164,21 @@ def sculpt(builder):
     for side in ('L', 'R'):
         upper, lower = 'upper_arm.' + side, 'forearm.' + side
         a, b, c = bones[upper][0], bones[lower][0], bones[lower][1]
-        points = [a.lerp(b, t) for t in (0., .10, .34, .65, .90, 1.)]
-        points += [b.lerp(c, t) for t in (.08, .26, .53, .78, .94, 1.)]
+        points = [a.lerp(b, t) for t in ARM_UPPER_SAMPLES]
+        points += [b.lerp(c, t) for t in ARM_FOREARM_SAMPLES]
         arm = kit.replace(builder, 'GEO_Arm.' + side,
             kit.tube(points, (.057, .077, .078, .071, .060, .055, .056, .060, .056, .048, .039, .037), 12, .86, False),
             {upper: 1.})
         arm_weights = []
         for row in range(len(points)):
-            t = max(0., min(1., (row - 4) / 3))
             shoulder = .14 if row == 0 else .04 if row == 1 else 0.
-            arm_weights.extend([{upper: (1 - t) * (1 - shoulder), lower: t * (1 - shoulder),
-                                 'chest': shoulder}] * 12)
+            if row < len(ARM_UPPER_SAMPLES):
+                t = ARM_UPPER_SAMPLES[row]
+                assignment = {upper: (1 - t) * (1 - shoulder), lower: t * (1 - shoulder), 'chest': shoulder}
+            else:
+                t = ARM_FOREARM_SAMPLES[row - len(ARM_UPPER_SAMPLES)]
+                assignment = {lower: 1 - t, 'hand.' + side: t}
+            arm_weights.extend([assignment] * 12)
         kit.skin(arm, arm_weights)
         arm['room_surface_roles'] = ['cloth']
 

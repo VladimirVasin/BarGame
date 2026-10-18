@@ -2,9 +2,11 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-18, authored enemies:**
-  Room|Imprint|LongExposure equal init-reset-refill/ownseed;Zombie Lab;art§15a/§6/story0.
-  Endless1–5/def3:random/Docker/Crane;Crane last≤2;11warm/≤5active;permaIDs-role-slot.
+- **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
+
+- **Accepted exception 2026-10-18, enemies:**
+  Endless1–5/def3:Room|Imprint|LongExposure rng/start-reset-refill,Docker,Crane(last≤2);
+  11warm;ZombieLab;§6/art§15a/story0.
 
 - **Accepted exception 2026-10-17, crane insect:**
   Form=art§15a;sharedrig/yaw±100°/hang↓.25/rootkept.

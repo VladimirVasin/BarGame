@@ -102,7 +102,14 @@ namespace BarPromenade
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             bool found;
             Vector3 spawn;
-            using (SpawnSearchMarker.Auto()) found = TryNextOpponentSpawn(available.Actor, out spawn);
+            float spawnRadius = available.Actor.Body.radius, spawnHeight = available.Actor.Body.height;
+            if (available.Actor.IsAuthoredEnemy && available.Variants != null)
+                foreach (CombatActor variant in available.Variants)
+                {
+                    spawnRadius = Mathf.Max(spawnRadius, variant.Body.radius);
+                    spawnHeight = Mathf.Max(spawnHeight, variant.Body.height);
+                }
+            using (SpawnSearchMarker.Auto()) found = TryNextOpponentSpawn(available.Actor, out spawn, spawnRadius, spawnHeight);
             LastSpawnSearchTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             if (!found)
             { endless.DeferSpawn(); return false; }
@@ -150,25 +157,32 @@ namespace BarPromenade
             return true;
         }
 
-        private bool TryNextOpponentSpawn(CombatActor recycled, out Vector3 spawn)
+        private bool TryNextOpponentSpawn(CombatActor recycled, out Vector3 spawn, float clearanceRadius, float clearanceHeight)
         {
             if (recycled.IsCrane) return TryNextCraneSpawn(out spawn);
             if (WarehousePlan != null && recycled.IsDocker) return TryNextMimicSpawn(recycled, out spawn);
             spawn = default;
             validSpawnPoints.Clear();
             if (WarehousePlan != null) GeometryUtility.CalculateFrustumPlanes(CameraFollow.Camera, mimicViewPlanes);
+            // Planner clearances start at the supporting floor; the live
+            // capsule instead starts at its grounded actor-root offset.
+            float plannerHeight = Mathf.Max(WarehouseArenaArea.DefaultHeadroom,
+                clearanceHeight + PlayerFactory.GroundedRootOffset);
             float minimumSquared = EncounterSettings.MinimumHeroDistance * EncounterSettings.MinimumHeroDistance;
             IReadOnlyList<Vector3> candidates = WarehousePlan != null ? WarehousePlan.SpawnPoints : NextOpponentCandidates;
             foreach (Vector3 candidate in candidates)
             {
                 Vector3 delta = candidate - Hero.transform.position; delta.y = 0f;
-                if (delta.sqrMagnitude < minimumSquared || !TrySpawnGround(candidate, recycled, out Vector3 grounded)) continue;
+                if (delta.sqrMagnitude < minimumSquared || !TrySpawnGround(candidate, recycled, out Vector3 grounded,
+                    clearanceRadius, clearanceHeight)) continue;
                 if (WarehousePlan != null)
                 {
                     if (!(arenaBounds is WarehouseArenaArea area) ||
-                        !area.TryGetHeight(grounded, out float height, recycled.Body.radius) ||
+                        !area.TryGetHeight(grounded, out float height, clearanceRadius, plannerHeight) ||
                         Mathf.Abs(grounded.y - PlayerFactory.GroundedRootOffset - height) > .15f) continue;
-                    Bounds silhouette = new Bounds(grounded + Vector3.up * .9f, new Vector3(.9f, 1.8f, .9f));
+                    float silhouetteHeight = Mathf.Max(1.8f, clearanceHeight), silhouetteWidth = Mathf.Max(.9f, clearanceRadius * 2f);
+                    Bounds silhouette = new Bounds(grounded + Vector3.up * (silhouetteHeight * .5f),
+                        new Vector3(silhouetteWidth, silhouetteHeight, silhouetteWidth));
                     if (GeometryUtility.TestPlanesAABB(mimicViewPlanes, silhouette) &&
                         WarehouseTargetVisible(grounded, Hero.transform.position)) continue;
                 }
@@ -184,7 +198,7 @@ namespace BarPromenade
                 int index = (int)(spawnPointSeed % (uint)validSpawnPoints.Count);
                 spawn = validSpawnPoints[index];
                 bool reachable = WarehousePlan == null || arenaBounds is WarehouseArenaArea area &&
-                    area.FindRoute(spawn, Hero.transform.position, warehouseSpawnRoute, recycled.Body.radius + .04f);
+                    area.FindRoute(spawn, Hero.transform.position, warehouseSpawnRoute, clearanceRadius + .04f, plannerHeight);
                 warehouseSpawnRoute.Clear();
                 if (reachable) return true;
                 validSpawnPoints[index] = validSpawnPoints[validSpawnPoints.Count - 1];
@@ -205,7 +219,8 @@ namespace BarPromenade
                 !WarehouseTargetVisible(bodyPosition, Hero.transform.position);
         }
 
-        private bool TrySpawnGround(Vector3 candidate, CombatActor recycled, out Vector3 grounded)
+        private bool TrySpawnGround(Vector3 candidate, CombatActor recycled, out Vector3 grounded,
+            float radius = .32f, float height = 1.75f)
         {
             grounded = default;
             RaycastHit[] groundHits = CombatTraversalQueries.Raycast(candidate + Vector3.up * 3f, Vector3.down,
@@ -220,9 +235,9 @@ namespace BarPromenade
                 nearest = hit.distance;
                 grounded = hit.point + Vector3.up * PlayerFactory.GroundedRootOffset;
             }
-            if (float.IsPositiveInfinity(nearest) || !arenaBounds.Contains(grounded, .32f)) return false;
-            Collider[] overlapHits = CombatTraversalQueries.OverlapCapsule(grounded + Vector3.up * .32f,
-                grounded + Vector3.up * 1.43f, .32f, ref spawnOverlapHits,
+            if (float.IsPositiveInfinity(nearest) || !arenaBounds.Contains(grounded, radius)) return false;
+            Collider[] overlapHits = CombatTraversalQueries.OverlapCapsule(grounded + Vector3.up * radius,
+                grounded + Vector3.up * Mathf.Max(radius, height - radius), radius, ref spawnOverlapHits,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore, out count);
             for (int i = 0; i < count; i++)
                 if (recycled == null || overlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;

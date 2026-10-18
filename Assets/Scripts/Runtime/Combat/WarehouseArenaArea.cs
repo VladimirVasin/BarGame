@@ -7,7 +7,8 @@ namespace BarPromenade
     /// <summary>Feet-aware storey selection; bounded spatial lookups and reusable route scratch.</summary>
     public sealed class WarehouseArenaArea : IWalkableArea
     {
-        private const float MaximumStep = .23f, Headroom = 1.85f, SurfaceCapture = .62f, ObstacleCellSize = 3f;
+        internal const float DefaultHeadroom = 1.85f;
+        private const float MaximumStep = .23f, SurfaceCapture = .62f, ObstacleCellSize = 3f;
         private readonly HashSet<Vector3Int> deckTiles = new HashSet<Vector3Int>();
         private readonly Dictionary<Vector2Int, List<int>> obstacleCells = new Dictionary<Vector2Int, List<int>>();
         private readonly List<Vector3> nextStepRoute = new List<Vector3>(64);
@@ -51,29 +52,32 @@ namespace BarPromenade
         public bool Contains(Vector3 position, float radius = 0f) => TryGetHeight(position, out _, radius);
 
         public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius = 0f)
+            => Constrain(currentPosition, desiredPosition, radius, DefaultHeadroom);
+
+        internal Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius, float height)
         {
             if (!Finite(desiredPosition) || radius < 0f) return currentPosition;
             desiredPosition.x = Mathf.Clamp(desiredPosition.x, -WarehouseArenaPlan.HalfWidth + radius, WarehouseArenaPlan.HalfWidth - radius);
             desiredPosition.z = Mathf.Clamp(desiredPosition.z, -WarehouseArenaPlan.HalfDepth + radius, WarehouseArenaPlan.HalfDepth - radius);
-            if (StepAllowed(currentPosition, desiredPosition, radius)) return desiredPosition;
+            if (StepAllowed(currentPosition, desiredPosition, radius, height)) return desiredPosition;
             Vector3 alongX = new Vector3(desiredPosition.x, desiredPosition.y, currentPosition.z);
-            if (StepAllowed(currentPosition, alongX, radius)) return alongX;
+            if (StepAllowed(currentPosition, alongX, radius, height)) return alongX;
             Vector3 alongZ = new Vector3(currentPosition.x, desiredPosition.y, desiredPosition.z);
-            if (StepAllowed(currentPosition, alongZ, radius)) return alongZ;
+            if (StepAllowed(currentPosition, alongZ, radius, height)) return alongZ;
             return new Vector3(currentPosition.x, desiredPosition.y, currentPosition.z);
         }
 
-        private bool StepAllowed(Vector3 current, Vector3 desired, float radius)
+        private bool StepAllowed(Vector3 current, Vector3 desired, float radius, float height)
         {
-            if (!TryGetHeight(current, out float before, radius) || !TryGetHeight(desired, out float after, radius) ||
+            if (!TryGetHeight(current, out float before, radius, height) || !TryGetHeight(desired, out float after, radius, height) ||
                 Mathf.Abs(after - before) > MaximumStep || Mathf.Abs(after - current.y) >= .48f) return false;
             // Impulses may be longer than a frame of walking. Sample them too, so thin partitions remain solid.
             current.y = before; desired.y = after;
-            return CanTraverse(current, desired, radius);
+            return CanTraverse(current, desired, radius, height);
         }
 
         /// <summary>Choose a nearby supporting surface from feet height, never a different floor through a shaft.</summary>
-        public bool TryGetHeight(Vector3 position, out float height, float radius = 0f)
+        public bool TryGetHeight(Vector3 position, out float height, float radius = 0f, float clearanceHeight = DefaultHeadroom)
         {
             height = 0f;
             if (!Finite(position) || radius < 0f || Mathf.Abs(position.x) > WarehouseArenaPlan.HalfWidth - radius ||
@@ -83,7 +87,7 @@ namespace BarPromenade
             {
                 float candidate = level * WarehouseArenaPlan.LevelRise;
                 if (Mathf.Abs(candidate - position.y) > SurfaceCapture || !CircleOnSurface(position.x,position.z,level,radius)) continue;
-                Consider(position, radius, candidate, ref height, ref best, ref found);
+                Consider(position, radius, clearanceHeight, candidate, ref height, ref best, ref found);
             }
             foreach (WarehouseArenaStair stair in Plan.Stairs)
             {
@@ -94,32 +98,32 @@ namespace BarPromenade
                     position.z < bounds.yMin - .03f || position.z > bounds.yMax + .03f) continue;
                 float candidate = stair.HeightAt(position.z);
                 if (Mathf.Abs(candidate - position.y) <= SurfaceCapture)
-                    Consider(position, radius, candidate, ref height, ref best, ref found);
+                    Consider(position, radius, clearanceHeight, candidate, ref height, ref best, ref found);
             }
             return found;
         }
 
-        private void Consider(Vector3 position, float radius, float candidate, ref float height, ref float best, ref bool found)
+        private void Consider(Vector3 position, float radius, float clearanceHeight, float candidate, ref float height, ref float best, ref bool found)
         {
-            if (Blocked(position.x,position.z,candidate,radius) || !HasHeadroom(position.x,position.z,candidate)) return;
+            if (Blocked(position.x,position.z,candidate,radius,clearanceHeight) || !HasHeadroom(position.x,position.z,candidate,clearanceHeight)) return;
             float distance = Mathf.Abs(position.y - candidate);
             if (distance >= best) return;
             height = candidate; best = distance; found = true;
         }
 
-        private bool HasHeadroom(float x, float z, float floor)
+        private bool HasHeadroom(float x, float z, float floor, float clearanceHeight)
         {
             foreach (WarehouseArenaStair stair in Plan.Stairs)
             {
                 if (!InRect(stair.Bounds,x,z)) continue;
                 float underside = stair.HeightAt(z) - .08f;
                 // The first tread is a normal step. Low treads above a lower standing floor are not a tunnel.
-                if (underside > floor + .12f && underside < floor + Headroom) return false;
+                if (underside > floor + .12f && underside < floor + clearanceHeight) return false;
             }
-            return floor + Headroom <= WarehouseArenaPlan.CeilingHeight;
+            return floor + clearanceHeight <= WarehouseArenaPlan.CeilingHeight;
         }
 
-        private bool Blocked(float x, float z, float floor, float radius)
+        private bool Blocked(float x, float z, float floor, float radius, float clearanceHeight)
         {
             for (int cz = Mathf.FloorToInt((z-radius) / ObstacleCellSize); cz <= Mathf.FloorToInt((z+radius) / ObstacleCellSize); cz++)
                 for (int cx = Mathf.FloorToInt((x-radius) / ObstacleCellSize); cx <= Mathf.FloorToInt((x+radius) / ObstacleCellSize); cx++)
@@ -130,7 +134,7 @@ namespace BarPromenade
                         Bounds bounds = Plan.Obstacles[index].Bounds;
                         if (Plan.Obstacles[index].Kind == WarehouseArenaObstacleKind.Gate && gateState != null)
                             bounds.center += Vector3.up * (gateState.Progress * WarehouseGateController.MaximumLift);
-                        if (floor >= bounds.max.y - .01f || floor + Headroom <= bounds.min.y) continue;
+                        if (floor >= bounds.max.y - .01f || floor + clearanceHeight <= bounds.min.y) continue;
                         if (x > bounds.min.x - radius && x < bounds.max.x + radius &&
                             z > bounds.min.z - radius && z < bounds.max.z + radius) return true;
                     }
@@ -177,28 +181,28 @@ namespace BarPromenade
         public bool SameSurface(Vector3 from, Vector3 to) =>
             TryGetHeight(from,out float a) && TryGetHeight(to,out float b) && Mathf.Abs(a-b) < .24f;
 
-        public bool CanTraverse(Vector3 from, Vector3 to, float radius = .36f)
+        public bool CanTraverse(Vector3 from, Vector3 to, float radius = .36f, float height = DefaultHeadroom)
         {
-            if (!TryGetHeight(from,out float previous,radius) || !TryGetHeight(to,out float target,radius)) return false;
+            if (!TryGetHeight(from,out float previous,radius,height) || !TryGetHeight(to,out float target,radius,height)) return false;
             if (Mathf.Abs(previous-from.y) > .25f || Mathf.Abs(target-to.y) > .25f) return false;
             int samples = Mathf.Max(1,Mathf.CeilToInt(Vector3.Distance(from,to) / .15f));
             for (int i = 1; i <= samples; i++)
             {
                 Vector3 position = Vector3.Lerp(from,to,i/(float)samples);
-                if (!TryGetHeight(position,out float next,radius) || Mathf.Abs(next-position.y) > .24f ||
+                if (!TryGetHeight(position,out float next,radius,height) || Mathf.Abs(next-position.y) > .24f ||
                     Mathf.Abs(next-previous) > MaximumStep) return false;
                 previous = next;
             }
             return true;
         }
 
-        public bool FindRoute(Vector3 from, Vector3 to, List<Vector3> destination, float radius = .36f)
+        public bool FindRoute(Vector3 from, Vector3 to, List<Vector3> destination, float radius = .36f, float height = DefaultHeadroom)
         {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             destination.Clear();
-            if (!TryGetHeight(from,out float fromHeight,radius) || !TryGetHeight(to,out float toHeight,radius)) return false;
+            if (!TryGetHeight(from,out float fromHeight,radius,height) || !TryGetHeight(to,out float toHeight,radius,height)) return false;
             from.y = fromHeight; to.y = toHeight;
-            if (CanTraverse(from,to,radius)) { destination.Add(to); return true; }
+            if (CanTraverse(from,to,radius,height)) { destination.Add(to); return true; }
             int count = Plan.NavigationNodes.Count, end = -1;
             heapCount = 0;
             for (int i = 0; i < count; i++)
@@ -207,18 +211,19 @@ namespace BarPromenade
                 routeEstimate[i] = Vector3.Distance(Plan.NavigationNodes[i],to);
             }
             for (int i = 0; i < count; i++)
-                if ((from-Plan.NavigationNodes[i]).sqrMagnitude <= 9f && CanTraverse(from,Plan.NavigationNodes[i],radius))
+                if ((from-Plan.NavigationNodes[i]).sqrMagnitude <= 9f && CanTraverse(from,Plan.NavigationNodes[i],radius,height))
                 { routeCost[i] = Vector3.Distance(from,Plan.NavigationNodes[i]); PushOrDecrease(i); }
             while (heapCount > 0)
             {
                 int current = PopNearest();
-                if ((Plan.NavigationNodes[current]-to).sqrMagnitude <= 9f && CanTraverse(Plan.NavigationNodes[current],to,radius))
+                if ((Plan.NavigationNodes[current]-to).sqrMagnitude <= 9f && CanTraverse(Plan.NavigationNodes[current],to,radius,height))
                 { end = current; break; }
                 routeClosed[current] = true;
                 foreach (int neighbour in neighbours[current])
                 {
                     if (routeClosed[neighbour]) continue;
-                    if (radius > .3601f && !CanTraverse(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour],radius)) continue;
+                    if ((radius > .3601f || height > DefaultHeadroom) &&
+                        !CanTraverse(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour],radius,height)) continue;
                     float next = routeCost[current] + Vector3.Distance(Plan.NavigationNodes[current],Plan.NavigationNodes[neighbour]);
                     if (next >= routeCost[neighbour]) continue;
                     routeCost[neighbour] = next; routePrevious[neighbour] = current; PushOrDecrease(neighbour);
@@ -230,7 +235,7 @@ namespace BarPromenade
             Vector3 start = from;
             for (int i = 0; i + 1 < destination.Count;)
             {
-                if (CanTraverse(start,destination[i+1],radius)) destination.RemoveAt(i);
+                if (CanTraverse(start,destination[i+1],radius,height)) destination.RemoveAt(i);
                 else { start = destination[i]; i++; }
             }
             return true;

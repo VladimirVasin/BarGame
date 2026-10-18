@@ -84,7 +84,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - CombatTest:warehouse/fish-key-gate;all3fish→power-music-spawn0.
   Endless1–5/default3:Room|Imprint|LongExposure,Docker,Crane;Crane last≤2.
   Random start-reset-refill;≤5active/≤11prepared;Lab:oldArena/6kinds/1target.
-  Enemy resistance2/head2/wounds;3weapons/finiteammo.
+  Enemy resistance2/head2/wounds;Room×1.2/bighead/longarms+hands;3weapons/finiteammo.
   Gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

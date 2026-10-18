@@ -131,9 +131,11 @@ namespace BarPromenade
             else LoadZombieClips();
             InitializeNpcAnimation();
             InitializeNpcPoseBlend();
+            InitializeRoomArmProportions();
             LoadStepClips(true);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
-            Ragdoll.InitializeOpponent(presentation, body);
+            Ragdoll.InitializeOpponent(presentation, body, IsRoom ? CombatRoomAssetProvider.RigHeight : body.height);
+            FitRoomHeadCollider();
             if (IsCrane) InitializeCraneSuspension();
             else InitializeZombieHands();
             InitializeDamagePose();

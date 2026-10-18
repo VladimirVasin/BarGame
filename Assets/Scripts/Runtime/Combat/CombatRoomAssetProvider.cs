@@ -6,6 +6,19 @@ namespace BarPromenade
     /// <summary>Shared authored assets for the isolated Room enemy.</summary>
     public static class CombatRoomAssetProvider
     {
+        public const float PresentationScale = 1.2f;
+        public const float UpperArmLengthScale = 1.3f;
+        public const float ForearmLengthScale = 1.8f;
+        public const float HandLengthScale = 1.5f;
+        internal const int HandLengthAxis = 1;
+        internal const float RigHeight = 1.75f * PresentationScale;
+        internal static float ControllerHeight()
+        {
+            float height = RigHeight;
+            foreach (CombatAuthoredBodyBank.BodyMesh mesh in Bank.LoadBodyManifest().meshes)
+                if (mesh.visible) height = Mathf.Max(height, mesh.bounds_max[1] * PresentationScale + .01f);
+            return height;
+        }
         public static CombatAuthoredBodyBank Bank { get; } = new CombatAuthoredBodyBank(
             "Room", "room_body_surface_v1", new[] { "cloth", "plaster", "flesh" }, new[] { .14f, .08f, .25f });
         public static CombatAuthoredBodyBank.BodyManifest LoadBodyManifest() => Bank.LoadBodyManifest();

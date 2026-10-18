@@ -144,7 +144,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   StdDocker;Endless1–5/def3:authored,Docker,Crane(last≤2);
   random start-reset-refill/seed/11warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie;spawn-reset/prepkept.
-  Room:corridor;Imprint:concavecast;LongExposure:fusedmotion/emulsion;UV-damage.
+  Room×1.2/bighead/longarms+hands/corridor;Imprint:cast;LongExposure:emulsion;UV
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
   Crane:flesh/carapace/6cables/longfoldlimbs/uprighthead/yaw±100°/hang↓.25;
   rig/UV0/2K+1K/WarehouseSurface/body-skull;

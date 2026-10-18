@@ -91,7 +91,7 @@ namespace BarPromenade
             PrepareGroundContacts(head.Bone);
         }
 
-        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController controller)
+        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController controller, float rigHeight = 0f)
         {
             combatActor = GetComponent<CombatActor>();
             if (physicsController != null) throw new InvalidOperationException("Combat ragdoll is already initialized.");
@@ -108,9 +108,12 @@ namespace BarPromenade
             // The same rendered rig returns to its live pose before this method exits.
             try
             {
+                combatActor.RestoreRoomHandBindScales();
                 RestoreSkinBindPose(npc.ModelRoot, anatomy);
+                combatActor.ApplyRoomArmProportionsToFreshPose();
                 physicsController = controller.gameObject.AddComponent<Player3DRagdollController>();
-                physicsController.Initialize(controller.transform, controller, npc.ModelRoot, anatomy, controller.height);
+                physicsController.Initialize(controller.transform, controller, npc.ModelRoot, anatomy,
+                    rigHeight > 0f ? rigHeight : controller.height);
             }
             finally { RestorePose(initialPose); }
             PrepareGroundContacts(anatomy[Player3DAnatomicalPart.Head]);

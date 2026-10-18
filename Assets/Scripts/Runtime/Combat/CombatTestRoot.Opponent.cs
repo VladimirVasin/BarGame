@@ -727,7 +727,7 @@ namespace BarPromenade
             if (separation.sqrMagnitude <= .000001f) return desired;
             Vector3 candidate = Vector3.ClampMagnitude(desired + separation * maximumSpeed * .7f, maximumSpeed);
             if (arenaBounds is WarehouseArenaArea area &&
-                !area.CanTraverse(before, before + candidate * .2f, AiOpponent.Body.radius + .04f)) return desired;
+                !area.CanTraverse(before, before + candidate * .2f, AiOpponent.Body.radius + .04f, OpponentClearanceHeight)) return desired;
             return candidate;
         }
 

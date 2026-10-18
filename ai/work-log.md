@@ -3,6 +3,30 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-19 - Room proportions
+
+- Room has a larger native head and upper neck; the hollow corridor and
+  canonical rest skeleton remain. Shared source textures are rebaked.
+- Its arms lengthen through the actual elbow and wrist chains; endpoint skin
+  weights keep sleeves, palms and wounds continuous through walks and strikes.
+- Palms and fingers extend along the retained local hand axis. Canonical source
+  meshes and grip shapes stay shared; hand scale resets before each pose sample.
+- The complete Room presentation grows on a stable wrapper; its actor stays
+  unit scale. Physical dimensions, head collision, gait and spawn clearance
+  follow the larger form and longer reach without changing the other enemies.
+- Source proof: `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`;
+  front, profile, walk and strike renders reviewed.
+- Own internal arm layers retain actual source skin through import; closed
+  source-bound fragments replace protruding radial tissue and structures.
+- Damage proof: independent rebuild equality, retained-head strain,
+  stretched-arm containment, full hand-affine containment, binary skin audit
+  and clear-corridor probes pass. The hand revision retains source, atlas and
+  damage FBX bytes.
+- Unity proofs: `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
+  `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass. In-game
+  silhouette, hero comparison, long-hand contact, damaged sleeve and corridor
+  reviewed.
+
 ## 2026-10-18 - Authored enemies and old arena
 
 - Room: coat/plaster around a receding corridor; thin source-bound tissue and

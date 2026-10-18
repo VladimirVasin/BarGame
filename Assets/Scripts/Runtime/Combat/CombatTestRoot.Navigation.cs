@@ -7,6 +7,8 @@ namespace BarPromenade
         private const float WarehousePerceptionSeconds = .12f;
         private const float WarehouseRouteSeconds = .35f;
         private const float WarehouseMeleeHeight = .4f;
+        private float OpponentClearanceHeight => AiOpponent.IsRoom
+            ? AiOpponent.Body.height + PlayerFactory.GroundedRootOffset : WarehouseArenaArea.DefaultHeadroom;
 
         internal string DescribeWarehouseOpponentNavigation()
         {
@@ -42,7 +44,7 @@ namespace BarPromenade
                 bool visible = WarehouseTargetVisible(from, target);
                 opponentContext.warehouseMeleeReachable = visible && Mathf.Abs(target.y - from.y) <= WarehouseMeleeHeight;
                 opponentContext.warehouseDirectTravel = area.SameSurface(from, target) &&
-                    area.CanTraverse(from, target, AiOpponent.Body.radius + .04f);
+                    area.CanTraverse(from, target, AiOpponent.Body.radius + .04f, OpponentClearanceHeight);
             }
             // Height is live even between the bounded visibility/graph samples.
             if (Mathf.Abs(target.y - from.y) > WarehouseMeleeHeight) opponentContext.warehouseMeleeReachable = false;
@@ -82,7 +84,7 @@ namespace BarPromenade
                 opponentContext.warehouseRouteTarget = target;
                 opponentContext.warehouseRouteIndex = 0;
                 opponentContext.warehouseStuckSeconds = 0f;
-                if (!area.FindRoute(from, target, opponentContext.warehouseOpponentRoute, AiOpponent.Body.radius + .04f))
+                if (!area.FindRoute(from, target, opponentContext.warehouseOpponentRoute, AiOpponent.Body.radius + .04f, OpponentClearanceHeight))
                     opponentContext.warehouseOpponentRoute.Clear();
             }
             while (opponentContext.warehouseRouteIndex < opponentContext.warehouseOpponentRoute.Count)

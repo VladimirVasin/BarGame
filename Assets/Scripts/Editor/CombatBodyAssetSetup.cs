@@ -108,14 +108,16 @@ namespace BarPromenade.Editor
                 bool exterior = piece.name.StartsWith("Region", StringComparison.Ordinal);
                 float measuredWarp = allowances.TryGetValue(original.name, out float value) ? value : 0f;
                 RestoreSkin(piece, original, bones, exterior, Mathf.Max(.0007f, measuredWarp * 1.05f + .0001f),
-                    torsoFrames.TryGetValue(original.name, out Matrix4x4 torsoFrame) ? torsoFrame : Matrix4x4.identity);
+                    torsoFrames.TryGetValue(original.name, out Matrix4x4 torsoFrame) ? torsoFrame : Matrix4x4.identity,
+                    assetPath == Folder + "BodyRoom.fbx" && IsRoomInternalArm(piece.name));
                 if (exterior && KindFor(assetPath) is "Crane" or "Room" or "Imprint" or "LongExposure")
                     CombatGoreAssetSetup.RestoreSourceMaterialSlots(piece.sharedMesh, original.sharedMesh);
             }
         }
 
         private static void RestoreSkin(SkinnedMeshRenderer piece, SkinnedMeshRenderer original,
-            Dictionary<string, Transform> bones, bool exterior, float maximumProjectionMetres, Matrix4x4 torsoFrame)
+            Dictionary<string, Transform> bones, bool exterior, float maximumProjectionMetres, Matrix4x4 torsoFrame,
+            bool preserveAuthoredSkin)
         {
             Mesh mesh = piece.sharedMesh, skin = original.sharedMesh;
             if (mesh == null || skin == null) throw new InvalidOperationException("Body derivative lacks mesh.");
@@ -128,6 +130,7 @@ namespace BarPromenade.Editor
             BoneWeight[] sourceWeights = skin.boneWeights, weights = new BoneWeight[vertices.Length];
             var samples = new Sample[vertices.Length];
             Matrix4x4 toSource = original.transform.worldToLocalMatrix * piece.transform.localToWorldMatrix;
+            if (preserveAuthoredSkin) weights = RemapRoomArmSkin(piece, original, toSource);
             Matrix4x4 normalToSource = toSource.inverse.transpose;
             float sourceScale = Mathf.Max(.0001f, original.transform.lossyScale.magnitude / Mathf.Sqrt(3f));
             float distanceTie = 1e-12f / (sourceScale * sourceScale);
@@ -165,7 +168,8 @@ namespace BarPromenade.Editor
                     tangents[i] = new Vector4(tangent.x, tangent.y, tangent.z, authoredTangent.w < 0f ? -1f : 1f);
                 }
                 if (exterior && sourceUv.Length == sourceVertices.Length) uv[i] = closest.Evaluate(sourceUv);
-                weights[i] = InterpolateWeights(sourceWeights[closest.A], sourceWeights[closest.B], sourceWeights[closest.C], closest.Barycentric);
+                if (!preserveAuthoredSkin)
+                    weights[i] = InterpolateWeights(sourceWeights[closest.A], sourceWeights[closest.B], sourceWeights[closest.C], closest.Barycentric);
             }
             mesh.vertices = vertices; mesh.normals = normals; mesh.uv = uv; mesh.boneWeights = weights;
             if (tangents != null) mesh.tangents = tangents;
@@ -211,6 +215,70 @@ namespace BarPromenade.Editor
             piece.bones = ordered;
             piece.rootBone = original.rootBone != null && bones.TryGetValue(original.rootBone.name, out Transform root) ? root : ordered[0];
             piece.localBounds = mesh.bounds;
+        }
+
+        private static bool IsRoomInternalArm(string name)
+        {
+            bool flesh = name.StartsWith("FleshRegion", StringComparison.Ordinal);
+            if (!flesh && !name.StartsWith("BoneRegion", StringComparison.Ordinal)) return false;
+            int start = flesh ? 11 : 10;
+            int end = name.IndexOf(flesh ? "Patch" : "__", StringComparison.Ordinal);
+            return end > start && int.TryParse(name.Substring(start, end - start), out int region) && region >= 5 && region <= 10;
+        }
+
+        private static BoneWeight[] RemapRoomArmSkin(SkinnedMeshRenderer piece, SkinnedMeshRenderer source, Matrix4x4 toSource)
+        {
+            // A hand-region cuff can come from the sleeve or fingers. Its
+            // offline actual-triangle skin cannot be resampled from the palm.
+            Mesh mesh = piece.sharedMesh;
+            Transform[] previous = piece.bones, canonical = source.bones;
+            Matrix4x4[] importedBind = mesh.bindposes, canonicalBind = source.sharedMesh.bindposes;
+            BoneWeight[] weights = mesh.boneWeights;
+            if (previous.Length != importedBind.Length || canonical.Length != canonicalBind.Length ||
+                weights.Length != mesh.vertexCount || mesh.uv.Length != mesh.vertexCount)
+                throw new InvalidOperationException("Room internal arm lost its authored skin/UV: " + piece.name);
+            var indices = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < canonical.Length; i++)
+                if (canonical[i] == null || !indices.TryAdd(canonical[i].name, i))
+                    throw new InvalidOperationException("Room internal arm requires unique canonical bones: " + piece.name);
+            var remap = new int[previous.Length];
+            Matrix4x4 sourceToPiece = toSource.inverse;
+            for (int i = 0; i < previous.Length; i++)
+            {
+                if (previous[i] == null || !indices.TryGetValue(previous[i].name, out remap[i]))
+                    throw new InvalidOperationException("Room internal arm introduced a noncanonical bone: " + piece.name);
+                Matrix4x4 restored = importedBind[i] * sourceToPiece;
+                for (int cell = 0; cell < 16; cell++)
+                    if (!float.IsFinite(restored[cell]) || Mathf.Abs(restored[cell] - canonicalBind[remap[i]][cell]) > .0001f)
+                        throw new InvalidOperationException("Room internal arm changed its retained bind frame: " + piece.name);
+            }
+            foreach (byte count in mesh.GetBonesPerVertex())
+                if (count == 0 || count > 4)
+                    throw new InvalidOperationException("Room internal arm requires one to four authored influences: " + piece.name);
+            foreach (Vector2 uv in mesh.uv)
+                if (!float.IsFinite(uv.x) || !float.IsFinite(uv.y) || uv.x < 0f || uv.x > 1f || uv.y < 0f || uv.y > 1f)
+                    throw new InvalidOperationException("Room internal arm lost its actual-source UV0: " + piece.name);
+            for (int i = 0; i < weights.Length; i++)
+            {
+                BoneWeight row = weights[i];
+                float sum = row.weight0 + row.weight1 + row.weight2 + row.weight3;
+                if (!float.IsFinite(sum) || Mathf.Abs(sum - 1f) > .002f)
+                    throw new InvalidOperationException("Room internal arm has nonnormalized authored skin: " + piece.name);
+                row.boneIndex0 = RemapRoomInfluence(row.boneIndex0, row.weight0, remap, piece.name);
+                row.boneIndex1 = RemapRoomInfluence(row.boneIndex1, row.weight1, remap, piece.name);
+                row.boneIndex2 = RemapRoomInfluence(row.boneIndex2, row.weight2, remap, piece.name);
+                row.boneIndex3 = RemapRoomInfluence(row.boneIndex3, row.weight3, remap, piece.name);
+                row.weight0 /= sum; row.weight1 /= sum; row.weight2 /= sum; row.weight3 /= sum;
+                weights[i] = row;
+            }
+            return weights;
+        }
+
+        private static int RemapRoomInfluence(int index, float weight, int[] remap, string piece)
+        {
+            if (!float.IsFinite(weight) || weight < 0f || (weight > 0f && (uint)index >= remap.Length))
+                throw new InvalidOperationException("Room internal arm has an invalid authored influence: " + piece);
+            return weight > 0f ? remap[index] : 0;
         }
 
         private sealed class TorsoFrameSamples

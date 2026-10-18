@@ -6,9 +6,9 @@ namespace BarPromenade
     {
         private float ZombieWalkSpeed => AiOpponent.IsDocker
             ? CombatZombieAssetProvider.WalkCycleDistance / CombatZombieAssetProvider.WalkCycleSeconds
-            : CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
-        private const float ZombieAttackRange = 1.3f;
-        private const float ZombieApproachSpacing = 1.25f;
+            : CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds * AiOpponent.PresentationScale;
+        private float ZombieAttackRange => 1.3f * AiOpponent.PresentationScale + AiOpponent.AdditionalArmReach;
+        private float ZombieApproachSpacing => 1.25f * AiOpponent.PresentationScale + AiOpponent.AdditionalArmReach;
         private const float ZombieLungeDistance = .9f;
 
         /// <summary>The awakened load pursues without work pauses, then rams with its fused torso.</summary>
@@ -108,7 +108,7 @@ namespace BarPromenade
             float activeFrom = (from - state.AttackWindupSeconds) / state.Settings.ActiveSeconds;
             float activeTo = (to - state.AttackWindupSeconds) / state.Settings.ActiveSeconds;
             Vector3 requested = opponentContext.committedDirection *
-                ((AiOpponent.IsDocker ? ZombieLungeDistance : .7f) *
+                ((AiOpponent.IsDocker ? ZombieLungeDistance : .7f * AiOpponent.PresentationScale) *
                     (Mathf.SmoothStep(0f, 1f, activeTo) - Mathf.SmoothStep(0f, 1f, activeFrom)));
             Vector3 travel = LimitOpponentCrowdTravel(before, requested);
             travel = LimitZombieSolidTravel(travel);
@@ -117,7 +117,7 @@ namespace BarPromenade
                 travel = AiOpponent.LimitZombieRamTravel(travel, Hero, seconds);
                 travel = AiOpponent.LimitZombieLoadTravel(travel);
             }
-            Vector3 desired = arenaBounds.Constrain(before, before + travel, AiOpponent.Body.radius);
+            Vector3 desired = ConstrainZombieTravel(before, before + travel);
             Vector3 constrained = desired - before;
             // A constrained axis slide changes the lunge's committed line.
             // Stop it here; ordinary chase may find a route after the return.
@@ -145,7 +145,7 @@ namespace BarPromenade
             Vector3 travel = LimitOpponentApproach(before, requested);
             travel = LimitOpponentCrowdTravel(before, travel);
             travel = AiOpponent.LimitZombieLoadTravel(travel);
-            Vector3 desired = arenaBounds.Constrain(before, before + travel, AiOpponent.Body.radius);
+            Vector3 desired = ConstrainZombieTravel(before, before + travel);
             AiOpponent.Body.Move(desired - before);
             Vector3 moved = AiOpponent.transform.position - before; moved.y = 0f;
             AiOpponent.AdvanceZombieWalkClock(elapsed, distance, moved.magnitude);
@@ -155,6 +155,11 @@ namespace BarPromenade
             JournalOpponentMovement(AiOpponent, desired - before, moved);
             ObserveWarehouseOpponentTravel(travel, moved, seconds);
         }
+
+        private Vector3 ConstrainZombieTravel(Vector3 before, Vector3 desired) =>
+            AiOpponent.IsRoom && arenaBounds is WarehouseArenaArea roomArea
+                ? roomArea.Constrain(before, desired, AiOpponent.Body.radius, OpponentClearanceHeight)
+                : arenaBounds.Constrain(before, desired, AiOpponent.Body.radius);
 
         private Vector3 LimitZombieSolidTravel(Vector3 travel)
         {
