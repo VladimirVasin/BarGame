@@ -50,6 +50,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             zombieFixtureStarted = false;
             CombatTestRoot.UseDockerPopulationForTests = false;
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
             string method = TestContext.CurrentContext.Test.MethodName;
             if (method != nameof(Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads) &&
                 method != nameof(Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus) &&
@@ -60,6 +61,10 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_GameplayHudRespondsToAimDamageAndDebugToggle) &&
                 method != nameof(Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle) &&
                 method != nameof(Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate) &&
+                method != nameof(Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset) &&
+                method != nameof(Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset) &&
+                method != nameof(Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset) &&
+                method != nameof(Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch) &&
                 method != nameof(Range_CraneSuspensionKeepsContactOcclusionPauseAndReset) &&
                 method != nameof(Range_CraneOwnHookKnockdownTriggersOneSuspendedFrenzy) &&
                 method != nameof(Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies))
@@ -80,6 +85,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
             if (!zombieFixtureStarted) yield break;
             zombieFixtureStarted = false;
             CombatTestRoot.UseLegacyArenaForTests = false;

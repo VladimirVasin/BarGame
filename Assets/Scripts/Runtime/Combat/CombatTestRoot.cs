@@ -113,9 +113,10 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
             Mode = selection.Mode;
+            LaboratoryEnemy = laboratoryChoice = selection.LaboratoryEnemy;
             EncounterSettings = selection.EncounterSettings;
             Camera camera;
-            if (UseLegacyArenaForTests)
+            if (IsLaboratory || UseLegacyArenaForTests)
             {
                 camera = RuntimeSceneSetup.EnsureCityNight();
                 RuntimeSceneSetup.EnsureLighting(new Color(.34f, .37f, .35f));
@@ -157,7 +158,7 @@ namespace BarPromenade
             SparkEffects.Initialize(transform);
             SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle");
             SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim");
-            Taunt = opponentObject.AddComponent<CombatTauntInteraction>();
+            Taunt = (IsLaboratory ? gameObject : opponentObject).AddComponent<CombatTauntInteraction>();
             Taunt.Initialize(this, arenaBounds);
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
             heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
@@ -205,7 +206,7 @@ namespace BarPromenade
             HitStopSecondsConsumed = 0f;
             roundCameraReleased = false;
             finishedRoundInitialized = false;
-            if (focusOpponent && Mode == CombatTestMode.Standard && WarehousePlan == null) LockOnOpponent();
+            if (focusOpponent && (Mode == CombatTestMode.Standard || IsLaboratory) && WarehousePlan == null) LockOnOpponent();
             else
             {
                 ClearFocusTracking();
@@ -236,7 +237,7 @@ namespace BarPromenade
         {
             Player.Motor.SetMovementTargetFrozen(this, frozen);
             Hero.SetPresentationFrozen(frozen);
-            foreach (CombatActor actor in combatOpponents) actor.SetPresentationFrozen(frozen);
+            foreach (CombatActor actor in preparedOpponents) actor.SetPresentationFrozen(frozen);
             HeadEffects?.SetFrozen(frozen);
             BodyEffects?.SetFrozen(frozen);
         }

@@ -10,8 +10,11 @@ namespace BarPromenade.Editor
     {
         private const string Folder = "Assets/Resources/CombatBlood/";
         private static string SourceFor(string path) => path.Contains("Hero") ? "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx" :
-            path.Contains("Crane") ? "Assets/Resources/Combat/CraneBody.fbx" : "Assets/Resources/VillageLife/StationWorker.fbx";
-        public override uint GetVersion() => 3;
+            path.Contains("Crane") ? "Assets/Resources/Combat/CraneBody.fbx" :
+            path.Contains("Room") ? "Assets/Resources/Combat/RoomBody.fbx" :
+            path.Contains("Imprint") ? "Assets/Resources/Combat/ImprintBody.fbx" :
+            path.Contains("LongExposure") ? "Assets/Resources/Combat/LongExposureBody.fbx" : "Assets/Resources/VillageLife/StationWorker.fbx";
+        public override uint GetVersion() => 4;
         private bool IsBlood => assetPath.StartsWith(Folder, StringComparison.Ordinal);
 
         private void OnPreprocessTexture()
@@ -52,7 +55,9 @@ namespace BarPromenade.Editor
             string sourcePath = SourceFor(assetPath);
             context.DependsOnSourceAsset(sourcePath);
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
-            if (source == null) throw new InvalidOperationException("Blood surface source is not imported: " + sourcePath);
+            // A fresh checkout can import a derivative before its production
+            // source. The artifact dependency retries it after that source is ready.
+            if (source == null) return;
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in source.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 originals[renderer.name] = renderer;
@@ -118,9 +123,9 @@ namespace BarPromenade.Editor
 
         public static void BuildOrThrow()
         {
-            foreach (string file in new[] { "WoundsHero.fbx", "WoundsNpc.fbx", "WoundsCrane.fbx", "BloodShapes.fbx", "BloodSurface.png" })
+            foreach (string file in new[] { "WoundsHero.fbx", "WoundsNpc.fbx", "WoundsCrane.fbx", "WoundsRoom.fbx", "WoundsImprint.fbx", "WoundsLongExposure.fbx", "BloodShapes.fbx", "BloodSurface.png" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
-            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
+            foreach (string kind in new[] { "Hero", "Npc", "Crane", "Room", "Imprint", "LongExposure" })
             {
                 GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "Wounds" + kind + ".fbx");
                 int skinnedCount = model != null ? model.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length : 0;

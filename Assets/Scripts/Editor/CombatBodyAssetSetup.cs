@@ -13,19 +13,32 @@ namespace BarPromenade.Editor
         private const string HeroSource = "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string NpcSource = "Assets/Resources/VillageLife/StationWorker.fbx";
         private const string CraneSource = "Assets/Resources/Combat/CraneBody.fbx";
+        private const string RoomSource = "Assets/Resources/Combat/RoomBody.fbx";
+        private const string ImprintSource = "Assets/Resources/Combat/ImprintBody.fbx";
+        private const string LongExposureSource = "Assets/Resources/Combat/LongExposureBody.fbx";
         private bool IsBody => assetPath == Folder + "BodyHero.fbx" || assetPath == Folder + "BodyNpc.fbx" ||
             assetPath == Folder + "BodyCrane.fbx" || assetPath == Folder + "SkullHero.fbx" ||
-            assetPath == Folder + "SkullNpc.fbx" || assetPath == Folder + "SkullCrane.fbx";
+            assetPath == Folder + "SkullNpc.fbx" || assetPath == Folder + "SkullCrane.fbx" ||
+            assetPath == Folder + "BodyRoom.fbx" || assetPath == Folder + "SkullRoom.fbx" ||
+            assetPath == Folder + "BodyImprint.fbx" || assetPath == Folder + "SkullImprint.fbx" ||
+            assetPath == Folder + "BodyLongExposure.fbx" || assetPath == Folder + "SkullLongExposure.fbx";
         private static string KindFor(string path) => path.EndsWith("Hero.fbx", StringComparison.Ordinal) ? "Hero" :
-            path.EndsWith("Crane.fbx", StringComparison.Ordinal) ? "Crane" : "Npc";
-        private static string SourceFor(string path) => KindFor(path) == "Hero" ? HeroSource : KindFor(path) == "Crane" ? CraneSource : NpcSource;
-        private static string ManifestFor(string path) => Folder + (KindFor(path) == "Crane" ? "CombatCraneDamage3D.json" : "CombatBody3D.json");
-        public override uint GetVersion() => 8;
+            path.EndsWith("Crane.fbx", StringComparison.Ordinal) ? "Crane" :
+            path.EndsWith("Room.fbx", StringComparison.Ordinal) ? "Room" :
+            path.EndsWith("Imprint.fbx", StringComparison.Ordinal) ? "Imprint" :
+            path.EndsWith("LongExposure.fbx", StringComparison.Ordinal) ? "LongExposure" : "Npc";
+        private static string SourceFor(string path) => KindFor(path) switch
+        { "Hero" => HeroSource, "Crane" => CraneSource, "Room" => RoomSource, "Imprint" => ImprintSource, "LongExposure" => LongExposureSource, _ => NpcSource };
+        private static string ManifestFor(string path) => Folder + (KindFor(path) switch
+        { "Crane" => "CombatCraneDamage3D.json", "Room" => "CombatRoomDamage3D.json", "Imprint" => "CombatImprintDamage3D.json",
+            "LongExposure" => "CombatLongExposureDamage3D.json", _ => "CombatBody3D.json" });
+        public override uint GetVersion() => 9;
 
         [Serializable]
         private sealed class TessellationManifest
         {
             public TessellationTolerance[] source_tessellation_tolerances;
+            public int flesh_patch_count;
         }
 
         [Serializable]
@@ -96,7 +109,8 @@ namespace BarPromenade.Editor
                 float measuredWarp = allowances.TryGetValue(original.name, out float value) ? value : 0f;
                 RestoreSkin(piece, original, bones, exterior, Mathf.Max(.0007f, measuredWarp * 1.05f + .0001f),
                     torsoFrames.TryGetValue(original.name, out Matrix4x4 torsoFrame) ? torsoFrame : Matrix4x4.identity);
-                if (exterior && KindFor(assetPath) == "Crane") CombatGoreAssetSetup.RestoreSourceMaterialSlots(piece.sharedMesh, original.sharedMesh);
+                if (exterior && KindFor(assetPath) is "Crane" or "Room" or "Imprint" or "LongExposure")
+                    CombatGoreAssetSetup.RestoreSourceMaterialSlots(piece.sharedMesh, original.sharedMesh);
             }
         }
 
@@ -371,7 +385,10 @@ namespace BarPromenade.Editor
             if (!File.Exists(Folder + "CombatBody3D.json")) throw new InvalidOperationException("Missing body anatomy manifest.");
             if (!File.Exists(Folder + "CombatSkull3D.json")) throw new InvalidOperationException("Missing skull anatomy manifest.");
             if (!File.Exists(Folder + "CombatCraneDamage3D.json")) throw new InvalidOperationException("Missing Crane anatomy manifest.");
-            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
+            if (!File.Exists(Folder + "CombatRoomDamage3D.json")) throw new InvalidOperationException("Missing Room anatomy manifest.");
+            if (!File.Exists(Folder + "CombatImprintDamage3D.json")) throw new InvalidOperationException("Missing Imprint anatomy manifest.");
+            if (!File.Exists(Folder + "CombatLongExposureDamage3D.json")) throw new InvalidOperationException("Missing Long Exposure anatomy manifest.");
+            foreach (string kind in new[] { "Hero", "Npc", "Crane", "Room", "Imprint", "LongExposure" })
             {
                 string path = Folder + "Body" + kind + ".fbx";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path)) == null)
@@ -380,7 +397,7 @@ namespace BarPromenade.Editor
                 foreach (SkinnedMeshRenderer original in AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path))
                     .GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(original.name, original);
                 Bounds sourceEnvelope = default; bool measuredSource = false;
-                if (kind == "Crane")
+                if (kind is "Crane" or "Room" or "Imprint" or "LongExposure")
                     foreach (SkinnedMeshRenderer original in originals.Values)
                     {
                         if (!measuredSource) { sourceEnvelope = original.bounds; measuredSource = true; }
@@ -406,12 +423,14 @@ namespace BarPromenade.Editor
                         renderer.name.StartsWith("FleshRegion3Patch", StringComparison.Ordinal) ||
                         renderer.name.StartsWith("FleshRegion4Patch", StringComparison.Ordinal))
                         ValidateTorsoCells(renderer, originals[renderer.name.Substring(renderer.name.IndexOf("__", StringComparison.Ordinal) + 2)].transform);
-                    if (kind == "Crane" ? !sourceEnvelope.Contains(renderer.bounds.min) || !sourceEnvelope.Contains(renderer.bounds.max) :
+                    if (kind is "Crane" or "Room" or "Imprint" or "LongExposure" ? !sourceEnvelope.Contains(renderer.bounds.min) || !sourceEnvelope.Contains(renderer.bounds.max) :
                         renderer.bounds.size.magnitude > 3f || renderer.bounds.center.y > 2.2f)
                         throw new InvalidOperationException("Body derivative lost imported metre scale: " + renderer.name);
                 }
-                if (flesh.Count != 64 || boneCount != 16)
-                    throw new InvalidOperationException("Combat body requires four closed flesh patches and visible bones for sixteen body regions.");
+                int expectedFlesh = kind is "Room" or "Imprint" or "LongExposure" ? JsonUtility.FromJson<TessellationManifest>(
+                    File.ReadAllText(ManifestFor(path))).flesh_patch_count : 64;
+                if (expectedFlesh < 52 || expectedFlesh > 64 || flesh.Count != expectedFlesh || boneCount != 16)
+                    throw new InvalidOperationException("Combat body flesh patches and sixteen visible bone regions differ from their measured source contract.");
                 string skullPath = Folder + "Skull" + kind + ".fbx";
                 if (reimport) AssetDatabase.ImportAsset(skullPath, ImportAssetOptions.ForceSynchronousImport);
                 GameObject skull = AssetDatabase.LoadAssetAtPath<GameObject>(skullPath);

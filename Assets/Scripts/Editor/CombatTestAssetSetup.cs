@@ -29,7 +29,10 @@ namespace BarPromenade.Editor
         private bool? simpleStrikeImport;
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal) &&
             !assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal) &&
-            !assetPath.StartsWith(Folder + "Crane", StringComparison.Ordinal);
+            !assetPath.StartsWith(Folder + "Crane", StringComparison.Ordinal) &&
+            !assetPath.StartsWith(Folder + "Room", StringComparison.Ordinal) &&
+            !assetPath.StartsWith(Folder + "Imprint", StringComparison.Ordinal) &&
+            !assetPath.StartsWith(Folder + "LongExposure", StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
         private bool IsHumanBank => assetPath.EndsWith("CombatNpcActions.fbx", StringComparison.Ordinal);
 

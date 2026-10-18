@@ -66,7 +66,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void CanonicalizeBodySkin(SkinnedMeshRenderer renderer, SkinnedMeshRenderer original,
+        internal static void CanonicalizeBodySkin(SkinnedMeshRenderer renderer, SkinnedMeshRenderer original,
             Dictionary<string, Transform> hierarchy)
         {
             Mesh mesh = renderer.sharedMesh, reference = original.sharedMesh;

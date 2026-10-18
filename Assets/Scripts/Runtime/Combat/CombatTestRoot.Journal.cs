@@ -20,7 +20,7 @@ namespace BarPromenade
         private DuelJournal duelJournal;
         private CombatJournalFrameObserver journalObserver;
         private JournalActorState journalHero;
-        private readonly List<JournalActorState> journalOpponents = new List<JournalActorState>(5);
+        private readonly List<JournalActorState> journalOpponents = new List<JournalActorState>(8);
         private long journalTick, journalFrameStart, journalSimulationTicks, journalPoseTicks, journalContactTicks;
         private long journalLastCollector, journalSnapshotTicks;
         private long journalLatePoseTicks, journalImpactApplyTicks;
@@ -85,7 +85,7 @@ namespace BarPromenade
         private long SumCombatCounter(Func<CombatActor, long> counter)
         {
             long sum = 0;
-            foreach (CombatActor actor in combatParticipants) sum += counter(actor);
+            foreach (CombatActor actor in preparedParticipants) sum += counter(actor);
             return sum;
         }
 
@@ -155,7 +155,7 @@ namespace BarPromenade
             JournalRoot = this;
             journalHero = new JournalActorState(Hero);
             journalOpponents.Clear();
-            foreach (CombatActor actor in combatOpponents) journalOpponents.Add(new JournalActorState(actor));
+            foreach (CombatActor actor in preparedOpponents) journalOpponents.Add(new JournalActorState(actor));
             Player3DAssetRegistry rig = (Player.Visual as Player3DCharacterPresentation)?.Registry;
             journalJacket = rig != null ? rig.GetComponent<PlayerJacketCloth>() : null;
             journalHair = rig != null ? rig.GetComponent<PlayerHair>() : null;
@@ -186,7 +186,7 @@ namespace BarPromenade
             journalLateFrameCaptured = false;
             journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
             journalStagesAtFrameStart = CaptureJournalStageCounters();
-            foreach (CombatActor actor in combatParticipants) actor.BeginJournalWorkFrame();
+            foreach (CombatActor actor in preparedParticipants) actor.BeginJournalWorkFrame();
             journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
             journalFoundScreen = WorldItemFoundScreen.For(Player.Interactor);
@@ -224,7 +224,7 @@ namespace BarPromenade
                 f5: GameLog.Field("npc_animation_revision", journalIdentity.NpcAnimation),
                 f6: GameLog.Field("timing_scopes", "actor_present/weapon_constraint/support_grip"));
             Hero.JournalActorId = 1;
-            foreach (CombatActor actor in combatParticipants)
+            foreach (CombatActor actor in preparedParticipants)
             {
                 actor.Journal = duelJournal;
                 actor.ImpactReceived += RequestJournalSnapshot;
@@ -240,7 +240,7 @@ namespace BarPromenade
                 f5: GameLog.Field("run", encounterRun),
                 f6: GameLog.Field("actor_work_samples", "active_or_called"));
             duelJournal.Record("corpse_settings", f0: GameLog.Field("maximum_corpses", EncounterSettings.MaximumCorpses),
-                f1: GameLog.Field("total_pool", combatOpponents.Count),
+                f1: GameLog.Field("total_pool", preparedOpponents.Count),
                 f2: GameLog.Field("retirement_order", "oldest_defeat_first"));
             if (WarehousePlan != null)
                 duelJournal.Record("warehouse_layout", f0: GameLog.Field("seed", WarehousePlan.Seed),
@@ -267,8 +267,9 @@ namespace BarPromenade
                 f6: GameLog.Field("animation_asset_revision", actor.IsHero ? journalIdentity.HeroAnimation : journalIdentity.NpcAnimation),
                 f7: GameLog.Field("intoxication", actor.IsHero ? GameSessionState.IntoxicationLevel : 0));
             duelJournal.Record("character", actor: actor.JournalActorId,
-                f0: GameLog.Field("id", actor.IsHero ? "hero" : actor.IsCrane
-                    ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(combatOpponents.IndexOf(actor))));
+                f0: GameLog.Field("id", actor.IsHero ? "hero" : actor.IsCrane ? DefaultNpcPopulation.CombatTestCraneEnemy :
+                    actor.IsAuthoredEnemy ? actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey :
+                    DefaultNpcPopulation.CombatTestOpponentId(IsLaboratory ? (actor.IsDocker ? 1 : 0) : combatOpponents.IndexOf(actor))));
         }
 
         private void EndJournalRound(string reason)
@@ -284,7 +285,7 @@ namespace BarPromenade
                 f1: GameLog.Field("hero_health", Hero.State.Health), f2: GameLog.Field("opponent_health", Opponent.State.Health));
             WriteJournalOpenIntervals(journalHero);
             foreach (JournalActorState saved in journalOpponents) WriteJournalOpenIntervals(saved);
-            foreach (CombatActor actor in combatParticipants)
+            foreach (CombatActor actor in preparedParticipants)
             {
                 actor.ImpactReceived -= RequestJournalSnapshot;
                 actor.Journal = null;
@@ -416,7 +417,7 @@ namespace BarPromenade
                         ? (now - journalRenderEnd) * JournalMillisecondsPerTick : double.NaN),
                     f6: GameLog.Field("render_contexts", journalRenderContexts));
                 WriteJournalFrameStages();
-                foreach (CombatActor actor in combatParticipants)
+                foreach (CombatActor actor in preparedParticipants)
                     if (actor.gameObject.activeInHierarchy || actor.HasJournalWork) actor.WriteJournalWorkFrame();
             }
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
@@ -427,7 +428,7 @@ namespace BarPromenade
             journalLatePoseFrame = -1; journalUpdateToLateMilliseconds = 0;
             journalLateFrameCaptured = false;
             journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
-            foreach (CombatActor actor in combatParticipants) actor.BeginJournalWorkFrame();
+            foreach (CombatActor actor in preparedParticipants) actor.BeginJournalWorkFrame();
             journalFrameSubsteps = journalFrozenSteps = journalPoseSamples = 0;
             foreach (JournalActorState saved in journalOpponents) saved.RequestedMove = saved.AchievedMove = Vector3.zero;
             journalQueriesAtFrameStart = SumCombatCounter(actor => actor.JournalPhysicsQueries);

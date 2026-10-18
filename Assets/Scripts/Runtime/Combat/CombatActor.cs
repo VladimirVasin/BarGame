@@ -34,6 +34,10 @@ namespace BarPromenade
         public bool IsZombie { get; private set; }
         public CombatEnemyKind EnemyKind { get; private set; }
         public bool IsDocker => IsZombie && EnemyKind == CombatEnemyKind.Docker;
+        public bool IsRoom => IsZombie && EnemyKind == CombatEnemyKind.Room;
+        public bool IsImprint => IsZombie && EnemyKind == CombatEnemyKind.Imprint;
+        public bool IsLongExposure => IsZombie && EnemyKind == CombatEnemyKind.LongExposure;
+        public bool IsAuthoredEnemy => IsRoom || IsImprint || IsLongExposure;
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
         public CombatWeaponId WeaponId { get; private set; }

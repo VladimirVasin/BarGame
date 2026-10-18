@@ -1,0 +1,15 @@
+{
+  "generator": "image_gen (built-in)",
+  "image": {
+    "name": "ImprintSurface",
+    "source": "ArtSource/CombatImprint/Textures/ImprintSurface.source.png",
+    "sha256": "ec2af8db9811159f30289b7b237c2e6ead08913a571368f2e57deba5f2858e85",
+    "prompt": "Use case: game production texture source.\nCreate a square opaque image as a perfectly flat 2 by 2 sheet of FOUR equal raw material swatches. Fill each quadrant edge to edge. These are unlit diffuse albedo sources for an unsettling low-poly human casting mould enemy called Imprint. Materials only; do not depict the creature, any face, or any cast.\nTOP LEFT: cold dirty ivory casting chalk, fine powdery gypsum, dry compact mineral surface, sparse pores and uneven rubbed patches, subtle old grey dust in tiny fissures, broad readable quiet tones. Pale but not white.\nTOP RIGHT: near-black smoky glasslike mineral crust, obsidian-dark charcoal with restrained cold brown grey variation and tiny mineral flecks, chipped dull grey edges, no reflections or highlights baked into the color.\nBOTTOM LEFT: desaturated grey-pink waxy human-like skin, restrained pale clay flesh color, faint plum mottling, delicate subtle creases, no wounds or body parts.\nBOTTOM RIGHT: worn dark grey chalk casting surface, powder rubbed into tiny pits, restrained cool umber-grey irregular stain and paler mineral dust, rough dull material.\nStyle: tactile hand-painted early 3D PS1 survival horror material detail, subtle fine texture over broad physical material structure, subdued neutral palette. Perfect orthographic evenly diffuse unlit swatches. No lighting gradients, specular glare, glow, cast shadows, perspective, vignette, baked ambient occlusion, faces, eyes, lips, hands, anatomy, printed features, symbols, text, logos, objects, grid lines, borders or gutters. Four flat raw surfaces.",
+    "regions": [
+      "dirty ivory casting chalk",
+      "near-black glasslike crust",
+      "grey-pink waxy flesh",
+      "worn dark grey casting chalk"
+    ]
+  }
+}

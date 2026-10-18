@@ -1,0 +1,15 @@
+{
+  "generator": "image_gen (built-in)",
+  "image": {
+    "name": "LongExposureSurface",
+    "source": "ArtSource/CombatLongExposure/Textures/LongExposureSurface.source.png",
+    "sha256": "adf1881492e2e8c99263b9719abf2d4f67edde2e17116b4c13733dfa826c245c",
+    "prompt": "Use case: stylized-concept\nAsset type: raw production albedo material sources for a low-poly PS1 survival horror 3D enemy called Long Exposure.\nCreate one square opaque image as a perfectly flat 2 by 2 sheet of FOUR equal raw material swatches, each filling its quadrant edge to edge. Materials only. Do not depict a character or body parts.\nTOP LEFT: desaturated warm-grey waxy flesh, soft aged grey-ivory midtone with faint muted mauve mottling, sparse subtle pores, slightly rubbed and stretched fine grain. No wounds or anatomy.\nTOP RIGHT: aged silver-grey photographic emulsion physically embedded in skin-like mineral wax, dull pale neutral grey with broad quiet rubbed patches and very fine linear grain, faint warm dirty undertone, no metallic reflections. Material without any pictured subject or developed photograph.\nBOTTOM LEFT: dense dark charcoal-grey emulsion residue, smoky graphite grey with restrained brown-violet mottling and tiny fine rubbed grains. Dull physical opaque deposit, no glow.\nBOTTOM RIGHT: weathered medium-grey wax/emulsion transition, dry pale-grey smear grain over muted warm grey, fine stretched tactile texture. No large folds or bands.\nStyle: tactile early 3D survival horror texture source, broad readable low contrast tones over restrained material detail. Perfectly flat orthographic even diffuse unlit swatches. No lighting gradients, cast shadows, specular highlights, reflections, baked ambient occlusion, perspective, vignette, transparency, blur effects, motion trails, faces, eyes, hands, anatomy, fabric folds, objects, printed photographs, frames, symbols, text, logos, borders, grid lines or gutters. Four raw surfaces, no scene.",
+    "regions": [
+      "warm-grey waxy flesh",
+      "aged silver-grey emulsion",
+      "dark charcoal emulsion residue",
+      "weathered grey wax/emulsion transition"
+    ]
+  }
+}

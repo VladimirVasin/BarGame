@@ -257,7 +257,7 @@ namespace BarPromenade
         internal void PrepareActor(CombatActor actor)
         {
             if (bodies.ContainsKey(actor)) return;
-            GameObject model = Resources.Load<GameObject>("CombatGore/Body" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Body" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : actor.IsRoom ? "Room" : actor.IsImprint ? "Imprint" : actor.IsLongExposure ? "LongExposure" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat body model.");
             var body = new Body { Actor = actor, ProxyPose = new ProxyPoseSnapshot(this) };
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
@@ -287,7 +287,11 @@ namespace BarPromenade
                 var skin = host.AddComponent<SkinnedMeshRenderer>();
                 skin.sharedMesh = template.sharedMesh; skin.bones = source.bones; skin.rootBone = source.rootBone;
                 skin.localBounds = source.localBounds; skin.updateWhenOffscreen = true;
-                skin.sharedMaterials = isBone || isFlesh ? new[] { RequireMaterial(isBone) } : source.sharedMaterials;
+                bool roomShell = actor.IsRoom && CombatBodyDamageState.IsTorso((BodyDamageRegion)region);
+                skin.sharedMaterials = isBone || isFlesh ? new[] { actor.IsImprint ? CombatImprintAssetProvider.LoadBodyMaterial("chalk") :
+                    actor.IsLongExposure ? CombatLongExposureAssetProvider.LoadBodyMaterial() :
+                    roomShell ? CombatRoomAssetProvider.LoadBodyMaterial("plaster") :
+                    RequireMaterial(isBone) } : source.sharedMaterials;
                 if (!isFlesh && !isBone)
                 { source.GetPropertyBlock(properties); skin.SetPropertyBlock(properties); properties.Clear(); }
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true; skin.enabled = false;
@@ -341,6 +345,19 @@ namespace BarPromenade
             bodies.Add(actor, body);
             owners[actor] = this;
             actor.Hurtboxes.PrepareBodySurfaces(body.Pieces);
+            RetainAuthoredIntactQueries(body);
+            if (actor.IsAuthoredEnemy) actor.Hurtboxes.CapturePreparedPose();
+        }
+
+        private static void RetainAuthoredIntactQueries(Body body)
+        {
+            if (!body.Actor.IsAuthoredEnemy) return;
+            // Authored silhouettes can extend beyond the retained human capsules
+            // or contain real openings. Query the prewarmed original skin before
+            // its first wound, without activating damage draws or physics proxies.
+            foreach (Piece piece in body.Pieces)
+                piece.QueryOriginal = piece.Eligible && !piece.Flesh && !piece.Bone;
+            body.Actor.Hurtboxes.SetBodySurfaces(body.Pieces);
         }
 
         /// <summary>One actual resolved contact; structural damage is independent of health delta.</summary>
@@ -1353,6 +1370,7 @@ namespace BarPromenade
             }
             body.Fragments.Clear(); body.Detached.Clear(); body.Replaced.Clear(); body.Active = false;
             body.VolleyDepth = 0; body.VolleyNeedsSynchronization = false;
+            RetainAuthoredIntactQueries(body);
         }
         public void ResetRound() { foreach (CombatActor actor in bodies.Keys) ResetActor(actor); frozen = false; }
         private void OnDestroy()

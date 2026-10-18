@@ -121,6 +121,7 @@ namespace BarPromenade
             {
                 if (DebugHudVisible) DrawDebugHud(canvas);
                 else DrawGameplayHud(canvas);
+                if (IsLaboratory) DrawLaboratoryControls(canvas);
             }
             finally { GUI.depth = depth; RetroUiTheme.EndCanvas(matrix); }
         }

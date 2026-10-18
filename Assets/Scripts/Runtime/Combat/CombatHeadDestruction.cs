@@ -265,7 +265,7 @@ namespace BarPromenade
         private Head RequireHead(CombatActor actor)
         {
             if (heads.TryGetValue(actor, out Head existing)) return existing;
-            GameObject model = Resources.Load<GameObject>("CombatGore/Head" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Head" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : actor.IsRoom ? "Room" : actor.IsImprint ? "Imprint" : actor.IsLongExposure ? "LongExposure" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat fracture model.");
             var head = new Head { Actor = actor };
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
@@ -295,7 +295,9 @@ namespace BarPromenade
                 var skin = host.AddComponent<SkinnedMeshRenderer>();
                 skin.sharedMesh = template.sharedMesh; skin.bones = source.bones; skin.rootBone = source.rootBone;
                 skin.localBounds = source.localBounds; skin.updateWhenOffscreen = true;
-                skin.sharedMaterials = isBrain ? new[] { RequireMaterial(true) } : interior ? new[] { RequireMaterial(false) } : source.sharedMaterials;
+                skin.sharedMaterials = actor.IsImprint && (isBrain || interior) ? new[] { CombatImprintAssetProvider.LoadBodyMaterial("chalk") } :
+                    actor.IsLongExposure && (isBrain || interior) ? new[] { CombatLongExposureAssetProvider.LoadBodyMaterial() } :
+                    isBrain ? new[] { RequireMaterial(true) } : interior ? new[] { RequireMaterial(false) } : source.sharedMaterials;
                 if (!interior && !isBrain) { source.GetPropertyBlock(properties); skin.SetPropertyBlock(properties); properties.Clear(); }
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true;
                 bool sourceVisible = source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source);

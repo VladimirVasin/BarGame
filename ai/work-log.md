@@ -3,6 +3,49 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-18 - Authored enemies and old arena
+
+- Room: coat/plaster around a receding corridor; thin source-bound tissue and
+  sparse torso patches retain the opening without changing anatomical defaults.
+- Imprint: closed concave face/chest/palms, chalk/glass rims, retained head and
+  chest-bound shoulders; damage keeps recesses and retires removed surfaces.
+- LongExposure: solid fused motion, trailing torso/shoulders, one readable head,
+  retained grip/soles and own ImageGen emulsion. Continuous phase onset and
+  source elbows remove tangent knives while preserving the sweep.
+- `LONG EXPOSURE CLOSED FUSED GEOMETRY, SURFACES AND BUDGET OK` passed;
+  deterministic geometry/skin/UV, closed sources and texture hashes agree.
+- `build-combat-long-exposure-damage-3d-model.py` independent rebuild passed:
+  source UV/skin, closed tissue, complete erosion paths and retained head strain
+  remain inside the swept source.
+- Bounded authored binding/import ownership retains source skin/grip. Damage
+  imports wait for source and validate bone order/binds; roles omit empty slots.
+- `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK` and
+  `build-combat-room-damage-3d-model.py` independent rebuild passed.
+- `IMPRINT CLOSED NEGATIVE GEOMETRY, SURFACES AND BUDGET OK` and
+  `build-combat-imprint-damage-3d-model.py` independent rebuild passed.
+  Source UV/skin, closed layers, head strain and erosion agree; Blender views reviewed.
+- `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
+  `Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset` passed;
+  warehouse body/corridor/face/wounds, torso contacts and intact reset reviewed.
+- Endless uses prepared authored variants/permanent role-slot IDs. Crane has
+  a reserved slot and refill priority; fish cutoff wins. Contacts use the live
+  roster; cleanup/journal include parked variants.
+- Authored intact hits now retain their prewarmed exact surface queries;
+  baseline human capsules missed the trailing volume before its first wound.
+- `Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset` passed:
+  trailing projectile contact, own palm/head wounds/reset reuse and game views agree.
+- `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` passed:
+  crane reservation/priority, all authored choices, reuse and fish cutoff;
+  hand-contact/head frames reviewed.
+- Old Arena has its own menu preparation and one replaceable target from all
+  existing enemy kinds. Prepared rigs reuse damage/contact pools; selected enemy
+  and kit return to preparation. Warehouse modes keep their own selection.
+- `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passed:
+  menu/choice, damage-reset/reuse, crane/pause and return to warehouse agree.
+  RU/EN menu and laboratory controls plus arena frames reviewed.
+- Canonical source manifest hashes passed: damage provenance survives Git's
+  CRLF/LF normalization without rebuilding geometry.
+
 ## 2026-10-17 - Warehouse storage, inspection and mixed combat
 
 - Endless shares ordinary zombies, loaded dockers and the suspended crane;

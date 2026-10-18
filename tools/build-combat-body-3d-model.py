@@ -238,7 +238,14 @@ def patches(poly, basis):
     return result
 
 
-def build_mesh(name, source, polys, basis=None):
+def tissue_target(point, normal, basis, scale, depth=None):
+    # A hollow authored shell needs a thin layer inside its actual surface;
+    # radial erosion would bridge its empty space. Other actors keep their
+    # existing anatomical radial profile.
+    return radial_target(point, basis, scale) if depth is None else point-normal*(depth*(1-scale)/.68)
+
+
+def build_mesh(name, source, polys, basis=None, tissue_depth=None, target_factory=None):
     inverse = source.matrix_world.inverted()
     verts, faces, uvs, skin, materials, lookup = [], [], [], [], [], {}
     metadata = []
@@ -253,8 +260,10 @@ def build_mesh(name, source, polys, basis=None):
         vertex_start, face_start = len(verts), len(faces)
         added_keys = []
         centre = sum((point[0] for point in poly), Vector())/len(poly)
+        normal = (poly[1][0]-poly[0][0]).cross(poly[2][0]-poly[0][0]).normalized()
+        targets = target_factory(source,poly,basis,tissue_depth) if basis is not None and target_factory is not None else None
         face = []
-        for point in poly:
+        for corner,point in enumerate(poly):
             local = inverse @ point[0]
             key = (tuple(round(v, 9) for v in local), tuple(round(v, 9) for v in point[1]),
                    tuple(sorted((k, round(v, 7)) for k, v in point[3].items() if v > 1e-7)),
@@ -264,7 +273,8 @@ def build_mesh(name, source, polys, basis=None):
                 added_keys.append(key)
                 verts.append(local); uvs.append(point[1]); skin.append(point[3])
                 if basis is not None:
-                    metadata.append((cell, 1, radial_target(point[0], basis, .32), centre))
+                    metadata.append((cell, 1, targets[corner] if targets is not None else
+                                     tissue_target(point[0], normal, basis, .32, tissue_depth), centre))
             face.append(lookup[key])
         for i in range(1, len(face)-1):
             tri = (face[0], face[i], face[i+1])
@@ -306,7 +316,7 @@ def build_mesh(name, source, polys, basis=None):
     return obj
 
 
-def flesh_cells(name, source, polys, basis):
+def flesh_cells(name, source, polys, basis, tissue_depth=None, metadata=True, point_normals=False):
     """Small closed authored prisms; runtime erodes them while they stay skinned.
 
     They are never loose objects or fragment templates. Each cell's first vertex
@@ -326,8 +336,8 @@ def flesh_cells(name, source, polys, basis):
                 continue
             normal.normalize()
             centre = sum((p[0] for p in tri), Vector())/3
-            outer = [radial_target(p[0],basis,.94) for p in tri]
-            inner = [radial_target(p[0],basis,.32) for p in tri]
+            outer = [tissue_target(p[0],p[2].normalized() if point_normals else normal,basis,.94,tissue_depth) for p in tri]
+            inner = [tissue_target(p[0],p[2].normalized() if point_normals else normal,basis,.32,tissue_depth) for p in tri]
             topology = [(0,1,2),(5,4,3)]
             for quad in ((1,0,3,4),(2,1,4,5),(0,2,5,3)):
                 # Radial recess can make the side nonplanar. Pick one diagonal
@@ -365,7 +375,7 @@ def flesh_cells(name, source, polys, basis):
     layer=mesh.uv_layers.new(name="UVMap")
     for loop in mesh.loops:
         layer.data[loop.index].uv=uv[loop.vertex_index]
-    cell_uv_layers(obj,rows)
+    if metadata:cell_uv_layers(obj,rows)
     for bone in sorted({key for row in skin for key in row}):
         group=obj.vertex_groups.new(name=bone)
         for vertex,row in enumerate(skin):
@@ -375,7 +385,7 @@ def flesh_cells(name, source, polys, basis):
     return obj
 
 
-def simple_mesh(name, source, vertices, faces, bone):
+def simple_mesh(name, source, vertices, faces, bone, uvs=None):
     inverse = source.matrix_world.inverted()
     mesh=bpy.data.meshes.new(name)
     mesh.from_pydata([inverse@p for p in vertices],[],faces);mesh.update()
@@ -384,7 +394,8 @@ def simple_mesh(name, source, vertices, faces, bone):
     group=obj.vertex_groups.new(name=bone);group.add(list(range(len(vertices))),1.,"REPLACE")
     layer=mesh.uv_layers.new(name="UVMap")
     for loop in mesh.loops:
-        point=vertices[loop.vertex_index];layer.data[loop.index].uv=(point.x*3+.5,point.z*3+.5)
+        point=vertices[loop.vertex_index]
+        layer.data[loop.index].uv=uvs[loop.vertex_index] if uvs is not None else (point.x*3+.5,point.z*3+.5)
     for mod in source.modifiers:
         if mod.type=="ARMATURE":obj.modifiers.new("Skin","ARMATURE").object=mod.object
     return obj
@@ -737,7 +748,8 @@ def measure(obj, closed=False):
     return result
 
 
-def build(kind,out,publish=False,source_filter=None):
+def build(kind,out,publish=False,source_filter=None,torso_tissue_depth=None,torso_bone_factory=None,
+          allow_empty_torso_patches=False,region_flesh_factory=None,region_bone_factory=None,torso_target_factory=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(ROOT/SOURCES[kind]),use_anim=False)
     originals=sorted((o for o in bpy.context.scene.objects if o.type=="MESH"),key=lambda o:o.name)
@@ -809,9 +821,10 @@ def build(kind,out,publish=False,source_filter=None):
                              "body_area_m2":round(partitioned_area,8),"head_excluded":False})
         for (region,patch),polys in sorted(collected.items()):
             obj=build_mesh(f"Region{region}Patch{patch}__{source.name}",source,polys,
-                           frames[region] if region in TORSO_REGIONS else None)
+                           frames[region] if region in TORSO_REGIONS else None,
+                           torso_tissue_depth if region in TORSO_REGIONS else None, torso_target_factory)
             if obj is not None:outputs.append(obj)
-    contracts=[]
+    contracts=[];empty_flesh=[]
     for region in range(1,17):
         if region not in bare_sources:
             raise RuntimeError("Missing actual bare anatomy for "+NAMES[region])
@@ -822,15 +835,29 @@ def build(kind,out,publish=False,source_filter=None):
         for patch in range(4):
             polys=flesh.get((region,patch),[])
             if not polys:
+                if allow_empty_torso_patches and region in TORSO_REGIONS:
+                    # A genuine empty quadrant of an open shell has no tissue
+                    # to author. Record it; never manufacture a plug for it.
+                    empty_flesh.append({"region":region,"patch":patch,"source":source.name})
+                    continue
                 raise RuntimeError("Empty flesh patch "+str((kind,region,patch)))
             name=f"FleshRegion{region}Patch{patch}__{source.name}"
-            obj=(flesh_cells(name,source,polys,frames[region]) if region in TORSO_REGIONS else
+            obj=(region_flesh_factory(region,patch,name,source,polys,frames[region],REGION_BONES[region])
+                 if region_flesh_factory is not None else
+                 flesh_cells(name,source,polys,frames[region],torso_tissue_depth) if region in TORSO_REGIONS else
                  flesh_shell(name,source,polys,frames[region],REGION_BONES[region]))
             if obj is None:raise RuntimeError("Missing flesh patch")
             outputs.append(obj)
-        vertices,faces=bone_geometry(region,frames[region],(region_min,region_max))
-        if region in (4,7,10,13,16):vertices=fit_bone_envelope(vertices,region_min,region_max)
-        outputs.append(simple_mesh(f"BoneRegion{region}__{source.name}",source,vertices,faces,REGION_BONES[region]))
+        structure_uv=None
+        structure=region_bone_factory(region,source,frames[region],flesh) if region_bone_factory is not None else None
+        if structure is not None:
+            vertices,faces,structure_uv=structure
+        elif region in TORSO_REGIONS and torso_bone_factory is not None:
+            vertices,faces,structure_uv=torso_bone_factory(region,source,frames[region],flesh)
+        else:
+            vertices,faces=bone_geometry(region,frames[region],(region_min,region_max))
+            if region in (4,7,10,13,16):vertices=fit_bone_envelope(vertices,region_min,region_max)
+        outputs.append(simple_mesh(f"BoneRegion{region}__{source.name}",source,vertices,faces,REGION_BONES[region],structure_uv))
         contracts.append({"id":region,"name":NAMES[region],"bone":REGION_BONES[region],"source":source.name,
                           "frame_unity_m":{key:unity(value) for key,value in frames[region].items()},
                           "bare_bounds_unity_m":bounds(region_points)})
@@ -844,9 +871,11 @@ def build(kind,out,publish=False,source_filter=None):
             object_types={"EMPTY","ARMATURE","MESH"},axis_forward="-Z",axis_up="Y",add_leaf_bones=False,
             bake_anim=False,use_armature_deform_only=False,use_mesh_modifiers=False,mesh_smooth_type="FACE")
     print("BODY ANATOMY",kind,len(outputs),"meshes",flush=True)
-    return {"source_sha256":digest((ROOT/SOURCES[kind]).read_bytes()),"coverage":coverage,"source_tessellation":tessellation,
+    result={"source_sha256":digest((ROOT/SOURCES[kind]).read_bytes()),"coverage":coverage,"source_tessellation":tessellation,
             "regions":contracts,"meshes":measurements,
             "semantic_sha256":digest(json.dumps(measurements,sort_keys=True,separators=(",",":")).encode())}
+    if allow_empty_torso_patches:result["empty_flesh_patches"]=empty_flesh
+    return result
 
 
 def texture():

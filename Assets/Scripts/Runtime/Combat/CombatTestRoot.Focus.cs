@@ -31,7 +31,7 @@ namespace BarPromenade
 
         private bool TryFocusOpponent()
         {
-            if (Mode == CombatTestMode.Standard && !Opponent.ZombieAwake) return false;
+            if ((Mode == CombatTestMode.Standard || IsLaboratory) && !Opponent.ZombieAwake) return false;
             if (Mode == CombatTestMode.Endless)
             {
                 CombatActor best = BestLiveOpponent();

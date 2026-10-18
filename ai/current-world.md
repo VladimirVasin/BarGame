@@ -124,7 +124,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   pool is spent. The bag: ten domestic lines plus a scarf request retired when
   worn; a separate first request raises the quest. Door reload keeps the bag.
   Empty hands, silent hero, no branch/choice; Cat/dinner/news outside this MVP;
-- `MainMenu`:index0/EditorPlay;black New Game/Combat Test/Quit;
+- `MainMenu`:index0/EditorPlay;NewGame/Combat/OldArena/Quit;
   12starts:9story,City docks-cannery,lodge;village first/default;Back;mouse-keys-pad.
   `NewGameStartService`:day1/07:40;areas AreaLoading/6interiors direct;
   no door-prologue-ride-cabin-arrival-travelart.
@@ -141,13 +141,13 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
-  Std1Docker;Endless1–5(default3:Zombie/Docker/Crane),≤1Crane;
-  corpses0–2(default2)/pool≤5/fixedroles. Zombie:normalrig/hands/.75m/s;
-  Shared refill-kills-reset;Crane unseen3Dspawn.
-  Enemy HP/structure×.5;head50/torso12.5/hero1;wounds grow/woodfirsthit hole-chips.
-  Crane:own flesh/carapace sculpt/6embeddedcables;
-  sharedrig/longfoldlimbs/uprighthead/yaw±100°/hang↓.25;
-  UV0/2K+1Kresp/WarehouseSurface/ownbody-skull banks;
+  StdDocker;Endless1–5/def3:authored,Docker,Crane(last≤2);
+  random start-reset-refill/seed/11warm/≤2corpses/roleIDs.
+  Lab:Arena/6warm/1target/Zombie;spawn-reset/prepkept.
+  Room:corridor;Imprint:concavecast;LongExposure:fusedmotion/emulsion;UV-damage.
+  HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
+  Crane:flesh/carapace/6cables/longfoldlimbs/uprighthead/yaw±100°/hang↓.25;
+  rig/UV0/2K+1K/WarehouseSurface/body-skull;
   3floorXYZ1axis/6tethers/pendulum-slack;6m3DLOS1hit-return/voidCOL/ragdoll;
   ownfall→5s tetheredFrenzy/holdAI/pause/reset-disable-deathclear.
   18anchors/shared COL/occupied0decor;

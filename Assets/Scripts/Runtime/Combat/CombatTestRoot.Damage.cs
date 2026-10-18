@@ -22,7 +22,7 @@ namespace BarPromenade
             BloodEffects.PrepareActor(Hero);
             Hero.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;
-            foreach (CombatActor actor in combatOpponents)
+            foreach (CombatActor actor in preparedOpponents)
             {
                 HeadEffects.PrepareActor(actor); BodyEffects.PrepareActor(actor); BloodEffects.PrepareActor(actor);
                 actor.ImpactReceived += ShowImpact; actor.DamageReset += ResetActorDamage;
@@ -92,13 +92,13 @@ namespace BarPromenade
             if (BloodEffects != null) BloodEffects.ResetActor(actor);
             HeadEffects?.ResetActor(actor);
             BodyEffects?.ResetActor(actor);
-            if (Mode == CombatTestMode.Standard) SparkEffects?.Clear();
+            if (Mode == CombatTestMode.Standard || IsLaboratory) SparkEffects?.Clear();
         }
 
         private void ReleaseDamageEffects()
         {
             if (Hero != null) { Hero.ImpactReceived -= ShowImpact; Hero.DamageReset -= ResetActorDamage; }
-            foreach (CombatActor actor in combatOpponents)
+            foreach (CombatActor actor in preparedOpponents)
                 if (actor != null) { actor.ImpactReceived -= ShowImpact; actor.DamageReset -= ResetActorDamage; }
         }
     }

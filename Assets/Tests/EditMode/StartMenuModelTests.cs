@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Navigation_WrapsBetweenTheThreeOptions()
+        public void Navigation_WrapsBetweenTheFourOptions()
         {
             var model = new StartMenuModel();
             model.Open();
@@ -45,6 +45,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(StartMenuOption.NewGame));
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.CombatTest));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Laboratory));
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Quit));
             Assert.That(model.MoveSelection(0), Is.False);

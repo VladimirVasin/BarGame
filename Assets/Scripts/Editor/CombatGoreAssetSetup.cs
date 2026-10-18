@@ -20,11 +20,16 @@ namespace BarPromenade.Editor
         private static string SourceSkinImportMarker => "BarPromenade.CombatGore.SourceSkin." +
             Hash128.Compute(Path.GetFullPath(Application.dataPath)) + "." + SourceSkinRecipeRevision;
         private static bool sourceSkinBootstrapQueued;
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 3;
         private bool IsGore => assetPath.StartsWith(Folder, StringComparison.Ordinal);
-        private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx" || assetPath == Folder + "HeadCrane.fbx";
+        private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx" ||
+            assetPath == Folder + "HeadCrane.fbx" || assetPath == Folder + "HeadRoom.fbx" || assetPath == Folder + "HeadImprint.fbx" ||
+            assetPath == Folder + "HeadLongExposure.fbx";
         private static string SourceFor(string path) => path.EndsWith("HeadHero.fbx", StringComparison.Ordinal)
-            ? HeroSource : path.EndsWith("HeadCrane.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/CraneBody.fbx" : NpcSource;
+            ? HeroSource : path.EndsWith("HeadCrane.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/CraneBody.fbx" :
+            path.EndsWith("HeadRoom.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/RoomBody.fbx" :
+            path.EndsWith("HeadImprint.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/ImprintBody.fbx" :
+            path.EndsWith("HeadLongExposure.fbx", StringComparison.Ordinal) ? "Assets/Resources/Combat/LongExposureBody.fbx" : NpcSource;
 
         [InitializeOnLoadMethod]
         private static void QueueSourceSkinBootstrap()
@@ -228,7 +233,9 @@ namespace BarPromenade.Editor
                 mesh.normals = normals;
                 mesh.boneWeights = weights;
                 mesh.bindposes = skin.bindposes;
-                if (!inner && assetPath.EndsWith("Crane.fbx", StringComparison.Ordinal)) RestoreSourceMaterialSlots(mesh, skin);
+                if (!inner && (assetPath.EndsWith("Crane.fbx", StringComparison.Ordinal) || assetPath.EndsWith("Room.fbx", StringComparison.Ordinal) ||
+                    assetPath.EndsWith("Imprint.fbx", StringComparison.Ordinal) || assetPath.EndsWith("LongExposure.fbx", StringComparison.Ordinal)))
+                    RestoreSourceMaterialSlots(mesh, skin);
                 mesh.RecalculateBounds();
                 Transform[] ordered = new Transform[original.bones.Length];
                 for (int i = 0; i < ordered.Length; i++)
@@ -281,7 +288,7 @@ namespace BarPromenade.Editor
 
         public static void BuildOrThrow()
         {
-            foreach (string kind in new[] { "Hero", "Npc", "Crane" })
+            foreach (string kind in new[] { "Hero", "Npc", "Crane", "Room", "Imprint", "LongExposure" })
             {
                 string path = Folder + "Head" + kind + ".fbx";
                 string sourcePath = SourceFor(path);

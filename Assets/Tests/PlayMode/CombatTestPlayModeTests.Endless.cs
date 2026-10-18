@@ -33,14 +33,494 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
+    public sealed class CombatRoomAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            bool existing = Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets");
+            Type.GetType("BarPromenade.Editor.CombatRoomAssetSetup, BarPromenade.Editor", true)
+                .GetMethod(existing ? "ValidateImportedOrThrow" : "BuildOrThrow", BindingFlags.Static | BindingFlags.Public).Invoke(null, null);
+#endif
+        }
+    }
+
+    public sealed class CombatImprintAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            bool existing = Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets");
+            Type.GetType("BarPromenade.Editor.CombatImprintAssetSetup, BarPromenade.Editor", true)
+                .GetMethod(existing ? "ValidateImportedOrThrow" : "BuildOrThrow", BindingFlags.Static | BindingFlags.Public).Invoke(null, null);
+#endif
+        }
+    }
+
+    public sealed class CombatMixedEndlessAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+            if (!Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets"))
+                new CombatCraneAssetsSetup().Setup();
+            new CombatRoomAssetsSetup().Setup();
+            new CombatImprintAssetsSetup().Setup();
+            new CombatLongExposureAssetsSetup().Setup();
+        }
+    }
+
+    public sealed class CombatLongExposureAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            bool existing = Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets");
+            Type.GetType("BarPromenade.Editor.CombatLongExposureAssetSetup, BarPromenade.Editor", true)
+                .GetMethod(existing ? "ValidateImportedOrThrow" : "BuildOrThrow", BindingFlags.Static | BindingFlags.Public).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
-        [PrebuildSetup(typeof(CombatCraneAssetsSetup))]
+        [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
+        public IEnumerator Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset()
+        { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Room); }
+
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatImprintAssetsSetup))]
+        public IEnumerator Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset()
+        { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Imprint); }
+
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatLongExposureAssetsSetup))]
+        public IEnumerator Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset()
+        { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.LongExposure); }
+
+        private static CombatAuthoredBodyBank AuthoredBodyBank(CombatEnemyKind kind) => kind switch
+        {
+            CombatEnemyKind.Room => CombatRoomAssetProvider.Bank,
+            CombatEnemyKind.Imprint => CombatImprintAssetProvider.Bank,
+            CombatEnemyKind.LongExposure => CombatLongExposureAssetProvider.Bank,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        private IEnumerator VerifyAuthoredBodyLifecycle(CombatEnemyKind kind)
+        {
+            CombatAuthoredBodyBank bank = AuthoredBodyBank(kind);
+            string identity = DefaultNpcPopulation.CombatTestAuthoredEnemyId(kind, 0);
+            const int authoredSlot = 0;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            CombatTestRoot.AuthoredEnemyKindForTests = kind;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            Assert.That(root.WarehousePlan, Is.Not.Null);
+            Assert.That(root.Opponents.Count, Is.EqualTo(3));
+            Assert.That(CombatEncounterSettings.Default.MaximumLiveOpponents, Is.EqualTo(3));
+            Assert.That(CombatEncounterSettings.OpponentCapacity, Is.EqualTo(5));
+            CombatActor room = root.Opponents[authoredSlot];
+            foreach (CombatActor actor in root.Opponents)
+                Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie));
+            Assert.That(root.Opponents[1].IsDocker, Is.True);
+            Assert.That(root.Opponents[2].IsCrane, Is.True);
+            Assert.That(room.EnemyKind, Is.EqualTo(kind));
+            Assert.That(room.IsAuthoredEnemy && room.IsZombie && room.ZombieAwake, Is.True);
+            Assert.That(room.IsDocker || room.IsCrane, Is.False);
+            Assert.That(room.State.Settings, Is.SameAs(CombatActor.OrdinaryZombieCombatSettings));
+            Assert.That(room.GetComponent<CombatZombieLoad>(), Is.Null);
+            Assert.That(room.GetComponentInChildren<CombatZombieAppearance>(true), Is.Null);
+            Assert.That(bank.LoadBodyAtlas(), Is.Not.SameAs(CombatZombieAssetProvider.LoadFace(0)));
+            Assert.That(DefaultNpcPopulation.GetCharacter(identity).ModelId,
+                Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+            Assert.That(room.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey,
+                Is.EqualTo(identity));
+
+            Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
+            room.ResetActor(ground, Vector3.forward);
+            AssertAuthoredBodyAppearance(room, bank, true);
+            if (room.IsLongExposure) AssertAuthoredTrailingProjectileContact(room, bank);
+            yield return CaptureAuthoredBodyAppearance(room, bank);
+
+            // Exercise the normal visible hand sweep without an attached prop.
+            // Other roles stay prepared away from this focused contact.
+            root.Hero.ResetActor(ground, Vector3.forward);
+            foreach (CombatActor actor in root.Opponents)
+                if (actor != room && !actor.IsCrane)
+                    actor.ResetActor(ground + Vector3.right * 12f, Vector3.back);
+            room.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
+            int graphBuilds = room.NpcAnimationGraphBuilds;
+            for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
+                root.Tick(CombatTestRoot.SimulationStep);
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(room));
+            Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
+            Assert.That(room.ActiveClipName, Does.StartWith("ZombieOrdinary"));
+
+            room.ResetActor(ground, Vector3.forward);
+            yield return AimAuthoredInspectionHero(room, bank, room.transform.position + Vector3.up * 1.2f);
+            if (kind != CombatEnemyKind.Room)
+            {
+                CombatHurtboxes.Hit palmHit = AuthoredSurfaceContact(room, bank, "GEO_HandPalm.L", BodyDamageRegion.LeftHand);
+                room.ReceiveProjectile(root.Hero, 201, palmHit, -palmHit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftHand, palmHit.DamagePatch), Is.GreaterThan(0f));
+                Assert.That(root.BloodEffects.TryGetProjectileWound(room, 0, out _, out _), Is.True);
+                var palmInspection = new GameObject("Test " + bank.Name + " palm inspection light");
+                palmInspection.transform.SetParent(root.CameraFollow.Camera.transform, false);
+                Light palmFill = palmInspection.AddComponent<Light>();
+                palmFill.type = LightType.Point; palmFill.intensity = .5f; palmFill.range = 3f; palmFill.shadows = LightShadows.None;
+                try { yield return CapturePistolWoundNearView(room, "Test " + bank.Name + " enemy - Damaged palm"); }
+                finally { Object.Destroy(palmInspection); }
+                for (int shot = 1; shot < 3; shot++)
+                    room.ReceiveProjectile(root.Hero, 201 + shot, palmHit, -palmHit.Normal * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftHand, palmHit.DamagePatch), Is.GreaterThanOrEqualTo(.25f));
+                CaptureBodyDestruction(room, "Test " + bank.Name + " enemy - Replaced palm source surface", palmHit.Normal);
+            }
+            else
+            {
+                ApplyKnownBodyContact(room, root.Hero, BodyDamageRegion.LeftForearm, 0, .3f, 201);
+                Assert.That(room.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.GreaterThan(0f));
+            }
+            AssertAuthoredBodyAppearance(room, bank, false);
+            AssertAuthoredBodyDerivativeSources(room, bank);
+            room.gameObject.SetActive(false);
+            room.gameObject.SetActive(true);
+            yield return null;
+            // Actor disable deliberately resets damage for pooled reuse.
+            Assert.That(TotalBodyTissueLoss(room), Is.Zero);
+            AssertAuthoredBodyAppearance(room, bank, true);
+            room.ResetActor(ground, Vector3.forward);
+            AssertAuthoredBodyAppearance(room, bank, true);
+
+            // Source-derived tissue must preserve the authored concavity when
+            // the torso transfers to its damaged surface set.
+            CombatHurtboxes.Hit torsoHit = AuthoredSurfaceContact(room, bank, "GEO_Torso");
+            int torsoContacts = room.ReceivedImpactCount;
+            room.ReceiveProjectile(root.Hero, 210, torsoHit, -torsoHit.Normal * CombatProjectilePool.MuzzleSpeed);
+            Assert.That(room.ReceivedImpactCount, Is.EqualTo(torsoContacts + 1));
+            Assert.That(room.LastImpact.BodyRegion, Is.EqualTo(torsoHit.DamageRegion));
+            Assert.That(TotalBodyTissueLoss(room), Is.GreaterThan(0f));
+            Assert.That(room.State.IsDefeated, Is.False);
+            AssertAuthoredBodyAppearance(room, bank, false);
+            AssertAuthoredBodyDerivativeSources(room, bank);
+            yield return CaptureAuthoredBodyAppearance(room, bank, true);
+            room.ResetActor(ground, Vector3.forward);
+            yield return AimAuthoredInspectionHero(room, bank, FindAnatomicalBone(room, "head").position);
+
+            // Every authored head owns its wound and destruction banks.
+            var inspectionLight = new GameObject("Test " + bank.Name + " damage inspection light");
+            inspectionLight.transform.SetParent(root.CameraFollow.Camera.transform, false);
+            Light light = inspectionLight.AddComponent<Light>();
+            light.type = LightType.Point; light.intensity = .5f; light.range = 4f; light.shadows = LightShadows.None;
+            try { yield return VerifyMixedEnemyHeadContacts(room, "Test " + bank.Name + " enemy"); }
+            finally { Object.Destroy(inspectionLight); }
+            AssertAuthoredBodyAppearance(room, bank, false);
+            AssertAuthoredBodyDerivativeSources(room, bank, onlyVisible: false);
+            root.ResetRound();
+            Assert.That(root.Opponents[authoredSlot], Is.SameAs(room));
+            Assert.That(room.NpcAnimationGraphBuilds, Is.EqualTo(graphBuilds));
+            Assert.That(room.ReceivedImpactCount, Is.Zero);
+            Assert.That(root.BloodEffects.ProjectileWoundCountFor(room), Is.Zero);
+            AssertAuthoredBodyAppearance(room, bank, true);
+            if (room.IsLongExposure) AssertAuthoredTrailingProjectileContact(room, bank);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertAuthoredTrailingProjectileContact(CombatActor actor, CombatAuthoredBodyBank bank)
+        {
+            Assert.That(actor.ReceivedImpactCount, Is.Zero);
+            Assert.That(TotalBodyTissueLoss(actor), Is.Zero);
+            CombatHurtboxes.Hit source = AuthoredSurfaceContact(actor, bank, "GEO_Torso", outsideBaseline: true);
+            Vector3 from = source.Point + source.Normal * .1f, to = source.Point - source.Normal * .1f;
+            Assert.That(actor.Hurtboxes.MeasureSweepSurfaceGap(from, to, CombatProjectilePool.Radius, out var gap), Is.True);
+            Assert.That(gap.Gap, Is.GreaterThan(.005f), "The complete shot must miss the retained human boxes and capsules.");
+            Assert.That(actor.Hurtboxes.SweepProjectile(from, to, CombatProjectilePool.Radius, -source.Normal, out var actual), Is.True,
+                "An intact authored trailing surface must accept the first projectile before any damage activates derived anatomy.");
+            Assert.That(actual.DamageRegion is BodyDamageRegion.Chest or BodyDamageRegion.Abdomen, Is.True);
+            Assert.That(Vector3.Distance(actual.Point, source.Point), Is.LessThan(.015f),
+                "The query must hit the visible source triangle, not a conservative bridge over empty space.");
+            Assert.That(actor.ReceivedImpactCount, Is.Zero);
+            Assert.That(TotalBodyTissueLoss(actor), Is.Zero);
+        }
+
+        private static CombatHurtboxes.Hit AuthoredSurfaceContact(CombatActor room, CombatAuthoredBodyBank bank,
+            string sourceName, BodyDamageRegion? requiredRegion = null, bool outsideBaseline = false)
+        {
+            room.CaptureContactPose();
+            SkinnedMeshRenderer torso = Array.Find(room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true),
+                skin => skin.name == sourceName);
+            Assert.That(torso, Is.Not.Null);
+            Assert.That(torso.enabled, Is.True);
+            string[] roles = Array.Find(bank.LoadBodyManifest().meshes, part => part.name == torso.name).surfaces;
+            string preferred = bank.Name == "Room" ? "cloth" : bank.Name == "Imprint" ? "chalk" : "flesh";
+            int clothSlot = Array.IndexOf(roles, preferred);
+            if (clothSlot < 0) clothSlot = 0;
+            var baked = new Mesh { name = "Test " + bank.Name + " posed source contact" };
+            try
+            {
+                torso.BakeMesh(baked, true);
+                Vector3[] vertices = baked.vertices;
+                int[] triangles = outsideBaseline ? baked.triangles : baked.GetTriangles(clothSlot);
+                for (int i = 0; i < vertices.Length; i++) vertices[i] = torso.transform.TransformPoint(vertices[i]);
+                for (int offset = 0; offset + 2 < triangles.Length; offset += 3)
+                {
+                    Vector3 a = vertices[triangles[offset]], b = vertices[triangles[offset + 1]], c = vertices[triangles[offset + 2]];
+                    Vector3 normal = Vector3.Cross(b - a, c - a);
+                    if (normal.sqrMagnitude < 1e-12f) continue;
+                    Vector3 point = (a + b + c) / 3f;
+                    BodyDamageRegion region = BodyDamageRegion.Head; int patch = -1;
+                    // The separate head bank owns head patches. Its source does
+                    // not appear in the sixteen non-head body region partitions.
+                    bool head = sourceName == "GEO_Head" && requiredRegion == BodyDamageRegion.Head;
+                    if (!head && (!CombatBodyDestruction.TryClassifySurface(room, torso, point, out region, out patch) ||
+                        (requiredRegion.HasValue ? region != requiredRegion.Value : region is not (BodyDamageRegion.Chest or BodyDamageRegion.Abdomen)))) continue;
+                    normal.Normalize();
+                    if (outsideBaseline)
+                    {
+                        if (!room.Hurtboxes.MeasureSweepSurfaceGap(point, point, 0f, out var pointGap) || pointGap.Gap <= .115f ||
+                            !room.Hurtboxes.MeasureSweepSurfaceGap(point + normal * .1f, point - normal * .1f,
+                                CombatProjectilePool.Radius, out var sweepGap) || sweepGap.Gap <= .005f) continue;
+                    }
+                    Transform bone = FindAnatomicalBone(room, CombatBodyAnatomy.BoneName(region));
+                    return new CombatHurtboxes.Hit(point, normal, -normal, 0f,
+                        new MeleeHitLocation(CombatBodyAnatomy.CombatRegion(region), MeleeHitSide.Front), CombatBodyAnatomy.ToPart(region),
+                        bone.InverseTransformPoint(point), bone.InverseTransformDirection(-normal).normalized, region, patch);
+                }
+                Assert.Fail("The visible authored source needs an anatomically classified triangle: " + sourceName);
+                return default;
+            }
+            finally { Object.Destroy(baked); }
+        }
+
+        private static void AssertAuthoredBodyAppearance(CombatActor room, CombatAuthoredBodyBank bank, bool intact)
+        {
+            Assert.That(bank.Name switch
+            {
+                "Room" => room.GetComponentInChildren<CombatRoomAppearance>(true) != null,
+                "Imprint" => room.GetComponentInChildren<CombatImprintAppearance>(true) != null,
+                "LongExposure" => room.GetComponentInChildren<CombatLongExposureAppearance>(true) != null,
+                _ => false
+            }, Is.True);
+            var joints = room.GetComponentInChildren<CharacterJointDeformation>(true);
+            Assert.That(joints == null || !joints.enabled, Is.True,
+                "The independent sculpt cannot run the worker's cached joint-shape indices.");
+            var manifest = bank.LoadBodyManifest();
+            Texture2D atlas = bank.LoadBodyAtlas();
+            Texture2D response = Resources.Load<Texture2D>("Combat/" + bank.Name + "MaterialResponse");
+            Assert.That(atlas.width, Is.EqualTo(2048));
+            Assert.That(response.width, Is.EqualTo(1024));
+            SkinnedMeshRenderer[] skins = room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var properties = new MaterialPropertyBlock();
+            bool corridorSeen = false;
+            foreach (CombatAuthoredBodyBank.BodyMesh part in manifest.meshes)
+            {
+                SkinnedMeshRenderer skin = Array.Find(skins, candidate => candidate.name == part.name);
+                Assert.That(skin, Is.Not.Null, part.name);
+                Assert.That(skin.sharedMesh, Is.SameAs(bank.LoadBodyRenderer(part.name).sharedMesh), part.name);
+                Assert.That(skin.sharedMaterials, Has.Length.EqualTo(part.surfaces.Length));
+                for (int slot = 0; slot < part.surfaces.Length; slot++)
+                {
+                    Material material = skin.sharedMaterials[slot];
+                    Assert.That(material, Is.SameAs(bank.LoadBodyMaterial(part.surfaces[slot])));
+                    Assert.That(material.GetTexture("_WarehouseMaterialResponse"), Is.SameAs(response));
+                    corridorSeen |= part.visible && part.name == "GEO_Torso" && (bank.Name == "LongExposure" ||
+                        part.surfaces[slot] == (bank.Name == "Room" ? "plaster" : "chalk"));
+                }
+                if (intact || !part.visible)
+                    Assert.That(skin.enabled && skin.gameObject.activeInHierarchy, Is.EqualTo(part.visible), part.name);
+                skin.GetPropertyBlock(properties);
+                Assert.That(properties.GetTexture("_BaseMap"), Is.SameAs(atlas), part.name);
+                properties.Clear();
+            }
+            Assert.That(corridorSeen, Is.True, "The authored torso must retain its structural surface role.");
+            foreach (SkinnedMeshRenderer skin in skins)
+                if (skin.name.StartsWith("CLO_", StringComparison.Ordinal) || skin.name.StartsWith("HAIR_", StringComparison.Ordinal))
+                    Assert.That(skin.enabled && skin.gameObject.activeInHierarchy, Is.False,
+                        "Worker garments or hair cannot return through wardrobe restoration.");
+        }
+
+        private static void AssertAuthoredBodyDerivativeSources(CombatActor room, CombatAuthoredBodyBank bank, bool onlyVisible = true)
+        {
+            Texture2D atlas = bank.LoadBodyAtlas();
+            var properties = new MaterialPropertyBlock();
+            int exteriorCount = 0;
+            foreach (SkinnedMeshRenderer skin in room.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if ((onlyVisible && (!skin.enabled || !skin.gameObject.activeInHierarchy)) ||
+                    !skin.name.Contains("__", StringComparison.Ordinal)) continue;
+                foreach (Material material in skin.sharedMaterials)
+                {
+                    if (material == null || material.shader != Resources.Load<Shader>("Shaders/WarehouseSurface")) continue;
+                    skin.GetPropertyBlock(properties);
+                    Assert.That(properties.GetTexture("_BaseMap") ?? material.GetTexture("_BaseMap"), Is.SameAs(atlas), skin.name);
+                    properties.Clear(); exteriorCount++;
+                }
+            }
+            Assert.That(exteriorCount, Is.GreaterThan(0), "Damaged exterior pieces must retain their authored body source surfaces.");
+        }
+
+        private IEnumerator AimAuthoredInspectionHero(CombatActor actor, CombatAuthoredBodyBank bank, Vector3 focus)
+        {
+            SkinnedMeshRenderer source = bank.LoadBodyRenderer("GEO_Torso");
+            int index = Array.FindIndex(source.bones, bone => bone != null && bone.name == "chest");
+            Assert.That(index, Is.GreaterThanOrEqualTo(0));
+            Matrix4x4 bind = source.transform.localToWorldMatrix * source.sharedMesh.bindposes[index].inverse;
+            Vector3 forward = Vector3.ProjectOnPlane(FindAnatomicalBone(actor, "chest").TransformVector(
+                bind.inverse.MultiplyVector(source.transform.root.TransformVector(Vector3.back))), Vector3.up).normalized;
+            Vector3 floor = actor.transform.position - Vector3.up * PlayerFactory.GroundedRootOffset;
+            Vector3 lampPosition = floor + forward * 3.2f + (bank.Name == "Imprint" ? Vector3.Cross(Vector3.up, forward) * .65f : Vector3.zero);
+            PlaceCraneHero(lampPosition, Vector3.ProjectOnPlane(actor.transform.position - lampPosition, Vector3.up).normalized);
+            Vector3 delta = focus - (root.Hero.transform.position + Vector3.up * 1.5f);
+            float targetPitch = -Mathf.Atan2(delta.y, new Vector2(delta.x, delta.z).magnitude) * Mathf.Rad2Deg;
+            root.CameraFollow.RotatePitch(Mathf.Clamp(targetPitch, root.CameraFollow.MinimumOrbitPitch,
+                root.CameraFollow.MaximumOrbitPitch) - root.CameraFollow.TargetOrbitPitch);
+            root.CameraFollow.Snap();
+            for (int frame = 0; frame < 4; frame++)
+            { root.Hero.AdvanceSimulation(.1f); root.Hero.Present(); yield return null; }
+        }
+
+        [Serializable] private sealed class AuthoredHeadCaptureManifest
+        { public ImprintCaptureForm imprint_negative_form; public LongExposureCaptureForm long_exposure_form; }
+        [Serializable] private sealed class ImprintCaptureForm
+        { public string probes_space; public float[] front_axis_blender, head_face_center_blender; }
+        [Serializable] private sealed class LongExposureCaptureForm
+        { public string space; public float[] head_focus_blender, head_front_blender; }
+
+        private static void AuthoredHeadFrame(CombatActor actor, CombatAuthoredBodyBank bank, out Vector3 center, out Vector3 forward)
+        {
+            TextAsset manifest = Resources.Load<TextAsset>("Combat/" + bank.Name + "Body");
+            AuthoredHeadCaptureManifest capture = JsonUtility.FromJson<AuthoredHeadCaptureManifest>(manifest.text);
+            string space;
+            float[] point, axis;
+            if (bank.Name == "Imprint")
+            {
+                Assert.That(capture.imprint_negative_form, Is.Not.Null);
+                space = capture.imprint_negative_form.probes_space;
+                point = capture.imprint_negative_form.head_face_center_blender;
+                axis = capture.imprint_negative_form.front_axis_blender;
+            }
+            else
+            {
+                Assert.That(capture.long_exposure_form, Is.Not.Null);
+                space = capture.long_exposure_form.space;
+                point = capture.long_exposure_form.head_focus_blender;
+                axis = capture.long_exposure_form.head_front_blender;
+            }
+            Assert.That(space, Is.EqualTo("blender_metres"));
+            Assert.That(point, Has.Length.EqualTo(3));
+            Assert.That(axis, Has.Length.EqualTo(3));
+            SkinnedMeshRenderer source = bank.LoadBodyRenderer("GEO_Head");
+            int index = Array.FindIndex(source.bones, bone => bone != null && bone.name == "head");
+            Assert.That(index, Is.GreaterThanOrEqualTo(0));
+            Matrix4x4 bind = source.transform.localToWorldMatrix * source.sharedMesh.bindposes[index].inverse;
+            Transform head = FindAnatomicalBone(actor, "head");
+            center = head.TransformPoint(bind.inverse.MultiplyPoint3x4(new Vector3(point[0], point[2], point[1])));
+            forward = head.TransformVector(bind.inverse.MultiplyVector(new Vector3(axis[0], axis[2], axis[1]))).normalized;
+        }
+
+        private static Vector3 AuthoredPosedSurfaceCenter(CombatActor actor, string name)
+        {
+            SkinnedMeshRenderer source = Array.Find(actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true),
+                skin => skin.name == name);
+            Assert.That(source, Is.Not.Null);
+            var posed = new Mesh { name = "Test authored surface framing" };
+            try
+            {
+                source.BakeMesh(posed, true);
+                posed.RecalculateBounds();
+                return source.transform.TransformPoint(posed.bounds.center);
+            }
+            finally { Object.Destroy(posed); }
+        }
+
+        private IEnumerator CaptureAuthoredBodyAppearance(CombatActor room, CombatAuthoredBodyBank bank, bool afterTorsoDamage = false)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            bool following = root.CameraFollow.enabled;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            Vector3 heroPosition = root.Hero.transform.position, heroForward = root.Hero.transform.forward;
+            float pitch = root.CameraFollow.TargetOrbitPitch, yaw = camera.transform.eulerAngles.y;
+            var flashlight = root.Hero.GetComponentInChildren<CombatChestFlashlight>(true);
+            Assert.That(flashlight, Is.Not.Null);
+            Assert.That(flashlight.SpotLight.enabled, Is.True);
+            // Calibrate authored -Y / Unity -Z against the retained chest bind
+            // frame, so the view follows the actual slouched model, not its capsule.
+            SkinnedMeshRenderer source = bank.LoadBodyRenderer("GEO_Torso");
+            int index = Array.FindIndex(source.bones, bone => bone != null && bone.name == "chest");
+            Assert.That(index, Is.GreaterThanOrEqualTo(0));
+            Matrix4x4 bind = source.transform.localToWorldMatrix * source.sharedMesh.bindposes[index].inverse;
+            Vector3 localForward = bind.inverse.MultiplyVector(source.transform.root.TransformVector(Vector3.back));
+            Vector3 forward = Vector3.ProjectOnPlane(FindAnatomicalBone(room, "chest").TransformVector(localForward), Vector3.up).normalized;
+            Vector3 corridorCenter = FindAnatomicalBone(room, "chest").TransformPoint(
+                bind.inverse.MultiplyPoint3x4(new Vector3(0f, 1.20f, -.182f)));
+            if (bank.Name == "LongExposure") corridorCenter = AuthoredPosedSurfaceCenter(room, "GEO_Torso");
+            room.CaptureContactPose();
+            Assert.That(room.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 headCenter, out _, out _), Is.True);
+            Vector3 headForward = forward;
+            if (bank.Name != "Room") AuthoredHeadFrame(room, bank, out headCenter, out headForward);
+            var inspection = new GameObject("Test " + bank.Name + " neutral inspection light");
+            inspection.transform.SetParent(camera.transform, false);
+            Light fill = inspection.AddComponent<Light>();
+            fill.type = LightType.Point; fill.range = 4f; fill.intensity = .5f; fill.shadows = LightShadows.None;
+            fill.enabled = false;
+            try
+            {
+                foreach (int view in afterTorsoDamage ? new[] { 2, 3 } :
+                    bank.Name != "Room" ? new[] { 0, 1, 4, 5, 6 } : new[] { 0, 1, 2, 3 })
+                {
+                    Vector3 viewForward = view >= 4 ? headForward : forward;
+                    Vector3 direction = view == 1 || view == 5 ? Quaternion.AngleAxis(bank.Name == "Room" ? 70f : 90f, Vector3.up) * viewForward :
+                        view == 4 ? Quaternion.AngleAxis(40f, Vector3.up) * viewForward : viewForward;
+                    // Keep the lamp on the clear centre aisle while the camera
+                    // orbits. A side-standing hero intersects the warehouse rack;
+                    // sharing the camera position would also put it inside his coat.
+                    Vector3 focus = view < 2 ? room.transform.position + Vector3.up * .95f : view >= 4 ? headCenter : corridorCenter;
+                    yield return AimAuthoredInspectionHero(room, bank, focus);
+                    root.CameraFollow.enabled = false;
+                    bool closeProfile = bank.Name != "Room" && view == 1;
+                    Vector3 eye = focus + direction * (view < 2 ? (closeProfile ? 2f : 2.8f) : 1.0f) + Vector3.up * .04f;
+                    camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                    camera.fieldOfView = view < 2 ? (closeProfile ? 58f : 48f) : 34f;
+                    fill.enabled = view == 3 || view == 6;
+                    string headSubject = bank.Name == "Imprint" ? "Concave face" : "Fused head sweep";
+                    string name = "Test " + bank.Name + " enemy - " + (view == 0 ? "Front body with chest light" :
+                        view == 1 ? "Profile body with chest light" : view == 4 ? headSubject + " three quarter with chest light" :
+                        view == 5 ? headSubject + " profile with chest light" : view == 6 ? headSubject + " neutral inspection" :
+                        view == 2 ? "Torso with chest light" : "Torso neutral inspection");
+                    CaptureMixedCameraFrame(camera, name + (afterTorsoDamage ? " - After torso damage" : string.Empty));
+                }
+            }
+            finally
+            {
+                Object.Destroy(inspection);
+                root.Hero.ResetActor(heroPosition, heroForward);
+                root.CameraFollow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, yaw));
+                root.CameraFollow.RotatePitch(pitch - root.CameraFollow.TargetOrbitPitch);
+                root.CameraFollow.Snap();
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov; root.CameraFollow.enabled = following;
+            }
+        }
+
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
         public IEnumerator Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate()
         {
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.WarehouseSeedForTests = 0;
+            // Small real encounters exercise the reserved crane place and every
+            // authored clone before the existing default-size combat proof.
+            foreach (int capacity in new[] { 1, 2, 5 })
+                yield return VerifyMixedEndlessPoolAtCapacity(capacity);
+            GameSessionState.BeginNewGame();
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Room;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
             var selection = new CombatTestSelection(new CombatLoadoutSelection(CombatWeaponId.Pistol),
@@ -61,12 +541,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Endless));
             Assert.That(root.Opponents.Count, Is.EqualTo(3));
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Every initial role is present on entering the shared warehouse.");
-            CombatActor zombie = root.Opponents[0], docker = root.Opponents[1], crane = root.Opponents[2];
-            Assert.That(zombie.EnemyKind, Is.EqualTo(CombatEnemyKind.Zombie));
+            CombatActor authored = root.Opponents[0], docker = root.Opponents[1], crane = root.Opponents[2];
+            AssertMixedEndlessLayout(3, CombatEnemyKind.Room);
+            CombatActor[] prepared = root.GetComponentsInChildren<CombatActor>(true);
+            string[] identities = SnapshotAuthoredPoolIdentities(prepared);
+            AssertPreparedEndlessPool(prepared, identities, 3);
             Assert.That(docker.EnemyKind, Is.EqualTo(CombatEnemyKind.Docker));
             Assert.That(crane.EnemyKind, Is.EqualTo(CombatEnemyKind.Crane));
-            Assert.That(zombie.IsZombie && zombie.ZombieAwake, Is.True);
-            Assert.That(zombie.GetComponent<CombatZombieLoad>(), Is.Null, "The ordinary zombie has no borrowed cargo or disguise.");
+            Assert.That(authored.IsZombie && authored.ZombieAwake, Is.True);
+            Assert.That(authored.GetComponent<CombatZombieLoad>(), Is.Null, "The authored ground enemy has no borrowed cargo or disguise.");
             Assert.That(docker.IsDocker && docker.ZombieDormant, Is.True);
             CombatZombieLoad load = docker.GetComponent<CombatZombieLoad>();
             Assert.That(load, Is.Not.Null);
@@ -81,28 +564,28 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.State.Settings.IncomingDamageScale, Is.EqualTo(1f), "Enemy endurance does not change incoming hero damage.");
             yield return CaptureMixedPopulationView("Test mixed encounter - Initial population");
 
-            // Run the ordinary palm through the production AI, planted windup,
+            // Run the authored palm through the production AI, planted windup,
             // authored lunge and anatomical sweep in the actual mixed roster.
             Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
             root.Hero.ResetActor(ground, Vector3.forward);
-            zombie.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
-            int attackSequence = zombie.State.AttackSequence;
-            Vector3 attackStart = zombie.transform.position;
+            authored.ResetActor(ground + Vector3.forward * 1.25f, Vector3.back);
+            int attackSequence = authored.State.AttackSequence;
+            Vector3 attackStart = authored.transform.position;
             for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
                 root.Tick(CombatTestRoot.SimulationStep);
-            Assert.That(zombie.State.AttackSequence, Is.EqualTo(attackSequence + 1));
-            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1), "The ordinary authored palm must reach the hero without cargo collision.");
-            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(zombie));
+            Assert.That(authored.State.AttackSequence, Is.EqualTo(attackSequence + 1));
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1), "The authored palm must reach the hero without cargo collision.");
+            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(authored));
             Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            Assert.That(Vector3.Distance(attackStart, zombie.transform.position), Is.InRange(.01f, .71f));
-            Assert.That(zombie.GetComponent<CombatZombieLoad>(), Is.Null);
+            Assert.That(Vector3.Distance(attackStart, authored.transform.position), Is.InRange(.01f, .71f));
+            Assert.That(authored.GetComponent<CombatZombieLoad>(), Is.Null);
             root.CameraFollow.Snap();
-            CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test ordinary zombie - Hand contact");
+            CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room enemy - Hand contact");
             root.ResetRound();
-
-            zombie.ResetActor(ground, Vector3.forward);
-            yield return VerifyMixedRepeatedArmWound(zombie);
-            zombie.ResetActor(zombie.transform.position, zombie.transform.forward);
+            authored = root.Opponents[0];
+            authored.ResetActor(ground, Vector3.forward);
+            yield return AimAuthoredInspectionHero(authored, CombatRoomAssetProvider.Bank,
+                FindAnatomicalBone(authored, "head").position);
 
             // The first protected contact must already alter the retained wood,
             // even while the board and its owner are both still alive.
@@ -120,8 +603,6 @@ namespace BarPromenade.Tests.PlayMode
             yield return AdvanceMimicTo(docker, CombatZombieAssetProvider.RevealSeconds);
             CaptureMimicView(docker, "Test mixed encounter - First board damage");
 
-            int[] graphBuilds = new int[root.Opponents.Count];
-            for (int i = 0; i < graphBuilds.Length; i++) graphBuilds[i] = root.Opponents[i].NpcAnimationGraphBuilds;
             IFirearmState pistol = root.Hero.CarriedFirearm(CombatWeaponId.Pistol);
             SpendEndlessRound(pistol);
             int rounds = pistol.Rounds, reserves = pistol.ReserveRounds;
@@ -131,12 +612,14 @@ namespace BarPromenade.Tests.PlayMode
             ApplyKnownBodyContact(docker, root.Hero, BodyDamageRegion.LeftForearm, 0, .1f, 90);
             float survivingTrauma = docker.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0);
 
-            yield return VerifyMixedEnemyHeadContacts(zombie, "Test ordinary zombie", pauseOnFirst: true);
+            yield return VerifyMixedEnemyHeadContacts(authored, "Test Room enemy", pauseOnFirst: true);
             root.Tick(0f);
             Assert.That(root.EndlessKills, Is.EqualTo(1));
             Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
             Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
             Assert.That(root.WaitingForNextOpponent, Is.True);
+            CombatActor retired = authored;
+            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Imprint;
             root.CameraFollow.enabled = false;
             root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
             // The terminal contact owns a short hit hold before the replacement
@@ -144,10 +627,14 @@ namespace BarPromenade.Tests.PlayMode
             for (int step = 0; step < 120 && root.LiveOpponentCount != 3; step++) root.Tick(CombatTestRoot.SimulationStep);
             root.CameraFollow.enabled = true;
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
-            Assert.That(root.Opponents[0], Is.SameAs(zombie), "A replacement reuses its prepared role and appearance.");
-            Assert.That(zombie.EnemyKind, Is.EqualTo(CombatEnemyKind.Zombie));
-            Assert.That(zombie.State.Health, Is.EqualTo(zombie.State.Settings.MaxHealth));
-            Assert.That(root.BloodEffects.ProjectileWoundCountFor(zombie), Is.Zero);
+            authored = root.Opponents[0];
+            Assert.That(authored, Is.Not.SameAs(retired), "A new birth can select the other prepared authored enemy.");
+            Assert.That(retired.gameObject.activeInHierarchy, Is.False);
+            AssertMixedEndlessLayout(3, CombatEnemyKind.Imprint);
+            AssertPreparedEndlessPool(prepared, identities, 3);
+            AssertAuthoredBodyAppearance(authored, CombatImprintAssetProvider.Bank, true);
+            Assert.That(authored.State.Health, Is.EqualTo(authored.State.Settings.MaxHealth));
+            Assert.That(root.BloodEffects.ProjectileWoundCountFor(authored), Is.Zero);
             Assert.That(docker.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.EqualTo(survivingTrauma));
             Assert.That(crane.CraneAttached && !crane.State.IsDefeated, Is.True);
             Assert.That(root.Hero.State.Health, Is.EqualTo(heroHealth));
@@ -173,14 +660,30 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(actor.State.Health, Is.EqualTo(actor.State.Settings.MaxHealth));
                 Assert.That(actor.ReceivedImpactCount, Is.Zero);
                 Assert.That(root.BloodEffects.ProjectileWoundCountFor(actor), Is.Zero);
-                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(graphBuilds[i]), "Reset reuses the prepared animation graph.");
+                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Reset reuses the prepared animation graph.");
             }
             Assert.That(docker.ZombieDormant, Is.True);
             Assert.That(load.DetachedBoardCount, Is.Zero);
             Assert.That(root.Projectiles.SurfaceEffects.HoleCount, Is.Zero);
             Assert.That(crane.CraneAttached, Is.True);
             Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
-            Assert.That(root.GetComponentsInChildren<CombatActor>(true).Length, Is.EqualTo(4));
+            AssertPreparedEndlessPool(prepared, identities, 3);
+
+            // Use the production choice with the fixed warehouse seed. This proves
+            // all branches are reachable, without asserting a sampled frequency.
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
+            bool sawRoom = false, sawImprint = false, sawLongExposure = false;
+            for (int birth = 0; birth < 16; birth++)
+            {
+                root.ResetRound();
+                authored = root.Opponents[0];
+                sawRoom |= authored.IsRoom;
+                sawImprint |= authored.IsImprint;
+                sawLongExposure |= authored.IsLongExposure;
+                AssertMixedEndlessLayout(3);
+            }
+            Assert.That(sawRoom && sawImprint && sawLongExposure, Is.True, "Unforced births must reach all three authored variants.");
+            AssertPreparedEndlessPool(prepared, identities, 3);
 
             var fish = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan, InventoryItemId.RottenFishHeadCan };
             for (int i = 0; i < fish.Length; i++)
@@ -189,8 +692,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.EndlessSpawnsBlockedByFish, Is.EqualTo(i == fish.Length - 1));
             }
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Collecting the final fish source retains all living roles.");
-            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
-            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
+            FireMixedEnemyProjectile(authored, Player3DAnatomicalPart.Head);
+            FireMixedEnemyProjectile(authored, Player3DAnatomicalPart.Head);
             root.Tick(.6f);
             Assert.That(root.EndlessKills, Is.EqualTo(1));
             Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
@@ -208,6 +711,164 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Object.FindAnyObjectByType<StartMenuRoot>().SelectedCombatSelection, Is.EqualTo(selection));
             Assert.That(PauseMenuController.IsAnyPaused, Is.False);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator VerifyMixedEndlessPoolAtCapacity(int capacity)
+        {
+            GameSessionState.BeginNewGame();
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Room;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            var settings = new CombatEncounterSettings(capacity, .1f, .1f, .15f, .15f);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            AssertMixedEndlessLayout(capacity, CombatEnemyKind.Room);
+            CombatActor[] prepared = root.GetComponentsInChildren<CombatActor>(true);
+            string[] identities = SnapshotAuthoredPoolIdentities(prepared);
+            AssertPreparedEndlessPool(prepared, identities, capacity);
+            int craneSlot = Mathf.Min(2, capacity - 1);
+            CombatActor crane = root.Opponents[craneSlot];
+            CombatActor docker = capacity >= 3 ? root.Opponents[1] : null;
+
+            foreach (CombatEnemyKind kind in new[] { CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure, CombatEnemyKind.Room })
+            {
+                if (capacity == 1 && kind != CombatEnemyKind.Imprint) continue;
+                RefillAuthoredEndlessPool(capacity, crane, kind,
+                    defeatCrane: capacity <= 2 && kind == CombatEnemyKind.Imprint);
+                foreach (CombatActor actor in root.Opponents)
+                    if (actor.IsAuthoredEnemy) AssertAuthoredBodyAppearance(actor, AuthoredBodyBank(actor.EnemyKind), true);
+                AssertPreparedEndlessPool(prepared, identities, capacity);
+            }
+            Assert.That(root.Opponents[craneSlot], Is.SameAs(crane));
+            if (docker != null)
+            {
+                Assert.That(root.Opponents[1], Is.SameAs(docker));
+                Assert.That(docker.State.Health, Is.EqualTo(docker.State.Settings.MaxHealth));
+                Assert.That(docker.ZombieDormant, Is.True);
+            }
+            Assert.That(root.ReturnToWeapons(), Is.True);
+            yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu && !SceneTransitionService.IsTransitioning,
+                "The bounded pool encounter did not return to preparation.");
+            Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
+        }
+
+        private void RefillAuthoredEndlessPool(int capacity, CombatActor crane, CombatEnemyKind kind, bool defeatCrane)
+        {
+            // At cap two the crane dies last, so its reservation must win over
+            // an older authored corpse when the production interval advances.
+            int missing = 0;
+            foreach (CombatActor actor in root.Opponents)
+                if (actor.IsAuthoredEnemy)
+                {
+                    FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
+                    FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
+                    Assert.That(actor.State.IsDefeated, Is.True);
+                    missing++;
+                }
+            if (defeatCrane)
+            {
+                FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
+                FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
+                Assert.That(crane.State.IsDefeated, Is.True);
+                missing++;
+            }
+            CombatTestRoot.AuthoredEnemyKindForTests = kind;
+            bool following = root.CameraFollow.enabled;
+            Quaternion rotation = root.CameraFollow.Camera.transform.rotation;
+            root.CameraFollow.enabled = false;
+            root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            try
+            {
+                for (int replacement = 0; replacement < missing; replacement++)
+                {
+                    Assert.That(root.AdvanceEndlessInterval(.3f), Is.True,
+                        "The production replacement interval must activate an already prepared body.");
+                    if (defeatCrane && replacement == 0)
+                    {
+                        Assert.That(root.Opponents[Mathf.Min(2, capacity - 1)], Is.SameAs(crane));
+                        Assert.That(crane.CraneAttached && !crane.State.IsDefeated, Is.True,
+                            "The crane returns first even when an older wildcard corpse is available.");
+                        Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
+                    }
+                }
+            }
+            finally
+            {
+                root.CameraFollow.Camera.transform.rotation = rotation;
+                root.CameraFollow.enabled = following;
+            }
+            AssertMixedEndlessLayout(capacity, kind);
+        }
+
+        private void AssertMixedEndlessLayout(int capacity, CombatEnemyKind? authoredKind = null)
+        {
+            Assert.That(root.WarehousePlan, Is.Not.Null);
+            Assert.That(root.Opponents.Count, Is.EqualTo(capacity));
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(capacity));
+            Assert.That(root.HasCraneOpponent, Is.True);
+            Assert.That(root.Opponents, Does.Contain(root.Opponent));
+            int craneSlot = Mathf.Min(2, capacity - 1);
+            for (int slot = 0; slot < capacity; slot++)
+            {
+                CombatActor actor = root.Opponents[slot];
+                Assert.That(actor.gameObject.activeInHierarchy && !actor.State.IsDefeated, Is.True);
+                Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie),
+                    "The ordinary zombie is excluded from the real Endless pool.");
+                if (slot == craneSlot)
+                    Assert.That(actor.IsCrane && actor.CraneAttached, Is.True);
+                else if (slot == 1) Assert.That(actor.IsDocker, Is.True);
+                else
+                {
+                    Assert.That(actor.IsAuthoredEnemy, Is.True);
+                    if (authoredKind.HasValue) Assert.That(actor.EnemyKind, Is.EqualTo(authoredKind.Value));
+                    Assert.That(actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey,
+                        Is.EqualTo(DefaultNpcPopulation.CombatTestAuthoredEnemyId(actor.EnemyKind, slot)));
+                }
+            }
+        }
+
+        private static string[] SnapshotAuthoredPoolIdentities(CombatActor[] prepared)
+        {
+            var identities = new string[prepared.Length];
+            var unique = new HashSet<string>();
+            for (int i = 0; i < prepared.Length; i++)
+            {
+                CombatActor actor = prepared[i];
+                if (!actor.IsAuthoredEnemy) continue;
+                identities[i] = actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey;
+                Assert.That(identities[i], Is.Not.Null.And.Not.Empty);
+                Assert.That(unique.Add(identities[i]), Is.True, "Every prewarmed authored clone owns a permanent identity.");
+                Assert.That(DefaultNpcPopulation.GetCharacter(identities[i]).ModelId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+            }
+            return identities;
+        }
+
+        private void AssertPreparedEndlessPool(CombatActor[] prepared, string[] identities, int capacity)
+        {
+            int wildcards = capacity == 1 ? 0 : capacity <= 3 ? 1 : capacity - 2;
+            Assert.That(prepared.Length, Is.EqualTo(capacity + 2 * wildcards + 1));
+            Assert.That(root.GetComponentsInChildren<CombatActor>(true), Is.EquivalentTo(prepared),
+                "Refill and reset reuse the entire prewarmed actor pool.");
+            int rooms = 0, imprints = 0, longExposures = 0;
+            var journalIds = new HashSet<int>();
+            for (int i = 0; i < prepared.Length; i++)
+            {
+                CombatActor actor = prepared[i];
+                if (actor.IsHero) continue;
+                Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie));
+                Assert.That(journalIds.Add(actor.JournalActorId), Is.True, "Every prepared enemy keeps a distinct journal identity.");
+                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Inactive variants also keep one prepared animation graph.");
+                if (!actor.IsAuthoredEnemy) continue;
+                rooms += actor.IsRoom ? 1 : 0;
+                imprints += actor.IsImprint ? 1 : 0;
+                longExposures += actor.IsLongExposure ? 1 : 0;
+                Assert.That(actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey, Is.EqualTo(identities[i]));
+                Assert.That(actor.GetComponentInChildren<CombatZombieAppearance>(true), Is.Null);
+            }
+            Assert.That(rooms, Is.EqualTo(wildcards));
+            Assert.That(imprints, Is.EqualTo(wildcards));
+            Assert.That(longExposures, Is.EqualTo(wildcards));
         }
 
         private static void AssertMixedRegionalDamage(MeleeCombatSettings settings)
@@ -298,9 +959,21 @@ namespace BarPromenade.Tests.PlayMode
         private void FireMixedEnemyProjectile(CombatActor actor, Player3DAnatomicalPart part)
         {
             actor.CaptureContactPose();
-            Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 center, out Vector3 outward, out _), Is.True);
-            Assert.That(actor.Hurtboxes.SweepProjectile(center + outward * .4f, center - outward * .4f,
-                CombatProjectilePool.Radius, -outward, out CombatHurtboxes.Hit hit), Is.True);
+            CombatHurtboxes.Hit hit;
+            Vector3 outward;
+            if (actor.IsLongExposure && part == Player3DAnatomicalPart.Head)
+            {
+                // The fused sweep has its own physical outline; address a posed
+                // source triangle rather than assuming a human head centre ray.
+                hit = AuthoredSurfaceContact(actor, CombatLongExposureAssetProvider.Bank, "GEO_Head", BodyDamageRegion.Head);
+                outward = hit.Normal;
+            }
+            else
+            {
+                Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 center, out outward, out _), Is.True);
+                Assert.That(actor.Hurtboxes.SweepProjectile(center + outward * .4f, center - outward * .4f,
+                    CombatProjectilePool.Radius, -outward, out hit), Is.True);
+            }
             Assert.That(hit.Part, Is.EqualTo(part), "The fixture must confirm the exposed anatomical contact before applying it.");
             int impacts = actor.ReceivedImpactCount;
             actor.ReceiveProjectile(root.Hero, 100 + impacts, hit, -outward * CombatProjectilePool.MuzzleSpeed);
@@ -898,9 +1571,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertEndlessPreparedAnimationGraphs()
         {
-            foreach (CombatActor actor in root.Opponents)
-                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1),
-                    "Arrival, reset and recycling must reuse each prepared opponent's native animation graph.");
+            foreach (CombatActor actor in root.GetComponentsInChildren<CombatActor>(true))
+                if (!actor.IsHero)
+                    Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1),
+                        "Arrival, reset and recycling must reuse each prepared opponent's native animation graph.");
         }
 
         private void PrepareEndlessPerformanceArrival()
@@ -1375,7 +2049,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static IEnumerator CaptureEndlessGameView(string name, string language)
+        private static IEnumerator CaptureEndlessGameView(string name, string language, bool requireExactSize = false)
         {
             const int width = 640, height = 360;
             int previousWidth = Screen.width, previousHeight = Screen.height;
@@ -1411,7 +2085,7 @@ namespace BarPromenade.Tests.PlayMode
                         File.WriteAllBytes(path, frame.EncodeToPNG());
                         TestContext.Progress.WriteLine("Endless UI frame: " + path + "; requested " + width + "x" + height +
                             "; framebuffer " + frame.width + "x" + frame.height + "; batch=" + Application.isBatchMode);
-                        if (!Application.isBatchMode)
+                        if (requireExactSize || !Application.isBatchMode)
                             Assert.That(new Vector2Int(frame.width, frame.height), Is.EqualTo(new Vector2Int(width, height)));
                     }
                     finally { if (frame != null) Object.Destroy(frame); }

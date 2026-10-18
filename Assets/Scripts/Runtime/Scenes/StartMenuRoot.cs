@@ -19,19 +19,25 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(206f, 134f, 228f, 92f);
+            new Rect(206f, 121f, 228f, 118f);
         internal static Rect MenuNewGameRect =>
-            new Rect(218f, 143f, 204f, 22f);
+            new Rect(218f, 130f, 204f, 22f);
         internal static Rect MenuCombatTestRect =>
-            new Rect(218f, 169f, 204f, 22f);
+            new Rect(218f, 156f, 204f, 22f);
+        internal static Rect MenuLaboratoryRect =>
+            new Rect(218f, 182f, 204f, 22f);
         internal static Rect MenuQuitRect =>
-            new Rect(218f, 195f, 204f, 22f);
+            new Rect(218f, 208f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
         internal static Rect CombatOptionRect(int index) => new Rect(166f,
             index < 3 ? 106f + index * 22f : index < 5 ? 197f + (index - 3) * 21f :
                 242f + (index - 5) * 22f, 308f, 20f);
+        internal static Rect LaboratoryOptionRect(int index) => new Rect(166f,
+            index < 3 ? 106f + index * 22f : index == 3 ? 202f : 264f + (index - 4) * 24f, 308f, 20f);
+        internal static Rect LaboratoryEnemyPanelRect => new Rect(166f, 62f, 308f, 236f);
+        internal static Rect LaboratoryEnemyOptionRect(int index) => new Rect(178f, 102f + index * 24f, 284f, 22f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -47,10 +53,12 @@ namespace BarPromenade
         public StartMenuOption SelectedOption => model.SelectedOption;
         public bool IsChoosingLocation => model.IsChoosingLocation;
         public bool IsChoosingCombatWeapon => model.IsChoosingCombatWeapon;
+        public bool IsChoosingLaboratoryEnemy => model.IsChoosingLaboratoryEnemy;
         public NewGameLocation SelectedLocation => model.SelectedLocation;
         public CombatWeaponId SelectedCombatWeapon => model.SelectedCombatWeapon;
         public CombatLoadoutSelection SelectedCombatLoadout => model.SelectedCombatLoadout;
         public CombatTestMode SelectedCombatMode => model.SelectedCombatMode;
+        public CombatEnemyKind SelectedLaboratoryEnemy => model.SelectedLaboratoryEnemy;
         public CombatEncounterSettings SelectedCombatEncounterSettings => model.SelectedCombatEncounterSettings;
         public CombatTestSelection SelectedCombatSelection => model.SelectedCombatSelection;
         public CombatPreparationOption SelectedCombatOption => model.SelectedCombatOption;
@@ -111,6 +119,7 @@ namespace BarPromenade
             {
                 case StartMenuAction.ChooseLocation:
                 case StartMenuAction.ChooseCombatWeapon:
+                case StartMenuAction.ChooseLaboratoryEnemy:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return true;
                 case StartMenuAction.Back:
@@ -163,6 +172,20 @@ namespace BarPromenade
         public bool ReturnToMainMenu()
         {
             if (IsBusy || !model.ReturnToMainMenu()) return false;
+            RetroAudio.Play(RetroSfxId.UiCancel);
+            return true;
+        }
+
+        public bool SelectLaboratoryEnemy(CombatEnemyKind kind)
+        {
+            if (IsBusy || !model.SelectLaboratoryEnemy(kind)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool ReturnToCombatPreparation()
+        {
+            if (IsBusy || !model.ReturnToCombatPreparation()) return false;
             RetroAudio.Play(RetroSfxId.UiCancel);
             return true;
         }
@@ -221,7 +244,8 @@ namespace BarPromenade
                     GameInputAction.Cancel,
                     GameInputContext.Menu))
             {
-                if (model.IsChoosingLocation || model.IsChoosingCombatWeapon) ReturnToMainMenu();
+                if (model.IsChoosingLaboratoryEnemy) ReturnToCombatPreparation();
+                else if (model.IsChoosingLocation || model.IsChoosingCombatWeapon) ReturnToMainMenu();
                 else SelectOption(StartMenuOption.Quit);
                 return;
             }
@@ -255,6 +279,11 @@ namespace BarPromenade
                     DrawLocations(canvas);
                     return;
                 }
+                if (model.IsChoosingLaboratoryEnemy)
+                {
+                    DrawLaboratoryEnemies(canvas);
+                    return;
+                }
                 if (model.IsChoosingCombatWeapon)
                 {
                     DrawCombatPreparation(canvas);
@@ -277,6 +306,11 @@ namespace BarPromenade
                     MenuCombatTestRect,
                     StartMenuOption.CombatTest,
                     "combat.title");
+                DrawOption(
+                    canvas,
+                    MenuLaboratoryRect,
+                    StartMenuOption.Laboratory,
+                    "combat.laboratory.menu");
                 DrawOption(
                     canvas,
                     MenuQuitRect,
@@ -319,9 +353,11 @@ namespace BarPromenade
 
         private void DrawCombatPreparation(RetroUiCanvas canvas)
         {
+            bool laboratory = model.SelectedCombatMode == CombatTestMode.Laboratory;
             RetroUiTheme.DrawPanel(CombatPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
-            GUI.Label(new Rect(166f, 18f, 308f, 20f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
+            GUI.Label(new Rect(166f, 18f, 308f, 20f),
+                LocalizationService.Get(laboratory ? "combat.mode.laboratory" : "combat.choose_weapon"), titleStyle);
             GUI.Label(new Rect(166f, 41f, 308f, 12f),
                 LocalizationService.Get("combat.loadout.pistol_carried"), descriptionStyle);
             GUI.Label(new Rect(166f, 54f, 308f, 14f),
@@ -331,12 +367,12 @@ namespace BarPromenade
             GUI.Label(new Rect(166f, 90f, 308f, 14f),
                 LocalizationService.Get("combat.loadout.initial_held"), descriptionStyle);
             GUI.Label(new Rect(166f, 181f, 308f, 14f),
-                LocalizationService.Get("combat.mode.title"), descriptionStyle);
+                LocalizationService.Get(laboratory ? "combat.laboratory.choose_enemy" : "combat.mode.title"), descriptionStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
-            for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
+            for (int index = 0; index < model.CombatOptionCount; index++)
             {
-                var option = (CombatPreparationOption)index;
-                Rect rect = CombatOptionRect(index);
+                CombatPreparationOption option = model.CombatOptionAt(index);
+                Rect rect = laboratory ? LaboratoryOptionRect(index) : CombatOptionRect(index);
                 if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) FocusCombatOption(option);
                 bool selected = model.SelectedCombatOption == option;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
@@ -348,6 +384,7 @@ namespace BarPromenade
                     CombatPreparationOption.Standard => "combat.mode.standard",
                     CombatPreparationOption.Endless => "combat.mode.endless",
                     CombatPreparationOption.OpponentLimit => "combat.endless.limit",
+                    CombatPreparationOption.LaboratoryEnemy => "combat.laboratory.enemy",
                     CombatPreparationOption.Start => "combat.start",
                     _ => "opening.back"
                 };
@@ -364,6 +401,8 @@ namespace BarPromenade
                 string mark = choice ? chosen ? "[x] " : "[ ] " : string.Empty;
                 string label = option == CombatPreparationOption.OpponentLimit ?
                     string.Format(LocalizationService.Get(key), model.SelectedCombatEncounterSettings.MaximumLiveOpponents) :
+                    option == CombatPreparationOption.LaboratoryEnemy ? string.Format(LocalizationService.Get(key),
+                        LocalizationService.Get(StartMenuModel.LaboratoryEnemyLabelKey(model.SelectedLaboratoryEnemy))) :
                     LocalizationService.Get(key);
                 if (GUI.Button(rect, (selected ? "> " : "  ") + mark + label,
                     selected ? selectedStyle : optionStyle))
@@ -375,6 +414,36 @@ namespace BarPromenade
             }
             GUI.Label(new Rect(166f, 333f, 308f, 14f),
                 LocalizationService.Get("combat.switch.controls"), descriptionStyle);
+        }
+
+        private void DrawLaboratoryEnemies(RetroUiCanvas canvas)
+        {
+            RetroUiTheme.DrawPanel(LaboratoryEnemyPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
+                false, 0f, 1f);
+            GUI.Label(new Rect(178f, 72f, 284f, 20f),
+                LocalizationService.Get("combat.laboratory.choose_enemy"), titleStyle);
+            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            for (int index = 0; index <= StartMenuModel.LaboratoryEnemyCount; index++)
+            {
+                bool back = index == StartMenuModel.LaboratoryEnemyCount;
+                var kind = (CombatEnemyKind)index;
+                Rect rect = LaboratoryEnemyOptionRect(index);
+                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                {
+                    if (back) SelectBack(); else SelectLaboratoryEnemy(kind);
+                }
+                bool selected = back ? model.IsBackSelected :
+                    !model.IsBackSelected && model.SelectedLaboratoryEnemy == kind;
+                if (selected) RetroUiTheme.DrawSelection(rect, true);
+                string key = back ? "opening.back" : StartMenuModel.LaboratoryEnemyLabelKey(kind);
+                if (GUI.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(key),
+                    selected ? selectedStyle : optionStyle))
+                {
+                    if (back) SelectBack(); else SelectLaboratoryEnemy(kind);
+                    ConfirmSelection();
+                    break;
+                }
+            }
         }
 
         private void DrawOption(

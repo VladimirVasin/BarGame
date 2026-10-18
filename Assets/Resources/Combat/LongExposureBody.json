@@ -1,0 +1,703 @@
+{
+  "design_id": "long_exposure_body_surface_v1",
+  "generator": "build-combat-long-exposure-3d-model.py",
+  "rig": "NpcHumanV2",
+  "geometry_owner": "independent_sculpt",
+  "bounds_space": "unity_metres",
+  "retained_rest_skeleton": true,
+  "uv_channel": 0,
+  "source_uv_channel": 1,
+  "source_sha256": "adf1881492e2e8c99263b9719abf2d4f67edde2e17116b4c13733dfa826c245c",
+  "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
+  "signature": "7edb06e3e7489788f86f933af3399ad41e64114041aed5a090e7078dd30e285d",
+  "long_exposure_form": {
+    "phases": 3,
+    "phase_offsets_blender_metres": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.07,
+        0.136,
+        -0.036
+      ],
+      [
+        -0.14,
+        0.272,
+        -0.072
+      ]
+    ],
+    "space": "blender_metres",
+    "opaque": true,
+    "one_head": true,
+    "source_closed": true,
+    "method": "single closed anatomical envelopes; three fused elliptical phase sections",
+    "maximum_authored_displacement_m": 0.3192227,
+    "maximum_allowed_displacement_m": 0.45,
+    "unchanged_contact_renderers": [
+      "GEO_FootShoe.L",
+      "GEO_FootShoe.R",
+      "GEO_HandFinger0.L",
+      "GEO_HandFinger0.R",
+      "GEO_HandFinger1.L",
+      "GEO_HandFinger1.R",
+      "GEO_HandFinger2.L",
+      "GEO_HandFinger2.R",
+      "GEO_HandFinger3.L",
+      "GEO_HandFinger3.R",
+      "GEO_HandPalm.L",
+      "GEO_HandPalm.R",
+      "GEO_HandThumb.L",
+      "GEO_HandThumb.R"
+    ],
+    "head_focus_blender": [
+      -0.00800000037997961,
+      0.06066157668828964,
+      1.584433913230896
+    ],
+    "head_front_blender": [
+      0.0,
+      -0.9205049276351929,
+      0.39073100686073303
+    ],
+    "head_cast_pitch_degrees": -23.0,
+    "head_nominal_core_front_back_m": 0.172,
+    "closed_sources": [
+      {
+        "name": "GEO_Arm.L",
+        "volume_m3": 0.0037538409
+      },
+      {
+        "name": "GEO_Arm.R",
+        "volume_m3": 0.0038482176
+      },
+      {
+        "name": "GEO_FootShoe.L",
+        "volume_m3": 0.0015350936
+      },
+      {
+        "name": "GEO_FootShoe.R",
+        "volume_m3": 0.0015596837
+      },
+      {
+        "name": "GEO_HandFinger0.L",
+        "volume_m3": 7.249e-06
+      },
+      {
+        "name": "GEO_HandFinger0.R",
+        "volume_m3": 7.2461e-06
+      },
+      {
+        "name": "GEO_HandFinger1.L",
+        "volume_m3": 9.9709e-06
+      },
+      {
+        "name": "GEO_HandFinger1.R",
+        "volume_m3": 9.964e-06
+      },
+      {
+        "name": "GEO_HandFinger2.L",
+        "volume_m3": 8.3668e-06
+      },
+      {
+        "name": "GEO_HandFinger2.R",
+        "volume_m3": 8.3623e-06
+      },
+      {
+        "name": "GEO_HandFinger3.L",
+        "volume_m3": 5.2587e-06
+      },
+      {
+        "name": "GEO_HandFinger3.R",
+        "volume_m3": 5.2543e-06
+      },
+      {
+        "name": "GEO_HandPalm.L",
+        "volume_m3": 0.0001515659
+      },
+      {
+        "name": "GEO_HandPalm.R",
+        "volume_m3": 0.0001515687
+      },
+      {
+        "name": "GEO_HandThumb.L",
+        "volume_m3": 2.0134e-05
+      },
+      {
+        "name": "GEO_HandThumb.R",
+        "volume_m3": 2.01265e-05
+      },
+      {
+        "name": "GEO_Head",
+        "volume_m3": 0.0055177355
+      },
+      {
+        "name": "GEO_LegsLower.L",
+        "volume_m3": 0.0011423995
+      },
+      {
+        "name": "GEO_LegsLower.R",
+        "volume_m3": 0.0011423995
+      },
+      {
+        "name": "GEO_LegsUpper",
+        "volume_m3": 0.0191751265
+      },
+      {
+        "name": "GEO_Neck",
+        "volume_m3": 0.0014332521
+      },
+      {
+        "name": "GEO_Torso",
+        "volume_m3": 0.0505194912
+      }
+    ],
+    "visible_triangles": 7992,
+    "measured_source_thickness": [
+      {
+        "name": "GEO_Head",
+        "central_thickness_m": 0.2188521
+      },
+      {
+        "name": "GEO_Torso",
+        "central_thickness_m": 0.3960048
+      }
+    ]
+  },
+  "meshes": [
+    {
+      "name": "GEO_Arm.L",
+      "visible": true,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        0.1194224,
+        1.0568449,
+        -0.0819742
+      ],
+      "bounds_max": [
+        0.6941206,
+        1.4616845,
+        0.0739742
+      ]
+    },
+    {
+      "name": "GEO_Arm.R",
+      "visible": true,
+      "vertices": 108,
+      "triangles": 212,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        -0.6921206,
+        1.0508449,
+        -0.0819308
+      ],
+      "bounds_max": [
+        -0.1190335,
+        1.4613743,
+        0.0739308
+      ]
+    },
+    {
+      "name": "GEO_Ear.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.011,
+        1.598,
+        0.052
+      ],
+      "bounds_max": [
+        -0.005,
+        1.608,
+        0.058
+      ]
+    },
+    {
+      "name": "GEO_Ear.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.011,
+        1.598,
+        0.052
+      ],
+      "bounds_max": [
+        -0.005,
+        1.608,
+        0.058
+      ]
+    },
+    {
+      "name": "GEO_EarFold.L",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.011,
+        1.598,
+        0.052
+      ],
+      "bounds_max": [
+        -0.005,
+        1.608,
+        0.058
+      ]
+    },
+    {
+      "name": "GEO_EarFold.R",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.011,
+        1.598,
+        0.052
+      ],
+      "bounds_max": [
+        -0.005,
+        1.608,
+        0.058
+      ]
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.011,
+        1.598,
+        0.052
+      ],
+      "bounds_max": [
+        -0.005,
+        1.608,
+        0.058
+      ]
+    },
+    {
+      "name": "GEO_FootShoe.L",
+      "visible": true,
+      "vertices": 40,
+      "triangles": 76,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        0.04762,
+        0.0036,
+        -0.233
+      ],
+      "bounds_max": [
+        0.14438,
+        0.0828,
+        0.04005
+      ]
+    },
+    {
+      "name": "GEO_FootShoe.R",
+      "visible": true,
+      "vertices": 40,
+      "triangles": 76,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        -0.14438,
+        0.0036,
+        -0.201
+      ],
+      "bounds_max": [
+        -0.04762,
+        0.0828,
+        0.07605
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.L",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.7303768,
+        1.0110465,
+        -0.0583814
+      ],
+      "bounds_max": [
+        0.7729169,
+        1.0487323,
+        -0.0422272
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.R",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.7709169,
+        1.0050466,
+        -0.0543814
+      ],
+      "bounds_max": [
+        -0.7283768,
+        1.0427324,
+        -0.0382272
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.L",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.7308343,
+        1.0045545,
+        -0.0397503
+      ],
+      "bounds_max": [
+        0.7827677,
+        1.0487808,
+        -0.0225849
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.R",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.7807679,
+        0.9985545,
+        -0.0357503
+      ],
+      "bounds_max": [
+        -0.7288343,
+        1.0427809,
+        -0.0185849
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.L",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.7317801,
+        1.0063328,
+        -0.020118
+      ],
+      "bounds_max": [
+        0.7802241,
+        1.0479476,
+        -0.0038599
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.R",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.7782241,
+        1.0003327,
+        -0.016118
+      ],
+      "bounds_max": [
+        -0.7297801,
+        1.0419477,
+        0.0001401
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.L",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.7329293,
+        1.0123421,
+        -0.0011841
+      ],
+      "bounds_max": [
+        0.771501,
+        1.0466999,
+        0.0132076
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.R",
+      "visible": true,
+      "vertices": 21,
+      "triangles": 38,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.769501,
+        1.0063422,
+        0.0028159
+      ],
+      "bounds_max": [
+        -0.7309294,
+        1.0407,
+        0.0172076
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.L",
+      "visible": true,
+      "vertices": 40,
+      "triangles": 76,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.6639765,
+        1.0233532,
+        -0.0616946
+      ],
+      "bounds_max": [
+        0.7525516,
+        1.0914,
+        0.017438
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.R",
+      "visible": true,
+      "vertices": 40,
+      "triangles": 76,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.7505516,
+        1.0173532,
+        -0.0576946
+      ],
+      "bounds_max": [
+        -0.6619765,
+        1.0854,
+        0.021438
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.L",
+      "visible": true,
+      "vertices": 24,
+      "triangles": 44,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        0.6861161,
+        1.0305005,
+        -0.0792275
+      ],
+      "bounds_max": [
+        0.7390949,
+        1.0767016,
+        -0.0375755
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.R",
+      "visible": true,
+      "vertices": 24,
+      "triangles": 44,
+      "surfaces": [
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.7370949,
+        1.0245004,
+        -0.0752276
+      ],
+      "bounds_max": [
+        -0.6841161,
+        1.0707016,
+        -0.0335755
+      ]
+    },
+    {
+      "name": "GEO_Head",
+      "visible": true,
+      "vertices": 842,
+      "triangles": 1680,
+      "surfaces": [
+        "emulsion",
+        "flesh"
+      ],
+      "bounds_min": [
+        -0.1284394,
+        1.4476817,
+        -0.048693
+      ],
+      "bounds_max": [
+        0.0783916,
+        1.7066319,
+        0.2219278
+      ]
+    },
+    {
+      "name": "GEO_LegsLower.L",
+      "visible": true,
+      "vertices": 48,
+      "triangles": 92,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        0.0461572,
+        0.11,
+        -0.0616836
+      ],
+      "bounds_max": [
+        0.1487228,
+        0.28,
+        0.0563636
+      ]
+    },
+    {
+      "name": "GEO_LegsLower.R",
+      "visible": true,
+      "vertices": 48,
+      "triangles": 92,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        -0.1487228,
+        0.11,
+        -0.0404436
+      ],
+      "bounds_max": [
+        -0.0461572,
+        0.28,
+        0.0776036
+      ]
+    },
+    {
+      "name": "GEO_LegsUpper",
+      "visible": true,
+      "vertices": 1202,
+      "triangles": 2400,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        -0.1897566,
+        0.23,
+        -0.0598144
+      ],
+      "bounds_max": [
+        0.1458434,
+        0.997,
+        0.1399113
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "visible": true,
+      "vertices": 64,
+      "triangles": 124,
+      "surfaces": [
+        "emulsion"
+      ],
+      "bounds_min": [
+        -0.087,
+        1.387,
+        -0.06
+      ],
+      "bounds_max": [
+        0.071,
+        1.5,
+        0.082
+      ]
+    },
+    {
+      "name": "GEO_Torso",
+      "visible": true,
+      "vertices": 1244,
+      "triangles": 2484,
+      "surfaces": [
+        "emulsion",
+        "residue"
+      ],
+      "bounds_min": [
+        -0.3031119,
+        0.887,
+        -0.1201991
+      ],
+      "bounds_max": [
+        0.18,
+        1.42,
+        0.3760834
+      ]
+    }
+  ],
+  "hardware": [],
+  "passive_meshes": [],
+  "textures": [
+    {
+      "name": "LongExposureBodyAtlas",
+      "size": 2048,
+      "sRGB": true,
+      "sha256": "6a0cb17910f3bea88473221e5b7c1b83c68d74db1cdf3ea1433c835e8fb571bb"
+    },
+    {
+      "name": "LongExposureMaterialResponse",
+      "size": 1024,
+      "sRGB": false,
+      "sha256": "dbe8ae92ecd666acc929e4b7f46ae954c2ca0053a27fef89d7855cd9bac9bc0d"
+    }
+  ],
+  "estimated_gpu_bytes": 6990560
+}

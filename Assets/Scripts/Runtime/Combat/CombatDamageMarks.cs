@@ -368,7 +368,7 @@ namespace BarPromenade
             projectileSurfaceReach = Mathf.Clamp(actor.Body != null ? actor.Body.height * .25f : .4f, .18f, .4f);
             Transform rig = actor.DamageRigRoot;
             if (rig == null) throw new InvalidOperationException("Blood requires the actor's original rendered rig.");
-            GameObject model = Resources.Load<GameObject>("CombatBlood/Wounds" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatBlood/Wounds" + (actor.IsHero ? "Hero" : actor.IsCrane ? "Crane" : actor.IsRoom ? "Room" : actor.IsImprint ? "Imprint" : actor.IsLongExposure ? "LongExposure" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat wound model.");
             var sources = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))

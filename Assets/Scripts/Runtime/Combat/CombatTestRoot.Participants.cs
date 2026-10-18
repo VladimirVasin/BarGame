@@ -8,6 +8,7 @@ namespace BarPromenade
         private sealed class OpponentSlot
         {
             internal CombatActor Actor;
+            internal CombatActor[] Variants;
             internal OpponentAiContext Ai;
             internal bool Spawned, DefeatCounted;
             internal int Generation;
@@ -18,19 +19,24 @@ namespace BarPromenade
         private readonly List<OpponentSlot> opponentSlots = new List<OpponentSlot>(5);
         private readonly List<CombatActor> combatOpponents = new List<CombatActor>(5);
         private readonly List<CombatActor> combatParticipants = new List<CombatActor>(6);
+        private readonly List<CombatActor> preparedOpponents = new List<CombatActor>(11);
+        private readonly List<CombatActor> preparedParticipants = new List<CombatActor>(12);
+        private static readonly CombatEnemyKind[] AuthoredEnemyKinds =
+            { CombatEnemyKind.Room, CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure };
+        internal static CombatEnemyKind? AuthoredEnemyKindForTests { get; set; }
+        private uint authoredVariantSeed;
         private int encounterRun;
         private long opponentDefeatOrder;
         private bool focusNextArrival;
         public IReadOnlyList<CombatActor> Opponents => combatOpponents;
         public CombatEncounterSettings EncounterSettings { get; private set; }
-        public bool HasCraneOpponent => Mode == CombatTestMode.Crane ||
-            Mode == CombatTestMode.Endless && !UseLegacyArenaForTests && !UseDockerPopulationForTests &&
-            EncounterSettings.MaximumLiveOpponents >= 3;
+        private bool HasMixedEndlessPool => Mode == CombatTestMode.Endless && !UseLegacyArenaForTests && !UseDockerPopulationForTests;
+        public bool HasCraneOpponent => Mode == CombatTestMode.Crane || IsLaboratory || HasMixedEndlessPool;
 
-        private CombatEnemyKind OpponentKind(int index) => Mode == CombatTestMode.Crane
-            ? CombatEnemyKind.Crane : Mode != CombatTestMode.Endless || UseLegacyArenaForTests || UseDockerPopulationForTests
-                ? CombatEnemyKind.Docker : index == 2 ? CombatEnemyKind.Crane
-                    : index % 2 == 0 ? CombatEnemyKind.Zombie : CombatEnemyKind.Docker;
+        private CombatEnemyKind OpponentKind(int index) => IsLaboratory ? LaboratoryEnemy : Mode == CombatTestMode.Crane
+            ? CombatEnemyKind.Crane : !HasMixedEndlessPool ? CombatEnemyKind.Docker :
+                index == Mathf.Min(2, EncounterSettings.MaximumLiveOpponents - 1) ? CombatEnemyKind.Crane :
+                index == 1 ? CombatEnemyKind.Docker : CombatEnemyKind.Room;
         public int LiveOpponentCount
         {
             get
@@ -88,32 +94,91 @@ namespace BarPromenade
         private void CreateCombatOpponents()
         {
             combatParticipants.Add(Hero);
+            preparedParticipants.Add(Hero);
             int count = Mode == CombatTestMode.Endless ? EncounterSettings.MaximumLiveOpponents : 1;
             for (int i = 0; i < count; i++)
             {
                 CombatEnemyKind kind = OpponentKind(i);
-                var obj = new GameObject(i == 0 ? "Combat Opponent" : "Combat Opponent " + (i + 1));
-                obj.transform.SetParent(transform, false);
-                var body = obj.AddComponent<CharacterController>();
-                body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
-                body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
-                body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
-                VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
-                    obj.transform, kind == CombatEnemyKind.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy : DefaultNpcPopulation.CombatTestOpponentId(i));
-                // Body/wardrobe scans must finish before the fused cargo is
-                // attached beneath this same skeleton with its own atlas.
-                if (kind == CombatEnemyKind.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
-                else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, i % 3);
-                CombatActor actor = obj.AddComponent<CombatActor>();
-                actor.InitializeOpponent(presentation, body, kind: kind);
-                actor.SetContactTarget(Hero);
-                actor.JournalActorId = i + 2;
+                CombatActor actor;
+                CombatActor[] variants = null;
+                if (IsLaboratory)
+                {
+                    variants = new CombatActor[LaboratoryEnemyKinds.Length];
+                    for (int variant = 0; variant < variants.Length; variant++)
+                        variants[variant] = CreatePreparedOpponent(i, LaboratoryEnemyKinds[variant], variant);
+                    actor = variants[(int)LaboratoryEnemy];
+                }
+                else
+                {
+                    actor = CreatePreparedOpponent(i, kind, 0);
+                    if (kind == CombatEnemyKind.Room)
+                    {
+                        variants = new CombatActor[AuthoredEnemyKinds.Length];
+                        variants[0] = actor;
+                        for (int variant = 1; variant < variants.Length; variant++)
+                            variants[variant] = CreatePreparedOpponent(i, AuthoredEnemyKinds[variant], variant);
+                    }
+                }
                 combatOpponents.Add(actor);
                 combatParticipants.Add(actor);
-                opponentSlots.Add(new OpponentSlot { Actor = actor, Ai = new OpponentAiContext(i) });
+                opponentSlots.Add(new OpponentSlot { Actor = actor, Variants = variants, Ai = new OpponentAiContext(i) });
             }
-            foreach (CombatActor actor in combatParticipants) actor.SetCombatParticipants(combatParticipants);
+            foreach (CombatActor actor in preparedParticipants) actor.SetCombatParticipants(combatParticipants);
             SelectCombatOpponent(combatOpponents[0]);
+        }
+
+        private CombatActor CreatePreparedOpponent(int index, CombatEnemyKind kind, int variantIndex)
+        {
+            var obj = new GameObject("Combat Opponent " + (index + 1) + " " + kind);
+            obj.transform.SetParent(transform, false);
+            var body = obj.AddComponent<CharacterController>();
+            body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
+            body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
+            body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
+            string identity = kind == CombatEnemyKind.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy :
+                kind is CombatEnemyKind.Room or CombatEnemyKind.Imprint or CombatEnemyKind.LongExposure ? DefaultNpcPopulation.CombatTestAuthoredEnemyId(kind, index) :
+                DefaultNpcPopulation.CombatTestOpponentId(IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index);
+            VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(obj.transform, identity);
+            // Finish wardrobe scans before adding bespoke attachments to this rig.
+            if (kind == CombatEnemyKind.Crane) CombatCraneAssetProvider.ApplyAppearance(presentation.gameObject, 0);
+            else if (kind == CombatEnemyKind.Room) CombatRoomAssetProvider.ApplyAppearance(presentation.gameObject, identity);
+            else if (kind == CombatEnemyKind.Imprint) CombatImprintAssetProvider.ApplyAppearance(presentation.gameObject, identity);
+            else if (kind == CombatEnemyKind.LongExposure) CombatLongExposureAssetProvider.ApplyAppearance(presentation.gameObject, identity);
+            else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index % 3);
+            CombatActor actor = obj.AddComponent<CombatActor>();
+            actor.InitializeOpponent(presentation, body, kind: kind);
+            actor.SetContactTarget(Hero);
+            actor.JournalActorId = index + 2 + variantIndex * CombatEncounterSettings.OpponentCapacity;
+            preparedOpponents.Add(actor); preparedParticipants.Add(actor);
+            // Damage preparation snapshots the authored visible surfaces while
+            // all variants are active. Reset then parks every unselected body.
+            return actor;
+        }
+
+        private void ChooseOpponentVariant(OpponentSlot slot)
+        {
+            if (slot.Variants == null) return;
+            int chosen;
+            if (IsLaboratory) chosen = (int)LaboratoryEnemy;
+            else
+            {
+                authoredVariantSeed ^= authoredVariantSeed << 13;
+                authoredVariantSeed ^= authoredVariantSeed >> 17;
+                authoredVariantSeed ^= authoredVariantSeed << 5;
+                chosen = (int)(authoredVariantSeed % (uint)slot.Variants.Length);
+                if (AuthoredEnemyKindForTests.HasValue)
+                {
+                    chosen = -1;
+                    for (int variant = 0; variant < slot.Variants.Length; variant++)
+                        if (slot.Variants[variant].EnemyKind == AuthoredEnemyKindForTests.Value) { chosen = variant; break; }
+                    if (chosen < 0) throw new System.InvalidOperationException("The authored test override must select a prepared variant.");
+                }
+            }
+            CombatActor selected = slot.Variants[chosen];
+            if (slot.Actor == selected) return;
+            slot.Actor = selected;
+            combatOpponents[slot.Ai.SlotIndex] = slot.Actor;
+            combatParticipants[slot.Ai.SlotIndex + 1] = slot.Actor;
         }
 
         private void SelectCombatOpponent(CombatActor actor)
@@ -134,18 +199,23 @@ namespace BarPromenade
         private void ResetCombatOpponents()
         {
             opponentDefeatOrder = 0;
+            int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
+            authoredVariantSeed = unchecked((uint)seed ^ 0x6d2b79f5u);
+            if (authoredVariantSeed == 0) authoredVariantSeed = 1;
             // Release old motor/corpse shapes before finding any initial ground place.
-            foreach (OpponentSlot slot in opponentSlots) slot.Actor.gameObject.SetActive(false);
+            foreach (CombatActor actor in preparedOpponents) actor.gameObject.SetActive(false);
             PrepareMimicPlacement();
             int slotIndex = 0;
             foreach (OpponentSlot slot in opponentSlots)
             {
+                ChooseOpponentVariant(slot);
                 bool spawn = Mode != CombatTestMode.Endless || WarehousePlan != null && !WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
                 if (slot.Actor.IsCrane)
                 {
+                    Vector3 ground = IsLaboratory ? opponentSpawn - Vector3.up * PlayerFactory.GroundedRootOffset : CraneGround;
                     slot.Actor.gameObject.SetActive(true);
-                    slot.Actor.ResetActor(CraneGround, Vector3.forward);
-                    slot.Actor.ConfigureCraneSuspension(CraneGround, new Vector3(CraneGround.x, 9.15f, CraneGround.z));
+                    slot.Actor.ResetActor(ground, Vector3.forward);
+                    slot.Actor.ConfigureCraneSuspension(ground, ground + Vector3.up * 9.15f);
                     ResetOpponentDecisions(slot.Actor, slot.Ai);
                     slot.Spawned = spawn; slot.DefeatCounted = false;
                     slot.Generation = 0; slot.DefeatOrder = 0; slot.CrateAnchorId = -1;
@@ -171,7 +241,6 @@ namespace BarPromenade
             }
             SelectCombatOpponent(combatOpponents[0]);
             focusNextArrival = WarehousePlan == null && Mode == CombatTestMode.Endless && !Hero.IsFirearm;
-            int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
             endless.Reset(EncounterSettings, seed);
             endless.Observe(false, LiveOpponentCount);
             RefreshEndlessSpawnGate();

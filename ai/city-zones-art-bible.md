@@ -4234,72 +4234,22 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-17`:Crane:independent industrial flesh/carapace/embedded6cables;
-longfoldlimbs/uprighthead/mantis yaw±100°;body-skull banks.
-2K+1Kresp/WarehouseSurface/flesh-shell/steel hooks;CLO-HAIR-Rhand0.
-Endless Z/D/C;normal Zombie/hands;
-everyhit/repeatwounds/woodhole-chips;finite;§6.
-
-`2026-10-16`:Crane:Rcuff-hook/6m3DLOS;
-fall→5s suspendedspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;
-worn gantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
-
-`2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;
-wetconcrete/bentsteel/peelpaint/swollenwood-cardboard/wornrubber;
-workdisgust§6;
-9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27doors/ammo allfloors↑.
-D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;
-spokevalve/yellowchain/graylock/PusherL-clear/keyUI.
-4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
-`2026-10-15`:toprear prep/trough/cordbulb;
-3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;
-3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;
-pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;
-key→chain↓/holdE-gate↑/gallery;
-key+stairs↓→heat2s/riseSFX/popglass/8phys;
-bulb0/socketcord/fixedlights-lenses-ambient0/Lchestonly/fog-sky-strobe0/§6.
-Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;
-skinneck-shoulders-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;
-slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-return.
-Mimic:near-hit→rigburst/planted/gaze/limblag;
-ram:compress→throw→kneel-rise;fell hero→loaded unevenspasms→rise;
-wood-wet inhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
-`2026-10-14`:remains step/rig-contour;livefall≠corpse/physicskept;
-coat-scarfrig/slinganchors;physics0/hairkept.
-Lchest/look/far0/near/beam↑.
-`2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
-6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
-`2026-10-13`:3guns/1held-2stowed;
-Gun:worn unbrandedmetal/Rpalmgait/2handaim/crossflash;
-Aim:8gaits/facing/Step/uppercam/FOV-gripreturn.
-Hero:drift/recoil/overshoot/finger regrip/blink;
-muzzlereticle/shotguncentre/stablecam/intentlegs.
-`2026-10-08`:streak/impulse-SFX/terminal→ragdoll.
-Shotgun:worndarksteel-wood/2barrels/shoulder-stock/Lforeend;
-heavyrecoil/flash-smoke/deepthud;2shots/break/spenteject/load/close.
-`2026-10-12`:Draw Rbarrels↓;Loutside/Lshoulder→verticalstock/palmdown
-→outershoulder/chest→Rgrip/Lforeend;0crossing/stow-rig-sling/2×.
-`2026-10-09`:nearmax/bodylaunch/head≤14/fast debris-blood/falloff.
-Rig:chest-abdomen/arm-hand/leg-catch/skin-fabric-glove-boot/wet-dry/repeat.
-`2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finiteparts;
-Survivor-corpse/crawl/reset.
-Pistol loweject;brain8:wetmuted jelly/squash/bone-tissue/cam-hide/loss.
-Dark blood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;
-convulsions≤2.35s/corpseimpulse/volley1reaction.
-Case/emptylock/mag-stash-seat-rack/SFX.
-World:chips-sparks/finiteholes;
-Shoulders↑/chin-in/breath-tremor/tightswing/awkwardreturn;
-softknees/pelvis-grip-elbows↓/step/faceblock-flex.
-≤2steps/crouch-brace/floor→hand→drop/return≠parry.
-Bar:batgrip/end/hook→/shoulder+block/charge/free;wall sparks/recoil.
-Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
-nearknee/barkept/torso mirror/L-shove←/palm-bar-body.
-Chest contrast;wall-edge-end→hide.
-Win:walk/gun;barE:toilet §7 FP/barL/body-floorR/0reaction.
-`2026-10-15` HUD:charcoal/bone;aim ammo/reloadmeter/HP damage3s-≤25%/staminafull+1s;
-charge-block/fade.15-.3;legacy:enemyHP/counts/result.
-Shield:amber=request/closed=ready/filled=block.
-
+`2026-10-18`:Room:coat/plaster/4-framecorridor/floor-walls/facelesshead;
+Imprint:negativeface-chest-palms/chalk-glass;LongExposure:3fusedposes/1head/emulsion.
+All:sculpt-UV-wounds/hands-walk/solid;Zombie Lab/story0/§6.
+`2026-10-17`:Crane:ownindust. flesh/carapace/inset6cables;longfoldlimbs/uprighthead/mantisyaw±100°;body/skullbanks/flesh-shell/steelhooks;CLO-HAIR-Rhand0;allhits/repeatwounds/woodhole-chips;finite;§6.
+`2026-10-16`:Crane:Rcuff-hook/6m3DLOS;fall→5shungspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
+`2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27doors/ammo alllvls↑.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI.4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
+`2026-10-15`:toprear prep/trough/cordbulb;3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;key→chain↓/holdE-gate↑/gallery;key+stairs↓→heat2s/riseSFX/popglass/8phys;bulb0/socketcord/fixedlights-lenses-amb0/Lchestonly/fog-sky-strobe0/§6.Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;skinneck-shldrs-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-ret.Mimic:near-hit→rigburst/planted/gaze/limblag;ram:compress→throw→kneel-rise;fell hero→loadedunevenspasms→rise;wood-wetinhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
+`2026-10-14`:remains step/rig-contour;livefall≠corpse/physicskept;coat-scarfrig/slinganchors;physics0/hairkept.Lchest/look/far0/near/beam↑.
+`2026-10-10`:pistolLunderM65/bar Rbelt/shotgun softsling/Lshldr-frontdiag-back;6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
+`2026-10-13`:3guns/1held-2stowed;Gun:wornunbrandedmetal/Rpalmgait/2handaim/xflash;Aim:8gaits/facing/Step/uppercam/FOV-gripret.Hero:drift/recoil/overshoot/finger regrip/blink;muzzlereticle/shotguncentre/stablecam/intentlegs.
+`2026-10-08`:streak/impulse-SFX/terminal→ragdoll.Shotgun:worndarksteel-wood/2barrels/shldr-stock/Lforeend;heavyrecoil/flash-smoke/deepthud;2shots/break/spenteject/load/close.
+`2026-10-12`:Draw Rbarrels↓;Loutside/Lshldr→vertstock/palmdown
+→outershldr/chest→Rgrip/Lforeend;0crossing/stow-rig-sling/2×.
+`2026-10-09`:nearmax/bodylaunch/head≤14/fastdebris-blood/falloff.Rig:chest-abdomen/arm-hand/leg-catch/skin/cloth-glove-boot/wet-dry/repeat.
+`2026-10-09`:torso→joined skel/0chunks;head-limbcuts/finiteparts;Survivor-corpse/crawl/reset.Pistolloweject;brain8:wetmutedjelly/squash/bone-tissue/cam-hide/loss.Darkblood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;spasms≤2.35s/corpseimpulse/volley1react.Case/emptylock/mag-stash-seat-rack/SFX.World:chips-sparks/finiteholes;Shldrs↑/chin-in/breath-tremor/tightswing/awkwardret;softknees/pelvis-grip-elbows↓/step/faceblock-flex.≤2steps/crouch-brace/floor→hand→drop/ret≠parry.Bar:batgrip/end/hook→/shldr+block/charge/free;wallsparks/recoil.Windup1m/Q-B:dry/0finish/highguard/buf;Qfar:pelvis-foot→/chest←;nearknee/barkept/torsomirror/L-shove←/palm-bar-body.Chestcontrast;wall-edge-end→hide.Win:walk/gun;barE:toilet §7 FP/barL/body-floorR/0react.
+`2026-10-15`HUD:charcoal/bone;aim ammo/reloadmeter/HP damage3s-≤25%/staminafull+1s;charge-block/fade.15-.3;legacy:enemyHP/counts/result.Shield:amber=request/closed=ready/filled=block.
 ### Принятое исключение — иллюстрации загрузки
 
 [Decision `2026-09-06`](architecture-notes.md): 4 static painterly `AreaLoading`

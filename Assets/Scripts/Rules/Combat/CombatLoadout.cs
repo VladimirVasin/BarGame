@@ -5,10 +5,10 @@ namespace BarPromenade
     /// <summary>The bounded weapon choices offered by the isolated combat test.</summary>
     public enum CombatWeaponId { Crowbar, Pistol, Shotgun }
 
-    public enum CombatTestMode { Standard, Endless, Crane }
+    public enum CombatTestMode { Standard, Endless, Crane, Laboratory }
 
     /// <summary>Permanent role of a pooled combat opponent, independent of the encounter mode.</summary>
-    public enum CombatEnemyKind { Zombie, Docker, Crane }
+    public enum CombatEnemyKind { Zombie, Docker, Crane, Room, Imprint, LongExposure }
 
     /// <summary>The complete isolated combat launch selection, consumed as one session value.</summary>
     public readonly struct CombatTestSelection : IEquatable<CombatTestSelection>
@@ -16,23 +16,27 @@ namespace BarPromenade
         public CombatLoadoutSelection Loadout { get; }
         public CombatTestMode Mode { get; }
         public CombatEncounterSettings EncounterSettings { get; }
+        public CombatEnemyKind LaboratoryEnemy { get; }
         public static CombatTestSelection Default => new CombatTestSelection(CombatLoadoutSelection.Default);
 
         public CombatTestSelection(CombatLoadoutSelection loadout, CombatTestMode mode = CombatTestMode.Standard,
-            CombatEncounterSettings? encounterSettings = null)
+            CombatEncounterSettings? encounterSettings = null, CombatEnemyKind laboratoryEnemy = CombatEnemyKind.Zombie)
         {
-            if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless && mode != CombatTestMode.Crane)
+            if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless && mode != CombatTestMode.Crane && mode != CombatTestMode.Laboratory)
                 throw new ArgumentOutOfRangeException(nameof(mode));
+            if ((uint)laboratoryEnemy > (uint)CombatEnemyKind.LongExposure)
+                throw new ArgumentOutOfRangeException(nameof(laboratoryEnemy));
             Loadout = loadout;
             Mode = mode;
+            LaboratoryEnemy = laboratoryEnemy;
             EncounterSettings = encounterSettings ?? CombatEncounterSettings.Default;
             EncounterSettings.Validate();
         }
 
         public bool Equals(CombatTestSelection other) => Loadout == other.Loadout && Mode == other.Mode &&
-            EncounterSettings == other.EncounterSettings;
+            EncounterSettings == other.EncounterSettings && LaboratoryEnemy == other.LaboratoryEnemy;
         public override bool Equals(object obj) => obj is CombatTestSelection other && Equals(other);
-        public override int GetHashCode() => ((Loadout.GetHashCode() * 397) ^ (int)Mode) * 397 ^ EncounterSettings.GetHashCode();
+        public override int GetHashCode() => (((Loadout.GetHashCode() * 397) ^ (int)Mode) * 397 ^ EncounterSettings.GetHashCode()) * 397 ^ (int)LaboratoryEnemy;
         public static bool operator ==(CombatTestSelection left, CombatTestSelection right) => left.Equals(right);
         public static bool operator !=(CombatTestSelection left, CombatTestSelection right) => !left.Equals(right);
     }

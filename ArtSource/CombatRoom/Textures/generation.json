@@ -1,0 +1,15 @@
+{
+  "generator": "image_gen (built-in)",
+  "image": {
+    "name": "RoomSurface",
+    "sha256": "e25c2ae26ee83de8e4a448a0170cc8fa0de474d3d3799e240ca371b888bc7126",
+    "source": "ArtSource/CombatRoom/Textures/RoomSurface.source.png",
+    "prompt": "Use case: game production texture source.\nCreate one square opaque image, a perfectly flat 2 by 2 sheet of FOUR equally sized raw material swatches filling each quadrant edge to edge. These are diffuse albedo sources to bake onto an unsettling low-poly humanoid enemy whose parted coat contains a deep miniature abandoned corridor. Material only, no character or room illustration.\nTOP LEFT: old charcoal-olive heavy wool coat cloth, broad subtly felted fibers, irregular damp darkening, softly frayed worn weave, muted grey olive and umber, sparse embedded pale plaster dust.\nTOP RIGHT: aged dirty ivory painted plaster from an abandoned narrow corridor, layered thin paint, small irregular lifted edges, sparse dark hairline cracks, grey yellow nicotine-like staining and damp soot, muted flat broad patches, no graphic pattern.\nBOTTOM LEFT: cold grey-pink waxy human-like skin, restrained pale clay flesh, faint desaturated plum marbling, delicate creases, waxiness expressed in color only, no wounds or body parts.\nBOTTOM RIGHT: worn dark brown wood doorframe, rubbed dull ochre edges and grey dust, sparse long grain, cracked old varnish, restrained very dark muted browns.\nStyle: tactile hand-painted early 3D PS1 survival horror material detail, coarse readable structure plus subtle fine texture, physically plausible materials, subdued palette. Perfectly orthographic evenly diffuse unlit swatches, no perspective, no highlights, no cast shadows, no vignette, no glow, no text, symbols, logos, faces, eyes, mouth, limbs, seams, buttons, objects, grid lines, frames, borders or gutters. No baked lighting. Four flat raw surfaces.",
+    "regions": [
+      "charcoal olive wool",
+      "aged dirty ivory plaster",
+      "cold waxy flesh",
+      "dark worn wood"
+    ]
+  }
+}

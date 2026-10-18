@@ -82,7 +82,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 ## Implemented capabilities
 
 - CombatTest:warehouse/fish-key-gate;all3fish→power-music-spawn0.
-  Endless1–5(default3:Zombie/Docker/Crane),≤5pool.
+  Endless1–5/default3:Room|Imprint|LongExposure,Docker,Crane;Crane last≤2.
+  Random start-reset-refill;≤5active/≤11prepared;Lab:oldArena/6kinds/1target.
   Enemy resistance2/head2/wounds;3weapons/finiteammo.
   Gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,

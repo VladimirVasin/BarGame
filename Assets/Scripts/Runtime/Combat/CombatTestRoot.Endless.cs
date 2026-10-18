@@ -89,8 +89,13 @@ namespace BarPromenade
             int live = LiveOpponentCount;
             if (!endless.Advance(seconds, live)) return false;
             OpponentSlot available = null;
+            // A defeated crane keeps its reserved place and returns before the
+            // ordinary ground pool; it cannot be displaced by a random variant.
             foreach (OpponentSlot slot in opponentSlots)
-                if (!slot.Spawned) { available = slot; break; }
+                if (slot.Actor.IsCrane && (!slot.Spawned || slot.Actor.State.IsDefeated)) { available = slot; break; }
+            if (available == null)
+                foreach (OpponentSlot slot in opponentSlots)
+                    if (!slot.Spawned) { available = slot; break; }
             if (available == null)
                 available = OldestOpponentCorpse();
             if (available == null) { endless.DeferSpawn(); return false; }
@@ -109,6 +114,8 @@ namespace BarPromenade
                 pistolProjectiles?.RetireActorContacts(actor);
                 shotgunProjectiles?.RetireActorContacts(actor);
             }
+            ChooseOpponentVariant(available);
+            actor = available.Actor;
             started = System.Diagnostics.Stopwatch.GetTimestamp();
             using (SpawnActivationMarker.Auto()) actor.gameObject.SetActive(true);
             LastSpawnActivationTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;

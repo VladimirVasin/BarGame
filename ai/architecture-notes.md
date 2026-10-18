@@ -2,17 +2,18 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-17, crane insect:**
-  User:independent industrial flesh/carapace sculpt/embedded6cables/steelhooks;
-  sharedrig/longfoldlimbs/uprighthead/mantis yaw±100°;
-  CraneBody:geometry/UV0;Crane-only body/skull damage banks;
-  ImageGen/2048sRGB+1024linear RGslope-Brough-Acavity;
-  WarehouseSurface/3shared materials/BC7mips6.67<7MiB.
-  3floors/insetvoid/6steel/inertia-slack/6m3DLOShook/5sFrenzy;
-  pause-reset-ragdoll/hang↓.25/rootkept;§6/art§15a/story0.
+- **Accepted exception 2026-10-18, authored enemies:**
+  Room|Imprint|LongExposure equal init-reset-refill/ownseed;Zombie Lab;art§15a/§6/story0.
+  Endless1–5/def3:random/Docker/Crane;Crane last≤2;11warm/≤5active;permaIDs-role-slot.
 
-- **Accepted exception 2026-10-17, mixed endless endurance:**
-  Endless3=Zombie/Docker/Crane,≤5/1Crane/fixedrolesIDs;normalZombiehands.
+- **Accepted exception 2026-10-17, crane insect:**
+  Form=art§15a;sharedrig/yaw±100°/hang↓.25/rootkept.
+  CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;
+  WarehouseSurface/3shared/BC7mips<7MiB.
+  3floors/insetvoid/inertia-slack/6m3DLOShook/5sFrenzy;
+  pause-reset-ragdoll;§6/art§15a/story0.
+
+- **Accepted exception 2026-10-17, endless endurance:**
   Crane3Drefill/sharedlife/fishcutoff.
   EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1.
   Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.

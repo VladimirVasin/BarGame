@@ -16,6 +16,21 @@ namespace BarPromenade
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
         public const string CombatTestCraneEnemy = "zz.combat-test.suspended-crane";
+        public const string CombatTestRoomEnemy = "zz.combat-test.room";
+        public const string CombatTestImprintEnemy = "zz.combat-test.imprint";
+        public const string CombatTestLongExposureEnemy = "zz.combat-test.long-exposure";
+        public static string CombatTestAuthoredEnemyId(CombatEnemyKind kind, int slot)
+        {
+            if (slot != 0 && slot != 3 && slot != 4) throw new ArgumentOutOfRangeException(nameof(slot));
+            string identity = kind switch
+            {
+                CombatEnemyKind.Room => CombatTestRoomEnemy,
+                CombatEnemyKind.Imprint => CombatTestImprintEnemy,
+                CombatEnemyKind.LongExposure => CombatTestLongExposureEnemy,
+                _ => throw new ArgumentOutOfRangeException(nameof(kind))
+            };
+            return slot == 0 ? identity : identity + "." + slot;
+        }
         private static readonly string[] FairIds = { "fair.vendor.0", "fair.vendor.1", "fair.vendor.2", "fair.vendor.3" };
         public const int FairVisitorCount = 3;
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
@@ -168,6 +183,15 @@ namespace BarPromenade
                 new SlotConstraint("gloves", "gloves.work"),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
+            foreach (string id in new[] { CombatTestRoomEnemy, CombatTestImprintEnemy, CombatTestLongExposureEnemy })
+            foreach (int slot in new[] { 0, 3, 4 })
+                roster.Add(new CharacterDefinition(slot == 0 ? id : id + "." + slot, model,
+                    new SlotConstraint("outerwear", "outerwear.work"),
+                    new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", new string[] { null }),
+                    new SlotConstraint("gloves", "gloves.work"),
+                    new SlotConstraint("scarf", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }

@@ -8,7 +8,7 @@ namespace BarPromenade
     {
         private static readonly Rect WarehouseButtonRect = new Rect(318, 12, 68, 18);
         // Explicit fixture selection preserves the original weapon-contact laboratory.
-        // Player starts and direct scene loads always use the warehouse.
+        // Laboratory selects it publicly; other player starts use the warehouse.
         internal static bool UseLegacyArenaForTests;
         internal static bool UseDockerPopulationForTests;
         internal static int? WarehouseSeedForTests;
@@ -22,11 +22,12 @@ namespace BarPromenade
             UseLegacyArenaForTests = false;
             UseDockerPopulationForTests = false;
             WarehouseSeedForTests = null;
+            AuthoredEnemyKindForTests = null;
         }
 
         private void CreateCombatLocation()
         {
-            if (UseLegacyArenaForTests)
+            if (IsLaboratory || UseLegacyArenaForTests)
             {
                 combatLocation = CombatAssetProvider.CreateArena(transform);
                 heroSpawn = CombatAssetProvider.FindAnchor(combatLocation, "HeroSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;

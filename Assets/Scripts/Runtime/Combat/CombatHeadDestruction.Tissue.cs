@@ -48,7 +48,7 @@ namespace BarPromenade
 
         private void PrepareSkull(Head head, SkinnedMeshRenderer source)
         {
-            GameObject model = Resources.Load<GameObject>("CombatGore/Skull" + (head.Actor.IsHero ? "Hero" : head.Actor.IsCrane ? "Crane" : "Npc"));
+            GameObject model = Resources.Load<GameObject>("CombatGore/Skull" + (head.Actor.IsHero ? "Hero" : head.Actor.IsCrane ? "Crane" : head.Actor.IsRoom ? "Room" : head.Actor.IsImprint ? "Imprint" : head.Actor.IsLongExposure ? "LongExposure" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat skull.");
             if (bone == null)
             {
@@ -68,7 +68,9 @@ namespace BarPromenade
                 head.Hosts.Add(host);
                 var skin = host.AddComponent<SkinnedMeshRenderer>();
                 skin.sharedMesh = template.sharedMesh; skin.bones = source.bones; skin.rootBone = source.rootBone;
-                skin.sharedMaterial = bone; skin.localBounds = source.localBounds; skin.updateWhenOffscreen = true;
+                skin.sharedMaterial = head.Actor.IsImprint ? CombatImprintAssetProvider.LoadBodyMaterial("chalk") :
+                    head.Actor.IsLongExposure ? CombatLongExposureAssetProvider.LoadBodyMaterial() : bone;
+                skin.localBounds = source.localBounds; skin.updateWhenOffscreen = true;
                 skin.enabled = false; Player3DHeadVisibility.RegisterDerived(source, skin);
                 head.Sectors[index].Pieces.Add(new Piece { Skin = skin, Source = source, Visible = true,
                     Bone = true, Anatomical = true, Bounds = MeasureInHead(head, skin), TissuePatch = index % 8 / 2 });
