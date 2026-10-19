@@ -67,7 +67,13 @@ namespace BarPromenade
         // Reject a missed stable actor before copying its full contact pose. If
         // any live rig/source state differs, the normal capture owns fresh bounds.
         internal bool MayIntersectProjectile(Vector3 from, Vector3 to, float radius)
+            => MayIntersectProjectile(from, to, radius, out _);
+
+        // The same exact revision check can retain the detailed on-ray pose,
+        // not only reject off-ray bodies. No frame/time-based reuse is involved.
+        internal bool MayIntersectProjectile(Vector3 from, Vector3 to, float radius, out bool poseCurrent)
         {
+            poseCurrent = false;
             if (!projectileBoundsCaptured || projectileShapes != activeShapes ||
                 projectileHeadSurfaces != activeHeadSurfaces || projectileBodySurfaces != bodySurfaces ||
                 projectileHeadStates.Length != headSurfaceCache.Count ||
@@ -78,6 +84,7 @@ namespace BarPromenade
                 if (!projectileHeadMatrices[i].Equals(projectileHeadBones[i].localToWorldMatrix)) return true;
             if (bodySurfaces != null)
                 foreach (BodySurface surface in bodySurfaces) if (!surface.ReleasedPoseUnchanged) return true;
+            poseCurrent = true;
             return IntersectsSegment(projectileBounds, from, to - from, radius);
         }
 

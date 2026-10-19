@@ -53,6 +53,7 @@ namespace BarPromenade.Tests.PlayMode
             CombatTestRoot.AuthoredEnemyKindForTests = null;
             string method = TestContext.CurrentContext.Test.MethodName;
             if (method != nameof(Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads) &&
+                method != nameof(Range_BodyProxiesShareTransformsAndFollowSameFrameChanges) &&
                 method != nameof(Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus) &&
                 method != nameof(Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse) &&
                 method != nameof(Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle) &&
@@ -62,6 +63,7 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle) &&
                 method != nameof(Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate) &&
                 method != nameof(Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset) &&
+                method != nameof(Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup) &&
                 method != nameof(Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset) &&
                 method != nameof(Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset) &&
                 method != nameof(Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch) &&

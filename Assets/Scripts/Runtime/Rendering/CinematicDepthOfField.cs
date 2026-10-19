@@ -72,7 +72,14 @@ namespace BarPromenade.Rendering
 
         internal static void SetOwnedFocusDistance(object token, float distance)
         {
-            if (ReferenceEquals(leaseOwner, token)) SetFocusDistance(distance);
+            // A returning owned shot still focuses while its volume fades out.
+            if (ReferenceEquals(leaseOwner, token) && owner != null) owner.SetFocusDistance(distance);
+        }
+
+        internal static void SetOwnedFocalLength(object token, float millimeters)
+        {
+            if (ReferenceEquals(leaseOwner, token) && owner != null)
+                owner.SetFocalLength(millimeters);
         }
 
         internal static void EndOwned(object token, bool immediately)
@@ -184,6 +191,9 @@ namespace BarPromenade.Rendering
                     CinematicDepthOfField.MinimumFocusDistance,
                     meters));
         }
+
+        public void SetFocalLength(float millimeters) =>
+            depthOfField.focalLength.Override(Mathf.Clamp(millimeters, 1f, 300f));
 
         public void Disengage()
         {

@@ -117,7 +117,7 @@ namespace BarPromenade
                 return false;
             }
 
-            if (!modalLock.TryCaptureAndDisable(
+            if (!BarMinigameModalLock.AllowsPauseMenu && !modalLock.TryCaptureAndDisable(
                     player.Interactor,
                     cameraFollow,
                     intoxicationHud))
@@ -190,7 +190,7 @@ namespace BarPromenade
                    !IsOpen &&
                    !ownsPauseState &&
                    activeController == null &&
-                   !BarMinigameModalLock.IsAnyLocked &&
+                   (!BarMinigameModalLock.IsAnyLocked || BarMinigameModalLock.AllowsPauseMenu) &&
                    !SceneTransitionService.IsTransitioning &&
                    (additionalCanOpen == null ||
                     additionalCanOpen());

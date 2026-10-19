@@ -799,7 +799,7 @@ namespace BarPromenade
             return true;
         }
 
-        private static Vector3 ClosestTriangle(Vector3 a, Vector3 b, Vector3 c, Vector3 point)
+        internal static Vector3 ClosestTriangle(Vector3 a, Vector3 b, Vector3 c, Vector3 point)
         {
             Vector3 ab = b - a, ac = c - a, ap = point - a;
             float d1 = Vector3.Dot(ab, ap), d2 = Vector3.Dot(ac, ap);

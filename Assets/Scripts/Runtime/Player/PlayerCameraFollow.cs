@@ -487,6 +487,23 @@ namespace BarPromenade
                 rotation);
         }
 
+        /// <summary>
+        /// Resolves the neutral pose ClearFixedPose will hand back to, including
+        /// the accepted orbit target and any live focus override. It differs
+        /// from a prospective follow solve when an owner interrupted orbit damping.
+        /// </summary>
+        internal Pose ResolveReleasePose()
+        {
+            if (controlledCamera == null || followTarget == null)
+                throw new InvalidOperationException("Initialize the player camera before resolving its release pose.");
+            Quaternion rotation = Quaternion.Euler(targetPitch, targetYaw, 0f);
+            float distance = GetCollisionAdjustedDistance(
+                GetTargetFocusPoint(), rotation, out Vector3 cameraPivot);
+            return new Pose(cameraPivot - rotation * Vector3.forward * distance, rotation);
+        }
+
+        internal Vector3 ReleaseFocusPoint => GetTargetFocusPoint();
+
         /// <summary>Scene-owned vertical reach; ordinary scenes retain their serialized limits.</summary>
         public void ConfigureOrbitPitchLimits(float minimumDegrees, float maximumDegrees)
         {

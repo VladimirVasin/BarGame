@@ -636,6 +636,7 @@ namespace BarPromenade
         /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
         private void AdvanceOpponentMovement(float seconds)
         {
+            if (IsRoomAttackerRecovering(AiOpponent)) { ResetOpponentMovement(); return; }
             if (AiOpponent != null && AiOpponent.IsCrane) return;
             if (seconds <= 0f) return;
             if (!Sparring || AiOpponent == null || !AiOpponent.ZombieAwake || AiOpponent.IsZombieFrenzied || Hero == null || AiOpponent.IsKnockedDown || HeroIsOnGround && !Hero.IsBodyGrounded || !AiOpponent.IsAvailable ||

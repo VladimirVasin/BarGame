@@ -139,6 +139,7 @@ namespace BarPromenade
         private static readonly HashSet<Renderer> suppressed = new HashSet<Renderer>();
         private static readonly Dictionary<CombatActor, CombatBodyDestruction> owners = new Dictionary<CombatActor, CombatBodyDestruction>();
         private readonly Dictionary<CombatActor, Body> bodies = new Dictionary<CombatActor, Body>();
+        private readonly ProxyVertexGroupingScratch proxyVertexGroupingScratch = new ProxyVertexGroupingScratch();
         private MaterialPropertyBlock properties;
         private Material flesh, bone;
         private CombatHeadDestruction headEffects;
@@ -651,7 +652,7 @@ namespace BarPromenade
             piece.ProxyMesh.GetVertices(vertices);
             IReadOnlyList<int> indices = piece.ProxyGeometry.ActiveIndices;
             if (indices.Count == 0) { SetColliderEnabled(piece.Proxy, false); return; }
-            if (piece.ProxyGeometry.TryNativeBounds(vertices, indices, piece.ProxyGeometry.ActiveIndexBuilds, matrix, minimum,
+            if (piece.ProxyGeometry.TryNativeBounds(piece, vertices, indices, piece.ProxyGeometry.ActiveIndexBuilds, matrix, minimum,
                 out Vector3 centre, out Vector3 size, out bool burst))
             {
                 ProxyNativeBoundsFolds++;
@@ -668,18 +669,20 @@ namespace BarPromenade
         {
             internal readonly Vector3[] Vertices;
             internal readonly int[] ActiveIndices, CachedActiveIndices;
-            internal readonly int IndexBuilds, SkinBindingBuilds;
+            internal readonly int IndexBuilds, SkinBindingBuilds, UniqueVertexTransforms, CornerCount;
             internal readonly Matrix4x4 Matrix;
             internal readonly Vector3 Minimum, NativeCentre, NativeSize;
             internal readonly bool ExecutedInBurst;
 
             internal ProxyBoundsDiagnostic(Vector3[] vertices, int[] indices, int[] cachedIndices, int indexBuilds, int skinBindingBuilds,
-                Matrix4x4 matrix, Vector3 minimum, Vector3 centre, Vector3 size, bool burst)
+                Matrix4x4 matrix, Vector3 minimum, Vector3 centre, Vector3 size, bool burst,
+                int uniqueVertexTransforms, int cornerCount)
             {
                 Vertices = vertices; ActiveIndices = indices; CachedActiveIndices = cachedIndices; IndexBuilds = indexBuilds;
                 SkinBindingBuilds = skinBindingBuilds;
                 Matrix = matrix; Minimum = minimum;
                 NativeCentre = centre; NativeSize = size; ExecutedInBurst = burst;
+                UniqueVertexTransforms = uniqueVertexTransforms; CornerCount = cornerCount;
             }
         }
 
@@ -699,10 +702,11 @@ namespace BarPromenade
                     int[] indices = piece.Skin.sharedMesh.triangles;
                     Matrix4x4 matrix = proxy.transform.parent.worldToLocalMatrix * piece.Skin.transform.localToWorldMatrix;
                     Vector3 minimum = piece.ProxyGeometry.MinimumSize;
-                    if (!piece.ProxyGeometry.TryNativeBounds(vertices, indices, 0, matrix, minimum,
+                    if (!piece.ProxyGeometry.TryNativeBounds(piece, vertices, indices, 0, matrix, minimum,
                         out Vector3 centre, out Vector3 size, out bool burst)) return false;
                     sample = new ProxyBoundsDiagnostic(vertices.ToArray(), indices, piece.ProxyGeometry.DiagnosticActiveIndices,
-                        piece.ProxyGeometry.ActiveIndexBuilds, piece.ProxyGeometry.SkinBindingBuilds, matrix, minimum, centre, size, burst);
+                        piece.ProxyGeometry.ActiveIndexBuilds, piece.ProxyGeometry.SkinBindingBuilds, matrix, minimum, centre, size, burst,
+                        piece.ProxyGeometry.LastUniqueVertexTransforms, piece.ProxyGeometry.LastCornerCount);
                     return true;
                 }
                 finally { Destroy(baked); }
@@ -759,6 +763,7 @@ namespace BarPromenade
             private ulong revision;
             internal int Count => nodes.Count;
             internal ulong Pass => pass;
+            internal ProxyVertexGroupingScratch VertexGroupingScratch => owner.proxyVertexGroupingScratch;
 
             internal ProxyPoseSnapshot(CombatBodyDestruction owner) => this.owner = owner;
             internal void BeginPass() => pass++;
@@ -837,6 +842,76 @@ namespace BarPromenade
             }
         }
 
+        // One cold-build workspace for every prepared body/partition owned by
+        // this component. Partitions retain only their representative int map.
+        internal sealed class ProxyVertexGroupingScratch
+        {
+            private readonly List<Vector3> positions = new List<Vector3>();
+            private readonly Dictionary<VertexBinding, int> representatives = new Dictionary<VertexBinding, int>();
+
+            internal bool TryBuild(Mesh mesh, ref int[] mapping)
+            {
+                if (mesh.blendShapeCount != 0) return false;
+                // Unity owns these read-only mesh views; never dispose them.
+                NativeArray<byte> counts = mesh.GetBonesPerVertex();
+                NativeArray<BoneWeight1> weights = mesh.GetAllBoneWeights();
+                if (counts.Length != mesh.vertexCount) return false;
+                int total = 0;
+                for (int i = 0; i < counts.Length; i++)
+                {
+                    if (counts[i] == 0 || counts[i] > 4) return false;
+                    total += counts[i];
+                }
+                if (total != weights.Length) return false;
+                mesh.GetVertices(positions);
+                if (positions.Count != counts.Length) return false;
+                if (mapping == null || mapping.Length < counts.Length) mapping = new int[counts.Length];
+                representatives.Clear();
+                int offset = 0;
+                for (int i = 0; i < counts.Length; i++)
+                {
+                    var key = new VertexBinding(positions[i], weights, offset, counts[i]);
+                    if (!representatives.TryGetValue(key, out int representative))
+                    { representative = i; representatives.Add(key, i); }
+                    mapping[i] = representative;
+                    offset += counts[i];
+                }
+                return true;
+            }
+
+            private readonly struct VertexBinding : IEquatable<VertexBinding>
+            {
+                private readonly int x, y, z, count;
+                private readonly int bone0, bone1, bone2, bone3, weight0, weight1, weight2, weight3;
+
+                internal VertexBinding(Vector3 position, NativeArray<BoneWeight1> weights, int offset, int count)
+                {
+                    x = BitConverter.SingleToInt32Bits(position.x); y = BitConverter.SingleToInt32Bits(position.y);
+                    z = BitConverter.SingleToInt32Bits(position.z); this.count = count;
+                    BoneWeight1 a = weights[offset], b = count > 1 ? weights[offset + 1] : default;
+                    BoneWeight1 c = count > 2 ? weights[offset + 2] : default, d = count > 3 ? weights[offset + 3] : default;
+                    bone0 = a.boneIndex; bone1 = b.boneIndex; bone2 = c.boneIndex; bone3 = d.boneIndex;
+                    weight0 = BitConverter.SingleToInt32Bits(a.weight); weight1 = BitConverter.SingleToInt32Bits(b.weight);
+                    weight2 = BitConverter.SingleToInt32Bits(c.weight); weight3 = BitConverter.SingleToInt32Bits(d.weight);
+                }
+
+                public bool Equals(VertexBinding other) => x == other.x && y == other.y && z == other.z && count == other.count &&
+                    bone0 == other.bone0 && bone1 == other.bone1 && bone2 == other.bone2 && bone3 == other.bone3 &&
+                    weight0 == other.weight0 && weight1 == other.weight1 && weight2 == other.weight2 && weight3 == other.weight3;
+                public override bool Equals(object other) => other is VertexBinding binding && Equals(binding);
+                public override int GetHashCode()
+                {
+                    unchecked
+                    {
+                        int hash = x; hash = hash * 31 + y; hash = hash * 31 + z; hash = hash * 31 + count;
+                        hash = hash * 31 + bone0; hash = hash * 31 + bone1; hash = hash * 31 + bone2; hash = hash * 31 + bone3;
+                        hash = hash * 31 + weight0; hash = hash * 31 + weight1; hash = hash * 31 + weight2;
+                        return hash * 31 + weight3;
+                    }
+                }
+            }
+        }
+
         internal sealed class ProxyGeometry : IDisposable
         {
             internal readonly List<Vector3> Vertices = new List<Vector3>();
@@ -868,33 +943,59 @@ namespace BarPromenade
             private uint geometryVersion;
             private bool captured;
             private ProxyBoundsWork boundsWork;
+            private Mesh representativeMesh;
+            private uint representativeGeometryVersion;
+            private int representativeTopologyVersion, representativeBuilds;
+            private int[] vertexRepresentatives;
             internal ProxyCacheInvalidation LastInvalidation { get; private set; }
             internal Vector3 MinimumSize => minimumSize;
+            internal int LastUniqueVertexTransforms => boundsWork?.LastUniqueVertexTransforms ?? 0;
+            internal int LastCornerCount => boundsWork?.LastCornerCount ?? 0;
 
-            internal bool TryNativeBounds(List<Vector3> vertices, IReadOnlyList<int> indices, int indicesVersion, Matrix4x4 matrix, Vector3 minimum,
+            internal bool TryNativeBounds(Piece piece, List<Vector3> vertices, IReadOnlyList<int> indices, int indicesVersion, Matrix4x4 matrix, Vector3 minimum,
                 out Vector3 centre, out Vector3 size, out bool burst)
             {
                 centre = size = default; burst = false;
                 if (!PlayerScarfBodyContacts.NativeClothSupported || indices.Count == 0) return false;
+                Mesh current = piece.Skin.sharedMesh;
+                if (current.vertexCount != vertices.Count) return false;
+                int topology = piece.Torso?.TopologyBuilds ?? 0;
+                if (representativeMesh != current || representativeGeometryVersion != piece.GeometryVersion ||
+                    representativeTopologyVersion != topology)
+                {
+                    if (!piece.ProxyPose.VertexGroupingScratch.TryBuild(current, ref vertexRepresentatives)) vertexRepresentatives = null;
+                    representativeMesh = current; representativeGeometryVersion = piece.GeometryVersion;
+                    representativeTopologyVersion = topology; representativeBuilds++;
+                }
                 boundsWork ??= new ProxyBoundsWork();
-                return boundsWork.Run(vertices, indices, indicesVersion, matrix, minimum, out centre, out size, out burst);
+                return boundsWork.Run(vertices, indices, indicesVersion, vertexRepresentatives, representativeBuilds,
+                    matrix, minimum, out centre, out size, out burst);
             }
 
-            public void Dispose() { boundsWork?.Dispose(); boundsWork = null; }
+            public void Dispose()
+            { boundsWork?.Dispose(); boundsWork = null; vertexRepresentatives = null; representativeMesh = null; }
 
             private sealed class ProxyBoundsWork : IDisposable
             {
                 private NativeArray<Vector3> vertices, result;
-                private NativeArray<int> indices;
+                private NativeArray<int> indices, uniqueIndices;
                 private Vector3[] upload = Array.Empty<Vector3>();
                 private int[] indexUpload = Array.Empty<int>();
+                private bool[] referencedVertices = Array.Empty<bool>();
                 private IReadOnlyList<int> uploadedIndices;
                 private int uploadedIndicesVersion;
+                private int uploadedRepresentativeBuilds;
+                private int uniqueIndexCount;
+                internal int LastUniqueVertexTransforms { get; private set; }
+                internal int LastCornerCount { get; private set; }
 
-                internal bool Run(List<Vector3> cloud, IReadOnlyList<int> corners, int cornersVersion, Matrix4x4 matrix, Vector3 minimum,
+                internal bool Run(List<Vector3> cloud, IReadOnlyList<int> corners, int cornersVersion,
+                    int[] vertexRepresentatives, int representativeBuilds, Matrix4x4 matrix, Vector3 minimum,
                     out Vector3 centre, out Vector3 size, out bool burst)
                 {
                     centre = size = default; burst = false;
+                    LastUniqueVertexTransforms = LastCornerCount = 0;
+                    if (cloud.Count == 0 || corners.Count == 0) return false;
                     try
                     {
                         if (!vertices.IsCreated || vertices.Length < cloud.Count)
@@ -902,6 +1003,7 @@ namespace BarPromenade
                             if (vertices.IsCreated) vertices.Dispose();
                             vertices = new NativeArray<Vector3>(cloud.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                             upload = new Vector3[cloud.Count];
+                            referencedVertices = new bool[cloud.Count];
                         }
                         if (!indices.IsCreated || indices.Length < corners.Count)
                         {
@@ -910,24 +1012,59 @@ namespace BarPromenade
                             indexUpload = new int[corners.Count];
                             uploadedIndices = null;
                         }
+                        int uniqueCapacity = Math.Min(cloud.Count, corners.Count);
+                        if (!uniqueIndices.IsCreated || uniqueIndices.Length < uniqueCapacity)
+                        {
+                            if (uniqueIndices.IsCreated) uniqueIndices.Dispose();
+                            uniqueIndices = new NativeArray<int>(uniqueCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                            uploadedIndices = null;
+                        }
                         if (!result.IsCreated) result = new NativeArray<Vector3>(2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                         cloud.CopyTo(upload);
                         NativeArray<Vector3>.Copy(upload, 0, vertices, 0, cloud.Count);
-                        if (!ReferenceEquals(uploadedIndices, corners) || uploadedIndicesVersion != cornersVersion)
+                        if (!ReferenceEquals(uploadedIndices, corners) || uploadedIndicesVersion != cornersVersion ||
+                            uploadedRepresentativeBuilds != representativeBuilds)
                         {
                             if (corners is List<int> ordered) ordered.CopyTo(indexUpload);
                             else if (corners is int[] array) Array.Copy(array, indexUpload, corners.Count);
                             else for (int i = 0; i < corners.Count; i++) indexUpload[i] = corners[i];
+                            // Equal rest-position and full skin-binding bits produce
+                            // identical BakeMesh positions under every current pose.
+                            // Preserve every corner in order, replacing only its
+                            // position-equivalent vertex reference; no welded mesh.
+                            if (vertexRepresentatives != null)
+                                for (int i = 0; i < corners.Count; i++)
+                                {
+                                    int index = indexUpload[i];
+                                    if ((uint)index >= (uint)cloud.Count) return false;
+                                    indexUpload[i] = vertexRepresentatives[index];
+                                }
                             NativeArray<int>.Copy(indexUpload, 0, indices, 0, corners.Count);
+                            // The native corner array retains the original fold order.
+                            // Reuse its managed upload scratch to cache each referenced
+                            // vertex once, without another full-size position buffer.
+                            Array.Clear(referencedVertices, 0, cloud.Count);
+                            uniqueIndexCount = 0;
+                            for (int i = 0; i < corners.Count; i++)
+                            {
+                                int index = indexUpload[i];
+                                if ((uint)index >= (uint)cloud.Count) return false;
+                                if (referencedVertices[index]) continue;
+                                referencedVertices[index] = true;
+                                indexUpload[uniqueIndexCount++] = index;
+                            }
+                            NativeArray<int>.Copy(indexUpload, 0, uniqueIndices, 0, uniqueIndexCount);
                             uploadedIndices = corners; uploadedIndicesVersion = cornersVersion;
+                            uploadedRepresentativeBuilds = representativeBuilds;
                         }
                         var job = new CombatBodyProxyBoundsJob
                         {
-                            Vertices = vertices, Indices = indices, Result = result, Matrix = matrix,
-                            MinimumSize = minimum, VertexCount = cloud.Count, IndexCount = corners.Count
+                            Vertices = vertices, Indices = indices, UniqueIndices = uniqueIndices, Result = result, Matrix = matrix,
+                            MinimumSize = minimum, VertexCount = cloud.Count, IndexCount = corners.Count, UniqueIndexCount = uniqueIndexCount
                         };
                         CombatBodyProxyBoundsJob.RunSynchronous(ref job);
                         if (job.Completed == 0) return false;
+                        LastUniqueVertexTransforms = job.TransformedVertexCount; LastCornerCount = corners.Count;
                         centre = result[0]; size = result[1]; burst = job.ExecutedInBurst != 0;
                         return true;
                     }
@@ -938,9 +1075,12 @@ namespace BarPromenade
                 {
                     if (vertices.IsCreated) vertices.Dispose();
                     if (indices.IsCreated) indices.Dispose();
+                    if (uniqueIndices.IsCreated) uniqueIndices.Dispose();
                     if (result.IsCreated) result.Dispose();
-                    vertices = default; indices = default; result = default;
+                    vertices = default; indices = uniqueIndices = default; result = default;
                     upload = Array.Empty<Vector3>(); indexUpload = Array.Empty<int>(); uploadedIndices = null;
+                    referencedVertices = Array.Empty<bool>();
+                    uniqueIndexCount = LastUniqueVertexTransforms = LastCornerCount = 0;
                 }
             }
 

@@ -54,6 +54,8 @@ namespace BarPromenade
 
         private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null)
         {
+            // A real hit wins immediately over a Room gesture, laugh or held head pose.
+            ResetRoomSpecialPresentation();
             LastJournalImpactSequence = JournalImpactEvent("impact_applied", impact,
                 GameLog.Field("health_before", impact.HealthBefore), GameLog.Field("health_after", impact.HealthAfter),
                 GameLog.Field("damage", impact.Damage), GameLog.Field("result", (int)impact.Result),

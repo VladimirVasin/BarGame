@@ -118,9 +118,12 @@ namespace BarPromenade
             foreach (CombatActor actor in combatOpponents)
             {
                 if (!actor.gameObject.activeInHierarchy || actor.Hurtboxes == null) continue;
-                if (!actor.Hurtboxes.MayIntersectProjectile(ray.origin, ray.GetPoint(distance), 0f)) continue;
-                actor.Hurtboxes.Capture();
-                actor.Hurtboxes.CaptureProjectileAimBounds();
+                if (!actor.Hurtboxes.MayIntersectProjectile(ray.origin, ray.GetPoint(distance), 0f, out bool poseCurrent)) continue;
+                if (!poseCurrent)
+                {
+                    actor.Hurtboxes.Capture();
+                    actor.Hurtboxes.CaptureProjectileAimBounds();
+                }
                 if (actor.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
                     distance *= hit.Fraction;
             }

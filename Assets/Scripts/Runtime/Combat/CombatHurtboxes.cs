@@ -105,6 +105,7 @@ namespace BarPromenade
 
         private void CapturePose(bool refreshBodySurfaces)
         {
+            projectileBoundsCaptured = false;
             PoseCaptureCount++;
             for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
             CaptureHeadSurfaces();

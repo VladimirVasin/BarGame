@@ -153,6 +153,7 @@ namespace BarPromenade
             }
             if (WarehousePlan != null) Hero.BindWarehouseTorsoLook(this);
             CreateCombatOpponents();
+            PrepareRoomAttackSequence();
             InitializeDamageEffects();
             SparkEffects = gameObject.AddComponent<CombatSparkEffects>();
             SparkEffects.Initialize(transform);
@@ -179,12 +180,13 @@ namespace BarPromenade
 
         public void ResetRound()
         {
-            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!IsInitialized || !RoomAttackCinematicActive && !GameInput.CanRead(GameInputContext.Gameplay)) return;
             PlaceRound(focusOpponent: Mode == CombatTestMode.Standard || !Hero.IsFirearm);
         }
 
         private void PlaceRound(bool focusOpponent)
         {
+            CancelRoomAttackSequence();
             ReleaseFreePistolAim();
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
@@ -275,9 +277,10 @@ namespace BarPromenade
             BeginJournalFrame();
             if (!IsInitialized) return;
             UpdateHudInput();
-            if (AutomaticSimulation && UpdateCombatInput())
+            if (AutomaticSimulation && (RoomAttackCinematicActive || UpdateCombatInput()))
             {
-                TickFrame(Time.deltaTime);
+                if (RoomAttackCinematicActive) Tick(Time.deltaTime);
+                else TickFrame(Time.deltaTime);
                 if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
             }
             if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
@@ -309,10 +312,14 @@ namespace BarPromenade
 
         private void TickCore(float seconds)
         {
-            if (!IsInitialized || !isActiveAndEnabled || !GameInput.CanRead(GameInputContext.Gameplay)) return;
-            AmmoSpawns?.SetInteractionEnabled(!Hero.State.IsDefeated && pistolApplicationFocused);
+            if (!IsInitialized || !isActiveAndEnabled) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
+            if (RoomAttackPhase != CombatRoomSequencePhase.Idle && !pistolApplicationFocused) return;
+            if (RoomAttackCinematicActive) { AdvanceRoomAttackSequence(seconds); return; }
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return;
+            AdvanceRoomAttackSequence(seconds);
+            AmmoSpawns?.SetInteractionEnabled(!Hero.State.IsDefeated && pistolApplicationFocused);
             if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
@@ -347,6 +354,7 @@ namespace BarPromenade
                 Hero.State.ObserveLateralCue(LateralBearing(Hero, Opponent));
                 Opponent.State.ObserveLateralCue(LateralBearing(Opponent, Hero));
                 if (Sparring) AdvanceOpponent(SimulationStep);
+                if (RoomAttackCinematicActive) { pendingSeconds = 0d; return; }
                 JournalOpponentDecision();
                 AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();

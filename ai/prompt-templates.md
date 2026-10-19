@@ -2,6 +2,15 @@
 
 Use the smallest workflow that fits the request. In every workflow, inspect repository reality first and preserve unrelated work.
 
+## Project fit
+
+Assess every user-proposed plan during planning and before implementation:
+verified repository facts, both world bibles, accepted architecture,
+gameplay/presentation and performance. Explicitly state whether it fits, needs
+adjustment or conflicts, explain why, and suggest the smallest compatible
+adjustment where needed. Keep proposals separate from accepted decisions;
+the assessment is not an extra approval gate.
+
 ## FAST (default)
 
 Use for ordinary implementation, including end-to-end features and shared
@@ -71,7 +80,8 @@ Use only when the user explicitly asks for a full regression or release gate.
 Use when the deliverable is a plan only.
 
 1. Inspect project reality and relevant references.
-2. Identify affected systems, dependencies, risks, and open decisions.
+2. Assess project fit under `AGENTS.md`; identify affected systems,
+   dependencies, risks, and open decisions.
 3. Define ordered implementation slices and a minimal acceptance budget: one
    primary check plus at most one focused behavior check.
 4. Clearly separate current state, assumptions, and proposed state.

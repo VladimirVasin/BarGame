@@ -3,8 +3,11 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-19 - Room proportions
+## 2026-10-19 - Room and combat CPU
 
+- Every user-proposed plan now requires an explicit project-fit assessment;
+  proposals remain separate from accepted decisions, without an extra approval
+  gate. `check-docs.py` and diff review verify the rule and PLAN workflow.
 - Room has a larger native head and upper neck; the hollow corridor and
   canonical rest skeleton remain. Shared source textures are rebaked.
 - Its arms lengthen through the actual elbow and wrist chains; endpoint skin
@@ -26,6 +29,23 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass. In-game
   silhouette, hero comparison, long-hand contact, damaged sleeve and corridor
   reviewed.
+- Room's continuous camera enters the real chest corridor and returns;
+  prepared hero/chair/lamp fit its weighted bind frame,duplicate walls hidden.
+  Source thresholds exposed the slope-only foot fit:cached posed plaster
+  triangles/boot supports now drive shared leg IK,keeping pelvis/chair contact.
+  No hero relocation/fade/render texture/recurring bake,load or allocation.
+  Return precedes damage/left-hand head reaction;others/flights/input resume on
+  vulnerable laugh. Pause/teardown restore ownership;existing canon exception.
+  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup` passes boot
+  geometry/threshold contact and lifecycle;sequential frames/seated view reviewed.
+  `build-combat-room-attack-3d-model.py --validate-only` passes;
+  `CombatRoomAttackAssetSetup.BuildOrThrow` imports and validates the bank.
+- Latest duel scopes identify body proxies and aim as CPU work;
+  Editor render-end→nextUpdate remains unattributed. Bounds share transforms
+  for exact rest-point/full ordered skin-binding bits only on zero-blendshape
+  meshes; ordered bitwise folding and versioned scratch stay. ON-ray aim reuses
+  validated settled pose; CapturePose invalidates it. FPS remains unmeasured.
+  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` passes.
 
 ## 2026-10-18 - Authored enemies and old arena
 

@@ -14,6 +14,8 @@ namespace BarPromenade
         /// <summary>The awakened load pursues without work pauses, then rams with its fused torso.</summary>
         private void AdvanceZombieOpponent(float seconds)
         {
+            if (IsRoomAttackerRecovering(AiOpponent))
+            { ResetOpponentMovement(); OpponentIntent = CombatOpponentIntent.Recover; return; }
             if (AdvanceMimicPerception(seconds)) return;
             opponentContext.opponentDelay = Mathf.Max(0f, opponentContext.opponentDelay - seconds);
             AiOpponent.SetBlock(false);
@@ -71,7 +73,7 @@ namespace BarPromenade
                 // a stale route sample never grants an attack through a stair or wall.
                 bool reachable = Mathf.Abs(Hero.transform.position.y - AiOpponent.transform.position.y) <= WarehouseMeleeHeight &&
                     WarehouseTargetVisible(AiOpponent.transform.position, Hero.transform.position);
-                if (reachable && AiOpponent.TryZombieAttack())
+                if (reachable && (AiOpponent.IsRoom ? TryBeginRoomAttack(AiOpponent) : AiOpponent.TryZombieAttack()))
                 {
                     opponentContext.committedDirection = AiOpponent.transform.forward;
                     opponentContext.zombieLungeBlocked = false;

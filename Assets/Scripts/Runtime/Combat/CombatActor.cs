@@ -53,7 +53,7 @@ namespace BarPromenade
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
+        public float MovementScale => roomAttackPoseActive || roomHeadPainActive || !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
@@ -68,7 +68,7 @@ namespace BarPromenade
 
         // Before sole support is refreshed, an ordinary turn can raise the
         // measured load. Only a live impact owns balance-related turn blocking.
-        internal float TurnScale => IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+        internal float TurnScale => roomAttackPoseActive || roomHeadPainActive || IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .2f,
@@ -339,7 +339,7 @@ namespace BarPromenade
             CancelInterruptedShoveContact();
             if (AdvanceKnockdown(seconds)) { CancelPendingKick("knocked_down"); return; }
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
-            if (!IsAvailable)
+            if (!IsAvailable && !roomHeadPainActive)
             {
                 ClearWarehouseTorsoLook();
                 State.CancelAction(); reaction = null; sweepValid = false;
@@ -584,6 +584,7 @@ namespace BarPromenade
         internal void SetPresentationFrozen(bool frozen)
         {
             presentationFrozen = frozen;
+            SetRoomLaughFrozen(frozen);
             SetCraneAudioFrozen(frozen);
             zombieLoad?.SetSimulationFrozen(frozen);
             zombieAudio?.SetFrozen(frozen);
@@ -605,6 +606,7 @@ namespace BarPromenade
             // Re-solving against a newly injured target during hit-stop would move
             // an NPC's weapon off that contact at the very same animation instant.
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (PresentRoomAttackPose() || PresentRoomHeadPain()) return;
             if (!IsRagdollActive) RestoreCorpseStepPose();
             if (PresentWeaponCarry()) return;
             if (!IsRagdollActive) RestorePistolAimPose();
@@ -759,6 +761,7 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            ResetRoomAttackDamageReceipt();
             ClearWarehouseTorsoLook();
             ResetCorpseStepPose();
             CombatFocused = true;
@@ -813,6 +816,7 @@ namespace BarPromenade
 
         private void ReleasePresentation(bool preservePresentedPose = false)
         {
+            ResetRoomSpecialPresentation();
             ClearWarehouseTorsoLook();
             if (IsRagdollActive || preservePresentedPose) ForgetCorpseStepPose();
             else ResetCorpseStepPose();
@@ -845,6 +849,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetRoomAttackDamageReceipt();
             SuspendCrane();
             ClearWarehouseTorsoLook();
             CombatCorpseTraversal.RefreshActor(this);

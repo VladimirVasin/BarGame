@@ -458,10 +458,17 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_BodyProxiesShareTransformsAndFollowSameFrameChanges()
         {
+            CombatTestRoot.UseLegacyArenaForTests = false;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-            yield return EnterRange(false, CombatWeaponId.Shotgun);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Shotgun), CombatTestMode.Laboratory,
+                laboratoryEnemy: CombatEnemyKind.Room)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            root.SendMessage("OnApplicationFocus", true);
+            Assert.That(root.Opponent.IsRoom, Is.True);
             AssertBodyProxyCache();
             root.ResetRound();
             LogAssert.NoUnexpectedReceived();
@@ -485,6 +492,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (BoxCollider proxy in retainedHeadProxies)
                 Assert.That(proxy.enabled, Is.False, "Prepared head collision sectors must stay disabled while the head is intact.");
             DefeatBodyTargetWithProjectile(target, root.Hero, 19);
+            if (!target.State.IsDefeated) DefeatBodyTargetWithProjectile(target, root.Hero, 119);
             Assert.That(target.State.IsDefeated && target.IsRagdollActive, Is.True);
             ApplyKnownBodyContact(target, root.Hero, BodyDamageRegion.RightShin, 0, 2f, 20);
             // Drain the real terminal contact hold before probing live cache work.
@@ -521,14 +529,43 @@ namespace BarPromenade.Tests.PlayMode
             target.Hurtboxes.CaptureProjectileAimBounds();
             Vector3 offRay = target.transform.position + Vector3.up * 1000f;
             int captures = target.Hurtboxes.PoseCaptureCount;
-            typeof(CombatTestRoot).GetMethod("ResolveFreePistolAimSurface", System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.NonPublic).Invoke(root, new object[] { new Ray(offRay, Vector3.right) });
+            var resolveAim = (Func<Ray, bool, Vector3>)typeof(CombatTestRoot).GetMethod("ResolveFreePistolAimSurface",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .CreateDelegate(typeof(Func<Ray, bool, Vector3>), root);
+            resolveAim(new Ray(offRay, Vector3.right), true);
             Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures),
                 "An off-ray settled corpse must be rejected before detailed anatomy capture.");
             Vector3 headCentre = FindAnatomicalBone(target, "head").position;
             Assert.That(target.Hurtboxes.MayIntersectProjectile(headCentre - Vector3.right * 2f,
                 headCentre + Vector3.right * 2f, 0f), Is.True,
                 "The broad phase must retain the corpse's current anatomical footprint.");
+            var onRay = new Ray(headCentre - Vector3.right * 2f, Vector3.right);
+            Vector3 expectedAim = resolveAim(onRay, true);
+            captures = target.Hurtboxes.PoseCaptureCount;
+            var aimTimer = System.Diagnostics.Stopwatch.StartNew();
+            for (int query = 0; query < 32; query++)
+                Assert.That(resolveAim(onRay, true), Is.EqualTo(expectedAim));
+            aimTimer.Stop();
+            Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures),
+                "Repeated on-ray queries must reuse the exactly validated corpse pose.");
+            var repeatedCaptureTimer = System.Diagnostics.Stopwatch.StartNew();
+            for (int query = 0; query < 32; query++)
+            {
+                // Reproduce the former caller's full recapture under the same
+                // warmed pose and ray; this is a CPU scope comparison, not FPS.
+                target.Hurtboxes.Capture();
+                target.Hurtboxes.CaptureProjectileAimBounds();
+                Assert.That(resolveAim(onRay, true), Is.EqualTo(expectedAim));
+            }
+            repeatedCaptureTimer.Stop();
+            Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures + 32));
+            TestContext.Out.WriteLine($"Test unchanged on-ray Room aim: cached={aimTimer.Elapsed.TotalMilliseconds / 32d:F3} ms/query, former recapture={repeatedCaptureTimer.Elapsed.TotalMilliseconds / 32d:F3} ms/query; identical aim, cached recaptures=0.");
+            // A contact capture may replace the shared snapshot between queries,
+            // even without moving any transforms. Its aim cache must be reprised.
+            target.Hurtboxes.Capture();
+            captures = target.Hurtboxes.PoseCaptureCount;
+            Assert.That(resolveAim(onRay, true), Is.EqualTo(expectedAim));
+            Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures + 1));
             var hands = target.GetComponentInChildren<NpcHandPose>();
             SkinnedMeshRenderer hand = null;
             int gripShape = -1;
@@ -553,6 +590,10 @@ namespace BarPromenade.Tests.PlayMode
             {
                 hand.SetBlendShapeWeight(gripShape, gripWeight == 100f ? 0f : 100f);
                 root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                captures = target.Hurtboxes.PoseCaptureCount;
+                resolveAim(onRay, true);
+                Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures + 1),
+                    "A changed hand corrective must refresh aim anatomy in the same rendered frame.");
                 Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
                     "A changed hand corrective must refresh its proxies immediately in the same rendered frame.");
                 AssertBodyProxyNativeBounds(target, "Changed hand corrective");
@@ -629,6 +670,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(retainedCount, Is.EqualTo(retainedProxies.Count), "Reset may not replace or duplicate retained proxies.");
             Assert.That(retainedHeadCount, Is.EqualTo(retainedHeadProxies.Count), "Reset may not replace or duplicate retained head sectors.");
             DefeatBodyTargetWithProjectile(target, root.Hero, 21);
+            if (!target.State.IsDefeated) DefeatBodyTargetWithProjectile(target, root.Hero, 121);
             Assert.That(target.State.IsDefeated && target.IsRagdollActive, Is.True);
             ApplyKnownBodyContact(target, root.Hero, BodyDamageRegion.RightShin, 0, 2f, 22);
             // Drain the real terminal contact hold before probing live cache work.
@@ -666,10 +708,16 @@ namespace BarPromenade.Tests.PlayMode
             selected = null; originalIndices = null; damagedIndexBuilds = 0;
             var bodies = (System.Collections.IDictionary)CarrySupportField(root.BodyEffects, "bodies");
             var pieces = (List<CombatBodyDestruction.Piece>)CarrySupportField(bodies[target], "Pieces");
+            CombatBodyDestruction.Piece largestTorso = null;
+            foreach (CombatBodyDestruction.Piece candidate in pieces)
+                if (candidate.Region == BodyDamageRegion.Chest && !candidate.Flesh && !candidate.Bone &&
+                    candidate.Torso != null && candidate.Proxy != null && candidate.Proxy.enabled &&
+                    (largestTorso == null || candidate.Torso.CellCount > largestTorso.Torso.CellCount)) largestTorso = candidate;
             foreach (CombatBodyDestruction.Piece piece in pieces)
             {
-                if (piece.Region != BodyDamageRegion.Chest || piece.Flesh || piece.Bone || piece.Torso == null ||
-                    piece.Proxy == null || !piece.Proxy.enabled ||
+                // Use a torso surface with room for a partial wound. The Room
+                // neck shares Chest but its small collar can be consumed whole.
+                if (piece != largestTorso ||
                     !root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, piece.Proxy, out var before)) continue;
                 Assert.That(before.ActiveIndices.Length, Is.GreaterThanOrEqualTo(3));
                 Vector3 centre = (before.Vertices[before.ActiveIndices[0]] + before.Vertices[before.ActiveIndices[1]] +
@@ -702,18 +750,29 @@ namespace BarPromenade.Tests.PlayMode
             if (!PlayerScarfBodyContacts.NativeClothSupported) return;
             int builds = root.BodyEffects.ProxyGeometryBuilds;
             BoxCollider[] proxies = target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true);
+            var bodies = (System.Collections.IDictionary)CarrySupportField(root.BodyEffects, "bodies");
+            var pieces = (List<CombatBodyDestruction.Piece>)CarrySupportField(bodies[target], "Pieces");
             foreach (BodyDamageRegion region in new[] { BodyDamageRegion.Chest, BodyDamageRegion.LeftHand })
             {
+                CombatBodyDestruction.Piece largest = null;
+                foreach (CombatBodyDestruction.Piece piece in pieces)
+                    if (piece.Region == region && piece.Proxy != null && piece.Proxy.enabled &&
+                        (largest == null || piece.Skin.sharedMesh.vertexCount > largest.Skin.sharedMesh.vertexCount)) largest = piece;
+                Assert.That(largest, Is.Not.Null, pose + ": requires active " + region + " geometry.");
                 bool compared = false;
                 foreach (BoxCollider proxy in proxies)
                 {
-                    if (!proxy.enabled || !proxy.name.StartsWith("Remaining body " + region + " ", StringComparison.Ordinal) ||
+                    if (proxy != largest.Proxy ||
                         !root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, proxy,
                             out CombatBodyDestruction.ProxyBoundsDiagnostic sample)) continue;
                     Assert.That(sample.ExecutedInBurst, Is.True, pose + ": the independent bounds comparison must run the actual Burst fold.");
                     Assert.That(sample.ActiveIndices, Is.Not.Empty);
                     Assert.That(sample.CachedActiveIndices, Is.EqualTo(sample.ActiveIndices),
                         pose + ": cached topology must match independently read current mesh triangles.");
+                    Assert.That(sample.UniqueVertexTransforms, Is.LessThanOrEqualTo(sample.CornerCount),
+                        pose + ": shared triangle corners must reuse their matrix transform.");
+                    Assert.That(sample.UniqueVertexTransforms, Is.LessThanOrEqualTo(new HashSet<int>(sample.ActiveIndices).Count));
+                    TestContext.Out.WriteLine($"Test {pose} {region} proxy: transforms={sample.UniqueVertexTransforms}, former corner transforms={sample.CornerCount + 1}.");
                     Bounds reference = new Bounds(sample.Matrix.MultiplyPoint3x4(sample.Vertices[sample.ActiveIndices[0]]), Vector3.zero);
                     // Preserve the original ordered fold, including its first
                     // point and every duplicate triangle vertex index.

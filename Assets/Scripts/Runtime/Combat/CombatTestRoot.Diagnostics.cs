@@ -110,6 +110,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            FinishRoomAttackPresentationFrame();
             if (IsInitialized && GameInput.CanRead(GameInputContext.Gameplay) && hitStopSubsteps == 0 && roundEndFreeze <= 0d)
                 AdvanceProjectilePoolPresentation(Time.deltaTime);
             if (GameLog.Profile == GameLogProfile.Off || !IsInitialized || Hero == null || Player.Motor == null) return;
@@ -143,6 +144,8 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            CancelRoomAttackSequence();
+            roomTableau?.Dispose();
             ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();
             ReleaseWarehouseAcoustics();

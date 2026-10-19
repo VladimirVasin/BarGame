@@ -2,6 +2,21 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-19, Room attack:**
+  CombatTest/outside scale:story§6/§7/§16.16/art§15a.
+  One camera:focus.9/hold2→gesture.6/entry1/seat2→out.6/return.8;
+  nonphysical18HP/real hero Lhead2s/laugh5s;pose/lens/focus smooth.
+  Original skinned plaster/four frames stay visible;camera enters actual hole.
+  Prepared `Player3DV2`/chair/lamp fit weighted torso bind frame;
+  rulers retain FBX scale;duplicate walls hidden;stage-up facing.
+  Seated clip→cached boot supports on cold-captured posed plaster/threshold
+  triangles→shared `LimbTwoBoneIk`;pelvis/chair kept.
+  No gameplay twin/hero relocation/fade/RT/live BakeMesh/loads/alloc.
+  Others/flights/input suspend until laugh;Room vulnerable/attack0/hits interrupt.
+  Pause freezes phases/poses/laugh;death/reset/end/exit restore;no text.
+  `FullscreenWithPause` keeps parent lock when PauseMenu closes.
+  Combat owns rig/camera/input/idempotent cleanup:bounded contextual exception.
+
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
 
 - **Accepted exception 2026-10-18, enemies:**
@@ -5185,32 +5200,17 @@
   independent entry/action/exit poses, neutral settle/terminal hold,
   atomic preparation/owned cleanup remain mandatory.
 - **Accepted — Grounded endpoint contract for contextual 3D animation:**
-  This is the mandatory project-wide authoring and runtime contract for every
-  future interaction in this class; the normative checklist lives in
-  `ai/contextual-animation-standard.md`, and deviations require an explicit
-  user-approved accepted exception here.
-  Interactive bed sleep, balcony smoking, cat feeding and ordinary location
-  doors share a visible
-  `Positioning` phase before `Entering -> Looping -> Exiting`. Each adapter
-  provides independent entry root/pelvis/facing, action pelvis and exit
-  root/pelvis/facing data. `PlayerMotor` advances the ordinary rig with its real
-  `CharacterController`, walkable constraint, gait, facing and footsteps;
-  manual input cannot redirect that approach. The authored Y level must already
-  be reachable from the current grounded root, so a vertical mismatch refuses
-  startup rather than teleporting. A constrained move with no measurable root
-  or rotation progress for `1.5 s` marks the approach stalled and restores the
-  captured state; scene transition, disable and destroy boundaries cancel it
-  through the same ownership cleanup.
-  Exact entry alignment activates the shared presentation handoff lock, resets
-  locomotion, face and additive status bones, and keeps the neutral rig visible
-  for one rendered frame. The controller then samples the registered Generic
-  enter/loop/exit clip before aligning its serialized pelvis anchor to the
-  authored world target. Animator transitions, Animation Events and root motion
-  own no gameplay transaction. The timeline guarantees that its terminal exit
-  pose is presented before becoming idle; the physical root is then placed at
-  the independent exit and the neutral ordinary rig stays locked until its
-  final `LateUpdate` restoration frame. Normal and abnormal exits end the clip,
-  reset its model-root spatial offset and restore owned presentation state.
+  Mandatory checklist: `ai/contextual-animation-standard.md`; deviations need
+  an explicit accepted user exception. Bed/smoking/cat/doors share visible
+  Positioning→Entering→Looping→Exiting and independent entry root/pelvis/facing,
+  action pelvis, exit root/pelvis/facing. `PlayerMotor`/`CharacterController`
+  retain walkability/gait/facing/footsteps; manual input cannot redirect.
+  Wrong Y rejects; no root/rotation progress for1.5s stalls; transition/disable/
+  destroy restore ownership. Exact entry locks handoff, resets gait/face/status,
+  holds neutral one rendered frame. Sample registered Generic clip before
+  pelvis alignment; Animator/events/root motion own no transactions. Present
+  terminal exit, place root at independent exit, keep neutral locked through
+  final LateUpdate. All exits clear clip/spatial offset and restore owned state.
 - **Accepted — Deformable mattress and volumetric pillow:** The mattress
   retains its faceted top grid. The pillow is a closed Blender-authored
   `0.62 x 0.14 x 1.05 m` cushion with an `8 x 14` domed top grid, rounded

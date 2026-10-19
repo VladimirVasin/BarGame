@@ -4181,10 +4181,10 @@ gameplay-модификатор морали.
 
 ### Область действия
 
-Мир/камера/свет/материалы/PS1/формат/звук/правила/управление/строки сохранены;
-исключения ниже. `640x360` читается после композита в тёмном/пьяном мире.
+Мир/камера/свет/материалы/PS1/формат/звук/правила/ввод/строки прежние
+вне исключений ниже. `640x360` читается в тёмном/пьяном композите.
 Загрузка: живописный viewport/пропорции-кадрирование/нижняя полоса.
-Сажа/старая бумага/тонкая линейка/воздух; изображение-текст-рамка не соперничают.
+Сажа/старая бумага/линейка/воздух;текст/рамка/изображение не спорят.
 
 ### Форма и материал
 
@@ -4234,10 +4234,10 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-19`:Room×1.2/head1.35/longarms+hands
+`2026-10-19`:Room×1.2/head1.35/longarms+hands;head-finger2s→chest→seated twin2s→Lhead2s→laugh5s;§6.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;
 Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion.
-All:UV-wounds/grip/walk/solid;0/§6.
+UV-wounds/grip/walk/solid.
 `2026-10-17`:Crane:ownindust. flesh/carapace/inset6cables;longfoldlimbs/uprighthead/mantisyaw±100°;body/skullbanks/flesh-shell/steelhooks;CLO-HAIR-Rhand0;allhits/repeatwounds/woodhole-chips;finite;§6.
 `2026-10-16`:Crane:Rcuff-hook/6m3DLOS;fall→5shungspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27doors/ammo alllvls↑.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI.4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.

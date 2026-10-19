@@ -4,9 +4,9 @@ These instructions apply to the entire repository.
 
 ## Before changing the project
 
-1. Read `AI.md` and the relevant files under `ai/`.
-2. Inspect the actual project before trusting planned documentation.
-3. Keep current facts separate from proposed architecture.
+Read `AI.md` and relevant `ai/` files; inspect reality before trusting plans.
+Separate facts from proposals. Assess every user plan for project fit under
+`ai/prompt-templates.md`.
 
 ## World canon
 

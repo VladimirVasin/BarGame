@@ -42,6 +42,7 @@ namespace BarPromenade.Tests.PlayMode
             Type.GetType("BarPromenade.Editor.CombatRoomAssetSetup, BarPromenade.Editor", true)
                 .GetMethod(existing ? "ValidateImportedOrThrow" : "BuildOrThrow", BindingFlags.Static | BindingFlags.Public).Invoke(null, null);
 #endif
+            new CombatRoomAttackAssetsSetup().Setup();
         }
     }
 
@@ -161,25 +162,22 @@ namespace BarPromenade.Tests.PlayMode
             yield return CaptureAuthoredBodyAppearance(room, bank);
             if (room.IsRoom) yield return CaptureRoomHeroScaleComparison(room, bank);
 
-            // Exercise the normal visible hand sweep without an attached prop.
-            // Other roles stay prepared away from this focused contact.
-            root.Hero.ResetActor(ground, Vector3.forward);
-            foreach (CombatActor actor in root.Opponents)
-                if (actor != room && !actor.IsCrane)
-                    actor.ResetActor(ground + Vector3.right * 12f, Vector3.back);
-            room.ResetActor(ground + Vector3.forward * (1.25f * room.PresentationScale + room.AdditionalArmReach), Vector3.back);
             int graphBuilds = room.NpcAnimationGraphBuilds;
-            float initialContactDistance = Vector3.Distance(room.transform.position, root.Hero.transform.position);
-            for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
-                root.Tick(CombatTestRoot.SimulationStep);
-            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
-            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(room));
-            Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            Assert.That(room.ActiveClipName, Does.StartWith("ZombieOrdinary"));
-            if (room.IsRoom)
+            // Room's camera-owned attack has its own focused lifecycle proof.
+            // The other authored bodies retain the ordinary physical palm sweep.
+            if (!room.IsRoom)
             {
-                Assert.That(initialContactDistance, Is.GreaterThan(1.75f), "The real long palm must reach from its added arm spacing.");
-                AssertRoomArmPose(room);
+                root.Hero.ResetActor(ground, Vector3.forward);
+                foreach (CombatActor actor in root.Opponents)
+                    if (actor != room && !actor.IsCrane)
+                        actor.ResetActor(ground + Vector3.right * 12f, Vector3.back);
+                room.ResetActor(ground + Vector3.forward * (1.25f * room.PresentationScale + room.AdditionalArmReach), Vector3.back);
+                for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+                Assert.That(root.Hero.LastImpact.Source, Is.SameAs(room));
+                Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
+                Assert.That(room.ActiveClipName, Does.StartWith("ZombieOrdinary"));
             }
 
             room.ResetActor(ground, Vector3.forward);
@@ -882,23 +880,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.State.Settings.IncomingDamageScale, Is.EqualTo(1f), "Enemy endurance does not change incoming hero damage.");
             yield return CaptureMixedPopulationView("Test mixed encounter - Initial population");
 
-            // Run the authored palm through the production AI, planted windup,
-            // authored lunge and anatomical sweep in the actual mixed roster.
+            // Room's replacement attack is verified by its focused camera/HP lifecycle test.
             Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
-            root.Hero.ResetActor(ground, Vector3.forward);
-            authored.ResetActor(ground + Vector3.forward * (1.25f * authored.PresentationScale + authored.AdditionalArmReach), Vector3.back);
-            int attackSequence = authored.State.AttackSequence;
-            Vector3 attackStart = authored.transform.position;
-            for (int step = 0; step < 360 && root.Hero.ReceivedImpactCount == 0; step++)
-                root.Tick(CombatTestRoot.SimulationStep);
-            Assert.That(authored.State.AttackSequence, Is.EqualTo(attackSequence + 1));
-            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1), "The authored palm must reach the hero without cargo collision.");
-            Assert.That(root.Hero.LastImpact.Source, Is.SameAs(authored));
-            Assert.That(root.Hero.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            Assert.That(Vector3.Distance(attackStart, authored.transform.position), Is.InRange(.01f, .71f * authored.PresentationScale));
-            Assert.That(authored.GetComponent<CombatZombieLoad>(), Is.Null);
-            root.CameraFollow.Snap();
-            CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room enemy - Hand contact");
             root.ResetRound();
             authored = root.Opponents[0];
             authored.ResetActor(ground, Vector3.forward);

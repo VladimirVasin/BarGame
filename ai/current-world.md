@@ -1,7 +1,7 @@
 # Current world and gameplay catalogue
 
-Baseline: [overview](project-overview.md); owners: [systems](systems-map.md);
-decisions: [architecture](architecture-notes.md).
+[Overview](project-overview.md), [systems](systems-map.md),
+[decisions](architecture-notes.md).
 
 Loading (`2026-09-06`, art§15a): static painting/directed City↔MountainRoad↔Village
 edge/bottom bar; direct map uses last leg. Village warm/inhabited;
@@ -143,13 +143,14 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   stop/noreplay/exitfade.
   StdDocker;Endless1–5/def3:authored,Docker,Crane(last≤2);
   random start-reset-refill/seed/11warm/≤2corpses/roleIDs.
-  Lab:Arena/6warm/1target/Zombie;spawn-reset/prepkept.
-  Room×1.2/bighead/longarms+hands/corridor;Imprint:cast;LongExposure:emulsion;UV
+  Lab:Arena/6warm/1target/Zombie;reset/prepkept.
+  Room×1.2/bighead/longarms+hands/corridor;Imprint:cast;LongExposure:emulsion.
+  Room:smooth focus2s→chest/seat2s→default/18HP/Lhead2s→laugh5s;
+  chest twin-chair/legIK/rootkept;others-input-flights0→laugh/pause-reset-end.
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
-  Crane:flesh/carapace/6cables/longfoldlimbs/uprighthead/yaw±100°/hang↓.25;
-  rig/UV0/2K+1K/WarehouseSurface/body-skull;
-  3floorXYZ1axis/6tethers/pendulum-slack;6m3DLOS1hit-return/voidCOL/ragdoll;
-  ownfall→5s tetheredFrenzy/holdAI/pause/reset-disable-deathclear.
+  Crane:flesh/carapace/6cables;3floor/6m3DLOS1hit-return;
+  pendulum/voidCOL/ragdoll/ownfall→5sFrenzy/holdAI;
+  pause/reset-disable-deathclear;form:art§15a.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
   Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;

@@ -8,7 +8,7 @@ namespace BarPromenade
     /// Shared camera loan, transitions, obstacle checks and focus for dialogue
     /// and object inspection. Sessions call Tick after the visible rig samples.
     /// </summary>
-    public class ContextualCameraDirector
+    public partial class ContextualCameraDirector
     {
         public const float EntrySeconds = .3f;
         public const float ExitSeconds = .3f;
@@ -30,6 +30,8 @@ namespace BarPromenade
         private float npcHeadHeight, heroHeadHeight;
         private bool active, entering, returning, previousFixed;
         private float elapsed, previousFixedFov, blendStartFov;
+        private float blendStartNearClipPlane, blendStartOpticalScale;
+        private Vector3 blendStartAuthoredFocus;
         private Pose previousFixedPose, blendStartPose;
         private FixedCameraFocus previousFocus;
         private int preferredVariant;
@@ -143,9 +145,9 @@ namespace BarPromenade
             CurrentSpeakerIsHero = false;
             if (!CinematicDepthOfField.TryBeginOwned(this, FocusDistance,
                 IsCloseUpShot ? 11f : 5.6f, 45f,
-                objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
-                objectShot ? InspectionExitSeconds : CinematicDepthOfField.BlendOutSeconds,
-                objectShot))
+                authoredShot ? authoredEntrySeconds : objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
+                authoredShot ? authoredExitSeconds : objectShot ? InspectionExitSeconds : CinematicDepthOfField.BlendOutSeconds,
+                objectShot || authoredShot && authoredSmoothTransitions))
             { ClearReferences(); return false; }
             activeOwner = this;
             previousFixed = follow.FixedPoseActive;
@@ -154,6 +156,7 @@ namespace BarPromenade
             previousFocus = follow.FixedFocus;
             blendStartPose = new Pose(camera.transform.position, camera.transform.rotation);
             blendStartFov = camera.fieldOfView;
+            OriginalNearClipPlane = blendStartNearClipPlane = camera.nearClipPlane;
             CurrentSpeakerIsHero = false;
             active = entering = true; returning = false; elapsed = 0f;
             ResolveCurrentShot(out Pose shot, out float fov);
@@ -190,9 +193,16 @@ namespace BarPromenade
                 elapsed += dt;
                 Pose destination = ResolveReturnPose();
                 float fov = previousFixed ? previousFixedFov : follow.FollowFieldOfView;
-                float seconds = objectShot ? InspectionExitSeconds : ExitSeconds;
+                float seconds = authoredShot ? authoredExitSeconds : objectShot ? InspectionExitSeconds : ExitSeconds;
                 float t = TransitionProgress(elapsed / seconds);
                 Apply(Blend(blendStartPose, destination, t), Mathf.Lerp(blendStartFov, fov, t));
+                if (authoredShot)
+                {
+                    camera.nearClipPlane = Mathf.Lerp(blendStartNearClipPlane, OriginalNearClipPlane, t);
+                    UpdateAuthoredFocalLength(Mathf.Lerp(blendStartOpticalScale, 1f, t));
+                    if (!previousFixed) authoredFocus = Vector3.Lerp(blendStartAuthoredFocus, follow.ReleaseFocusPoint, t);
+                    UpdateFocusDistance();
+                }
                 if (elapsed >= seconds) RestoreImmediate();
                 return;
             }
@@ -201,7 +211,7 @@ namespace BarPromenade
             if (entering)
             {
                 elapsed += dt;
-                float seconds = objectShot ? InspectionEntrySeconds : EntrySeconds;
+                float seconds = authoredShot ? authoredEntrySeconds : objectShot ? InspectionEntrySeconds : EntrySeconds;
                 float t = TransitionProgress(elapsed / seconds);
                 Pose candidate = Blend(blendStartPose, target, t);
                 // A blend may cross a warehouse corner even though both end
@@ -209,6 +219,11 @@ namespace BarPromenade
                 // visible hero remains at the already-reached conversation dock.
                 candidate = ConstrainBlend(candidate, target);
                 Apply(candidate, Mathf.Lerp(blendStartFov, targetFov, t));
+                if (authoredShot)
+                {
+                    camera.nearClipPlane = Mathf.Lerp(blendStartNearClipPlane, authoredNearClipPlane, t);
+                    UpdateAuthoredFocalLength(Mathf.Lerp(1f, authoredOpticalScale, t));
+                }
                 if (elapsed >= seconds) entering = false;
             }
             else
@@ -219,6 +234,11 @@ namespace BarPromenade
                 Pose adjusted = new Pose(target.position,
                     Quaternion.Slerp(CurrentShotPose.rotation, target.rotation, response));
                 Apply(adjusted, targetFov);
+                if (authoredShot)
+                {
+                    camera.nearClipPlane = authoredNearClipPlane;
+                    UpdateAuthoredFocalLength(authoredOpticalScale);
+                }
             }
             UpdateFocusDistance();
         }
@@ -229,6 +249,9 @@ namespace BarPromenade
             if (!ParticipantsExist()) { RestoreImmediate(); return; }
             blendStartPose = new Pose(camera.transform.position, camera.transform.rotation);
             blendStartFov = camera.fieldOfView;
+            blendStartNearClipPlane = camera.nearClipPlane;
+            blendStartOpticalScale = authoredOpticalScale;
+            blendStartAuthoredFocus = authoredFocus;
             entering = false; returning = true; elapsed = 0f;
             CinematicDepthOfField.EndOwned(this, false);
         }
@@ -238,6 +261,7 @@ namespace BarPromenade
         {
             if (!active) return;
             active = entering = returning = false;
+            if (camera != null) camera.nearClipPlane = OriginalNearClipPlane;
             if (follow != null)
             {
                 if (previousFixed)
@@ -255,6 +279,12 @@ namespace BarPromenade
 
         private bool ResolveCurrentShot(out Pose pose, out float fov)
         {
+            if (authoredShot)
+            {
+                pose = authoredPose; fov = authoredFov;
+                CurrentShotIsClear = true;
+                return true;
+            }
             if (TryResolveShot(CurrentSpeakerIsHero, preferredVariant, out pose, out fov))
             {
                 CurrentShotIsClear = true;
@@ -586,7 +616,7 @@ namespace BarPromenade
             // Demanding the final sightline on every intermediate frame used
             // to jump straight to the target even with a clear camera path.
             if (CameraPositionClear(candidate.position) &&
-                (objectShot || SightClear(FocusPoint, candidate.position))) return candidate;
+                (authoredShot || objectShot || SightClear(FocusPoint, candidate.position))) return candidate;
             Vector3 origin = FocusPoint;
             Vector3 direction = candidate.position - origin;
             float distance = direction.magnitude;
@@ -644,7 +674,9 @@ namespace BarPromenade
 
         private Pose ResolveReturnPose()
         {
-            if (!previousFixed) return follow.ResolveFollowPose(heroRoot.position);
+            if (!previousFixed) return authoredShot
+                ? follow.ResolveReleasePose()
+                : follow.ResolveFollowPose(heroRoot.position);
             Quaternion rotation = previousFixedPose.rotation;
             if (previousFocus.Enabled)
             {
@@ -675,16 +707,17 @@ namespace BarPromenade
             : Vector3.Distance(camera.transform.position, FocusPoint);
 
         private Transform ActiveHead => CurrentSpeakerIsHero ? heroHead : npcHead;
-        private Vector3 FocusPoint => objectShot
+        private Vector3 FocusPoint => authoredShot ? authoredFocus : objectShot
             ? objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot ? closeUpCenter : objectBounds.center
             : ActiveHead.position + Vector3.up * .1f;
 
         private bool ParticipantsExist() => follow != null && camera != null &&
-            npcRoot != null && heroRoot != null && (objectShot || npcHead != null && heroHead != null) &&
+            npcRoot != null && heroRoot != null && (authoredShot || objectShot || npcHead != null && heroHead != null) &&
             npcRoot.gameObject.activeInHierarchy && heroRoot.gameObject.activeInHierarchy;
 
         private void ClearReferences()
         {
+            authoredShot = false;
             follow = null; camera = null;
             npcRoot = npcHead = heroRoot = heroHead = null;
             objectShotHeroBody = null;
@@ -697,7 +730,9 @@ namespace BarPromenade
         {
             float t = Mathf.Clamp01(progress);
             // Inspection starts and ends with zero velocity and acceleration.
-            return objectShot ? t * t * t * (t * (t * 6f - 15f) + 10f) : Mathf.SmoothStep(0f, 1f, t);
+            return objectShot || authoredShot && authoredSmoothTransitions
+                ? t * t * t * (t * (t * 6f - 15f) + 10f)
+                : Mathf.SmoothStep(0f, 1f, t);
         }
 
         private static string ColliderPath(Transform value)

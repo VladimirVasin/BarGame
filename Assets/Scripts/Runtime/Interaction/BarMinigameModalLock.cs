@@ -8,17 +8,20 @@ namespace BarPromenade
             bool disableMotorInput,
             bool disableCinematicMotion,
             bool hideHud,
-            bool disableOrbitInput)
+            bool disableOrbitInput,
+            bool allowPauseMenu = false)
         {
             DisableMotorInput = disableMotorInput;
             DisableCinematicMotion = disableCinematicMotion;
             HideHud = hideHud;
             DisableOrbitInput = disableOrbitInput;
+            AllowPauseMenu = allowPauseMenu;
         }
 
         public bool DisableMotorInput { get; }
         public bool DisableCinematicMotion { get; }
         public bool HideHud { get; }
+        public bool AllowPauseMenu { get; }
 
         /// <summary>
         /// Whether the orbit camera stops listening. A full-screen
@@ -29,6 +32,9 @@ namespace BarPromenade
 
         public static BarMinigameModalLockOptions Fullscreen =>
             new BarMinigameModalLockOptions(true, true, true, true);
+
+        public static BarMinigameModalLockOptions FullscreenWithPause =>
+            new BarMinigameModalLockOptions(true, true, true, true, true);
 
         public static BarMinigameModalLockOptions BalanceCheck =>
             new BarMinigameModalLockOptions(false, false, false, false);
@@ -44,6 +50,7 @@ namespace BarPromenade
         private IntoxicationHudView hud;
         private bool previousMotorInput;
         private bool blocksMotorInput;
+        private bool allowsPauseMenu;
         private bool previousInteractorInput;
         private bool previousOrbitInput;
         private bool previousCinematicMotion;
@@ -53,6 +60,9 @@ namespace BarPromenade
 
         public static bool BlocksMotorInput =>
             IsAnyLocked && activeLock.blocksMotorInput;
+
+        /// <summary>A pause overlays this loan; closing pause never releases its parent.</summary>
+        public static bool AllowsPauseMenu => IsAnyLocked && activeLock.allowsPauseMenu;
 
         /// <summary>
         /// Whether anything currently holds the modal lock.
@@ -142,6 +152,7 @@ namespace BarPromenade
             previousHudVisibility =
                 hud == null || hud.Visible;
             blocksMotorInput = options.DisableMotorInput;
+            allowsPauseMenu = options.AllowPauseMenu;
             IsLocked = true;
             activeLock = this;
 

@@ -150,11 +150,11 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
-blood:--texture-only;else:--validate-only;CombatGore:hero/NPC body-skull.
-zombie:10clips+fishloop/.85m-.5swalk/fusedcrate/3faces/14SFX;1mat.
-crane:10clips/kit;build-combat-crane-surfaces.py:sculpt/2K+1K.
+blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
+`build-combat-crane-surfaces.py`:sculpt/2K+1K.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
-Hero:batgrip/hook→/strike-block/Ready.
+`build-combat-room-attack-3d-model.py`:clips/chair/laugh/RoomPoint/source rulers.
+`--tableau-only`/`--validate-only`;rerun after body rebuild.
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.

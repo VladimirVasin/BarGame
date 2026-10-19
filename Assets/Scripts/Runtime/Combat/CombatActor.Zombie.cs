@@ -112,6 +112,7 @@ namespace BarPromenade
 
         private void AdvanceZombiePresentation(float seconds)
         {
+            if (roomAttackPoseActive) return;
             if (IsZombieFrenzied) { AdvanceZombieFrenzy(seconds); return; }
             if (State.Phase == MeleePhase.Ready)
             {

@@ -1,0 +1,261 @@
+{
+  "generator": "build-combat-room-attack-3d-model.py",
+  "version": 1,
+  "test_only": true,
+  "pointing": {
+    "basis_signature": "c0fef82431817431022971031aab790ae45fcd0515fdbcb8509cc63497250b25",
+    "shape": "RoomPoint",
+    "affected": [
+      {
+        "name": "GEO_HandFinger1.R",
+        "vertices": 21,
+        "shape": "RoomPoint"
+      },
+      {
+        "name": "GEO_HandFinger2.R",
+        "vertices": 21,
+        "shape": "RoomPoint"
+      },
+      {
+        "name": "GEO_HandFinger3.R",
+        "vertices": 21,
+        "shape": "RoomPoint"
+      },
+      {
+        "name": "GEO_HandThumb.R",
+        "vertices": 24,
+        "shape": "RoomPoint"
+      }
+    ],
+    "extended_index": "GEO_HandFinger0.R"
+  },
+  "npc": {
+    "rig": "NpcHumanV2",
+    "root_motion": false,
+    "animation_events": 0,
+    "fps": 60,
+    "signature": "bcafd96ccc77b3b39e538c4cb1d0110675075879483f846a9768770bfbad3e62",
+    "clips": [
+      {
+        "name": "RoomPointHero",
+        "duration": 2.0,
+        "loop": false
+      },
+      {
+        "name": "RoomPointChest",
+        "duration": 0.45,
+        "loop": false
+      },
+      {
+        "name": "RoomLaugh",
+        "duration": 5.0,
+        "loop": false
+      }
+    ],
+    "accepted_presented_lengths": [
+      1.3,
+      1.8,
+      1.5
+    ],
+    "fixed_lower_body": true,
+    "point_directions": {
+      "RoomPointHero": {
+        "hand_axis_error_degrees": 0.0,
+        "wrist_metres": [
+          -0.340000182390213,
+          -0.6999998688697815,
+          1.429999828338623
+        ]
+      },
+      "RoomPointChest": {
+        "hand_axis_error_degrees": 0.0,
+        "wrist_metres": [
+          -0.44000011682510376,
+          -0.47000008821487427,
+          1.2999998331069946
+        ]
+      }
+    }
+  },
+  "hero": {
+    "rig": "HeroV2",
+    "root_motion": false,
+    "animation_events": 0,
+    "fps": 60,
+    "signature": "c57e9b1942d4afd06bd9d40936b408d10696bdfe2c9a6c2307fbb3992a252e31",
+    "clips": [
+      {
+        "name": "RoomHeadPain",
+        "duration": 2.0,
+        "loop": false
+      }
+    ],
+    "anatomical_hand": "L",
+    "entry_ground_offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "exit_ground_offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fixed_lower_body": true,
+    "neutral_endpoints": true,
+    "left_wrist_to_head_m": 0.1902629
+  },
+  "tableau": {
+    "geometry_signature": "9572fbabecef6fdfa7fc4f7ed93266cf8530393ac5a6ee856e7ffbcb9fd88845",
+    "anchors": {
+      "HeroPelvis": [
+        0.0,
+        2.3304850746268695,
+        5.1
+      ],
+      "HeroForward": [
+        0.24192189559966773,
+        2.3304850746268695,
+        4.129704273724003
+      ],
+      "Camera": [
+        0.72,
+        2.95,
+        1.9
+      ],
+      "LookAt": [
+        0.0,
+        2.95298507462687,
+        5.1
+      ],
+      "EntryCamera": [
+        0.0,
+        2.85,
+        0.05
+      ],
+      "Light": [
+        0.0,
+        3.3,
+        3.8
+      ],
+      "MouthFloor": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "SourceOrigin": [
+        0.0,
+        -14.210000038146973,
+        2.547999858856201
+      ],
+      "SourceRight": [
+        14.0,
+        -14.210000038146973,
+        2.547999858856201
+      ],
+      "SourceUp": [
+        0.0,
+        -0.20999979972839355,
+        2.547999858856201
+      ],
+      "SourceForward": [
+        0.0,
+        -14.210000038146973,
+        16.54800033569336
+      ]
+    },
+    "bounds_min": [
+      -2.4499999582767487,
+      -0.2799999332427965,
+      -0.19599992823600776
+    ],
+    "bounds_max": [
+      2.4499999582767487,
+      5.459999599456788,
+      5.6279999833106995
+    ],
+    "source": "RoomBody/GEO_Torso/plaster",
+    "original_uv0": true,
+    "corridor_uniform_scale": 14.0,
+    "nested_frame_count": 4,
+    "source_frame": {
+      "space": "unity_metres",
+      "origin": [
+        0.0,
+        1.0149999856948853,
+        -0.18199999630451202
+      ],
+      "ruler_distance_source_metres": 1.0,
+      "tableau_from_source": "(source - origin) * corridor_uniform_scale"
+    },
+    "front_opening": [
+      4.34,
+      5.1800000000000015
+    ],
+    "chair_floor_height": 1.9029850746268697,
+    "chair_seat_height": 2.25048507462687,
+    "seated_yaw_degrees": 14.0,
+    "hero_pelvis_above_seat": 0.08,
+    "vertices": 448,
+    "triangles": 852,
+    "material_slots_per_mesh": 1
+  },
+  "textures": {
+    "RoomAttackWood": "2a64296e4074e68370a7e36fd77c9a20e5b8a82c05724b832a978fc0d1a38136"
+  },
+  "laugh_audio": {
+    "name": "RoomLaugh",
+    "duration": 5.0,
+    "sha256": "6241a5b555b76a7faa9254096290a777e49f260593e3bc65b9e3111af0b3ead1"
+  },
+  "laugh_impulses": [
+    [
+      0.28,
+      0.72
+    ],
+    [
+      0.64,
+      0.9
+    ],
+    [
+      1.03,
+      1.0
+    ],
+    [
+      1.35,
+      0.83
+    ],
+    [
+      1.72,
+      1.0
+    ],
+    [
+      2.02,
+      0.77
+    ],
+    [
+      2.38,
+      1.0
+    ],
+    [
+      2.77,
+      0.9
+    ],
+    [
+      3.12,
+      0.78
+    ],
+    [
+      3.52,
+      0.92
+    ],
+    [
+      3.91,
+      0.72
+    ],
+    [
+      4.28,
+      0.52
+    ]
+  ]
+}

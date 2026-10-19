@@ -11,12 +11,15 @@ namespace BarPromenade
     [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true, DisableSafetyChecks = true)]
     internal struct CombatBodyProxyBoundsJob : IJob
     {
-        [ReadOnly] public NativeArray<Vector3> Vertices;
+        // Private upload scratch: transform only referenced vertices in place.
+        // Run uploads fresh BakeMesh positions before every invocation.
+        public NativeArray<Vector3> Vertices;
         [ReadOnly] public NativeArray<int> Indices;
+        [ReadOnly] public NativeArray<int> UniqueIndices;
         public NativeArray<Vector3> Result;
         public Matrix4x4 Matrix;
         public Vector3 MinimumSize;
-        public int VertexCount, IndexCount, Completed, ExecutedInBurst;
+        public int VertexCount, IndexCount, UniqueIndexCount, TransformedVertexCount, Completed, ExecutedInBurst;
 
         [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true, DisableSafetyChecks = true)]
         public static void RunSynchronous(ref CombatBodyProxyBoundsJob job) => job.Execute();
@@ -24,12 +27,28 @@ namespace BarPromenade
         public void Execute()
         {
             Completed = 0;
+            TransformedVertexCount = 0;
             ExecutedInBurst = 1;
             MarkManaged(ref ExecutedInBurst);
-            if (IndexCount <= 0 || !Finite(Matrix) || !Finite(MinimumSize)) return;
+            if (IndexCount <= 0 || UniqueIndexCount <= 0 || !Finite(Matrix) || !Finite(MinimumSize)) return;
+            bool sharedVertices = UniqueIndexCount < IndexCount;
+            // Triangle soups have no repeated corners to amortize this pass.
+            // Keep their direct fold and reuse just the initial corner value.
+            if (sharedVertices)
+                for (int i = 0; i < UniqueIndexCount; i++)
+                {
+                    int index = UniqueIndices[i];
+                    if ((uint)index >= (uint)VertexCount) return;
+                    Vector3 point = MultiplyPoint(Matrix, Vertices[index]);
+                    if (!Finite(point)) return;
+                    Vertices[index] = point;
+                    TransformedVertexCount++;
+                }
             int first = Indices[0];
             if ((uint)first >= (uint)VertexCount) return;
-            Vector3 centre = MultiplyPoint(Matrix, Vertices[first]);
+            Vector3 firstPoint = sharedVertices ? Vertices[first] : MultiplyPoint(Matrix, Vertices[first]);
+            if (!sharedVertices) TransformedVertexCount++;
+            Vector3 centre = firstPoint;
             Vector3 extents = Vector3.zero;
             if (!Finite(centre)) return;
             // The first corner is intentionally included again: the original
@@ -38,7 +57,8 @@ namespace BarPromenade
             {
                 int index = Indices[i];
                 if ((uint)index >= (uint)VertexCount) return;
-                Vector3 point = MultiplyPoint(Matrix, Vertices[index]);
+                Vector3 point = sharedVertices ? Vertices[index] : i == 0 ? firstPoint : MultiplyPoint(Matrix, Vertices[index]);
+                if (!sharedVertices && i != 0) TransformedVertexCount++;
                 if (!Finite(point)) return;
                 Vector3 minimum = Min(Subtract(centre, extents), point);
                 Vector3 maximum = Max(Add(centre, extents), point);
