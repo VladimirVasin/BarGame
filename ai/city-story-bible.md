@@ -458,9 +458,10 @@
 | `0` | §12/§19/§21; худ. §10g | фото/пассивность базы | `2026-09-25`: фото базы/подъёмника без лиц, лыжи/стул, границы — §12. §16/§21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12/§21 «Нельзя», «Проверка»; худ. §10g | пассивность/вопрос без ответа/нижний ответ | `2026-09-25`: люк приподнимается/упирается/закрывается→точная нижняя строка; границы — §12. §16/остальной §21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12; худ. §1/§10g | единая походка/скорость; нет замедления вне троп | `2026-09-25`: сугроб деревни — отдельный шаг без бега; глубина/следы/расчистка, не граница. Без урона/возврата/опасности/сюжета/текста; §16/§21/девять проверок, `ai/architecture-notes.md`. |
-| вне шкалы | §6/§7/§16.15/§21;худ.§15a | combat-loss/UI/gore/taunt/undead/rust-otherworld/strobe0 | `2026-09-19`:bar;`2026-09-20`:HP/blood;`2026-09-21`:duel/FPtoilet/rearhead/shy;`2026-09-25`:palm/blood/steps;`2026-10-02`:counter/rise/gaze-shield;`2026-10-03`:kick/AI/recoil;`2026-10-07`:body/guns;`2026-10-08`:aim/reload/destroy/shotgun/flights;`2026-10-09`:pwr/sever-crawl/aim8;`2026-10-10`:carry;`2026-10-12`:warehouse/endless;`2026-10-13`:pop/ammo;`2026-10-14`:corpseStep/cloth0/chestSpot/otherworld/valve-key;`2026-10-15`:fish-power/key-torch-gate/HUD;loathed-docker/mimic-woodbreak/chase-ram/fallfrenzy-SFX/dormant/entrycorrupt-back0;`2026-10-16`:CraneHook/Frenzy/Fishorganic;`2026-10-17`:EndlessZDC/2x/wounds/CraneSculpt;`2026-10-18`:Room/Imprint/LongExposure/Zombie:Lab6/story0;`ai/architecture-notes.md` |
-| вне шкалы | §7/§16.16/§21/§22;худ.§15a | capture/cam/clear | `2026-10-19`:Room:seat2wide→face/out cont/othersidle. Crane:6m/up2m/5s/E6/COLrails/cam/fallHP/inertia;others+spawns idle→release;home-watch10;fatalcry-spasm3/home-regen10/immortal;wounds/nodetach/frontblock/back0;Commit3→foes-bodies-spawn0/kills-reward-autowin+0/6cables;Resetkeep/Newfresh;story-text0;`ai/architecture-notes.md`. |
-| вне шкалы | §3/11/16.10;art§15a | subjective light/SFX | `2026-10-19`:Roomtwin:abstractjelly;1neutral midbar in/out L→R;wet close/glugs/pull;figures/anatomy/sex/voicebreath/her/factmemory/motive0;`ai/architecture-notes.md`. |
+| вне шкалы|§6/7/16.15/21;art§15a|loss/UI/gore/taunt/undead/rust-otherworld/strobe0|2026-09-19:bar;2026-09-20:HP/blood;2026-09-21:duel/FPtoilet/rearhead/shy;2026-09-25:palm/blood/steps;2026-10-02:counter/rise/gazeshield;2026-10-03:kick/AI/recoil;2026-10-07:body/guns;2026-10-08:aim/reload/destroy/shotgun/flights;2026-10-09:pwr/severcrawl/aim8;2026-10-10:carry;2026-10-12:warehouse/endless;2026-10-13:pop/ammo;2026-10-14:corpseStep/cloth0/chestSpot/otherworld/valvekey;2026-10-15:fishpower/keytorchgate/HUD;loatheddocker/mimicwoodbreak/chaseram/fallfrenzySFX/dormant/entrycorruptback0;2026-10-16:CraneHook/Frenzy/Fishorganic;2026-10-17:EndlessZDC/2x/wounds/CraneSculpt;2026-10-18:Room/Imprint/LongExposure/Zombie:Lab6/story0. |
+| вне шкалы|§7/16.16/21/22;art§15a|capture/cam/clear|2026-10-19:Room:seat2wide→face/outcont/othersidle.Crane:6m/up2m/5s/E6/COLrails/cam/fallHP/inertia;others/spawnidle→release;homewatch10;fatalcryspasm3/homeRegen10/immortal;wounds/nodetach/frontblock/back0;Commit3→foes/bodies/spawn0/kills/reward/autowin0;fanstop:6cables snapwell;ResetNewsame;storytext0.|
+| вне шкалы|§3/11/16.10;art§15a|subjective light/SFX|2026-10-19:Roomtwin:abstractjelly;1neutral midbar L→R/in-out;wet close/glugs/pull;figures/anatomy/sex/voicebreath/her/factmemory/motive0. |
+| вне шкалы|§6/7/21;art§15a/16|SFX-owner|2026-10-19 user:CombatTest warehouse/fanstop→quiet insectclicks/wordless-indistinctwhisper;2random3D@hero/fixed-fullclip/.8/gaps/mix;speaker/line/address/info/story0. |
 | `0` | §18 «Междомовая арка»; §21 «Проверка» | «молчат», «добавить разговор»; первый пул троих | `2026-09-16`: двое у бочки переговариваются между собой, спящий отвечает из-под одеяла; общие пузыри, пары без повторов, в слышимости героя. Без обращения к нему, просьб, реакции, квеста; §16/§21. |
 | `0` | худ. §2.1a/§10e/§16/§18.19/22 | нет восточной горы/фонарей; равнина/пустая трасса | `2026-09-15`: спуск к городу на дне долины; машины/фонари, первый в пуле `12`, дальше без Light. `ai/architecture-notes.md`. |
 | `0` | худ. §10e | «без россыпей/мелкого мусора» | `2026-09-14`: пассивный мусор по всей доступной полосе `12 м` дорога→ограда. Мелочь проходима; крупное вне путей. Без свалки/эстетики ржавчины/лагеря/текста/новых следов; §16/§21. |
@@ -564,15 +565,14 @@
 Короткая формула: он рассказывает про предметы, потому что про себя рассказать
 нечем.
 
-Он не злодей и не антигерой; полигон (§6, `2026-09-21`) — исключение.
+Он не злодей/антигерой, кроме полигона (§6,`2026-09-21`).
 Худой узкоплечий усталый мужчина с тёмной стрижкой
 «шторки», в великоватой выцветшей оливковой M-65 поверх угольной рубахи.
 Он приехал за работой,
 как все, — поздно, к концу, когда работы уже не хватало, и остался.
 
-Он не военный и почти не умеет стрелять. Только на полигоне (§6,
-`2026-10-13`): дрожь рук, вздрагивание, неловкая отдача. Без реплик
-о навыке и новой биографии.
+Он не военный, стрелять почти не умеет; полигон (§6,`2026-10-13`):
+дрожь рук/вздрагивание/неловкая отдача, без реплик о навыке/новой биографии.
 
 Социопатия подаётся **только формой речи и выбором кадра**, никогда диагнозом.
 Слово «социопат» в игре не звучит.

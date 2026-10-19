@@ -4232,11 +4232,12 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 
 ### Принятое исключение — боевой полигон
 
+`2026-10-19` user/§6:only CombatTest warehouse/fan-stopped→quiet rare insectclicks+wordless-indistinctwhisper;2ownerless textures/newrandom3D3–7m@hero/fixed-fullclip/mono/.8/LP2800/World echo-reverb/gaps;speaker/line/address/storyinfo0. Valve fullyopen→1heavy metal latch impact@drive;tail after inspection.
 `2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
 Seat2→face;jelly:nonstrobe/squash/stretch/lag;neutral midflatbar axial↔;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;PS1gray/§6.
 Chest:Spot+weakbodyPoint/spill-bounce;dust/fan/rare grit→settle/fog-glow0.
 UpperLbroken;ammo12/allbays;route-facing.
-Crane:hook6m/up2m/5s/COLhaul-rails/struggle/bodycam/fallHP/inertia;wounds/nodetach;home-watch/fatalcry-spasm3-home-regen10;§6/story0. Commit3→6oldcables@lastpose/unequalfree;recoilfade/weakasync wind+rare3Dcreak@hanger/persist/pause.
+Crane:hook6m/up2m/5s/COLhaul-rails/struggle/bodycam/fallHP/inertia;wounds/nodetach;home-watch/fatalcry-spasm3-home-regen10;§6/story0. Commit3→body0;fanstop→instant nearestwell(-2.75,.4,5)/head9.15+bridge+24cables;rails-feeds-geom-limits/payoutkept/travel0;unequallow/recoilfade/weakasyncwind+rare3Dcreak/persist/pause.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave face-chest-palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
 `2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.
 `2026-10-16`:Crane:Rcuff-hook/3DLOS;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/SFX/ragdoll;§6.
@@ -4334,15 +4335,13 @@ frames replace black/PS1 raster;UI/world/camera/light/materials/PS1 compositor k
 отношения остаются связными, между краткими провалами различим исходный мир.
 Изменение силы, начало и конец эпизода и возврат к обычному звучанию плавные;
 повторяемый фрагмент не перескакивает при изменении опьянения.
-Принятая `2026-09-08` оптическая обработка режима `BEGOTTEN` — единственное
-место, где к звуку мира прибавляется звук, которого в мире нет: шум поверхности
-отпечатка, щелчки пыли и стрёкот лентопротяжки. Это аппарат показа, а не деталь
-города, у него нет причины внутри вымысла и он не подчиняется правилу о
-физическом владельце звука. Он приходит и уходит вместе с изображением, за те же
-пятнадцать и три секунды, и по тому же правилу не заменяет мир шумом: под
-отпечатком районы по-прежнему различаются по содержанию. Режим необязателен и
-выключен по умолчанию; тест звука проверяется с выключенным режимом, а под
-включённым — только требование различимости районов.
+Оптика `BEGOTTEN` (`2026-09-08`) добавляет вне мира шум поверхности отпечатка,
+щелчки пыли/стрёкот лентопротяжки: аппарат показа без причины в вымысле и
+физического владельца. Звук следует изображению (вход15с/выход3с), не заменяет
+мир шумом; районы различимы по содержанию. Режим необязателен/выключен по умолчанию.
+Без режима проверяется весь тест, с ним — различимость районов.
+`2026-10-19` (§6/§15a):only2ownerless3Dtextures+gaps CombatTest warehouse/fan-stopped;
+city/speech/otheraudio:exception0.
 
 ### Тест перехода
 

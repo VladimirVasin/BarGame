@@ -206,6 +206,7 @@ namespace BarPromenade
             bool moved = State.Advance(seconds, confirmArmed && held);
             if (moved) ApplyTravel();
             Sounds.SetTurning(moved && !State.IsOpen);
+            if (moved && State.IsOpen) Sounds.PlayFullyOpenLatch();
         }
 
         public void EndActivity()

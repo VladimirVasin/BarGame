@@ -9,39 +9,40 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
 `Range_CraneHookCaptureEscapeRetreatAndRegeneration`,
 `Range_CraneCaptureYieldsMixedOpponentsUntilRelease` OK;
-Crane:haul/release-momentum/frontblock/immortal;gallery/home seen.
+Crane:haul/momentum/frontblock/immortal;gallery/home seen.
 - `Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight`,
 `Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding`,
 `SprintAndTurn_ReachesRunCapWithoutSkidding` OK.
-- Room:head-neck-arms-hands↑;corridor/rest/texture/source/grip/reset-scale-atlas/damageFBX kept;sleeve/palm/woundweights/closed layers/protrusions0.
+- Room:head-neck-arms-hands↑;corridor/rest/surfaces/grip/reset-scale-atlas/damageFBX kept;sleeve-palm/wounds/closed/protrusions0.
 - `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
 `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset`,
-`Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` OK.
-Body/corridor seen.
-- Room:head-high point/palmar fingers/thumb/wrist;wideDutch→seat-face/reverse.
-Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;dupewalls/warp/fade/hotbake-load-alloc0.
-HeroLhead0→ret+2s/input0/18HP/laugh5-idle5;hitcancel fullidle/laterclock+hurtwins;
-simlive/others-spawns idle→heroend.
-HUDmodal→HP3sunlock;pause-death-reset-disable clean.
+`Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` OK/seen.
+- Room:highpoint/palmar-thumb-wrist;wideDutch→seat-face/reverse.
+Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;dupewall/warp/fade/hotbake-load-alloc0.
+HeroLhead0→ret+2s/input0/18HP/laugh5-idle5;hitcancel idle/laterclock+hurtwins;
+simlive/others-spawns idle→end.
+HUDmodal→HP3s;pause/death/reset/disable clear.
 Crane/Room/Docker;Lab6.
 `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier/assets/pause/focus/audio OK;Laugh-cancel roll open.
 `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` OK.
-Face/point-seat-return/midbar↔/occlusion/jelly seen.
+Shots/midbar↔/occlusion/jelly seen.
 Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV,
 `build-combat-room-attack-3d-model.py --npc-only --validate-only` OK;
 `CombatRoomAttackAssetSetup.BuildOrThrow` imports.
-- Air:world inertia/limitedsteer/g24/caps;NPC/canon kept.
-- Hero:live hit/fall/recovery drop0;death drop+pickup;NPCdrop kept;shotgun draw grip-ammo resume.
+- Air:inertia/limitedsteer/g24/caps;NPC kept.
+- Hero:hit/fall/recovery drop0;death drop+pickup;NPC kept;shotgun draw grip-ammo resumes.
 `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle` OK.
-- CPU:shared restpoint/ordered proxy transforms/versioned scratch/settled ON-ray pose cache;
-Editor render-end→Update unattributed/FPS unmeasured.
+- CPU:shared restpoint/ordered proxies/versioned scratch/settled ON-ray cache;
+render-end→Update unattributed/FPS unmeasured.
 `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` OK.
-- `IPrioritizedInteractable`:family;lockers Take>open>close>distance;
-adjacent bays/overflow retry;`CombatWarehouseLockerPriorities` OK.
+- `IPrioritizedInteractable`:family/lockers Take>open>close>distance;
+bays/overflow retry;`CombatWarehouseLockerPriorities` OK.
 - `CombatWarehouseFishAssemblyCloseUp`:low/playfill/lamp1.8;OK/seen.
 - UI:dedup/Use gate;`SelectionAndExamine_UsePureMenuState` OK;seen.
-- `CombatWarehouseFishClearsOpponents`:clear/spawn0/kills+0;cables/creak;OK/seen.
+- `CombatWarehouseFishClearsOpponents`:clear/spawn0/kills+0;fanstop→mountsnapnearestwell/creak;OK/seen.
 - `CombatWarehouseGateUnlockAndAudio`:gCOL/3voices/motioncreak;OK.
+- Postfan:AAC→OGG/quiet clicks-whispers/.8/LP2800/World/PCM/keep;gate heavy latch1/tail.
+`CombatWarehouseAudio` OK/PCM.
 - `CombatWarehouseFlashlightGlow`,`CombatWarehouseGateLampSurvivesPendant`:spill/red>0/mountclear;OK.
 - `WarehouseAtmosphere`:litdust/fan/grit;poststop drift/settle;seed/caps/lifecycle/fog0.
 `CombatWarehouseAtmosphere` OK;stop-motion/blackout seen;perf unmeasured.

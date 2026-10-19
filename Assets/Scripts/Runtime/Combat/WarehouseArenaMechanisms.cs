@@ -31,6 +31,7 @@ namespace BarPromenade
         private Color fanEmission;
         private float fanIntensity;
         private float lastFanFactor = -1f;
+        private float lastFanProgress = -1f;
         private double fanShutdownSeconds;
         private bool initialized;
         private bool subscribed;
@@ -275,6 +276,16 @@ namespace BarPromenade
 
         private void ApplyFanPower()
         {
+            float progress = FanShutdownProgress;
+            if (lastFanProgress != progress)
+            {
+                lastFanProgress = progress;
+                // Lamp failure can make power zero before the motor reaches its terminal pose.
+                // Audio admission follows the actual rundown clock independently of that power gate.
+                owner?.Music?.ApplyFanShutdown(progress);
+                owner?.Ambience?.ApplyFanShutdown(progress);
+                owner?.ApplyWarehouseFanAftermath(progress);
+            }
             float factor = GameSessionState.WarehouseFishLamp.Phase == WarehouseFishLampPhase.Burst ? 0f : FanSpeedFactor;
             if (lastFanFactor == factor) return;
             lastFanFactor = factor;
@@ -295,7 +306,6 @@ namespace BarPromenade
                     machine.Voice.volume = .07f * factor;
                     if (factor <= 0f) machine.Voice.Stop();
                 }
-            owner?.Music?.ApplyFanShutdown(FanShutdownProgress);
         }
 
         private static float[] CreateFanGrindSamples()

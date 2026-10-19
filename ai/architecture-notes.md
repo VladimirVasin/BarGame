@@ -1,6 +1,8 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-19, warehouse post-fan audio — explicit user request:**
+  CombatTest only:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:`Audio/CombatWarehouseAmbience`/{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. Play:random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/perf unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
 - **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
 - **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a;continuous hero/approach0. 6m/chestup2m/start-releaseLOS/lockedthrow/zonepuncture1→pain5s/COLhoist-haul→well/rails/physstruggle/bodycamorbit/fallHP;release:drivesrestore/velocitykept. Others-spawns idle→release-cancel/Roomcompose. E6fresh/charcoalbonebar/held0;escape→actualhome/watch10;fatalcry-spasm3→home/regen10/full/sameslot/kill-reward-corpse0. Hero:wounds/nodetach;frontXZdot≥.35/frontbar fullblock/guardbreak-back0. Pause-modal-focus0;reset-disable-unload clearinput-rig-anchor-UI/story0.
@@ -41,7 +43,7 @@
 - **Accepted exception 2026-10-19, gate:** Keyinturn/click/shackle↑↻full/keyout/chainglide/gCOLsettle;3×3Dvoices/metalhitcap;valvecreak:motion/lowrust/Eupfade;holdEwheel-leafCOL↑;unlockedskip;release-pause-Esckeep/maxlatch/sharedstandbounds/ResetNewkeep/Newinv0;Gallery/upper/headroom/silentgoalstub;NoKeyE2tug1.2s→RUENkey/silentSharedInspect;§6/21.
 - **Accepted 2026-10-15, warehouse tabletop:**
   WorkSurfaceCloseUp<bulb1.8;playfill/pourcans0;2026-10-19:localY≤1.30m.
-- **Accepted exception 2026-10-19, warehouse fish cutoff:** Commit3→spawned foes-corpses0/spawn0/kill-reward-autowin+0/Crane6oldcables. Wind-creak:art§15a;taken Reset-reentrykeep/Newfresh;§6/story-text0.
+- **Accepted exception 2026-10-19, warehouse fish cutoff:** Commit3→foes-corpses-spawn0/kills-reward-autowin0;user:fullfanstop→instant originalhead-bridge-24cables@nearest±5goal(-2.75,.4,5);head9.15/originalrails-feeds-geometry-limits/payoutkept;travel0/unequallow/wind-creak;Reset-reentry-Newkeep/Newinv0;§6/art15a/story0.
 - **Accepted exception 2026-10-15, warehouse fish assembly:**
   §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-key1/sharedreceipt/retry;
   standing-modal-camera/Esc-Reset-Newkeep/Newinv0/fishorganic.
@@ -5839,31 +5841,20 @@
   flash is composed over the panel pulse. The effect changes only shared
   emissive material properties: it creates no material instances, realtime
   `Light` components or strobing whole-room illumination.
-- **Accepted — One mixing rule for every music change:** `MusicMix` holds the
-  default rule: `FadeOutSeconds = 4`, `FadeInSeconds = 1`, and a registry of the
-  sources that are still leaving. A theme starts only through
-  `BeginFadeInThroughRule`, which refuses to sound while
-  `MusicMix.IsFadeOutActive` and retries each frame, so themes hand over
-  instead of crossfading. The Ferryman radio decision permits only its physical
-  power switch to stop that source immediately. Because a scene unload would
-  cut a four-second tail dead, `MusicMix.BeginDetachedFadeOut` reparents the departing music object
-  out of its scene into `DontDestroyOnLoad` — the same `AudioSource` keeps
-  playing, so a streaming clip is never re-seeked — and the player destroys
-  its own carrier when the fade reaches zero. That removes the old activation
-  gate: `SceneTransitionService` now only asks every `IMusicMixSource` in the
-  outgoing scene to leave, and the tail finishes across the door presentation
-  while the destination streams in. The registry self-prunes on destroyed,
-  stopped or silent sources, and a source releases itself before fading back
-  in so a theme never waits on its own tail. Before that detach, the spatial
-  bar exception measures the long-range theme and short-range cabinet
-  attenuation independently and preserves both levels while their carrier is
-  temporarily non-spatial; otherwise either the next scene's distant listener
-  would cut the tail or the close mechanism would jump louder at the door.
-  `HomeSmokingMusicPlayer`
-  implements the same interface: it defers `BeginFromStart` until the mix is
-  clear, eases in over `FadeInSeconds` when it had to wait, and leaves through
-  `BeginRuleFadeOut` at the `Exiting` phase instead of the shorter
-  camera-restore ramp.
+- **Accepted — One mixing rule for every music change:** `MusicMix`:
+  `FadeOutSeconds=4`/`FadeInSeconds=1`. `BeginFadeInThroughRule`
+  waits/retries each frame while `MusicMix.IsFadeOutActive`; no crossfade.
+  Ferryman's physical radio power switch alone stops immediately.
+  `MusicMix.BeginDetachedFadeOut` reparents the same `AudioSource` to
+  `DontDestroyOnLoad`, without a streaming seek; its player destroys the carrier
+  at zero gain. `SceneTransitionService` requests outgoing `IMusicMixSource`
+  exit; tails span doors/destination loading. Registry prunes destroyed/stopped/
+  silent; resume releases its own entry. Before detach, Bar preserves separate long-range
+  theme/short-range cabinet attenuation, then makes the carrier non-spatial
+  so the destination listener cannot cut or amplify either tail.
+  `HomeSmokingMusicPlayer`: `BeginFromStart` waits for a clear mix, deferred
+  playback uses `FadeInSeconds`; `Exiting` uses `BeginRuleFadeOut`, rather than
+  the shorter camera-return ramp.
 - **Accepted — Music bound to a place, not only to a scene:** `City` keeps
   `city_theme` as its default and hands the mix to a place theme whenever the
   hero stands on grounds that have one. `CityLocationMusicDirector` holds a

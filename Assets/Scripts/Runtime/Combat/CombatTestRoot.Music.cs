@@ -5,6 +5,7 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         public CombatWarehouseMusicPlayer Music { get; private set; }
+        public CombatWarehouseAmbiencePlayer Ambience { get; private set; }
         private GameAudioProfile previousWarehouseAudioProfile;
         private bool warehouseAudioOwned;
 
@@ -30,7 +31,7 @@ namespace BarPromenade
             GameAudioMixer.ApplyProfile(restore);
         }
 
-        private void InitializeWarehouseMusic()
+        private void InitializeWarehouseAudio()
         {
             if (WarehousePlan == null) return;
             // Keep the carrier outside combatLocation: resets and a replacement
@@ -39,13 +40,18 @@ namespace BarPromenade
             carrier.transform.SetParent(transform, false);
             Music = carrier.AddComponent<CombatWarehouseMusicPlayer>();
             Music.Initialize(this);
+            var ambienceCarrier = new GameObject("Warehouse Post Fan Ambience");
+            ambienceCarrier.transform.SetParent(transform, false);
+            Ambience = ambienceCarrier.AddComponent<CombatWarehouseAmbiencePlayer>();
+            Ambience.Initialize(this);
         }
 
-        private void SuspendWarehouseMusic()
+        private void SuspendWarehouseAudio()
         {
             // Disabling just this root component leaves child objects enabled.
             // The player's gate restores playback if the root resumes later.
             Music?.SetPlaybackSuppressed(true);
+            Ambience?.Advance(0f);
         }
     }
 }

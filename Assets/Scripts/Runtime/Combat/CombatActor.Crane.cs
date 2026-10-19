@@ -65,7 +65,7 @@ namespace BarPromenade
         private Vector3 CraneStationPosition => craneStationPosition;
         public int CraneCableCount => IsCrane ? craneCables.Length : 0;
         public Vector3 CraneStrikeHandPosition => CraneHookPosition;
-        public Vector3 GetCraneCableStart(int index) => craneFeeds[index].position;
+        public Vector3 GetCraneCableStart(int index) => HasWarehouseCraneRemnant ? craneRemnant.GetCableStart(index) : craneFeeds[index].position;
         public Vector3 GetCraneCableEnd(int index) => HasWarehouseCraneRemnant ? craneRemnant.GetCableEnd(index) : craneAttachments[index].position;
         internal Transform GetCraneCableTransform(int index) => craneCables[index];
         internal Transform GetCraneCableTransform(int index, int segment) => craneCablePieces[index, segment];
@@ -127,7 +127,7 @@ namespace BarPromenade
                 craneCables[i] = craneCablePieces[i, 0];
             }
             craneRemnant = craneSuspensionHost.AddComponent<CombatCraneRemnant>();
-            craneRemnant.Initialize(craneCablePieces, craneCableScales, GetComponentInParent<CombatTestRoot>());
+            craneRemnant.Initialize(craneCablePieces, craneCableScales, GetComponentInParent<CombatTestRoot>(), this);
             InitializeCraneClearance(); InitializeCraneDynamics(); InitializeCraneHook();
             craneWinch = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadWinchSound(), .26f);
             craneRailVoice = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadRailSound(), .24f);
@@ -539,7 +539,22 @@ namespace BarPromenade
             if (!HasWarehouseCraneRemnant) craneSuspensionHost.SetActive(false);
         }
 
-        /// <summary>The encounter removes the body separately; this keeps the achieved gantry and six free cables.</summary>
+        internal void ParkWarehouseCraneRemnant(Vector3 valve)
+        {
+            if (!HasWarehouseCraneRemnant || craneRemnant.IsParked) return;
+            // This is an explicit discontinuity at fan stop. Reuse the original
+            // carriage range, head, bridge and feeds; the fixed rails never move.
+            craneCommand = CraneTravelGoal = craneStationPosition = new Vector3(
+                Mathf.Clamp(valve.x, -CraneWellHalfWidth, CraneWellHalfWidth),
+                CraneGroundPosition.y + CraneRestHeight,
+                Mathf.Clamp(valve.z, -CraneWellHalfWidth, CraneWellHalfWidth));
+            craneFloor = craneDestinationFloor = 0;
+            transform.position = craneCommand;
+            UpdateCraneMachinePose();
+            craneRemnant.Park();
+        }
+
+        /// <summary>The body retires now; the original empty suspension jumps into place at fan stop.</summary>
         internal void SetWarehouseCraneRemnant(bool visible, bool animate = false)
         {
             if (!IsCrane || craneRemnant == null || visible == HasWarehouseCraneRemnant) return;

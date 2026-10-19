@@ -130,7 +130,7 @@ namespace BarPromenade
             RetroAudioService.EnsureInstalled();
             CreateCombatLocation();
             AcquireWarehouseAcoustics();
-            InitializeWarehouseMusic();
+            InitializeWarehouseAudio();
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
             Prompt = ui.AddComponent<InteractionPromptView>();
             gameObject.AddComponent<PlayerClothPhysicsPolicy>().SetSimulationEnabled(false);

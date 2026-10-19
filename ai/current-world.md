@@ -131,14 +131,15 @@ cemetery:own interiors/returns.
   door-map-start inside closes/no village signpost;
 - CombatTest:3floors/9rooms/4flights:L3gap/R3only/fanwell/9sets-signs;ground:A*/partial/gate;
   Midforms/4K+2Kresp/uniqueUV/metrewearjoins/clones0.
-  valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;holdE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch.
+  valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;holdE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch→heavySFX1@valve/activityexittail/fullstop0.
   Home↔gate/E/back-travel-speech0/stub/gallery2/upper;fridges3/labels-scraps/Take1x/fullkeep/redfade-humclick.
-  3src→flicker-crackle/mech-music-foes-corpses-spawn0;6windcables/creak.
+  3src→flickercrackle/mech-music-foes-corpses-spawn0;fan0:6cables snapvalvewell/windcreak.
   toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
   bulb0/socketcord/restL-lens-amb0/gateRedsoftflicker>0+chest/silent;Escpause/Reset-Newkeep/newgame-inv0.
   D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
   Dust192+32/fan→settle/seed.
   SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/noreplay/exitfade.
+  Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
@@ -1064,25 +1065,23 @@ cemetery:own interiors/returns.
 - scene loops under `Resources/Audio/`: `{City,Bar,Supermarket,Stairwell,Church,Home}Music/`
   with matching snake-case `_theme` names; optional slots fail silent.
   `AlpineVillageMusicPlayer` adds `AlpineVillageMusic/alpine_village_theme`,
-  with the user's MP3, streaming/background/stereo and optional at build time.
-  Hero inside lodge, both doors shut: 1 s resume, no restart. Either open or outside:
-  4 s fade/pause. Suppressed before playback;
-  normal scene exits.
-  User `1.00` theme gain; no LUFS calibration.
-  `MusicMix`: unscaled `4 s` out, then `1 s` in after silence, no overlap;
-  players wait for clip data. Six measured masters span ~`8 LUFS` raw;
+  user's optional MP3: streaming/background/stereo.
+  Lodge/both doors shut: 1 s resume, no restart; open/outside: 4 s fade/pause.
+  Suppressed before playback; normal scene exits.
+  User gain `1.00`; LUFS uncalibrated.
+  `MusicMix`: unscaled `4 s` out→silence→`1 s` in; no overlap, waits for clip data.
+  Six measured masters span ~`8 LUFS` raw;
   source trims/Music `-11.5 dB` target `-36.5 LUFS` after Master `-6 dB`.
-  Ordinary themes use a `12 kHz` low-pass, leaving transients to actions.
+  Ordinary themes: `12 kHz` low-pass; action transients kept.
   The bar is diegetic: `bar_theme` sits on the visible jukebox grille with
   full linear positioning across the room, a `120 Hz–5.6 kHz` cabinet band,
   light distortion and a short-range generated motor/record texture. The
   cabinet's amber panel and two pink tubes use three phase-shifted emissive
   pulses whose strength follows the theme gain; they add no realtime `Light`
-  and never strobe. A departing theme detaches from its
-  scene into the persistent mix, so a Single-load never cuts the fade-out
-  short and never waits for it either: the tail finishes over the door
-  presentation while the destination streams in, and the destination theme
-  enters after it. Home pauses `home_theme` after the same `4 s` fade-out
+  and never strobe. Departing themes detach into the persistent mix:
+  Single-load keeps the tail over the door presentation while the destination
+  streams without waiting; its theme enters after that tail.
+  Home pauses `home_theme` after the same `4 s` fade-out
   whenever the Balcony shot owns the doorway-hysteresis zone, then resumes the
   same sample through the `1 s` fade-in only after returning indoors and only
   once the mix is clear. Home also owns an optional interaction-local
@@ -1124,9 +1123,7 @@ cemetery:own interiors/returns.
   The chosen station and used flag survive both scenes; only a new trip
   chooses again and clears the flag. Missing music does not advance the clock;
   pause/loading freeze it. Power-off and station changes reset only that clock,
-  preserving the choice and once-per-trip limit. All themes use the shared `Music`
-  mixer group and remain owned by
-  their scene or interaction;
+  preserving the choice and once-per-trip limit. Themes: shared `Music`, scene/interaction ownership;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
   all snapshots keep Music `-11.5 dB`, Beds `-4 dB`, Details `+0.5 dB`, World

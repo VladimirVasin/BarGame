@@ -5,6 +5,15 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private bool warehouseOpponentsCleared;
+        private bool warehouseFanStopped;
+
+        internal void ApplyWarehouseFanAftermath(float progress)
+        {
+            warehouseFanStopped = progress >= 1f;
+            if (!warehouseFanStopped || !warehouseOpponentsCleared) return;
+            foreach (CombatActor actor in preparedOpponents)
+                if (actor.IsCrane) actor.ParkWarehouseCraneRemnant(WarehousePlan.GateControlPosition);
+        }
 
         public bool WarehouseCraneRemnantActive
         {
@@ -20,8 +29,8 @@ namespace BarPromenade
         {
             if (warehouseOpponentsCleared) return;
             warehouseOpponentsCleared = true;
-            // Capture the achieved suspension pose before cancellation or
-            // actor retirement can restore the rig or hide its sibling host.
+            // The body retires immediately. The original empty suspension jumps
+            // to its final pose only when the fan has completely stopped.
             foreach (CombatActor actor in preparedOpponents)
                 if (actor.IsCrane) actor.SetWarehouseCraneRemnant(true, animate);
             CancelRoomAttackSequence();
@@ -51,13 +60,14 @@ namespace BarPromenade
                 ResetActorDamage(actor);
             }
             endless.SetSpawningEnabled(false, 0);
+            ApplyWarehouseFanAftermath(warehouseFanStopped ? 1f : 0f);
             duelJournal?.Record("warehouse_opponents_cleared");
         }
 
         private void ResetClearedWarehouseOpponents(int seed)
         {
-            // A reload has no live suspension pose to retain. Prepare its
-            // authored home once; ordinary resets retain the existing remnant.
+            // Rebuild the original retained machinery once; ordinary resets keep
+            // the empty suspension's achieved position.
             foreach (CombatActor actor in preparedOpponents)
                 if (actor.IsCrane && !actor.HasWarehouseCraneRemnant)
                 {

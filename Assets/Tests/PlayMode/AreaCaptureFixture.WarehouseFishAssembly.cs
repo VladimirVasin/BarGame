@@ -138,6 +138,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(gate.Progress, Is.EqualTo(1f));
                 Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
                 Assert.That(gate.Sounds.ChainReleaseCount, Is.EqualTo(1));
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.EqualTo(1), "Resetting combat cannot replay the terminal stop.");
                 WarehouseGateAudio oldSounds = gate.Sounds;
                 Assert.That(root.NewWarehouseLayout(0), Is.True);
                 yield return null;
@@ -148,6 +149,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(gate.Progress, Is.EqualTo(1f));
                 Assert.That(gate.Sounds.UnlockClickCount, Is.Zero);
                 Assert.That(gate.Sounds.ChainReleaseCount, Is.Zero);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.Zero, "A restored open gate is silent.");
                 Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False);
                 foreach (Rigidbody body in gate.ChainBodies)
                     Assert.That(body.isKinematic, Is.True, "A restored chain remains settled without replaying the release.");
@@ -159,6 +161,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.False);
                 Assert.That(gate.Sounds.CreakSource.isPlaying || gate.Sounds.ActionSource.isPlaying ||
                     gate.Sounds.ContactSource.isPlaying, Is.False);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.Zero);
                 foreach (Rigidbody body in gate.ChainBodies)
                     Assert.That(body.isKinematic, Is.True);
             }
@@ -178,7 +181,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [Explicit("Third-can opponent retirement, retained crane suspension, reset and warehouse re-entry.")]
+        [Explicit("Third-can retirement, instant full-stop relocation of the original gantry, feed continuity and retained lifecycle.")]
         public IEnumerator CombatWarehouseFishClearsOpponents()
         {
             CombatTestRoot root = null;
@@ -254,6 +257,26 @@ namespace BarPromenade.Tests.PlayMode
                 Camera camera = root.CameraFollow.Camera;
                 camera.aspect = (float)Width / Height;
                 Vector3 suspension = crane.GetCraneCableStart(0);
+                Assert.That(suspension.y, Is.GreaterThan(WarehouseArenaPlan.TopHeight),
+                    "The original overhead suspension remains above the galleries.");
+                var retainedPieces = new Transform[crane.CraneCableCount, CombatActor.CraneCableSegments];
+                var originalFeeds = new Transform[crane.CraneCableCount];
+                Transform suspensionHost = crane.GetCraneCableTransform(0, 0).parent;
+                Transform rails = suspensionHost.Find("Crane longitudinal rails");
+                Transform bridge = suspensionHost.Find("Crane transverse bridge");
+                Transform headModel = suspensionHost.Find("Ceiling suspension head");
+                Assert.That(rails != null && bridge != null && headModel != null, Is.True);
+                Vector3 railsPosition = rails.position, railsScale = rails.localScale;
+                Quaternion railsRotation = rails.rotation;
+                Vector3 bridgeScale = bridge.localScale, headScale = headModel.localScale;
+                for (int cable = 0; cable < crane.CraneCableCount; cable++)
+                {
+                    originalFeeds[cable] = CityPedestrianHandProps.FindSocket(
+                        crane.GetCraneCableTransform(cable, 0).parent, CombatCraneAssetProvider.HeadAnchorNames[cable]);
+                    Assert.That(originalFeeds[cable], Is.Not.Null);
+                    for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
+                        retainedPieces[cable, segment] = crane.GetCraneCableTransform(cable, segment);
+                }
                 Vector3 cameraPosition = suspension + new Vector3(2.8f, -1.8f, -3.6f);
                 Quaternion cameraRotation = Quaternion.LookRotation(
                     suspension + Vector3.down * 1.1f - cameraPosition);
@@ -263,11 +286,58 @@ namespace BarPromenade.Tests.PlayMode
 
                 long killsBefore = root.EndlessKills;
                 int impactsBefore = root.Hero.ReceivedImpactCount;
+                Vector3 headBefore = crane.CraneAnchorPosition;
+                var feedsBefore = new Vector3[originalFeeds.Length];
+                var releasedHeights = new float[originalFeeds.Length];
+                for (int cable = 0; cable < originalFeeds.Length; cable++)
+                {
+                    feedsBefore[cable] = originalFeeds[cable].position;
+                    releasedHeights[cable] = crane.GetCraneCableEnd(cable).y - crane.CraneCarriagePosition.y;
+                }
                 Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[2].SourceId,
                     cans[2]), Is.True);
                 AssertWarehouseFishOpponentsCleared(root, killsBefore);
                 CombatCraneRemnant remnant = root.GetComponentInChildren<CombatCraneRemnant>();
                 Assert.That(remnant, Is.Not.Null);
+                Assert.That(crane.CraneAnchorPosition, Is.EqualTo(headBefore), "The gantry must wait for the fan to stop completely.");
+                for (int cable = 0; cable < originalFeeds.Length; cable++)
+                    Assert.That(Vector3.Distance(crane.GetCraneCableStart(cable), feedsBefore[cable]), Is.LessThan(.001f));
+                Assert.That(remnant.IsParked, Is.False);
+                Vector3 commandBefore = crane.CraneCarriagePosition;
+                WarehouseArenaMechanisms machines = root.GetComponentInChildren<WarehouseArenaMechanisms>();
+                machines.Advance(WarehouseArenaMechanisms.FanShutdownDuration - .1f);
+                Assert.That(machines.FanShutdownProgress, Is.LessThan(1f));
+                Assert.That(remnant.IsParked, Is.False);
+                remnant.Advance(.35f);
+                Assert.That(crane.CraneCarriagePosition, Is.EqualTo(commandBefore));
+                Assert.That(crane.CraneAnchorPosition, Is.EqualTo(headBefore),
+                    "Ordinary remnant updates cannot start a gradual mounting move before full fan stop.");
+                for (int cable = 0; cable < originalFeeds.Length; cable++)
+                    Assert.That(Vector3.Distance(crane.GetCraneCableStart(cable), feedsBefore[cable]), Is.LessThan(.001f));
+                Vector3 pausedEnd = remnant.GetCableEnd(0);
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    machines.Advance(1f);
+                    remnant.Advance(1f);
+                    Assert.That(crane.CraneCarriagePosition, Is.EqualTo(commandBefore), "Pause cannot complete the fan or relocate its gantry.");
+                    Assert.That(remnant.GetCableEnd(0), Is.EqualTo(pausedEnd));
+                    Assert.That(remnant.IsParked, Is.False);
+                }
+                machines.Advance(.2f);
+                Assert.That(machines.FanShutdownProgress, Is.EqualTo(1f));
+                Assert.That(remnant.IsParked, Is.True, "Full fan stop must relocate the complete mounting in this same call.");
+                AssertWarehouseFishOpponentsCleared(root, killsBefore, expectParked: true);
+                AssertWarehouseRetainedCranePieces(crane, retainedPieces);
+                Assert.That(rails.position, Is.EqualTo(railsPosition));
+                Assert.That(rails.rotation, Is.EqualTo(railsRotation));
+                Assert.That(rails.localScale, Is.EqualTo(railsScale));
+                Assert.That(bridge.localScale, Is.EqualTo(bridgeScale));
+                Assert.That(headModel.localScale, Is.EqualTo(headScale), "Relocation cannot resize or rebuild the original mechanism.");
+                for (int cable = 0; cable < releasedHeights.Length; cable++)
+                    Assert.That(crane.GetCraneCableEnd(cable).y - crane.CraneCarriagePosition.y,
+                        Is.EqualTo(releasedHeights[cable]).Within(.001f),
+                        "Relocation preserves each original attachment's relative height instead of inventing another cable set.");
+                SetWarehouseCraneRemnantView(root, crane, false);
                 Vector3 cableBefore = remnant.GetCableEnd(0);
                 remnant.Advance(.35f);
                 Vector3 cableAfter = remnant.GetCableEnd(0);
@@ -287,15 +357,20 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 for (int step = 0; step < 120; step++) root.Tick(CombatTestRoot.SimulationStep);
                 yield return null;
-                AssertWarehouseFishOpponentsCleared(root, killsBefore);
+                AssertWarehouseFishOpponentsCleared(root, killsBefore, expectParked: true);
                 Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(impactsBefore));
-                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Empty crane suspension");
+                SetWarehouseCraneRemnantView(root, crane, false);
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Original crane gantry and valve-side cables");
+                SetWarehouseCraneRemnantView(root, crane, true);
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Crane cable ends from valve");
 
                 root.ResetRound();
-                AssertWarehouseFishOpponentsCleared(root, 0);
+                AssertWarehouseFishOpponentsCleared(root, 0, expectParked: true);
+                AssertWarehouseRetainedCranePieces(crane, retainedPieces);
                 Assert.That(root.NewWarehouseLayout(0), Is.True);
                 yield return null;
-                AssertWarehouseFishOpponentsCleared(root, 0);
+                AssertWarehouseFishOpponentsCleared(root, 0, expectParked: true);
+                AssertWarehouseRetainedCranePieces(crane, retainedPieces);
 
                 GameSessionState.ResetInventoryState();
                 Assert.That(root.EndlessSpawnsBlockedByFish || root.WarehouseCraneRemnantActive, Is.False);
@@ -311,6 +386,10 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[part].SourceId,
                         cans[part]), Is.True);
                 AssertWarehouseFishOpponentsCleared(root, 0);
+                Assert.That(remnant.IsParked, Is.False);
+                root.GetComponentInChildren<WarehouseArenaMechanisms>().Advance(WarehouseArenaMechanisms.FanShutdownDuration);
+                AssertWarehouseFishOpponentsCleared(root, 0, expectParked: true);
+                AssertWarehouseRetainedCranePieces(crane, retainedPieces);
                 GameSessionState.BeginNewGame();
                 Assert.That(root.EndlessSpawnsBlockedByFish || root.WarehouseCraneRemnantActive, Is.False);
                 Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
@@ -329,7 +408,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.BeginNewGame();
         }
 
-        private static void AssertWarehouseFishOpponentsCleared(CombatTestRoot root, long expectedKills)
+        private static void AssertWarehouseFishOpponentsCleared(CombatTestRoot root, long expectedKills, bool expectParked = false)
         {
             AssertFishAssemblySpawnCutoff(root, 0);
             Assert.That(root.CorpseCount, Is.Zero);
@@ -338,9 +417,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.SetOpponentFocus(true), Is.False);
             Assert.That(root.IsOpponentFocused || root.FocusMarkerVisible || root.Hero.IsRestrained ||
                 root.RoomAttackCinematicActive, Is.False);
+            CombatActor crane = null;
             foreach (CombatActor actor in root.GetComponentsInChildren<CombatActor>(true))
             {
                 if (actor.IsHero) continue;
+                if (actor.IsCrane)
+                {
+                    Assert.That(crane, Is.Null, "The retained encounter has one crane suspension.");
+                    crane = actor;
+                }
                 Assert.That(actor.gameObject.activeInHierarchy || actor.IsAvailable || actor.State.IsAttacking ||
                     actor.RoomAttackPoseActive || actor.HasCraneVictim, Is.False);
                 Assert.That(actor.TryAttack(), Is.False);
@@ -355,6 +440,91 @@ namespace BarPromenade.Tests.PlayMode
             foreach (CombatCraneRemnant remnant in root.GetComponentsInChildren<CombatCraneRemnant>(true))
                 if (remnant.gameObject.activeInHierarchy) remnants++;
             Assert.That(remnants, Is.EqualTo(1), "Reset and layout re-entry retain a single crane remnant.");
+            Assert.That(crane, Is.Not.Null);
+            AssertWarehouseOriginalCraneCables(root, crane, expectParked);
+        }
+
+        private static void AssertWarehouseRetainedCranePieces(CombatActor crane, Transform[,] retainedPieces)
+        {
+            for (int cable = 0; cable < crane.CraneCableCount; cable++)
+                for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
+                    Assert.That(crane.GetCraneCableTransform(cable, segment), Is.SameAs(retainedPieces[cable, segment]),
+                        "Retirement and relocation reuse all original cable meshes.");
+        }
+
+        private static void AssertWarehouseOriginalCraneCables(CombatTestRoot root, CombatActor crane, bool expectParked)
+        {
+            CombatCraneRemnant remnant = root.GetComponentInChildren<CombatCraneRemnant>();
+            Assert.That(remnant != null && remnant.IsVisible, Is.True);
+            Assert.That(crane.CraneCableCount, Is.EqualTo(6));
+            Vector3 valve = root.WarehousePlan.GateControlPosition;
+            Assert.That(Mathf.Abs(crane.CraneCarriagePosition.x), Is.LessThanOrEqualTo(5f + .001f));
+            Assert.That(Mathf.Abs(crane.CraneCarriagePosition.z), Is.LessThanOrEqualTo(5f + .001f));
+            Assert.That(crane.CraneAnchorPosition.y, Is.EqualTo(9.15f).Within(.001f),
+                "The original overhead machine height must remain unchanged.");
+            if (expectParked)
+            {
+                Assert.That(remnant.IsParked, Is.True);
+                Vector3 goal = new Vector3(valve.x, crane.CraneGroundPosition.y + .40f, 5f);
+                Assert.That(Vector3.Distance(crane.CraneCarriagePosition, goal), Is.LessThan(.025f),
+                    "The complete mounting must snap to the closest projected valve point within its original well limits.");
+            }
+            for (int cable = 0; cable < crane.CraneCableCount; cable++)
+            {
+                Vector3 start = crane.GetCraneCableStart(cable), end = crane.GetCraneCableEnd(cable);
+                Transform feed = CityPedestrianHandProps.FindSocket(crane.GetCraneCableTransform(cable, 0).parent,
+                    CombatCraneAssetProvider.HeadAnchorNames[cable]);
+                Assert.That(feed, Is.Not.Null);
+                Assert.That(Vector3.Distance(start, feed.position), Is.LessThan(.001f),
+                    "Each cable must still emerge from its original authored gantry feed.");
+                Assert.That(start, Is.EqualTo(remnant.GetCableStart(cable)));
+                Assert.That(end, Is.EqualTo(remnant.GetCableEnd(cable)));
+                Assert.That(start.y, Is.GreaterThan(end.y + .03f));
+
+                Vector3 previous = start;
+                for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
+                {
+                    Vector3 from = crane.GetCraneCableSegmentStart(cable, segment);
+                    Vector3 to = crane.GetCraneCableSegmentEnd(cable, segment);
+                    Assert.That(Vector3.Distance(from, previous), Is.LessThan(.001f));
+                    Assert.That(from.y, Is.InRange(end.y - .001f, start.y + .001f));
+                    Assert.That(to.y, Is.InRange(end.y - .001f, start.y + .001f));
+                    Transform piece = crane.GetCraneCableTransform(cable, segment);
+                    Assert.That(piece.gameObject.activeInHierarchy, Is.True);
+                    Assert.That(piece.GetComponentsInChildren<Collider>(true), Is.Empty);
+                    Assert.That(piece.GetComponentsInChildren<Rigidbody>(true), Is.Empty);
+                    Renderer[] renderers = piece.GetComponentsInChildren<Renderer>(true);
+                    Assert.That(renderers, Is.Not.Empty);
+                    Bounds bounds = renderers[0].bounds;
+                    for (int index = 1; index < renderers.Length; index++) bounds.Encapsulate(renderers[index].bounds);
+                    Assert.That(Vector3.Distance(bounds.center, (from + to) * .5f), Is.LessThan(.08f),
+                        "The imported cable mesh must visibly span the public segment endpoints.");
+                    Assert.That(bounds.size.magnitude, Is.EqualTo(Vector3.Distance(from, to)).Within(.08f));
+                    foreach (WarehouseArenaSurface surface in root.WarehousePlan.Surfaces)
+                    {
+                        Rect area = surface.Bounds;
+                        var deck = new Bounds(new Vector3(area.center.x,
+                            surface.Height - WarehouseArenaPlan.DeckThickness * .5f, area.center.y),
+                            new Vector3(area.width, WarehouseArenaPlan.DeckThickness, area.height));
+                        Assert.That(CombatHurtboxes.IntersectsSegment(deck, from, to - from, .01f), Is.False,
+                            "The full original-feed cable path must stay outside every solid gallery deck.");
+                    }
+                    previous = to;
+                }
+                Assert.That(Vector3.Distance(previous, end), Is.LessThan(.001f));
+            }
+        }
+
+        private static void SetWarehouseCraneRemnantView(CombatTestRoot root, CombatActor crane, bool detail)
+        {
+            Vector3 valve = root.WarehousePlan.GateControlPosition;
+            Vector3 ends = Vector3.zero;
+            for (int cable = 0; cable < crane.CraneCableCount; cable++) ends += crane.GetCraneCableEnd(cable);
+            ends /= crane.CraneCableCount;
+            Vector3 eye = detail ? valve + new Vector3(0f, 1.6f, -2.1f) : new Vector3(.5f, 3.7f, -3.5f);
+            Vector3 focus = detail ? ends + Vector3.up * .25f :
+                (crane.CraneAnchorPosition + ends) * .5f + Vector3.forward * 1.4f;
+            root.CameraFollow.SetFixedPose(eye, Quaternion.LookRotation(focus - eye), detail ? 62f : 76f);
         }
 
         [UnityTest]
@@ -1298,6 +1468,7 @@ namespace BarPromenade.Tests.PlayMode
             if (detailedUnlockProof)
             {
                 gate.Sounds.Advance(.1f);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.Zero, "Partial travel cannot announce a fully open gate.");
                 Assert.That(gate.Sounds.CreakStartCount, Is.GreaterThan(0));
                 Assert.That(gate.Sounds.CreakSource.volume, Is.GreaterThan(0f));
                 Assert.That(gate.Sounds.CreakSource.loop && gate.Sounds.CreakSource.isPlaying, Is.True);
@@ -1321,6 +1492,7 @@ namespace BarPromenade.Tests.PlayMode
                 gate.Sounds.Advance(.2f);
                 Assert.That(gate.Sounds.CreakSource.volume, Is.Zero);
                 Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False, "Releasing E fades the valve sound out.");
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.Zero);
             }
             Assert.That(gate.Progress, Is.EqualTo(partial));
             Assert.That(gate.GateLift, Is.EqualTo(partialLift), "Releasing E holds the raised grille at its exact height.");
@@ -1341,6 +1513,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(gate.Sounds.IsPaused, Is.True);
                     Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False);
                     Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
+                    Assert.That(gate.Sounds.FullyOpenLatchCount, Is.Zero);
                 }
                 input.Release(keyboard.eKey, queueEventOnly: true);
                 yield return null;
@@ -1374,6 +1547,51 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(gate.IsOpen, Is.True);
             Assert.That(gate.GateLift, Is.GreaterThan(partialLift + .5f));
             Assert.That(grille.bounds.center.y - closedGrilleCenter, Is.EqualTo(gate.GateLift - closedLift).Within(.002f));
+            if (detailedUnlockProof)
+            {
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.EqualTo(1));
+                AudioSource terminalVoice = gate.Sounds.ActionSource;
+                Assert.That(terminalVoice.isPlaying && !terminalVoice.loop, Is.True);
+                Assert.That(terminalVoice.transform.parent, Is.SameAs(wheel), "The final stop sounds at the valve, away from the fallen lock.");
+                Assert.That(Vector3.Distance(terminalVoice.transform.position, wheel.position), Is.LessThan(.001f));
+                Assert.That(terminalVoice.outputAudioMixerGroup, Is.SameAs(GameAudioMixer.SfxWorldGroup));
+                AudioClip terminalClip = terminalVoice.clip;
+                Assert.That(terminalClip, Is.Not.Null);
+                var terminalSamples = new float[terminalClip.samples * terminalClip.channels];
+                Assert.That(terminalClip.GetData(terminalSamples, 0), Is.True);
+                float peak = 0f;
+                bool finite = true;
+                foreach (float sample in terminalSamples)
+                {
+                    finite &= float.IsFinite(sample);
+                    peak = Mathf.Max(peak, Mathf.Abs(sample));
+                }
+                Assert.That(finite, Is.True);
+                Assert.That(peak, Is.InRange(.2f, .89f), "The generated terminal stop has a bounded audible impact.");
+                gate.Advance(WarehouseGateState.TurnSeconds);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.EqualTo(1), "Holding E at the end cannot replay the latch.");
+                yield return null;
+                Assert.That(NarrativeInteractionController.For(root.Player.Interactor).Phase,
+                    Is.EqualTo(NarrativeInteractionPhase.Exiting));
+                Assert.That(terminalVoice.isPlaying, Is.True, "Automatic activity completion must let the world's latch ring out.");
+                gate.EndActivity();
+                Assert.That(terminalVoice.isPlaying, Is.True, "Repeated activity cleanup cannot cut the terminal tail.");
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    gate.Sounds.Advance(.1f);
+                    int pausedLatch = terminalVoice.timeSamples;
+                    yield return null;
+                    Assert.That(terminalVoice.isPlaying, Is.False);
+                    Assert.That(terminalVoice.timeSamples, Is.EqualTo(pausedLatch));
+                }
+                gate.Sounds.Advance(.01f);
+                Assert.That(terminalVoice.isPlaying, Is.True);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.EqualTo(1));
+                gate.Sounds.Stop();
+                Assert.That(terminalVoice.isPlaying, Is.False, "Full world cleanup must stop the terminal tail.");
+                gate.Advance(WarehouseGateState.TurnSeconds);
+                Assert.That(gate.Sounds.FullyOpenLatchCount, Is.EqualTo(1));
+            }
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return WaitForFishAssemblyExit(root);
             AssertFishAssemblyReleased(root);

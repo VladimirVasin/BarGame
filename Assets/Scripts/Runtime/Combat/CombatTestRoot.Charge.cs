@@ -193,7 +193,7 @@ namespace BarPromenade
             ClearRoomAttackCooldowns();
             ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();
-            SuspendWarehouseMusic();
+            SuspendWarehouseAudio();
             ReleaseWarehouseAcoustics();
             Hero?.ClearWarehouseTorsoLook();
             if (Flashlight != null) Flashlight.enabled = false;

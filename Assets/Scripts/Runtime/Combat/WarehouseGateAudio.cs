@@ -3,18 +3,19 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Three bounded, causal world voices for the lock, falling chain and moving rusty drive.</summary>
+    /// <summary>Three bounded world voices for the lock, falling chain, rusty drive and final stop.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(320)]
     public sealed class WarehouseGateAudio : MonoBehaviour
     {
         private const int SampleRate = 24000;
         private const float TurningVolume = .40f, FadeSeconds = .12f, ContactCooldown = .09f;
-        private static AudioClip keyTurnClip, unlockClip, releaseClip, turningClip;
+        private static AudioClip keyTurnClip, unlockClip, releaseClip, turningClip, fullyOpenLatchClip;
         private static readonly AudioClip[] impactClips = new AudioClip[3];
         private static int leases;
         private Func<bool> suspended;
-        private bool initialized, leased, turning, manuallySuspended, paused, contactsEnabled, contactPending;
+        private bool initialized, leased, turning, manuallySuspended, paused, contactsEnabled, contactPending, terminalAction;
+        private Transform mechanismAnchor, lockAnchor;
         private Vector3 contactPoint;
         private float contactImpulse;
         private double clock, lastContact = double.NegativeInfinity;
@@ -28,6 +29,7 @@ namespace BarPromenade
         public int ChainReleaseCount { get; private set; }
         public int ImpactCount { get; private set; }
         public int CreakStartCount { get; private set; }
+        public int FullyOpenLatchCount { get; private set; }
         public bool IsPaused => paused;
 
         public void Initialize(Transform mechanism, Transform contactParent, Func<bool> suspended = null)
@@ -35,6 +37,8 @@ namespace BarPromenade
             if (initialized) return;
             if (mechanism == null || contactParent == null) throw new ArgumentNullException();
             this.suspended = suspended;
+            mechanismAnchor = mechanism;
+            lockAnchor = contactParent;
             try
             {
                 AcquireClips();
@@ -92,9 +96,26 @@ namespace BarPromenade
             ChainReleaseCount++;
         }
 
-        private void PlayAction(AudioClip clip, float volume)
+        public void PlayFullyOpenLatch()
+        {
+            // The activity ticks before this component's late audio update.
+            // A completion on the first resumed frame cannot lose its edge to
+            // the cached pause flag from the previous frame.
+            if (initialized && isActiveAndEnabled && !(suspended?.Invoke() ?? false))
+                SetPaused(manuallySuspended || RuntimePaused);
+            if (!CanEmit) return;
+            // The released lock may still be falling after a manually advanced
+            // drive. The terminal stop belongs to the valve, never that lock.
+            PlayAction(fullyOpenLatchClip, .82f, true);
+            FullyOpenLatchCount++;
+        }
+
+        private void PlayAction(AudioClip clip, float volume, bool terminal = false)
         {
             ActionSource.Stop();
+            terminalAction = terminal;
+            ActionSource.transform.SetParent(terminal ? mechanismAnchor : lockAnchor, false);
+            ActionSource.transform.localPosition = Vector3.zero;
             ActionSource.clip = clip;
             ActionSource.volume = volume;
             ActionSource.Play();
@@ -178,12 +199,12 @@ namespace BarPromenade
             else { CreakSource.UnPause(); ActionSource.UnPause(); ContactSource.UnPause(); }
         }
 
-        /// <summary>Leaving inspection can stop lock handling while the world chain finishes landing.</summary>
-        public void StopActions() { if (ActionSource != null) ActionSource.Stop(); }
+        /// <summary>The world's terminal latch rings out after the completed activity releases its owner.</summary>
+        public void StopActions() { if (ActionSource != null && !terminalAction) ActionSource.Stop(); }
 
         public void Stop()
         {
-            turning = manuallySuspended = paused = contactPending = contactsEnabled = false;
+            turning = manuallySuspended = paused = contactPending = contactsEnabled = terminalAction = false;
             if (CreakSource != null) { CreakSource.Stop(); CreakSource.volume = 0f; }
             if (ActionSource != null) ActionSource.Stop();
             if (ContactSource != null) ContactSource.Stop();
@@ -193,7 +214,7 @@ namespace BarPromenade
         {
             Stop();
             clock = 0d; lastContact = double.NegativeInfinity; impactVariant = 0;
-            KeyTurnCount = UnlockClickCount = ChainReleaseCount = ImpactCount = CreakStartCount = 0;
+            KeyTurnCount = UnlockClickCount = ChainReleaseCount = ImpactCount = CreakStartCount = FullyOpenLatchCount = 0;
         }
 
         private void Update() => Advance(Time.unscaledDeltaTime);
@@ -227,6 +248,7 @@ namespace BarPromenade
                     unlockClip = MakeClip("Warehouse shackle release", .30f, 1);
                     releaseClip = MakeClip("Warehouse chain coming loose", .64f, 2);
                     turningClip = MakeClip("Warehouse rusty valve strain", 4f, 4);
+                    fullyOpenLatchClip = MakeClip("Warehouse valve fully open latch", 1.15f, 5);
                     for (int index = 0; index < impactClips.Length; index++)
                         impactClips[index] = MakeClip("Warehouse chain contact " + (index + 1), .24f + index * .035f, 3, index);
                 }
@@ -246,7 +268,8 @@ namespace BarPromenade
             if (unlockClip != null) Destroy(unlockClip);
             if (releaseClip != null) Destroy(releaseClip);
             if (turningClip != null) Destroy(turningClip);
-            keyTurnClip = unlockClip = releaseClip = turningClip = null;
+            if (fullyOpenLatchClip != null) Destroy(fullyOpenLatchClip);
+            keyTurnClip = unlockClip = releaseClip = turningClip = fullyOpenLatchClip = null;
             for (int index = 0; index < impactClips.Length; index++)
             { if (impactClips[index] != null) Destroy(impactClips[index]); impactClips[index] = null; }
         }
@@ -298,6 +321,21 @@ namespace BarPromenade
                             float since = time - (hit * .087f + hit * hit * .012f);
                             if (since >= 0f) sample += (MetalRing(since, 430f + hit * 113f) * .29f + noise * .15f) *
                                 Mathf.Exp(-since * (22f + hit * 4f)) * (1f - hit * .16f);
+                        }
+                    }
+                    else if (kind == 5)
+                    {
+                        // A heavy drive hits its stop, the pawl seats, then the
+                        // housing rings. No random playback or extra native voice.
+                        float body = Mathf.Sin(time * Mathf.PI * 2f * 83f) * .46f * Mathf.Exp(-time * 12f);
+                        float strike = (noise * .32f + MetalRing(time, 218f) * .28f) * Mathf.Exp(-time * 35f);
+                        sample = body + strike + MetalRing(time, 461f) * .15f * Mathf.Exp(-time * 5.5f);
+                        for (int hit = 0; hit < 3; hit++)
+                        {
+                            float since = time - (.065f + hit * .047f);
+                            if (since >= 0f)
+                                sample += (MetalRing(since, 610f + hit * 117f) * .19f + noise * .09f) *
+                                    Mathf.Exp(-since * 52f) * (1f - hit * .22f) * Mathf.Clamp01(since / .0015f);
                         }
                     }
                     else sample = (MetalRing(time, 390f + variant * 91f) * .50f + noise * .24f) * Mathf.Exp(-time * (19f + variant * 3f));

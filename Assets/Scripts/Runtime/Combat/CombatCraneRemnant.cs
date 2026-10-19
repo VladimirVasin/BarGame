@@ -10,10 +10,13 @@ namespace BarPromenade
         internal const float SettleSeconds = 3f;
         private const float WindCycleSeconds = 40f, AudibleDistance = 16f;
         private readonly Vector3[] starts = new Vector3[6], restEnds = new Vector3[6], ends = new Vector3[6], spread = new Vector3[6];
+        private readonly Vector3[] releasedOffsets = new Vector3[6];
         private readonly Renderer[] visibilityRenderers = new Renderer[24];
         private Transform[,] pieces;
         private Vector3[,] scales;
         private CombatTestRoot owner;
+        private CombatActor suspendedActor;
+        private Transform[] feeds;
         private Transform observer;
         private Vector3 centre;
         private AudioClip creak;
@@ -23,15 +26,18 @@ namespace BarPromenade
 
         internal bool IsVisible { get; private set; }
         internal bool IsAnimating => IsVisible && enabled;
+        internal bool IsParked { get; private set; }
         internal AudioSource Source { get; private set; }
+        internal Vector3 GetCableStart(int index) => starts[index];
         internal Vector3 GetCableEnd(int index) => ends[index];
 
-        internal void Initialize(Transform[,] cablePieces, Vector3[,] cableScales, CombatTestRoot warehouse)
+        internal void Initialize(Transform[,] cablePieces, Vector3[,] cableScales, CombatTestRoot warehouse, CombatActor actor)
         {
             pieces = cablePieces;
             scales = cableScales;
             segmentCount = pieces.GetLength(1);
             owner = warehouse;
+            suspendedActor = actor;
             observer = owner != null && owner.CameraFollow != null ? owner.CameraFollow.Camera.transform : null;
             for (int index = 0; index < starts.Length; index++)
                 for (int segment = 0; segment < segmentCount; segment++)
@@ -39,28 +45,26 @@ namespace BarPromenade
             enabled = false;
         }
 
-        internal void Show(Transform[] feeds, Transform[] attachments, bool animate)
+        internal void Show(Transform[] liveFeeds, Transform[] attachments, bool animate)
         {
             if (IsVisible) return;
+            if (owner == null || owner.WarehousePlan == null)
+                throw new InvalidOperationException("Free crane cables require a warehouse plan.");
+            feeds = liveFeeds;
             centre = Vector3.zero;
-            for (int index = 0; index < starts.Length; index++)
-            {
-                starts[index] = feeds[index].position;
-                centre += starts[index];
-            }
+            for (int index = 0; index < starts.Length; index++) centre += feeds[index].position;
             centre /= starts.Length;
             for (int index = 0; index < starts.Length; index++)
             {
+                starts[index] = feeds[index].position;
                 Vector3 outward = Vector3.ProjectOnPlane(starts[index] - centre, Vector3.up);
                 if (outward.sqrMagnitude < .0001f)
                     outward = Quaternion.AngleAxis(index * 60f, Vector3.up) * Vector3.right;
                 spread[index] = outward.normalized;
-                // Retain the achieved payout with small unequal losses at the free
-                // ends; using vertical clearance keeps them above the former feet.
-                float length = Mathf.Max(.45f, starts[index].y - attachments[index].position.y) * (.92f + index % 3 * .025f);
-                restEnds[index] = starts[index] + Vector3.down * length + spread[index] * (.09f + index * .012f);
+                releasedOffsets[index] = attachments[index].position - suspendedActor.CraneCarriagePosition;
             }
             IsVisible = true;
+            IsParked = false;
             elapsed = animate ? 0f : SettleSeconds;
             windClock = 0f;
             presentationRemaining = 0f;
@@ -72,9 +76,17 @@ namespace BarPromenade
             Sample();
         }
 
+        internal void Park()
+        {
+            IsParked = true;
+            elapsed = SettleSeconds;
+            presentationRemaining = 0f;
+            Sample();
+        }
+
         internal void Clear()
         {
-            IsVisible = false;
+            IsVisible = IsParked = false;
             elapsed = windClock = presentationRemaining = 0f;
             StopAudio();
             enabled = false;
@@ -165,10 +177,21 @@ namespace BarPromenade
             float decay = 1f - elapsed / SettleSeconds;
             decay *= decay;
             float phase = windClock * (Mathf.PI * 2f / WindCycleSeconds);
+            centre = Vector3.zero;
             for (int index = 0; index < starts.Length; index++)
             {
+                starts[index] = feeds[index].position;
+                centre += starts[index];
+            }
+            centre /= starts.Length;
+            if (Source != null) Source.transform.position = centre;
+            for (int index = 0; index < starts.Length; index++)
+            {
+                Vector3 released = suspendedActor.CraneCarriagePosition + releasedOffsets[index];
+                restEnds[index] = new Vector3(starts[index].x, released.y, starts[index].z) +
+                    spread[index] * (.09f + index * .012f);
                 Vector3 tangent = Vector3.Cross(Vector3.up, spread[index]);
-                ends[index] = restEnds[index] +
+                ends[index] = Vector3.Lerp(restEnds[index], released, decay) +
                     tangent * (Mathf.Sin(phase * (3 + index % 3) + index * .7f) * .022f +
                         Mathf.Sin(elapsed * (5.6f + index * .19f) + index * .7f) * .06f * decay) +
                     spread[index] * (Mathf.Sin(phase * (2 + index % 2) + index * .43f) * .014f);
