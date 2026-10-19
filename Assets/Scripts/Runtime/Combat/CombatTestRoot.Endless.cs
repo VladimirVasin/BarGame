@@ -131,6 +131,7 @@ namespace BarPromenade
             using (SpawnResetMarker.Auto()) actor.ResetActor(spawn, facing.normalized);
             if (actor.IsCrane) actor.ConfigureCraneSuspension(CraneGround, new Vector3(CraneGround.x, 9.15f, CraneGround.z));
             PlaceSpawnedMimic(available, spawn);
+            actor.SetRoomAttackSuppressed(RoomAttackCinematicActive && actor != roomAttacker);
             LastSpawnResetTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             available.Spawned = true;
             available.DefeatCounted = false;

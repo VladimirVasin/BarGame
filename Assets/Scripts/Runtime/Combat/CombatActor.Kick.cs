@@ -561,7 +561,7 @@ namespace BarPromenade
             }
             internal void Apply()
             {
-                if (source.ContactGeneration != sourceGeneration || target.ContactGeneration != targetGeneration ||
+                if (source.RoomAttackSuppressed || source.ContactGeneration != sourceGeneration || target.ContactGeneration != targetGeneration ||
                     !HasPhysicalBody(target) || !source.isActiveAndEnabled) return;
                 // Both actors register contacts before either is interrupted by the other's strike.
                 MeleePhase before = target.State.Phase;

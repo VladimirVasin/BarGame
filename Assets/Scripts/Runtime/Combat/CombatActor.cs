@@ -182,7 +182,7 @@ namespace BarPromenade
         // a catching step, but can never cancel an already committed fall.
         internal bool HasAttackBalance => BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        private bool CanAttemptBodyAction => !IsZombieFrenzied && !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => !RoomAttackSuppressed && !IsZombieFrenzied && !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
         internal bool CanAttemptUpperBodyAttack => !HasWeaponSwitchRequest && BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
         private string UpperBodyAttackRejection => !BodyDamage.CanUseRightHand ? "right_hand_unavailable" : weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
@@ -206,7 +206,7 @@ namespace BarPromenade
         public bool GuardRequested => guardHeld;
         public bool GuardReady => !IsZombie && GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => RoomAttackSuppressed ? "room_attack" : HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport || (guardHeld && supportGrip != null && !supportGrip.IsSupportingGuard) ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
@@ -326,6 +326,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            if (RoomAttackCooldownActive) AdvanceRoomAttackCooldown(seconds);
             if (IsCrane && !State.IsDefeated) { AdvanceCraneSimulation(seconds); return; }
             if (!presentationFrozen && !ZombieDormant) zombieLoad?.AdvanceCatch(seconds);
             AdvanceWeaponCarry(seconds);
@@ -595,6 +596,7 @@ namespace BarPromenade
 
         public void SetLocomotion(Vector3 velocity)
         {
+            if (RoomAttackSuppressed) velocity = Vector3.zero;
             velocity.y = 0f;
             locomotionVelocity = velocity;
         }
@@ -761,12 +763,15 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            EndRoomAttackPose();
+            ClearRoomAttackCooldown();
             ResetRoomAttackDamageReceipt();
             ClearWarehouseTorsoLook();
             ResetCorpseStepPose();
             CombatFocused = true;
             freeLocomotionReleased = false;
             presentationFrozen = false;
+            RoomAttackSuppressed = false;
             guardHeld = false;
             journalActionRequest = journalQueuedRequest = 0;
             LastJournalImpactSequence = 0;
@@ -849,6 +854,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            RoomAttackSuppressed = false;
+            ClearRoomAttackCooldown();
             ResetRoomAttackDamageReceipt();
             SuspendCrane();
             ClearWarehouseTorsoLook();

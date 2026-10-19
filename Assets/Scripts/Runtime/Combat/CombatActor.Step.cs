@@ -31,6 +31,7 @@ namespace BarPromenade
         public bool TryStep(Vector2 input)
         {
             int request = JournalCommand("step");
+            if (RoomAttackSuppressed) return JournalCommandResult(request, "rejected", "room_attack");
             if (HasWeaponSwitchRequest) return JournalCommandResult(request, "rejected", "weapon_switching");
             if (!BodyDamage.CanStand) return JournalCommandResult(request, "rejected", "leg_support_unavailable");
             if (!CombatFocused && !IsFreePistolAiming) return JournalCommandResult(request, "rejected", "unfocused");

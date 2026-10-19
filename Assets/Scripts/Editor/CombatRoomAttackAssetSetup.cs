@@ -12,7 +12,7 @@ namespace BarPromenade.Editor
         private const string Hero = "Assets/Resources/Player/RoomAttackHeroActions.fbx";
         private const string Tableau = "Assets/Resources/Combat/RoomAttackTableau.fbx";
         private bool IsBank => assetPath == Npc || assetPath == Hero;
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private void OnPreprocessModel()
         {
@@ -43,7 +43,8 @@ namespace BarPromenade.Editor
                 bool known = assetPath == Hero ? clip.name == CombatRoomAttackAssetProvider.HeadPainClip :
                     Array.IndexOf(CombatRoomAttackAssetProvider.NpcClipNames, clip.name) >= 0;
                 if (!known) throw new InvalidOperationException("Unexpected Room action: " + clip.name);
-                clip.loopTime = false; clip.loopPose = false;
+                clip.loopTime = clip.name == CombatRoomAttackAssetProvider.IdleClip;
+                clip.loopPose = false;
                 clip.keepOriginalOrientation = true; clip.keepOriginalPositionXZ = true; clip.keepOriginalPositionY = true;
                 clip.lockRootRotation = true; clip.lockRootPositionXZ = true; clip.lockRootHeightY = true;
                 clip.events = Array.Empty<AnimationEvent>();

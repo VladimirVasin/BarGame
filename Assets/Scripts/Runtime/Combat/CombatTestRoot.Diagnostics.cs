@@ -145,6 +145,7 @@ namespace BarPromenade
         private void OnDestroy()
         {
             CancelRoomAttackSequence();
+            ClearRoomAttackCooldowns();
             roomTableau?.Dispose();
             ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();

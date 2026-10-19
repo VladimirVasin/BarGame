@@ -53,7 +53,7 @@ namespace BarPromenade
         }
 
         private bool IsAuthoredZombieClip(AnimationClip clip) =>
-            IsCrane && IsCraneClip(clip) || clip == ready || clip == zombieWalk || clip == zombieAttackRight || clip == zombieAttackLeft ||
+            IsCrane && IsCraneClip(clip) || clip == ready || clip == rest || clip == zombieWalk || clip == zombieAttackRight || clip == zombieAttackLeft ||
             clip == hit || clip == zombieLoadAdjust || clip == zombieWatch || clip == zombieDormant || clip == zombieReveal || clip == zombieFrenzy;
 
         private void ApplyZombieGenericAnatomy()

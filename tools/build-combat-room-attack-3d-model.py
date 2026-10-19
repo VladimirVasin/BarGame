@@ -43,7 +43,9 @@ FPS = 30
 OUT = ROOT / 'Assets/Resources/Combat'
 HERO_OUT = ROOT / 'Assets/Resources/Player'
 SOURCE = ROOT / 'ArtSource/CombatRoom'
-CLIPS = (('RoomPointHero', 2.), ('RoomPointChest', .45), ('RoomLaugh', 5.))
+INPUT_SOURCE = SOURCE
+DAMAGE_OUT = ROOT / 'Assets/Resources/CombatGore'
+CLIPS = (('RoomPointHero', 1.), ('RoomPointChest', .45), ('RoomLaugh', 5.), ('RoomIdle', 5.))
 LAUGHS = ((.28,.72),(.64,.90),(1.03,1.),(1.35,.83),(1.72,1.),
           (2.02,.77),(2.38,1.),(2.77,.9),(3.12,.78),(3.52,.92),(3.91,.72),(4.28,.52))
 CORRIDOR_SCALE = 14.
@@ -100,7 +102,7 @@ def blend(builder, first, second, t):
         for b in builder.result.rig.pose.bones}
 
 
-def arm_to(builder, side, wrist, direction, presented=False):
+def arm_to(builder, side, wrist, direction, presented=False, palm=None):
     """Solve authored rotations; runtime owns the Room's accepted limb lengths."""
     rig = builder.result.rig
     upper, fore, hand = (rig.pose.bones[name+'.'+side] for name in ('upper_arm','forearm','hand'))
@@ -124,6 +126,17 @@ def arm_to(builder, side, wrist, direction, presented=False):
                                (hand,target,Vector(direction))):
         rest = bone.bone
         rotation = (rest.tail_local-rest.head_local).normalized().rotation_difference(aim.normalized()) @ rest.matrix_local.to_quaternion()
+        if bone == hand and palm is not None:
+            # A pointing axis alone leaves wrist roll unspecified. Match the
+            # actual anatomical palm, rather than assuming hand-local Z is it.
+            native_axis = (rest.tail_local-rest.head_local).normalized()
+            native_palm = builder.hand_frame(side)[2]
+            def basis(axis, normal):
+                axis=axis.normalized()
+                normal=(normal-axis*normal.dot(axis)).normalized()
+                return Matrix((axis.cross(normal),axis,normal)).transposed()
+            rotation = (basis(aim,Vector(palm)) @ basis(native_axis,native_palm).transposed() @
+                        rest.matrix_local.to_3x3()).to_quaternion()
         bone.matrix = Matrix.Translation(origin) @ rotation.to_matrix().to_4x4()
         bpy.context.view_layer.update()
     return snapshot(builder)
@@ -155,28 +168,91 @@ def validate_actions(builder):
     builder._reset_pose()
 
 
+def idle_action(builder, base):
+    """A planted, uneasy loop, relaxed at both ends of the laugh handoff."""
+    keys=[]
+    for frame in range(301):
+        t=frame/300.
+        phase=math.tau*t
+        # Zero displacement and velocity at the seam. Distal motion trails the
+        # chest; two small finite wrist ticks break the otherwise slow sway.
+        envelope=math.sin(math.pi*t)**2
+        breath=math.sin(2.*phase)*envelope
+        lean=math.sin(phase)*envelope
+        pose=dict(base)
+        changes={'spine':(-.65*breath, .6*lean, -.6*lean),
+                 'chest':(1.8*breath, -.8*lean, 1.1*lean),
+                 'neck':(2.4*envelope, -2.6*lean, 3.4*lean),
+                 'head':(3.2*envelope, 5.*lean, 16.*lean)}
+        for side,sign,lag in (('L',1.,.55),('R',-1.,1.05)):
+            loose=math.sin(phase-lag)*envelope
+            twitch=(math.exp(-((t-(.34 if side=='L' else .68))/.013)**2)-
+                    .55*math.exp(-((t-(.365 if side=='L' else .705))/.020)**2))*envelope
+            changes['upper_arm.'+side]=(1.1*loose, sign*.8*loose, sign*1.8*loose)
+            changes['forearm.'+side]=(-2.4*loose, 0., sign*.9*loose)
+            changes['hand.'+side]=(5.*loose+1.5*twitch, sign*2.8*loose, sign*(2.*loose+3.*twitch))
+        for name,delta in changes.items():
+            pose[name]=common.BonePose(rotation_degrees=tuple(a+b for a,b in
+                zip(base[name].rotation_degrees, delta)))
+        keys.append((t,base if frame in (0,300) else pose))
+    builder._create_action('RoomIdle','room_idle',5.,True,300,60,keys)
+
+
+def validate_idle(builder):
+    rig=builder.result.rig
+    record=builder.result.actions['RoomIdle']
+    rig.animation_data.action=record.action
+    bpy.context.scene.frame_set(0)
+    initial={bone.name:bone.rotation_quaternion.copy() for bone in rig.pose.bones}
+    maximum={name:0. for name in ('head','chest','hand.L','hand.R')}
+    for frame in range(301):
+        bpy.context.scene.frame_set(frame)
+        for name in maximum:
+            maximum[name]=max(maximum[name],math.degrees(initial[name].rotation_difference(
+                rig.pose.bones[name].rotation_quaternion).angle))
+    seam=max(math.degrees(initial[b.name].rotation_difference(b.rotation_quaternion).angle)
+             for b in rig.pose.bones)
+    if seam>.001 or maximum['head']<8. or maximum['chest']<1.5 or min(maximum['hand.L'],maximum['hand.R'])<3.:
+        raise ValueError('Room idle lost closed seam or authored upper-body motion')
+    # Both one-frame seam tangents are almost stationary; the authoring envelope
+    # makes their limiting velocity exactly zero, not merely matching poses.
+    seam_step=0.
+    for frame in (1,299):
+        bpy.context.scene.frame_set(frame)
+        seam_step=max(seam_step,max(math.degrees(initial[b.name].rotation_difference(
+            b.rotation_quaternion).angle) for b in rig.pose.bones))
+    if seam_step>.04:raise ValueError('Room idle seam has a velocity snap')
+    rig.animation_data.action=None;builder._reset_pose()
+    return {'relaxed_endpoints':True,'loop_seam_degrees':round(seam,6),
+            'seam_step_degrees':round(seam_step,6),
+            'maximum_local_rotation_degrees':{name:round(value,6) for name,value in maximum.items()}}
+
+
 def npc_bank(publish):
     builder = room.zombie.load_builder()
     common.ANIMATION_FPS = FPS
     bpy.context.scene.render.fps = FPS
     base = evaluated_pose(builder, builder.relaxed_pose())
     builder._reset_pose(); builder._apply_pose(base)
-    point = arm_to(builder,'R',(-.34,-.70,1.43),(0.,-1.,.02),True)
+    upper,fore=(builder.result.rig.pose.bones[name+'.R'] for name in ('upper_arm','forearm'))
+    shoulder=upper.head.copy()
+    # Extend toward the lens at face height, with a small natural elbow bend.
+    # Raising a wrist at the old short reach merely folds the elbow upwards.
+    reach=.995*(upper.bone.length*room.geometry.UPPER_ARM_LENGTH_SCALE+
+                fore.bone.length*room.geometry.FOREARM_LENGTH_SCALE)
+    wrist=Vector((shoulder.x-.035,shoulder.y,1.58))
+    wrist.y-=math.sqrt(reach*reach-(wrist.x-shoulder.x)**2-(wrist.z-shoulder.z)**2)
+    point = arm_to(builder,'R',wrist,(0.,-1.,.02),True,palm=(0.,0.,-1.))
     builder._reset_pose(); builder._apply_pose(base)
-    chest = arm_to(builder,'R',(-.44,-.47,1.30),(.72,.68,-.06),True)
-    keys = [(frame/60.,blend(builder,base,point,smooth(frame/9.))) for frame in range(61)]
-    builder._create_action('RoomPointHero','room_attack',2.,False,60,FPS,keys)
+    chest = arm_to(builder,'R',(-.44,-.47,1.30),(.72,.68,-.06),True,palm=(0.,0.,-1.))
     # .45 seconds is intentionally not an integral frame at 30 Hz. The bank
     # uses 60 Hz so the authored move remains exactly .45 s after FBX import.
     common.ANIMATION_FPS = 60
     bpy.context.scene.render.fps = 60
     keys = [(frame/27.,blend(builder,point,chest,smooth(frame/27.))) for frame in range(28)]
     builder._create_action('RoomPointChest','room_attack',.45,False,27,60,keys)
-    # Rebuild first action at the same export sampling rate.
-    old = builder.result.actions.pop('RoomPointHero').action
-    bpy.data.actions.remove(old)
-    keys = [(frame/120.,blend(builder,base,point,smooth(frame/18.))) for frame in range(121)]
-    builder._create_action('RoomPointHero','room_attack',2.,False,120,60,keys)
+    keys = [(frame/60.,blend(builder,base,point,smooth(frame/18.))) for frame in range(61)]
+    builder._create_action('RoomPointHero','room_attack',1.,False,60,60,keys)
     keys=[]
     for frame in range(301):
         seconds=frame/60.
@@ -197,7 +273,9 @@ def npc_bank(publish):
         if frame==300:laugh=base
         keys.append((frame/300.,laugh))
     builder._create_action('RoomLaugh','room_attack',5.,False,300,60,keys)
+    idle_action(builder,base)
     validate_actions(builder)
+    idle=validate_idle(builder)
     directions={}
     rig=builder.result.rig
     for name,expected in [('RoomPointHero',Vector((0.,-1.,.02))),('RoomPointChest',Vector((.72,.68,-.06)))]:
@@ -208,11 +286,36 @@ def npc_bank(publish):
         actual=(hand.tail-hand.head).normalized()
         error=math.degrees(actual.angle(expected.normalized()))
         if error>.02:raise ValueError('Room finger does not aim along authored direction '+name)
-        directions[name]={'hand_axis_error_degrees':round(error,6),'wrist_metres':list(hand.head)}
+        native_palm=builder.hand_frame('R')[2]
+        actual_palm=(hand.matrix.to_3x3() @ hand.bone.matrix_local.to_3x3().inverted() @ native_palm).normalized()
+        wanted_palm=(Vector((0.,0.,-1.))-expected.normalized()*Vector((0.,0.,-1.)).dot(expected.normalized())).normalized()
+        palm_error=math.degrees(actual_palm.angle(wanted_palm))
+        if palm_error>.02:raise ValueError('Room pointing palm lost authored wrist roll '+name)
+        upper,fore=(rig.pose.bones[part+'.R'] for part in ('upper_arm','forearm'))
+        upper_vector=fore.head-upper.head;fore_vector=hand.head-fore.head
+        reach_ratio=(hand.head-upper.head).length/(upper_vector.length+fore_vector.length)
+        elbow_flex=math.degrees(upper_vector.angle(fore_vector))
+        if name=='RoomPointHero' and not .994<reach_ratio<.996:
+            raise ValueError('Room pointing arm is not naturally extended '+str(reach_ratio))
+        directions[name]={'hand_axis_error_degrees':round(error,6),'palm_error_degrees':round(palm_error,6),
+                          'wrist_metres':list(hand.head),'shoulder_metres':list(upper.head),
+                          'elbow_metres':list(fore.head),'presented_reach_ratio':round(reach_ratio,6),
+                          'elbow_flex_degrees':round(elbow_flex,6)}
+    handoffs={}
+    for first,second in [('RoomPointHero','RoomPointChest'),('RoomPointChest','RoomLaugh')]:
+        rig.animation_data.action=builder.result.actions[first].action
+        bpy.context.scene.frame_set(round(builder.result.actions[first].action.frame_end))
+        previous={b.name:b.rotation_quaternion.copy() for b in rig.pose.bones}
+        rig.animation_data.action=builder.result.actions[second].action
+        bpy.context.scene.frame_set(0)
+        error=max(math.degrees(previous[b.name].rotation_difference(b.rotation_quaternion).angle) for b in rig.pose.bones)
+        if error>.001:raise ValueError('Room pointing pose handoff jumps '+first+' to '+second)
+        handoffs[first+' to '+second]=round(error,6)
     rig.animation_data.action=None;builder._reset_pose()
     data={'rig':'NpcHumanV2','root_motion':False,'animation_events':0,'fps':60,
-          'signature':curve_signature(builder),'clips':[{'name':n,'duration':t,'loop':False} for n,t in CLIPS],
-          'accepted_presented_lengths':[1.3,1.8,1.5],'fixed_lower_body':True,'point_directions':directions}
+          'signature':curve_signature(builder),'clips':[{'name':n,'duration':t,'loop':n=='RoomIdle'} for n,t in CLIPS],
+          'accepted_presented_lengths':[1.3,1.8,1.5],'fixed_lower_body':True,'point_directions':directions,
+          'idle':idle,'point_handoff_error_degrees':handoffs}
     if publish:
         common.export_animation_fbx(OUT/'RoomAttackNpcActions.fbx',builder.result)
         common.save_blend(SOURCE/'RoomAttackNpcActions.blend')
@@ -275,7 +378,7 @@ def body_basis_signature(objects):
 
 
 def pointing_shape(publish):
-    bpy.ops.wm.open_mainfile(filepath=str(SOURCE/'RoomBody.blend'))
+    bpy.ops.wm.open_mainfile(filepath=str(INPUT_SOURCE/'RoomBody.blend'))
     rig=bpy.data.objects['RIG_Player']
     rig.animation_data.action=None
     for bone in rig.pose.bones:
@@ -283,6 +386,15 @@ def pointing_shape(publish):
     objects=[obj for obj in bpy.data.objects if obj.type=='MESH' and obj.name.startswith('GEO_')]
     before=body_basis_signature(objects)
     frame=rig.matrix_world @ rig.data.bones['hand.R'].matrix_local
+    rest=rig.data.bones['hand.R']
+    axis=(rest.tail_local-rest.head_local).normalized()
+    across=(Vector((0.,1.,0.))-axis*axis.y).normalized()
+    palm=axis.cross(across).normalized()
+    to_local=rest.matrix_local.to_3x3().inverted()
+    axis,across,palm=(to_local @ vector for vector in (axis,across,palm))
+    curl_axis=axis.cross(palm).normalized()
+    index=bpy.data.objects['GEO_HandFinger0.R']
+    index_before=body_basis_signature([index])
     affected=[]
     for name in ['GEO_HandFinger1.R','GEO_HandFinger2.R','GEO_HandFinger3.R','GEO_HandThumb.R']:
         obj=bpy.data.objects[name]
@@ -291,21 +403,59 @@ def pointing_shape(publish):
         points=[into @ v.co for v in obj.data.vertices]
         if obj.data.shape_keys is None:obj.shape_key_add(name='Basis')
         shape=obj.data.shape_keys.key_blocks.get('RoomPoint') or obj.shape_key_add(name='RoomPoint')
-        low=min(p.y for p in points);high=max(p.y for p in points)
-        # Preserve embedded root rings. Distal stations curl into the same palm;
-        # cross sections rotate rigidly, so thin fingers retain their volume.
-        for vertex,p in zip(shape.data,points):
-            fraction=max(0.,min(1.,(p.y-low)/(high-low)))
-            angle=math.radians(145.)*fraction
-            length=p.y-low
-            radius=(high-low)/math.radians(145.)
-            centre=Vector((p.x,low+radius*math.sin(angle),radius*(1.-math.cos(angle))))
-            neutral_centre=Vector((p.x,p.y,0.))
-            rotated=Matrix.Rotation(angle,3,'X')@(p-neutral_centre)
-            vertex.co=out@(centre+rotated)
+        sides=8 if 'Thumb' in name else 7
+        if len(points)!=3*sides:raise ValueError('Room pointing needs the retained three finger rings '+name)
+        centres=[sum(points[row*sides:(row+1)*sides],Vector())/sides for row in range(3)]
+        segments=[centres[i+1]-centres[i] for i in range(2)]
+        if 'Thumb' in name:
+            # The thumb crosses the folded fingers from its own radial root;
+            # it cannot share the parallel fingers' curling plane.
+            directions=[(across*.70+axis*.50+palm*.50).normalized(),
+                        (across*.80+axis*.40+palm*.45).normalized()]
+            changed_segments=[direction*segment.length for direction,segment in zip(directions,segments)]
+        else:
+            changed_segments=[Matrix.Rotation(math.radians(angle),3,curl_axis) @ segment
+                              for angle,segment in zip((65.,145.),segments)]
+        changed=[centres[0]]
+        for segment in changed_segments:changed.append(changed[-1]+segment)
+        rotations=[Matrix.Identity(3)]
+        for row in (1,2):
+            previous=centres[min(2,row+1)]-centres[max(0,row-1)]
+            desired=changed[min(2,row+1)]-changed[max(0,row-1)]
+            rotations.append(previous.normalized().rotation_difference(desired.normalized()).to_matrix())
+        posed=[]
+        for row in range(3):
+            for i in range(sides):
+                # Whole rings rotate rigidly. In particular, every root-ring
+                # vertex stays embedded in the original palm at every weight.
+                vertex=changed[row]+rotations[row]@(points[row*sides+i]-centres[row])
+                posed.append(vertex)
+                shape.data[row*sides+i].co=out@vertex
         shape.value=0.
-        affected.append({'name':name,'vertices':len(points),'shape':'RoomPoint'})
+        root_error=max((a-b).length for a,b in zip(points[:sides],posed[:sides]))
+        segment_error=max(abs((changed[i+1]-changed[i]).length-segments[i].length) for i in range(2))
+        radius_error=max(abs((posed[row*sides+i]-changed[row]).length-(points[row*sides+i]-centres[row]).length)
+                         for row in range(3) for i in range(sides))
+        volumes=[]
+        for weight in (0.,.5,1.):
+            vertices=[a.lerp(b,weight) for a,b in zip(points,posed)]
+            volumes.append(sum(vertices[p.vertices[0]].dot(vertices[p.vertices[i]].cross(vertices[p.vertices[i+1]]))/6.
+                               for p in obj.data.polygons for i in range(1,len(p.vertices)-1)))
+        palmar_travel=(changed[-1]-centres[0]).dot(palm)
+        opposed_travel=(changed[-1]-centres[0]).dot(across)
+        if max(root_error,segment_error,radius_error)>.000001 or min(volumes)<=0.:
+            raise ValueError('Room pointing inverted, stretched or detached a finger '+name)
+        if palmar_travel<.015 or ('Thumb' in name and opposed_travel<.020):
+            raise ValueError('Room pointing finger does not fold into its anatomical palm '+name)
+        affected.append({'name':name,'vertices':len(points),'shape':'RoomPoint',
+                         'root_error_m':round(root_error,8),'segment_length_error_m':round(segment_error,8),
+                         'cross_section_radius_error_m':round(radius_error,8),
+                         'minimum_signed_volume_m3':round(min(volumes),10),
+                         'palmar_tip_travel_m':round(palmar_travel,7),
+                         'opposed_tip_travel_m':round(opposed_travel,7) if 'Thumb' in name else None})
     if body_basis_signature(objects)!=before:raise ValueError('Point shape changed original Room mesh/UV/skin')
+    if body_basis_signature([index])!=index_before or (index.data.shape_keys and 'RoomPoint' in index.data.shape_keys.key_blocks):
+        raise ValueError('Room pointing changed its extended index')
     if publish:
         bpy.ops.object.select_all(action='DESELECT');rig.select_set(True)
         for obj in objects:obj.select_set(True)
@@ -315,7 +465,8 @@ def pointing_shape(publish):
             bake_anim=False,use_custom_props=True,use_mesh_modifiers=False,use_armature_deform_only=False,
             path_mode='STRIP',mesh_smooth_type='FACE')
         common.save_blend(SOURCE/'RoomBody.blend')
-    return {'basis_signature':before,'shape':'RoomPoint','affected':affected,'extended_index':'GEO_HandFinger0.R'}
+    return {'basis_signature':before,'shape':'RoomPoint','affected':affected,'extended_index':'GEO_HandFinger0.R',
+            'anatomical_palm_hand_local':[round(v,7) for v in palm],'index_basis_signature':index_before}
 
 
 def mesh_object(name,geometry,parent,role):
@@ -509,7 +660,7 @@ def refresh_damage_hash(old,new):
         elif isinstance(value,list):
             for item in value:update(item)
     update(payload)
-    path.write_text(json.dumps(payload,indent=2)+'\n',encoding='utf-8')
+    (DAMAGE_OUT/path.name).write_text(json.dumps(payload,indent=2)+'\n',encoding='utf-8')
 
 
 def inspection_scene(camera_at,look_at):
@@ -539,13 +690,14 @@ def previews():
         loaded.actions=[name for name in available.actions if name in dict(CLIPS)]
     actions={a.name.split('.')[0]:a for a in loaded.actions}
     scene=inspection_scene((1.25,-3.2,1.75),(0.,-.10,1.25))
-    for name,frame in [('RoomPointHero',90),('RoomPointChest',27),('RoomLaugh',126)]:
+    for name,frame in [('RoomPointHero',90),('RoomPointChest',27),('RoomLaugh',126),('RoomIdle',105),('RoomIdle',210)]:
         rig.animation_data.action=actions[name]
         scene.frame_set(frame);room.apply_presented_arm_lengths(rig)
         for obj in bpy.data.objects:
             if obj.type=='MESH' and obj.data.shape_keys and obj.data.shape_keys.key_blocks.get('RoomPoint'):
-                obj.data.shape_keys.key_blocks['RoomPoint'].value=0. if name=='RoomLaugh' else 1.
-        scene.render.filepath=str(destination/(name+'.png'));bpy.ops.render.render(write_still=True)
+                obj.data.shape_keys.key_blocks['RoomPoint'].value=0. if name in ('RoomLaugh','RoomIdle') else 1.
+        suffix=str(frame) if name=='RoomIdle' else ''
+        scene.render.filepath=str(destination/(name+suffix+'.png'));bpy.ops.render.render(write_still=True)
     bpy.ops.wm.open_mainfile(filepath=str(ROOT/'ArtSource/Player/Blender/HomeShowerCurtainActions.blend'))
     rig=bpy.data.objects['RIG_Player']
     with bpy.data.libraries.load(str(SOURCE/'RoomAttackHeroActions.blend'),link=False) as (available,loaded):
@@ -593,18 +745,56 @@ def tableau_preview():
 
 
 def main():
+    global OUT,SOURCE,DAMAGE_OUT
     parser=argparse.ArgumentParser();parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--preview-only',action='store_true')
     parser.add_argument('--tableau-only',action='store_true')
+    parser.add_argument('--npc-only',action='store_true')
+    parser.add_argument('--pointing-only',action='store_true')
+    parser.add_argument('--output-dir',type=Path)
+    parser.add_argument('--source-dir',type=Path)
+    parser.add_argument('--damage-output-dir',type=Path)
     parser.add_argument('--measure-seated-only',action='store_true')
     parser.add_argument('--tableau-preview-only',action='store_true')
     args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+    OUT=args.output_dir or OUT;SOURCE=args.source_dir or SOURCE;DAMAGE_OUT=args.damage_output_dir or DAMAGE_OUT
+    if not args.validate_only:
+        for directory in (OUT,SOURCE,DAMAGE_OUT):directory.mkdir(parents=True,exist_ok=True)
+    if args.pointing_only:
+        publish=not args.validate_only
+        source_body=ROOT/'Assets/Resources/Combat/RoomBody.fbx'
+        old=digest(source_body.read_bytes())
+        body=pointing_shape(publish)
+        manifest=ROOT/'Assets/Resources/Combat/RoomAttack3D.json'
+        payload=json.loads(manifest.read_text(encoding='utf-8'))
+        changed={'pointing':body}
+        if args.npc_only:changed['npc']=npc_bank(publish)
+        if args.validate_only:
+            for key,value in changed.items():
+                if json.loads(json.dumps(value))!=payload[key]:raise ValueError('Room '+key+' differs')
+        else:
+            payload.update(changed)
+            (OUT/manifest.name).write_text(json.dumps(payload,indent=2)+'\n',encoding='utf-8')
+            refresh_damage_hash(old,digest((OUT/'RoomBody.fbx').read_bytes()))
+        print('ROOM POINTING: unchanged basis/index; rooted outward rings; preserved segments; anatomical curl/thumb; authored wrist roll and action handoffs verified',flush=True)
+        return
     if args.preview_only:
         previews();return
     if args.tableau_preview_only:
         tableau_preview();return
     if args.measure_seated_only:
         seated_fit();return
+    if args.npc_only:
+        npc=npc_bank(not args.validate_only)
+        manifest=ROOT/'Assets/Resources/Combat/RoomAttack3D.json'
+        payload=json.loads(manifest.read_text(encoding='utf-8'))
+        if args.validate_only:
+            if json.loads(json.dumps(npc))!=payload['npc']:raise ValueError('Room NPC actions differ')
+        else:
+            payload['npc']=npc
+            (OUT/manifest.name).write_text(json.dumps(payload,indent=2)+'\n',encoding='utf-8')
+        print('ROOM NPC ACTIONS: fixed lower body, relaxed idle seam and deterministic upper-body motion verified',flush=True)
+        return
     if args.tableau_only:
         model=tableau(not args.validate_only)
         manifest=OUT/'RoomAttack3D.json'

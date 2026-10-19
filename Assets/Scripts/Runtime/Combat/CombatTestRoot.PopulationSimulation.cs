@@ -46,12 +46,10 @@ namespace BarPromenade
                     BeginOpponentMovement();
                     slot.Actor.State.ObserveLateralCue(LateralBearing(slot.Actor, Hero));
                     AdvanceOpponent(SimulationStep);
-                    if (RoomAttackCinematicActive) break;
                     JournalOpponentDecision();
                     AdvanceOpponentMovement(SimulationStep);
                 }
                 RestoreSelectedOpponentContext();
-                if (RoomAttackCinematicActive) { pendingSeconds = 0d; return; }
                 using (PopulationSyncMarker.Auto()) Physics.SyncTransforms();
                 pendingContacts.Clear(); pendingShoves.Clear(); pendingKicks.Clear();
                 Hero.AdvanceSimulation(SimulationStep, true);

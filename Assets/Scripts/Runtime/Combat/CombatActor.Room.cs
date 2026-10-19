@@ -12,6 +12,41 @@ namespace BarPromenade
         private Vector3[] roomCanonicalHandScales;
         private Vector3[] roomHandTips;
         private Vector3 roomHandTipFrom, roomHandTipTo;
+        private Vector3 roomPointingTip, roomPointingDirection;
+
+        internal Vector3 RoomPointingTipWorld => roomArmEndpoints[3].TransformPoint(roomPointingTip);
+        internal Vector3 RoomPointingDirectionWorld => roomArmEndpoints[3].TransformVector(roomPointingDirection).normalized;
+        internal bool RoomAttackSuppressed { get; private set; }
+
+        // Other enemies yield voluntary combat to the Room's shot while their
+        // real idle, injuries, fall and death keep their ordinary simulation.
+        internal void SetRoomAttackSuppressed(bool suppressed)
+        {
+            if (RoomAttackSuppressed == suppressed) return;
+            RoomAttackSuppressed = suppressed;
+            if (!suppressed) return;
+            bool voluntary = State.IsAttacking || State.IsCharging || State.IsShoving || State.IsKicking ||
+                State.Phase == MeleePhase.Step;
+            if (voluntary) State.CancelAction();
+            else State.CancelBufferedAction(State.BufferedAction);
+            State.SetBlocking(false);
+            guardHeld = false;
+            journalQueuedRequest = 0;
+            ResetShove(); ResetKick();
+            EndZombieFrenzy();
+            zombieLoad?.EndRam();
+            collectSweep = collectShove = collectKick = sweepValid = zombieContactPoseValid = false;
+            frozenWeaponValid = frozenWeaponActive = false;
+            locomotionVelocity = Vector3.zero;
+            zombieWalkingRequested = false;
+            stepDirection = Vector3.zero; pendingStepInput = Vector2.zero;
+            ClearCrawlInput();
+            if (IsRecoil(reaction)) reaction = null;
+            if (IsFirearm) EndPistolAction();
+            SuppressCraneForRoomAttack();
+            if (!State.IsDefeated && !State.IsStunned && !IsKnockedDown && !IsRagdollActive)
+                BeginPoseBlend(.12f);
+        }
 
         private void InitializeRoomArmProportions()
         {
@@ -76,6 +111,7 @@ namespace BarPromenade
             roomHandTips = new Vector3[2];
             SkinnedMeshRenderer[] skins = DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             float extraHandReach = 0f;
+            bool measuredPointingFinger = false;
             for (int side = 0; side < 2; side++)
             {
                 Transform hand = roomArmEndpoints[side + 2];
@@ -97,8 +133,37 @@ namespace BarPromenade
                         if (weight.weight1 > 0f) point += posed[weight.boneIndex1].MultiplyPoint3x4(vertex) * weight.weight1;
                         if (weight.weight2 > 0f) point += posed[weight.boneIndex2].MultiplyPoint3x4(vertex) * weight.weight2;
                         if (weight.weight3 > 0f) point += posed[weight.boneIndex3].MultiplyPoint3x4(vertex) * weight.weight3;
+                        points[i] = point;
                         if (!measured) { bounds = new Bounds(point, Vector3.zero); measured = true; }
                         else bounds.Encapsulate(point);
+                    }
+                    if (side == 1 && skin.name == "GEO_HandFinger0.R")
+                    {
+                        int axisIndex = CombatRoomAssetProvider.HandLengthAxis;
+                        float low = float.PositiveInfinity, high = float.NegativeInfinity;
+                        foreach (Vector3 point in points)
+                        { low = Mathf.Min(low, point[axisIndex]); high = Mathf.Max(high, point[axisIndex]); }
+                        // The retained index has three separated cross sections.
+                        // Isolate its cap rings geometrically; FBX may duplicate
+                        // seam vertices or reorder them during import.
+                        float capDepth = (high - low) * .25f;
+                        Vector3 rootCentre = Vector3.zero, tipCentre = Vector3.zero;
+                        int rootCount = 0, tipCount = 0;
+                        for (int i = 0; i < points.Length; i++)
+                        {
+                            Vector3 point = points[i];
+                            bool duplicate = false;
+                            for (int previous = 0; previous < i; previous++)
+                                if ((point - points[previous]).sqrMagnitude < 1e-12f) { duplicate = true; break; }
+                            if (duplicate) continue;
+                            if (point[axisIndex] <= low + capDepth) { rootCentre += point; rootCount++; }
+                            if (point[axisIndex] >= high - capDepth) { tipCentre += point; tipCount++; }
+                        }
+                        if (rootCount < 3 || tipCount < 3)
+                            throw new InvalidOperationException("Room pointing requires the actual extended index cap rings.");
+                        roomPointingTip = tipCentre / tipCount;
+                        roomPointingDirection = (roomPointingTip - rootCentre / rootCount).normalized;
+                        measuredPointingFinger = true;
                     }
                 }
                 if (!measured) throw new InvalidOperationException("Room requires its actual palm and finger source surfaces.");
@@ -109,6 +174,7 @@ namespace BarPromenade
                 extraHandReach = Mathf.Max(extraHandReach, Mathf.Max(0f, tip[CombatRoomAssetProvider.HandLengthAxis]) * nativeAxisScale *
                     (CombatRoomAssetProvider.HandLengthScale - 1f));
             }
+            if (!measuredPointingFinger) throw new InvalidOperationException("Room requires its actual right index finger.");
             AdditionalArmReach += extraHandReach;
         }
 

@@ -21,12 +21,12 @@ namespace BarPromenade
         private Collider zombieHeadShape;
         private Vector3 zombieHeadFrom, zombieHeadTo;
         private bool zombieContactPoseValid;
-        private float zombieWalkClock, zombieGroanRemaining, zombieWorkClock;
+        private float zombieWalkClock, zombieGroanRemaining, zombieWorkClock, roomIdleClock;
         private bool zombieWalkingRequested;
         private CombatZombieAudio zombieAudio;
         private NpcFootstepProfile zombieFootsteps;
         public bool ZombieAttackUsesLeftSide { get; private set; }
-        internal bool ZombieWorkPause => IsDocker && !IsZombieFrenzied && State.Phase == MeleePhase.Ready && !roundEnded &&
+        internal bool ZombieWorkPause => IsDocker && !RoomAttackSuppressed && !IsZombieFrenzied && State.Phase == MeleePhase.Ready && !roundEnded &&
             !zombieWalkingRequested && (contactTarget == null || contactTarget.State.IsDefeated) &&
             (zombieWorkClock >= 4f && zombieWorkClock < 6.4f || zombieWorkClock >= 9f && zombieWorkClock < 11.8f);
 
@@ -34,7 +34,10 @@ namespace BarPromenade
         {
             if (!IsDocker)
             {
-                ready = rest = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryIdleClip);
+                // Ready/0 remains the canonical anatomical baseline. Only the
+                // Room's visible stationary pose uses its own planted loop.
+                ready = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryIdleClip);
+                rest = IsRoom ? CombatRoomAttackAssetProvider.LoadNpcClip(CombatRoomAttackAssetProvider.IdleClip) : ready;
                 zombieWalk = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryWalkClip);
                 zombieAttackRight = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryAttackRightClip);
                 zombieAttackLeft = CombatZombieAssetProvider.LoadOrdinaryClip(CombatZombieAssetProvider.OrdinaryAttackLeftClip);
@@ -114,6 +117,9 @@ namespace BarPromenade
         {
             if (roomAttackPoseActive) return;
             if (IsZombieFrenzied) { AdvanceZombieFrenzy(seconds); return; }
+            if (IsRoom)
+                roomIdleClock = State.Phase == MeleePhase.Ready && !zombieWalkingRequested
+                    ? Mathf.Repeat(roomIdleClock + seconds, rest.length) : 0f;
             if (State.Phase == MeleePhase.Ready)
             {
                 zombieWorkClock = Mathf.Repeat(zombieWorkClock + seconds, 14f);
@@ -134,11 +140,11 @@ namespace BarPromenade
             AnimationClip chosen = State.IsDefeated ? defeat : stagger ? hit : IsZombieFrenzied ? zombieFrenzy : State.IsAttacking
                 ? ZombieAttackUsesLeftSide ? zombieAttackLeft : zombieAttackRight
                 : ZombieWorkPause ? zombieWorkClock < 9f ? zombieLoadAdjust : zombieWatch
-                : zombieWalkingRequested && !roundEnded ? zombieWalk : ready;
+                : zombieWalkingRequested && !roundEnded ? zombieWalk : rest;
             float time = State.IsDefeated ? Mathf.Min(defeatClock, chosen.length) : stagger
                 ? State.PhaseProgress * chosen.length : IsZombieFrenzied ? ZombieFrenzySampleTime : State.IsAttacking ? State.AttackProgress * chosen.length
                 : chosen == zombieLoadAdjust ? zombieWorkClock - 4f : chosen == zombieWatch ? zombieWorkClock - 9f
-                : Mathf.Repeat(chosen == zombieWalk ? zombieWalkClock : poseClock, chosen.length);
+                : Mathf.Repeat(chosen == zombieWalk ? zombieWalkClock : IsRoom && chosen == rest ? roomIdleClock : poseClock, chosen.length);
             if (visibleClip != chosen.name || !IsZombieFrenzied && visibleAttackSequence != State.AttackSequence)
             { BeginPoseBlend(IsZombieFrenzied ? .1f : State.IsAttacking ? .045f : .08f); visibleClip = chosen.name; }
             SampleNpcClip(chosen, time);
@@ -355,7 +361,7 @@ namespace BarPromenade
         internal Vector3 LimitZombieLoadTravel(Vector3 travel) => zombieLoad != null
             ? zombieLoad.LimitTravel(travel) : travel;
 
-        internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking;
+        internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking && !RoomAttackSuppressed;
 
         internal float PreviewZombieWalkDistance(float seconds) => IsDocker
             ? CombatZombieAssetProvider.WalkTravel(zombieWalkClock + seconds) - CombatZombieAssetProvider.WalkTravel(zombieWalkClock)
@@ -412,6 +418,7 @@ namespace BarPromenade
             zombieHeadFrom = zombieHeadTo = default;
             zombieHandFrom = zombieHandTo = default;
             zombieWalkClock = 0f; zombieGroanRemaining = 3f + (JournalActorId % 3) * 2f;
+            roomIdleClock = 0f;
             zombieWalkingRequested = false;
             zombieFootsteps?.ResetContacts();
             zombieWorkClock = JournalActorId % 3;

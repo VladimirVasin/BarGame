@@ -82,9 +82,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 ## Implemented capabilities
 
 - CombatTest:warehouse/fish-key-gate;all3fish→power-music-spawn0.
-  Endless1–5/def3:Room|Imprint|LongExposure,Docker,Crane;Crane last≤2.
-  Refillrng;≤5active/≤11prepared;Lab:oldArena/6kinds/1target.
-  HP2/head2/wounds;Room:smooth chest path/hurt/laugh;3weapons/finiteammo.
+  Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
+  Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.
+  HP2/head2/wounds;Room:head0→ret+2s/retlaugh5→idle5;simlive/otherAI0;3weapons/finiteammo.
   Proxy:exact skin groups/settled aim.
   Gap:pierce/balance. [World](current-world.md).
 - City: 20 metre types; district heights, curved old/service streets,

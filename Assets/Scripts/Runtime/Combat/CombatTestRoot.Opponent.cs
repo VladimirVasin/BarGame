@@ -90,6 +90,12 @@ namespace BarPromenade
 
         private void AdvanceOpponent(float seconds)
         {
+            if (RoomAttackCinematicActive)
+            {
+                ResetOpponentMovement();
+                OpponentIntent = CombatOpponentIntent.Recover;
+                return;
+            }
             if (AiOpponent.IsCrane)
             {
                 ResetOpponentMovement();

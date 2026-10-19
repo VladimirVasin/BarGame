@@ -19,10 +19,10 @@ namespace BarPromenade
         private readonly List<OpponentSlot> opponentSlots = new List<OpponentSlot>(5);
         private readonly List<CombatActor> combatOpponents = new List<CombatActor>(5);
         private readonly List<CombatActor> combatParticipants = new List<CombatActor>(6);
-        private readonly List<CombatActor> preparedOpponents = new List<CombatActor>(11);
-        private readonly List<CombatActor> preparedParticipants = new List<CombatActor>(12);
+        private readonly List<CombatActor> preparedOpponents = new List<CombatActor>(6);
+        private readonly List<CombatActor> preparedParticipants = new List<CombatActor>(7);
         private static readonly CombatEnemyKind[] AuthoredEnemyKinds =
-            { CombatEnemyKind.Room, CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure };
+            { CombatEnemyKind.Room };
         internal static CombatEnemyKind? AuthoredEnemyKindForTests { get; set; }
         private uint authoredVariantSeed;
         private int encounterRun;

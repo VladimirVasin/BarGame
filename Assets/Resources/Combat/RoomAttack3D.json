@@ -9,36 +9,66 @@
       {
         "name": "GEO_HandFinger1.R",
         "vertices": 21,
-        "shape": "RoomPoint"
+        "shape": "RoomPoint",
+        "root_error_m": 0.0,
+        "segment_length_error_m": 0.0,
+        "cross_section_radius_error_m": 0.0,
+        "minimum_signed_volume_m3": 4.5437e-06,
+        "palmar_tip_travel_m": 0.038782,
+        "opposed_tip_travel_m": null
       },
       {
         "name": "GEO_HandFinger2.R",
         "vertices": 21,
-        "shape": "RoomPoint"
+        "shape": "RoomPoint",
+        "root_error_m": 0.0,
+        "segment_length_error_m": 0.0,
+        "cross_section_radius_error_m": 0.0,
+        "minimum_signed_volume_m3": 3.9023e-06,
+        "palmar_tip_travel_m": 0.036298,
+        "opposed_tip_travel_m": null
       },
       {
         "name": "GEO_HandFinger3.R",
         "vertices": 21,
-        "shape": "RoomPoint"
+        "shape": "RoomPoint",
+        "root_error_m": 0.0,
+        "segment_length_error_m": 0.0,
+        "cross_section_radius_error_m": 0.0,
+        "minimum_signed_volume_m3": 2.6786e-06,
+        "palmar_tip_travel_m": 0.0288456,
+        "opposed_tip_travel_m": null
       },
       {
         "name": "GEO_HandThumb.R",
         "vertices": 24,
-        "shape": "RoomPoint"
+        "shape": "RoomPoint",
+        "root_error_m": 0.0,
+        "segment_length_error_m": 0.0,
+        "cross_section_radius_error_m": 0.0,
+        "minimum_signed_volume_m3": 1.09527e-05,
+        "palmar_tip_travel_m": 0.0259121,
+        "opposed_tip_travel_m": 0.0402482
       }
     ],
-    "extended_index": "GEO_HandFinger0.R"
+    "extended_index": "GEO_HandFinger0.R",
+    "anatomical_palm_hand_local": [
+      0.5160122,
+      -1e-07,
+      -0.8565809
+    ],
+    "index_basis_signature": "b498834cccc9135ae615a1b2fea7cc073206a4d8374418efbd8dc2a1dc5df7e7"
   },
   "npc": {
     "rig": "NpcHumanV2",
     "root_motion": false,
     "animation_events": 0,
     "fps": 60,
-    "signature": "bcafd96ccc77b3b39e538c4cb1d0110675075879483f846a9768770bfbad3e62",
+    "signature": "b4f593dd968715e3eb6dc16bf42904f317c26799a158521e22ae6c31a4ce25f6",
     "clips": [
       {
         "name": "RoomPointHero",
-        "duration": 2.0,
+        "duration": 1.0,
         "loop": false
       },
       {
@@ -50,6 +80,11 @@
         "name": "RoomLaugh",
         "duration": 5.0,
         "loop": false
+      },
+      {
+        "name": "RoomIdle",
+        "duration": 5.0,
+        "loop": true
       }
     ],
     "accepted_presented_lengths": [
@@ -61,20 +96,61 @@
     "point_directions": {
       "RoomPointHero": {
         "hand_axis_error_degrees": 0.0,
+        "palm_error_degrees": 0.0,
         "wrist_metres": [
-          -0.340000182390213,
-          -0.6999998688697815,
-          1.429999828338623
-        ]
+          -0.24623160064220428,
+          -0.874719500541687,
+          1.580000400543213
+        ],
+        "shoulder_metres": [
+          -0.21123184263706207,
+          0.009796230122447014,
+          1.4187430143356323
+        ],
+        "elbow_metres": [
+          -0.2480829358100891,
+          -0.37824350595474243,
+          1.4497498273849487
+        ],
+        "presented_reach_ratio": 0.995,
+        "elbow_flex_degrees": 11.570608
       },
       "RoomPointChest": {
         "hand_axis_error_degrees": 0.0,
+        "palm_error_degrees": 0.0,
         "wrist_metres": [
-          -0.44000011682510376,
-          -0.47000008821487427,
-          1.2999998331069946
-        ]
+          -0.4400002658367157,
+          -0.47000014781951904,
+          1.2999993562698364
+        ],
+        "shoulder_metres": [
+          -0.21123184263706207,
+          0.009796230122447014,
+          1.4187430143356323
+        ],
+        "elbow_metres": [
+          -0.3698718547821045,
+          -0.020341509953141212,
+          1.062625765800476
+        ],
+        "presented_reach_ratio": 0.602286,
+        "elbow_flex_degrees": 107.351545
       }
+    },
+    "idle": {
+      "relaxed_endpoints": true,
+      "loop_seam_degrees": 0.0,
+      "seam_step_degrees": 0.0,
+      "maximum_local_rotation_degrees": {
+        "head": 11.08441,
+        "chest": 1.752067,
+        "hand.L": 6.58495,
+        "hand.R": 5.898576
+      }
+    },
+    "point_handoff_error_degrees": {
+      "RoomPointHero to RoomPointChest": 0.0,
+      "RoomPointChest to RoomLaugh": 0.0
     }
   },
   "hero": {

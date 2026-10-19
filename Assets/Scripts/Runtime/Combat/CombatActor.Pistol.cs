@@ -83,7 +83,7 @@ namespace BarPromenade
         }
 
         // A committed step keeps the upper-body aim; firing/reloading still wait for Ready.
-        internal bool PistolAimBodyAvailable => IsFirearm && Firearm != null && BodyDamage.CanUseRightHand &&
+        internal bool PistolAimBodyAvailable => !RoomAttackSuppressed && IsFirearm && Firearm != null && BodyDamage.CanUseRightHand &&
             (!IsShotgun || BodyDamage.CanUseLeftHand) && !weaponDropped && !State.IsDefeated && (!roundEnded || hero != null) &&
             (CanUseGroundedFirearm || CanAttemptBodyAction && IsAvailable &&
                 (State.Phase is MeleePhase.Ready or MeleePhase.Step) && !(footwork?.RecoveryEpisodeActive ?? false));

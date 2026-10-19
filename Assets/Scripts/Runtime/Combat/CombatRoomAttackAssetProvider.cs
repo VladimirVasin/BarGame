@@ -4,13 +4,13 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Finite authored Room gestures, tableau and positional laugh.</summary>
+    /// <summary>Finite authored Room gestures, planted idle, tableau and positional laugh.</summary>
     public static class CombatRoomAttackAssetProvider
     {
         public const string PointHeroClip = "RoomPointHero", PointChestClip = "RoomPointChest",
-            LaughClip = "RoomLaugh", HeadPainClip = "RoomHeadPain", PointingShape = "RoomPoint";
-        public static readonly string[] NpcClipNames = { PointHeroClip, PointChestClip, LaughClip };
-        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(4);
+            LaughClip = "RoomLaugh", IdleClip = "RoomIdle", HeadPainClip = "RoomHeadPain", PointingShape = "RoomPoint";
+        public static readonly string[] NpcClipNames = { PointHeroClip, PointChestClip, LaughClip, IdleClip };
+        private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(5);
         private static GameObject tableau;
         private static AudioClip laughter;
         private static Material plaster, wood;
@@ -18,7 +18,7 @@ namespace BarPromenade
 
         public static float ClipDuration(string name) => name switch
         {
-            PointHeroClip or HeadPainClip => 2f, PointChestClip => .45f, LaughClip => 5f,
+            PointHeroClip => 1f, HeadPainClip => 2f, PointChestClip => .45f, LaughClip or IdleClip => 5f,
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown Room action.")
         };
 
@@ -40,7 +40,7 @@ namespace BarPromenade
             foreach (AnimationClip clip in Resources.LoadAll<AnimationClip>(resource))
             {
                 if (clip.name != name) continue;
-                if (clip.events.Length != 0 || clip.isLooping || Mathf.Abs(clip.length - ClipDuration(name)) > .003f)
+                if (clip.events.Length != 0 || clip.isLooping != (name == IdleClip) || Mathf.Abs(clip.length - ClipDuration(name)) > .003f)
                     throw new InvalidOperationException("Invalid in-place Room action: " + name);
                 Clips[name] = clip;
                 return clip;

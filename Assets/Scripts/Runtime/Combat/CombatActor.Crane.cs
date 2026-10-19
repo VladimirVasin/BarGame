@@ -172,7 +172,7 @@ namespace BarPromenade
         // achieved stop, never choose the next patrol destination.
         internal bool TryBeginCraneCycle(CombatActor target)
         {
-            if (!CraneAttached || craneTravelling || CranePhase != CombatCranePhase.Waiting || craneCooldown > 0f ||
+            if (RoomAttackSuppressed || !CraneAttached || craneTravelling || CranePhase != CombatCranePhase.Waiting || craneCooldown > 0f ||
                 cranePerceptionWait > 0f || roundEnded || State.Phase != MeleePhase.Ready || target == null || target.State.IsDefeated) return false;
             cranePerceptionWait = .12f;
             Vector3 delta = CraneTargetPoint(target) - CraneHookCableExit;
@@ -208,12 +208,19 @@ namespace BarPromenade
         private void AdvanceCraneSimulation(float seconds)
         {
             collectSweep = collectShove = collectKick = false; simulationPosePending = false;
-            if (!CraneAttached || presentationFrozen || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!CraneAttached || presentationFrozen || !RoomAttackSuppressed && !GameInput.CanRead(GameInputContext.Gameplay)) return;
             InterruptZombieFrenzyIfNeeded();
             poseClock += seconds;
             craneCooldown = Mathf.Max(0f, craneCooldown - seconds); cranePerceptionWait = Mathf.Max(0f, cranePerceptionWait - seconds);
             if (poseBlendRemaining > 0f) poseBlendRemaining = Mathf.Max(0f, poseBlendRemaining - seconds);
             State.Advance(seconds, false);
+            craneHurtClock = Mathf.Max(0f, craneHurtClock - seconds);
+            craneHurtHold = Mathf.Max(0f, craneHurtHold - seconds);
+            if (RoomAttackSuppressed)
+            {
+                AdvanceCraneRoomIdle(seconds);
+                return;
+            }
             if (!CranePatrolEnabled || roundEnded || contactTarget != null && contactTarget.State.IsDefeated)
             { EndZombieFrenzy(); StopCraneVoices(); return; }
             if (IsCraneFrenzied)
@@ -224,8 +231,6 @@ namespace BarPromenade
             craneBreathWait -= seconds;
             if (craneBreathWait <= 0f && !craneBodyVoice.isPlaying)
             { craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound(); craneBodyVoice.Play(); craneBreathWait = 2f; }
-            craneHurtClock = Mathf.Max(0f, craneHurtClock - seconds);
-            craneHurtHold = Mathf.Max(0f, craneHurtHold - seconds);
             craneClock += seconds;
             Vector3 previous = transform.position, oldCommand = craneCommand;
             if (craneTravelling && craneHurtHold <= 0f)
@@ -267,6 +272,40 @@ namespace BarPromenade
             float turnSpeed = CranePhase == CombatCranePhase.Signal ? 320f : 200f;
             if (!MoveCraneRoot(CraneLoadPosition, Quaternion.RotateTowards(transform.rotation, rotation, seconds * turnSpeed), craneCommand))
             { craneSwayVelocity *= -.15f; craneSway = Vector3.ProjectOnPlane(transform.position - craneCommand, Vector3.up); }
+            UpdateCraneMachinePose();
+            locomotionVelocity = (transform.position - previous) / Mathf.Max(.0001f, seconds);
+        }
+
+        private void SuppressCraneForRoomAttack()
+        {
+            if (!CraneAttached) return;
+            craneTravelling = craneChangingFloors = craneStarting = false;
+            craneFrenzyResumeTravelling = craneFrenzyResumeChangingFloors = false;
+            craneWaypointCount = craneWaypointIndex = 0;
+            craneMoveSpeed = craneBrakeClock = craneMotorClock = craneBlockedClock = 0f;
+            CraneMotionAxis = 0; CraneTravelBlocked = false;
+            craneStationPosition = CraneTravelGoal = craneCommand;
+            craneContactValid = false; craneStrikeStopped = true;
+            StopCraneMotors(); craneRelease.Stop();
+            SetCranePhase(CombatCranePhase.Waiting);
+            if (CraneHookPhase is CombatCraneHookPhase.Outbound or CombatCraneHookPhase.Holding)
+                BeginCraneHookReturn();
+        }
+
+        private void AdvanceCraneRoomIdle(float seconds)
+        {
+            craneClock += seconds;
+            AdvanceCraneHook(seconds);
+            craneContactValid = collectSweep = sweepValid = false;
+            // The carriage stays at its achieved position; residual pendulum
+            // motion and the collision-aware hook return remain physical.
+            AdvanceCraneDynamics(seconds, Vector3.zero);
+            Vector3 previous = transform.position;
+            if (!MoveCraneRoot(CraneLoadPosition, transform.rotation, craneCommand))
+            {
+                craneSwayVelocity *= -.15f;
+                craneSway = Vector3.ProjectOnPlane(transform.position - craneCommand, Vector3.up);
+            }
             UpdateCraneMachinePose();
             locomotionVelocity = (transform.position - previous) / Mathf.Max(.0001f, seconds);
         }

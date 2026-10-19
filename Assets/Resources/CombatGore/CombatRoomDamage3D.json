@@ -4,7 +4,7 @@
   "test_only": true,
   "source": {
     "path": "Assets/Resources/Combat/RoomBody.fbx",
-    "sha256": "3c9e03806966a335c647e6ccf36e74c54809b8d04088f8d2b065560f380845fb"
+    "sha256": "fc2f0e66243c41fb8fcf3443df17895190c385a11456a9c6a09739414f73a4f9"
   },
   "body_region_count": 16,
   "patch_count": 4,
@@ -1966,7 +1966,7 @@
     },
     "SkullRoom": {
       "source": "Assets/Resources/Combat/RoomBody.fbx",
-      "source_sha256": "3c9e03806966a335c647e6ccf36e74c54809b8d04088f8d2b065560f380845fb",
+      "source_sha256": "fc2f0e66243c41fb8fcf3443df17895190c385a11456a9c6a09739414f73a4f9",
       "head_contract_sha256": "48c1bd0bab5ded22753d1dd848f388eae33a72b69358ddd627144728dbdfbe21",
       "head_center_unity_m": [
         0.0,
@@ -2379,7 +2379,7 @@
       ]
     },
     "BodyRoom": {
-      "source_sha256": "3c9e03806966a335c647e6ccf36e74c54809b8d04088f8d2b065560f380845fb",
+      "source_sha256": "fc2f0e66243c41fb8fcf3443df17895190c385a11456a9c6a09739414f73a4f9",
       "coverage": [
         {
           "source": "GEO_Arm.L",
@@ -11333,7 +11333,7 @@
     "CombatBlood/WoundsRoom.fbx": "373ea3198a6f13b65d595694b32cf4bdcf43884ffb7d87332fcaafed9ae813f9"
   },
   "hand_length_proof": {
-    "source_sha256": "3c9e03806966a335c647e6ccf36e74c54809b8d04088f8d2b065560f380845fb",
+    "source_sha256": "fc2f0e66243c41fb8fcf3443df17895190c385a11456a9c6a09739414f73a4f9",
     "body_bank_sha256": "bcefa0a32b8702e62d080f5946220abfd3a3d235a7be7322ed8ca05293f66e16",
     "native_bank_files": "unchanged; actual FBX vertices, UV0, raw skin and bind skeleton",
     "upper_arm_length_scale": 1.3,

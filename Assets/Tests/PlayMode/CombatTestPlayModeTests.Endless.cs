@@ -65,6 +65,14 @@ namespace BarPromenade.Tests.PlayMode
             if (!Array.Exists(Environment.GetCommandLineArgs(), value => value == "-combatExistingAssets"))
                 new CombatCraneAssetsSetup().Setup();
             new CombatRoomAssetsSetup().Setup();
+        }
+    }
+
+    public sealed class CombatLaboratoryAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+            new CombatMixedEndlessAssetsSetup().Setup();
             new CombatImprintAssetsSetup().Setup();
             new CombatLongExposureAssetsSetup().Setup();
         }
@@ -90,12 +98,12 @@ namespace BarPromenade.Tests.PlayMode
         { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Room); }
 
         [UnityTest]
-        [PrebuildSetup(typeof(CombatImprintAssetsSetup))]
+        [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset()
         { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Imprint); }
 
         [UnityTest]
-        [PrebuildSetup(typeof(CombatLongExposureAssetsSetup))]
+        [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset()
         { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.LongExposure); }
 
@@ -112,23 +120,30 @@ namespace BarPromenade.Tests.PlayMode
             CombatAuthoredBodyBank bank = AuthoredBodyBank(kind);
             string identity = DefaultNpcPopulation.CombatTestAuthoredEnemyId(kind, 0);
             const int authoredSlot = 0;
+            bool laboratory = kind != CombatEnemyKind.Room;
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.WarehouseSeedForTests = 0;
-            CombatTestRoot.AuthoredEnemyKindForTests = kind;
+            CombatTestRoot.AuthoredEnemyKindForTests = laboratory ? null : kind;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
             Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
-                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
+                new CombatLoadoutSelection(CombatWeaponId.Pistol),
+                laboratory ? CombatTestMode.Laboratory : CombatTestMode.Endless, settings, laboratoryEnemy: kind)), Is.True);
             yield return AwaitSelectedCombatRange();
-            Assert.That(root.WarehousePlan, Is.Not.Null);
-            Assert.That(root.Opponents.Count, Is.EqualTo(3));
+            Assert.That(root.IsLaboratory, Is.EqualTo(laboratory));
+            if (laboratory) Assert.That(root.WarehousePlan, Is.Null);
+            else Assert.That(root.WarehousePlan, Is.Not.Null);
+            Assert.That(root.Opponents.Count, Is.EqualTo(laboratory ? 1 : 3));
             Assert.That(CombatEncounterSettings.Default.MaximumLiveOpponents, Is.EqualTo(3));
             Assert.That(CombatEncounterSettings.OpponentCapacity, Is.EqualTo(5));
             CombatActor room = root.Opponents[authoredSlot];
             foreach (CombatActor actor in root.Opponents)
                 Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie));
-            Assert.That(root.Opponents[1].IsDocker, Is.True);
-            Assert.That(root.Opponents[2].IsCrane, Is.True);
+            if (!laboratory)
+            {
+                Assert.That(root.Opponents[1].IsDocker, Is.True);
+                Assert.That(root.Opponents[2].IsCrane, Is.True);
+            }
             Assert.That(room.EnemyKind, Is.EqualTo(kind));
             Assert.That(room.IsAuthoredEnemy && room.IsZombie && room.ZombieAwake, Is.True);
             Assert.That(room.IsDocker || room.IsCrane, Is.False);
@@ -830,13 +845,13 @@ namespace BarPromenade.Tests.PlayMode
         {
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.WarehouseSeedForTests = 0;
-            // Small real encounters exercise the reserved crane place and every
-            // authored clone before the existing default-size combat proof.
+            // Small real encounters exercise the reserved crane place and the
+            // allowed warehouse roles before the default-size combat proof.
             foreach (int capacity in new[] { 1, 2, 5 })
                 yield return VerifyMixedEndlessPoolAtCapacity(capacity);
             GameSessionState.BeginNewGame();
             CombatTestRoot.WarehouseSeedForTests = 0;
-            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Room;
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
             var selection = new CombatTestSelection(new CombatLoadoutSelection(CombatWeaponId.Pistol),
@@ -858,7 +873,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Opponents.Count, Is.EqualTo(3));
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Every initial role is present on entering the shared warehouse.");
             CombatActor authored = root.Opponents[0], docker = root.Opponents[1], crane = root.Opponents[2];
-            AssertMixedEndlessLayout(3, CombatEnemyKind.Room);
+            AssertMixedEndlessLayout(3);
             CombatActor[] prepared = root.GetComponentsInChildren<CombatActor>(true);
             string[] identities = SnapshotAuthoredPoolIdentities(prepared);
             AssertPreparedEndlessPool(prepared, identities, 3);
@@ -919,8 +934,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
             Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
             Assert.That(root.WaitingForNextOpponent, Is.True);
-            CombatActor retired = authored;
-            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Imprint;
+            CombatActor preparedRoom = authored;
             root.CameraFollow.enabled = false;
             root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
             // The terminal contact owns a short hit hold before the replacement
@@ -929,11 +943,10 @@ namespace BarPromenade.Tests.PlayMode
             root.CameraFollow.enabled = true;
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
             authored = root.Opponents[0];
-            Assert.That(authored, Is.Not.SameAs(retired), "A new birth can select the other prepared authored enemy.");
-            Assert.That(retired.gameObject.activeInHierarchy, Is.False);
-            AssertMixedEndlessLayout(3, CombatEnemyKind.Imprint);
+            Assert.That(authored, Is.SameAs(preparedRoom), "A replacement reuses the prepared Room body.");
+            AssertMixedEndlessLayout(3);
             AssertPreparedEndlessPool(prepared, identities, 3);
-            AssertAuthoredBodyAppearance(authored, CombatImprintAssetProvider.Bank, true);
+            AssertAuthoredBodyAppearance(authored, CombatRoomAssetProvider.Bank, true);
             Assert.That(authored.State.Health, Is.EqualTo(authored.State.Settings.MaxHealth));
             Assert.That(root.BloodEffects.ProjectileWoundCountFor(authored), Is.Zero);
             Assert.That(docker.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.EqualTo(survivingTrauma));
@@ -970,20 +983,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
             AssertPreparedEndlessPool(prepared, identities, 3);
 
-            // Use the production choice with the fixed warehouse seed. This proves
-            // all branches are reachable, without asserting a sampled frequency.
-            CombatTestRoot.AuthoredEnemyKindForTests = null;
-            bool sawRoom = false, sawImprint = false, sawLongExposure = false;
-            for (int birth = 0; birth < 16; birth++)
-            {
-                root.ResetRound();
-                authored = root.Opponents[0];
-                sawRoom |= authored.IsRoom;
-                sawImprint |= authored.IsImprint;
-                sawLongExposure |= authored.IsLongExposure;
-                AssertMixedEndlessLayout(3);
-            }
-            Assert.That(sawRoom && sawImprint && sawLongExposure, Is.True, "Unforced births must reach all three authored variants.");
+            // A further unforced reset keeps only the warehouse roster and
+            // reuses its prepared bodies rather than resurrecting lab variants.
+            root.ResetRound();
+            authored = root.Opponents[0];
+            AssertMixedEndlessLayout(3);
             AssertPreparedEndlessPool(prepared, identities, 3);
 
             var fish = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan, InventoryItemId.RottenFishHeadCan };
@@ -1018,13 +1022,13 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             CombatTestRoot.WarehouseSeedForTests = 0;
-            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Room;
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             var settings = new CombatEncounterSettings(capacity, .1f, .1f, .15f, .15f);
             Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
                 new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
             yield return AwaitSelectedCombatRange();
-            AssertMixedEndlessLayout(capacity, CombatEnemyKind.Room);
+            AssertMixedEndlessLayout(capacity);
             CombatActor[] prepared = root.GetComponentsInChildren<CombatActor>(true);
             string[] identities = SnapshotAuthoredPoolIdentities(prepared);
             AssertPreparedEndlessPool(prepared, identities, capacity);
@@ -1032,15 +1036,10 @@ namespace BarPromenade.Tests.PlayMode
             CombatActor crane = root.Opponents[craneSlot];
             CombatActor docker = capacity >= 3 ? root.Opponents[1] : null;
 
-            foreach (CombatEnemyKind kind in new[] { CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure, CombatEnemyKind.Room })
-            {
-                if (capacity == 1 && kind != CombatEnemyKind.Imprint) continue;
-                RefillAuthoredEndlessPool(capacity, crane, kind,
-                    defeatCrane: capacity <= 2 && kind == CombatEnemyKind.Imprint);
-                foreach (CombatActor actor in root.Opponents)
-                    if (actor.IsAuthoredEnemy) AssertAuthoredBodyAppearance(actor, AuthoredBodyBank(actor.EnemyKind), true);
-                AssertPreparedEndlessPool(prepared, identities, capacity);
-            }
+            RefillAuthoredEndlessPool(capacity, crane, defeatCrane: capacity <= 2);
+            foreach (CombatActor actor in root.Opponents)
+                if (actor.IsRoom) AssertAuthoredBodyAppearance(actor, CombatRoomAssetProvider.Bank, true);
+            AssertPreparedEndlessPool(prepared, identities, capacity);
             Assert.That(root.Opponents[craneSlot], Is.SameAs(crane));
             if (docker != null)
             {
@@ -1054,7 +1053,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
         }
 
-        private void RefillAuthoredEndlessPool(int capacity, CombatActor crane, CombatEnemyKind kind, bool defeatCrane)
+        private void RefillAuthoredEndlessPool(int capacity, CombatActor crane, bool defeatCrane)
         {
             // At cap two the crane dies last, so its reservation must win over
             // an older authored corpse when the production interval advances.
@@ -1074,7 +1073,6 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(crane.State.IsDefeated, Is.True);
                 missing++;
             }
-            CombatTestRoot.AuthoredEnemyKindForTests = kind;
             bool following = root.CameraFollow.enabled;
             Quaternion rotation = root.CameraFollow.Camera.transform.rotation;
             root.CameraFollow.enabled = false;
@@ -1099,10 +1097,10 @@ namespace BarPromenade.Tests.PlayMode
                 root.CameraFollow.Camera.transform.rotation = rotation;
                 root.CameraFollow.enabled = following;
             }
-            AssertMixedEndlessLayout(capacity, kind);
+            AssertMixedEndlessLayout(capacity);
         }
 
-        private void AssertMixedEndlessLayout(int capacity, CombatEnemyKind? authoredKind = null)
+        private void AssertMixedEndlessLayout(int capacity)
         {
             Assert.That(root.WarehousePlan, Is.Not.Null);
             Assert.That(root.Opponents.Count, Is.EqualTo(capacity));
@@ -1114,15 +1112,14 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CombatActor actor = root.Opponents[slot];
                 Assert.That(actor.gameObject.activeInHierarchy && !actor.State.IsDefeated, Is.True);
-                Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie),
-                    "The ordinary zombie is excluded from the real Endless pool.");
+                Assert.That(actor.IsRoom || actor.IsDocker || actor.IsCrane, Is.True,
+                    "Only Room, Docker and Crane belong to the warehouse population.");
                 if (slot == craneSlot)
                     Assert.That(actor.IsCrane && actor.CraneAttached, Is.True);
                 else if (slot == 1) Assert.That(actor.IsDocker, Is.True);
                 else
                 {
-                    Assert.That(actor.IsAuthoredEnemy, Is.True);
-                    if (authoredKind.HasValue) Assert.That(actor.EnemyKind, Is.EqualTo(authoredKind.Value));
+                    Assert.That(actor.IsRoom, Is.True);
                     Assert.That(actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey,
                         Is.EqualTo(DefaultNpcPopulation.CombatTestAuthoredEnemyId(actor.EnemyKind, slot)));
                 }
@@ -1147,19 +1144,20 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertPreparedEndlessPool(CombatActor[] prepared, string[] identities, int capacity)
         {
-            int wildcards = capacity == 1 ? 0 : capacity <= 3 ? 1 : capacity - 2;
-            Assert.That(prepared.Length, Is.EqualTo(capacity + 2 * wildcards + 1));
+            int roomSlots = capacity == 1 ? 0 : capacity <= 3 ? 1 : capacity - 2;
+            Assert.That(prepared.Length, Is.EqualTo(capacity + 1), "The main range prepares one allowed body per live slot plus the hero.");
             Assert.That(root.GetComponentsInChildren<CombatActor>(true), Is.EquivalentTo(prepared),
                 "Refill and reset reuse the entire prewarmed actor pool.");
-            int rooms = 0, imprints = 0, longExposures = 0;
+            int rooms = 0;
             var journalIds = new HashSet<int>();
             for (int i = 0; i < prepared.Length; i++)
             {
                 CombatActor actor = prepared[i];
                 if (actor.IsHero) continue;
-                Assert.That(actor.EnemyKind, Is.Not.EqualTo(CombatEnemyKind.Zombie));
+                Assert.That(actor.IsRoom || actor.IsDocker || actor.IsCrane, Is.True,
+                    "The warehouse must not warm hidden Zombie, Imprint or Long Exposure bodies.");
                 Assert.That(journalIds.Add(actor.JournalActorId), Is.True, "Every prepared enemy keeps a distinct journal identity.");
-                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Inactive variants also keep one prepared animation graph.");
+                Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Every allowed body keeps one prepared animation graph.");
                 if (!actor.IsAuthoredEnemy) continue;
                 rooms += actor.IsRoom ? 1 : 0;
                 if (actor.IsRoom)
@@ -1168,14 +1166,10 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(actor.Body.radius, Is.EqualTo(.32f * CombatRoomAssetProvider.PresentationScale).Within(.00001f));
                     AssertRoomArmPose(actor, measureSleeves: false);
                 }
-                imprints += actor.IsImprint ? 1 : 0;
-                longExposures += actor.IsLongExposure ? 1 : 0;
                 Assert.That(actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey, Is.EqualTo(identities[i]));
                 Assert.That(actor.GetComponentInChildren<CombatZombieAppearance>(true), Is.Null);
             }
-            Assert.That(rooms, Is.EqualTo(wildcards));
-            Assert.That(imprints, Is.EqualTo(wildcards));
-            Assert.That(longExposures, Is.EqualTo(wildcards));
+            Assert.That(rooms, Is.EqualTo(roomSlots));
         }
 
         private static void AssertMixedRegionalDamage(MeleeCombatSettings settings)

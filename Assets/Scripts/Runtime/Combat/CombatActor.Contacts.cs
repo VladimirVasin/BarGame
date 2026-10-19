@@ -107,7 +107,7 @@ namespace BarPromenade
             internal float Time => time;
             internal int Priority => constraintFailure ? 3 : !solid ? 2 : metal ? 1 : 0;
             internal int SourceId => source.GetEntityId().GetHashCode();
-            internal bool IsCurrent => source != null && source.ContactGeneration == sourceGeneration && source.isActiveAndEnabled &&
+            internal bool IsCurrent => source != null && !source.RoomAttackSuppressed && source.ContactGeneration == sourceGeneration && source.isActiveAndEnabled &&
                 (target == null || target.ContactGeneration == targetGeneration && target.isActiveAndEnabled);
 
             public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,

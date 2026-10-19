@@ -106,7 +106,7 @@ namespace BarPromenade
                 craneBodyVoice.volume = .2f;
             }
             if (CranePhase != CombatCranePhase.Frenzied) return;
-            bool resume = isActiveAndEnabled && !roundEnded && !State.IsDefeated && !State.IsStunned &&
+            bool resume = !RoomAttackSuppressed && isActiveAndEnabled && !roundEnded && !State.IsDefeated && !State.IsStunned &&
                 !IsKnockedDown && !IsRagdollActive && BodyDamage.CanStand;
             craneTravelling = resume && craneFrenzyResumeTravelling;
             craneChangingFloors = craneTravelling && craneFrenzyResumeChangingFloors;

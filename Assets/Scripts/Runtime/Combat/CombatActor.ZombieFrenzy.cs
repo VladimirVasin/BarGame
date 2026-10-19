@@ -39,7 +39,7 @@ namespace BarPromenade
         // A received impulse can recover its balance instead, or topple later.
         private void ReactToZombieKnockdown(CombatImpact impact)
         {
-            if (!(IsDocker || IsCrane) || !ZombieAwake || impact.Source != this || impact.Target == null || !impact.Target.IsHero ||
+            if (!(IsDocker || IsCrane) || RoomAttackSuppressed || !ZombieAwake || impact.Source != this || impact.Target == null || !impact.Target.IsHero ||
                 impact.Kind != CombatImpactKind.Unarmed || impact.AttackSequence != State.AttackSequence ||
                 !impact.Target.IsKnockedDown || !IsAvailable || roundEnded || State.IsDefeated || State.IsStunned ||
                 IsKnockedDown || IsRagdollActive || !BodyDamage.CanStand || zombieFrenzied ||

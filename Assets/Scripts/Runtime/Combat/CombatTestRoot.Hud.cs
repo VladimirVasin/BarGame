@@ -35,11 +35,11 @@ namespace BarPromenade
         private static float FadeHud(float fade, bool show, float seconds) =>
             Mathf.MoveTowards(fade, show ? 1f : 0f, seconds / (show ? HudFadeInSeconds : HudFadeOutSeconds));
 
-        private void ResetHudPresentation(bool closeDebug = false)
+        private void ResetHudPresentation(bool closeDebug = false, bool preserveHealthBaseline = false)
         {
             ammoHudFade = reloadHudFade = healthHudFade = staminaHudFade = guardHudFade = chargeHudFade = 0f;
             healthHudHold = staminaHudHold = 0f;
-            hudLastHealth = Hero != null ? Hero.State.Health : 0f;
+            if (!preserveHealthBaseline) hudLastHealth = Hero != null ? Hero.State.Health : 0f;
             hudWeapon = Hero != null ? Hero.WeaponId : CombatWeaponId.Crowbar;
             resultSelection = 0;
             if (closeDebug) DebugHudVisible = false;
@@ -71,8 +71,11 @@ namespace BarPromenade
             if (!IsInitialized || !isActiveAndEnabled || float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f) return;
             if (!HudCanRender)
             {
-                // Pause retains the exact fade. Other handoffs discard stale flashes.
-                if (!PauseMenuController.IsAnyPaused) ResetHudPresentation();
+                // The Room hit lands while its camera/input loan still hides the
+                // HUD. Keep that health baseline so release reveals the real
+                // damage once. Pause retains the exact fade; other handoffs reset.
+                if (!PauseMenuController.IsAnyPaused)
+                    ResetHudPresentation(preserveHealthBaseline: roomInput.IsLocked && RoomAttackCinematicActive);
                 return;
             }
             if (hudWeapon != Hero.WeaponId || Hero.IsSwitchingWeapon)

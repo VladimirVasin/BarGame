@@ -52,10 +52,12 @@ namespace BarPromenade
             else damagePose?.Apply(weight);
         }
 
-        private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null)
+        private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null, bool preserveRoomHeadPain = false)
         {
-            // A real hit wins immediately over a Room gesture, laugh or held head pose.
-            ResetRoomSpecialPresentation();
+            // Real contacts interrupt special poses. The Room's own nonphysical
+            // receipt alone preserves the head already held for that sequence.
+            EndRoomAttackPose();
+            if (!preserveRoomHeadPain) EndRoomHeadPain();
             LastJournalImpactSequence = JournalImpactEvent("impact_applied", impact,
                 GameLog.Field("health_before", impact.HealthBefore), GameLog.Field("health_after", impact.HealthAfter),
                 GameLog.Field("damage", impact.Damage), GameLog.Field("result", (int)impact.Result),
@@ -79,6 +81,7 @@ namespace BarPromenade
                     GameLog.Field("pellet_index", impact.PelletIndex), GameLog.Field("primary_response", impact.PrimaryResponse),
                     GameLog.Field("head_feedback", impact.HeadFeedback), GameLog.Field("wound_damage", impact.WoundDamage));
             ReceivedImpactCount++;
+            if (preserveRoomHeadPain && roomHeadPainActive) roomHeadPainImpactCount = ReceivedImpactCount;
             InterruptZombieFrenzyIfNeeded();
             NotifyZombieBodyHit(impact);
             ApplyPhysicalImpact(impact);

@@ -279,8 +279,7 @@ namespace BarPromenade
             UpdateHudInput();
             if (AutomaticSimulation && (RoomAttackCinematicActive || UpdateCombatInput()))
             {
-                if (RoomAttackCinematicActive) Tick(Time.deltaTime);
-                else TickFrame(Time.deltaTime);
+                TickFrame(Time.deltaTime);
                 if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
             }
             if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
@@ -315,11 +314,13 @@ namespace BarPromenade
             if (!IsInitialized || !isActiveAndEnabled) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
-            if (RoomAttackPhase != CombatRoomSequencePhase.Idle && !pistolApplicationFocused) return;
-            if (RoomAttackCinematicActive) { AdvanceRoomAttackSequence(seconds); return; }
-            if (!GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!pistolApplicationFocused && (RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown)) return;
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (!RoomAttackCinematicActive && !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            foreach (CombatActor actor in preparedOpponents)
+                actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);
-            AmmoSpawns?.SetInteractionEnabled(!Hero.State.IsDefeated && pistolApplicationFocused);
+            AmmoSpawns?.SetInteractionEnabled(!RoomAttackCinematicActive && !Hero.State.IsDefeated && pistolApplicationFocused);
             if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
@@ -354,7 +355,6 @@ namespace BarPromenade
                 Hero.State.ObserveLateralCue(LateralBearing(Hero, Opponent));
                 Opponent.State.ObserveLateralCue(LateralBearing(Opponent, Hero));
                 if (Sparring) AdvanceOpponent(SimulationStep);
-                if (RoomAttackCinematicActive) { pendingSeconds = 0d; return; }
                 JournalOpponentDecision();
                 AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();
@@ -450,6 +450,7 @@ namespace BarPromenade
             ObserveEndlessOutcome();
             if (finishedRoundInitialized) return;
             finishedRoundInitialized = true;
+            ClearRoomAttackCooldowns();
             JournalRoundResult();
             pistolProjectiles?.ClearFlights();
             if (Hero.State.IsDefeated) shotgunProjectiles?.ClearFlights();

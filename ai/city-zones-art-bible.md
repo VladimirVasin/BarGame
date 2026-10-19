@@ -4234,7 +4234,7 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-19`:Room×1.2/head1.35/longarms+hands;head-finger2s→chest→seated twin2s→Lhead2s→laugh5s;§6.
+`2026-10-19`:Room×1.2/head1.35/longarms+hands;wideDutch1s;Lhead0→ret+2s;ret:laugh5s→idle5s;§6.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;
 Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion.
 UV-wounds/grip/walk/solid.

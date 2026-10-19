@@ -141,12 +141,12 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
-  StdDocker;Endless1–5/def3:authored,Docker,Crane(last≤2);
-  random start-reset-refill/seed/11warm/≤2corpses/roleIDs.
+  StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);
+  seeded start-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie;reset/prepkept.
-  Room×1.2/bighead/longarms+hands/corridor;Imprint:cast;LongExposure:emulsion.
-  Room:smooth focus2s→chest/seat2s→default/18HP/Lhead2s→laugh5s;
-  chest twin-chair/legIK/rootkept;others-input-flights0→laugh/pause-reset-end.
+  Room×1.2/bighead/longarms+hands/corridor;Lab Imprint:cast/LongExposure:emulsion.
+  Room:head0→ret+2s;lens1s/chest-seat2s/ret18HP/laugh5s→idle5s;
+  twin-chair/legIK/rootkept;simlive/input-otherAI0/liveidle until headend.
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
   Crane:flesh/carapace/6cables;3floor/6m3DLOS1hit-return;
   pendulum/voidCOL/ragdoll/ownfall→5sFrenzy/holdAI;

@@ -5,40 +5,41 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-19 - Room and combat CPU
 
-- Every user-proposed plan now requires an explicit project-fit assessment;
-  proposals remain separate from accepted decisions, without an extra approval
-  gate. `check-docs.py` and diff review verify the rule and PLAN workflow.
+- Plans require explicit project-fit assessment;proposals stay separate from
+  accepted decisions,without another gate. `check-docs.py`/diff review verify it.
 - Room has a larger native head and upper neck; the hollow corridor and
   canonical rest skeleton remain. Shared source textures are rebaked.
-- Its arms lengthen through the actual elbow and wrist chains; endpoint skin
-  weights keep sleeves, palms and wounds continuous through walks and strikes.
-- Palms and fingers extend along the retained local hand axis. Canonical source
-  meshes and grip shapes stay shared; hand scale resets before each pose sample.
-- The complete Room presentation grows on a stable wrapper; its actor stays
-  unit scale. Physical dimensions, head collision, gait and spawn clearance
-  follow the larger form and longer reach without changing the other enemies.
+- Arms lengthen through elbow/wrist chains;endpoint weights keep sleeve/palm/
+  wound continuity. Palms/fingers extend on the retained hand axis;source mesh/
+  grip stay shared;hand scale resets before sampling.
+- Stable wrapper grows Room presentation;unit-scale actor dimensions/head COL/
+  gait/spawn clearance follow the form/reach;other enemies kept.
 - Source proof: `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`;
   front, profile, walk and strike renders reviewed.
 - Own internal arm layers retain actual source skin through import; closed
   source-bound fragments replace protruding radial tissue and structures.
-- Damage proof: independent rebuild equality, retained-head strain,
-  stretched-arm containment, full hand-affine containment, binary skin audit
-  and clear-corridor probes pass. The hand revision retains source, atlas and
-  damage FBX bytes.
+- Damage proof:independent rebuild/head-strain/stretched-arm+hand-affine
+  containment/binary skin/clear-corridor probes pass;hand growth retained
+  source/atlas/damage FBX bytes.
 - Unity proofs: `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
   `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass. In-game
   silhouette, hero comparison, long-hand contact, damaged sleeve and corridor
   reviewed.
-- Room's continuous camera enters the real chest corridor and returns;
-  prepared hero/chair/lamp fit its weighted bind frame,duplicate walls hidden.
-  Source thresholds exposed the slope-only foot fit:cached posed plaster
-  triangles/boot supports now drive shared leg IK,keeping pelvis/chair contact.
-  No hero relocation/fade/render texture/recurring bake,load or allocation.
-  Return precedes damage/left-hand head reaction;others/flights/input resume on
-  vulnerable laugh. Pause/teardown restore ownership;existing canon exception.
-  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup` passes boot
-  geometry/threshold contact and lifecycle;sequential frames/seated view reviewed.
-  `build-combat-room-attack-3d-model.py --validate-only` passes;
+- Room:point1s/seat2s;extended arm/head-high hand,index-ray Dutch/head size kept;
+  palmar curl/opposed thumb/wrist roll;real corridor/weighted hero-chair-lamp/FBXscale;
+  cached plaster-threshold/legIK seat contact/dupewalls0;no hot bake-load-alloc/teleport/fade/RT.
+  Hero holds head from attack0 through return+2s;Return:one18HP/Laugh5s.
+  World sim runs;other living monsters/newspawns liveidle/no chase-attack until heroend.
+  HUD baseline kept across modal→health3s unlock;Laugh end/hit→full idle5s;
+  laterhits keep/hurt wins;idle=headcant/breath/laghands-twitch/planted;
+  pause freezes;death/reset/disable clear scoped ownership.
+  Main:Crane/Room/Docker only;Lab6 unchanged.
+  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup` passes head0/hold/worldsim/
+  NPCidle/arm-index optics/camera/boots/HUD/laugh/cooldown/hit/pause/cleanup;
+  pointing/seat/return/head-laugh reviewed.
+  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes;
+  Lab6 choice reviewed.
+  `build-combat-room-attack-3d-model.py --npc-only --validate-only` passes;
   `CombatRoomAttackAssetSetup.BuildOrThrow` imports and validates the bank.
 - Latest duel scopes identify body proxies and aim as CPU work;
   Editor render-end→nextUpdate remains unattributed. Bounds share transforms

@@ -18,10 +18,31 @@ namespace BarPromenade
         private int roomPoseImpactCount, roomHeadPainImpactCount;
         private CombatActor lastRoomDamageSource;
         private int lastRoomDamageSequence = int.MinValue;
+        internal const float RoomAttackCooldownSeconds = 5f;
+        private double roomAttackCooldownRemaining;
+        private bool roomCooldownStartPending;
 
         internal bool RoomAttackPoseActive => roomAttackPoseActive;
         internal bool RoomHeadPainActive => roomHeadPainActive;
         internal bool RoomLaughRecoveryActive => roomAttackPoseActive && roomAttackPose == CombatRoomAttackPose.Laugh;
+        internal bool RoomAttackCooldownActive => roomAttackCooldownRemaining > 0d;
+        internal float RoomAttackCooldownRemaining => (float)roomAttackCooldownRemaining;
+
+        // The sequence is sampled before the frame's fixed gameplay steps. A
+        // newly ended laugh must not spend that already elapsed frame twice.
+        internal void BeginRoomAttackGameplayFrame() => roomCooldownStartPending = false;
+
+        private void AdvanceRoomAttackCooldown(float seconds)
+        {
+            if (!roomCooldownStartPending && !presentationFrozen)
+                roomAttackCooldownRemaining = Math.Max(0d, roomAttackCooldownRemaining - seconds);
+        }
+
+        internal void ClearRoomAttackCooldown()
+        {
+            roomAttackCooldownRemaining = 0d;
+            roomCooldownStartPending = false;
+        }
 
         /// <summary>Prepare once before the camera/input loan; sampling does not load or allocate assets.</summary>
         internal bool PrepareRoomAttackPresentation()
@@ -76,7 +97,7 @@ namespace BarPromenade
 
         internal bool TryBeginRoomAttackPose()
         {
-            if (roomAttackPoseActive || !IsRoom || !isActiveAndEnabled || !IsAvailable ||
+            if (roomAttackPoseActive || RoomAttackCooldownActive || !IsRoom || !isActiveAndEnabled || !IsAvailable ||
                 State.Phase != MeleePhase.Ready || !CanAttemptBodyAction || !HasAttackBalance ||
                 !BodyDamage.CanUseRightHand || !PrepareRoomAttackPresentation()) return false;
             State.CancelAction();
@@ -119,6 +140,14 @@ namespace BarPromenade
         internal void EndRoomAttackPose()
         {
             if (!roomAttackPoseActive && !roomLaughStarted) return;
+            if (roomLaughStarted && !State.IsDefeated && isActiveAndEnabled && !RoomAttackCooldownActive)
+            {
+                roomAttackCooldownRemaining = RoomAttackCooldownSeconds;
+                roomCooldownStartPending = true;
+                roomIdleClock = 0f;
+                zombieWalkingRequested = false;
+                locomotionVelocity = Vector3.zero;
+            }
             roomAttackPoseActive = roomLaughStarted = false;
             roomAttackPoseProgress = 0f;
             SetRoomPointingWeight(0f);
@@ -256,7 +285,7 @@ namespace BarPromenade
             PublishImpact(new CombatImpact(source, this, sequence, point, -direction, direction,
                 healthBefore, State.Health, result, location, part: Player3DAnatomicalPart.Head,
                 kind: CombatImpactKind.Unarmed, primaryResponse: false, headFeedback: false,
-                bodyRegion: BodyDamageRegion.Head), before);
+                bodyRegion: BodyDamageRegion.Head), before, preserveRoomHeadPain: roomHeadPainActive && !State.IsDefeated);
             if (State.IsDefeated) BeginDefeat(direction, point);
             return true;
         }

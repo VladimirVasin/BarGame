@@ -153,8 +153,8 @@ test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-
 blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
 `build-combat-crane-surfaces.py`:sculpt/2K+1K.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
-`build-combat-room-attack-3d-model.py`:clips/chair/laugh/RoomPoint/source rulers.
-`--tableau-only`/`--validate-only`;rerun after body rebuild.
+`build-combat-room-attack-3d-model.py`:clips/tableau.
+`--pointing-only`/`--npc-only`/`--tableau-only`/`--validate-only`;after body rebuild.
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.

@@ -32,6 +32,35 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
+      name: RoomIdle
+      takeName: RIG_Player|RoomIdle
+      internalID: 1133080703190263067
+      firstFrame: 0
+      lastFrame: 300
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000u
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
       name: RoomLaugh
       takeName: RIG_Player|RoomLaugh
       internalID: -4882651613078119434
@@ -94,7 +123,7 @@ ModelImporter:
       takeName: RIG_Player|RoomPointHero
       internalID: 7172456319308793082
       firstFrame: 0
-      lastFrame: 120
+      lastFrame: 60
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

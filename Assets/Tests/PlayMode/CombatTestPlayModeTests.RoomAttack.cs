@@ -36,10 +36,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
                 new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
             yield return AwaitSelectedCombatRange();
+            root.AutomaticHudPresentation = false;
             root.SendMessage("OnApplicationFocus", true);
             CombatActor room = root.Opponents[0];
             Assert.That(room.IsRoom, Is.True);
             PlaceRoomAttackTestPair(room);
+            CombatActor waitingDocker = root.Opponents[1], waitingCrane = root.Opponents[2];
+            Assert.That(waitingDocker.TryZombieAttack(), Is.True);
+            Assert.That(waitingDocker.State.Phase, Is.EqualTo(MeleePhase.Windup),
+                "A real pending Docker strike must yield when the Room takes the shot.");
             Vector3 heroRoot = root.Hero.transform.position;
             float ordinaryNearClip = root.CameraFollow.Camera.nearClipPlane;
             root.CameraFollow.RotateYaw(18f); // Leave an orbit target pending when the camera is borrowed.
@@ -49,50 +54,77 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Motor.InputEnabled, Is.False);
             Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.False);
             Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
+            float pointingStartFov = root.CameraFollow.Camera.fieldOfView;
+            float pointingStartRoll = Mathf.Abs(RoomTestCameraRoll(root.CameraFollow.Camera));
+            yield return AtCombatPresentation(() => AssertRoomPointShotComposition(room));
 
             var opponents = new Vector3[root.Opponents.Count];
-            var heads = new Quaternion[root.Opponents.Count];
             for (int i = 0; i < opponents.Length; i++)
-            {
                 opponents[i] = root.Opponents[i].transform.position;
-                heads[i] = FindAnatomicalBone(root.Opponents[i], "head").rotation;
-            }
-            Assert.That(root.Projectiles.TrySpawn(root.Hero, heroRoot + Vector3.up * 2.5f,
-                Vector3.right * CombatProjectilePool.MuzzleSpeed, 1), Is.True);
+            Quaternion idleDockerHead = FindAnatomicalBone(waitingDocker, "head").localRotation;
+            float idleCraneClock = waitingCrane.CranePhaseElapsed;
+            // A slow flight above the hall avoids incidental geometry contacts;
+            // its normal lifetime remains shorter than the camera sequence.
+            Assert.That(root.Projectiles.TrySpawn(root.Hero, heroRoot + Vector3.up * 100f,
+                Vector3.right * 4f, 1), Is.True);
             Vector3 bullet = root.Projectiles.LastPosition;
-            int impacts = root.Projectiles.ImpactCount;
-            root.Tick(.75f);
+            yield return TraceRoomCameraToPhase(CombatRoomSequencePhase.PointHero, "The threatening finger", .75f);
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.PointHero));
             Transform pointingHand = FindAnatomicalBone(room, "hand.R");
             Vector3 towardHero = ((Player3DCharacterPresentation)root.Player.Visual).Registry.Anchors.Head.position - pointingHand.position;
             Assert.That(Vector3.Dot(pointingHand.TransformDirection(Vector3.up).normalized, towardHero.normalized), Is.GreaterThan(.65f),
                 "The pointing finger is directed at the actual hero.");
-            AssertRoomTestFreeze(heroRoot, opponents, heads, bullet, impacts);
+            AssertRoomTestLiveIdle(room, heroRoot, opponents);
+            Assert.That(Vector3.Distance(root.Projectiles.LastPosition, bullet), Is.GreaterThan(1f),
+                "An existing projectile keeps its ordinary ballistic simulation during the camera loan.");
+            Assert.That(root.Projectiles.ActiveCount, Is.EqualTo(1));
+            Assert.That(waitingCrane.CranePhaseElapsed, Is.GreaterThan(idleCraneClock + .5f),
+                "The yielding crane's real idle clock continues instead of freezing its presentation.");
             yield return AtCombatPresentation(() =>
             {
-                AssertRoomTestInFrame(FindAnatomicalBone(room, "head").position);
-                AssertRoomTestInFrame(room.RoomHandTipWorld(false));
+                AssertRoomPointShotComposition(room);
+                AssertRoomHeroHeadHeld();
+                Assert.That(Quaternion.Angle(idleDockerHead, FindAnatomicalBone(waitingDocker, "head").localRotation), Is.GreaterThan(.1f),
+                    "A yielding Docker samples a moving idle rather than holding its cancelled attack frame.");
+                Assert.That(root.CameraFollow.Camera.fieldOfView, Is.GreaterThan(pointingStartFov + 5f),
+                    "The held gesture expands the wide lens instead of freezing the approach lens.");
+                Assert.That(Mathf.Abs(RoomTestCameraRoll(root.CameraFollow.Camera)), Is.GreaterThan(pointingStartRoll + 4f),
+                    "The Dutch angle grows with the pointing threat.");
                 CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Pointing at hero");
             });
 
             float held = root.RoomAttackPhaseElapsed;
             Pose heldCamera = new Pose(root.CameraFollow.Camera.transform.position, root.CameraFollow.Camera.transform.rotation);
+            float heldFov = root.CameraFollow.Camera.fieldOfView;
+            Vector3 pausedBullet = root.Projectiles.LastPosition;
+            Quaternion pausedDockerHead = FindAnatomicalBone(waitingDocker, "head").localRotation;
+            float pausedCraneClock = waitingCrane.CranePhaseElapsed;
             Assert.That(root.PauseMenu.Open(), Is.True);
             root.Tick(1f);
             yield return null;
             Assert.That(root.RoomAttackPhaseElapsed, Is.EqualTo(held));
             Assert.That(root.CameraFollow.Camera.transform.position, Is.EqualTo(heldCamera.position));
             Assert.That(Quaternion.Angle(root.CameraFollow.Camera.transform.rotation, heldCamera.rotation), Is.LessThan(.01f));
+            Assert.That(root.CameraFollow.Camera.fieldOfView, Is.EqualTo(heldFov).Within(.0001f),
+                "Pause freezes the lens as well as the Dutch camera pose.");
+            Assert.That(root.Projectiles.LastPosition, Is.EqualTo(pausedBullet), "Actual pause freezes the live projectile.");
+            Assert.That(root.Projectiles.ActiveCount, Is.EqualTo(1));
+            Assert.That(waitingCrane.CranePhaseElapsed, Is.EqualTo(pausedCraneClock));
+            Assert.That(Quaternion.Angle(pausedDockerHead, FindAnatomicalBone(waitingDocker, "head").localRotation), Is.LessThan(.01f));
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return WaitFor(() => !root.PauseMenu.IsOpen && !GameTimeScaleRuntime.IsPaused,
                 "Pause did not release its overlay on the Room shot.");
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True, "Closing pause preserves the attack's input loan.");
             Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.False);
-            root.Tick(1.2f);
-            Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.PointHero), "The point shot lasts the full two seconds.");
+            yield return TraceRoomCameraToPhase(CombatRoomSequencePhase.PointHero, "The final pointing threat", .95f);
+            Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.PointHero),
+                "The one-second pointing hold is separate from the preceding camera approach.");
+            yield return AtCombatPresentation(() => AssertRoomPointShotComposition(room));
             root.Tick(.06f);
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.PointChest));
             yield return TraceRoomCameraToPhase(CombatRoomSequencePhase.SeatedHero, "Entering the room");
+            Assert.That(root.Projectiles.ActiveCount, Is.Zero,
+                "The projectile expires on its ordinary lifetime while the attack camera continues.");
             Assert.That(root.RoomAttackTableauVisible, Is.True);
             Player3DAssetRegistry image = root.RoomAttackHeroImage;
             Assert.That(image, Is.Not.Null);
@@ -146,7 +178,7 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(.55f);
             yield return AtCombatPresentation(() => AssertRoomTestSeatedFootContact(image, originalCorridor));
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.SeatedHero));
-            AssertRoomTestFreeze(heroRoot, opponents, heads, bullet, impacts);
+            AssertRoomTestLiveIdle(room, heroRoot, opponents);
             root.Tick(.06f);
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.ReturnRoom));
             Assert.That(root.RoomAttackTableauVisible, Is.True, "The hero stays inside the real chest during the reverse journey.");
@@ -161,6 +193,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.CameraFollow.FixedPoseActive, Is.False);
             Assert.That(root.CameraFollow.Camera.nearClipPlane, Is.EqualTo(ordinaryNearClip).Within(.00001f),
                 "The miniature interior lens must release its near plane with the camera.");
+            Assert.That(root.Hero.RoomHeadPainActive, Is.True);
+            Assert.That(room.RoomLaughRecoveryActive, Is.True,
+                "The monster starts laughing as soon as the camera returns, over the hero's head pain.");
+            Assert.That(room.ActiveClipName, Is.EqualTo(CombatRoomAttackAssetProvider.LaughClip));
+            AudioSource laugh = RoomTestLaughSource(room);
+            root.AdvanceHudPresentation(.2f);
+            Assert.That(root.HealthHudOpacity, Is.Zero, "The health event stays deferred while the pain action owns input.");
             root.Tick(.9f);
             yield return AtCombatPresentation(() =>
             {
@@ -169,18 +208,33 @@ namespace BarPromenade.Tests.PlayMode
                     "The actual left hand contacts the head during the pain action.");
                 CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Left hand on head");
             });
+            float overlappingLaugh = root.RoomLaughElapsed;
+            Quaternion laughingHead = FindAnatomicalBone(room, "head").rotation;
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            root.Tick(.5f);
+            Assert.That(root.RoomLaughElapsed, Is.EqualTo(overlappingLaugh), "Pause freezes the overlapping laugh clock too.");
+            Assert.That(FindAnatomicalBone(room, "head").rotation, Is.EqualTo(laughingHead));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => !root.PauseMenu.IsOpen && !GameTimeScaleRuntime.IsPaused,
+                "Pause did not release the overlapping Room laugh.");
             root.Tick(1.05f);
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.HeadPain));
-            AssertRoomTestFreeze(heroRoot, opponents, heads, bullet, impacts);
+            AssertRoomTestLiveIdle(room, heroRoot, opponents);
             root.Tick(.06f);
             yield return null; // The terminal pain sample must reach LateUpdate before input is returned.
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Laugh));
-            AssertRoomTestRestored();
+            AssertRoomTestRestored(ordinaryNearClip);
             Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
             Assert.That(room.RoomLaughRecoveryActive, Is.True);
             Assert.That(root.Hero.RoomHeadPainActive, Is.False);
             Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready), "Visible head pain consumes the hit recovery before control returns.");
-            AudioSource laugh = RoomTestLaughSource(room);
+            Assert.That(root.RoomLaughElapsed, Is.GreaterThanOrEqualTo(2f), "Releasing hero input must not restart the laugh.");
+            Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth - 18f).Within(.001f));
+            root.AdvanceHudPresentation(.2f);
+            Assert.That(root.HealthHudOpacity, Is.EqualTo(1f).Within(.001f),
+                "The real health loss remains visible after the modal camera and pain loan.");
+            root.AdvanceHudPresentation(2.5f);
+            Assert.That(root.HealthHudOpacity, Is.EqualTo(1f).Within(.001f), "The deferred damage gets the ordinary readable hold.");
             Assert.That(laugh.clip.length, Is.EqualTo(5f).Within(.02f));
             root.SendMessage("OnApplicationFocus", false);
             float laughHeld = root.RoomAttackPhaseElapsed;
@@ -191,36 +245,91 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtCombatPresentation(() => CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Laughing recovery"));
             root.Hero.ResetActor(heroRoot + Vector3.back * 14f, Vector3.forward);
             Vector3 laughingRoot = room.transform.position;
-            root.Tick(4.1f);
+            root.Tick(2.1f); // The first two seconds of laughter already overlapped the pain action.
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Laugh));
             Assert.That(Vector3.Distance(room.transform.position, laughingRoot), Is.LessThan(.001f));
-            root.Tick(.11f);
+            root.Tick(.6f); // A hitch crossing the laugh end must preserve the whole new wait.
             Assert.That(room.RoomLaughRecoveryActive, Is.False);
             Assert.That(laugh.isPlaying, Is.False);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(5f).Within(.00001f),
+                "The frame that ends laughter cannot also spend the new cooldown.");
+            root.Hero.ResetActor(heroRoot, Vector3.forward);
+            HoldOtherRoomTestOpponentsAway(room);
+            root.CameraFollow.Snap();
+            root.Tick(.2f);
+            yield return AtCombatPresentation(() =>
+            {
+                Assert.That(room.ActiveClipName, Is.EqualTo(CombatRoomAttackAssetProvider.IdleClip));
+                CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Waiting after laugh");
+            });
+            float cooldownHeld = room.RoomAttackCooldownRemaining;
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            root.Tick(10f);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(cooldownHeld));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => !root.PauseMenu.IsOpen && !GameTimeScaleRuntime.IsPaused,
+                "Pause did not release the Room cooldown.");
+            root.SendMessage("OnApplicationFocus", false);
+            root.Tick(10f);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(cooldownHeld));
+            root.SendMessage("OnApplicationFocus", true);
+            Quaternion idleHead = FindAnatomicalBone(room, "head").localRotation;
+            for (int sample = 0; sample < 4; sample++)
+            {
+                root.Tick(1f);
+                Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Idle));
+                Assert.That(Vector3.Distance(room.transform.position, laughingRoot), Is.LessThan(.001f));
+                HoldOtherRoomTestOpponentsAway(room);
+                yield return AtCombatPresentation(() => CaptureMixedCameraFrame(root.CameraFollow.Camera,
+                    "Test Room attack - Uneasy idle - Pose " + (sample + 1)));
+            }
+            Assert.That(Quaternion.Angle(idleHead, FindAnatomicalBone(room, "head").localRotation), Is.GreaterThan(1f),
+                "The planted wait presents the authored uneasy idle rather than a frozen pose.");
+            root.Tick(.79f);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.GreaterThan(0f));
+            Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Idle),
+                "Even a nearby facing hero cannot be attacked before five full seconds.");
+            Assert.That(Vector3.Distance(room.transform.position, laughingRoot), Is.LessThan(.001f));
+            yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.PointHero);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.Zero);
 
             PlaceRoomAttackTestPair(room);
             yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.Laugh);
             CombatHurtboxes.Hit chestHit = AuthoredSurfaceContact(room, CombatRoomAssetProvider.Bank, "GEO_Torso");
             room.ReceiveProjectile(root.Hero, 2, chestHit, -chestHit.Normal * CombatProjectilePool.MuzzleSpeed);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(5f), "Interrupting laughter starts the same full wait.");
             root.Tick(.05f);
             Assert.That(room.RoomAttackPoseActive, Is.False, "A new hit interrupts the exposed laughing enemy.");
             Assert.That(laugh.isPlaying, Is.False);
-            AssertRoomTestRestored();
+            AssertRoomTestRestored(ordinaryNearClip);
+            float afterHit = room.RoomAttackCooldownRemaining;
+            room.ReceiveProjectile(root.Hero, 3, chestHit, Vector3.zero);
+            Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(afterHit), "Later hits do not restart the wait.");
+            root.enabled = false;
+            Assert.That(room.RoomAttackCooldownRemaining, Is.Zero, "Disabling the encounter clears actor cooldown ownership.");
+            root.enabled = true;
+            root.AdvanceHudPresentation(.2f);
+            Assert.That(root.HealthHudOpacity, Is.Zero, "Disable clears a pending health reveal from the completed attack.");
 
             PlaceRoomAttackTestPair(room);
-            yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.SeatedHero);
+            yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.HeadPain);
             root.ResetRound();
+            root.AdvanceHudPresentation(.2f);
+            Assert.That(root.HealthHudOpacity, Is.Zero, "Reset clears the deferred health event.");
+            Assert.That(root.Hero.RoomHeadPainActive, Is.False);
+            Assert.That(laugh.isPlaying, Is.False, "Reset stops the overlapping laugh as well as hero pain.");
+            Assert.That(room.RoomAttackCooldownRemaining, Is.Zero);
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Idle));
             Assert.That(root.RoomAttackTableauVisible, Is.False);
             Assert.That(room.RoomAttackPoseActive, Is.False);
-            AssertRoomTestRestored();
+            AssertRoomTestRestored(ordinaryNearClip);
             PlaceRoomAttackTestPair(room);
             yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.PointHero);
             root.enabled = false;
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Idle));
             Assert.That(root.RoomAttackTableauVisible, Is.False);
             Assert.That(room.RoomAttackPoseActive, Is.False);
-            AssertRoomTestRestored();
+            AssertRoomTestRestored(ordinaryNearClip);
             root.enabled = true;
 
             PlaceRoomAttackTestPair(room);
@@ -230,7 +339,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.State.IsDefeated, Is.True, "A lethal Room hit enters the ordinary defeat lifecycle.");
             Assert.That(root.Hero.RoomHeadPainActive, Is.False);
             Assert.That(root.RoomAttackTableauVisible, Is.False);
-            AssertRoomTestRestored();
+            AssertRoomTestRestored(ordinaryNearClip);
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -243,6 +352,14 @@ namespace BarPromenade.Tests.PlayMode
             foreach (CombatActor actor in root.Opponents)
                 if (actor != room && !actor.IsCrane) actor.ResetActor(ground + Vector3.right * 12f, Vector3.left);
             root.CameraFollow.Snap();
+            Physics.SyncTransforms();
+        }
+
+        private void HoldOtherRoomTestOpponentsAway(CombatActor room)
+        {
+            foreach (CombatActor actor in root.Opponents)
+                if (actor != room && !actor.IsCrane)
+                    actor.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset + Vector3.right * 12f, Vector3.left);
             Physics.SyncTransforms();
         }
 
@@ -262,7 +379,7 @@ namespace BarPromenade.Tests.PlayMode
         /// and the frame after fixed-camera ownership is returned. The bounded
         /// 12 Hz captures retain the real lighting/post-processing for motion review.
         /// </summary>
-        private IEnumerator TraceRoomCameraToPhase(CombatRoomSequencePhase phase, string journey)
+        private IEnumerator TraceRoomCameraToPhase(CombatRoomSequencePhase phase, string journey, float minimumPhaseElapsed = 0f)
         {
             const float stepSeconds = 1f / 60f;
             Camera camera = root.CameraFollow.Camera;
@@ -276,13 +393,25 @@ namespace BarPromenade.Tests.PlayMode
             previous = new Pose(camera.transform.position, camera.transform.rotation);
             previousFov = camera.fieldOfView;
             previousHead = RoomTestHeadProjection(camera);
-            for (int step = 0; step < 600 && root.RoomAttackPhase != phase; step++)
+            for (int step = 0; step < 600 &&
+                (root.RoomAttackPhase != phase || root.RoomAttackPhaseElapsed + .000001f < minimumPhaseElapsed); step++)
             {
                 root.Tick(stepSeconds);
                 bool sampleCapture = step % 5 == 4 || root.RoomAttackPhase != previousPhase;
                 yield return AtCombatPresentation(() =>
                 {
                     AssertRoomCameraFrameContinuity(camera, previous, previousFov, previousPhase, previousHead);
+                    if (root.RoomAttackCinematicActive)
+                    {
+                        Assert.That(root.Hero.RoomHeadPainActive, Is.True,
+                            "The real hero owns the head action from the first Room attack frame.");
+                        AssertRoomOtherActorsYield(root.Opponents[0]);
+                        if (root.RoomAttackPhase != CombatRoomSequencePhase.HeadPain &&
+                            (root.RoomAttackPhase != CombatRoomSequencePhase.FocusEntry || root.RoomAttackPhaseElapsed >= .32f))
+                            AssertRoomHeroHeadHeld();
+                    }
+                    if (root.RoomAttackPhase == CombatRoomSequencePhase.PointHero)
+                        AssertRoomPointShotComposition(root.Opponents[0]);
                     if (sampleCapture) CaptureMixedCameraFrame(camera,
                         "Test Room attack - " + journey + " - Frame " + (++captured).ToString("D2"));
                 });
@@ -292,6 +421,7 @@ namespace BarPromenade.Tests.PlayMode
                 previousHead = RoomTestHeadProjection(camera);
             }
             Assert.That(root.RoomAttackPhase, Is.EqualTo(phase), "The smooth Room camera did not reach " + phase + ".");
+            Assert.That(root.RoomAttackPhaseElapsed + .000001f, Is.GreaterThanOrEqualTo(minimumPhaseElapsed));
             yield return AtCombatPresentation(() => AssertRoomCameraFrameContinuity(camera,
                 previous, previousFov, previousPhase, previousHead));
         }
@@ -380,20 +510,43 @@ namespace BarPromenade.Tests.PlayMode
             finally { UnityEngine.Object.DestroyImmediate(scratch); }
         }
 
-        private void AssertRoomTestFreeze(Vector3 heroRoot, Vector3[] opponents, Quaternion[] heads, Vector3 bullet, int impacts)
+        private void AssertRoomTestLiveIdle(CombatActor room, Vector3 heroRoot, Vector3[] opponents)
         {
             Assert.That(Vector3.Distance(root.Hero.transform.position, heroRoot), Is.LessThan(.01f), "The actual hero stays in the arena.");
-            Assert.That(root.Projectiles.LastPosition, Is.EqualTo(bullet), "An in-flight projectile stays frozen throughout the cinematic.");
-            Assert.That(root.Projectiles.ActiveCount, Is.EqualTo(1));
-            Assert.That(root.Projectiles.ImpactCount, Is.EqualTo(impacts));
+            AssertRoomOtherActorsYield(room);
             for (int i = 1; i < opponents.Length; i++)
             {
-                Assert.That(root.Opponents[i].transform.position, Is.EqualTo(opponents[i]));
-                Assert.That(Quaternion.Angle(FindAnatomicalBone(root.Opponents[i], "head").rotation, heads[i]), Is.LessThan(.01f));
+                CombatActor actor = root.Opponents[i];
+                if (actor.IsCrane) continue; // Residual pendulum and hook return remain physical.
+                Assert.That(Vector3.ProjectOnPlane(actor.transform.position - opponents[i], Vector3.up).magnitude, Is.LessThan(.02f),
+                    "A healthy yielding ground enemy does not voluntarily chase the hero.");
+                Assert.That(actor.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.IdleClip),
+                    "The awake Docker yields through its ordinary living idle.");
             }
         }
 
-        private void AssertRoomTestRestored()
+        private void AssertRoomOtherActorsYield(CombatActor room)
+        {
+            foreach (CombatActor actor in root.Opponents)
+            {
+                if (actor == room || actor.State.IsDefeated) continue;
+                Assert.That(actor.RoomAttackSuppressed, Is.True, "Every other living opponent yields voluntary combat to the Room shot.");
+                Assert.That(actor.State.IsAttacking || actor.State.IsCharging || actor.State.IsShoving ||
+                    actor.State.IsKicking || actor.State.Phase == MeleePhase.Step, Is.False,
+                    "An existing windup is cancelled and no other attack can overlap the camera sequence.");
+                if (actor.IsCrane) Assert.That(actor.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+            }
+        }
+
+        private void AssertRoomHeroHeadHeld()
+        {
+            Assert.That(root.Hero.RoomHeadPainActive, Is.True);
+            var hero = ((Player3DCharacterPresentation)root.Player.Visual).Registry;
+            Assert.That(Vector3.Distance(hero.Anchors.LeftGrip.position, hero.Anchors.Head.position), Is.LessThan(.4f),
+                "The actual hero keeps his left hand at his head while the camera points and travels inside the monster.");
+        }
+
+        private void AssertRoomTestRestored(float nearClipPlane)
         {
             Assert.That(root.RoomAttackCinematicActive, Is.False);
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
@@ -401,7 +554,50 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.CameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.True);
+            foreach (CombatActor actor in root.GetComponentsInChildren<CombatActor>(true))
+                Assert.That(actor.RoomAttackSuppressed, Is.False, "Completion, reset and disable release every prepared actor's Room suppression.");
+            Assert.That(root.CameraFollow.Camera.fieldOfView, Is.EqualTo(root.CameraFollow.FollowFieldOfView).Within(.001f),
+                "Releasing a Room shot restores the ordinary lens.");
+            Assert.That(RoomTestCameraRoll(root.CameraFollow.Camera), Is.EqualTo(0f).Within(.01f),
+                "The Dutch angle cannot leak into the gameplay camera.");
+            Assert.That(root.CameraFollow.Camera.nearClipPlane, Is.EqualTo(nearClipPlane).Within(.00001f),
+                "Cancellation and reset release the miniature-room near plane too.");
         }
+
+        private void AssertRoomPointShotComposition(CombatActor room)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Transform shoulder = FindAnatomicalBone(room, "upper_arm.R");
+            Transform forearm = FindAnatomicalBone(room, "forearm.R");
+            Transform hand = FindAnatomicalBone(room, "hand.R");
+            Vector3 tip = room.RoomPointingTipWorld;
+            Vector3 head = FindAnatomicalBone(room, "head").position;
+            Vector3 pointing = room.RoomPointingDirectionWorld;
+            Assert.That(Vector3.Dot((camera.transform.position - tip).normalized, pointing), Is.GreaterThan(.995f),
+                "The raised index finger points directly into the lens throughout the pointing shot.");
+            Assert.That(hand.position.y, Is.GreaterThanOrEqualTo(head.y - .15f * room.PresentationScale),
+                "The pointing wrist stays raised near the monster's head rather than reaching up from the chest.");
+            float armLength = Vector3.Distance(shoulder.position, forearm.position) +
+                Vector3.Distance(forearm.position, hand.position);
+            Assert.That(Vector3.Distance(shoulder.position, hand.position), Is.GreaterThanOrEqualTo(.97f * armLength),
+                "The raised pointing arm reaches forward almost straight, with only a small natural elbow bend.");
+            Assert.That(Vector3.Dot(camera.transform.forward, (head - camera.transform.position).normalized), Is.GreaterThan(.95f),
+                "The tilted lens still looks toward the monster's head behind the finger.");
+            AssertRoomTestInFrame(head);
+            AssertRoomTestInFrame(tip);
+            Vector3 fingerView = camera.WorldToViewportPoint(tip);
+            Vector3 headView = camera.WorldToViewportPoint(head);
+            Assert.That(fingerView.z, Is.GreaterThan(camera.nearClipPlane * 1.5f),
+                "The foreground finger stays in front of the borrowed lens's near plane.");
+            Assert.That(fingerView.z, Is.LessThan(headView.z * .75f),
+                "The foreground finger is visibly closer than the head for the wide-angle threat.");
+            Assert.That(camera.fieldOfView, Is.InRange(70f, 95f), "The pointing shot uses its dramatic wide lens.");
+            Assert.That(Mathf.Abs(RoomTestCameraRoll(camera)), Is.InRange(8f, 30f),
+                "A readable Dutch angle is part of the pointing composition.");
+        }
+
+        private static float RoomTestCameraRoll(Camera camera) => Vector3.SignedAngle(
+            Vector3.ProjectOnPlane(Vector3.up, camera.transform.forward), camera.transform.up, camera.transform.forward);
 
         private void AssertRoomTestInFrame(Vector3 point)
         {

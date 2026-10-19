@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
-        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
+        [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch()
         {
             // The production menu selection must choose the old arena itself.

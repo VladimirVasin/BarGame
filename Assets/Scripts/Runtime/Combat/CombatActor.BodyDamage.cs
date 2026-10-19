@@ -31,7 +31,7 @@ namespace BarPromenade
         public void SetCrawlInput(Vector2 input)
         {
             if (!float.IsFinite(input.x) || !float.IsFinite(input.y)) throw new ArgumentOutOfRangeException(nameof(input));
-            bodyCrawlInput = Vector2.ClampMagnitude(input, 1f);
+            bodyCrawlInput = RoomAttackSuppressed ? Vector2.zero : Vector2.ClampMagnitude(input, 1f);
             bodyCrawlInputOwned = true;
         }
         public void ClearCrawlInput() { bodyCrawlInput = Vector2.zero; bodyCrawlInputOwned = false; }

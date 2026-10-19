@@ -39,6 +39,7 @@ namespace BarPromenade
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
+            ClearRoomAttackCooldown();
             ReleaseCraneSuspension();
             EndZombieFrenzy();
             zombieLoad?.EndRam();
@@ -95,6 +96,7 @@ namespace BarPromenade
 
         internal void AdvanceRoundEnd(float seconds)
         {
+            ClearRoomAttackCooldown();
             if (CraneAttached && !State.IsDefeated)
             {
                 roundEnded = true;

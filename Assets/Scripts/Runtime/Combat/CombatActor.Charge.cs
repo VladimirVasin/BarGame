@@ -74,7 +74,7 @@ namespace BarPromenade
         {
             MeleeBufferedAction action = State.BufferedAction;
             bool freeSwing = action is MeleeBufferedAction.Attack or MeleeBufferedAction.Charge;
-            if ((!CombatFocused && !freeSwing || roundEnded) && !CanAttackFinishedBody || presentationFrozen || !IsAvailable ||
+            if ((!CombatFocused && !freeSwing || roundEnded) && !CanAttackFinishedBody || RoomAttackSuppressed || presentationFrozen || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (CombatFocused && contactTarget != null && contactTarget.State.IsDefeated && !CanAttackFinishedBody)) return false;
             if (CanAttackFinishedBody && action is not (MeleeBufferedAction.Attack or MeleeBufferedAction.Charge)) return false;

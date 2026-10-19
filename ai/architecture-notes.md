@@ -3,25 +3,26 @@
 ## Current facts
 
 - **Accepted exception 2026-10-19, Room attack:**
-  CombatTest/outside scale:story§6/§7/§16.16/art§15a.
-  One camera:focus.9/hold2→gesture.6/entry1/seat2→out.6/return.8;
-  nonphysical18HP/real hero Lhead2s/laugh5s;pose/lens/focus smooth.
-  Original skinned plaster/four frames stay visible;camera enters actual hole.
-  Prepared `Player3DV2`/chair/lamp fit weighted torso bind frame;
-  rulers retain FBX scale;duplicate walls hidden;stage-up facing.
-  Seated clip→cached boot supports on cold-captured posed plaster/threshold
-  triangles→shared `LimbTwoBoneIk`;pelvis/chair kept.
-  No gameplay twin/hero relocation/fade/RT/live BakeMesh/loads/alloc.
-  Others/flights/input suspend until laugh;Room vulnerable/attack0/hits interrupt.
-  Pause freezes phases/poses/laugh;death/reset/end/exit restore;no text.
-  `FullscreenWithPause` keeps parent lock when PauseMenu closes.
-  Combat owns rig/camera/input/idempotent cleanup:bounded contextual exception.
+  CombatTest/outside scale:story§6/7/16.16/art§15a;no text.
+  Cam:focus.9/point1/chest.6/in1/seat2/out.6/ret.8;
+  Point/chest/in/seat FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;
+  out=reverse;Return=normal. Extended head-high arm/index-ray push(head size kept);
+  index kept/3 fingers palmward/thumb opposed/wrist roll.
+  Skin/4frames/hole;weighted Player3DV2/chair/lamp/FBXscale;
+  dupe walls0/up;plaster-threshold cache→LimbTwoBoneIk;boot/pelvis/chair touch;seat backoff.
+  No gameplay twin/warp/fade/RT/hot bake-load-alloc.
+  Hero Lhead:attack0→return+2s/input0;Return:18HP1x/Laugh5s.
+  Worldsim live;other live monsters/newspawns:idle/no chase-attack until heroend.
+  Vulnerable/hit-cancel;HUD baseline held in lock→HP3s on unlock.
+  Laugh end/cancel→idle5s;remainder0;laterhits keep/hurt wins.
+  Idle:planted/headcant/breath/hands lag-twitch/blends.
+  Pause freezes;death/reset/disable/end/exit:rig/camera/input/lock cleanup idempotent.
 
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
 
-- **Accepted exception 2026-10-18, enemies:**
-  Endless1–5/def3:Room|Imprint|LongExposure rng/start-reset-refill,Docker,Crane(last≤2);
-  11warm;ZombieLab;§6/art§15a/story0.
+- **Accepted 2026-10-19, warehouse roster:**
+  Main:Crane/Room/Docker only;Endless1–5/def3;Crane last/≤2corpses;
+  Lab all6/Zombie/default1target;≤6warm;§6/art§15a/story0.
 
 - **Accepted exception 2026-10-17, crane insect:**
   Form=art§15a;sharedrig/yaw±100°/hang↓.25/rootkept.

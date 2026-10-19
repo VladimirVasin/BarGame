@@ -157,8 +157,8 @@ namespace BarPromenade
         {
             pistolApplicationFocused = focused;
             GameCursor.SetApplicationFocused(focused);
-            if (RoomAttackPhase != CombatRoomSequencePhase.Idle && IsInitialized)
-                SetDuelFrozen(!focused || RoomAttackCinematicActive || hitStopSubsteps > 0 || roundEndFreeze > 0d);
+            if ((RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown) && IsInitialized)
+                SetDuelFrozen(!focused || hitStopSubsteps > 0 || roundEndFreeze > 0d);
             AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated);
             JournalApplicationFocus(focused);
             if (focused) return;
@@ -176,6 +176,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             CancelRoomAttackSequence();
+            ClearRoomAttackCooldowns();
             ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();
             SuspendWarehouseMusic();
