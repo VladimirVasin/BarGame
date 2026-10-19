@@ -34,6 +34,7 @@ namespace BarPromenade
         private RaycastHit[] craneVisibilityHits = new RaycastHit[16];
         private Transform craneHand, craneHookCentre, craneLeftHookCentre;
         private GameObject craneSuspensionHost, craneSuspensionHead, craneRails, craneBridge;
+        private CombatCraneRemnant craneRemnant;
         private Transform craneFeedSwivel;
         private Quaternion craneFeedSwivelRest;
         private AudioSource craneWinch, craneRelease, craneRailVoice, craneBodyVoice;
@@ -55,6 +56,8 @@ namespace BarPromenade
         public bool CraneTravelBlocked { get; private set; }
         public int CraneArrivedStops { get; private set; }
         public bool CraneAttached => IsCrane && CranePhase != CombatCranePhase.Released;
+        internal bool HasWarehouseCraneRemnant => craneRemnant != null && craneRemnant.IsVisible;
+        internal bool WarehouseCraneRemnantAnimating => craneRemnant != null && craneRemnant.IsAnimating;
         public int CraneFloorIndex => craneFloor;
         public bool CranePatrolTravelling => craneChangingFloors;
         internal bool CranePatrolEnabled { get; set; } = true;
@@ -63,11 +66,13 @@ namespace BarPromenade
         public int CraneCableCount => IsCrane ? craneCables.Length : 0;
         public Vector3 CraneStrikeHandPosition => CraneHookPosition;
         public Vector3 GetCraneCableStart(int index) => craneFeeds[index].position;
-        public Vector3 GetCraneCableEnd(int index) => craneAttachments[index].position;
+        public Vector3 GetCraneCableEnd(int index) => HasWarehouseCraneRemnant ? craneRemnant.GetCableEnd(index) : craneAttachments[index].position;
         internal Transform GetCraneCableTransform(int index) => craneCables[index];
         internal Transform GetCraneCableTransform(int index, int segment) => craneCablePieces[index, segment];
-        public Vector3 GetCraneCableSegmentStart(int index, int segment) => CraneRopePoint(index, segment / (float)CraneCableSegments);
-        public Vector3 GetCraneCableSegmentEnd(int index, int segment) => CraneRopePoint(index, (segment + 1f) / CraneCableSegments);
+        public Vector3 GetCraneCableSegmentStart(int index, int segment) => HasWarehouseCraneRemnant
+            ? craneRemnant.GetPoint(index, segment / (float)CraneCableSegments) : CraneRopePoint(index, segment / (float)CraneCableSegments);
+        public Vector3 GetCraneCableSegmentEnd(int index, int segment) => HasWarehouseCraneRemnant
+            ? craneRemnant.GetPoint(index, (segment + 1f) / CraneCableSegments) : CraneRopePoint(index, (segment + 1f) / CraneCableSegments);
 
         private void LoadCraneClips()
         {
@@ -121,6 +126,8 @@ namespace BarPromenade
                 }
                 craneCables[i] = craneCablePieces[i, 0];
             }
+            craneRemnant = craneSuspensionHost.AddComponent<CombatCraneRemnant>();
+            craneRemnant.Initialize(craneCablePieces, craneCableScales, GetComponentInParent<CombatTestRoot>());
             InitializeCraneClearance(); InitializeCraneDynamics(); InitializeCraneHook();
             craneWinch = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadWinchSound(), .26f);
             craneRailVoice = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadRailSound(), .24f);
@@ -144,6 +151,7 @@ namespace BarPromenade
 
         internal void ConfigureCraneSuspension(Vector3 ground, Vector3 ceiling)
         {
+            if (HasWarehouseCraneRemnant) return;
             CraneGroundPosition = ground; CraneAnchorPosition = ceiling;
             CraneHomePosition = ground + Vector3.up * (WarehouseArenaPlan.TopHeight + CraneRestHeight);
             craneRails.transform.position = new Vector3(0f, ceiling.y, 0f);
@@ -152,7 +160,7 @@ namespace BarPromenade
 
         private void ResetCraneSuspension()
         {
-            if (!IsCrane || craneSuspensionHead == null) return;
+            if (!IsCrane || craneSuspensionHead == null || HasWarehouseCraneRemnant) return;
             ResetCraneAttackLifecycle();
             ResetZombieFrenzy(); CraneFrenzyPlayCount = 0; CraneFrenzySecondsElapsed = 0f;
             craneClock = cranePerceptionWait = craneHurtHold = craneHurtClock = craneBreathWait = 0f; craneCooldown = .6f;
@@ -488,7 +496,7 @@ namespace BarPromenade
 
         private void ReceiveCraneImpulse(CombatImpact impact)
         {
-            if (impact.Result == MeleeHitResult.Ignored || IsCraneRegenerating) return;
+            if (impact.Result == MeleeHitResult.Ignored || IsCraneRegenerating || HasWarehouseCraneRemnant) return;
             craneSwayVelocity += Vector3.ClampMagnitude(Vector3.ProjectOnPlane(impact.Impulse, Vector3.up) * .008f, .65f);
             craneHurtHold = .18f; craneHurtClock = .55f;
             BeginPoseBlend(.08f);
@@ -498,7 +506,7 @@ namespace BarPromenade
 
         private void PlayCraneContactSound(MeleeHitResult result)
         {
-            if (!IsCrane || result == MeleeHitResult.Ignored) return;
+            if (!IsCrane || result == MeleeHitResult.Ignored || HasWarehouseCraneRemnant) return;
             craneBodyVoice.PlayOneShot(CombatCraneAssetProvider.LoadReleaseSound(), .9f);
         }
 
@@ -528,7 +536,42 @@ namespace BarPromenade
             ReleaseCraneVictim(false);
             EndZombieFrenzy();
             StopCraneVoices();
-            craneSuspensionHost.SetActive(false);
+            if (!HasWarehouseCraneRemnant) craneSuspensionHost.SetActive(false);
+        }
+
+        /// <summary>The encounter removes the body separately; this keeps the achieved gantry and six free cables.</summary>
+        internal void SetWarehouseCraneRemnant(bool visible, bool animate = false)
+        {
+            if (!IsCrane || craneRemnant == null || visible == HasWarehouseCraneRemnant) return;
+            if (!visible)
+            {
+                craneRemnant.Clear();
+                ResetCraneSuspension();
+                if (isActiveAndEnabled) PresentCrane();
+                else craneSuspensionHost.SetActive(false);
+                return;
+            }
+            ResetCraneAttackLifecycle();
+            EndZombieFrenzy();
+            State.CancelAction();
+            CranePhase = CombatCranePhase.Released;
+            craneChangingFloors = craneTravelling = craneStarting = false;
+            CraneMotionAxis = 0;
+            craneMoveSpeed = 0f;
+            craneContactValid = collectSweep = sweepValid = collectShove = collectKick = false;
+            StopCraneVoices();
+            CombatCorpseTraversal.ReleaseCollider(craneHookCollider);
+            CombatCorpseTraversal.ReleaseCollider(craneCuffCollider);
+            craneHookBody.isKinematic = craneCuffBody.isKinematic = true;
+            craneHookBody.useGravity = craneCuffBody.useGravity = false;
+            craneHookCollider.enabled = craneCuffCollider.enabled = false;
+            craneHookFrame.SetActive(false);
+            craneCuffFrame.SetActive(false);
+            craneAttackCable.gameObject.SetActive(false);
+            CraneHookPhase = CombatCraneHookPhase.Released;
+            craneSuspensionHost.SetActive(true);
+            craneSuspensionHead.SetActive(true);
+            craneRemnant.Show(craneFeeds, craneAttachments, animate);
         }
 
         private void SetCraneAudioFrozen(bool frozen)
@@ -542,6 +585,7 @@ namespace BarPromenade
         private void DisposeCrane()
         {
             ReleaseCraneVictim(false);
+            if (craneRemnant != null) craneRemnant.Clear();
             CombatCorpseTraversal.ReleaseCollider(craneHookCollider); CombatCorpseTraversal.ReleaseCollider(craneCuffCollider);
             if (craneSuspensionHost != null) Destroy(craneSuspensionHost);
         }

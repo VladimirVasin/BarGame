@@ -69,8 +69,13 @@ namespace BarPromenade
                     : "inventory.equipment.unused")
                 : string.Empty;
 
-        public bool CanUseSelected =>
+        public bool HasSelectedUseAction =>
             HasSelection &&
+            (SelectedIsEquippable || InventoryConsumableCatalog.TryGet(
+                SelectedStack.ItemId, out _));
+
+        public bool CanUseSelected =>
+            HasSelectedUseAction &&
             (SelectedIsEquippable || SelectedUseEvaluation.Succeeded);
 
         public string SelectedUseActionLabel
@@ -89,8 +94,7 @@ namespace BarPromenade
                         SelectedStack.ItemId,
                         out _))
                 {
-                    return LocalizationService.Get(
-                        "inventory.action.use");
+                    return string.Empty;
                 }
 
                 InventoryItemUseResult evaluation =
@@ -240,7 +244,7 @@ namespace BarPromenade
 
         public bool UseSelected()
         {
-            if (!IsOpen || IsExamining || !HasSelection)
+            if (!IsOpen || IsExamining || !HasSelectedUseAction)
             {
                 return false;
             }

@@ -292,7 +292,9 @@ namespace BarPromenade
 
         public bool SelectAction(int index)
         {
-            if (!IsInspecting || !GameInput.CanRead(GameInputContext.Menu) || index < 0 || index > 2)
+            if (!IsInspecting || !GameInput.CanRead(GameInputContext.Menu) ||
+                (index != (int)HomeRefrigeratorItemAction.Take &&
+                 index != (int)HomeRefrigeratorItemAction.Back))
             {
                 return false;
             }
@@ -314,9 +316,7 @@ namespace BarPromenade
                     selectedActionIndex = (int)action;
                     return TakeActiveItem();
                 case HomeRefrigeratorItemAction.Use:
-                    feedbackKey = UnavailableFeedbackKey;
-                    selectedActionIndex = (int)action;
-                    return true;
+                    return false;
                 case HomeRefrigeratorItemAction.Back:
                     selectedActionIndex = (int)action;
                     return RequestReturn();
@@ -409,7 +409,9 @@ namespace BarPromenade
             if (horizontal != 0)
             {
                 selectedActionIndex =
-                    WrapIndex(selectedActionIndex + horizontal, 3);
+                    selectedActionIndex == (int)HomeRefrigeratorItemAction.Take
+                        ? (int)HomeRefrigeratorItemAction.Back
+                        : (int)HomeRefrigeratorItemAction.Take;
                 feedbackKey = string.Empty;
             }
 

@@ -444,6 +444,76 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(10f));
 
             Assert.That(
+                itemInspection.SelectedActionIndex,
+                Is.EqualTo((int)HomeRefrigeratorItemAction.Take));
+            Assert.That(
+                itemInspection.SelectAction((int)HomeRefrigeratorItemAction.Use),
+                Is.False,
+                "An unavailable command must not become the selected action.");
+            Assert.That(
+                itemInspection.InvokeAction(HomeRefrigeratorItemAction.Use),
+                Is.False,
+                "A hidden Use command must not run the Take transaction.");
+            Assert.That(itemInspection.IsInspecting, Is.True);
+            Assert.That(itemInspection.ActiveItem, Is.SameAs(item));
+            Assert.That(itemInspection.FeedbackKey, Is.Empty);
+            Assert.That(
+                itemInspection.SelectedActionIndex,
+                Is.EqualTo((int)HomeRefrigeratorItemAction.Take));
+
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                for (int step = 0; step < 4; step++)
+                {
+                    var navigationKey = step < 2
+                        ? keyboard.rightArrowKey
+                        : keyboard.leftArrowKey;
+                    inputFixture.Press(navigationKey, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(
+                        itemInspection.SelectedActionIndex,
+                        Is.EqualTo((int)(step % 2 == 0
+                            ? HomeRefrigeratorItemAction.Back
+                            : HomeRefrigeratorItemAction.Take)),
+                        "Action navigation must wrap between Take and Back, skipping Use.");
+                    inputFixture.Release(navigationKey, queueEventOnly: true);
+                    yield return null;
+                }
+            }
+            finally
+            {
+                if (keyboard.added)
+                {
+                    InputSystem.RemoveDevice(keyboard);
+                }
+            }
+
+            Rect takeAction = RetroItemPanel.ActionRect(0, 2);
+            Rect backAction = RetroItemPanel.ActionRect(1, 2);
+            Assert.That(takeAction.xMax, Is.LessThan(backAction.xMin));
+            Assert.That(
+                (takeAction.xMin + backAction.xMax) * 0.5f,
+                Is.EqualTo(RetroUiTheme.LogicalWidth * 0.5f).Within(0.01f),
+                "Available actions must remain centred when Use is omitted.");
+
+            if (!Application.isBatchMode &&
+                System.Environment.GetEnvironmentVariable(
+                    "BAR_PROMENADE_CAPTURE_ITEM_ACTIONS") == "1")
+            {
+                string capturePath = System.IO.Path.GetFullPath(
+                    System.IO.Path.Combine(Application.dataPath, "..", "Captures",
+                        "Item actions", "Test refrigerator - Available actions.png"));
+                System.IO.Directory.CreateDirectory(
+                    System.IO.Path.GetDirectoryName(capturePath));
+                ScreenCapture.CaptureScreenshot(capturePath);
+                yield return null;
+                yield return null;
+                yield return null;
+                Assert.That(System.IO.File.Exists(capturePath), Is.True);
+            }
+
+            Assert.That(
                 itemInspection.InvokeAction(
                     HomeRefrigeratorItemAction.Take),
                 Is.True);

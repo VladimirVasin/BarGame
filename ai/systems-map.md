@@ -48,9 +48,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
-| Crane | Hook6m/up2m/hold5/E6/hoist-haul/others idle/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
+| Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
-| Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
+| Warehouse | Fish3:foes/corpses/spawn0;6windcables+creak;gateSFX/doors/ammo;Spot+heroPt.| `Warehouse*`,`Combat{Ammo,Chest}*`| Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -58,7 +58,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
-| Hero inventory | Session actions/equipment, one-log cap; mandatory shared pickup/receipt flow. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
+| Hero inventory | Session stacks;Use only consumables/equipment;one-log cap;pickup/receipt. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
 | World item pickup and its found screen | Shared lit 3D examination/turn; one confirmed take; isolated model lights; original layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
@@ -166,9 +166,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
 | Home bed sleep | One trigger on the door-side bed edge; guided walk, neutral settle, then enter/loop/exit through a real bedside sit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
 | Home balcony smoking | One modal balcony smoking sequence owns its prop, sound, camera and completion-only stress relief. | `HomeBalconySmoking{Plan,Interaction,Timeline,CameraDrift,ExhaleEffect}`, `HomeBalconyWorldBuilder` | Current |
-| Shared refrigerator | Hand-free Home/warehouse;warehouse entry/chest aim;atomic Take. Gap: `Use` unavailable. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
+| Shared refrigerator | Hand-free Home/warehouse;entry/chest aim;atomic Take/Back. Gap: `Use` hidden/unimplemented. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
-| Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
+| Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
 | Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
 | NPC role labels | Eleven roles (east guards share one), excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
 | Debug controls | F9: intoxication/day/speed gate; City loaded truck near factory. F1/F2/F3: ×3/×5/×10 across gameplay. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |

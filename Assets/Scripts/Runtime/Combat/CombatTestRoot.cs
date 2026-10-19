@@ -88,7 +88,8 @@ namespace BarPromenade
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
         public bool Sparring { get; private set; }
-        public bool RoundFinished => Hero.State.IsDefeated || Mode != CombatTestMode.Endless && Opponent.State.IsDefeated;
+        public bool RoundFinished => Hero.State.IsDefeated ||
+            !warehouseOpponentsCleared && Mode != CombatTestMode.Endless && Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
         // Deterministic scenarios may drive explicit attacks while retaining the
         // real population simulation, contact resolution and physics lifecycle.
@@ -326,7 +327,7 @@ namespace BarPromenade
                 actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);
             AmmoSpawns?.SetInteractionEnabled(!RoomAttackCinematicActive && !Hero.State.IsDefeated && !Hero.IsRestrained && pistolApplicationFocused);
-            if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }
+            if (Mode == CombatTestMode.Endless || warehouseOpponentsCleared) { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
                 BeginFinishedRound();

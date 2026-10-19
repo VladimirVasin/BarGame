@@ -131,12 +131,12 @@ cemetery:own interiors/returns.
   door-map-start inside closes/no village signpost;
 - CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
   Midforms/4K+2Kresp/uniqueUV/worldmetrewearjoins;runtimeUV-matclone0.
-  valve/PusherL;nokeyE2pulls1.2s;keykept→physchainlockfall;HoldE6s/3turns→leafCOL3.05m/release-pause-Esckeep/maxlatch;
+  valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;HoldE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch;
   Homeentry↔gate/return0/E/silent/goalstub/0travel;gallery2/upper-progress;3fridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
-  3src→whiteflicker-crackle/mechgrind-musicchew0/spawn0-live-dormantkept;
-  toprear/troughfill/belowbulb/3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIclosed+stairs↓→heat2s/riseSFX→popglass/8phys;
-  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly/silentrebuild. Esc-pause/Reset-Newkeep;newgame-invreset0.
-  D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
+  3src→flicker-crackle/mech-music-enemies-corpses-spawn0;6windcables/creak;
+  toprear/lowplayfill<bulbI1.8/3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIclosed+stairs↓:heat2s/riseSFX→popglass8phys;
+  bulb0/socketcord/otherL-lens-amb0/gateRedsoftflicker>0+chest/silent;Esc-pause/Reset-Newkeep;newgame-invreset0.
+  D7fan/redshadows/deckblock/guards;LM65:Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seeded start-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
@@ -164,7 +164,7 @@ cemetery:own interiors/returns.
   ownDebris0CC/resize-reset/floor;ground0attack/infection0;freecam/dummy/Tabfight/MMBfocus;
   Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
   Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/atomic;winfire/partreload/physspend/empty0;
-  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloE/fridgecurve/hollowCOL/shared/full0/part1/ownbayopen/resetshut;
+  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloE/fridgecurve/hollowCOL/std/full0/part1/openTake>open>close/resetshut;
   Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
@@ -688,7 +688,7 @@ cemetery:own interiors/returns.
   OS fonts; Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
   checklist above the selected quest description. Unread entries blink a top-right
   notebook; its key persists until first opening, then appears for six seconds.
-  Menus, inspectors and map omit persistent key guides/footers. Contextual prompts
+  Menus, inspectors and map omit persistent key guides/footers;commands appear once. Contextual prompts
   are full pointer targets for the same guarded keyboard/gamepad action. Loading
   retains framing/progress and its separately accepted painterly illustration;
 - a localized PS1-style pause menu in City, Bar, Supermarket, Home and
@@ -2277,9 +2277,8 @@ cemetery:own interiors/returns.
   confirm provide the same selection path. Click or confirm flies the chosen
   model into the center of the camera, fades in a dark camera-facing backdrop,
   rotates it slowly and presents a localized title, short description and
-  `Take`/`Use`/`Back` actions. `Take` atomically commits the stable world-item
-  source and inventory stack before removing the model; `Use` remains
-  unavailable inside refrigerator inspection, while target-owned uses such as
+  two centered `Take`/`Back` actions. `Take` atomically commits the stable world-item
+  source and inventory stack before removing the model. Target-owned uses such as
   feeding the stairwell cat begin at that world target. `Back`
   returns an untaken item before the refrigerator can close. Normal return, cancel,
   disable and destroy restore the exact parent, sibling index, local transform,
@@ -2350,8 +2349,8 @@ cemetery:own interiors/returns.
   food has explicit relief but cannot reduce hunger below `20`; food with no
   effect remains in its stack. Alcohol has separate stress-relief values, and
   the inventory vodka bottle commits four servings atomically while maximum
-  intoxication leaves it untouched. Only commands backed by implemented rules
-  are shown;
+  intoxication leaves it untouched. Use appears only for consumables/equipment;
+  temporarily blocked actions stay disabled;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the

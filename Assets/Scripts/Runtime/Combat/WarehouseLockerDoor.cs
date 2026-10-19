@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>One authored leaf, one refrigerator curve and one source-availability gate.</summary>
     [DisallowMultipleComponent]
-    public sealed class WarehouseLockerDoor : MonoBehaviour, IInteractable
+    public sealed class WarehouseLockerDoor : MonoBehaviour, IInteractable, IPrioritizedInteractable
     {
         private readonly HomeRefrigeratorInteractionTimeline timeline = new HomeRefrigeratorInteractionTimeline();
         private readonly List<CombatAmmoPickup> ammunition = new List<CombatAmmoPickup>(3);
@@ -24,6 +24,8 @@ namespace BarPromenade
         public float DoorOpenAmount { get; private set; }
         public string PromptKey => IsOpen ? "interaction.close_locker" : "interaction.open_locker";
         public Vector3 InteractionPosition => Bank != null ? Bank.transform.TransformPoint(handlePositionInBank) : transform.position;
+        public object InteractionPriorityGroup => typeof(WarehouseLocker);
+        public int InteractionPriority => IsOpen ? 0 : 1;
 
         internal void Initialize(WarehouseLocker bank, CombatTestRoot root, int bay, Transform pivot)
         {
@@ -42,7 +44,7 @@ namespace BarPromenade
             if (ammunition.Contains(pickup)) return;
             if (ammunition.Count >= 3) throw new InvalidOperationException("A locker compartment has a bounded ammunition shelf.");
             ammunition.Add(pickup);
-            pickup.SetSourceAvailability(sourceAvailability);
+            pickup.SetSourceAvailability(sourceAvailability, InteractionPriorityGroup);
         }
 
         internal void UnbindAmmo(CombatAmmoPickup pickup) => ammunition.Remove(pickup);
@@ -56,14 +58,10 @@ namespace BarPromenade
                 !GameInput.CanRead(GameInputContext.Contextual) || CounterMenuInput.IsBlockedByOtherUi() ||
                 SceneTransitionService.IsTransitioning || BarMinigameModalLock.IsAnyLocked) return false;
             Vector3 local = Bank.transform.InverseTransformPoint(interactor.transform.position);
-            // The shared selector ranks distance, so adjacent closed leaves must
-            // not steal an exposed shelf's Take from the compartment in front.
-            if (Mathf.Abs(local.x - (Bay - 1) * .74f) > .37f ||
-                Mathf.Abs(local.y - PlayerFactory.GroundedRootOffset) > .65f ||
+            // Adjacent bays compete by action priority. Keep the front approach
+            // and opening sweep clear without restricting focus to one lane.
+            if (Mathf.Abs(local.y - PlayerFactory.GroundedRootOffset) > .65f ||
                 local.z > (IsOpen ? -.32f : -1.25f)) return false;
-            if (IsOpen)
-                for (int index = 0; index < ammunition.Count; index++)
-                    if (ammunition[index] != null && ammunition[index].CanInteract(interactor)) return false;
             Vector3 origin = interactor.transform.position + Vector3.up * .8f;
             Vector3 target = InteractionPosition;
             if ((target - origin).sqrMagnitude > PlayerInteractor.InteractionRadius * PlayerInteractor.InteractionRadius) return false;

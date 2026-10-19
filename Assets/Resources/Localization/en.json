@@ -1,7 +1,7 @@
 {
   "entries": [
     {"key":"interaction.warehouse_fish","value":"E — assemble the fish"},
-    {"key":"combat.warehouse.fish.controls","value":"LMB — move · wheel/Q/R — rotate · Tab — select\nWASD — shift · E — pick up/put down · Esc — leave"},
+    {"key":"combat.warehouse.fish.controls","value":"LMB / WASD — move · wheel/Q/R — rotate\nTab — select · E — pick up/put down · Esc — leave"},
     {"key":"combat.warehouse.fish.gamepad_controls","value":"A — pick up/put down · left stick — move\nLB/RB — rotate · Y — select · B — leave"},
     {"key":"combat.warehouse.fish.missing","value":"Three tins needed: a tail, a belly and a head."},
     {"key":"combat.warehouse.fish.complete","value":"The fish has stopped moving."},
@@ -30,7 +30,7 @@
     {"key":"narrative.page.thought","value":"Thoughts"},
     {"key":"narrative.page.document","value":"Note"},
     {"key":"narrative.controls.next","value":"E — next    Esc — close"},
-    {"key":"narrative.controls.close","value":"E — close    Esc — close"},
+    {"key":"narrative.controls.close","value":"E / Esc — close"},
     {"key":"alpine_village.house_door.abandoned","value":"The door is locked. No one's lived here for a long time."},
     {"key":"village.narrative.01.title","value":"Dismantled chair"},
     {"key":"village.narrative.01.prompt","value":"E — inspect the dismantled chair"},

@@ -214,6 +214,14 @@ namespace BarPromenade
             int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
             authoredVariantSeed = unchecked((uint)seed ^ 0x6d2b79f5u);
             if (authoredVariantSeed == 0) authoredVariantSeed = 1;
+            if (WarehouseFishLamp.AllSourcesCollected(WarehousePlan))
+            {
+                ResetClearedWarehouseOpponents(seed);
+                return;
+            }
+            warehouseOpponentsCleared = false;
+            foreach (CombatActor actor in preparedOpponents)
+                if (actor.IsCrane) actor.SetWarehouseCraneRemnant(false);
             // Release old motor/corpse shapes before finding any initial ground place.
             foreach (CombatActor actor in preparedOpponents) actor.gameObject.SetActive(false);
             PrepareMimicPlacement();

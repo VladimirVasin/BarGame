@@ -15,6 +15,8 @@ namespace BarPromenade
             {
                 CombatTestRoot owner = parent.GetComponent<CombatTestRoot>();
                 GameObject gate = null, door = null, control = null;
+                Light valveLamp = null;
+                Transform valveLampFixture = null;
                 int roomDetailIndex = (int)(unchecked((uint)plan.Seed) % 3u);
                 var surfaceOrdinals = new Dictionary<string, int>(StringComparer.Ordinal);
                 foreach (WarehouseArenaPlacement part in plan.ModulePlacements)
@@ -68,7 +70,13 @@ namespace BarPromenade
                         Light light = WarehouseArenaLighting.CreatePractical(lamp,
                             WarehouseArenaAssetProvider.FindAnchor(fixture, "Light"),
                             lamp.Kind == "FishStationLamp" || lamp.Kind == "EmergencyRoomLamp" ? fixture.transform : host.transform);
-                        if (lamp.Kind == "FishStationLamp")
+                        // The plan's goal fixture is independent of the processing-station circuit.
+                        if (lamp.Kind == "EmergencyLamp")
+                        {
+                            valveLamp = light; valveLampFixture = fixture.transform;
+                            fixture.AddComponent<WarehouseValveLampFlicker>().Initialize(fixture, light, owner);
+                        }
+                        else if (lamp.Kind == "FishStationLamp")
                             fixture.AddComponent<WarehouseFishLamp>().Initialize(fixture, light, owner);
                         else if (lamp.Kind == "EmergencyRoomLamp")
                             fixture.AddComponent<WarehouseRoomIndicator>().Initialize(fixture, light, owner,
@@ -82,7 +90,8 @@ namespace BarPromenade
                     WarehouseLockerFactory.Create(host.transform, owner, locker.Position, locker.Yaw);
                 host.AddComponent<WarehouseFishCratePopulation>().Initialize(plan);
                 host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
-                host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform);
+                host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform,
+                    valveLamp, valveLampFixture);
                 return host;
             }
             catch

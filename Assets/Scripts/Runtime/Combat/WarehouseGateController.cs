@@ -8,23 +8,25 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class WarehouseGateController : MonoBehaviour, INarrativeActivity
     {
-        public const float MaximumLift = 3.05f, UnlockSeconds = 1.2f;
-        private const float ReleaseTime = .6f, SettleSeconds = 6f;
+        public const float MaximumLift = 3.05f, UnlockSeconds = 2.7f;
+        internal const float UnlockCommitSeconds = 1.45f, ChainSlideSeconds = .35f;
+        private const float SettleSeconds = 6f;
         private readonly List<Rigidbody> chainBodies = new List<Rigidbody>(29);
         private readonly List<Collider> chainColliders = new List<Collider>(29);
         private readonly List<Vector3> bodyRestPositions = new List<Vector3>(29);
         private readonly List<Quaternion> bodyRestRotations = new List<Quaternion>(29);
+        private readonly Vector3[] suspendedVelocity = new Vector3[29], suspendedSpin = new Vector3[29];
         private readonly List<Transform> leafParts = new List<Transform>(8);
         private readonly List<Vector3> leafRest = new List<Vector3>(8);
         private Transform wheel, padlock, shackle;
         private Quaternion wheelRest, shackleRotation;
-        private Vector3 shackleRest;
+        private Vector3 shackleRest, shackleLift;
         private GameObject chainPack, key;
         private MeshRenderer originalChain;
         private Rigidbody lockBody;
         private PlayerInteractor listener;
         private CombatTestRoot owner;
-        private bool active, unlocking, confirmArmed, initialized;
+        private bool active, unlocking, confirmArmed, initialized, chainSuspended;
         private float unlockElapsed, settleElapsed;
         private int inputFrame;
         private Vector3 keyRest;
@@ -35,6 +37,11 @@ namespace BarPromenade
         public bool IsOpen => State.IsOpen;
         public float GateLift => Progress * MaximumLift;
         public bool ChainReleased { get; private set; }
+        internal bool ChainPhysicsReleased { get; private set; }
+        internal float UnlockElapsed => unlockElapsed;
+        internal Transform KeyModel => key.transform;
+        internal Transform Shackle => shackle;
+        internal WarehouseGateAudio Sounds { get; private set; }
         public IReadOnlyList<Rigidbody> ChainBodies => chainBodies;
         public NarrativeInteraction ValveInteraction { get; private set; }
         public NarrativeInteraction DoorInteraction { get; private set; }
@@ -51,7 +58,27 @@ namespace BarPromenade
                 if (renderer.name.StartsWith("PadlockShackle", StringComparison.Ordinal)) shackle = renderer.transform;
             }
             if (originalChain == null || shackle == null) throw new InvalidOperationException("Gate needs its chain and opening shackle.");
+            // The imported mesh is authored in the complete control frame.
+            // Rotate at its retained leg, rather than at that distant FBX origin.
+            Transform shackleModel = shackle;
+            Bounds meshBounds = shackleModel.GetComponent<MeshFilter>().sharedMesh.bounds;
+            Bounds localBounds = default;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 point = meshBounds.center + Vector3.Scale(meshBounds.extents,
+                    new Vector3((corner & 1) == 0 ? -1f : 1f, (corner & 2) == 0 ? -1f : 1f,
+                        (corner & 4) == 0 ? -1f : 1f));
+                point = padlock.InverseTransformPoint(shackleModel.TransformPoint(point));
+                if (corner == 0) localBounds = new Bounds(point, Vector3.zero);
+                else localBounds.Encapsulate(point);
+            }
+            shackle = new GameObject("Warehouse Padlock Hinge").transform;
+            shackle.SetParent(padlock, false);
+            shackle.localPosition = new Vector3(localBounds.max.x - localBounds.extents.z,
+                localBounds.min.y + localBounds.extents.z, localBounds.center.z);
+            shackleModel.SetParent(shackle, true);
             shackleRest = shackle.localPosition; shackleRotation = shackle.localRotation;
+            shackleLift = padlock.InverseTransformVector(transform.up * .075f);
             BuildChain();
             lockBody = padlock.gameObject.AddComponent<Rigidbody>();
             ConfigureBody(lockBody, .32f);
@@ -69,6 +96,10 @@ namespace BarPromenade
             keyRest = transform.InverseTransformPoint(padlock.position) + new Vector3(0f, .012f, -.075f);
             keyRotation = Quaternion.Euler(0f, -90f, 0f);
             key.SetActive(false);
+            Sounds = gameObject.AddComponent<WarehouseGateAudio>();
+            Sounds.Initialize(wheel, padlock, () => owner != null && !owner.isActiveAndEnabled);
+            foreach (Rigidbody body in chainBodies)
+                body.gameObject.AddComponent<WarehouseGateChainContact>().Initialize(Sounds);
             initialized = true;
             if (IsUnlocked) ReleaseChain(true);
             ApplyTravel();
@@ -120,7 +151,11 @@ namespace BarPromenade
             if (!listener.PromptView.TryHoldPage(this, unlocking ? "combat.warehouse.valve.unlocking" : "combat.warehouse.valve.turn",
                 null, "combat.warehouse.valve.exit", CloseActivity, compact: true, requiresRunningGameTime: false))
             { EndActivity(); return false; }
-            if (unlocking) key.SetActive(true);
+            if (unlocking)
+            {
+                key.transform.SetLocalPositionAndRotation(keyRest + Vector3.back * .045f, keyRotation);
+                key.SetActive(true);
+            }
             return true;
         }
 
@@ -133,19 +168,33 @@ namespace BarPromenade
         {
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
-            if (!active || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning) return;
+            if (!active || !isActiveAndEnabled || owner != null && !owner.isActiveAndEnabled ||
+                PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning ||
+                !GameInput.MovementFocused || !GameInput.CanRead(GameInputContext.Menu)) return;
             bool held = GameInput.IsHeld(GameInputAction.Interact, GameInputContext.Menu);
             if (Time.frameCount > inputFrame && !held) confirmArmed = true;
             if (unlocking)
             {
+                float before = unlockElapsed;
                 unlockElapsed = Mathf.Min(UnlockSeconds, unlockElapsed + seconds);
-                float turn = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.15f, ReleaseTime, unlockElapsed));
-                key.transform.localPosition = keyRest + Vector3.back * (.045f * (1f - Mathf.Clamp01(unlockElapsed / .25f)));
+                float turn = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.25f, .6f, unlockElapsed));
+                float withdraw = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1.15f, 1.38f, unlockElapsed));
+                key.transform.localPosition = keyRest + Vector3.back *
+                    (.045f * (1f - Mathf.Clamp01(unlockElapsed / .25f)) + .12f * withdraw);
                 key.transform.localRotation = Quaternion.AngleAxis(turn * 90f, Vector3.forward) * keyRotation;
-                if (!IsUnlocked) shackle.localPosition = shackleRest + padlock.InverseTransformVector(transform.up * (.075f * turn));
-                if (unlockElapsed >= ReleaseTime && !IsUnlocked)
+                if (before < .25f && unlockElapsed >= .25f) Sounds.PlayKeyTurn();
+                if (before < .6f && unlockElapsed >= .6f) Sounds.PlayUnlock();
+                if (!IsUnlocked)
+                {
+                    float lift = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.7f, .92f, unlockElapsed));
+                    float swivel = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.9f, 1.15f, unlockElapsed));
+                    shackle.localPosition = shackleRest + shackleLift * lift;
+                    shackle.localRotation = shackleRotation * Quaternion.AngleAxis(65f * swivel, Vector3.up);
+                }
+                if (unlockElapsed >= UnlockCommitSeconds && !IsUnlocked)
                 {
                     if (!GameSessionState.TryUnlockWarehouseGate()) { CloseActivity(); return; }
+                    key.SetActive(false);
                     ReleaseChain(false);
                 }
                 if (unlockElapsed < UnlockSeconds) return;
@@ -154,13 +203,16 @@ namespace BarPromenade
                     "combat.warehouse.valve.exit", CloseActivity, compact: true, requiresRunningGameTime: false);
                 return;
             }
-            if (State.Advance(seconds, confirmArmed && held)) ApplyTravel();
+            bool moved = State.Advance(seconds, confirmArmed && held);
+            if (moved) ApplyTravel();
+            Sounds.SetTurning(moved && !State.IsOpen);
         }
 
         public void EndActivity()
         {
             if (listener != null && listener.PromptView != null) listener.PromptView.ReleaseHeldPage(this);
             active = unlocking = false; listener = null;
+            if (Sounds != null) { Sounds.SetTurning(false); Sounds.StopActions(); }
             if (key != null) key.SetActive(false);
             if (!IsUnlocked && shackle != null) shackle.SetLocalPositionAndRotation(shackleRest, shackleRotation);
         }
@@ -223,6 +275,8 @@ namespace BarPromenade
         {
             if (ChainReleased) return;
             ChainReleased = true; settleElapsed = 0f;
+            ChainPhysicsReleased = restored;
+            chainSuspended = false;
             originalChain.gameObject.SetActive(false); chainPack.SetActive(true);
             for (int i = 0; i < chainBodies.Count; i++)
             {
@@ -234,24 +288,71 @@ namespace BarPromenade
                     body.position = transform.TransformPoint(new Vector3(-.68f + order * .06f, .065f, -.58f + .025f * Mathf.Sin(order)));
                     body.rotation = transform.rotation * Quaternion.Euler(90f, 0f, 90f);
                 }
-                else
-                {
-                    body.isKinematic = false;
-                    body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                    // Opening the loop releases its stored pull away from the lug and spokes.
-                    // Gravity then brings the entire open strand down, rather than leaving a balanced drape.
-                    body.linearVelocity = transform.forward * -1.2f;
-                }
+                body.isKinematic = true;
             }
+            if (restored)
+            {
+                shackle.localPosition = shackleRest + shackleLift;
+                shackle.localRotation = shackleRotation * Quaternion.AngleAxis(65f, Vector3.up);
+                settleElapsed = SettleSeconds;
+            }
+            else Sounds.PlayChainRelease();
         }
 
         private void FixedUpdate()
         {
             if (!ChainReleased || settleElapsed >= SettleSeconds) return;
+            bool suspended = !isActiveAndEnabled || owner != null && !owner.isActiveAndEnabled ||
+                PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
+                SceneTransitionService.IsTransitioning || !GameInput.MovementFocused;
+            SuspendChain(suspended);
+            if (suspended) return;
             settleElapsed += Time.fixedDeltaTime;
+            if (!ChainPhysicsReleased)
+            {
+                float slide = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(settleElapsed / ChainSlideSeconds));
+                // Ease the open loop clear of the fixed lug before gravity owns
+                // it. Neighbours keep their original joint separation throughout.
+                Vector3 offset = Vector3.back * (.2f * slide) + Vector3.down * (.055f * slide);
+                for (int i = 0; i < chainBodies.Count; i++)
+                {
+                    Rigidbody body = chainBodies[i];
+                    body.position = body.transform.parent.TransformPoint(bodyRestPositions[i]) + transform.TransformVector(offset);
+                }
+                if (settleElapsed < ChainSlideSeconds) return;
+                ChainPhysicsReleased = true;
+                foreach (Rigidbody body in chainBodies)
+                {
+                    body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                    body.isKinematic = false;
+                    body.linearVelocity = body.angularVelocity = Vector3.zero;
+                }
+            }
             if (settleElapsed < SettleSeconds) return;
             // Small visual debris has a bounded simulation lifetime and keeps its final contact pose.
             foreach (Rigidbody body in chainBodies) body.isKinematic = true;
+        }
+
+        private void SuspendChain(bool suspended)
+        {
+            if (chainSuspended == suspended || !ChainPhysicsReleased) return;
+            chainSuspended = suspended;
+            for (int index = 0; index < chainBodies.Count; index++)
+            {
+                Rigidbody body = chainBodies[index];
+                if (suspended)
+                {
+                    suspendedVelocity[index] = body.linearVelocity;
+                    suspendedSpin[index] = body.angularVelocity;
+                    body.isKinematic = true;
+                }
+                else
+                {
+                    body.isKinematic = false;
+                    body.linearVelocity = suspendedVelocity[index];
+                    body.angularVelocity = suspendedSpin[index];
+                }
+            }
         }
 
         private void RefreshSession()
@@ -259,10 +360,12 @@ namespace BarPromenade
             if (!initialized || IsUnlocked) return;
             if (ValveInteraction.IsPresenting) NarrativeInteractionController.For(owner.Player.Interactor).RestoreImmediate();
             EndActivity();
+            Sounds?.Reset();
             if (ChainReleased)
             {
                 // Inventory/new-game reset rebuilds the source geometry. Ordinary combat resets never reach here.
                 ChainReleased = false;
+                ChainPhysicsReleased = chainSuspended = false;
                 chainPack.SetActive(false); originalChain.gameObject.SetActive(true);
                 for (int i = 0; i < chainBodies.Count; i++)
                 {
@@ -281,6 +384,8 @@ namespace BarPromenade
             if (ValveInteraction != null && ValveInteraction.IsPresenting && owner != null && owner.Player.Interactor != null)
                 NarrativeInteractionController.For(owner.Player.Interactor).RestoreImmediate();
             EndActivity();
+            Sounds?.Stop();
+            SuspendChain(true);
         }
     }
 }

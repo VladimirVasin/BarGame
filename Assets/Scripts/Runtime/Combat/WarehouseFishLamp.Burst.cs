@@ -32,6 +32,8 @@ namespace BarPromenade
         public int HeatingPlayCount => burstAudio != null ? burstAudio.HeatingPlayCount : 0;
         public int BurstPlayCount => burstAudio != null ? burstAudio.BurstPlayCount : 0;
         public AudioSource CueSource => burstAudio != null ? burstAudio.Source : null;
+        internal Light ValveLamp { get; private set; }
+        internal Transform ValveLampFixture { get; private set; }
 
         private void InitializeBurst(GameObject fixture)
         {
@@ -74,20 +76,28 @@ namespace BarPromenade
             shards.SetActive(false);
         }
 
-        internal void BindWarehouseLighting(Transform warehouse)
+        internal void BindWarehouseLighting(Transform warehouse, Light valveLamp, Transform valveFixture)
         {
             warehouseLighting = warehouse;
+            ValveLamp = valveLamp;
+            ValveLampFixture = valveFixture;
             // The legacy player proxy covers the high faucet. Glass, like the fish sections,
             // uses the authored trough/rims beneath it instead of that invisible envelope.
             foreach (Collider collider in warehouse.GetComponentsInChildren<Collider>(true))
                 if (collider.name.StartsWith("Collision_PreparationStation", StringComparison.Ordinal))
                     foreach (Collider fragment in shardColliders) Physics.IgnoreCollision(fragment, collider);
-            practicals = warehouse.GetComponentsInChildren<Light>(true);
+            // Preserve the exact plan-owned valve fixture in both blackout and restoration.
+            // Other red room indicators remain on the processing-station circuit.
+            var affectedLights = new List<Light>(24);
+            foreach (Light practical in warehouse.GetComponentsInChildren<Light>(true))
+                if (practical != valveLamp) affectedLights.Add(practical);
+            practicals = affectedLights.ToArray();
             practicalEnabled = new bool[practicals.Length];
             for (int i = 0; i < practicals.Length; i++) practicalEnabled[i] = practicals[i].enabled;
             var emissive = new List<Renderer>(24);
             foreach (Renderer renderer in warehouse.GetComponentsInChildren<Renderer>(true))
-                if (renderer.name.Contains("__Lamp") || renderer.name.Contains("__SignalRed")) emissive.Add(renderer);
+                if ((valveFixture == null || !renderer.transform.IsChildOf(valveFixture)) &&
+                    (renderer.name.Contains("__Lamp") || renderer.name.Contains("__SignalRed"))) emissive.Add(renderer);
             lenses = emissive.ToArray(); lensRest = new MaterialPropertyBlock[lenses.Length];
             for (int i = 0; i < lenses.Length; i++)
             { lensRest[i] = new MaterialPropertyBlock(); lenses[i].GetPropertyBlock(lensRest[i]); }

@@ -7,7 +7,9 @@ namespace BarPromenade
     public sealed class PlayerInteractor : MonoBehaviour
     {
         public const float InteractionRadius = 1.65f;
-        private readonly Collider[] overlapBuffer = new Collider[24];
+        private Collider[] overlapBuffer = new Collider[24];
+        private readonly HashSet<IInteractable> seenInteractables = new HashSet<IInteractable>();
+        private readonly List<IInteractable> candidateBuffer = new List<IInteractable>(16);
 
         // Filled in place every Update; the array-returning overload
         // would allocate one array per overlapped collider per frame.
@@ -211,18 +213,31 @@ namespace BarPromenade
 
         private IInteractable FindClosestInteractable()
         {
+            Vector3 origin = transform.position + Vector3.up * .8f;
             int count = Physics.OverlapSphereNonAlloc(
-                transform.position + (Vector3.up * 0.8f),
+                origin,
                 InteractionRadius,
                 overlapBuffer,
                 InteractionLayerMask,
                 QueryTriggerInteraction.Collide);
+            // A full NonAlloc result may omit the winning action. Retain a
+            // larger scratch array, with a complete fallback for dense areas.
+            while (count == overlapBuffer.Length && overlapBuffer.Length < 192)
+            {
+                Array.Resize(ref overlapBuffer, overlapBuffer.Length * 2);
+                count = Physics.OverlapSphereNonAlloc(origin, InteractionRadius, overlapBuffer,
+                    InteractionLayerMask, QueryTriggerInteraction.Collide);
+            }
+            Collider[] overlaps = count == overlapBuffer.Length
+                ? Physics.OverlapSphere(origin, InteractionRadius, InteractionLayerMask, QueryTriggerInteraction.Collide)
+                : overlapBuffer;
+            if (overlaps != overlapBuffer) count = overlaps.Length;
             IInteractable closest = null;
             float closestDistance = float.PositiveInfinity;
 
             for (int i = 0; i < count; i++)
             {
-                Collider candidateCollider = overlapBuffer[i];
+                Collider candidateCollider = overlaps[i];
                 if (candidateCollider == null ||
                     candidateCollider.transform.IsChildOf(transform))
                 {
@@ -236,6 +251,7 @@ namespace BarPromenade
                 for (int j = 0; j < behaviours.Count; j++)
                 {
                     if (!(behaviours[j] is IInteractable candidate) ||
+                        !seenInteractables.Add(candidate) ||
                         !PassesInteractionFilters(candidate) || !candidate.CanInteract(this))
                     {
                         continue;
@@ -243,7 +259,9 @@ namespace BarPromenade
 
                     float distance = (
                         candidate.InteractionPosition - transform.position).sqrMagnitude;
-                    if (distance < closestDistance)
+                    candidateBuffer.Add(candidate);
+                    if (distance < closestDistance ||
+                        (distance == closestDistance && ReferenceEquals(candidate, activeInteractable)))
                     {
                         closestDistance = distance;
                         closest = candidate;
@@ -251,6 +269,31 @@ namespace BarPromenade
                 }
             }
 
+            object group = (closest as IPrioritizedInteractable)?.InteractionPriorityGroup;
+            if (group != null)
+            {
+                int bestPriority = ((IPrioritizedInteractable)closest).InteractionPriority;
+                for (int index = 0; index < candidateBuffer.Count; index++)
+                {
+                    IInteractable candidate = candidateBuffer[index];
+                    if (!(candidate is IPrioritizedInteractable ranked) ||
+                        !ReferenceEquals(group, ranked.InteractionPriorityGroup)) continue;
+                    float distance = (candidate.InteractionPosition - transform.position).sqrMagnitude;
+                    int priority = ranked.InteractionPriority;
+                    if (priority > bestPriority || (priority == bestPriority &&
+                        (distance < closestDistance ||
+                         (distance == closestDistance && ReferenceEquals(candidate, activeInteractable)))))
+                    {
+                        bestPriority = priority;
+                        closestDistance = distance;
+                        closest = candidate;
+                    }
+                }
+            }
+            candidateBuffer.Clear();
+            seenInteractables.Clear();
+            behaviourBuffer.Clear();
+            Array.Clear(overlapBuffer, 0, overlapBuffer.Length);
             return closest;
         }
 

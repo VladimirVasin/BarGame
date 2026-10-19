@@ -36,9 +36,15 @@ namespace BarPromenade
         /// the middle of three would be.
         /// </summary>
         public static Rect ActionRect(int index)
+            => ActionRect(index, ActionSlotCount);
+
+        /// <summary>Centres the visible actions without leaving gaps for omitted commands.</summary>
+        public static Rect ActionRect(int index, int actionCount)
         {
-            return ActionRects[
-                Mathf.Clamp(index, 0, ActionRects.Length - 1)];
+            int count = Mathf.Clamp(actionCount, 1, ActionSlotCount);
+            Rect rect = ActionRects[Mathf.Clamp(index, 0, count - 1)];
+            rect.x += (ActionSlotCount - count) * 47f;
+            return rect;
         }
 
         public static Rect SoleActionRect => ActionRects[1];

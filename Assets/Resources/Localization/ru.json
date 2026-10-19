@@ -1,7 +1,7 @@
 {
   "entries": [
     {"key":"interaction.warehouse_fish","value":"E — собрать рыбу"},
-    {"key":"combat.warehouse.fish.controls","value":"ЛКМ — перенос · колесо/Q/R — поворот · Tab — выбор\nWASD — сдвиг · E — взять/положить · Esc — выйти"},
+    {"key":"combat.warehouse.fish.controls","value":"ЛКМ / WASD — перенос · колесо/Q/R — поворот\nTab — выбор · E — взять/положить · Esc — выйти"},
     {"key":"combat.warehouse.fish.gamepad_controls","value":"A — взять/положить · левый стик — перенос\nLB/RB — поворот · Y — выбор · B — выйти"},
     {"key":"combat.warehouse.fish.missing","value":"Нужны три банки: хвост, брюшко и голова."},
     {"key":"combat.warehouse.fish.complete","value":"Рыба больше не шевелится."},
@@ -30,7 +30,7 @@
     {"key":"narrative.page.thought","value":"Мысли"},
     {"key":"narrative.page.document","value":"Записка"},
     {"key":"narrative.controls.next","value":"E — дальше    Esc — закрыть"},
-    {"key":"narrative.controls.close","value":"E — закрыть    Esc — закрыть"},
+    {"key":"narrative.controls.close","value":"E / Esc — закрыть"},
     {"key":"alpine_village.house_door.abandoned","value":"Дверь заперта. Здесь давно никто не живёт."},
     {"key":"village.narrative.01.title","value":"Разобранный стул"},
     {"key":"village.narrative.01.prompt","value":"E — осмотреть разобранный стул"},

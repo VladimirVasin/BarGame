@@ -34,7 +34,7 @@ namespace BarPromenade
 
         internal bool TryAwakenZombie()
         {
-            if (!ZombieDormant || State.IsDefeated || roundEnded) return false;
+            if (!isActiveAndEnabled || !ZombieDormant || State.IsDefeated || roundEnded) return false;
             mimicPhase = MimicPhase.Revealing;
             mimicClock = 0f;
             mimicBreakIndex = 0;

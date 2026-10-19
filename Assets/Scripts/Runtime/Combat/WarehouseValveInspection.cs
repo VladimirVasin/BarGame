@@ -33,10 +33,13 @@ namespace BarPromenade
             }
             if (!measured) throw new InvalidOperationException("The valve inspection needs its visible wheel and lock.");
             Vector3 floor = control.transform.TransformPoint(plan.GateControlApproach - plan.GateControlPosition);
+            // Include the landing strand in the same uninterrupted close-up.
+            bounds.Encapsulate(control.transform.TransformPoint(new Vector3(-.72f, .025f, -.85f)));
+            bounds.Encapsulate(control.transform.TransformPoint(new Vector3(.98f, .15f, -.5f)));
             Vector3 facing = bounds.center - floor;
             facing.y = 0f;
             var staging = NarrativeStagingPlan.Standing(floor, Quaternion.LookRotation(facing), bounds,
-                Vector3.right, NarrativeCameraMode.ObjectCloseUp, new Vector3(.12f, .12f, -1f).normalized,
+                Vector3.right, NarrativeCameraMode.ObjectCloseUp, new Vector3(.12f, 1.2f, -1f).normalized,
                 authoredFocusBoundsOnly: true);
             var definition = new NarrativeInteractionDefinition("warehouse-valve", PromptKey,
                 new[] { new NarrativePage(LockedKey, compact: true) }, requiresRunningGameTime: false);

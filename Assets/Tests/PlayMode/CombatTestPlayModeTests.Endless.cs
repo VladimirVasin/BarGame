@@ -996,14 +996,20 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[i].SourceId, fish[i]), Is.True);
                 Assert.That(root.EndlessSpawnsBlockedByFish, Is.EqualTo(i == fish.Length - 1));
             }
-            Assert.That(root.LiveOpponentCount, Is.EqualTo(3), "Collecting the final fish source retains all living roles.");
-            FireMixedEnemyProjectile(authored, Player3DAnatomicalPart.Head);
-            FireMixedEnemyProjectile(authored, Player3DAnatomicalPart.Head);
+            Assert.That(root.LiveOpponentCount, Is.Zero, "Collecting the final fish source retires all living roles.");
+            Assert.That(root.CorpseCount, Is.Zero);
+            Assert.That(root.WarehouseCraneRemnantActive, Is.True);
+            Assert.That(root.EndlessKills, Is.Zero);
+            foreach (CombatActor actor in root.Opponents)
+                Assert.That(actor.gameObject.activeInHierarchy, Is.False);
             root.Tick(.6f);
-            Assert.That(root.EndlessKills, Is.EqualTo(1));
-            Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
+            Assert.That(root.EndlessKills, Is.Zero);
+            Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(root.CorpseCount, Is.Zero);
+            Assert.That(root.WarehouseCraneRemnantActive, Is.True);
+            foreach (CombatActor actor in root.Opponents)
+                Assert.That(actor.gameObject.activeInHierarchy, Is.False);
             Assert.That(root.WaitingForNextOpponent, Is.False, "The fish cutoff stops replacement of every role.");
-            Assert.That(docker.gameObject.activeInHierarchy && crane.gameObject.activeInHierarchy, Is.True);
             root.ResetRound();
             Assert.That(root.EndlessSpawnsBlockedByFish, Is.True);
             Assert.That(root.LiveOpponentCount, Is.Zero, "Reset cannot restore a mixed population after the finite warehouse cutoff.");

@@ -12,6 +12,519 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Focused lower-camera fish assembly captures, using the production table and finale.")]
+        public IEnumerator CombatWarehouseFishAssemblyCloseUp()
+        {
+            CombatTestRoot root = null;
+            float previousDelta = Time.captureDeltaTime;
+            float previousAspect = 0f;
+            bool previousBackground = Application.runInBackground;
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            Time.captureDeltaTime = 1f / 60f;
+            Application.runInBackground = true;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized, Is.True);
+                root.AutomaticSimulation = false;
+                root.SetSparring(false);
+                root.SetDuelLogging(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                previousAspect = root.CameraFollow.Camera.aspect;
+                root.CameraFollow.Camera.aspect = (float)Width / Height;
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                WarehouseFishAssembly table = root.GetComponentInChildren<WarehouseFishAssembly>();
+                Assert.That(table, Is.Not.Null);
+                var cans = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan,
+                    InventoryItemId.RottenFishHeadCan };
+                for (int part = 0; part < cans.Length; part++)
+                    Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[part].SourceId,
+                        cans[part]), Is.True);
+                yield return EnterFishAssembly(root, table, input, keyboard);
+                table.Advance(WarehouseFishAssemblyState.PourSeconds);
+                for (int frame = 0; frame < 35; frame++) yield return new WaitForFixedUpdate();
+                Assert.That(table.Phase, Is.EqualTo(WarehouseFishAssemblyPhase.Assembling));
+                AssertFishAssemblyFraming(root, table);
+                CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Fish sections close-up");
+                foreach (WarehouseFishPart part in new[] { WarehouseFishPart.Belly, WarehouseFishPart.Tail, WarehouseFishPart.Head })
+                {
+                    Assert.That(table.SelectPart(part), Is.True);
+                    Assert.That(table.MoveSelected(new Vector2(((int)part - 1) * WarehouseFishAssemblyState.PartSpacing, 0f), 0f), Is.True);
+                    Assert.That(table.DropSelected(), Is.True);
+                }
+                Assert.That(table.Phase, Is.EqualTo(WarehouseFishAssemblyPhase.Convulsing));
+                table.Advance(1.6f);
+                yield return null;
+                AssertFishAssemblyFraming(root, table);
+                CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Assembled fish close-up");
+                Light pendant = root.GetComponentInChildren<WarehouseFishLamp>().Light;
+                Light torch = root.Flashlight.SpotLight;
+                bool pendantEnabled = pendant.enabled, torchEnabled = torch.enabled;
+                try
+                {
+                    torch.enabled = false;
+                    CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Fish under pendant only");
+                    pendant.enabled = false;
+                    torch.enabled = torchEnabled;
+                    CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Fish under flashlight only");
+                }
+                finally { pendant.enabled = pendantEnabled; torch.enabled = torchEnabled; }
+                for (int step = 0; step < 100 && table.Phase == WarehouseFishAssemblyPhase.Convulsing; step++) table.Advance(.05f);
+                table.Advance(.35f);
+                yield return null;
+                Assert.That(table.Phase, Is.EqualTo(WarehouseFishAssemblyPhase.Spitting));
+                AssertFishAssemblyFraming(root, table);
+                CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Fish key close-up");
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    NarrativeInteractionController.For(root.Player.Interactor).RestoreImmediate();
+                    if (previousAspect > 0f) root.CameraFollow.Camera.aspect = previousAspect;
+                }
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+                Time.captureDeltaTime = previousDelta;
+                Application.runInBackground = previousBackground;
+            }
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            GameSessionState.BeginNewGame();
+        }
+
+        [UnityTest]
+        [Explicit("Focused keyed lock, controlled chain release, valve audio and retained gate lifecycle.")]
+        public IEnumerator CombatWarehouseGateUnlockAndAudio()
+        {
+            CombatTestRoot root = null;
+            float previousDelta = Time.captureDeltaTime;
+            bool previousBackground = Application.runInBackground;
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            Time.captureDeltaTime = 1f / 60f;
+            Application.runInBackground = true;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized && root.WarehousePlan != null, Is.True);
+                Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Standard));
+                root.AutomaticSimulation = false;
+                root.SetSparring(false);
+                root.SetDuelLogging(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                root.CameraFollow.Camera.aspect = (float)Width / Height;
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.WarehouseGateKey), Is.True);
+                yield return VerifyWarehouseFishGate(root, input, keyboard, detailedUnlockProof: true);
+
+                WarehouseGateController gate = root.GetComponentInChildren<WarehouseGateController>();
+                root.ResetRound();
+                Assert.That(gate.IsUnlocked && gate.IsOpen && gate.ChainReleased, Is.True);
+                Assert.That(gate.Progress, Is.EqualTo(1f));
+                Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
+                Assert.That(gate.Sounds.ChainReleaseCount, Is.EqualTo(1));
+                WarehouseGateAudio oldSounds = gate.Sounds;
+                Assert.That(root.NewWarehouseLayout(0), Is.True);
+                yield return null;
+                Assert.That(gate == null, Is.True, "Replacing the layout destroys the previous mechanism owner.");
+                Assert.That(oldSounds == null, Is.True);
+                gate = root.GetComponentInChildren<WarehouseGateController>();
+                Assert.That(gate.IsUnlocked && gate.IsOpen && gate.ChainReleased, Is.True);
+                Assert.That(gate.Progress, Is.EqualTo(1f));
+                Assert.That(gate.Sounds.UnlockClickCount, Is.Zero);
+                Assert.That(gate.Sounds.ChainReleaseCount, Is.Zero);
+                Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False);
+                foreach (Rigidbody body in gate.ChainBodies)
+                    Assert.That(body.isKinematic, Is.True, "A restored chain remains settled without replaying the release.");
+
+                GameSessionState.ResetInventoryState();
+                Assert.That(gate.IsUnlocked || gate.IsOpen || gate.ChainReleased, Is.False);
+                Assert.That(gate.Progress, Is.Zero);
+                Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.WarehouseGateKey), Is.False);
+                Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.False);
+                Assert.That(gate.Sounds.CreakSource.isPlaying || gate.Sounds.ActionSource.isPlaying ||
+                    gate.Sounds.ContactSource.isPlaying, Is.False);
+                foreach (Rigidbody body in gate.ChainBodies)
+                    Assert.That(body.isKinematic, Is.True);
+            }
+            finally
+            {
+                if (root != null)
+                    NarrativeInteractionController.For(root.Player.Interactor).RestoreImmediate();
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+                Time.captureDeltaTime = previousDelta;
+                Application.runInBackground = previousBackground;
+            }
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            GameSessionState.BeginNewGame();
+        }
+
+        [UnityTest]
+        [Explicit("Third-can opponent retirement, retained crane suspension, reset and warehouse re-entry.")]
+        public IEnumerator CombatWarehouseFishClearsOpponents()
+        {
+            CombatTestRoot root = null;
+            float previousDelta = Time.captureDeltaTime;
+            bool previousBackground = Application.runInBackground;
+            var input = new InputTestFixture();
+            input.Setup();
+            Time.captureDeltaTime = 1f / 60f;
+            Application.runInBackground = true;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.UseDockerPopulationForTests = false;
+            CombatTestRoot.AuthoredEnemyKindForTests = null;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                    CombatLoadoutSelection.Default, CombatTestMode.Endless)), Is.True);
+                for (int frame = 0; frame < 600; frame++)
+                {
+                    root = Object.FindAnyObjectByType<CombatTestRoot>();
+                    if (root != null && root.IsInitialized)
+                    {
+                        root.AutomaticSimulation = false;
+                        if (!SceneTransitionService.IsTransitioning) break;
+                    }
+                    yield return null;
+                }
+                Assert.That(root != null && root.IsInitialized, Is.True);
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+                root.AutomaticSimulation = false;
+                root.SetDuelLogging(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Endless));
+                Assert.That(root.EncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+                Assert.That(root.Opponents[0].IsRoom, Is.True);
+                Assert.That(root.Opponents[1].IsDocker, Is.True);
+                CombatActor crane = root.Opponents[2];
+                Assert.That(crane.IsCrane, Is.True);
+                Assert.That(root.WarehouseCraneRemnantActive, Is.False);
+                var cans = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan,
+                    InventoryItemId.RottenFishHeadCan };
+                for (int part = 0; part < 2; part++)
+                    Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[part].SourceId,
+                        cans[part]), Is.True);
+                Assert.That(root.EndlessSpawnsBlockedByFish, Is.False);
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+                foreach (CombatActor actor in root.Opponents)
+                    Assert.That(actor.gameObject.activeInHierarchy && !actor.State.IsDefeated, Is.True,
+                        "Two collected cans retain the existing opponents.");
+
+                CombatActor corpse = root.Opponents[0];
+                for (int shot = 0; shot < 2; shot++)
+                {
+                    corpse.CaptureContactPose();
+                    Assert.That(corpse.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 head,
+                        out Vector3 outward, out _), Is.True);
+                    Assert.That(corpse.Hurtboxes.SweepProjectile(head + outward * .4f, head - outward * .4f,
+                        CombatProjectilePool.Radius, -outward, out CombatHurtboxes.Hit hit), Is.True);
+                    Assert.That(hit.Part, Is.EqualTo(Player3DAnatomicalPart.Head));
+                    corpse.ReceiveProjectile(root.Hero, 100 + shot, hit, -outward * CombatProjectilePool.MuzzleSpeed);
+                }
+                root.Tick(0f);
+                Assert.That(corpse.State.IsDefeated && corpse.IsRagdollActive && corpse.gameObject.activeInHierarchy, Is.True);
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
+                Assert.That(root.CorpseCount, Is.EqualTo(1));
+                Assert.That(root.EndlessKills, Is.EqualTo(1));
+                Assert.That(root.Opponents[1].gameObject.activeInHierarchy && crane.gameObject.activeInHierarchy, Is.True);
+
+                Camera camera = root.CameraFollow.Camera;
+                camera.aspect = (float)Width / Height;
+                Vector3 suspension = crane.GetCraneCableStart(0);
+                Vector3 cameraPosition = suspension + new Vector3(2.8f, -1.8f, -3.6f);
+                Quaternion cameraRotation = Quaternion.LookRotation(
+                    suspension + Vector3.down * 1.1f - cameraPosition);
+                root.CameraFollow.SetFixedPose(cameraPosition, cameraRotation, 56f);
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Crane before final can");
+
+                long killsBefore = root.EndlessKills;
+                int impactsBefore = root.Hero.ReceivedImpactCount;
+                Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[2].SourceId,
+                    cans[2]), Is.True);
+                AssertWarehouseFishOpponentsCleared(root, killsBefore);
+                CombatCraneRemnant remnant = root.GetComponentInChildren<CombatCraneRemnant>();
+                Assert.That(remnant, Is.Not.Null);
+                Vector3 cableBefore = remnant.GetCableEnd(0);
+                remnant.Advance(.35f);
+                Vector3 cableAfter = remnant.GetCableEnd(0);
+                Assert.That(Vector3.Distance(cableBefore, cableAfter), Is.InRange(.0001f, .2f),
+                    "The free suspension retains a small wind-driven sway after the body disappears.");
+                remnant.Advance(2.5f);
+                Assert.That(remnant.Source.isPlaying, Is.True, "The free suspension emits a sparse creak.");
+                Assert.That(remnant.Source.spatialBlend, Is.EqualTo(1f));
+                Assert.That(remnant.Source.loop, Is.False);
+                cableAfter = remnant.GetCableEnd(0);
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    remnant.Advance(.5f);
+                    Assert.That(Vector3.Distance(cableAfter, remnant.GetCableEnd(0)), Is.LessThan(.00001f),
+                        "Pausing freezes the remnant's achieved cable position.");
+                    Assert.That(remnant.Source.isPlaying, Is.False);
+                }
+                for (int step = 0; step < 120; step++) root.Tick(CombatTestRoot.SimulationStep);
+                yield return null;
+                AssertWarehouseFishOpponentsCleared(root, killsBefore);
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(impactsBefore));
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Empty crane suspension");
+
+                root.ResetRound();
+                AssertWarehouseFishOpponentsCleared(root, 0);
+                Assert.That(root.NewWarehouseLayout(0), Is.True);
+                yield return null;
+                AssertWarehouseFishOpponentsCleared(root, 0);
+
+                GameSessionState.ResetInventoryState();
+                Assert.That(root.EndlessSpawnsBlockedByFish || root.WarehouseCraneRemnantActive, Is.False);
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(3),
+                    "Resetting the source collection restores the original population through WorldItemsChanged.");
+                root.ResetRound();
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+                Assert.That(root.WarehouseCraneRemnantActive, Is.False);
+                foreach (CombatActor actor in root.Opponents)
+                    Assert.That(actor.gameObject.activeInHierarchy && !actor.State.IsDefeated, Is.True);
+
+                for (int part = 0; part < cans.Length; part++)
+                    Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[part].SourceId,
+                        cans[part]), Is.True);
+                AssertWarehouseFishOpponentsCleared(root, 0);
+                GameSessionState.BeginNewGame();
+                Assert.That(root.EndlessSpawnsBlockedByFish || root.WarehouseCraneRemnantActive, Is.False);
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+            }
+            finally
+            {
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.UseDockerPopulationForTests = false;
+                CombatTestRoot.AuthoredEnemyKindForTests = null;
+                CombatTestRoot.WarehouseSeedForTests = null;
+                input.TearDown();
+                Time.captureDeltaTime = previousDelta;
+                Application.runInBackground = previousBackground;
+            }
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            GameSessionState.BeginNewGame();
+        }
+
+        private static void AssertWarehouseFishOpponentsCleared(CombatTestRoot root, long expectedKills)
+        {
+            AssertFishAssemblySpawnCutoff(root, 0);
+            Assert.That(root.CorpseCount, Is.Zero);
+            Assert.That(root.EndlessKills, Is.EqualTo(expectedKills), "Retiring opponents does not credit kills.");
+            Assert.That(root.WarehouseCraneRemnantActive, Is.True);
+            Assert.That(root.SetOpponentFocus(true), Is.False);
+            Assert.That(root.IsOpponentFocused || root.FocusMarkerVisible || root.Hero.IsRestrained ||
+                root.RoomAttackCinematicActive, Is.False);
+            foreach (CombatActor actor in root.GetComponentsInChildren<CombatActor>(true))
+            {
+                if (actor.IsHero) continue;
+                Assert.That(actor.gameObject.activeInHierarchy || actor.IsAvailable || actor.State.IsAttacking ||
+                    actor.RoomAttackPoseActive || actor.HasCraneVictim, Is.False);
+                Assert.That(actor.TryAttack(), Is.False);
+                Assert.That(actor.TryAwakenZombie(), Is.False);
+                Assert.That(root.Hero.CanDamageParticipant(actor), Is.False);
+                Assert.That(root.BloodEffects.ProjectileWoundCountFor(actor), Is.Zero);
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(actor), Is.Zero);
+                foreach (AudioSource source in actor.GetComponentsInChildren<AudioSource>(true))
+                    Assert.That(source.isPlaying, Is.False, "Retired opponents cannot keep enemy audio playing.");
+            }
+            int remnants = 0;
+            foreach (CombatCraneRemnant remnant in root.GetComponentsInChildren<CombatCraneRemnant>(true))
+                if (remnant.gameObject.activeInHierarchy) remnants++;
+            Assert.That(remnants, Is.EqualTo(1), "Reset and layout re-entry retain a single crane remnant.");
+        }
+
+        [UnityTest]
+        [Explicit("The valve's red fixture survives the live pendant burst and silent retained reconstruction.")]
+        public IEnumerator CombatWarehouseGateLampSurvivesPendant()
+        {
+            CombatTestRoot root = null;
+            float previousDelta = Time.captureDeltaTime;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            Time.captureDeltaTime = 1f / 60f;
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized, Is.True);
+                root.AutomaticSimulation = false;
+                root.SetDuelLogging(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                WarehouseFishLamp lamp = root.GetComponentInChildren<WarehouseFishLamp>();
+                Assert.That(lamp.ValveLamp != null && lamp.ValveLampFixture != null, Is.True);
+                AssertWarehouseValveMountingClearance(root, lamp);
+                root.Hero.ResetActor(root.WarehousePlan.GateControlApproach +
+                    Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
+                root.Hero.SetCombatFocused(false);
+                root.Hero.ApplyMotorConstraint();
+                WarehouseArenaLighting.UpdateHeroVisibility(root.Flashlight.transform);
+                root.CameraFollow.enabled = false;
+                Camera camera = root.CameraFollow.Camera;
+                Vector3 mounting = lamp.ValveLampFixture.position;
+                Vector3 mountingEye = mounting + new Vector3(1.25f, .15f, -1.65f);
+                camera.transform.SetPositionAndRotation(mountingEye, Quaternion.LookRotation(mounting - mountingEye));
+                camera.fieldOfView = 50f;
+                camera.aspect = (float)Width / Height;
+                Physics.SyncTransforms();
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Valve lamp mounting clearance");
+                float redIntensity = lamp.ValveLamp.intensity;
+                var cans = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan,
+                    InventoryItemId.RottenFishHeadCan };
+                for (int index = 0; index < cans.Length; index++)
+                    Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[index].SourceId,
+                        cans[index]), Is.True);
+                // The pure trigger is already covered by the puzzle scenario;
+                // advance the production heating/burst path for this lighting regression.
+                Assert.That(GameSessionState.WarehouseFishLamp.TryBegin(true, true), Is.True);
+                lamp.Advance(WarehouseFishLamp.HeatingSeconds - .02f);
+                Assert.That(lamp.Phase, Is.EqualTo(WarehouseFishLampPhase.Heating));
+                Assert.That(lamp.ValveLamp.enabled, Is.True);
+                lamp.Advance(.03f);
+                Assert.That(lamp.Phase, Is.EqualTo(WarehouseFishLampPhase.Burst));
+                Assert.That(lamp.BurstPlayCount, Is.EqualTo(1));
+                AssertWarehousePendantBlackout(root);
+                Assert.That(lamp.ValveLamp.intensity, Is.EqualTo(redIntensity));
+
+                Vector3 target = root.WarehousePlan.GateControlPosition + Vector3.up * 1.45f;
+                Vector3 eye = target + new Vector3(2f, .25f, -4f);
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                camera.fieldOfView = 50f;
+                camera.aspect = (float)Width / Height;
+                root.Flashlight.SpotLight.enabled = false;
+                root.Flashlight.SynchronizeBodyFill(0f);
+                Physics.SyncTransforms();
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Red valve lamp after bulb burst");
+                VerifyWarehouseValveFlicker(root, lamp, camera, redIntensity);
+                root.Flashlight.SpotLight.enabled = true;
+                root.Flashlight.SynchronizeBodyFill(0f);
+
+                lamp.enabled = false;
+                Assert.That(lamp.ValveLamp.enabled, Is.True);
+                lamp.enabled = true;
+                root.ResetRound();
+                AssertWarehousePendantBlackout(root);
+                Assert.That(root.NewWarehouseLayout(0), Is.True);
+                yield return null;
+                lamp = root.GetComponentInChildren<WarehouseFishLamp>();
+                AssertWarehouseValveMountingClearance(root, lamp);
+                Assert.That(lamp.Phase, Is.EqualTo(WarehouseFishLampPhase.Burst));
+                Assert.That(lamp.HeatingPlayCount + lamp.BurstPlayCount, Is.Zero);
+                AssertWarehousePendantBlackout(root);
+                Assert.That(lamp.ValveLamp.intensity, Is.EqualTo(redIntensity));
+                GameSessionState.BeginNewGame();
+                Assert.That(lamp.Phase, Is.EqualTo(WarehouseFishLampPhase.Waiting));
+                Assert.That(lamp.ValveLamp.enabled && lamp.ValveLamp.intensity > 0f, Is.True);
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+                Time.captureDeltaTime = previousDelta;
+                GameSessionState.BeginNewGame();
+            }
+        }
+
+        private static void AssertWarehouseValveMountingClearance(CombatTestRoot root, WarehouseFishLamp lamp)
+        {
+            Bounds fixtureBounds = default, controlBounds = default;
+            bool hasFixture = false, hasControl = false;
+            foreach (MeshRenderer renderer in lamp.ValveLampFixture.GetComponentsInChildren<MeshRenderer>())
+            {
+                if (!hasFixture) { fixtureBounds = renderer.bounds; hasFixture = true; }
+                else fixtureBounds.Encapsulate(renderer.bounds);
+            }
+            foreach (MeshRenderer renderer in FindWarehouseModel(root, "GateControl").GetComponentsInChildren<MeshRenderer>())
+            {
+                if (!hasControl) { controlBounds = renderer.bounds; hasControl = true; }
+                else controlBounds.Encapsulate(renderer.bounds);
+            }
+            Assert.That(hasFixture && hasControl, Is.True);
+            Assert.That(fixtureBounds.min.z - controlBounds.max.z, Is.GreaterThan(.06f),
+                "The complete authored lamp must clear the valve riser and its brackets before and after reconstruction.");
+        }
+
+        private static void VerifyWarehouseValveFlicker(CombatTestRoot root, WarehouseFishLamp lamp,
+            Camera camera, float baseIntensity)
+        {
+            WarehouseValveLampFlicker flicker = lamp.ValveLampFixture.GetComponent<WarehouseValveLampFlicker>();
+            Assert.That(flicker, Is.Not.Null);
+            Renderer lens = null;
+            foreach (Renderer renderer in lamp.ValveLampFixture.GetComponentsInChildren<Renderer>(true))
+                if (renderer.name.EndsWith("__SignalRed", StringComparison.Ordinal)) lens = renderer;
+            Assert.That(lens, Is.Not.Null);
+            Material sharedLens = lens.sharedMaterial;
+            int emissionId = Shader.PropertyToID("_EmissionColor");
+            Color authoredEmission = sharedLens.GetColor(emissionId);
+            var properties = new MaterialPropertyBlock();
+            float minimum = 1f, maximum = 0f;
+            bool capturedDip = false;
+            for (int step = 0; step < 240; step++)
+            {
+                flicker.Advance(.05f);
+                Assert.That(lamp.ValveLamp.enabled, Is.True);
+                Assert.That(flicker.CurrentFactor, Is.InRange(WarehouseValveLampFlicker.MinimumFactor - .0001f, 1f));
+                Assert.That(lamp.ValveLamp.intensity, Is.EqualTo(baseIntensity * flicker.CurrentFactor).Within(.0001f));
+                minimum = Mathf.Min(minimum, flicker.CurrentFactor);
+                maximum = Mathf.Max(maximum, flicker.CurrentFactor);
+                lens.GetPropertyBlock(properties);
+                Color emission = properties.HasColor(emissionId) ? properties.GetColor(emissionId) : authoredEmission;
+                Assert.That(emission.r, Is.EqualTo(authoredEmission.r * flicker.CurrentFactor).Within(.0001f),
+                    "The lens and real red light must dip together.");
+                if (capturedDip || flicker.CurrentFactor >= .5f) continue;
+                capturedDip = true;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Red valve lamp during flicker");
+            }
+            Assert.That(minimum, Is.LessThan(.5f));
+            Assert.That(maximum, Is.EqualTo(1f));
+            Assert.That(capturedDip, Is.True);
+            Assert.That(lens.sharedMaterial, Is.SameAs(sharedLens));
+            Assert.That(sharedLens.GetColor(emissionId), Is.EqualTo(authoredEmission));
+            float elapsed = flicker.Elapsed, factor = flicker.CurrentFactor;
+            using (GameTimeScaleRuntime.AcquirePause()) flicker.Advance(1.6f);
+            Assert.That(flicker.Elapsed, Is.EqualTo(elapsed));
+            Assert.That(flicker.CurrentFactor, Is.EqualTo(factor));
+            try
+            {
+                GameInput.HandleApplicationFocus(false);
+                flicker.Advance(1.6f);
+                Assert.That(flicker.Elapsed, Is.EqualTo(elapsed));
+            }
+            finally { GameInput.HandleApplicationFocus(true); }
+            flicker.enabled = false;
+            Assert.That(lamp.ValveLamp.enabled, Is.True);
+            Assert.That(lamp.ValveLamp.intensity, Is.EqualTo(baseIntensity));
+            flicker.enabled = true;
+        }
+
+        [UnityTest]
         [Explicit("The warehouse fish puzzle, physical pieces, retained progress and shared key receipt. Run without -batchmode for UI frames.")]
         public IEnumerator CombatWarehouseFishAssembly()
         {
@@ -46,12 +559,11 @@ namespace BarPromenade.Tests.PlayMode
                 root.SetDuelLogging(false);
                 for (int frame = 0; frame < SettleFrames; frame++) yield return null;
                 Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Endless));
-                Assert.That(root.AdvanceEndlessInterval(root.NextOpponentSeconds + .01f), Is.True);
-                Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(pacing.MaximumLiveOpponents));
                 CombatActor survivor = root.Opponents[0];
                 Assert.That(survivor.gameObject.activeInHierarchy, Is.True);
-                Assert.That(root.WaitingForNextOpponent, Is.True);
-                Assert.That(root.NextOpponentSeconds, Is.GreaterThan(0f));
+                Assert.That(root.WaitingForNextOpponent, Is.False);
+                Assert.That(root.NextOpponentSeconds, Is.Zero);
 
                 WarehouseFishAssembly table = root.GetComponentInChildren<WarehouseFishAssembly>();
                 Assert.That(table, Is.Not.Null);
@@ -74,14 +586,14 @@ namespace BarPromenade.Tests.PlayMode
                 for (int part = 0; part < 2; part++)
                     Assert.That(GameSessionState.GetInventoryItemCount(cans[part]), Is.EqualTo(1));
                 Assert.That(root.EndlessSpawnsBlockedByFish, Is.False);
-                Assert.That(root.WaitingForNextOpponent, Is.True);
+                Assert.That(root.WaitingForNextOpponent, Is.False);
                 Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[2].SourceId,
                     cans[2]), Is.True);
-                AssertFishAssemblySpawnCutoff(root, 1);
-                Assert.That(survivor.gameObject.activeInHierarchy && !survivor.State.IsDefeated, Is.True,
-                    "Collecting the final can stops arrivals while keeping the existing live opponent.");
+                AssertFishAssemblySpawnCutoff(root, 0);
+                Assert.That(survivor.gameObject.activeInHierarchy, Is.False,
+                    "Collecting the final can retires the existing live opponent without defeating it.");
                 Assert.That(root.AdvanceEndlessInterval(12f), Is.False);
-                AssertFishAssemblySpawnCutoff(root, 1);
+                AssertFishAssemblySpawnCutoff(root, 0);
                 Assert.That(root.Opponents[0], Is.SameAs(survivor));
                 yield return EnterFishAssembly(root, table, input, keyboard);
                 Assert.That(root.GetComponentInChildren<WarehouseFishLamp>().Phase, Is.EqualTo(WarehouseFishLampPhase.Waiting));
@@ -457,10 +969,14 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWarehousePendantBlackout(CombatTestRoot root)
         {
+            WarehouseFishLamp pendant = root.GetComponentInChildren<WarehouseFishLamp>();
+            Assert.That(pendant.ValveLamp != null && pendant.ValveLampFixture != null, Is.True);
+            Assert.That(pendant.ValveLamp.enabled && pendant.ValveLamp.intensity > 0f, Is.True,
+                "The red valve fixture remains a working light after the pendant fails.");
             Assert.That(root.Flashlight.SpotLight.enabled && root.Flashlight.SpotLight.intensity > 0f, Is.True);
             foreach (Light light in root.GetComponentsInChildren<Light>(true))
-                if (!light.transform.IsChildOf(root.Hero.transform))
-                    Assert.That(light.enabled && light.intensity > 0f, Is.False, "A burst leaves the chest flashlight as the only warehouse light: " + light.name);
+                if (!light.transform.IsChildOf(root.Hero.transform) && light != pendant.ValveLamp)
+                    Assert.That(light.enabled && light.intensity > 0f, Is.False, "Other fixed lights stay off after the pendant burst: " + light.name);
             int emissionId = Shader.PropertyToID("_EmissionColor");
             var properties = new MaterialPropertyBlock();
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
@@ -473,7 +989,9 @@ namespace BarPromenade.Tests.PlayMode
                 renderer.GetPropertyBlock(properties);
                 Color emission = properties.HasProperty(emissionId) ? properties.GetColor(emissionId) :
                     renderer.sharedMaterial.GetColor(emissionId);
-                Assert.That(emission.maxColorComponent, Is.LessThan(.001f), "A fixed warehouse lens must no longer glow: " + renderer.name);
+                if (renderer.transform.IsChildOf(pendant.ValveLampFixture))
+                    Assert.That(emission.maxColorComponent, Is.GreaterThan(.01f), "The red valve lens must retain its visible glow.");
+                else Assert.That(emission.maxColorComponent, Is.LessThan(.001f), "Other fixed lenses stay dark: " + renderer.name);
             }
             Assert.That(RenderSettings.ambientIntensity, Is.Zero);
         }
@@ -513,7 +1031,155 @@ namespace BarPromenade.Tests.PlayMode
             WarehouseArenaLighting.UpdateHeroVisibility(root.Flashlight.transform);
         }
 
-        private static IEnumerator VerifyWarehouseFishGate(CombatTestRoot root, InputTestFixture input, Keyboard keyboard)
+        private static IEnumerator VerifyWarehouseGateUnlockStages(CombatTestRoot root, WarehouseGateController gate)
+        {
+            Assert.That(gate.Sounds, Is.Not.Null);
+            Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.True);
+            Quaternion keyRest = gate.KeyModel.rotation, shackleRest = gate.Shackle.rotation;
+            float shackleHeight = gate.Shackle.position.y;
+            var closedPoses = new Pose[gate.ChainBodies.Count];
+            for (int index = 0; index < gate.ChainBodies.Count; index++)
+                closedPoses[index] = new Pose(gate.ChainBodies[index].position, gate.ChainBodies[index].rotation);
+            MeshRenderer lockHousing = null;
+            foreach (MeshRenderer renderer in gate.ChainBodies[28].GetComponentsInChildren<MeshRenderer>(true))
+                if (renderer.name.StartsWith("PadlockBody", StringComparison.Ordinal)) lockHousing = renderer;
+            MeshRenderer shackleRenderer = gate.Shackle.GetComponentInChildren<MeshRenderer>(true);
+            Assert.That(lockHousing, Is.Not.Null);
+            Assert.That(shackleRenderer, Is.Not.Null);
+            Assert.That(lockHousing.bounds.Intersects(shackleRenderer.bounds), Is.True,
+                "The closed shackle must remain seated in the housing before the key turns.");
+            gate.Advance(Mathf.Max(0f, .5f - gate.UnlockElapsed));
+            Assert.That(gate.IsUnlocked || gate.ChainReleased, Is.False);
+            AssertWarehouseChainHeldBeforeCommit(gate, closedPoses);
+            Assert.That(gate.Shackle.position.y, Is.EqualTo(shackleHeight).Within(.001f));
+            Assert.That(Quaternion.Angle(shackleRest, gate.Shackle.rotation), Is.LessThan(.001f));
+            Assert.That(lockHousing.bounds.Intersects(shackleRenderer.bounds), Is.True,
+                "Inserting and turning the key cannot detach the closed lock from its chain.");
+            Assert.That(Quaternion.Angle(keyRest, gate.KeyModel.rotation), Is.GreaterThan(15f));
+            Vector3 turnedKey = gate.KeyModel.position;
+            CaptureWarehouseGateDetail(root, gate.Shackle.position, "Test warehouse - Key turning in lock");
+
+            float pausedUnlock = gate.UnlockElapsed;
+            Quaternion pausedKey = gate.KeyModel.rotation;
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                gate.Advance(1f);
+                gate.Sounds.Advance(1f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(gate.UnlockElapsed, Is.EqualTo(pausedUnlock));
+                Assert.That(Quaternion.Angle(pausedKey, gate.KeyModel.rotation), Is.LessThan(.001f));
+                Assert.That(gate.Sounds.IsPaused, Is.True);
+                Assert.That(gate.Sounds.UnlockClickCount, Is.Zero);
+                int heldSample = gate.Sounds.ActionSource.timeSamples;
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(gate.Sounds.ActionSource.timeSamples, Is.EqualTo(heldSample));
+            }
+            gate.Sounds.Advance(0f);
+            gate.Advance(Mathf.Max(0f, 1.4f - gate.UnlockElapsed));
+            Assert.That(gate.IsUnlocked || gate.ChainReleased, Is.False);
+            AssertWarehouseChainHeldBeforeCommit(gate, closedPoses);
+            Assert.That(gate.Shackle.position.y, Is.GreaterThan(shackleHeight + .04f));
+            Assert.That(Quaternion.Angle(shackleRest, gate.Shackle.rotation), Is.GreaterThan(60f),
+                "The shackle must be fully open before the strand or padlock can move.");
+            Assert.That(Vector3.Distance(turnedKey, gate.KeyModel.position), Is.GreaterThan(.01f),
+                "The key must withdraw before the open lock releases the chain.");
+            CaptureWarehouseGateDetail(root, gate.Shackle.position, "Test warehouse - Lifted and turned shackle");
+
+            gate.Advance(Mathf.Max(0f, WarehouseGateController.UnlockCommitSeconds + .01f - gate.UnlockElapsed));
+            Assert.That(gate.IsUnlocked && gate.ChainReleased, Is.True);
+            Assert.That(gate.ChainPhysicsReleased, Is.False);
+            Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.False);
+            Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.WarehouseGateKey), Is.EqualTo(1));
+            var slideStart = new Vector3[gate.ChainBodies.Count];
+            for (int index = 0; index < gate.ChainBodies.Count; index++)
+            {
+                Assert.That(gate.ChainBodies[index].isKinematic, Is.True);
+                slideStart[index] = gate.ChainBodies[index].position;
+            }
+            for (int frame = 0; frame < 4; frame++) yield return new WaitForFixedUpdate();
+            Assert.That(gate.ChainPhysicsReleased, Is.False);
+            float slideDistance = 0f;
+            var pausedPositions = new Vector3[gate.ChainBodies.Count];
+            for (int index = 0; index < gate.ChainBodies.Count; index++)
+            {
+                Rigidbody body = gate.ChainBodies[index];
+                Assert.That(body.isKinematic, Is.True);
+                slideDistance = Mathf.Max(slideDistance, Vector3.Distance(slideStart[index], body.position));
+                pausedPositions[index] = body.position;
+            }
+            Assert.That(slideDistance, Is.GreaterThan(.005f), "The open strand must slide free before gravity is enabled.");
+            CaptureWarehouseGateDetail(root, gate.transform.position + Vector3.up * .6f,
+                "Test warehouse - Open chain sliding free", overview: true);
+            float pausedSlideUnlock = gate.UnlockElapsed;
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                gate.Advance(1f);
+                gate.Sounds.Advance(1f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(gate.UnlockElapsed, Is.EqualTo(pausedSlideUnlock));
+                Assert.That(gate.ChainPhysicsReleased, Is.False);
+                Assert.That(gate.Sounds.IsPaused, Is.True);
+                for (int index = 0; index < gate.ChainBodies.Count; index++)
+                    Assert.That(Vector3.Distance(pausedPositions[index], gate.ChainBodies[index].position), Is.LessThan(.0001f));
+            }
+            gate.Sounds.Advance(0f);
+            Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1), "Resuming cannot replay a committed lock cue.");
+            try
+            {
+                GameInput.HandleApplicationFocus(false);
+                gate.Advance(1f);
+                gate.Sounds.Advance(1f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(gate.UnlockElapsed, Is.EqualTo(pausedSlideUnlock));
+                Assert.That(gate.ChainPhysicsReleased, Is.False);
+                Assert.That(gate.Sounds.IsPaused, Is.True);
+                for (int index = 0; index < gate.ChainBodies.Count; index++)
+                    Assert.That(Vector3.Distance(pausedPositions[index], gate.ChainBodies[index].position), Is.LessThan(.0001f),
+                        "Focus loss freezes the achieved controlled-slide pose.");
+            }
+            finally
+            {
+                GameInput.HandleApplicationFocus(true);
+            }
+            gate.Sounds.Advance(0f);
+            Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1), "Focus return cannot replay the committed lock cue.");
+        }
+
+        private static void AssertWarehouseChainHeldBeforeCommit(WarehouseGateController gate, Pose[] closedPoses)
+        {
+            for (int index = 0; index < gate.ChainBodies.Count; index++)
+            {
+                Rigidbody body = gate.ChainBodies[index];
+                Assert.That(body.isKinematic, Is.True);
+                Assert.That(Vector3.Distance(body.position, closedPoses[index].position), Is.LessThan(.0001f),
+                    "The closed strand and padlock stay attached until the unlock commit marker.");
+                Assert.That(Quaternion.Angle(body.rotation, closedPoses[index].rotation), Is.LessThan(.001f));
+            }
+        }
+
+        private static void CaptureWarehouseGateDetail(CombatTestRoot root, Vector3 focus, string name, bool overview = false)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 previousPosition = camera.transform.position;
+            Quaternion previousRotation = camera.transform.rotation;
+            float previousFov = camera.fieldOfView;
+            try
+            {
+                Vector3 eye = focus + (overview ? new Vector3(.65f, .7f, -1.6f) : new Vector3(.2f, .12f, -.62f));
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                camera.fieldOfView = overview ? 64f : 48f;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                camera.fieldOfView = previousFov;
+            }
+        }
+
+        private static IEnumerator VerifyWarehouseFishGate(CombatTestRoot root, InputTestFixture input, Keyboard keyboard,
+            bool detailedUnlockProof = false)
         {
             WarehouseGateController gate = root.GetComponentInChildren<WarehouseGateController>();
             Assert.That(gate, Is.Not.Null);
@@ -538,10 +1204,21 @@ namespace BarPromenade.Tests.PlayMode
             AssertFishAssemblyReleased(root);
             Assert.That(gate.IsUnlocked || gate.ChainReleased, Is.False);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.WarehouseGateKey), Is.EqualTo(1));
+            if (detailedUnlockProof)
+            {
+                Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.False);
+                Assert.That(gate.Sounds.UnlockClickCount, Is.Zero);
+                Assert.That(gate.Sounds.ChainReleaseCount, Is.Zero);
+                foreach (Rigidbody body in gate.ChainBodies) Assert.That(body.isKinematic, Is.True);
+            }
 
             yield return EnterWarehouseFishGate(root, gate, input, keyboard, "Test valve - Unlock after cancellation");
-            gate.Advance(WarehouseGateController.UnlockSeconds * .55f);
+            if (detailedUnlockProof) yield return VerifyWarehouseGateUnlockStages(root, gate);
+            else gate.Advance(WarehouseGateController.UnlockSeconds * .55f);
             Assert.That(gate.IsUnlocked && gate.ChainReleased, Is.True);
+            for (int frame = 0; frame < 60 && !gate.ChainPhysicsReleased; frame++)
+                yield return new WaitForFixedUpdate();
+            Assert.That(gate.ChainPhysicsReleased, Is.True, "Controlled sliding must finish before real gravity takes ownership.");
             Assert.That(gate.ChainBodies, Is.Not.Empty);
             var releasePositions = new Vector3[gate.ChainBodies.Count];
             for (int index = 0; index < gate.ChainBodies.Count; index++)
@@ -552,14 +1229,43 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(body.GetComponentsInChildren<Collider>(), Is.Not.Empty);
                 releasePositions[index] = body.position;
             }
-            for (int frame = 0; frame < 70; frame++) yield return new WaitForFixedUpdate();
+            for (int frame = 0; frame < (detailedUnlockProof ? 330 : 70); frame++)
+            {
+                yield return new WaitForFixedUpdate();
+                if (!detailedUnlockProof) continue;
+                foreach (Rigidbody body in gate.ChainBodies)
+                {
+                    Assert.That(float.IsFinite(body.position.x) && float.IsFinite(body.position.y) && float.IsFinite(body.position.z), Is.True);
+                    Assert.That(body.linearVelocity.magnitude, Is.LessThan(12f), "The released strand must fall without explosive joint separation.");
+                    Assert.That(Vector3.Distance(body.position, gate.transform.position), Is.LessThan(4f));
+                }
+                if (frame == 9)
+                    CaptureWarehouseGateDetail(root, gate.transform.position + Vector3.up * .6f,
+                        "Test warehouse - Chain falling", overview: true);
+            }
             float largestFall = 0f;
             for (int index = 0; index < gate.ChainBodies.Count; index++)
                 largestFall = Mathf.Max(largestFall, releasePositions[index].y - gate.ChainBodies[index].position.y);
             Assert.That(largestFall, Is.GreaterThan(.08f), "Gravity must visibly drop the released authored chain links.");
             foreach (Rigidbody body in gate.ChainBodies)
                 Assert.That(body.position.y, Is.LessThan(.5f), "The complete open strand must clear the valve and fall to the floor.");
+            if (detailedUnlockProof)
+            {
+                foreach (Rigidbody body in gate.ChainBodies) Assert.That(body.isKinematic, Is.True);
+                Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
+                Assert.That(gate.Sounds.ChainReleaseCount, Is.EqualTo(1));
+                Assert.That(gate.Sounds.ImpactCount, Is.GreaterThan(0), "Real environmental contacts must produce bounded metal impacts.");
+                CaptureWarehouseGateDetail(root, gate.transform.position + Vector3.up * .25f,
+                    "Test warehouse - Chain settled on floor", overview: true);
+            }
             CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, "Test warehouse - Valve chain released");
+            // Fixed-update waits and explicit camera rendering can leave the
+            // Input System on a non-player buffer. Rejoin the dynamic loop
+            // before InputTestFixture creates a delta event for the held key.
+            yield return null;
+            Assert.That(keyboard.added, Is.True);
+            Assert.That(Keyboard.current, Is.SameAs(keyboard));
+            Assert.That(keyboard.eKey.isPressed, Is.True);
             Assert.That(NarrativeInteractionController.For(root.Player.Interactor).Phase,
                 Is.EqualTo(NarrativeInteractionPhase.Activity), NarrativeInteractionController.For(root.Player.Interactor).LastFailureReason);
             gate.Advance(WarehouseGateController.UnlockSeconds);
@@ -589,11 +1295,33 @@ namespace BarPromenade.Tests.PlayMode
                 "Holding E must turn the authored wheel as well as advance the gate state.");
             Assert.That(gate.IsOpen, Is.False);
             Assert.That(gate.DoorInteraction.CanInteract(root.Player.Interactor), Is.False);
+            if (detailedUnlockProof)
+            {
+                gate.Sounds.Advance(.1f);
+                Assert.That(gate.Sounds.CreakStartCount, Is.GreaterThan(0));
+                Assert.That(gate.Sounds.CreakSource.volume, Is.GreaterThan(0f));
+                Assert.That(gate.Sounds.CreakSource.loop && gate.Sounds.CreakSource.isPlaying, Is.True);
+                AudioClip clip = gate.Sounds.CreakSource.clip;
+                Assert.That(clip, Is.Not.Null);
+                int frames = Mathf.Min(clip.samples, clip.frequency * 2);
+                var samples = new float[frames * clip.channels];
+                Assert.That(clip.GetData(samples, 0), Is.True);
+                string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest);
+                System.IO.Directory.CreateDirectory(folder);
+                WritePcmWave(System.IO.Path.Combine(folder, "Test warehouse - Valve creak.wav"), samples,
+                    clip.frequency, clip.channels, 1f);
+            }
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return null;
             float partial = gate.Progress, partialLift = gate.GateLift;
             Quaternion partialWheel = wheel.rotation;
             gate.Advance(12f);
+            if (detailedUnlockProof)
+            {
+                gate.Sounds.Advance(.2f);
+                Assert.That(gate.Sounds.CreakSource.volume, Is.Zero);
+                Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False, "Releasing E fades the valve sound out.");
+            }
             Assert.That(gate.Progress, Is.EqualTo(partial));
             Assert.That(gate.GateLift, Is.EqualTo(partialLift), "Releasing E holds the raised grille at its exact height.");
             Assert.That(Quaternion.Angle(partialWheel, wheel.rotation), Is.LessThan(.001f));
@@ -607,6 +1335,13 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(gate.Progress, Is.EqualTo(partial));
                 Assert.That(gate.GateLift, Is.EqualTo(partialLift));
                 Assert.That(Quaternion.Angle(partialWheel, wheel.rotation), Is.LessThan(.001f));
+                if (detailedUnlockProof)
+                {
+                    gate.Sounds.Advance(.5f);
+                    Assert.That(gate.Sounds.IsPaused, Is.True);
+                    Assert.That(gate.Sounds.CreakSource.isPlaying, Is.False);
+                    Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1));
+                }
                 input.Release(keyboard.eKey, queueEventOnly: true);
                 yield return null;
             }
@@ -624,6 +1359,12 @@ namespace BarPromenade.Tests.PlayMode
 
             yield return EnterWarehouseFishGate(root, gate, input, keyboard, "Test valve - Continue opening");
             Assert.That(gate.Progress, Is.EqualTo(partial));
+            if (detailedUnlockProof)
+            {
+                Assert.That(gate.KeyModel.gameObject.activeInHierarchy, Is.False);
+                Assert.That(gate.Sounds.UnlockClickCount, Is.EqualTo(1), "Re-entry must not replay the committed lock click.");
+                Assert.That(gate.Sounds.ChainReleaseCount, Is.EqualTo(1));
+            }
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return null;
             input.Press(keyboard.eKey, queueEventOnly: true);
@@ -806,28 +1547,32 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(bulb.enabled && !bulb.forceRenderingOff && bulb.gameObject.activeInHierarchy, Is.True);
             Assert.That(camera.transform.position.y, Is.LessThanOrEqualTo(bulb.bounds.min.y - .03f),
                 "The actual minigame eye must stay below the lowest visible bulb surface after framing settles.");
+            Assert.That(camera.transform.position.y, Is.LessThanOrEqualTo(table.TableFrame.position.y + 1.30f),
+                "The fish puzzle retains its lower close-up instead of backing out to the whole table rim.");
 
-            // The full authored basin lip, including both end rims, is wider
-            // than the fish's inner collision floor. Legs do not define this shot.
+            // Keep every reachable part position visible above the control strip;
+            // the tall outer metal rim no longer defines the close-up.
             Vector2 low = Vector2.one * float.PositiveInfinity;
             Vector2 high = Vector2.one * float.NegativeInfinity;
             for (int corner = 0; corner < 8; corner++)
             {
                 Vector3 world = table.TableFrame.TransformPoint(new Vector3(
-                    (corner & 1) == 0 ? -1.13f : 1.13f,
-                    (corner & 2) == 0 ? .78f : 1.09f,
-                    (corner & 4) == 0 ? -.611f : .611f));
+                    (corner & 1) == 0 ? -.88f : .88f,
+                    (corner & 2) == 0 ? .78f : .90f,
+                    (corner & 4) == 0 ? -.38f : .38f));
                 Vector3 screen = camera.WorldToViewportPoint(world);
                 Assert.That(screen.z, Is.GreaterThan(camera.nearClipPlane));
-                Assert.That(screen.x, Is.InRange(.015f, .985f), "The full table rim must fit horizontally.");
-                Assert.That(screen.y, Is.InRange(.015f, .985f), "The full table rim must fit vertically.");
+                Assert.That(screen.x, Is.InRange(.015f, .985f), "The entire playable surface must fit horizontally.");
+                Assert.That(screen.y, Is.InRange(.105f, .985f), "Reachable fish sections must stay above the controls.");
                 low = Vector2.Min(low, new Vector2(screen.x, screen.y));
                 high = Vector2.Max(high, new Vector2(screen.x, screen.y));
             }
             Vector2 coverage = high - low;
-            Assert.That(coverage.x, Is.GreaterThanOrEqualTo(.78f), "The tabletop must occupy most of the viewport width.");
-            Assert.That(coverage.y, Is.GreaterThanOrEqualTo(.50f), "The tabletop must remain large enough to assemble its parts.");
-            Assert.That(coverage.x * coverage.y, Is.GreaterThanOrEqualTo(.45f));
+            Assert.That(coverage.x, Is.GreaterThanOrEqualTo(.65f), "The playable surface must fill the close-up.");
+            float aspectScale = Mathf.Min(1f, camera.aspect / (16f / 9f));
+            Assert.That(coverage.y, Is.GreaterThanOrEqualTo(.50f * aspectScale),
+                "The wide work surface must retain its readable height at the current aspect ratio.");
+            Assert.That(coverage.x * coverage.y, Is.GreaterThanOrEqualTo(.35f));
         }
     }
 }

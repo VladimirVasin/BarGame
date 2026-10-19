@@ -10,11 +10,10 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class HomeRefrigeratorItemInspectionView : MonoBehaviour
     {
-        private static readonly string[] ActionKeys =
+        private static readonly HomeRefrigeratorItemAction[] Actions =
         {
-            HomeRefrigeratorItemInspectionController.TakeActionKey,
-            HomeRefrigeratorItemInspectionController.UseActionKey,
-            HomeRefrigeratorItemInspectionController.BackActionKey
+            HomeRefrigeratorItemAction.Take,
+            HomeRefrigeratorItemAction.Back
         };
 
         private HomeRefrigeratorItemInspectionController controller;
@@ -131,7 +130,7 @@ namespace BarPromenade
             Vector2 logicalMouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             EventType eventType = Event.current.type;
-            for (int index = 0; index < ActionKeys.Length; index++)
+            for (int index = 0; index < Actions.Length; index++)
             {
                 DrawAction(index, logicalMouse, eventType);
             }
@@ -142,14 +141,15 @@ namespace BarPromenade
             Vector2 logicalMouse,
             EventType eventType)
         {
-            Rect rect = RetroItemPanel.ActionRect(index);
-            bool selected = index == controller.SelectedActionIndex;
+            HomeRefrigeratorItemAction action = Actions[index];
+            Rect rect = RetroItemPanel.ActionRect(index, Actions.Length);
+            bool selected = (int)action == controller.SelectedActionIndex;
             bool hovered = rect.Contains(logicalMouse);
             if (hovered &&
                 (eventType == EventType.MouseMove ||
                  eventType == EventType.MouseDown))
             {
-                controller.SelectAction(index);
+                controller.SelectAction((int)action);
                 selected = true;
             }
 
@@ -171,13 +171,14 @@ namespace BarPromenade
             }
             if (GUI.Button(
                     rect,
-                    LocalizationService.Get(ActionKeys[index]),
+                    LocalizationService.Get(action == HomeRefrigeratorItemAction.Take
+                        ? HomeRefrigeratorItemInspectionController.TakeActionKey
+                        : HomeRefrigeratorItemInspectionController.BackActionKey),
                     selected
                         ? selectedActionStyle
                         : actionStyle))
             {
-                controller.InvokeAction(
-                    (HomeRefrigeratorItemAction)index);
+                controller.InvokeAction(action);
             }
         }
 

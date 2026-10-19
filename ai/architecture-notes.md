@@ -2,7 +2,7 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a:forced continuous hero/no approach. Approved:6m/chest-up2m/start-release LOS/lockedthrow/zonepuncture1→5s pain/COLhoist-haul toward well/overrails/physstruggle/bodycam-orbit/fallHP;release restores drives/keeps velocity. Others+spawns liveidle→release/cancel;Room suppression owners compose. E6fresh/charcoal-bone bar/held0. Success/escape→actualhome→watch10;fatal cry/spasm3→home→regen10/full/sameslot/no kill-reward-corpse. Hero:wounds/no detach. Horizontal frontdot≥.35;frontbar fullblock/no guardbreak/back0. Pause-modal-focus freeze;reset-disable-unload clear input/rig/anchor/UI;story/outsideworld0.
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a;forced continuous hero/no approach. 6m/chest-up2m/start-release LOS/lockedthrow/zonepuncture1→5s pain/COLhoist-haul toward well/overrails/physstruggle/bodycam-orbit/fallHP;release:restore drives/keep velocity. Others+spawns idle→release/cancel;Room owners compose. E6fresh/charcoal-bone bar/held0. Success/escape→actualhome→watch10;fatal cry/spasm3→home→regen10/full/sameslot/kill-reward-corpse0. Hero:wounds/nodetach. FrontdotXZ≥.35;frontbar fullblock/guardbreak-back0. Pause-modal-focus freeze;reset-disable-unload clear input-rig-anchor-UI;story/outsideworld0.
 
 - **Accepted 2026-10-19, hero airborne inertia:** Approved motor world-space velocity/yaw-release brake0/limited steering;combat hero separate planar-vertical caps/freefall gravity24;NPC physics kept. Fixedstep/bounded bodies/shared clamp/hotalloc0.
 
@@ -26,10 +26,6 @@
   9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;
   UVslots/worldmetres/sharedwear;gate=PlatformUV/runtimeUV-matclone0.
 
-- **Accepted 2026-10-16, chest glow:**
-  Warmlens-halo/20→80°/depth/2sharedparticles;
-  switch-hide-cleanup/exposure-free/Spotkept.
-
 - **Accepted 2026-10-15, shared entry door design:**
   Home/CombatTest:`ApartmentEntranceDoor`:agedwood/4panels/reveals-trim-threshold/
   3hinges/levers-keyhole-peephole/wear;leaf1.12×2.16×.052/frame1.32×2.3×.22/
@@ -41,9 +37,6 @@
 - **Accepted exception 2026-10-15, mimics:**
   Reveal/chase/ram/kneel-rise;ownfall→5s rigFrenzy/2SFX/Recovery0;
   depthentry/attack-move-buffer0/hurtstop/pause-reset;§6/art§15a.
-
-- **Accepted 2026-10-15, beam:**
-  ChestSpot:d²/4m/5rays10Hz/centre|2side/.045↓.22↑/pause-reset.
 
 - **Accepted exception 2026-10-15, docker:**
   Slat→hole/corekept/0pierce;8fish/1skin/anyfallspill/finiteasync;
@@ -60,22 +53,18 @@
   gameplay locked-hidden/menu free/focusdelta0/authoredwins.
   `GameCursor`:leases0/5/10/cap32/prune/update/cleanup/stalesnapshots0.
 
-- **Accepted exception 2026-10-15, warehouse bulb failure:**
-  Keyreceiptclosed+eitherupperstairs↓→continuousheat2s/light-emission-range↑/riseSFX→popglass/8phys;
-  bulb0/socketcordkept/fixedlights-lenses-ambient0/Lchestonly;
-  pause0/Reset-Newkeep/silent;newgame-invreset0/camera-input-text-damage-story0;§6.
+- **Accepted exception 2026-10-19, warehouse lamps:**
+  KeyUIend+upperstairs↓→heat2s/L-emission-range↑/riseSFX→popglass8phys;bulb0/socketcord/restL-lens-amb0/gateRedL+lens>0+chest;red:softperiodicdip×≥.45/gapsflat/SFX-strobe0/pause-focus0/layoutquiet;Reset-Newkeep/silent;NewGameinv0/cam-input-text-damage-story0;§6.
 
-- **Accepted exception 2026-10-15, warehouse gate:**
-  Key→chainlock↓;holdE→wheel-leafCOL↑;release-pause-Esckeep/maxlatch.
-  Sharedstanding/bounds/Reset-Newkeep/newgame-invreset0;
-  Gallery/upper/headroom;goaldoor silentstub;§6.
+- **Accepted exception 2026-10-19, gate:**
+  Keyinturn/click/shackle↑↻full/keyout/chainglide/gCOLsettle;3x3Dvoices/metalhitcap;valvecreak=motion/lowrust/Eupfade;holdEwheel-leafCOL↑;unlockedskip;release-pause-Esckeep/maxlatch/sharedstandbounds/ResetNewkeep/NewGameinvreset0;Gallery/upper/headroom/silentgoalstub;NoKeyE2tug1.2s→RUENkey/silentSharedInspect;§6/21.
 
 - **Accepted 2026-10-15, warehouse tabletop:**
-  WorkSurfaceCloseUp<bulb;trough-rimsfill/pourcans0.
+  WorkSurfaceCloseUp<bulbI1.8;playfill/pourcans0;user2026-10-19:localY≤1.30m.
 
-- **Accepted 2026-10-15, warehouse spawn cutoff:**
-  3fishsourceIDs→Endless pending-spawns0/livefight/autowin0;
-  events/Reset-Newkeep/newgame-invreset freshdelay.
+- **Accepted exception 2026-10-19, warehouse fish cutoff:**
+  Commit3→spawned foes-corpses0/spawn0/kill-reward-autowin+0;Crane6oldcablesonly.
+  Wind/creak:art§15a;taken Reset-reentrykeep/NewGame fresh;§6/story-text0.
 
 - **Accepted exception 2026-10-15, warehouse fish assembly:**
   §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-key1/sharedreceipt/retry;
@@ -95,7 +84,7 @@
 
 - **Accepted exception 2026-10-15, warehouse fish finds:**
   Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms;
-  RedTake→fade-humclick/6off/gateonuntilburst;
+  RedTake→fade-humclick/6off/gatealways;
   rustenamel/stains/openscraps/cream tail-belly-head/bottom→top/text-brand0.
   Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nested/endrestore.
 
@@ -110,9 +99,6 @@
 
 - **Accepted 2026-10-14, warehouse goal:**
   9wallplates.44×.5/1–9/3floor/seedfixed.
-
-- **Accepted exception 2026-10-14, valve inspection:**
-  No-key E:1.2s/2locked tugs→silent RU-EN key/shared inspection;§6/§21.
 
 - **Accepted exception 2026-10-14, warehouse fan:**
   Spot11.8/cap12.1–12.22/roof-deck shadows/pause/strobe0;
@@ -132,11 +118,8 @@
   orbit≤35full→90zero/rootlegs/Llight/actionpriority/pausemodal;
   cleanup-hotalloc0/Advance-repeatApply0timebend.
 
-- **Accepted exception 2026-10-14, warehouse chest light:**
-  LM65Chest/on/Spot≤60/16m/60–28°hard;
-  fog-sky-camera0/GIhero3D3→black12m/Ps1Lit bakedGI-only;
-  outside-disable-unload0;
-  1hero/resetkeep/cleanup/noMPB-clone-pass/input-battery-inventory-story0.
+- **Accepted exception 2026-10-19, chest fixture:**
+  LM65/on:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/GIhero3D3→black12m/Ps1Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery-inventory-story0.
 
 - **Accepted — 2026-10-14, combat cloth policy:**
   `PlayerClothPhysicsPolicy`:CombatTest jacket-scarf-sling0live-bake;
@@ -5013,8 +4996,8 @@
   reversible MPB tint/cursor name; keyboard/gamepad cycle-confirm equivalent.
   Stock: pure Browsing→FlyingIn→Inspecting→FlyingOut;
   camera-relative pivot/centered ease/`18°/s`/dark camera-facing backdrop.
-  Post-composite title/description/Take-Use-Back. Take atomically grants item/source,
-  unregisters/removes world model; Use unavailable. Back/outer close return untaken
+  Post-composite title/description/centered Take-Back. Take atomically grants item/source,
+  unregisters/removes world model; Back/outer close return untaken
   item before closing. Return/cancel/disable/destroy restore parent/sibling/local
   pose-scale/collider/renderer colors, then clear presentation state.
 - **Accepted — Session hero inventory:** One pure ordered stack model and code

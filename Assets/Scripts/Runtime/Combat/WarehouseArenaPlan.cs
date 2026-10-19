@@ -271,14 +271,14 @@ namespace BarPromenade
             var lamps = new List<WarehouseArenaLamp>
             {
                 new WarehouseArenaLamp(new Vector3(-7.5f, 2.72f, -4.6f), Vector3.down, 5.5f, .65f),
-                // The wall-mounted emergency fixture replaces the existing goal practical.
-                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.75f), new Vector3(.65f,-1f,-.35f),
+                // Seat the fixture at the wall, behind the valve riser and its brackets.
+                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.97f), new Vector3(-.10f,-1.14f,-.515f),
                     6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 78f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
                 // The separate corded bulb is rooted at the real ceiling; finite finds own its power.
                 new WarehouseArenaLamp(new Vector3(0f, WarehouseArenaPlan.CeilingHeight, 10.15f),
-                    Vector3.down, 4.5f, 18f, "FishStationLamp", Color.white,
+                    Vector3.down, 4.5f, 1.8f, "FishStationLamp", Color.white,
                     outerAngle: 85f, innerAngle: 50f, modelRotation: Quaternion.identity),
                 // A rim-mounted maintenance lamp reveals the rotor's underside from the entrance.
                 new WarehouseArenaLamp(new Vector3(3.78f, 9.4f, 0f), new Vector3(-1f,.1f,0f), 8f, 4f)

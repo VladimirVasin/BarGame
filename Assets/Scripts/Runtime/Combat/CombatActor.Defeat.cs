@@ -222,8 +222,16 @@ namespace BarPromenade
         {
             if (IsHero || !State.IsDefeated)
                 throw new InvalidOperationException("Only a defeated opponent can return to the encounter pool.");
+            RetireOpponent();
+        }
+
+        internal void RetireOpponent()
+        {
+            if (IsHero)
+                throw new InvalidOperationException("The hero cannot return to the opponent pool.");
             // Dropped props live beside the actor. Restore ownership while the
             // hierarchy is active; OnDisable deliberately cannot reparent them.
+            State.CancelAction();
             ReturnWeaponToRightHand();
             RestoreWeapon();
             gameObject.SetActive(false);

@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>One reusable authored pack, confirmed once through the hero's shared found-item screen.</summary>
     [DisallowMultipleComponent]
-    public sealed class CombatAmmoPickup : MonoBehaviour, IInteractable
+    public sealed class CombatAmmoPickup : MonoBehaviour, IInteractable, IPrioritizedInteractable
     {
         private const float WorldModelScale = 1.6f;
         private const float ShellSpacing = .045f;
@@ -31,6 +31,8 @@ namespace BarPromenade
         public float RespawnRemaining { get; private set; }
         public string PromptKey => WeaponId == CombatWeaponId.Pistol ? "combat.ammo.pickup_pistol" : "combat.ammo.pickup_shotgun";
         public Vector3 InteractionPosition => transform.position + Vector3.up * .08f;
+        public object InteractionPriorityGroup { get; private set; }
+        public int InteractionPriority => 2;
         internal IFirearmState State => state;
 
         internal void Initialize(CombatActor hero, CombatWeaponId id, IFirearmState firearm, Vector3 worldPosition)
@@ -197,7 +199,11 @@ namespace BarPromenade
             if (interactionTrigger != null) interactionTrigger.enabled = enabled && available && !inspecting && isActiveAndEnabled;
         }
 
-        internal void SetSourceAvailability(Func<bool> availability) => sourceAvailable = availability;
+        internal void SetSourceAvailability(Func<bool> availability, object priorityGroup)
+        {
+            sourceAvailable = availability;
+            InteractionPriorityGroup = priorityGroup;
+        }
 
         internal void CancelPickup()
         {

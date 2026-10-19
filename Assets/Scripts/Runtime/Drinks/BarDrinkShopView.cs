@@ -88,16 +88,6 @@ namespace BarPromenade
                     LocalizationService.Get("drink_shop.balance"),
                     controller.CashBalance),
                 balanceStyle);
-
-            if (controller.IsBrowsing)
-            {
-                Rect closeRect = new Rect(590f, 20f, 27f, 27f);
-                DrawButton(
-                    closeRect,
-                    "×",
-                    controller.Exit,
-                    false);
-            }
         }
 
         private void DrawFooter()

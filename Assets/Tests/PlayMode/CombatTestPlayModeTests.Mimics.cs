@@ -198,10 +198,14 @@ namespace BarPromenade.Tests.PlayMode
             for (int i = 0; i < 3; i++)
                 Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[i].SourceId, items[i]), Is.True);
             Assert.That(root.EndlessSpawnsBlockedByFish, Is.True);
-            Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
-            Assert.That(zombie.TryAwakenZombie(), Is.True, "Stopping future arrivals preserves already living dormant actors.");
+            Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(root.CorpseCount, Is.Zero);
+            Assert.That(zombie.gameObject.activeInHierarchy, Is.False);
+            Assert.That(zombie.TryAwakenZombie(), Is.False, "The final source retires dormant actors with the live population.");
             root.Tick(1.5f);
-            Assert.That(zombie.ZombieAwake, Is.True);
+            Assert.That(zombie.gameObject.activeInHierarchy, Is.False);
+            Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(CombatZombieAudio.ActiveGroanCount, Is.Zero);
             root.ResetRound();
             Assert.That(root.LiveOpponentCount, Is.Zero, "A completed warehouse cannot repopulate on Reset.");
             Assert.That(CombatZombieAudio.ActiveGroanCount, Is.Zero);

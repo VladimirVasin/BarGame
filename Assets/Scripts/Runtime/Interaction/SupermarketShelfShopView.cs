@@ -129,11 +129,6 @@ namespace BarPromenade
                         "supermarket.shop.balance"),
                     controller.CashBalance),
                 balanceStyle);
-            DrawButton(
-                new Rect(590f, 22f, 27f, 27f),
-                "X",
-                exitAction,
-                false);
         }
 
         private void DrawFooter()

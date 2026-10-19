@@ -57,6 +57,14 @@ namespace BarPromenade
         {
             if (!IsInitialized) return;
             endlessSpawnsBlockedByFish = WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
+            if (endlessSpawnsBlockedByFish) ClearWarehouseOpponents(true);
+            else if (warehouseOpponentsCleared)
+            {
+                // Inventory/new-game reset also clears committed source IDs.
+                // Rebuild the fresh encounter once, using the ordinary reset.
+                warehouseOpponentsCleared = false;
+                PlaceRound(focusOpponent: Mode == CombatTestMode.Standard || !Hero.IsFirearm);
+            }
             endless.SetSpawningEnabled(!endlessSpawnsBlockedByFish, LiveOpponentCount);
         }
 

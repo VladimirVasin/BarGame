@@ -3,50 +3,54 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-19 - Room, Crane and combat CPU
+## 2026-10-19 - Combat
 
-- `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum` and
-  `Range_CraneHookCaptureEscapeRetreatAndRegeneration` pass;
-  gallery clearance/release momentum/home-watch verified;frames reviewed.
-- `Range_CraneCaptureYieldsMixedOpponentsUntilRelease` passes.
+- `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
+`Range_CraneHookCaptureEscapeRetreatAndRegeneration`,
+`Range_CraneCaptureYieldsMixedOpponentsUntilRelease` pass;
+gallery/momentum/home-watch viewed.
 - `Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight`,
-  `Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding` and
-  `SprintAndTurn_ReachesRunCapWithoutSkidding` pass.
-- Plans require project-fit assessment;facts/proposals/decisions stay separate.
-  `check-docs.py`/diff review verify it.
-- Room:head/neck/arms/hands larger;corridor/rest rig/textures kept.
-  Elbow/wrist endpoint weights retain sleeve/palm/wounds;hand growth keeps
-  source/grip/reset scale. Closed source-bound layers replace radial protrusions.
-- Source:`ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
-  Damage rebuild/head strain/affine containment/binary skin/clear corridor pass;
-  hand growth keeps source/atlas/damage FBX bytes.
-  `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
-  `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass.
-  Body/strike/hero comparison/damaged sleeve/corridor reviewed.
+`Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding`,
+`SprintAndTurn_ReachesRunCapWithoutSkidding` pass.
+- Fit:facts/proposals/decisions;`check-docs.py`/diff.
+- Room:head/neck/arms/hands↑;corridor/rest rig/texture kept.
+Elbow-wrist:sleeve/palm/woundweights;hands:source/grip/reset scale+atlas/damageFBX kept;
+closed sourcelayers/protrusions0.
+- `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
+Rebuild/headstrain/affine containment/binaryskin/corridor;
+`Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset`,
+`Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass.
+Body/strike/hero/sleeve/corridor viewed.
 - Room:head-high point/palmar fingers/thumb/wrist;wideDutch→seat-face/reverse.
-  Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;
-  dupewalls/warp/fade/hot bake-load-alloc0.
-  HeroLhead0→return+2s/input0;return18HP/laugh5→idle5;hit cancel grants full idle,
-  later hits keep clock/hurt wins. World sim live;others/spawns idle until heroend.
-  HUD baseline survives modal→HP3s unlock;pause/death/reset/disable cleanup.
-  Main:Crane/Room/Docker;Lab6.
-  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier pass;
-  prior Unity:assets/pause/focus/audio pass;Laugh-cancel restore roll unresolved.
-  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes.
-  Face/point-seat-return/midbar in-out/occlusion/jelly reviewed.
-  Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV and
-  `build-combat-room-attack-3d-model.py --npc-only --validate-only` pass;
-  `CombatRoomAttackAssetSetup.BuildOrThrow` validates imports.
-- Crane:2m/6m/5s/E6bar;physical hoist-haul overrails;
-  others/spawns idle→release;momentum/struggle/bodycam/fallHP;
-  frontbar/nodetach;home-watch10/fatal3-regen10;pause-reset clear.
-- Air:world-space inertia/limited steering/combat freefall gravity24/separate caps;
-  NPC kept;canon updated.
-- Hero:alive hit/fall/recovery drop0;death drop+pickup;NPCdrop kept;shotgun draw grip-ammo resume.
-  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle` passes.
-- CPU:rest-point/ordered skin bits share proxy transforms;versioned scratch/
-  settled ON-ray cache/pose invalidation kept. Editor render-end→Update unattributed;
-  FPS unmeasured. `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` passes.
+Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;
+dupewalls/warp/fade/hotbake-load-alloc0.
+HeroLhead0→ret+2s/input0/18HP/laugh5-idle5;hitcancel fullidle/laterclock+hurtwins;
+simlive/others-spawns idle→heroend.
+HUDbase modal→HP3s unlock;pause-death-reset-disable clean.
+Crane/Room/Docker;Lab6.
+`Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier pass;
+assets/pause/focus/audio pass;Laugh-cancel restore roll unresolved.
+`Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` pass.
+Face/point-seat-return/midbar in-out/occlusion/jelly viewed.
+Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV,
+`build-combat-room-attack-3d-model.py --npc-only --validate-only` pass;
+`CombatRoomAttackAssetSetup.BuildOrThrow` checks imports.
+- Crane:2m/6m/5s/E6bar/COLhoist-haul/overrails;
+others/spawns idle→release;momentum/struggle/bodycam/fallHP;
+frontbar/nodetach;home-watch10/fatal3-regen10;pause-reset.
+- Air:world inertia/limited steer/g24/caps;NPC/canon kept.
+- Hero:live hit/fall/recovery drop0;death drop+pickup;NPCdrop kept;shotgun draw grip-ammo resume.
+`Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle` pass.
+- CPU:shared restpoint/ordered skin proxy transforms;versioned scratch;
+settled ON-ray cache/pose invalidation;Editor render-end→Update unattributed/FPS unmeasured.
+`Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` pass.
+- `IPrioritizedInteractable`:family;lockers Take>open>close>distance;
+adjacent bays/overflow retry;`CombatWarehouseLockerPriorities` pass.
+- `CombatWarehouseFishAssemblyCloseUp`:low/playfill/lamp1.8;pass/reviewed.
+- UI:dedup/Use gate;`SelectionAndExamine_UsePureMenuState` pass;reviewed.
+- `CombatWarehouseFishClearsOpponents`:clear/spawn0/kills+0;cables/creak;pass/reviewed.
+- `CombatWarehouseGateUnlockAndAudio`:gCOL/3voices/motioncreak;pass.
+- `CombatWarehouseFlashlightGlow`,`CombatWarehouseGateLampSurvivesPendant`:spill/red>0/mountclear;pass.
 
 ## 2026-10-18 - Authored enemies and old arena
 

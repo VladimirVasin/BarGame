@@ -13,6 +13,251 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Focused production locker priorities, eligibility, saturated overlap and physical E input.")]
+        public IEnumerator CombatWarehouseLockerPriorities()
+        {
+            CombatTestRoot root = null;
+            GameObject clutter = null, obstacle = null, looseItem = null;
+            float previousDelta = Time.captureDeltaTime;
+            bool previousBackground = Application.runInBackground;
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            Time.captureDeltaTime = 1f / 60f;
+            Application.runInBackground = true;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized, Is.True);
+                root.AutomaticSimulation = false;
+                root.SetSparring(false);
+                root.SetDuelLogging(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+
+                PlayerInteractor interactor = root.Player.Interactor;
+                CombatAmmoPickup pack = root.AmmoSpawns.GetSlot(0);
+                WarehouseLocker bank = Array.Find(root.GetComponentsInChildren<WarehouseLocker>(),
+                    candidate => Vector3.Distance(candidate.ShelfPosition(), pack.transform.position) < .01f);
+                Assert.That(bank, Is.Not.Null);
+                WarehouseLockerDoor left = bank.GetDoor(0), middle = bank.GetDoor(1), right = bank.GetDoor(2);
+                WorldItemFoundScreen screen = WorldItemFoundScreen.For(interactor);
+                IFirearmState firearm = root.Hero.CarriedFirearm(pack.WeaponId);
+                firearm.Reset();
+                bank.ResetState();
+
+                clutter = new GameObject("Test warehouse - Nearby trigger clutter");
+                clutter.transform.position = bank.transform.TransformPoint(new Vector3(0f,
+                    PlayerFactory.GroundedRootOffset + .8f, -1.3f));
+                for (int index = 0; index < 80; index++)
+                {
+                    SphereCollider trigger = clutter.AddComponent<SphereCollider>();
+                    trigger.isTrigger = true;
+                    trigger.radius = .04f;
+                }
+                PlaceTestLockerPriorityHero(root, bank, -.74f, -1.45f);
+                Assert.That(Physics.OverlapSphere(interactor.transform.position + Vector3.up * .8f,
+                    PlayerInteractor.InteractionRadius, PlayerInteractor.InteractionLayerMask,
+                    QueryTriggerInteraction.Collide).Length, Is.GreaterThan(24));
+                AssertTestLockerSelection(root, left);
+                PlaceTestLockerPriorityHero(root, bank, .74f, -1.45f);
+                AssertTestLockerSelection(root, right);
+                PlaceTestLockerPriorityHero(root, bank, -.74f, -1.45f);
+                AssertTestLockerSelection(root, left);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(left.IsMoving && !middle.IsMoving && !right.IsMoving, Is.True);
+                bank.Advance(2f);
+                yield return null;
+                Assert.That(left.IsOpen && !middle.IsMoving && !right.IsMoving, Is.True,
+                    "Holding the opening E cannot open the next closed leaf.");
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+
+                PlaceTestLockerPriorityHero(root, bank, -1.08f, -1.26f);
+                Assert.That(left.CanInteract(interactor) && middle.CanInteract(interactor), Is.True);
+                Assert.That((left.InteractionPosition - interactor.transform.position).sqrMagnitude,
+                    Is.LessThan((middle.InteractionPosition - interactor.transform.position).sqrMagnitude));
+                AssertTestLockerSelection(root, middle);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(middle.IsMoving && left.IsOpen && !right.IsMoving, Is.True);
+                Assert.That(pack.CanInteract(interactor), Is.False, "A moving shelf remains unavailable.");
+                bank.Advance(2f);
+                PlaceTestLockerPriorityHero(root, bank, .74f, -1.3f);
+                yield return null;
+                Assert.That(pack.CanInteract(interactor) && right.CanInteract(interactor), Is.True);
+                Assert.That(pack.IsPresenting || screen.IsPresenting, Is.False,
+                    "The held door-opening E must not become a pickup when its shelf opens.");
+                Assert.That((right.InteractionPosition - interactor.transform.position).sqrMagnitude,
+                    Is.LessThan((pack.InteractionPosition - interactor.transform.position).sqrMagnitude));
+                AssertTestLockerSelection(root, pack);
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                yield return AwaitTestLockerScreen(() => screen.IsShowing);
+                yield return null;
+                Assert.That(pack.IsPresenting && screen.IsShowing && !right.IsMoving, Is.True);
+                Assert.That(firearm.ReserveRounds, Is.Zero,
+                    "The opening pickup E cannot also confirm the shared item screen.");
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                yield return AwaitTestLockerScreen(() => !screen.IsPresenting);
+                yield return null;
+                Assert.That(pack.IsAvailable, Is.False);
+                Assert.That(firearm.ReserveRounds, Is.EqualTo(pack.RoundsPerPickup));
+                Assert.That(right.IsOpen || right.IsMoving, Is.False,
+                    "Holding confirmation through modal cleanup cannot open another locker.");
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                AssertTestLockerSelection(root, right);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(right.IsMoving && left.IsOpen && middle.IsOpen, Is.True);
+                bank.Advance(2f);
+                yield return null;
+                Assert.That(right.IsOpen && !right.IsMoving, Is.True,
+                    "Holding E through the last opening cannot immediately close a door.");
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                AssertTestLockerNearestOpen(root, bank);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(right.IsMoving && left.IsOpen && middle.IsOpen, Is.True,
+                    "With every nearby door open and no stock, E closes the nearest open door.");
+                bank.Advance(2f);
+                yield return null;
+                Assert.That(right.IsOpen || right.IsMoving, Is.False,
+                    "Holding E through closing cannot reopen the newly closed door.");
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+
+                Assert.That(right.BeginOpen(), Is.True);
+                bank.Advance(2f);
+                PlaceTestLockerPriorityHero(root, bank, -.74f, -1.3f);
+                WarehouseLockerDoor nearLeft = AssertTestLockerNearestOpen(root, bank);
+                PlaceTestLockerPriorityHero(root, bank, .74f, -1.3f);
+                Assert.That(AssertTestLockerNearestOpen(root, bank), Is.Not.SameAs(nearLeft),
+                    "Distance resolves ties within the open-door priority.");
+
+                pack.ResetPickup(bank.ShelfPosition() + bank.transform.right * .14f);
+                CombatAmmoPickup secondPack = root.AmmoSpawns.GetSlot(1);
+                secondPack.ResetPickup(bank.ShelfPosition() - bank.transform.right * .14f);
+                bank.BindAmmo(secondPack, 1);
+                PlaceTestLockerPriorityHero(root, bank, -.24f, -1.3f);
+                Assert.That(pack.CanInteract(interactor) && secondPack.CanInteract(interactor), Is.True);
+                AssertTestLockerSelection(root, secondPack);
+                PlaceTestLockerPriorityHero(root, bank, .24f, -1.3f);
+                Assert.That(pack.CanInteract(interactor) && secondPack.CanInteract(interactor), Is.True);
+                AssertTestLockerSelection(root, pack);
+                pack.ResetPickup(bank.ShelfPosition());
+                PlaceTestLockerPriorityHero(root, bank, 0f, -1.3f);
+
+                looseItem = new GameObject("Test warehouse - Loose ammunition");
+                CombatAmmoPickup loosePack = looseItem.AddComponent<CombatAmmoPickup>();
+                loosePack.Initialize(root.Hero, pack.WeaponId, firearm,
+                    bank.transform.TransformPoint(new Vector3(0f, .55f, -1.1f)));
+                Physics.SyncTransforms();
+                Assert.That(loosePack.CanInteract(interactor), Is.True);
+                float looseDistance = (loosePack.InteractionPosition - interactor.transform.position).sqrMagnitude;
+                foreach (IInteractable candidate in new IInteractable[] { left, middle, right, pack, secondPack })
+                    if (candidate.CanInteract(interactor))
+                        Assert.That(looseDistance,
+                            Is.LessThan((candidate.InteractionPosition - interactor.transform.position).sqrMagnitude),
+                            "The unrelated pickup must be closer than every eligible locker target.");
+                AssertTestLockerSelection(root, loosePack);
+                looseItem.SetActive(false);
+                secondPack.SetInteractionEnabled(false);
+                AssertTestLockerSelection(root, pack);
+
+                obstacle = new GameObject("Test warehouse - Shelf obstruction");
+                obstacle.transform.SetPositionAndRotation((interactor.transform.position + Vector3.up * .8f +
+                    pack.InteractionPosition) * .5f, bank.transform.rotation);
+                obstacle.AddComponent<BoxCollider>().size = new Vector3(.12f, .3f, .08f);
+                Physics.SyncTransforms();
+                Assert.That(pack.CanInteract(interactor), Is.False, "Stock behind an obstacle cannot outrank an available door.");
+                AssertTestLockerNearestOpen(root, bank);
+                obstacle.SetActive(false);
+
+                middle.ResetState();
+                PlaceTestLockerPriorityHero(root, bank, 0f, -.8f);
+                Assert.That(middle.CanInteract(interactor), Is.False, "Closed leaves retain their safe opening approach.");
+                Assert.That(pack.CanInteract(interactor), Is.False, "A closed source never offers its concealed stock.");
+                PlaceTestLockerPriorityHero(root, bank, 0f, -1.3f);
+                AssertTestLockerSelection(root, middle);
+                Assert.That(middle.BeginOpen(), Is.True);
+                bank.Advance(.12f);
+                Assert.That(middle.IsMoving && !pack.CanInteract(interactor), Is.True);
+                AssertTestLockerNearestOpen(root, bank);
+                bank.Advance(2f);
+                PlaceTestLockerPriorityHero(root, bank, 0f, -3.4f);
+                Assert.That(pack.CanInteract(interactor), Is.False, "Priority cannot extend interaction range.");
+                for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+                    Assert.That(bank.GetDoor(bay).CanInteract(interactor), Is.False);
+                interactor.SendMessage("Update");
+                Assert.That(interactor.ActiveInteractable, Is.Not.SameAs(pack));
+                PlaceTestLockerHero(root, bank.transform.TransformPoint(new Vector3(0f, 1.2f, -1.3f)), bank);
+                for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+                    Assert.That(bank.GetDoor(bay).CanInteract(interactor), Is.False,
+                        "The new ordering retains the cabinet's vertical approach limit.");
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    WorldItemFoundScreen.For(root.Player.Interactor)?.Abandon();
+                    root.AutomaticSimulation = false;
+                }
+                foreach (GameObject temporary in new[] { clutter, obstacle, looseItem })
+                    if (temporary != null) { temporary.SetActive(false); Object.Destroy(temporary); }
+                input.TearDown();
+                Time.captureDeltaTime = previousDelta;
+                Application.runInBackground = previousBackground;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = null;
+            }
+        }
+
+        private static void PlaceTestLockerPriorityHero(CombatTestRoot root, WarehouseLocker bank, float x, float z)
+        {
+            PlaceTestLockerHero(root, bank.transform.TransformPoint(new Vector3(x, 0f, z)), bank);
+        }
+
+        private static void AssertTestLockerSelection(CombatTestRoot root, IInteractable expected)
+        {
+            root.Player.Interactor.SendMessage("Update");
+            Assert.That(root.Player.Interactor.ActiveInteractable, Is.SameAs(expected));
+            Assert.That(root.Player.Interactor.PromptView.PromptKey, Is.EqualTo(expected.PromptKey),
+                "The visible prompt must describe the same target as the E action.");
+        }
+
+        private static WarehouseLockerDoor AssertTestLockerNearestOpen(CombatTestRoot root, WarehouseLocker bank)
+        {
+            WarehouseLockerDoor nearest = null;
+            float distance = float.PositiveInfinity;
+            for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+            {
+                WarehouseLockerDoor candidate = bank.GetDoor(bay);
+                if (!candidate.IsOpen || !candidate.CanInteract(root.Player.Interactor)) continue;
+                float candidateDistance = (candidate.InteractionPosition - root.Player.Interactor.transform.position).sqrMagnitude;
+                if (candidateDistance >= distance) continue;
+                nearest = candidate;
+                distance = candidateDistance;
+            }
+            Assert.That(nearest, Is.Not.Null, "The fixture must retain an eligible open door.");
+            AssertTestLockerSelection(root, nearest);
+            return nearest;
+        }
+
+        [UnityTest]
         [Explicit("Focused warehouse locker placement, moving doors and shared ammunition pickup, with production lighting captures.")]
         public IEnumerator CombatWarehouseLockers()
         {
@@ -296,10 +541,8 @@ namespace BarPromenade.Tests.PlayMode
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return null;
             PlaceTestLockerDoorHero(root, bank, 0);
-            AssertTestLockerDoorSelection(root, left);
             Assert.That(left.BeginClose(), Is.True);
             PlaceTestLockerDoorHero(root, bank, 2);
-            AssertTestLockerDoorSelection(root, right);
             Assert.That(right.BeginClose(), Is.True);
             bank.Advance(.12f);
             Assert.That(left.IsMoving && right.IsMoving && middle.IsOpen, Is.True,

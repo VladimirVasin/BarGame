@@ -31,6 +31,7 @@ namespace BarPromenade
 
         private bool TryFocusOpponent()
         {
+            if (warehouseOpponentsCleared) return false;
             if ((Mode == CombatTestMode.Standard || IsLaboratory) && !Opponent.ZombieAwake) return false;
             if (Mode == CombatTestMode.Endless)
             {

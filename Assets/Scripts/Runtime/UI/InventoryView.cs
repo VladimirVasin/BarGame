@@ -368,18 +368,23 @@ namespace BarPromenade
 
         private void DrawCommands()
         {
-            DrawCommandButtonLabel(
-                new Rect(506f, 229f, 108f, 29f),
-                controller.SelectedUseActionLabel,
-                controller.CanUseSelected,
-                controller.UseSelected);
+            float y = 229f;
+            if (controller.HasSelectedUseAction)
+            {
+                DrawCommandButtonLabel(
+                    new Rect(506f, y, 108f, 29f),
+                    controller.SelectedUseActionLabel,
+                    controller.CanUseSelected,
+                    controller.UseSelected);
+                y += 39f;
+            }
             DrawCommandButton(
-                new Rect(506f, 268f, 108f, 29f),
+                new Rect(506f, y, 108f, 29f),
                 "inventory.action.examine",
                 controller.HasSelection,
                 controller.ExamineSelected);
             DrawCommandButton(
-                new Rect(506f, 307f, 108f, 29f),
+                new Rect(506f, y + 39f, 108f, 29f),
                 "inventory.action.close",
                 true,
                 controller.Close);

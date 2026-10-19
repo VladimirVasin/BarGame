@@ -37,7 +37,7 @@ namespace BarPromenade
         public GameObject AssembledFish => fish;
         public Transform KeyModel => key != null ? key.transform : null;
         public Bounds PresentationBounds { get; private set; }
-        public float BulbMaxCameraHeight => station.position.y + 1.55f;
+        public float BulbMaxCameraHeight => station.position.y + 1.30f;
 
         public static WarehouseFishAssembly Create(GameObject table, WarehouseArenaPlan plan, CombatTestRoot root)
         {
@@ -53,8 +53,9 @@ namespace BarPromenade
             owner = root; station = table.transform;
             // Capture the old solid proxy before adding the actual fish floor/rims.
             Collider[] playerBlocking = table.GetComponentsInChildren<Collider>(true);
-            // Author the complete worktop and its rims, independently of legs and high faucet.
-            Bounds bounds = new Bounds(station.TransformPoint(new Vector3(0f, .935f, 0f)), new Vector3(2.26f, .31f, 1.222f));
+            // Frame the playable floor and lifted pieces, with a small edge
+            // margin. The tall outer rim must not push the fish away from the lens.
+            Bounds bounds = new Bounds(station.TransformPoint(new Vector3(0f, .84f, 0f)), new Vector3(1.90f, .12f, .92f));
             PresentationBounds = bounds;
             WarehouseFishAssemblyAssets.CreatePlaySurface(station);
             for (int index = 0; index < 3; index++)
@@ -87,7 +88,7 @@ namespace BarPromenade
             sounds.Initialize(soundAnchor, owner);
             for (int index = 0; index < 3; index++) bodies[index].gameObject.AddComponent<WarehouseFishPartImpact>().Initialize(sounds);
             // Both gallery tiles are walkable here. This dock keeps the hero
-            // outside the complete table shot without hiding his world rig.
+            // outside the work-surface shot without hiding his world rig.
             Vector3 floor = station.TransformPoint(new Vector3(0f, 0f, -2f));
             var staging = NarrativeStagingPlan.Standing(floor, station.rotation, bounds, station.right,
                 NarrativeCameraMode.WorkSurfaceCloseUp, station.TransformDirection(new Vector3(0f, 1f, -.08f).normalized),

@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
-    /// <summary>One passive chest attachment and one real, torso-directed warehouse light.</summary>
+    /// <summary>One chest fixture with a directed beam and bounded, body-only scattered light.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(310)]
     public sealed class CombatChestFlashlight : MonoBehaviour
@@ -15,6 +15,8 @@ namespace BarPromenade
         public const float InnerAngle = 28f;
         public const float Intensity = 60f;
         internal const float NearExposureDistance = 4f;
+        internal const float BodyFillBaseIntensity = CombatFlashlightBodyFill.BaseIntensity;
+        internal const float BodyFillMaximumIntensity = CombatFlashlightBodyFill.MaximumIntensity;
         private const float ExposureProbeInterval = .1f;
         private const float MinimumExposureFraction = .01f;
         private const float ExposureDownSeconds = .045f, ExposureUpSeconds = .22f;
@@ -23,6 +25,10 @@ namespace BarPromenade
         public Transform Lens { get; private set; }
         public Light SpotLight { get; private set; }
         public CombatFlashlightGlow Glow { get; private set; }
+        public Light BodyFill => bodyFill?.Source;
+        internal float BodyFillBounce => bodyFill?.BounceAmount ?? 0f;
+        private CombatFlashlightBodyFill bodyFill;
+        private float bodyFillTargetBounce;
         private Player3DCharacterPresentation presentation;
         private PlayerEquipmentContacts equipment;
         private Renderer[] renderers;
@@ -159,6 +165,7 @@ namespace BarPromenade
             // physical lamp, so inspection and hero hiding cannot leave a halo.
             renderers = ModelRoot.GetComponentsInChildren<Renderer>(true);
             presentation.RegisterAccessoryRenderers(renderers);
+            bodyFill = new CombatFlashlightBodyFill(presentation, Lens, SpotLight, Glow.LensRenderer);
             SetActive(isActiveAndEnabled);
         }
 
@@ -169,6 +176,7 @@ namespace BarPromenade
             SpotLight.enabled = active;
             Glow.Synchronize();
             ResetExposure();
+            bodyFill?.SetActive(active);
             if (active && !contactsRegistered)
             {
                 WarehouseArenaLighting.BindHeroVisibility(transform);
@@ -192,7 +200,8 @@ namespace BarPromenade
         {
             if (!float.IsFinite(seconds) || seconds < 0f) throw new ArgumentOutOfRangeException(nameof(seconds));
             if (SpotLight == null || !SpotLight.enabled || !isActiveAndEnabled || seconds <= 0f ||
-                GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
+                GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning)
+            { SynchronizeBodyFill(0f); return; }
             exposureProbeRemaining -= seconds;
             if (exposureProbeRemaining <= 0f)
             {
@@ -201,6 +210,7 @@ namespace BarPromenade
                 Vector3 forward = beam.forward, right = beam.right * ProbeSideOffset, up = beam.up * ProbeSideOffset;
                 Vector3 origin = beam.position;
                 float central = NearExposureDistance, nearestSide = NearExposureDistance, secondSide = NearExposureDistance;
+                float centralBounce = 0f, nearestSideBounce = 0f, secondSideBounce = 0f;
                 for (int i = 0; i < 5; i++)
                 {
                     Vector3 direction = i switch
@@ -208,10 +218,17 @@ namespace BarPromenade
                         1 => forward + right, 2 => forward - right,
                         3 => forward + up, 4 => forward - up, _ => forward
                     };
-                    float distance = ProbeNearSurface(origin, direction.normalized);
-                    if (i == 0) central = distance;
-                    else if (distance < nearestSide) { secondSide = nearestSide; nearestSide = distance; }
-                    else secondSide = Mathf.Min(secondSide, distance);
+                    direction.Normalize();
+                    float distance = ProbeNearSurface(origin, direction, out RaycastHit surface);
+                    float bounce = SurfaceBounce(surface, direction);
+                    if (i == 0) { central = distance; centralBounce = bounce; }
+                    else
+                    {
+                        if (distance < nearestSide) { secondSide = nearestSide; nearestSide = distance; }
+                        else secondSide = Mathf.Min(secondSide, distance);
+                        if (bounce > nearestSideBounce) { secondSideBounce = nearestSideBounce; nearestSideBounce = bounce; }
+                        else secondSideBounce = Mathf.Max(secondSideBounce, bounce);
+                    }
                 }
                 // One glancing edge at a doorway must not dim the whole cone.
                 // A central hit is sufficient; side hits need a second sample.
@@ -219,14 +236,30 @@ namespace BarPromenade
                 NearSurfaceDistance = nearest;
                 float fraction = nearest / NearExposureDistance;
                 ExposureTargetIntensity = Intensity * Mathf.Clamp(fraction * fraction, MinimumExposureFraction, 1f);
+                // Reuse the same physical probes: a lone edge cannot produce a
+                // broad reflection, and a grazing surface contributes little.
+                bodyFillTargetBounce = Mathf.Max(centralBounce, secondSideBounce);
             }
             float response = SpotLight.intensity > ExposureTargetIntensity ? ExposureDownSeconds : ExposureUpSeconds;
             float blend = 1f - Mathf.Exp(-seconds / response);
             float intensity = Mathf.Lerp(SpotLight.intensity, ExposureTargetIntensity, blend);
             SpotLight.intensity = Mathf.Abs(intensity - ExposureTargetIntensity) < .001f ? ExposureTargetIntensity : intensity;
+            SynchronizeBodyFill(seconds);
         }
 
-        private float ProbeNearSurface(Vector3 origin, Vector3 direction)
+        private static float SurfaceBounce(RaycastHit surface, Vector3 direction)
+        {
+            if (surface.collider == null) return 0f;
+            float facing = Mathf.Clamp01(Vector3.Dot(surface.normal, -direction));
+            float proximity = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.6f, 3f, surface.distance));
+            return proximity * facing;
+        }
+
+        internal void SynchronizeBodyFill(float seconds) => bodyFill?.Advance(seconds, bodyFillTargetBounce,
+            GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning ||
+            !GameInput.MovementFocused);
+
+        private float ProbeNearSurface(Vector3 origin, Vector3 direction, out RaycastHit surface)
         {
             RaycastHit[] hits;
             int count;
@@ -249,11 +282,14 @@ namespace BarPromenade
                 break;
             }
             float nearest = NearExposureDistance;
+            surface = default;
             for (int i = 0; i < count; i++)
             {
                 Collider collider = hits[i].collider;
                 if (collider == null || collider.transform.IsChildOf(exposureOwnerRoot)) continue;
-                nearest = Mathf.Min(nearest, hits[i].distance);
+                if (hits[i].distance >= nearest) continue;
+                nearest = hits[i].distance;
+                surface = hits[i];
             }
             return nearest;
         }
@@ -263,6 +299,8 @@ namespace BarPromenade
             exposureProbeRemaining = 0f;
             NearSurfaceDistance = NearExposureDistance;
             ExposureTargetIntensity = Intensity;
+            bodyFillTargetBounce = 0f;
+            bodyFill?.Reset();
             if (SpotLight != null) SpotLight.intensity = Intensity;
         }
 
@@ -281,6 +319,7 @@ namespace BarPromenade
         {
             if (HasInspectionAim) EndInspectionAim(inspectionAimOwner);
             WarehouseArenaLighting.ClearHeroVisibility(transform);
+            bodyFill?.Dispose();
             if (contactsRegistered && equipment != null) equipment.Unregister(this);
             if (presentation != null && renderers != null) presentation.UnregisterAccessoryRenderers(renderers);
             if (ModelRoot != null) Destroy(ModelRoot);

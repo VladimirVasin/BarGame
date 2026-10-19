@@ -216,16 +216,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.Open(), Is.True);
 
             Assert.That(inventory.SelectedItemIndex, Is.Zero);
+            AssertNoUseAction();
             Assert.That(inventory.MoveSelection(1), Is.True);
             Assert.That(inventory.SelectedItemIndex, Is.EqualTo(1));
             Assert.That(
                 inventory.View.PreviewRenderer.CurrentItemId,
                 Is.EqualTo(InventoryItemId.Lighter));
+            AssertNoUseAction();
             Assert.That(inventory.MoveSelection(1), Is.True);
             Assert.That(inventory.SelectedItemIndex, Is.EqualTo(2));
             Assert.That(
                 inventory.View.PreviewRenderer.CurrentItemId,
                 Is.EqualTo(InventoryItemId.ChickenEgg));
+            GameSessionState.UpdateNeeds(0, 0);
+            Assert.That(inventory.HasSelectedUseAction, Is.True,
+                "A real food action stays visible even when hunger is already satisfied.");
+            Assert.That(inventory.CanUseSelected, Is.False);
+            Assert.That(inventory.SelectedUseActionLabel, Is.Not.Empty);
             Assert.That(inventory.ExamineSelected(), Is.True);
             Assert.That(inventory.IsExamining, Is.True);
             Assert.That(
@@ -234,7 +241,55 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.Cancel(), Is.True);
             Assert.That(inventory.IsExamining, Is.False);
             Assert.That(inventory.IsOpen, Is.True);
+
+            var questItems = new[]
+            {
+                InventoryItemId.WarehouseGateKey,
+                InventoryItemId.RottenFishTailCan,
+                InventoryItemId.RottenFishBellyCan,
+                InventoryItemId.RottenFishHeadCan
+            };
+            foreach (InventoryItemId itemId in questItems)
+            {
+                Assert.That(GameSessionState.TryAddInventoryItem(itemId), Is.True);
+                Assert.That(inventory.SelectItem(
+                    GameSessionState.InventoryItems.Count - 1), Is.True);
+                AssertNoUseAction();
+                Assert.That(GameSessionState.GetInventoryItemCount(itemId), Is.EqualTo(1));
+            }
+
+            if (!Application.isBatchMode &&
+                System.Environment.GetEnvironmentVariable(
+                    "BAR_PROMENADE_CAPTURE_ITEM_ACTIONS") == "1")
+            {
+                string folder = System.IO.Path.Combine(
+                    System.IO.Directory.GetCurrentDirectory(), "Captures", "Item actions");
+                System.IO.Directory.CreateDirectory(folder);
+                string path = System.IO.Path.Combine(folder,
+                    "Test inventory - Warehouse can actions.png");
+                ScreenCapture.CaptureScreenshot(path);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(System.IO.File.Exists(path), Is.True);
+            }
+
             yield return null;
+            inputFixture.Press(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+            AssertNoUseAction();
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.RottenFishHeadCan), Is.EqualTo(1));
+            Assert.That(inventory.IsOpen, Is.True);
+            inputFixture.Release(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+        }
+
+        private void AssertNoUseAction()
+        {
+            Assert.That(inventory.HasSelectedUseAction, Is.False);
+            Assert.That(inventory.CanUseSelected, Is.False);
+            Assert.That(inventory.SelectedUseActionLabel, Is.Empty);
+            Assert.That(inventory.UseSelected(), Is.False);
+            Assert.That(inventory.UseFeedbackMessage, Is.Empty);
         }
 
         [UnityTest]
@@ -251,6 +306,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 inventory.SelectedStack.ItemId,
                 Is.EqualTo(InventoryItemId.VodkaBottle));
+            Assert.That(inventory.HasSelectedUseAction, Is.True);
             Assert.That(inventory.CanUseSelected, Is.True);
 
             yield return null;
@@ -288,6 +344,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(LocalizationService.Get("inventory.equipment.unused")));
             Assert.That(inventory.SelectedUseActionLabel,
                 Is.EqualTo(LocalizationService.Get("inventory.action.equip")));
+            Assert.That(inventory.HasSelectedUseAction, Is.True);
             Assert.That(inventory.CanUseSelected, Is.True);
 
             yield return null;
