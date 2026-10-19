@@ -120,6 +120,7 @@ namespace BarPromenade
                 current.massScale = previous.massScale;
                 current.connectedMassScale = previous.connectedMassScale;
                 CaptureSurvivorArmJointReference(current, previous);
+                CaptureRestraintJointReference(current, previous);
                 joints[index] = current;
 
                 // Destroy is deferred. Retire every constraint immediately so
@@ -305,6 +306,7 @@ namespace BarPromenade
 
         private void ClearCombatSimulation()
         {
+            EndRestraintDrive();
             // Cancellation discards held impulses; unfreezing here would apply a stale hit.
             simulationSuspended = false;
             movingCombatAnchor = false;

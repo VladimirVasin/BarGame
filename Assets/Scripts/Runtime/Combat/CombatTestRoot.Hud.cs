@@ -8,9 +8,10 @@ namespace BarPromenade
         private const float HudFadeInSeconds = .15f, HudFadeOutSeconds = .3f;
         private float ammoHudFade, reloadHudFade, healthHudFade, staminaHudFade, guardHudFade, chargeHudFade;
         private float healthHudHold, staminaHudHold, hudLastHealth;
+        private float restraintHudProgress, restraintHudPulse;
         private CombatWeaponId hudWeapon;
         private int resultSelection;
-        private GUIStyle ammoDigits, ammoReserve, hudCaption, resultTitle;
+        private GUIStyle ammoDigits, ammoReserve, hudCaption, resultTitle, restraintKey;
         private readonly HudCounterLabel gameplayRounds = new HudCounterLabel("");
         private readonly HudCounterLabel gameplayReserve = new HudCounterLabel("");
         private readonly GUIContent ammunitionMeasure = new GUIContent();
@@ -30,6 +31,8 @@ namespace BarPromenade
         public float StaminaHudOpacity => HudOpacity(staminaHudFade);
         public float GuardHudOpacity => HudOpacity(guardHudFade);
         public float ChargeHudOpacity => HudOpacity(chargeHudFade);
+        public bool RestraintHudVisible => GameplayHudVisible && Hero != null && Hero.IsRestrained;
+        public float RestraintHudProgress => RestraintHudVisible ? Hero.RestraintEscapeProgress : 0f;
 
         private float HudOpacity(float fade) => GameplayHudVisible ? Mathf.SmoothStep(0f, 1f, fade) : 0f;
         private static float FadeHud(float fade, bool show, float seconds) =>
@@ -39,6 +42,7 @@ namespace BarPromenade
         {
             ammoHudFade = reloadHudFade = healthHudFade = staminaHudFade = guardHudFade = chargeHudFade = 0f;
             healthHudHold = staminaHudHold = 0f;
+            restraintHudProgress = restraintHudPulse = 0f;
             if (!preserveHealthBaseline) hudLastHealth = Hero != null ? Hero.State.Health : 0f;
             hudWeapon = Hero != null ? Hero.WeaponId : CombatWeaponId.Crowbar;
             resultSelection = 0;
@@ -97,6 +101,11 @@ namespace BarPromenade
             staminaHudFade = FadeHud(staminaHudFade, spent || staminaHudHold > 0f, seconds);
             guardHudFade = FadeHud(guardHudFade, !Hero.IsFirearm && (Hero.GuardRequested || Hero.State.IsBlocking), seconds);
             chargeHudFade = FadeHud(chargeHudFade, !Hero.IsFirearm && Hero.State.IsCharging, seconds);
+            float escapeProgress = Hero.IsRestrained ? Hero.RestraintEscapeProgress : 0f;
+            // Pulse from accepted presses, never from held-device state or IMGUI events.
+            restraintHudPulse = escapeProgress > restraintHudProgress ? 1f :
+                Mathf.MoveTowards(restraintHudPulse, 0f, seconds / .14f);
+            restraintHudProgress = escapeProgress;
         }
 
         private void EnsureHudStyles()
@@ -110,6 +119,7 @@ namespace BarPromenade
             ammoReserve = RetroUiTheme.CreateLabelStyle(11, TextAnchor.MiddleRight, RetroUiTheme.Muted);
             hudCaption = RetroUiTheme.CreateLabelStyle(8, TextAnchor.MiddleLeft, RetroUiTheme.Text);
             resultTitle = RetroUiTheme.CreateLabelStyle(13, TextAnchor.MiddleCenter, RetroUiTheme.Text);
+            restraintKey = RetroUiTheme.CreateLabelStyle(18, TextAnchor.MiddleCenter, RetroUiTheme.Text);
         }
 
         private void OnGUI()
@@ -142,7 +152,28 @@ namespace BarPromenade
             if (GuardHudOpacity > 0f)
                 DrawGuardReadiness(new Rect(138, 304, 15, 15), Hero, GuardHudOpacity);
             DrawGameplayAmmunition();
+            DrawRestraintEscape();
             if (RoundFinished) DrawGameplayResult(canvas);
+        }
+
+        private void DrawRestraintEscape()
+        {
+            if (!RestraintHudVisible) return;
+            // One silent instrument: the real key and its accumulated escape effort.
+            // Fixed canvas coordinates share the other charcoal/bone HUD plates.
+            var key = new Rect(304, 276, 32, 30);
+            Color edge = Color.Lerp(RetroUiTheme.BorderMuted, RetroUiTheme.Text, restraintHudPulse);
+            RetroUiTheme.DrawPanel(key, RetroUiTheme.Ink, edge, false, 0f, 1f, .9f);
+            if (restraintHudPulse > 0f)
+                RetroUiTheme.FillRect(new Rect(key.x + 2, key.y + 2, key.width - 4, key.height - 4),
+                    RetroUiTheme.Fade(RetroUiTheme.Text, restraintHudPulse * .16f));
+            GUI.Label(new Rect(key.x, key.y - 1, key.width, key.height), "E", restraintKey);
+            var track = new Rect(260, 312, 120, 7);
+            RetroUiTheme.FillRect(track, RetroUiTheme.Fade(RetroUiTheme.Ink, .9f));
+            RetroUiTheme.FillRect(new Rect(track.x + 1, track.y + 1, track.width - 2, track.height - 2),
+                RetroUiTheme.BorderMuted);
+            RetroUiTheme.FillRect(new Rect(track.x + 1, track.y + 1,
+                (track.width - 2) * RestraintHudProgress, track.height - 2), RetroUiTheme.Text);
         }
 
         private void DrawGameplayMeter(Rect rect, string key, float value, float max, float opacity,

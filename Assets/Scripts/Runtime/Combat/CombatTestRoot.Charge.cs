@@ -14,7 +14,7 @@ namespace BarPromenade
         private bool UpdateCombatInput()
         {
             UpdateCombatMouseOwnership();
-            if ((Hero.IsFirearm || Hero.IsSwitchingWeapon) && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
+            if (!pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
             {
                 if (Hero.IsFirearm && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
                     Hero.RejectPistolInput(pistolApplicationFocused ? "input_gate" : "application_focus");
@@ -41,6 +41,17 @@ namespace BarPromenade
                 inputSuspended = releasedWhileSuspended = false;
             }
             if (!held) requireAttackRelease = false;
+            if (Hero.IsRestrained)
+            {
+                ReleaseFreePistolAim();
+                Hero.SuspendPistolInput();
+                Hero.SetBlock(false);
+                CancelHeldHeroCharge();
+                attackInputOwned = false;
+                requireAttackRelease |= held;
+                requirePistolAimRelease = true;
+                return true;
+            }
             if ((Mode == CombatTestMode.Standard || IsLaboratory) && GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
             { SetSparring(!Sparring); return false; }
             if (GameCursor.GameplayMouseInputAllowed && GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
@@ -158,9 +169,9 @@ namespace BarPromenade
             pistolApplicationFocused = focused;
             roomTableau?.SetSoundPaused(!focused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             GameCursor.SetApplicationFocused(focused);
-            if ((RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown) && IsInitialized)
+            if (IsInitialized)
                 SetDuelFrozen(!focused || hitStopSubsteps > 0 || roundEndFreeze > 0d);
-            AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated);
+            AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated && !Hero.IsRestrained);
             JournalApplicationFocus(focused);
             if (focused) return;
             ResetHudPresentation();

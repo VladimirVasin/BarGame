@@ -1302,6 +1302,33 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>Environmental impact preserves an existing physical fall/rise;
+        /// guard and anatomical weapon multipliers do not protect a landing.</summary>
+        public MeleeHitResult ReceiveEnvironmentDamage(float damage)
+        {
+            NonNegative(damage, nameof(damage));
+            if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
+            Health = Math.Max(0f, Health - damage * Settings.IncomingDamageScale);
+            if (Health == 0f)
+            {
+                CancelAction();
+                DefeatCause = MeleeDefeatCause.HealthLoss;
+                Phase = MeleePhase.Defeated;
+            }
+            return MeleeHitResult.Hit;
+        }
+
+        /// <summary>A regenerating enemy remains a living encounter participant.
+        /// Its runtime recovery owns immunity and the eventual full restoration.</summary>
+        public void BeginRegeneration()
+        {
+            Phase = MeleePhase.Ready;
+            DefeatCause = MeleeDefeatCause.None;
+            Health = Math.Max(1f, Math.Min(Health, Settings.MaxHealth));
+            bodyRightHand = bodyLeftHand = bodyStanding = true;
+            CancelAction();
+        }
+
         public void Reset()
         {
             BeginCommand(MeleeBufferedAction.None);

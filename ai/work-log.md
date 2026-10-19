@@ -3,52 +3,47 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-19 - Room and combat CPU
+## 2026-10-19 - Room, Crane and combat CPU
 
-- Plans require explicit project-fit assessment;proposals stay separate from
-  accepted decisions,without another gate. `check-docs.py`/diff review verify it.
-- Room:larger native head/upper neck;hollow corridor/rest skeleton kept;
-  shared source textures rebaked.
-- Arms:elbow/wrist chains;endpoint weights keep sleeve/palm/
-  wound continuity. Palms/fingers extend on the retained hand axis;source mesh/
-  grip stay shared;hand scale resets before sampling.
-- Room wrapper grows;unit actor dimensions/head COL/
-  gait/spawn clearance follow the form/reach;other enemies kept.
-- Source proof: `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`;
-  front, profile, walk and strike renders reviewed.
-- Own internal arm layers retain actual source skin through import; closed
-  source-bound fragments replace protruding radial tissue and structures.
-- Damage proof:independent rebuild/head-strain/stretched-arm+hand-affine
-  containment/binary skin/clear-corridor probes pass;hand growth retained
-  source/atlas/damage FBX bytes.
-- Unity proofs: `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
-  `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass. In-game
-  silhouette, hero comparison, long-hand contact, damaged sleeve and corridor
-  reviewed.
-- Room:point1s/seat2s;extended arm/head-high hand,index-ray Dutch/head size kept;
-  palmar curl/opposed thumb/wrist roll;real corridor/weighted hero-chair-lamp/FBXscale;
-  cached plaster-threshold/legIK seat contact/dupewalls0;no hot bake-load-alloc/teleport/fade/RT.
-  Hero holds head from attack0 through return+2s;Return:one18HP/Laugh5s.
-  World sim runs;other living monsters/newspawns liveidle/no chase-attack until heroend.
-  HUD baseline kept across modal→health3s unlock;Laugh end/hit→full idle5s;
-  laterhits keep/hurt wins;idle=headcant/breath/laghands-twitch/planted;
-  pause freezes;death/reset/disable clear scoped ownership.
-  Main:Crane/Room/Docker only;Lab6 unchanged.
-  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup` passes head0/hold/worldsim/
-  NPCidle/arm-index optics/camera/boots/HUD/laugh/cooldown/hit/pause/cleanup;
-  pointing/seat/return/head-laugh reviewed.
-  Face/collision/Foley/pause/focus/cleanup pass;frames reviewed.
-  `build-combat-room-shadow.py`:bank validated;louder/crisper WAV validated.
-  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes;
-  Lab6 choice reviewed.
-  `build-combat-room-attack-3d-model.py --npc-only --validate-only` passes;
+- `Range_CraneHookCaptureEscapeRetreatAndRegeneration` passes;
+  height/start-release/bodycam/effort/cleanup verified;frames reviewed.
+  Gallery fixture stalls at `AwaitCraneWatch`;cause open;raised support passes.
+- Plans require project-fit assessment;facts/proposals/accepted decisions stay
+  separate,without another approval gate. `check-docs.py`/diff review verify it.
+- Room:native head/upper neck/arms/hands larger;corridor/rest rig/source textures
+  kept. Elbow/wrist endpoint weights retain sleeve/palm/wounds;hand-axis growth
+  keeps shared source/grip and resets scale before sampling.
+  Own closed source-bound arm layers replace radial tissue/structure protrusions.
+- Source:`ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
+  Independent damage rebuild/head strain/affine containment/binary skin/clear
+  corridor pass;hand growth keeps source/atlas/damage FBX bytes.
+  `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
+  `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass.
+  Front/profile/walk/strike,hero comparison/damaged sleeve/corridor reviewed.
+- Room:index/head-high point1s/palmar fingers/opposed thumb/wrist roll;
+  wideDutch→chest-seat-face2s/reverse return;headsize kept.
+  Weighted hero-chair-lamp/FBXscale;cached plaster-threshold/legIK/seated contacts;
+  dupewalls/warp/fade/hot bake-load-alloc0.
+  HeroLhead0→return+2s/input0;return18HP/laugh5→idle5;hit cancel grants full idle,
+  later hits keep clock/hurt wins. World sim live;others/spawns idle until heroend.
+  HUD baseline survives modal→HP3s unlock;pause/death/reset/disable cleanup.
+  Main:Crane/Room/Docker;Lab6.
+  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`/
+  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` pass;
+  head/arm-index optics/camera/boots/worldsim/NPCidle/HUD/cooldown/pause/cleanup.
+  Face/shadows/Foley/point-seat-return reviewed.
+  `build-combat-room-shadow.py` bank/WAV and
+  `build-combat-room-attack-3d-model.py --npc-only --validate-only` pass;
   `CombatRoomAttackAssetSetup.BuildOrThrow` validates imports.
-- Duel CPU:body proxies/aim;Editor render-end→nextUpdate unattributed.
-  Bounds share transforms
-  for exact rest-point/full ordered skin-binding bits only on zero-blendshape
-  meshes; ordered bitwise folding and versioned scratch stay. ON-ray aim reuses
-  validated settled pose; CapturePose invalidates it. FPS remains unmeasured.
-  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` passes.
+- Crane:hook6m/chest-up1.5m/start-release gate;zonehook5s/E6bar/held0;rig pain/drag/lift/
+  activephys-struggle/bodycam/fallHP;hero wounds/no detach. Frontcrowbar fullblock/back0;
+  blockable contacts share horizontal frontsector. Success→actualhome→watch10;
+  fatal cry/spasm3→home→regen10/full/sameactor/no kill. Pause/modal/reset/disable
+  clear ownership. Canon records approved combat exception.
+- CPU:exact rest-point/full ordered skin-binding bits share zero-blendshape
+  proxy transforms;bitwise folding/versioned scratch retained. ON-ray aim caches
+  settled pose;CapturePose invalidates. Editor render-end→Update unattributed;
+  FPS unmeasured. `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` passes.
 
 ## 2026-10-18 - Authored enemies and old arena
 

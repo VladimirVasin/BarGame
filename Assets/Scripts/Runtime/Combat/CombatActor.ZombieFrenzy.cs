@@ -39,23 +39,13 @@ namespace BarPromenade
         // A received impulse can recover its balance instead, or topple later.
         private void ReactToZombieKnockdown(CombatImpact impact)
         {
-            if (!(IsDocker || IsCrane) || RoomAttackSuppressed || !ZombieAwake || impact.Source != this || impact.Target == null || !impact.Target.IsHero ||
+            if (!IsDocker || RoomAttackSuppressed || !ZombieAwake || impact.Source != this || impact.Target == null || !impact.Target.IsHero ||
                 impact.Kind != CombatImpactKind.Unarmed || impact.AttackSequence != State.AttackSequence ||
                 !impact.Target.IsKnockedDown || !IsAvailable || roundEnded || State.IsDefeated || State.IsStunned ||
                 IsKnockedDown || IsRagdollActive || !BodyDamage.CanStand || zombieFrenzied ||
                 zombieFrenzySequenceValid && zombieFrenzySequence == impact.AttackSequence) return;
             zombieFrenzySequenceValid = true;
             zombieFrenzySequence = impact.AttackSequence;
-            if (IsCrane)
-            {
-                // The suspended worker has neither the porter's loaded pelvis
-                // nor its planted kneel. Its retained crane rig owns the reaction.
-                zombieFrenzied = true;
-                ZombieFrenzySecondsElapsed = 0f;
-                BeginCraneFrenzy(impact.AttackSequence);
-                JournalEvent("zombie_frenzy_started", impact.Target.JournalActorId, impact.AttackSequence);
-                return;
-            }
             // A delayed loss of balance may find the attacker already kneeling.
             // Enter at that depth, keeping the cue's later impulse times intact.
             float depth = Mathf.InverseLerp(zombieFrenzyEntryHeight, zombieFrenzyKneelHeight,

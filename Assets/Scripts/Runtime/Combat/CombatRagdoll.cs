@@ -285,6 +285,7 @@ namespace BarPromenade
         internal void FinishRecovery()
         {
             if (!IsActive || !IsRecovering) return;
+            ResetRestraintPhysics();
             LocalPose[] finalPose = CaptureSkeleton(modelRoot, null);
             physicsController.Cancel();
             RestorePose(finalPose);
@@ -381,6 +382,7 @@ namespace BarPromenade
             // presentation updates own this body's remaining fall time.
             if (!IsActive || IsRecovering || IsSettled || hitStopFrozen || Time.timeScale <= 0f || PauseMenuController.IsAnyPaused) return;
             AdvanceTerminalConvulsions(Time.fixedDeltaTime);
+            AdvanceRestraintPhysics(Time.fixedDeltaTime);
             physicsController.AdvanceCombatAnchor();
             simulationSeconds += Time.fixedDeltaTime;
             foreach (Rigidbody body in Bodies)
@@ -397,7 +399,7 @@ namespace BarPromenade
             float speed = recoverable ? Mathf.Max(CentralSpeed(physicsController.PelvisBody),
                 CentralSpeed(physicsController.ChestBody)) : MaximumBodySpeed;
             quietSeconds = !IsConvulsing && speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
-            bool readyToRise = !physicsController.HasActiveSurvivorArmAim && hasSupport && simulationSeconds >= .45f &&
+            bool readyToRise = !restraintSuspension && !physicsController.HasActiveSurvivorArmAim && hasSupport && simulationSeconds >= .45f &&
                 (quietSeconds >= .18f || (supportSeconds >= 1.1f && speed < 1f));
             bool terminalRest = !IsConvulsing && ((simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f);
             if (recoverable ? readyToRise : terminalRest)
@@ -439,6 +441,7 @@ namespace BarPromenade
 
         public void Cancel()
         {
+            ResetRestraintPhysics();
             ClearGroundContact();
             hitStopFrozen = false;
             terminalConvulsionsStarted = false;

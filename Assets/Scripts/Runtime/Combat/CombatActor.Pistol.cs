@@ -682,6 +682,7 @@ namespace BarPromenade
 
         internal void ReceiveProjectile(CombatActor source, int sequence, CombatHurtboxes.Hit hit, Vector3 velocity)
         {
+            if (IsCraneRegenerating) return;
             MeleePhase phaseBefore = State.Phase;
             float health = State.Health;
             float stagger = hit.Location.Region switch

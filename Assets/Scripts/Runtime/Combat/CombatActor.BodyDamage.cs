@@ -40,6 +40,11 @@ namespace BarPromenade
         /// published. Visibility never decides HP, death, movement or action support.</summary>
         public void ApplyBodyCapabilities(CombatImpact impact)
         {
+            if (IsHero)
+            {
+                State.SetBodyCapabilities(true, true, true);
+                return;
+            }
             if (CraneAttached)
             {
                 // The suspension supplies support independently of the legs.

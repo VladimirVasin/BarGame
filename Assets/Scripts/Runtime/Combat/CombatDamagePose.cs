@@ -16,6 +16,10 @@ namespace BarPromenade
         private bool baseCaptured;
         private Vector3 impulse;
         private float breathPhase;
+        private bool restraintActive;
+        private Player3DAnatomicalPart restraintPart;
+        private Vector3 restraintPoint;
+        private float restraintSeconds;
         private SecondOrderFilter injury = new SecondOrderFilter(6f, 1f);
         private SecondOrderFilter pitch = new SecondOrderFilter(14f, .58f);
         private SecondOrderFilter roll = new SecondOrderFilter(14f, .58f);
@@ -24,7 +28,7 @@ namespace BarPromenade
         private SecondOrderFilter headRoll = new SecondOrderFilter(10f, .65f);
         private SecondOrderFilter shoulder = new SecondOrderFilter(11f, .65f);
 
-        public bool IsInitialized => actorFrame != null && bones.Length == 6;
+        public bool IsInitialized => actorFrame != null && bones.Length == 8;
         public float InjuryAmount => Mathf.Clamp01(injury.Value);
         public float BreathAmount => InjuryAmount * InjuryAmount * Mathf.Sin(breathPhase);
         public float AppliedWeight { get; private set; }
@@ -41,7 +45,7 @@ namespace BarPromenade
             var found = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (Transform candidate in rigRoot.GetComponentsInChildren<Transform>(true))
                 if (!found.ContainsKey(candidate.name)) found.Add(candidate.name, candidate);
-            string[] names = { "spine", "chest", "neck", "head", "upper_arm.L", "forearm.L" };
+            string[] names = { "spine", "chest", "neck", "head", "upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R" };
             var resolved = new Transform[names.Length];
             for (int i = 0; i < names.Length; i++)
                 if (!found.TryGetValue(names[i], out resolved[i]))
@@ -97,6 +101,16 @@ namespace BarPromenade
             impulse = Vector3.ClampMagnitude(impulse, 70f);
         }
 
+        internal void SetRestraintContact(Player3DAnatomicalPart part, Vector3 point, float seconds)
+        {
+            restraintActive = true;
+            restraintPart = part;
+            restraintPoint = point;
+            restraintSeconds = seconds;
+        }
+
+        internal void ClearRestraintContact() => restraintActive = false;
+
         /// <summary>
         /// The caller masks this to zero during committed weapon/guard/step
         /// actions. It must restore before every animation or contact sample.
@@ -106,7 +120,7 @@ namespace BarPromenade
             Restore();
             if (!IsInitialized || !Finite(combatWeight)) return;
             float weight = Mathf.Clamp01(combatWeight);
-            if (weight <= 0f || (InjuryAmount <= .0001f && ReactionAmount <= .0001f &&
+            if (weight <= 0f || (!restraintActive && InjuryAmount <= .0001f && ReactionAmount <= .0001f &&
                 Mathf.Abs(headPitch.Value) + Mathf.Abs(headRoll.Value) + Mathf.Abs(shoulder.Value) <= .0001f)) return;
             for (int i = 0; i < bones.Length; i++) baseRotations[i] = bones[i].localRotation;
             baseCaptured = true;
@@ -131,8 +145,9 @@ namespace BarPromenade
             Rotate(4, right, (hurt * 8f + shoulder.Value * 10f + shoulderBreath * .8f) * weight);
             Rotate(4, forward, (hurt * 8f + shoulder.Value * 7f) * weight);
             Rotate(5, right, hurt * 10f * weight);
-            // Pelvis, feet and the weapon hand remain on their authored pose.
-            // The free hand closes toward the torso without inventing a contact.
+            if (restraintActive) ApplyRestraint(weight, forward, right);
+            // Pelvis and feet retain their authored contacts. Ordinary injury
+            // preserves the weapon hand; restraint may temporarily own both arms.
         }
 
         public void Restore()
@@ -153,6 +168,7 @@ namespace BarPromenade
         public void Reset()
         {
             Restore();
+            restraintActive = false;
             impulse = Vector3.zero;
             breathPhase = 0f;
             injury.Reset(); pitch.Reset(); roll.Reset(); turn.Reset();
@@ -172,6 +188,29 @@ namespace BarPromenade
             Vector3 forward = actorFrame.forward;
             forward.y = 0f;
             return forward.sqrMagnitude > .000001f ? forward.normalized : Vector3.forward;
+        }
+
+        private void ApplyRestraint(float weight, Vector3 forward, Vector3 right)
+        {
+            BodyDamageRegion region = CombatBodyAnatomy.ToRegion(restraintPart);
+            bool low = region is BodyDamageRegion.Abdomen or BodyDamageRegion.Pelvis or
+                BodyDamageRegion.LeftThigh or BodyDamageRegion.RightThigh or BodyDamageRegion.LeftShin or
+                BodyDamageRegion.RightShin or BodyDamageRegion.LeftFoot or BodyDamageRegion.RightFoot;
+            float side = Mathf.Clamp(Vector3.Dot(restraintPoint - bones[1].position, right) * 3f, -1f, 1f);
+            float pulse = Mathf.Sin(restraintSeconds * 12f);
+            float front = Vector3.Dot(restraintPoint - bones[1].position, forward) >= 0f ? 1f : -1f;
+            Rotate(0, right, (low ? 13f : 5f) * front * weight);
+            Rotate(1, right, (9f + pulse * 3f) * front * weight);
+            Rotate(1, forward, -side * (8f + pulse * 2f) * weight);
+            Rotate(3, right, (region == BodyDamageRegion.Head ? -13f : 9f) * weight);
+            Rotate(3, forward, side * 7f * weight);
+            // The free arm folds toward the injured side. The opposite shoulder
+            // answers each struggle pulse; neither hand claims an invented grip.
+            bool leftHit = region is BodyDamageRegion.LeftUpperArm or BodyDamageRegion.LeftForearm or BodyDamageRegion.LeftHand;
+            int arm = leftHit ? 6 : 4, forearm = leftHit ? 7 : 5;
+            Rotate(arm, right, (low ? 20f : 32f) * weight);
+            Rotate(arm, forward, (leftHit ? -1f : 1f) * (13f + pulse * 4f) * weight);
+            Rotate(forearm, right, (29f + pulse * 6f) * weight);
         }
 
         private void Rotate(int index, Vector3 axis, float degrees) =>

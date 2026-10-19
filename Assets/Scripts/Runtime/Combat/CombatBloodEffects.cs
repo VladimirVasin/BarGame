@@ -199,7 +199,7 @@ namespace BarPromenade
         // A new bullet contact wounds a corpse without inventing another HP transaction.
         public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
             impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : Mathf.Max(impact.WoundDamage, impact.Damage),
-            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet);
+            impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet);
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);

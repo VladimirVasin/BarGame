@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -22,6 +23,7 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CombatTestPlayModeTests
     {
+        private GameObject craneTestFooting;
         private Transform[,] preparedCraneCables;
         private Transform preparedCraneHook, preparedCraneHookCable;
         private int observedCraneThrows, craneMovieFrames;
@@ -32,172 +34,528 @@ namespace BarPromenade.Tests.PlayMode
         private Vector3 craneOriginalAnchor, craneMinimumCommand, craneMaximumCommand;
 
         [UnityTest]
-        public IEnumerator Range_CraneOwnHookKnockdownTriggersOneSuspendedFrenzy()
+        public IEnumerator Range_CraneHookCaptureEscapeRetreatAndRegeneration()
         {
-            CombatTestRoot.UseLegacyArenaForTests = false;
-            CombatTestRoot.WarehouseSeedForTests = 0;
-            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
-                CombatLoadoutSelection.Default, CombatTestMode.Crane)), Is.True);
-            yield return WaitFor(() =>
-            {
-                root = Object.FindAnyObjectByType<CombatTestRoot>();
-                return root != null && root.IsInitialized && !SceneTransitionService.IsTransitioning &&
-                    GameInput.CanRead(GameInputContext.Gameplay);
-            }, "The crane knockdown regression did not reach live gameplay.");
-            root.AutomaticSimulation = false;
-            root.SetSparring(true);
-            CombatActor crane = root.Opponent, hero = root.Hero;
-            Assert.That(crane.IsCrane, Is.True);
-            Assert.That(crane.GetComponent<CombatZombieLoad>(), Is.Null,
-                "The suspended actor must reach the fall callback without a porter's loaded pelvis state.");
-            preparedCraneCables = new Transform[crane.CraneCableCount, CombatActor.CraneCableSegments];
-            for (int i = 0; i < crane.CraneCableCount; i++)
-                for (int segment = 0; segment < CombatActor.CraneCableSegments; segment++)
-                    preparedCraneCables[i, segment] = crane.GetCraneCableTransform(i, segment);
-            preparedCraneHook = crane.GetCraneHookTransform();
-            preparedCraneHookCable = crane.GetCraneHookCableTransform();
-            observedCraneThrows = crane.CraneHookThrowCount;
-            craneOriginalAnchor = crane.CraneAnchorPosition;
-            craneOriginalYaw = crane.transform.eulerAngles.y;
-            craneMinimumCommand = craneMaximumCommand = crane.CraneCarriagePosition;
-            var cableStarts = new Vector3[crane.CraneCableCount];
-            for (int i = 0; i < cableStarts.Length; i++) cableStarts[i] = crane.GetCraneCableStart(i);
-            int animationGraphs = crane.NpcAnimationGraphBuilds, knockdowns = 0;
-            void RecordFall(CombatImpact impact) { knockdowns++; }
-            hero.KnockedDown += RecordFall;
+            var input = new InputTestFixture();
+            var modal = new BarMinigameModalLock();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            bool background = Application.runInBackground;
             try
             {
-                yield return BeginCraneHookKnockdown(crane);
-                CombatImpact realHit = hero.LastImpact;
-                Assert.That(knockdowns, Is.EqualTo(1));
-                Assert.That(crane.IsCraneFrenzied, Is.True);
-                Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
-                Assert.That(crane.CraneFrenzySecondsElapsed, Is.LessThanOrEqualTo(CombatTestRoot.SimulationStep));
-                AudioSource sound = Array.Find(crane.GetComponentsInChildren<AudioSource>(true),
-                    voice => voice.clip != null && voice.clip.name.StartsWith("ZombieFrenzy", StringComparison.Ordinal));
-                Assert.That(sound, Is.Not.Null, "The physical knockdown starts the shared organic frenzy cue.");
-                Assert.That(sound.loop || sound.ignoreListenerPause, Is.False);
-                Vector3 heldCommand = crane.CraneCarriagePosition;
-                int heldThrows = crane.CraneHookThrowCount, attack = crane.State.AttackSequence;
-                Transform head = FindAnatomicalBone(crane, "head"), hand = FindAnatomicalBone(crane, "hand.L");
-                Quaternion firstHead = head.localRotation, firstHand = hand.localRotation;
-                float headMotion = 0f, handMotion = 0f;
-                bool sampledEarly = false, sampledLate = false, paused = false;
-                for (int frame = 0; frame < 80 && crane.IsCraneFrenzied; frame++)
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                Application.runInBackground = true;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = 0;
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                    CombatLoadoutSelection.Default, CombatTestMode.Crane)), Is.True);
+                yield return WaitFor(() =>
                 {
-                    Assert.That(crane.TryBeginCraneCycle(hero), Is.False, "The outburst owns the attack and patrol opening.");
-                    Assert.That(crane.State.AttackSequence, Is.EqualTo(attack));
-                    Assert.That(crane.CraneHookThrowCount, Is.EqualTo(heldThrows));
-                    Assert.That(crane.CraneCarriagePosition, Is.EqualTo(heldCommand));
-                    Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
-                    Assert.That(hero.ReceivedImpactCount, Is.EqualTo(1), "The returning hook remains harmless.");
-                    AssertCraneCablesFollowRig(crane, cableStarts);
-                    if (crane.CraneFrenzySecondsElapsed >= 1f)
-                    {
-                        headMotion = Mathf.Max(headMotion, Quaternion.Angle(firstHead, head.localRotation));
-                        handMotion = Mathf.Max(handMotion, Quaternion.Angle(firstHand, hand.localRotation));
-                        if (!sampledEarly)
-                        {
-                            CaptureCraneFrenzyView(crane, "Test crane - Knockdown frenzy");
-                            sampledEarly = true;
-                        }
-                        if (!sampledLate && crane.CraneFrenzySecondsElapsed >= 2.5f)
-                        {
-                            CaptureCraneFrenzyView(crane, "Test crane - Suspended frenzy motion");
-                            sampledLate = true;
-                        }
-                    }
-                    if (!paused && crane.CraneFrenzySecondsElapsed >= .5f)
-                    {
-                        float clock = crane.CraneFrenzySecondsElapsed;
-                        Assert.That(hero.TryBeginKnockdown(realHit, realHit.Direction, Vector3.zero), Is.False);
-                        Assert.That(knockdowns, Is.EqualTo(1));
-                        Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(clock));
-                        Quaternion heldHead = head.localRotation, heldHand = hand.localRotation;
-                        Vector3 heldBody = crane.transform.position, heldHook = crane.CraneHookPosition;
-                        Assert.That(root.PauseMenu.Open(), Is.True);
-                        TickCrane(crane, 1f);
-                        yield return null;
-                        int samples = sound.timeSamples;
-                        yield return null;
-                        Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(clock));
-                        Assert.That(crane.transform.position, Is.EqualTo(heldBody));
-                        Assert.That(crane.CraneHookPosition, Is.EqualTo(heldHook));
-                        Assert.That(Quaternion.Angle(head.localRotation, heldHead), Is.LessThan(.01f));
-                        Assert.That(Quaternion.Angle(hand.localRotation, heldHand), Is.LessThan(.01f));
-                        Assert.That(sound.timeSamples, Is.EqualTo(samples));
-                        AssertCraneCablesFollowRig(crane, cableStarts);
-                        Assert.That(root.PauseMenu.Cancel(), Is.True);
-                        yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the crane frenzy.");
-                        paused = true;
-                    }
-                    float remaining = CombatActor.ZombieFrenzyDurationSeconds - crane.CraneFrenzySecondsElapsed;
-                    if (remaining <= .1001f) crane.Step(remaining);
-                    else TickCrane(crane, .1f);
-                }
-                Assert.That(sampledEarly && sampledLate && paused, Is.True);
-                Assert.That(headMotion, Is.GreaterThan(5f), "The suspended head visibly participates in the outburst.");
-                Assert.That(handMotion, Is.GreaterThan(5f), "The same continuous suspended rig drives the arm motion.");
-                Assert.That(crane.IsCraneFrenzied, Is.False);
-                Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(CombatActor.ZombieFrenzyDurationSeconds).Within(.001f));
-                Assert.That(sound.isPlaying, Is.False, "Simulation expiry stops the cue even when DSP playback has not caught up.");
-                Assert.That(crane.NpcAnimationGraphBuilds, Is.EqualTo(animationGraphs));
-                PlaceCraneHero(new Vector3(0f, WarehouseArenaPlan.TopHeight, -6.6f), Vector3.forward);
-                Assert.That(hero.TryBeginKnockdown(realHit, realHit.Direction * .8f, Vector3.zero), Is.True);
-                Assert.That(crane.IsCraneFrenzied, Is.False, "A new physical fall attributed to the same old strike cannot restart the cue.");
-                Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
-                PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
-                TickCrane(crane, 3.2f);
-                Assert.That(crane.CranePatrolTravelling, Is.True, "The ordinary independent patrol resumes after the complete outburst.");
+                    root = Object.FindAnyObjectByType<CombatTestRoot>();
+                    return root != null && root.IsInitialized && !SceneTransitionService.IsTransitioning &&
+                        GameInput.CanRead(GameInputContext.Gameplay);
+                }, "The crane capture regression did not reach live gameplay.");
+                root.AutomaticSimulation = false;
+                root.SetSparring(true);
+                root.AutomaticOpponentDecisions = false; // Keep genuine simulation/contact while driving each throw explicitly.
+                ForceAmmoFocus();
+                CombatActor crane = root.Opponent, hero = root.Hero;
+                Assert.That(crane.IsCrane, Is.True);
+                Assert.That(crane.CraneHookReach, Is.EqualTo(CombatActor.CraneHookMaximumLength));
+                Vector3 home = crane.CraneHomePosition;
+                int graphs = crane.NpcAnimationGraphBuilds;
+
+                // A supported ledge in the open well isolates height from range and rails.
+                PlaceCraneFootingHero(crane, outsideHeight: true);
+                root.Tick(.7f);
+                Assert.That(CraneChestHeightAboveHero(crane), Is.GreaterThan(CombatActor.CraneMaximumAttackHeightAboveTarget));
+                Assert.That(Vector3.Distance(crane.CraneHookCableExit, hero.transform.position + Vector3.up * 1.2f),
+                    Is.LessThan(crane.CraneHookReach),
+                    "The height rejection fixture must remain inside hook reach: source=" + crane.CraneHookCableExit +
+                    ", target=" + (hero.transform.position + Vector3.up * 1.2f) + ".");
+                Assert.That(crane.TryBeginCraneCycle(hero), Is.False, "A body too far above the hero cannot attack within otherwise valid cable reach.");
+                Assert.That(crane.CraneHookThrowCount, Is.Zero);
+                PlaceCraneFootingHero(crane);
+                yield return null;
+                ForceAmmoFocus();
+                root.Tick(.2f);
+                Assert.That(CraneChestHeightAboveHero(crane), Is.InRange(0f,
+                    CombatActor.CraneMaximumAttackHeightAboveTarget - .2f));
+                Assert.That(crane.TryBeginCraneCycle(hero), Is.True, CraneAcquisitionDiagnostic(crane));
+                PlaceCraneFootingHero(crane, outsideHeight: true);
+                root.Tick(.7f);
+                Assert.That(crane.CraneHookThrowCount, Is.Zero, "Losing eligibility during the tell cancels release without a throw.");
+                Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+                RemoveCraneTestFooting();
+                root.ResetRound();
+                ForceAmmoFocus();
+
+                // A held crowbar remains an absolute block, including this real downward shot.
+                PlaceCraneCaptureHero(crane);
+                hero.SetBlock(true);
+                root.Tick(.7f);
+                hero.State.Advance(MeleeCombatSettings.Crowbar.ParryWindowSeconds + .05f);
+                Assert.That(crane.TryBeginCraneCycle(hero), Is.True);
+                for (int step = 0; step < 600 && hero.ReceivedImpactCount == 0; step++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(hero.ReceivedImpactCount, Is.EqualTo(1), "The actual hook must reach the held crowbar.");
+                Assert.That(hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
+                Assert.That(hero.State.Health, Is.EqualTo(hero.State.Settings.MaxHealth));
+                Assert.That(hero.IsRestrained || crane.HasCraneVictim, Is.False);
+                Assert.That(root.BloodEffects.WoundCountFor(hero), Is.Zero);
+                Assert.That(hero.State.Phase, Is.Not.EqualTo(MeleePhase.GuardBroken));
+                yield return CaptureGameplayHud("Test crane - Crowbar blocks overhead hook");
 
                 root.ResetRound();
-                observedCraneThrows = crane.CraneHookThrowCount;
-                yield return BeginCraneHookKnockdown(crane);
-                TickCrane(crane, .4f);
-                Assert.That(crane.IsCraneFrenzied, Is.True);
+                ForceAmmoFocus();
+                // A key held before contact cannot become escape effort at capture.
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                yield return BeginActualCraneCapture(crane, guardAway: true);
+                Assert.That(CraneChestHeightAboveHero(crane), Is.LessThanOrEqualTo(CombatActor.CraneMaximumAttackHeightAboveTarget));
+                Assert.That(hero.LastImpact.Source, Is.SameAs(crane));
+                Assert.That(hero.LastImpact.Damage, Is.GreaterThan(0f));
+                Assert.That(root.BloodEffects.WoundCountFor(hero), Is.GreaterThan(0), "A real hook punctures its contacted anatomical surface.");
+                Assert.That(Vector3.Distance(crane.CraneHookPosition, hero.RestraintAnchor), Is.LessThan(.08f));
+                Assert.That(root.RestraintHudVisible, Is.True);
+                root.Tick(.25f);
+                yield return null;
+                root.Tick(.1f);
+                Assert.That(hero.RestraintEscapeProgress, Is.Zero, "Holding E across contact is not repeated pressing.");
+                float capturedClock = crane.CraneCaptureElapsed;
+                Vector3 capturedPoint = crane.CraneHookPosition, capturedRoot = hero.transform.position;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(1f);
+                yield return null;
+                Assert.That(root.RestraintHudVisible, Is.False);
+                Assert.That(crane.CraneCaptureElapsed, Is.EqualTo(capturedClock));
+                Assert.That(crane.CraneHookPosition, Is.EqualTo(capturedPoint));
+                Assert.That(hero.transform.position, Is.EqualTo(capturedRoot));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Capture pause did not release input.");
+                ForceAmmoFocus();
+                Assert.That(modal.TryCaptureAndDisable(root.Player.Interactor, root.CameraFollow, null), Is.True);
+                Assert.That(root.RestraintHudVisible, Is.False);
+                root.Tick(1f);
+                Assert.That(crane.CraneCaptureElapsed, Is.EqualTo(capturedClock));
+                Assert.That(modal.Restore(), Is.True);
+                ForceAmmoFocus();
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                root.Tick(.02f);
+                for (int press = 0; press < 6; press++)
+                {
+                    input.Press(keyboard.eKey, queueEventOnly: true);
+                    yield return null;
+                    root.Tick(.02f);
+                    root.AdvanceHudPresentation(.02f);
+                    if (press < 5)
+                    {
+                        Assert.That(hero.IsRestrained, Is.True);
+                        Assert.That(hero.RestraintEscapeProgress, Is.EqualTo((press + 1f) / 6f).Within(.001f));
+                        Assert.That(root.RestraintHudProgress, Is.EqualTo(hero.RestraintEscapeProgress));
+                        root.Tick(.06f); // Several substeps from one press still count once.
+                        Assert.That(hero.RestraintEscapeProgress, Is.EqualTo((press + 1f) / 6f).Within(.001f));
+                    }
+                    if (press == 2) yield return CaptureCraneVictim(crane, "Test crane - Hook wound and half filled E escape");
+                    input.Release(keyboard.eKey, queueEventOnly: true);
+                    yield return null;
+                    root.Tick(.02f);
+                }
+                Assert.That(hero.IsRestrained || crane.HasCraneVictim || root.RestraintHudVisible, Is.False);
+                AssertCraneStruggleStopped(hero.Ragdoll.PhysicsController);
+                Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.ReturningHome));
+                Assert.That(crane.CraneCaptureElapsed, Is.LessThan(CombatActor.CraneHookHoldSeconds));
+                yield return AwaitCraneWatch(crane, home, regeneration: false);
+                int throws = crane.CraneHookThrowCount;
+                root.Tick(9.8f - crane.CraneWatchElapsed);
+                Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Watching));
+                Assert.That(crane.TryBeginCraneCycle(hero), Is.False);
+                Assert.That(crane.CraneHookThrowCount, Is.EqualTo(throws));
+                root.Tick(.22f);
+                Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+
                 root.ResetRound();
-                observedCraneThrows = crane.CraneHookThrowCount;
+                ForceAmmoFocus();
+                Player3DRagdollController heroPhysics = hero.Ragdoll.PhysicsController;
+                CraneJointDriveSnapshot[] restingDrives = CaptureCraneJointDrives(heroPhysics);
+                Transform heroChest = FindAnatomicalBone(hero, "chest"), heroPelvis = FindAnatomicalBone(hero, "pelvis");
+                Transform leftArm = FindAnatomicalBone(hero, "forearm.L"), rightArm = FindAnatomicalBone(hero, "forearm.R");
+                Transform leftShin = FindAnatomicalBone(hero, "shin.L"), rightShin = FindAnatomicalBone(hero, "shin.R");
+                Quaternion leftArmStart = Quaternion.identity, rightArmStart = Quaternion.identity;
+                Quaternion leftShinStart = Quaternion.identity, rightShinStart = Quaternion.identity;
+                float activeArmMotion = 0f, activeLegMotion = 0f, earlyTargetTravel = 0f;
+                bool earlyStruggleCaptured = false, lateStruggleCaptured = false;
+                yield return BeginActualCraneCapture(crane);
+                Vector3 originalHeroRoot = hero.transform.position;
+                Assert.That(hero.RestraintEscapeProgress, Is.Zero, "The next capture starts with an empty meter.");
+                for (int captureStep = 0; captureStep < 400 && hero.IsRestrained &&
+                    crane.CraneCaptureElapsed < CombatActor.CraneHookHoldSeconds - .15f; captureStep++)
+                {
+                    root.Tick(Time.fixedDeltaTime);
+                    yield return new WaitForFixedUpdate();
+                    if (hero.IsRestraintAirborne && !earlyStruggleCaptured && crane.CraneCaptureElapsed >= .8f)
+                    {
+                        Assert.That(heroPhysics.IsRestraintDriveActive, Is.True);
+                        Assert.That(heroPhysics.RestraintDrivenJointCount, Is.GreaterThan(7));
+                        Assert.That(heroPhysics.RestraintDrivenLegJointCount, Is.GreaterThanOrEqualTo(4),
+                            "Suspension keeps active hip/knee effort instead of leaving the lower body limp.");
+                        leftArmStart = Quaternion.Inverse(heroChest.rotation) * leftArm.rotation;
+                        rightArmStart = Quaternion.Inverse(heroChest.rotation) * rightArm.rotation;
+                        leftShinStart = Quaternion.Inverse(heroPelvis.rotation) * leftShin.rotation;
+                        rightShinStart = Quaternion.Inverse(heroPelvis.rotation) * rightShin.rotation;
+                        earlyTargetTravel = heroPhysics.RestraintDriveTargetTravelDegrees;
+                        yield return ConsumeMouseLookInput(); // Finish the ownership/focus neutral frames before a real mouse delta.
+                        AssertCraneLiveBodyCamera(heroPhysics);
+                        Assert.That(root.CameraFollow.TargetLockActive, Is.False);
+                        Quaternion cameraBeforeOrbit = root.CameraFollow.Camera.transform.rotation;
+                        float pitchBeforeOrbit = root.CameraFollow.TargetOrbitPitch;
+                        input.Set(mouse.delta, new Vector2(70f, 22f), queueEventOnly: true);
+                        yield return ConsumeMouseLookInput();
+                        Assert.That(root.CameraFollow.TargetOrbitPitch, Is.LessThan(pitchBeforeOrbit - .5f));
+                        // Receipt changes the orbit target immediately; the ordinary
+                        // follow deliberately eases its rendered rotation toward it.
+                        for (int frame = 0; frame < 8 &&
+                            Quaternion.Angle(cameraBeforeOrbit, root.CameraFollow.Camera.transform.rotation) <= 1f; frame++)
+                            yield return null;
+                        Assert.That(Quaternion.Angle(cameraBeforeOrbit, root.CameraFollow.Camera.transform.rotation), Is.GreaterThan(1f),
+                            "Actual mouse input must still orbit the lifted physical hero.");
+                        Assert.That(hero.IsRestrained, Is.True);
+                        CaptureCraneView(crane, "Test crane - Live follow early struggle body", gameplayCamera: true);
+                        yield return CaptureGameplayHud("Test crane - Live follow early struggle");
+                        earlyStruggleCaptured = true;
+                    }
+                    if (earlyStruggleCaptured)
+                    {
+                        activeArmMotion = Mathf.Max(activeArmMotion,
+                            Quaternion.Angle(leftArmStart, Quaternion.Inverse(heroChest.rotation) * leftArm.rotation),
+                            Quaternion.Angle(rightArmStart, Quaternion.Inverse(heroChest.rotation) * rightArm.rotation));
+                        activeLegMotion = Mathf.Max(activeLegMotion,
+                            Quaternion.Angle(leftShinStart, Quaternion.Inverse(heroPelvis.rotation) * leftShin.rotation),
+                            Quaternion.Angle(rightShinStart, Quaternion.Inverse(heroPelvis.rotation) * rightShin.rotation));
+                    }
+                    if (earlyStruggleCaptured && !lateStruggleCaptured && crane.CraneCaptureElapsed >= 2f)
+                    {
+                        Assert.That(heroPhysics.RestraintDriveTargetTravelDegrees, Is.GreaterThan(earlyTargetTravel + 20f),
+                            "The retained muscles keep changing their intended joint poses while the hook pulls.");
+                        Assert.That(activeArmMotion, Is.GreaterThan(3f), "The arms visibly struggle relative to the chest, beyond whole-body translation.");
+                        Assert.That(activeLegMotion, Is.GreaterThan(3f), "The legs visibly kick relative to the pelvis, beyond whole-body translation.");
+                        Assert.That(hero.BodyWorldPosition.y, Is.GreaterThan(originalHeroRoot.y + .75f));
+                        yield return ConsumeMouseLookInput();
+                        AssertCraneLiveBodyCamera(heroPhysics);
+                        Assert.That(root.CameraFollow.CurrentFocusPoint.y, Is.GreaterThan(originalHeroRoot.y + .8f),
+                            "The camera rises with the visible body instead of watching the abandoned capsule.");
+                        CaptureCraneView(crane, "Test crane - Live follow lifted struggle body", gameplayCamera: true);
+                        yield return CaptureGameplayHud("Test crane - Live follow lifted struggle");
+                        lateStruggleCaptured = true;
+                    }
+                }
+                Assert.That(earlyStruggleCaptured && lateStruggleCaptured, Is.True);
+                Assert.That(hero.IsRestrained, Is.True, "The genuine contact remains embedded for its full capture duration.");
+                Assert.That(hero.IsRestraintAirborne, Is.True, "A modest-height capture can pull the continuous rig away from its real stair support.");
+                Assert.That(hero.IsRagdollActive, Is.True, "The lifted body uses its prepared partial physical rig.");
+                Assert.That(root.BodyEffects.DetachedPartCountFor(hero), Is.Zero);
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(hero), Is.Zero);
+                foreach (BodyDamageRegion region in Enum.GetValues(typeof(BodyDamageRegion)))
+                    Assert.That(hero.BodyDamage.IsAttached(region), Is.True, "Hero anatomy remains continuous: " + region);
+                yield return CaptureCraneVictim(crane, "Test crane - Embedded hook airborne partial ragdoll");
+                float healthBeforeFall = hero.State.Health;
+                float finalCaptureTime = crane.CraneCaptureElapsed;
+                while (hero.IsRestrained)
+                {
+                    root.Tick(Time.fixedDeltaTime);
+                    finalCaptureTime += Time.fixedDeltaTime;
+                    yield return new WaitForFixedUpdate();
+                }
+                Assert.That(finalCaptureTime, Is.InRange(CombatActor.CraneHookHoldSeconds - .025f,
+                    CombatActor.CraneHookHoldSeconds + .04f));
+                Assert.That(hero.IsRagdollActive, Is.True, "Release preserves the already airborne physical body.");
+                AssertCraneStruggleStopped(heroPhysics);
+                AssertCraneJointDrivesRestored(heroPhysics, restingDrives);
+                for (int frame = 0; frame < 240 && hero.RestraintFallDamageCount == 0; frame++)
+                {
+                    root.Tick(Time.fixedDeltaTime);
+                    yield return new WaitForFixedUpdate();
+                }
+                Assert.That(hero.RestraintFallDamageCount, Is.EqualTo(1));
+                Assert.That(hero.LastRestraintFallDamage, Is.GreaterThan(0f));
+                Assert.That(hero.State.Health, Is.LessThan(healthBeforeFall));
+                for (int frame = 0; frame < 20; frame++)
+                {
+                    root.Tick(Time.fixedDeltaTime);
+                    yield return new WaitForFixedUpdate();
+                }
+                Assert.That(hero.RestraintFallDamageCount, Is.EqualTo(1), "Several landing bones produce one damage transaction.");
+                yield return CaptureCraneVictim(crane, "Test crane - Fall after release");
+                RemoveCraneTestFooting();
+
+                root.ResetRound();
+                AssertCraneStruggleStopped(heroPhysics);
+                AssertCraneJointDrivesRestored(heroPhysics, restingDrives);
+                ForceAmmoFocus();
+                yield return BeginActualCraneCapture(crane);
+                crane.CaptureContactPose();
+                Assert.That(crane.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 headPoint, out _, out _), Is.True);
+                var headHit = new CombatHurtboxes.Hit(headPoint, Vector3.up, Vector3.down, 0f,
+                    new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Front), Player3DAnatomicalPart.Head, Vector3.zero);
+                crane.ReceiveProjectile(hero, 1, headHit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
+                crane.ReceiveProjectile(hero, 2, headHit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
+                Assert.That(hero.IsRestrained || crane.HasCraneVictim, Is.False, "Fatal pain immediately frees the captive.");
+                Assert.That(crane.IsCraneRegenerating && crane.IsCraneFrenzied, Is.True);
+                Assert.That(crane.State.IsDefeated || root.RoundFinished, Is.False, "Fatal damage creates a retreat, never a kill or completed round.");
+                Assert.That(crane.CraneFrenzyPlayCount, Is.EqualTo(1));
+                Transform head = FindAnatomicalBone(crane, "head"), hand = FindAnatomicalBone(crane, "hand.L");
+                Quaternion headStart = head.localRotation, handStart = hand.localRotation;
+                float headMotion = 0f, handMotion = 0f;
+                for (int frame = 0; frame < 28; frame++)
+                {
+                    root.Tick(.1f);
+                    headMotion = Mathf.Max(headMotion, Quaternion.Angle(headStart, head.localRotation));
+                    handMotion = Mathf.Max(handMotion, Quaternion.Angle(handStart, hand.localRotation));
+                }
+                Assert.That(crane.IsCraneFrenzied, Is.True, "Fatal convulsions retain their full three-second phase.");
+                Assert.That(headMotion, Is.GreaterThan(5f));
+                Assert.That(handMotion, Is.GreaterThan(5f));
+                CaptureCraneFrenzyView(crane, "Test crane - Fatal scream and convulsions");
+                float spasmClock = crane.CraneFrenzySecondsElapsed;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(1f);
+                yield return null;
+                Assert.That(crane.CraneFrenzySecondsElapsed, Is.EqualTo(spasmClock));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Fatal pain pause did not release input.");
+                ForceAmmoFocus();
+                root.Tick(.3f);
                 Assert.That(crane.IsCraneFrenzied, Is.False);
-                Assert.That(crane.CraneFrenzySecondsElapsed, Is.Zero);
-                Assert.That(crane.CraneFrenzyPlayCount, Is.Zero);
-                Assert.That(sound.isPlaying, Is.False, "Reset stops the retained voice immediately.");
+                yield return AwaitCraneWatch(crane, home, regeneration: true);
+                root.Tick(9.8f - crane.CraneWatchElapsed);
+                Assert.That(crane.IsCraneRegenerating, Is.True);
+                root.Tick(.22f);
+                Assert.That(crane.State.Health, Is.EqualTo(crane.State.Settings.MaxHealth));
+                Assert.That(crane.State.IsDefeated || crane.IsCraneRegenerating, Is.False);
+                Assert.That(root.Opponent, Is.SameAs(crane));
+                Assert.That(root.Opponents.Count, Is.EqualTo(1), "Regeneration retains the existing population slot.");
+                Assert.That(crane.NpcAnimationGraphBuilds, Is.EqualTo(graphs));
+
+                root.ResetRound();
+                yield return BeginActualCraneCapture(crane);
+                crane.enabled = false;
+                Assert.That(hero.IsRestrained || root.RestraintHudVisible, Is.False, "Disabling the source releases capture and its interface.");
+                AssertCraneStruggleStopped(heroPhysics);
+                crane.enabled = true;
+                root.ResetRound();
+                Assert.That(hero.RestraintEscapeProgress, Is.Zero);
                 Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Stowed));
-                AssertCraneCablesFollowRig(crane, cableStarts);
+                Assert.That(root.ReturnToMenu(), Is.True);
+                yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
+                    !SceneTransitionService.IsTransitioning, "The captured encounter did not unload.");
+                Assert.That(crane == null, Is.True);
                 LogAssert.NoUnexpectedReceived();
             }
             finally
             {
-                if (hero != null) hero.KnockedDown -= RecordFall;
+                RemoveCraneTestFooting();
+                modal.Restore();
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+                Application.runInBackground = background;
             }
         }
 
-        private IEnumerator BeginCraneHookKnockdown(CombatActor crane)
+        private void AssertCraneLiveBodyCamera(Player3DRagdollController physics)
         {
-            // The initial top stop can reach this real gallery without a long patrol setup.
-            PlaceCraneHero(new Vector3(0f, WarehouseArenaPlan.TopHeight, -6.6f), Vector3.forward);
-            for (int step = 0; step < 480 && root.Hero.ReceivedImpactCount == 0; step++)
+            PlayerCameraFollow follow = root.CameraFollow;
+            Assert.That(follow.enabled, Is.True, "This proof uses the ordinary live gameplay camera.");
+            Assert.That(follow.CombatBodyFocusActive, Is.True);
+            Vector3 physicalFocus = (physics.PelvisBody.position + physics.ChestBody.position) * .5f +
+                Vector3.up * PlayerCameraFollow.FocusOverrideHeight;
+            Assert.That(Vector3.Distance(follow.CombatBodyFocusPoint, physicalFocus), Is.LessThan(.1f));
+            Assert.That(Vector3.Distance(follow.CurrentFocusPoint, physicalFocus), Is.LessThan(.6f),
+                "Ordinary damping may trail the moving body, but it must stay inside its bounded focus lag.");
+            Vector3 visible = follow.Camera.WorldToViewportPoint(physicalFocus);
+            Assert.That(visible.z, Is.GreaterThan(0f));
+            Assert.That(visible.x, Is.InRange(.02f, .98f));
+            Assert.That(visible.y, Is.InRange(.02f, .98f), "The lifted hero must remain in the gameplay view.");
+        }
+
+        private static void AssertCraneStruggleStopped(Player3DRagdollController physics)
+        {
+            Assert.That(physics.IsRestraintDriveActive, Is.False);
+            Assert.That(physics.RestraintDrivenJointCount, Is.Zero);
+            Assert.That(physics.RestraintDrivenLegJointCount, Is.Zero);
+        }
+
+        private readonly struct CraneJointDriveSnapshot
+        {
+            internal readonly string Name, ConnectedName;
+            internal readonly RotationDriveMode Mode;
+            internal readonly JointDrive Slerp, AngularX, AngularYZ;
+            internal readonly Quaternion Target;
+            internal readonly Vector3 AngularVelocity;
+
+            internal CraneJointDriveSnapshot(ConfigurableJoint joint)
             {
-                TickCrane(crane, CombatTestRoot.SimulationStep);
+                Name = joint.name;
+                ConnectedName = joint.connectedBody != null ? joint.connectedBody.name : "";
+                Mode = joint.rotationDriveMode;
+                Slerp = joint.slerpDrive;
+                AngularX = joint.angularXDrive;
+                AngularYZ = joint.angularYZDrive;
+                Target = joint.targetRotation;
+                AngularVelocity = joint.targetAngularVelocity;
+            }
+        }
+
+        private static CraneJointDriveSnapshot[] CaptureCraneJointDrives(Player3DRagdollController physics)
+        {
+            ConfigurableJoint[] joints = physics.GetComponentsInChildren<ConfigurableJoint>(true);
+            Assert.That(joints, Is.Not.Empty);
+            return Array.ConvertAll(joints, joint => new CraneJointDriveSnapshot(joint));
+        }
+
+        private static void AssertCraneJointDrivesRestored(Player3DRagdollController physics,
+            CraneJointDriveSnapshot[] expected)
+        {
+            ConfigurableJoint[] joints = physics.GetComponentsInChildren<ConfigurableJoint>(true);
+            foreach (CraneJointDriveSnapshot saved in expected)
+            {
+                // The physical handoff replaces elbow joints while retaining the same
+                // anatomical link; compare its state rather than the retired instance.
+                ConfigurableJoint joint = Array.Find(joints, candidate => candidate != null && candidate.name == saved.Name &&
+                    (candidate.connectedBody != null ? candidate.connectedBody.name : "") == saved.ConnectedName);
+                Assert.That(joint, Is.Not.Null, "The anatomical joint survives restraint: " + saved.Name);
+                Assert.That(joint.rotationDriveMode, Is.EqualTo(saved.Mode), saved.Name);
+                AssertCraneJointDrive(joint.slerpDrive, saved.Slerp, saved.Name);
+                AssertCraneJointDrive(joint.angularXDrive, saved.AngularX, saved.Name);
+                AssertCraneJointDrive(joint.angularYZDrive, saved.AngularYZ, saved.Name);
+                Assert.That(Quaternion.Angle(joint.targetRotation, saved.Target), Is.LessThan(.01f), saved.Name);
+                Assert.That(Vector3.Distance(joint.targetAngularVelocity, saved.AngularVelocity), Is.LessThan(.001f), saved.Name);
+            }
+        }
+
+        private static void AssertCraneJointDrive(JointDrive actual, JointDrive expected, string name)
+        {
+            Assert.That(actual.positionSpring, Is.EqualTo(expected.positionSpring), name);
+            Assert.That(actual.positionDamper, Is.EqualTo(expected.positionDamper), name);
+            Assert.That(actual.maximumForce, Is.EqualTo(expected.maximumForce), name);
+        }
+
+        private void PlaceCraneCaptureHero(CombatActor crane)
+        {
+            PlaceCraneFootingHero(crane);
+        }
+
+        private float CraneChestHeightAboveHero(CombatActor crane) =>
+            FindAnatomicalBone(crane, "chest").position.y - FindAnatomicalBone(root.Hero, "chest").position.y;
+
+        private string CraneAcquisitionDiagnostic(CombatActor crane)
+        {
+            Vector3 target = root.Hero.transform.position + Vector3.up * 1.2f;
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            return $"phase={crane.CranePhase}, clock={crane.CranePhaseElapsed}, state={crane.State.Phase}, " +
+                $"cooldown={typeof(CombatActor).GetField("craneCooldown", flags).GetValue(crane)}, " +
+                $"perception={typeof(CombatActor).GetField("cranePerceptionWait", flags).GetValue(crane)}, " +
+                $"source={crane.CraneHookCableExit}, target={target}, chestAbove={CraneChestHeightAboveHero(crane)}, " +
+                $"range={Vector3.Distance(crane.CraneHookCableExit, target)}, input={GameInput.CanRead(GameInputContext.Gameplay)}";
+        }
+
+        private void PlaceCraneFootingHero(CombatActor crane, bool outsideHeight = false)
+        {
+            // This collider is test support only, like the partition fixture below.
+            // Its real contact lets the unmodified rig leave the ledge and fall.
+            if (craneTestFooting == null)
+            {
+                craneTestFooting = new GameObject("Test crane raised footing");
+                craneTestFooting.transform.SetParent(root.transform, false);
+                craneTestFooting.AddComponent<BoxCollider>().size = new Vector3(1.1f, .3f, 1.1f);
+            }
+            float chestOffset = FindAnatomicalBone(root.Hero, "chest").position.y - root.Hero.transform.position.y;
+            float above = outsideHeight ? CombatActor.CraneMaximumAttackHeightAboveTarget + .5f : 1f;
+            Vector3 position = crane.transform.position + Vector3.forward * 3f;
+            position.y = FindAnatomicalBone(crane, "chest").position.y - chestOffset - above;
+            craneTestFooting.transform.position = position - Vector3.up * (.15f + PlayerFactory.GroundedRootOffset);
+            root.Hero.ResetActor(position, Vector3.ProjectOnPlane(crane.CraneHookCableExit - position, Vector3.up).normalized);
+            root.Hero.SetCombatFocused(false);
+            Physics.SyncTransforms();
+            root.CameraFollow.Snap();
+        }
+
+        private void RemoveCraneTestFooting()
+        {
+            if (craneTestFooting == null) return;
+            craneTestFooting.SetActive(false);
+            Object.Destroy(craneTestFooting);
+            craneTestFooting = null;
+        }
+
+        private IEnumerator BeginActualCraneCapture(CombatActor crane, bool guardAway = false)
+        {
+            PlaceCraneCaptureHero(crane);
+            if (guardAway)
+            {
+                root.Hero.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
+                root.Hero.SetBlock(true);
+            }
+            root.Tick(.7f);
+            Assert.That(crane.TryBeginCraneCycle(root.Hero), Is.True,
+                "The achieved stop must reach the nearby hero within the shared chest-height and six-metre limits. " + CraneAcquisitionDiagnostic(crane));
+            for (int step = 0; step < 600 && !root.Hero.IsRestrained; step++)
+            {
+                root.Tick(CombatTestRoot.SimulationStep);
                 if (step % 120 == 119) yield return null;
             }
-            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1),
-                "The genuine hook must hit before the physical fall; phase=" + crane.CranePhase +
-                ", hook=" + crane.CraneHookPhase + ", actor=" + crane.transform.position + ".");
-            CombatImpact impact = root.Hero.LastImpact;
-            Assert.That(impact.Source, Is.SameAs(crane));
-            Assert.That(impact.Target, Is.SameAs(root.Hero));
-            Assert.That(impact.Kind, Is.EqualTo(CombatImpactKind.Unarmed));
-            // A balance-preserving hit is followed through the same production
-            // physical handoff as the porter regression; the callback is never invoked directly.
-            if (!root.Hero.IsKnockedDown)
+            Assert.That(root.Hero.IsRestrained && crane.HasCraneVictim, Is.True,
+                "Actual hook flight must produce a capture; phase=" + crane.CranePhase + ", hook=" + crane.CraneHookPhase +
+                ", impacts=" + root.Hero.ReceivedImpactCount + ", result=" + root.Hero.LastImpact.Result + ".");
+            Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Embedded));
+            Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Capturing));
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+            if (guardAway) Assert.That(root.Hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Hit),
+                "Holding a crowbar while facing away cannot block the hook entering the exposed body.");
+        }
+
+        private IEnumerator AwaitCraneWatch(CombatActor crane, Vector3 home, bool regeneration)
+        {
+            CombatCranePhase expected = regeneration ? CombatCranePhase.Regenerating : CombatCranePhase.Watching;
+            for (int step = 0; step < 800 && crane.CranePhase != expected; step++)
             {
-                Assert.That(impact.AttackSequence, Is.EqualTo(crane.State.AttackSequence));
-                Assert.That(root.Hero.TryBeginKnockdown(impact, impact.Direction * .8f, Vector3.zero), Is.True);
+                Assert.That(crane.CraneWatchElapsed, Is.Zero, "Watching cannot start while the return carriage is still travelling.");
+                root.Tick(.05f);
+                if (step % 80 == 79) yield return null;
             }
-            Assert.That(root.Hero.IsKnockedDown && root.Hero.IsRagdollActive, Is.True);
-            Assert.That(crane.State.AttackSequence, Is.EqualTo(impact.AttackSequence + 1),
-                "Entering frenzy invalidates the old strike before harmless hook return.");
+            Assert.That(crane.CranePhase, Is.EqualTo(expected));
+            Assert.That(Vector3.Distance(crane.CraneCarriagePosition, home), Is.LessThan(.025f));
+            Assert.That(crane.CraneWatchElapsed, Is.LessThanOrEqualTo(.05f));
+        }
+
+        private IEnumerator CaptureCraneVictim(CombatActor crane, string name)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            bool following = root.CameraFollow.enabled;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                Vector3 focus = root.Hero.BodyWorldPosition + Vector3.up * .8f;
+                Vector3 eye = focus + new Vector3(3.2f, .7f, 3.2f);
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                camera.fieldOfView = 56f;
+                root.AdvanceHudPresentation(.02f);
+                CaptureCraneView(crane, name + " body", gameplayCamera: true);
+                yield return CaptureGameplayHud(name);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                root.CameraFollow.enabled = following;
+            }
         }
 
         private void CaptureCraneFrenzyView(CombatActor crane, string name)
@@ -356,17 +714,17 @@ namespace BarPromenade.Tests.PlayMode
             yield return AdvanceCraneTo(crane, CombatCranePhase.Waiting, cableStarts);
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero, "A hero who leaves the locked flight path must evade the hook.");
             Assert.That(crane.CraneHookThrowCount, Is.EqualTo(lockedThrow));
-            PlaceCraneHero(ringCenter + Vector3.forward * 6.5f, Vector3.back);
+            PlaceCraneHero(ringCenter + Vector3.forward * (crane.CraneHookReach + 1f), Vector3.back);
             TickCrane(crane, .8f);
             Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
-            Assert.That(crane.CraneHookThrowCount, Is.EqualTo(lockedThrow), "A target beyond six metres cannot start a new throw.");
+            Assert.That(crane.CraneHookThrowCount, Is.EqualTo(lockedThrow), "A target beyond the real three-dimensional hook reach cannot start a new throw.");
             for (int angle = 0; angle < 8; angle++)
             {
                 float radians = angle * Mathf.PI * .25f;
                 Vector3 heroPosition = ringCenter + new Vector3(Mathf.Sin(radians), 0f, Mathf.Cos(radians)) * 2.2f;
                 yield return VerifyCraneHookHit(crane, heroPosition, cableStarts,
                     angle == 0 ? "crane-hook-ground" : null);
-                Assert.That(crane.CraneFloorIndex, Is.Zero, "The same achieved stop can throw through the full horizontal circle.");
+                Assert.That(crane.CraneFloorIndex, Is.EqualTo(2), "Each successful capture completes its return to the original ceiling stop.");
             }
 
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
@@ -382,9 +740,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(observedCraneAim.y, Is.GreaterThan(.05f), "The actual throw must aim upward at the supported stair tread.");
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
             yield return AdvanceCraneFloor(crane, 2, cableStarts);
-            yield return VerifyCraneHookHit(crane, new Vector3(4.5f, WarehouseArenaPlan.LevelRise, -6.45f),
-                cableStarts, "crane-hook-top-to-middle");
-            Assert.That(observedCraneAim.y, Is.LessThan(-.2f));
+            yield return VerifyCraneHookHit(crane, new Vector3(4.5f, WarehouseArenaPlan.TopHeight, -6.45f),
+                cableStarts, "Test crane - Same storey gallery hook");
+            Assert.That(observedCraneAim.y, Is.InRange(-.35f, .35f));
             Assert.That(root.Opponent, Is.SameAs(crane), "All storeys use the same living actor without resetting its round.");
             Assert.That(crane.NpcAnimationGraphBuilds, Is.EqualTo(animationGraphs));
 
@@ -408,16 +766,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.CraneAttached, Is.True, "The first head wound retains the continuous suspended rig.");
             AssertCraneAppearance(crane, intact: false);
             crane.ReceiveProjectile(root.Hero, 2, hit, Vector3.down * CombatProjectilePool.MuzzleSpeed);
-            Assert.That(crane.State.IsDefeated, Is.True, "The suspended worker keeps common anatomical damage.");
+            Assert.That(crane.State.IsDefeated, Is.False, "Fatal damage starts regeneration instead of killing the suspended worker.");
             root.Tick(CombatTestRoot.SimulationStep);
-            Assert.That(crane.IsRagdollActive, Is.True);
-            Assert.That(crane.CraneAttached, Is.False);
-            Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Released));
-            Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Released));
-            foreach (Transform cable in preparedCraneCables) Assert.That(cable.gameObject.activeSelf, Is.False);
-            Assert.That(preparedCraneHookCable.gameObject.activeSelf, Is.False);
+            Assert.That(crane.IsCraneRegenerating && crane.IsCraneFrenzied, Is.True);
+            Assert.That(crane.CraneAttached, Is.True);
+            Assert.That(crane.IsRagdollActive, Is.False);
+            foreach (Transform cable in preparedCraneCables) Assert.That(cable.gameObject.activeSelf, Is.True);
+            Assert.That(preparedCraneHookCable.gameObject.activeSelf, Is.True);
             yield return null;
-            CaptureCraneView(crane, "crane-08-released");
+            CaptureCraneView(crane, "Test crane - Suspended regeneration begins");
             root.ResetRound();
             observedCraneThrows = crane.CraneHookThrowCount;
             Assert.That(root.Opponent, Is.SameAs(crane));
@@ -450,7 +807,7 @@ namespace BarPromenade.Tests.PlayMode
             PlaceCraneHero(heroPosition, Vector3.ProjectOnPlane(crane.transform.position - heroPosition, Vector3.up).normalized);
             int throws = crane.CraneHookThrowCount;
             Assert.That(Vector3.Distance(crane.CraneHookCableExit, root.Hero.transform.position + Vector3.up * 1.2f),
-                Is.LessThan(CombatActor.CraneHookMaximumLength), "The supported test target must be in actual three-dimensional cable reach.");
+                Is.LessThan(crane.CraneHookReach), "The supported test target must be in actual three-dimensional cable reach.");
             yield return AdvanceCraneTo(crane, CombatCranePhase.Striking, starts);
             Assert.That(crane.CraneHookThrowCount, Is.EqualTo(throws + 1));
             Assert.That(crane.CraneHookPhase, Is.EqualTo(CombatCraneHookPhase.Outbound).Or.EqualTo(CombatCraneHookPhase.Holding));
@@ -644,11 +1001,12 @@ namespace BarPromenade.Tests.PlayMode
                 int beforeImpacts = root.Hero.ReceivedImpactCount;
                 Vector3 hookBefore = crane.CraneHookPosition;
                 root.Tick(step);
-                if (root.Hero.ReceivedImpactCount > beforeImpacts)
+                if (root.Hero.ReceivedImpactCount > beforeImpacts && root.Hero.LastImpact.Kind != CombatImpactKind.Fall)
                 {
                     Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(beforeImpacts + 1));
                     Assert.That(crane.CraneHookPhase == CombatCraneHookPhase.Outbound ||
                         crane.CraneHookPhase == CombatCraneHookPhase.Holding ||
+                        crane.CraneHookPhase == CombatCraneHookPhase.Embedded ||
                         crane.IsCraneFrenzied && crane.CraneHookPhase == CombatCraneHookPhase.Returning, Is.True,
                         "Only the outbound hook can transact damage, never the fist or returning cable.");
                     Vector3 sweep = crane.CraneHookPosition - hookBefore;
@@ -681,7 +1039,7 @@ namespace BarPromenade.Tests.PlayMode
                 maximumCraneSwing = Mathf.Max(maximumCraneSwing, crane.CraneSwingOffset.magnitude);
                 maximumCraneLimbEnergy = Mathf.Max(maximumCraneLimbEnergy, crane.CraneLimbMotionEnergy);
                 Assert.That(float.IsFinite(crane.CraneHookCableLength), Is.True);
-                Assert.That(crane.CraneHookCableLength, Is.LessThanOrEqualTo(CombatActor.CraneHookMaximumLength + .02f));
+                Assert.That(crane.CraneHookCableLength, Is.LessThanOrEqualTo(crane.CraneHookReach + .02f));
                 if (crane.CraneHookThrowCount != observedCraneThrows)
                 {
                     Assert.That(crane.CraneHookThrowCount, Is.EqualTo(observedCraneThrows + 1));

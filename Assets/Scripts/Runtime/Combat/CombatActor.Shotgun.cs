@@ -128,7 +128,7 @@ namespace BarPromenade
         private void ReceiveShotgunVolleyCore(CombatActor source, int sequence, List<CombatProjectilePool.PelletHit> hits,
             bool firstResponse)
         {
-            if (hits.Count == 0) return;
+            if (hits.Count == 0 || IsCraneRegenerating) return;
             float damage = 0f, strongest = -1f;
             var healthDamage = new float[hits.Count];
             Vector3 impulse = Vector3.zero;
@@ -185,7 +185,7 @@ namespace BarPromenade
                 PublishImpact(impact, before);
                 allocatedHealth = nextHealth;
             }
-            if (terminal) Ragdoll.BeginTerminalConvulsions();
+            if (terminal && State.IsDefeated) Ragdoll.BeginTerminalConvulsions();
             Present();
         }
     }

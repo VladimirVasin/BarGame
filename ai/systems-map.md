@@ -1,8 +1,7 @@
 # Systems map
 
-One row per system: guarantee, owner, status. Decisions: `ai/architecture-notes.md`;
-behaviour: `ai/current-world.md`; history: `ai/release-notes.md`;
-paths: `git ls-files`/`rg`.
+One row per system. Decisions:`ai/architecture-notes.md`;behaviour:`ai/current-world.md`;
+history:`ai/release-notes.md`;paths:`git ls-files`/`rg`.
 
 ## Status vocabulary
 
@@ -49,10 +48,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
-| Crane | Sculpt2K+1K/InsectRig/3floors/6tethers/6mhook/fallFrenzy/refill. | `CombatCraneAppearance`,`Combat*.Crane*` | Current |
+| Crane | Hook6m/up1.5m/hold5/E6/struggle/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
-| Body destruction | Torso skeleton/sever/crawl/reset;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
+| Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -147,7 +146,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
 | Player motor | Tank motion; gun aim:walk speed/no sprint/normalized strafe+diagonals. Snow/contextual limits retained. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |
-| Third-person chase camera | Mouse orbit;RMB aim;.5 m right/1.9 m back/aim1.4;0lag;collision/dolly/fixed-modal ownership. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
+| Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
 | Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |

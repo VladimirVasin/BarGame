@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatImpactKind { Weapon, Kick, Shove, Projectile, Unarmed }
+    public enum CombatImpactKind { Weapon, Kick, Shove, Projectile, Unarmed, Hook, Fall }
     /// <summary>One resolved contact. Presentation cannot change its damage or replay its strike.</summary>
     public readonly struct CombatImpact
     {

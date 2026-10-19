@@ -1121,6 +1121,7 @@ namespace BarPromenade
                 ConfigureJointCommon(joint);
                 joints.Add(joint);
                 CaptureSurvivorArmJointReference(joint);
+                CaptureRestraintJointReference(joint);
                 if (spec.Part == Player3DAnatomicalPart.Head)
                 {
                     headJoint = joint;

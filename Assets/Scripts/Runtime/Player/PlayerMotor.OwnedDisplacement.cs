@@ -4,6 +4,20 @@ namespace BarPromenade
 {
     public sealed partial class PlayerMotor
     {
+        /// <summary>External restraint keeps capsule/world bounds while voluntary input is locked.</summary>
+        internal Vector3 ApplyOwnedForcedDisplacement(object owner, Vector3 displacement)
+        {
+            if (owner == null || !ReferenceEquals(owner, movementConstraintOwner) || controller == null ||
+                !controller.enabled || !IsFinite(displacement) || PauseMenuController.IsAnyPaused ||
+                GameTimeScaleRuntime.IsPaused) return Vector3.zero;
+            displacement.y = 0f;
+            Vector3 refusal = Vector3.zero;
+            CollisionFlags flags = CollisionFlags.None;
+            Vector3 moved = MoveConstrainedDrift(displacement, ref refusal, ref flags);
+            lastContact = PlayerMotorContactSample.From(flags, sideHitThisMove, sideHitNormal, sideHitPoint, refusal);
+            return moved;
+        }
+
         /// <summary>Moves an owning action through the same ground bounds and capsule as ordinary locomotion.</summary>
         public Vector3 ApplyOwnedDisplacement(object owner, Vector3 displacement)
         {

@@ -2,9 +2,8 @@
 
 ## Current baseline
 
-- **Барный Променад / Bar Promenade** is a playable Windows/PC Unity vertical
-  slice with a runtime-composed coastal city, mountain road, alpine village
-  and their interiors. Detailed world facts live in [current-world.md](current-world.md).
+- **Барный Променад / Bar Promenade**:Windows/PC Unity slice;runtime-composed
+  coastal city,mountain road,alpine village/interiors. [World](current-world.md).
 - Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`;versions:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
@@ -85,8 +84,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
   Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.
   HP2/head2/wounds;Room:head0→ret+2s/retlaugh5→idle5;simlive/otherAI0;3weapons/finiteammo.
-  Proxy:exact skin groups/settled aim.
-  Gap:pierce/balance. [World](current-world.md).
+  Crane:5s hook/E6/struggle/bodycam/fall→home/watch10;fatal3→regen10/kill0.
+  Hero:wounds/no detach/frontguard. Proxy:skin/aim.
+  Gap:pierce/balance. [World](current-world.md)
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

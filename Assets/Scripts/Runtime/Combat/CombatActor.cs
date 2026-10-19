@@ -48,12 +48,12 @@ namespace BarPromenade
         public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
         public float SupportGripWeight => supportGrip?.Weight ?? 0f;
         public CombatArmSupportState SupportArmState => supportGrip?.State ?? CombatArmSupportState.SupportingWeapon;
-        public bool IsAvailable => isActiveAndEnabled && (IsBodyGrounded || hero == null ||
+        public bool IsAvailable => isActiveAndEnabled && !IsRestrained && (IsBodyGrounded || hero == null ||
             (hero.CanAcquireClip(this) && !interaction.IsActive && motor.InputEnabled));
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => roomAttackPoseActive || roomHeadPainActive || !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
+        public float MovementScale => IsRestrained || roomAttackPoseActive || roomHeadPainActive || !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
@@ -68,7 +68,7 @@ namespace BarPromenade
 
         // Before sole support is refreshed, an ordinary turn can raise the
         // measured load. Only a live impact owns balance-related turn blocking.
-        internal float TurnScale => roomAttackPoseActive || roomHeadPainActive || IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+        internal float TurnScale => IsRestrained || roomAttackPoseActive || roomHeadPainActive || IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .2f,
@@ -180,9 +180,9 @@ namespace BarPromenade
 
         // Guard and kicks need stable support. An upper-body attempt may share
         // a catching step, but can never cancel an already committed fall.
-        internal bool HasAttackBalance => BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
+        internal bool HasAttackBalance => !IsRestrained && BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        private bool CanAttemptBodyAction => !RoomAttackSuppressed && !IsZombieFrenzied && !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => !IsRestrained && !RoomAttackSuppressed && !IsZombieFrenzied && !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
         internal bool CanAttemptUpperBodyAttack => !HasWeaponSwitchRequest && BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
         private string UpperBodyAttackRejection => !BodyDamage.CanUseRightHand ? "right_hand_unavailable" : weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
@@ -326,6 +326,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            if (IsRestrained) { AdvanceRestraint(seconds); return; }
             if (RoomAttackCooldownActive) AdvanceRoomAttackCooldown(seconds);
             if (IsCrane && !State.IsDefeated) { AdvanceCraneSimulation(seconds); return; }
             if (!presentationFrozen && !ZombieDormant) zombieLoad?.AdvanceCatch(seconds);
@@ -420,7 +421,17 @@ namespace BarPromenade
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f,
             bool physicalBody = false, BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
         {
-            if (damage <= 0f) return MeleeHitResult.Ignored;
+            if (damage <= 0f || IsCraneRegenerating) return MeleeHitResult.Ignored;
+            if (source.IsCrane && CanBlockIncoming(source, direction) && !State.IsDefeated)
+            {
+                reaction = guardImpact; reactionClock = 0f;
+                RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .8f);
+                PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
+                    State.Health, State.Health, MeleeHitResult.Blocked, location, power, part,
+                    localPoint, weaponSpeed, kind: CombatImpactKind.Hook), State.Phase);
+                Present();
+                return MeleeHitResult.Blocked;
+            }
             MeleePhase phaseBefore = State.Phase;
             bool postmortem = State.IsDefeated;
             receivedDuringStep = State.Phase == MeleePhase.Step;
@@ -477,8 +488,8 @@ namespace BarPromenade
                     ? result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse
                     : result == MeleeHitResult.Blocked ? 10f : 25f) :
                     CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
-                kind: unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
-                woundDamage: unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
+                kind: source.IsCrane ? CombatImpactKind.Hook : unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
+                woundDamage: source.IsCrane ? requested : unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
             // A strong fatal torso strike hands the live pose to physics before
             // publishing its momentum, just like a fatal projectile contact.
             bool immediateFall = !postmortem && !detachedPart && State.IsDefeated &&
@@ -603,6 +614,7 @@ namespace BarPromenade
 
         public void Present()
         {
+            if (PresentRestraint()) return;
             using var journalTiming = MeasureJournalWork(JournalWork.Present);
             // The contact has already left the complete visible pose on this rig.
             // Re-solving against a newly injured target during hit-stop would move
@@ -763,6 +775,8 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            CancelRestraint();
+            ResetRestraintDiagnostics();
             EndRoomAttackPose();
             ClearRoomAttackCooldown();
             ResetRoomAttackDamageReceipt();
@@ -854,6 +868,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CancelRestraint();
             RoomAttackSuppressed = false;
             ClearRoomAttackCooldown();
             ResetRoomAttackDamageReceipt();
@@ -885,6 +900,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            CancelRestraint();
             DisposeCrane();
             ClearWarehouseTorsoLook();
             CombatCorpseTraversal.UnregisterActor(this);

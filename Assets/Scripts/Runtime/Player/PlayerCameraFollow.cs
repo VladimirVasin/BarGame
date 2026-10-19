@@ -76,6 +76,7 @@ namespace BarPromenade
         private RaycastHit[] collisionHits = new RaycastHit[24];
         private Camera controlledCamera;
         private Transform followTarget;
+        private CombatActor followCombatActor;
         private bool isInterior;
         private bool fixedPoseActive;
         private Vector3 fixedBasePosition;
@@ -128,6 +129,14 @@ namespace BarPromenade
         public bool OrbitInputEnabled { get; private set; } = true;
         public bool CinematicMotionEnabled { get; private set; } = true;
         public Vector3 CurrentFocusPoint => currentFocusPoint;
+        /// <summary>A physical combat body can leave its upright controller behind.</summary>
+        public bool CombatBodyFocusActive => followCombatActor != null && followCombatActor.isActiveAndEnabled &&
+            followCombatActor.IsRagdollActive && followCombatActor.Ragdoll.PhysicsController != null;
+        public Vector3 CombatBodyFocusPoint => CombatBodyFocusActive
+            ? Vector3.Lerp(followCombatActor.Ragdoll.PhysicsController.PelvisBody.transform.position,
+                followCombatActor.Ragdoll.PhysicsController.ChestBody.transform.position, .5f) + Vector3.up * .35f
+            : followTarget != null ? followTarget.position + Vector3.up *
+                (isInterior ? interiorFocusHeight : exteriorFocusHeight) : Vector3.zero;
         public bool FixedPoseActive => fixedPoseActive;
         public int CollisionLayerMask => collisionMask.value;
         public Pose FixedBasePose =>
@@ -205,6 +214,7 @@ namespace BarPromenade
             ResetTargetLockState();
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
+            followCombatActor = target != null ? target.GetComponent<CombatActor>() : null;
             isInterior = interior;
             collisionMask =
                 collisionMask.value &
@@ -969,6 +979,10 @@ namespace BarPromenade
 
         private Vector3 GetTargetFocusPoint()
         {
+            // Resolve the posed physical body on the camera's own late clock,
+            // after PhysX. An intoxication override must not pull a captured
+            // combatant back toward the capsule left on the floor.
+            if (CombatBodyFocusActive) return CombatBodyFocusPoint;
             float focusHeight = isInterior ? interiorFocusHeight : exteriorFocusHeight;
             Vector3 rootFocus = followTarget.position + Vector3.up * focusHeight;
             if (FocusOverrideWeight <= 0f)
@@ -984,6 +998,7 @@ namespace BarPromenade
 
         private bool ShouldSnapForTeleport()
         {
+            if (CombatBodyFocusActive) return false;
             if (teleportSnapDistance <= 0f)
             {
                 return false;
@@ -1002,7 +1017,8 @@ namespace BarPromenade
             // Carry ordinary locomotion directly with the hero. Damping a
             // moving root made the anchor trail and pulled the view back
             // while running; only changes of the authored focus should lag.
-            currentFocusPoint += displacement * (1f - FocusOverrideWeight);
+            if (CombatBodyFocusActive) displacement = Vector3.zero;
+            else currentFocusPoint += displacement * (1f - FocusOverrideWeight);
             displacement.y = 0f;
             previousTargetPosition = followTarget.position;
             float observedSpeed = deltaTime > 0.0001f

@@ -132,9 +132,7 @@ namespace BarPromenade
                 guarded = false;
                 constraintFailure = false; constraintShape = null;
                 worldCollider = null;
-                Vector3 incoming = source.transform.position - target.transform.position;
-                incoming.y = 0f;
-                fromFront = Vector3.Dot(target.transform.forward, incoming.normalized) >= .35f;
+                fromFront = target.FacingIncomingAttack(source, direction);
             }
 
             private Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
@@ -147,8 +145,7 @@ namespace BarPromenade
                 request = source.journalActionRequest;
                 damage = source.State.AttackDamage; this.weaponSpeed = weaponSpeed;
                 blockCost = source.State.AttackBlockCost; power = source.State.AttackPower;
-                fromFront = target != null && Vector3.Dot(target.transform.forward,
-                    (source.transform.position - target.transform.position).normalized) >= .35f;
+                fromFront = target != null && target.FacingIncomingAttack(source, direction);
                 guarded = metal && target != null && target.State.IsBlocking && fromFront;
                 physicalBody = false;
                 bodyRegion = null; bodyPatch = -1; detachedPart = false;
@@ -214,6 +211,7 @@ namespace BarPromenade
                     GameLog.Field("from_front", fromFront), GameLog.Field("damage_requested", damage));
                 source.State.RecordAttackOutcome(result, attackSequence);
                 source.PlayCraneContactSound(result);
+                if (source.IsCrane) source.ConfirmCraneHookContact(target, attackSequence, result, part, localPoint, point);
                 if (result == MeleeHitResult.Parried) source.ShowParried(point, direction);
             }
         }
@@ -252,6 +250,7 @@ namespace BarPromenade
         private void ReceiveWeaponGuard(CombatActor source, int sequence, Vector3 point, Vector3 normal,
             Vector3 direction, float blockCost, float power)
         {
+            if (!FacingIncomingAttack(source, direction)) return;
             MeleePhase previous = State.Phase;
             MeleeHitResult result = State.ReceiveWeaponObstacle(blockCost, power);
             if (result == MeleeHitResult.Ignored) return;
@@ -370,6 +369,7 @@ namespace BarPromenade
                 {
                     CombatActor target = ContactParticipantAt(participant);
                     if (target == this || !HasPhysicalBody(target) || target.IsFirearm || target.weaponDropped ||
+                        target.State.IsBlocking && !target.frozenWeaponActive && !target.FacingIncomingAttack(this, travel.normalized) ||
                         !target.frozenWeaponValid || !target.Weapon.activeInHierarchy ||
                         !CombatWeaponGeometry.Sweep(sweepValid ? previousWeapon : currentWeapon, currentWeapon,
                             CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleStart),

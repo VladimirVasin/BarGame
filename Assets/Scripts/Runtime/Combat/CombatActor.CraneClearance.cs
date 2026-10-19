@@ -186,7 +186,7 @@ namespace BarPromenade
                     CombatHurtboxes.IntersectsSegment(bridge, from, delta, CraneLimbRadius(i)))
                 { CraneBlockedAnatomy = CraneAnatomyBoneNames[i]; return false; }
             }
-            if (CraneHookPhase is CombatCraneHookPhase.Outbound or CombatCraneHookPhase.Holding or CombatCraneHookPhase.Returning)
+            if (CraneHookPhase is CombatCraneHookPhase.Outbound or CombatCraneHookPhase.Holding or CombatCraneHookPhase.Returning or CombatCraneHookPhase.Embedded)
             {
                 Vector3 exit = wanted + turn * (CraneHookCableExit - transform.position);
                 if (!CranePathVisible(exit, craneHookEye)) return false;

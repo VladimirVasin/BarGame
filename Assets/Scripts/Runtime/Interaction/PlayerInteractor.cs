@@ -19,6 +19,8 @@ namespace BarPromenade
         private int inputRestoredFrame = -1;
         private readonly Dictionary<object, Func<IInteractable, bool>> interactionFilters =
             new Dictionary<object, Func<IInteractable, bool>>();
+        private readonly HashSet<object> interactKeyOwners = new HashSet<object>();
+        private bool legacyInteractKeyClaimed;
 
         /// <summary>A held world item can keep movement free while reserving compatible hand actions.</summary>
         public void SetInteractionFilter(object owner, Func<IInteractable, bool> filter)
@@ -46,7 +48,7 @@ namespace BarPromenade
         /// The prompt hides while the key is claimed, because a prompt
         /// promising a door the key will not open is a lie.
         /// </summary>
-        public bool InteractKeyClaimed { get; private set; }
+        public bool InteractKeyClaimed => legacyInteractKeyClaimed || interactKeyOwners.Count > 0;
 
         public IInteractable ActiveInteractable => activeInteractable;
         public InteractionPromptView PromptView => promptView;
@@ -94,11 +96,23 @@ namespace BarPromenade
         /// </summary>
         public void SetInteractKeyClaimed(bool claimed)
         {
-            InteractKeyClaimed = claimed;
+            legacyInteractKeyClaimed = claimed;
             if (claimed)
             {
                 SetActive(null);
             }
+        }
+
+        /// <summary>Independent readers release only their own key claim, preserving other activities.</summary>
+        public void SetOwnedInteractKeyClaim(object owner, bool claimed)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (claimed)
+            {
+                interactKeyOwners.Add(owner);
+                SetActive(null);
+            }
+            else if (interactKeyOwners.Remove(owner)) inputRestoredFrame = Time.frameCount;
         }
 
         public bool ShowFeedback(

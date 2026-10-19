@@ -2,17 +2,16 @@
 
 ## Статус
 
-Это целевая сюжетная спецификация Барного Променада, парная к
-[художественной библии зон](city-zones-art-bible.md).
+Сюжетная спецификация;парная
+[художественной библии](city-zones-art-bible.md).
 
-- Художественная библия — форма: масса, силуэт, фасад, материал, палитра, свет,
-  следы жизни, звук. Здесь — смысл: события, герой, значение мест, регистр строк.
-- «Что город уже говорит» — реализованное; остальное — утверждённое направление.
-- Работница завода — женщина §11; хронология §25 открыта.
+- Там — масса,силуэт,фасад,материал,палитра,свет,жизнь,звук.
+  Здесь — события,герой,значение мест,регистр строк.
+- «Что город уже говорит» — факты;остальное — утверждённое направление.
+- Работница — женщина §11;хронология §25 открыта.
 - Художественные запреты действуют на **нулевом уровне** шкалы §6;
   выше нуля снимаются только поимённо в §6.
-- Имена героя, жертвы и матери, название и страна города и точный год не
-  определяются.
+- Имена героя/жертвы/матери,название/страна города,точный год не определены.
 
 Главное решение: **это игра про алкоголизм.** Отравление города — сюжет;
 распад одного человека — предмет. Всё сверхъестественное в этой игре имеет
@@ -460,7 +459,7 @@
 | `0` | §12/§21 «Нельзя», «Проверка»; худ. §10g | пассивность/вопрос без ответа/нижний ответ | `2026-09-25`: люк приподнимается/упирается/закрывается→точная нижняя строка; границы — §12. §16/остальной §21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12; худ. §1/§10g | единая походка/скорость; нет замедления вне троп | `2026-09-25`: сугроб деревни — отдельный шаг без бега; глубина/следы/расчистка, не граница. Без урона/возврата/опасности/сюжета/текста; §16/§21/девять проверок, `ai/architecture-notes.md`. |
 | вне шкалы | §6/§7/§16.15/§21;худ.§15a | combat-loss/UI/gore/taunt/undead/rust-otherworld/strobe0 | `2026-09-19`:bar;`2026-09-20`:HP/blood;`2026-09-21`:duel/FPtoilet/rearhead/shy;`2026-09-25`:palm/blood/steps;`2026-10-02`:counter/rise/gaze-shield;`2026-10-03`:kick/AI/recoil;`2026-10-07`:body/guns;`2026-10-08`:aim/reload/destroy/shotgun/flights;`2026-10-09`:pwr/sever-crawl/aim8;`2026-10-10`:carry;`2026-10-12`:warehouse/endless;`2026-10-13`:pop/ammo;`2026-10-14`:corpseStep/cloth0/chestSpot/otherworld/valve-key;`2026-10-15`:fish-power/key-torch-gate/HUD;loathed-docker/mimic-woodbreak/chase-ram/fallfrenzy-SFX/dormant/entrycorrupt-back0;`2026-10-16`:CraneHook/Frenzy/Fishorganic;story0;`2026-10-17`:EndlessZDC/2x/wounds/CraneSculpt;`2026-10-18`:Room/Imprint/LongExposure/Zombie:Lab6/story0;`ai/architecture-notes.md` |
-| вне шкалы | §7/§16.16/§22;худ.§15a | held-hero/camera/room-twin | `2026-10-19`:CombatTest Room:seat2wide→face/out continuous/timekept;simlive/others idle;story/text0;`ai/architecture-notes.md`. |
+| вне шкалы | §7/§16.16/§21/§22;худ.§15a | held-hero/camera/room-twin/Crane | `2026-10-19`:CombatTest Room:seat2wide→face/out continuous/timekept;simlive/others idle. Crane:hook6m/up1.5m/5s/E6bar/pull/struggle/bodycam/fallHP;actualhome→watch10;fatalcry-spasm3→home→regen10/immortal;herowounds/nodetach;frontblock/back0;story/text0;`ai/architecture-notes.md`. |
 | вне шкалы | §3/11/16.10;art§15a | subjective light/SFX | `2026-10-19`:Room twin:abstract collision/dry cloth-seat+wood;figures/anatomy/sex/voice-breath/her/factualmemory/motive0;§3/11/16.10 kept;`ai/architecture-notes.md`. |
 | `0` | §18 «Междомовая арка»; §21 «Проверка» | «молчат», «добавить разговор»; первый пул троих | `2026-09-16`: двое у бочки переговариваются между собой, спящий отвечает из-под одеяла; общие пузыри, пары без повторов, в слышимости героя. Без обращения к нему, просьб, реакции, квеста; §16/§21. |
 | `0` | худ. §2.1a/§10e/§16/§18.19/22 | нет восточной горы/фонарей; равнина/пустая трасса | `2026-09-15`: спуск к городу на дне долины; машины/фонари, первый в пуле `12`, дальше без Light. `ai/architecture-notes.md`. |

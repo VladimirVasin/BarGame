@@ -3,39 +3,36 @@
 [Overview](project-overview.md), [systems](systems-map.md),
 [decisions](architecture-notes.md).
 
-Loading (`2026-09-06`, art§15a): static painting/directed City↔MountainRoad↔Village
-edge/bottom bar; direct map uses last leg. Village warm/inhabited;
-no text/portrait/spoiler/new fact; architecture exception.
+Loading (`2026-09-06`,art§15a):static painting/directed City↔MountainRoad↔Village
+edge/bar;direct map:last leg;Village warm/inhabited;text/portrait/spoiler/newfact0.
 
 ## Implemented MVP
 
-Runtime-composed coastal City; separate MountainRoad/Village above cableway/
-upper-house interior. One modular low-poly 3D hero walks streets/climb/lane;
-home-adjacent bar/shop/home/church north of cemetery: separate interiors/matching returns.
+Runtime-composed coastal City/MountainRoad/Village/cableway/upper-house;
+modular low-poly 3D hero/streets-climb-lane. Bar/shop/home/church north of
+cemetery:own interiors/returns.
 
 
 ### Areas and scenes
 
-- six named winter neighbours greet the hero. `VillageHouseholdCatalog` fixes
-  31 house/family pairs: `04` Veidra, `08` Drauven, `11` Kersna and
-  mother's house are occupied; other windows stay dark. Hero/mother remain
-  unnamed.
-  The station worker checks his cargo lid. At `04` the woman loads six logs,
-  delivers two baskets to separate supports, then tends/rests. `08`/`11` have
-  shovel/support, closed basket/rests, hinged gate/fence returns. The shovel
-  worker picks up, makes three strokes and returns it; the visitor carries
-  her basket to `08` and back through the gate. Repair/sewing neighbours visit
-  yards and work in `08`'s accessible lower room, visible through two windows.
-  Chair repair is finite; sewing: sit/unpack/work/fold/closed-box stow/stand.
-  `VillageNeighbourhoodPlan`: at most four outside, outings `05:00–18:30`,
+- Six named winter neighbours greet hero. `VillageHouseholdCatalog`:
+  31 house/families;occupied:`04` Veidra,`08` Drauven,`11` Kersna,mother;
+  other windows dark;hero/mother unnamed. Station worker checks cargo lid.
+  At `04`:six logs,two baskets to separate supports,tend/rest. `08`/`11`:
+  shovel/support,closed basket/rests,hinged gate/fence returns. Shovel:
+  pick up/three strokes/return;visitor carries basket to `08` and back through
+  gate. Repair/sewing neighbours visit yards/work in `08`'s accessible lower
+  room,visible through two windows.
+  Chair repair finite;sewing:sit/unpack/work/fold/closed-box stow/stand.
+  `VillageNeighbourhoodPlan`:≤4 outside,outings `05:00–18:30`,
   completed before evening return. Moving doors/L-shaped solid vestibules
   at `04/08/11` hide active bodies. Gusts pause movement/waiting for `2.2 s`
   without releasing grips. Neighbours yield/sidestep; pause freezes life.
   `VillageLife` covers bodies/contacts/passages and evening/morning transitions.
   Hero opens/closes `08`, enters, sits and holds the chair rail for the joint.
   Indoors: no cold/snow/fog, muffled outdoor sound, storm through windows.
-  Shared room/hallway fixed views avoid shoulder close-ups. Outdoor help:
-  existing lid/gate/baskets/shovel; hold a moving
+  Room/hallway fixed views avoid shoulder close-ups. Outdoor help:
+  lid/gate/baskets/shovel;hold a moving
   partner's prop, carry full baskets freely between supports, or clear one of
   three patches and return the shovel. Production-rig torso actions retain free
   carrying movement. Residents fetch spring water and
@@ -142,19 +139,23 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   D7fan/redshadows/deckblock/guards;LM65chest/look/black12m/fog-sky0/near;warm lens-halo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
   stop/noreplay/exitfade.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seeded start-reset-refill/≤5warm/≤2corpses/roleIDs.
-  Lab:Arena/6warm/1target/Zombie;reset/prepkept.
+  Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;abstract clash/clothseat/wood;§6.
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
-  Crane:flesh/carapace/6cables;3floor/6m3DLOS1hit-return;
-  pendulum/voidCOL/ragdoll/ownfall→5sFrenzy/holdAI;
-  pause/reset-disable-deathclear;art§15a.
+  Crane:flesh/carapace/6cables/3floors/6m/up1.5m-chest/LOS/locked1hit;
+  zonepuncture→5s pull/activephys-struggle/bodycam/fallHP;
+  escape6freshE/bar/held0;success→actualhome→watch10;
+  fatalcry-spasm3→home→regen10/full/sameactor/kill0.
+  Frontcrowbar fullblock/back0;sharedblockfront dot≥.35.
+  Hero:wounds/HP,no head-limb-bodydetach globally.
+  pendulum/voidCOL;pause-modal-focus/reset-disable-unload;art§15a.
   18anchors/shared COL/occupied0decor;
   2.7m/samefloor/LOS|hit→rig.65s/limbs-head breakwood;
   Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
   reset:Endless unseen/Std initial. Audio14/2voices/≤2groans/SfxWorld/wood-wet sync;
   Kill1x/heroend;injury-action-ammo-flights kept;
   unused→oldest/excess retire;
-  body-drop0/focus≠hits/Tab-E0.
+  bodydrop0/focus≠hits/Tab-E0.
   All3/defaultbar/stow-draw/fallcancel/pose-ammo/sharedE.
   Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;
   1.7m/s/plantbursts;ram.9m(.25/.18/2.4)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
@@ -165,7 +166,7 @@ home-adjacent bar/shop/home/church north of cemetery: separate interiors/matchin
   Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloE/fridgecurve/hollowCOL/shared/full0/part1/ownbayopen/resetshut;
   Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
-  Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
+  Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
   Bar:bat/hook→/shoulder-block/charge/free/8seg/1hit/recoil/6zones;taunt/Eshared/0grant.
   Cloth:rig-anchors/hand-opening/physics0/hair;pause-drop-resetclean.

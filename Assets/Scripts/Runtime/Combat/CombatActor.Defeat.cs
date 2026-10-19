@@ -39,6 +39,8 @@ namespace BarPromenade
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
+            if (TryBeginCraneRegeneration()) return;
+            CancelRestraint();
             ClearRoomAttackCooldown();
             ReleaseCraneSuspension();
             EndZombieFrenzy();
@@ -59,6 +61,7 @@ namespace BarPromenade
 
         private void BeginProjectileDefeat(CombatImpact impact)
         {
+            if (TryBeginCraneRegeneration()) return;
             long start = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
@@ -96,6 +99,7 @@ namespace BarPromenade
 
         internal void AdvanceRoundEnd(float seconds)
         {
+            CancelRestraint();
             ClearRoomAttackCooldown();
             if (CraneAttached && !State.IsDefeated)
             {

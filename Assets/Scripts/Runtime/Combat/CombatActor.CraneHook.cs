@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatCraneHookPhase { Stowed, Outbound, Holding, Returning, Released }
+    public enum CombatCraneHookPhase { Stowed, Outbound, Holding, Returning, Released, Embedded }
 
     public sealed partial class CombatActor
     {
         public const float CraneHookMaximumLength = 6f;
         private GameObject craneHookFrame, craneCuffFrame;
         private Transform craneHookEyeAnchor, craneHookImpact, craneCableExit, craneAttackCable;
-        private Vector3 craneAttackCableScale, craneHookEye, craneHookVelocity, craneHookInitialVelocity;
+        private Vector3 craneAttackCableScale, craneHookEye, craneHookVelocity, craneHookInitialVelocity, craneHookImpactOffset;
         private Quaternion craneHookRotation;
         private readonly Vector3[] craneHookContactFrom = new Vector3[5], craneHookContactTo = new Vector3[5];
         private SkinnedMeshRenderer[] craneHiddenHands;
@@ -26,6 +26,7 @@ namespace BarPromenade
         public Vector3 CraneHookEyePosition => craneHookEyeAnchor != null ? craneHookEyeAnchor.position : transform.position;
         public Vector3 CraneHookCableExit => craneCableExit != null ? craneCableExit.position : craneHand.position;
         public float CraneHookCableLength => Vector3.Distance(CraneHookCableExit, CraneHookEyePosition);
+        public float CraneHookReach => CraneHookMaximumLength;
         public Vector3 CraneHookAimDirection { get; private set; }
         public Vector3 CraneHookFlightOrigin { get; private set; }
         public int CraneHookThrowCount { get; private set; }
@@ -54,6 +55,7 @@ namespace BarPromenade
             GameObject cuff = CombatCraneAssetProvider.CreateWristSocket(craneCuffFrame.transform);
             craneCableExit = CityPedestrianHandProps.FindSocket(cuff.transform, CombatCraneAssetProvider.WristCableAnchor);
             if (craneHookEyeAnchor == null || craneHookImpact == null || craneCableExit == null) throw new InvalidOperationException("Missing crane hook attachment.");
+            craneHookImpactOffset = craneHookFrame.transform.InverseTransformPoint(craneHookImpact.position);
             craneAttackCable = CombatCraneAssetProvider.CreateCableSegment(craneSuspensionHost.transform).transform;
             craneAttackCable.name = "Crane attack cable"; craneAttackCableScale = craneAttackCable.localScale;
             craneHookBody = craneHookFrame.AddComponent<Rigidbody>(); craneHookBody.isKinematic = true; craneHookBody.useGravity = false;
@@ -92,7 +94,7 @@ namespace BarPromenade
             CraneHookAimDirection = craneDirection = direction;
             craneHookEye = CraneHookFlightOrigin = CraneHookCableExit + direction * .12f;
             Vector3 targetEye = target - direction * CombatCraneAssetProvider.HookImpactOffsetMetres;
-            targetEye = CraneHookCableExit + Vector3.ClampMagnitude(targetEye - CraneHookCableExit, CraneHookMaximumLength);
+            targetEye = CraneHookCableExit + Vector3.ClampMagnitude(targetEye - CraneHookCableExit, CraneHookReach);
             craneHookDuration = Mathf.Clamp(Vector3.Distance(craneHookEye, targetEye) / 11f, .2f, .7f);
             craneHookInitialVelocity = (targetEye - craneHookEye) / craneHookDuration + Vector3.up * (4.905f * craneHookDuration);
             craneHookVelocity = craneHookInitialVelocity; craneHookTime = craneHookHold = 0f;
@@ -115,7 +117,7 @@ namespace BarPromenade
                 float time = Mathf.Min(craneHookTime, craneHookDuration + .08f);
                 wanted = CraneHookFlightOrigin + craneHookInitialVelocity * time + Vector3.down * (4.905f * time * time);
                 craneHookVelocity = craneHookInitialVelocity + Vector3.down * (9.81f * time);
-                wanted = CraneHookCableExit + Vector3.ClampMagnitude(wanted - CraneHookCableExit, CraneHookMaximumLength - .08f);
+                wanted = CraneHookCableExit + Vector3.ClampMagnitude(wanted - CraneHookCableExit, CraneHookReach - .08f);
             }
             else wanted = Vector3.MoveTowards(from, CraneHookCableExit + Vector3.down * .1f, seconds * 8f);
             float fraction = CraneHookWorldFraction(from, wanted, craneHookRotation);
@@ -125,7 +127,7 @@ namespace BarPromenade
             if (outbound)
             {
                 collectSweep = true; sweepFrom = Mathf.Max(0f, State.AttackElapsed - seconds); sweepTo = State.AttackElapsed; pendingSequence = State.AttackSequence;
-                if (craneHookWorldBlocked || craneHookTime >= craneHookDuration + .08f || CraneHookCableLength >= CraneHookMaximumLength - .02f)
+                if (craneHookWorldBlocked || craneHookTime >= craneHookDuration + .08f || CraneHookCableLength >= CraneHookReach - .02f)
                 { CraneHookPhase = CombatCraneHookPhase.Holding; craneHookHold = 0f; craneSwayVelocity += Vector3.ProjectOnPlane(CraneHookAimDirection, Vector3.up) * .4f; }
             }
             else if (!craneHookWorldBlocked && Vector3.Distance(craneHookEye, CraneHookCableExit) < .13f)
@@ -167,6 +169,7 @@ namespace BarPromenade
             {
                 GetCraneStowedHookPose(out craneHookEye, out craneHookRotation);
             }
+            else if (CraneHookPhase == CombatCraneHookPhase.Embedded) UpdateCraneEmbeddedHook();
             craneHookFrame.transform.SetPositionAndRotation(craneHookEye, craneHookRotation);
             Vector3 delta = CraneHookEyePosition - CraneHookCableExit;
             craneAttackCable.SetPositionAndRotation(CraneHookCableExit, Quaternion.FromToRotation(Vector3.up, delta));

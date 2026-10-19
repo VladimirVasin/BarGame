@@ -4,7 +4,8 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatCranePhase { Waiting, Signal, Descending, Striking, Recovering, Ascending, Released, Frenzied }
+    public enum CombatCranePhase { Waiting, Signal, Descending, Striking, Recovering, Ascending, Released, Frenzied,
+        Capturing, ReturningHome, Watching, Regenerating }
 
     public sealed partial class CombatActor
     {
@@ -19,6 +20,7 @@ namespace BarPromenade
             "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"
         };
         private const float CraneSignalSeconds = .65f, CraneStrikeSeconds = 1.1f;
+        public const float CraneMaximumAttackHeightAboveTarget = 1.5f;
         // The enlarged head keeps clear of the lower gantry cassette upstairs.
         private const float CraneRestHeight = .40f, CraneWellHalfWidth = 5f;
         internal const int CraneCableSegments = 4;
@@ -143,6 +145,7 @@ namespace BarPromenade
         internal void ConfigureCraneSuspension(Vector3 ground, Vector3 ceiling)
         {
             CraneGroundPosition = ground; CraneAnchorPosition = ceiling;
+            CraneHomePosition = ground + Vector3.up * (WarehouseArenaPlan.TopHeight + CraneRestHeight);
             craneRails.transform.position = new Vector3(0f, ceiling.y, 0f);
             ResetCraneSuspension(); Present();
         }
@@ -150,7 +153,8 @@ namespace BarPromenade
         private void ResetCraneSuspension()
         {
             if (!IsCrane || craneSuspensionHead == null) return;
-            ResetZombieFrenzy(); CraneFrenzyPlayCount = 0;
+            ResetCraneAttackLifecycle();
+            ResetZombieFrenzy(); CraneFrenzyPlayCount = 0; CraneFrenzySecondsElapsed = 0f;
             craneClock = cranePerceptionWait = craneHurtHold = craneHurtClock = craneBreathWait = 0f; craneCooldown = .6f;
             craneFloor = craneDestinationFloor = 2; cranePatrolStop = CraneArrivedStops = 0;
             craneChangingFloors = craneTravelling = craneStarting = CraneTravelBlocked = false;
@@ -175,11 +179,24 @@ namespace BarPromenade
             if (RoomAttackSuppressed || !CraneAttached || craneTravelling || CranePhase != CombatCranePhase.Waiting || craneCooldown > 0f ||
                 cranePerceptionWait > 0f || roundEnded || State.Phase != MeleePhase.Ready || target == null || target.State.IsDefeated) return false;
             cranePerceptionWait = .12f;
-            Vector3 delta = CraneTargetPoint(target) - CraneHookCableExit;
-            if (delta.sqrMagnitude > CraneHookMaximumLength * CraneHookMaximumLength || delta.sqrMagnitude < .16f ||
-                !CranePathVisible(CraneHookCableExit, CraneTargetPoint(target))) return false;
-            craneDirection = delta.normalized;
+            if (!TryResolveCraneThrowDirection(target, out Vector3 direction)) return false;
+            craneDirection = direction;
             SetCranePhase(CombatCranePhase.Signal); return true;
+        }
+
+        private bool TryResolveCraneThrowDirection(CombatActor target, out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            // Compare the two live bodies. The gantry remains at the ceiling,
+            // and wrist animation must not change the permitted elevation.
+            if (target == null || target.State.IsDefeated || target.Ragdoll == null ||
+                !target.Ragdoll.PhysicsController.TryGetCombatBone(Player3DAnatomicalPart.Torso, out Transform targetChest) ||
+                craneClearanceBones[2].position.y - targetChest.position.y > CraneMaximumAttackHeightAboveTarget) return false;
+            Vector3 point = CraneTargetPoint(target), delta = point - CraneHookCableExit;
+            if (delta.sqrMagnitude > CraneHookReach * CraneHookReach || delta.sqrMagnitude < .16f ||
+                !CranePathVisible(CraneHookCableExit, point)) return false;
+            direction = delta.normalized;
+            return true;
         }
 
         private bool CranePathVisible(Vector3 from, Vector3 to)
@@ -209,7 +226,6 @@ namespace BarPromenade
         {
             collectSweep = collectShove = collectKick = false; simulationPosePending = false;
             if (!CraneAttached || presentationFrozen || !RoomAttackSuppressed && !GameInput.CanRead(GameInputContext.Gameplay)) return;
-            InterruptZombieFrenzyIfNeeded();
             poseClock += seconds;
             craneCooldown = Mathf.Max(0f, craneCooldown - seconds); cranePerceptionWait = Mathf.Max(0f, cranePerceptionWait - seconds);
             if (poseBlendRemaining > 0f) poseBlendRemaining = Mathf.Max(0f, poseBlendRemaining - seconds);
@@ -222,7 +238,7 @@ namespace BarPromenade
                 return;
             }
             if (!CranePatrolEnabled || roundEnded || contactTarget != null && contactTarget.State.IsDefeated)
-            { EndZombieFrenzy(); StopCraneVoices(); return; }
+            { ReleaseCraneVictim(false); StopCraneVoices(); return; }
             if (IsCraneFrenzied)
             {
                 AdvanceCraneFrenzy(seconds);
@@ -232,6 +248,7 @@ namespace BarPromenade
             if (craneBreathWait <= 0f && !craneBodyVoice.isPlaying)
             { craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound(); craneBodyVoice.Play(); craneBreathWait = 2f; }
             craneClock += seconds;
+            if (craneRetreatRequested && CranePhase == CombatCranePhase.Waiting) BeginCraneReturnHome();
             Vector3 previous = transform.position, oldCommand = craneCommand;
             if (craneTravelling && craneHurtHold <= 0f)
             {
@@ -239,7 +256,7 @@ namespace BarPromenade
                 {
                     craneFloor = craneDestinationFloor; craneStationPosition = CraneTravelGoal;
                     craneChangingFloors = false; CraneArrivedStops++;
-                    SetCranePhase(CombatCranePhase.Waiting);
+                    if (CranePhase != CombatCranePhase.ReturningHome) SetCranePhase(CombatCranePhase.Waiting);
                 }
             }
             else if (!craneTravelling) switch (CranePhase)
@@ -253,7 +270,15 @@ namespace BarPromenade
                         Vector3 aim = CraneTargetPoint(contactTarget) - CraneHookCableExit;
                         if (aim.sqrMagnitude > .001f) craneDirection = aim.normalized;
                     }
-                    if (craneClock >= CraneSignalSeconds) SetCranePhase(CombatCranePhase.Striking);
+                    if (craneClock >= CraneSignalSeconds)
+                    {
+                        if (TryResolveCraneThrowDirection(contactTarget, out Vector3 releaseDirection))
+                        {
+                            craneDirection = releaseDirection;
+                            SetCranePhase(CombatCranePhase.Striking);
+                        }
+                        else SetCranePhase(CombatCranePhase.Waiting);
+                    }
                     break;
                 case CombatCranePhase.Striking:
                     AdvanceCraneHook(seconds);
@@ -265,7 +290,15 @@ namespace BarPromenade
                     if (CraneHookPhase == CombatCraneHookPhase.Stowed && craneClock >= .6f)
                     { State.CancelAction(); SetCranePhase(CombatCranePhase.Waiting); }
                     break;
+                case CombatCranePhase.Capturing:
+                    AdvanceCraneCapture();
+                    break;
+                case CombatCranePhase.Watching:
+                case CombatCranePhase.Regenerating:
+                    AdvanceCraneWatch();
+                    break;
             }
+            if (CranePhase == CombatCranePhase.ReturningHome) AdvanceCraneHomeArrival(seconds);
             AdvanceCraneDynamics(seconds, (craneCommand - oldCommand) / Mathf.Max(.0001f, seconds));
             Vector3 direction = craneChangingFloors ? -Vector3.ProjectOnPlane(craneCommand, Vector3.up) : Vector3.ProjectOnPlane(craneDirection, Vector3.up);
             Quaternion rotation = direction.sqrMagnitude > .01f ? Quaternion.LookRotation(direction) : transform.rotation;
@@ -279,15 +312,18 @@ namespace BarPromenade
         private void SuppressCraneForRoomAttack()
         {
             if (!CraneAttached) return;
+            ReleaseCraneVictim(false);
             craneTravelling = craneChangingFloors = craneStarting = false;
-            craneFrenzyResumeTravelling = craneFrenzyResumeChangingFloors = false;
             craneWaypointCount = craneWaypointIndex = 0;
             craneMoveSpeed = craneBrakeClock = craneMotorClock = craneBlockedClock = 0f;
             CraneMotionAxis = 0; CraneTravelBlocked = false;
             craneStationPosition = CraneTravelGoal = craneCommand;
             craneContactValid = false; craneStrikeStopped = true;
             StopCraneMotors(); craneRelease.Stop();
-            SetCranePhase(CombatCranePhase.Waiting);
+            // The cinematic temporarily owns hostile movement. A pending
+            // retreat resumes from this achieved position when that owner ends.
+            if (CranePhase is not (CombatCranePhase.Watching or CombatCranePhase.Regenerating or CombatCranePhase.Frenzied))
+                SetCranePhase(CombatCranePhase.Waiting);
             if (CraneHookPhase is CombatCraneHookPhase.Outbound or CombatCraneHookPhase.Holding)
                 BeginCraneHookReturn();
         }
@@ -424,7 +460,8 @@ namespace BarPromenade
         {
             if (!CraneAttached) return;
             int index = CranePhase switch { CombatCranePhase.Signal => 1, CombatCranePhase.Descending => 2,
-                CombatCranePhase.Striking => 3, CombatCranePhase.Recovering => 4, CombatCranePhase.Ascending => 5, _ => 0 };
+                CombatCranePhase.Striking => 3, CombatCranePhase.Capturing or CombatCranePhase.Recovering => 4,
+                CombatCranePhase.Ascending or CombatCranePhase.ReturningHome => 5, _ => 0 };
             if (craneTravelling) index = craneStarting ? 7 : craneBrakeClock > 0f ? 8 : CraneMotionAxis is 1 or 3 ? 6 : index;
             if (craneHurtClock > 0f) index = 9;
             AnimationClip clip = craneClips[index];
@@ -451,7 +488,7 @@ namespace BarPromenade
 
         private void ReceiveCraneImpulse(CombatImpact impact)
         {
-            if (impact.Result == MeleeHitResult.Ignored) return;
+            if (impact.Result == MeleeHitResult.Ignored || IsCraneRegenerating) return;
             craneSwayVelocity += Vector3.ClampMagnitude(Vector3.ProjectOnPlane(impact.Impulse, Vector3.up) * .008f, .65f);
             craneHurtHold = .18f; craneHurtClock = .55f;
             BeginPoseBlend(.08f);
@@ -475,6 +512,7 @@ namespace BarPromenade
         private void ReleaseCraneSuspension()
         {
             if (!CraneAttached) return;
+            ReleaseCraneVictim(false);
             CranePhase = CombatCranePhase.Released;
             craneChangingFloors = craneTravelling = false;
             CraneMotionAxis = 0;
@@ -487,6 +525,7 @@ namespace BarPromenade
         private void SuspendCrane()
         {
             if (!IsCrane || craneSuspensionHead == null) return;
+            ReleaseCraneVictim(false);
             EndZombieFrenzy();
             StopCraneVoices();
             craneSuspensionHost.SetActive(false);
@@ -502,6 +541,7 @@ namespace BarPromenade
 
         private void DisposeCrane()
         {
+            ReleaseCraneVictim(false);
             CombatCorpseTraversal.ReleaseCollider(craneHookCollider); CombatCorpseTraversal.ReleaseCollider(craneCuffCollider);
             if (craneSuspensionHost != null) Destroy(craneSuspensionHost);
         }

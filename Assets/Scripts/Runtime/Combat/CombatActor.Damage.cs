@@ -69,7 +69,7 @@ namespace BarPromenade
                 GameLog.Field("weapon_speed", impact.WeaponSpeed));
             JournalImpactEvent("impact_kind", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("kind", impact.Kind switch
-                { CombatImpactKind.Kick => "kick", CombatImpactKind.Shove => "shove", CombatImpactKind.Projectile => "projectile", CombatImpactKind.Unarmed => "unarmed", _ => "weapon" }));
+                { CombatImpactKind.Kick => "kick", CombatImpactKind.Shove => "shove", CombatImpactKind.Projectile => "projectile", CombatImpactKind.Unarmed => "unarmed", CombatImpactKind.Hook => "hook", CombatImpactKind.Fall => "fall", _ => "weapon" }));
             JournalImpactEvent("impact_anatomy", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("region", (int)impact.Location.Region), GameLog.Field("side", (int)impact.Location.Side),
                 GameLog.Field("is_critical", impact.IsCritical), GameLog.Field("is_finisher", impact.IsFinisher),

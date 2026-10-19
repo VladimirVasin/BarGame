@@ -2,17 +2,19 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a:forced hook/continuous hero/no contextual approach. 6m/chest-up1.5m/start-release LOS/lockedthrow/zonepuncture1→5s embed/pain/drag-lift/activephys-struggle/bodycam-orbit/fallHP;release restores drives. E6fresh+silent charcoal/bone Ebar,held0. Success/earlyescape→actualhome→watch10. Fatal always cry/spasm3→home→regen10/full;sameactor-slot/no kill-reward-corpse. Hero:HP/visualwounds,no head-limb-body separation. Blockable attacks:horizontal front dot≥.35;frontcrowbar fullyblocks hook/no guardbreak,back0. Pause/modal/focus freeze;reset-disable-unload clear input/rig/anchor/UI;story/outsideworld0.
+
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a:twin/nonstrobe abstract collisions+dry cloth-seat/wood;figures-anatomy-sex/voice-breath/factualmemory-motive0. `CombatRoomAttackTableau`:1Spot/8×256R8/exclusiveLayer+restore;pause-focus-exit clear/RT-matalloc0
 
-- **Accepted exception 2026-10-19, Room attack:** §6/7/16.16/art§15a;text0;Cam:focus.9/point1/chest.6/in1/seat2:wide→face/out.6/ret.8; P/C/I/S FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;out face→rev/ret norm;headhigh arm/indexray(headsize kept)/3palmarfingers/opposedthumb/wristroll. Skin/4frames/hole;weighted Player3DV2-chair-lamp/FBXscale;dupewalls0/up;cached plaster-threshold→LimbTwoBoneIk/boot-pelvis-chair/seatbackoff. Gameplaytwin-warp-fade/hotbake-load-alloc0. HeroLhead0→ret+2s/input0;ret18HP1x/laugh5s. Simlive/others+spawns idle→heroend. Vulnerable/hitcancel/HUDlock→HP3sunlock. Laughend-cancel→idle5s/remainder0;hits keep/hurt wins. Idle:planted/headcant/breath/lag-twitchhands/blend. Pause0;death-reset-disable-end-exit:rig-cam-input-lock clear1x.
+- **Accepted exception 2026-10-19, Room attack:** §6/7/16.16/art§15a;text0;Cam:focus.9/point1/chest.6/in1/seat2:wide→face/out.6/ret.8;P/C/I/S FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;out reverse/ret normal. Head-high indexray/headsize kept;3palmarfingers/thumb/wristroll. Skin/4frames/hole;weighted Player3DV2-chair-lamp/FBXscale;dupewalls0/up;cached plaster-threshold→LimbTwoBoneIk/boot-pelvis-chair/seatbackoff;warp-fade/hotbake-load-alloc0. HeroLhead0→ret+2s/input0;ret18HP1x/laugh5s;simlive/others+spawns idle→heroend. Vulnerable/hitcancel/HUDlock→HP3sunlock;Laughend-cancel→idle5s/remainder0;hits keep/hurt wins. Idle:planted/headcant/breath/lag-twitchhands/blend. Pause0;death-reset-disable-end-exit clear1x.
 
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
 
 - **Accepted 2026-10-19, warehouse roster:** Main:Crane/Room/Docker only;Endless1–5/def3;Crane last/≤2corpses;Lab6/Zombie/default1target/≤6warm;§6/art§15a/story0.
 
-- **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/6m3DLOShook/5sFrenzy;pause-reset-ragdoll;§6/story0.
+- **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/pause-reset;§6/story0.
 
-- **Accepted exception 2026-10-17, endless endurance:** Crane3Drefill/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
+- **Accepted exception 2026-10-17, endless endurance:** Crane/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 
 - **Accepted 2026-10-16, warehouse storage:** 3room+6wall/27leaves/soloE/fridgecurve/hollowCOL; multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell; reset-respawnkeep/Endlessrespawn/resetshut; 8/2+0/reserveonly/wave-story0/lamp-matclone0.
 
@@ -2074,39 +2076,29 @@
 - **Accepted — Data-first generation:** A pure `CityLayout` is validated before GameObjects are created.
 - **Accepted — Stable local randomness:** Road stages and lot coordinates use stable hashes; Unity global random state is not used.
 - **Accepted — Finite connected graph:** Kruskal-style spanning tree plus
-  deterministic optional interior loops. For `default-coastal`, every edge
-  where its road-grid footprint meets non-road-grid space is appended after
-  the seeded graph and access-repair passes as mandatory Street. This preserves
-  the protected entrance graph while district street priorities shape the
-  remaining interior selection. Continuous river-bank roads and
-  two road bridges join the west/east perimeters into one outer circuit.
-  A blueprint's `AuthoredStreets` (`CityBlueprintBuilder.WithAuthoredStreet`,
-  validated against the road grid) are appended last under the same rule;
-  `default-coastal` authors `(10,4)-(10,5)` (`2026-09-16`) so the x = 10
-  Nightlife lane ends in a crossroads at `(10,5)` rather than a stub between
-  lots `(9,4)` and `(10,4)`. Seven other one-block stubs remain seeded.
-  Legacy and custom blueprints retain their prior graph policy.
+  deterministic optional interior loops. `default-coastal`:road-grid boundary
+  edges become mandatory Street after seeded graph/access repair;protected
+  entrances stay,district priorities shape the interior. River-bank roads/two
+  bridges join west/east into one outer circuit. Grid-validated `AuthoredStreets`
+  (`CityBlueprintBuilder.WithAuthoredStreet`) append last by the same rule.
+  Authored `(10,4)-(10,5)` (`2026-09-16`):Nightlife x=10 lane reaches crossroads
+  `(10,5)`,not a stub between `(9,4)`/`(10,4)`;seven other stubs stay seeded.
+  Legacy/custom graph policy stays.
 - **Accepted — Stable blueprint identity over position:** An immutable
   `CityBlueprint` owns stable area IDs, category, reusable visual archetype,
   placement policy and per-cell topology. Movable urban areas may swap cell
   sets without changing roads; `CityDistrictKind` remains a presentation and
   legacy-system archetype, not canonical area identity. The session persists
   one blueprint ID and seed shared by City and Home.
-- **Accepted — Anchored coastal sparse city:** The default blueprint keeps a
-  connected `13 x 12` urban envelope with four urban areas and 144 land-use
-  cells: an added central river column splits the former `12 x 12` grid while
-  the eastern half shifts outward without losing a lot. The 16-cell central
-  park becomes two `2 x 4` regions joined by its own footbridge. A full-width
-  walkable northern beach and continuous non-walkable water row remain. The
-  playable default also extends east
-  with a `3 x 2` cemetery, a separate `4 x 2` church precinct immediately
-  north of it, and a residual `4 x 4` north-east yard (the drained
-  former lake block). Cemetery and yard retain the shared open-area
-  street-access contract; the church owns one explicit west frontage without
-  participating in the pre-MST access repair. The cemetery owns deterministic
-  runtime-composed landmarks. Roads, ground, navigation and map
-  drawing consume only active cells, so connected holes and non-rectangular
-  outlines remain real voids.
+- **Accepted — Anchored coastal sparse city:** Default:connected `13 x 12`
+  envelope/four urban areas/144 land-use cells;central river column splits the
+  old `12 x 12` grid,eastern half shifts without lot loss. Central park:
+  two `2 x 4` regions/footbridge;full-width walkable north beach/continuous
+  non-walkable water row. East:`3 x 2` cemetery,`4 x 2` church immediately
+  north,`4 x 4` north-east yard/drained former lake. Cemetery/yard keep open-area
+  street access;church:explicit west frontage/no pre-MST access repair.
+  Cemetery landmarks:deterministic runtime composition. Roads/ground/navigation/
+  map consume active cells only;holes/non-rectangular outlines stay real voids.
 - **Accepted — Church is a special precinct with split Blender payloads:**
   `default-coastal` carves `RectInt(13,2,4,2)` from the former eastern Yard
   and keeps the residual Yard rectangular at `RectInt(13,4,4,4)`. Church is

@@ -38,6 +38,7 @@ namespace BarPromenade
                 if (!supportSurfaces.Contains(surface)) supportSurfaces.Add(surface);
             }
             else supportSurfaces.Remove(surface);
+            owner.RegisterRestraintLanding(collision);
             if (central) owner.RegisterGroundContact(collision);
         }
     }

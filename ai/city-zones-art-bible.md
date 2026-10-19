@@ -2,18 +2,16 @@
 
 ## Статус
 
-Это целевая художественная спецификация Барного Променада.
+Художественная спецификация Барного Променада.
 
-- Раздел «Текущее состояние» описывает уже реализованные факты.
-- Остальной документ фиксирует утверждённое направление будущей реализации.
+- «Текущее состояние» — реализованные факты;остальное — утверждённое направление.
 - Канонические системные виды сохраняются: OldTown, Residential, Industrial,
   Nightlife и CentralPark.
 - Канонические названия на карте сохраняются: «Старый город», «Жилой район»,
   «Промзона», «Ночной район» и «Центральный парк».
 - Страна, точный год и имя города намеренно не определяются.
-- Сверхъестественное объяснение больше не является неопределённым: его
-  фиксирует парная [сюжетная библия](city-story-bible.md). Художественная
-  библия остаётся главной по форме, сюжетная — по смыслу.
+- [Сюжетная библия](city-story-bible.md) фиксирует сверхъестественную
+  причину;здесь — форма,там — смысл.
 - Все запреты этого документа описывают **нулевой уровень отравления** по
   шкале сюжетной библии §6. Выше нуля и для всего документа они снимаются
   только поимённо, через реестр §6 сюжетной библии, и больше нигде.
@@ -4238,7 +4236,8 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 Seat2wide→face;nonstrobe abstract clash/dry cloth-seat+wood;figures/voicebreath0;PS1gray/§6.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
 `2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.
-`2026-10-16`:Crane:Rcuff-hook/6m3DLOS;fall→5shungspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
+`2026-10-19`:Crane:hook6m/chest-up1.5m/zonepuncture5s/rigpain/pull/active-struggle/bodycam/fallHP;E6bar/held0;hero wounds/no detach. Frontcrowbar fullblock/back0. Success→actualhome→watch10;fatal cry/spasm3→home→regen10/full/immortal-sameslot;§6/story0.
+`2026-10-16`:Crane:Rcuff-hook/3DLOS;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27doors/ammo alllvls↑.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI.4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;key→chain↓/holdE-gate↑/gallery;key+stairs↓→heat2s/riseSFX/popglass/8phys;bulb0/socketcord/fixedlights-lenses-amb0/Lchestonly/fog-sky-strobe0/§6.Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;skinneck-shldrs-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-ret.Mimic:near-hit→rigburst/planted/gaze/limblag;ram:compress→throw→kneel-rise;fell hero→loadedunevenspasms→rise;wood-wetinhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
 `2026-10-14`:remains step/rig-contour;livefall≠corpse/physicskept;coat-scarfrig/slinganchors;physics0/hairkept.Lchest/look/far0/near/beam↑.

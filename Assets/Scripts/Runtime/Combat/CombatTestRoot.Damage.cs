@@ -34,7 +34,7 @@ namespace BarPromenade
             if (impact.Target != null && impact.Target.State.IsDefeated) SparkEffects?.Clear();
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
-                (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && Mathf.Max(impact.WoundDamage, impact.Damage) > 0f) && BloodEffects != null)
+                (impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook || impact.Kind == CombatImpactKind.Weapon && Mathf.Max(impact.WoundDamage, impact.Damage) > 0f) && BloodEffects != null)
             {
                 long start = System.Diagnostics.Stopwatch.GetTimestamp();
                 BloodEffects.Emit(impact);

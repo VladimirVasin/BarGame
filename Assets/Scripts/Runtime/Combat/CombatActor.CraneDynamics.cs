@@ -14,7 +14,7 @@ namespace BarPromenade
         public Vector3 CraneSwingOffset => CraneLoadOffset;
         public float CraneLimbMotionEnergy { get; private set; }
         private bool CraneAiming => !IsCraneFrenzied &&
-            CranePhase is CombatCranePhase.Signal or CombatCranePhase.Striking or CombatCranePhase.Recovering;
+            CranePhase is CombatCranePhase.Signal or CombatCranePhase.Striking or CombatCranePhase.Capturing or CombatCranePhase.Recovering;
         private float CranePendulumLength => Mathf.Clamp(CraneAnchorPosition.y - craneCommand.y - 1.15f, .65f, 8f);
         private Vector3 CraneLoadOffset
         {

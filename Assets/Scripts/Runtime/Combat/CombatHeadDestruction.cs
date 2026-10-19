@@ -146,7 +146,7 @@ namespace BarPromenade
 
         internal void Apply(CombatImpact impact, CombatBloodEffects blood)
         {
-            if (impact.Kind != CombatImpactKind.Projectile || impact.Target == null) return;
+            if (impact.Kind != CombatImpactKind.Projectile || impact.Target == null || impact.Target.IsHero || impact.Target.IsCraneRegenerating) return;
             Head head = RequireHead(impact.Target);
             ShotgunFracture volley = null;
             float ejection = 1f;

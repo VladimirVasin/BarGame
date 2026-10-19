@@ -90,6 +90,9 @@ namespace BarPromenade
         public bool Sparring { get; private set; }
         public bool RoundFinished => Hero.State.IsDefeated || Mode != CombatTestMode.Endless && Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
+        // Deterministic scenarios may drive explicit attacks while retaining the
+        // real population simulation, contact resolution and physics lifecycle.
+        internal bool AutomaticOpponentDecisions { get; set; } = true;
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
         public CombatSparkEffects SparkEffects { get; private set; }
@@ -315,13 +318,13 @@ namespace BarPromenade
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             roomTableau?.SetSoundPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
-            if (!pistolApplicationFocused && (RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown)) return;
+            if (!pistolApplicationFocused) return;
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             if (!RoomAttackCinematicActive && !GameInput.CanRead(GameInputContext.Gameplay)) return;
             foreach (CombatActor actor in preparedOpponents)
                 actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);
-            AmmoSpawns?.SetInteractionEnabled(!RoomAttackCinematicActive && !Hero.State.IsDefeated && pistolApplicationFocused);
+            AmmoSpawns?.SetInteractionEnabled(!RoomAttackCinematicActive && !Hero.State.IsDefeated && !Hero.IsRestrained && pistolApplicationFocused);
             if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
@@ -355,7 +358,7 @@ namespace BarPromenade
                 // its own facing; a swing committed this step reads that cue.
                 Hero.State.ObserveLateralCue(LateralBearing(Hero, Opponent));
                 Opponent.State.ObserveLateralCue(LateralBearing(Opponent, Hero));
-                if (Sparring) AdvanceOpponent(SimulationStep);
+                if (Sparring && AutomaticOpponentDecisions) AdvanceOpponent(SimulationStep);
                 JournalOpponentDecision();
                 AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();
