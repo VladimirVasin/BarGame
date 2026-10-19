@@ -13,7 +13,8 @@ namespace BarPromenade
         private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(5);
         private static GameObject tableau;
         private static AudioClip laughter, memorySound;
-        public const int ShadowFrameCount = 8, ShadowFrameSize = 256;
+        // R8 with complete mip chains: the prepared bank stays below 2 MiB.
+        public const int ShadowFrameCount = 24, ShadowFrameSize = 256;
         public const float ShadowCycleSeconds = .64f;
         private static Texture2D[] shadowCookies;
         private static Material plaster, wood;

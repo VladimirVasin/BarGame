@@ -141,11 +141,17 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shadow.type, Is.EqualTo(LightType.Spot));
             Assert.That(shadow.shadows, Is.EqualTo(LightShadows.None), "The abstract shadow adds no shadow-map pass.");
             var shadowBank = new Texture[CombatRoomAttackAssetProvider.ShadowFrameCount];
+            long shadowBytes = 0;
             for (int frame = 0; frame < shadowBank.Length; frame++)
             {
-                shadowBank[frame] = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
-                Assert.That(shadowBank[frame].width, Is.EqualTo(CombatRoomAttackAssetProvider.ShadowFrameSize));
+                Texture2D cookie = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
+                shadowBank[frame] = cookie;
+                Assert.That(cookie.width, Is.EqualTo(CombatRoomAttackAssetProvider.ShadowFrameSize));
+                Assert.That(cookie.format, Is.EqualTo(TextureFormat.R8), "The denser jelly sequence keeps single-channel storage.");
+                for (int mip = 0; mip < cookie.mipmapCount; mip++)
+                    shadowBytes += (long)Mathf.Max(1, cookie.width >> mip) * Mathf.Max(1, cookie.height >> mip);
             }
+            Assert.That(shadowBytes, Is.LessThanOrEqualTo(2L * 1024 * 1024), "The complete prepared shadow bank has a fixed memory budget.");
             Assert.That(shadowBank, Does.Contain(shadow.cookie));
             Assert.That(shadow.isActiveAndEnabled && shadow.intensity > 0f, Is.True);
             AudioSource memory = root.RoomAttackMemorySound;
@@ -155,7 +161,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(memory.clip.length, Is.EqualTo(3.6f).Within(.003f));
             Assert.That(memory.spatialBlend, Is.EqualTo(1f));
             Assert.That(memory.outputAudioMixerGroup, Is.Not.Null, "The quiet room phrase belongs to the existing world SFX bus.");
-            Assert.That(memory.isPlaying, Is.True, "Entering the room starts its finite cloth-and-wood phrase.");
+            Assert.That(memory.isPlaying, Is.True, "Entering the room starts its finite viscous compression phrase.");
             uint shadowLayer = shadow.GetUniversalAdditionalLightData().renderingLayers;
             foreach (var receiver in imageLayers)
                 Assert.That(receiver.Key.renderingLayerMask, Is.EqualTo(shadowLayer),

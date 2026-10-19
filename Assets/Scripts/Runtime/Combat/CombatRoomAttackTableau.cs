@@ -98,7 +98,7 @@ namespace BarPromenade
                     shadowFrames[frame] = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
                 shadowLight.cookie = shadowFrames[0];
                 shadowLight.GetUniversalAdditionalLightData().renderingLayers = ShadowLayer;
-                var sound = new GameObject("Room Inside cloth and wood");
+                var sound = new GameObject("Room Inside viscous compression");
                 sound.transform.SetParent(root.transform, false);
                 sound.transform.position = pelvis.position;
                 memorySound = sound.AddComponent<AudioSource>();

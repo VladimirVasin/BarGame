@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
 | Crane | Hook6m/up1.5m/hold5/E6/struggle/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
-| Authored enemies | Room:idle5s;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
+| Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |

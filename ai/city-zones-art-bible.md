@@ -4233,7 +4233,7 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 ### Принятое исключение — боевой полигон
 
 `2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
-Seat2wide→face;nonstrobe abstract clash/dry cloth-seat+wood;figures/voicebreath0;PS1gray/§6.
+Seat2→face;nonstrobe jelly squash/stretch/lag;1neutral flatbar mid axial in/out;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;PS1gray/§6.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
 `2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.
 `2026-10-19`:Crane:hook6m/chest-up1.5m/zonepuncture5s/rigpain/pull/active-struggle/bodycam/fallHP;E6bar/held0;hero wounds/no detach. Frontcrowbar fullblock/back0. Success→actualhome→watch10;fatal cry/spasm3→home→regen10/full/immortal-sameslot;§6/story0.

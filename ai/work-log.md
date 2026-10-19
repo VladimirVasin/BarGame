@@ -28,11 +28,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   later hits keep clock/hurt wins. World sim live;others/spawns idle until heroend.
   HUD baseline survives modal→HP3s unlock;pause/death/reset/disable cleanup.
   Main:Crane/Room/Docker;Lab6.
-  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`/
-  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` pass;
-  head/arm-index optics/camera/boots/worldsim/NPCidle/HUD/cooldown/pause/cleanup.
-  Face/shadows/Foley/point-seat-return reviewed.
-  `build-combat-room-shadow.py` bank/WAV and
+  `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier pass;
+  prior Unity:assets/pause/focus/audio pass;Laugh-cancel restore roll fails;
+  camera unchanged;unresolved.
+  `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes.
+  Face/point-seat-return reviewed;asset preview:midbar axial in/out/occlusion/jelly waves.
+  Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV and
   `build-combat-room-attack-3d-model.py --npc-only --validate-only` pass;
   `CombatRoomAttackAssetSetup.BuildOrThrow` validates imports.
 - Crane:hook6m/chest-up1.5m/start-release gate;zonehook5s/E6bar/held0;rig pain/drag/lift/
