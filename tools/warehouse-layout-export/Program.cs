@@ -36,6 +36,9 @@ var manifest = new
             tread_count = WarehouseArenaStair.TreadCount,
             tread_depth = WarehouseArenaStair.TreadDepth,
             tread_rise = WarehouseArenaStair.TreadRise,
+            // The base Stair slot stays reserved for core painting; runtime
+            // substitutes the separately authored broken-flight model.
+            broken = stair.IsBroken,
         }),
         rails = plan.RailSpans.Select((rail, slot) => new
         {

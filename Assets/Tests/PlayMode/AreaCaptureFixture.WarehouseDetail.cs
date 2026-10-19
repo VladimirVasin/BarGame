@@ -299,7 +299,7 @@ namespace BarPromenade.Tests.PlayMode
                     gateDeck || part.Kind == "LockerProps");
             }
             foreach (WarehouseArenaStair stair in root.WarehousePlan.Stairs)
-                AssertPlacement("Stair", stair.Foot, Quaternion.identity);
+                AssertPlacement("Stair", stair.Foot, Quaternion.identity, substituted: stair.IsBroken);
             foreach (WarehouseArenaRailSpan rail in root.WarehousePlan.RailSpans)
                 AssertPlacement("Rail", rail.Position, Quaternion.Euler(0f, rail.Yaw, 0f));
             foreach (WarehouseArenaLamp lamp in root.WarehousePlan.Lamps)

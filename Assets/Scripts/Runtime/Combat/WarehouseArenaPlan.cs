@@ -11,10 +11,16 @@ namespace BarPromenade
     {
         public const float Width = 2.4f, ClearWidth = 2.13f, Run = 6f, TreadDepth = .3f, TreadRise = .16f;
         public const int TreadCount = 20;
+        public const int FirstMissingTread = 6, MissingTreadEnd = 16;
         public readonly Vector3 Foot;
+        public readonly bool IsBroken;
         public Vector3 Top => Foot + new Vector3(0f, WarehouseArenaPlan.LevelRise, Run);
         public Rect Bounds => new Rect(Foot.x - Width * .5f, Foot.z, Width, Run);
-        public WarehouseArenaStair(float x, float floor = 0f) { Foot = new Vector3(x, floor, -3f); }
+        public WarehouseArenaStair(float x, float floor = 0f, bool broken = false)
+        { Foot = new Vector3(x, floor, -3f); IsBroken = broken; }
+        public bool HasTread(int step) => step >= 0 && step < TreadCount &&
+            (!IsBroken || step < FirstMissingTread || step >= MissingTreadEnd);
+        public bool HasTreadAt(float z) => HasTread(Mathf.Clamp(Mathf.FloorToInt((z - Foot.z) / TreadDepth), 0, TreadCount - 1));
         public float HeightAt(float z) => Foot.y + Mathf.Clamp(Mathf.Floor((z - Foot.z) / TreadDepth) + 1f,
             1f, TreadCount) * TreadRise;
     }
@@ -101,12 +107,22 @@ namespace BarPromenade
     /// <summary>Wall storage faces -Z; its approach stays on the floor, its stock rests on a shelf.</summary>
     public readonly struct WarehouseLockerPlacement
     {
-        public const float ShelfHeight = 1.065f;
+        public const int BayCount = 3;
+        public const float ShelfHeight = 1.065f, BaySpacing = .74f;
         public readonly int Floor;
         public readonly Vector3 Position;
         public readonly float Yaw;
-        public Vector3 Approach => Position + Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f);
-        public Vector3 Shelf => Position + Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f);
+        public Vector3 Approach => ApproachAt(1);
+        public Vector3 Shelf => ShelfAt(1);
+        public Vector3 ApproachAt(int bay) => Position + Quaternion.Euler(0f, Yaw, 0f) *
+            new Vector3(BayOffset(bay), 0f, -1.45f);
+        public Vector3 ShelfAt(int bay) => Position + Quaternion.Euler(0f, Yaw, 0f) *
+            new Vector3(BayOffset(bay), ShelfHeight, -.08f);
+        private static float BayOffset(int bay)
+        {
+            if (bay < 0 || bay >= BayCount) throw new ArgumentOutOfRangeException(nameof(bay));
+            return (bay - 1) * BaySpacing;
+        }
         public WarehouseLockerPlacement(int floor, Vector3 position, float yaw)
         { Floor = floor; Position = position; Yaw = yaw; }
     }
@@ -134,7 +150,8 @@ namespace BarPromenade
     /// <summary>Metre-space authority for imported geometry, all storeys, guarded machinery and safe routes.</summary>
     public sealed class WarehouseArenaPlan
     {
-        public const string GeneratorVersion = "warehouse-v4";
+        public const int AmmoCacheCount = 12;
+        public const string GeneratorVersion = "warehouse-v5";
         public const float LevelRise = 3.2f, TopHeight = 6.4f, TileSize = 3f, DeckThickness = .18f;
         public const float HalfWidth = 15f, HalfDepth = 12f, CeilingHeight = 10.2f;
         // Compatibility for clients that capture the first gallery. Storey logic uses LevelRise/TopHeight.
@@ -209,7 +226,7 @@ namespace BarPromenade
             var stairs = new[]
             {
                 new WarehouseArenaStair(-7.5f), new WarehouseArenaStair(7.5f),
-                new WarehouseArenaStair(-7.5f, WarehouseArenaPlan.LevelRise),
+                new WarehouseArenaStair(-7.5f, WarehouseArenaPlan.LevelRise, broken: true),
                 new WarehouseArenaStair(7.5f, WarehouseArenaPlan.LevelRise)
             };
             for (int level = 1; level <= 2; level++)
@@ -226,6 +243,16 @@ namespace BarPromenade
                         surfaces.Add(new WarehouseArenaSurface(new Rect(x - 1.5f, z - 1.5f, 3f, 3f), tile.y));
                     }
             var obstacles = new List<WarehouseArenaObstacle>();
+            // Match the imported remnant's cross-guards; no invisible ramp or
+            // route may cross the torn centre or enter it from the upper deck.
+            foreach (WarehouseArenaStair stair in stairs)
+                if (stair.IsBroken)
+                {
+                    obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Rail,
+                        stair.Foot + new Vector3(0f, .96f, 1.65f), 0f, new Vector3(2.56f, 1.1f, .09f)));
+                    obstacles.Add(new WarehouseArenaObstacle(WarehouseArenaObstacleKind.Rail,
+                        stair.Top, 0f, new Vector3(2.56f, 1.1f, .09f)));
+                }
             var rooms = new List<Vector3>();
             for (int level = 0; level <= 2; level++)
             {
@@ -358,37 +385,34 @@ namespace BarPromenade
                 candidates[index] = candidates[other]; candidates[other] = swap;
             }
 
-            var selected = new WarehouseLockerPlacement[4];
-            int floorMask = 0, selectedMask = 0, count = 0;
-            for (int index = 0; index < candidates.Count; index++)
+            ammo = new Vector3[WarehouseArenaPlan.AmmoCacheCount];
+            approaches = new Vector3[ammo.Length];
+            int slot = 0, bankIndex = 0, firstBay = (int)(Next(ref state) % WarehouseLockerPlacement.BayCount);
+            for (int floor = 0; floor < 3; floor++)
             {
-                int floorBit = 1 << candidates[index].Floor;
-                if ((floorMask & floorBit) != 0) continue;
-                selected[count++] = candidates[index];
-                floorMask |= floorBit; selectedMask |= 1 << index;
+                int extraCandidate = -1, extraBay = -1, floorBanks = 0;
+                for (int index = 0; index < candidates.Count; index++)
+                {
+                    WarehouseLockerPlacement bank = candidates[index];
+                    if (bank.Floor != floor) continue;
+                    // All nine banks receive stock; cycling the seeded first bay guarantees
+                    // left, middle and right compartments in every layout, without overlap.
+                    int bay = (firstBay + bankIndex++) % WarehouseLockerPlacement.BayCount;
+                    ammo[slot] = bank.ShelfAt(bay);
+                    approaches[slot++] = bank.ApproachAt(bay);
+                    floorBanks++;
+                    // Reservoir selection gives each bank on this storey the extra pack equally.
+                    if (extraCandidate < 0 || Next(ref state) % (uint)floorBanks == 0)
+                    { extraCandidate = index; extraBay = bay; }
+                }
+                if (extraCandidate < 0)
+                    throw new InvalidOperationException("Ammunition storage needs a reachable locker on every storey.");
+                int otherBay = (extraBay + 1 + (int)(Next(ref state) % 2u)) % WarehouseLockerPlacement.BayCount;
+                ammo[slot] = candidates[extraCandidate].ShelfAt(otherBay);
+                approaches[slot++] = candidates[extraCandidate].ApproachAt(otherBay);
             }
-            if (floorMask != 7 || count != 3)
-                throw new InvalidOperationException("Ammunition storage needs a reachable locker on every storey.");
-            for (int index = 0; index < candidates.Count; index++)
-                if ((selectedMask & (1 << index)) == 0)
-                { selected[count++] = candidates[index]; break; }
-            if (count != selected.Length)
-                throw new InvalidOperationException("Ammunition packs require four distinct locker banks.");
-
-            // Shuffling assignments also varies which storeys carry pistol magazines and shells.
-            for (int index = selected.Length - 1; index > 0; index--)
-            {
-                int other = (int)(Next(ref state) % (uint)(index + 1));
-                WarehouseLockerPlacement swap = selected[index];
-                selected[index] = selected[other]; selected[other] = swap;
-            }
-            ammo = new Vector3[selected.Length];
-            approaches = new Vector3[selected.Length];
-            for (int slot = 0; slot < selected.Length; slot++)
-            {
-                ammo[slot] = selected[slot].Shelf;
-                approaches[slot] = selected[slot].Approach;
-            }
+            if (slot != ammo.Length)
+                throw new InvalidOperationException("Ammunition needs stock in every bank and one extra compartment per storey.");
         }
 
         private static WarehouseFishCrateAnchor[] BuildFishCrateAnchors(int seed, List<Vector3> rooms)
@@ -512,6 +536,7 @@ namespace BarPromenade
                     }
             foreach (WarehouseArenaStair stair in plan.Stairs)
             {
+                if (stair.IsBroken) continue;
                 AddNode(stair.Foot + Vector3.back * .6f, nodes, unique);
                 for (int step = 0; step < WarehouseArenaStair.TreadCount; step++)
                     AddNode(stair.Foot + new Vector3(0f, (step + 1) * WarehouseArenaStair.TreadRise,
@@ -561,10 +586,10 @@ namespace BarPromenade
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (plan.Stairs.Count != 4 || plan.RoomCenters.Count != 9 || plan.Platforms.Count < 100 ||
-                plan.AmmoAnchors.Count != 4 || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
+                plan.AmmoAnchors.Count != WarehouseArenaPlan.AmmoCacheCount || plan.NavigationNodes.Count == 0 || plan.Lamps.Count != 15 ||
                 plan.Refrigerators.Count != 3 || plan.FishCrateAnchors.Count != 18 ||
-                plan.HallwayLockers.Count != 6 || plan.AmmoApproaches.Count != 4)
-                throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, four ammo anchors and sparse light.");
+                plan.HallwayLockers.Count != 6 || plan.AmmoApproaches.Count != WarehouseArenaPlan.AmmoCacheCount)
+                throw new InvalidOperationException("Warehouse needs three storeys, nine rooms, four stairs, twelve ammo anchors and sparse light.");
             WarehouseArenaLamp stationLamp = plan.Lamps[4];
             if (stationLamp.Kind != "FishStationLamp" ||
                 Vector3.Distance(stationLamp.Position, new Vector3(0f, WarehouseArenaPlan.CeilingHeight, 10.15f)) > .001f ||
@@ -607,8 +632,19 @@ namespace BarPromenade
             RequireRoute(area, plan.HeroSpawn, plan.GateControlApproach, route);
             if (!area.CanTraverse(plan.GateApproach, plan.GateControlApproach, .36f))
                 throw new InvalidOperationException("The valve approach must stay clear across the gate's front aisle.");
+            int brokenStairs = 0;
             foreach (WarehouseArenaStair stair in plan.Stairs)
+            {
                 RequireRoute(area, stair.Foot + Vector3.back * .6f, stair.Top + Vector3.forward * .6f, route);
+                if (!stair.IsBroken) continue;
+                brokenStairs++;
+                Vector3 gap = stair.Foot + new Vector3(0f, 1.76f, 3f);
+                if (Mathf.Abs(stair.Foot.y - WarehouseArenaPlan.LevelRise) > .01f ||
+                    area.TryGetHeight(gap, out _, .36f) ||
+                    area.CanTraverse(stair.Foot + Vector3.back * .6f, stair.Top + Vector3.forward * .6f, .36f))
+                    throw new InvalidOperationException("The broken upper stair must have no walkable surface through its gap.");
+            }
+            if (brokenStairs != 1) throw new InvalidOperationException("Exactly one upper flight must be broken.");
             if (area.CanTraverse(plan.GateApproach, new Vector3(0f,0f,11.9f), .36f))
                 throw new InvalidOperationException("The future goal gate must remain closed and solid.");
         }

@@ -135,6 +135,8 @@ namespace BarPromenade.Editor
                         if (placed != null) UnityEngine.Object.DestroyImmediate(placed);
                     }
                 }
+                GameObject brokenStair = WarehouseBrokenStairFactory.Create(root.transform, Vector3.zero);
+                UnityEngine.Object.DestroyImmediate(brokenStair);
             }
             finally
             {

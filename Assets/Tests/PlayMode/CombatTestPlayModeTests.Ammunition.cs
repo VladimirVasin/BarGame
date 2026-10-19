@@ -33,9 +33,9 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 Assert.That(root.WarehousePlan, Is.Not.Null);
                 Assert.That(root.LiveOpponentCount, Is.Zero);
-                Assert.That(root.AmmoSpawns.SlotCount, Is.EqualTo(4));
-                var pickups = new CombatAmmoPickup[4];
-                var models = new Transform[4];
+                Assert.That(root.AmmoSpawns.SlotCount, Is.EqualTo(12));
+                var pickups = new CombatAmmoPickup[root.AmmoSpawns.SlotCount];
+                var models = new Transform[pickups.Length];
                 for (int slot = 0; slot < pickups.Length; slot++)
                 {
                     pickups[slot] = root.AmmoSpawns.GetSlot(slot);
@@ -196,8 +196,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.NewWarehouseLayout(1), Is.True);
                 yield return null;
                 AssertWarehouseAmmoPlacement(pickups, models);
-                Assert.That(root.GetComponentsInChildren<CombatAmmoPickup>(true).Length, Is.EqualTo(4),
-                    "Reset and layout replacement reuse the bounded four packs and their authored models.");
+                Assert.That(root.GetComponentsInChildren<CombatAmmoPickup>(true).Length, Is.EqualTo(12),
+                    "Reset and layout replacement reuse the bounded twelve packs and their authored models.");
                 Assert.That(root.Hero.CarriedFirearm(CombatWeaponId.Pistol), Is.SameAs(pistol));
                 Assert.That(root.Hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgun));
 
@@ -228,20 +228,25 @@ namespace BarPromenade.Tests.PlayMode
 
         private void ApproachAmmo(CombatAmmoPickup pickup)
         {
-            int slot = Array.IndexOf(new[] { root.AmmoSpawns.GetSlot(0), root.AmmoSpawns.GetSlot(1),
-                root.AmmoSpawns.GetSlot(2), root.AmmoSpawns.GetSlot(3) }, pickup);
+            int slot = -1;
+            for (int index = 0; index < root.AmmoSpawns.SlotCount; index++)
+                if (root.AmmoSpawns.GetSlot(index) == pickup) { slot = index; break; }
             Assert.That(slot, Is.GreaterThanOrEqualTo(0));
-            WarehouseLocker locker = Array.Find(root.GetComponentsInChildren<WarehouseLocker>(),
-                candidate => Vector3.Distance(candidate.ShelfPosition(), pickup.transform.position) < .01f);
+            WarehouseLocker locker = null;
+            int sourceBay = -1;
+            foreach (WarehouseLocker candidate in root.GetComponentsInChildren<WarehouseLocker>())
+                for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+                    if (Vector3.Distance(candidate.ShelfPosition(bay), pickup.transform.position) < .01f)
+                    { locker = candidate; sourceBay = bay; break; }
             Assert.That(locker, Is.Not.Null);
             Vector3 approach = root.WarehousePlan.AmmoApproaches[slot];
             root.Hero.ResetActor(approach + Vector3.up * PlayerFactory.GroundedRootOffset,
                 Vector3.ProjectOnPlane(pickup.transform.position - approach, Vector3.up).normalized);
             Physics.SyncTransforms();
             ForceAmmoFocus();
-            if (!locker.IsOpen)
+            if (!locker.GetDoor(sourceBay).IsOpen)
             {
-                Assert.That(locker.BeginOpen(), Is.True);
+                Assert.That(locker.BeginOpen(sourceBay), Is.True);
                 locker.Advance(2f);
                 Physics.SyncTransforms();
             }
@@ -252,6 +257,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             var area = new WarehouseArenaArea(root.WarehousePlan);
             var floors = new int[3];
+            var weaponFloors = new int[3, 2];
+            var shelves = new System.Collections.Generic.HashSet<Vector3>();
             for (int slot = 0; slot < pickups.Length; slot++)
             {
                 CombatAmmoPickup pickup = root.AmmoSpawns.GetSlot(slot);
@@ -269,9 +276,15 @@ namespace BarPromenade.Tests.PlayMode
                 int storey = Mathf.RoundToInt(floor / WarehouseArenaPlan.LevelRise);
                 Assert.That(storey, Is.InRange(0, 2));
                 floors[storey]++;
+                weaponFloors[storey, slot % 2]++;
+                Assert.That(shelves.Add(pickup.transform.position), Is.True,
+                    "Each retained pack must have its own compartment shelf.");
             }
-            foreach (int count in floors)
-                Assert.That(count, Is.GreaterThanOrEqualTo(1), "Seeded stock remains available on every floor.");
+            Assert.That(floors, Is.EqualTo(new[] { 3, 6, 3 }));
+            for (int floor = 0; floor < 3; floor++)
+                for (int weapon = 0; weapon < 2; weapon++)
+                    Assert.That(weaponFloors[floor, weapon], Is.GreaterThanOrEqualTo(1),
+                        "Both carried firearms can be supplied on every floor.");
         }
 
         private void CaptureAmmoPreview(string name)

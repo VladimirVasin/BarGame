@@ -129,15 +129,16 @@ cemetery:own interiors/returns.
   Else rootspawn;City home-return/docks-cannery pedestrian-clear.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
-- CombatTest:3levels/9rooms/seed/2stairs-4flights/fanwell/sets-signs1–9;
-  Midforms/4K+2Kresp/uniqueUV/worldmetrewearjoins;runtimeUV-matclone0.
-  valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;HoldE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch;
-  Homeentry↔gate/return0/E/silent/goalstub/0travel;gallery2/upper-progress;3fridges/labels-scraps/Take1x/fullkeep/redfade-humclick;
-  3src→flicker-crackle/mech-music-enemies-corpses-spawn0;6windcables/creak;
-  toprear/lowplayfill<bulbI1.8/3pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIclosed+stairs↓:heat2s/riseSFX→popglass8phys;
-  bulb0/socketcord/otherL-lens-amb0/gateRedsoftflicker>0+chest/silent;Esc-pause/Reset-Newkeep;newgame-invreset0.
-  D7fan/redshadows/deckblock/guards;LM65:Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo. SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync;
-  stop/noreplay/exitfade.
+- CombatTest:3levels/9rooms/seed/2stairs4flights:L3gap/R3only/fanwell/sets-signs1–9;
+  Midforms/4K+2Kresp/uniqueUV/metrewearjoins/UV-matclone0.
+  valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;holdE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch.
+  Home↔gate/E/back-travel-speech0/stub/gallery2/upper;fridges3/labels-scraps/Take1x/fullkeep/redfade-humclick.
+  3src→flicker-crackle/mech-music-foes-corpses-spawn0;6windcables/creak.
+  toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
+  bulb0/socketcord/restL-lens-amb0/gateRedsoftflicker>0+chest/silent;Escpause/Reset-Newkeep/newgame-inv0.
+  D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
+  Dust192+32/fan→settle/seed.
+  SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/noreplay/exitfade.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seeded start-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
@@ -164,7 +165,7 @@ cemetery:own interiors/returns.
   ownDebris0CC/resize-reset/floor;ground0attack/infection0;freecam/dummy/Tabfight/MMBfocus;
   Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
   Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/atomic;winfire/partreload/physspend/empty0;
-  Ammo4(+8mag/+4shells)/seed9banks/allfloors↑;3room+6wall/27soloE/fridgecurve/hollowCOL/std/full0/part1/openTake>open>close/resetshut;
+  Ammo12(6mag×8/6shell×4)/seed9banks/3bays/both/flr;legacy4;3room+6wall/27soloE/fridgecurve/hollowCOL/std/full0/part1/Take>open>close/resetshut;
   Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.

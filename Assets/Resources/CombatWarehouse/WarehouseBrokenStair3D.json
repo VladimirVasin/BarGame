@@ -1,0 +1,160 @@
+{
+  "generator": "tools/build-warehouse-broken-stair-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "eddb6f7e5c93df82ddf3d4aff53636729d9f6619db5961f37ef9366089a71364",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 6104,
+  "materials": {
+    "Steel": [
+      0.2,
+      0.24,
+      0.22
+    ],
+    "WornSteel": [
+      0.36,
+      0.39,
+      0.32
+    ],
+    "Rust": [
+      0.39,
+      0.23,
+      0.13
+    ],
+    "ConcreteDark": [
+      0.2,
+      0.23,
+      0.21
+    ]
+  },
+  "models": [
+    {
+      "name": "BrokenStair",
+      "bounds_min": [
+        -1.375946,
+        -0.059809,
+        -0.07
+      ],
+      "bounds_max": [
+        1.375946,
+        4.315,
+        6.08
+      ],
+      "triangle_count": 6104,
+      "solid_count": 218,
+      "mesh_count": 26,
+      "anchors": [
+        {
+          "name": "Foot",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Top",
+          "position": [
+            0,
+            3.2,
+            6.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "LowerClosure",
+          "position": [
+            0,
+            0.96,
+            1.65
+          ],
+          "parent": null
+        },
+        {
+          "name": "UpperClosure",
+          "position": [
+            0,
+            3.2,
+            6.0
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "contract": {
+    "flight_dimensions": [
+      2.4,
+      3.2,
+      6.0
+    ],
+    "retained_tread_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      16,
+      17,
+      18,
+      19
+    ],
+    "missing_tread_indices": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "missing_tread_interval_z": [
+      1.8,
+      4.8
+    ],
+    "clear_void_interval_z": [
+      2.25,
+      4.5
+    ],
+    "closures": [
+      {
+        "center": [
+          0,
+          1.51,
+          1.65
+        ],
+        "size": [
+          2.56,
+          1.1,
+          0.09
+        ]
+      },
+      {
+        "center": [
+          0,
+          3.75,
+          6.0
+        ],
+        "size": [
+          2.56,
+          1.1,
+          0.09
+        ]
+      }
+    ],
+    "materials": "shared warehouse auxiliary atlas; no new painting or master-atlas repack",
+    "collision": "authored retained treads, severed stringers, side rails and cross-closures; no ramp"
+  }
+}

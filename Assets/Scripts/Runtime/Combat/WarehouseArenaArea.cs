@@ -96,6 +96,7 @@ namespace BarPromenade
                 float inside = (WarehouseArenaStair.Width-WarehouseArenaStair.ClearWidth) * .5f;
                 if (position.x < bounds.xMin + inside + radius || position.x > bounds.xMax - inside - radius ||
                     position.z < bounds.yMin - .03f || position.z > bounds.yMax + .03f) continue;
+                if (!stair.HasTreadAt(position.z)) continue;
                 float candidate = stair.HeightAt(position.z);
                 if (Mathf.Abs(candidate - position.y) <= SurfaceCapture)
                     Consider(position, radius, clearanceHeight, candidate, ref height, ref best, ref found);
@@ -116,6 +117,7 @@ namespace BarPromenade
             foreach (WarehouseArenaStair stair in Plan.Stairs)
             {
                 if (!InRect(stair.Bounds,x,z)) continue;
+                if (!stair.HasTreadAt(z)) continue;
                 float underside = stair.HeightAt(z) - .08f;
                 // The first tread is a normal step. Low treads above a lower standing floor are not a tunnel.
                 if (underside > floor + .12f && underside < floor + clearanceHeight) return false;

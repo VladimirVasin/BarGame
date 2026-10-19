@@ -50,8 +50,11 @@ namespace BarPromenade
                 control.GetComponent<WarehouseGateController>().BindWorld(gate, door, plan, owner);
                 WarehouseEntranceDoor.Create(plan, host.transform, owner);
                 foreach (WarehouseArenaStair stair in plan.Stairs)
-                    WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity,
-                        NextSurfaceSlot("Stair", surfaceOrdinals));
+                {
+                    int surfaceSlot = NextSurfaceSlot("Stair", surfaceOrdinals);
+                    if (stair.IsBroken) WarehouseBrokenStairFactory.Create(host.transform, stair.Foot);
+                    else WarehouseArenaAssetProvider.Create("Stair", host.transform, stair.Foot, Quaternion.identity, surfaceSlot);
+                }
                 foreach (WarehouseArenaRailSpan span in plan.RailSpans)
                 {
                     GameObject rail = WarehouseArenaAssetProvider.Create("Rail", host.transform, span.Position,
@@ -89,9 +92,11 @@ namespace BarPromenade
                 foreach (WarehouseLockerPlacement locker in plan.HallwayLockers)
                     WarehouseLockerFactory.Create(host.transform, owner, locker.Position, locker.Yaw);
                 host.AddComponent<WarehouseFishCratePopulation>().Initialize(plan);
-                host.AddComponent<WarehouseArenaMechanisms>().Initialize(plan, owner);
+                var mechanisms = host.AddComponent<WarehouseArenaMechanisms>();
+                mechanisms.Initialize(plan, owner);
                 host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform,
                     valveLamp, valveLampFixture);
+                host.AddComponent<WarehouseAtmosphere>().Initialize(plan, owner, mechanisms);
                 return host;
             }
             catch

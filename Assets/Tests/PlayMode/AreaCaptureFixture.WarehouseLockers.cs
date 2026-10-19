@@ -41,10 +41,10 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < SettleFrames; frame++) yield return null;
 
                 PlayerInteractor interactor = root.Player.Interactor;
-                CombatAmmoPickup pack = root.AmmoSpawns.GetSlot(0);
-                WarehouseLocker bank = Array.Find(root.GetComponentsInChildren<WarehouseLocker>(),
-                    candidate => Vector3.Distance(candidate.ShelfPosition(), pack.transform.position) < .01f);
-                Assert.That(bank, Is.Not.Null);
+                WarehouseLocker[] lockers = root.GetComponentsInChildren<WarehouseLocker>();
+                CombatAmmoPickup pack = FindTestMiddleStock(root, lockers, out WarehouseLocker bank);
+                for (int slot = 0; slot < root.AmmoSpawns.SlotCount; slot++)
+                    if (root.AmmoSpawns.GetSlot(slot) != pack) root.AmmoSpawns.GetSlot(slot).SetInteractionEnabled(false);
                 WarehouseLockerDoor left = bank.GetDoor(0), middle = bank.GetDoor(1), right = bank.GetDoor(2);
                 WorldItemFoundScreen screen = WorldItemFoundScreen.For(interactor);
                 IFirearmState firearm = root.Hero.CarriedFirearm(pack.WeaponId);
@@ -149,7 +149,8 @@ namespace BarPromenade.Tests.PlayMode
                     "Distance resolves ties within the open-door priority.");
 
                 pack.ResetPickup(bank.ShelfPosition() + bank.transform.right * .14f);
-                CombatAmmoPickup secondPack = root.AmmoSpawns.GetSlot(1);
+                CombatAmmoPickup secondPack = root.AmmoSpawns.GetSlot(root.AmmoSpawns.GetSlot(0) == pack ? 1 : 0);
+                secondPack.SetInteractionEnabled(true);
                 secondPack.ResetPickup(bank.ShelfPosition() - bank.transform.right * .14f);
                 bank.BindAmmo(secondPack, 1);
                 PlaceTestLockerPriorityHero(root, bank, -.24f, -1.3f);
@@ -306,61 +307,62 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(perFloor, Is.EqualTo(new[] { 2, 2, 2 }));
                 AssertTestLockerAmmoStorageSeeds(lockers);
-                CombatAmmoPickup independentPack = root.AmmoSpawns.GetSlot(0);
-                WarehouseLocker independentBank = Array.Find(lockers,
-                    candidate => Vector3.Distance(candidate.ShelfPosition(), independentPack.transform.position) < .01f);
-                Assert.That(independentBank, Is.Not.Null);
+                CombatAmmoPickup independentPack = FindTestMiddleStock(root, lockers, out WarehouseLocker independentBank);
+                for (int slot = 0; slot < root.AmmoSpawns.SlotCount; slot++)
+                    if (root.AmmoSpawns.GetSlot(slot) != independentPack) root.AmmoSpawns.GetSlot(slot).SetInteractionEnabled(false);
                 yield return VerifyTestLockerIndependentDoors(root, independentBank, independentPack, input, keyboard);
+                for (int slot = 0; slot < root.AmmoSpawns.SlotCount; slot++)
+                    root.AmmoSpawns.GetSlot(slot).SetInteractionEnabled(true);
 
                 Camera camera = root.CameraFollow.Camera;
                 Assert.That(root.Flashlight.SpotLight.isActiveAndEnabled, Is.True);
                 for (int slot = 0; slot < root.AmmoSpawns.SlotCount; slot++)
                 {
                     CombatAmmoPickup pack = root.AmmoSpawns.GetSlot(slot);
-                    WarehouseLocker bank = Array.Find(lockers,
-                        candidate => Vector3.Distance(candidate.ShelfPosition(), pack.transform.position) < .01f);
-                    Assert.That(bank, Is.Not.Null, "Ammunition must rest inside an actual cabinet.");
+                    WarehouseLocker bank = FindTestStockLocker(lockers, pack.transform.position, out int bay);
+                    WarehouseLockerDoor leaf = bank.GetDoor(bay);
+                    bank.ResetState();
                     Assert.That(pack.transform.position, Is.EqualTo(plan.AmmoAnchors[slot]));
                     Bounds bounds = WorldItemInspectionPresenter.CalculateWorldBounds(pack.Model);
                     Assert.That(bounds.min.y, Is.EqualTo(pack.transform.position.y + .015f).Within(.01f));
                     Assert.That(bounds.size.magnitude, Is.GreaterThan(.13f), "The enlarged pack must retain a readable physical silhouette.");
                     PlaceTestLockerHero(root, plan.AmmoApproaches[slot], bank);
                     Assert.That(pack.CanInteract(root.Player.Interactor), Is.False, "A closed bank must reject its concealed ammunition.");
-                    Assert.That(bank.GetDoor(1).CanInteract(root.Player.Interactor), Is.True);
+                    Assert.That(leaf.CanInteract(root.Player.Interactor), Is.True);
                     if (slot == 0)
                     {
                         SetTestLockerFollowCamera(root, bank);
                         for (int frame = 0; frame < 3; frame++) yield return null;
                         CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Closed ammunition locker");
-                        AssertTestLockerDoorCollision(bank, true);
+                        AssertTestLockerDoorCollision(bank, true, bay);
                         root.SendMessage("OnApplicationFocus", true);
                         GameInput.HandleApplicationFocus(true);
                     }
-                    Assert.That(bank.BeginOpen(), Is.True);
+                    Assert.That(bank.BeginOpen(bay), Is.True);
                     bank.Advance(.12f);
-                    float pausedOpening = bank.DoorOpenAmount;
+                    float pausedOpening = leaf.DoorOpenAmount;
                     Assert.That(pack.CanInteract(root.Player.Interactor), Is.False,
                         "A moving leaf must finish opening before its shelf becomes available.");
                     using (GameTimeScaleRuntime.AcquirePause())
                     {
                         bank.Advance(2f);
-                        Assert.That(bank.DoorOpenAmount, Is.EqualTo(pausedOpening));
+                        Assert.That(leaf.DoorOpenAmount, Is.EqualTo(pausedOpening));
                     }
                     bank.Advance(2f);
                     Physics.SyncTransforms();
-                    Assert.That(bank.IsOpen && !bank.IsMoving, Is.True);
+                    Assert.That(leaf.IsOpen && !leaf.IsMoving, Is.True);
                     SetTestLockerFollowCamera(root, bank);
                     for (int frame = 0; frame < 3; frame++) yield return null;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest,
                         "Test warehouse - Open ammunition locker on floor " + (Mathf.RoundToInt(bank.transform.position.y / WarehouseArenaPlan.LevelRise) + 1) +
-                        (pack.WeaponId == CombatWeaponId.Pistol ? " pistol" : " shells"));
+                        (pack.WeaponId == CombatWeaponId.Pistol ? " pistol" : " shells") + " bay " + (bay + 1));
                     if (slot == 0)
                         yield return CaptureTestLockerCloseView(root, bank, "Test warehouse - Shelf ammunition close view");
                     // The Editor may lose native focus while writing a frame. This
                     // synthetic input fixture explicitly owns focus, as the ammo fixture does.
                     root.SendMessage("OnApplicationFocus", true);
                     GameInput.HandleApplicationFocus(true);
-                    AssertTestLockerDoorCollision(bank, false);
+                    AssertTestLockerDoorCollision(bank, false, bay);
                     Assert.That(pack.CanInteract(root.Player.Interactor), Is.True,
                         "The grounded hero must be able to take the shelf pack through the open doorway. " +
                         TestLockerPickupDiagnostic(root, bank, pack));
@@ -374,14 +376,15 @@ namespace BarPromenade.Tests.PlayMode
                             TestLockerPickupDiagnostic(root, bank, pack));
                         root.Player.Interactor.SendMessage("Update");
                         Assert.That(root.Player.Interactor.ActiveInteractable, Is.SameAs(pack),
-                            "The real interaction selection must offer Take across the middle shelf approach; side=" + side + ".");
+                            "The real interaction selection must offer Take across its own shelf approach; side=" + side + ".");
                     }
                     PlaceTestLockerHero(root, plan.AmmoApproaches[slot], bank);
                 }
 
                 CombatAmmoPickup firstPack = root.AmmoSpawns.GetSlot(0);
-                WarehouseLocker firstBank = Array.Find(lockers,
-                    candidate => Vector3.Distance(candidate.ShelfPosition(), firstPack.transform.position) < .01f);
+                WarehouseLocker firstBank = FindTestStockLocker(lockers, firstPack.transform.position, out int firstBay);
+                if (!firstBank.GetDoor(firstBay).IsOpen)
+                { Assert.That(firstBank.BeginOpen(firstBay), Is.True); firstBank.Advance(2f); }
                 PlaceTestLockerHero(root, plan.AmmoApproaches[0], firstBank);
                 root.CameraFollow.ClearFixedPose();
                 root.SendMessage("OnApplicationFocus", true);
@@ -392,7 +395,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return AwaitTestLockerScreen(() => screen.IsShowing);
                 yield return null;
                 Assert.That(screen.ActiveItemId, Is.EqualTo(InventoryItemId.CombatPistolAmmo));
-                Assert.That(firstBank.BeginClose(), Is.False, "A presenting shelf item keeps its source cabinet open.");
+                Assert.That(firstBank.BeginClose(firstBay), Is.False, "A presenting shelf item keeps its source cabinet open.");
                 yield return CaptureFishUi("Test warehouse - Locker ammunition shared screen");
                 Assert.That(screen.Dismiss(), Is.True);
                 yield return AwaitTestLockerScreen(() => !screen.IsPresenting);
@@ -426,10 +429,10 @@ namespace BarPromenade.Tests.PlayMode
                 root.SendMessage("OnApplicationFocus", true);
                 GameInput.HandleApplicationFocus(true);
                 Assert.That(firstPack.IsAvailable, Is.False);
-                Assert.That(firstBank.BeginClose(), Is.True);
+                Assert.That(firstBank.BeginClose(firstBay), Is.True);
                 firstBank.Advance(2f);
-                Assert.That(firstBank.IsOpen || firstBank.IsMoving, Is.False);
-                AssertTestLockerDoorCollision(firstBank, true);
+                Assert.That(firstBank.GetDoor(firstBay).IsOpen || firstBank.GetDoor(firstBay).IsMoving, Is.False);
+                AssertTestLockerDoorCollision(firstBank, true, firstBay);
 
                 WarehouseArenaPlacement roomPlacement = default;
                 foreach (WarehouseArenaPlacement placement in plan.ModulePlacements)
@@ -580,35 +583,70 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertTestLockerAmmoStorageSeeds(WarehouseLocker[] lockers)
         {
             // Existing room and wall banks are invariant across layout seeds; stock alone varies.
-            var reached = new HashSet<WarehouseLocker>();
+            var reachedShelves = new HashSet<Vector3>();
             foreach (int seed in new[] { 0, 1, 3, 5, 9, -1, int.MinValue, int.MaxValue })
             {
                 WarehouseArenaPlan plan = WarehouseArenaPlanner.Create(seed);
                 WarehouseArenaPlan repeated = WarehouseArenaPlanner.Create(seed);
                 Assert.That(repeated.AmmoAnchors, Is.EqualTo(plan.AmmoAnchors), "A seed retains its stock shelves.");
                 Assert.That(repeated.AmmoApproaches, Is.EqualTo(plan.AmmoApproaches), "A seed retains its stock approaches.");
-                Assert.That(plan.AmmoAnchors.Count, Is.EqualTo(4));
-                Assert.That(plan.AmmoApproaches.Count, Is.EqualTo(4));
+                Assert.That(plan.AmmoAnchors.Count, Is.EqualTo(12));
+                Assert.That(plan.AmmoApproaches.Count, Is.EqualTo(12));
                 var selected = new HashSet<WarehouseLocker>();
+                var shelves = new HashSet<Vector3>();
                 var floors = new int[3];
+                var weaponsPerFloor = new int[3, 2];
+                int bayMask = 0;
                 for (int slot = 0; slot < plan.AmmoAnchors.Count; slot++)
                 {
-                    WarehouseLocker bank = Array.Find(lockers,
-                        candidate => Vector3.Distance(candidate.ShelfPosition(), plan.AmmoAnchors[slot]) < .01f);
-                    Assert.That(bank, Is.Not.Null, "Seeded stock must use an actual middle shelf; seed=" + seed + ".");
-                    Assert.That(selected.Add(bank), Is.True, "Each stock pack uses a distinct cabinet bank.");
-                    reached.Add(bank);
+                    WarehouseLocker bank = FindTestStockLocker(lockers, plan.AmmoAnchors[slot], out int bay);
+                    Assert.That(shelves.Add(plan.AmmoAnchors[slot]), Is.True,
+                        "Each stock pack uses a distinct authored shelf; seed=" + seed + ".");
+                    selected.Add(bank);
+                    reachedShelves.Add(plan.AmmoAnchors[slot]);
+                    bayMask |= 1 << bay;
                     int floor = Mathf.RoundToInt(bank.transform.position.y / WarehouseArenaPlan.LevelRise);
                     Assert.That(floor, Is.InRange(0, 2));
                     floors[floor]++;
-                    Vector3 approach = bank.transform.TransformPoint(new Vector3(0f, 0f, -1.45f));
+                    weaponsPerFloor[floor, slot % 2]++;
+                    Vector3 approach = bank.transform.TransformPoint(new Vector3((bay - 1) * WarehouseLockerPlacement.BaySpacing, 0f, -1.45f));
                     Assert.That(Vector3.Distance(plan.AmmoApproaches[slot], approach), Is.LessThan(.01f),
-                        "The stock approach must face the same cabinet as its shelf.");
+                        "The stock approach must face the same compartment as its shelf.");
                 }
-                foreach (int count in floors)
-                    Assert.That(count, Is.GreaterThanOrEqualTo(1), "Every floor retains reachable ammunition.");
+                Assert.That(selected.Count, Is.EqualTo(9), "Every room and hallway bank now contains stock.");
+                Assert.That(bayMask, Is.EqualTo(7), "Every seed must stock left, middle and right compartments.");
+                Assert.That(floors, Is.EqualTo(new[] { 3, 6, 3 }));
+                for (int floor = 0; floor < 3; floor++)
+                    for (int weapon = 0; weapon < 2; weapon++)
+                        Assert.That(weaponsPerFloor[floor, weapon], Is.GreaterThanOrEqualTo(1),
+                            "Both firearm types retain reachable ammunition on every floor.");
             }
-            Assert.That(reached.Count, Is.GreaterThan(4), "Changing the layout seed must vary which banks carry ammunition.");
+            Assert.That(reachedShelves.Count, Is.GreaterThan(12), "Changing the layout seed must vary stocked compartments.");
+        }
+
+        private static WarehouseLocker FindTestStockLocker(WarehouseLocker[] lockers, Vector3 shelf, out int bay)
+        {
+            foreach (WarehouseLocker bank in lockers)
+                for (int candidate = 0; candidate < WarehouseLocker.DoorCount; candidate++)
+                    if (Vector3.Distance(bank.ShelfPosition(candidate), shelf) < .01f)
+                    { bay = candidate; return bank; }
+            bay = -1;
+            Assert.Fail("Ammunition must rest on an actual authored compartment shelf at " + shelf + ".");
+            return null;
+        }
+
+        private static CombatAmmoPickup FindTestMiddleStock(CombatTestRoot root, WarehouseLocker[] lockers,
+            out WarehouseLocker bank)
+        {
+            for (int slot = 0; slot < root.AmmoSpawns.SlotCount; slot++)
+            {
+                CombatAmmoPickup pack = root.AmmoSpawns.GetSlot(slot);
+                bank = FindTestStockLocker(lockers, pack.transform.position, out int bay);
+                if (bay == 1) return pack;
+            }
+            bank = null;
+            Assert.Fail("Independent door priority coverage needs one of the seeded middle-shelf packs.");
+            return null;
         }
 
         private static WarehouseLocker FindTestLocker(WarehouseLocker[] lockers, Vector3 position)
@@ -662,11 +700,11 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void AssertTestLockerDoorCollision(WarehouseLocker bank, bool expected)
+        private static void AssertTestLockerDoorCollision(WarehouseLocker bank, bool expected, int stockBay = 1)
         {
             Physics.SyncTransforms();
-            Vector3 start = bank.transform.TransformPoint(new Vector3(0f, 1.245f, -1f));
-            Vector3 end = bank.ShelfPosition() + Vector3.up * .18f;
+            Vector3 start = bank.transform.TransformPoint(new Vector3((stockBay - 1) * WarehouseLockerPlacement.BaySpacing, 1.245f, -1f));
+            Vector3 end = bank.ShelfPosition(stockBay) + Vector3.up * .18f;
             bool intersectsLeaf = false;
             var details = new System.Text.StringBuilder($" from={start:F4}, target={end:F4}; open={bank.DoorOpenAmount:F4};");
             for (int bay = 0; bay < 3; bay++)
@@ -677,9 +715,9 @@ namespace BarPromenade.Tests.PlayMode
             foreach (RaycastHit hit in Physics.RaycastAll(start, (end - start).normalized, Vector3.Distance(start, end),
                          Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             {
-                bool leaf = hit.transform.IsChildOf(bank.DoorPivot(1));
+                bool leaf = hit.transform.IsChildOf(bank.DoorPivot(stockBay));
                 if (leaf) intersectsLeaf = true;
-                details.Append($" hit={hit.transform.name}, middleLeaf={leaf}, point={hit.point:F4}, bankLocal={bank.transform.InverseTransformPoint(hit.point):F4}, normal={hit.normal:F4}, distance={hit.distance:F4};");
+                details.Append($" hit={hit.transform.name}, stockLeaf={leaf}, point={hit.point:F4}, bankLocal={bank.transform.InverseTransformPoint(hit.point):F4}, normal={hit.normal:F4}, distance={hit.distance:F4};");
             }
             Assert.That(intersectsLeaf, Is.EqualTo(expected), "Collision must follow the actual hinged leaf." + details);
         }

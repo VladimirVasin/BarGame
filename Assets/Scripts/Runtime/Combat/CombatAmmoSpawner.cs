@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Four retained pickups; only the arena's active simulation advances their return.</summary>
+    /// <summary>Bounded retained pickups; only the arena's active simulation advances their return.</summary>
     internal sealed class CombatAmmoSpawner : IDisposable
     {
-        internal const int Capacity = 4;
+        internal const int Capacity = WarehouseArenaPlan.AmmoCacheCount, LegacyCapacity = 4;
         internal const float RespawnSeconds = 12f;
-        private readonly CombatAmmoPickup[] slots = new CombatAmmoPickup[Capacity];
+        private readonly CombatAmmoPickup[] slots;
         private bool disposed;
         private bool interactionEnabled = true;
 
@@ -20,6 +20,7 @@ namespace BarPromenade
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (hero == null) throw new ArgumentNullException(nameof(hero));
             ValidatePositions(positions);
+            slots = new CombatAmmoPickup[positions.Length];
             IFirearmState pistol = hero.CarriedFirearm(CombatWeaponId.Pistol);
             IFirearmState shotgun = hero.CarriedFirearm(CombatWeaponId.Shotgun);
             if (pistol == null || shotgun == null)
@@ -50,6 +51,8 @@ namespace BarPromenade
         {
             if (disposed) return;
             ValidatePositions(positions);
+            if (positions.Length != slots.Length)
+                throw new ArgumentException("A retained arena cannot change its ammunition pool size.", nameof(positions));
             for (int index = 0; index < slots.Length; index++) slots[index].ResetPickup(positions[index]);
         }
 
@@ -78,8 +81,8 @@ namespace BarPromenade
         private static void ValidatePositions(Vector3[] positions)
         {
             if (positions == null) throw new ArgumentNullException(nameof(positions));
-            if (positions.Length != Capacity)
-                throw new ArgumentException("The arena supplies exactly four walkable ammunition positions.", nameof(positions));
+            if (positions.Length != Capacity && positions.Length != LegacyCapacity)
+                throw new ArgumentException("The arena supplies twelve warehouse or four legacy ammunition positions.", nameof(positions));
             for (int index = 0; index < positions.Length; index++)
             {
                 Vector3 position = positions[index];

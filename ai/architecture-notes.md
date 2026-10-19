@@ -2,7 +2,9 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a;forced continuous hero/no approach. 6m/chest-up2m/start-release LOS/lockedthrow/zonepuncture1→5s pain/COLhoist-haul toward well/overrails/physstruggle/bodycam-orbit/fallHP;release:restore drives/keep velocity. Others+spawns idle→release/cancel;Room owners compose. E6fresh/charcoal-bone bar/held0. Success/escape→actualhome→watch10;fatal cry/spasm3→home→regen10/full/sameslot/kill-reward-corpse0. Hero:wounds/nodetach. FrontdotXZ≥.35;frontbar fullblock/guardbreak-back0. Pause-modal-focus freeze;reset-disable-unload clear input-rig-anchor-UI;story/outsideworld0.
+- **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
+
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a;forced continuous hero/approach0. 6m/chestup2m/start-releaseLOS/lockedthrow/zonepuncture1→pain5s/COLhoist-haul→well/rails/physstruggle/bodycamorbit/fallHP;release:drivesrestore/velocitykept. Others-spawns idle→release-cancel/Roomcompose. E6fresh/charcoalbonebar/held0;success-escape→actualhome/watch10;fatalcry-spasm3→home/regen10/full/sameslot/kill-reward-corpse0. Hero:wounds/nodetach;frontXZdot≥.35/frontbar fullblock/guardbreak-back0. Pause-modal-focus0;reset-disable-unload clearinput-rig-anchor-UI/story-outsideworld0.
 
 - **Accepted 2026-10-19, hero airborne inertia:** Approved motor world-space velocity/yaw-release brake0/limited steering;combat hero separate planar-vertical caps/freefall gravity24;NPC physics kept. Fixedstep/bounded bodies/shared clamp/hotalloc0.
 
@@ -14,17 +16,17 @@
 
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
 
-- **Accepted 2026-10-19, warehouse roster:** Main:Crane/Room/Docker only;Endless1–5/def3;Crane last/≤2corpses;Lab6/Zombie/default1target/≤6warm;§6/art§15a/story0.
+- **Accepted 2026-10-19, warehouse roster:** Main:Crane/Room/Docker;Endless1–5/def3;Crane last/≤2corpses;Lab6/Zombie/def1target/≤6warm;§6/art§15a/story0.
 
 - **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/pause-reset;§6/story0.
 
 - **Accepted exception 2026-10-17, endless endurance:** Crane/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 
-- **Accepted 2026-10-16, warehouse storage:** 3room+6wall/27leaves/soloE/fridgecurve/hollowCOL; multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell; reset-respawnkeep/Endlessrespawn/resetshut; 8/2+0/reserveonly/wave-story0/lamp-matclone0.
+- **Accepted 2026-10-19, warehouse routes/stock:** upperLbroken/Ronly;3room6wall/27soloE/fridgecurve/hollowCOL/multiopen/ownbay→Take;seed12packs/6mag6shell/9banks/3bays/allfloors;reset-respawnkeep/Endlessrefill/shut;8/2+0reserve/wave-story0.
 
 - **Accepted 2026-10-16, warehouse detail:**
-  9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;
-  UVslots/worldmetres/sharedwear;gate=PlatformUV/runtimeUV-matclone0.
+  9sets/doorCOLclear;4096+2048resp+2×512/BC7mips27.34≤28MiB;
+  UVslots/metrewear;gatePlatformUV/UV-matclone0.
 
 - **Accepted 2026-10-15, shared entry door design:**
   Home/CombatTest:`ApartmentEntranceDoor`:agedwood/4panels/reveals-trim-threshold/
@@ -54,24 +56,24 @@
   `GameCursor`:leases0/5/10/cap32/prune/update/cleanup/stalesnapshots0.
 
 - **Accepted exception 2026-10-19, warehouse lamps:**
-  KeyUIend+upperstairs↓→heat2s/L-emission-range↑/riseSFX→popglass8phys;bulb0/socketcord/restL-lens-amb0/gateRedL+lens>0+chest;red:softperiodicdip×≥.45/gapsflat/SFX-strobe0/pause-focus0/layoutquiet;Reset-Newkeep/silent;NewGameinv0/cam-input-text-damage-story0;§6.
+  KeyUIend+upperstairs↓→heat2s/L-emission-range↑/riseSFX→popglass8phys;bulb0/socketcord/restL-lens-amb0/gateRedL+lens>0+chest;red:softperiodicdip×≥.45/gapsflat/SFX-strobe0/pause-focus0/layoutquiet;Reset-Newkeep/silent;Newinv0/cam-input-text-dmg-story0;§6.
 
 - **Accepted exception 2026-10-19, gate:**
-  Keyinturn/click/shackle↑↻full/keyout/chainglide/gCOLsettle;3x3Dvoices/metalhitcap;valvecreak=motion/lowrust/Eupfade;holdEwheel-leafCOL↑;unlockedskip;release-pause-Esckeep/maxlatch/sharedstandbounds/ResetNewkeep/NewGameinvreset0;Gallery/upper/headroom/silentgoalstub;NoKeyE2tug1.2s→RUENkey/silentSharedInspect;§6/21.
+  Keyinturn/click/shackle↑↻full/keyout/chainglide/gCOLsettle;3×3Dvoices/metalhitcap;valvecreak:motion/lowrust/Eupfade;holdEwheel-leafCOL↑;unlockedskip;release-pause-Esckeep/maxlatch/sharedstandbounds/ResetNewkeep/Newinv0;Gallery/upper/headroom/silentgoalstub;NoKeyE2tug1.2s→RUENkey/silentSharedInspect;§6/21.
 
 - **Accepted 2026-10-15, warehouse tabletop:**
-  WorkSurfaceCloseUp<bulbI1.8;playfill/pourcans0;user2026-10-19:localY≤1.30m.
+  WorkSurfaceCloseUp<bulb1.8;playfill/pourcans0;2026-10-19:localY≤1.30m.
 
 - **Accepted exception 2026-10-19, warehouse fish cutoff:**
-  Commit3→spawned foes-corpses0/spawn0/kill-reward-autowin+0;Crane6oldcablesonly.
-  Wind/creak:art§15a;taken Reset-reentrykeep/NewGame fresh;§6/story-text0.
+  Commit3→spawned foes-corpses0/spawn0/kill-reward-autowin+0/Crane6oldcables.
+  Wind-creak:art§15a;taken Reset-reentrykeep/Newfresh;§6/story-text0.
 
 - **Accepted exception 2026-10-15, warehouse fish assembly:**
   §6:atomic3cans→flatphys/drag-turn/seams→rig/spasmSFX/die-key1/sharedreceipt/retry;
-  standing-modal-camera/Esc-Reset-Newkeep/newgame-invreset0/fishorganic.
+  standing-modal-camera/Esc-Reset-Newkeep/Newinv0/fishorganic.
 
 - **Accepted exception 2026-10-15, warehouse final-can power:**
-  Cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill untilfailure;
+  Cordbulb/socket;3unique-anyorder→Homeflicker-crackle/spill→failure;
   fanlens/vent-mechstrain5s-grind→0;music tapechew/wow-pitch-LP-volume0;
   pause-cleanup/Reset-Newsilent/cache-hotload-strobe0.
 
@@ -85,8 +87,8 @@
 - **Accepted exception 2026-10-15, warehouse fish finds:**
   Cityprep/toprear→hall;Homefridge/seedfloor/Resetkeep-Newrooms;
   RedTake→fade-humclick/6off/gatealways;
-  rustenamel/stains/openscraps/cream tail-belly-head/bottom→top/text-brand0.
-  Take/fullkeep/floorIDs/0refill;beam cursorplane/torso-lagpitch/pause-nested/endrestore.
+  rustenamel/stains/openscraps/cream tail-belly-head/bottom↑/text-brand0.
+  Take/fullkeep/floorIDs/refill0;beam cursorplane/torso-lagpitch/pause-nested/endrestore.
 
 - **Accepted — 2026-10-14, closer camera and steadier aim:**
   ChaseR.5/back1.9m;aim.5/1.4m/stable1.4;focus1.6/1.5m;ext=int.
@@ -105,13 +107,13 @@
   URP2048:key1024/chest512/rest256;redPoint6hardfaces;≤49/64.
 
 - **Accepted exception 2026-10-14, warehouse otherworld:**
-  Portwork monotony-exhaustion-disgust/wet-rust/futilemech/§6;
+  Portwork monotony-exhaustion-disgust/wetrust/futilemech/§6;
   Blender/seed/Reset-Newkeep/flat testonly/clear/pause/hazard-falldmg0.
 
 - **Accepted 2026-10-14, warehouse audio:**
   SFX:clearer/EQ165Hz×1.45/LP6800/stepsLP2600/gunsLP5400;
   pitch.84/.88/echo-room/dryUI;warehouse_theme WAV-OGG-MP3/MusicMix kept;
-  playhead/Reset-New pre-finalcan/pause-disable-resume/exit/cache/cleanup
+  playhead/Reset-New pre-can3/pause-disable-resume/exit/cache/cleanup
 
 - **Accepted 2026-10-14, warehouse look:**
   Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;

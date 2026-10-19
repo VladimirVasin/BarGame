@@ -50,7 +50,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
-| Warehouse | Fish3:foes/corpses/spawn0;6windcables+creak;gateSFX/doors/ammo;Spot+heroPt.| `Warehouse*`,`Combat{Ammo,Chest}*`| Current |
+| Warehouse | Fish3:foes/spawn0;cables/gate/E;ammo12/3bays;L3broken;dust/fan→settle. | `Warehouse*`,`Combat{Ammo,Chest}*` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |

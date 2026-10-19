@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
-        private readonly Vector3[] ammoPositions = new Vector3[CombatAmmoSpawner.Capacity];
+        private Vector3[] ammoPositions = Array.Empty<Vector3>();
         private WarehouseLocker[] warehouseLockers = Array.Empty<WarehouseLocker>();
         internal CombatAmmoSpawner AmmoSpawns { get; private set; }
 
@@ -40,6 +40,8 @@ namespace BarPromenade
 
         private void ResolveAmmoPositions()
         {
+            int capacity = WarehousePlan == null ? CombatAmmoSpawner.LegacyCapacity : CombatAmmoSpawner.Capacity;
+            if (ammoPositions.Length != capacity) ammoPositions = new Vector3[capacity];
             if (WarehousePlan == null)
             {
                 float floor = heroSpawn.y - PlayerFactory.GroundedRootOffset;
@@ -63,11 +65,16 @@ namespace BarPromenade
             for (int slot = 0; slot < ammoPositions.Length; slot++)
             {
                 WarehouseLocker source = null;
+                int sourceBay = -1;
                 foreach (WarehouseLocker locker in warehouseLockers)
-                    if ((locker.ShelfPosition() - ammoPositions[slot]).sqrMagnitude < .0001f)
-                    { source = locker; break; }
+                {
+                    for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+                        if ((locker.ShelfPosition(bay) - ammoPositions[slot]).sqrMagnitude < .0001f)
+                        { source = locker; sourceBay = bay; break; }
+                    if (source != null) break;
+                }
                 if (source == null) throw new InvalidOperationException("Ammunition needs its authored locker shelf.");
-                source.BindAmmo(AmmoSpawns.GetSlot(slot));
+                source.BindAmmo(AmmoSpawns.GetSlot(slot), sourceBay);
             }
         }
     }

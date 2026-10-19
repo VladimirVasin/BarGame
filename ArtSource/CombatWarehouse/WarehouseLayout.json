@@ -2,8 +2,8 @@
   "schema_version": 1,
   "authority": {
     "source": "Assets/Scripts/Runtime/Combat/WarehouseArenaPlan.cs",
-    "source_sha256": "4a43ec423f8852fafc05603d056eb23cb794fb61b2f16ad42d8a220470ffca5d",
-    "projection_sha256": "726b94629515a00f3682e12aae87fc0f3f8fd6c0050a9cf2df610ca0c6b16250",
+    "source_sha256": "e0885f0426b330efa3057c55ded7c128ee8b7ae25df95f851c9695e97455e32c",
+    "projection_sha256": "b706f7fa4a7a9ec6c6f36dda2cbe804b62e003e40515dfc6b3f60f3b3cd86448",
     "unity_version": "6000.6.4f1",
     "scope": "placement-only; native lamp rotations, navigation and runtime validation are omitted",
     "omissions": [
@@ -16,12 +16,12 @@
         "sha256": "8968bc570b975dc54d2f09b84084545780d99a792fe7785a84b6a7205d342eac"
       },
       {
-        "anchor": "Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f)",
-        "sha256": "ee857519c959aba8fd54c94b69e7e3f266c7b8127466cab3805e380106ccbfb7"
+        "anchor": "Quaternion.Euler(0f, Yaw, 0f) *\n            new Vector3(BayOffset(bay), 0f, -1.45f)",
+        "sha256": "9182bb0452f4b88c0dc1d5ccb047bde37a4f59fe76ab67238204e55d8f79a214"
       },
       {
-        "anchor": "Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f)",
-        "sha256": "6a67f989162b6e236edb0700d24b5b437f1d18b66c3f81c8b252121e3c457852"
+        "anchor": "Quaternion.Euler(0f, Yaw, 0f) *\n            new Vector3(BayOffset(bay), ShelfHeight, -.08f)",
+        "sha256": "70b79e53599f57ded1105b4cbb504b3c739f2690f3eafcc6c176a69f40112648"
       },
       {
         "anchor": "BuildNavigation(plan);",
@@ -33,15 +33,15 @@
       },
       {
         "anchor": "private static void BuildNavigation(WarehouseArenaPlan plan)",
-        "sha256": "3ed6085136675f00b91f9c66fedcbcb74873bf09aa29ad6bdfdfc811d6dadf6b"
+        "sha256": "aa898c58a126b76bc5d907fdffc338eca5055c0c0068949c81a8d50a8e798a97"
       },
       {
         "anchor": "public static class WarehouseArenaValidator",
-        "sha256": "3e2860442e15c4dad228e6a985502fb40b4815ad78bf51832267cb5b359fba76"
+        "sha256": "852a2832b88dc8cd8f7a292600d43696ab03faaa3ab6ee8199dd4bade8b7c06b"
       }
     ]
   },
-  "generator_version": "warehouse-v4",
+  "generator_version": "warehouse-v5",
   "coordinates": "Unity metres; position [x,y,z], yaw degrees around \u002BY",
   "templates": [
     {
@@ -1656,7 +1656,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 1,
@@ -1674,7 +1675,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 2,
@@ -1692,7 +1694,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": true
         },
         {
           "slot": 3,
@@ -1710,7 +1713,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         }
       ],
       "rails": [
@@ -3158,7 +3162,7 @@
           "position": [
             -2.65,
             2.6,
-            11.75
+            11.97
           ],
           "enabled": true
         },
@@ -5149,7 +5153,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 1,
@@ -5167,7 +5172,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 2,
@@ -5185,7 +5191,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": true
         },
         {
           "slot": 3,
@@ -5203,7 +5210,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         }
       ],
       "rails": [
@@ -6651,7 +6659,7 @@
           "position": [
             -2.65,
             2.6,
-            11.75
+            11.97
           ],
           "enabled": true
         },
@@ -8642,7 +8650,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 1,
@@ -8660,7 +8669,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         },
         {
           "slot": 2,
@@ -8678,7 +8688,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": true
         },
         {
           "slot": 3,
@@ -8696,7 +8707,8 @@
           "run": 6,
           "tread_count": 20,
           "tread_depth": 0.3,
-          "tread_rise": 0.16
+          "tread_rise": 0.16,
+          "broken": false
         }
       ],
       "rails": [
@@ -10144,7 +10156,7 @@
           "position": [
             -2.65,
             2.6,
-            11.75
+            11.97
           ],
           "enabled": true
         },

@@ -74,10 +74,12 @@ def project_source(text):
         # Shelf/approach positions are now evaluated by the planner itself.
         # Quaternion.Euler needs Unity native code; these exact yaw-only
         # replacements retain their metre offsets in the managed projection.
-        ("Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, 0f, -1.45f)",
-         "new Vector3(-1.45f * Mathf.Sin(Yaw * Mathf.Deg2Rad), 0f, -1.45f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
-        ("Quaternion.Euler(0f, Yaw, 0f) * new Vector3(0f, ShelfHeight, -.08f)",
-         "new Vector3(-.08f * Mathf.Sin(Yaw * Mathf.Deg2Rad), ShelfHeight, -.08f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
+        ("Quaternion.Euler(0f, Yaw, 0f) *\n            new Vector3(BayOffset(bay), 0f, -1.45f)",
+         "new Vector3(BayOffset(bay) * Mathf.Cos(Yaw * Mathf.Deg2Rad) - 1.45f * Mathf.Sin(Yaw * Mathf.Deg2Rad), "
+         "0f, -BayOffset(bay) * Mathf.Sin(Yaw * Mathf.Deg2Rad) - 1.45f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
+        ("Quaternion.Euler(0f, Yaw, 0f) *\n            new Vector3(BayOffset(bay), ShelfHeight, -.08f)",
+         "new Vector3(BayOffset(bay) * Mathf.Cos(Yaw * Mathf.Deg2Rad) - .08f * Mathf.Sin(Yaw * Mathf.Deg2Rad), "
+         "ShelfHeight, -BayOffset(bay) * Mathf.Sin(Yaw * Mathf.Deg2Rad) - .08f * Mathf.Cos(Yaw * Mathf.Deg2Rad))"),
     ):
         once(text, original)
         omissions.append({"anchor": original, "sha256": digest(original)})
@@ -86,8 +88,8 @@ def project_source(text):
         once(text, call)
         omissions.append({"anchor": call, "sha256": digest(call)})
         text = text.replace(call, "// Omitted by placement-only exporter.")
-    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "3ed6085136675f00b91f9c66fedcbcb74873bf09aa29ad6bdfdfc811d6dadf6b")
-    omit_block("public static class WarehouseArenaValidator", "3e2860442e15c4dad228e6a985502fb40b4815ad78bf51832267cb5b359fba76")
+    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "aa898c58a126b76bc5d907fdffc338eca5055c0c0068949c81a8d50a8e798a97")
+    omit_block("public static class WarehouseArenaValidator", "852a2832b88dc8cd8f7a292600d43696ab03faaa3ab6ee8199dd4bade8b7c06b")
     return text, omissions
 
 

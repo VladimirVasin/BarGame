@@ -108,6 +108,11 @@ namespace BarPromenade.Tests.PlayMode
                 for (int i = 0; i < root.WarehousePlan.Stairs.Count; i++)
                 {
                     WarehouseArenaStair stair = root.WarehousePlan.Stairs[i];
+                    if (stair.IsBroken)
+                    {
+                        AssertWarehouseBrokenStairRoutes(root.WarehousePlan);
+                        continue;
+                    }
                     bool ascending = i % 2 == 0;
                     Vector3 lower = stair.Foot + Vector3.back * .6f;
                     Vector3 upper = stair.Top + Vector3.forward * .6f;
@@ -119,7 +124,7 @@ namespace BarPromenade.Tests.PlayMode
                     float reachedHeight = ascending ? stair.Top.y : stair.Foot.y;
                     Assert.That(root.Hero.transform.position.y,
                         Is.EqualTo(reachedHeight + PlayerFactory.GroundedRootOffset).Within(.1f),
-                        "The production hero must traverse all four physical stairs, including the second floor pair.");
+                        "The production hero must traverse each intact physical flight, including the remaining upper route.");
                 }
 
                 // Matching XZ on separate storeys must not become a close-range
@@ -141,11 +146,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.OpponentDecisionSequence, Is.Zero,
                     "Occluded target phases must not reach the opponent's combat perception.");
 
-                foreach (int stairIndex in new[] { 0, 2, 3 })
+                for (int traversal = 0; traversal < 3; traversal++)
                 {
                     root.SetSparring(true);
+                    int stairIndex = traversal == 0 ? 0 : 3;
                     WarehouseArenaStair stair = root.WarehousePlan.Stairs[stairIndex];
-                    bool ascend = stairIndex != 3;
+                    bool ascend = traversal != 2;
                     Vector3 target = ascend ? stair.Top + Vector3.forward * 2f : stair.Foot + Vector3.back * 2.5f;
                     Vector3 start = ascend ? stair.Foot + Vector3.back * .8f : stair.Top + Vector3.forward * .8f;
                     root.Hero.ResetActor(target + Vector3.up * PlayerFactory.GroundedRootOffset,
@@ -1001,12 +1007,28 @@ namespace BarPromenade.Tests.PlayMode
                 for (int step = 0; step < WarehouseArenaStair.TreadCount; step++)
                 {
                     float height = stair.Foot.y + (step + 1) * WarehouseArenaStair.TreadRise;
-                    Vector3 tread = stair.Foot + Vector3.forward * ((step + .5f) * WarehouseArenaStair.TreadDepth);
+                    // The broken lower remnant has a transverse guard at the
+                    // last tread's centre. Probe behind that real barrier.
+                    // Probe the tread before the remnant guard's fastener
+                    // shoe; that visible shoe legitimately sits above it.
+                    Vector3 tread = stair.Foot + Vector3.forward * ((step + (stair.IsBroken ? .1f : .5f)) * WarehouseArenaStair.TreadDepth);
                     tread.y = height;
-                    Assert.That(Physics.Raycast(tread + Vector3.up * .35f, Vector3.down, out RaycastHit hit,
-                        .65f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
-                    Assert.That(hit.point.y, Is.EqualTo(height).Within(.025f),
-                        "A short ray must hit this storey's tread rather than the stacked staircase above it.");
+                    bool supported = Physics.Raycast(tread + Vector3.up * .35f, Vector3.down, out RaycastHit hit,
+                        .65f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                    if (!stair.HasTread(step))
+                    {
+                        Assert.That(supported, Is.False, "The missing upper stair section cannot retain an invisible physical ramp.");
+                        continue;
+                    }
+                    Assert.That(supported, Is.True);
+                    bool bentEdge = stair.IsBroken && (step == WarehouseArenaStair.FirstMissingTread - 1 ||
+                        step == WarehouseArenaStair.MissingTreadEnd);
+                    if (bentEdge)
+                        Assert.That(hit.point.y, Is.InRange(height - .14f, height + .025f),
+                            "The exposed edge piece retains its authored bent collision below the original tread height.");
+                    else
+                        Assert.That(hit.point.y, Is.EqualTo(height).Within(.025f),
+                            "A short ray must hit this storey's tread rather than the stacked staircase above it.");
                 }
             Vector3 entrance = root.WarehousePlan.HeroSpawn + Vector3.right * .85f;
             Assert.That(Physics.Raycast(entrance + Vector3.up * .5f, Vector3.down, out RaycastHit floor,
