@@ -69,7 +69,7 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
 
-            playerObject = new GameObject("Player Motor Heading Test Player");
+            playerObject = new GameObject("Test player motor");
             playerObject.transform.position = new Vector3(0f, 100f, 0f);
             playerObject.AddComponent<CharacterController>();
             motor = playerObject.AddComponent<PlayerMotor>();
@@ -78,7 +78,7 @@ namespace BarPromenade.Tests.PlayMode
 
             keyboard = InputSystem.AddDevice<Keyboard>();
             gamepad = InputSystem.AddDevice<Gamepad>();
-            yield return null;
+            yield return GroundForExternalPush();
         }
 
         [UnityTearDown]
@@ -970,8 +970,49 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding()
+        {
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSpeed(MaximumRunningSpeed - .01f);
+            Vector3 leavingVelocity = motor.PlanarVelocity;
+            pushGround.SetActive(false);
+            Physics.SyncTransforms();
+            // Lose the previous move's support before testing air controls.
+            yield return null;
+            Assert.That(motor.IsGrounded, Is.False);
+            QueueKeyboardState(Key.D);
+            float deadline = Time.time + .3f;
+            while (Time.time < deadline)
+            {
+                yield return null;
+                Assert.That(Vector3.Distance(motor.PlanarVelocity, leavingVelocity), Is.LessThan(.05f),
+                    "Releasing travel and turning in the air must retain the achieved world velocity.");
+            }
+            Assert.That(Mathf.Abs(Mathf.DeltaAngle(playerObject.transform.eulerAngles.y, 0f)), Is.GreaterThan(15f));
+
+            QueueKeyboardState(Key.S);
+            deadline = Time.time + .25f;
+            while (Time.time < deadline)
+            {
+                Vector3 before = motor.PlanarVelocity;
+                yield return null;
+                Assert.That(Vector3.Distance(motor.PlanarVelocity, before), Is.LessThanOrEqualTo(1.5f * Time.deltaTime + .02f),
+                    "Held air control changes velocity gradually rather than replacing the flight direction.");
+            }
+            Assert.That(Vector3.Dot(motor.PlanarVelocity, leavingVelocity.normalized), Is.GreaterThan(3f));
+
+            QueueKeyboardState();
+            yield return GroundForExternalPush();
+            yield return WaitForStop();
+            Assert.That(motor.IsGrounded, Is.True, "Landing restores ordinary ground braking.");
+        }
+
+        [UnityTest]
         public IEnumerator ExternalPush_HardStopsClearContactAndUnavailableStatesRejectIt()
         {
+            pushGround.SetActive(false);
+            Physics.SyncTransforms();
+            yield return null;
             Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False,
                 "An airborne rig must not accept a pending contact.");
             yield return GroundForExternalPush();
@@ -1187,13 +1228,15 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator GroundForExternalPush()
         {
+            if (pushGround != null && pushGround.activeSelf && motor.IsGrounded) yield break;
             CharacterController capsule =
                 playerObject.GetComponent<CharacterController>();
-            pushGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            pushGround.name = "External Push Test Ground";
+            if (pushGround == null) pushGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pushGround.name = "Test motor ground";
             pushGround.transform.localScale = new Vector3(100f, 1f, 100f);
             pushGround.transform.position = playerObject.transform.position +
                 Vector3.up * (capsule.center.y - capsule.height * 0.5f - 0.55f);
+            pushGround.SetActive(true);
             Physics.SyncTransforms();
             float deadline = Time.realtimeSinceStartup + 1f;
             while (!motor.IsGrounded && Time.realtimeSinceStartup < deadline)

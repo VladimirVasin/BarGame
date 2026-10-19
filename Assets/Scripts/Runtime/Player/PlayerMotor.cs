@@ -11,7 +11,8 @@ namespace BarPromenade
         private const float InteractionTurnSpeedDegrees = 540f;
         private const float Acceleration = 6.5f;
         private const float Deceleration = 11f;
-        private const float Gravity = 24f;
+        internal const float Gravity = 24f;
+        private const float AirAcceleration = 1.5f;
         // Shared with the NPC stride tracker, so a passer-by and the hero
         // step to one measure.
         internal const float FootstepStride = 1.35f;
@@ -603,7 +604,8 @@ namespace BarPromenade
             // momentum is the player's own achieved motion; the balance
             // drift moves the capsule in a second, separate move below and
             // is never re-integrated here.
-            Vector3 steeredPlanarVelocity = basisRelative || targetRelative && inertialTargetMovement
+            bool airborne = !IsGrounded;
+            Vector3 steeredPlanarVelocity = airborne || basisRelative || targetRelative && inertialTargetMovement
                 ? momentumVelocity
                 : Quaternion.AngleAxis(yawDelta, Vector3.up) * momentumVelocity;
             if (ExternalPushActive)
@@ -615,9 +617,11 @@ namespace BarPromenade
             }
 
             RequestedPlanarVelocity = desiredPlanarVelocity;
-            float velocityChangeRate = GetVelocityChangeRate(
-                steeredPlanarVelocity,
-                desiredPlanarVelocity);
+            // Without ground friction, releasing the keys retains world-space
+            // velocity. Deliberate air control can only change it gradually.
+            float velocityChangeRate = airborne
+                ? (desiredPlanarVelocity.sqrMagnitude > FacingThresholdSquared ? AirAcceleration * ownedMoveScale : 0f)
+                : GetVelocityChangeRate(steeredPlanarVelocity, desiredPlanarVelocity);
             Vector3 inertialPlanarVelocity = Vector3.MoveTowards(
                 steeredPlanarVelocity,
                 desiredPlanarVelocity,
@@ -914,7 +918,7 @@ namespace BarPromenade
                 footstepDistance = 0f;
                 return;
             }
-            if ((!InputEnabled && !allowWhenInputDisabled) ||
+            if (!IsGrounded || (!InputEnabled && !allowWhenInputDisabled) ||
                 SceneTransitionService.IsTransitioning ||
                 PlanarVelocity.sqrMagnitude <
                 Mathf.Lerp(FootstepMinimumSpeedSquared, .01f, SnowBlend))

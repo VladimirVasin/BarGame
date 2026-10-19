@@ -2,7 +2,11 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a:forced hook/continuous hero/no contextual approach. 6m/chest-up1.5m/start-release LOS/lockedthrow/zonepuncture1→5s embed/pain/drag-lift/activephys-struggle/bodycam-orbit/fallHP;release restores drives. E6fresh+silent charcoal/bone Ebar,held0. Success/earlyescape→actualhome→watch10. Fatal always cry/spasm3→home→regen10/full;sameactor-slot/no kill-reward-corpse. Hero:HP/visualwounds,no head-limb-body separation. Blockable attacks:horizontal front dot≥.35;frontcrowbar fullyblocks hook/no guardbreak,back0. Pause/modal/focus freeze;reset-disable-unload clear input/rig/anchor/UI;story/outsideworld0.
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a:forced continuous hero/no approach. Approved:6m/chest-up2m/start-release LOS/lockedthrow/zonepuncture1→5s pain/COLhoist-haul toward well/overrails/physstruggle/bodycam-orbit/fallHP;release restores drives/keeps velocity. Others+spawns liveidle→release/cancel;Room suppression owners compose. E6fresh/charcoal-bone bar/held0. Success/escape→actualhome→watch10;fatal cry/spasm3→home→regen10/full/sameslot/no kill-reward-corpse. Hero:wounds/no detach. Horizontal frontdot≥.35;frontbar fullblock/no guardbreak/back0. Pause-modal-focus freeze;reset-disable-unload clear input/rig/anchor/UI;story/outsideworld0.
+
+- **Accepted 2026-10-19, hero airborne inertia:** Approved motor world-space velocity/yaw-release brake0/limited steering;combat hero separate planar-vertical caps/freefall gravity24;NPC physics kept. Fixedstep/bounded bodies/shared clamp/hotalloc0.
+
+- **Accepted 2026-10-19, hero weapon retention:** Live hero:hit/fall/recovery drop0;death→drop+pickup;NPC kept;shotgun draw grip-model-ammo kept/resume.
 
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a kept;jelly waves;mid flatbar axial in/out;wet closure/low glugs/sticky pull. `CombatRoomAttackTableau`:1Spot/24×256R8texels+mips≤2MiB/.64s;SFX3.6s;preload/layerrestore/pause-focus-exit clear/hotalloc0/extra shadowpass0.
 
@@ -137,7 +141,7 @@
 - **Accepted — 2026-10-14, combat cloth policy:**
   `PlayerClothPhysicsPolicy`:CombatTest jacket-scarf-sling0live-bake;
   hair/rig/hand-opening/anchors kept;solve-contact-wind0;
-  pause-drop-reset-dispose/worldon/freshresume.
+  pause-reset-dispose/worldon/freshresume.
 
 - **Accepted — 2026-10-14, corpse traversal:**
   CombatTest:auto corpsestep/rigcache;livefall≠corpse/world-weapon phys-lifecycle.
@@ -156,7 +160,7 @@
   `ai/debug-log.md`.
 
 - **Accepted — 2026-10-13, three-weapon carry:**
-  All3/1held-2stowed/3mount-action-ammo/drop-recover-reset/0story.
+  All3/1held-2stowed/mount-action-ammo/reset/0story.
 
 - **Accepted exception 2026-10-13, novice firearms:**
   Hero sway-recoil/regrip/blink-breath/novice§7;
@@ -177,9 +181,7 @@
   bar Rbelt/shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
-  Ropen/barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown
-  →outer shoulder/chest→Rgrip/Lforeend;0crossing.
-  Importoffsets/continuous handoffs/pause-drop=pose-ammo/stow-model-rig-sling/2×.
+  Art§15a hand path/offsets/continuous handoffs/pause pose-ammo/stow rig-sling/2×.
 
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→chest/abdomen→low Rside;draw/stow.
   Ribbon0jacket;gun/bar→hair;JacketBody-only width/seam pad.
@@ -479,14 +481,14 @@
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/floorcancel. HP-focus/MMB/reset mode-focus;pause-hitstop0/hitstop≠lock-reset;Aim¼Windup lock/Charge free/motor yield;Step1m/bounded landing-overload/first bar-world-body/metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX;Q/Step contacts-poses:art§15a/`CombatActor`.
+  NPCfloor/stall→drop;rise≠grip;unarmed walk-Q-Step/hits-falls/Eshared/0grant/floorcancel;HPfocus/MMB/reset modefocus;pause-hitstop0≠lock-reset. Aim¼windup/chargefree/yield;Step1m/bounded landing-overload/firstbar-world-body/wallrecoil-stop/guardbreak/parry0HP/sparks-SFXpool;Q-Step contacts:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
 - **Accepted 2026-10-03, combat:**
   Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;regrip≤600°/s wrist-elbow-shoulder/body-world-palm;Q/B/recoil hold;.20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
-  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°.
+  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns/Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/NPCdrop past capsule→anatomy0/hand-ignore expiry/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
   6zones/firstseq;barhead×2(50/80,cap.99MaxHP);torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll. C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
@@ -5518,15 +5520,11 @@
   Chase:independent orbit/no player yaw;Combat target/held aim lease translation;
   actor:facing;`WalkPlanarStep`:travel-facing. `PlayerMotionSample`:planar velocity/
   signed forward speed/turn→`Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight`,six-input mixer.
-- **Accepted — Bounded inertial walk/run locomotion:** Character-relative
-  targets: `2.6/4.2 m/s` forward walk/run, `1.4 m/s` back;
-  acceleration/brake `6.5/11 m/s²`. Constrained displacement feeds next velocity;
-  road edges/collision retain no hidden impulse. Input release coasts;
-  modal/transition/input disable/teleport immediately stop planar motion.
-  Intoxication scales forward targets/turn; fatigue has no debuff. Scripted
-  approaches call the walking step directly without held sprint.
-  `PlayerMotionSample.RunBlend`: signed speed after collision/walkable constraints,
-  not requested keys; a blocked hero cannot run in place.
+- **Accepted — Bounded inertial walk/run locomotion:** Forward walk/run
+  `2.6/4.2 m/s`,back `1.4`;ground accel/brake `6.5/11 m/s²`;release coasts.
+  Constrained displacement feeds velocity/`PlayerMotionSample.RunBlend`;
+  collision/road edges store no impulse or run-in-place. Modal/transition/input
+  disable/teleport stop. Intoxication scales targets/turn;fatigue0;approaches walk.
 - **Accepted — Run is one production-only authored gait:** Hero V2 appends one
   bone-only, in-place `Run` Action (`0.75 s`, `18` frames at `24 fps`) to reach
   `38` production Actions at that decision; the later three-part seated drink

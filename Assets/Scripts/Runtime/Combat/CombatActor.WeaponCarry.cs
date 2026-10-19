@@ -31,12 +31,14 @@ namespace BarPromenade
         }
 
         private CarriedWeaponRecord[] carriedWeapons;
-        private CarriedWeaponRecord activeCarry, carryAction;
+        private CarriedWeaponRecord activeCarry, carryAction, interruptedShotgunDraw;
         private CombatWeaponId? requestedCarry;
         private bool carryDraw, carryTransferred, carrySettling, resettingCarry, disposingCarry;
         private float carryElapsed, carrySettleElapsed;
         private int carryTerminalFrame = -1;
         private int shotgunDrawStage;
+        private float interruptedShotgunElapsed;
+        private int interruptedShotgunStage;
         // Retiming preserves authored contact phases for the rig, jacket and sling.
         private const float CarryPlaybackSpeed = 2f;
         private const float CarrySettleSeconds = .16f / CarryPlaybackSpeed;
@@ -45,9 +47,23 @@ namespace BarPromenade
 
         public CombatLoadoutSelection LoadoutSelection { get; private set; }
         public bool IsSwitchingWeapon => carryAction != null;
+        internal bool WeaponCarryRecoveryPending => interruptedShotgunDraw != null;
+        private bool HasTransientShotgunHold => activeCarry != null && activeCarry.Id == CombatWeaponId.Shotgun &&
+            activeCarry.Location == CombatWeaponCarryLocation.Held &&
+            (interruptedShotgunDraw == activeCarry || carryAction == activeCarry && carryDraw && shotgunDrawStage > 0 && shotgunDrawStage < 3);
+
+        private bool ReassertTransientShotgunHold()
+        {
+            if (!HasTransientShotgunHold) return false;
+            float progress = WeaponCarryRecoveryPending ? interruptedShotgunElapsed /
+                CarryPhaseDuration(CombatWeaponId.Shotgun, true) : WeaponCarryActionProgress;
+            handPose.SetGrip(false, CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(false, progress));
+            handPose.SetGrip(true, CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(true, progress));
+            return true;
+        }
         public bool HasWeaponInHand => activeCarry == null ? !weaponDropped && Weapon != null :
             activeCarry.Location == CombatWeaponCarryLocation.Held;
-        private bool HasWeaponSwitchRequest => IsSwitchingWeapon || requestedCarry.HasValue;
+        private bool HasWeaponSwitchRequest => IsSwitchingWeapon || WeaponCarryRecoveryPending || requestedCarry.HasValue;
         public CombatWeaponId? WeaponCarryActionWeapon => carryAction?.Id;
         public bool WeaponCarryActionIsDraw => carryDraw;
         public float WeaponCarryActionProgress => carryAction == null ? 0f : Mathf.Clamp01(
@@ -203,7 +219,13 @@ namespace BarPromenade
 
         private void TryBeginPendingWeaponCarry()
         {
-            if (IsSwitchingWeapon || !requestedCarry.HasValue || !CanStartWeaponCarry) return;
+            if (IsSwitchingWeapon || !CanStartWeaponCarry) return;
+            if (WeaponCarryRecoveryPending)
+            {
+                if (BodyDamage.CanUseLeftHand) ResumeInterruptedShotgunDraw();
+                return;
+            }
+            if (!requestedCarry.HasValue) return;
             CarriedWeaponRecord target = FindCarriedWeapon(requestedCarry.Value);
             if (target == null || target.Location == CombatWeaponCarryLocation.Dropped)
             { requestedCarry = null; return; }
@@ -228,6 +250,40 @@ namespace BarPromenade
             PresentWeaponCarry();
         }
 
+        private void ResumeInterruptedShotgunDraw()
+        {
+            EndPistolAction(); ReleasePresentation(preservePresentedPose: true);
+            carryAction = interruptedShotgunDraw;
+            carryDraw = carryTransferred = true;
+            carryElapsed = interruptedShotgunElapsed;
+            shotgunDrawStage = interruptedShotgunStage;
+            ClearInterruptedShotgunDraw();
+            carrySettleElapsed = 0f; carryTerminalFrame = -1; carrySettling = true;
+            JournalWeaponCarry("resume", carryAction);
+            AnimationClip clip = carryAction.CarryClips[1];
+            if (!hero.TryAcquireClip(this, clip.name)) { CancelWeaponCarry(); return; }
+            hero.SetOwnedClipLocomotion(this, true);
+            visibleClip = clip.name; winnerPresentationReleased = false; freeLocomotionReleased = false;
+            BeginPoseBlend(CarrySettleSeconds, force: true);
+            PresentWeaponCarry();
+        }
+
+        private void ClearInterruptedShotgunDraw()
+        {
+            interruptedShotgunDraw = null;
+            interruptedShotgunElapsed = 0f;
+            interruptedShotgunStage = 0;
+        }
+
+        private void EndWeaponCarryForRelease()
+        {
+            CancelWeaponCarry(retainPose: true);
+            // Terminal release keeps the live attachment until
+            // the ordinary drop detaches it in world space. It cannot resume
+            // the living hero's interrupted draw or reassert its hand closure.
+            ClearInterruptedShotgunDraw();
+        }
+
         private void AdvanceWeaponCarry(float seconds)
         {
             UpdateConcealedPistol();
@@ -240,7 +296,8 @@ namespace BarPromenade
                 }
             if (IsSwitchingWeapon && (!BodyDamage.CanStand || !BodyDamage.CanUseRightHand ||
                 carryAction.Id != CombatWeaponId.Crowbar && !BodyDamage.CanUseLeftHand ||
-                State.IsDefeated || IsKnockedDown || IsRagdollActive || State.Phase != MeleePhase.Ready || !IsAvailable))
+                State.IsDefeated || IsKnockedDown || IsRagdollActive || State.Phase != MeleePhase.Ready ||
+                (ImpactMotion?.IsActive ?? false) || !IsAvailable))
             { CancelWeaponCarry(); return; }
             if (!IsSwitchingWeapon) { TryBeginPendingWeaponCarry(); return; }
             if (carryTerminalFrame >= 0)
@@ -359,19 +416,28 @@ namespace BarPromenade
         private bool CancelWeaponCarry(bool retainPose = false)
         {
             requestedCarry = null;
-            if (!IsSwitchingWeapon) return false;
-            bool releaseTransientHold = carryAction.Id == CombatWeaponId.Shotgun && carryDraw &&
-                shotgunDrawStage > 0 && shotgunDrawStage < 3 && !resettingCarry && !disposingCarry && gameObject.activeInHierarchy;
+            bool lifecycle = resettingCarry || disposingCarry;
+            if (lifecycle) ClearInterruptedShotgunDraw();
+            if (!IsSwitchingWeapon) return WeaponCarryRecoveryPending;
+            bool retainTransientHold = carryAction.Id == CombatWeaponId.Shotgun && carryDraw &&
+                shotgunDrawStage > 0 && shotgunDrawStage < 3 && !lifecycle;
             JournalWeaponCarry("cancel", carryAction, resettingCarry || disposingCarry ? "lifecycle" : "interrupted");
+            if (retainTransientHold)
+            {
+                interruptedShotgunDraw = carryAction;
+                interruptedShotgunElapsed = carryElapsed;
+                interruptedShotgunStage = shotgunDrawStage;
+            }
             carryAction = null; carryTerminalFrame = -1;
-            // A palm push or upper catch is not a stable firing hold. Interruptions
-            // release the same real gun at its live pose instead of snapping it to
-            // the distant trigger hand; normal drop/pickup retains its ammunition.
-            if (releaseTransientHold) ReleaseWeapon(Vector3.zero, Vector3.zero);
+            // Keep the actual push/catch attachment through the injury. The
+            // interrupted draw resumes from this contact after ordinary body
+            // recovery; keeping it separate lets knockdown own its own clock.
+            // Disable releases presentation leases, retaining only this bounded
+            // contact intent for re-enable. Reset and disposal clear it above.
             if (hero != null) CombatWeaponCarryAssetProvider.SetJacketAccess(hero.Registry, 0f);
             motor?.ReleaseMovementConstraint(this);
             if (!retainPose) ReleasePresentation(preservePresentedPose: true);
-            return releaseTransientHold;
+            return retainTransientHold;
         }
 
         private void ResetWeaponCarry()

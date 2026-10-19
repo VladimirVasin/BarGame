@@ -190,6 +190,7 @@ namespace BarPromenade
         private void PlaceRound(bool focusOpponent)
         {
             CancelRoomAttackSequence();
+            ClearOpponentAttackSuppression();
             ReleaseFreePistolAim();
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");

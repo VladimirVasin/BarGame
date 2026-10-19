@@ -142,8 +142,9 @@ cemetery:own interiors/returns.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
-  Crane:flesh/carapace/6cables/3floors/6m/up1.5m-chest/LOS/locked1hit;
-  zonepuncture→5s pull/activephys-struggle/bodycam/fallHP;
+  Crane:flesh/carapace/6cables/3floors/6m/up2m-chest/LOS/1hit;
+  hook5s/COLhoist-haul overrails/struggle/bodycam/fallHP/inertia;
+  others+spawns idle→release/cancel;
   escape6freshE/bar/held0;success→actualhome→watch10;
   fatalcry-spasm3→home→regen10/full/sameactor/kill0.
   Frontcrowbar fullblock/back0;sharedblockfront dot≥.35.
@@ -156,7 +157,7 @@ cemetery:own interiors/returns.
   Kill1x/heroend;injury-action-ammo-flights kept;
   unused→oldest/excess retire;
   bodydrop0/focus≠hits/Tab-E0.
-  All3/defaultbar/stow-draw/fallcancel/pose-ammo/sharedE.
+  Hero:All3/alivehold/deathdrop-pickup;draw grip-ammo resume.
   Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;
   1.7m/s/plantbursts;ram.9m(.25/.18/2.4)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
   dmg32/guard28/impulse85-block26/firstsurface1hit/guard-counter-retreat0;
@@ -169,7 +170,7 @@ cemetery:own interiors/returns.
   Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
   Bar:bat/hook→/shoulder-block/charge/free/8seg/1hit/recoil/6zones;taunt/Eshared/0grant.
-  Cloth:rig-anchors/hand-opening/physics0/hair;pause-drop-resetclean.
+  Cloth:rig-anchors/hand-opening/physics0/hair;pause-resetclean.
   HUD:art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
@@ -1738,8 +1739,9 @@ cemetery:own interiors/returns.
 - road-constrained tank motion: `W`→hero-forward `2.6 m/s`;
   Shift/L3+forward→`4.2 m/s`; `S`: backpedal `1.4 m/s`;
   `A`/`D`: step-turn clips/arcs, yaw in place `150°/s`.
-  Accel/brake `6.5/11 m/s²`; release coasts; modal/transition/teleport stop;
-  constraints retain no momentum. Camera-plane only in CombatTest aim.
+  Ground accel/brake `6.5/11 m/s²`;coasts;modal/transition/teleport stop;
+  Blocked motion0. Air:world-space inertia/no release brake/limited
+  steering/gravity24. Camera-plane only in CombatTest aim.
   Intoxication scales walk/run; fatigue no debuff; scripted approaches walk;
 - City/Bar/Supermarket:third-person chase `1.9 m` ext/int;
   FOV `53°/57°`,focus `1.6/1.5 m`,hero low.
@@ -1806,14 +1808,13 @@ cemetery:own interiors/returns.
   where the capture point is going he topples — the root goes with him, one or
   two lunges are thrown at where the point will be, the hands go out for the
   ground — and either a lunge catches him or he goes down;
-- a lost topple hands the body to a 14-body runtime ragdoll from the bracing
-  pose, with the motion the topple had (a rotation about the boot under his
-  weight), instead of a scripted shove after a clip. The pelvis is tethered to
-  a `0.68 m` sphere around the gameplay root; lower spine and chest have
-  separate bounded joints and share the former torso's `18 kg` as `8/10 kg`.
+- a lost topple hands the bracing pose and its motion about the supporting boot
+  to a 14-body runtime ragdoll. The pelvis is tethered within `0.68 m` of the
+  root;lower-spine/chest joints share `18 kg` as `8/10 kg`.
   Every ragdoll collider ignores its jointed neighbor and the upright
   `CharacterController`, while other non-overlapping body pairs collide, and the expanded
-  analytic contact shadow slides along the fall's own axis. He lies until the
+  analytic contact shadow follows the fall. Combat hero:separate planar/vertical
+  caps;freefall gravity24/lateral inertia;NPC kept. He lies until the
   ragdoll is still and, drunk, a while longer; then the capsule is brought
   under him and turned to match how he lies. Calibrated chest/pelvis fronts
   against the probed floor distinguish stomach from back; a side landing

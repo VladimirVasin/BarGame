@@ -24,7 +24,7 @@ namespace BarPromenade
                 JournalEvent("rise_escape_started", f0: GameLog.Field("blocked_seconds", recoveryBlockedSeconds),
                     f1: GameLog.Field("shape", WeaponBlockingShape));
             }
-            if (!weaponDropped && recoveryBlockedSeconds >= RecoveryWeaponReleaseSeconds)
+            if (!IsHero && !weaponDropped && recoveryBlockedSeconds >= RecoveryWeaponReleaseSeconds)
             {
                 // Keep the complete displayed pose. Only the hand opens and its
                 // actual prop becomes a free physical body at its present location.

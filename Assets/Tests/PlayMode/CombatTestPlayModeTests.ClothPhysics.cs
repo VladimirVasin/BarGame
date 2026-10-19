@@ -29,7 +29,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return AwaitSelectedCombatRange();
                 root.SendMessage("OnApplicationFocus", true);
                 GameInput.HandleApplicationFocus(true);
-                Assert.That(root.LiveOpponentCount, Is.Zero);
+                SuspendRigidCombatOpponents();
 
                 var visual = (Player3DCharacterPresentation)root.Player.Visual;
                 Player3DAssetRegistry rig = visual.Registry;
@@ -173,52 +173,79 @@ namespace BarPromenade.Tests.PlayMode
                 yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Cloth pause did not release input.");
 
                 yield return CompleteRigidClothWeapon(CombatWeaponId.Shotgun, policy, jacket, scarf, sling, off);
-                root.Hero.SendMessage("DropWeapon", SendMessageOptions.RequireReceiver);
-                Assert.That(root.Hero.CarriedWeaponLocation(CombatWeaponId.Shotgun), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
-                Assert.That(shotgun.transform.IsChildOf(root.Hero.transform), Is.False);
-                Rigidbody weaponBody = shotgun.GetComponent<Rigidbody>();
-                Collider[] droppedShapes = shotgun.GetComponentsInChildren<Collider>();
-                float floorY = root.Hero.transform.position.y - PlayerFactory.GroundedRootOffset;
-                bool droppedOnFloor = false;
-                for (int frame = 0; frame < 90; frame++)
+                yield return SpendRigidCombatRound(policy, jacket, scarf, sling, off);
+                foreach (CombatWeaponId retained in CarryWeaponIds)
                 {
-                    yield return new WaitForFixedUpdate();
-                    SynchronizeRigidCombatCloth(visual, scarf, sling);
-                    AssertCombatClothOff(policy, jacket, scarf, sling, off);
-                    if (frame < 34 || !RigidCombatWeaponOnFloor(weaponBody, droppedShapes, floorY)) continue;
-                    droppedOnFloor = true;
-                    break;
+                    if (root.Hero.WeaponId != retained)
+                    {
+                        Assert.That(root.Hero.TrySelectWeapon(retained), Is.True);
+                        if (retained != CombatWeaponId.Shotgun)
+                            yield return CompleteRigidClothWeapon(retained, policy, jacket, scarf, sling, off);
+                        else
+                        {
+                            // Interrupt the real left-hand catch before the final
+                            // right-hand transfer, rather than an already stable hold.
+                            for (int frame = 0; frame < 120 && shotgun.transform.parent != rig.Anchors.LeftGrip; frame++)
+                                yield return AdvanceRigidCombatCloth(1, policy, jacket, scarf, sling, off);
+                            Assert.That(root.Hero.IsSwitchingWeapon && root.Hero.WeaponCarryActionIsDraw, Is.True);
+                            Assert.That(root.Hero.WeaponCarryActionWeapon, Is.EqualTo(CombatWeaponId.Shotgun));
+                            Assert.That(shotgun.transform.parent, Is.SameAs(rig.Anchors.LeftGrip));
+                        }
+                    }
+                    if (root.Hero.IsFirearm && !root.Hero.IsSwitchingWeapon)
+                        yield return SpendRigidCombatRound(policy, jacket, scarf, sling, off);
+                    var held = new HeroHeldWeaponSnapshot(root.Hero);
+                    float catchProgress = root.Hero.WeaponCarryActionProgress;
+                    root.Hero.SendMessage("DropWeapon", SendMessageOptions.RequireReceiver);
+                    held.AssertMatches(root.Hero, retained + ": explicit release request");
+                    ApplyControlledImpact(root.Hero, -root.Hero.transform.forward, ChargedDiagnosticImpulse);
+                    bool sawPhysics = false, sawLeftCatchFall = false, sawCatchResume = false;
+                    for (int frame = 0; frame < 720; frame++)
+                    {
+                        yield return AdvanceRigidCombatCloth(1, policy, jacket, scarf, sling, off);
+                        sawPhysics |= root.Hero.IsKnockedDown && root.Hero.Ragdoll.PhysicsController.IsSimulating;
+                        if (retained == CombatWeaponId.Shotgun)
+                        {
+                            sawLeftCatchFall |= root.Hero.IsKnockedDown && shotgun.transform.parent == rig.Anchors.LeftGrip;
+                            if (sawPhysics && !root.Hero.IsKnockedDown && root.Hero.IsSwitchingWeapon)
+                            {
+                                sawCatchResume = true;
+                                Assert.That(root.Hero.WeaponCarryActionProgress, Is.GreaterThanOrEqualTo(catchProgress - .01f),
+                                    "Recovery resumes the retained catch instead of restarting the sling push.");
+                            }
+                        }
+                        held.AssertMatches(root.Hero, retained + ": physical fall and recovery",
+                            preserveParent: retained != CombatWeaponId.Shotgun || !sawCatchResume);
+                        if (sawPhysics && !root.Hero.IsKnockedDown && !root.Hero.IsRagdollActive &&
+                            !root.Hero.WeaponCarryRecoveryPending && !root.Hero.IsSwitchingWeapon &&
+                            root.Hero.State.Phase == MeleePhase.Ready && !root.Hero.ImpactMotion.IsActive &&
+                            !root.Hero.Footwork.RecoveryEpisodeActive) break;
+                    }
+                    Assert.That(sawPhysics, Is.True, retained + ": the real impact must produce a physical knockdown.");
+                    Assert.That(root.Hero.IsKnockedDown || root.Hero.IsRagdollActive, Is.False,
+                        retained + ": recovery finishes while retaining the held weapon. " + DescribeImpactRecoveryGate(root.Hero));
+                    Assert.That(root.Hero.WeaponCarryRecoveryPending || root.Hero.IsSwitchingWeapon, Is.False);
+                    if (retained == CombatWeaponId.Shotgun)
+                    {
+                        Assert.That(sawLeftCatchFall && sawCatchResume, Is.True,
+                            "The interrupted left-hand catch survives physical recovery and completes its remaining draw.");
+                        Assert.That(shotgun.transform.parent, Is.SameAs(rig.Anchors.RightGrip));
+                    }
                 }
-                Assert.That(droppedOnFloor, Is.True, "The sling capture must inspect the actual landed floor prop.");
-                CaptureRigidCombatCloth("Test combat rigid dropped sling", rear: false,
-                    focusOverride: weaponBody.worldCenterOfMass);
-
-                // Reclaim the very same floor prop through the production receipt screen.
-                weaponBody.linearVelocity = weaponBody.angularVelocity = Vector3.zero;
-                Vector3 stand = shotgun.transform.position + Vector3.right * .75f;
-                stand.y = root.Hero.transform.position.y;
-                root.Player.Motor.Teleport(stand);
-                Physics.SyncTransforms();
-                yield return null;
-                CombatDroppedWeaponPickup pickup = shotgun.GetComponent<CombatDroppedWeaponPickup>();
-                Assert.That(pickup.TryBeginPickup(root.Player.Interactor), Is.True);
-                WorldItemFoundScreen found = WorldItemFoundScreen.For(root.Player.Interactor);
-                yield return WaitFor(() => found.IsShowing, "The dropped shotgun did not reach its receipt screen.");
-                yield return null;
-                Assert.That(found.Confirm(), Is.True);
-                yield return WaitFor(() => !found.IsPresenting, "Shotgun pickup retained input ownership.");
-                yield return CompleteRigidClothWeapon(CombatWeaponId.Shotgun, policy, jacket, scarf, sling, off);
                 Assert.That(root.Hero.Weapon, Is.SameAs(shotgun));
-
+                var defeatedWeapon = new HeroHeldWeaponSnapshot(root.Hero);
+                float floorY = root.Hero.transform.position.y - PlayerFactory.GroundedRootOffset;
                 root.Hero.State.ReceiveProjectileHit(root.Hero.State.Settings.MaxHealth);
                 root.Hero.Step(CombatAssetProvider.DefeatHandoffSeconds + .05f);
                 Assert.That(root.Hero.IsRagdollActive, Is.True);
+                defeatedWeapon.AssertDroppedMatches(root.Hero, "Terminal fall handoff");
                 bool bodyFallen = false;
                 for (int frame = 0; frame < 120; frame++)
                 {
                     yield return new WaitForFixedUpdate();
                     SynchronizeRigidCombatCloth(visual, scarf, sling);
                     AssertCombatClothOff(policy, jacket, scarf, sling, off);
+                    defeatedWeapon.AssertDroppedMatches(root.Hero, "Physically fallen hero");
                     if (frame < 34 || !root.Hero.Ragdoll.HasGroundContact ||
                         rig.Anchors.Head.position.y > floorY + .85f ||
                         root.Hero.Ragdoll.PelvisBody.position.y > floorY + .5f) continue;
@@ -229,6 +256,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(scarf.TailRenderer.transform.IsChildOf(rig.transform), Is.True);
                 CaptureRigidCombatCloth("Test combat rigid cloth fallen hero", rear: false);
                 root.ResetRound();
+                SuspendRigidCombatOpponents();
                 yield return AdvanceRigidCombatCloth(8, policy, jacket, scarf, sling, off);
                 Assert.That(root.Hero.IsRagdollActive, Is.False);
                 Assert.That(root.Hero.CarriedWeapon(CombatWeaponId.Shotgun), Is.SameAs(shotgun));
@@ -275,6 +303,15 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private void SuspendRigidCombatOpponents()
+        {
+            // The live warehouse starts with its mixed roster. This fixture
+            // isolates the hero's equipment without changing population rules.
+            root.SetSparring(false);
+            root.AutomaticOpponentDecisions = false;
+            root.SendMessage("SetRoomOpponentSuppression", true, SendMessageOptions.RequireReceiver);
+        }
+
         private IEnumerator CompleteRigidClothWeapon(CombatWeaponId target, PlayerClothPhysicsPolicy policy,
             PlayerJacketCloth jacket, PlayerScarfPresentation scarf, CombatShotgunSling sling, CombatClothSnapshot expected)
         {
@@ -283,6 +320,21 @@ namespace BarPromenade.Tests.PlayMode
                 yield return AdvanceRigidCombatCloth(1, policy, jacket, scarf, sling, expected);
             Assert.That(root.Hero.IsSwitchingWeapon, Is.False);
             Assert.That(root.Hero.HasWeaponInHand && root.Hero.WeaponId == target, Is.True);
+        }
+
+        private IEnumerator SpendRigidCombatRound(PlayerClothPhysicsPolicy policy, PlayerJacketCloth jacket,
+            PlayerScarfPresentation scarf, CombatShotgunSling sling, CombatClothSnapshot expected)
+        {
+            // Spent guns distinguish retained ammunition from a fresh loadout.
+            int beforeShot = root.Hero.Firearm.Rounds;
+            root.Hero.SetPistolAim(true, root.Hero.transform.position + Vector3.up * 1.3f + Vector3.forward * 20f);
+            root.Tick(.65f);
+            Assert.That(root.Hero.RequestPistolShot(), Is.True);
+            root.Tick(CombatTestRoot.SimulationStep);
+            Assert.That(root.Hero.Firearm.Rounds, Is.EqualTo(beforeShot - 1));
+            root.Tick(.7f);
+            root.Hero.SetPistolAim(false);
+            yield return AdvanceRigidCombatCloth(30, policy, jacket, scarf, sling, expected);
         }
 
         private readonly struct CombatClothSnapshot
@@ -322,13 +374,67 @@ namespace BarPromenade.Tests.PlayMode
             sling.Present();
         }
 
-        private static bool RigidCombatWeaponOnFloor(Rigidbody body, Collider[] shapes, float floorY)
+        private readonly struct HeroHeldWeaponSnapshot
         {
-            if (body.linearVelocity.magnitude > .6f || body.angularVelocity.magnitude > 2f) return false;
-            foreach (Collider shape in shapes)
-                if (shape.enabled && !shape.isTrigger && shape.attachedRigidbody == body &&
-                    shape.bounds.min.y <= floorY + .06f) return true;
-            return false;
+            private readonly CombatWeaponId id;
+            private readonly GameObject model;
+            private readonly Transform parent;
+            private readonly IFirearmState pistol, shotgun;
+            private readonly int pistolRounds, pistolReserve, shotgunRounds, shotgunReserve;
+
+            internal HeroHeldWeaponSnapshot(CombatActor hero)
+            {
+                id = hero.WeaponId;
+                model = hero.Weapon;
+                parent = model.transform.parent;
+                pistol = hero.CarriedFirearm(CombatWeaponId.Pistol);
+                shotgun = hero.CarriedFirearm(CombatWeaponId.Shotgun);
+                pistolRounds = pistol.Rounds;
+                pistolReserve = pistol.ReserveRounds;
+                shotgunRounds = shotgun.Rounds;
+                shotgunReserve = shotgun.ReserveRounds;
+            }
+
+            internal void AssertMatches(CombatActor hero, string context, bool preserveParent = true)
+            {
+                Assert.That(hero.IsWeaponDropped, Is.False, context);
+                Assert.That(hero.HasWeaponInHand, Is.True, context);
+                Assert.That(hero.WeaponId, Is.EqualTo(id), context);
+                Assert.That(hero.Weapon, Is.SameAs(model), context);
+                Assert.That(hero.CarriedWeaponLocation(id), Is.EqualTo(CombatWeaponCarryLocation.Held), context);
+                if (preserveParent && model.transform.parent != parent)
+                    Assert.Fail(context + ": attachment changed from " + parent.name + " to " +
+                        (model.transform.parent != null ? model.transform.parent.name : "world") +
+                        "; knocked down=" + hero.IsKnockedDown + "; pending=" + hero.WeaponCarryRecoveryPending +
+                        "; switching=" + hero.IsSwitchingWeapon + "; progress=" + hero.WeaponCarryActionProgress);
+                Assert.That(model.transform.IsChildOf(hero.transform), Is.True, context);
+                AssertAmmunitionMatches(hero, context);
+            }
+
+            internal void AssertDroppedMatches(CombatActor hero, string context)
+            {
+                Assert.That(hero.State.IsDefeated && hero.IsWeaponDropped, Is.True, context);
+                Assert.That(hero.HasWeaponInHand, Is.False, context);
+                Assert.That(hero.Weapon, Is.SameAs(model), context);
+                Assert.That(hero.CarriedWeaponLocation(id), Is.EqualTo(CombatWeaponCarryLocation.Dropped), context);
+                Assert.That(model.transform.parent, Is.Not.SameAs(parent), context);
+                Assert.That(model.transform.IsChildOf(hero.transform), Is.False, context);
+                Rigidbody body = model.GetComponent<Rigidbody>();
+                Assert.That(body, Is.Not.Null, context);
+                Assert.That(body.isKinematic, Is.False, context);
+                Assert.That(body.useGravity, Is.True, context);
+                AssertAmmunitionMatches(hero, context);
+            }
+
+            private void AssertAmmunitionMatches(CombatActor hero, string context)
+            {
+                Assert.That(hero.CarriedFirearm(CombatWeaponId.Pistol), Is.SameAs(pistol), context);
+                Assert.That(hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgun), context);
+                Assert.That(pistol.Rounds, Is.EqualTo(pistolRounds), context);
+                Assert.That(pistol.ReserveRounds, Is.EqualTo(pistolReserve), context);
+                Assert.That(shotgun.Rounds, Is.EqualTo(shotgunRounds), context);
+                Assert.That(shotgun.ReserveRounds, Is.EqualTo(shotgunReserve), context);
+            }
         }
 
         private static void AssertCombatClothOff(PlayerClothPhysicsPolicy policy, PlayerJacketCloth jacket,

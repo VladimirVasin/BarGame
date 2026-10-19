@@ -90,7 +90,7 @@ namespace BarPromenade
 
         private void AdvanceOpponent(float seconds)
         {
-            if (RoomAttackCinematicActive)
+            if (RoomAttackCinematicActive || IsOpponentAttackSuppressed(AiOpponent))
             {
                 ResetOpponentMovement();
                 OpponentIntent = CombatOpponentIntent.Recover;

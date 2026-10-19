@@ -385,14 +385,21 @@ namespace BarPromenade
             AdvanceRestraintPhysics(Time.fixedDeltaTime);
             physicsController.AdvanceCombatAnchor();
             simulationSeconds += Time.fixedDeltaTime;
+            bool hasSupport = HasSupportContact;
+            bool hero = motor != null;
+            // The motor and this temporary physical handoff share the hero's
+            // fall weight. The suspension still owns its authored lift force;
+            // supported limbs and NPCs retain their existing PhysX gravity.
+            Vector3 extraGravity = hero && !restraintSuspension && !hasSupport
+                ? Vector3.down * PlayerMotor.Gravity - Physics.gravity : Vector3.zero;
             foreach (Rigidbody body in Bodies)
             {
                 if (body == null || body.isKinematic) continue;
-                body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, 8f);
+                body.linearVelocity = Player3DRagdollController.ConstrainCombatLinearVelocity(body.linearVelocity, hero);
                 body.angularVelocity = Vector3.ClampMagnitude(body.angularVelocity, 10f);
+                if (extraGravity.sqrMagnitude > .0001f) body.AddForce(extraGravity, ForceMode.Acceleration);
             }
             if (HasGroundContact) groundSeconds += Time.fixedDeltaTime;
-            bool hasSupport = HasSupportContact;
             supportSeconds = hasSupport ? supportSeconds + Time.fixedDeltaTime : 0f;
             // A settled torso can actively gather still-moving limbs. Waiting for the
             // fastest fingertip/joint to stop made every temporary fall hit a 4 s timeout.

@@ -20,6 +20,51 @@ namespace BarPromenade.Tests.PlayMode
         private int diagnosticImpactSequence;
 
         [UnityTest]
+        public IEnumerator Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            yield return EnterRange();
+            root.Player.Motor.Teleport(root.Hero.transform.position + Vector3.up * 40f);
+            Physics.SyncTransforms();
+            CombatRagdoll ragdoll = root.Hero.Ragdoll;
+            Vector3 entering = new Vector3(4f, -10f, 0f);
+            Assert.That(ragdoll.BeginKnockdown(entering, Vector3.zero), Is.True);
+            Assert.That(ragdoll.PelvisBody.linearVelocity.x, Is.EqualTo(entering.x).Within(.03f),
+                "The physical handoff must not spend horizontal speed on the existing downward motion.");
+            Assert.That(ragdoll.PelvisBody.linearVelocity.y, Is.EqualTo(entering.y).Within(.03f));
+            Vector3 initialVelocity = AirborneRagdollMassVelocity(ragdoll);
+            Vector3 initialPosition = ragdoll.PelvisBody.position;
+            float elapsed = 0f;
+            for (int step = 0; step < 30; step++)
+            {
+                yield return new WaitForFixedUpdate();
+                elapsed += Time.fixedDeltaTime;
+                Assert.That(ragdoll.IsSettled || ragdoll.HasSupportContact, Is.False,
+                    "A freely falling hero has no support for recovery.");
+            }
+            Vector3 falling = AirborneRagdollMassVelocity(ragdoll);
+            Assert.That(falling.x, Is.GreaterThan(initialVelocity.x * .9f),
+                "Downward acceleration past 8 m/s must not erase airborne horizontal momentum.");
+            Assert.That(falling.y, Is.LessThan(-20f), "The hero retains the motor's fall weight in physical flight.");
+            Assert.That(falling.y, Is.EqualTo(initialVelocity.y - PlayerMotor.Gravity * elapsed).Within(2f));
+            Assert.That(ragdoll.PelvisBody.position.x - initialPosition.x, Is.GreaterThan(entering.x * elapsed * .8f));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static Vector3 AirborneRagdollMassVelocity(CombatRagdoll ragdoll)
+        {
+            Vector3 momentum = Vector3.zero;
+            float mass = 0f;
+            foreach (Rigidbody body in ragdoll.Bodies)
+            {
+                if (body == null || body.isKinematic) continue;
+                momentum += body.linearVelocity * body.mass;
+                mass += body.mass;
+            }
+            return mass > 0f ? momentum / mass : Vector3.zero;
+        }
+
+        [UnityTest]
         public IEnumerator Range_ImpactRecoveryMovesBothRigsThroughSupportFallRiseAndRegrip()
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);

@@ -208,6 +208,7 @@ namespace BarPromenade
             }
             handPose?.SetGrip(false, IsZombie || weaponDropped ? 0f : 1f);
             if (!recoveryRegrip) handPose?.SetGrip(true, 0f);
+            ReassertTransientShotgunHold();
             return true;
         }
 

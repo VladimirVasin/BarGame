@@ -161,12 +161,21 @@ namespace BarPromenade
                         Vector3.Cross(pelvisMotion.Angular, body.worldCenterOfMass - centre);
                     relativeAngular = bone.Angular - pelvisMotion.Angular;
                 }
-                body.linearVelocity = Vector3.ClampMagnitude(linear + Vector3.Cross(angular,
-                    body.worldCenterOfMass - centre) + Vector3.ClampMagnitude(relativeLinear, 3f), 8f);
+                body.linearVelocity = ConstrainCombatLinearVelocity(linear + Vector3.Cross(angular,
+                    body.worldCenterOfMass - centre) + Vector3.ClampMagnitude(relativeLinear, 3f), presentation != null);
                 body.angularVelocity = Vector3.ClampMagnitude(angular + Vector3.ClampMagnitude(relativeAngular, 6f), 10f);
             }
             movingCombatAnchor = true;
             return true;
+        }
+
+        internal static Vector3 ConstrainCombatLinearVelocity(Vector3 velocity, bool hero)
+        {
+            if (!hero) return Vector3.ClampMagnitude(velocity, 8f);
+            // Falling must not spend a shared speed allowance and erase the
+            // horizontal motion that carried the hero away from his support.
+            Vector3 planar = Vector3.ClampMagnitude(new Vector3(velocity.x, 0f, velocity.z), 12f);
+            return new Vector3(planar.x, Mathf.Clamp(velocity.y, -32f, 12f), planar.z);
         }
 
         /// <summary>Follow only with the kinematic anchor. Moving the parent actor would move

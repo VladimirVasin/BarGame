@@ -20,7 +20,7 @@ namespace BarPromenade
             "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"
         };
         private const float CraneSignalSeconds = .65f, CraneStrikeSeconds = 1.1f;
-        public const float CraneMaximumAttackHeightAboveTarget = 1.5f;
+        public const float CraneMaximumAttackHeightAboveTarget = 2f;
         // The enlarged head keeps clear of the lower gantry cassette upstairs.
         private const float CraneRestHeight = .40f, CraneWellHalfWidth = 5f;
         internal const int CraneCableSegments = 4;
@@ -291,7 +291,7 @@ namespace BarPromenade
                     { State.CancelAction(); SetCranePhase(CombatCranePhase.Waiting); }
                     break;
                 case CombatCranePhase.Capturing:
-                    AdvanceCraneCapture();
+                    AdvanceCraneCapture(seconds);
                     break;
                 case CombatCranePhase.Watching:
                 case CombatCranePhase.Regenerating:

@@ -71,6 +71,7 @@ namespace BarPromenade
                 if (restraintSceneOwner == null) restraintSceneOwner = FindAnyObjectByType<CombatTestRoot>();
             }
             restraintSceneOwner?.SetOpponentFocus(false);
+            restraintSceneOwner?.BeginCraneOpponentSuppression(source);
             if (restraintInteractor == null) restraintInteractor = GetComponent<PlayerInteractor>();
             restraintInteractor?.SetOwnedInteractKeyClaim(this, true);
             if (IsRagdollActive) Ragdoll.BeginRestraintSuspension(part, localPoint, source.CraneHookPullOrigin);
@@ -156,7 +157,7 @@ namespace BarPromenade
         internal bool PresentRestraint()
         {
             if (!restraintActive) return false;
-            if (IsRagdollActive) return true;
+            if (IsRagdollActive) { ReassertTransientShotgunHold(); return true; }
             RestoreCombatAttention();
             if (!hero.OwnsClip(this) && !hero.TryAcquireClip(this, hit.name)) return true;
             float struggle = Mathf.Sin(restraintSeconds * 12f);
@@ -167,6 +168,7 @@ namespace BarPromenade
             visibleClip = hit.name;
             handPose?.SetGrip(false, 0f);
             handPose?.SetGrip(true, 0f);
+            ReassertTransientShotgunHold();
             hero.ReapplyLatePresentationPose();
             return true;
         }
@@ -194,9 +196,11 @@ namespace BarPromenade
 
         private void ReleaseRestraint()
         {
+            CombatActor releasedSource = restraintSource;
             damagePose?.ClearRestraintContact();
             restraintActive = false;
             restraintSource = null;
+            restraintSceneOwner?.EndCraneOpponentSuppression(releasedSource);
             restraintBone = null;
             restraintPressArmed = false;
             restraintInteractor?.SetOwnedInteractKeyClaim(this, false);

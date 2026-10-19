@@ -285,8 +285,10 @@ namespace BarPromenade
 
         private void ReleaseWeapon(Vector3 linearVelocity, Vector3 angularVelocity)
         {
-            if (weaponDropped || Weapon == null) return;
-            CancelWeaponCarry(retainPose: true);
+            // A living hero keeps his weapon through impacts and falls.
+            // Terminal defeat retains the ordinary physical release.
+            if ((IsHero && !State.IsDefeated) || weaponDropped || Weapon == null) return;
+            EndWeaponCarryForRelease();
             EndPistolAction();
             weaponConstraint?.EndRecoveryContact();
             handPose.SetGrip(false, 0f);

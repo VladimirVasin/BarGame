@@ -361,6 +361,7 @@ namespace BarPromenade
 
         private void ApplyPistolAimPose(bool finalStep)
         {
+            if (ReassertTransientShotgunHold()) return;
             // A living grounded body's arm belongs to physical muscle impulses.
             // Neither this render callback nor contact previews overwrite that pose.
             if (IsBodyGrounded) return;

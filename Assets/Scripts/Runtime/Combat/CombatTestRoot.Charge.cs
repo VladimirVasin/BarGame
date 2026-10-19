@@ -188,6 +188,8 @@ namespace BarPromenade
         private void OnDisable()
         {
             CancelRoomAttackSequence();
+            Hero?.CancelRestraint();
+            ClearOpponentAttackSuppression();
             ClearRoomAttackCooldowns();
             ResetHudPresentation(closeDebug: true);
             UnsubscribeEndlessSpawnGate();

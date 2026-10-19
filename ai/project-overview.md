@@ -84,7 +84,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
   Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.
   HP2/head2/wounds;Room:head0→ret+2s/retlaugh5→idle5;simlive/otherAI0;3weapons/finiteammo.
-  Crane:5s hook/E6/struggle/bodycam/fall→home/watch10;fatal3→regen10/kill0.
+  Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City: 20 metre types; district heights, curved old/service streets,
@@ -119,7 +119,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.
   31 homes have fixed families, four occupied. Hero/mother remain unnamed.
 - One shared animated hero, contextual interactions, intoxication/balance,
-  session clock, needs, inventory, purchases, dated quests and grave work.
+  air inertia/steering,clock,needs,inventory,quests and grave work.
 - A collectible scarf in the mother's upstairs bedroom has reversible inventory
   equipment and reduces alpine shivering and the rate of new frost exposure.
   After five seconds of free third-person play it lowers outside Alpine Village

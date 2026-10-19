@@ -34,6 +34,88 @@ namespace BarPromenade.Tests.PlayMode
         private Vector3 craneOriginalAnchor, craneMinimumCommand, craneMaximumCommand;
 
         [UnityTest]
+        public IEnumerator Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                CombatLoadoutSelection.Default, CombatTestMode.Crane)), Is.True);
+            yield return WaitFor(() =>
+            {
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                return root != null && root.IsInitialized && !SceneTransitionService.IsTransitioning &&
+                    GameInput.CanRead(GameInputContext.Gameplay);
+            }, "The gallery capture did not reach gameplay.");
+            root.AutomaticSimulation = false;
+            root.AutomaticOpponentDecisions = false;
+            root.SetSparring(true);
+            ForceAmmoFocus();
+            CombatActor crane = root.Opponent, hero = root.Hero;
+            for (int step = 0; step < 800 && (crane.CraneFloorIndex != 1 ||
+                crane.CranePatrolTravelling || crane.CranePhase != CombatCranePhase.Waiting); step++)
+            {
+                root.Tick(.05f);
+                if (step % 40 == 39) yield return null;
+            }
+            Assert.That(crane.CraneFloorIndex, Is.EqualTo(1));
+            Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+            Vector3 floor = new Vector3(6.75f, WarehouseArenaPlan.LevelRise, crane.CraneCarriagePosition.z);
+            PlaceCraneHero(floor, Vector3.ProjectOnPlane(crane.CraneHookCableExit - floor, Vector3.up).normalized);
+            hero.SetCombatFocused(false);
+            root.Tick(.7f);
+            Assert.That(crane.TryBeginCraneCycle(hero), Is.True, CraneAcquisitionDiagnostic(crane));
+            for (int step = 0; step < 600 && !hero.IsRestrained; step++)
+            {
+                root.Tick(CombatTestRoot.SimulationStep);
+                if (step % 120 == 119) yield return null;
+            }
+            Assert.That(hero.IsRestrained, Is.True,
+                "The actual hook must reach the hero standing behind the warehouse rail.");
+            Player3DRagdollController physics = hero.Ragdoll.PhysicsController;
+            bool crossed = false;
+            float crossingPelvisHeight = 0f;
+            float highestPelvis = hero.BodyWorldPosition.y;
+            Vector3 releaseVelocity = Vector3.zero;
+            for (int frame = 0; frame < 300 && hero.IsRestrained; frame++)
+            {
+                releaseVelocity = physics.IsSimulating ? physics.PelvisBody.linearVelocity : Vector3.zero;
+                root.Tick(Time.fixedDeltaTime);
+                highestPelvis = Mathf.Max(highestPelvis, hero.BodyWorldPosition.y);
+                if (!crossed && hero.BodyWorldPosition.x < 5.45f)
+                {
+                    crossed = true;
+                    crossingPelvisHeight = physics.PelvisBody.position.y;
+                    yield return CaptureCraneVictim(crane, "Test crane - Hero pulled across the gallery rail",
+                        new Vector3(-3.2f, 1.4f, -2f));
+                }
+                if (hero.IsRestrained) yield return new WaitForFixedUpdate();
+            }
+            Assert.That(hero.IsRestrained, Is.False, "Capture must release within its bounded hold.");
+            Assert.That(crossed, Is.True,
+                $"A real rail must be cleared into the well; body={hero.BodyWorldPosition}, highestPelvis={highestPelvis}, source={crane.CraneHookCableExit}.");
+            Assert.That(crossingPelvisHeight, Is.GreaterThan(floor.y + 1.1f),
+                "The central body crosses above the gallery rail, rather than falling beneath its bars.");
+            Assert.That(hero.IsRagdollActive, Is.True);
+            Assert.That(Vector3.ProjectOnPlane(releaseVelocity, Vector3.up).magnitude, Is.GreaterThan(.4f),
+                "The final physical haul must leave meaningful horizontal momentum.");
+            Assert.That(Vector3.Distance(physics.PelvisBody.linearVelocity, releaseVelocity), Is.LessThan(.05f),
+                "Detaching the hook must preserve the existing physical velocity.");
+            Vector3 releasePosition = physics.PelvisBody.position;
+            Vector3 direction = Vector3.ProjectOnPlane(releaseVelocity, Vector3.up).normalized;
+            for (int frame = 0; frame < 12; frame++)
+            {
+                root.Tick(Time.fixedDeltaTime);
+                yield return new WaitForFixedUpdate();
+            }
+            Assert.That(Vector3.Dot(physics.PelvisBody.position - releasePosition, direction), Is.GreaterThan(.08f),
+                "The detached hero must continue travelling through the air.");
+            yield return CaptureCraneVictim(crane, "Test crane - Free fall beyond the gallery rail",
+                new Vector3(-3.2f, 1.4f, -2f));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator Range_CraneHookCaptureEscapeRetreatAndRegeneration()
         {
             var input = new InputTestFixture();
@@ -78,7 +160,7 @@ namespace BarPromenade.Tests.PlayMode
                     ", target=" + (hero.transform.position + Vector3.up * 1.2f) + ".");
                 Assert.That(crane.TryBeginCraneCycle(hero), Is.False, "A body too far above the hero cannot attack within otherwise valid cable reach.");
                 Assert.That(crane.CraneHookThrowCount, Is.Zero);
-                PlaceCraneFootingHero(crane);
+                PlaceCraneFootingHero(crane, chestAbove: 1.75f);
                 yield return null;
                 ForceAmmoFocus();
                 root.Tick(.2f);
@@ -463,7 +545,7 @@ namespace BarPromenade.Tests.PlayMode
                 $"range={Vector3.Distance(crane.CraneHookCableExit, target)}, input={GameInput.CanRead(GameInputContext.Gameplay)}";
         }
 
-        private void PlaceCraneFootingHero(CombatActor crane, bool outsideHeight = false)
+        private void PlaceCraneFootingHero(CombatActor crane, bool outsideHeight = false, float chestAbove = 1f)
         {
             // This collider is test support only, like the partition fixture below.
             // Its real contact lets the unmodified rig leave the ledge and fall.
@@ -474,7 +556,7 @@ namespace BarPromenade.Tests.PlayMode
                 craneTestFooting.AddComponent<BoxCollider>().size = new Vector3(1.1f, .3f, 1.1f);
             }
             float chestOffset = FindAnatomicalBone(root.Hero, "chest").position.y - root.Hero.transform.position.y;
-            float above = outsideHeight ? CombatActor.CraneMaximumAttackHeightAboveTarget + .5f : 1f;
+            float above = outsideHeight ? CombatActor.CraneMaximumAttackHeightAboveTarget + .5f : chestAbove;
             Vector3 position = crane.transform.position + Vector3.forward * 3f;
             position.y = FindAnatomicalBone(crane, "chest").position.y - chestOffset - above;
             craneTestFooting.transform.position = position - Vector3.up * (.15f + PlayerFactory.GroundedRootOffset);
@@ -532,7 +614,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(crane.CraneWatchElapsed, Is.LessThanOrEqualTo(.05f));
         }
 
-        private IEnumerator CaptureCraneVictim(CombatActor crane, string name)
+        private IEnumerator CaptureCraneVictim(CombatActor crane, string name, Vector3? cameraOffset = null)
         {
             Camera camera = root.CameraFollow.Camera;
             Vector3 position = camera.transform.position;
@@ -543,7 +625,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 root.CameraFollow.enabled = false;
                 Vector3 focus = root.Hero.BodyWorldPosition + Vector3.up * .8f;
-                Vector3 eye = focus + new Vector3(3.2f, .7f, 3.2f);
+                Vector3 eye = focus + (cameraOffset ?? new Vector3(3.2f, .7f, 3.2f));
                 camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
                 camera.fieldOfView = 56f;
                 root.AdvanceHudPresentation(.02f);

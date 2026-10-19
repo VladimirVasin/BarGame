@@ -21,6 +21,7 @@ namespace BarPromenade
 
         private void PlaceHeldFirearm()
         {
+            if (ReassertTransientShotgunHold()) return;
             if (IsShotgun) CombatShotgunAssetProvider.PlaceShotgun(Weapon, weaponGrip, handPose);
             else CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
         }

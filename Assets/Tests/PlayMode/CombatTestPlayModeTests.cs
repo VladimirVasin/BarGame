@@ -64,6 +64,9 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate) &&
                 method != nameof(Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset) &&
                 method != nameof(Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup) &&
+                method != nameof(Range_CraneCaptureYieldsMixedOpponentsUntilRelease) &&
+                method != nameof(Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum) &&
+                method != nameof(Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight) &&
                 method != nameof(Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset) &&
                 method != nameof(Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset) &&
                 method != nameof(Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch) &&

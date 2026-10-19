@@ -47,8 +47,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
-| Crane | Hook6m/up1.5m/hold5/E6/struggle/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
+| Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
+| Crane | Hook6m/up2m/hold5/E6/hoist-haul/others idle/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Wear/deckshadows/fish-key-gate/power/solo doors/ammo. | `WarehouseArenaBuilder`,`CombatAmmoPickup` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
@@ -145,7 +145,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
-| Player motor | Tank motion; gun aim:walk speed/no sprint/normalized strafe+diagonals. Snow/contextual limits retained. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |
+| Player motor | Tank/aim walk;world-space air inertia/limited steering;ground/snow/context limits. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
@@ -183,7 +183,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |
 | Bar drink retail and physical service | The inset 2x2 menu offers exactly four low-grade drinks; either order-key family pays once. | `BarDrink{Catalog,MenuPresentation,ServicePlan,ServiceTimeline,ShopController,VesselView}` | Current |
 | Intoxication stages and presentation | Session alcohol drives reversible visual/audio/body presentation and bounded passive recovery. | `IntoxicationStageRules`, `IntoxicationStatusController` | Current |
-| Continuous balance and falling | Settled pose selects seated/all-fours recovery; complete pose and motion persist across handoffs. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
+| Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Imported bar shell/service assets keep plan-owned collision, entrance geometry and shared resources. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |

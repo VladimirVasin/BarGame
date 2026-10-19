@@ -26,6 +26,142 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
+        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
+        public IEnumerator Range_CraneCaptureYieldsMixedOpponentsUntilRelease()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            CombatTestRoot.AuthoredEnemyKindForTests = CombatEnemyKind.Room;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            var settings = new CombatEncounterSettings(3, .1f, .1f, .15f, .15f);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, settings)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            root.SendMessage("OnApplicationFocus", true);
+            CombatActor room = root.Opponents[0], docker = root.Opponents[1], crane = root.Opponents[2];
+            // Exercise activation under the same ownership on a real route
+            // endpoint. A lifted hero can legitimately defer every spawn for
+            // lack of a walkable destination, independently of suppression.
+            root.BeginCraneOpponentSuppression(crane);
+            FireMixedEnemyProjectile(room, Player3DAnatomicalPart.Head);
+            FireMixedEnemyProjectile(room, Player3DAnatomicalPart.Head);
+            root.Tick(0f);
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
+            root.CameraFollow.enabled = false;
+            root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            for (int step = 0; step < 120 && root.LiveOpponentCount != 3; step++) root.Tick(CombatTestRoot.SimulationStep);
+            root.CameraFollow.enabled = true;
+            bool spawnTargetSupported = root.WarehouseArea.TryGetHeight(root.Hero.transform.position,
+                out float spawnTargetHeight, room.Body.radius + .04f);
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(3),
+                $"Replacement under capture ownership: hero={root.Hero.transform.position}, supported={spawnTargetSupported}, " +
+                $"floor={spawnTargetHeight}, waiting={root.WaitingForNextOpponent}, next={root.NextOpponentSeconds}, " +
+                $"interval={root.EncounterSettings.SpawnIntervalMinSeconds}, hitStop={root.HitStopSecondsConsumed}, " +
+                $"fishGate={root.EndlessSpawnsBlockedByFish}, finished={root.EndlessRunFinished}.");
+            room = root.Opponents[0];
+            Assert.That(room.RoomAttackSuppressed, Is.True, "A replacement joins the same live idle immediately.");
+            Assert.That(room.State.IsAttacking || room.State.IsCharging || room.RoomAttackPoseActive, Is.False);
+            root.EndCraneOpponentSuppression(crane);
+            root.ResetRound();
+            room = root.Opponents[0];
+            yield return BeginMixedCraneCapture(room, docker, crane);
+            root.SendMessage("CancelRoomAttackSequence");
+            Assert.That(room.RoomAttackSuppressed && docker.RoomAttackSuppressed, Is.True,
+                "Cleaning up the independent Room presentation cannot release an embedded hook's ownership.");
+            Vector3 roomPosition = room.transform.position, dockerPosition = docker.transform.position;
+            Quaternion idleHead = FindAnatomicalBone(docker, "head").localRotation;
+            root.Tick(.5f);
+            Assert.That(root.Hero.IsRestrained && crane.HasCraneVictim, Is.True);
+            Assert.That(Vector3.ProjectOnPlane(room.transform.position - roomPosition, Vector3.up).magnitude, Is.LessThan(.02f));
+            Assert.That(Vector3.ProjectOnPlane(docker.transform.position - dockerPosition, Vector3.up).magnitude, Is.LessThan(.02f));
+            Assert.That(docker.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.IdleClip));
+            Assert.That(Quaternion.Angle(idleHead, FindAnatomicalBone(docker, "head").localRotation), Is.GreaterThan(.1f),
+                "A yielding enemy keeps its live idle rather than a cancelled strike pose.");
+
+            float captureClock = crane.CraneCaptureElapsed;
+            Quaternion pausedHead = FindAnatomicalBone(docker, "head").localRotation;
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            root.Tick(.5f);
+            yield return null;
+            Assert.That(crane.CraneCaptureElapsed, Is.EqualTo(captureClock));
+            Assert.That(FindAnatomicalBone(docker, "head").localRotation, Is.EqualTo(pausedHead));
+            Assert.That(room.RoomAttackSuppressed && docker.RoomAttackSuppressed, Is.True);
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the held hero.");
+            ForceAmmoFocus();
+
+            for (int press = 0; press < CombatActor.RestraintEscapePresses; press++)
+                Assert.That(root.Hero.RegisterRestraintEscapePress(), Is.True);
+            Assert.That(root.Hero.IsRestrained || crane.HasCraneVictim, Is.False);
+            AssertMixedCraneSuppressionCleared();
+
+            root.ResetRound();
+            yield return BeginMixedCraneCapture(root.Opponents[0], root.Opponents[1], crane);
+            crane.enabled = false;
+            Assert.That(root.Hero.IsRestrained, Is.False);
+            AssertMixedCraneSuppressionCleared();
+            crane.enabled = true;
+            root.ResetRound();
+            yield return BeginMixedCraneCapture(root.Opponents[0], root.Opponents[1], crane);
+            root.ResetRound();
+            AssertMixedCraneSuppressionCleared();
+            yield return BeginMixedCraneCapture(root.Opponents[0], root.Opponents[1], crane);
+            root.enabled = false;
+            Assert.That(root.Hero.IsRestrained, Is.False, "Disabling only the root also ends its capture ownership.");
+            AssertMixedCraneSuppressionCleared();
+        }
+
+        private IEnumerator BeginMixedCraneCapture(CombatActor room, CombatActor docker, CombatActor crane)
+        {
+            // Wait for the real first-floor patrol stop without letting the
+            // ground pair start its separate encounter during fixture setup.
+            room.enabled = docker.enabled = false;
+            for (int step = 0; step < 800 && (crane.CraneFloorIndex != 1 ||
+                crane.CranePatrolTravelling || crane.CranePhase != CombatCranePhase.Waiting); step++)
+            {
+                root.Tick(.05f);
+                if (step % 40 == 39) yield return null;
+            }
+            room.enabled = docker.enabled = true;
+            Assert.That(crane.CraneFloorIndex, Is.EqualTo(1));
+            Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
+            Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
+            room.ResetActor(ground + Vector3.right * 12f, Vector3.left);
+            docker.ResetActor(ground + Vector3.left * 12f, Vector3.right);
+            // Spawn reachability must target a real navigation surface. The
+            // isolated hook fixture's raised footing in the well has none.
+            Vector3 floor = new Vector3(6.75f, WarehouseArenaPlan.LevelRise, crane.CraneCarriagePosition.z);
+            PlaceCraneHero(floor, Vector3.ProjectOnPlane(crane.CraneHookCableExit - floor, Vector3.up).normalized);
+            root.Hero.SetCombatFocused(false);
+            ForceAmmoFocus();
+            bool pendingStrike = false;
+            for (int step = 0; step < 600 && !root.Hero.IsRestrained; step++)
+            {
+                if (!pendingStrike && crane.CraneHookPhase == CombatCraneHookPhase.Outbound)
+                {
+                    Assert.That(docker.TryZombieAttack(), Is.True);
+                    pendingStrike = true;
+                }
+                root.Tick(CombatTestRoot.SimulationStep);
+                if (step % 120 == 119) yield return null;
+            }
+            Assert.That(pendingStrike, Is.True, "The other enemy starts a real strike before accepted hook contact.");
+            Assert.That(root.Hero.IsRestrained && crane.HasCraneVictim, Is.True);
+            Assert.That(room.RoomAttackSuppressed && docker.RoomAttackSuppressed, Is.True);
+            Assert.That(docker.State.IsAttacking || docker.State.IsCharging || docker.State.IsShoving || docker.State.IsKicking, Is.False,
+                "Accepted hook contact cancels the already pending strike synchronously.");
+            Assert.That(crane.RoomAttackSuppressed, Is.False, "The capturing crane retains its own attack and pull.");
+            Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Capturing));
+            Assert.That(root.RoomAttackCinematicActive, Is.False, "Capture does not borrow the Room camera or input owner.");
+        }
+
+        private void AssertMixedCraneSuppressionCleared()
+        {
+            foreach (CombatActor actor in root.GetComponentsInChildren<CombatActor>(true))
+                Assert.That(actor.RoomAttackSuppressed, Is.False, "Every prepared opponent releases only the finished capture's suppression.");
+        }
+
+        [UnityTest]
         [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup()
         {

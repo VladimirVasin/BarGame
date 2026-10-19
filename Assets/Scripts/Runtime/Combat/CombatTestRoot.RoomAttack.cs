@@ -29,6 +29,8 @@ namespace BarPromenade
         private float roomChestStartFov, roomChestStartNear;
         private Vector3 roomChestFocus, roomPointFocus, roomPathFirst, roomPathSecond;
         private bool roomReleasePending;
+        private bool roomOpponentSuppressionActive;
+        private CombatActor craneCaptureAttacker;
 
         public CombatRoomSequencePhase RoomAttackPhase { get; private set; }
         public float RoomAttackPhaseElapsed => roomPhaseElapsed;
@@ -141,8 +143,42 @@ namespace BarPromenade
 
         private void SetRoomOpponentSuppression(bool suppressed)
         {
+            roomOpponentSuppressionActive = suppressed;
+            RefreshOpponentAttackSuppression();
+        }
+
+        // Each exclusive attack releases only its own reason. In particular,
+        // cancelling a Room presentation must not release a live hook capture.
+        private bool IsOpponentAttackSuppressed(CombatActor actor) =>
+            roomOpponentSuppressionActive && actor != roomAttacker ||
+            craneCaptureAttacker != null && actor != craneCaptureAttacker;
+
+        private void RefreshOpponentAttackSuppression()
+        {
             foreach (CombatActor actor in preparedOpponents)
-                actor.SetRoomAttackSuppressed(suppressed && actor != roomAttacker);
+                actor.SetRoomAttackSuppressed(IsOpponentAttackSuppressed(actor));
+        }
+
+        internal void BeginCraneOpponentSuppression(CombatActor source)
+        {
+            if (source == null || !source.IsCrane || craneCaptureAttacker == source) return;
+            craneCaptureAttacker = source;
+            ResetAllOpponentMovement();
+            RefreshOpponentAttackSuppression();
+        }
+
+        internal void EndCraneOpponentSuppression(CombatActor source)
+        {
+            if (craneCaptureAttacker != source) return;
+            craneCaptureAttacker = null;
+            RefreshOpponentAttackSuppression();
+        }
+
+        private void ClearOpponentAttackSuppression()
+        {
+            roomOpponentSuppressionActive = false;
+            craneCaptureAttacker = null;
+            RefreshOpponentAttackSuppression();
         }
 
         /// <summary>The presentation owns input, while the ordinary simulation keeps running.</summary>

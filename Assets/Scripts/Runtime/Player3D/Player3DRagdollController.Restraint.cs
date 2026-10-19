@@ -74,7 +74,7 @@ namespace BarPromenade
             Vector3 point = restraintContactBone.TransformPoint(restraintContactLocal);
             Vector3 delta = restraintPullTarget - point;
             float distance = delta.magnitude;
-            Vector3 desired = distance > .001f ? delta / distance * (2.6f * Mathf.Clamp01((distance - .65f) / .65f)) : Vector3.zero;
+            Vector3 desired = distance > .001f ? delta / distance * (4.2f * Mathf.Clamp01((distance - .45f) / .85f)) : Vector3.zero;
             float mass = ActiveCombatMass;
             Vector3 force = (desired - restraintContactBody.GetPointVelocity(point)) * (mass * 7f) - Physics.gravity * mass;
             restraintContactBody.AddForceAtPosition(Vector3.ClampMagnitude(force, mass * 28f), point, ForceMode.Force);

@@ -10,6 +10,7 @@ namespace BarPromenade
         private CombatActor craneVictim;
         private Quaternion craneVictimHookRotation;
         private Vector3 craneVictimPenetration;
+        private Vector3 craneCaptureStart, craneCaptureHaulDirection;
         private bool craneRetreatRequested, craneRegenerating;
 
         public bool HasCraneVictim => craneVictim != null;
@@ -44,6 +45,8 @@ namespace BarPromenade
             }
             craneVictimHookRotation = Quaternion.Inverse(anchor.rotation) * craneHookRotation;
             craneVictimPenetration = Quaternion.Inverse(anchor.rotation) * (CraneHookAimDirection * .035f);
+            craneCaptureStart = craneCommand;
+            craneCaptureHaulDirection = Vector3.ProjectOnPlane(CraneHookCableExit - anchor.position, Vector3.up).normalized;
             craneHookVelocity = Vector3.zero;
             craneRetreatRequested = true;
             State.CancelAction();
@@ -67,15 +70,44 @@ namespace BarPromenade
             return true;
         }
 
-        private void AdvanceCraneCapture()
+        private void AdvanceCraneCapture(float seconds)
         {
             if (craneVictim == null || craneVictim.State.IsDefeated || !craneVictim.isActiveAndEnabled ||
                 !UpdateCraneEmbeddedHook() || !CranePathVisible(CraneHookCableExit, craneHookEye) ||
+                (CraneHookCableExit - craneHookEye).sqrMagnitude > (CraneHookReach + .15f) * (CraneHookReach + .15f) ||
                 craneClock + .000001f >= CraneHookHoldSeconds)
             {
                 ReleaseCraneVictim(false);
                 BeginCraneReturnHome();
+                return;
             }
+            // Move the real suspended source: the victim follows only through
+            // tension at the embedded wound. Ceiling, anatomy, cable and world
+            // clearance can stop either axis without moving the hero through it.
+            float lift = Mathf.SmoothStep(0f, 1f, craneClock / 1.2f) * 1.4f;
+            Vector3 vertical = craneCommand;
+            vertical.y = Mathf.MoveTowards(vertical.y, craneCaptureStart.y + lift, seconds * 2.4f);
+            bool moved = TryMoveCraneCaptureSource(vertical, 2);
+            float haul = Mathf.SmoothStep(0f, 1f, (craneClock - 4f) / 1f) * 1.6f;
+            Vector3 lateral = craneCaptureStart + craneCaptureHaulDirection * haul;
+            lateral.x = Mathf.Clamp(lateral.x, -CraneWellHalfWidth, CraneWellHalfWidth);
+            lateral.z = Mathf.Clamp(lateral.z, -CraneWellHalfWidth, CraneWellHalfWidth);
+            lateral.y = craneCommand.y;
+            lateral = Vector3.MoveTowards(craneCommand, lateral, seconds * 2.8f);
+            moved |= TryMoveCraneCaptureSource(lateral, 1);
+            if (!moved) StopCraneMotors();
+        }
+
+        private bool TryMoveCraneCaptureSource(Vector3 candidate, int axis)
+        {
+            Vector3 delta = candidate - craneCommand;
+            if (delta.sqrMagnitude < .00000001f ||
+                (CraneHookCableExit + delta - craneHookEye).sqrMagnitude > CraneHookReach * CraneHookReach ||
+                !MoveCraneRoot(candidate + CraneLoadOffset, transform.rotation, candidate)) return false;
+            craneCommand = candidate;
+            craneMoveSpeed = axis == 2 ? 2.4f : 2.8f;
+            UpdateCraneMotorSound(axis, delta.y);
+            return true;
         }
 
         internal void ReleaseCraneVictimEarly()

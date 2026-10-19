@@ -5,45 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-19 - Room, Crane and combat CPU
 
-- `Range_CraneHookCaptureEscapeRetreatAndRegeneration` passes;
-  height/start-release/bodycam/effort/cleanup verified;frames reviewed.
-  Gallery fixture stalls at `AwaitCraneWatch`;cause open;raised support passes.
-- Plans require project-fit assessment;facts/proposals/accepted decisions stay
-  separate,without another approval gate. `check-docs.py`/diff review verify it.
-- Room:native head/upper neck/arms/hands larger;corridor/rest rig/source textures
-  kept. Elbow/wrist endpoint weights retain sleeve/palm/wounds;hand-axis growth
-  keeps shared source/grip and resets scale before sampling.
-  Own closed source-bound arm layers replace radial tissue/structure protrusions.
+- `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum` and
+  `Range_CraneHookCaptureEscapeRetreatAndRegeneration` pass;
+  gallery clearance/release momentum/home-watch verified;frames reviewed.
+- `Range_CraneCaptureYieldsMixedOpponentsUntilRelease` passes.
+- `Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight`,
+  `Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding` and
+  `SprintAndTurn_ReachesRunCapWithoutSkidding` pass.
+- Plans require project-fit assessment;facts/proposals/decisions stay separate.
+  `check-docs.py`/diff review verify it.
+- Room:head/neck/arms/hands larger;corridor/rest rig/textures kept.
+  Elbow/wrist endpoint weights retain sleeve/palm/wounds;hand growth keeps
+  source/grip/reset scale. Closed source-bound layers replace radial protrusions.
 - Source:`ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
-  Independent damage rebuild/head strain/affine containment/binary skin/clear
-  corridor pass;hand growth keeps source/atlas/damage FBX bytes.
+  Damage rebuild/head strain/affine containment/binary skin/clear corridor pass;
+  hand growth keeps source/atlas/damage FBX bytes.
   `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset` and
   `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` pass.
-  Front/profile/walk/strike,hero comparison/damaged sleeve/corridor reviewed.
-- Room:index/head-high point1s/palmar fingers/opposed thumb/wrist roll;
-  wideDutch→chest-seat-face2s/reverse return;headsize kept.
-  Weighted hero-chair-lamp/FBXscale;cached plaster-threshold/legIK/seated contacts;
+  Body/strike/hero comparison/damaged sleeve/corridor reviewed.
+- Room:head-high point/palmar fingers/thumb/wrist;wideDutch→seat-face/reverse.
+  Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;
   dupewalls/warp/fade/hot bake-load-alloc0.
   HeroLhead0→return+2s/input0;return18HP/laugh5→idle5;hit cancel grants full idle,
   later hits keep clock/hurt wins. World sim live;others/spawns idle until heroend.
   HUD baseline survives modal→HP3s unlock;pause/death/reset/disable cleanup.
   Main:Crane/Room/Docker;Lab6.
   `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier pass;
-  prior Unity:assets/pause/focus/audio pass;Laugh-cancel restore roll fails;
-  camera unchanged;unresolved.
+  prior Unity:assets/pause/focus/audio pass;Laugh-cancel restore roll unresolved.
   `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes.
-  Face/point-seat-return reviewed;asset preview:midbar axial in/out/occlusion/jelly waves.
+  Face/point-seat-return/midbar in-out/occlusion/jelly reviewed.
   Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV and
   `build-combat-room-attack-3d-model.py --npc-only --validate-only` pass;
   `CombatRoomAttackAssetSetup.BuildOrThrow` validates imports.
-- Crane:hook6m/chest-up1.5m/start-release gate;zonehook5s/E6bar/held0;rig pain/drag/lift/
-  activephys-struggle/bodycam/fallHP;hero wounds/no detach. Frontcrowbar fullblock/back0;
-  blockable contacts share horizontal frontsector. Success→actualhome→watch10;
-  fatal cry/spasm3→home→regen10/full/sameactor/no kill. Pause/modal/reset/disable
-  clear ownership. Canon records approved combat exception.
-- CPU:exact rest-point/full ordered skin-binding bits share zero-blendshape
-  proxy transforms;bitwise folding/versioned scratch retained. ON-ray aim caches
-  settled pose;CapturePose invalidates. Editor render-end→Update unattributed;
+- Crane:2m/6m/5s/E6bar;physical hoist-haul overrails;
+  others/spawns idle→release;momentum/struggle/bodycam/fallHP;
+  frontbar/nodetach;home-watch10/fatal3-regen10;pause-reset clear.
+- Air:world-space inertia/limited steering/combat freefall gravity24/separate caps;
+  NPC kept;canon updated.
+- Hero:alive hit/fall/recovery drop0;death drop+pickup;NPCdrop kept;shotgun draw grip-ammo resume.
+  `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle` passes.
+- CPU:rest-point/ordered skin bits share proxy transforms;versioned scratch/
+  settled ON-ray cache/pose invalidation kept. Editor render-end→Update unattributed;
   FPS unmeasured. `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` passes.
 
 ## 2026-10-18 - Authored enemies and old arena
