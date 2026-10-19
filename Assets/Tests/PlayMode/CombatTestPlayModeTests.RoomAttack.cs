@@ -6,6 +6,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -41,6 +42,12 @@ namespace BarPromenade.Tests.PlayMode
             CombatActor room = root.Opponents[0];
             Assert.That(room.IsRoom, Is.True);
             PlaceRoomAttackTestPair(room);
+            var imageLayers = new Dictionary<Renderer, uint>();
+            foreach (Renderer renderer in root.RoomAttackHeroImage.GetComponentsInChildren<Renderer>(true))
+                imageLayers.Add(renderer, renderer.renderingLayerMask);
+            var heroLayers = new Dictionary<Renderer, uint>();
+            foreach (Renderer renderer in ((Player3DCharacterPresentation)root.Player.Visual).Registry.GetComponentsInChildren<Renderer>(true))
+                heroLayers.Add(renderer, renderer.renderingLayerMask);
             CombatActor waitingDocker = root.Opponents[1], waitingCrane = root.Opponents[2];
             Assert.That(waitingDocker.TryZombieAttack(), Is.True);
             Assert.That(waitingDocker.State.Phase, Is.EqualTo(MeleePhase.Windup),
@@ -129,6 +136,33 @@ namespace BarPromenade.Tests.PlayMode
             Player3DAssetRegistry image = root.RoomAttackHeroImage;
             Assert.That(image, Is.Not.Null);
             Assert.That(image.GetComponent<CombatActor>(), Is.Null, "The seated hero is a visual of the production model.");
+            Light shadow = root.RoomAttackShadowLight;
+            Assert.That(shadow, Is.Not.Null);
+            Assert.That(shadow.type, Is.EqualTo(LightType.Spot));
+            Assert.That(shadow.shadows, Is.EqualTo(LightShadows.None), "The abstract shadow adds no shadow-map pass.");
+            var shadowBank = new Texture[CombatRoomAttackAssetProvider.ShadowFrameCount];
+            for (int frame = 0; frame < shadowBank.Length; frame++)
+            {
+                shadowBank[frame] = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
+                Assert.That(shadowBank[frame].width, Is.EqualTo(CombatRoomAttackAssetProvider.ShadowFrameSize));
+            }
+            Assert.That(shadowBank, Does.Contain(shadow.cookie));
+            Assert.That(shadow.isActiveAndEnabled && shadow.intensity > 0f, Is.True);
+            AudioSource memory = root.RoomAttackMemorySound;
+            Assert.That(memory.clip, Is.SameAs(CombatRoomAttackAssetProvider.LoadMemorySound()));
+            Assert.That(memory.loop || memory.playOnAwake || memory.ignoreListenerPause, Is.False);
+            Assert.That(memory.clip.channels, Is.EqualTo(1));
+            Assert.That(memory.clip.length, Is.EqualTo(3.6f).Within(.003f));
+            Assert.That(memory.spatialBlend, Is.EqualTo(1f));
+            Assert.That(memory.outputAudioMixerGroup, Is.Not.Null, "The quiet room phrase belongs to the existing world SFX bus.");
+            Assert.That(memory.isPlaying, Is.True, "Entering the room starts its finite cloth-and-wood phrase.");
+            uint shadowLayer = shadow.GetUniversalAdditionalLightData().renderingLayers;
+            foreach (var receiver in imageLayers)
+                Assert.That(receiver.Key.renderingLayerMask, Is.EqualTo(shadowLayer),
+                    "Warehouse lights cannot wash out the prepared image's projected dark regions.");
+            foreach (var receiver in heroLayers)
+                Assert.That(receiver.Key.renderingLayerMask, Is.EqualTo(receiver.Value),
+                    "Borrowing a light channel for the image never changes the actual hero.");
             foreach (Collider collider in image.GetComponentsInChildren<Collider>(true)) Assert.That(collider.enabled, Is.False);
             MeshRenderer corridor = null, chair = null;
             foreach (MeshRenderer surface in image.transform.parent.GetComponentsInChildren<MeshRenderer>(true))
@@ -148,35 +182,79 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(chair.sharedMaterials, Has.Length.EqualTo(1), "The authored chair has a drawable material slot.");
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero, "The room insert cannot apply damage early.");
             AssertRoomTestSeatedFootContact(image, originalCorridor);
+            float wideFaceHeight = RoomTestFaceHeight(image);
+            Quaternion shadowStart = shadow.transform.localRotation;
+            Texture shadowFrameStart = shadow.cookie;
             root.Tick(.45f);
-            yield return AtCombatPresentation(() => AssertRoomTestSeatedFootContact(image, originalCorridor));
-            root.Tick(.45f);
+            yield return AtCombatPresentation(() =>
+            {
+                AssertRoomTestSeatedFootContact(image, originalCorridor);
+                Assert.That(Quaternion.Angle(shadowStart, shadow.transform.localRotation), Is.GreaterThan(.1f),
+                    "The abstract projection moves with the owned room timeline rather than holding a painted stain.");
+                Assert.That(shadow.cookie, Is.Not.SameAs(shadowFrameStart), "The two abstract shapes approach and rebound through the prepared frame bank.");
+                CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Moving shadow");
+            });
+            root.Tick(.11f);
+            yield return AtCombatPresentation(() => CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Shadow collision"));
+            root.Tick(.34f);
             yield return AtCombatPresentation(() =>
             {
                 AssertRoomTestSeatedFootContact(image, originalCorridor);
                 AssertRoomTestInFrame(image.Anchors.Head.position);
                 CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Seated hero");
+                // Review the projection against the exact same pose, camera and
+                // exposure; this comparison cannot be mistaken for a dark shirt.
+                Texture cookie = shadow.cookie;
+                try
+                {
+                    shadow.cookie = Texture2D.whiteTexture;
+                    CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Light comparison");
+                }
+                finally { shadow.cookie = cookie; }
             });
             float interiorNearClip = root.CameraFollow.Camera.nearClipPlane;
             Assert.That(interiorNearClip, Is.LessThan(ordinaryNearClip), "The lens can see the actual miniature interior without clipping it.");
             float seatedHeld = root.RoomAttackPhaseElapsed;
             Pose seatedCamera = new Pose(root.CameraFollow.Camera.transform.position, root.CameraFollow.Camera.transform.rotation);
+            Quaternion pausedShadow = shadow.transform.localRotation;
+            Texture pausedShadowFrame = shadow.cookie;
+            float pausedLight = shadow.intensity;
             Assert.That(root.PauseMenu.Open(), Is.True);
             root.Tick(.5f);
+            int pausedSoundSample = memory.timeSamples;
             yield return null;
             Assert.That(root.RoomAttackPhaseElapsed, Is.EqualTo(seatedHeld));
             Assert.That(root.CameraFollow.Camera.nearClipPlane, Is.EqualTo(interiorNearClip));
             Assert.That(root.CameraFollow.Camera.transform.position, Is.EqualTo(seatedCamera.position));
             Assert.That(Quaternion.Angle(root.CameraFollow.Camera.transform.rotation, seatedCamera.rotation), Is.LessThan(.01f));
+            Assert.That(Quaternion.Angle(shadow.transform.localRotation, pausedShadow), Is.LessThan(.001f),
+                "Pause freezes the projected shadow as well as the image and camera.");
+            Assert.That(shadow.cookie, Is.SameAs(pausedShadowFrame), "Pause holds the exact collision frame.");
+            Assert.That(shadow.intensity, Is.EqualTo(pausedLight));
+            Assert.That(memory.timeSamples, Is.EqualTo(pausedSoundSample), "Pause must not spend the short room sound.");
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return WaitFor(() => !root.PauseMenu.IsOpen && !GameTimeScaleRuntime.IsPaused,
                 "Pause did not release its overlay inside the Room interior.");
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True);
             Assert.That(root.CameraFollow.Camera.nearClipPlane, Is.EqualTo(interiorNearClip));
             root.Tick(.5f);
+            Assert.That(memory.isPlaying, Is.True, "The phrase resumes after pause without replaying its beginning.");
+            root.SendMessage("OnApplicationFocus", false);
+            int unfocusedSoundSample = memory.timeSamples;
+            root.Tick(.25f);
+            yield return null;
+            Assert.That(memory.timeSamples, Is.EqualTo(unfocusedSoundSample), "Lost focus freezes the room phrase too.");
+            root.SendMessage("OnApplicationFocus", true);
             yield return AtCombatPresentation(() => AssertRoomTestSeatedFootContact(image, originalCorridor));
             root.Tick(.55f);
-            yield return AtCombatPresentation(() => AssertRoomTestSeatedFootContact(image, originalCorridor));
+            yield return AtCombatPresentation(() =>
+            {
+                AssertRoomTestSeatedFootContact(image, originalCorridor);
+                AssertRoomTestInFrame(image.Anchors.Head.position);
+                Assert.That(RoomTestFaceHeight(image), Is.GreaterThan(wideFaceHeight * 2f),
+                    "The existing seated hold finishes on a genuinely larger face without adding a new phase.");
+                CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Face close-up");
+            });
             Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.SeatedHero));
             AssertRoomTestLiveIdle(room, heroRoot, opponents);
             root.Tick(.06f);
@@ -184,6 +262,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.RoomAttackTableauVisible, Is.True, "The hero stays inside the real chest during the reverse journey.");
             yield return TraceRoomCameraToPhase(CombatRoomSequencePhase.HeadPain, "Returning to the hero");
             Assert.That(root.RoomAttackTableauVisible, Is.False);
+            foreach (var receiver in imageLayers)
+                Assert.That(receiver.Key.renderingLayerMask, Is.EqualTo(receiver.Value),
+                    "Hiding the image restores its exact original renderer channels.");
             Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
             Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth - 18f).Within(.001f));
             Assert.That(root.Hero.LastImpact.Source, Is.SameAs(room));
@@ -429,6 +510,14 @@ namespace BarPromenade.Tests.PlayMode
         private Vector3 RoomTestHeadProjection(Camera camera) => root.RoomAttackHeroImage == null
             ? Vector3.back : camera.WorldToViewportPoint(root.RoomAttackHeroImage.Anchors.Head.position);
 
+        private float RoomTestFaceHeight(Player3DAssetRegistry image)
+        {
+            Vector3 up = image.transform.parent.up * (.1f * image.transform.parent.lossyScale.x);
+            Camera camera = root.CameraFollow.Camera;
+            return Mathf.Abs(camera.WorldToViewportPoint(image.Anchors.Head.position + up).y -
+                camera.WorldToViewportPoint(image.Anchors.Head.position - up).y);
+        }
+
         private void AssertRoomCameraFrameContinuity(Camera camera, Pose previous, float previousFov,
             CombatRoomSequencePhase previousPhase, Vector3 previousHead)
         {
@@ -548,6 +637,11 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertRoomTestRestored(float nearClipPlane)
         {
+            Assert.That(root.RoomAttackShadowLight.isActiveAndEnabled, Is.False);
+            Assert.That(root.RoomAttackShadowLight.intensity, Is.Zero,
+                "Completion, reset, disable and defeat release the projected light too.");
+            Assert.That(root.RoomAttackMemorySound.isPlaying, Is.False,
+                "The room phrase cannot bleed into head pain, reset, defeat or ordinary combat.");
             Assert.That(root.RoomAttackCinematicActive, Is.False);
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
             Assert.That(root.CameraFollow.FixedPoseActive, Is.False);

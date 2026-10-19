@@ -11,6 +11,8 @@ namespace BarPromenade.Editor
         private const string Npc = "Assets/Resources/Combat/RoomAttackNpcActions.fbx";
         private const string Hero = "Assets/Resources/Player/RoomAttackHeroActions.fbx";
         private const string Tableau = "Assets/Resources/Combat/RoomAttackTableau.fbx";
+        private const string ShadowCookie = "Assets/Resources/Combat/RoomAttackShadow.png";
+        private const string MemorySound = "Assets/Resources/Combat/RoomAttackMemory.wav";
         private bool IsBank => assetPath == Npc || assetPath == Hero;
         public override uint GetVersion() => 2;
 
@@ -54,6 +56,23 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessTexture()
         {
+            if (IsShadowCookie(assetPath) && assetImporter is TextureImporter cookie)
+            {
+                cookie.textureType = TextureImporterType.SingleChannel;
+                var channel = new TextureImporterSettings();
+                cookie.ReadTextureSettings(channel);
+                channel.singleChannelComponent = TextureImporterSingleChannelComponent.Red;
+                cookie.SetTextureSettings(channel);
+                cookie.sRGBTexture = false; cookie.mipmapEnabled = true; cookie.isReadable = false;
+                cookie.alphaSource = TextureImporterAlphaSource.None;
+                cookie.wrapMode = TextureWrapMode.Clamp; cookie.filterMode = FilterMode.Bilinear;
+                cookie.anisoLevel = 1; cookie.maxTextureSize = CombatRoomAttackAssetProvider.ShadowFrameSize;
+                cookie.textureCompression = TextureImporterCompression.Uncompressed;
+                var platform = cookie.GetPlatformTextureSettings("Standalone");
+                platform.overridden = true; platform.maxTextureSize = CombatRoomAttackAssetProvider.ShadowFrameSize; platform.format = TextureImporterFormat.R8;
+                cookie.SetPlatformTextureSettings(platform);
+                return;
+            }
             if (assetPath != "Assets/Resources/Combat/RoomAttackWood.png" || !(assetImporter is TextureImporter importer)) return;
             importer.textureType = TextureImporterType.Default; importer.sRGBTexture = true;
             importer.mipmapEnabled = true; importer.isReadable = false; importer.alphaSource = TextureImporterAlphaSource.None;
@@ -65,13 +84,25 @@ namespace BarPromenade.Editor
             importer.SetPlatformTextureSettings(windows);
         }
 
+        private static string ShadowPath(int frame) => frame == 0 ? ShadowCookie :
+            "Assets/Resources/Combat/RoomAttackShadow" + frame + ".png";
+
+        private static bool IsShadowCookie(string path)
+        {
+            if (!path.StartsWith("Assets/Resources/Combat/RoomAttackShadow", StringComparison.Ordinal)) return false;
+            for (int frame = 0; frame < CombatRoomAttackAssetProvider.ShadowFrameCount; frame++)
+                if (path == ShadowPath(frame)) return true;
+            return false;
+        }
+
         private void OnPreprocessAudio()
         {
-            if (assetPath != "Assets/Resources/Combat/RoomLaugh.wav" || !(assetImporter is AudioImporter importer)) return;
+            if ((assetPath != "Assets/Resources/Combat/RoomLaugh.wav" && assetPath != MemorySound) || !(assetImporter is AudioImporter importer)) return;
             importer.forceToMono = true; importer.loadInBackground = false;
             var sample = importer.defaultSampleSettings;
             sample.preloadAudioData = true;
-            sample.loadType = AudioClipLoadType.DecompressOnLoad; sample.compressionFormat = AudioCompressionFormat.ADPCM;
+            sample.loadType = AudioClipLoadType.DecompressOnLoad;
+            sample.compressionFormat = assetPath == MemorySound ? AudioCompressionFormat.PCM : AudioCompressionFormat.ADPCM;
             sample.sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate;
             importer.defaultSampleSettings = sample;
         }
@@ -79,8 +110,10 @@ namespace BarPromenade.Editor
         public static void BuildOrThrow()
         {
             foreach (string path in new[] { Npc, Hero, Tableau, "Assets/Resources/Combat/RoomLaugh.wav",
-                "Assets/Resources/Combat/RoomAttackWood.png" })
+                "Assets/Resources/Combat/RoomAttackWood.png", ShadowCookie, MemorySound })
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            for (int frame = 1; frame < CombatRoomAttackAssetProvider.ShadowFrameCount; frame++)
+                AssetDatabase.ImportAsset(ShadowPath(frame), ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             ValidateImportedOrThrow();
         }
 
@@ -90,6 +123,16 @@ namespace BarPromenade.Editor
                 CombatTestAssetSetup.ValidateInPlaceClip(CombatRoomAttackAssetProvider.LoadNpcClip(name));
             CombatTestAssetSetup.ValidateInPlaceClip(CombatRoomAttackAssetProvider.LoadHeroClip(CombatRoomAttackAssetProvider.HeadPainClip));
             CombatRoomAttackAssetProvider.LoadLaughAudio();
+            CombatRoomAttackAssetProvider.LoadMemorySound();
+            for (int frame = 0; frame < CombatRoomAttackAssetProvider.ShadowFrameCount; frame++)
+            {
+                Texture2D cookie = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
+                var cookieImporter = (TextureImporter)AssetImporter.GetAtPath(ShadowPath(frame));
+                if (cookie.width != CombatRoomAttackAssetProvider.ShadowFrameSize || cookie.height != CombatRoomAttackAssetProvider.ShadowFrameSize || cookie.isReadable ||
+                    cookieImporter.sRGBTexture || cookieImporter.wrapMode != TextureWrapMode.Clamp ||
+                    cookieImporter.textureType != TextureImporterType.SingleChannel)
+                    throw new InvalidOperationException("Room shadow needs its finite linear single-channel frame bank.");
+            }
             GameObject model = CombatRoomAttackAssetProvider.LoadTableau();
             foreach (string name in new[] { "HeroPelvis", "HeroForward", "Camera", "LookAt", "EntryCamera", "Light" })
                 if (CityPedestrianHandProps.FindSocket(model.transform, "ANCHOR_" + name) == null)

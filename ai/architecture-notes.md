@@ -2,45 +2,19 @@
 
 ## Current facts
 
-- **Accepted exception 2026-10-19, Room attack:**
-  CombatTest/outside scale:story§6/7/16.16/art§15a;no text.
-  Cam:focus.9/point1/chest.6/in1/seat2/out.6/ret.8;
-  Point/chest/in/seat FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;
-  out=reverse;Return=normal. Extended head-high arm/index-ray push(head size kept);
-  index kept/3 fingers palmward/thumb opposed/wrist roll.
-  Skin/4frames/hole;weighted Player3DV2/chair/lamp/FBXscale;
-  dupe walls0/up;plaster-threshold cache→LimbTwoBoneIk;boot/pelvis/chair touch;seat backoff.
-  No gameplay twin/warp/fade/RT/hot bake-load-alloc.
-  Hero Lhead:attack0→return+2s/input0;Return:18HP1x/Laugh5s.
-  Worldsim live;other live monsters/newspawns:idle/no chase-attack until heroend.
-  Vulnerable/hit-cancel;HUD baseline held in lock→HP3s on unlock.
-  Laugh end/cancel→idle5s;remainder0;laterhits keep/hurt wins.
-  Idle:planted/headcant/breath/hands lag-twitch/blends.
-  Pause freezes;death/reset/disable/end/exit:rig/camera/input/lock cleanup idempotent.
+- **Accepted exception 2026-10-19, Room shadow:** §6/art§15a:twin/nonstrobe abstract collisions+dry cloth-seat/wood;figures-anatomy-sex/voice-breath/factualmemory-motive0. `CombatRoomAttackTableau`:1Spot/8×256R8/exclusiveLayer+restore;pause-focus-exit clear/RT-matalloc0
+
+- **Accepted exception 2026-10-19, Room attack:** §6/7/16.16/art§15a;text0;Cam:focus.9/point1/chest.6/in1/seat2:wide→face/out.6/ret.8; P/C/I/S FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;out face→rev/ret norm;headhigh arm/indexray(headsize kept)/3palmarfingers/opposedthumb/wristroll. Skin/4frames/hole;weighted Player3DV2-chair-lamp/FBXscale;dupewalls0/up;cached plaster-threshold→LimbTwoBoneIk/boot-pelvis-chair/seatbackoff. Gameplaytwin-warp-fade/hotbake-load-alloc0. HeroLhead0→ret+2s/input0;ret18HP1x/laugh5s. Simlive/others+spawns idle→heroend. Vulnerable/hitcancel/HUDlock→HP3sunlock. Laughend-cancel→idle5s/remainder0;hits keep/hurt wins. Idle:planted/headcant/breath/lag-twitchhands/blend. Pause0;death-reset-disable-end-exit:rig-cam-input-lock clear1x.
 
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
 
-- **Accepted 2026-10-19, warehouse roster:**
-  Main:Crane/Room/Docker only;Endless1–5/def3;Crane last/≤2corpses;
-  Lab all6/Zombie/default1target;≤6warm;§6/art§15a/story0.
+- **Accepted 2026-10-19, warehouse roster:** Main:Crane/Room/Docker only;Endless1–5/def3;Crane last/≤2corpses;Lab6/Zombie/default1target/≤6warm;§6/art§15a/story0.
 
-- **Accepted exception 2026-10-17, crane insect:**
-  Form=art§15a;sharedrig/yaw±100°/hang↓.25/rootkept.
-  CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;
-  WarehouseSurface/3shared/BC7mips<7MiB.
-  3floors/insetvoid/inertia-slack/6m3DLOShook/5sFrenzy;
-  pause-reset-ragdoll;§6/art§15a/story0.
+- **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/6m3DLOShook/5sFrenzy;pause-reset-ragdoll;§6/story0.
 
-- **Accepted exception 2026-10-17, endless endurance:**
-  Crane3Drefill/sharedlife/fishcutoff.
-  EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1.
-  Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
+- **Accepted exception 2026-10-17, endless endurance:** Crane3Drefill/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 
-- **Accepted 2026-10-16, warehouse storage:**
-  3room+6wall/27leaves/soloE/fridgecurve/hollowCOL;
-  multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell;
-  reset-respawnkeep/Endlessrespawn/resetshut;
-  8/2+0/reserveonly/wave-story0/lamp-matclone0.
+- **Accepted 2026-10-16, warehouse storage:** 3room+6wall/27leaves/soloE/fridgecurve/hollowCOL; multiopen/ownbay→sharedTake;↑ammo/seed9banks/allfloors/2mag+2shell; reset-respawnkeep/Endlessrespawn/resetshut; 8/2+0/reserveonly/wave-story0/lamp-matclone0.
 
 - **Accepted 2026-10-16, warehouse detail:**
   9sets→door/COLclear;4096+2048response+2×512/BC7mips27.34≤28MiB;

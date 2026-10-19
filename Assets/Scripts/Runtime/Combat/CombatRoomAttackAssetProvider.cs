@@ -12,7 +12,10 @@ namespace BarPromenade
         public static readonly string[] NpcClipNames = { PointHeroClip, PointChestClip, LaughClip, IdleClip };
         private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>(5);
         private static GameObject tableau;
-        private static AudioClip laughter;
+        private static AudioClip laughter, memorySound;
+        public const int ShadowFrameCount = 8, ShadowFrameSize = 256;
+        public const float ShadowCycleSeconds = .64f;
+        private static Texture2D[] shadowCookies;
         private static Material plaster, wood;
         private static Material[] plasterSlots, woodSlots;
 
@@ -59,6 +62,30 @@ namespace BarPromenade
             return laughter;
         }
 
+        public static Texture2D LoadShadowCookie(int frame = 0)
+        {
+            if ((uint)frame >= ShadowFrameCount) throw new ArgumentOutOfRangeException(nameof(frame));
+            // Warm the entire finite bank before input/camera ownership. A shot
+            // changes only the already retained texture reference.
+            if (shadowCookies == null)
+            {
+                var bank = new Texture2D[ShadowFrameCount];
+                for (int index = 0; index < bank.Length; index++)
+                    bank[index] = Resources.Load<Texture2D>("Combat/RoomAttackShadow" + (index == 0 ? string.Empty : index.ToString()))
+                        ?? throw new InvalidOperationException("Missing authored Room shadow frame: " + index);
+                shadowCookies = bank;
+            }
+            return shadowCookies[frame];
+        }
+
+        public static AudioClip LoadMemorySound()
+        {
+            memorySound ??= Resources.Load<AudioClip>("Combat/RoomAttackMemory");
+            if (memorySound == null || Mathf.Abs(memorySound.length - 3.6f) > .003f || memorySound.channels != 1)
+                throw new InvalidOperationException("Missing finite mono Room memory sound.");
+            return memorySound;
+        }
+
         public static void ApplyTableauMaterials(GameObject instance)
         {
             if (instance == null) throw new ArgumentNullException(nameof(instance));
@@ -87,7 +114,7 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
-            Clips.Clear(); tableau = null; laughter = null;
+            Clips.Clear(); tableau = null; laughter = memorySound = null; shadowCookies = null;
             if (wood != null) UnityEngine.Object.Destroy(wood);
             plaster = wood = null;
             plasterSlots = woodSlots = null;

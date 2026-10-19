@@ -156,6 +156,7 @@ namespace BarPromenade
         private void OnApplicationFocus(bool focused)
         {
             pistolApplicationFocused = focused;
+            roomTableau?.SetSoundPaused(!focused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             GameCursor.SetApplicationFocused(focused);
             if ((RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown) && IsInitialized)
                 SetDuelFrozen(!focused || hitStopSubsteps > 0 || roundEndFreeze > 0d);

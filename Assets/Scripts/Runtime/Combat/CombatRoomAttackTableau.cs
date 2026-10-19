@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -11,7 +12,15 @@ namespace BarPromenade
         private readonly Player3DAssetRegistry hero;
         private readonly AnimationClip seated;
         private readonly Transform pelvis, forward, camera, lookAt, entryCamera;
-        private readonly Light light;
+        // This channel belongs only to the prepared image. Warehouse lights
+        // must not fill in its projected dark shapes; the real hero is untouched.
+        private const uint ShadowLayer = 1u << 5;
+        private readonly Light light, shadowLight;
+        private readonly Texture2D[] shadowFrames;
+        private readonly AudioSource memorySound;
+        private bool memoryStarted, memoryPaused;
+        private readonly Renderer[] shadowReceivers;
+        private readonly uint[] receiverLayers;
         private readonly Vector3 sourceOrigin, sourceRight, sourceUp, sourceForward;
         private readonly Dictionary<CombatActor, SourceFrame> sourceFrames = new Dictionary<CombatActor, SourceFrame>();
         private readonly FootContact[] footContacts;
@@ -21,8 +30,20 @@ namespace BarPromenade
         internal Pose CameraPose => Aim(camera.position);
         internal Pose EntryPose => Aim(entryCamera.position);
         internal Vector3 Focus => lookAt.position;
+        internal Vector3 FaceFocus => hero.Anchors.Head.position + root.transform.up * (.08f * OpticalScale);
+        internal Pose FaceCameraPose
+        {
+            get
+            {
+                Vector3 focus = FaceFocus;
+                Vector3 position = focus + (hero.transform.forward * .58f + hero.transform.right * .13f + root.transform.up * .015f) * OpticalScale;
+                return new Pose(position, Quaternion.LookRotation(focus - position, root.transform.up));
+            }
+        }
         internal float OpticalScale { get; private set; } = 1f;
         internal Vector3 Inward => root.transform.forward;
+        internal Light ShadowLight => shadowLight;
+        internal AudioSource MemorySound => memorySound;
 
         internal CombatRoomAttackTableau(Transform parent, Player3DAssetRegistry source)
         {
@@ -51,6 +72,10 @@ namespace BarPromenade
                 seated = binding.Clip;
                 DisableGameplay(hero);
                 CopyAppearance(source, hero);
+                shadowReceivers = hero.GetComponentsInChildren<Renderer>(true);
+                receiverLayers = new uint[shadowReceivers.Length];
+                for (int index = 0; index < shadowReceivers.Length; index++)
+                    receiverLayers[index] = shadowReceivers[index].renderingLayerMask;
                 Transform lightAnchor = CombatAssetProvider.FindAnchor(room, "ANCHOR_Light");
                 var lamp = new GameObject("Room Inside ceiling light");
                 lamp.transform.SetParent(root.transform, false);
@@ -59,7 +84,31 @@ namespace BarPromenade
                 light.type = LightType.Point; light.color = new Color(1f, .78f, .56f);
                 light.intensity = 12f; light.range = 8f; light.shadows = LightShadows.None;
                 light.renderMode = LightRenderMode.ForcePixel;
+                var projector = new GameObject("Room Inside memory light");
+                projector.transform.SetParent(root.transform, false);
+                projector.transform.position = lightAnchor.position;
+                shadowLight = projector.AddComponent<Light>();
+                shadowLight.type = LightType.Spot; shadowLight.color = light.color;
+                shadowLight.intensity = 0f; shadowLight.range = 8f;
+                shadowLight.spotAngle = 44f; shadowLight.innerSpotAngle = 42f;
+                shadowLight.shadows = LightShadows.None; shadowLight.bounceIntensity = 0f;
+                shadowLight.renderMode = LightRenderMode.ForcePixel;
+                shadowFrames = new Texture2D[CombatRoomAttackAssetProvider.ShadowFrameCount];
+                for (int frame = 0; frame < shadowFrames.Length; frame++)
+                    shadowFrames[frame] = CombatRoomAttackAssetProvider.LoadShadowCookie(frame);
+                shadowLight.cookie = shadowFrames[0];
+                shadowLight.GetUniversalAdditionalLightData().renderingLayers = ShadowLayer;
+                var sound = new GameObject("Room Inside cloth and wood");
+                sound.transform.SetParent(root.transform, false);
+                sound.transform.position = pelvis.position;
+                memorySound = sound.AddComponent<AudioSource>();
+                memorySound.playOnAwake = memorySound.loop = false;
+                CityWorkAudio.Configure(memorySound, true, 2400f, 8f, false);
+                memorySound.clip = CombatRoomAttackAssetProvider.LoadMemorySound();
+                memorySound.volume = .7f; memorySound.priority = 96;
+                memorySound.ignoreListenerPause = false;
                 Sample(0f);
+                SampleShadow(0f);
                 footContacts = new[] { new FootContact(hero, true), new FootContact(hero, false) };
                 root.SetActive(false);
 
@@ -102,8 +151,12 @@ namespace BarPromenade
             stage.rotation = rotation * Quaternion.Inverse(authoredAxes);
             stage.position = frame.MultiplyPoint3x4(Vector3.zero) - stage.TransformVector(sourceOrigin);
             light.range = 8f * OpticalScale;
+            shadowLight.range = 8f * OpticalScale;
+            memorySound.minDistance = .8f * OpticalScale;
+            memorySound.maxDistance = 8f * OpticalScale;
             lightIntensity = 12f * OpticalScale * OpticalScale;
-            light.intensity = 0f;
+            SetLightAmount(0f);
+            SampleShadow(0f);
             Sample(0f);
             source.CaptureFloor(stage);
             float pelvisHeight = stage.InverseTransformPoint(hero.Anchors.Pelvis.position).y;
@@ -111,9 +164,57 @@ namespace BarPromenade
             Sample(0f);
         }
 
-        internal void SetLightAmount(float amount) => light.intensity = lightIntensity * Mathf.Clamp01(amount);
+        internal void SetLightAmount(float amount)
+        {
+            light.intensity = lightIntensity * Mathf.Clamp01(amount);
+            shadowLight.intensity = light.intensity;
+        }
 
-        internal void SetVisible(bool visible) { if (root != null) root.SetActive(visible); }
+        internal void SetVisible(bool visible)
+        {
+            if (root == null) return;
+            for (int index = 0; index < shadowReceivers.Length; index++)
+                if (shadowReceivers[index] != null)
+                    shadowReceivers[index].renderingLayerMask = visible ? ShadowLayer : receiverLayers[index];
+            if (!visible)
+            {
+                SetLightAmount(0f);
+                memorySound.Stop(); memoryStarted = memoryPaused = false;
+            }
+            root.SetActive(visible);
+        }
+
+        /// <summary>A continuous abstract light interruption, sampled only by the owned pause-aware shot.</summary>
+        internal void SampleShadow(float seconds)
+        {
+            int frame = Mathf.Min(shadowFrames.Length - 1, (int)(Mathf.Repeat(seconds,
+                CombatRoomAttackAssetProvider.ShadowCycleSeconds) / CombatRoomAttackAssetProvider.ShadowCycleSeconds * shadowFrames.Length));
+            if (shadowLight.cookie != shadowFrames[frame]) shadowLight.cookie = shadowFrames[frame];
+            float sway = Mathf.Sin(seconds * (Mathf.PI * 1.4f));
+            float drift = Mathf.Sin(seconds * 1.1f);
+            Vector3 aim = root.transform.InverseTransformPoint(pelvis.position) +
+                new Vector3(.025f * sway, .49f + .012f * drift, 0f);
+            Vector3 toward = aim - shadowLight.transform.localPosition;
+            shadowLight.transform.localRotation = Quaternion.LookRotation(toward, Vector3.up) *
+                Quaternion.AngleAxis(-5f + sway, Vector3.forward);
+        }
+
+        internal void SampleSound(float seconds)
+        {
+            if (!Visible || seconds >= memorySound.clip.length) return;
+            if (!memoryStarted) { memorySound.Play(); memoryStarted = true; }
+            // Normal frames stream the prepared phrase. A hitch/manual tick
+            // seeks only after real drift; there is no per-frame DSP restart.
+            if (Mathf.Abs(memorySound.time - seconds) > .12f)
+                memorySound.time = Mathf.Clamp(seconds, 0f, memorySound.clip.length - .02f);
+        }
+
+        internal void SetSoundPaused(bool paused)
+        {
+            if (!memoryStarted || memoryPaused == paused) return;
+            memoryPaused = paused;
+            if (paused) memorySound.Pause(); else memorySound.UnPause();
+        }
 
         internal void Sample(float seconds)
         {
@@ -233,7 +334,7 @@ namespace BarPromenade
         private static string Path(Transform current, Transform root) => current == root ? string.Empty :
             current.parent == root ? current.name : Path(current.parent, root) + "/" + current.name;
 
-        public void Dispose() { if (root != null) UnityEngine.Object.Destroy(root); }
+        public void Dispose() { if (root != null) { SetVisible(false); UnityEngine.Object.Destroy(root); } }
 
         /// <summary>Prepared skin-frame sample at the mouth, not the actor's root.</summary>
         private sealed class SourceFrame

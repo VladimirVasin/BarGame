@@ -4200,9 +4200,9 @@ gameplay-модификатор морали.
 
 ### Типографика и иерархия
 
-Встроенный сухой `Roboto-Regular`/RU-EN/normal; OS dynamic fonts в IMGUI запрещены,
-Unity legacy — аварийный fallback. Заголовок/основная/приглушённая строка:
-размер-светлота/без цветной плашки; разрядка без пробелов/поломки локализации.
+`Roboto-Regular`/RU-EN/normal,сухой builtin;OS dynamic fonts/IMGUI0,
+Unity legacy:аварийный резерв. Заголовок/основной/тусклый текст:
+размер-светлота/без цветной плашки;разрядка без пробелов/поломки локализации.
 
 Речь (`2026-09-11`): `24` знака/с/щелчки≥`0,13 с`/время прочесть;
 строки сохранены/подписи короткие-функциональные/текст: сюжетная §21.
@@ -4230,15 +4230,14 @@ Unity legacy — аварийный fallback. Заголовок/основна�
 - Пауза/старт дня: один центр, короткий вертикальный набор действий/одна шкала.
 - Загрузка между большими областями следует отдельному принятому исключению
   ниже: одна неподвижная иллюстрация и одна полоса прогресса внизу.
-- HUD/мини-игры — приборы: минимум площади, одна величина, тот же рамочный/светлотный язык.
+- HUD/мини-игры: приборы;минимум площади/одна величина/общий рамочный-светлотный язык.
 
 ### Принятое исключение — боевой полигон
 
-`2026-10-19`:Room×1.2/head1.35/longarms+hands;wideDutch1s;Lhead0→ret+2s;ret:laugh5s→idle5s;§6.
-`2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;
-Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion.
-UV-wounds/grip/walk/solid.
-`2026-10-17`:Crane:ownindust. flesh/carapace/inset6cables;longfoldlimbs/uprighthead/mantisyaw±100°;body/skullbanks/flesh-shell/steelhooks;CLO-HAIR-Rhand0;allhits/repeatwounds/woodhole-chips;finite;§6.
+`2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
+Seat2wide→face;nonstrobe abstract clash/dry cloth-seat+wood;figures/voicebreath0;PS1gray/§6.
+`2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave-face/chest/palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
+`2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.
 `2026-10-16`:Crane:Rcuff-hook/6m3DLOS;fall→5shungspasm/2SFX;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/worldSFX/ragdoll;§6.
 `2026-10-14`:3levels/9rooms6x6/hall12x12/2stairs-4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;3room+6wall/27doors/ammo alllvls↑.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI.4dim/red;fanSpot/blades;roof-deckblock red/chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;3→Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;key→chain↓/holdE-gate↑/gallery;key+stairs↓→heat2s/riseSFX/popglass/8phys;bulb0/socketcord/fixedlights-lenses-amb0/Lchestonly/fog-sky-strobe0/§6.Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;skinneck-shldrs-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-ret.Mimic:near-hit→rigburst/planted/gaze/limblag;ram:compress→throw→kneel-rise;fell hero→loadedunevenspasms→rise;wood-wetinhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic

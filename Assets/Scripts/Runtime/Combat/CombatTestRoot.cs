@@ -314,6 +314,7 @@ namespace BarPromenade
             if (!IsInitialized || !isActiveAndEnabled) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
+            roomTableau?.SetSoundPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             if (!pistolApplicationFocused && (RoomAttackPhase != CombatRoomSequencePhase.Idle || HasRoomAttackCooldown)) return;
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             if (!RoomAttackCinematicActive && !GameInput.CanRead(GameInputContext.Gameplay)) return;

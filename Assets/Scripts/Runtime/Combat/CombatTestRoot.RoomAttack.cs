@@ -36,6 +36,8 @@ namespace BarPromenade
         public bool RoomAttackCinematicActive => RoomAttackPhase != CombatRoomSequencePhase.Idle && RoomAttackPhase != CombatRoomSequencePhase.Laugh;
         internal bool RoomAttackTableauVisible => roomTableau != null && roomTableau.Visible;
         internal Player3DAssetRegistry RoomAttackHeroImage => roomTableau?.Hero;
+        internal Light RoomAttackShadowLight => roomTableau?.ShadowLight;
+        internal AudioSource RoomAttackMemorySound => roomTableau?.MemorySound;
 
         private void PrepareRoomAttackSequence()
         {
@@ -205,6 +207,8 @@ namespace BarPromenade
                     }
                     break;
                 case CombatRoomSequencePhase.EnterRoom:
+                    roomTableau.SampleShadow(Mathf.Min(roomPhaseElapsed, RoomTransferSeconds));
+                    roomTableau.SampleSound(Mathf.Min(roomPhaseElapsed, RoomTransferSeconds));
                     ApplyRoomTravel(RoomEase(roomPhaseElapsed / RoomTransferSeconds));
                     if (roomPhaseElapsed >= RoomTransferSeconds)
                     {
@@ -214,10 +218,17 @@ namespace BarPromenade
                     break;
                 case CombatRoomSequencePhase.SeatedHero:
                     roomTableau.Sample(roomPhaseElapsed);
+                    roomTableau.SampleShadow(RoomTransferSeconds + Mathf.Min(roomPhaseElapsed, RoomShotSeconds));
+                    roomTableau.SampleSound(RoomTransferSeconds + Mathf.Min(roomPhaseElapsed, RoomShotSeconds));
                     float seatedProgress = RoomEase(roomPhaseElapsed / RoomShotSeconds);
-                    roomCamera.SetAuthoredShot(WithRoomRoll(RoomSeatedCamera,
+                    float facePush = RoomEase((roomPhaseElapsed / RoomShotSeconds - .3f) / .7f);
+                    Pose wide = RoomSeatedCamera, face = roomTableau.FaceCameraPose;
+                    var seatedShot = new Pose(Vector3.Lerp(wide.position, face.position, facePush),
+                        Quaternion.Slerp(wide.rotation, face.rotation, facePush));
+                    roomCamera.SetAuthoredShot(WithRoomRoll(seatedShot,
                         Mathf.Lerp(RoomSeatedStartRoll, RoomSeatedEndRoll, seatedProgress)),
-                        Mathf.Lerp(RoomSeatedStartFov, RoomSeatedEndFov, seatedProgress), roomChestFocus, true,
+                        Mathf.Lerp(RoomSeatedStartFov, RoomSeatedEndFov, seatedProgress),
+                        Vector3.Lerp(roomChestFocus, roomTableau.FaceFocus, facePush), true,
                         RoomSeatedNear, roomTableau.OpticalScale);
                     if (roomPhaseElapsed >= RoomShotSeconds)
                     {
@@ -225,6 +236,8 @@ namespace BarPromenade
                     }
                     break;
                 case CombatRoomSequencePhase.ReturnRoom:
+                    roomTableau.SampleShadow(RoomTransferSeconds + RoomShotSeconds + Mathf.Min(roomPhaseElapsed, RoomWithdrawSeconds));
+                    roomTableau.SampleSound(RoomTransferSeconds + RoomShotSeconds + Mathf.Min(roomPhaseElapsed, RoomWithdrawSeconds));
                     ApplyRoomTravel(1f - RoomEase(roomPhaseElapsed / RoomWithdrawSeconds), withdrawing: true);
                     if (roomPhaseElapsed >= RoomWithdrawSeconds)
                     {
@@ -272,16 +285,18 @@ namespace BarPromenade
 
         private void ApplyRoomTravel(float progress, bool withdrawing = false)
         {
-            Pose seated = RoomSeatedCamera;
+            Pose seated = withdrawing ? roomTableau.FaceCameraPose : RoomSeatedCamera;
+            Vector3 second = withdrawing ? seated.position - roomTableau.Inward * (.05f * roomAttacker.PresentationScale) : roomPathSecond;
             float reverse = 1f - progress;
             Vector3 position = reverse * reverse * reverse * roomApproachCamera.position +
                 3f * reverse * reverse * progress * roomPathFirst +
-                3f * reverse * progress * progress * roomPathSecond + progress * progress * progress * seated.position;
+                3f * reverse * progress * progress * second + progress * progress * progress * seated.position;
             roomCamera.SetAuthoredShot(new Pose(position,
                 Quaternion.Slerp(roomApproachCamera.rotation, seated.rotation, progress) * Quaternion.AngleAxis(
                     Mathf.Lerp(RoomApproachRoll, withdrawing ? RoomSeatedEndRoll : RoomSeatedStartRoll, progress), Vector3.forward)),
                 Mathf.Lerp(RoomApproachFov, withdrawing ? RoomSeatedEndFov : RoomSeatedStartFov, progress),
-                roomChestFocus, true, Mathf.Lerp(RoomApproachNear, RoomSeatedNear, progress),
+                withdrawing ? Vector3.Lerp(roomChestFocus, roomTableau.FaceFocus, progress) : roomChestFocus,
+                true, Mathf.Lerp(RoomApproachNear, RoomSeatedNear, progress),
                 Mathf.Lerp(Mathf.Sqrt(roomTableau.OpticalScale), roomTableau.OpticalScale, progress));
         }
 

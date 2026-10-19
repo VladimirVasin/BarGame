@@ -7,12 +7,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 - Plans require explicit project-fit assessment;proposals stay separate from
   accepted decisions,without another gate. `check-docs.py`/diff review verify it.
-- Room has a larger native head and upper neck; the hollow corridor and
-  canonical rest skeleton remain. Shared source textures are rebaked.
-- Arms lengthen through elbow/wrist chains;endpoint weights keep sleeve/palm/
+- Room:larger native head/upper neck;hollow corridor/rest skeleton kept;
+  shared source textures rebaked.
+- Arms:elbow/wrist chains;endpoint weights keep sleeve/palm/
   wound continuity. Palms/fingers extend on the retained hand axis;source mesh/
   grip stay shared;hand scale resets before sampling.
-- Stable wrapper grows Room presentation;unit-scale actor dimensions/head COL/
+- Room wrapper grows;unit actor dimensions/head COL/
   gait/spawn clearance follow the form/reach;other enemies kept.
 - Source proof: `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`;
   front, profile, walk and strike renders reviewed.
@@ -37,12 +37,14 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup` passes head0/hold/worldsim/
   NPCidle/arm-index optics/camera/boots/HUD/laugh/cooldown/hit/pause/cleanup;
   pointing/seat/return/head-laugh reviewed.
+  Face/collision/Foley/pause/focus/cleanup pass;frames reviewed.
+  `build-combat-room-shadow.py`:bank validated;louder/crisper WAV validated.
   `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` passes;
   Lab6 choice reviewed.
   `build-combat-room-attack-3d-model.py --npc-only --validate-only` passes;
-  `CombatRoomAttackAssetSetup.BuildOrThrow` imports and validates the bank.
-- Latest duel scopes identify body proxies and aim as CPU work;
-  Editor render-end→nextUpdate remains unattributed. Bounds share transforms
+  `CombatRoomAttackAssetSetup.BuildOrThrow` validates imports.
+- Duel CPU:body proxies/aim;Editor render-end→nextUpdate unattributed.
+  Bounds share transforms
   for exact rest-point/full ordered skin-binding bits only on zero-blendshape
   meshes; ordered bitwise folding and versioned scratch stay. ON-ray aim reuses
   validated settled pose; CapturePose invalidates it. FPS remains unmeasured.
