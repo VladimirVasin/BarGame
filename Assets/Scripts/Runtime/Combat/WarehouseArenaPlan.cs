@@ -523,7 +523,7 @@ namespace BarPromenade
 
         private static void BuildNavigation(WarehouseArenaPlan plan)
         {
-            var area = new WarehouseArenaArea(plan);
+            var area = new WarehouseArenaArea(plan, ignoreGate: true);
             var nodes = new List<Vector3>(800);
             var unique = new HashSet<Vector3>();
             for (int level = 0; level <= 2; level++)
@@ -538,11 +538,17 @@ namespace BarPromenade
             {
                 if (stair.IsBroken) continue;
                 AddNode(stair.Foot + Vector3.back * .6f, nodes, unique);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    AddSupportedNode(stair.Foot + new Vector3(side * .55f, 0f, -.75f), area, nodes, unique);
+                    AddSupportedNode(stair.Top + new Vector3(side * .55f, 0f, .75f), area, nodes, unique);
+                }
                 for (int step = 0; step < WarehouseArenaStair.TreadCount; step++)
                     AddNode(stair.Foot + new Vector3(0f, (step + 1) * WarehouseArenaStair.TreadRise,
                         (step + .5f) * WarehouseArenaStair.TreadDepth), nodes, unique);
                 AddNode(stair.Top + Vector3.forward * .6f, nodes, unique);
             }
+            AddRailCornerNodes(plan, area, nodes, unique);
             foreach (Vector3 spawn in plan.SpawnPoints) AddNode(spawn, nodes, unique);
             foreach (Vector3 approach in plan.AmmoApproaches) AddNode(approach, nodes, unique);
             foreach (WarehouseLockerPlacement locker in plan.HallwayLockers) AddNode(locker.Approach, nodes, unique);
@@ -572,6 +578,56 @@ namespace BarPromenade
                 }
             }
             plan.SetNavigation(nodes.ToArray(), edges.ToArray());
+        }
+
+        private static void AddRailCornerNodes(WarehouseArenaPlan plan, WarehouseArenaArea area,
+            List<Vector3> nodes, HashSet<Vector3> unique)
+        {
+            // Metre rails are authored in spans. Only actual corners/endpoints
+            // need extra approaches; every seam along a straight guard does not.
+            var directions = new Dictionary<Vector3Int, int>();
+            foreach (WarehouseArenaRailSpan rail in plan.RailSpans)
+            {
+                bool alongX = Mathf.Abs(rail.Yaw) < 45f;
+                Vector3 axis = alongX ? Vector3.right : Vector3.forward;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 endpoint = rail.Position + axis * (rail.Length * .5f * side);
+                    var key = new Vector3Int(Mathf.RoundToInt(endpoint.x * 1000f),
+                        Mathf.RoundToInt(endpoint.y * 1000f), Mathf.RoundToInt(endpoint.z * 1000f));
+                    directions.TryGetValue(key, out int mask);
+                    directions[key] = mask | (alongX ? (side < 0 ? 1 : 2) : (side < 0 ? 4 : 8));
+                }
+            }
+            // Preserve plan order rather than relying on dictionary iteration.
+            var visited = new HashSet<Vector3Int>();
+            foreach (WarehouseArenaRailSpan rail in plan.RailSpans)
+            {
+                Vector3 axis = Mathf.Abs(rail.Yaw) < 45f ? Vector3.right : Vector3.forward;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 endpoint = rail.Position + axis * (rail.Length * .5f * side);
+                    var key = new Vector3Int(Mathf.RoundToInt(endpoint.x * 1000f),
+                        Mathf.RoundToInt(endpoint.y * 1000f), Mathf.RoundToInt(endpoint.z * 1000f));
+                    if (!visited.Add(key) || directions[key] == 3 || directions[key] == 12) continue;
+                    for (int clearance = 0; clearance < 2; clearance++)
+                    {
+                        // The outer approach also clears the docker's carried
+                        // crate; its feet still use the ordinary support radius.
+                        float offset = clearance == 0 ? .6f : 1.2f;
+                        for (int z = -1; z <= 1; z += 2)
+                            for (int x = -1; x <= 1; x += 2)
+                                AddSupportedNode(endpoint + new Vector3(x * offset, 0f, z * offset), area, nodes, unique);
+                    }
+                }
+            }
+        }
+
+        private static void AddSupportedNode(Vector3 point, WarehouseArenaArea area,
+            List<Vector3> nodes, HashSet<Vector3> unique)
+        {
+            if (area.TryGetHeight(point, out float height, .4f) && Mathf.Abs(height - point.y) < .01f)
+                AddNode(point, nodes, unique);
         }
 
         private static Vector3Int Cell(Vector3 point, float size) => new Vector3Int(Mathf.FloorToInt(point.x / size),

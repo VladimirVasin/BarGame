@@ -361,6 +361,9 @@ namespace BarPromenade
         internal Vector3 LimitZombieLoadTravel(Vector3 travel) => zombieLoad != null
             ? zombieLoad.LimitTravel(travel) : travel;
 
+        internal float GroundObstacleRadius => zombieLoad != null && zombieLoad.IsCarrying ? zombieLoad.NavigationRadius : 0f;
+        internal float GroundObstacleHeight => zombieLoad != null && zombieLoad.IsCarrying ? zombieLoad.NavigationHeight : 0f;
+
         internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking && !RoomAttackSuppressed;
 
         internal float PreviewZombieWalkDistance(float seconds) => IsDocker

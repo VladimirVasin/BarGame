@@ -73,6 +73,10 @@ namespace BarPromenade
                 // a stale route sample never grants an attack through a stair or wall.
                 bool reachable = Mathf.Abs(Hero.transform.position.y - AiOpponent.transform.position.y) <= WarehouseMeleeHeight &&
                     WarehouseTargetVisible(AiOpponent.transform.position, Hero.transform.position);
+                if (WarehousePlan != null && arenaBounds is WarehouseArenaArea area)
+                    reachable &= area.CanTraverse(AiOpponent.transform.position, Hero.transform.position,
+                        OpponentNavigationRadius, OpponentBodyHeight) &&
+                        WarehouseTravelClear(Hero.transform.position - AiOpponent.transform.position);
                 if (reachable && (AiOpponent.IsRoom ? TryBeginRoomAttack(AiOpponent) : AiOpponent.TryZombieAttack()))
                 {
                     opponentContext.committedDirection = AiOpponent.transform.forward;
@@ -144,7 +148,8 @@ namespace BarPromenade
             float distance = AiOpponent.PreviewZombieWalkDistance(elapsed);
             Vector3 before = AiOpponent.transform.position;
             Vector3 requested = desiredVelocity / speed * distance;
-            Vector3 travel = LimitOpponentApproach(before, requested);
+            Vector3 travel = LimitWarehouseWaypointTravel(before, requested);
+            travel = LimitOpponentApproach(before, travel);
             travel = LimitOpponentCrowdTravel(before, travel);
             travel = AiOpponent.LimitZombieLoadTravel(travel);
             Vector3 desired = ConstrainZombieTravel(before, before + travel);
@@ -155,11 +160,13 @@ namespace BarPromenade
             opponentContext.opponentMoveVelocity = moved / seconds;
             AiOpponent.SetLocomotion(opponentContext.opponentMoveVelocity);
             JournalOpponentMovement(AiOpponent, desired - before, moved);
-            ObserveWarehouseOpponentTravel(travel, moved, seconds);
+            // The load or motor may reduce travel to zero. Intent still owns
+            // the stall clock; a zero constrained step must not hide a blockage.
+            ObserveWarehouseOpponentTravel(desiredVelocity * seconds, moved, seconds);
         }
 
         private Vector3 ConstrainZombieTravel(Vector3 before, Vector3 desired) =>
-            AiOpponent.IsRoom && arenaBounds is WarehouseArenaArea roomArea
+            arenaBounds is WarehouseArenaArea roomArea
                 ? roomArea.Constrain(before, desired, AiOpponent.Body.radius, OpponentClearanceHeight)
                 : arenaBounds.Constrain(before, desired, AiOpponent.Body.radius);
 

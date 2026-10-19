@@ -13,6 +13,10 @@ namespace BarPromenade
         private MeleePhase facingPhase = MeleePhase.Ready;
         private int facingSequence = -1;
         private bool facingLocked;
+        private Vector3 navigationFacing;
+
+        // Only ready, voluntary ground travel can replace the combat target's yaw.
+        internal void SetNavigationFacing(Vector3 direction) => navigationFacing = direction;
 
         // The duel owns yaw, while the motor retains target-relative translation.
         // Presentation and contact previews only read this accepted world frame.
@@ -25,6 +29,7 @@ namespace BarPromenade
             facingPhase = MeleePhase.Ready;
             facingSequence = -1;
             facingLocked = false;
+            navigationFacing = Vector3.zero;
             plantedFacing = transform.eulerAngles.y;
         }
 
@@ -84,6 +89,8 @@ namespace BarPromenade
             Vector3 direction = (IsFreePistolAiming ? PistolAimIntentPoint :
                 contactTarget.ImpactMotion?.CentreOfMass ?? contactTarget.transform.position) -
                 (ImpactMotion?.CentreOfMass ?? transform.position);
+            if (!IsHero && State.Phase == MeleePhase.Ready && navigationFacing.sqrMagnitude > .0001f)
+                direction = navigationFacing;
             direction.y = 0f;
             if (direction.sqrMagnitude < .0004f) { facingVelocity = 0f; return; }
             float desiredYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;

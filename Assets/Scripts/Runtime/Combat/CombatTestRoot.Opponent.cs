@@ -600,6 +600,12 @@ namespace BarPromenade
         private void MoveOpponent(Vector3 direction, float distance, float seconds, bool steerAroundObstacle = true)
         {
             if (distance <= 0f || seconds <= 0f) return;
+            if (WarehousePlan != null)
+            {
+                if (WarehouseTravelClear(direction * distance))
+                    opponentContext.opponentMoveRequest = direction * (distance / seconds);
+                return;
+            }
             Vector3 before = AiOpponent.transform.position;
             RaycastHit[] contacts = CombatTraversalQueries.SphereCast(before + Vector3.up * .9f, .34f, direction,
                 ref opponentContext.navigationContacts, distance + .3f, ~0, QueryTriggerInteraction.Ignore, out int count);
@@ -626,17 +632,22 @@ namespace BarPromenade
         {
             opponentContext.opponentMoveRequest = Vector3.zero;
             opponentContext.warehouseCrowdWaiting = false;
+            if (AiOpponent != null) AiOpponent.SetNavigationFacing(Vector3.zero);
         }
 
         private void ResetOpponentTravel()
         {
             opponentContext.opponentMoveRequest = opponentContext.opponentMoveVelocity = Vector3.zero;
-            if (AiOpponent != null) { AiOpponent.SetLocomotion(0f); AiOpponent.SetZombieWalking(false); }
+            if (AiOpponent != null)
+            { AiOpponent.SetLocomotion(0f); AiOpponent.SetZombieWalking(false); }
         }
 
         private void ResetOpponentMovement()
         {
             ResetOpponentTravel();
+            if (AiOpponent != null) AiOpponent.SetNavigationFacing(Vector3.zero);
+            if (WarehousePlan != null && (opponentContext.warehouseRouteAttempted || opponentContext.warehouseRouting))
+                ResetWarehouseOpponentNavigation();
         }
 
         /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
@@ -674,12 +685,13 @@ namespace BarPromenade
             float rate = braking ? 11f : 6.5f;
             Vector3 velocity = Vector3.MoveTowards(opponentContext.opponentMoveVelocity, desiredVelocity, rate * seconds);
             Vector3 before = AiOpponent.transform.position;
-            Vector3 travel = LimitOpponentApproach(before, velocity * seconds);
+            Vector3 travel = LimitWarehouseWaypointTravel(before, velocity * seconds);
+            travel = LimitOpponentApproach(before, travel);
             travel = LimitOpponentCrowdTravel(before, travel);
             if (AiOpponent.IsZombie) travel = AiOpponent.LimitZombieLoadTravel(travel);
             Vector3 desired = before + travel;
-            if (WarehousePlan != null)
-                desired = arenaBounds.Constrain(before, desired, AiOpponent.Body.radius);
+            if (arenaBounds is WarehouseArenaArea warehouseArea)
+                desired = warehouseArea.Constrain(before, desired, AiOpponent.Body.radius, OpponentClearanceHeight);
             else
             {
                 desired.x = Mathf.Clamp(desired.x, -7.3f, 7.3f);
@@ -766,7 +778,7 @@ namespace BarPromenade
         {
             // A fighter on the gallery must not stop another fighter directly
             // below it from reaching the stair or passing under the platform.
-            if (WarehousePlan != null && !opponentContext.warehouseMeleeReachable) return travel;
+            if (WarehousePlan != null && (opponentContext.warehouseRouting || !opponentContext.warehouseMeleeReachable)) return travel;
             // Bound achieved travel, including the inertial braking tail. Keep
             // its original line: this cannot steer a committed swing after the
             // hero sidesteps, and a hero entering shove range still forces the

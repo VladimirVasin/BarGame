@@ -36,6 +36,11 @@ namespace BarPromenade
             internal float warehousePerceptionWait, warehouseRouteWait, warehouseStuckSeconds;
             internal float warehouseOpponentVerticalSpeed;
             internal bool warehouseMeleeReachable, warehouseDirectTravel, warehouseOpponentGrounded;
+            internal bool warehouseRouting, warehouseRouteAttempted, warehouseRouteComplete;
+            internal float warehouseGateProgress, warehouseRetrySeconds;
+            internal int warehouseRouteSearches;
+            internal bool warehouseRecoveringContact;
+            internal Vector3 warehouseRecoveryTarget;
             internal Vector3 warehouseRouteTarget;
             internal float opponentDelay = .8f;
             internal bool warehouseCrowdWaiting;

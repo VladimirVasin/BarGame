@@ -129,8 +129,8 @@ cemetery:own interiors/returns.
   Else rootspawn;City home-return/docks-cannery pedestrian-clear.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
-- CombatTest:3levels/9rooms/seed/2stairs4flights:L3gap/R3only/fanwell/sets-signs1–9;
-  Midforms/4K+2Kresp/uniqueUV/metrewearjoins/UV-matclone0.
+- CombatTest:3floors/9rooms/4flights:L3gap/R3only/fanwell/9sets-signs;ground:A*/partial/gate;
+  Midforms/4K+2Kresp/uniqueUV/metrewearjoins/clones0.
   valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;holdE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch.
   Home↔gate/E/back-travel-speech0/stub/gallery2/upper;fridges3/labels-scraps/Take1x/fullkeep/redfade-humclick.
   3src→flicker-crackle/mech-music-foes-corpses-spawn0;6windcables/creak.
@@ -139,7 +139,7 @@ cemetery:own interiors/returns.
   D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
   Dust192+32/fan→settle/seed.
   SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/noreplay/exitfade.
-  StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seeded start-reset-refill/≤5warm/≤2corpses/roleIDs.
+  StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
   HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.

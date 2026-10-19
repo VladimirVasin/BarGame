@@ -26,6 +26,9 @@ namespace BarPromenade
         private readonly CombatWeaponGeometry.Segment[] authoredSegments = new CombatWeaponGeometry.Segment[2];
         private readonly Part[] railOwners = new Part[2];
         private BoxCollider envelopeCollider;
+        private float navigationRadius, navigationHeight;
+        internal float NavigationRadius { get { MeasureNavigationEnvelope(); return navigationRadius; } }
+        internal float NavigationHeight { get { MeasureNavigationEnvelope(); return navigationHeight; } }
         private Collider ramProxy;
         private bool ownsBodyProxyIgnore;
         private PlayableGraph catchGraph;
@@ -116,6 +119,7 @@ namespace BarPromenade
             Model.gameObject.SetActive(true);
             ResetParts();
             IsCarrying = true;
+            navigationRadius = navigationHeight = 0f;
             catchClock = 0d;
             catchFrame = -1;
             ResetReleasedCatch();
@@ -258,9 +262,37 @@ namespace BarPromenade
                 if (hit.collider == null || hit.collider.transform.IsChildOf(owner.transform) ||
                     hit.collider.transform.IsChildOf(debrisRoot) || CombatCorpseTraversal.IsCorpse(hit.collider) || hit.normal.y > .6f) continue;
                 if (hit.collider == ramProxy) continue;
+                // A turn or an impact can leave timber already touching a rail.
+                // Permit only travel that reduces that existing penetration;
+                // every new solid contact still limits the ordinary box sweep.
+                if (hit.distance <= .01001f && Physics.ComputePenetration(shape, frame.position, frame.rotation,
+                        hit.collider, hit.collider.transform.position, hit.collider.transform.rotation,
+                        out _, out float beforeDepth) && beforeDepth > .00001f &&
+                    (!Physics.ComputePenetration(shape, frame.position + travel, frame.rotation,
+                        hit.collider, hit.collider.transform.position, hit.collider.transform.rotation,
+                        out _, out float afterDepth) || afterDepth < beforeDepth - .000001f)) continue;
                 allowed = Mathf.Min(allowed, Mathf.Max(0f, hit.distance - .01f));
             }
             return allowed;
+        }
+
+        private void MeasureNavigationEnvelope()
+        {
+            if (navigationRadius > 0f || envelopeCollider == null || owner == null) return;
+            // Read the authored envelope at the first awake pose, once per load.
+            // A circle retains that clearance when the same world rig turns.
+            Vector3 half = envelopeCollider.size * .5f;
+            float radiusSquared = 0f;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 local = envelopeCollider.center + Vector3.Scale(half,
+                    new Vector3((corner & 1) == 0 ? -1f : 1f, (corner & 2) == 0 ? -1f : 1f,
+                        (corner & 4) == 0 ? -1f : 1f));
+                Vector3 offset = envelopeCollider.transform.TransformPoint(local) - owner.transform.position;
+                radiusSquared = Mathf.Max(radiusSquared, offset.x * offset.x + offset.z * offset.z);
+                navigationHeight = Mathf.Max(navigationHeight, offset.y + PlayerFactory.GroundedRootOffset);
+            }
+            navigationRadius = Mathf.Sqrt(radiusSquared);
         }
 
         internal void BeginRamAgainst(CharacterController proxy)

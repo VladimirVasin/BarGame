@@ -4233,9 +4233,9 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 ### Принятое исключение — боевой полигон
 
 `2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
-Seat2→face;nonstrobe jelly squash/stretch/lag;1neutral flatbar mid axial in/out;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;PS1gray/§6.
-1Chest:Spot+weakbodyPoint/spill-bounce;dust/fan/rare shedding→settle/fog-glow0.
-UpperLbroken;ammo12/allbays.
+Seat2→face;jelly:nonstrobe/squash/stretch/lag;neutral midflatbar axial↔;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;PS1gray/§6.
+Chest:Spot+weakbodyPoint/spill-bounce;dust/fan/rare grit→settle/fog-glow0.
+UpperLbroken;ammo12/allbays;route-facing.
 Crane:hook6m/up2m/5s/COLhaul-rails/struggle/bodycam/fallHP/inertia;wounds/nodetach;home-watch/fatalcry-spasm3-home-regen10;§6/story0. Commit3→6oldcables@lastpose/unequalfree;recoilfade/weakasync wind+rare3Dcreak@hanger/persist/pause.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave face-chest-palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
 `2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.

@@ -66,6 +66,7 @@ namespace BarPromenade.Tests.PlayMode
                 method != nameof(Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup) &&
                 method != nameof(Range_CraneCaptureYieldsMixedOpponentsUntilRelease) &&
                 method != nameof(Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum) &&
+                method != nameof(Range_GroundEnemiesRouteAroundRailsStairsAndChangedTargets) &&
                 method != nameof(Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight) &&
                 method != nameof(Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset) &&
                 method != nameof(Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset) &&
