@@ -44,7 +44,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.4f1`, `17.6.0` | Current |
-| PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
+| Presentation styles | PS1/default or native Clean/optional SMAA High; shared grade/UI. Independent Begotten keeps film grid/cadence/ramp. | `Runtime/Rendering`, `GraphicsEffectsSettings`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
@@ -278,5 +278,5 @@ player -> interaction -> SceneTransitionService -> DoorTransition
 all gameplay results -> GameSessionState -> preserved across Single loads
 state boundaries     -> correlated rotating debug.log (NDJSON)
 scene root           -> audio mixer snapshot + scene music + ambience
-URP post-processing  -> PS1 composite -> crisp soot/bone IMGUI overlay
+URP post-processing  -> selected style + optional Begotten -> crisp soot/bone IMGUI
 ```

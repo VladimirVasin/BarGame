@@ -7,6 +7,8 @@ namespace BarPromenade.Tests.EditMode
     {
         private static readonly string[] Keys =
         {
+            "graphics.style",
+            "graphics.clean_aa",
             "graphics.dof",
             "graphics.intoxication_fx",
             "graphics.dither",
@@ -60,6 +62,14 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Defaults_AllEffectsEnabledWithoutPrefs()
         {
+            Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
+            Assert.That(PlayerPrefs.HasKey("graphics.style"), Is.False,
+                "Reading a missing style must preserve existing preferences without writing migration data.");
+            Assert.That(System.Enum.GetValues(typeof(GraphicsStyle)), Has.Length.EqualTo(2));
+            Assert.That((int)GraphicsStyle.CleanLowPoly, Is.EqualTo(2),
+                "Existing Clean preferences keep their persisted id.");
+            Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.IsCleanAntialiasingApplicable, Is.False);
             Assert.That(
                 GraphicsEffectsSettings.DepthOfFieldEnabled,
                 Is.True);
@@ -104,6 +114,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GraphicsEffectsSettings.Version,
                 Is.EqualTo(initial + 1));
+
+            GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 1));
+            GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 2));
+            GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 2));
             Assert.That(
                 GraphicsEffectsSettings.DitherEnabled,
                 Is.False);
@@ -111,7 +128,13 @@ namespace BarPromenade.Tests.EditMode
             GraphicsEffectsSettings.DitherEnabled = false;
             Assert.That(
                 GraphicsEffectsSettings.Version,
-                Is.EqualTo(initial + 1));
+                Is.EqualTo(initial + 2));
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = true;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 2));
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 3));
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(initial + 3));
         }
 
         [Test]
@@ -120,6 +143,8 @@ namespace BarPromenade.Tests.EditMode
             GraphicsEffectsSettings.ScanlinesEnabled = false;
             GraphicsEffectsSettings.DepthOfFieldEnabled = false;
             GraphicsEffectsSettings.AspectRatio43Enabled = true;
+            GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
 
             GraphicsEffectsSettings.ResetLoadedStateForTests();
 
@@ -135,6 +160,48 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GraphicsEffectsSettings.AspectRatio43Enabled,
                 Is.True);
+            Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
+            Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.False);
+        }
+
+        [TestCase(-1)]
+        [TestCase(1)]
+        [TestCase(3)]
+        [TestCase(int.MaxValue)]
+        public void UnknownStyle_LoadsPs1WithoutChangingExistingFlags(int storedStyle)
+        {
+            PlayerPrefs.SetInt("graphics.style", storedStyle);
+            PlayerPrefs.SetInt("graphics.dither", 0);
+            PlayerPrefs.SetInt("graphics.vertex_jitter", 1);
+            PlayerPrefs.SetInt("graphics.clean_aa", 0);
+            GraphicsEffectsSettings.ResetLoadedStateForTests();
+
+            Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
+            Assert.That(GraphicsEffectsSettings.DitherEnabled, Is.False);
+            Assert.That(GraphicsEffectsSettings.VertexJitterEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.False);
+            Assert.That(GraphicsEffectsSettings.Version, Is.Zero);
+        }
+
+        [TestCase(GraphicsStyle.Ps1, true, false)]
+        [TestCase(GraphicsStyle.CleanLowPoly, false, true)]
+        public void Style_ReportsApplicabilityWithoutOverwritingStoredChoices(
+            GraphicsStyle selectedStyle, bool ps1EffectsApplicable, bool cleanAntialiasingApplicable)
+        {
+            GraphicsEffectsSettings.DitherEnabled = true;
+            GraphicsEffectsSettings.ScanlinesEnabled = true;
+            GraphicsEffectsSettings.VertexJitterEnabled = true;
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = true;
+            GraphicsEffectsSettings.Style = selectedStyle;
+
+            Assert.That(GraphicsEffectsSettings.IsDitherApplicable, Is.EqualTo(ps1EffectsApplicable));
+            Assert.That(GraphicsEffectsSettings.IsScanlinesApplicable, Is.EqualTo(ps1EffectsApplicable));
+            Assert.That(GraphicsEffectsSettings.IsVertexJitterApplicable, Is.EqualTo(ps1EffectsApplicable));
+            Assert.That(GraphicsEffectsSettings.IsCleanAntialiasingApplicable, Is.EqualTo(cleanAntialiasingApplicable));
+            Assert.That(GraphicsEffectsSettings.DitherEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.ScanlinesEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.VertexJitterEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.True);
         }
     }
 }

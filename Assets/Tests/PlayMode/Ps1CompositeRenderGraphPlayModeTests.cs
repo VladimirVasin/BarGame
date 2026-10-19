@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -19,30 +20,141 @@ namespace BarPromenade.Tests.PlayMode
         private Material sourceMaterial;
         private bool previousFogEnabled;
         private bool fogStateCaptured;
-        private bool previousDitherEnabled;
-        private bool previousScanlinesEnabled;
-        private bool previousAspectRatio43Enabled;
-        private bool previousBegottenModeEnabled;
+        private readonly Dictionary<string, int?> savedPreferences =
+            new Dictionary<string, int?>();
         private bool effectFlagsCaptured;
+        private bool warehouseCaptureLoaded;
 
         [SetUp]
         public void CaptureEffectFlags()
         {
-            previousDitherEnabled =
-                GraphicsEffectsSettings.DitherEnabled;
-            previousScanlinesEnabled =
-                GraphicsEffectsSettings.ScanlinesEnabled;
-            previousAspectRatio43Enabled =
-                GraphicsEffectsSettings.AspectRatio43Enabled;
-            previousBegottenModeEnabled =
-                GraphicsEffectsSettings.BegottenModeEnabled;
+            foreach (string key in new[]
+            {
+                "graphics.style", "graphics.clean_aa", "graphics.dither", "graphics.scanlines",
+                "graphics.aspect_4_3", "graphics.begotten", "graphics.vertex_jitter"
+            })
+                savedPreferences[key] = PlayerPrefs.HasKey(key)
+                    ? PlayerPrefs.GetInt(key) : (int?)null;
             effectFlagsCaptured = true;
+            GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
             GraphicsEffectsSettings.DitherEnabled = false;
             GraphicsEffectsSettings.ScanlinesEnabled = false;
             GraphicsEffectsSettings.AspectRatio43Enabled = false;
             // The print replaces the whole composite; these tests measure
             // the composite.
             GraphicsEffectsSettings.BegottenModeEnabled = false;
+        }
+
+        [UnityTest]
+        public IEnumerator GameCamera_StylesSwitchImmediatelyAndRetainSharedEffects()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+                Assert.Ignore("Actual RenderGraph output requires a graphics device.");
+
+            RenderComposite(1280, 720);
+            Camera camera = cameraObject.GetComponent<Camera>();
+            Ps1CompositeRendererFeature feature = FindFeature();
+            bool? previousFilmFrame = feature.DebugForceFilmFrame;
+            float? previousFilmWeight = BegottenModeRamp.DebugWeightOverride;
+            Color32[] ps1 = readback.GetPixels32();
+            int frame = Time.frameCount;
+            try
+            {
+                GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+                RenderAgain(camera);
+                Color32[] clean = readback.GetPixels32();
+                Assert.That(ChangedSamples(ps1, clean), Is.GreaterThan(100));
+                Assert.That(CheckerContrast(), Is.GreaterThan(.8f),
+                    "Clean Low Poly must retain the native one-pixel checker.");
+                Assert.That(((Color32)readback.GetPixel(960, 180)).r, Is.EqualTo(20).Within(1));
+                Assert.That(((Color32)readback.GetPixel(960, 540)).r, Is.EqualTo(228).Within(1));
+
+                GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
+                RenderAgain(camera);
+                CollectionAssert.AreEqual(ps1, readback.GetPixels32(),
+                    "Returning to PS1 in the same frame must preserve its original rendering.");
+                Assert.That(Time.frameCount, Is.EqualTo(frame),
+                    "The mode transitions above must exercise the same-frame render path.");
+
+                Color32[] filmReference = null;
+                foreach (GraphicsStyle style in new[]
+                {
+                    GraphicsStyle.Ps1, GraphicsStyle.CleanLowPoly
+                })
+                {
+                    GraphicsEffectsSettings.Style = style;
+                    GraphicsEffectsSettings.VertexJitterEnabled = true;
+                    GraphicsEffectsSettings.ScanlinesEnabled = true;
+                    RenderAgain(camera);
+                    float snap = Shader.GetGlobalVector("_Ps1VertexSnapParams").z;
+                    if (style == GraphicsStyle.Ps1) Assert.That(snap, Is.GreaterThan(0f));
+                    else Assert.That(snap, Is.Zero, "Only PS1 may snap projected vertices.");
+                    if (style != GraphicsStyle.Ps1)
+                        Assert.That(readback.GetPixel(960, 500), Is.EqualTo(readback.GetPixel(960, 501)),
+                            "The retained scanline preference must not affect the other styles.");
+
+                    var exclusion = cameraObject.AddComponent<Ps1VertexJitterExclusion>();
+                    RenderAgain(camera);
+                    Assert.That(Shader.GetGlobalVector("_Ps1VertexSnapParams").z, Is.Zero,
+                        "An excluded camera must clear the preceding camera's snap globals.");
+                    Object.DestroyImmediate(exclusion);
+                    GraphicsEffectsSettings.VertexJitterEnabled = false;
+                    GraphicsEffectsSettings.ScanlinesEnabled = false;
+
+                    RenderAgain(camera);
+                    Color32[] sober = readback.GetPixels32();
+                    IntoxicationRenderState.Set(IntoxicationStageRules.Evaluate(100),
+                        1.25f, 0f, Vector2.zero, Vector3.zero);
+                    RenderAgain(camera);
+                    Assert.That(ChangedSamples(sober, readback.GetPixels32()), Is.GreaterThan(100),
+                        "Intoxication must remain visible in every presentation style.");
+                    IntoxicationRenderState.Clear();
+
+                    GraphicsEffectsSettings.AspectRatio43Enabled = true;
+                    RenderAgain(camera);
+                    AssertPillarbox();
+                    GraphicsEffectsSettings.AspectRatio43Enabled = false;
+
+                    // The authored film replaces each base style and retains
+                    // its own resolution, rather than inheriting the native one.
+                    sourceMaterial.SetColor("_BaseColor", new Color(.5f, .75f, 1f));
+                    GraphicsEffectsSettings.CleanAntialiasingEnabled = true;
+                    GraphicsEffectsSettings.BegottenModeEnabled = true;
+                    BegottenModeRamp.DebugWeightOverride = 1f;
+                    feature.DebugForceFilmFrame = true;
+                    feature.DebugResetProjector();
+                    RenderAgain(camera);
+                    Assert.That(feature.DebugCleanSmaaApplied, Is.False,
+                        "The full film must skip SMAA, independently of its base style.");
+                    AssertPillarbox();
+                    Color32[] film = readback.GetPixels32();
+                    for (int y = 96; y < 624; y += 32)
+                    {
+                        Color32 pixel = readback.GetPixel(960, y);
+                        Assert.That(Mathf.Abs(pixel.r - pixel.g) + Mathf.Abs(pixel.g - pixel.b),
+                            Is.LessThanOrEqualTo(2), "BEGOTTEN must remove the source's colour.");
+                    }
+                    if (filmReference == null) filmReference = film;
+                    else CollectionAssert.AreEqual(filmReference, film,
+                        "The same held film frame must be independent of its base style.");
+                    GraphicsEffectsSettings.BegottenModeEnabled = false;
+                    GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
+                    BegottenModeRamp.DebugWeightOverride = 0f;
+                    sourceMaterial.SetColor("_BaseColor", Color.white);
+                }
+                yield return AssertCleanAntialiasing(camera, feature);
+            }
+            finally
+            {
+                IntoxicationRenderState.Clear();
+                feature.DebugForceFilmFrame = previousFilmFrame;
+                BegottenModeRamp.DebugWeightOverride = previousFilmWeight;
+            }
+
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-bp-style-capture") >= 0)
+                yield return CaptureWarehouseStyleComparison();
+            yield return null;
         }
 
         [UnityTest]
@@ -241,16 +353,29 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            if (warehouseCaptureLoaded)
+            {
+                Scene scene = SceneManager.GetActiveScene();
+                if (scene.IsValid() && scene.name == SceneIds.CombatTest)
+                {
+                    Scene cleanup = SceneManager.CreateScene("Test presentation cleanup");
+                    SceneManager.SetActiveScene(cleanup);
+                    AsyncOperation unload = SceneManager.UnloadSceneAsync(scene);
+                    if (unload != null) yield return unload;
+                }
+                warehouseCaptureLoaded = false;
+            }
             if (effectFlagsCaptured)
             {
-                GraphicsEffectsSettings.DitherEnabled =
-                    previousDitherEnabled;
-                GraphicsEffectsSettings.ScanlinesEnabled =
-                    previousScanlinesEnabled;
-                GraphicsEffectsSettings.AspectRatio43Enabled =
-                    previousAspectRatio43Enabled;
-                GraphicsEffectsSettings.BegottenModeEnabled =
-                    previousBegottenModeEnabled;
+                foreach (KeyValuePair<string, int?> preference in savedPreferences)
+                {
+                    if (preference.Value.HasValue)
+                        PlayerPrefs.SetInt(preference.Key, preference.Value.Value);
+                    else PlayerPrefs.DeleteKey(preference.Key);
+                }
+                PlayerPrefs.Save();
+                GraphicsEffectsSettings.ResetLoadedStateForTests();
+                savedPreferences.Clear();
                 effectFlagsCaptured = false;
             }
 
@@ -296,7 +421,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private void RenderComposite(int outputWidth, int outputHeight)
         {
-            cameraObject = new GameObject("PS1 Composite Smoke Camera");
+            cameraObject = new GameObject("Test presentation camera");
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.enabled = false;
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -329,14 +454,12 @@ namespace BarPromenade.Tests.PlayMode
                 RenderTextureFormat.ARGB32,
                 RenderTextureReadWrite.Linear)
             {
-                name = "PS1 Composite Smoke Target",
+                name = "Test presentation target",
                 filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp
             };
             Assert.That(target.Create(), Is.True);
             camera.targetTexture = target;
-
-            camera.Render();
 
             readback = new Texture2D(
                 outputWidth,
@@ -344,15 +467,232 @@ namespace BarPromenade.Tests.PlayMode
                 TextureFormat.RGBA32,
                 false,
                 true);
+            RenderAgain(camera);
+        }
+
+        private void RenderAgain(Camera camera)
+        {
+            camera.Render();
             RenderTexture previous = RenderTexture.active;
-            RenderTexture.active = target;
-            readback.ReadPixels(
-                new Rect(0f, 0f, outputWidth, outputHeight),
-                0,
-                0,
-                false);
-            readback.Apply(false, false);
-            RenderTexture.active = previous;
+            try
+            {
+                RenderTexture.active = target;
+                readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0, false);
+                readback.Apply(false, false);
+            }
+            finally { RenderTexture.active = previous; }
+        }
+
+        private IEnumerator AssertCleanAntialiasing(Camera camera, Ps1CompositeRendererFeature feature)
+        {
+            GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
+            // A shallow diagonal has real staircase edges; a one-pixel checker
+            // instead tests the native-resolution contract, not edge smoothing.
+            var diagonal = new Texture2D(target.width, target.height,
+                TextureFormat.RGBA32, false, true)
+            {
+                name = "Test diagonal source", filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave
+            };
+            var pixels = new Color32[target.width * target.height];
+            for (int y = 0; y < target.height; y++)
+                for (int x = 0; x < target.width; x++)
+                {
+                    byte tone = x < 160f + y * .65f ? (byte)20 : (byte)228;
+                    pixels[y * target.width + x] = new Color32(tone, tone, tone, 255);
+                }
+            diagonal.SetPixels32(pixels);
+            diagonal.Apply(false, true);
+            sourceMaterial.SetTexture("_BaseMap", diagonal);
+            Object.DestroyImmediate(sourceTexture);
+            sourceTexture = diagonal;
+            RenderAgain(camera);
+            Color32[] unfiltered = readback.GetPixels32();
+            Assert.That(feature.DebugCleanSmaaApplied, Is.False);
+
+            GraphicsEffectsSettings.CleanAntialiasingEnabled = true;
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.True,
+                "Clean's enabled SMAA must actually record its spatial passes.");
+            Color32[] filtered = readback.GetPixels32();
+            Assert.That(ChangedSamples(unfiltered, filtered), Is.GreaterThan(5));
+            int softened = 0;
+            for (int y = 32; y < target.height - 32; y++)
+                for (int x = Mathf.FloorToInt(160f + y * .65f) - 2;
+                     x <= Mathf.CeilToInt(160f + y * .65f) + 2; x++)
+                {
+                    Color32 pixel = readback.GetPixel(x, y);
+                    if (pixel.r > 22 && pixel.r < 226) softened++;
+                }
+            Assert.That(softened, Is.GreaterThan(100), "Diagonal edges must receive partial coverage.");
+            Assert.That(((Color32)readback.GetPixel(1000, 180)).r, Is.EqualTo(228).Within(1));
+            Assert.That(((Color32)readback.GetPixel(20, 180)).r, Is.EqualTo(20).Within(1));
+
+            // Returning to the same camera pose must reproduce the same image:
+            // spatial AA has no history to leave a trail after camera motion.
+            Vector3 position = camera.transform.position;
+            camera.transform.position += Vector3.right * .05f;
+            camera.ResetWorldToCameraMatrix();
+            yield return null;
+            RenderAgain(camera);
+            Assert.That(ChangedSamples(filtered, readback.GetPixels32()), Is.GreaterThan(5));
+            camera.transform.position = position;
+            camera.ResetWorldToCameraMatrix();
+            yield return null;
+            RenderAgain(camera);
+            CollectionAssert.AreEqual(filtered, readback.GetPixels32());
+
+            var excluded = cameraObject.AddComponent<Ps1VertexJitterExclusion>();
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.False);
+            CollectionAssert.AreEqual(unfiltered, readback.GetPixels32());
+            Object.DestroyImmediate(excluded);
+
+            GraphicsEffectsSettings.AspectRatio43Enabled = true;
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.True);
+            AssertPillarbox();
+            GraphicsEffectsSettings.AspectRatio43Enabled = false;
+            IntoxicationRenderState.Set(IntoxicationStageRules.Evaluate(100),
+                1.25f, .2f, Vector2.one, new Vector3(5000f, 5000f, 0f));
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.True);
+            IntoxicationRenderState.Clear();
+            GraphicsEffectsSettings.BegottenModeEnabled = true;
+            BegottenModeRamp.DebugWeightOverride = .5f;
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.True,
+                "A partial film must keep smoothing the live colour, before the print is overlaid.");
+            GraphicsEffectsSettings.BegottenModeEnabled = false;
+            BegottenModeRamp.DebugWeightOverride = 0f;
+            GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
+            RenderAgain(camera);
+            Assert.That(feature.DebugCleanSmaaApplied, Is.False);
+        }
+
+        private float CheckerContrast()
+        {
+            float contrast = 0f;
+            for (int x = 320; x < 384; x++)
+                contrast += Mathf.Abs(readback.GetPixel(x, 180).r - readback.GetPixel(x + 1, 180).r);
+            return contrast / 64f;
+        }
+
+        private static int ChangedSamples(Color32[] first, Color32[] second)
+        {
+            int changed = 0;
+            for (int i = 0; i < first.Length; i += 47)
+                if (first[i].r != second[i].r || first[i].g != second[i].g || first[i].b != second[i].b)
+                    changed++;
+            return changed;
+        }
+
+        private void AssertPillarbox()
+        {
+            foreach (int x in new[] { 0, 80, 158, 1122, 1200, 1279 })
+            {
+                Color32 pixel = readback.GetPixel(x, 360);
+                Assert.That((int)pixel.r + pixel.g + pixel.b, Is.Zero,
+                    "The shared 4:3 frame must keep its black pillarbox.");
+            }
+            int content = 0;
+            for (int x = 480; x <= 960; x += 80)
+            {
+                Color32 pixel = readback.GetPixel(x, 540);
+                content += pixel.r + pixel.g + pixel.b;
+            }
+            Assert.That(content, Is.GreaterThan(0), "The visible frame must retain its image.");
+        }
+
+        private static Ps1CompositeRendererFeature FindFeature()
+        {
+            foreach (Ps1CompositeRendererFeature feature in
+                Resources.FindObjectsOfTypeAll<Ps1CompositeRendererFeature>())
+                if (feature != null && feature.isActive) return feature;
+            Assert.Fail("The PC renderer's presentation feature is not loaded.");
+            return null;
+        }
+
+        private IEnumerator CaptureWarehouseStyleComparison()
+        {
+            bool previousArena = CombatTestRoot.UseLegacyArenaForTests;
+            int? previousSeed = CombatTestRoot.WarehouseSeedForTests;
+            float previousCaptureDelta = Time.captureDeltaTime;
+            bool previousBackground = Application.runInBackground;
+            CombatTestRoot root = null;
+            try
+            {
+                Application.runInBackground = true;
+                Time.captureDeltaTime = 1f / 60f;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.WarehouseSeedForTests = 0;
+                GameSessionState.BeginNewGame();
+                warehouseCaptureLoaded = true;
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root != null && root.IsInitialized && root.WarehousePlan != null, Is.True);
+                root.AutomaticSimulation = false;
+                root.AutomaticOpponentDecisions = false;
+                root.SetDuelLogging(false);
+                root.SetSparring(false);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                for (int frame = 0; frame < 12; frame++) yield return null;
+                Camera camera = root.CameraFollow.Camera;
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    GraphicsEffectsSettings.DitherEnabled = true;
+                    GraphicsEffectsSettings.ScanlinesEnabled = true;
+                    GraphicsEffectsSettings.VertexJitterEnabled = false;
+                    GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                        "Test warehouse presentation - PS1");
+                    GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
+                    GraphicsEffectsSettings.CleanAntialiasingEnabled = false;
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                        "Test warehouse presentation - Clean without smoothing");
+                    GraphicsEffectsSettings.CleanAntialiasingEnabled = true;
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                        "Test warehouse presentation - Clean with smoothing");
+                    Quaternion rotation = camera.transform.rotation;
+                    camera.transform.Rotate(Vector3.up, .25f, Space.World);
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                        "Test warehouse presentation - Clean camera turn");
+                    camera.transform.rotation = rotation;
+                    Time.captureDeltaTime = 0f;
+                    foreach (bool antialiasing in new[] { false, true })
+                    {
+                        GraphicsEffectsSettings.CleanAntialiasingEnabled = antialiasing;
+                        Assert.That(RuntimePerformanceCapture.StartCapture(new PerformanceCaptureOptions(
+                            SceneIds.CombatTest, antialiasing ? "Test clean smoothing on" : "Test clean smoothing off",
+                            .5, 2), System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(),
+                            "Captures", "CleanPerformance")), Is.True);
+                        double deadline = Time.realtimeSinceStartupAsDouble + 8d;
+                        while (RuntimePerformanceCapture.IsRunning && Time.realtimeSinceStartupAsDouble < deadline)
+                            yield return null;
+                        Assert.That(RuntimePerformanceCapture.IsRunning, Is.False,
+                            "The bounded comparison must finish in its capture window.");
+                        Assert.That(RuntimePerformanceCapture.LastReportPath, Is.Not.Empty);
+                    }
+                }
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    root.AutomaticSimulation = false;
+                    root.PauseMenu?.Cancel();
+                    Object.Destroy(root.gameObject);
+                }
+                RuntimePerformanceCapture.StopCapture();
+                CombatTestRoot.UseLegacyArenaForTests = previousArena;
+                CombatTestRoot.WarehouseSeedForTests = previousSeed;
+                Time.captureDeltaTime = previousCaptureDelta;
+                Application.runInBackground = previousBackground;
+                GameSessionState.BeginNewGame();
+                RetroAudioService.Instance?.StopAll();
+            }
         }
 
         private void CreateSource(

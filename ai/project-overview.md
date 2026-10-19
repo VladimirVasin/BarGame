@@ -7,8 +7,8 @@
 - Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`;versions:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- One PC quality/pipeline profile applies the PS1 composite after URP
-  post-processing.
+- PC: PS1/default or native Clean/SMAA High; independent Begotten,
+  shared lighting/grade/UI.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -131,7 +131,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.
 - Map/inventory/journal/pause/options/localized;warehouse door ambush/debug.
-- Shared PS1 presentation, causal audio and bounded diagnostics.
+- Shared styles, causal audio and bounded diagnostics.
 
 See [current-world.md](current-world.md) for gameplay and
 [systems-map.md](systems-map.md) for owners. Paths: `git ls-files`/`rg`; the bibles own canon.

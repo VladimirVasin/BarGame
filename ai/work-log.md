@@ -28,6 +28,19 @@ Cancellation restores its snapshot; replay clears the owned hang. Paired-bank
 pinned validation and hook/floor/ceiling contact checks passed; focused fixture
 updated for the new contract. Visual and physical tuning await manual review.
 `check-docs.py` and scoped `git diff --check` OK.
+User accepted saved PS1/default and native Clean; shared lighting/grade/DoF/
+intoxication/UI and retained retro flags. Clean-only optional SMAA High defaults
+on, persists separately and runs spatial edge/blend/neighbourhood passes after
+native/intoxication, before independently sourced film. Full Begotten skips AA;
+4:3 bars reapply after AA, UI/nameplates follow. Preview/reflection exclusions
+stay; film retains its authored grid/cadence/ramp. Shared targets/assets,
+canon exception recorded; performance gains unmeasured.
+`OptionsPage_TogglesAndPersistsGraphicsFlag` and
+`GameCamera_AveragesDetailAndPreservesTones` OK.
+`GameCamera_StylesSwitchImmediatelyAndRetainSharedEffects` OK.
+Warehouse SMAA comparison reviewed: thin diagonals soften without broad blur
+or lighting changes. Paired Editor AA diagnostics reviewed; GPU/render-thread
+timings unavailable, no performance gain or GPU-cost claim.
 
 ## 2026-10-19
 

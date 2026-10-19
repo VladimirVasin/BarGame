@@ -1,6 +1,18 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-20, optional presentation styles — explicit user decision:**
+  Art §4/§15a; story §6. PS1 stays default and unchanged. `graphics.style`
+  persists exactly PS1/Clean in `GraphicsEffectsSettings`; unknown values→PS1.
+  Clean: native source, quantization/dither/scanlines/jitter0. Its optional
+  SMAA High defaults on and persists as `graphics.clean_aa`; PS1 never uses it.
+  Custom RenderGraph spatial SMAA: three passes after live native/intoxication,
+  before independently sourced Begotten; full film skips AA. Reapply 4:3 bars
+  after AA; UI/nameplates draw later. Preview/reflection exclusions stay.
+  Retro flags remain stored; unsupported controls disable without clearing them.
+  Shared lighting/fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay. Begotten is
+  an independent overlay: original film grid/cadence/ramp/soundtrack.
+  Shared passes/retained targets, no world copies; performance gains unmeasured.
 - **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
   rolls follow action;review framing/contacts.
 - **Accepted exception 2026-10-19, warehouse door ambush:**
@@ -5551,15 +5563,12 @@
   Bar, Home and Supermarket families retain texture/material identity but not
   a different hue. The remaining channels are implemented inputs, not yet
   claims about built geometry.
-- **Accepted — PC PS1 world composite:** The active PC renderer runs one native
-  Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
-  Game camera. It footprint-averages the world to `640x360` by default, blends
-  35% perceptual-space RGB555 into the original tone without a screen-space
-  dither overlay, then point-upscales it, producing exact 2x/3x scaling at
-  720p/1080p. Before quantization, the same pass consumes shared intoxication
-  state for animated UV warp, ghost/chromatic sampling, warmth, exposure pulse
-  and vignette. Lower `426x240` and `320x180` presets remain available; mobile
-  renderer integration is deferred.
+- **Accepted — PC world composite:** One Unity 6 RenderGraph feature runs at
+  `AfterRenderingPostProcessing` for the final Game camera. PS1/default:
+  footprint-average `640x360`, 35% perceptual RGB555/Bayer, point upscale
+  (exact 2x/3x at 720p/1080p); authored `426x240`/`320x180` presets remain.
+  The `2026-10-20` styles share intoxication UV warp, ghost/chromatic sampling,
+  warmth, exposure pulse and vignette. Mobile integration remains deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
@@ -7289,20 +7298,15 @@
   previously hidden renderers off; wardrobe leases exclude the head.
   Torso and limbs remain visible; the camera moves
   out of the skull while the body still locates the player at the board.
-- **Accepted — player graphics toggles are one static service over
-  `PlayerPrefs`, the project's first persistence:** `GraphicsEffectsSettings`
-  holds seven booleans (`graphics.dof`, `graphics.intoxication_fx`,
+- **Accepted — saved graphics options:** `GraphicsEffectsSettings` lazily reads
+  `PlayerPrefs`, saves changes and exposes polled `Version`. `graphics.style`
+  joins seven flags: `graphics.dof`, `graphics.intoxication_fx`,
   `graphics.dither`, `graphics.scanlines`, `graphics.aspect_4_3`,
-  `graphics.vertex_jitter` and `graphics.begotten`), loaded lazily and saved
-  on change, with a
-  `Version` counter consumers poll instead of subscribing to events — no
-  lifecycle hazards. The first four default on; 4:3, vertex jitter and the
-  Begotten film mode are explicit opt-ins. Effect consumers gate themselves: the PS1 composite
-  zeroes its dither/scanline floats per frame, the render feature supplies
-  camera-specific vertex-snap globals, the intoxication lens driver forces
-  zero per `Apply`, and `DepthOfFieldSettingsBinder` flips `active` only on
-  volume-profile clones or runtime-built profiles, never on the authored
-  `.asset` at play time.
+  `graphics.vertex_jitter`, `graphics.begotten`. First four default on;
+  4:3/jitter/Begotten opt in; Clean-only `graphics.clean_aa` defaults on.
+  Style gates dither/scanline/snap values without
+  clearing flags. Camera-specific snap globals retain exclusions; intoxication
+  forces zero when disabled. DoF changes runtime/cloned profiles only.
 - **Accepted — depth of field runs in two tiers around the PS1 crush:** the
   always-on tier is Gaussian in every scene grade (City `start 8 / end 28 /
   radius 1.5` — the band must sit inside the `48 m` far clip where exp² fog
@@ -7355,15 +7359,8 @@
   boils instead of aliasing. The width is the readability dial: the common
   tone (fog, sky) burns to bone, a road one deviation darker prints as
   sparse grain rather than solid soot so a black figure still stands on
-  it, two deviations down is soot. Narrower mappings failed twice: with
-  black one deviation under the mean the common tone fell just under the
-  roll and the whole ground printed as boiling black; with `1.3` either
-  side the night road and the hero on it were both solid soot. Two earlier attempts are why: a fixed
-  threshold pulled toward the scene mean and clamped at `0.12` turned the
-  real night City - fog, ground and figures all under the clamp - into one
-  unreadable field of grain (the user's first look), and pulled halfway to
-  the mean a sunlit ground landed exactly on the threshold and boiled from
-  edge to edge where the film burns it white (the first sheet). Lamp flicker, vignette
+  it, two deviations down is soot. Narrower exposure ranges made night ground
+  and hero merge; fixed thresholds made common tones boil. Lamp flicker, vignette
   and gate weave act on the light before the threshold, never on the
   printed value, so a dark corner is soot with a boiling edge and never
   grey. The film runs at `24` pictures a second of unscaled time with
@@ -7378,7 +7375,7 @@
   4:3 gate, mutes dither, RGB555 and scanlines (meaningless under it) —
   amended 2026-09-08: all four now cross the ramp below rather than
   switching, and everything here describes the mode at full strength. Keeps
-  the vertex jitter and the drunk lens as the player set them, and skips
+  the chosen style's eligible vertex jitter and the player's drunk lens, and skips
   cameras marked `Ps1VertexJitterExclusion` — the inventory preview stays in
   colour (a documented residual) and the reflection probe never holds a
   face. IMGUI (every menu, prompt, subtitle and fade) draws after the

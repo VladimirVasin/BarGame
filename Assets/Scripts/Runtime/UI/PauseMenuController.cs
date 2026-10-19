@@ -26,6 +26,7 @@ namespace BarPromenade
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private GUIStyle messageStyle;
+        private GUIStyle styleControlStyle;
         private IDisposable timePause;
         private bool previousAudioPause;
         private bool ownsPauseState;
@@ -46,6 +47,8 @@ namespace BarPromenade
         private static readonly (PauseMenuOptionsRow Row, string Key)[]
             OptionsRows =
             {
+                (PauseMenuOptionsRow.GraphicsStyle, "options.graphics_style"),
+                (PauseMenuOptionsRow.CleanAntialiasing, "options.clean_aa"),
                 (PauseMenuOptionsRow.DepthOfField, "options.dof"),
                 (PauseMenuOptionsRow.IntoxicationFx,
                     "options.intoxication_fx"),
@@ -258,10 +261,25 @@ namespace BarPromenade
                 return false;
             }
 
+            if (Page == PauseMenuPage.Options && !IsGraphicsOptionAvailable(SelectedOptionsRow))
+                return false;
+
             RefreshCutscenes();
             PauseMenuAction action = model.Confirm();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             Execute(action);
+            return true;
+        }
+
+        public bool CycleGraphicsStyle(int delta)
+        {
+            if (!IsOpen || closePending || Page != PauseMenuPage.Options ||
+                SelectedOptionsRow != PauseMenuOptionsRow.GraphicsStyle || delta == 0)
+                return false;
+
+            GraphicsEffectsSettings.Style = GraphicsEffectsSettings.Style == GraphicsStyle.Ps1
+                ? GraphicsStyle.CleanLowPoly
+                : GraphicsStyle.Ps1;
             return true;
         }
 
@@ -308,6 +326,9 @@ namespace BarPromenade
                     return;
                 case PauseMenuAction.ToggleGraphicsOption:
                     ToggleGraphicsOption(model.SelectedOptionsRow);
+                    return;
+                case PauseMenuAction.CycleGraphicsStyle:
+                    CycleGraphicsStyle(1);
                     return;
                 case PauseMenuAction.StartCutscene:
                     if (cutscenes != null && cutscenes.Catalog != null &&
@@ -413,11 +434,19 @@ namespace BarPromenade
                 return;
             }
 
-            int delta = ReadSelectionDelta();
+            bool selectingStyle = Page == PauseMenuPage.Options &&
+                                  SelectedOptionsRow == PauseMenuOptionsRow.GraphicsStyle;
+            int delta = selectingStyle
+                ? GameInput.ReadMenuVerticalSelectionDelta(GameInputContext.PauseMenu)
+                : ReadSelectionDelta();
             if (delta != 0)
             {
                 MoveSelection(delta);
             }
+
+            if (selectingStyle && delta == 0 &&
+                CycleGraphicsStyle(GameInput.ReadMenuHorizontalSelectionDelta(GameInputContext.PauseMenu)))
+                RetroAudio.Play(RetroSfxId.UiMove);
 
             if (WasConfirmPressed())
             {
@@ -822,21 +851,38 @@ namespace BarPromenade
 
             bool selected = SelectedOptionsRow == row;
             DrawSelection(rect, selected);
+            string label = LocalizationService.Get(localizationKey);
+            if (row == PauseMenuOptionsRow.GraphicsStyle)
+            {
+                DrawGraphicsStyleRow(rect, label, selected);
+                return;
+            }
+
+            bool available = IsGraphicsOptionAvailable(row);
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && available;
             if (GUI.Button(
                     rect,
-                    (selected ? "> " : "  ") +
-                    LocalizationService.Get(localizationKey),
+                    (selected ? "> " : "  ") + label,
                     selected ? selectedStyle : optionStyle))
             {
                 model.SelectOptionsRow(row);
                 ConfirmSelection();
             }
+            GUI.enabled = previousEnabled;
 
             if (row != PauseMenuOptionsRow.Back)
             {
                 // Drawn after the button so the box sits on top of
                 // its background; clicking the box still lands on the
                 // row button underneath.
+                if (!available)
+                {
+                    GUI.Label(new Rect(rect.xMax - 94f, rect.y, 90f, rect.height),
+                        LocalizationService.Get("options.unavailable"), optionStyle);
+                    return;
+                }
+
                 DrawCheckbox(
                     new Rect(
                         rect.xMax - 28f,
@@ -846,6 +892,31 @@ namespace BarPromenade
                     IsGraphicsOptionEnabled(row),
                     selected);
             }
+        }
+
+        private void DrawGraphicsStyleRow(Rect rect, string label, bool selected)
+        {
+            // Fixed non-overlapping cells leave room for both localized
+            // labels and the longest style name on the logical canvas.
+            Rect labelRect = new Rect(rect.x, rect.y, 128f, rect.height);
+            Rect previousRect = new Rect(labelRect.xMax, rect.y, 24f, rect.height);
+            Rect nextRect = new Rect(rect.xMax - 24f, rect.y, 24f, rect.height);
+            Rect valueRect = new Rect(previousRect.xMax, rect.y,
+                nextRect.x - previousRect.xMax, rect.height);
+            GUI.Label(labelRect, (selected ? "> " : "  ") + label,
+                selected ? selectedStyle : optionStyle);
+
+            if (GUI.Button(previousRect, "<", styleControlStyle)) ChangeGraphicsStyleFromPointer(-1);
+            if (GUI.Button(valueRect,
+                LocalizationService.Get(GraphicsStyleKey(GraphicsEffectsSettings.Style)), styleControlStyle))
+                ChangeGraphicsStyleFromPointer(1);
+            if (GUI.Button(nextRect, ">", styleControlStyle)) ChangeGraphicsStyleFromPointer(1);
+        }
+
+        private void ChangeGraphicsStyleFromPointer(int delta)
+        {
+            model.SelectOptionsRow(PauseMenuOptionsRow.GraphicsStyle);
+            if (CycleGraphicsStyle(delta)) RetroAudio.Play(RetroSfxId.UiConfirm);
         }
 
         private static void DrawCheckbox(
@@ -875,8 +946,13 @@ namespace BarPromenade
         private static void ToggleGraphicsOption(
             PauseMenuOptionsRow row)
         {
+            if (!IsGraphicsOptionAvailable(row)) return;
             switch (row)
             {
+                case PauseMenuOptionsRow.CleanAntialiasing:
+                    GraphicsEffectsSettings.CleanAntialiasingEnabled =
+                        !GraphicsEffectsSettings.CleanAntialiasingEnabled;
+                    return;
                 case PauseMenuOptionsRow.DepthOfField:
                     GraphicsEffectsSettings.DepthOfFieldEnabled =
                         !GraphicsEffectsSettings.DepthOfFieldEnabled;
@@ -918,11 +994,34 @@ namespace BarPromenade
             }
         }
 
+        internal static bool IsGraphicsOptionAvailable(PauseMenuOptionsRow row)
+        {
+            return row switch
+            {
+                PauseMenuOptionsRow.CleanAntialiasing => GraphicsEffectsSettings.IsCleanAntialiasingApplicable,
+                PauseMenuOptionsRow.Dither => GraphicsEffectsSettings.IsDitherApplicable,
+                PauseMenuOptionsRow.Scanlines => GraphicsEffectsSettings.IsScanlinesApplicable,
+                PauseMenuOptionsRow.VertexJitter => GraphicsEffectsSettings.IsVertexJitterApplicable,
+                _ => true
+            };
+        }
+
+        private static string GraphicsStyleKey(GraphicsStyle style)
+        {
+            return style switch
+            {
+                GraphicsStyle.CleanLowPoly => "options.style.clean_low_poly",
+                _ => "options.style.ps1"
+            };
+        }
+
         private static bool IsGraphicsOptionEnabled(
             PauseMenuOptionsRow row)
         {
             switch (row)
             {
+                case PauseMenuOptionsRow.CleanAntialiasing:
+                    return GraphicsEffectsSettings.CleanAntialiasingEnabled;
                 case PauseMenuOptionsRow.DepthOfField:
                     return GraphicsEffectsSettings
                         .DepthOfFieldEnabled;
@@ -1069,6 +1168,11 @@ namespace BarPromenade
                 12,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
+                false);
+            styleControlStyle = RetroUiTheme.CreateButtonStyle(
+                12,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
                 false);
             messageStyle = RetroUiTheme.CreateLabelStyle(
                 12,

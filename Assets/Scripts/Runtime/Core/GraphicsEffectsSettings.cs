@@ -2,8 +2,16 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum GraphicsStyle
+    {
+        Ps1 = 0,
+        CleanLowPoly = 2
+    }
+
     public static class GraphicsEffectsSettings
     {
+        private const string StyleKey = "graphics.style";
+        private const string CleanAntialiasingKey = "graphics.clean_aa";
         private const string DepthOfFieldKey = "graphics.dof";
         private const string IntoxicationLensFxKey =
             "graphics.intoxication_fx";
@@ -14,6 +22,8 @@ namespace BarPromenade
         private const string BegottenKey = "graphics.begotten";
 
         private static bool loaded;
+        private static GraphicsStyle style;
+        private static bool cleanAntialiasingEnabled;
         private static bool depthOfFieldEnabled;
         private static bool intoxicationLensFxEnabled;
         private static bool ditherEnabled;
@@ -23,6 +33,44 @@ namespace BarPromenade
         private static bool begottenModeEnabled;
 
         public static int Version { get; private set; }
+
+        public static GraphicsStyle Style
+        {
+            get
+            {
+                EnsureLoaded();
+                return style;
+            }
+            set
+            {
+                EnsureLoaded();
+                GraphicsStyle next = NormalizeStyle((int)value);
+                if (style == next) return;
+                style = next;
+                PlayerPrefs.SetInt(StyleKey, (int)next);
+                PlayerPrefs.Save();
+                Version++;
+                GameLog.Info("graphics", "style_changed",
+                    GameLog.Field("style", next.ToString()));
+            }
+        }
+
+        // Stored flags remain the player's choices even when the selected
+        // style cannot use them; switching back restores those choices.
+        public static bool IsDitherApplicable => Style == GraphicsStyle.Ps1;
+        public static bool IsScanlinesApplicable => Style == GraphicsStyle.Ps1;
+        public static bool IsVertexJitterApplicable => Style == GraphicsStyle.Ps1;
+        public static bool IsCleanAntialiasingApplicable => Style == GraphicsStyle.CleanLowPoly;
+
+        public static bool CleanAntialiasingEnabled
+        {
+            get
+            {
+                EnsureLoaded();
+                return cleanAntialiasingEnabled;
+            }
+            set => Apply(ref cleanAntialiasingEnabled, value, CleanAntialiasingKey);
+        }
 
         public static bool DepthOfFieldEnabled
         {
@@ -142,6 +190,8 @@ namespace BarPromenade
                 return;
             }
 
+            style = NormalizeStyle(PlayerPrefs.GetInt(StyleKey, (int)GraphicsStyle.Ps1));
+            cleanAntialiasingEnabled = ReadFlag(CleanAntialiasingKey);
             depthOfFieldEnabled = ReadFlag(DepthOfFieldKey);
             intoxicationLensFxEnabled =
                 ReadFlag(IntoxicationLensFxKey);
@@ -170,6 +220,15 @@ namespace BarPromenade
             return PlayerPrefs.GetInt(
                 key,
                 defaultEnabled ? 1 : 0) != 0;
+        }
+
+        private static GraphicsStyle NormalizeStyle(int value)
+        {
+            // Keep Clean's persisted id stable; the retired style id 1
+            // and any unknown future/corrupt value fall back to PS1.
+            return value == (int)GraphicsStyle.CleanLowPoly
+                ? GraphicsStyle.CleanLowPoly
+                : GraphicsStyle.Ps1;
         }
 
         private static void Apply(

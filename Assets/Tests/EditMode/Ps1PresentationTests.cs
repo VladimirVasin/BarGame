@@ -85,9 +85,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(material.shader, Is.Not.Null);
             Assert.That(material.shader.name,
                 Is.EqualTo("Hidden/BarPromenade/PS1Composite"));
-            // Downsample, point upscale, and the four passes of the
-            // Begotten print: soft luma, glow, levels, print.
-            Assert.That(material.passCount, Is.EqualTo(6));
+            // Original six passes retain their indices; the independent film
+            // source, native effects and final native presentation are appended.
+            Assert.That(material.passCount, Is.EqualTo(9));
         }
 
         [Test]

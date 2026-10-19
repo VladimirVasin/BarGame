@@ -299,13 +299,13 @@ namespace BarPromenade.Tests.EditMode
             string source = File.ReadAllText(
                 Path.Combine(
                     Application.dataPath,
-                    "Resources/Shaders/Ps1Composite.shader"));
+                    "Resources/Shaders/Ps1SceneComposite.hlsl"));
 
             AssertShaderCarries(source, "_IntoxicationVertigo;");
             AssertShaderCarries(source, "_IntoxicationVertigoShape;");
             AssertShaderCarries(
                 source,
-                "float2 sourceUv = ApplyVertigoWhirlpool(input.texcoord);");
+                "float2 sourceUv = ApplyVertigoWhirlpool(targetUv);");
             AssertShaderCarries(source, "max(length(far), inner + 0.001)");
             AssertShaderCarries(source, "t * t * (3.0 - 2.0 * t)");
             AssertShaderCarries(source, "sincos(twist * profile");

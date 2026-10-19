@@ -97,7 +97,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void OptionsEntry_OpensPageOnFirstToggleRow()
+        public void OptionsEntry_OpensPageOnStyleRow()
         {
             var model = new PauseMenuModel();
             model.Open();
@@ -111,7 +111,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PauseMenuPage.Options));
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.DepthOfField));
+                Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
         }
 
         [Test]
@@ -129,7 +129,20 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.DepthOfField));
+                Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
+        }
+
+        [Test]
+        public void OptionsStyleRow_ReportsCycleAndStaysOnPage()
+        {
+            var model = new PauseMenuModel();
+            model.Open();
+            model.SelectOption(PauseMenuOption.Options);
+            model.Confirm();
+
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.CycleGraphicsStyle));
+            Assert.That(model.Page, Is.EqualTo(PauseMenuPage.Options));
+            Assert.That(model.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
         }
 
         [Test]
@@ -139,7 +152,7 @@ namespace BarPromenade.Tests.EditMode
             model.Open();
             model.SelectOption(PauseMenuOption.Options);
             model.Confirm();
-            model.SelectOptionsRow(PauseMenuOptionsRow.Dither);
+            model.SelectOptionsRow(PauseMenuOptionsRow.CleanAntialiasing);
 
             Assert.That(
                 model.Confirm(),
@@ -149,7 +162,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PauseMenuPage.Options));
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.Dither));
+                Is.EqualTo(PauseMenuOptionsRow.CleanAntialiasing));
         }
 
         [Test]

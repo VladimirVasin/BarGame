@@ -45,6 +45,7 @@ namespace BarPromenade.Tests.PlayMode
         private bool previousAspectRatio43Enabled;
         private bool previousBegottenModeEnabled;
         private bool previousVertexJitterEnabled;
+        private int? previousStylePreference;
         private bool effectFlagsCaptured;
         private bool previousFogEnabled;
         private FogMode previousFogMode;
@@ -57,6 +58,9 @@ namespace BarPromenade.Tests.PlayMode
         [SetUp]
         public void CaptureEffectFlags()
         {
+            previousStylePreference = PlayerPrefs.HasKey("graphics.style")
+                ? PlayerPrefs.GetInt("graphics.style") : (int?)null;
+            GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
             previousDitherEnabled = GraphicsEffectsSettings.DitherEnabled;
             previousScanlinesEnabled =
                 GraphicsEffectsSettings.ScanlinesEnabled;
@@ -96,6 +100,11 @@ namespace BarPromenade.Tests.PlayMode
                     previousVertexJitterEnabled;
                 GraphicsEffectsSettings.BegottenModeEnabled =
                     previousBegottenModeEnabled;
+                if (previousStylePreference.HasValue)
+                    PlayerPrefs.SetInt("graphics.style", previousStylePreference.Value);
+                else PlayerPrefs.DeleteKey("graphics.style");
+                PlayerPrefs.Save();
+                GraphicsEffectsSettings.ResetLoadedStateForTests();
                 effectFlagsCaptured = false;
             }
 

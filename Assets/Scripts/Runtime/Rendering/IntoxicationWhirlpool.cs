@@ -6,7 +6,7 @@ namespace BarPromenade.Rendering
     /// The geometry of the drunk vertigo whirlpool, and the CPU mirror of the
     /// composite shader that draws it. <see cref="Warp"/> is the same
     /// arithmetic as <c>ApplyVertigoWhirlpool</c> in
-    /// <c>Assets/Resources/Shaders/Ps1Composite.shader</c>, kept here so the
+    /// <c>Assets/Resources/Shaders/Ps1SceneComposite.hlsl</c>, kept here so the
     /// contract can be tested without a GPU; the shader keeps its own copy of
     /// the formula and a contract test pins the literals in both.
     ///

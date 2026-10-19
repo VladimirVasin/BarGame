@@ -672,17 +672,18 @@ cemetery:own interiors/returns.
   `48 / 120 / 110 m` far planes are render distance rather than low physical
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
-- a default `640x360` PS1 world composite with four-tap footprint averaging,
-  exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
-  without a screen-space dither grid, point upscaling and percentage-driven
-  intoxication vignette, ghost/chromatic image, warp, warmth and exposure
-  pulse; lower `426x240` and `320x180` presets remain available;
-- two depth-of-field tiers behind the same player setting. Exterior grades
-  retain their broader Gaussian far blur, while the six true interiors — Bar,
-  Supermarket, Stairwell, Home, Church and the mother's house — cap Gaussian
-  maximum radius at `0.55`, keeping nearby people, furniture and gestures
-  legible. A separate priority-10 Bokeh owner remains available only to an
-  active modal close-up and yields back to the scene grade when released;
+- post-URP PS1/default: `640x360`, 35% RGB555/Bayer,
+  point upscale; `426x240`/`320x180` presets. Clean: native,
+  quantization/dither/scanlines/jitter0; saved optional SMAA High/default-on.
+  SMAA: spatial three-pass graph after native/intoxication, before independent
+  sourced Begotten; full film skips AA, 4:3 bars reapply after AA, UI/nameplates
+  draw later. Preview/reflection exclusions stay. Shared light/fog/SSAO/bloom/
+  DoF/intox/4:3; saved style/flags. Begotten keeps film grid/cadence/ramp.
+  Intoxication: vignette/ghost/chromatic image/warp/warmth/exposure pulse;
+- two DoF tiers share one setting. Exteriors retain broad Gaussian far blur;
+  Bar/Supermarket/Stairwell/Home/Church/Mother's House cap radius at `0.55`
+  for legible nearby people/furniture/gestures. Priority-10 Bokeh owns active
+  modal close-ups only, then yields to the scene grade;
 - prompts, pause/start, inventory, shops, inspectors, journal, HUD and maps
   share a crisp `640x360` IMGUI layer after the world composite: soot/charcoal/
   dirty-bone, flat rectangular panels, thin nested frames, stable grain and
@@ -700,9 +701,8 @@ cemetery:own interiors/returns.
   struggle;E/next0. Crane/8guides;front1.18m/red36/pair/FOV.
   Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
   Space/A pause,R/X replay,Esc/B list before capture;
-- shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
-  material for ordinary runtime primitives, hard directional shadows and
-  disabled camera MSAA for a deliberate low-poly silhouette;
+- shared 8-sided cylinders, packaged shared URP/Lit runtime-primitive material,
+  hard directional shadows; camera MSAA stays off, Clean offers spatial SMAA;
 - Exterior ground retains its albedos, palette and metre UVs: City's soil/asphalt
   repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared

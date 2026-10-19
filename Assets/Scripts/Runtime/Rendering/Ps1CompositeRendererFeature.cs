@@ -40,6 +40,7 @@ namespace BarPromenade.Rendering
         /// <summary>The picture last handed to the print pass.</summary>
         internal BegottenFilmFrame DebugFilmState =>
             pass != null ? pass.FilmState : default;
+        internal bool DebugCleanSmaaApplied => pass != null && pass.SmaaApplied;
 
         internal int DebugNameplateCandidateCount => nameplatePass?.CandidateCount ?? 0;
         internal Rect DebugNameplatePanelRect => nameplatePass?.LastPanelRect ?? default;
@@ -190,11 +191,18 @@ namespace BarPromenade.Rendering
                     Mathf.RoundToInt(outputWidth * aspectFraction));
             }
 
-            Vector2Int resolution = presentationSettings != null
-                ? presentationSettings.GetInternalResolution(
-                    effectiveWidth,
-                    outputHeight)
-                : Vector2Int.zero;
+            GraphicsStyle style = GraphicsEffectsSettings.Style;
+            GraphicsStyleParameters presentation = presentationSettings != null
+                ? GraphicsStylePresentation.Resolve(style, presentationSettings,
+                    effectiveWidth, outputHeight, GraphicsEffectsSettings.DitherEnabled,
+                    GraphicsEffectsSettings.ScanlinesEnabled, GraphicsEffectsSettings.VertexJitterEnabled)
+                : default;
+            Vector2Int resolution = presentation.Resolution;
+            // The film and pixel-sized intoxication offsets retain the authored
+            // PS1 reference grid, independently of the live picture's style.
+            Vector2Int filmResolution = presentationSettings != null
+                ? presentationSettings.GetInternalResolution(effectiveWidth, outputHeight)
+                : Vector2Int.one;
 
             // The snap grid is the grid the frame is presented on, which
             // is why it is derived here rather than in the shader: only
@@ -207,10 +215,10 @@ namespace BarPromenade.Rendering
             float snapStrength = 0f;
             Vector2 snapGrid = Vector2.zero;
             if (present &&
-                GraphicsEffectsSettings.VertexJitterEnabled &&
+                presentation.VertexJitterStrength > 0f &&
                 !excluded)
             {
-                snapStrength = presentationSettings.VertexJitterStrength;
+                snapStrength = presentation.VertexJitterStrength;
                 snapGrid = new Vector2(
                     resolution.x / (2f * Mathf.Max(0.01f, aspectFraction)),
                     resolution.y * 0.5f);
@@ -268,23 +276,23 @@ namespace BarPromenade.Rendering
                 compositeMaterial,
                 resolution,
                 aspectFraction,
-                presentationSettings.QuantizationStrength * retro,
-                (GraphicsEffectsSettings.DitherEnabled
-                    ? presentationSettings.DitherStrength
-                    : 0f) * retro,
-                (GraphicsEffectsSettings.ScanlinesEnabled
-                    ? presentationSettings.ScanlineIntensity
-                    : 0f) * retro,
+                presentation.QuantizationStrength * retro,
+                presentation.DitherStrength * retro,
+                presentation.ScanlineIntensity * retro,
                 intoxication,
                 vertigo,
-                vertigoShape);
+                vertigoShape,
+                filmResolution,
+                presentation.Native,
+                presentation.Native && GraphicsEffectsSettings.CleanAntialiasingEnabled && !excluded);
             pass.SetupFilm(
                 begottenWeight,
                 cameraData.camera,
                 effectiveWidth,
                 outputHeight,
                 DebugForceFilmFrame);
-            renderer.EnqueuePass(pass);
+            if (pass.ShouldRender)
+                renderer.EnqueuePass(pass);
             EnqueueNameplates(renderer, cameraData, aspectFraction);
         }
 
@@ -430,6 +438,9 @@ namespace BarPromenade.Rendering
             private const int GlowPassIndex = 3;
             private const int LevelsPassIndex = 4;
             private const int PrintPassIndex = 5;
+            private const int FilmSourcePassIndex = 6;
+            private const int NativePassIndex = 7;
+            private const int NativePresentationPassIndex = 8;
 
             private static readonly int LowResolutionTexelSizeId =
                 Shader.PropertyToID("_Ps1LowResolutionTexelSize");
@@ -441,6 +452,8 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_Ps1ScanlineIntensity");
             private static readonly int AspectFractionId =
                 Shader.PropertyToID("_Ps1AspectFraction");
+            private static readonly int FilmSourceTexelSizeId = Shader.PropertyToID("_BegottenSourceTexelSize");
+            private static readonly int IntoxicationPixelSizeId = Shader.PropertyToID("_IntoxicationPixelSize");
             private static readonly int IntoxicationVignetteId =
                 Shader.PropertyToID("_IntoxicationVignette");
             private static readonly int IntoxicationGhostPixelsId =
@@ -492,6 +505,11 @@ namespace BarPromenade.Rendering
 
             private Material material;
             private Vector2Int resolution;
+            private Vector2Int filmResolution;
+            private bool native;
+            private bool nativeEffectsNeeded;
+            private bool antialiasing;
+            private readonly CleanSmaaPass smaa = new CleanSmaaPass();
 
             // The projector and the picture in its gate. The picture is a
             // persistent texture: on a held frame no pass runs and the
@@ -532,6 +550,7 @@ namespace BarPromenade.Rendering
                 public Material Material;
                 public TextureHandle Colour;
                 public TextureHandle Film;
+                public int PassIndex;
             }
 
             public Ps1CompositePass()
@@ -540,6 +559,8 @@ namespace BarPromenade.Rendering
             }
 
             public BegottenFilmFrame FilmState => filmState;
+            public bool SmaaApplied { get; private set; }
+            public bool ShouldRender => !native || nativeEffectsNeeded || filmEnabled || antialiasing;
 
             public void Setup(
                 Material composite,
@@ -550,11 +571,23 @@ namespace BarPromenade.Rendering
                 float scanlineIntensity,
                 IntoxicationRenderParameters intoxication,
                 Vector4 vertigo,
-                Vector4 vertigoShape)
+                Vector4 vertigoShape,
+                Vector2Int referenceResolution,
+                bool nativePicture,
+                bool cleanAntialiasing)
             {
                 material = composite;
                 resolution = internalResolution;
+                filmResolution = referenceResolution;
+                native = nativePicture;
+                antialiasing = cleanAntialiasing && smaa.IsAvailable;
+                SmaaApplied = false;
                 currentAspect = Mathf.Clamp(aspectFraction, 0.01f, 1f);
+                nativeEffectsNeeded = currentAspect < 1f ||
+                    intoxication.VignetteStrength > 0f || intoxication.GhostPixels > 0f ||
+                    intoxication.WarpStrength > 0f || intoxication.Warmth > 0f ||
+                    intoxication.ExposurePulse > 0f || vertigo.w != 0f ||
+                    vertigoShape.z != 0f || vertigoShape.w != 0f;
                 // Pushed every frame, like the intoxication parameters
                 // above: the material is shared, so a weight left behind
                 // by a ramp would keep bleeding a stale print into the
@@ -563,6 +596,11 @@ namespace BarPromenade.Rendering
                 // runs; when it does not run, zero is the truth.
                 material.SetFloat(FilmWeightId, 0f);
                 material.SetFloat(FilmStruckAspectId, 1f);
+                Vector4 referenceTexelSize = new Vector4(
+                    1f / Mathf.Max(1, filmResolution.x), 1f / Mathf.Max(1, filmResolution.y),
+                    filmResolution.x, filmResolution.y);
+                material.SetVector(FilmSourceTexelSizeId, referenceTexelSize);
+                material.SetVector(IntoxicationPixelSizeId, referenceTexelSize);
                 material.SetVector(
                     LowResolutionTexelSizeId,
                     new Vector4(
@@ -678,10 +716,10 @@ namespace BarPromenade.Rendering
                     GateId,
                     new Vector4(
                         filmState.WeaveInternalPixels.x /
-                        Mathf.Max(1, resolution.x),
+                        Mathf.Max(1, filmResolution.x),
                         filmState.WeaveInternalPixels.y /
-                        Mathf.Max(1, resolution.y),
-                        filmState.SlipPixels / Mathf.Max(1, resolution.y),
+                        Mathf.Max(1, filmResolution.y),
+                        filmState.SlipPixels / Mathf.Max(1, filmResolution.y),
                         0f));
                 material.SetFloat(ThresholdId, filmState.Threshold);
                 material.SetFloat(ExposureId, filmState.Exposure);
@@ -729,6 +767,12 @@ namespace BarPromenade.Rendering
                 if (filmEnabled && filmWeight >= 1f)
                 {
                     RecordFilm(renderGraph, resourceData, source);
+                    return;
+                }
+
+                if (native)
+                {
+                    RecordNative(renderGraph, resourceData, source);
                     return;
                 }
 
@@ -807,6 +851,16 @@ namespace BarPromenade.Rendering
                 TextureHandle film,
                 TextureHandle destination)
             {
+                RecordComposedUpscale(renderGraph, lowResolution, film, destination, 1);
+            }
+
+            private void RecordComposedUpscale(
+                RenderGraph renderGraph,
+                TextureHandle lowResolution,
+                TextureHandle film,
+                TextureHandle destination,
+                int passIndex)
+            {
                 material.SetFloat(FilmWeightId, filmWeight);
                 material.SetFloat(FilmStruckAspectId, filmStruckAspect);
                 using IRasterRenderGraphBuilder builder =
@@ -817,6 +871,7 @@ namespace BarPromenade.Rendering
                 data.Material = material;
                 data.Colour = lowResolution;
                 data.Film = film;
+                data.PassIndex = passIndex;
                 builder.UseTexture(lowResolution);
                 builder.UseTexture(film);
                 builder.SetRenderAttachment(destination, 0, AccessFlags.WriteAll);
@@ -833,7 +888,7 @@ namespace BarPromenade.Rendering
                             (RTHandle)passData.Colour,
                             new Vector4(1f, 1f, 0f, 0f),
                             passData.Material,
-                            1);
+                            passData.PassIndex);
                     });
             }
 
@@ -861,18 +916,68 @@ namespace BarPromenade.Rendering
                     return;
                 }
 
-                TextureHandle lowResolution = CreateLowResolution(
-                    renderGraph,
-                    source);
+                RecordFilmSource(renderGraph, source, film);
+                resourceData.cameraColor = film;
+            }
+
+            private void RecordFilmSource(RenderGraph renderGraph, TextureHandle source, TextureHandle film)
+            {
+                TextureHandle lowResolution = CreateLowResolution(renderGraph, source,
+                    filmResolution, "_BarPromenadeFilmSource");
                 renderGraph.AddBlitPass(
                     new RenderGraphUtils.BlitMaterialParameters(
                         source,
                         lowResolution,
                         material,
-                        0),
-                    "PS1 Downsample");
+                        FilmSourcePassIndex),
+                    "Begotten Source Downsample");
                 RecordPrintChain(renderGraph, lowResolution, film);
-                resourceData.cameraColor = film;
+            }
+
+            private void RecordNative(RenderGraph renderGraph, UniversalResourceData resourceData,
+                TextureHandle source)
+            {
+                TextureHandle live = source;
+                if (nativeEffectsNeeded)
+                {
+                    live = CreateNativeTexture(renderGraph, source, "_BarPromenadeNativeEffects");
+                    renderGraph.AddBlitPass(new RenderGraphUtils.BlitMaterialParameters(
+                        source, live, material, NativePassIndex), "Native Shared Effects");
+                }
+                if (antialiasing)
+                {
+                    live = smaa.Record(renderGraph, live);
+                    SmaaApplied = true;
+                }
+                // Do not smooth the print or UI. Mask the pillarbox again after
+                // edge blending so its outside pixels remain exactly black.
+                if (filmEnabled || currentAspect < 1f)
+                {
+                    TextureHandle destination = CreateNativeTexture(renderGraph, source,
+                        "_BarPromenadeNativePresentation");
+                    if (filmEnabled)
+                    {
+                        TextureHandle film = ImportFilmFrame(renderGraph, source, out bool reallocated);
+                        if (filmState.IsNew || reallocated)
+                            RecordFilmSource(renderGraph, source, film);
+                        RecordComposedUpscale(renderGraph, live, film, destination, NativePresentationPassIndex);
+                    }
+                    else
+                        renderGraph.AddBlitPass(new RenderGraphUtils.BlitMaterialParameters(
+                            live, destination, material, NativePresentationPassIndex), "Native Frame Mask");
+                    live = destination;
+                }
+                resourceData.cameraColor = live;
+            }
+
+            private static TextureHandle CreateNativeTexture(RenderGraph graph, TextureHandle source, string name)
+            {
+                TextureDesc descriptor = graph.GetTextureDesc(source);
+                descriptor.depthBufferBits = DepthBits.None;
+                descriptor.msaaSamples = MSAASamples.None;
+                descriptor.clearBuffer = false;
+                descriptor.name = name;
+                return graph.CreateTexture(descriptor);
             }
 
             /// <summary>
@@ -936,8 +1041,8 @@ namespace BarPromenade.Rendering
                 TextureHandle film)
             {
                 TextureDesc softDescriptor = new TextureDesc(
-                    Mathf.Max(1, resolution.x / 2),
-                    Mathf.Max(1, resolution.y / 2))
+                    Mathf.Max(1, filmResolution.x / 2),
+                    Mathf.Max(1, filmResolution.y / 2))
                 {
                     format = SoftFormat,
                     filterMode = FilterMode.Bilinear,
@@ -1028,10 +1133,19 @@ namespace BarPromenade.Rendering
                 RenderGraph renderGraph,
                 TextureHandle source)
             {
+                return CreateLowResolution(renderGraph, source, resolution, LowResolutionName);
+            }
+
+            private static TextureHandle CreateLowResolution(
+                RenderGraph renderGraph,
+                TextureHandle source,
+                Vector2Int size,
+                string name)
+            {
                 TextureDesc lowDescriptor = renderGraph.GetTextureDesc(source);
                 lowDescriptor.sizeMode = TextureSizeMode.Explicit;
-                lowDescriptor.width = resolution.x;
-                lowDescriptor.height = resolution.y;
+                lowDescriptor.width = size.x;
+                lowDescriptor.height = size.y;
                 lowDescriptor.depthBufferBits = DepthBits.None;
                 lowDescriptor.msaaSamples = MSAASamples.None;
                 lowDescriptor.filterMode = FilterMode.Point;
@@ -1039,7 +1153,7 @@ namespace BarPromenade.Rendering
                 lowDescriptor.useMipMap = false;
                 lowDescriptor.autoGenerateMips = false;
                 lowDescriptor.clearBuffer = false;
-                lowDescriptor.name = LowResolutionName;
+                lowDescriptor.name = name;
                 return renderGraph.CreateTexture(lowDescriptor);
             }
 
@@ -1093,6 +1207,7 @@ namespace BarPromenade.Rendering
 
             public void Dispose()
             {
+                smaa.Dispose();
                 material = null;
                 filmFrame?.Release();
                 filmFrame = null;

@@ -487,6 +487,26 @@
       "value": "OPTIONS"
     },
     {
+      "key": "options.graphics_style",
+      "value": "GRAPHICS STYLE"
+    },
+    {
+      "key": "options.style.ps1",
+      "value": "PS1"
+    },
+    {
+      "key": "options.style.clean_low_poly",
+      "value": "CLEAN LOW-POLY"
+    },
+    {
+      "key": "options.unavailable",
+      "value": "UNAVAILABLE"
+    },
+    {
+      "key": "options.clean_aa",
+      "value": "ANTI-ALIASING"
+    },
+    {
       "key": "options.dof",
       "value": "DEPTH OF FIELD"
     },

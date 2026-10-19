@@ -117,6 +117,26 @@ namespace BarPromenade
                 ? 1 : 0;
         }
 
+        public static int ReadMenuVerticalSelectionDelta(GameInputContext context)
+        {
+            if (!CanRead(context)) return 0;
+            if (KeyboardUp()) return -1;
+            if (KeyboardDown()) return 1;
+            Gamepad gamepad = Gamepad.current;
+            if (Pressed(gamepad?.dpad.up) || Pressed(gamepad?.leftStick.up)) return -1;
+            return Pressed(gamepad?.dpad.down) || Pressed(gamepad?.leftStick.down) ? 1 : 0;
+        }
+
+        public static int ReadMenuHorizontalSelectionDelta(GameInputContext context)
+        {
+            if (!CanRead(context)) return 0;
+            if (KeyboardLeft()) return -1;
+            if (KeyboardRight()) return 1;
+            Gamepad gamepad = Gamepad.current;
+            if (Pressed(gamepad?.dpad.left) || Pressed(gamepad?.leftStick.left)) return -1;
+            return Pressed(gamepad?.dpad.right) || Pressed(gamepad?.leftStick.right) ? 1 : 0;
+        }
+
         public static int ReadGridSelectionDelta(int columns)
         {
             if (!CanRead(GameInputContext.Menu)) return 0;
