@@ -40,6 +40,8 @@ namespace BarPromenade
         public event Action<float> AttemptProgress;
         /// <summary>Local eligibility and reversible presentation handoff; the shared session owns their lifetime.</summary>
         public Func<PlayerInteractor, bool> Admission { get; set; }
+        /// <summary>An authored sequence may retain this target's shared admission and prompt.</summary>
+        public Action<PlayerInteractor> InteractionHandler { get; set; }
         public event Action<PlayerInteractor> PreparingPlayer;
         public event Action<PlayerInteractor> RestoringPlayer;
 
@@ -91,6 +93,7 @@ namespace BarPromenade
         public void Interact(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor)) return;
+            if (InteractionHandler != null) { InteractionHandler(interactor); return; }
             session = NarrativeInteractionController.For(interactor);
             session.Begin(this, interactor);
         }

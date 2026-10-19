@@ -218,6 +218,16 @@ namespace BarPromenade
             if (!IsUnlocked && shackle != null) shackle.SetLocalPositionAndRotation(shackleRest, shackleRotation);
         }
 
+        internal void RestoreRetainedProgressForDebug()
+        {
+            EndActivity();
+            if (!IsUnlocked || !IsOpen)
+                throw new InvalidOperationException("The warehouse gate has not reached its retained open state.");
+            if (!ChainReleased) ReleaseChain(true);
+            else if (settleElapsed < SettleSeconds) SettleReleasedChain();
+            ApplyTravel();
+        }
+
         private void ApplyTravel()
         {
             if (wheel != null) wheel.localRotation = wheelRest * Quaternion.AngleAxis(-360f * WarehouseGateState.Turns * Progress, Vector3.forward);
@@ -282,22 +292,29 @@ namespace BarPromenade
             for (int i = 0; i < chainBodies.Count; i++)
             {
                 Rigidbody body = chainBodies[i];
-                if (restored)
-                {
-                    // Rebuild an already-open mechanism as a settled strand, without replaying an unlock.
-                    float order = i < 18 ? i + 10 : i - 18;
-                    body.position = transform.TransformPoint(new Vector3(-.68f + order * .06f, .065f, -.58f + .025f * Mathf.Sin(order)));
-                    body.rotation = transform.rotation * Quaternion.Euler(90f, 0f, 90f);
-                }
                 body.isKinematic = true;
             }
-            if (restored)
-            {
-                shackle.localPosition = shackleRest + shackleLift;
-                shackle.localRotation = shackleRotation * Quaternion.AngleAxis(65f, Vector3.up);
-                settleElapsed = SettleSeconds;
-            }
+            if (restored) SettleReleasedChain();
             else Sounds.PlayChainRelease();
+        }
+
+        private void SettleReleasedChain()
+        {
+            ChainPhysicsReleased = true;
+            chainSuspended = false;
+            settleElapsed = SettleSeconds;
+            for (int i = 0; i < chainBodies.Count; i++)
+            {
+                Rigidbody body = chainBodies[i];
+                if (!body.isKinematic) body.linearVelocity = body.angularVelocity = Vector3.zero;
+                body.isKinematic = true;
+                // Same settled strand as a rebuilt, already-open gate.
+                float order = i < 18 ? i + 10 : i - 18;
+                body.position = transform.TransformPoint(new Vector3(-.68f + order * .06f, .065f, -.58f + .025f * Mathf.Sin(order)));
+                body.rotation = transform.rotation * Quaternion.Euler(90f, 0f, 90f);
+            }
+            shackle.localPosition = shackleRest + shackleLift;
+            shackle.localRotation = shackleRotation * Quaternion.AngleAxis(65f, Vector3.up);
         }
 
         private void FixedUpdate()

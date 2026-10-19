@@ -13,6 +13,7 @@ namespace BarPromenade
         private int freeAimInputFrame = -1;
         private int freeAimOrbitFrame = -1;
         private float freeAimShoulderHeight;
+        private bool freeAimPhysicalBody;
         private Vector3 freeAimCameraOffset = new Vector3(RightShoulderOffset, 0f, -FirearmAimDistance);
         private Quaternion freeAimRotationOffset = Quaternion.identity;
         private float freeAimFieldOfView = TargetLockFieldOfView;
@@ -35,7 +36,8 @@ namespace BarPromenade
             (!(freeAimOwner is Object owner) || owner != null);
 
         /// <summary>Mouse-controlled shoulder view, independent of any opponent.</summary>
-        public bool SetFreeAim(object owner, Transform shoulder, bool preserveCurrentPose = false)
+        public bool SetFreeAim(object owner, Transform shoulder, bool preserveCurrentPose = false,
+            bool followPhysicalBody = false)
         {
             if (owner == null || shoulder == null || controlledCamera == null || followTarget == null ||
                 !shoulder.IsChildOf(followTarget) || fixedPoseActive || TargetLockActive ||
@@ -45,6 +47,7 @@ namespace BarPromenade
             targetPitch = ClampOrbitPitch(Mathf.DeltaAngle(0f, controlledCamera.transform.eulerAngles.x));
             freeAimOwner = owner;
             freeAimShoulder = shoulder;
+            freeAimPhysicalBody = followPhysicalBody;
             freeAimShoulderHeight = shoulder.position.y - followTarget.position.y;
             freeAimCameraOffset = new Vector3(RightShoulderOffset, 0f, -FirearmAimDistance);
             freeAimRotationOffset = Quaternion.identity;
@@ -77,6 +80,7 @@ namespace BarPromenade
                 (!(owner is Behaviour behaviour) || (behaviour != null && behaviour.isActiveAndEnabled));
             freeAimOwner = null;
             freeAimShoulder = null;
+            freeAimPhysicalBody = false;
             freeAimInputFrame = -1;
             // Resume the chase camera from the accepted look direction.
             freeAimHitKick = 0f;
@@ -91,7 +95,7 @@ namespace BarPromenade
         /// <summary>Consume orbit once before a shot; LateUpdate only follows the completed body pose.</summary>
         public void PrepareFreeAimFrame(object owner)
         {
-            if (!FreeAimActive || !ReferenceEquals(owner, freeAimOwner) || freeAimInputFrame == Time.frameCount) return;
+            if (PresentationSuspended || !FreeAimActive || !ReferenceEquals(owner, freeAimOwner) || freeAimInputFrame == Time.frameCount) return;
             freeAimInputFrame = Time.frameCount;
             AdvanceFreeAimHitKick(Time.deltaTime);
             if (freeAimOrbitFrame != Time.frameCount)
@@ -205,6 +209,7 @@ namespace BarPromenade
 
         private Vector3 GetFreeAimOrigin()
         {
+            if (freeAimPhysicalBody && CombatBodyFocusActive) return CombatBodyFocusPoint;
             // Arm/torso recoil belongs to the character, not the camera boom
             // or the next centre ray used to aim the gun.
             Vector3 origin = followTarget.position;

@@ -223,6 +223,10 @@ namespace BarPromenade
                     return false; // Round reset is an explicit toolbar action; R/X belongs to reload.
                 case GameInputAction.CombatReload:
                     return Read(keyboard?.rKey, held) || Read(gamepad?.buttonWest, held);
+                case GameInputAction.CutscenePause:
+                    return Read(keyboard?.spaceKey, held) || Read(gamepad?.buttonSouth, held);
+                case GameInputAction.CutsceneRestart:
+                    return Read(keyboard?.rKey, held) || Read(gamepad?.buttonWest, held);
                 case GameInputAction.CombatMode:
                     return Read(keyboard?.tabKey, held) || Read(gamepad?.buttonNorth, held);
                 case GameInputAction.CombatStep:

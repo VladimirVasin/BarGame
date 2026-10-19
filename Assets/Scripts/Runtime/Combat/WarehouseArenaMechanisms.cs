@@ -4,7 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>Four finite rigged machines. Scene-owned time, cached pivots and causal local audio.</summary>
-    public sealed class WarehouseArenaMechanisms : MonoBehaviour
+    public sealed partial class WarehouseArenaMechanisms : MonoBehaviour
     {
         public const float FanShutdownDuration = 5f;
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -31,6 +31,7 @@ namespace BarPromenade
         private Color fanEmission;
         private float fanIntensity;
         private float lastFanFactor = -1f;
+        private float lastFanLightFactor = -1f;
         private float lastFanProgress = -1f;
         private double fanShutdownSeconds;
         private bool initialized;
@@ -86,6 +87,7 @@ namespace BarPromenade
                         fanLens.GetPropertyBlock(fanProperties);
                         pivot = WarehouseArenaAssetProvider.Create("FanRotor", transform, specification.Position, rotation).transform;
                         FanRotor = pivot;
+                        InitializeDoorAmbushFan(housing);
                         ambience = gameObject.AddComponent<WarehouseArenaAmbience>();
                         ambience.Initialize(pivot, owner, FanSpeedFactor);
                         var grindVoice = new GameObject("Warehouse Fan Grinding");
@@ -161,6 +163,7 @@ namespace BarPromenade
             fanShutdownSeconds = 0d;
             if (!complete)
             {
+                ResetDoorAmbushOverdrive();
                 fanGrindPending = false;
                 if (FanGrindSource != null) FanGrindSource.Stop();
                 ApplyFanPower();
@@ -213,8 +216,9 @@ namespace BarPromenade
         public void Advance(float seconds)
         {
             if (!initialized) return;
-            bool running = Running;
+            bool running = Running && (!DoorAmbushOverdriveActive || DoorAmbushOverdriveCanRun);
             SynchronizeAudio(running);
+            SynchronizeDoorAmbushAudio(running);
             if (!running || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
             ElapsedSeconds += seconds;
             if (FanShutdownStarted)
@@ -227,15 +231,33 @@ namespace BarPromenade
                 // across frame sizes and long background catch-up advances.
                 MechanicalSeconds += step * (1d - (previous + fanShutdownSeconds) / (2d * FanShutdownDuration));
                 ApplyFanPower();
-                if (fanShutdownSeconds >= FanShutdownDuration && FanGrindSource != null)
+                if (fanShutdownSeconds >= FanShutdownDuration && FanGrindSource != null && !DoorAmbushOverdriveActive)
                 {
                     fanGrindPending = false;
                     FanGrindSource.Stop();
                 }
             }
             else MechanicalSeconds += seconds;
+            AdvanceDoorAmbushOverdrive(seconds);
             // A background jump restores phase without replaying missed contacts.
             ApplyPoses(seconds <= .25f);
+        }
+
+        internal void FinishShutdownForDebug()
+        {
+            if (!initialized || !WarehouseFishLamp.AllSourcesCollected(plan))
+                throw new InvalidOperationException("The warehouse fan needs all committed fish sources.");
+            ResetDoorAmbushOverdrive();
+            FanShutdownStarted = true;
+            double previous = fanShutdownSeconds;
+            double remaining = FanShutdownDuration - previous;
+            MechanicalSeconds += remaining * (1d - (previous + FanShutdownDuration) / (2d * FanShutdownDuration));
+            ElapsedSeconds += remaining;
+            fanShutdownSeconds = FanShutdownDuration;
+            fanGrindPending = false;
+            if (FanGrindSource != null && !DoorAmbushOverdriveActive) FanGrindSource.Stop();
+            ApplyFanPower();
+            ApplyPoses(false);
         }
 
         private void ApplyPoses(bool sound)
@@ -249,6 +271,7 @@ namespace BarPromenade
                 switch (machine.Motion)
                 {
                     case Motion.Fan:
+                        if (DoorAmbushOverdriveActive) continue;
                         machine.Pivot.localRotation = machine.Rotation * Quaternion.Euler(0f, (float)(time * 9d % 360d), 0f);
                         continue;
                     case Motion.Drum:
@@ -283,22 +306,30 @@ namespace BarPromenade
                 // Lamp failure can make power zero before the motor reaches its terminal pose.
                 // Audio admission follows the actual rundown clock independently of that power gate.
                 owner?.Music?.ApplyFanShutdown(progress);
-                owner?.Ambience?.ApplyFanShutdown(progress);
+                owner?.Ambience?.ApplyFanShutdown(DoorAmbushOverdriveActive ? 0f : progress);
                 owner?.ApplyWarehouseFanAftermath(progress);
             }
             float factor = GameSessionState.WarehouseFishLamp.Phase == WarehouseFishLampPhase.Burst ? 0f : FanSpeedFactor;
+            float lightFactor = DoorAmbushOverdriveActive
+                ? Mathf.Clamp01(doorAmbushOverdriveSpeed / DoorAmbushOverdriveMaximumSpeed) : factor;
+            if (lastFanLightFactor != lightFactor)
+            {
+                lastFanLightFactor = lightFactor;
+                if (FanLight != null)
+                {
+                    FanLight.intensity = fanIntensity * lightFactor;
+                    FanLight.enabled = lightFactor > 0f;
+                }
+                if (fanLens != null)
+                {
+                    // Retain the blackout owner's other per-renderer values.
+                    fanLens.GetPropertyBlock(fanProperties);
+                    fanProperties.SetColor(EmissionColorId, fanEmission * lightFactor);
+                    fanLens.SetPropertyBlock(fanProperties);
+                }
+            }
             if (lastFanFactor == factor) return;
             lastFanFactor = factor;
-            if (FanLight != null)
-            {
-                FanLight.intensity = fanIntensity * factor;
-                FanLight.enabled = factor > 0f;
-            }
-            if (fanLens != null)
-            {
-                fanProperties.SetColor(EmissionColorId, fanEmission * factor);
-                fanLens.SetPropertyBlock(fanProperties);
-            }
             if (ambience != null) ambience.SetPower(factor);
             foreach (Machine machine in machines)
                 if (machine.Voice != null)
@@ -346,6 +377,7 @@ namespace BarPromenade
             bool complete = WarehouseFishLamp.AllSourcesCollected(plan);
             if (complete != FanShutdownStarted)
             {
+                if (!complete) ResetDoorAmbushOverdrive();
                 FanShutdownStarted = complete;
                 fanShutdownSeconds = complete ? FanShutdownDuration : 0d;
                 ApplyFanPower();
@@ -358,12 +390,14 @@ namespace BarPromenade
             foreach (Machine machine in machines) if (machine.Voice != null) machine.Voice.Stop();
             fanGrindPending = false;
             if (FanGrindSource != null) FanGrindSource.Stop();
+            SynchronizeDoorAmbushAudio(false);
             audioPaused = false;
         }
 
         private void OnDestroy()
         {
             Unsubscribe();
+            DisposeDoorAmbushOverdrive();
             if (FanGrindSource != null) { FanGrindSource.Stop(); FanGrindSource.clip = null; }
             if (contact != null) Destroy(contact);
             if (fanGrind != null) Destroy(fanGrind);

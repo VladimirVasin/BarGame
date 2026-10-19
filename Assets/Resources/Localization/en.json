@@ -1,5 +1,13 @@
 {
   "entries": [
+    {"key":"cutscene.warehouse_door_ambush","value":"Ambush at the door"},
+    {"key":"pause.cutscenes","value":"Cutscenes"},
+    {"key":"cutscene.empty","value":"No cutscenes on this level yet."},
+    {"key":"cutscene.back","value":"Back"},
+    {"key":"cutscene.unavailable","value":"Cutscene unavailable right now."},
+    {"key":"cutscene.pause","value":"Pause"},
+    {"key":"cutscene.resume","value":"Resume"},
+    {"key":"cutscene.restart","value":"Restart"},
     {"key":"interaction.warehouse_fish","value":"E — assemble the fish"},
     {"key":"combat.warehouse.fish.controls","value":"LMB / WASD — move · wheel/Q/R — rotate\nTab — select · E — pick up/put down · Esc — leave"},
     {"key":"combat.warehouse.fish.gamepad_controls","value":"A — pick up/put down · left stick — move\nLB/RB — rotate · Y — select · B — leave"},

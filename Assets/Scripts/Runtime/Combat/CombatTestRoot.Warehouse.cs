@@ -16,6 +16,17 @@ namespace BarPromenade
         public WarehouseArenaPlan WarehousePlan { get; private set; }
         internal WarehouseArenaArea WarehouseArea => arenaBounds as WarehouseArenaArea;
 
+        private void RegisterWarehouseCutscenes()
+        {
+            Cutscenes.Catalog.Clear();
+            if (DoorAmbush != null)
+            {
+                DoorAmbush.BindLocation();
+                Cutscenes.Catalog.Register(new CutsceneDefinition(WarehouseDoorAmbushScene.CutsceneId,
+                    "cutscene.warehouse_door_ambush", DoorAmbush.CreatePlayback));
+            }
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetWarehouseSelection()
         {
@@ -70,6 +81,7 @@ namespace BarPromenade
         {
             if (!IsInitialized || WarehousePlan == null || !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (Taunt != null && Taunt.IsActive)) return false;
+            DoorAmbush?.ResetEpisode();
             WarehouseArenaPlan nextPlan = WarehouseArenaPlanner.Create(seed);
             GameObject next = WarehouseArenaBuilder.Create(nextPlan, transform);
             EndJournalRound("layout_changed");
@@ -77,6 +89,7 @@ namespace BarPromenade
             previous.SetActive(false);
             combatLocation = next;
             WarehousePlan = nextPlan;
+            RegisterWarehouseCutscenes();
             ((WarehouseArenaArea)arenaBounds).ReplacePlan(nextPlan);
             UpdateWarehouseSpawns();
             Destroy(previous);

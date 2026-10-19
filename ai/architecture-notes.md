@@ -1,11 +1,22 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
+  rolls follow action;review framing/contacts.
+- **Accepted exception 2026-10-19, warehouse door ambush:**
+  CombatTest;story§6/7/16.16/21/22,art§15a. Gate→door E;prep clock0.
+  User2026-10-20:door3s→attack5s→RightShin hook/jerk;fan720°/s+Spot↑5s.
+  Sparks:1pooled Point/4.8m/.1s.
+  Physical inverted roof hoist→free camera/180°ease;hero stays struggling.
+  E/release/next0;1Crane/8guides/feedcap;haul under gallery→well.
+  Front1.18m/red36/.85floor/rig/audio/FOV;stowed. Debug commits prereqs;
+  stages entry;progress stays. Cancel:pose/vitals/grip/fan/red;ammo kept,
+  preview wound0/real shared puncture. Replay/disable clean owned hang/camera.
 - **Accepted exception 2026-10-19, warehouse post-fan audio — explicit user request:**
   CombatTest only:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:`Audio/CombatWarehouseAmbience`/{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. Play:random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/perf unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
 - **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a;continuous hero/approach0. 6m/chestup2m/start-releaseLOS/lockedthrow/zonepuncture1→pain5s/COLhoist-haul→well/rails/physstruggle/bodycamorbit/fallHP;release:drivesrestore/velocitykept. Others-spawns idle→release-cancel/Roomcompose. E6fresh/charcoalbonebar/held0;escape→actualhome/watch10;fatalcry-spasm3→home/regen10/full/sameslot/kill-reward-corpse0. Hero:wounds/nodetach;frontXZdot≥.35/frontbar fullblock/guardbreak-back0. Pause-modal-focus0;reset-disable-unload clearinput-rig-anchor-UI/story0.
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m;LOS before cast/release;one puncture,5s hold,6 fresh E presses. Collision haul over rails,physical struggle,body camera,fall damage;release keeps velocity. Others/spawns wait. Escape→home/watch10s;fatal→cry/spasm3s/home/regen10s;same actor,no kill/reward/corpse. Hero wounds never sever;front crowbar blocks(dot≥.35),back does not. Pause/modal/focus/reset/disable/unload clear owned input/rig/anchors/UI;no story.
 - **Accepted 2026-10-19, hero airborne inertia:** WorldV/yaw-release brake0/limitedsteer;combat planar/vertical caps/freefall g24;NPCphys kept;fixedstep/boundedbodies/shared clamp/hotalloc0.
 - **Accepted 2026-10-19, hero weapon retention:** Hero alive:hit-fall-recovery drop0;death→drop+pickup;NPC kept;shotgun draw grip-model-ammo resumes.
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a kept;jelly waves;mid flatbar axial in/out;wet closure/low glugs/sticky pull. `CombatRoomAttackTableau`:1Spot/24×256R8texels+mips≤2MiB/.64s;SFX3.6s;preload/layerrestore/pause-focus-exit clear/hotalloc0/extra shadowpass0.
@@ -5443,21 +5454,13 @@
   safe spawn: it is mutually exclusive with debug teleport and consumes map
   selection input without requesting cross-area travel
   or confirming a teleport. Those actions return only after `XYZ` is closed.
-- **Accepted — Shared-lock gameplay pause:** City, MountainRoad, BarInterior,
-  SupermarketInterior, HomeInterior and StairwellInterior each attach one
-  runtime `PauseMenuController` to their existing UI root. Escape or gamepad
-  Start can open it only when no other
-  `BarMinigameModalLock` or scene transition owns gameplay; pause therefore
-  never steals Escape from maps, refrigerator inspection or modal shops, remains
-  unavailable during the Home opening, and uses a Bar-specific gate rather
-  than skipping the arrival reveal. Opening captures the prior time scale,
-  listener-pause flag, motor/interactor/orbit/cinematic/HUD state, then sets
-  scaled time to zero and pauses listener-owned gameplay audio. UI-pool sources
-  alone ignore listener pause. Resume restores captured state after a one-frame
-  input guard; disable, destroy, restart and quit restore it immediately.
-  The localized `640x360` menu exposes only Resume, Start Over and Quit Game;
-  restart and quit require explicit default-No confirmation, while save/load,
-  settings and a visible main-menu destination remain unimplemented.
+- **Accepted — Shared-lock gameplay pause:** UI roots own
+  `PauseMenuController`; Esc/Start respects modals/transitions, Home opening
+  and Bar arrival; motor/interactor/orbit/cinematic/HUD/audio are captured.
+  World/non-UI audio freeze. Resume restores one frame later;
+  disable/destroy/restart/quit immediately. Localized `640x360`:
+  Resume, graphics Options, Start Over, Quit; restart/quit default to No.
+  Save/load remains deferred.
 - **Accepted — Tank-control player heading (supersedes independent heading):**
   Ordinary A/D:yaw `150°/s` × intoxication, never velocity-facing.
   W:own-forward;S:backpedal `1.4 m/s`;W±A/D:walk/run arcs.

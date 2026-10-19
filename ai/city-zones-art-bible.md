@@ -4237,10 +4237,15 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 Seat2→face;jelly:nonstrobe/squash/stretch/lag;neutral midflatbar axial↔;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;PS1gray/§6.
 Chest:Spot+weakbodyPoint/spill-bounce;dust/fan/rare grit→settle/fog-glow0.
 UpperLbroken;ammo12/allbays;route-facing.
-Crane:hook6m/up2m/5s/COLhaul-rails/struggle/bodycam/fallHP/inertia;wounds/nodetach;home-watch/fatalcry-spasm3-home-regen10;§6/story0. Commit3→body0;fanstop→instant nearestwell(-2.75,.4,5)/head9.15+bridge+24cables;rails-feeds-geom-limits/payoutkept/travel0;unequallow/recoilfade/weakasyncwind+rare3Dcreak/persist/pause.
+Crane:hook6m/lift2m/5s/E6,physical struggle and fall damage;home/fatal3-regen10. Fish3 clears regular bodies;fan head/bridge/cables settle in well;wind creak/pause;§6.
+`2026-10-19`,§6/2026-10-20:prep0;door3s→attack5s→shin hook/jerk.
+Front1.18m/red key36/pair→leg/FOV→roof hang/struggle;cam eases180°→free look.
+Fan720°/s+Spot↑5s;warm sparkPoint/.1s;Crane/8guides/rig/audio.
+Haul under deck→well;stowed;E/next0;cancel restores grip/ammo/fan.
 `2026-10-18`:Room:coat/plaster/4frame-corridor/faceless;Imprint:concave face-chest-palms/chalk-glass;LongExposure:fused3/1head/emulsion;UV-wounds/grip/walk/solid.
-`2026-10-17`:Crane:indust.flesh/carapace/inset6cables;longfoldlimbs/head↑/mantisyaw±100°;body-skull/flesh-shell/steelhooks;CLO-HAIR-Rhand0;repeatwounds/woodhole-chips;finite;§6.
-`2026-10-16`:Crane:Rcuff-hook/3DLOS;6steel:head-pelvis-hands-feet/pendulum-slack-inertia-yaw;worngantry/voidpatrol/COL/fan-stairs/SFX/ragdoll;§6.
+`2026-10-17`/`2026-10-16`:Crane:industrial flesh/carapace,folded limbs,head up,
+six inset cables. Right cuff hook;no clothing/hair/right hand.
+Shared body/skull and finite wounds/wood chips;§6.
 `2026-10-14`:3levels/9rooms6x6/hall12²/4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;9banks/27doors.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI;.4dimred/fanSpot-blades/roof-deckblock red-chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;3:Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;key:gchain/holdEgate↑+creak/gallery;key+stairs↓:heat2s/riseSFX/popglass8phys;bulb0/socketcord/restL-lens-amb0/gateRedflicker>0+chest/fog-sky-strobe0/§6.Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;skinneck-shldrs-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-ret.Mimic:near-hit→rigburst/planted/gaze/limblag;ram:compress→throw→kneel-rise;fell hero→loadedunevenspasms→rise;wood-wetinhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
 `2026-10-14`:remains:rig-contourstep/livefall≠corpsephys;coat-scarf-slingrigid/hairkept.

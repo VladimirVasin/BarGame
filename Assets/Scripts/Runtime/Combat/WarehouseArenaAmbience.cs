@@ -8,6 +8,8 @@ namespace BarPromenade
         private AudioSource source;
         private AudioClip clip;
         private bool paused;
+        private float doorAmbushOverdrive = -1f;
+        private bool doorAmbushOverdriveSuspended;
         private CombatTestRoot owner;
         public AudioSource Source => source;
         public float PowerFactor { get; private set; } = 1f;
@@ -30,15 +32,40 @@ namespace BarPromenade
         {
             PowerFactor = Mathf.Clamp01(factor);
             if (source == null) return;
+            if (doorAmbushOverdrive >= 0f) { ApplyDoorAmbushOverdrive(); return; }
             source.volume = .13f * PowerFactor;
             source.pitch = .7f * Mathf.Lerp(.45f, 1f, PowerFactor);
             if (PowerFactor <= 0f) { source.Stop(); paused = false; }
         }
 
+        internal void SetDoorAmbushOverdrive(float speed)
+        {
+            doorAmbushOverdrive = speed < 0f ? -1f : Mathf.Clamp01(speed);
+            if (doorAmbushOverdrive < 0f) doorAmbushOverdriveSuspended = false;
+            if (source == null) return;
+            if (doorAmbushOverdrive < 0f) SetPower(PowerFactor);
+            else ApplyDoorAmbushOverdrive();
+        }
+
+        internal void SetDoorAmbushOverdriveSuspended(bool value)
+        {
+            doorAmbushOverdriveSuspended = value;
+            if (value && doorAmbushOverdrive >= 0f && source != null && !paused)
+            { source.Pause(); paused = true; }
+        }
+
+        private void ApplyDoorAmbushOverdrive()
+        {
+            source.volume = Mathf.Lerp(.13f, .30f, doorAmbushOverdrive);
+            source.pitch = Mathf.Lerp(.7f, 2.4f, doorAmbushOverdrive);
+        }
+
         private void Update()
         {
-            if (source == null || PowerFactor <= 0f) return;
-            bool suspended = GameTimeScaleRuntime.IsPaused || owner == null || !owner.isActiveAndEnabled;
+            if (source == null || (PowerFactor <= 0f && doorAmbushOverdrive < 0f)) return;
+            bool suspended = GameTimeScaleRuntime.IsPaused || owner == null || !owner.isActiveAndEnabled ||
+                (doorAmbushOverdrive >= 0f && (doorAmbushOverdriveSuspended ||
+                    !GameInput.MovementFocused || SceneTransitionService.IsTransitioning));
             if (suspended && !paused) { source.Pause(); paused = true; }
             else if (!suspended && paused) { source.UnPause(); paused = false; }
             // Native audio stops when the whole scene carrier is disabled.

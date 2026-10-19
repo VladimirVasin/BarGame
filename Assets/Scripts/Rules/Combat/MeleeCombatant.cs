@@ -1329,6 +1329,18 @@ namespace BarPromenade
             CancelAction();
         }
 
+        /// <summary>Restores a debug preview's ready-state vitals without resetting weapons or body damage.</summary>
+        public void RestoreVitals(float health, float restoredStamina)
+        {
+            if (float.IsNaN(health) || float.IsInfinity(health) || health <= 0f || health > Settings.MaxHealth ||
+                float.IsNaN(restoredStamina) || float.IsInfinity(restoredStamina) || restoredStamina < 0f || restoredStamina > Settings.MaxStamina)
+                throw new ArgumentOutOfRangeException(nameof(health));
+            Health = health;
+            stamina = restoredStamina;
+            CancelAction();
+            Phase = MeleePhase.Ready;
+        }
+
         public void Reset()
         {
             BeginCommand(MeleeBufferedAction.None);

@@ -122,6 +122,8 @@ namespace BarPromenade
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static WarehouseFishAssemblyState WarehouseFishAssembly => warehouseFishAssembly;
         public static WarehouseGateState WarehouseGate => warehouseGate;
+        public static bool WarehouseDoorAmbushPlayed { get; private set; }
+        internal static void MarkWarehouseDoorAmbushPlayed() => WarehouseDoorAmbushPlayed = true;
         public static WarehouseFishLampState WarehouseFishLamp => warehouseFishLamp;
         public static VillageHouseholdProgress VillageHousehold => villageHousehold;
         public static string CityBlueprintId { get; private set; } =
@@ -563,6 +565,7 @@ namespace BarPromenade
             inventory.ResetWithStarterItems();
             warehouseFishAssembly.Reset();
             warehouseGate.Reset();
+            WarehouseDoorAmbushPlayed = false;
             warehouseFishLamp.Reset();
             WorldItemsChanged?.Invoke();
             InventoryEquipmentChanged?.Invoke();
@@ -1309,6 +1312,7 @@ namespace BarPromenade
             inventory.ResetWithStarterItems();
             warehouseFishAssembly.Reset();
             warehouseGate.Reset();
+            WarehouseDoorAmbushPlayed = false;
             warehouseFishLamp.Reset();
             WorldItemsChanged?.Invoke();
             ScarfRestingLowered = false;

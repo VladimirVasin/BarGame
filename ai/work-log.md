@@ -3,51 +3,81 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-19 - Combat
+## 2026-10-20
 
-`Range_GroundEnemiesRouteAroundRailsStairsAndChangedTargets` OK.
-- `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
+Door-ambush debug launch now commits its real prerequisites: source cans,
+fish assembly, key, lamp failure, stopped fan and open gate. Retained models,
+colliders and navigation synchronize; replay keeps progress without duplicate
+rewards. The debug boundary stages the hero at the door and restores his pose
+on cancellation. The door's ordinary admission stays conditional.
+`debug.log` identified `sample_failed`: closed gate blocked the entry route.
+`DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse` covers
+fresh-spawn preparation and retained progress; runtime proof remains manual.
+Door scene now attempts for three seconds, attacks for five, then punctures the
+shin and jerks the hero into an inverted physical roof hoist. The camera eases
+upside down, then gives free look while the hero stays struggling; escape and
+further progression are disabled. Frontal framing, aimed red lamp and smooth
+shared fan overdrive accompany the action. The existing overhead spotlight and
+lens follow the motor's normalized speed; one reused local light illuminates
+spark bursts. Blackout elsewhere stays; the opening camera is higher.
+The door's existing red source gets an owned paired-shot profile: aimed at both
+actors, warmer red and stronger, with shallow voltage dips; normal settings
+return on cancellation or gameplay handoff. Coverage and restoration are in the
+same focused fixture. Preview preserves prior injuries.
+Cancellation restores its snapshot; replay clears the owned hang. Paired-bank
+pinned validation and hook/floor/ceiling contact checks passed; focused fixture
+updated for the new contract. Visual and physical tuning await manual review.
+`check-docs.py` and scoped `git diff --check` OK.
+
+## 2026-10-19
+
+`Range_GroundEnemiesRouteAroundRailsStairsAndChangedTargets`,
+`Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
 `Range_CraneHookCaptureEscapeRetreatAndRegeneration`,
-`Range_CraneCaptureYieldsMixedOpponentsUntilRelease` OK;
+`Range_CraneCaptureYieldsMixedOpponentsUntilRelease` OK.
 Crane:haul/momentum/frontblock/immortal;gallery/home seen.
-- `Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight`,
+`Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight`,
 `Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding`,
 `SprintAndTurn_ReachesRunCapWithoutSkidding` OK.
-- Room:head-neck-arms-hands↑;corridor/rest/surfaces/grip/reset-scale-atlas/damageFBX kept;sleeve-palm/wounds/closed/protrusions0.
-- `ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK`.
+Room:proportions/corridor/surfaces/grip/reset/damage retained;closed sleeves/palms/wounds.
+ROOM BODY, HOLLOW CORRIDOR, SURFACES AND BUDGET OK.
 `Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset`,
 `Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate` OK/seen.
-- Room:highpoint/palmar-thumb-wrist;wideDutch→seat-face/reverse.
-Weighted hero-chair-lamp/FBXscale;cached threshold/legIK/contacts;dupewall/warp/fade/hotbake-load-alloc0.
-HeroLhead0→ret+2s/input0/18HP/laugh5-idle5;hitcancel idle/laterclock+hurtwins;
-simlive/others-spawns idle→end.
-HUDmodal→HP3s;pause/death/reset/disable clear.
+Room:highpoint/palmar-thumb-wrist;wideDutch→seat-face/reverse.
+Shared hero-chair-lamp;cached threshold/legIK/contacts;no duplicate wall/warp/fade/hot bake.
+Room:head-hand break→ret+2s/18HP/laugh5-idle5;hitcancel/hurt wins;
+others wait;HUD/input/pause/death/reset/disable cleanup.
 Crane/Room/Docker;Lab6.
-`Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:earlier/assets/pause/focus/audio OK;Laugh-cancel roll open.
+`Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup`:assets/pause/focus/audio OK before;Laugh-cancel roll open.
 `Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch` OK.
-Shots/midbar↔/occlusion/jelly seen.
-Wet closure/glugs/sticky pull;`build-combat-room-shadow.py --validate-only` bank/WAV,
+Shots/midbar↔/occlusion/jelly seen;wet closure/glugs/sticky pull.
+`build-combat-room-shadow.py --validate-only`:bank/WAV,
 `build-combat-room-attack-3d-model.py --npc-only --validate-only` OK;
 `CombatRoomAttackAssetSetup.BuildOrThrow` imports.
-- Air:inertia/limitedsteer/g24/caps;NPC kept.
-- Hero:hit/fall/recovery drop0;death drop+pickup;NPC kept;shotgun draw grip-ammo resumes.
+Air:inertia/limitedsteer/g24/caps;NPC=.
+Hero:alive drop0/death drop+pickup;NPC=;shotgun draw grip-ammo↩.
 `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle` OK.
-- CPU:shared restpoint/ordered proxies/versioned scratch/settled ON-ray cache;
-render-end→Update unattributed/FPS unmeasured.
+CPU:shared restpoint/proxies/scratch/ray cache;render-end→Update unknown/FPS unmeasured.
 `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges` OK.
-- `IPrioritizedInteractable`:family/lockers Take>open>close>distance;
-bays/overflow retry;`CombatWarehouseLockerPriorities` OK.
-- `CombatWarehouseFishAssemblyCloseUp`:low/playfill/lamp1.8;OK/seen.
-- UI:dedup/Use gate;`SelectionAndExamine_UsePureMenuState` OK;seen.
-- `CombatWarehouseFishClearsOpponents`:clear/spawn0/kills+0;fanstop→mountsnapnearestwell/creak;OK/seen.
-- `CombatWarehouseGateUnlockAndAudio`:gCOL/3voices/motioncreak;OK.
-- Postfan:AAC→OGG/quiet clicks-whispers/.8/LP2800/World/PCM/keep;gate heavy latch1/tail.
-`CombatWarehouseAudio` OK/PCM.
-- `CombatWarehouseFlashlightGlow`,`CombatWarehouseGateLampSurvivesPendant`:spill/red>0/mountclear;OK.
-- `WarehouseAtmosphere`:litdust/fan/grit;poststop drift/settle;seed/caps/lifecycle/fog0.
-`CombatWarehouseAtmosphere` OK;stop-motion/blackout seen;perf unmeasured.
-- Ground:cargo/partial/gate/escape;UpperLbroken/Ronly;ammo↑/allbays;`WAREHOUSE BROKEN STAIR CONTRACT OK`.
-`CombatWarehouseRoutesAndStock`:route/stock/sideTake;OK/seen.
+Lockers:Take>open>close>distance/bays;overflow retry;
+CombatWarehouseLockerPriorities OK.
+CombatWarehouseFishAssemblyCloseUp:low/playfill/lamp1.8;OK/seen.
+UI:dedup/Use gate;SelectionAndExamine_UsePureMenuState OK/seen.
+CombatWarehouseFishClearsOpponents:clear/spawn0/kills0;fanstop→mountsnapnearestwell/creak;OK/seen.
+CombatWarehouseGateUnlockAndAudio:gCOL/3voices/motioncreak;OK.
+Postfan OGG:quiet click/whisper/.8/LP2800/World/PCM/persist;gate latch/tail.
+CombatWarehouseAudio OK/PCM.
+CombatWarehouseFlashlightGlow,CombatWarehouseGateLampSurvivesPendant:spill/red>0/mountclear;OK.
+WarehouseAtmosphere:dust/fan/grit→settle;seed/caps/lifecycle/fog0.
+CombatWarehouseAtmosphere OK;stop-motion/blackout seen;perf unmeasured.
+Ground:cargo/partial/gate/escape;UpperLbroken/R;ammo↑/allbays;`WAREHOUSE BROKEN STAIR CONTRACT OK`.
+CombatWarehouseRoutesAndStock:sideTake;OK/seen.
+Door ambush:opening view/timecode/stow seen.
+FOV/Dutch rule:AGENTS/architecture;scene uses it.
+WAREHOUSE DOOR AMBUSH ART CONTRACT OK.
+Warehouse test:pre-fix foot.R blocked lift;floor-clearance fix validated.
+Capture/lift/escape:manual pending.
+`LevelCutscenes_DeferredLaunchClockReplayAndCleanup` OK.
 
 ## 2026-10-18 - Authored enemies and old arena
 

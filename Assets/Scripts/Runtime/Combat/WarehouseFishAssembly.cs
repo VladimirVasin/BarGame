@@ -361,6 +361,12 @@ namespace BarPromenade
             key.transform.rotation = station.rotation * Quaternion.Euler(0f, 225f * t, 0f);
         }
 
+        internal void RestoreRetainedProgressForDebug()
+        {
+            sounds.Stop();
+            RestorePresentation();
+        }
+
         private void RestorePresentation()
         {
             lastVisualPhase = Phase;

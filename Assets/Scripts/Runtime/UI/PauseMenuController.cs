@@ -19,6 +19,9 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private Func<bool> additionalCanOpen;
+        private CutscenePlaybackController cutscenes;
+        private CutscenePlaybackController pendingCutsceneController;
+        private string pendingCutsceneId;
         private GUIStyle titleStyle;
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
@@ -56,6 +59,9 @@ namespace BarPromenade
             };
 
         private int optionsScroll;
+        private int cutscenesScroll;
+        private int cutscenesScrollSelection = -1;
+        private int lastCutsceneSelection;
         private string pendingCloseReason = string.Empty;
 
         public static bool IsAnyPaused =>
@@ -75,6 +81,8 @@ namespace BarPromenade
             model.ConfirmationYesSelected;
         public PauseMenuOptionsRow SelectedOptionsRow =>
             model.SelectedOptionsRow;
+        public int SelectedCutsceneIndex => model.SelectedCutsceneIndex;
+        public string CutsceneMessageKey { get; private set; } = string.Empty;
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -110,6 +118,85 @@ namespace BarPromenade
             IsInitialized = true;
         }
 
+        public void BindCutscenes(CutscenePlaybackController controller)
+        {
+            cutscenes = controller;
+            lastCutsceneSelection = 0;
+            RefreshCutscenes();
+        }
+
+        public bool OpenCutscenes()
+        {
+            RefreshCutscenes();
+            if (!model.CutscenesAvailable || closePending ||
+                (!IsOpen && !Open()))
+            {
+                return false;
+            }
+
+            if (model.Page != PauseMenuPage.Cutscenes)
+            {
+                model.Open();
+                model.SelectOption(PauseMenuOption.Cutscenes);
+                model.Confirm();
+            }
+
+            model.SelectCutscene(Mathf.Clamp(
+                lastCutsceneSelection, 0, model.CutsceneCount));
+            cutscenesScrollSelection = -1;
+            return true;
+        }
+
+        public bool TryStartCutscene(string id)
+        {
+            if (!IsOpen || closePending)
+            {
+                return false;
+            }
+
+            RefreshCutscenes();
+            if (!model.CutscenesAvailable || cutscenes.IsPlaying ||
+                string.IsNullOrEmpty(id))
+            {
+                CutsceneMessageKey = "cutscene.unavailable";
+                return false;
+            }
+
+            int index = 0;
+            for (; index < cutscenes.Catalog.Count; index++)
+            {
+                if (string.Equals(
+                        cutscenes.Catalog[index].Id, id,
+                        StringComparison.Ordinal))
+                {
+                    break;
+                }
+            }
+
+            if (index == cutscenes.Catalog.Count)
+            {
+                CutsceneMessageKey = "cutscene.unavailable";
+                return false;
+            }
+
+            lastCutsceneSelection = index;
+            pendingCutsceneController = cutscenes;
+            pendingCutsceneId = id;
+            closePending = true;
+            closeRequestedFrame = Time.frameCount;
+            pendingCloseReason = "cutscene";
+            CutsceneMessageKey = string.Empty;
+            return true;
+        }
+
+        private void RefreshCutscenes()
+        {
+            bool available = cutscenes != null &&
+                cutscenes.isActiveAndEnabled && cutscenes.Catalog != null;
+            model.ConfigureCutscenes(
+                available, available ? cutscenes.Catalog.Count : 0);
+        }
+
         public bool Open()
         {
             if (!CanOpen())
@@ -131,7 +218,13 @@ namespace BarPromenade
             activeController = this;
             closePending = false;
             pendingCloseReason = string.Empty;
+            pendingCutsceneId = null;
+            pendingCutsceneController = null;
+            CutsceneMessageKey = string.Empty;
+            RefreshCutscenes();
             model.Open();
+            cutscenesScroll = 0;
+            cutscenesScrollSelection = -1;
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             AudioListener.pause = true;
@@ -147,6 +240,7 @@ namespace BarPromenade
 
         public bool MoveSelection(int delta)
         {
+            RefreshCutscenes();
             if (!IsOpen || closePending ||
                 !model.MoveSelection(delta))
             {
@@ -164,6 +258,7 @@ namespace BarPromenade
                 return false;
             }
 
+            RefreshCutscenes();
             PauseMenuAction action = model.Confirm();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             Execute(action);
@@ -214,6 +309,14 @@ namespace BarPromenade
                 case PauseMenuAction.ToggleGraphicsOption:
                     ToggleGraphicsOption(model.SelectedOptionsRow);
                     return;
+                case PauseMenuAction.StartCutscene:
+                    if (cutscenes != null && cutscenes.Catalog != null &&
+                        model.SelectedCutsceneIndex < cutscenes.Catalog.Count)
+                    {
+                        TryStartCutscene(
+                            cutscenes.Catalog[model.SelectedCutsceneIndex].Id);
+                    }
+                    return;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(action),
@@ -261,13 +364,27 @@ namespace BarPromenade
             {
                 if (Time.frameCount > closeRequestedFrame)
                 {
+                    CutscenePlaybackController target = pendingCutsceneController;
+                    string cutsceneId = pendingCutsceneId;
                     RestoreOwnedState(pendingCloseReason);
 
-                    // Only resuming defers its close - restart, quit,
-                    // disable and destroy call RestoreOwnedState straight
-                    // out - so this branch is the return to play itself,
-                    // and a mode armed behind the menu starts arriving on
-                    // the first frame the player owns again.
+                    // Restore the old snapshot before playback captures its
+                    // own. Both operations happen before any gameplay Update.
+                    if (cutsceneId != null)
+                    {
+                        if (target == null || target != cutscenes ||
+                            !target.isActiveAndEnabled || !target.TryPlay(cutsceneId))
+                        {
+                            if (!OpenCutscenes())
+                            {
+                                Open();
+                            }
+                            CutsceneMessageKey = "cutscene.unavailable";
+                        }
+
+                        return;
+                    }
+
                     BegottenModeRamp.NotifyReturnedToPlay();
                 }
 
@@ -284,6 +401,7 @@ namespace BarPromenade
                 return;
             }
 
+            RefreshCutscenes();
             if (Time.frameCount <= inputUnlockFrame)
             {
                 return;
@@ -309,6 +427,8 @@ namespace BarPromenade
 
         private void RestoreOwnedState(string reason)
         {
+            pendingCutsceneId = null;
+            pendingCutsceneController = null;
             if (!ownsPauseState)
             {
                 IsOpen = false;
@@ -353,6 +473,7 @@ namespace BarPromenade
             }
 
             EnsureStyles();
+            RefreshCutscenes();
             GUI.depth = -300;
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
@@ -374,6 +495,10 @@ namespace BarPromenade
                 {
                     DrawOptionsPage(canvas);
                 }
+                else if (Page == PauseMenuPage.Cutscenes)
+                {
+                    DrawCutscenesPage(canvas);
+                }
                 else
                 {
                     DrawConfirmationPage(canvas);
@@ -387,7 +512,10 @@ namespace BarPromenade
 
         private void DrawMainPage(RetroUiCanvas canvas)
         {
-            Rect panel = new Rect(198f, 52f, 244f, 268f);
+            bool hasCutscenes = model.CutscenesAvailable;
+            Rect panel = new Rect(
+                198f, hasCutscenes ? 32f : 52f,
+                244f, hasCutscenes ? 308f : 268f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.PanelInset,
@@ -396,30 +524,170 @@ namespace BarPromenade
                 0f,
                 1f);
             GUI.Label(
-                new Rect(214f, 70f, 212f, 30f),
+                new Rect(214f, panel.y + 18f, 212f, 30f),
                 LocalizationService.Get("pause.title"),
                 titleStyle);
 
             DrawMainOption(
                 canvas,
-                new Rect(216f, 118f, 208f, 32f),
+                new Rect(216f, panel.y + 66f, 208f, 32f),
                 PauseMenuOption.Resume,
                 "pause.resume");
             DrawMainOption(
                 canvas,
-                new Rect(216f, 158f, 208f, 32f),
+                new Rect(216f, panel.y + 106f, 208f, 32f),
                 PauseMenuOption.Options,
                 "pause.options");
+            if (hasCutscenes)
+            {
+                DrawMainOption(
+                    canvas,
+                    new Rect(216f, panel.y + 146f, 208f, 32f),
+                    PauseMenuOption.Cutscenes,
+                    "pause.cutscenes");
+            }
+
+            float additionalHeight = hasCutscenes ? 40f : 0f;
             DrawMainOption(
                 canvas,
-                new Rect(216f, 198f, 208f, 32f),
+                new Rect(216f, panel.y + 146f + additionalHeight, 208f, 32f),
                 PauseMenuOption.Restart,
                 "pause.restart");
             DrawMainOption(
                 canvas,
-                new Rect(216f, 238f, 208f, 32f),
+                new Rect(216f, panel.y + 186f + additionalHeight, 208f, 32f),
                 PauseMenuOption.Quit,
                 "pause.quit");
+
+            if (!string.IsNullOrEmpty(CutsceneMessageKey))
+            {
+                GUI.Label(
+                    new Rect(214f, panel.yMax - 40f, 212f, 28f),
+                    LocalizationService.Get(CutsceneMessageKey),
+                    messageStyle);
+            }
+        }
+
+        private void DrawCutscenesPage(RetroUiCanvas canvas)
+        {
+            Rect panel = new Rect(140f, 40f, 360f, 300f);
+            RetroUiTheme.DrawPanel(
+                panel,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
+                1f);
+            GUI.Label(
+                new Rect(156f, 56f, 328f, 28f),
+                LocalizationService.Get("pause.cutscenes"),
+                titleStyle);
+
+            int count = model.CutsceneCount;
+            if (count == 0)
+            {
+                GUI.Label(
+                    new Rect(164f, 110f, 312f, 76f),
+                    LocalizationService.Get("cutscene.empty"),
+                    messageStyle);
+                DrawCutsceneRow(canvas, 5, 0, "cutscene.back");
+            }
+            else
+            {
+                bool hasMessage = !string.IsNullOrEmpty(CutsceneMessageKey);
+                int visibleRows = hasMessage
+                    ? VisibleOptionsRows - 1
+                    : VisibleOptionsRows;
+                int rowCount = count + 1;
+                int maximumScroll = Mathf.Max(0, rowCount - visibleRows);
+                cutscenesScroll = Mathf.Clamp(cutscenesScroll, 0, maximumScroll);
+                if (cutscenesScrollSelection != model.SelectedCutsceneIndex)
+                {
+                    cutscenesScrollSelection = model.SelectedCutsceneIndex;
+                    if (cutscenesScrollSelection < cutscenesScroll)
+                    {
+                        cutscenesScroll = cutscenesScrollSelection;
+                    }
+                    else if (cutscenesScrollSelection >= cutscenesScroll + visibleRows)
+                    {
+                        cutscenesScroll = cutscenesScrollSelection - visibleRows + 1;
+                    }
+                }
+
+                if (Event.current.type == EventType.ScrollWheel &&
+                    panel.Contains(RetroUiTheme.LogicalMousePosition(canvas)))
+                {
+                    cutscenesScroll = Mathf.Clamp(
+                        cutscenesScroll +
+                        (Event.current.delta.y > 0f ? 1 : -1),
+                        0,
+                        maximumScroll);
+                    Event.current.Use();
+                }
+
+                for (int slot = 0; slot < visibleRows; slot++)
+                {
+                    int index = cutscenesScroll + slot;
+                    if (index >= rowCount)
+                    {
+                        break;
+                    }
+
+                    DrawCutsceneRow(
+                        canvas,
+                        slot,
+                        index,
+                        index == count
+                            ? "cutscene.back"
+                            : cutscenes.Catalog[index].TitleKey);
+                }
+
+                DrawScrollHint(
+                    new Rect(panel.center.x - 8f, 84f, 16f, 8f),
+                    cutscenesScroll > 0);
+                DrawScrollHint(
+                    new Rect(
+                        panel.center.x - 8f,
+                        96f + visibleRows * 32f,
+                        16f,
+                        8f),
+                    cutscenesScroll < maximumScroll,
+                    true);
+            }
+
+            if (!string.IsNullOrEmpty(CutsceneMessageKey))
+            {
+                GUI.Label(
+                    new Rect(156f, 304f, 328f, 28f),
+                    LocalizationService.Get(CutsceneMessageKey),
+                    messageStyle);
+            }
+        }
+
+        private void DrawCutsceneRow(
+            RetroUiCanvas canvas,
+            int slot,
+            int index,
+            string titleKey)
+        {
+            Rect rect = new Rect(156f, 94f + slot * 32f, 328f, 28f);
+            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            if (rect.Contains(mouse) &&
+                Event.current.type == EventType.MouseMove)
+            {
+                model.SelectCutscene(index);
+            }
+
+            bool selected = model.SelectedCutsceneIndex == index;
+            DrawSelection(rect, selected);
+            if (GUI.Button(
+                    rect,
+                    (selected ? "> " : "  ") + LocalizationService.Get(titleKey),
+                    selected ? selectedStyle : optionStyle))
+            {
+                model.SelectCutscene(index);
+                ConfirmSelection();
+            }
         }
 
         private void DrawOptionsPage(RetroUiCanvas canvas)

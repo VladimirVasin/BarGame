@@ -693,14 +693,13 @@ cemetery:own interiors/returns.
   Menus, inspectors and map omit persistent key guides/footers;commands appear once. Contextual prompts
   are full pointer targets for the same guarded keyboard/gamepad action. Loading
   retains framing/progress and its separately accepted painterly illustration;
-- a localized PS1-style pause menu in City, Bar, Supermarket, Home and
-  Stairwell gameplay:
-  Escape or gamepad Start captures the shared modal lock, freezes scaled time,
-  pauses non-UI audio, hides gameplay HUD/input and offers only Resume, Start
-  Over and Quit Game. Restart and quit require an explicit default-No warning
-  because no save/load system exists; child modals retain first ownership of
-  Escape, the Home opening stays exclusive and the bar arrival reveal cannot
-  be skipped by opening pause;
+- localized PS1 pause:Esc/Start/input-time-audio;Resume/Options/default-No restart/quit.
+  Warehouse ambush;Lab0. Debug commits cans/fish/key/lamp/fan/gate;
+  stages entry;progress stays. Gate→door E. Prep clock0;door3s→attack5s→shin
+  hook/jerk+fan720°/s+Spot↑5s/lit sparks. Inverted roof hoist→free camera/180°roll;
+  struggle;E/next0. Crane/8guides;front1.18m/red36/pair/FOV.
+  Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
+  Space/A pause,R/X replay,Esc/B list before capture;
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;

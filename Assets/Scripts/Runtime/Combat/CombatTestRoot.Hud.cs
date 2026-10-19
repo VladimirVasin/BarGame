@@ -31,7 +31,7 @@ namespace BarPromenade
         public float StaminaHudOpacity => HudOpacity(staminaHudFade);
         public float GuardHudOpacity => HudOpacity(guardHudFade);
         public float ChargeHudOpacity => HudOpacity(chargeHudFade);
-        public bool RestraintHudVisible => GameplayHudVisible && Hero != null && Hero.IsRestrained;
+        public bool RestraintHudVisible => GameplayHudVisible && Hero != null && Hero.CanEscapeRestraint;
         public float RestraintHudProgress => RestraintHudVisible ? Hero.RestraintEscapeProgress : 0f;
 
         private float HudOpacity(float fade) => GameplayHudVisible ? Mathf.SmoothStep(0f, 1f, fade) : 0f;

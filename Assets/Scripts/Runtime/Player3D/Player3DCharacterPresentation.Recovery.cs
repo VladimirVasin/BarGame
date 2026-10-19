@@ -12,6 +12,7 @@ namespace BarPromenade
         private RecoverySample[] previousRecoveryPose;
         private RecoverySample[] transitionRecoveryPose;
         private RecoverySample[] recoveryTargetPose;
+        private RecoverySample[] handoffRecoveryPose;
         private bool recoveryTargetCaptured;
         private Vector3[] transitionLinearVelocity;
         private Vector3[] transitionAngularVelocity;
@@ -27,6 +28,30 @@ namespace BarPromenade
         private readonly Vector3[] riseHandContacts = new Vector3[2];
         private readonly Vector3[] riseHandNormals = new Vector3[2];
         private readonly bool[] riseHandContactValid = new bool[2];
+        private object contextualClockOwner;
+        private int contextualClockFrame = -1;
+        private float contextualClockDelta;
+
+        private float PresentationDeltaTime => contextualClockOwner == null
+            ? Time.deltaTime
+            : contextualClockFrame == Time.frameCount ? contextualClockDelta : 0f;
+
+        internal void AdvanceContextualPresentationClock(object owner, float seconds)
+        {
+            if (owner == null || (contextualClockOwner != null && !ReferenceEquals(contextualClockOwner, owner))) return;
+            contextualClockOwner = owner;
+            if (contextualClockFrame != Time.frameCount) contextualClockDelta = 0f;
+            contextualClockFrame = Time.frameCount;
+            contextualClockDelta += seconds;
+        }
+
+        internal void ReleaseContextualPresentationClock(object owner)
+        {
+            if (!ReferenceEquals(contextualClockOwner, owner)) return;
+            contextualClockOwner = null;
+            contextualClockFrame = -1;
+            contextualClockDelta = 0f;
+        }
 
         private struct RecoverySample
         {
@@ -73,6 +98,38 @@ namespace BarPromenade
             int depth = 0;
             while (bone != null) { depth++; bone = bone.parent; }
             return depth;
+        }
+
+        /// <summary>
+        /// Detach the contextual graph without presenting an intermediate
+        /// neutral pose. Preserve world-space bones while restoring the model
+        /// origin, so the next owner captures the ordinary spatial baseline.
+        /// </summary>
+        internal void EndClipForHandoff()
+        {
+            EnsureRecoveryBones();
+            if (recoveryBones != null)
+            {
+                if (handoffRecoveryPose == null) handoffRecoveryPose = new RecoverySample[recoveryBones.Length];
+                for (int i = 0; i < recoveryBones.Length; i++)
+                    handoffRecoveryPose[i] = RecoverySample.Read(recoveryBones[i]);
+            }
+            EndClip();
+            interactionHandoffLocked = false;
+            releaseInteractionHandoffAfterLateUpdate = false;
+            if (recoveryBones == null) return;
+            // The cache is ordered parent first, so restoring a child cannot
+            // be undone by a later parent restoration.
+            for (int i = 0; i < recoveryBones.Length; i++)
+            {
+                RecoverySample sample = handoffRecoveryPose[i];
+                recoveryBones[i].SetPositionAndRotation(sample.WorldPosition, sample.WorldRotation);
+                visibleRecoveryPose[i] = RecoverySample.Read(recoveryBones[i]);
+            }
+            visibleRecoverySamples = 1;
+            visibleRecoveryDelta = 0f;
+            recoverySampleClockOwner = null;
+            recoverySampleClock = 0f;
         }
 
         private void RememberRecoveryPose(float deltaTime)

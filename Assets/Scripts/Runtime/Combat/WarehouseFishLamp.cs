@@ -65,6 +65,12 @@ namespace BarPromenade
             subscribed = false;
         }
 
+        internal void RestoreRetainedProgressForDebug()
+        {
+            burstAudio.Stop();
+            RefreshCollected();
+        }
+
         private void RefreshCollected()
         {
             if (!initialized) return;

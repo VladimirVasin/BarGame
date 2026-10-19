@@ -34,7 +34,9 @@ namespace BarPromenade
         EquipPistol,
         EquipCrowbar,
         CombatNextWeapon,
-        EquipShotgun
+        EquipShotgun,
+        CutscenePause,
+        CutsceneRestart
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

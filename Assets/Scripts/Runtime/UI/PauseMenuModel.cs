@@ -8,14 +8,16 @@ namespace BarPromenade
         Options = 1,
         Restart = 2,
         Quit = 3,
-        Count = 4
+        Cutscenes = 4,
+        Count = 5
     }
 
     public enum PauseMenuPage
     {
         Main = 0,
         Confirmation = 1,
-        Options = 2
+        Options = 2,
+        Cutscenes = 3
     }
 
     public enum PauseMenuOptionsRow
@@ -37,15 +39,36 @@ namespace BarPromenade
         Resume = 1,
         Restart = 2,
         Quit = 3,
-        ToggleGraphicsOption = 4
+        ToggleGraphicsOption = 4,
+        StartCutscene = 5
     }
 
     public sealed class PauseMenuModel
     {
+        private static readonly PauseMenuOption[] MainOptions =
+        {
+            PauseMenuOption.Resume,
+            PauseMenuOption.Options,
+            PauseMenuOption.Restart,
+            PauseMenuOption.Quit
+        };
+
+        private static readonly PauseMenuOption[] MainOptionsWithCutscenes =
+        {
+            PauseMenuOption.Resume,
+            PauseMenuOption.Options,
+            PauseMenuOption.Cutscenes,
+            PauseMenuOption.Restart,
+            PauseMenuOption.Quit
+        };
+
         public PauseMenuPage Page { get; private set; }
         public PauseMenuOption SelectedOption { get; private set; }
         public PauseMenuOption ConfirmationTarget { get; private set; }
         public bool ConfirmationYesSelected { get; private set; }
+        public bool CutscenesAvailable { get; private set; }
+        public int CutsceneCount { get; private set; }
+        public int SelectedCutsceneIndex { get; private set; }
         public PauseMenuOptionsRow SelectedOptionsRow
         {
             get;
@@ -59,6 +82,32 @@ namespace BarPromenade
             ConfirmationTarget = PauseMenuOption.Resume;
             ConfirmationYesSelected = false;
             SelectedOptionsRow = PauseMenuOptionsRow.DepthOfField;
+            SelectedCutsceneIndex = 0;
+        }
+
+        public void ConfigureCutscenes(bool available, int count)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            CutscenesAvailable = available;
+            CutsceneCount = available ? count : 0;
+            SelectedCutsceneIndex = Math.Min(
+                SelectedCutsceneIndex, CutsceneCount);
+            if (!available)
+            {
+                if (Page == PauseMenuPage.Cutscenes)
+                {
+                    Page = PauseMenuPage.Main;
+                }
+
+                if (SelectedOption == PauseMenuOption.Cutscenes)
+                {
+                    SelectedOption = PauseMenuOption.Resume;
+                }
+            }
         }
 
         public bool MoveSelection(int delta)
@@ -90,15 +139,40 @@ namespace BarPromenade
                 return true;
             }
 
-            int count = (int)PauseMenuOption.Count;
+            if (Page == PauseMenuPage.Cutscenes)
+            {
+                int rowCount = CutsceneCount + 1;
+                SelectedCutsceneIndex =
+                    (SelectedCutsceneIndex + Math.Sign(delta) + rowCount) %
+                    rowCount;
+                return rowCount > 1;
+            }
+
+            PauseMenuOption[] options = CutscenesAvailable
+                ? MainOptionsWithCutscenes
+                : MainOptions;
+            int count = options.Length;
             int next =
-                ((int)SelectedOption + Math.Sign(delta)) % count;
+                (Array.IndexOf(options, SelectedOption) + Math.Sign(delta)) % count;
             if (next < 0)
             {
                 next += count;
             }
 
-            SelectedOption = (PauseMenuOption)next;
+            SelectedOption = options[next];
+            return true;
+        }
+
+        public bool SelectCutscene(int index)
+        {
+            if (Page != PauseMenuPage.Cutscenes ||
+                index < 0 || index > CutsceneCount ||
+                SelectedCutsceneIndex == index)
+            {
+                return false;
+            }
+
+            SelectedCutsceneIndex = index;
             return true;
         }
 
@@ -121,6 +195,7 @@ namespace BarPromenade
             if (Page != PauseMenuPage.Main ||
                 option < PauseMenuOption.Resume ||
                 option >= PauseMenuOption.Count ||
+                (option == PauseMenuOption.Cutscenes && !CutscenesAvailable) ||
                 SelectedOption == option)
             {
                 return false;
@@ -144,6 +219,17 @@ namespace BarPromenade
 
         public PauseMenuAction Confirm()
         {
+            if (Page == PauseMenuPage.Cutscenes)
+            {
+                if (SelectedCutsceneIndex == CutsceneCount)
+                {
+                    Page = PauseMenuPage.Main;
+                    return PauseMenuAction.None;
+                }
+
+                return PauseMenuAction.StartCutscene;
+            }
+
             if (Page == PauseMenuPage.Confirmation)
             {
                 if (!ConfirmationYesSelected)
@@ -177,6 +263,10 @@ namespace BarPromenade
                     SelectedOptionsRow =
                         PauseMenuOptionsRow.DepthOfField;
                     return PauseMenuAction.None;
+                case PauseMenuOption.Cutscenes:
+                    Page = PauseMenuPage.Cutscenes;
+                    SelectedCutsceneIndex = 0;
+                    return PauseMenuAction.None;
                 case PauseMenuOption.Restart:
                 case PauseMenuOption.Quit:
                     ConfirmationTarget = SelectedOption;
@@ -198,7 +288,8 @@ namespace BarPromenade
                 return PauseMenuAction.None;
             }
 
-            if (Page == PauseMenuPage.Options)
+            if (Page == PauseMenuPage.Options ||
+                Page == PauseMenuPage.Cutscenes)
             {
                 Page = PauseMenuPage.Main;
                 return PauseMenuAction.None;

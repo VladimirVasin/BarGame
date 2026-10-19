@@ -13,6 +13,8 @@ namespace BarPromenade
         private Vector3 restraintContactLocal, restraintPullTarget;
         private float restraintDriveSeconds;
         private int restraintDrivenLegJoints;
+        private bool restraintInvertedLeg;
+        private Player3DAnatomicalPart restraintAttachmentPart;
 
         public bool IsRestraintDriveActive => restraintContactBody != null && restraintJointDrives.Count > 0;
         public int RestraintDrivenJointCount => restraintJointDrives.Count;
@@ -28,7 +30,8 @@ namespace BarPromenade
                 restraintJointReferences[joint] = Quaternion.Inverse(joint.connectedBody.rotation) * joint.transform.rotation;
         }
 
-        internal bool BeginRestraintDrive(Player3DAnatomicalPart part, Vector3 localPoint, Vector3 target)
+        internal bool BeginRestraintDrive(Player3DAnatomicalPart part, Vector3 localPoint, Vector3 target,
+            bool invertedLeg = false)
         {
             if (!IsSimulating || !bones.TryGetValue(part, out Transform bone)) return false;
             Rigidbody body = CombatBodyForPart(part);
@@ -38,6 +41,8 @@ namespace BarPromenade
             restraintContactBone = bone;
             restraintContactBody = body;
             restraintContactLocal = localPoint;
+            restraintInvertedLeg = invertedLeg;
+            restraintAttachmentPart = part;
             restraintPullTarget = target;
             restraintDriveSeconds = 0f;
             RestraintDriveTargetTravelDegrees = 0f;
@@ -55,7 +60,16 @@ namespace BarPromenade
                 if (IsRestraintLegPart(drivenPart)) restraintDrivenLegJoints++;
                 joint.rotationDriveMode = RotationDriveMode.Slerp;
                 joint.angularXDrive = joint.angularYZDrive = default;
-                joint.slerpDrive = RestraintMuscleFor(drivenPart);
+                JointDrive muscle = RestraintMuscleFor(drivenPart);
+                if (restraintInvertedLeg)
+                {
+                    // The single ankle carries weight. Relative joint intent
+                    // remains active, while gravity owns the whole-body inversion.
+                    muscle.positionSpring *= .25f;
+                    muscle.positionDamper *= .6f;
+                    muscle.maximumForce *= .35f;
+                }
+                joint.slerpDrive = muscle;
                 joint.targetRotation = targetRotation;
                 joint.targetAngularVelocity = Vector3.zero;
                 own.WakeUp();
@@ -74,10 +88,12 @@ namespace BarPromenade
             Vector3 point = restraintContactBone.TransformPoint(restraintContactLocal);
             Vector3 delta = restraintPullTarget - point;
             float distance = delta.magnitude;
-            Vector3 desired = distance > .001f ? delta / distance * (4.2f * Mathf.Clamp01((distance - .45f) / .85f)) : Vector3.zero;
+            bool initialJerk = restraintInvertedLeg && restraintDriveSeconds < .45f;
+            float maximumSpeed = initialJerk ? 7.2f : 4.2f;
+            Vector3 desired = distance > .001f ? delta / distance * (maximumSpeed * Mathf.Clamp01((distance - .45f) / .85f)) : Vector3.zero;
             float mass = ActiveCombatMass;
             Vector3 force = (desired - restraintContactBody.GetPointVelocity(point)) * (mass * 7f) - Physics.gravity * mass;
-            restraintContactBody.AddForceAtPosition(Vector3.ClampMagnitude(force, mass * 28f), point, ForceMode.Force);
+            restraintContactBody.AddForceAtPosition(Vector3.ClampMagnitude(force, mass * (initialJerk ? 42f : 28f)), point, ForceMode.Force);
             restraintDriveSeconds += seconds;
             float engagement = Mathf.SmoothStep(0f, 1f, restraintDriveSeconds / .22f);
             for (int i = 0; i < restraintJointDrives.Count; i++)
@@ -100,6 +116,7 @@ namespace BarPromenade
         {
             restraintContactBone = null;
             restraintContactBody = null;
+            restraintInvertedLeg = false;
             foreach (RestraintJointDrive drive in restraintJointDrives)
             {
                 if (drive.Joint == null) continue;
@@ -162,6 +179,18 @@ namespace BarPromenade
                 Player3DAnatomicalPart.LeftFoot or Player3DAnatomicalPart.LeftUpperArm or Player3DAnatomicalPart.LeftForearm;
             float phase = cycle + (left ? 0f : Mathf.PI);
             float flex = Mathf.Sin(phase), answer = Mathf.Sin(phase - .65f);
+            if (restraintInvertedLeg)
+            {
+                bool attachedRight = restraintAttachmentPart is Player3DAnatomicalPart.RightShin or Player3DAnatomicalPart.RightFoot;
+                bool attached = attachedRight
+                    ? drive.Part is Player3DAnatomicalPart.RightThigh or Player3DAnatomicalPart.RightShin or Player3DAnatomicalPart.RightFoot
+                    : drive.Part is Player3DAnatomicalPart.LeftThigh or Player3DAnatomicalPart.LeftShin or Player3DAnatomicalPart.LeftFoot;
+                if (attached) return drive.HeldTarget;
+                if (IsRestraintLegPart(drive.Part))
+                    return drive.HeldTarget * Quaternion.Euler(flex * 12f, 0f, answer * 4f);
+                if (drive.Part is Player3DAnatomicalPart.Torso or Player3DAnatomicalPart.LowerTorso)
+                    return drive.HeldTarget * Quaternion.Euler(answer * 4f, flex * 3f, 0f);
+            }
             switch (drive.Part)
             {
                 case Player3DAnatomicalPart.LeftThigh:

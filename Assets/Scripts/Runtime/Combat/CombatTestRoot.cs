@@ -83,6 +83,8 @@ namespace BarPromenade
         public CombatCasingPool Casings => Hero != null && Hero.IsShotgun ? shotgunCasings : pistolCasings;
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+        public CutscenePlaybackController Cutscenes { get; private set; }
+        public WarehouseDoorAmbushScene DoorAmbush { get; private set; }
         public InventoryController Inventory { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
@@ -169,6 +171,21 @@ namespace BarPromenade
             heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(Player, CameraFollow, null);
+            if (WarehousePlan != null)
+            {
+                Cutscenes = ui.AddComponent<CutscenePlaybackController>();
+                Cutscenes.Initialize(Player, CameraFollow, null, PauseMenu);
+                CombatActor stagedCrane = CreatePreparedOpponent(0, CombatEnemyKind.Crane, 0, registerForCombat: false);
+                stagedCrane.ResetActor(CraneGround, Vector3.forward);
+                stagedCrane.ConfigureCraneSuspension(CraneGround, CraneGround + Vector3.up * 9.15f);
+                stagedCrane.RetireOpponent();
+                CombatActor existingSuspension = null;
+                foreach (CombatActor actor in preparedOpponents) if (actor.IsCrane) { existingSuspension = actor; break; }
+                DoorAmbush = ui.AddComponent<WarehouseDoorAmbushScene>();
+                DoorAmbush.Initialize(this, stagedCrane, existingSuspension);
+                RegisterWarehouseCutscenes();
+                PauseMenu.BindCutscenes(Cutscenes);
+            }
             IsInitialized = true;
             GameLog.BeforeShutdown += WriteMovementSummary;
             InitializeDuelJournal();
@@ -190,6 +207,7 @@ namespace BarPromenade
 
         private void PlaceRound(bool focusOpponent)
         {
+            DoorAmbush?.ResetEpisode();
             CancelRoomAttackSequence();
             ClearOpponentAttackSuppression();
             ReleaseFreePistolAim();
@@ -251,6 +269,9 @@ namespace BarPromenade
 
         private void RequestHitStop(int substeps)
         {
+            // The paired scene owns contact timing while ordinary combat's
+            // substep clock is suspended. Damage and wound effects still run.
+            if (DoorAmbush != null && DoorAmbush.IsActive) return;
             if (RoundFinished)
             {
                 // Later shots can strike the same terminal body. Their contact
@@ -282,6 +303,11 @@ namespace BarPromenade
             BeginJournalFrame();
             if (!IsInitialized) return;
             UpdateHudInput();
+            if (DoorAmbush != null && DoorAmbush.IsActive)
+            {
+                if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
+                return;
+            }
             if (AutomaticSimulation && (RoomAttackCinematicActive || UpdateCombatInput()))
             {
                 TickFrame(Time.deltaTime);
@@ -316,6 +342,7 @@ namespace BarPromenade
 
         private void TickCore(float seconds)
         {
+            if (DoorAmbush != null && DoorAmbush.IsActive) return;
             if (!IsInitialized || !isActiveAndEnabled) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));

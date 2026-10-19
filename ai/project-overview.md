@@ -130,7 +130,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.
-- Map, inventory, journal, pause/options and localized interaction interfaces.
+- Map/inventory/journal/pause/options/localized;warehouse door ambush/debug.
 - Shared PS1 presentation, causal audio and bounded diagnostics.
 
 See [current-world.md](current-world.md) for gameplay and

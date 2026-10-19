@@ -284,20 +284,25 @@ namespace BarPromenade
             ClearInterruptedShotgunDraw();
         }
 
-        private void AdvanceWeaponCarry(float seconds)
+        private void AdvanceWeaponCarry(float seconds, object externalOwner = null)
         {
+            bool contextual = externalOwner != null && ReferenceEquals(doorWeaponStowDriver, externalOwner);
+            if (doorWeaponStowDriver != null && !contextual) return;
             UpdateConcealedPistol();
-            if (carriedWeapons == null || presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (carriedWeapons == null || presentationFrozen ||
+                !contextual && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused)) return;
             foreach (CarriedWeaponRecord record in carriedWeapons)
                 if (record != activeCarry)
                 {
-                    record.Firearm?.Advance(seconds);
+                    if (!contextual) record.Firearm?.Advance(seconds);
                     UpdateStowedWeaponMechanics(record);
                 }
             if (IsSwitchingWeapon && (!BodyDamage.CanStand || !BodyDamage.CanUseRightHand ||
                 carryAction.Id != CombatWeaponId.Crowbar && !BodyDamage.CanUseLeftHand ||
                 State.IsDefeated || IsKnockedDown || IsRagdollActive || State.Phase != MeleePhase.Ready ||
-                (ImpactMotion?.IsActive ?? false) || !IsAvailable))
+                (ImpactMotion?.IsActive ?? false) || (contextual
+                    ? !isActiveAndEnabled || !hero.CanAcquireClip(this) || interaction.IsActive || IsRestrained
+                    : !IsAvailable)))
             { CancelWeaponCarry(); return; }
             if (!IsSwitchingWeapon) { TryBeginPendingWeaponCarry(); return; }
             if (carryTerminalFrame >= 0)
@@ -415,6 +420,7 @@ namespace BarPromenade
 
         private bool CancelWeaponCarry(bool retainPose = false)
         {
+            ReleaseDoorWeaponStowDriver();
             requestedCarry = null;
             bool lifecycle = resettingCarry || disposingCarry;
             if (lifecycle) ClearInterruptedShotgunDraw();

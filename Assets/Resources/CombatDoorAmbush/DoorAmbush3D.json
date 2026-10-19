@@ -1,0 +1,1605 @@
+{
+  "generator": "tools/build-warehouse-door-ambush-3d-model.py",
+  "generator_version": "paired-door-leg-v1",
+  "root_motion": false,
+  "animation_events": 0,
+  "fps": 100,
+  "pose_samples_hz": 40,
+  "attack_cue_seconds": 3.0,
+  "capture_seconds": 8.0,
+  "final_jab_start_seconds": 7.7,
+  "grounded_root_height": 0.04,
+  "gameplay_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "source_to_gameplay_axes": "-x,z,-y",
+  "hero_neutral_pelvis": [
+    -0.0,
+    0.835,
+    -0.008
+  ],
+  "hero_action_pelvis": [
+    -0.0,
+    0.835,
+    -0.008
+  ],
+  "hero_exit_pelvis": [
+    -0.0,
+    0.835,
+    -0.008
+  ],
+  "hero_door_grip": [
+    0.18,
+    1.07,
+    0.54
+  ],
+  "hero_hook_contact": [
+    0.093129,
+    0.234963,
+    -0.012564
+  ],
+  "hero_hook_victim_part": "RightShin",
+  "hero_hook_distance_from_ankle_m": 0.14,
+  "hook_down_gameplay": [
+    0.0,
+    -1.0,
+    0.0
+  ],
+  "hook_wrist_to_impact_m": 0.69,
+  "hero_hold_left_palm": [
+    0.12,
+    1.12,
+    0.1
+  ],
+  "hero_hold_right_palm": [
+    0.18,
+    0.9,
+    0.22
+  ],
+  "crane_root_offset": [
+    -0.0,
+    0.18,
+    -0.64
+  ],
+  "entry_pelvis_gameplay_local": [
+    -0.0,
+    0.835,
+    -0.008
+  ],
+  "exit_pelvis_gameplay_local": [
+    -0.0,
+    0.835,
+    -0.008
+  ],
+  "door_grip_gameplay_local": [
+    0.18,
+    1.07,
+    0.54
+  ],
+  "door_contact_start_seconds": 0.8,
+  "door_contact_end_seconds": 3.0,
+  "crane_root_relative_to_hero_gameplay": [
+    -0.0,
+    0.18,
+    -0.64
+  ],
+  "hero": {
+    "rig": "HeroV2",
+    "bone_count": 43,
+    "maximum_endpoint_error": 2.98e-07,
+    "clips": [
+      {
+        "name": "DoorAmbushEnter",
+        "duration_seconds": 8.0,
+        "loop": false,
+        "signature": "5323731c986a251ec90b28e007718abb8d96c64194e5597cfa5ed7b8b5466c52",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                0.003263,
+                1.409886,
+                0.005155
+              ],
+              "head": [
+                0.004068,
+                1.485249,
+                0.018185
+              ],
+              "left_grip": [
+                -0.298748,
+                0.776604,
+                0.042394
+              ],
+              "right_grip": [
+                0.280126,
+                0.768585,
+                0.023104
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 3.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                0.001035,
+                1.403194,
+                0.065461
+              ],
+              "head": [
+                0.001008,
+                1.475378,
+                0.090749
+              ],
+              "left_grip": [
+                -0.294247,
+                0.770684,
+                -0.014426
+              ],
+              "right_grip": [
+                0.18,
+                1.07,
+                0.54
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 4.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.026545,
+                1.400789,
+                -0.041651
+              ],
+              "head": [
+                -0.062393,
+                1.468316,
+                -0.039403
+              ],
+              "left_grip": [
+                -0.26,
+                1.190068,
+                0.04
+              ],
+              "right_grip": [
+                0.34,
+                1.19,
+                -0.139899
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 8.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.025976,
+                1.343697,
+                0.204514
+              ],
+              "head": [
+                -0.034497,
+                1.402383,
+                0.252818
+              ],
+              "left_grip": [
+                0.12,
+                1.12,
+                0.1
+              ],
+              "right_grip": [
+                0.18,
+                0.9,
+                0.22
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DoorAmbushHold",
+        "duration_seconds": 1.0,
+        "loop": true,
+        "signature": "31468b3e516aa4a8658d066f7c3656552f3fbe838807a72ab8803cbba83e25f3",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.025976,
+                1.343697,
+                0.204514
+              ],
+              "head": [
+                -0.034497,
+                1.402383,
+                0.252818
+              ],
+              "left_grip": [
+                0.12,
+                1.12,
+                0.1
+              ],
+              "right_grip": [
+                0.18,
+                0.9,
+                0.22
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 0.5,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.025505,
+                1.339616,
+                0.210087
+              ],
+              "head": [
+                -0.033891,
+                1.397115,
+                0.259822
+              ],
+              "left_grip": [
+                0.12,
+                1.124,
+                0.1
+              ],
+              "right_grip": [
+                0.18,
+                0.904,
+                0.22
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 1.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.025976,
+                1.343697,
+                0.204514
+              ],
+              "head": [
+                -0.034496,
+                1.402383,
+                0.252818
+              ],
+              "left_grip": [
+                0.12,
+                1.12,
+                0.1
+              ],
+              "right_grip": [
+                0.18,
+                0.9,
+                0.22
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DoorAmbushExit",
+        "duration_seconds": 0.65,
+        "loop": false,
+        "signature": "d42116c6ac528efa6d3004a71e56dff3ce2902d5f438f2d2b5747bf6364c9018",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.025976,
+                1.343697,
+                0.204514
+              ],
+              "head": [
+                -0.034497,
+                1.402383,
+                0.252818
+              ],
+              "left_grip": [
+                0.12,
+                1.12,
+                0.1
+              ],
+              "right_grip": [
+                0.18,
+                0.9,
+                0.22
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 0.325,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                -0.013293,
+                1.39201,
+                0.107907
+              ],
+              "head": [
+                -0.0176,
+                1.461613,
+                0.139321
+              ],
+              "left_grip": [
+                -0.036256,
+                0.864439,
+                -0.05575
+              ],
+              "right_grip": [
+                0.23425,
+                0.805799,
+                0.115773
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          },
+          {
+            "seconds": 0.65,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0,
+                0.835,
+                -0.008
+              ],
+              "neck": [
+                0.003263,
+                1.409886,
+                0.005155
+              ],
+              "head": [
+                0.004068,
+                1.485249,
+                0.018185
+              ],
+              "left_grip": [
+                -0.298748,
+                0.776604,
+                0.042394
+              ],
+              "right_grip": [
+                0.280126,
+                0.768585,
+                0.023104
+              ],
+              "left_foot": [
+                -0.096,
+                0.095,
+                0.022
+              ],
+              "right_foot": [
+                0.096,
+                0.095,
+                -0.014
+              ],
+              "right_shin": [
+                0.088,
+                0.485,
+                -0.01
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "maximum_door_grip_error": 4.777e-06,
+    "maximum_foot_anchor_error": 0.0
+  },
+  "crane": {
+    "rig": "NpcHumanV2",
+    "bone_count": 31,
+    "maximum_endpoint_error": 2.265e-06,
+    "clips": [
+      {
+        "name": "CraneDoorAmbush",
+        "duration_seconds": 5.0,
+        "loop": false,
+        "signature": "5d8fbc882d0f70f05dc8b4120122bb704fde64f1f6c5f14fa3142eba54df9d65",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.696864,
+                1.336047,
+                0.840335
+              ],
+              "right_grip": [
+                0.488,
+                0.822672,
+                1.231224
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 2.5,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.42,
+                1.278101,
+                0.7
+              ],
+              "right_grip": [
+                0.4,
+                1.003477,
+                0.918997
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 3.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.42,
+                1.313236,
+                0.7
+              ],
+              "right_grip": [
+                0.4,
+                1.064964,
+                0.848727
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 5.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.62,
+                1.277599,
+                0.48
+              ],
+              "right_grip": [
+                0.093129,
+                0.622563,
+                0.627435
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CraneDoorHold",
+        "duration_seconds": 1.0,
+        "loop": true,
+        "signature": "4a19071035333ed10e4f2e50970ea2fd928d6eda37f748747038fec6635e6ef5",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.62,
+                1.2776,
+                0.48
+              ],
+              "right_grip": [
+                0.093129,
+                0.622563,
+                0.627435
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 0.5,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.62,
+                1.2776,
+                0.48
+              ],
+              "right_grip": [
+                0.093129,
+                0.622563,
+                0.627435
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 1.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.62,
+                1.2776,
+                0.48
+              ],
+              "right_grip": [
+                0.093129,
+                0.622563,
+                0.627435
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CraneDoorRetreat",
+        "duration_seconds": 1.2,
+        "loop": false,
+        "signature": "c8d558cb1f085d73e8733649ebf186e6018c760c50f1b7c79106e04f3079e418",
+        "samples": [
+          {
+            "seconds": 0.0,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.62,
+                1.2776,
+                0.48
+              ],
+              "right_grip": [
+                0.093129,
+                0.622563,
+                0.627435
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 0.6,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -1.186041,
+                1.056326,
+                0.927133
+              ],
+              "right_grip": [
+                0.432311,
+                0.503511,
+                0.995987
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          },
+          {
+            "seconds": 1.2,
+            "anchors_gameplay_local": {
+              "pelvis": [
+                -0.0549,
+                1.0086,
+                -0.122
+              ],
+              "neck": [
+                0.0488,
+                1.5332,
+                0.2684
+              ],
+              "head": [
+                -0.0488,
+                1.5576,
+                0.4392
+              ],
+              "left_grip": [
+                -0.696864,
+                1.336047,
+                0.840335
+              ],
+              "right_grip": [
+                0.488,
+                0.822672,
+                1.231224
+              ],
+              "left_foot": [
+                -0.9394,
+                0.9842,
+                0.2806
+              ],
+              "right_foot": [
+                0.5734,
+                -0.0162,
+                0.0366
+              ],
+              "right_shin": [
+                0.6832,
+                0.667,
+                -0.5856
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "floor_and_contact_contract": {
+      "runtime_source": "Assets/Scripts/Runtime/Combat/CombatActor.CraneClearance.cs",
+      "actor_minimum_root_world_y": 0.22,
+      "minimum_floor_clearance_m": 0.0817998,
+      "minimum_foot_capsule_clearance_m": 0.0817998,
+      "minimum_foot_bone_world_height_m": 0.2037998,
+      "conservative_foot_radius_m": 0.15,
+      "minimum_conservative_foot_clearance_m": 0.0537998,
+      "maximum_capsule_world_height_m": 2.2656001,
+      "victim_part": "RightShin",
+      "maximum_world_hook_impact_contact_error_m": 1e-06,
+      "maximum_hook_down_axis_error": 3.74e-07,
+      "minimum_hook_impact_clearance_before_final_jab_m": 0.5693781,
+      "minimum_terminal_hook_solid_world_height_m": 0.144963,
+      "clips": [
+        {
+          "clip": "CraneDoorAmbush",
+          "samples_hz": 100,
+          "minimum_floor_clearance_m": 0.0817999,
+          "minimum_foot_capsule_clearance_m": 0.0817999,
+          "minimum_foot_bone_world_height_m": 0.2037999,
+          "maximum_capsule_world_height_m": 2.2656001,
+          "anatomy": [
+            {
+              "bone": "pelvis",
+              "parent": null,
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.5092002
+            },
+            {
+              "bone": "spine",
+              "parent": "pelvis",
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.6922001
+            },
+            {
+              "bone": "chest",
+              "parent": "spine",
+              "radius_m": 0.2928,
+              "minimum_capsule_height_m": 1.1188001,
+              "maximum_capsule_height_m": 1.8508002
+            },
+            {
+              "bone": "neck",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994001,
+              "maximum_capsule_height_m": 1.9118003
+            },
+            {
+              "bone": "head",
+              "parent": null,
+              "radius_m": 0.488,
+              "minimum_capsule_height_m": 1.2895998,
+              "maximum_capsule_height_m": 2.2656001
+            },
+            {
+              "bone": "clavicle.L",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994001,
+              "maximum_capsule_height_m": 1.8386004
+            },
+            {
+              "bone": "clavicle.R",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994001,
+              "maximum_capsule_height_m": 1.8386005
+            },
+            {
+              "bone": "upper_arm.L",
+              "parent": "clavicle.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.4725996,
+              "maximum_capsule_height_m": 1.8264004
+            },
+            {
+              "bone": "upper_arm.R",
+              "parent": "clavicle.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.5336003,
+              "maximum_capsule_height_m": 1.9240003
+            },
+            {
+              "bone": "forearm.L",
+              "parent": "upper_arm.L",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.1797998,
+              "maximum_capsule_height_m": 1.9041995
+            },
+            {
+              "bone": "forearm.R",
+              "parent": "upper_arm.R",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.2658001,
+              "maximum_capsule_height_m": 1.9850005
+            },
+            {
+              "bone": "hand.L",
+              "parent": "forearm.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.1675998,
+              "maximum_capsule_height_m": 1.9483992
+            },
+            {
+              "bone": "hand.R",
+              "parent": "forearm.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.8185629,
+              "maximum_capsule_height_m": 1.9972005
+            },
+            {
+              "bone": "thigh.L",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238001
+            },
+            {
+              "bone": "thigh.R",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238001
+            },
+            {
+              "bone": "shin.L",
+              "parent": "thigh.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.4112003,
+              "maximum_capsule_height_m": 1.3872001
+            },
+            {
+              "bone": "shin.R",
+              "parent": "thigh.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.7406,
+              "maximum_capsule_height_m": 1.3872001
+            },
+            {
+              "bone": "foot.L",
+              "parent": "shin.L",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.4356003,
+              "maximum_capsule_height_m": 1.3262004
+            },
+            {
+              "bone": "foot.R",
+              "parent": "shin.R",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.0817999,
+              "maximum_capsule_height_m": 1.0090002
+            }
+          ]
+        },
+        {
+          "clip": "CraneDoorHold",
+          "samples_hz": 100,
+          "minimum_floor_clearance_m": 0.0818001,
+          "minimum_foot_capsule_clearance_m": 0.0818001,
+          "minimum_foot_bone_world_height_m": 0.2038001,
+          "maximum_capsule_world_height_m": 2.2656001,
+          "anatomy": [
+            {
+              "bone": "pelvis",
+              "parent": null,
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.5092002
+            },
+            {
+              "bone": "spine",
+              "parent": "pelvis",
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.6922001
+            },
+            {
+              "bone": "chest",
+              "parent": "spine",
+              "radius_m": 0.2928,
+              "minimum_capsule_height_m": 1.1188001,
+              "maximum_capsule_height_m": 1.8508002
+            },
+            {
+              "bone": "neck",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994002,
+              "maximum_capsule_height_m": 1.9118003
+            },
+            {
+              "bone": "head",
+              "parent": null,
+              "radius_m": 0.488,
+              "minimum_capsule_height_m": 1.2896001,
+              "maximum_capsule_height_m": 2.2656001
+            },
+            {
+              "bone": "clavicle.L",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994002,
+              "maximum_capsule_height_m": 1.8386003
+            },
+            {
+              "bone": "clavicle.R",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3994002,
+              "maximum_capsule_height_m": 1.8386004
+            },
+            {
+              "bone": "upper_arm.L",
+              "parent": "clavicle.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.4725999,
+              "maximum_capsule_height_m": 1.8264003
+            },
+            {
+              "bone": "upper_arm.R",
+              "parent": "clavicle.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.5336004,
+              "maximum_capsule_height_m": 1.924
+            },
+            {
+              "bone": "forearm.L",
+              "parent": "upper_arm.L",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.4847999,
+              "maximum_capsule_height_m": 1.9041997
+            },
+            {
+              "bone": "forearm.R",
+              "parent": "upper_arm.R",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.2657998,
+              "maximum_capsule_height_m": 1.9118
+            },
+            {
+              "bone": "hand.L",
+              "parent": "forearm.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.4735999,
+              "maximum_capsule_height_m": 1.9163997
+            },
+            {
+              "bone": "hand.R",
+              "parent": "forearm.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.8185629,
+              "maximum_capsule_height_m": 1.5464
+            },
+            {
+              "bone": "thigh.L",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238001
+            },
+            {
+              "bone": "thigh.R",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238
+            },
+            {
+              "bone": "shin.L",
+              "parent": "thigh.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.4112003,
+              "maximum_capsule_height_m": 1.3872001
+            },
+            {
+              "bone": "shin.R",
+              "parent": "thigh.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.7406001,
+              "maximum_capsule_height_m": 1.3872
+            },
+            {
+              "bone": "foot.L",
+              "parent": "shin.L",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.4356003,
+              "maximum_capsule_height_m": 1.3262001
+            },
+            {
+              "bone": "foot.R",
+              "parent": "shin.R",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.0818001,
+              "maximum_capsule_height_m": 1.0090001
+            }
+          ]
+        },
+        {
+          "clip": "CraneDoorRetreat",
+          "samples_hz": 100,
+          "minimum_floor_clearance_m": 0.0817998,
+          "minimum_foot_capsule_clearance_m": 0.0817998,
+          "minimum_foot_bone_world_height_m": 0.2037998,
+          "maximum_capsule_world_height_m": 2.2656001,
+          "anatomy": [
+            {
+              "bone": "pelvis",
+              "parent": null,
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.5092002
+            },
+            {
+              "bone": "spine",
+              "parent": "pelvis",
+              "radius_m": 0.2806,
+              "minimum_capsule_height_m": 0.9480002,
+              "maximum_capsule_height_m": 1.6922001
+            },
+            {
+              "bone": "chest",
+              "parent": "spine",
+              "radius_m": 0.2928,
+              "minimum_capsule_height_m": 1.1188,
+              "maximum_capsule_height_m": 1.8508002
+            },
+            {
+              "bone": "neck",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3993999,
+              "maximum_capsule_height_m": 1.9118003
+            },
+            {
+              "bone": "head",
+              "parent": null,
+              "radius_m": 0.488,
+              "minimum_capsule_height_m": 1.2895998,
+              "maximum_capsule_height_m": 2.2656001
+            },
+            {
+              "bone": "clavicle.L",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3993999,
+              "maximum_capsule_height_m": 1.8386004
+            },
+            {
+              "bone": "clavicle.R",
+              "parent": "chest",
+              "radius_m": 0.1586,
+              "minimum_capsule_height_m": 1.3993999,
+              "maximum_capsule_height_m": 1.8386005
+            },
+            {
+              "bone": "upper_arm.L",
+              "parent": "clavicle.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.4725996,
+              "maximum_capsule_height_m": 1.8264004
+            },
+            {
+              "bone": "upper_arm.R",
+              "parent": "clavicle.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.5336002,
+              "maximum_capsule_height_m": 1.9240003
+            },
+            {
+              "bone": "forearm.L",
+              "parent": "upper_arm.L",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.1797998,
+              "maximum_capsule_height_m": 1.9041997
+            },
+            {
+              "bone": "forearm.R",
+              "parent": "upper_arm.R",
+              "radius_m": 0.1342,
+              "minimum_capsule_height_m": 1.2657998,
+              "maximum_capsule_height_m": 1.9850004
+            },
+            {
+              "bone": "hand.L",
+              "parent": "forearm.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 1.1675998,
+              "maximum_capsule_height_m": 1.9483993
+            },
+            {
+              "bone": "hand.R",
+              "parent": "forearm.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.7482247,
+              "maximum_capsule_height_m": 1.9972004
+            },
+            {
+              "bone": "thigh.L",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238001
+            },
+            {
+              "bone": "thigh.R",
+              "parent": "pelvis",
+              "radius_m": 0.183,
+              "minimum_capsule_height_m": 1.0456002,
+              "maximum_capsule_height_m": 1.4238001
+            },
+            {
+              "bone": "shin.L",
+              "parent": "thigh.L",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.4112003,
+              "maximum_capsule_height_m": 1.3872001
+            },
+            {
+              "bone": "shin.R",
+              "parent": "thigh.R",
+              "radius_m": 0.1464,
+              "minimum_capsule_height_m": 0.7406,
+              "maximum_capsule_height_m": 1.3872001
+            },
+            {
+              "bone": "foot.L",
+              "parent": "shin.L",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.4356003,
+              "maximum_capsule_height_m": 1.3262004
+            },
+            {
+              "bone": "foot.R",
+              "parent": "shin.R",
+              "radius_m": 0.122,
+              "minimum_capsule_height_m": 0.0817998,
+              "maximum_capsule_height_m": 1.0090002
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cable_guide": {
+    "name": "CraneDoorCableGuide",
+    "bounds_min": [
+      -0.7,
+      -0.065,
+      -2.19
+    ],
+    "bounds_max": [
+      0.7,
+      7.26,
+      0.17
+    ],
+    "triangles": 1484,
+    "signature": "f190066dbb43f0e2d5816010fe28beee37ae9eb1139efd3c0f6f525716930691",
+    "anchors": [
+      {
+        "name": "ANCHOR_Guide0",
+        "position": [
+          -0.55,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Guide1",
+        "position": [
+          -0.33,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Guide2",
+        "position": [
+          -0.11,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Guide3",
+        "position": [
+          0.11,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Guide4",
+        "position": [
+          0.33,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Guide5",
+        "position": [
+          0.55,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_NeckGuide0",
+        "position": [
+          -0.18,
+          6.96,
+          -2.09
+        ]
+      },
+      {
+        "name": "ANCHOR_NeckGuide1",
+        "position": [
+          0.18,
+          6.96,
+          -2.09
+        ]
+      }
+    ],
+    "recommended_world_root": [
+      0.0,
+      2.94,
+      5.94
+    ],
+    "support_slot_open_axis": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "support_slot_inner_radius_m": 0.045,
+    "rope_radius_m": 0.014,
+    "ceiling_mount_world_y": 10.2,
+    "neck_guide_world_positions": [
+      [
+        -0.18,
+        9.9,
+        3.85
+      ],
+      [
+        0.18,
+        9.9,
+        3.85
+      ]
+    ]
+  },
+  "signature": "f6a5f117c785d0559a92ef7cf547ac9505aa6ddc4b6dd5d36e1762b66c17ef8c"
+}

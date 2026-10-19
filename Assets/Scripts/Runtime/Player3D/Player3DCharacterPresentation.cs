@@ -1001,7 +1001,7 @@ namespace BarPromenade
                 return;
             }
 
-            float deltaTime = Mathf.Max(0f, Time.deltaTime);
+            float deltaTime = Mathf.Max(0f, PresentationDeltaTime);
             intoxicationAmount = Mathf.MoveTowards(
                 intoxicationAmount,
                 intoxicationTarget,
@@ -1044,7 +1044,7 @@ namespace BarPromenade
             if (OwnedAttentionPresentationFrozen) return;
             RestoreCorpseStepPose();
             RestoreCombatFirearm();
-            float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
+            float deltaTime = scopedPresentationFrozen ? 0f : PresentationDeltaTime;
             if (!ragdollPoseActive)
             {
                 ApplyLatePose(deltaTime);
@@ -1500,7 +1500,7 @@ namespace BarPromenade
                         ref gaitWeightVelocities[gait],
                         smoothTime,
                         Mathf.Infinity,
-                        Mathf.Max(0f, Time.deltaTime));
+                        Mathf.Max(0f, PresentationDeltaTime));
                     if (Mathf.Abs(
                             gaitWeights[gait] -
                             targetGaitWeights[gait]) < 0.0005f)
@@ -2992,7 +2992,7 @@ namespace BarPromenade
                     nauseaPose.Active ? nauseaPose.HandWeight : 0f,
                     vomitPose.Flow));
             PlayerFacialExpression expression = facialState.Advance(
-                Time.deltaTime,
+                PresentationDeltaTime,
                 allowIdleExpressions,
                 intoxicationAmount,
                 mood);

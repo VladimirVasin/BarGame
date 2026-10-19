@@ -261,6 +261,9 @@ namespace BarPromenade
         private bool stateCaptured;
         private bool previousMotorInput;
         private bool previousInteractorInput;
+        private object externalClockOwner;
+        private int externalTerminalSampleFrame = -1;
+        private bool externalClockPaused;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
         public event Action<PlayerAnimatedInteractionPhase>
@@ -334,6 +337,79 @@ namespace BarPromenade
         public double ExitDurationSeconds => timeline != null
             ? timeline.ExitDurationSeconds
             : 0d;
+
+        /// <summary>
+        /// A manually sampled presentation can retain the shared approach,
+        /// endpoint gates and cleanup while the surrounding world is paused.
+        /// </summary>
+        public bool BeginExternalClock(object owner)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (!IsInitialized || !isActiveAndEnabled ||
+                (externalClockOwner == null && IsActive) ||
+                (externalClockOwner != null && !ReferenceEquals(externalClockOwner, owner))) return false;
+            externalClockOwner = owner;
+            externalTerminalSampleFrame = -1;
+            externalClockPaused = false;
+            return true;
+        }
+
+        public bool AdvanceExternal(object owner, float seconds)
+        {
+            if (owner == null || !ReferenceEquals(externalClockOwner, owner)) return false;
+            if (!IsFinite(seconds) || seconds < 0f) throw new ArgumentOutOfRangeException(nameof(seconds));
+            if (externalClockPaused) return IsActive;
+            // Endpoints are rendered-frame gates, even for a caller sampling
+            // more than once during the same Unity frame.
+            if (externalTerminalSampleFrame == Time.frameCount &&
+                timeline != null && timeline.Phase == PlayerAnimatedInteractionPhase.Exiting &&
+                timeline.PhaseProgress >= 1f) return IsActive;
+            if (player.Visual is Player3DCharacterPresentation presentation)
+                presentation.AdvanceContextualPresentationClock(owner, seconds);
+            object previousCueOwner = RetroAudio.SetPresentationCueOwner(owner);
+            try { AdvanceInteraction(seconds); }
+            finally { RetroAudio.SetPresentationCueOwner(previousCueOwner); }
+            if (isPositioning) player.Motor?.PreserveExternallyGuidedMotion();
+            if (timeline != null && timeline.Phase == PlayerAnimatedInteractionPhase.Exiting &&
+                timeline.PhaseProgress >= 1f) externalTerminalSampleFrame = Time.frameCount;
+            return IsActive;
+        }
+
+        public bool ReleaseExternalClock(object owner)
+        {
+            if (owner == null || !ReferenceEquals(externalClockOwner, owner)) return false;
+            if (player.Visual is Player3DCharacterPresentation presentation)
+                presentation.ReleaseContextualPresentationClock(owner);
+            RetroAudioService.Instance?.ReleasePresentation(owner);
+            externalClockOwner = null;
+            externalTerminalSampleFrame = -1;
+            externalClockPaused = false;
+            return true;
+        }
+
+        public bool SetExternalPaused(object owner, bool paused)
+        {
+            if (owner == null || !ReferenceEquals(externalClockOwner, owner)) return false;
+            externalClockPaused = paused;
+            RetroAudioService.Instance?.SetPresentationPaused(owner, paused);
+            return true;
+        }
+
+        /// <summary>
+        /// Synchronous transfer to another world-rig owner. The caller must
+        /// acquire its next presentation in the same call stack; no neutral
+        /// sample or authored exit relocation occurs between the two owners.
+        /// </summary>
+        public bool ReleaseForHandoff(object owner)
+        {
+            if (owner == null || !ReferenceEquals(externalClockOwner, owner) ||
+                isPositioning || !ownsClipPresentation ||
+                !(player.Visual is Player3DCharacterPresentation presentation)) return false;
+            presentation.EndClipForHandoff();
+            ownsClipPresentation = false;
+            CompleteInteraction();
+            return true;
+        }
 
         public void Initialize(
             PlayerRuntime playerRuntime,
@@ -552,6 +628,26 @@ namespace BarPromenade
                 authoredExitPose,
                 transition,
                 initialVerticalTolerance);
+        }
+
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            float initialVerticalTolerance,
+            IReadOnlyList<Vector3> entryApproachWaypoints,
+            int entryApproachWaypointCount)
+        {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                null,
+                initialVerticalTolerance,
+                entryApproachWaypoints,
+                entryApproachWaypointCount);
         }
 
         public bool BeginPositioned(
@@ -955,6 +1051,16 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (SceneTransitionService.IsTransitioning && IsActive)
+            {
+                CompleteInteraction();
+                return;
+            }
+            if (externalClockOwner == null) AdvanceInteraction(Time.deltaTime);
+        }
+
+        private void AdvanceInteraction(float seconds)
+        {
             if (!IsActive)
             {
                 return;
@@ -968,20 +1074,20 @@ namespace BarPromenade
 
             if (isPositioning)
             {
-                UpdatePositioning();
+                UpdatePositioning(seconds);
                 return;
             }
 
             if (IsNestedLoopActionActive)
             {
-                UpdateNestedLoopAction();
+                UpdateNestedLoopAction(seconds);
                 return;
             }
 
             PlayerAnimatedInteractionPhase previousPhase =
                 timeline.Phase;
             if (mouthAccess != null && !mouthAccess.IsReady) return;
-            timeline.Advance(Time.deltaTime);
+            timeline.Advance(seconds);
             if (!timeline.IsActive)
             {
                 CompleteInteraction(completedNormally: true);
@@ -1017,7 +1123,7 @@ namespace BarPromenade
             NestedLoopActionCompleted = null;
         }
 
-        private void UpdateNestedLoopAction()
+        private void UpdateNestedLoopAction(float seconds)
         {
             if (nestedMouthAccess != null && !nestedMouthAccess.IsReady) return;
             if (Time.frameCount <= nestedLoopActionSettleFrame)
@@ -1026,7 +1132,7 @@ namespace BarPromenade
             }
             PlayerAnimatedInteractionPhase previousPhase =
                 nestedLoopAction.Phase;
-            nestedLoopAction.Advance(Time.deltaTime);
+            nestedLoopAction.Advance(seconds);
             if (!nestedLoopAction.IsActive)
             {
                 FinishNestedLoopAction(completedNormally: true);
@@ -1040,7 +1146,7 @@ namespace BarPromenade
             }
         }
 
-        private void UpdatePositioning()
+        private void UpdatePositioning(float seconds)
         {
             if (entryPoseSettled)
             {
@@ -1055,7 +1161,7 @@ namespace BarPromenade
                 if (player.Motor.MoveTowardsApproachWaypoint(
                         corner,
                         ApproachWaypointArrivalRadius,
-                        Time.deltaTime))
+                        seconds))
                 {
                     approachWaypointIndex++;
                     return;
@@ -1068,7 +1174,7 @@ namespace BarPromenade
             if (player.Motor.MoveTowardsInteractionPose(
                     entryPose.RootPosition,
                     entryPose.RootRotation,
-                    Time.deltaTime))
+                    seconds))
             {
                 SettleAtEntryPose();
                 return;
@@ -1258,6 +1364,13 @@ namespace BarPromenade
                 completedNormally &&
                 placeAtExitOnCompletion &&
                 stateCaptured;
+
+            if (externalClockOwner != null && player.Visual is Player3DCharacterPresentation externalPresentation)
+                externalPresentation.ReleaseContextualPresentationClock(externalClockOwner);
+            if (externalClockOwner != null) RetroAudioService.Instance?.ReleasePresentation(externalClockOwner);
+            externalClockOwner = null;
+            externalTerminalSampleFrame = -1;
+            externalClockPaused = false;
 
             player.Motor?.CancelInteractionPoseMove();
             mouthAccess?.Dispose();

@@ -468,6 +468,268 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator LevelCutscenes_DeferredLaunchClockReplayAndCleanup()
+        {
+            Camera camera = cameraObject.GetComponent<Camera>();
+            var controller = uiObject.AddComponent<CutscenePlaybackController>();
+            controller.Initialize(
+                new PlayerRuntime(playerObject, motor, interactor, null),
+                cameraFollow,
+                hud,
+                menu);
+            controller.AutomaticPlayback = false;
+            menu.BindCutscenes(controller);
+            var playbacks = new List<TestCutscenePlayback>();
+            const string cutsceneId = "test.warehouse.cutscene";
+            try
+            {
+                Assert.That(controller.Catalog.Count, Is.Zero);
+                Assert.That(menu.Open(), Is.True);
+                for (int row = 0;
+                     row < (int)PauseMenuOption.Count &&
+                     menu.SelectedOption != PauseMenuOption.Cutscenes;
+                     row++)
+                {
+                    menu.MoveSelection(1);
+                }
+
+                Assert.That(menu.SelectedOption, Is.EqualTo(PauseMenuOption.Cutscenes));
+                Assert.That(menu.ConfirmSelection(), Is.True);
+                Assert.That(menu.Page, Is.EqualTo(PauseMenuPage.Cutscenes),
+                    "A level may expose its catalog before any authored cutscenes exist.");
+                Assert.That(menu.TryStartCutscene("missing"), Is.False);
+                yield return CaptureCutsceneUi("empty-list");
+
+                controller.Catalog.Register(new CutsceneDefinition(
+                    cutsceneId,
+                    "Test warehouse cutscene",
+                    () =>
+                    {
+                        var playback = new TestCutscenePlayback(camera, () =>
+                            Time.timeScale == 0f && AudioListener.pause &&
+                            !motor.InputEnabled && !interactor.InputEnabled &&
+                            cameraFollow.PresentationSuspended && !hud.Visible);
+                        playbacks.Add(playback);
+                        return playback;
+                    }));
+                Assert.That(controller.Catalog.Count, Is.EqualTo(1));
+                Assert.That(controller.Catalog[0], Is.Not.Null);
+                Vector3 initialPlayerPosition = playerObject.transform.position;
+                InputSystem.QueueStateEvent(keyboard,
+                    new KeyboardState(Key.W, Key.E, Key.Space));
+                Assert.That(menu.TryStartCutscene(cutsceneId), Is.True);
+                Assert.That(menu.TryStartCutscene(cutsceneId), Is.False,
+                    "A pending launch must not enqueue another playback.");
+                Assert.That(menu.IsOpen, Is.True);
+                Assert.That(controller.IsPlaying, Is.False);
+                Assert.That(Time.timeScale, Is.Zero);
+                yield return null;
+
+                Assert.That(menu.IsOpen, Is.False);
+                Assert.That(controller.IsPlaying, Is.True);
+                Assert.That(controller.IsPlaybackPaused, Is.False,
+                    "The menu's confirmation key must not pause the arriving cutscene.");
+                Assert.That(controller.ElapsedSeconds, Is.Zero);
+                Assert.That(controller.CurrentTimecode, Is.EqualTo("00:00.000"));
+                Assert.That(playbacks[0].PrepareCount, Is.EqualTo(1));
+                Assert.That(playbacks[0].LastSample, Is.Zero);
+                Assert.That(playbacks[0].PreparedWhileOwned, Is.True);
+                Assert.That(playbacks[0].SampledWhileOwned, Is.True);
+                Assert.That(playerObject.transform.position, Is.EqualTo(initialPlayerPosition));
+                Assert.That(PlayerDirectionalInput.ReadRaw(), Is.EqualTo(Vector2.zero));
+                Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.False);
+                Assert.That(controller.TryPlay(cutsceneId), Is.False,
+                    "A playing cutscene is the sole owner of playback.");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                controller.Advance(12.35d);
+                Assert.That(controller.ElapsedSeconds, Is.EqualTo(12.35d).Within(0.000001d));
+                Assert.That(playbacks[playbacks.Count - 1].LastSample,
+                    Is.EqualTo(controller.ElapsedSeconds));
+                Assert.That(controller.CurrentTimecode, Is.EqualTo("00:12.350"));
+                yield return CaptureCutsceneUi("playback");
+                controller.TogglePause();
+                Assert.That(controller.IsPlaybackPaused, Is.True);
+                Assert.That(playbacks[playbacks.Count - 1].IsPaused, Is.True);
+                controller.Advance(2d);
+                Assert.That(controller.ElapsedSeconds, Is.EqualTo(12.35d).Within(0.000001d));
+                Assert.That(controller.CurrentTimecode, Is.EqualTo("00:12.350"));
+                Assert.That(playbacks[playbacks.Count - 1].LastSample,
+                    Is.EqualTo(controller.ElapsedSeconds));
+
+                controller.Restart();
+                Assert.That(controller.IsPlaybackPaused, Is.False);
+                Assert.That(playbacks[playbacks.Count - 1].IsPaused, Is.False);
+                Assert.That(controller.ElapsedSeconds, Is.Zero);
+                Assert.That(controller.CurrentTimecode, Is.EqualTo("00:00.000"));
+                Assert.That(playbacks[playbacks.Count - 1].LastSample, Is.Zero);
+                TestCutscenePlayback beforeReturn = playbacks[playbacks.Count - 1];
+                controller.Advance(100d);
+                Assert.That(controller.ElapsedSeconds, Is.EqualTo(30d));
+                Assert.That(beforeReturn.LastSample, Is.EqualTo(30d));
+                Assert.That(controller.CurrentTimecode, Is.EqualTo("00:30.000"),
+                    "Completion keeps its exact terminal sample until the deferred return.");
+                controller.ReturnToList();
+                Assert.That(Time.timeScale, Is.Zero);
+                Assert.That(motor.InputEnabled, Is.False);
+                yield return null;
+                Assert.That(controller.IsPlaying, Is.False);
+                Assert.That(beforeReturn.StopCount, Is.EqualTo(1));
+                Assert.That(menu.IsOpen, Is.True);
+                Assert.That(menu.Page, Is.EqualTo(PauseMenuPage.Cutscenes));
+                Assert.That(Time.timeScale, Is.Zero);
+                Assert.That(motor.InputEnabled, Is.False);
+
+                Assert.That(menu.TryStartCutscene(cutsceneId), Is.True);
+                yield return null;
+                Assert.That(controller.IsPlaying, Is.True);
+                Assert.That(controller.ElapsedSeconds, Is.Zero);
+                TestCutscenePlayback repeated = playbacks[playbacks.Count - 1];
+                Assert.That(repeated, Is.Not.SameAs(beforeReturn));
+                controller.Stop();
+                Assert.That(repeated.StopCount, Is.EqualTo(1));
+                AssertCutsceneStateRestored();
+                Assert.That(controller.TryPlay("missing"), Is.False);
+
+                Vector3 cameraPosition = camera.transform.position;
+                Quaternion cameraRotation = camera.transform.rotation;
+                float cameraFieldOfView = camera.fieldOfView;
+                Assert.That(controller.TryPlay(cutsceneId), Is.True);
+                controller.Advance(4d);
+                TestCutscenePlayback beforeDisable = playbacks[playbacks.Count - 1];
+                controller.enabled = false;
+                Assert.That(controller.IsPlaying, Is.False);
+                Assert.That(beforeDisable.StopCount, Is.EqualTo(1));
+                AssertCutsceneStateRestored();
+                Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
+                Assert.That(Quaternion.Angle(camera.transform.rotation, cameraRotation),
+                    Is.LessThan(0.001f));
+                Assert.That(camera.fieldOfView, Is.EqualTo(cameraFieldOfView));
+                controller.Stop();
+                Assert.That(beforeDisable.StopCount, Is.EqualTo(1),
+                    "Repeated teardown must not stop authored content twice.");
+
+                controller.enabled = true;
+                var failed = new TestCutscenePlayback(camera, () =>
+                    Time.timeScale == 0f && !motor.InputEnabled)
+                {
+                    FailPreparation = true
+                };
+                controller.Catalog.Register(new CutsceneDefinition(
+                    "test.unavailable.cutscene", "Test unavailable cutscene", () => failed));
+                Assert.That(controller.TryPlay("test.unavailable.cutscene"), Is.False);
+                Assert.That(controller.IsPlaying, Is.False);
+                Assert.That(failed.PreparedWhileOwned, Is.True);
+                Assert.That(failed.StopCount, Is.EqualTo(1),
+                    "Failed preparation still owns content cleanup.");
+                AssertCutsceneStateRestored();
+                Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
+                Assert.That(camera.fieldOfView, Is.EqualTo(cameraFieldOfView));
+            }
+            finally
+            {
+                controller.Stop();
+                controller.enabled = false;
+            }
+        }
+
+        private void AssertCutsceneStateRestored()
+        {
+            Assert.That(menu.IsOpen, Is.False);
+            Assert.That(PauseMenuController.IsAnyPaused, Is.False);
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(Time.timeScale, Is.EqualTo(0.75f));
+            Assert.That(AudioListener.pause, Is.False);
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.enabled, Is.True);
+            Assert.That(cameraFollow.PresentationSuspended, Is.False);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
+            Assert.That(hud.Visible, Is.True);
+        }
+
+        private sealed class TestCutscenePlayback : ICutscenePlayback
+        {
+            private readonly Camera camera;
+            private readonly System.Func<bool> ownsPlayback;
+            public double DurationSeconds => 30d;
+            public int PrepareCount { get; private set; }
+            public int StopCount { get; private set; }
+            public double LastSample { get; private set; } = -1d;
+            public bool PreparedWhileOwned { get; private set; }
+            public bool SampledWhileOwned { get; private set; } = true;
+            public bool IsPaused { get; private set; }
+            public bool FailPreparation { get; set; }
+
+            public TestCutscenePlayback(Camera camera, System.Func<bool> ownsPlayback)
+            {
+                this.camera = camera;
+                this.ownsPlayback = ownsPlayback;
+            }
+
+            public void Prepare()
+            {
+                PrepareCount++;
+                PreparedWhileOwned = ownsPlayback();
+                if (FailPreparation)
+                    throw new System.InvalidOperationException("Test cutscene preparation failed.");
+            }
+
+            public void Sample(double elapsedSeconds)
+            {
+                LastSample = elapsedSeconds;
+                SampledWhileOwned &= ownsPlayback();
+                camera.transform.SetPositionAndRotation(
+                    new Vector3(6f + (float)elapsedSeconds, 3f, -8f),
+                    Quaternion.Euler(8f, 35f, 0f));
+                camera.fieldOfView = 42f;
+            }
+
+            public void Stop()
+            {
+                StopCount++;
+            }
+
+            public void SetPaused(bool paused)
+            {
+                IsPaused = paused;
+            }
+        }
+
+        private static IEnumerator CaptureCutsceneUi(string name)
+        {
+            // The Game view includes IMGUI; Camera.Render cannot prove the overlay.
+            System.IDisposable gameView = null;
+            Texture2D frame = null;
+            try
+            {
+#if UNITY_EDITOR
+                System.Type sizeOwner = typeof(AreaLoadingVisualCapture).GetNestedType(
+                    "GameViewResolution", System.Reflection.BindingFlags.NonPublic);
+                gameView = (System.IDisposable)System.Activator.CreateInstance(sizeOwner, true);
+                sizeOwner.GetMethod("Set").Invoke(gameView, new object[] { 1280, 720 });
+#endif
+                yield return null;
+                if (Application.isBatchMode) { yield return null; yield return null; }
+                else yield return new WaitForEndOfFrame();
+                frame = ScreenCapture.CaptureScreenshotAsTexture();
+                Assert.That(frame, Is.Not.Null,
+                    "The cutscene UI capture requires a rendered framebuffer.");
+                string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, "..", "Captures", "CutsceneFoundation", name + ".png"));
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                System.IO.File.WriteAllBytes(path, frame.EncodeToPNG());
+            }
+            finally
+            {
+                if (frame != null) Object.Destroy(frame);
+                gameView?.Dispose();
+            }
+        }
+
         private static void Destroy(GameObject gameObject)
         {
             if (gameObject != null)

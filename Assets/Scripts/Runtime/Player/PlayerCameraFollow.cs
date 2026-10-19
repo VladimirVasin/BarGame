@@ -11,6 +11,27 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed partial class PlayerCameraFollow : MonoBehaviour
     {
+        private int presentationSuspensions;
+        internal bool PresentationSuspended => presentationSuspensions > 0;
+
+        /// <summary>Temporarily yield the camera without cancelling its current aim transition.</summary>
+        internal IDisposable SuspendPresentation()
+        {
+            presentationSuspensions++;
+            return new PresentationSuspension(this);
+        }
+
+        private sealed class PresentationSuspension : IDisposable
+        {
+            private PlayerCameraFollow owner;
+            public PresentationSuspension(PlayerCameraFollow camera) { owner = camera; }
+            public void Dispose()
+            {
+                if (owner != null) owner.presentationSuspensions--;
+                owner = null;
+            }
+        }
+
         [Header("Exterior")]
         [SerializeField, Range(1f, 40f)] private float exteriorPitch = 14f;
         [SerializeField, Min(0.1f)] private float exteriorDistance = 1.9f;
@@ -717,7 +738,7 @@ namespace BarPromenade
         private void LateUpdate()
         {
             RefreshCursor();
-            if (controlledCamera == null || followTarget == null)
+            if (PresentationSuspended || controlledCamera == null || followTarget == null)
             {
                 return;
             }

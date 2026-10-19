@@ -65,13 +65,17 @@ namespace BarPromenade
         private Vector3 CraneStationPosition => craneStationPosition;
         public int CraneCableCount => IsCrane ? craneCables.Length : 0;
         public Vector3 CraneStrikeHandPosition => CraneHookPosition;
-        public Vector3 GetCraneCableStart(int index) => HasWarehouseCraneRemnant ? craneRemnant.GetCableStart(index) : craneFeeds[index].position;
-        public Vector3 GetCraneCableEnd(int index) => HasWarehouseCraneRemnant ? craneRemnant.GetCableEnd(index) : craneAttachments[index].position;
+        public Vector3 GetCraneCableStart(int index) => DoorAmbushPrepared ? DoorSupportPoint(index, 0f) :
+            HasWarehouseCraneRemnant ? craneRemnant.GetCableStart(index) : craneFeeds[index].position;
+        public Vector3 GetCraneCableEnd(int index) => DoorAmbushPrepared ? DoorSupportPoint(index, 1f) :
+            HasWarehouseCraneRemnant ? craneRemnant.GetCableEnd(index) : craneAttachments[index].position;
         internal Transform GetCraneCableTransform(int index) => craneCables[index];
         internal Transform GetCraneCableTransform(int index, int segment) => craneCablePieces[index, segment];
-        public Vector3 GetCraneCableSegmentStart(int index, int segment) => HasWarehouseCraneRemnant
+        public Vector3 GetCraneCableSegmentStart(int index, int segment) => DoorAmbushPrepared
+            ? DoorSupportPoint(index, segment / (float)CraneCableSegments) : HasWarehouseCraneRemnant
             ? craneRemnant.GetPoint(index, segment / (float)CraneCableSegments) : CraneRopePoint(index, segment / (float)CraneCableSegments);
-        public Vector3 GetCraneCableSegmentEnd(int index, int segment) => HasWarehouseCraneRemnant
+        public Vector3 GetCraneCableSegmentEnd(int index, int segment) => DoorAmbushPrepared
+            ? DoorSupportPoint(index, (segment + 1f) / CraneCableSegments) : HasWarehouseCraneRemnant
             ? craneRemnant.GetPoint(index, (segment + 1f) / CraneCableSegments) : CraneRopePoint(index, (segment + 1f) / CraneCableSegments);
 
         private void LoadCraneClips()

@@ -187,6 +187,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (DoorAmbush != null) DoorAmbush.enabled = false;
+            if (Cutscenes != null)
+            {
+                Cutscenes.enabled = false;
+                Cutscenes.Catalog.Clear();
+                PauseMenu?.BindCutscenes(null);
+            }
             CancelRoomAttackSequence();
             Hero?.CancelRestraint();
             ClearOpponentAttackSuppression();

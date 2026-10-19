@@ -7,11 +7,12 @@ namespace BarPromenade
         private bool restraintSuspension, restraintLandingPending;
         private float restraintLandingSpeed;
 
-        internal bool BeginRestraintSuspension(Player3DAnatomicalPart part, Vector3 localPoint, Vector3 target)
+        internal bool BeginRestraintSuspension(Player3DAnatomicalPart part, Vector3 localPoint, Vector3 target,
+            bool invertedLeg = false)
         {
             if (!IsActive || !recoverable || physicsController == null) return false;
             if ((IsRecovering || physicsController.IsFrozen) && !ResumeHeldSimulation()) return false;
-            if (!physicsController.BeginRestraintDrive(part, localPoint, target)) return false;
+            if (!physicsController.BeginRestraintDrive(part, localPoint, target, invertedLeg)) return false;
             restraintSuspension = true;
             restraintLandingPending = false;
             restraintLandingSpeed = 0f;

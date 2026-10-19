@@ -46,19 +46,11 @@ Rules:
 
 - Unity `6000.6.4f1`, Universal Render Pipeline `17.6.0`, Input System `1.20.0`.
 - Runtime composition builds near-empty scenes from validated pure plans.
-- Thirteen build scenes, in build order:
-  `Assets/Scenes/MainMenu.unity` (index `0`),
-  `Assets/Scenes/City.unity`,
-  `Assets/Scenes/DoorTransition.unity`,
-  `Assets/Scenes/BarInterior.unity`,
-  `Assets/Scenes/SupermarketInterior.unity`,
-  `Assets/Scenes/StairwellInterior.unity`,
-  `Assets/Scenes/HomeInterior.unity`,
-  `Assets/Scenes/MountainRoad.unity`,
-  `Assets/Scenes/AreaLoading.unity`,
-  `Assets/Scenes/ChurchInterior.unity`,
-  `Assets/Scenes/AlpineVillage.unity`,
-  `Assets/Scenes/MothersHouseInterior.unity`, and `Assets/Scenes/CombatTest.unity`.
+- Thirteen build scenes under `Assets/Scenes/`, all `.unity`, in build order:
+  `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,
+  `SupermarketInterior`, `StairwellInterior`, `HomeInterior`, `MountainRoad`,
+  `AreaLoading`, `ChurchInterior`, `AlpineVillage`, `MothersHouseInterior`,
+  `CombatTest`.
   Ten are gameplay roots: City, BarInterior, SupermarketInterior,
   StairwellInterior, HomeInterior, MountainRoad, ChurchInterior, AlpineVillage
   MothersHouseInterior and CombatTest. Each instantiates
@@ -72,6 +64,9 @@ Rules:
 
 ## Unity rules
 
+- Scripted scenes use expressive camera staging: deliberate FOV changes,
+  Dutch angles and other horizon rolls timed to the action. Author and review
+  lens and roll changes together with framing and character contacts.
 - Do not edit or commit `Library`, `Temp`, `Logs`, `UserSettings`, generated IDE files, or build output.
 - Preserve Unity `.meta` files with their assets. Move or rename assets through Unity when practical.
 - Avoid hand-editing serialized scenes, prefabs, and ScriptableObjects unless the change is deliberate and verified in Unity.

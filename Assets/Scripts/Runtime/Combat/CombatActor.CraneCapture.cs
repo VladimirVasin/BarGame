@@ -16,7 +16,7 @@ namespace BarPromenade
         public bool HasCraneVictim => craneVictim != null;
         public bool IsCraneRegenerating => IsCrane && craneRegenerating;
         public Vector3 CraneHomePosition { get; private set; }
-        public Vector3 CraneHookPullOrigin => CraneHookCableExit;
+        public Vector3 CraneHookPullOrigin => DoorAmbushPrepared ? doorAmbushPullOrigin : CraneHookCableExit;
         public float CraneCaptureElapsed => CranePhase == CombatCranePhase.Capturing ? craneClock : 0f;
         public float CraneWatchElapsed => CranePhase is CombatCranePhase.Watching or CombatCranePhase.Regenerating ? craneClock : 0f;
 
@@ -63,7 +63,10 @@ namespace BarPromenade
         private bool UpdateCraneEmbeddedHook()
         {
             if (craneVictim == null || !craneVictim.TryGetCraneRestraintAnchor(this, out Pose anchor)) return false;
-            craneHookRotation = anchor.rotation * craneVictimHookRotation;
+            // The scene's freely swivelling eye stays above the puncture while
+            // the real leg rotates around it; ordinary thrown contacts retain
+            // their original bone-relative hook orientation.
+            craneHookRotation = DoorAmbushLegCapture ? doorReleasedHookRotation : anchor.rotation * craneVictimHookRotation;
             craneHookEye = anchor.position + anchor.rotation * craneVictimPenetration - craneHookRotation * craneHookImpactOffset;
             Vector3 aim = anchor.position - CraneHookCableExit;
             if (aim.sqrMagnitude > .001f) craneDirection = aim.normalized;
@@ -112,6 +115,7 @@ namespace BarPromenade
 
         internal void ReleaseCraneVictimEarly()
         {
+            if (DoorAmbushPrepared) { ReleaseDoorAmbushCapture(); return; }
             if (!CraneAttached || craneVictim == null) return;
             ReleaseCraneVictim(false);
             BeginCraneReturnHome();

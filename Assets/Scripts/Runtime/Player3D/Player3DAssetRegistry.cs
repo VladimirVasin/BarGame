@@ -478,6 +478,7 @@ namespace BarPromenade
         public IReadOnlyList<Player3DAnimationBinding> Animations => animations;
         private readonly Dictionary<string, Player3DAnimationBinding> runtimeAnimations =
             new Dictionary<string, Player3DAnimationBinding>(StringComparer.Ordinal);
+        private HashSet<string> runtimeAnimationBanks;
 
         /// <summary>Optional action banks belong to this instance, never the shared prefab.</summary>
         public void RegisterRuntimeAnimation(Player3DAnimationBinding binding)
@@ -485,6 +486,26 @@ namespace BarPromenade
             if (binding == null || binding.Clip == null || string.IsNullOrEmpty(binding.ClipName))
                 throw new ArgumentException("A runtime action needs a named clip.", nameof(binding));
             runtimeAnimations[binding.ClipName] = binding;
+        }
+
+        /// <summary>Load an optional action bank once per hero, without changing its shared prefab.</summary>
+        public bool RegisterRuntimeAnimationBank(string resourcePath, string category)
+        {
+            if (string.IsNullOrWhiteSpace(resourcePath)) throw new ArgumentException("An action bank needs a resource path.", nameof(resourcePath));
+            runtimeAnimationBanks ??= new HashSet<string>(StringComparer.Ordinal);
+            if (runtimeAnimationBanks.Contains(resourcePath)) return true;
+            if (runtimeAnimationBanks.Count >= 16) throw new InvalidOperationException("The hero's optional action bank limit was exceeded.");
+            AnimationClip[] clips = Resources.LoadAll<AnimationClip>(resourcePath);
+            bool registered = false;
+            for (int i = 0; i < clips.Length; i++)
+            {
+                AnimationClip clip = clips[i];
+                if (clip == null || clip.name.StartsWith("__preview__", StringComparison.Ordinal)) continue;
+                RegisterRuntimeAnimation(new Player3DAnimationBinding(clip.name, category, clip, clip.length, clip.isLooping));
+                registered = true;
+            }
+            if (registered) runtimeAnimationBanks.Add(resourcePath);
+            return registered;
         }
         public Player3DBoneAnchors Anchors => anchors;
         public Player3DMetrics Metrics => metrics;

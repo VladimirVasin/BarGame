@@ -16,6 +16,10 @@ namespace BarPromenade
         {
             private readonly AudioSource[] sources;
             private readonly Voice[] voices;
+            private readonly object[] presentationOwners;
+            private readonly bool[] previousIgnoreListenerPause;
+            private readonly bool[] presentationPaused;
+            private int presentationVoiceCount;
 
             public SourcePool(
                 Transform parent,
@@ -25,6 +29,9 @@ namespace BarPromenade
             {
                 sources = new AudioSource[sourceCount];
                 voices = new Voice[sourceCount];
+                presentationOwners = new object[sourceCount];
+                previousIgnoreListenerPause = new bool[sourceCount];
+                presentationPaused = new bool[sourceCount];
 
                 for (int index = 0; index < sourceCount; index++)
                 {
@@ -55,7 +62,8 @@ namespace BarPromenade
                 Vector3 position,
                 float pitch,
                 double dspTime,
-                float volumeScale)
+                float volumeScale,
+                object presentationOwner)
             {
                 int activeForEffect = 0;
                 int freeIndex = -1;
@@ -65,7 +73,9 @@ namespace BarPromenade
                 for (int index = 0; index < voices.Length; index++)
                 {
                     Voice voice = voices[index];
-                    bool active = voice.EndsAt > dspTime;
+                    bool active = presentationOwners[index] == null
+                        ? voice.EndsAt > dspTime
+                        : presentationPaused[index] || sources[index].isPlaying;
                     if (active && voice.Id == definition.Id)
                     {
                         activeForEffect++;
@@ -102,6 +112,14 @@ namespace BarPromenade
 
                 AudioSource source = sources[targetIndex];
                 source.Stop();
+                RestorePresentationSource(targetIndex);
+                if (presentationOwner != null)
+                {
+                    presentationOwners[targetIndex] = presentationOwner;
+                    presentationVoiceCount++;
+                    previousIgnoreListenerPause[targetIndex] = source.ignoreListenerPause;
+                    source.ignoreListenerPause = true;
+                }
                 source.transform.position = position;
                 source.clip = clip;
                 source.volume =
@@ -121,11 +139,56 @@ namespace BarPromenade
                 return true;
             }
 
+            public void SetPresentationPaused(object owner, bool paused)
+            {
+                if (presentationVoiceCount == 0) return;
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    if (!ReferenceEquals(presentationOwners[i], owner) || presentationPaused[i] == paused) continue;
+                    presentationPaused[i] = paused;
+                    if (paused) sources[i].Pause();
+                    else sources[i].UnPause();
+                }
+            }
+
+            public void ReleasePresentation(object owner)
+            {
+                if (presentationVoiceCount == 0) return;
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    if (!ReferenceEquals(presentationOwners[i], owner)) continue;
+                    sources[i].Stop();
+                    RestorePresentationSource(i);
+                    voices[i] = default;
+                }
+            }
+
+            public void RefreshPresentationSources()
+            {
+                if (presentationVoiceCount == 0) return;
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    if (presentationOwners[i] == null || presentationPaused[i] || sources[i].isPlaying) continue;
+                    RestorePresentationSource(i);
+                    voices[i] = default;
+                }
+            }
+
+            private void RestorePresentationSource(int index)
+            {
+                if (presentationOwners[index] == null) return;
+                sources[index].ignoreListenerPause = previousIgnoreListenerPause[index];
+                presentationOwners[index] = null;
+                presentationVoiceCount--;
+                presentationPaused[index] = false;
+            }
+
             public void StopAll()
             {
                 for (int index = 0; index < sources.Length; index++)
                 {
                     sources[index].Stop();
+                    RestorePresentationSource(index);
                     sources[index].clip = null;
                     voices[index] = default;
                 }
@@ -149,6 +212,7 @@ namespace BarPromenade
         private int[] lastVariants;
         private SourcePool[] pools;
         private double[] nextAllowedTimes;
+        private double[] presentationNextAllowedTimes;
         private uint playSequence;
         private bool initialized;
 
@@ -164,6 +228,7 @@ namespace BarPromenade
         private static void ResetStatics()
         {
             instance = null;
+            RetroAudio.SetPresentationCueOwner(null);
         }
 
         public static RetroAudioService EnsureInstalled()
@@ -309,7 +374,10 @@ namespace BarPromenade
             RetroSfxDefinition definition =
                 RetroSfxLibrary.GetDefinition(id);
             double dspTime = AudioSettings.dspTime;
-            if (dspTime < nextAllowedTimes[index])
+            bool presentationCue = RetroAudio.PresentationCueOwner != null;
+            double cueTime = presentationCue ? Time.realtimeSinceStartupAsDouble : dspTime;
+            double[] cueCooldowns = presentationCue ? presentationNextAllowedTimes : nextAllowedTimes;
+            if (cueTime < cueCooldowns[index])
             {
                 return false;
             }
@@ -345,14 +413,32 @@ namespace BarPromenade
                     position,
                     pitch,
                     dspTime,
-                    volumeScale))
+                    volumeScale,
+                    RetroAudio.PresentationCueOwner))
             {
                 return false;
             }
 
-            nextAllowedTimes[index] =
-                dspTime + definition.CooldownSeconds;
+            cueCooldowns[index] = cueTime + definition.CooldownSeconds;
             return true;
+        }
+
+        internal void SetPresentationPaused(object owner, bool paused)
+        {
+            if (owner == null || pools == null) return;
+            for (int i = 1; i < pools.Length; i++) pools[i]?.SetPresentationPaused(owner, paused);
+        }
+
+        internal void ReleasePresentation(object owner)
+        {
+            if (owner == null || pools == null) return;
+            for (int i = 1; i < pools.Length; i++) pools[i]?.ReleasePresentation(owner);
+        }
+
+        private void Update()
+        {
+            if (pools == null) return;
+            for (int i = 1; i < pools.Length; i++) pools[i]?.RefreshPresentationSources();
         }
 
         public void StopAll()
@@ -374,6 +460,7 @@ namespace BarPromenade
                      index++)
                 {
                     nextAllowedTimes[index] = 0d;
+                    presentationNextAllowedTimes[index] = 0d;
                 }
             }
         }
@@ -414,6 +501,7 @@ namespace BarPromenade
             variantClips = new AudioClip[clips.Length][];
             lastVariants = new int[clips.Length];
             nextAllowedTimes = new double[clips.Length];
+            presentationNextAllowedTimes = new double[clips.Length];
             for (int index = 1; index < clips.Length; index++)
             {
                 var id = (RetroSfxId)index;
@@ -536,6 +624,14 @@ namespace BarPromenade
 
     public static class RetroAudio
     {
+        internal static object PresentationCueOwner { get; private set; }
+        internal static object SetPresentationCueOwner(object owner)
+        {
+            object previous = PresentationCueOwner;
+            PresentationCueOwner = owner;
+            return previous;
+        }
+
         public static bool Play(RetroSfxId id)
         {
             if (!Application.isPlaying)

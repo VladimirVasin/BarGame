@@ -127,7 +127,7 @@ namespace BarPromenade
             SelectCombatOpponent(combatOpponents[0]);
         }
 
-        private CombatActor CreatePreparedOpponent(int index, CombatEnemyKind kind, int variantIndex)
+        private CombatActor CreatePreparedOpponent(int index, CombatEnemyKind kind, int variantIndex, bool registerForCombat = true)
         {
             var obj = new GameObject("Combat Opponent " + (index + 1) + " " + kind);
             obj.transform.SetParent(transform, false);
@@ -161,7 +161,7 @@ namespace BarPromenade
             actor.InitializeOpponent(presentation, body, kind: kind);
             actor.SetContactTarget(Hero);
             actor.JournalActorId = index + 2 + variantIndex * CombatEncounterSettings.OpponentCapacity;
-            preparedOpponents.Add(actor); preparedParticipants.Add(actor);
+            if (registerForCombat) { preparedOpponents.Add(actor); preparedParticipants.Add(actor); }
             // Damage preparation snapshots the authored visible surfaces while
             // all variants are active. Reset then parks every unselected body.
             return actor;

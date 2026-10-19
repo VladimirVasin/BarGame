@@ -13,12 +13,17 @@ namespace BarPromenade
         private Transform restraintBone;
         private Player3DAnatomicalPart restraintPart;
         private Vector3 restraintLocalPoint, restraintDragVelocity;
-        private bool restraintActive, restraintPressArmed;
+        private bool restraintActive, restraintPressArmed, restraintEscapeGateWasOpen;
         private int restraintPresses, restraintInputFrame = -1;
         private float restraintSeconds;
+        private AnimationClip restraintHoldClip;
 
         public bool IsRestrained => restraintActive;
         public bool IsRestraintAirborne => restraintActive && IsRagdollActive;
+        public bool CanEscapeRestraint => restraintActive && restraintSource != null &&
+            (!restraintSource.DoorAmbushPrepared || restraintSource.DoorAmbushEscapeEnabled);
+        public float RestraintElapsed => restraintSeconds;
+        public Player3DAnatomicalPart RestraintPart => restraintPart;
         public float RestraintEscapeProgress => Mathf.Clamp01(restraintPresses / (float)RestraintEscapePresses);
         public Vector3 RestraintAnchor => restraintBone != null
             ? restraintBone.TransformPoint(restraintLocalPoint) : BodyWorldPosition;
@@ -28,13 +33,20 @@ namespace BarPromenade
         /// <summary>The resolved anatomical contact owns the attachment; no second hit or HP transaction occurs.</summary>
         public bool TryBeginCraneRestraint(CombatActor source, Player3DAnatomicalPart part,
             Vector3 localPoint, Vector3 worldPoint)
+            => TryBeginCraneRestraint(source, part, localPoint, worldPoint, null);
+
+        private bool TryBeginCraneRestraint(CombatActor source, Player3DAnatomicalPart part,
+            Vector3 localPoint, Vector3 worldPoint, AnimationClip holdClip)
         {
             if (source == null || !source.IsCrane || hero == null || restraintActive || State.IsDefeated ||
                 !isActiveAndEnabled || (interaction != null && interaction.IsActive) || Ragdoll == null ||
                 !FiniteRestraintVector(localPoint) || !FiniteRestraintVector(worldPoint) ||
                 !Ragdoll.PhysicsController.TryGetCombatBone(part, out Transform bone)) return false;
             if (IsRagdollActive && !IsKnockedDown) return false;
-            if (!IsRagdollActive && !hero.TryAcquireClip(this, hit.name)) return false;
+            if (holdClip != null)
+                hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(holdClip.name,
+                    "Combat", holdClip, holdClip.length, holdClip.isLooping));
+            if (!IsRagdollActive && !hero.TryAcquireClip(this, holdClip != null ? holdClip.name : hit.name)) return false;
             if (!IsRagdollActive && motor != null && !motor.SetOwnedMovementConstraint(this, 0f, 0f))
             {
                 hero.ReleaseOwnedClip(this);
@@ -55,6 +67,7 @@ namespace BarPromenade
             supportGrip?.SetRecoveryOwned(true);
             if (!IsRagdollActive) motor?.SetOwnedMovementConstraint(this, 0f, 0f);
             restraintSource = source;
+            restraintHoldClip = holdClip;
             restraintBone = bone;
             restraintPart = part;
             restraintLocalPoint = localPoint;
@@ -63,6 +76,7 @@ namespace BarPromenade
             restraintPresses = 0;
             restraintInputFrame = Time.frameCount;
             restraintPressArmed = !GameInput.IsHeld(GameInputAction.Interact, GameInputContext.Gameplay);
+            restraintEscapeGateWasOpen = !source.DoorAmbushPrepared;
             restraintActive = true;
             if (!restraintSceneOwnerResolved)
             {
@@ -74,7 +88,8 @@ namespace BarPromenade
             restraintSceneOwner?.BeginCraneOpponentSuppression(source);
             if (restraintInteractor == null) restraintInteractor = GetComponent<PlayerInteractor>();
             restraintInteractor?.SetOwnedInteractKeyClaim(this, true);
-            if (IsRagdollActive) Ragdoll.BeginRestraintSuspension(part, localPoint, source.CraneHookPullOrigin);
+            if (IsRagdollActive) Ragdoll.BeginRestraintSuspension(part, localPoint, source.CraneHookPullOrigin,
+                source.DoorAmbushLegCapture);
             PresentRestraint();
             return true;
         }
@@ -108,8 +123,10 @@ namespace BarPromenade
                 bool lostGround = motor != null && !motor.IsGrounded && restraintSeconds >= .16f;
                 if ((lifting || lostGround) && BeginRestraintPhysics(target)) return;
                 Vector3 planar = Vector3.ProjectOnPlane(delta, Vector3.up);
-                Vector3 wanted = planar.sqrMagnitude > .01f ? planar.normalized * Mathf.Min(2.2f, planar.magnitude) : Vector3.zero;
-                Vector3 displacement = Vector3.MoveTowards(restraintDragVelocity, wanted, seconds * 7f) * seconds;
+                float motionRate = restraintSource.DoorAmbushPrepared ? DoorAmbushMotionRate : 1f;
+                Vector3 wanted = planar.sqrMagnitude > .01f
+                    ? planar.normalized * Mathf.Min(2.2f, planar.magnitude) * motionRate : Vector3.zero;
+                Vector3 displacement = Vector3.MoveTowards(restraintDragVelocity, wanted, seconds * 7f * motionRate) * seconds;
                 Vector3 moved = motor != null ? motor.ApplyOwnedForcedDisplacement(this, displacement) : Vector3.zero;
                 restraintDragVelocity = moved / seconds;
                 motor?.SetOwnedMovementConstraint(this, 0f, 0f);
@@ -126,13 +143,27 @@ namespace BarPromenade
                 localPoint: restraintLocalPoint, kind: CombatImpactKind.Hook, primaryResponse: false,
                 headFeedback: false);
             if (!IsKnockedDown && !TryBeginKnockdown(impact, restraintDragVelocity, Vector3.zero)) return false;
-            return Ragdoll.BeginRestraintSuspension(restraintPart, restraintLocalPoint, target);
+            return Ragdoll.BeginRestraintSuspension(restraintPart, restraintLocalPoint, target,
+                restraintSource.DoorAmbushLegCapture);
         }
 
         private void ReadRestraintEscape()
         {
             if (restraintInputFrame == Time.frameCount || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             restraintInputFrame = Time.frameCount;
+            if (!CanEscapeRestraint)
+            {
+                restraintEscapeGateWasOpen = restraintPressArmed = false;
+                return;
+            }
+            if (!restraintEscapeGateWasOpen)
+            {
+                // Opening the gate discards held and same-frame presses. A
+                // subsequent neutral frame arms the first fresh attempt.
+                restraintEscapeGateWasOpen = true;
+                restraintPressArmed = false;
+                return;
+            }
             if (!GameInput.IsHeld(GameInputAction.Interact, GameInputContext.Gameplay)) restraintPressArmed = true;
             if (!restraintPressArmed || !GameInput.WasPressed(GameInputAction.Interact, GameInputContext.Gameplay)) return;
             restraintPressArmed = false;
@@ -142,7 +173,7 @@ namespace BarPromenade
         /// <summary>One already-resolved new press, shared by input and deterministic diagnostics.</summary>
         public bool RegisterRestraintEscapePress()
         {
-            if (!restraintActive || presentationFrozen || PauseMenuController.IsAnyPaused ||
+            if (!CanEscapeRestraint || presentationFrozen || PauseMenuController.IsAnyPaused ||
                 GameTimeScaleRuntime.IsPaused || State.IsDefeated) return false;
             restraintPresses = Mathf.Min(RestraintEscapePresses, restraintPresses + 1);
             if (restraintPresses == RestraintEscapePresses)
@@ -159,13 +190,26 @@ namespace BarPromenade
             if (!restraintActive) return false;
             if (IsRagdollActive) { ReassertTransientShotgunHold(); return true; }
             RestoreCombatAttention();
-            if (!hero.OwnsClip(this) && !hero.TryAcquireClip(this, hit.name)) return true;
+            string clipName = restraintHoldClip != null ? restraintHoldClip.name : hit.name;
+            if (!hero.OwnsClip(this) && !hero.TryAcquireClip(this, clipName)) return true;
             float struggle = Mathf.Sin(restraintSeconds * 12f);
             hero.SetOwnedClipLocomotion(this, false);
-            hero.SampleOwnedClipBlend(this, guardBreak.name, .18f + .10f * struggle, .34f + .065f * struggle);
-            damagePose?.SetRestraintContact(restraintPart, RestraintAnchor, restraintSeconds);
-            hero.SetCombatDamagePose(this, damagePose, 1f);
-            visibleClip = hit.name;
+            if (restraintHoldClip != null)
+            {
+                // This loop starts at the paired action's exact terminal pose.
+                // The physical handoff below captures this same visible rig.
+                float clipSeconds = restraintSeconds * (restraintSource.DoorAmbushPrepared ? DoorAmbushMotionRate : 1f);
+                hero.SampleOwnedClip(this, Mathf.Repeat(clipSeconds,
+                    restraintHoldClip.length) / restraintHoldClip.length);
+                hero.ClearCombatDamagePose(this);
+            }
+            else
+            {
+                hero.SampleOwnedClipBlend(this, guardBreak.name, .18f + .10f * struggle, .34f + .065f * struggle);
+                damagePose?.SetRestraintContact(restraintPart, RestraintAnchor, restraintSeconds);
+                hero.SetCombatDamagePose(this, damagePose, 1f);
+            }
+            visibleClip = clipName;
             handPose?.SetGrip(false, 0f);
             handPose?.SetGrip(true, 0f);
             ReassertTransientShotgunHold();
@@ -200,9 +244,10 @@ namespace BarPromenade
             damagePose?.ClearRestraintContact();
             restraintActive = false;
             restraintSource = null;
+            restraintHoldClip = null;
             restraintSceneOwner?.EndCraneOpponentSuppression(releasedSource);
             restraintBone = null;
-            restraintPressArmed = false;
+            restraintPressArmed = restraintEscapeGateWasOpen = false;
             restraintInteractor?.SetOwnedInteractKeyClaim(this, false);
             Ragdoll?.EndRestraintSuspension();
             motor?.ReleaseMovementConstraint(this);

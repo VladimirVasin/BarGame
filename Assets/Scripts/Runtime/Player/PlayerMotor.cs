@@ -51,6 +51,7 @@ namespace BarPromenade
         private Vector3 sideHitNormal;
         private Vector3 sideHitPoint;
         private bool interactionPoseMoveActive;
+        private int externalInteractionMotionFrame = -1;
         private float interactionPoseStallSeconds;
         private Vector3 lastInteractionPosePosition;
         private Quaternion lastInteractionPoseRotation;
@@ -97,6 +98,8 @@ namespace BarPromenade
             ownedMinimumSpacing = 0f;
             targetYawVelocity = 0f;
         }
+
+        internal void PreserveExternallyGuidedMotion() => externalInteractionMotionFrame = Time.frameCount;
 
         /// <summary>
         /// Grounded as of the player's own move this frame. The balance
@@ -509,6 +512,10 @@ namespace BarPromenade
 
         private void Update()
         {
+            // A manually clocked contextual approach may already have moved
+            // this frame before the ordinary motor's Update. Keep that motion
+            // sample for the gait instead of overwriting it with stationary.
+            if (interactionPoseMoveActive && externalInteractionMotionFrame == Time.frameCount) return;
             RequestedPlanarVelocity = BalanceDriftVelocity = Vector3.zero;
             if (controller == null || !controller.enabled)
             {

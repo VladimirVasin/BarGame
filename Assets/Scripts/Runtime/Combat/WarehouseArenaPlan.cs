@@ -298,9 +298,10 @@ namespace BarPromenade
             var lamps = new List<WarehouseArenaLamp>
             {
                 new WarehouseArenaLamp(new Vector3(-7.5f, 2.72f, -4.6f), Vector3.down, 5.5f, .65f),
-                // Seat the fixture at the wall, behind the valve riser and its brackets.
-                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.97f), new Vector3(-.10f,-1.14f,-.515f),
-                    6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 78f, Quaternion.identity),
+                // Keep the lens on its fixture; aim between the valve dock and
+                // the exit door so both the operator and the hero receive red light.
+                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.97f), new Vector3(1.27f,-1f,-1.58f),
+                    6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 88f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
                 // The separate corded bulb is rooted at the real ceiling; finite finds own its power.

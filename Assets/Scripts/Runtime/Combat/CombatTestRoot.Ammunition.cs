@@ -11,6 +11,13 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            if (Cutscenes != null)
+            {
+                Cutscenes.enabled = true;
+                if (DoorAmbush != null) DoorAmbush.enabled = true;
+                RegisterWarehouseCutscenes();
+                PauseMenu.BindCutscenes(Cutscenes);
+            }
             SubscribeEndlessSpawnGate();
             AcquireWarehouseAcoustics();
             if (Flashlight != null) Flashlight.enabled = true;

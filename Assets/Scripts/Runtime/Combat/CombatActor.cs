@@ -326,6 +326,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            if (DoorAmbushPrepared) return; // The scene owns this staged source's one clock.
             if (IsRestrained) { AdvanceRestraint(seconds); return; }
             if (RoomAttackCooldownActive) AdvanceRoomAttackCooldown(seconds);
             if (IsCrane && !State.IsDefeated) { AdvanceCraneSimulation(seconds); return; }
@@ -614,6 +615,7 @@ namespace BarPromenade
 
         public void Present()
         {
+            if (PresentDoorAmbush()) return;
             if (PresentRestraint()) return;
             using var journalTiming = MeasureJournalWork(JournalWork.Present);
             // The contact has already left the complete visible pose on this rig.
@@ -868,6 +870,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            EndDoorAmbush();
             CancelRestraint();
             RoomAttackSuppressed = false;
             ClearRoomAttackCooldown();
@@ -900,6 +903,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            EndDoorAmbush();
             CancelRestraint();
             DisposeCrane();
             ClearWarehouseTorsoLook();

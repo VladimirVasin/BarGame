@@ -1,5 +1,13 @@
 {
   "entries": [
+    {"key":"cutscene.warehouse_door_ambush","value":"Нападение у двери"},
+    {"key":"pause.cutscenes","value":"Катсцены"},
+    {"key":"cutscene.empty","value":"На этом уровне пока нет катсцен."},
+    {"key":"cutscene.back","value":"Назад"},
+    {"key":"cutscene.unavailable","value":"Катсцена сейчас недоступна."},
+    {"key":"cutscene.pause","value":"Пауза"},
+    {"key":"cutscene.resume","value":"Продолжить"},
+    {"key":"cutscene.restart","value":"Сначала"},
     {"key":"interaction.warehouse_fish","value":"E — собрать рыбу"},
     {"key":"combat.warehouse.fish.controls","value":"ЛКМ / WASD — перенос · колесо/Q/R — поворот\nTab — выбор · E — взять/положить · Esc — выйти"},
     {"key":"combat.warehouse.fish.gamepad_controls","value":"A — взять/положить · левый стик — перенос\nLB/RB — поворот · Y — выбор · B — выйти"},
