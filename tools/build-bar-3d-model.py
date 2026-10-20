@@ -3120,6 +3120,8 @@ def write_manifest(
             design_id,
             generator_version),
     }
+    if getattr(asset, "city_surface_contract", None) is not None:
+        manifest["city_surface_contract"] = asset.city_surface_contract
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(manifest, indent=2, sort_keys=False) + "\n",
@@ -3152,16 +3154,66 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--fbx", type=Path, default=DEFAULT_FBX)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--city-facade-surfaces", action="store_true",
+                        help="Author only the City/Home facade's guarded UVs; protect interior/service outputs")
+    parser.add_argument("--layout-only", action="store_true",
+                        help="With --city-facade-surfaces, publish the chart contract without model outputs")
     argv = argv[argv.index("--") + 1:] if "--" in argv else []
     return parser.parse_args(argv)
 
 
+def city_facade_surfaces(args) -> None:
+    import city_bar_unique_surfaces as surfaces
+    protected = (DEFAULT_BLEND, DEFAULT_FBX, DEFAULT_MANIFEST, SERVICE_FBX, SERVICE_MANIFEST,
+                 Path(str(FACADE_FBX) + ".meta"), Path(str(FACADE_MANIFEST) + ".meta"))
+    fingerprints = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in protected if path.exists()}
+    # Build with the original naming context, but publish only the facade.
+    # This preserves Blender's stable object/mesh names if another Bar part
+    # ever shares a source name, without re-exporting the donor assets.
+    _, _, facade = build()
+    validate_facade(facade)
+    previous = json.loads(FACADE_MANIFEST.read_text(encoding="utf8"))
+    signature = signature_for(facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
+    if previous["build_signature"] != signature:
+        raise RuntimeError("City facade UV authoring must not change the accepted Bar geometry/anchors")
+    surfaces.prepare(facade, write=not args.validate_only, apply=not args.layout_only)
+    if not args.validate_only and not args.layout_only:
+        surfaces.review_materials(facade)
+        write_manifest(facade, FACADE_MANIFEST, exterior.DESIGN_ID,
+            generator_version=exterior.GENERATOR_VERSION, display_name=exterior.DISPLAY_NAME,
+            dimensions=(exterior.WIDTH, exterior.DEPTH, exterior.HEIGHT),
+            wall_thickness=exterior.WALL_THICKNESS,
+            door_opening=(exterior.DOOR_WIDTH, exterior.DOOR_HEIGHT), unity_outward_axis="+X",
+            activity_kinds=(), district_moods=())
+        export_fbx(facade, FACADE_FBX)
+        # The editable source is City-owned; the shared interior/service blend
+        # is protected just like its FBXs and manifests.
+        for obj in list(bpy.data.objects):
+            if obj.name not in facade.collection.objects: bpy.data.objects.remove(obj, do_unlink=True)
+        surfaces.BLEND.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.wm.save_as_mainfile(filepath=str(surfaces.BLEND))
+    if not args.layout_only:
+        surfaces.verify_export(FACADE_FBX, facade)
+    for path, checksum in fingerprints.items():
+        if hashlib.sha256(path.read_bytes()).hexdigest() != checksum:
+            raise RuntimeError("Facade-only authoring changed a protected donor: " + str(path))
+    print("CITY BAR FACADE ONLY OK: original geometry/anchors and interior/service outputs retained.")
+
+
 def main() -> None:
     args = parse_args(list(sys.argv))
+    if args.city_facade_surfaces:
+        city_facade_surfaces(args)
+        return
+    if args.layout_only:
+        raise RuntimeError("--layout-only requires --city-facade-surfaces")
     interior, service_props, facade = build()
     validate(interior)
     validate_service_props(service_props)
     validate_facade(facade)
+    import city_bar_unique_surfaces as city_surfaces
+    if city_surfaces.MANIFEST.exists():
+        city_surfaces.prepare(facade)
     total = kit.triangle_count(
         kit.merge_all([part.geometry for part in interior.parts]))
     facade_total = kit.triangle_count(

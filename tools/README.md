@@ -1,5 +1,7 @@
 # Art and native tool entry points
 
+[City](../ai/city-texture-plan.md).
+
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
 (`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
 source `ArtSource/City/EastExit`.
@@ -20,9 +22,9 @@ source: `ArtSource/City/{Fair,FairChild}`.
 `Assets/Resources/City/FairChild/ChildActions` (`.fbx/.json`).
 Use `run-blender.py`/`--validate-only`.
 
-`build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
-source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;
-contacts/scale/truck/`.29 m` ordinary crew clearance/UVs/determinism.
+`build-city-cannery-3d-model.py`:10 FBXs/JSON→`Assets/Resources/City/Cannery`;
+source `ArtSource/City/Cannery`; port maps/scale/`CartonStack`, contacts/truck/
+`.29m` clearance/UVs/determinism.
 `build-cannery-{woman,receiver}-3d-model.py`: `Woman/CanneryWoman{,Actions}` and
 `Receiver/CanneryReceiver{,Actions}` FBX/JSONs, wardrobe/painted-face PNGs;
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,

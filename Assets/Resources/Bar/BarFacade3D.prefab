@@ -858,6 +858,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -393574390472480550, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: -393574390472480550, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -393574390472480550, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -393574390472480550, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: -176823198457672446, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -870,6 +886,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 56002540349246585, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: 56002540349246585, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 56002540349246585, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 56002540349246585, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: 538511274667304843, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_CastShadows
       value: 0

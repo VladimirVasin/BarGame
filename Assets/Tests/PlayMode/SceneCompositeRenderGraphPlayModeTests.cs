@@ -219,6 +219,15 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator ReflectionCapture_ColdStallAndTimeoutRecovery()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+                Assert.Ignore("Native reflection capture requires a graphics device.");
+            RenderComposite(640, 360);
+            yield return CaptureWarehouseNativeEffects(reflectionRecoveryOnly: true);
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
@@ -483,7 +492,7 @@ namespace BarPromenade.Tests.PlayMode
             return null;
         }
 
-        private IEnumerator CaptureWarehouseNativeEffects()
+        private IEnumerator CaptureWarehouseNativeEffects(bool reflectionRecoveryOnly = false)
         {
             bool previousArena = CombatTestRoot.UseLegacyArenaForTests;
             int? previousSeed = CombatTestRoot.WarehouseSeedForTests;
@@ -528,7 +537,7 @@ namespace BarPromenade.Tests.PlayMode
                 previousTarget = camera.targetTexture;
                 target.Release();
                 Object.Destroy(target);
-                target = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32,
+                target = new RenderTexture(reflectionRecoveryOnly ? 640 : 1920, reflectionRecoveryOnly ? 360 : 1080, 24, RenderTextureFormat.ARGB32,
                     RenderTextureReadWrite.sRGB) { name = "Test warehouse presentation target", filterMode = FilterMode.Point };
                 Assert.That(target.Create(), Is.True);
                 Object.Destroy(readback);
@@ -545,6 +554,23 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 WarehouseCleanPresentation warehouse = WarehouseCleanPresentation.Current;
                 Assert.That(warehouse != null && warehouse.IsForCamera(camera), Is.True);
+                if (reflectionRecoveryOnly)
+                {
+                    camera.enabled = false;
+                    SetCleanEnhancements(true);
+                    double captureDeadline = Time.realtimeSinceStartupAsDouble + 35d;
+                    while (!warehouse.Reflection.IsReady && Time.realtimeSinceStartupAsDouble < captureDeadline)
+                    {
+                        SubmitWarehouseFrame(camera);
+                        yield return null;
+                    }
+                    Assert.That(warehouse.Reflection.IsReady, Is.True, "The real warehouse must finish its initial filtered capture.");
+                    Assert.That(warehouse.Reflection.CaptureFailureCount, Is.Zero, "Cold startup must not consume a retry.");
+#if UNITY_EDITOR
+                    yield return AssertReflectionTimeoutRecovery(camera, warehouse.Reflection, warehouse.FanLight);
+#endif
+                    yield break;
+                }
                 Assert.That(warehouse.BounceRegionCount, Is.InRange(1, 4));
                 SceneCompositeRendererFeature feature = FindFeature();
                 var mixer = Resources.Load<UnityEngine.Audio.AudioMixer>("Audio/Mixers/BarPromenadeAudio");
@@ -845,11 +871,14 @@ namespace BarPromenade.Tests.PlayMode
                 OnDemandRendering.renderFrameInterval = previousRenderInterval;
                 GameSessionState.BeginNewGame();
                 RetroAudioService.Instance?.StopAll();
-                string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(),
-                    "TestResults", "Test render profile");
-                System.IO.Directory.CreateDirectory(folder);
-                System.IO.File.WriteAllText(System.IO.Path.Combine(folder, "Presentation lifecycle.json"),
-                    JsonUtility.ToJson(lifecycle, true));
+                if (!reflectionRecoveryOnly)
+                {
+                    string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(),
+                        "TestResults", "Test render profile");
+                    System.IO.Directory.CreateDirectory(folder);
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(folder, "Presentation lifecycle.json"),
+                        JsonUtility.ToJson(lifecycle, true));
+                }
             }
         }
 
@@ -1118,6 +1147,12 @@ namespace BarPromenade.Tests.PlayMode
             WarehouseReflectionController reflection, Light source)
         {
             Assert.That(source != null && source.enabled, Is.True);
+            Assert.That(SceneReflectionCapture.CaptureDeadlineReached(9.99d, 100), Is.False);
+            Assert.That(SceneReflectionCapture.CaptureDeadlineReached(11d, 2), Is.False,
+                "A cold wall-clock stall must leave time-sliced rendering a complete frame cycle.");
+            Assert.That(SceneReflectionCapture.CaptureDeadlineReached(11d, 16), Is.True);
+            Assert.That(SceneReflectionCapture.CaptureDeadlineReached(30d, 0), Is.True,
+                "Sparse rendering must not retain the global quality lease indefinitely.");
             bool previousQuality = QualitySettings.realtimeReflectionProbes;
             int starts = reflection.CaptureCount;
             int completed = reflection.CaptureCompletedCount;
@@ -1126,6 +1161,31 @@ namespace BarPromenade.Tests.PlayMode
             bool previousSource = source.enabled;
             try
             {
+                source.enabled = false;
+                SubmitWarehouseFrame(camera);
+                yield return null;
+                source.enabled = true;
+                double coldDeadline = Time.realtimeSinceStartupAsDouble + 10d;
+                while (!reflection.CaptureInProgress && Time.realtimeSinceStartupAsDouble < coldDeadline)
+                { SubmitWarehouseFrame(camera); yield return null; }
+                Assert.That(reflection.CaptureInProgress, Is.True);
+                reflection.DebugHoldCaptureForTests(11d, 0);
+                yield return null;
+                Assert.That(reflection.CaptureInProgress, Is.True, "A compile stall before the native frame cycle is not a hung capture.");
+                Assert.That(reflection.CaptureTimeoutCount, Is.EqualTo(timeouts));
+                Assert.That(reflection.CaptureFailureCount, Is.EqualTo(failures));
+                Assert.That(QualitySettings.realtimeReflectionProbes, Is.True);
+                reflection.DebugResumeCaptureForTests();
+                coldDeadline = Time.realtimeSinceStartupAsDouble + 10d;
+                while (!reflection.IsReady && Time.realtimeSinceStartupAsDouble < coldDeadline)
+                { SubmitWarehouseFrame(camera); yield return null; }
+                Assert.That(reflection.IsReady, Is.True, "The aged request must finish normally without consuming a recovery attempt.");
+                Assert.That(reflection.CaptureCount, Is.EqualTo(starts + 1));
+                Assert.That(reflection.CaptureCompletedCount, Is.EqualTo(completed + 1));
+                Assert.That(reflection.CaptureTimeoutCount, Is.EqualTo(timeouts));
+                Assert.That(QualitySettings.realtimeReflectionProbes, Is.EqualTo(previousQuality));
+                starts = reflection.CaptureCount;
+                completed = reflection.CaptureCompletedCount;
                 source.enabled = false;
                 SubmitWarehouseFrame(camera);
                 yield return null;

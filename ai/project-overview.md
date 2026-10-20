@@ -7,7 +7,8 @@
 - Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, Navigation `2.0.15`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC: native/SMAA High; saved local effects for warehouse/road/village/mother's house; shared grade/UI.
+- PC: native/SMAA High; saved City/warehouse/road/village/house effects; grade/UI.
+  City/Home: scoped material maps; bar facade UV0/UV1.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |

@@ -168,6 +168,7 @@ namespace BarPromenade
                 //  hundred.
                 part.SetParent(destination, true);
                 ApplyAppearance(binding, renderer);
+                CitySurfaceLibrary.ApplyBarFacade(renderer, binding.SourceName);
 
                 if (sign && markerComponent != null)
                 {

@@ -24,6 +24,7 @@ namespace BarPromenade
         public Transform Balcony { get; private set; }
         public Transform ExteriorView { get; private set; }
         public CityNightWorldResult ExteriorNight { get; private set; }
+        public CityLightingPresentation ExteriorLighting { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
         public CityBalconySmokerPlan BalconySmokerPlan
@@ -383,6 +384,13 @@ namespace BarPromenade
                 GameSessionState.CitySeed);
             ExteriorAtmosphere.BindPedestrians(Pedestrians);
             ExteriorAtmosphere.BindBalconySmokers(BalconySmokers);
+            var exteriorLightingObject = new GameObject("Home Balcony City Lighting");
+            exteriorLightingObject.transform.SetParent(ExteriorView, false);
+            ExteriorLighting = exteriorLightingObject.AddComponent<CityLightingPresentation>();
+            ExteriorLighting.InitializeExterior(ExteriorView, camera,
+                ExteriorNight.Atmosphere, () => ExteriorAtmosphere != null &&
+                    ExteriorAtmosphere.IsBalconyVisibilityActive, ExteriorContext.Layout);
+            ExteriorAtmosphere.BindLightingPresentation(ExteriorLighting);
             GameObject dayNightObject =
                 new GameObject("Home Day Night");
             dayNightObject.transform.SetParent(transform, false);

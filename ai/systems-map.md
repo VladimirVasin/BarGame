@@ -44,7 +44,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
-| Scene presentation | Native/SMAA; saved warehouse/road/village/house effects, grade/UI, optional 4:3. | `SceneCompositeRendererFeature`, `SceneLightingPresentation`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | Native/SMAA; saved City/warehouse/road/village/house lighting, grade/UI and 4:3. | `SceneCompositeRendererFeature`, `*LightingPresentation`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
@@ -117,7 +117,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Park board games | Both boards are playable. | `ChessRules`, `ChessEngine` | Current |
 | Park chess-set quarrel | The two men hate each other on the only grounds available: one plays chess and despises draughts, the other the reverse. | `CityParkQuarrelController`, `ParkQuarrelTimeline` | Current |
 | City world builder | One validated plan feeds shared staged/synchronous construction; temporary scene, input and audio ownership is explicit. | `CityWorldBuilder`, `CityTerrainSurfaceWorldBuilder` | Current |
-| City street surfaces | Roads/curbs/paths share ground; paint follows exact support. | `CityStreetSurface{Plan,Planner}`, `CityGroundSurfaceSystem` | Current |
+| City surfaces | Nine areas/Home: scoped maps/bar UV0+1; ground slots/paint support. | `CitySurfaceLibrary`, `CityGroundSurfaceSystem` | Current |
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |

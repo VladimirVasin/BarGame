@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "generator": "OpenAI builtin image_gen.imagegen",
+  "generated_on": "2026-10-20",
+  "purpose": "City-owned pigment ingredients only; response derives from independent physical fields. Top-left, top-right, bottom-left, bottom-right cells.",
+  "images": [
+    {
+      "name": "Masonry",
+      "file": "CityMasonry.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "Brick",
+        "Plaster",
+        "Concrete",
+        "Stone"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: old muted brown-grey fired brick pigment and gentle mineral variation, no drawn mortar grid or brick outlines. Top right: worn cool grey-beige lime plaster, subtle fine aggregate and maintained patch tone, no dramatic peeling or stains. Bottom left: weathered neutral service concrete, fine aggregate and restrained age, no joints, rebars or large marks. Bottom right: old ash-grey limestone and granite mineral grain, broad subdued variation, no drawn masonry, engraved details or wet shine.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-2603202e-3bb7-4ca2-90d6-ed704046b5a7.png",
+      "sha256": "3e33f7fb09a55914b5f2d8f7ab3c5ce1df34eccb4563d33e314358825eb10dd4"
+    },
+    {
+      "name": "Ground",
+      "file": "CityGround.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "Asphalt",
+        "Soil",
+        "Gravel",
+        "Sand"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: dark neutral-grey municipal asphalt, fine nondirectional aggregate, no markings, wheel tracks, puddles or painted repairs. Top right: dark damp grey-brown humus with tiny stones, restrained granular pigment, no grass blades, objects or footprints. Bottom left: old muted grey-beige fine compacted gravel, quiet small aggregate and broad tonal variation, no isolated large rocks or tracks. Bottom right: cool grey-tan coastal sand with faint mineral bands and fine grain, no shells, objects, footprints, waves, water or directional shadows.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-bbbb9bf3-e78c-4624-b0de-d71d9f55ab5e.png",
+      "sha256": "9e65e3a76c91cc79519141f4877964a33c601ab677d71f60e985de9ff6ac147d"
+    },
+    {
+      "name": "Finish",
+      "file": "CityFinish.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "Rust",
+        "PaintedMetal",
+        "Galvanized",
+        "Enamel"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: restrained dull grey-brown oxidized iron pigment, quiet patches of rubbed steel and fine pitting, no theatrical orange-red rust or strong flaking silhouettes. Top right: aged desaturated grey-green painted steel, gentle scuffs and pigment variation, no panel seams, screws or rivets. Bottom left: aged matte zinc and galvanized grey steel, subdued fine spangle and rubbed use, no lighting reflections or bright silver highlights. Bottom right: old pale grey-ivory working enamel, calm colour variation, clean maintained age, no drawn gloss, hardware, chips as dark shadows or grime.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-fd18f2a2-6314-4ee7-aaea-968f48852023.png",
+      "sha256": "b296c422a5506df215e5d3b164aa8350a1969b942c3e502bad5fd420ae9ecfa3"
+    },
+    {
+      "name": "Wood",
+      "file": "CityWood.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "WeatheredWood",
+        "DarkWood",
+        "PaintedWood",
+        "Roof"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: continuous weathered grey-brown outdoor conifer timber grain oriented vertically, restrained age checks and sparse soft knots, no plank joints. Top right: old dark desaturated brown wood grain, vertical, soft rubbing and quiet age, no black fissures or varnish shine. Bottom left: old maintained grey-olive painted wood, faint vertical grain and rubbed pigment, no plank joints, dramatic peeling or hinges. Bottom right: aged muted grey-brown clay roofing pigment, subtle mineral grain and ordinary exposure, no drawn tile grid, seams, outlines or moss patches.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-bcdfb143-7950-426a-b251-8b4000ad80f2.png",
+      "sha256": "78657c58a7fee9f98a852cb20eae5c462370c776649708d65dcfcf638c93be8a"
+    },
+    {
+      "name": "Fabric",
+      "file": "CityFabric.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "Cloth",
+        "Canvas",
+        "Paper",
+        "Rubber"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: old undyed grey-beige woven cloth, calm medium weave and gentle handling wear, no seams, stitching or folds. Top right: coarse muted grey-brown canvas, readable but restrained woven structure, no seams, patches, folds or stains. Bottom left: blank warm grey-cream paper pigment with faint fibres and mild handling age, no writing, drawings, logos, tears, stamps or marks. Bottom right: matte charcoal rubber with quiet worn surface and sparse faint scuffs, no tread pattern, grooves, holes or object contours.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-be300b5d-57b9-4dbd-b558-8421b050394e.png",
+      "sha256": "45c4f7442aef1c6c5ccdfc2537fc4b53570b336011a63b7e69cbb159561abeed"
+    },
+    {
+      "name": "Nature",
+      "file": "CityNature.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "cells": [
+        "Bark",
+        "Needles",
+        "Grass",
+        "Moss"
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment ingredients for the coastal City in Bar Promenade. Create one square image containing exactly four equal square full-bleed material swatches in a strict 2 by 2 grid, no borders or gaps. Each quadrant is an orthographic flat material texture and must tile on its own four edges. Restrained hand-painted pigment detail compatible with a low-poly municipal town, calm broad structure and crisp modest close-view grain. Uniform diffuse pigment only, without directional illumination, baked shadows, specular highlights, ambient occlusion or normal-map colours. Old surfaces show prolonged ordinary use and maintenance rather than catastrophe or theatrical ruin. Muted mineral colours, no photographic micro-noise. No text, letters, numbers, labels, logos, symbols, watermarks, objects, framing, perspective, cast shadows, drawn hardware, cracks that resemble letters, or story clues. Top left: aged grey-brown deciduous bark pigment with vertical furrows and restrained natural age, no tree outline or spiral grain. Top right: dense desaturated dark green conifer needle pigment clusters with quiet gaps, no isolated repeated sprig, branch silhouette or alpha background. Bottom left: dark desaturated green worn municipal lawn pigment with fine irregular organic grain, no isolated large blades, flowers, footprints or objects. Bottom right: subdued dark grey-olive moss pigment with small organic structure and quiet tonal variation, no rocks, shapes, symbols or lighting shadows.",
+      "original": "C:\\Users\\tushk\\.codex\\generated_images\\01a15a83-e7c8-7c52-b45b-1512df72f65b\\exec-d17aefa0-2b9b-464a-b4a4-f7a4c79522e4.png",
+      "sha256": "d94893d55a60d68174a143638e522f348300c9d41cdb3fb183354a6270ccd09a"
+    }
+  ]
+}

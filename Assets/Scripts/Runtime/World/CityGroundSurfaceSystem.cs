@@ -420,6 +420,9 @@ namespace BarPromenade
                 renderer.SetPropertyBlock(style.Properties, i);
                 if (style.HasWeather) CityWetSurfaceRegistry.Register(renderer, style.WetKind, style.DryTint, i);
             }
+            // Dynamic cemetery sectors reuse style snapshots after a dig. Bind their indexed maps here too,
+            // so rebuilding a local cut cannot revert to donor pigment or the old ground response.
+            CitySurfaceLibrary.ApplyRenderer(renderer);
             if (collision)
             {
                 host.AddComponent<MeshCollider>().sharedMesh = mesh;

@@ -40,9 +40,9 @@ namespace BarPromenade
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
 
-        // The Blender generator bakes metre-scaled UVs from the same recipe
-        // pitches. Re-deriving scale from a profiled mesh's bounds would
-        // stretch openings and roof slopes, so the runtime transform is exact.
+        // These source recipes use metre UVs. Selected City/Home facade parts
+        // preserve them in UV1; ApplyBarFacade later binds guarded UV0 maps.
+        // Both passes keep identity ST rather than deriving scale from bounds.
         private static readonly Vector4 IdentityBaseMapTransform =
             new Vector4(1f, 1f, 0f, 0f);
 

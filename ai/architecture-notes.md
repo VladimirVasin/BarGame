@@ -1,6 +1,57 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-20, City material surfaces — explicit user decision:**
+  The user accepted implementation of all nine areas in `city-texture-plan.md`.
+  Art §6–11/§15a and story §6 allow City-owned pigment/physical maps and the
+  close bar facade atlas. Exact source identities retain district palettes,
+  causal wear, four-side facade atlases, full-face plinths and metre UVs.
+  ImageGen sources/prompts/hashes live under `ArtSource/City/Surfaces/Source`;
+  independent physical fields encode metre slopes RG, roughness B, cavity A.
+  Ground retains its distinct smoothness/height/cavity packing, indexed MPBs,
+  road coordinates, wetness and wind. No lighting is baked into pigment.
+  The opaque bar facade uses guarded uniform unique UV0, original UV1 and
+  full-colour tint once; geometry, anchors, collision and interior/service
+  donors remain intact. Glass, emission, pictures, text, water and characters
+  retain their own presentation. Cemetery thin iron/crowns and coastal flat
+  iron/rust/grass/litter stay flat; the accepted large-port exception remains.
+  `CitySurfaceLibrary` binds exact sources within City and Home's reconstructed
+  exterior, using bounded shared material clones and packaged maps. Other
+  scenes' donor maps remain unchanged. BC7/mips/non-readable imports share a
+  calculated cap of 224 MiB, not measured residency or a frame-rate claim.
+  The focused `CityNativeLighting` extends its nine-area day/night, boundary,
+  five-effect and Home/dormancy/return/unload proof with imported map budgets,
+  actual slots, close views and frozen pigment/response pairs. Authoring
+  validators own physical filtering, source hashes and exact facade UVs.
+  No new place, story trace, writing, damage, light, fog or sky is introduced;
+  story §16/§21 and all nine art §16 checks still apply.
+  Authoring/shader/FBX checks and `CityNativeLighting` passed; reviewed area,
+  close/boundary and real balcony/return frames. The separate old Home test
+  still assumes enabled source ground meshes despite sector consolidation;
+  its updated material assertions pass before that unrelated expectation.
+- **Accepted exception 2026-10-20, City local lighting — explicit user decision:**
+  The user accepted the nine-area queue and requested implementation. Art
+  §4/§6–11/§15a and story §6/§20 permit the same five saved lighting effects
+  on existing City emitters: finite air, source halation, metal response,
+  source-derived bounce and static local reflections. One City presentation
+  owns the whole frame budget; work areas do not create new districts or
+  independent sky, fog, weather, grade, lights or narrative. The existing
+  twelve-light street/quay/practical pool keeps its leases and power; effects
+  follow live transforms, including moving headlights, without double halos.
+  The bar-yard and island spotlights retain their no-volume constraints;
+  the park keeps its sole chess lamp, church lighting stays within its
+  accepted garden support, and beach/boat approaches, river cave, tunnel
+  destination and eastern distance gain no lighting. Structural occlusion
+  and finite support limit air/bounce; small-object volume shadows are not
+  promised. At most two local 256 HDR capture slots share the filtered
+  SceneReflectionCapture lifecycle; moving actors/vehicles/precipitation are
+  excluded. Static receiver bounds constrain metal and river/sea/puddle
+  reflections; existing fountain/spring reflections retain their owner.
+  Home's reconstructed balcony exterior reuses the City profile only during
+  its outdoor camera, preserving the apartment. Dormancy, return and unload
+  restore owned layers/material values and release cubes. Acceptance is the
+  focused CityNativeLighting with reviewed area/boundary and effect frames;
+  local GPU cost and frame-rate gains require measurements.
 - **Accepted 2026-10-20, whole Mountain Road material surfaces — explicit user decision:**
   Art §10f/story §6: local pigment/physical maps replace borrowed environment
   sheets and the cafe's six-sheet format. The same fifteen road kinds retain
@@ -163,7 +214,7 @@
   response using reserved stock-Lit MPB slots, without material clones; disabled
   flags retain original response and teardown restores the original blocks.
   `SceneReflectionCapture` shares filtered 256-cube capture/watchdog/quality-lease
-  recovery with the warehouse: at most two attempts per state, ten-second timeout.
+  recovery with the warehouse: at most two attempts per state; bounded frame grace.
   The village binds one finite spring-water/nearby-stone region. Meaningful
   light/night/warmth drift invalidates it no more often than every five seconds;
   gusts do not trigger recapture. The saved `graphics.clean_*` effect keys stay.
@@ -186,8 +237,10 @@
   probe: intensity zero and a tiny influence volume avoid automatic scene lighting;
   a reference-counted lease enables realtime probes only while capture/
   convolution is pending, then restores the original quality flag. No permanent
-  global probe enablement; cleanup releases the lease. A ten-second watchdog
-  destroys a stalled probe, clears its result/gain and releases the lease. At most
+  global probe enablement; cleanup releases the lease. The watchdog starts after
+  `RenderProbe` returns: ten seconds and at least sixteen engine frames, capped
+  at thirty seconds for sparse frames. Completion is polled first. Expiry destroys
+  a stalled probe, clears its result/gain and releases the lease. At most
   two attempts run per source-state generation; a new state or explicit setting
   re-enable rearms recovery. CPU submit/poll and wall latency remain separate.
   WornSteel receives directional highlights; bounce uses two validated floor

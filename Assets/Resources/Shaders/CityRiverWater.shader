@@ -92,9 +92,9 @@ Shader "Bar Promenade/City River Water"
         _FoamColor("Foam Colour", Color) = (1, 1, 1, 1)
 
         // The Morrowind mirror: an environment cubemap reflected
-        // about the rippled normal. Black and zero by default, which
-        // is what the river and the sea keep - only the fountain
-        // binds a cube and turns the strength up. The distortion is
+        // about the rippled normal. Black and zero by default: the
+        // river and sea borrow the scene's finite local environments;
+        // the fountain binds its own cube. The distortion is
         // how much of the ripple bends the mirror: at 1 the full
         // shading normal scatters the cube into metallic noise, at
         // this default the mirrored world stays legible and swims.
@@ -241,6 +241,7 @@ Shader "Bar Promenade/City River Water"
             CBUFFER_END
 
             #include "WarehouseCleanCommon.hlsl"
+            #include "SceneWaterReflection.hlsl"
             #include "CityOffshoreBoatWater.hlsl"
 
             struct Attributes
@@ -643,6 +644,12 @@ Shader "Bar Promenade/City River Water"
 
                 float3 viewDirWS = normalize(
                     GetWorldSpaceViewDir(input.positionWS));
+
+                if (_ReflectionStrength <= 0.0h)
+                {
+                    float3 localMirrorNormal = normalize(lerp(float3(0, 1, 0), normalWS, _ReflectionDistortion));
+                    color += SceneWaterReflection(input.positionWS, localMirrorNormal, viewDirWS);
+                }
 
                 // The Morrowind mirror. The environment cube is
                 // reflected about the rippled normal, so the mirrored

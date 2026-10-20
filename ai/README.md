@@ -1,10 +1,8 @@
 # AI memory index
 
-This directory is the concise, versioned memory for Bar Promenade.
-Read [`AI.md`](../AI.md) first; it is the entry point and states the
-source-of-truth order. Read the overview and system index next, then only the
-relevant sections of the detailed catalogue and architecture notes. Avoid
-copying world descriptions back into the entry documents.
+Versioned project memory. Start with [`AI.md`](../AI.md), then the overview,
+system index and relevant detailed sections. Keep world descriptions out of
+entry documents; AI.md owns the source-of-truth order.
 
 Every document below has a **type** and a **byte budget**, both owned by
 [`tools/docs-budget.json`](../tools/docs-budget.json) and enforced by
@@ -19,6 +17,8 @@ compares them, so this index cannot quietly drift out of date again.
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
 | `village-life-plan.md` | state | 12000 | The accepted four-part village household update; all four parts are implemented |
 | `village-narrative-plan.md` | note | 40000 | Place-based inspections, families, reusable object camera/text; acceptance contract |
+| `city-lighting-plan.md` | note | 8000 | Nine City lighting stages and acceptance |
+| `city-texture-plan.md` | note | 8000 | Nine City material stages and acceptance |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
 | `architecture-notes.md` | canon | 570000 | Accepted technical decisions and the exceptions the bibles allow |
 | `debug-log.md` | state | 8000 | Structured diagnostics format, events and support workflow |

@@ -39,6 +39,7 @@ namespace BarPromenade
         public ChurchGardenPotInteraction ChurchGardenPot { get; private set; }
         public CityNightWorldResult Night { get; private set; }
         public CityDayNightController DayNight { get; private set; }
+        public CityLightingPresentation Lighting { get; private set; }
         public CityRainField Rain { get; private set; }
         public CityRainSoundPlayer RainSound { get; private set; }
         public CitySurfSoundPlayer SurfSound { get; private set; }
@@ -1302,6 +1303,16 @@ namespace BarPromenade
                 follow,
                 intoxicationHud);
             GameLogPhases.Report("city", "ui_controllers", stepTimer);
+            stepTimer.Restart();
+            // All real fixtures and transport actors now exist. Keep the
+            // presentation under the root so interior dormancy releases its
+            // captures, material leases and camera registration with the city.
+            var lightingObject = new GameObject("City Lighting");
+            lightingObject.transform.SetParent(transform, false);
+            Lighting = lightingObject.AddComponent<CityLightingPresentation>();
+            Lighting.Initialize(this);
+            GameLogPhases.Report("city", "local_lighting", stepTimer);
+            yield return new CompositionStep("local_lighting", 0.98f);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);

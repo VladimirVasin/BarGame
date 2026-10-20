@@ -672,15 +672,17 @@ cemetery:own interiors/returns.
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
 - native/SMAA High/default-on:three passes after native/intoxication, then 4:3/UI;
-  previews/probes excluded. Saved warehouse/road/village/house effects:
-  `SceneLightingPresentation` (4 owners). Warehouse:shadowed fan/steel/floor bounce.
-  Village:bounded window/garland air-snow/facade-depth clip (no small-object
-  shadows), snow-normal bounce/metal/spring cube. House:room halos/metal/bounce/
-  weak air; living-tea/bath cubes, one pending; atlas/half-shadow/passive mirror stay.
-  Road:bounded air/snow/live headlights/halos/metal/bounce;cafe/station cubes,
-  one pending; moving actors/props/car/snow excluded; headlights/tunnel flicker
-  never recapture. Shared ownership/cleanup/filtered256; GPU cost unmeasured.
-  Lights/fog/weather/story/lodge stay.
+  previews/probes off. Flags:`SceneLightingPresentation` (4 owners).
+  Warehouse:fan/steel/bounce. Village:window/garland air-snow/clip,
+  snow bounce/metal/spring cube. House:halos/metal/bounce/air, two cubes;
+  atlas/half-shadow/mirror stay. Road:air/snow/headlights/halos/metal/bounce,
+  cafe/station cubes. City:9 areas, real lamps/windows/traffic;
+  finite air/bounce/metal; two reused metal/water cubes.
+  Home balcony shares City; indoors off. Dark places retained.
+  Filtered256 captures:one pending per owner, no actors/vehicles/precipitation;
+  post-submit watchdog gives bounded frame grace for cold stalls.
+  moving lights never recapture. No small-object volume shadows.
+  Cleanup; GPU unmeasured; Lights/fog/weather/story stay.
   Intoxication:vignette/ghost/chromatic/warp/warmth/exposure;
 - DoF: shared setting, exterior Gaussian far blur;
   Bar/Supermarket/Stairwell/Home/Church/Mother's House radius `0.55`
@@ -704,7 +706,11 @@ cemetery:own interiors/returns.
   Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
   Space/A pause,R/X replay,Esc/B list before capture;
 - shared 8-sided cylinders/URP Lit; hard directional shadows; MSAA off;
-- Exterior ground retains its albedos, palette and metre UVs: City's soil/asphalt
+- City/Home recipes below feed `CitySurfaceLibrary`: scoped ImageGen pigment/
+  physical maps, exact sources, consolidated ground; palette/layout/UVs kept.
+  Bar facade: guarded UV0/original UV1. Flat coast/cemetery exceptions and
+  glass/emission/text/water/characters stay. New BC7 maps≤224 MiB; donors extra,
+  residency unmeasured. Queue: `city-texture-plan.md`. City's soil/asphalt
   repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared
   `GroundSurfaceLit` via `GroundSurfaceAppearance`, linear response companions
@@ -715,26 +721,18 @@ cemetery:own interiors/returns.
   Other City ground reads registry-driven global `_CityGroundWetness` without
   a second renderer list; MountainRoad never inherits that City flag.
   Mountain ridge haze keeps its dedicated shader and gains rock response;
-- eight opaque generated Central Park albedos from
-  `tools/build-city-park-textures.py` (trodden turf, the sand-stone walk,
-  dirty plaza slabs on a `4x4` joint grid, trunk bark, leaf mass, bench
-  timber, jointless park masonry and chipped municipal paint over steel)
-  applied by `CityParkSurfaceAppearance` through MPBs; ground/stone/timber use
-  `GroundSurfaceLit`, foliage/metal retain `RuntimePrimitiveLit`. Baked world
+- Park: `CityParkSurfaceAppearance`/`tools/build-city-park-textures.py` source
+  recipes turf/path/plaza (`4x4` joints)/bark/foliage/timber/stone/painted steel;
+  MPBs/ground/stone/timber use
+  `GroundSurfaceLit`; foliage/metal use native City response. Baked world
   UVs phase neighbours continuously: lawn/path/plaza XZ pitch `3.0/2.2/2.8 m`;
   trunks/crowns/hedges/timber use face-normal box projection at `1.2/1.6/1.4 m`.
   Solved compensation preserves authored palette/brightness. Home shares the
-  park path recipe. The
-  stone, timber and painted-metal sheets reach the four park landmarks
-  inside the otherwise flat city decoration layer: `CityDecorationWorldBuilder`
-  batches on a second axis, so a park part keeps the batch colour it always
-  had and only adds its sheet, while every other district's decoration stays
-  a flat fill. Those batches sit on a chunk-offset transform, so the chunk
-  origin goes back into the baked UVs and a landmark split across two chunks
-  still tiles as one surface. The fountain's standing water stays flat, like
-  the river and the sea, and round: a disc drawn to the stone ring's own inner
-  face, with both pours hanging from the statue's spout tips and leaning out
-  past its pedestal as they fall;
+  park path recipe. `CityDecorationWorldBuilder` batches park landmarks by
+  stone/timber/painted metal and original colour; other decorations stay flat.
+  Chunk-origin UV offsets keep split landmarks continuous. Fountain water:
+  flat disc to stone ring's inner face; pours start at statue spouts and fall
+  outward past the pedestal;
 - eight legacy district wall albedos plus one shared roof cap, generated by
   `tools/build-city-facade-textures.py`, remain the box/sheet contract for the
   supermarket's crossing-only fallback and a prototype crossing the clipped

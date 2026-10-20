@@ -58,6 +58,7 @@ namespace BarPromenade
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
         private BuildingLot homeLot;
+        private CityLightingPresentation localLighting;
 
         public bool IsInitialized { get; private set; }
         public bool IsBalconyVisibilityActive { get; private set; }
@@ -219,6 +220,14 @@ namespace BarPromenade
             RuntimeSceneSetup.ApplyCityExteriorLighting(
                 sample,
                 updateEnvironment);
+        }
+
+        public void BindLightingPresentation(CityLightingPresentation presentation)
+        {
+            if (!IsInitialized) throw new InvalidOperationException("Initialize the balcony atmosphere first.");
+            if (localLighting != null) throw new InvalidOperationException("The balcony lighting is already bound.");
+            localLighting = presentation != null ? presentation : throw new ArgumentNullException(nameof(presentation));
+            localLighting.enabled = IsBalconyVisibilityActive;
         }
 
         private void OnEnable()
@@ -609,6 +618,9 @@ namespace BarPromenade
         private void SetExteriorLightingEnabled(
             bool lightingEnabled)
         {
+            // Camera exclusion alone clears globals, but the hidden exterior
+            // must also release material/layer leases and pending capture work.
+            if (localLighting != null) localLighting.enabled = lightingEnabled;
             if (ExteriorLighting == null)
             {
                 return;

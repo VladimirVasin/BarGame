@@ -87,6 +87,14 @@
       "type": "note",
       "budget": 40000
     },
+    "ai/city-lighting-plan.md": {
+      "type": "note",
+      "budget": 8000
+    },
+    "ai/city-texture-plan.md": {
+      "type": "note",
+      "budget": 8000
+    },
     "ai/architecture-notes.md": {
       "type": "canon",
       "block_max": 8000,

@@ -1699,10 +1699,38 @@ namespace BarPromenade.Tests.PlayMode
         {
             Renderer renderer = transform.GetComponent<Renderer>();
             Assert.That(renderer, Is.Not.Null);
-            Assert.That(
-                renderer.sharedMaterial,
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
-                $"'{transform.name}' must use the same lit material as City.");
+            var block = new MaterialPropertyBlock();
+            Material[] materials = renderer.sharedMaterials;
+            for (int slot = 0; slot < materials.Length; slot++)
+            {
+                Material material = materials[slot];
+                int index = CitySurfaceLibrary.PropertyIndex(renderer, materials.Length, slot, block);
+                CitySurfaceLibrary.ReadProperties(renderer, index, block);
+                Texture albedo = block.GetTexture("_BaseMap") ?? material.GetTexture("_BaseMap");
+                CitySurfaceSheet bound = null;
+                foreach (CitySurfaceSheet sheet in CitySurfaceLibrary.Manifest.sheets)
+                {
+                    if (albedo == Resources.Load<Texture2D>(sheet.albedo)) bound = sheet;
+                    if (!string.IsNullOrEmpty(sheet.source))
+                        Assert.That(albedo, Is.Not.SameAs(Resources.Load<Texture2D>(sheet.source)),
+                            transform.name + " must use its refreshed City map after exterior construction.");
+                }
+                if (bound == null)
+                {
+                    Assert.That(material, Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                        transform.name + " retains the City's protected flat material.");
+                    continue;
+                }
+                bool ground = material.HasProperty("_GroundResponse");
+                Assert.That(material.shader, Is.SameAs(Resources.Load<Shader>(ground ? "Shaders/GroundSurfaceLit" : "Shaders/CitySurfaceLit")),
+                    transform.name + " must use the matching native City response shader.");
+                string property = ground ? "_GroundResponse" : "_SceneMaterialResponse";
+                Assert.That(block.GetTexture(property) ?? material.GetTexture(property),
+                    Is.SameAs(Resources.Load<Texture2D>(ground ? bound.ground_response : bound.response)), transform.name);
+                if (!bound.unique_uv) continue;
+                Assert.That(block.GetVector("_BaseMap_ST"), Is.EqualTo(new Vector4(1, 1, 0, 0)), transform.name);
+                if (bound.full_color) Assert.That(block.GetColor("_BaseColor"), Is.EqualTo(Color.white), transform.name);
+            }
         }
     }
 }

@@ -3,53 +3,71 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-21
+
+City material queue: local ImageGen pigment/independent filtered physical maps
+preserve district palette, facade grammar and metre UVs; ground keeps indexed
+MPBs/road coordinates/wetness. Guarded bar UV0 retains original UV1/geometry/
+anchors and interior/service donors. Shared scoped maps also serve Home exterior;
+flat coast/cemetery, characters/glass/emission/text/water retain their owners.
+New BC7 pack is bounded separately from retained donors; residency unmeasured.
+City surface validator, native shader parity and pinned facade FBX round-trip OK.
+CityNativeLighting OK:imports/bindings/pigment-response/effects/Home/dormancy/
+return/unload; area/close/boundary/balcony views reviewed.
+HomeScene_BuildsWalkableBalconyOnSeededStreet:material assertions OK; unrelated
+foundGround expectation still assumes enabled source meshes before consolidation.
+
+Shared reflection watchdog excludes synchronous submit stalls and gives the native
+frame cycle bounded grace; genuine expiry still releases quality and retries.
+ReflectionCapture_ColdStallAndTimeoutRecovery OK in the real warehouse.
+
 ## 2026-10-20
 
 Door-ambush preview commits prerequisites, syncs world and stages hero once.
 Cancel restores pose/vitals/grip/fan/red; replay retains injuries/progress.
 Closed gate explained sample_failed.
 DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse OK;
-tuning manual. Shin puncture/inverted hoist/free look/struggling, paired
-red/fan/spot/lens/sparks retain blackout/disabled escape-next. Paired-bank and
-hook/floor/ceiling contact checks passed.
+tuning manual. Shin puncture/inverted hoist/free look/struggle and synced
+red/fan/spot/lens/sparks retain blackout/disabled escape-next; contacts checked.
 
 Native-only replaces styles; saved SMAA/lens/4:3/effects and fog/gameplay stay.
 Native VHS ABI/mixer, OptionsPage_TogglesAndPersistsGraphicsFlag and
 GameCamera_NativeEffectsAndWarehouseLightingRemainStable baseline/optimized OK.
 Rail-volume gaps/empty view fixed; thin shadow aliasing remains possible.
-Optical-depth rejection/bounds/additive RGB/cached halation retain integration/
-fan-shadow budgets. Probe timeout/lease/recovery checked. Wardrobe enumerators
-removed; HomeUrineEffect idle-liquid regression OK; captures:FindAnyObjectByType.
-CPU/workload/probe/wall/GPU availability distinct; no cost/FPS gain claimed.
+Optical-depth/bounds/additive RGB/cached halation retain fan-shadow budgets.
+Probe timeout/lease/recovery checked; wardrobe enumerators removed;
+HomeUrineEffect idle-liquid OK; captures:FindAnyObjectByType.
+CPU/workload/probe/wall/GPU remain distinct; no cost/FPS gain claimed.
 
-Village real-emitter halos/metal/terrain-normal snow bounce/spring reflection
-share ownership. Accepted air/snow/facade/depth clipping retains weather/interiors,
-no new Light. Native initializes with scene; readiness follows shader warmup,
-no seed-gust dependency. Shared warehouse visual gates passed; D3D12 GPU unavailable.
+Village halos/metal/snow-normal bounce/spring cube and bounded air/snow/facade
+clip retain weather/interiors; no new Light. Scene readiness follows shader
+warmup, not gusts. Shared warehouse gates passed; D3D12 GPU unavailable.
 
-Mother's room effects retain cutaway blockers/chair pool/stable fire captures.
-Unique opaque UV0:house-owned ImageGen pigments/filtered fields/neat repairs;
-auxiliary maps retain scarf. Geometry/anchors/kettle/mirror/half-shadow stay.
+Mother's room effects retain cutaway/chair/fire ownership. Unique UV0 uses
+local ImageGen pigment/filtered fields/neat repairs; auxiliary maps retain
+scarf. Geometry/anchors/kettle/mirror/half-shadow stay.
 Pinned model, mother texture validator/shader parity and MothersHouseNativeLighting OK:
 views/closeups/response/import/budget/scarf/fire/cleanup. Cube warmup keeps timeouts.
 
-Village local pigment/physical families/unique closeup atlas retain geometry/
-contacts/metre UV1. Ground channels/junction masks/snow deformation stay distinct;
-Lit/wind reuse lighting hooks. PNG/packed slopes checked; photos keep bounded BC7.
+Village local pigment/physical maps/closeup atlas retain geometry/contacts/UV1;
+ground/junction/snow channels stay distinct. Lit/wind reuse hooks; filtered
+slopes/PNG checked; photos retain bounded BC7.
 Pinned unique/model validation, surface validator/shader parity OK.
 AlpineVillageNativeLighting OK:import/budget/bindings/response pairs/snow/dormancy;
 authored views/closeups/resume recapture reviewed; closeups clear test frost.
 
-Road:real-source halos/finite air-snow/headlights/metal/bounce, cafe-station cubes;
-moving lights/tunnel flicker do not recapture. Hierarchy/dark brink/weather stay.
-Bounce reach differs from footprint; last owner clears menu/loading globals.
+Road:real-source halos/air-snow/headlights/metal/bounce/cafe-station cubes;
+moving lights/tunnel flicker do not recapture. Dark brink/weather stay;
+bounce reach differs from footprint; last owner clears menu/loading globals.
 MountainRoadNativeLighting OK:imports/budget/pigment-response/lighting/
 headlights/exclusions/return/unload; day/night/edge and surface views reviewed.
-GPU cost unmeasured.
-Local pigment/physical maps/cafe unique charts retain UV1/geometry;
-ground format/masks/wind, glass/emission/menu/car/cast stay. BC7 budget bounded.
-Model/texture/shader OK.
+GPU cost unmeasured. Local pigment/physical maps/cafe charts retain UV1/geometry,
+ground/masks/wind/glass/emission/menu/car/cast; BC7 bounded. Model/texture/shader OK.
 check-workspace.py: preexisting cache/temp-scene/old-log/sibling-worktree leftovers.
+
+City effects share bounded sources/cubes; pooled motion and canon dark areas stay.
+Home ground/facade support uses no colliders; bounce reads the hit submesh tint.
+CityNativeLighting OK: area/boundary/effect views, leases/dormancy/return/unload.
 
 ## 2026-10-19
 

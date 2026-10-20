@@ -43,6 +43,21 @@
         0.0,
         0.0,
         0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -52,6 +67,21 @@
         0.88,
         1.86,
         3.78
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     }
   ],
@@ -1083,5 +1113,16 @@
       "triangles": 28
     }
   ],
-  "build_signature": "f6edb07bd456a1e5bf524b569540b456e16b66849c3dc537dd61b64db807eccf"
+  "build_signature": "f6edb07bd456a1e5bf524b569540b456e16b66849c3dc537dd61b64db807eccf",
+  "city_surface_contract": {
+    "design_id": "city_bar_facade_unique_surfaces_v1",
+    "albedo": "City/Surfaces/CityBarFacadeAlbedo",
+    "response": "City/Surfaces/CityBarFacadeResponse",
+    "albedo_size": 4096,
+    "response_size": 2048,
+    "unique_part_count": 26,
+    "geometry_signature": "1ee7ea8619d4be8916f2cfe8c04797c3be0e9f3ddd2f6dccd463a69f25f73a66",
+    "anchors_signature": "15f0594c3db7ca51b9034d212244c9feafb7644326f3a68bc026fed2847350dd",
+    "uv_signature": "12615adc682bd4274cca036a03f53fee36e667e3a79cc728a28de5e482493609"
+  }
 }

@@ -15,6 +15,11 @@ namespace BarPromenade.Rendering
         public const int CaptureLayer = 31;
         private const float QuietSeconds = .25f;
         private const double CaptureTimeoutSeconds = 10d;
+        // IndividualFaces needs fourteen engine frames for faces/filtering.
+        // Cold shader/asset stalls can spend ten wall seconds before that cycle
+        // gets to run. Give it one cycle, with a hard bound if frames stay scarce.
+        private const int MinimumCaptureFrames = 16;
+        private const double MaximumCaptureWallSeconds = 30d;
         private const int MaximumCaptureAttempts = 2;
         private static readonly ProfilerMarker SubmitMarker = new ProfilerMarker("Scene Reflection.Submit");
         private static readonly ProfilerMarker PollMarker = new ProfilerMarker("Scene Reflection.Poll");
@@ -39,16 +44,23 @@ namespace BarPromenade.Rendering
         private uint state;
         private double dirtyAt;
         private double captureStartedAt;
+        private int captureStartedFrame;
         private int captureAttempts;
         private bool settingWasEnabled;
 #if UNITY_EDITOR
         private bool forceTimeoutForTests;
         internal void DebugExpireCaptureForTests()
         {
+            DebugHoldCaptureForTests(CaptureTimeoutSeconds + 1d, MinimumCaptureFrames);
+        }
+        internal void DebugHoldCaptureForTests(double elapsedSeconds, int elapsedFrames)
+        {
             if (captureId < 0) throw new InvalidOperationException("A capture must be pending.");
-            captureStartedAt = Time.realtimeSinceStartupAsDouble - CaptureTimeoutSeconds - 1d;
+            captureStartedAt = Time.realtimeSinceStartupAsDouble - elapsedSeconds;
+            captureStartedFrame = Time.frameCount - elapsedFrames;
             forceTimeoutForTests = true;
         }
+        internal void DebugResumeCaptureForTests() => forceTimeoutForTests = false;
 #endif
         private bool initialized, wanted, valid, qualityLease, captureFailureReported;
 
@@ -152,8 +164,11 @@ namespace BarPromenade.Rendering
                 valid = captureGeneration == generation && CapturePermitted && capturedTexture != null;
                 ReleaseQualityLease();
             }
-            if (captureId >= 0 && Time.realtimeSinceStartupAsDouble - captureStartedAt >= CaptureTimeoutSeconds)
+            if (captureId >= 0 && CaptureDeadlineReached(Time.realtimeSinceStartupAsDouble - captureStartedAt,
+                Time.frameCount - captureStartedFrame))
             {
+                double pendingSeconds = Time.realtimeSinceStartupAsDouble - captureStartedAt;
+                int pendingFrames = Time.frameCount - captureStartedFrame;
                 CaptureTimeoutCount++;
                 CaptureFailureCount++;
                 captureId = -1;
@@ -170,7 +185,9 @@ namespace BarPromenade.Rendering
                 if (!captureFailureReported)
                 {
                     captureFailureReported = true;
-                    Debug.LogWarning("Scene reflection capture timed out; its quality lease was released.", this);
+                    Debug.LogWarning("Scene reflection capture timed out; its quality lease was released. " +
+                        gameObject.scene.name + "/" + GetType().Name + ": " + pendingSeconds.ToString("F1") +
+                        " seconds, " + pendingFrames + " frames.", this);
                 }
             }
             if (!wanted || valid || captureId >= 0 || !CapturePermitted ||
@@ -188,8 +205,11 @@ namespace BarPromenade.Rendering
                 using (SubmitMarker.Auto())
                 {
                     AcquireQualityLease();
-                    captureStartedAt = Time.realtimeSinceStartupAsDouble;
                     captureId = probe.RenderProbe();
+                    // Submission can synchronously compile shaders/upload assets.
+                    // Only its returned asynchronous request owns this watchdog.
+                    captureStartedAt = Time.realtimeSinceStartupAsDouble;
+                    captureStartedFrame = Time.frameCount;
                 }
                 if (captureId >= 0) CaptureCount++;
                 else
@@ -216,6 +236,10 @@ namespace BarPromenade.Rendering
                 if (captureId < 0) ReleaseQualityLease();
             }
         }
+
+        internal static bool CaptureDeadlineReached(double elapsedSeconds, int elapsedFrames) =>
+            elapsedSeconds >= MaximumCaptureWallSeconds ||
+            elapsedSeconds >= CaptureTimeoutSeconds && elapsedFrames >= MinimumCaptureFrames;
 
         private bool PollCapture()
         {
