@@ -14,7 +14,8 @@ namespace BarPromenade
     {
         Plank = 0,
         ChessTable = 1,
-        DraughtsTable = 2
+        DraughtsTable = 2,
+        DiningChair = 3
     }
 
     /// <summary>
@@ -335,6 +336,14 @@ namespace BarPromenade
                 : EntryRotation * Vector3.forward;
             Vector3 offset = fromPosition - InteractionPosition;
             offset.y = 0f;
+            if (Kind == CityBenchSeatKind.DiningChair)
+            {
+                // The chair is entered from its right through the open
+                // rear aisle. The forward game-table detour would cross
+                // the kitchen table and the apartment's locked room.
+                return Vector3.Dot(offset, approach) <= SeatDepth * 0.5f;
+            }
+
             return Vector3.Dot(offset, approach) >= SeatDepth * 0.5f;
         }
 
@@ -502,7 +511,10 @@ namespace BarPromenade
                 return 0;
             }
 
-            float standoff = longitudinal > 0f
+            // The dining chair backs onto an indoor aisle. Its admitted
+            // front edge still joins that rear lane; the outdoor game-table
+            // detour would lead through the tabletop and locked-room wall.
+            float standoff = Kind != CityBenchSeatKind.DiningChair && longitudinal > 0f
                 ? BoardSeatFrontLaneDistance
                 : -BoardSeatBackLaneDistance;
             buffer[0] = center +

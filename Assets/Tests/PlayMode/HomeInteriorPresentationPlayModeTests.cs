@@ -92,7 +92,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Atmosphere.IsInitialized, Is.True);
             Assert.That(
                 home.Atmosphere.PracticalLights,
-                Has.Count.EqualTo(2));
+                Has.Count.EqualTo(HomeInteriorAtmosphere.MaximumPracticalLights));
             Assert.That(
                 home.Atmosphere.BathroomSpillLight,
                 Is.Not.Null);
@@ -294,41 +294,41 @@ namespace BarPromenade.Tests.PlayMode
                 home.CameraFollow.FixedBaseRotation;
             float mainFov =
                 home.CameraFollow.FixedBaseFieldOfView;
-            Assert.That(mainFov, Is.EqualTo(64f).Within(0.001f));
+            Assert.That(mainFov, Is.EqualTo(68f).Within(0.001f));
             Assert.That(
                 home.Layout.TryGetFurniture(
-                    HomeFurnitureKind.CameraCornerJunk,
-                    out HomeFurnitureFootprint cornerJunk),
+                    HomeFurnitureKind.Bookcase,
+                    out HomeFurnitureFootprint cornerBookcase),
                 Is.True);
             Assert.That(
-                cornerJunk.Bounds.Contains(
+                cornerBookcase.Bounds.Contains(
                     new Vector2(
                         mainPosition.x,
                         mainPosition.z)),
                 Is.True,
                 "The selected bed-side camera corner must be physically " +
-                "blocked by atmospheric junk.");
-            Transform cornerJunkBase = AssertRequiredObject(
+                "occupied by the relocated bookcase.");
+            Transform cornerBookcaseModel = AssertRequiredObject(
                 home.Room,
-                "Home Camera Corner Junk Base");
-            Collider cornerJunkCollider =
-                cornerJunkBase.GetComponent<Collider>();
-            Assert.That(cornerJunkCollider, Is.Not.Null);
-            Assert.That(cornerJunkCollider.enabled, Is.True);
+                "Home Battered Cabinet");
+            Collider cornerBookcaseCollider =
+                cornerBookcaseModel.GetComponent<Collider>();
+            Assert.That(cornerBookcaseCollider, Is.Not.Null);
+            Assert.That(cornerBookcaseCollider.enabled, Is.True);
             CharacterController playerController =
                 home.Player.GameObject
                     .GetComponent<CharacterController>();
             Assert.That(playerController, Is.Not.Null);
             Assert.That(
-                cornerJunkCollider.bounds.size.y,
+                cornerBookcaseCollider.bounds.size.y,
                 Is.GreaterThan(
                     playerController.stepOffset +
                     playerController.skinWidth),
-                "The low foreground junk must remain too tall to step over.");
+                "The foreground bookcase must remain a real movement blocker.");
             Assert.That(
-                cornerJunkCollider.bounds.size.y,
-                Is.LessThan(0.60f),
-                "Foreground junk must not hide most of the nearby player.");
+                cornerBookcaseCollider.bounds.max.y,
+                Is.LessThan(mainPosition.y),
+                "The fixed camera must sit above the bookcase rather than inside it.");
             AssertPlayerVisible(camera, home.Player.GameObject.transform);
             AssertEmitterVisible(camera, mainEmitter);
             AssertEntryDoorLamp(
@@ -346,7 +346,7 @@ namespace BarPromenade.Tests.PlayMode
 
             home.Player.Motor.Teleport(
                 new Vector3(
-                    cornerJunk.Bounds.xMax +
+                    cornerBookcase.Bounds.xMax +
                     playerController.radius +
                     0.02f,
                     0.12f,
@@ -358,16 +358,16 @@ namespace BarPromenade.Tests.PlayMode
             AssertPlayerVisible(
                 camera,
                 home.Player.GameObject.transform);
-            AssertForegroundJunkOcclusionContract(
+            AssertForegroundBookcaseOcclusionContract(
                 home,
-                cornerJunkCollider);
+                cornerBookcaseCollider);
 
             // Framing is proved where the shot is AUTHORED to hold him -
             // the middle of its own hold rect - and not in the camera
             // corner above. That corner is barely two metres from the lens
-            // and off at the edge of a 64-degree frame pitched steeply
+            // and off at the edge of a 68-degree frame pitched steeply
             // down: nothing standing there can be shown whole, which is
-            // exactly why the junk pile is placed in it. The corner earns
+            // where the bookcase now stands. The corner earns
             // its own contract (visible, and occluded correctly) a few
             // lines up; this is the one about composition.
             Assert.That(
@@ -491,7 +491,7 @@ namespace BarPromenade.Tests.PlayMode
                 "floating or intersecting deeply.");
         }
 
-        private static void AssertForegroundJunkOcclusionContract(
+        private static void AssertForegroundBookcaseOcclusionContract(
             HomeInteriorRoot home,
             Collider blockingCollider)
         {
@@ -500,7 +500,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.PlayerOcclusion.IsInitialized, Is.True);
             Assert.That(
                 home.OcclusionRegistry.TryGetGroup(
-                    "home.furniture.camera-junk",
+                    "home.furniture.bookcase",
                     out HomeOccluderGroup group),
                 Is.True);
 
@@ -529,19 +529,19 @@ namespace BarPromenade.Tests.PlayMode
         {
             Assert.That(
                 home.OcclusionRegistry.TryGetGroup(
-                    "home.furniture.sofa",
-                    out HomeOccluderGroup sofaGroup),
+                    "home.furniture.bed",
+                    out HomeOccluderGroup sleepingSofaGroup),
                 Is.True);
             Renderer sofaLaundry =
                 AssertRequiredObject(
                     home.Room,
-                    "Day3 Sofa Laundry")
+                    "Day3 Sofa Foot Linen")
                     .GetComponent<Renderer>();
             Assert.That(sofaLaundry, Is.Not.Null);
             Assert.That(
-                sofaGroup.Renderers,
+                sleepingSofaGroup.Renderers,
                 Does.Contain(sofaLaundry),
-                "Laundry left on the sofa must reveal with the sofa group.");
+                "Laundry left on the sleeping sofa must reveal with its shared bed group.");
 
             Assert.That(
                 home.OcclusionRegistry.TryGetGroup(

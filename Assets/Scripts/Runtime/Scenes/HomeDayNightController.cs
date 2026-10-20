@@ -14,6 +14,8 @@ namespace BarPromenade
         // a low amber sun on the window before the blue moon arrives.
         public const float DayMainLampIntensity = 2.90f;
         public const float NightMainLampIntensity = 4.40f;
+        public const float DayKitchenLampIntensity = 1.40f;
+        public const float NightKitchenLampIntensity = 2.90f;
         public const float DayEntryLightIntensity = 8.00f;
         public const float NightEntryLightIntensity = 9.40f;
         public const float DuskWindowBlend = 0.65f;
@@ -28,6 +30,10 @@ namespace BarPromenade
             new Color(0.95f, 0.60f, 0.32f);
         public static readonly Color NightMainLampColor =
             new Color(0.95f, 0.50f, 0.20f);
+        public static readonly Color DayKitchenLampColor =
+            new Color(0.96f, 0.84f, 0.65f);
+        public static readonly Color NightKitchenLampColor =
+            new Color(0.94f, 0.76f, 0.50f);
         // The ambient floor keeps the whole flat and the player
         // readable between the lamp pools; the mood lives in the
         // color contrast of the practicals, not in raw darkness.
@@ -181,9 +187,9 @@ namespace BarPromenade
 
             // By day the bulbs are pale leftovers; after dark they are
             // the room.
-            if (interiorAtmosphere.PracticalLights.Count > 0)
+            Light mainLamp = interiorAtmosphere.MainLight;
+            if (mainLamp != null)
             {
-                Light mainLamp = interiorAtmosphere.PracticalLights[0];
                 mainLamp.intensity = Mathf.Lerp(
                     NightMainLampIntensity,
                     DayMainLampIntensity,
@@ -191,6 +197,19 @@ namespace BarPromenade
                 mainLamp.color = Color.Lerp(
                     NightMainLampColor,
                     DayMainLampColor,
+                    WindowDayFactor);
+            }
+
+            Light kitchenLamp = interiorAtmosphere.KitchenLight;
+            if (kitchenLamp != null)
+            {
+                kitchenLamp.intensity = Mathf.Lerp(
+                    NightKitchenLampIntensity,
+                    DayKitchenLampIntensity,
+                    WindowDayFactor);
+                kitchenLamp.color = Color.Lerp(
+                    NightKitchenLampColor,
+                    DayKitchenLampColor,
                     WindowDayFactor);
             }
 

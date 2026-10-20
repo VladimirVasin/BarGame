@@ -160,6 +160,8 @@ namespace BarPromenade
         public MinigameDebugWindow DebugWindow { get; private set; }
         public HomeApartmentDayController ApartmentDays { get; private set; }
         public LockedDoorInteraction LockedRoomDoor { get; private set; }
+        public CityBenchSitInteraction DiningSeat { get; private set; }
+        public NarrativeInteraction Painting { get; private set; }
 
         private void Awake()
         {
@@ -339,6 +341,8 @@ namespace BarPromenade
                 CreateCameraShots(
                     Layout,
                     BalconyLayout));
+            DiningSeat = HomeDiningSeatPlan.Build(Room, Layout, Player, camera);
+            Painting = HomeWallPainting.Build(Room);
             GameLogPhases.Report("home", "player_and_camera", phaseTimer);
             yield return new CompositionStep("player_and_camera", 0.82f);
             phaseTimer.Restart();
@@ -654,9 +658,9 @@ namespace BarPromenade
                     HomeCameraShotKind.MainRoom,
                     mainActivation,
                     mainHold,
-                    new Vector3(-4.48f, 3.00f, -3.25f),
+                    new Vector3(-6.48f, 3.05f, -3.25f),
                     new Vector3(28f, 55f, 0f),
-                    64f)
+                    68f)
                     .WithFocus(
                         FixedCameraFocus.Bounded(
                             MainRoomFocusYawDegrees,

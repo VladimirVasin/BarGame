@@ -31,14 +31,14 @@ namespace BarPromenade.Tests.PlayMode
                         .MaximumPracticalLights));
             Assert.That(
                 atmosphere.PracticalLights.Count,
-                Is.LessThanOrEqualTo(2));
+                Is.LessThanOrEqualTo(3));
 
             Light mainLight = atmosphere.PracticalLights[0];
             Light bathroomLight =
                 atmosphere.PracticalLights[1];
             AssertPracticalLight(
                 mainLight,
-                new Vector3(-2.35f, 2.00f, 0.45f),
+                new Vector3(-2.35f, 2.60f, -1.10f),
                 new Color(0.95f, 0.52f, 0.22f),
                 3.50f,
                 9.0f);
@@ -48,6 +48,16 @@ namespace BarPromenade.Tests.PlayMode
                 new Color(0.52f, 0.68f, 0.72f),
                 2.20f,
                 4.0f);
+            Assert.That(atmosphere.MainLight, Is.SameAs(mainLight));
+            Assert.That(
+                atmosphere.KitchenLight,
+                Is.SameAs(atmosphere.PracticalLights[2]));
+            AssertPracticalLight(
+                atmosphere.KitchenLight,
+                new Vector3(-5.20f, 1.72f, 2.50f),
+                new Color(0.94f, 0.78f, 0.53f),
+                2.40f,
+                4.40f);
             Assert.That(
                 mainLight.color.r,
                 Is.GreaterThan(mainLight.color.b));
@@ -259,15 +269,15 @@ namespace BarPromenade.Tests.PlayMode
                         .MaximumRealtimeLights));
             Assert.That(
                 ownedLights.Length,
-                Is.LessThanOrEqualTo(5));
+                Is.LessThanOrEqualTo(6));
             Assert.That(
                 atmosphere.PracticalLights[0],
                 Is.Not.SameAs(windowLight),
-                "The window beam is separate from the two practicals.");
+                "The window beam is separate from the room practicals.");
             Assert.That(
                 atmosphere.PracticalLights[1],
                 Is.Not.SameAs(windowLight),
-                "The window beam is separate from the two practicals.");
+                "The window beam is separate from the room practicals.");
             Assert.That(
                 atmosphere.PracticalLights[0],
                 Is.Not.SameAs(bathroomSpillLight),

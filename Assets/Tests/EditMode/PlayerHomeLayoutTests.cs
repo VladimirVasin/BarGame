@@ -371,7 +371,8 @@ namespace BarPromenade.Tests.EditMode
                     HomeInteriorLayoutValidator.ValidateOrThrow(
                         plan),
                 Throws.Nothing);
-            Assert.That(plan.RoomSize, Is.EqualTo(new Vector2(10f, 8f)));
+            Assert.That(plan.RoomSize, Is.EqualTo(new Vector2(12f, 8f)));
+            Assert.That(plan.RoomBounds.center, Is.EqualTo(new Vector2(-1f, 0f)));
             Assert.That(plan.RoomHeight, Is.EqualTo(3.4f));
             Assert.That(
                 plan.Zones.Select(zone => zone.Kind),
@@ -394,7 +395,9 @@ namespace BarPromenade.Tests.EditMode
                 plan.Furniture.Select(item => item.Kind),
                 Is.EquivalentTo(
                     Enum.GetValues(typeof(HomeFurnitureKind))
-                        .Cast<HomeFurnitureKind>()));
+                        .Cast<HomeFurnitureKind>()
+                        .Where(kind => kind != HomeFurnitureKind.Sofa &&
+                            kind != HomeFurnitureKind.CameraCornerJunk)));
             Assert.That(
                 plan.Furniture.Select(item => item.Id).Distinct().Count(),
                 Is.EqualTo(plan.Furniture.Count));
@@ -486,10 +489,8 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(HomeFurnitureKind.Bed)]
         [TestCase(HomeFurnitureKind.Kitchen)]
-        [TestCase(HomeFurnitureKind.Sofa)]
         [TestCase(HomeFurnitureKind.Table)]
         [TestCase(HomeFurnitureKind.Bookcase)]
-        [TestCase(HomeFurnitureKind.CameraCornerJunk)]
         [TestCase(HomeFurnitureKind.Toilet)]
         [TestCase(HomeFurnitureKind.Shower)]
         [TestCase(HomeFurnitureKind.Sink)]
@@ -678,7 +679,9 @@ namespace BarPromenade.Tests.EditMode
                 CopyPlan(
                     source,
                     walkableBounds:
-                        new Rect(-5.25f, -3.65f, 9.90f, 7.30f));
+                        Rect.MinMaxRect(source.RoomBounds.xMin - .25f,
+                            source.WalkableBounds.yMin, source.WalkableBounds.xMax,
+                            source.WalkableBounds.yMax));
 
             Assert.That(
                 () =>
@@ -714,7 +717,8 @@ namespace BarPromenade.Tests.EditMode
                     new List<HomeInteriorPath>(source.Paths),
                 furniture ??
                     new List<HomeFurnitureFootprint>(
-                        source.Furniture));
+                        source.Furniture),
+                source.RoomBounds.center);
         }
 
         private static bool RectContains(

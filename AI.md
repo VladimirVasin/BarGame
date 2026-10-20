@@ -106,7 +106,7 @@ repository evidence. This does not require running every test layer.
   unbranded and text-free product models come from the separate passive
   `tools/build-supermarket-products-3d-model.py` pack: five are finite shop
   stock, while the open stew can enters the world only through the Home
-  refrigerator/cat flow. The apartment/stairwell remain future migrations.
+  refrigerator/cat flow. Home's living remodel also uses the kit; stairwell awaits migration.
 - **Blender's axes reach Unity by SWAPPING the last two, not by negating one.**
   Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
   (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the

@@ -1,6 +1,46 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-21, Home remodel — explicit user decision:**
+  Apartment `12 x 8 x 3.4 m`, same locked room `13.04 m²`; art §7/story §6/§11
+  replace old dimensions/bed placement. Door/reply/contents/bathroom/balcony stay.
+  Sofa `2.55 x 1.15 m`: back west, head/pillow/clock south, sleep frame `-90°`.
+  Table flush to locked-room front, wholly inside its width; chair south/dock east.
+  Corner junk/slippers/late junk are removed. Bookcase/radio move to
+  `X[-6.86,-5.76], Z[-3.76,-3.11]`, yaw `-90°`, shelves facing east.
+  `home_interior_remodel.py`/shared kit own living geometry; five local sheets
+  leave other donors intact. Four-burner cooker/oven, hollow sink, storage and
+  utensils are visual, without cooking gameplay. Sleep keeps rig contacts/live
+  deformation. `HomeDiningSeatPlan` reuses complete `ChessSeatEnter/PlayLoop/Exit`:
+  side entry/rear aisle veto clear backrest/table; shared cleanup owns input/shadow.
+  The owning seat filters world interaction until cleanup; seated handlers retain E.
+  Kitchen practical raises local lights to six without another shadow map;
+  bathroom/balcony lighting and default fixed shots stay. No plot/clue/speech;
+  story §16/§21 and all nine art §16 checks remain mandatory.
+- **Accepted 2026-10-21, Home wall painting — explicit user decision:**
+  `TheWeaverandCrownedBirdTapestry.png` becomes one anonymous household painting
+  left of the locked-room door, with original image aspect and a worn dark frame
+  `1.40 x 0.82 m`. `HomeWallPainting` uses shared narrative standing approach and
+  object close-up. The shared definition/controller allow an empty-page silent
+  view: keyed E prompt, E/Esc exit, normal owned camera/input cleanup.
+  No caption, thought, speech, sound, reward or connection to the hero/woman/crime.
+  It carries no story trace; §11/§16/§19/§21 and art §7 remain intact, so no
+  `Нельзя` is lifted and no new §6 exemption is required.
+- **Accepted exception 2026-10-21, global debug free camera — explicit user decision:**
+  `DebugFreeCamera` is installed by `PlayerFactory` in every gameplay root.
+  F4 selects free flight: mouse look, WASD, Q down/E up, Shift ×4 speed.
+  Busy actions, modal ownership and defeat permit entry; actual pause and scene
+  transitions still block it. The camera-only overlay reserves physical commands
+  through `GameInput`, without a modal lock or Motor/Interactor/Orbit snapshots.
+  Action/world timelines continue; action owners retain input/rig authority even
+  if they finish during flight. The follow lease hides ordinary lens writing
+  while the current fixed/scene camera plan advances. F4/Esc releases the overlay
+  to that current camera, never a stale entry pose or input flag. Pause, transition,
+  disable and unload release ownership; flight controls must be released before
+  gameplay resumes. F9 has no camera button; Home keeps default fixed shots.
+  Defeat keeps death/ragdoll stepping and the round result; its owner controls
+  dead-hero input/reset. This tool adds no fiction, room content or clues;
+  story §16/§21 and all nine art §16 checks remain mandatory.
 - **Accepted 2026-10-20, City material surfaces — explicit user decision:**
   The user accepted implementation of all nine areas in `city-texture-plan.md`.
   Art §6–11/§15a and story §6 allow City-owned pigment/physical maps and the
@@ -5169,24 +5209,12 @@
   can be driven into and only backed out of, because behind it stand the
   island's paving circle and its route mast, so the homecoming parks turned
   round and the canonical stance returns with the next city build.
-- **Accepted — Compact separate home interior:** `HomeInterior` owns a
-  validated `10 x 8 x 3.4 m` runtime-composed main room and bathroom with six
-  main-room furniture footprints plus toilet, shower and sink, protected
-  entry/main/bathroom-access paths and a solid ajar bathroom door. Dedicated
-  blocking junk owns the otherwise reachable camera corner; the toilet keeps
-  its cistern against the right wall and its bowl facing into the room. It
-  reuses the common player, intoxication HUD, interaction and door-transition
-  contracts while putting the single Main Camera into three authored fixed
-  poses with doorway/balcony hysteresis and a main-room fallback. The camera
-  poses remain unchanged. A separate cold, hard-shadow ForcePixel Spot starts
-  just inside the bathroom threshold and projects through the ajar door onto
-  the existing apartment exit area. It shares one deterministic unscaled
-  fluorescent-failure flicker with the bathroom point pool, HDR tube and halo;
-  the main practical and time-of-day window-cookie Spot remain. One separate
-  shadowless warm ForcePixel Spot is co-located with the compact amber fixture
-  above the entrance and aims its full-strength cone over the door and entry
-  floor, for at most five atmosphere-owned local realtime lights in addition
-  to the scene Directional light. Exiting sends
+- **Accepted — Separate home interior:** `HomeInterior` owns the validated
+  `12 x 8 x 3.4 m` runtime-composed apartment with protected entry/main/bathroom
+  routes, a solid ajar bathroom door and unchanged toilet/shower/sink contacts.
+  It reuses the common player, HUD, interaction and door-transition contracts.
+  The single camera defaults to three authored shots with zone hysteresis;
+  the accepted `2026-10-21` global debug mode optionally flies freely. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
   approach, without altering cash or drinking progress.
@@ -5200,13 +5228,10 @@
   Imported geometry owns
   visible shape, not colliders, Lights, cameras or gameplay components.
   Existing plans keep collision, contacts, routes and contextual-action
-  ownership; the bed keeps its live deformation contract.
-  The `2026-09-06` placement: cupboard `X[-4.86,-4.21], Z[2.76,3.86]`; bed starts at
-  `X=-4.86`, two centimetres from the inner wall. Furniture validation uses
-  physical inner wall bounds; player walking clearance is unchanged. The
-  shortened left counter preserves the refrigerator's right-side inset.
-  Bedside props and all calendar dressing follow the furniture, while the
-  compact south-west pile preserves the bed's standing approach.
+  ownership; the unfolded sofa keeps the live sleep-surface contract.
+  Furniture validation uses physical inner wall bounds. Sofa, table/chair,
+  south-west bookcase, refrigerator and calendar dressing follow the accepted
+  `2026-10-21` plan; sleeping and kitchen approaches stay clear.
   `HomeApartmentDressing` owns visual day groups, and
   `HomeApartmentDayController` reads `HomeApartmentDayRules` at construction
   and safe interaction boundaries, including exact reverse debug selection.
@@ -5239,7 +5264,7 @@
   supernatural effects are introduced. The corresponding story §6 row and
   art §7 define the accepted scope.
 - **Accepted — Data-first interactive Home refrigerator:**
-  Validated counter split `1.08 x 0.76 m`/table Z+`0.30 m`/player-width route/trigger.
+  Validated counter split `1.08 x 0.76 m`, independent four-waypoint aisle approach/trigger.
   Worn hollow cabinet/three shelves/drawer/two bins/six cavity+two door slots;
   initial vodka/egg/open stew. `HomeRefrigerator{ItemCatalog,ItemView}`:
   name-description-preview/root-renderers-tight trigger.
@@ -5514,10 +5539,8 @@
   `49–54%`, reaches the side seat at `57%`, lowers each leg, then stands after
   `90%`. The manifest publishes the same paths and lift for a direct contract
   comparison with Unity. Full motion captures accompany the contact regression.
-  The camera-corner storage pile is `1.30 m` wide against the west wall, leaving
-  the middle dock's player clearance free. Its fixed authored base/wardrobe
-  door and later-day bottles/bags fit that footprint; the plan contract rejects
-  a dock inside any blocking furniture's clearance envelope.
+  The plan contract rejects a dock inside any blocking furniture's clearance
+  envelope; the accepted remodel removes the former camera-corner junk entirely.
   The three bed clips also became the first contextual Actions on auto-clamped
   Bezier curves with separately staggered pelvis, lower-spine, chest and head
   keys. V2's build now runs the bed support validator on its actual skinned
@@ -5644,11 +5667,9 @@
   rule rather than the timeline: it waits for the apartment theme to finish
   leaving, eases in over `MusicMix.FadeInSeconds`, leaves over
   `MusicMix.FadeOutSeconds` and treats a missing clip as a silent no-op.
-- **Accepted — Diegetic Home practicals and fixed 3D shots:** The Home
-  atmosphere retains exactly two shadowless practical realtime lights. A
-  visible HDR emitter and depth-tested halo are physically co-located with
-  each practical so the warm hanging lamp and cold bathroom tube read as
-  actual sources. The bathroom point pool, tube and halo share a deterministic
+- **Accepted — Diegetic Home practicals and 3D shots:** Three shadowless
+  practical pools follow the living pendant, kitchen fixture and bathroom tube.
+  The bathroom point pool, tube and halo share a deterministic
   unscaled `6.4 s` cycle with a separate cold hard-shadow Spot staged just
   inside the bathroom threshold; the group remains steady for most of the
   cycle, then stutters together briefly while the Spot projects through the
@@ -5657,7 +5678,7 @@
   the door plus entry floor. One shadowed cookie Spot projects through the
   window; only its color and intensity blend from the existing cold night
   shaft to warm daylight under `HomeDayNightController`, while the room
-  practicals retain their existing behavior. The atmosphere owns at most five
+  practicals follow the clock. The atmosphere owns at most six
   local realtime lights. Window/door panes reuse one shared transparent glass
   shader/material. During Home fixed-camera
   ownership, the same world-oriented modular 3D hero remains active in
@@ -6841,7 +6862,7 @@
   first-person naked shower wash:** This replaces bathroom exception (a)
   with a wash seen from the production hero's own eyes and a real bare-skin
   texture. The entry/exit staging is revised by the accepted `2026-09-07`
-  decision below. Clothes come off only while the lens is inside his head;
+  decision below. Dressed approach/opening precede offscreen undress before StepIn;
   the latest explicit exit exception below restores them only after the
   entire hero has left a rendered camera frame. The existing procedural tile brace, head bow and tap reach keep
   their scoped bathroom exception; the new curtain actions do not extend it.
@@ -6866,19 +6887,19 @@
   rest pitch and toilet constants remain unchanged; the bounded contact
   springs and mesh sweep guard act around the same fixed roots.
   All are placed from bone positions each frame and shown only
-  while the lease is out. The lease is taken while the rendered lens is
-  inside the head and released after the entire visible model leaves the
-  exit frame. `Player3DHeadVisibility` follows actual head/lens separation after
-  camera detachment, not merely the timeline phase; `shower_undress_in_view` /
-  `shower_redress_in_view` warn if that ever fails.
+  while the lease is out. Before StepIn, the parked lens must render the whole
+  dressed hero outside its frustum; the lease then applies before movement.
+  An already-inside start undresses behind the closed curtain. Release waits
+  until the whole hero leaves the exit frame. `Player3DHeadVisibility` follows
+  head/lens separation; `shower_redress_in_view` guards exit restoration.
   `HomeShowerFirstPersonView` is the lens: the mouth anchor plus `0.068 m`,
   the actor's yaw with the scene's wash base pitch (`38°` — the pose's
   neck + head) and a clamped
   look (`±75°` yaw, absolute pitch `−75°…115°`) that never turns the body.
   The bent head sits ahead of the chest, so the downward limit passes
   vertical far enough to leave room for a visible washing stroke there.
-  Arrow keys turn the view at `90°/s` while the soap pointer remains active;
-  mouse/right-stick motion belongs to the held RMB/LT look mode. The wash pose
+  Before soap, mouse/right stick look directly. Only Washing enables the pointer
+  and held RMB/LT look; arrows remain direct look at `90°/s`. The wash pose
   (`HomeShowerWashPose`) is unchanged in kind: Idle neutral captured under
   the handoff lock, spine/chest/neck/head pitched about the actor's world
   right axis, both palms on the tile in their default brace
@@ -7285,14 +7306,14 @@
   keeps its exact day (`8.25`, warm) and night (`5.25`, blue) poles —
   test-pinned — and passes through a dusk amber
   (`1.0/0.56/0.30`, blend `0.65`) that peaks mid-transition and vanishes
-  at both endpoints. The main lamp swings `2.30 (day) -> 4.10 (night)`
-  and deepens its orange, the entry spot lifts `8.0 -> 9.4` (never
+  at both endpoints. The main lamp swings `2.90 (day) -> 4.40 (night)`
+  and deepens its orange; kitchen `1.40 -> 2.90`, entry spot `8.0 -> 9.4` (never
   below the test floor of `8`), and `RenderSettings.ambientLight` plus
   the directional fill lerp from a warm bright day to a cold dark night
   (`0.44 -> 0.22`, blue-grey). The Balcony shot is respected: the
   indoor ambient/sun mood is skipped while the balcony borrows City
   lighting and reasserts itself the moment the shot returns inside.
-  Light count is unchanged — the five-light budget stands.
+  The accepted remodel bounds atmosphere-owned lights at six.
 - **Superseded 2026-09-02 — Runtime-primitive corner CCTV heads:** The
   passive Blender-interior decision above replaced the primitive housings
   with four authored mount/head-pivot assemblies at the current plan parity:

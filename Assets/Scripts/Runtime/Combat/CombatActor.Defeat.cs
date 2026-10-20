@@ -15,6 +15,25 @@ namespace BarPromenade
         private Vector3 weaponPosition, weaponScale;
         private Quaternion weaponRotation;
         private bool weaponDropped;
+        private bool defeatInputCaptured, motorInputBeforeDefeat, interactorInputBeforeDefeat;
+        private PlayerInteractor defeatedInteractor;
+
+        internal void HoldDefeatedHeroInput()
+        {
+            if (!IsHero || State == null || !State.IsDefeated) return;
+            if (!defeatInputCaptured)
+            {
+                defeatedInteractor = GetComponent<PlayerInteractor>();
+                if (!DebugFreeCamera.TryGetCapturedInput(gameObject, out motorInputBeforeDefeat, out interactorInputBeforeDefeat))
+                {
+                    motorInputBeforeDefeat = motor != null && motor.InputEnabled;
+                    interactorInputBeforeDefeat = defeatedInteractor != null && defeatedInteractor.InputEnabled;
+                }
+                defeatInputCaptured = true;
+            }
+            if (motor != null && motor.InputEnabled) motor.SetInputEnabled(false);
+            if (defeatedInteractor != null && defeatedInteractor.InputEnabled) defeatedInteractor.SetInputEnabled(false);
+        }
 
         public CombatRagdoll Ragdoll { get; private set; }
         public bool IsRagdollActive => Ragdoll != null && Ragdoll.IsActive;
@@ -40,6 +59,7 @@ namespace BarPromenade
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
             if (TryBeginCraneRegeneration()) return;
+            HoldDefeatedHeroInput();
             CancelRestraint();
             ClearRoomAttackCooldown();
             ReleaseCraneSuspension();
@@ -99,6 +119,7 @@ namespace BarPromenade
 
         internal void AdvanceRoundEnd(float seconds)
         {
+            HoldDefeatedHeroInput();
             CancelRestraint();
             ClearRoomAttackCooldown();
             if (CraneAttached && !State.IsDefeated)
@@ -211,6 +232,15 @@ namespace BarPromenade
 
         private void ResetDefeat()
         {
+            if (defeatInputCaptured)
+            {
+                // The camera reserves physical commands independently. A
+                // round reset restores this actor's living baseline even
+                // when the inspection overlay is still open.
+                motor?.SetInputEnabled(motorInputBeforeDefeat);
+                defeatedInteractor?.SetInputEnabled(interactorInputBeforeDefeat);
+                defeatInputCaptured = false;
+            }
             roundEnded = false;
             winnerPresentationReleased = false;
             defeatClock = 0f;

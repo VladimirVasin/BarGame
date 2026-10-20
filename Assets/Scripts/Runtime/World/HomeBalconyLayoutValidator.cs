@@ -85,9 +85,9 @@ namespace BarPromenade
                 }
             }
 
-            if (!interior.TryGetFurniture(
+            if (interior.TryGetFurniture(
                     HomeFurnitureKind.Sofa,
-                    out HomeFurnitureFootprint sofa) ||
+                    out HomeFurnitureFootprint sofa) &&
                 balcony.WindowCenter.y -
                 balcony.WindowSize.y * 0.5f <
                 sofa.Height - 0.12f)

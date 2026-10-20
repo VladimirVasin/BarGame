@@ -562,7 +562,7 @@ namespace BarPromenade
             music?.BeginRuleFadeOut();
             home?.InteractionPrompt?.SetPrompt(string.Empty);
             modalLock.Restore();
-            home?.FixedCamera?.ReapplyActiveShot();
+            home?.FixedCamera?.RestoreGameplayCamera();
         }
 
         private void RestoreFailedBegin(
@@ -585,7 +585,7 @@ namespace BarPromenade
 
             music?.StopImmediate();
             modalLock.Restore();
-            home?.FixedCamera?.ReapplyActiveShot();
+            home?.FixedCamera?.RestoreGameplayCamera();
         }
 
         private static bool WasExitPressed()

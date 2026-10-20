@@ -29,10 +29,8 @@ namespace BarPromenade
         {
             HomeFurnitureKind.Bed,
             HomeFurnitureKind.Kitchen,
-            HomeFurnitureKind.Sofa,
             HomeFurnitureKind.Table,
             HomeFurnitureKind.Bookcase,
-            HomeFurnitureKind.CameraCornerJunk,
             HomeFurnitureKind.Toilet,
             HomeFurnitureKind.Shower,
             HomeFurnitureKind.Sink
@@ -309,7 +307,7 @@ namespace BarPromenade
             if (plan.Furniture.Count != RequiredFurnitureKinds.Length)
             {
                 throw new InvalidOperationException(
-                    "The home layout requires exactly six living " +
+                    "The home layout requires exactly four living " +
                     "furniture groups and three bathroom fixtures.");
             }
 

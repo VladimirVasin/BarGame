@@ -91,10 +91,10 @@ namespace BarPromenade.Tests.EditMode
                 "nor bury him in it.");
 
             var mattress = new Rect(
-                plan.BedBounds.xMin + 0.08f,
-                plan.BedBounds.yMin + 0.09f,
-                plan.BedBounds.width - 0.16f,
-                plan.BedBounds.height - 0.18f);
+                plan.BedBounds.xMin + 0.09f * HomeBedInteractionPlan.FurnitureDepthScale,
+                plan.BedBounds.yMin + 0.08f,
+                plan.BedBounds.width - 0.18f * HomeBedInteractionPlan.FurnitureDepthScale,
+                plan.BedBounds.height - 0.16f);
             Assert.That(
                 mattress.Contains(
                     new Vector2(
@@ -144,13 +144,13 @@ namespace BarPromenade.Tests.EditMode
                     "The filled pillow crown must remain visibly above the mattress, " +
                     "rather than burying nearly all its thickness inside it.");
 
-                float headX =
-                    plan.ActionHipPosition.x -
-                    (plan.HeadToFootAxis.x * 0.85f);
+                Vector3 head = plan.ActionHipPosition - plan.HeadToFootAxis * .85f;
                 Assert.That(
-                    headX,
+                    head.x,
                     Is.InRange(pillow.min.x, pillow.max.x),
                     "His head has to actually come down over the pillow.");
+                Assert.That(head.z, Is.InRange(pillow.min.z, pillow.max.z),
+                    "The south-facing head must meet the rotated pillow along the sofa's length.");
             }
             finally
             {
@@ -169,7 +169,7 @@ namespace BarPromenade.Tests.EditMode
                     HomeBedInteractionPlan.Create(
                         HomeInteriorLayoutPlanner.Generate());
 
-                float spineZ = plan.ActionHipPosition.z;
+                float spineX = plan.ActionHipPosition.x;
                 Bounds blanket =
                     FindPart(bed, "Home Bed Crooked Blanket");
 
@@ -181,14 +181,14 @@ namespace BarPromenade.Tests.EditMode
                     "The blanket should still read as bedding heaped on " +
                     "the bed, not as a flat panel inside the mattress.");
                 Assert.That(
-                    blanket.min.z,
-                    Is.GreaterThanOrEqualTo(spineZ + SleeperHalfWidth),
+                    blanket.max.x,
+                    Is.LessThanOrEqualTo(spineX - SleeperHalfWidth),
                     "The crooked blanket must be shoved clear of the " +
                     "sleeper; anything overlapping him is geometry he lies " +
                     "through.");
                 Assert.That(
-                    blanket.max.z,
-                    Is.LessThanOrEqualTo(plan.BedBounds.yMax),
+                    blanket.min.x,
+                    Is.GreaterThanOrEqualTo(plan.BedBounds.xMin),
                     "and it must not hang off the far side of the bed.");
             }
             finally

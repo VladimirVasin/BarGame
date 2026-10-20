@@ -587,6 +587,8 @@ namespace BarPromenade
             ApplyShot(ActiveShot);
         }
 
+        public bool RestoreGameplayCamera() => isActiveAndEnabled && ReapplyActiveShot();
+
         public bool ReapplyActiveShot()
         {
             if (!IsInitialized ||
@@ -605,7 +607,7 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                RefreshSelection(true);
+                RestoreGameplayCamera();
             }
         }
 
@@ -629,6 +631,7 @@ namespace BarPromenade
             HomeCameraShot shot = ActiveShot;
             if (!shot.Zoom.Enabled ||
                 cameraFollow == null ||
+                cameraFollow.PresentationSuspended ||
                 target == null ||
                 !cameraFollow.FixedPoseActive)
             {
@@ -689,8 +692,7 @@ namespace BarPromenade
                 selected.Kind != ActiveShot.Kind;
             ActiveShot = selected;
             if (forceApply ||
-                changed ||
-                !cameraFollow.FixedPoseActive)
+                changed || !cameraFollow.FixedPoseActive)
             {
                 ApplyShot(selected);
             }

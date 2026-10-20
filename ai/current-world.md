@@ -176,8 +176,8 @@ cemetery:own interiors/returns.
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.
   Wake `6.9 s` (`6 s` exit at `1.15`): `2.25 s` camera glide→gameplay easing;
-- Home F9: exact reversible apartment day `1–7` picker and City-at-home/debug-map
-  button. Opening/contextual/door/modal owners block it;
+- Home F9: reversible apartment day `1–7` and City-at-home/map.
+  Opening/contextual/door/modal owners block it;
   map button retains the one-shot arrival request consumed after transition;
 - one session clock starts at `07:40`/day `1` when the starting place is confirmed
   and persists through Single-mode scene loads.
@@ -2228,17 +2228,22 @@ cemetery:own interiors/returns.
   Closed stew is
   a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
   therefore cannot satisfy the stairwell cat's feeding requirement;
-- one validated `10 x 8 x 3.4 m` Home main room/bathroom with clear routes,
-  six furniture groups and separate toilet/shower/sink footprints.
-  Blender `home_interior_v1` owns shell/furniture/bathroom/balcony/dressing;
-  Unity keeps collision/actions/lights/cameras/live bed.
+- Home `12 x 8 x 3.4 m`, `X[-7,5]`: clear routes, bathroom/balcony intact.
+  Blender `home_interior_v1`/`interior_kit`: geometry; Unity: collision/actions/
+  lights/cameras/live sleep deformation.
   `ApartmentEntranceDoor` shares aged timber/four recessed panels, deep frame,
   architraves/threshold/hardware with CombatTest; opening `1.32 m`.
-  The closed room stays north-central; cupboard `X[-4.86,-4.21], Z[2.76,3.86]`
-  is north-west; bed head is two centimetres from the west wall. The shorter
-  left counter keeps the refrigerator in place; the south-west pile clears bed access.
-  The closed room's day-one interaction reports the missing key without opening,
-  revealing contents or consuming the player's apartment keys;
+  The same locked room is `13.04 m²`, `X[-2.80,1.46], Z[0.82,3.88]`;
+  its unchanged door reports the missing key without opening or consuming keys.
+  Sleep is on the unfolded `2.55 x 1.15 m` west sofa, back west/head south.
+  No corner junk/late decor; bookcase/radio face east from the south-west corner.
+  A `3.37 m` full kitchen includes four burners/oven, hollow sink, storage,
+  worktop and utensils; cooking is visual only. Table top `0.83 m` is flush to
+  the locked-room front, wholly inside its width; table/chair share `X=-1.925`.
+  Chair seat `0.48 m`; `HomeDiningSeatPlan` shares side-entry/rear approach;
+  an owned filter retains seat E/prompt through cleanup.
+  Five living sheets preserve bathroom/balcony maps. `HomeWallPainting` adds
+  anonymous wall art with silent standing close-up/E-Esc exit, no text/reward;
 - seven calendar apartment appearances through `HomeApartmentDayRules` and
   `HomeApartmentDayController`: day one is relatively kept, days two through
   seven accumulate domestic clutter and grime, and later days retain day seven.
@@ -2246,8 +2251,7 @@ cemetery:own interiors/returns.
   This presentation is separate from alcohol level, acts and future decay;
   sleep, sobering and scene round trips do not clean it or disable actions;
 - one visually prominent data-first refrigerator fitted into a split kitchen
-  counter, with a validated player-width approach created by moving the table
-  deeper into the room; its Blender-authored enamel cabinet contains a
+  counter, with an independently authored player-width approach; its enamel cabinet contains a
   hollow liner, three stained shelves, a lower drawer, frost, grime and two
   door bins. Six cavity slots and two door slots form the storage contract;
   the initial occupied slots hold a vodka bottle, one chicken egg and an open
@@ -2423,7 +2427,7 @@ cemetery:own interiors/returns.
   height, no-progress approach, failed preparation, transition, disable and
   destroy all reset clip spatial offsets and restore control, camera, HUD,
   props, partner animation and contact shadow through owned cleanup;
-- one reachable bed interaction on the long `zMin` side nearest the Home door:
+- one reachable sleeping-sofa interaction on its east long side:
   the first `E` walks and turns the 3D hero to the middle of
   that edge, opposite the sleeping pelvis, holds neutral for one frame and plays the `5 s` `BedEnter`
   on the continuous rig — the one contextual action authored on eased curves
@@ -2441,9 +2445,9 @@ cemetery:own interiors/returns.
   two supported pelvis steps to reach the side, then drops the right
   leg over the near edge, then the left, and only then stands. Per-sample pelvis alignment
   keeps the same longitudinal coordinate through entry, sleep and exit. The
-  standing approach stays clear beside the `1.30 m`-wide corner storage pile.
-  The sleeper remains at the authored bed action anchor, with the head at the
-  `xMin` pillow. Both hip anchors are the mattress top plus a measured body
+  standing approach stays clear of the south-west bookcase.
+  The sleeper remains at the authored sofa action anchor, with the head at the
+  south pillow. Both hip anchors are the mattress top plus a measured body
   offset rather than a clearance guess: the generator reports how far the
   supine back, the lifted head and the seated weight hang below the pelvis
   bone, `PlayerCharacterDimensions` mirrors those numbers, and the pillow,
@@ -2459,7 +2463,7 @@ cemetery:own interiors/returns.
   Only a normally completed `BedExit` resets session fatigue;
   cancellation, transition, disable and destroy preserve it. Localized prompts
   and all normal/abnormal cleanup remain;
-- one bed-relative low-poly nightstand and a `27.6 cm`-wide 3D alarm clock that remain visible
+- one sofa-relative nightstand and a `27.6 cm`-wide 3D alarm clock that remain visible
   as ordinary Home dressing. Its reusable 28-segment display begins the
   retained waking opening at `05:59` and flickers all digits and punctuation briefly
   at long intervals. After a silent five-second input lock it reveals the menu
@@ -2481,9 +2485,8 @@ cemetery:own interiors/returns.
   leak stains and floor drain; the toilet cistern sits against the right wall
   and its bowl faces into the room;
 - one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
-  exactly two bounded shadowless practical pools whose visible HDR emitters
-  and halos are physically aligned with their lights—a dirty-yellow hanging
-  lamp and a cold bathroom tube. The bathroom point pool, tube and halo share
+  three bounded shadowless practical pools aligned with the living pendant,
+  kitchen fixture and cold bathroom tube. The bathroom point pool, tube and halo share
   one deterministic unscaled flicker: they stay steady for most of each
   `6.4 s` cycle, then briefly stutter through a `0.52 s` fluorescent-failure
   burst while a co-located spatial electrical crackle follows every actually
@@ -2491,26 +2494,22 @@ cemetery:own interiors/returns.
   bathroom threshold, shares the same flicker and projects through the ajar
   door onto the apartment exit area; another cold shadowed cookie Spot casts
   time-of-day light through the window, blending from the existing cold night
-  shaft to a warm daylight shaft. A fifth shadowless warm Spot is physically
+  shaft to a warm daylight shaft. A shadowless warm Spot is physically
   co-located with the compact amber lamp above the entrance and casts a local
-  pool over the door, wall and floor. These remain capped at five
+  pool over the door, wall and floor. These remain capped at six
   atmosphere-owned local realtime lights; the scene Directional light is
   separate. The atmosphere also owns a shared transparent glass
   shader/material, a restrained Bloom/color/exposure/vignette/film-grain
   runtime volume, at most 12 sparse dust motes, a calm room bed, spatial
   refrigerator/balcony layers, sparse domestic details and a short damped
   reverb snapshot without echo;
-- one unchanged Main Camera setup that hard-cuts among three authored poses:
-  the user-approved MainRoom pose at `(-4.48, 3.00, -3.25)`, Euler
-  `(28°, 55°, 0°)` and `64°` FOV, the Bathroom pose at
+- one Main Camera defaults to three authored poses:
+  MainRoom at `(-6.48, 3.05, -3.25)`, Euler `(28°, 55°, 0°)`, `68°` FOV;
+  Bathroom at
   `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°` FOV, and the Balcony
   pose; separate activation and wider hold bounds provide threshold
-  hysteresis, while each fixed position ignores
-  orbit/follow input and retains only quarter-strength intoxication, balance
-  and fall rotation;
-- while the Home fixed-camera controller is active, the same world-oriented 3D
-  hero remains visible in MainRoom, Bathroom and Balcony without camera-plane
-  or yaw-billboard modes;
+  hysteresis. Fixed positions ignore orbit and retain quarter-strength
+  intoxication/balance/fall rotation;
 - a lived-in bathroom: a rebuilt shower stall (hand-operated entrance curtain on an
   L-rail, mixer, rusty pipe, tilted head, soap shelf); the green hose segments
   alongside the pipe are removed. Its red/blue cross valves share the sink's
@@ -2527,9 +2526,8 @@ cemetery:own interiors/returns.
   in which the hero visibly opens the curtain opposite the tap wall, steps
   into the stall and closes it behind him. The lens starts a gentler flight on `E`,
   crosses the opening curtain and reaches the future eye position before
-  the hero. He walks to the wash dock and leans into that view; costume
-  changes wait for the actual head/camera alignment, then the lens follows
-  his eyes exactly with no independent drift. The feet stand farther from
+  the hero. Dressed approach/opening precede offscreen undress before StepIn;
+  he enters bare and joins the eye lens without drift. The feet stand farther from
   the wall and the torso leans toward the water without automatic sway.
   Both palms rest on the tile. Before taking soap, the right hand opens
   the hot wheel, then the left opens the cold wheel. Each returns to its brace;
@@ -2539,7 +2537,7 @@ cemetery:own interiors/returns.
   He washes with the current wardrobe removed: actual bare body/skin atlas,
   no repaint or shoulder overlays, the toilet's passive anatomy. Restoration
   returns the selected outfit and preserves the first-person head lease.
-  Until the soap is held, `E` takes it from the shelf regardless of cursor
+  Before soap, mouse/right stick look normally. `E` takes it regardless of cursor
   position or viewing direction. A localized prompt, yellow outline and
   connecting line appear beside the soap when it is visible; they do not
   gate pickup. Pickup takes priority over exit. Pressing on
@@ -2759,6 +2757,10 @@ cemetery:own interiors/returns.
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. There is no bar-visited mechanic and no planned bar route on
   the map: bars are numbered markers with names, nothing more;
+- global `F4` free flight: mouse/WASD, Q down/E up, Shift ×4.
+  Busy actions/modal ownership and defeat permit entry; timelines stay live.
+  Flight reserves physical commands, never snapshots input flags. F4/Esc returns
+  the current scene camera; actual pause/scene/disable clears the overlay;
 - `F9` City/Bar/Road/Home: closes map, modal lock; clicks/Left/Right adjust
   intoxication `±20` within `0–100`, keep drink context. Days `1–7` keep
   `HH:MM`/running/needs; days uncapped. City owns teleport flag;

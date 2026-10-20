@@ -1,8 +1,13 @@
 # Home surface albedos
 
-The twelve apartment surface sheets in `Assets/Resources/Home/Textures/`
-are built, validated and hashed by `tools/build-home-textures.py`
-(Pillow is the only dependency):
+`tools/build-home-textures.py` builds, validates and hashes the Home sheets
+under `Assets/Resources/Home/Textures/` (Pillow only). Twelve retained donor
+sheets keep their original maps/imports, including bathroom and balcony.
+The living remodel uses five separate `Room*` sheets: wallpaper, planks,
+wood, laminate and upholstery. `--room-only` writes only these, with
+`home-room-textures.json` and `home-room-contact-sheet.png`; `--room-only --verify`
+checks them without publication. They import at native 1024 with BC7/mips and
+trilinear sampling. The contracts below describe the twelve donor sheets:
 
 ```bash
 python tools/build-home-textures.py            # write sheets + manifest

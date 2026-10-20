@@ -38,7 +38,8 @@ namespace BarPromenade
                 PauseMenuController.IsAnyPaused,
                 GameTimeScaleRuntime.IsPaused,
                 modalLocked,
-                BarMinigameModalLock.BlocksMotorInput);
+                BarMinigameModalLock.BlocksMotorInput,
+                DebugFreeCamera.BlocksWorldInput);
         }
 
         public static bool WasPressed(

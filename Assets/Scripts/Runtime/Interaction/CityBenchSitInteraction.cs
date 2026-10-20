@@ -28,6 +28,7 @@ namespace BarPromenade
         public const string ChessPromptKey = "interaction.play_chess";
         public const string DraughtsPromptKey =
             "interaction.play_checkers";
+        public const string DiningPromptKey = "interaction.sit_at_table";
         public const string StandPromptKey = "interaction.stand_up";
         public const string EnterClipName = "BusBoardEnter";
         public const string LoopClipName = "BusRideLoop";
@@ -51,6 +52,7 @@ namespace BarPromenade
         public const float ApproachVerticalTolerance = 0.35f;
 
         private PlayerAnimatedInteractionController controller;
+        private PlayerInteractor playerInteractor;
         private Transform playerRoot;
         private CityBenchSitPlan plan;
         private PlayerAnimatedInteractionDefinition definition;
@@ -124,6 +126,7 @@ namespace BarPromenade
             }
 
             controller = interactionController;
+            playerInteractor = player.Interactor;
             contactShadow = player.ContactShadow;
             playerRoot = player.GameObject.transform;
             plan = interactionPlan;
@@ -152,6 +155,8 @@ namespace BarPromenade
                     return ChessPromptKey;
                 case CityBenchSeatKind.DraughtsTable:
                     return DraughtsPromptKey;
+                case CityBenchSeatKind.DiningChair:
+                    return DiningPromptKey;
                 default:
                     return SitPromptKey;
             }
@@ -194,7 +199,9 @@ namespace BarPromenade
 
             // Both game tables wear the same clips: the timber, the
             // slab and the gap a body has to get through are identical,
-            // and only the men on the board differ.
+            // and only the men on the board differ. Dining chairs use
+            // this complete family too: its side transfer clears the
+            // backrest, and its loop shares the exact enter/exit pose.
             return new PlayerAnimatedInteractionDefinition(
                 BoardEnterClipName,
                 BoardLoopClipName,
@@ -313,7 +320,12 @@ namespace BarPromenade
             }
 
             ownsActiveInteraction = true;
+            // The loop re-enables E so the seat (or its seated activity)
+            // can release the hero. Nearby world prompts cannot borrow it.
+            playerInteractor?.SetInteractionFilter(this, IsOwnedSeatAction);
         }
+
+        private bool IsOwnedSeatAction(IInteractable candidate) => ReferenceEquals(candidate, this);
 
         private void HandlePhaseChanged(
             PlayerAnimatedInteractionPhase phase)
@@ -343,6 +355,7 @@ namespace BarPromenade
                 phase == PlayerAnimatedInteractionPhase.Idle)
             {
                 ownsActiveInteraction = false;
+                playerInteractor?.SetInteractionFilter(this, null);
                 RestoreContactShadow();
                 CityBenchSeatClaims.Release(plan.Id, this);
             }
@@ -391,6 +404,7 @@ namespace BarPromenade
 
         private void CancelOwnedInteraction()
         {
+            playerInteractor?.SetInteractionFilter(this, null);
             if (!ownsActiveInteraction)
             {
                 return;

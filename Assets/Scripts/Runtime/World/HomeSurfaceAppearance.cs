@@ -16,7 +16,12 @@ namespace BarPromenade
         Enamel,
         PaintedMetal,
         Concrete,
-        Rug
+        Rug,
+        RoomWallpaper,
+        RoomPlanks,
+        RoomWood,
+        RoomLaminate,
+        RoomUpholstery
     }
 
     internal readonly struct HomeSurfaceRecipe
@@ -77,7 +82,7 @@ namespace BarPromenade
         public const string RugTextureResourcePath =
             "Home/Textures/HomeRugAlbedo";
 
-        private const int SurfaceCount = (int)HomeSurfaceKind.Rug + 1;
+        private const int SurfaceCount = (int)HomeSurfaceKind.RoomUpholstery + 1;
         private const float MinimumUvScale = 0.35f;
 
         // Salts the deterministic UV offset hash away from the stairwell
@@ -105,6 +110,16 @@ namespace BarPromenade
         {
             switch (kind)
             {
+                case HomeSurfaceKind.RoomWallpaper:
+                    return new HomeSurfaceRecipe("Home/Textures/HomeRoomWallpaperAlbedo", 1.9f, 0.05f, 0f, 1.383f);
+                case HomeSurfaceKind.RoomPlanks:
+                    return new HomeSurfaceRecipe("Home/Textures/HomeRoomPlanksAlbedo", 1.6f, 0.14f, 0f, 1.4935f);
+                case HomeSurfaceKind.RoomWood:
+                    return new HomeSurfaceRecipe("Home/Textures/HomeRoomWoodAlbedo", 1.1f, 0.17f, 0f, 1.4175f);
+                case HomeSurfaceKind.RoomLaminate:
+                    return new HomeSurfaceRecipe("Home/Textures/HomeRoomLaminateAlbedo", 1.2f, 0.23f, 0f, 1.4065f);
+                case HomeSurfaceKind.RoomUpholstery:
+                    return new HomeSurfaceRecipe("Home/Textures/HomeRoomUpholsteryAlbedo", 0.85f, 0.04f, 0f, 1.4655f);
                 case HomeSurfaceKind.Wallpaper:
                     return new HomeSurfaceRecipe(
                         WallpaperTextureResourcePath,

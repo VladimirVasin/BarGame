@@ -1,0 +1,128 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "HomeRoomWallpaperAlbedo",
+      "grammar": "room_wallpaper",
+      "resourcePath": "Home/Textures/HomeRoomWallpaperAlbedo",
+      "meanLinearLuminance": 0.499883,
+      "albedoCompensation": 1.383,
+      "brightnessError": 0.008307,
+      "metersPerTile": 1.9,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.775051,
+      "tints": {
+        "RoomWallpaper": [
+          0.43,
+          0.405,
+          0.345
+        ]
+      },
+      "edgeDelta": 3.0247,
+      "seamRatio": 1.3593,
+      "contrast": 33,
+      "channelRatio": 1.0393,
+      "sha256": "3919E9D7F4C4589A9371206AD4F920DAAD84922DCE0DB3EF32FC2EEB370E7A53"
+    },
+    {
+      "key": "HomeRoomPlanksAlbedo",
+      "grammar": "planks",
+      "resourcePath": "Home/Textures/HomeRoomPlanksAlbedo",
+      "meanLinearLuminance": 0.449989,
+      "albedoCompensation": 1.4935,
+      "brightnessError": 0.046674,
+      "metersPerTile": 1.6,
+      "smoothness": 0.14,
+      "metallic": 0.0,
+      "exposure": 0.82555,
+      "tints": {
+        "RoomPlanks": [
+          0.32,
+          0.235,
+          0.16
+        ]
+      },
+      "edgeDelta": 1.2961,
+      "seamRatio": 0.7879,
+      "contrast": 46,
+      "channelRatio": 1.069,
+      "sha256": "85E1AB650A093EBB7FB89B85B7E9853A04ABA85818D80A68320D8C478C6DF68D"
+    },
+    {
+      "key": "HomeRoomWoodAlbedo",
+      "grammar": "veneer",
+      "resourcePath": "Home/Textures/HomeRoomWoodAlbedo",
+      "meanLinearLuminance": 0.51999,
+      "albedoCompensation": 1.4175,
+      "brightnessError": 0.062572,
+      "metersPerTile": 1.1,
+      "smoothness": 0.17,
+      "metallic": 0.0,
+      "exposure": 0.702401,
+      "tints": {
+        "RoomWood": [
+          0.27,
+          0.185,
+          0.11
+        ]
+      },
+      "edgeDelta": 0.9951,
+      "seamRatio": 0.8517,
+      "contrast": 27,
+      "channelRatio": 1.0737,
+      "sha256": "26D19D1AE126EFCB7720879A523D005DC97E06A4AC690426AB3C911D7E5603D3"
+    },
+    {
+      "key": "HomeRoomLaminateAlbedo",
+      "grammar": "laminate",
+      "resourcePath": "Home/Textures/HomeRoomLaminateAlbedo",
+      "meanLinearLuminance": 0.480275,
+      "albedoCompensation": 1.4065,
+      "brightnessError": 0.006942,
+      "metersPerTile": 1.2,
+      "smoothness": 0.23,
+      "metallic": 0.0,
+      "exposure": 0.831755,
+      "tints": {
+        "RoomLaminate": [
+          0.42,
+          0.44,
+          0.37
+        ]
+      },
+      "edgeDelta": 1.0589,
+      "seamRatio": 0.9895,
+      "contrast": 32,
+      "channelRatio": 1.0264,
+      "sha256": "745BD2EC6FC91F06BE3954F48C2A8A75E3CDD313DD900404421E5FDD04883278"
+    },
+    {
+      "key": "HomeRoomUpholsteryAlbedo",
+      "grammar": "weave",
+      "resourcePath": "Home/Textures/HomeRoomUpholsteryAlbedo",
+      "meanLinearLuminance": 0.450186,
+      "albedoCompensation": 1.4655,
+      "brightnessError": 0.009319,
+      "metersPerTile": 0.85,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.886896,
+      "tints": {
+        "RoomUpholstery": [
+          0.28,
+          0.335,
+          0.3
+        ]
+      },
+      "edgeDelta": 4.6229,
+      "seamRatio": 0.9878,
+      "contrast": 36,
+      "channelRatio": 1.0281,
+      "sha256": "E832DE892B413E21691941F14FA237768D6520956FCDB5A58E8B0B6EF5E3E5D3"
+    }
+  ]
+}

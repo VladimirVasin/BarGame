@@ -339,13 +339,13 @@ namespace BarPromenade
                 returning = true;
             }
 
-            if (aimingAllowed && !returning &&
-                !PauseMenuController.IsAnyPaused)
+            bool acceptsAim = aimingAllowed && !returning && GameInput.CanRead(GameInputContext.Contextual);
+            if (acceptsAim)
             {
                 ReadAimInput(Mathf.Max(0f, deltaTime), !wasAimingAllowed);
             }
 
-            wasAimingAllowed = aimingAllowed;
+            wasAimingAllowed = acceptsAim;
             if (returning && weight <= 0.0001f)
             {
                 RestorePose();
@@ -359,11 +359,12 @@ namespace BarPromenade
                 UpdateCameraPose();
                 // Only head geometry is hidden; the actual arm, body and
                 // contact shadow stay visible throughout the action.
-                if (weight >= 0.90f && hiddenHead == null)
+                bool insideHead = weight >= .90f && !DebugFreeCamera.IsInspecting(host.Player.GameObject);
+                if (insideHead && hiddenHead == null)
                 {
                     hiddenHead = Player3DHeadVisibility.Hide(registry);
                 }
-                else if (weight < 0.90f && hiddenHead != null)
+                else if (!insideHead && hiddenHead != null)
                 {
                     RestoreHead();
                 }

@@ -1,6 +1,9 @@
-# Art and native tool entry points
+# Art/native tools
 
 [City](../ai/city-texture-plan.md).
+
+Home: `build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
+`--validate-only`; maps `build-home-textures.py --room-only`.
 
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
 (`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
@@ -129,7 +132,7 @@ Fixed Alpine frost: ImageGen/prompt/hash/linear import:
 python tools/toolchain.py --scope all
 ```
 
-Install Python packages: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
+Python: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
 `BP_BLENDER`/`--blender`:another installation of the same pinned build;
 native launcher:MSVC/SDK pins.
 
@@ -139,14 +142,14 @@ Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
-Stage assets via repeated
+Stage via repeated
 `--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`; other args stay.
 `--expect` maps destinations. Publish checked/Unity closed;
 keep `.meta`/rollback on failure. Import is not atomic.
 
-The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
-publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
-in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
+`tools/audio-vhs/build.ps1` validates the staged DLL before publishing.
+`-Validate` remains; `-CompileOnly` stays in `Captures` without publication.
+See [audio-vhs/README.md](audio-vhs/README.md).
 
 `build-player-3d-model-v2.py`: 31 body/12 hair bones; `--surfaces-only`: UVs.
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
@@ -191,13 +194,13 @@ python tools/run-blender.py tools/build-home-shower-curtain-actions.py --expect 
 python tools/run-blender.py tools/build-home-shower-curtain-actions.py --validate-only -- --validate-only
 ```
 
-Close Unity to publish. Checks:neutral ends/fixed pelvis-feet/moving grip/both arms
+Checks:neutral ends/fixed pelvis-feet/moving grip/both arms
 against evaluated body at60Hz. Second command:manifest comparison,0publication.
 Unity's
 `Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
 the imported clips against the production Idle pose and world grip targets.
 
-The mother's ordinary scarf has its own folded and worn Blender pack. Its
+Mother scarf: folded/worn Blender pack. Its
 45 cm rear tail uses a 6 by 20 cloth grid; the wrap and knot retain their
 authored silhouette, and the `MouthLowered` shape opens the actual face.
 Both forms sample the existing mother's-house `BookCloth` atlas tile.
@@ -207,7 +210,7 @@ python tools/run-blender.py tools/build-player-scarf-3d-model.py --expect Assets
 python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only -- --validate-only --no-preview
 ```
 
-Close Unity to publish. Command one renders front/lowered/rear views
+Command one renders front/lowered/rear views
 under `ArtSource/PlayerScarf`; `-- --no-preview` skips them. Validation checks
 weights, geometry/shapes, determinism and face clearance.
 `PlayerScarfAssetSetup.BuildOrThrow` only imports/measures FBXs;

@@ -64,7 +64,7 @@ namespace BarPromenade
             timeline.Phase == HomeShowerScenePhase.Wash && !washingFinishRequested &&
             soapPhase != HomeShowerSoapPhase.Finished;
         public bool WashingPointerAvailable => soapStarted && !washingFinishRequested &&
-            (soapPhase == HomeShowerSoapPhase.SelectSoap || soapPhase == HomeShowerSoapPhase.Washing);
+            soapPhase == HomeShowerSoapPhase.Washing;
         public Camera WashingCamera => Home != null && Home.CameraFollow != null ? Home.CameraFollow.Camera : null;
         public bool ShowGamepadWashingPointer => gamepadWashingPointer && WashingPointerAvailable && !washingLookHeld;
         public Vector2 WashingPointer => scrubPointer;
@@ -98,7 +98,8 @@ namespace BarPromenade
         private void AdvanceWashing(float seconds)
         {
             if (timeline.Phase != HomeShowerScenePhase.Wash || PauseMenuController.IsAnyPaused) return;
-            if (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+            bool acceptsInput = GameInput.CanRead(GameInputContext.Contextual);
+            if (acceptsInput && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
             {
                 RequestStopFromSceneInput();
                 if (washingFinishRequested) return;
@@ -116,6 +117,11 @@ namespace BarPromenade
                 }
             }
             if (soapStartRendered) soapPhaseElapsed += Mathf.Max(0f, seconds);
+            if (!acceptsInput)
+            {
+                washingLookHeld = previousWashingLook = scrubHeld = scrubSubmitted = selectPointRequested = pointerArmed = false;
+                return;
+            }
             if (scrubSubmitted) return;
 
             Mouse mouse = Mouse.current;
@@ -149,7 +155,7 @@ namespace BarPromenade
         /// <summary>E takes the known soap from its shelf; neither the mouse nor the camera chooses the item.</summary>
         public bool TryPickUpSoap()
         {
-            if (!OwnsScene || !soapStarted || PauseMenuController.IsAnyPaused ||
+            if (!OwnsScene || !soapStarted || !GameInput.CanRead(GameInputContext.Contextual) ||
                 timeline.Phase != HomeShowerScenePhase.Wash || soapPhase != HomeShowerSoapPhase.SelectSoap ||
                 washingFinishRequested) return false;
             SetSoapPhase(HomeShowerSoapPhase.Pickup);
@@ -162,7 +168,7 @@ namespace BarPromenade
         /// <summary>Screen-space input only: target selection and actual contact remain in the presentation path.</summary>
         public void SetScrubInput(Vector2 screenPosition, Vector2 mouseDelta, bool held)
         {
-            if (!OwnsScene || PauseMenuController.IsAnyPaused || !WashingPointerAvailable ||
+            if (!OwnsScene || !GameInput.CanRead(GameInputContext.Contextual) || !WashingPointerAvailable ||
                 !float.IsFinite(screenPosition.x) || !float.IsFinite(screenPosition.y) ||
                 !float.IsFinite(mouseDelta.x) || !float.IsFinite(mouseDelta.y)) return;
             scrubPointer = screenPosition;
@@ -205,7 +211,7 @@ namespace BarPromenade
         public bool TrySelectWashPoint(Vector2 screenPosition)
         {
             SelectionDiagnostic = $"point={screenPosition:F2}, phase={soapPhase}, look={washingLookHeld}, paused={PauseMenuController.IsAnyPaused}";
-            if (!OwnsScene || !soapStarted || washingFinishRequested || PauseMenuController.IsAnyPaused ||
+            if (!OwnsScene || !soapStarted || washingFinishRequested || !GameInput.CanRead(GameInputContext.Contextual) ||
                 washingLookHeld || soapPhase != HomeShowerSoapPhase.Washing || WashingCamera == null ||
                 !float.IsFinite(screenPosition.x) || !float.IsFinite(screenPosition.y)) return false;
             ClearWashSelection();

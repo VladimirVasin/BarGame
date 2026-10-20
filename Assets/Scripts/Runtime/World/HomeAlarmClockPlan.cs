@@ -33,9 +33,10 @@ namespace BarPromenade
                 NightstandFootprint.center.y);
         public Vector3 NightstandSize =>
             new Vector3(
-                NightstandFootprint.width,
+                0.68f,
                 NightstandHeight,
-                NightstandFootprint.height);
+                0.46f);
+        public Quaternion Rotation => HomeBedInteractionPlan.FurnitureRotation;
         public Vector3 ClockPosition { get; }
 
         public static HomeAlarmClockPlan Create(
@@ -57,13 +58,13 @@ namespace BarPromenade
             const float nightstandWidth = 0.68f;
             const float nightstandDepth = 0.46f;
             Vector2 center = new Vector2(
-                bed.Bounds.xMin + 0.38f,
-                bed.Bounds.yMax + 0.30f);
+                bed.Bounds.center.x,
+                bed.Bounds.yMin - 0.05f - nightstandWidth * 0.5f);
             Rect nightstand = new Rect(
-                center.x - nightstandWidth * 0.5f,
-                center.y - nightstandDepth * 0.5f,
-                nightstandWidth,
-                nightstandDepth);
+                center.x - nightstandDepth * 0.5f,
+                center.y - nightstandWidth * 0.5f,
+                nightstandDepth,
+                nightstandWidth);
             Vector3 clockPosition = new Vector3(
                 center.x,
                 NightstandHeight +

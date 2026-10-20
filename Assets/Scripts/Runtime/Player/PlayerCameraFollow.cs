@@ -971,6 +971,7 @@ namespace BarPromenade
 
         private void ApplyPose(Vector3 cameraPivot, Quaternion rotation)
         {
+            if (PresentationSuspended || controlledCamera == null) return;
             controlledCamera.transform.SetPositionAndRotation(
                 cameraPivot - rotation * Vector3.forward * dollyDistance,
                 rotation);
@@ -978,7 +979,7 @@ namespace BarPromenade
 
         private void ApplyFixedPose(Quaternion rotation)
         {
-            if (controlledCamera == null)
+            if (controlledCamera == null || PresentationSuspended)
             {
                 return;
             }
@@ -1278,7 +1279,7 @@ namespace BarPromenade
 
         private void ConfigureCamera()
         {
-            if (controlledCamera == null)
+            if (controlledCamera == null || PresentationSuspended)
             {
                 return;
             }

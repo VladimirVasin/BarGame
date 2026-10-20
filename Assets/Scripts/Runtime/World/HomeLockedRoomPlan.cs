@@ -6,7 +6,7 @@ namespace BarPromenade
     /// <summary>The single inaccessible story room. All dimensions are Home-local metres.</summary>
     public static class HomeLockedRoomPlan
     {
-        public static Rect Bounds => Rect.MinMaxRect(-0.10f, 0.82f, 1.46f, 3.88f);
+        public static Rect Bounds => Rect.MinMaxRect(-2.80f, 0.82f, 1.46f, 3.88f);
         public static Vector3 DoorPosition => new Vector3(0.68f, 1.05f, 0.815f);
         public static Vector3 DockPosition => new Vector3(0.68f, PlayerFactory.GroundedRootOffset, 0.30f);
         public static Vector3 TriggerPosition => new Vector3(0.68f, 1.0f, 0.28f);

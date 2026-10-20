@@ -82,12 +82,15 @@ namespace BarPromenade
             switch (kind)
             {
                 case HomeSurfaceKind.BedLinen: lastDay = new Color(0.60f, 0.51f, 0.39f); break;
-                case HomeSurfaceKind.Upholstery: lastDay = new Color(0.67f, 0.60f, 0.47f); break;
+                case HomeSurfaceKind.Upholstery:
+                case HomeSurfaceKind.RoomUpholstery: lastDay = new Color(0.67f, 0.60f, 0.47f); break;
                 case HomeSurfaceKind.BathroomTile:
                 case HomeSurfaceKind.Enamel: lastDay = new Color(0.76f, 0.72f, 0.57f); break;
                 case HomeSurfaceKind.PlankFloor:
+                case HomeSurfaceKind.RoomPlanks:
                 case HomeSurfaceKind.Rug: lastDay = new Color(0.71f, 0.65f, 0.55f); break;
-                case HomeSurfaceKind.WornLaminate: lastDay = new Color(0.75f, 0.69f, 0.57f); break;
+                case HomeSurfaceKind.WornLaminate:
+                case HomeSurfaceKind.RoomLaminate: lastDay = new Color(0.75f, 0.69f, 0.57f); break;
                 default: lastDay = new Color(0.90f, 0.87f, 0.81f); break;
             }
             Color tint = original * Color.Lerp(Color.white, lastDay, amount);

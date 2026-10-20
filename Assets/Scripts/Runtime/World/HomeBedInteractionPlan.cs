@@ -12,6 +12,9 @@ namespace BarPromenade
         private const float TriggerLength = 0.90f;
         internal const float ActionHipFootwardOffset = 0.135f;
         internal const float DoorSideSeatInset = 0.16f;
+        internal const float FurnitureLength = 2.55f;
+        internal const float FurnitureDepth = 1.15f;
+        internal const float FurnitureDepthScale = FurnitureDepth / 1.75f;
 
         // Both hip heights are the mattress plus the measured distance the
         // authored pose hangs below the pelvis bone. Nothing here is a
@@ -48,6 +51,7 @@ namespace BarPromenade
         internal const float ExitHoldProgress = 0.30f;
         internal const float ExitSettleProgress = 1f;
         public const float UprightVisualOffset = 0.005f;
+        public static Quaternion FurnitureRotation => Quaternion.Euler(0f, -90f, 0f);
 
         private HomeBedInteractionPlan(
             Rect bedBounds,
@@ -118,9 +122,12 @@ namespace BarPromenade
                 CreateEnterPath(),
                 CreateExitPath());
 
-        private Vector3 SupportedSeat(float acrossBed, float lift = 0f) =>
-            new Vector3(SeatHipPosition.x, SeatedHipHeight + lift,
-                Mathf.Lerp(SeatHipPosition.z, ActionHipPosition.z, acrossBed));
+        private Vector3 SupportedSeat(float acrossBed, float lift = 0f)
+        {
+            Vector3 support = Vector3.Lerp(SeatHipPosition, ActionHipPosition, acrossBed);
+            support.y = SeatedHipHeight + lift;
+            return support;
+        }
 
         private PlayerAnimatedInteractionPelvisPath CreateEnterPath() =>
             new PlayerAnimatedInteractionPelvisPath(
@@ -173,16 +180,15 @@ namespace BarPromenade
             }
 
             Rect bounds = bed.Bounds;
-            float doorSideEdge = bounds.yMin;
+            float doorSideEdge = bounds.xMax;
             // Sit opposite the sleeping pelvis near the middle of the long
             // side. Sharing this longitudinal coordinate lets the torso
             // reach the pillow by reclining, without sliding along the bed.
-            float dockX = bounds.center.x + ActionHipFootwardOffset;
-            float centerZ = bounds.center.y;
+            float dockZ = bounds.center.y + ActionHipFootwardOffset;
             Vector3 entryRoot = new Vector3(
-                dockX,
+                doorSideEdge + ApproachOffset,
                 PlayerFactory.GroundedRootOffset,
-                doorSideEdge - ApproachOffset);
+                dockZ);
             Vector3 exitRoot = entryRoot;
             var walkable = new RoadWalkableArea(
                 new[] { layout.WalkableBounds });
@@ -207,28 +213,28 @@ namespace BarPromenade
                     exitRoot,
                     UprightVisualOffset);
             Vector3 seatHip = new Vector3(
-                dockX,
+                doorSideEdge - DoorSideSeatInset,
                 SeatedHipHeight,
-                doorSideEdge + DoorSideSeatInset);
+                dockZ);
             // The dock leaves the character's back toward the mattress. The
             // authored clip can therefore sit straight down on the long edge
             // nearest the apartment door and finish standing into the room.
-            Vector3 dockFacingDirection = Vector3.back;
-            Vector3 headToFootAxis = Vector3.right;
+            Vector3 dockFacingDirection = Vector3.right;
+            Vector3 headToFootAxis = Vector3.forward;
             Vector3 actionHip = new Vector3(
                 bounds.center.x +
                 (headToFootAxis.x * ActionHipFootwardOffset),
                 SleepingHipHeight,
-                centerZ +
+                bounds.center.y +
                 (headToFootAxis.z * ActionHipFootwardOffset));
             Vector3 triggerSize = new Vector3(
-                Mathf.Min(TriggerLength, bounds.width),
+                TriggerDepth,
                 TriggerHeight,
-                TriggerDepth);
+                Mathf.Min(TriggerLength, bounds.height));
             Vector3 triggerCenter = new Vector3(
-                dockX,
+                doorSideEdge + (TriggerDepth * 0.5f),
                 TriggerHeight * 0.5f,
-                doorSideEdge - (TriggerDepth * 0.5f));
+                dockZ);
 
             return new HomeBedInteractionPlan(
                 bounds,

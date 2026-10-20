@@ -5,6 +5,32 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-21
 
+Home expanded west: same larger locked room, sleeping sofa/full visual kitchen.
+Shared chair side entry keeps endpoints and live sleep contacts/deformation.
+Local living sheets and kitchen practical preserve
+bathroom/balcony presentation. F4 reserves flight commands over busy actions/
+defeat; timelines continue. No input snapshots; exit returns the current camera.
+Defeat stays live; its own owner keeps dead-hero input off.
+DebugFreeCameraPlayModeTests OK: busy completion/current camera, defeat/reset.
+Refrigerator approach is independent of sleep.
+Sofa narrowed, length/west back fixed, head/clock south. Table flush to locked-room
+front within its width; chair/sleep contacts follow the frames.
+Corner junk/slippers removed; bookcase/radio move south-west, shelves east.
+Anonymous painting keeps aspect; shared silent inspection has no pages/caption/
+speech/reward or interpretation. Left-of-door image cache survives scene cleanup.
+DiningChair always joins the rear corner from the admitted front strip; game
+boards keep their routes. Shower captures prior handoff once at scene capture,
+avoiding recapture of its pending unlock so normal exit restores walking.
+The same stale handoff blocked F4; no separate fixed-camera fault reproduced.
+AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed OK: raw E stand/prompt/
+filter release; bed/chair/painting flight; game views reviewed.
+Shower_CancelMidWashDressesHimAndShutsTheWater OK: bare first entry, initial
+mouse/RMB, live wash/exit flight, cancel/Q handoff and W boot gait.
+Owned seat E/prompt filter keeps painting from intercepting stand; cleanup releases it.
+Shower enters bare after offscreen undress, with dressed exterior approach.
+Before soap, direct mouse/stick look; pointer/RMB belongs only to Washing.
+Workspace audit reports pre-existing temporary files and retention violations.
+
 City material queue: local ImageGen pigment/independent filtered physical maps
 preserve district palette, facade grammar and metre UVs; ground keeps indexed
 MPBs/road coordinates/wetness. Guarded bar UV0 retains original UV1/geometry/

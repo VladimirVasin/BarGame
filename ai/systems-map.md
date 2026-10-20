@@ -23,7 +23,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Lodge shelter | Doors/wind/lamp/seats/photo/hatch; 7 wood identities. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `LodgeWoodAppearance`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six residents/31 homes; help persists; automatic greetings 5 Hz, E immediate; reusable visibility buffer. | `AlpineVillageLifeController`, `VillageWorkroomController`, `VillageHousehold*` | Current |
-| Narrative inspection | 24 outdoor + 4 lodge RU/EN; low/right hatch close-up, compact choice, lid attempt→bottom reply. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
+| Narrative inspection | Village 24+4; hatch choice/reply; Home silent painting close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*`, `HomeWallPainting` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Pause/modal priority; Alt cursor blocks mouse combat; focus guard. | `GameInput`, `GameInputPolicy`, `GameCursor` | Current |
 | Performance capture | Camera-bound frame/GPU/GC, inclusive combat/NPC CPU and separate fountain/probe metrics; availability explicit. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
@@ -144,11 +144,11 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
 | Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
-| Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
+| Home alarm clock | Sofa-side `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
 | Player motor | Tank/aim walk;world-space air inertia/limited steering;ground/snow/context limits. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
-| Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
+| Home camera | Fixed shots/pan with explicit contextual ownership. | `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
 | Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
@@ -159,20 +159,20 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Alpine frost presentation | Session frost; scarf halves growth, full frost stops cues; warm zones thaw. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |
 | Continuous 3D player interactions | Shared positioned actions preserve visible entry/exit continuity and clean up presentation/input ownership. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
-| Bed sleep and wake | Two hand-supported pelvis steps with seated stops in both directions; a domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
-| City bench and park game-table seats | Plan-owned seats reuse shared contextual sit/rest/stand with measured contacts and camera cleanup. | `CityParkBenchPlanner`, `CityBenchSit{Plan,WorldBuilder}` | Current |
+| Sofa sleep and wake | Two hand-supported pelvis steps with seated stops; domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
+| City bench and park game-table seats | Shared sit/rest/stand; owning seat retains E/prompt and nested handlers through cleanup. | `CityParkBenchPlanner`, `CityBenchSit{Plan,WorldBuilder}` | Current |
 | Ferryman car and passenger seat | Doors, attachment, camera, audio, area arrival; callouts outline radio knobs and glovebox handle. | `LastRouteCar{Plan,Factory,Doors,Suspension}`, `LastRouteCarDashboard`, `LastRouteRadioAffordance` | Current |
 | Ferryman radio and road speech | Three stations, playheads and cabin reactions persist; passenger exit switches the radio off. | `LastRouteRadioMusicPlayer`, `LastRouteRideSpeech{Session,View}` | Current |
 | Ferryman coin | One authored coin supplies the toss and contained glovebox pile; shared material, no pickups. | `LastRouteCoinAsset`, `LastRouteGloveboxCoins` | Current |
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
-| Home bed sleep | One trigger on the door-side bed edge; guided walk, neutral settle, then enter/loop/exit through a real bedside sit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
+| Home sofa sleep | Door-side edge: guided walk, neutral settle, shared sleep enter/loop/exit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
 | Home balcony smoking | One modal balcony smoking sequence owns its prop, sound, camera and completion-only stress relief. | `HomeBalconySmoking{Plan,Interaction,Timeline,CameraDrift,ExhaleEffect}`, `HomeBalconyWorldBuilder` | Current |
 | Shared refrigerator | Hand-free Home/warehouse;entry/chest aim;atomic Take/Back. Gap: `Use` hidden/unimplemented. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
 | Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
 | NPC role labels | Eleven roles (east guards share one), excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
-| Debug controls | F9: intoxication/day/speed gate; City loaded truck near factory. F1/F2/F3: ×3/×5/×10 across gameplay. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
+| Debug controls | F4: busy/defeat flight, live timelines. F9: day/intoxication/truck; F1–F3: speed. | `DebugFreeCamera`, `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | City/MountainRoad/Village tabs chart pure plans on first open; nine POI glyphs, legend; travel/teleport share checks. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
@@ -188,17 +188,17 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Imported bar shell/service assets keep plan-owned collision, entrance geometry and shared resources. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |
-| Player home interior | Blender apartment/balcony;shared framed entry with warehouse;Unity collision/contacts/cameras. | `HomeInteriorModelLibrary`, `ApartmentEntranceDoor` | Current |
+| Player home interior | 12×8m; sofa sleep/full kitchen/locked room; chair shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Exact days `1–7` accumulate domestic neglect; later days keep state seven. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | A shared ramp/step plan joins street and home with height-selected cameras and an authored atmosphere. | `StairwellLayout*` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
-| Home surface presentation | Twelve shared apartment sheets bind authored semantic parts with their UVs; permitted hardware keeps metre fitting. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory` | Current |
+| Home surfaces | Five local living sheets; bathroom/balcony maps preserved. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory` | Current |
 | Stairwell cat | The perched cat supports talk/feed and the grin controller; the future story grin trigger remains unwired. | `StairwellCat*`, `StairwellCatInteraction` | Current |
 | Home exterior context | Home reconstructs a bounded same-seed street view only; Balcony gates its residents and atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder` | Current |
-| Player home atmosphere | The shared clock controls visible home lights, while Balcony borrows and restores the City's atmosphere. | `HomeInteriorAtmosphere`, `HomeDayNightController` | Current |
+| Player home atmosphere | Clock drives six local lights; Balcony borrows/restores City. | `HomeInteriorAtmosphere`, `HomeDayNightController` | Current |
 | Mirror brushing | First-person X/Y brushing ends with a three-second close teeth inspection, then spit and faucet closure. | `HomeTeethBrushing*`, `HomeBrushingFirstPersonView`, `HomeSinkFaucet` | Current |
 | Toilet choice and seated action | Shared real-hand lid actions; large branch seats, inspects and flushes. Dressing overlaps camera return; no relief. | `HomeToiletChoiceInteraction`, `HomeToilet{PlungeInteraction,SeatedTimeline,ActorPresentation}` | Current |
 | Toilet body and bowl contact | Original-rig garment/anatomy module; emitted solid, once-only water contact and isolated local bowl fill. | `HomeToilet{SeatedAppearance,BowelEffect,BowlLighting}` | Current |

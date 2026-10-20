@@ -299,7 +299,7 @@ namespace BarPromenade
 
         private void ReadMenuInput()
         {
-            if (QuitRequested)
+            if (QuitRequested || DebugFreeCamera.BlocksWorldInput)
             {
                 return;
             }
@@ -520,7 +520,8 @@ namespace BarPromenade
                     new Vector3(0f, -0.009f, 0f);
                 position =
                     target +
-                    new Vector3(-0.34f, 0.29f, -0.885f);
+                    home.AlarmClock.transform.TransformDirection(
+                        new Vector3(-0.34f, 0.29f, -0.885f));
                 rotation = LookAt(position, target);
                 fieldOfView = ClockFieldOfView;
             }
@@ -566,7 +567,7 @@ namespace BarPromenade
             home.AlarmClock.FollowSessionTime();
             CinematicDepthOfField.End();
             modalLock.Restore();
-            home.FixedCamera.ReapplyActiveShot();
+            home.FixedCamera.RestoreGameplayCamera();
             restored = true;
             appliedCameraPose = OpeningCameraPose.None;
             enabled = false;
@@ -591,7 +592,7 @@ namespace BarPromenade
                 home.FixedCamera != null &&
                 home.FixedCamera.isActiveAndEnabled)
             {
-                home.FixedCamera.ReapplyActiveShot();
+                home.FixedCamera.RestoreGameplayCamera();
             }
 
             restored = true;
@@ -617,7 +618,7 @@ namespace BarPromenade
                 home.FixedCamera != null &&
                 home.FixedCamera.isActiveAndEnabled)
             {
-                home.FixedCamera.ReapplyActiveShot();
+                home.FixedCamera.RestoreGameplayCamera();
             }
 
             restored = true;

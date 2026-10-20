@@ -320,7 +320,7 @@ namespace BarPromenade
                 if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
                 return;
             }
-            if (AutomaticSimulation && (RoomAttackCinematicActive || UpdateCombatInput()))
+            if (AutomaticSimulation && (RoomAttackCinematicActive || UpdateCombatInput() || DebugFreeCamera.BlocksWorldInput))
             {
                 TickFrame(Time.deltaTime);
                 if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
@@ -362,8 +362,10 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             roomTableau?.SetSoundPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             if (!pistolApplicationFocused) return;
-            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
-            if (!RoomAttackCinematicActive && !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning) return;
+            // Inspection owns player commands, never the world's combat/death clock.
+            if (!RoomAttackCinematicActive && !DebugFreeCamera.BlocksWorldInput &&
+                !GameInput.CanRead(GameInputContext.Gameplay)) return;
             foreach (CombatActor actor in preparedOpponents)
                 actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);

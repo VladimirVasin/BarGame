@@ -512,7 +512,7 @@ namespace BarPromenade
         private bool ShouldSuspend()
         {
             if (targetCamera == null ||
-                !targetCamera.isActiveAndEnabled)
+                !targetCamera.isActiveAndEnabled || DebugFreeCamera.IsAnyActive)
             {
                 return true;
             }

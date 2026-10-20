@@ -143,7 +143,7 @@ namespace BarPromenade
 
             basePitch = basePitchDegrees;
             lookPitch = ClampLookPitch(lookPitch);
-            bool acceptsLook = lookAllowed && !PauseMenuController.IsAnyPaused &&
+            bool acceptsLook = lookAllowed && GameInput.CanRead(GameInputContext.Contextual) &&
                 IsFinite(deltaTime) && deltaTime > 0f;
             if (acceptsLook)
             {
@@ -152,6 +152,7 @@ namespace BarPromenade
 
             wasLookAllowed = acceptsLook;
             UpdateCameraPose();
+            if (DebugFreeCamera.IsInspecting(home.Player.GameObject)) cameraBlend = 0f;
             if (cameraBlend >= HeadHideBlend && hiddenHead == null)
             {
                 hiddenHead = Player3DHeadVisibility.Hide(registry);

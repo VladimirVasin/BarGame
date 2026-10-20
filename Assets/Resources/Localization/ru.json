@@ -1,5 +1,7 @@
 {
   "entries": [
+    {"key":"interaction.inspect_painting","value":"E — осмотреть картину"},
+    {"key":"interaction.sit_at_table","value":"E — сесть за стол"},
     {"key":"cutscene.warehouse_door_ambush","value":"Нападение у двери"},
     {"key":"pause.cutscenes","value":"Катсцены"},
     {"key":"cutscene.empty","value":"На этом уровне пока нет катсцен."},

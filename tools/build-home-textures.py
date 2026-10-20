@@ -483,10 +483,48 @@ HOME_SHEET_SPECS: tuple[HomeSheetSpec, ...] = (
     ),
 )
 
+# Separate living-room sheets keep every bathroom/balcony surface unchanged.
+ROOM_SHEET_SPECS = (
+    HomeSheetSpec("HomeRoomWallpaperAlbedo", "room_wallpaper", 0x48525750,
+                  (1.02,1.0,.97), .50, 1.9, .05, 0.0,
+                  (("RoomWallpaper",(.43,.405,.345)),), contrast_floor=24),
+    HomeSheetSpec("HomeRoomPlanksAlbedo", "planks", 0x48525046,
+                  (1.03,1.0,.95), .45, 1.6, .14, 0.0,
+                  (("RoomPlanks",(.32,.235,.16)),), contrast_floor=24),
+    HomeSheetSpec("HomeRoomWoodAlbedo", "veneer", 0x48524457,
+                  (1.04,1.0,.94), .52, 1.1, .17, 0.0,
+                  (("RoomWood",(.27,.185,.11)),), contrast_floor=24),
+    HomeSheetSpec("HomeRoomLaminateAlbedo", "laminate", 0x48524C4D,
+                  (1.0,1.01,.98), .48, 1.2, .23, 0.0,
+                  (("RoomLaminate",(.42,.44,.37)),), contrast_floor=24),
+    HomeSheetSpec("HomeRoomUpholsteryAlbedo", "weave", 0x48525548,
+                  (.98,1.01,1.0), .45, .85, .04, 0.0,
+                  (("RoomUpholstery",(.28,.335,.30)),), contrast_floor=24),
+)
+
 
 # --------------------------------------------------------------------------
 # grammars: the grey value field of each material
 # --------------------------------------------------------------------------
+
+
+def draw_room_wallpaper(base: Image.Image, rng: random.Random) -> Image.Image:
+    draw = ImageDraw.Draw(base)
+    # A faded fine stripe and small paired leaves replace chunky old crosses.
+    for x in range(0,SHEET_SIZE,64):
+        wrap_rect(draw,(x,0,x+22,SHEET_SIZE),BASE+10)
+        wrap_line(draw,(x+25,0,x+25,SHEET_SIZE),BASE-23,width=2)
+    for row in range(8):
+        for col in range(8):
+            x=col*128+64+(row%2)*64;y=row*128+64
+            wrap_line(draw,(x,y-17,x,y+17),BASE-27,width=2)
+            for sign in (-1,1):
+                wrap_ellipse(draw,(x-12 if sign<0 else x,y-9,x if sign<0 else x+12,y+2),fill=BASE-22)
+    def age(layer):
+        for _ in range(8):
+            x=rng.randrange(SHEET_SIZE);y=rng.randrange(SHEET_SIZE)
+            wrap_ellipse(layer,(x,y,x+rng.randint(80,210),y+rng.randint(90,230)),fill=112)
+    return soft_overlay(base,26,age)
 
 
 def draw_wallpaper(base: Image.Image, rng: random.Random) -> Image.Image:
@@ -1070,6 +1108,7 @@ def draw_rug(base: Image.Image, rng: random.Random) -> Image.Image:
 
 
 GRAMMARS = {
+    "room_wallpaper": draw_room_wallpaper,
     "wallpaper": draw_wallpaper,
     "whitewash": draw_whitewash,
     "planks": draw_planks,
@@ -1196,6 +1235,10 @@ def build_sheet(spec: HomeSheetSpec) -> tuple[Image.Image, dict]:
         ((8, 1.0), (32, 0.62), (128, 0.38), (256, 0.22), (512, 0.12)),
         rng,
     )
+    if spec in ROOM_SHEET_SPECS:
+        # At native resolution the fibre/grain is the material; large noise
+        # must not erase it or turn every surface into mottled concrete.
+        macro = Image.blend(Image.new("L", macro.size, 128), macro, .48)
     field_image = wrap_filter(
         ImageChops.overlay(structure, macro),
         ImageFilter.SMOOTH,
@@ -1381,11 +1424,13 @@ def main() -> None:
         action="store_true",
         help="Build and validate without writing anything.",
     )
+    parser.add_argument("--room-only", action="store_true",
+                        help="Generate only the living-room sheets; preserve original shared sheets.")
     args = parser.parse_args()
 
     records: list[dict] = []
     built: list[tuple[HomeSheetSpec, Image.Image]] = []
-    for spec in HOME_SHEET_SPECS:
+    for spec in (ROOM_SHEET_SPECS if args.room_only else HOME_SHEET_SPECS + ROOM_SHEET_SPECS):
         image, record = build_sheet(spec)
         validate(image, spec, record)
         built.append((spec, image))
@@ -1422,14 +1467,14 @@ def main() -> None:
         "tintChannelFloor": TINT_CHANNEL_FLOOR,
         "sheets": records,
     }
-    manifest_path = args.art_source / "home-textures.json"
+    manifest_path = args.art_source / ("home-room-textures.json" if args.room_only else "home-textures.json")
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(
         json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
     )
     contact = build_contact_sheet(built)
-    contact_path = args.art_source / "home-contact-sheet.png"
+    contact_path = args.art_source / ("home-room-contact-sheet.png" if args.room_only else "home-contact-sheet.png")
     contact.save(contact_path, format="PNG", compress_level=9)
     print(f"Wrote {manifest_path} and {contact_path}.")
 

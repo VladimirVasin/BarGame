@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -415,6 +416,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator CaptureShowerUiFrame(string area, string shot)
         {
+            // Batch mode renders the scene but has no Game-view IMGUI repaint.
+            if (Application.isBatchMode) yield break;
             string path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", area, shot + ".png");
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
             System.DateTime previousWrite = System.IO.File.Exists(path)
@@ -451,13 +454,15 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private void CaptureFrame(string area, string shot, Camera lens = null)
+        private void CaptureFrame(string area, string shot, Camera lens = null, bool nativeResolution = false)
         {
             Camera camera = lens != null ? lens : home.CameraFollow.GetComponent<Camera>();
             string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", area);
             System.IO.Directory.CreateDirectory(folder);
-            var target = new RenderTexture(1280, 720, 24);
-            var frame = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            int width = nativeResolution ? Mathf.Max(1, Screen.width) : 1280;
+            int height = nativeResolution ? Mathf.Max(1, Screen.height) : 720;
+            var target = new RenderTexture(width, height, 24);
+            var frame = new Texture2D(width, height, TextureFormat.RGB24, false);
             RenderTexture previousTarget = camera.targetTexture;
             RenderTexture previousActive = RenderTexture.active;
             try
@@ -465,7 +470,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera.targetTexture = target;
                 camera.Render();
                 RenderTexture.active = target;
-                frame.ReadPixels(new Rect(0f, 0f, 1280, 720), 0, 0);
+                frame.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
                 frame.Apply();
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, shot + ".png"), frame.EncodeToPNG());
             }
@@ -759,8 +764,8 @@ namespace BarPromenade.Tests.PlayMode
                             entryEyeRotation = camera.transform.rotation;
                         }
                         maximumWaitingEyeError = Mathf.Max(maximumWaitingEyeError, Vector3.Distance(camera.transform.position, shower.TargetEyeWorld));
-                        if (!Player3DHeadVisibility.IsHeadDrawn(registry) || shower.IsUndressed)
-                            return "the camera waiting at the future eyes hid or undressed the hero before he arrived";
+                        if (!Player3DHeadVisibility.IsHeadDrawn(registry))
+                            return "the camera waiting at the future eyes hid the hero's head before he arrived";
                     }
                 }
                 if (phase >= HomeShowerScenePhase.DripHold && phase <= HomeShowerScenePhase.CloseExitCurtain &&
@@ -1389,6 +1394,8 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator Shower_CancelMidWashDressesHimAndShutsTheWater()
         {
             yield return LoadHome();
+            Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True,
+                "This standalone bathroom arrival must start the normal post-wake calendar before testing live world time.");
             GameSessionState.UpdateNeeds(0, 50);
             HomeShowerInteraction shower = home.ShowerScene;
             var presentation = home.Player.Visual as Player3DCharacterPresentation;
@@ -1405,11 +1412,7 @@ namespace BarPromenade.Tests.PlayMode
             MeshFilter hotWheel = home.Room.Find(HomeShowerInteraction.HotHandleName).GetComponentInChildren<MeshFilter>();
             AssertShowerHardware(hotWheel);
 
-            yield return WalkToAndActivate(shower, new Vector3(3.30f, 0.12f, 2.35f));
-            Time.timeScale = FastTimeScale;
-            yield return WaitUntil(
-                () => shower.Timeline.Phase == HomeShowerScenePhase.Wash && shower.Timeline.PhaseElapsed > 1f,
-                "The wash never started.");
+            yield return EnterShowerWithBareFirstAppearance(shower, camera, registry);
             Assert.That(shower.IsUndressed, Is.True);
             Assert.That(shower.View.IsHeadHidden, Is.True);
             Assert.That(home.Soundscape.ShowerWaterAmount, Is.GreaterThan(0.5f));
@@ -1417,6 +1420,8 @@ namespace BarPromenade.Tests.PlayMode
                 "Shower water stays outside the separate mirrored bathroom, as do the existing shower particles.");
 
             Time.timeScale = 1f;
+            yield return AssertShowerMouseLook(shower, camera, false);
+            yield return AssertFreeCameraDuringShower(shower, camera);
             yield return AtPresentation(() =>
             {
                 CaptureFrame("HomeShowerHardware", "00-front-wash");
@@ -1446,6 +1451,7 @@ namespace BarPromenade.Tests.PlayMode
                 "HomeShowerHardware");
             yield return PickUpShowerSoap(shower, camera, "HomeShowerHardware");
             Assert.That(shower.SoapHeld, Is.True, "The cancellation must exercise an actually held soap.");
+            yield return AssertShowerMouseLook(shower, camera, true);
             yield return RequestShowerExitWithQ(shower, camera, false);
             Assert.That(shower.SoapPhase, Is.EqualTo(HomeShowerSoapPhase.PutDown), "Q returns held soap before either valve closes.");
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
@@ -1481,11 +1487,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Idle));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(50), "A cancel commits nothing.");
             Assert.That(Player3DBathingAppearance.IsActive, Is.False);
+            yield return AssertWalkingAfterShower("cancelling the wash");
             shower.enabled = true;
 
             // Preserve the held-soap cancellation above, then exercise the
             // short, real early-stop path against the imported valve wheel.
             yield return WalkToAndActivate(shower, HomeShowerFraming.Dock);
+            Assert.That(shower.IsUndressed, Is.True,
+                "A wash begun already inside must remove the outfit behind the closed curtain before its camera approaches.");
+            Assert.That(home.Room.Find("Home Bathroom Shower Curtain").localScale.x,
+                Is.EqualTo(HomeShowerInteraction.ClosedCurtainScale).Within(.001f));
             Time.timeScale = FastTimeScale;
             yield return WaitUntil(() => shower.Timeline.Phase == HomeShowerScenePhase.Wash &&
                 shower.Timeline.PhaseElapsed > 1.2f, "The second wash never reached its early-stop prompt.");
@@ -1560,13 +1571,367 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(shower.WaterEffect.DrainFlowAmount, Is.GreaterThan(0f));
                 CaptureFrame("HomeShowerHardware", "32-tray-draining-after-tap");
             });
-            Time.timeScale = FastTimeScale;
-            yield return WaitUntil(() => !shower.View.IsActive, "The early stop never returned control.");
+            yield return CompleteShowerWhileFlying(shower, camera, registry);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(shower.IsUndressed, Is.False);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(50), "Stopping before washing must not commit relief.");
             AssertShowerSoapRest(soap, soapParent, soapPosition, soapRotation, soapScale);
             AssertRigRestored(before, registry);
+            yield return AssertWalkingAfterShower("finishing the shower exit");
+        }
+
+        private IEnumerator EnterShowerWithBareFirstAppearance(HomeShowerInteraction shower, Camera camera,
+            Player3DAssetRegistry registry)
+        {
+            var wardrobe = registry.GetComponent<PlayerWardrobe>();
+            Assert.That(wardrobe, Is.Not.Null);
+            using var geometry = new ShowerBodyContactCheck(registry);
+            var probe = home.gameObject.AddComponent<HomeShowerInvariantProbe>();
+            int exteriorFrames = 0, firstInsideFrame = -1;
+            probe.Check = () =>
+            {
+                HomeShowerScenePhase phase = shower.Timeline.Phase;
+                if (phase == HomeShowerScenePhase.Approach || phase == HomeShowerScenePhase.OpenCurtain)
+                {
+                    exteriorFrames++;
+                    if (shower.IsUndressed) return "the exterior approach changed the hero's outfit";
+                }
+                if (phase < HomeShowerScenePhase.StepIn || phase > HomeShowerScenePhase.WaterOn ||
+                    !HomeShowerFraming.IsInsideStall(home.Room.InverseTransformPoint(home.Player.GameObject.transform.position)))
+                    return null;
+                string visiblePart = geometry.FindVisibleGeometryInCamera(home.Player.GameObject.transform, camera, out _);
+                if (visiblePart == null) return null;
+                if (firstInsideFrame < 0)
+                {
+                    firstInsideFrame = Time.frameCount;
+                    CaptureFrame("HomeShowerHardware", "first-visible-inside-shower", nativeResolution: true);
+                }
+                if (!shower.IsUndressed)
+                    return "the first visible interior shower frame still has the hero's outfit: " + visiblePart;
+                foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
+                    foreach (Renderer renderer in garment.Renderers)
+                        if (renderer.enabled) return "an interior shower frame still draws garment " + renderer.name;
+                foreach (Player3DAnatomicalPart part in new[]
+                    { Player3DAnatomicalPart.Torso, Player3DAnatomicalPart.Pelvis, Player3DAnatomicalPart.LeftThigh })
+                    if (!registry.TryGetPart(part, out Player3DAnatomicalPartBinding body) || !body.Renderer.enabled)
+                        return "the removed outfit did not release the bare-body mask: " + part;
+                return null;
+            };
+            try
+            {
+                yield return WalkToAndActivate(shower, new Vector3(3.30f, .12f, 2.35f));
+                Time.timeScale = FastTimeScale;
+                yield return WaitUntil(() => shower.Timeline.Phase == HomeShowerScenePhase.Wash &&
+                    shower.Timeline.PhaseElapsed > 1f, "The wash never started after its private entry frame.");
+                Assert.That(probe.Violation, Is.Null);
+                Assert.That(exteriorFrames, Is.GreaterThan(0));
+                Assert.That(firstInsideFrame, Is.GreaterThanOrEqualTo(0),
+                    "The entry must measure actual visible production meshes before the wall brace finishes.");
+            }
+            finally
+            {
+                probe.Check = null;
+                Object.Destroy(probe);
+            }
+        }
+
+        private IEnumerator AssertShowerMouseLook(HomeShowerInteraction shower, Camera camera, bool holdingSoap)
+        {
+            Time.timeScale = 1f;
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
+            Assert.That(shower.SoapPhase, Is.EqualTo(holdingSoap ? HomeShowerSoapPhase.Washing : HomeShowerSoapPhase.SelectSoap));
+            yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.EqualTo(holdingSoap),
+                "Only the actual held-soap washing phase needs a body-selection pointer."));
+            float originalYaw = shower.View.LookYawDegrees, originalPitch = shower.View.LookPitchDegrees;
+            Quaternion actorRotation = home.Player.GameObject.transform.rotation;
+            float progress = shower.WashingProgress.Amount;
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            bool previousFocus = GameCursor.ApplicationFocused;
+            try
+            {
+                input.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+                GameInput.HandleApplicationFocus(true);
+                if (holdingSoap) input.Press(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                yield return null; // Discard the cursor-ownership handoff delta.
+                float yaw = shower.View.LookYawDegrees, pitch = shower.View.LookPitchDegrees;
+                Quaternion cameraBefore = camera.transform.rotation;
+                input.Set(mouse.delta, new Vector2(70f, -25f), queueEventOnly: true);
+                yield return null;
+                yield return AtPresentation(() =>
+                {
+                    Assert.That(shower.View.LookYawDegrees, Is.GreaterThan(yaw + 5f),
+                        "Real mouse delta must turn the initial shower hold; the soap phase is " + shower.SoapPhase + ".");
+                    Assert.That(shower.View.LookPitchDegrees, Is.GreaterThan(pitch + 1f));
+                    Assert.That(Quaternion.Angle(cameraBefore, camera.transform.rotation), Is.GreaterThan(3f));
+                    Assert.That(Quaternion.Angle(actorRotation, home.Player.GameObject.transform.rotation), Is.LessThan(.01f),
+                        "Looking from the shower must not rotate the planted body.");
+                    Assert.That(shower.WashingProgress.Amount, Is.EqualTo(progress));
+                });
+                if (holdingSoap) input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.EqualTo(holdingSoap)));
+            }
+            finally
+            {
+                shower.View.ApplyLookDelta(originalYaw - shower.View.LookYawDegrees, originalPitch - shower.View.LookPitchDegrees);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+                GameInput.HandleApplicationFocus(previousFocus);
+            }
+        }
+
+        private IEnumerator AssertFreeCameraDuringShower(HomeShowerInteraction shower, Camera camera)
+        {
+            var flight = home.Player.GameObject.GetComponent<DebugFreeCamera>();
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            bool focus = GameCursor.ApplicationFocused;
+            float yaw = shower.View.LookYawDegrees, pitch = shower.View.LookPitchDegrees;
+            Vector3 heroPosition = home.Player.GameObject.transform.position;
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            double clock = GameSessionState.GameTimeOfDayMinutes;
+            float sceneElapsed = shower.Timeline.PhaseElapsed;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                GameInput.HandleApplicationFocus(true);
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.True, "Raw F4 must inspect an ongoing shower without cancelling it.");
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Vector3 cameraPosition = camera.transform.position;
+                Quaternion cameraRotation = camera.transform.rotation;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.Q, Key.E));
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                input.Set(mouse.delta, new Vector2(50f, -20f), queueEventOnly: true);
+                yield return null;
+                yield return AtPresentation(() =>
+                {
+                    Assert.That(flight.IsActive, Is.True);
+                    Assert.That(Vector3.Distance(cameraPosition, camera.transform.position), Is.GreaterThan(.001f),
+                        "The shower's late camera writer must not override real flight movement.");
+                    Assert.That(Quaternion.Angle(cameraRotation, camera.transform.rotation), Is.GreaterThan(2f));
+                    Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash), "Flight Q must not exit the shower.");
+                    Assert.That(shower.SoapPhase, Is.EqualTo(HomeShowerSoapPhase.SelectSoap), "Flight E must not pick up soap.");
+                    Assert.That(shower.WashingProgress.Amount, Is.Zero);
+                    Assert.That(shower.View.LookYawDegrees, Is.EqualTo(yaw).Within(.001f));
+                    Assert.That(shower.View.LookPitchDegrees, Is.EqualTo(pitch).Within(.001f));
+                    Assert.That(home.Player.GameObject.transform.position, Is.EqualTo(heroPosition));
+                    Assert.That(shower.View.IsHeadHidden, Is.False, "Debug flight must show the real hero's whole head.");
+                    Assert.That(shower.Timeline.PhaseElapsed, Is.GreaterThan(sceneElapsed));
+                    Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.GreaterThan(clock));
+                    CaptureFrame("HomeShowerHardware", "free-camera-during-shower");
+                });
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.False);
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                yield return AtPresentation(() =>
+                {
+                    Assert.That(Vector3.Distance(camera.transform.position, home.CameraFollow.FixedBasePosition), Is.LessThan(.003f));
+                    Assert.That(Quaternion.Angle(camera.transform.rotation, home.CameraFollow.FixedBaseRotation), Is.LessThan(.1f));
+                    Assert.That(home.Player.Motor.InputEnabled, Is.False, "Leaving debug must retain the active shower's input owner.");
+                    Assert.That(home.Player.Interactor.InputEnabled, Is.False);
+                    Assert.That(shower.View.IsHeadHidden, Is.True);
+                });
+            }
+            finally
+            {
+                if (flight != null && flight.IsActive) flight.Exit();
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+                GameInput.HandleApplicationFocus(focus);
+            }
+        }
+
+        private IEnumerator CompleteShowerWhileFlying(HomeShowerInteraction shower, Camera camera, Player3DAssetRegistry registry)
+        {
+            Time.timeScale = 1f;
+            var flight = home.Player.GameObject.GetComponent<DebugFreeCamera>();
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            bool focus = GameCursor.ApplicationFocused;
+            bool watchedExitBody = false;
+            using var geometry = new ShowerBodyContactCheck(registry);
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                GameInput.HandleApplicationFocus(true);
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.True);
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Vector3 euler = camera.transform.eulerAngles;
+                input.Set(mouse.delta, new Vector2(Mathf.DeltaAngle(euler.y, 0f) / .16f,
+                    (Mathf.DeltaAngle(0f, euler.x) - 10f) / .16f), queueEventOnly: true);
+                input.Press(keyboard.sKey, queueEventOnly: true);
+                float moveUntil = Time.unscaledTime + .55f;
+                while (Time.unscaledTime < moveUntil) yield return null;
+                input.Release(keyboard.sKey, queueEventOnly: true);
+                yield return null;
+                Time.timeScale = FastTimeScale;
+                float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                while (shower.View.IsActive && Time.realtimeSinceStartup < deadline)
+                {
+                    yield return AtPresentation(() =>
+                    {
+                        Assert.That(flight.IsActive, Is.True);
+                        if (shower.Timeline.Phase == HomeShowerScenePhase.CameraOut &&
+                            geometry.FindVisibleGeometryInCamera(home.Player.GameObject.transform, camera, out _) != null)
+                            watchedExitBody = true;
+                    });
+                }
+                Assert.That(shower.View.IsActive, Is.False,
+                    "Watching the hero from debug must not stall the action's private offscreen redress or exit.");
+                Assert.That(watchedExitBody, Is.True, "The flying view must actually watch the hero while his authored view returns.");
+                Assert.That(flight.IsActive, Is.True, "Completing the shower must leave debug flight active.");
+                Assert.That(home.Player.Motor.InputEnabled, Is.True);
+                Assert.That(GameInput.CanRead(GameInputContext.Movement), Is.False, "Flight still owns manual input after the action releases it.");
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.False);
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(home.CameraFollow.FixedPoseActive, Is.True);
+                Assert.That(Vector3.Distance(camera.transform.position, home.CameraFollow.FixedBasePosition), Is.LessThan(.003f));
+                Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            }
+            finally
+            {
+                if (flight != null && flight.IsActive) flight.Exit();
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+                GameInput.HandleApplicationFocus(focus);
+            }
+        }
+
+        private IEnumerator AssertWalkingAfterShower(string cleanup)
+        {
+            Time.timeScale = 1f;
+            var visual = (Player3DCharacterPresentation)home.Player.Visual;
+            yield return AtPresentation(() =>
+            {
+                Assert.That(visual.InteractionHandoffLocked, Is.False,
+                    "The shower must release its presentation lock after " + cleanup + ".");
+                Assert.That(visual.IsClipActive, Is.False,
+                    "The last curtain clip must release the real gait after " + cleanup + ".");
+            });
+            // Use an unobstructed ordinary route for real manual input. The
+            // shower has already completed or cancelled through its own path.
+            home.Player.Motor.Teleport(home.Layout.PlayerSpawn);
+            home.Player.GameObject.transform.rotation = home.transform.rotation;
+            Physics.SyncTransforms();
+            var boot = Find(visual.Registry, "CLO_Boot.L").Renderer as SkinnedMeshRenderer;
+            Assert.That(boot, Is.Not.Null);
+            Assert.That(boot.enabled, Is.True, "The walking proof must measure the visible dressed hero.");
+            var mesh = new Mesh { name = "Test walking after shower mesh" };
+            var vertices = new List<Vector3>();
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            bool previousFocus = GameCursor.ApplicationFocused;
+            Vector3 start = home.Player.GameObject.transform.position;
+            Vector3 firstBoot = default;
+            bool sampledBoot = false;
+            float bootTravel = 0f, cycleTravel = 0f, previousCycle = visual.ForwardGaitCycle;
+            int walkingFrames = 0;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                GameInput.HandleApplicationFocus(true);
+                yield return null;
+                GameInput.ReadMovement(); // A neutral device completes any focus handoff.
+                input.Press(keyboard.wKey, queueEventOnly: true);
+                float until = Time.time + .80f;
+                while (Time.time < until)
+                {
+                    yield return AtPresentation(() =>
+                    {
+                        if (visual.CurrentLocomotionState != Player3DLocomotionState.Walk ||
+                            visual.LocomotionBlend < .25f) return;
+                        walkingFrames++;
+                        float cycle = visual.ForwardGaitCycle;
+                        cycleTravel += Mathf.Abs(Mathf.DeltaAngle(previousCycle * 360f, cycle * 360f)) / 360f;
+                        previousCycle = cycle;
+                        mesh.Clear(false);
+                        boot.BakeMesh(mesh, true);
+                        vertices.Clear();
+                        mesh.GetVertices(vertices);
+                        Vector3 center = Vector3.zero;
+                        foreach (Vector3 vertex in vertices) center += vertex;
+                        Assert.That(vertices.Count, Is.GreaterThan(0));
+                        center = home.Player.GameObject.transform.InverseTransformPoint(
+                            boot.transform.TransformPoint(center / vertices.Count));
+                        if (!sampledBoot) { firstBoot = center; sampledBoot = true; }
+                        bootTravel = Mathf.Max(bootTravel, Vector3.Distance(firstBoot, center));
+                    });
+                }
+                input.Release(keyboard.wKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(Vector3.Distance(start, home.Player.GameObject.transform.position), Is.GreaterThan(.50f),
+                    "Real W input must move the hero after " + cleanup + ".");
+                Assert.That(walkingFrames, Is.GreaterThan(2),
+                    "Movement must drive the Walk presentation after " + cleanup + ".");
+                Assert.That(cycleTravel, Is.GreaterThan(.15f), "The restored walking clip must advance its stride.");
+                Assert.That(bootTravel, Is.GreaterThan(.04f),
+                    "The actual skinned boot must move relative to the walking root, rather than slide in a frozen pose.");
+                yield return WaitUntil(() => home.Player.Motor.PlanarVelocity.sqrMagnitude < .001f,
+                    "Released W must settle ordinary movement before testing free-camera ownership.");
+                yield return null;
+                DebugFreeCamera flight = home.Player.GameObject.GetComponent<DebugFreeCamera>();
+                Assert.That(flight, Is.Not.Null);
+                string admission = $"focus={GameCursor.ApplicationFocused}, " +
+                    $"gameplay={GameInput.CanRead(GameInputContext.Gameplay)}, " +
+                    $"modal={BarMinigameModalLock.IsAnyLocked}, paused={GameTimeScaleRuntime.IsPaused}, " +
+                    $"motor={home.Player.Motor.InputEnabled}, interactor={home.Player.Interactor.InputEnabled}, " +
+                    $"handoff={visual.InteractionHandoffLocked}, clip={visual.ActiveClipName}, " +
+                    $"animation={home.AnimatedInteraction.IsActive}, orbit={home.CameraFollow.OrbitInputEnabled}, " +
+                    $"suspended={home.CameraFollow.PresentationSuspended}";
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.True,
+                    "Raw F4 must work in the real fixed-camera Home after " + cleanup + ": " + admission);
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                input.Press(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(flight.IsActive, Is.False);
+                input.Release(keyboard.f4Key, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(home.Player.Motor.InputEnabled, Is.True);
+                Assert.That(home.Player.Interactor.InputEnabled, Is.True);
+                Assert.That(home.CameraFollow.FixedPoseActive, Is.True);
+            }
+            finally
+            {
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+                GameInput.HandleApplicationFocus(previousFocus);
+                Object.Destroy(mesh);
+            }
         }
 
         private IEnumerator RequestShowerExitWithQ(HomeShowerInteraction shower, Camera camera, bool verifyPrompt)
@@ -1578,23 +1943,29 @@ namespace BarPromenade.Tests.PlayMode
                 AimShowerAt(shower, camera, cold.GetComponent<Renderer>().bounds.center);
                 int earliestFrame = Time.frameCount + 1;
                 float deadline = Time.realtimeSinceStartup + 2f;
-                while (shower.ExitPromptRenderedFrame < earliestFrame && Time.realtimeSinceStartup < deadline) yield return null;
+                while ((!shower.ExitPromptVisible || !Application.isBatchMode && shower.ExitPromptRenderedFrame < earliestFrame) &&
+                    Time.realtimeSinceStartup < deadline) yield return null;
                 yield return AtPresentation(() =>
                 {
                     Assert.That(shower.ExitPromptVisible, Is.True);
                     Assert.That(shower.ExitPromptText, Is.EqualTo(LocalizationService.Get(HomeShowerInteraction.ExitPromptKey)));
                     StringAssert.Contains("Q", shower.ExitPromptText);
-                    Assert.That(shower.ExitPromptRenderedFrame, Is.GreaterThanOrEqualTo(earliestFrame));
                     Assert.That(affordance.ExitOutlineMesh, Is.SameAs(cold), "The exit outline belongs to the actual cold wheel.");
-                    Assert.That(affordance.ExitOutlineCount, Is.GreaterThanOrEqualTo(3));
-                    Rect label = shower.ExitPromptRenderedScreenRect, outline = affordance.ExitOutlineScreenRect;
-                    Assert.That(label.width, Is.GreaterThan(20f));
-                    Assert.That(label.xMin >= 0f && label.yMin >= 0f && label.xMax <= Screen.width && label.yMax <= Screen.height, Is.True);
-                    Assert.That(label.xMax, Is.LessThan(outline.xMin), "Q is drawn to the left of the cold-wheel outline.");
-                    Assert.That(affordance.ExitPromptLeaderStart.x, Is.EqualTo(label.xMax).Within(2f));
-                    outline.xMin -= 2f; outline.xMax += 2f; outline.yMin -= 2f; outline.yMax += 2f;
-                    Assert.That(outline.Contains(affordance.ExitPromptLeaderEnd), Is.True, "The actual leader reaches the drawn wheel outline.");
-                    Assert.That(Vector2.Distance(affordance.ExitPromptLeaderStart, affordance.ExitPromptLeaderEnd), Is.GreaterThan(5f));
+                    Assert.That(affordance.TryGetExitPromptPosition(out _), Is.True,
+                        "The Q prompt must belong to a visible, unobstructed wheel in every run mode.");
+                    if (!Application.isBatchMode)
+                    {
+                        Assert.That(shower.ExitPromptRenderedFrame, Is.GreaterThanOrEqualTo(earliestFrame));
+                        Assert.That(affordance.ExitOutlineCount, Is.GreaterThanOrEqualTo(3));
+                        Rect label = shower.ExitPromptRenderedScreenRect, outline = affordance.ExitOutlineScreenRect;
+                        Assert.That(label.width, Is.GreaterThan(20f));
+                        Assert.That(label.xMin >= 0f && label.yMin >= 0f && label.xMax <= Screen.width && label.yMax <= Screen.height, Is.True);
+                        Assert.That(label.xMax, Is.LessThan(outline.xMin), "Q is drawn to the left of the cold-wheel outline.");
+                        Assert.That(affordance.ExitPromptLeaderStart.x, Is.EqualTo(label.xMax).Within(2f));
+                        outline.xMin -= 2f; outline.xMax += 2f; outline.yMin -= 2f; outline.yMax += 2f;
+                        Assert.That(outline.Contains(affordance.ExitPromptLeaderEnd), Is.True, "The actual leader reaches the drawn wheel outline.");
+                        Assert.That(Vector2.Distance(affordance.ExitPromptLeaderStart, affordance.ExitPromptLeaderEnd), Is.GreaterThan(5f));
+                    }
                 });
                 yield return CaptureShowerUiFrame("HomeShowerHardware", "37-q-exit-cold-ui");
             }
@@ -1763,7 +2134,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 input.Setup();
                 keyboard = InputSystem.AddDevice<Keyboard>();
-                Assert.That(shower.View.IsPointerMode, Is.True, "Arrow look must work while the mouse remains the soap pointer.");
+                Assert.That(shower.View.IsPointerMode, Is.EqualTo(shower.SoapPhase == HomeShowerSoapPhase.Washing),
+                    "Waiting for soap keeps ordinary look; held soap gives the mouse its washing pointer.");
                 float beforeUp = shower.View.LookPitchDegrees;
                 input.Press(keyboard.upArrowKey, queueEventOnly: true);
                 float deadline = Time.realtimeSinceStartup + 2f;
@@ -1915,7 +2287,8 @@ namespace BarPromenade.Tests.PlayMode
             int promptStartFrame = Time.frameCount + 1;
             AimShowerAt(shower, camera, shower.Soap.position);
             float promptDeadline = Time.realtimeSinceStartup + 2f;
-            while (affordance.SoapPromptRenderedFrame < promptStartFrame && Time.realtimeSinceStartup < promptDeadline)
+            while ((!shower.SoapPromptVisible || !Application.isBatchMode && affordance.SoapPromptRenderedFrame < promptStartFrame) &&
+                Time.realtimeSinceStartup < promptDeadline)
                 yield return null;
             yield return AtPresentation(() =>
             {
@@ -1926,17 +2299,22 @@ namespace BarPromenade.Tests.PlayMode
                 Vector2 soapScreen = camera.WorldToScreenPoint(shower.Soap.GetComponentInChildren<Renderer>().bounds.center);
                 Assert.That(Vector2.Distance(shower.SoapPromptScreenPosition, soapScreen), Is.LessThan(100f),
                     "The localized pickup label belongs beside the visible soap.");
-                Assert.That(affordance.SoapPromptRenderedFrame, Is.GreaterThanOrEqualTo(promptStartFrame),
-                    "The E label must be drawn by the real OnGUI repaint, not just declared visible.");
-                Rect label = affordance.SoapPromptRenderedScreenRect;
-                Assert.That(label.width, Is.GreaterThan(20f));
-                Assert.That(label.height, Is.GreaterThan(8f));
-                Assert.That(label.xMin >= 0f && label.yMin >= 0f && label.xMax <= Screen.width && label.yMax <= Screen.height,
-                    Is.True, "The actually drawn prompt remains inside the screen.");
-                Vector2 guiSoap = new Vector2(soapScreen.x, Screen.height - soapScreen.y);
-                Vector2 nearest = new Vector2(Mathf.Clamp(guiSoap.x, label.xMin, label.xMax), Mathf.Clamp(guiSoap.y, label.yMin, label.yMax));
-                Assert.That(Vector2.Distance(guiSoap, nearest), Is.LessThan(Screen.height * 0.15f),
-                    "The rendered label is anchored beside the soap, not a distant screen prompt.");
+                Assert.That(affordance.TryGetSoapPromptPosition(out _), Is.True,
+                    "The E prompt must belong to visible, unobstructed soap in every run mode.");
+                if (!Application.isBatchMode)
+                {
+                    Assert.That(affordance.SoapPromptRenderedFrame, Is.GreaterThanOrEqualTo(promptStartFrame),
+                        "The E label must be drawn by the real OnGUI repaint, not just declared visible.");
+                    Rect label = affordance.SoapPromptRenderedScreenRect;
+                    Assert.That(label.width, Is.GreaterThan(20f));
+                    Assert.That(label.height, Is.GreaterThan(8f));
+                    Assert.That(label.xMin >= 0f && label.yMin >= 0f && label.xMax <= Screen.width && label.yMax <= Screen.height,
+                        Is.True, "The actually drawn prompt remains inside the screen.");
+                    Vector2 guiSoap = new Vector2(soapScreen.x, Screen.height - soapScreen.y);
+                    Vector2 nearest = new Vector2(Mathf.Clamp(guiSoap.x, label.xMin, label.xMax), Mathf.Clamp(guiSoap.y, label.yMin, label.yMax));
+                    Assert.That(Vector2.Distance(guiSoap, nearest), Is.LessThan(Screen.height * 0.15f),
+                        "The rendered label is anchored beside the soap, not a distant screen prompt.");
+                }
                 // Camera.Render records scene framing only. The actual IMGUI
                 // label is proved by its current repaint/rectangle above.
                 CaptureFrame(captureArea, "27-soap-e-prompt");

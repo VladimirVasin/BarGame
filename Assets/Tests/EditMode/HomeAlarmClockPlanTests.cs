@@ -25,10 +25,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
             Assert.That(
                 plan.NightstandFootprint.center.x,
-                Is.LessThan(bed.Bounds.center.x));
+                Is.EqualTo(bed.Bounds.center.x).Within(.001f));
             Assert.That(
-                plan.NightstandFootprint.yMin,
-                Is.GreaterThan(bed.Bounds.yMax));
+                plan.NightstandFootprint.yMax,
+                Is.LessThan(bed.Bounds.yMin));
             Assert.That(
                 plan.ClockPosition.y,
                 Is.GreaterThan(

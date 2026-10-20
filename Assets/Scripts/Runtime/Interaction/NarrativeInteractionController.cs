@@ -28,7 +28,8 @@ namespace BarPromenade
         public NarrativeInteractionPhase Phase { get; private set; }
         public bool IsActive => Phase != NarrativeInteractionPhase.Idle;
         public int PageIndex { get; private set; }
-        public NarrativePage CurrentPage => Target != null ? Target.Definition.Pages[PageIndex] : default;
+        public NarrativePage CurrentPage => Target != null && PageIndex < Target.Definition.Pages.Count
+            ? Target.Definition.Pages[PageIndex] : default;
         public ContextualCameraDirector CameraDirector => director;
         public string LastFailureReason { get; private set; } = string.Empty;
 
@@ -89,6 +90,7 @@ namespace BarPromenade
             if ((Phase != NarrativeInteractionPhase.Reading && Phase != NarrativeInteractionPhase.Outcome) ||
                 Paused || Time.frameCount <= pageFrame ||
                 !GameInput.CanRead(GameInputContext.Menu)) return false;
+            if (Target.Definition.IsSilent) { Cancel(); completed = true; return true; }
             if (Phase == NarrativeInteractionPhase.Outcome) { Cancel(); return true; }
             if (PageIndex + 1 == Target.Definition.Pages.Count && Target.Confirmation != null)
             {
@@ -169,7 +171,7 @@ namespace BarPromenade
                     break;
                 case NarrativeInteractionPhase.Reading:
                 case NarrativeInteractionPhase.Outcome:
-                    if (!view.IsHeldBy(this)) { RestoreImmediate(); return; }
+                    if (!Target.Definition.IsSilent && !view.IsHeldBy(this)) { RestoreImmediate(); return; }
                     if (Time.frameCount > pageFrame)
                     {
                         bool choice = Phase == NarrativeInteractionPhase.Reading && Target.Confirmation != null &&
@@ -208,6 +210,12 @@ namespace BarPromenade
 
         private void ShowPage()
         {
+            if (Target.Definition.IsSilent)
+            {
+                Phase = NarrativeInteractionPhase.Reading; pageFrame = Time.frameCount;
+                confirmArmed = false; GameCursor.Capture(this, CursorLockMode.None, false);
+                return;
+            }
             NarrativePage page = CurrentPage;
             string heading = page.Compact ? null : !string.IsNullOrWhiteSpace(page.AttributionKey) ? page.AttributionKey :
                 page.Kind == NarrativePageKind.DocumentText ? "narrative.page.document" : "narrative.page.thought";

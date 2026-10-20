@@ -1079,6 +1079,7 @@ namespace BarPromenade
         private Vector3 exitCameraStartPosition;
         private Quaternion exitCameraStartRotation;
         private bool outsideFrameRendered;
+        private bool entryPrivacyFrameRendered;
         private bool stepOutArrived;
         private float stepOutSettleElapsed;
         private const float StepOutSettleSeconds = 0.25f;
@@ -1229,9 +1230,14 @@ namespace BarPromenade
 
         protected override void OnSceneCaptured()
         {
+            // One shower session borrows the presentation several times.
+            // Its own deferred unlock must never become the next phase's
+            // saved baseline, or the final restore can leave gait locked.
+            previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
             futureEyeCaptured = liveEyeReached = false;
             exitCameraCaptured = false;
             outsideFrameRendered = false;
+            entryPrivacyFrameRendered = false;
             stepOutArrived = false;
             stepOutSettleElapsed = 0f;
             sceneCamera = Home.CameraFollow.GetComponent<Camera>();
@@ -1279,6 +1285,9 @@ namespace BarPromenade
             }
 
             view.Begin(timeline.ViewPitchDegrees);
+            // An already-inside hero is behind the closed curtain. Ordinary
+            // entry waits for the parked inner lens to render him offscreen.
+            if (startedInside) TryUndress();
             CaptureCameraPath();
         }
 
@@ -1341,6 +1350,11 @@ namespace BarPromenade
         private bool AdvanceSceneWalk(float deltaTime)
         {
             HomeShowerScenePhase phase = timeline.Phase;
+            if (phase == HomeShowerScenePhase.StepIn && lease == null && !redressed)
+            {
+                if (!entryPrivacyFrameRendered) return true;
+                TryUndress();
+            }
             if (phase == HomeShowerScenePhase.CameraIn && !timeline.CameraArrived) return true;
             if (phase == HomeShowerScenePhase.StepOut && stepOutArrived) return true;
             bool crossesCurtain = phase == HomeShowerScenePhase.StepIn || phase == HomeShowerScenePhase.StepOut;
@@ -1415,11 +1429,6 @@ namespace BarPromenade
                 }
                 presentedGesture = phase;
             }
-            if (timeline.IsInsideHead && timeline.PoseWeight >= 0.999f && lease == null && !redressed)
-            {
-                TryUndress();
-            }
-
             if (phase == HomeShowerScenePhase.Settle && !braceCaptured)
             {
                 // Lock first: the lock writes the Idle neutral synchronously,
@@ -1460,9 +1469,6 @@ namespace BarPromenade
             {
                 return;
             }
-
-            bool inside = view != null && view.IsHeadHidden;
-            if (!inside) return;
 
             lease = Player3DBathingAppearance.Apply(registry);
             washPose?.SetBridgesShown(true);
@@ -1529,6 +1535,9 @@ namespace BarPromenade
             }
 
             HomeShowerScenePhase phase = timeline.Phase;
+            if (phase == HomeShowerScenePhase.StepIn && lease == null && !entryPrivacyFrameRendered &&
+                timeline.CameraArrived && IsHeroOutsideCamera())
+                entryPrivacyFrameRendered = true;
             if (timeline.IsCurtainGesture && presentedGesture == phase)
             {
                 curtainPose.Apply(timeline.GestureNormalized);
@@ -1585,7 +1594,7 @@ namespace BarPromenade
                     ? 1f : 0f;
             }
             view.Tick(deltaTime, headBlend, timeline.ViewPitchDegrees,
-                lookAllowed && (!interactive || WashingPointerAvailable));
+                lookAllowed && (!interactive || soapPhase == HomeShowerSoapPhase.SelectSoap || WashingPointerAvailable));
             if (phase == HomeShowerScenePhase.StepOut && stepOutArrived)
             {
                 // Let the ordinary 0.2 s gait blend finish with the toes
@@ -1603,7 +1612,19 @@ namespace BarPromenade
         private bool IsHeroOutsideCamera()
         {
             if (sceneCamera == null) return false;
-            GeometryUtility.CalculateFrustumPlanes(sceneCamera, exitFrustum);
+            if (DebugFreeCamera.IsInspecting(Home.Player.GameObject))
+            {
+                // The action still owns its staged view while debug lends the
+                // physical camera elsewhere. Its privacy beats use that view,
+                // so watching the hero in flight cannot strand an entry/exit.
+                PlayerCameraFollow follow = Home.CameraFollow;
+                Matrix4x4 view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) *
+                    Matrix4x4.TRS(follow.FixedBasePosition, follow.FixedBaseRotation, Vector3.one).inverse;
+                Matrix4x4 projection = Matrix4x4.Perspective(follow.FixedBaseFieldOfView,
+                    sceneCamera.aspect, sceneCamera.nearClipPlane, sceneCamera.farClipPlane);
+                GeometryUtility.CalculateFrustumPlanes(projection * view, exitFrustum);
+            }
+            else GeometryUtility.CalculateFrustumPlanes(sceneCamera, exitFrustum);
             bool foundVisibleModel = false;
             foreach (Renderer renderer in exitVisibilityRenderers)
             {
@@ -1744,6 +1765,7 @@ namespace BarPromenade
             redressed = false;
             futureEyeCaptured = liveEyeReached = exitCameraCaptured = false;
             outsideFrameRendered = false;
+            entryPrivacyFrameRendered = false;
             stepOutArrived = false;
             stepOutSettleElapsed = 0f;
             exitVisibilityRenderers = Array.Empty<Renderer>();
@@ -1756,7 +1778,6 @@ namespace BarPromenade
         private void AcquireHandoff()
         {
             if (ownsHandoff) return;
-            previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
             Home.Player.Visual.SetInteractionHandoffLocked(true);
             ownsHandoff = true;
         }

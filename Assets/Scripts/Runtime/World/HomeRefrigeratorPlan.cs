@@ -265,14 +265,6 @@ namespace BarPromenade
                 GetRequiredFurniture(
                     layout,
                     HomeFurnitureKind.Kitchen);
-            HomeFurnitureFootprint bed =
-                GetRequiredFurniture(
-                    layout,
-                    HomeFurnitureKind.Bed);
-            HomeFurnitureFootprint table =
-                GetRequiredFurniture(
-                    layout,
-                    HomeFurnitureKind.Table);
             HomeInteriorPath mainPath =
                 GetRequiredPath(
                     layout,
@@ -306,10 +298,11 @@ namespace BarPromenade
             Vector3 handleCenterLocal = CabinetHandleCenter;
             Vector3 handleSize = CabinetHandleSize;
 
-            float approachClearance =
-                table.Bounds.yMin - bed.Bounds.yMax;
-            float passageZ =
-                (bed.Bounds.yMax + table.Bounds.yMin) * 0.5f;
+            // The kitchen aisle is authored independently of sleep furniture.
+            // Its 0.85 m width remains clear beside the table in every day state.
+            const float approachClearance = 0.85f;
+            const float passageZ = -2.15f;
+            const float kitchenAisleX = -3.775f;
             var approachPosition = new Vector3(
                 rootPosition.x + 0.14f,
                 layout.PlayerSpawn.y,
@@ -324,23 +317,15 @@ namespace BarPromenade
                 new Vector3(
                     mainPath.Bounds.xMin + 0.18f,
                     layout.PlayerSpawn.y,
-                    Mathf.Min(
-                        mainPath.Bounds.yMax - 0.06f,
-                        passageZ)),
+                    passageZ),
                 new Vector3(
-                    bed.Bounds.xMax +
-                    HomeInteriorLayoutValidator
-                        .PlayerClearanceRadius +
-                    0.04f,
+                    kitchenAisleX,
                     layout.PlayerSpawn.y,
                     passageZ),
                 new Vector3(
-                    table.Bounds.xMin -
-                    HomeInteriorLayoutValidator
-                        .PlayerClearanceRadius -
-                    0.04f,
+                    kitchenAisleX,
                     layout.PlayerSpawn.y,
-                    passageZ),
+                    approachPosition.z),
                 approachPosition
             };
 
@@ -590,7 +575,26 @@ namespace BarPromenade
                     "The refrigerator approach route must begin on " +
                     "the protected main path.");
             }
+
+            float radius = HomeInteriorLayoutValidator.PlayerClearanceRadius;
+            for (int index = 1; index < plan.ApproachWaypoints.Count; index++)
+            {
+                Vector3 a = plan.ApproachWaypoints[index - 1];
+                Vector3 b = plan.ApproachWaypoints[index];
+                Rect aisle = Rect.MinMaxRect(
+                    Mathf.Min(a.x, b.x) - radius, Mathf.Min(a.z, b.z) - radius,
+                    Mathf.Max(a.x, b.x) + radius, Mathf.Max(a.z, b.z) + radius);
+                if (OverlapsInterior(aisle, HomeLockedRoomPlan.Bounds))
+                    throw new InvalidOperationException("The kitchen route enters the locked room.");
+                foreach (HomeFurnitureFootprint item in layout.Furniture)
+                    if (item.BlocksMovement && OverlapsInterior(aisle, item.Bounds))
+                        throw new InvalidOperationException($"The kitchen route intersects '{item.Id}'.");
+            }
         }
+
+        private static bool OverlapsInterior(Rect a, Rect b) =>
+            Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin) > Tolerance &&
+            Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin) > Tolerance;
 
         private static void ValidateSlots(
             HomeRefrigeratorPlan plan)

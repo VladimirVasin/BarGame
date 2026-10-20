@@ -41,7 +41,7 @@ namespace BarPromenade
         internal const float BedPillowCenterHeight =
             BedPillowSurfaceHeight - (BedPillowThickness * 0.5f);
         internal const float KitchenDressingSurfaceHeight = 1.03f;
-        internal const float TableDressingSurfaceHeight = 0.88f;
+        internal const float TableDressingSurfaceHeight = 0.83f;
         internal const float BookcaseDressingSurfaceHeight = 2.25f;
         internal const string BedOccluderId = "home.furniture.bed";
         internal const string KitchenLeftOccluderId =
@@ -199,6 +199,15 @@ namespace BarPromenade
 
             dressing.Build(plan, balcony, occlusionRegistry);
 
+            Transform kitchenDiffuser = room.Find("Home Kitchen Task Diffuser");
+            if (kitchenDiffuser != null && kitchenDiffuser.TryGetComponent(out Renderer taskRenderer))
+            {
+                taskRenderer.sharedMaterial = CityNightResources.EmissiveMaterial;
+                RuntimePrimitiveFactory.SetColor(taskRenderer, new Color(2.10f, 1.72f, 1.10f));
+                taskRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                taskRenderer.receiveShadows = false;
+            }
+
             return room;
         }
 
@@ -207,15 +216,15 @@ namespace BarPromenade
             HomeInteriorLayoutPlan plan,
             HomeBalconyLayoutPlan balcony)
         {
-            float halfWidth = plan.RoomSize.x * 0.5f;
             float halfDepth = plan.RoomSize.y * 0.5f;
+            Rect shell = plan.RoomBounds;
             float wallThickness =
                 PlayerHomeBalconyGeometry.WallThickness;
             FootstepGround.Stamp(
                 HomeSurfacePrimitives.CreateBox(
                     "Home Floor",
                     room,
-                    new Vector3(0f, -0.08f, 0f),
+                    new Vector3(shell.center.x, -0.08f, shell.center.y),
                     new Vector3(
                         plan.RoomSize.x,
                         0.16f,
@@ -229,7 +238,7 @@ namespace BarPromenade
                     "Home Ceiling",
                     room,
                     new Vector3(
-                        0f,
+                        shell.center.x,
                         plan.RoomHeight + 0.04f,
                         0f),
                     new Vector3(
@@ -252,7 +261,7 @@ namespace BarPromenade
                 "Home Back Wall",
                 room,
                 new Vector3(
-                    0f,
+                    shell.center.x,
                     plan.RoomHeight * 0.5f,
                     halfDepth),
                 new Vector3(
@@ -266,7 +275,7 @@ namespace BarPromenade
                 "Home Left Wall",
                 room,
                 new Vector3(
-                    -halfWidth,
+                    shell.xMin,
                     plan.RoomHeight * 0.5f,
                     0f),
                 new Vector3(
@@ -282,7 +291,7 @@ namespace BarPromenade
                     "Home Right Wall",
                     room,
                     new Vector3(
-                        halfWidth,
+                        shell.xMax,
                         plan.RoomHeight * 0.5f,
                         0f),
                     new Vector3(
@@ -306,11 +315,11 @@ namespace BarPromenade
                 "Home Entry Wall Left",
                 room,
                 new Vector3(
-                    -3.15f,
+                    (shell.xMin - 1.30f) * 0.5f,
                     plan.RoomHeight * 0.5f,
                     -halfDepth),
                 new Vector3(
-                    3.70f,
+                    -1.30f - shell.xMin,
                     plan.RoomHeight,
                     wallThickness),
                 Wall,
@@ -320,11 +329,11 @@ namespace BarPromenade
                 "Home Entry Wall Right",
                 room,
                 new Vector3(
-                    3.15f,
+                    (shell.xMax + 1.30f) * 0.5f,
                     plan.RoomHeight * 0.5f,
                     -halfDepth),
                 new Vector3(
-                    3.70f,
+                    shell.xMax - 1.30f,
                     plan.RoomHeight,
                     wallThickness),
                 Wall,
@@ -644,9 +653,9 @@ namespace BarPromenade
                 room,
                 new Vector3(
                     mainBulb.x,
-                    2.78f,
+                    3.12f,
                     mainBulb.z),
-                new Vector3(0.028f, 0.31f, 0.028f),
+                new Vector3(0.028f, 0.20f, 0.028f),
                 new Color(0.045f, 0.038f, 0.032f),
                 false);
             HomeAuthoredVisualFactory.CreateCylinder(
@@ -654,7 +663,7 @@ namespace BarPromenade
                 room,
                 new Vector3(
                     mainBulb.x,
-                    3.16f,
+                    3.35f,
                     mainBulb.z),
                 new Vector3(0.22f, 0.055f, 0.22f),
                 new Color(0.075f, 0.055f, 0.040f),
@@ -825,6 +834,14 @@ namespace BarPromenade
             Rect bounds,
             HomeOcclusionRegistry occlusionRegistry)
         {
+            Vector3 roomCenter = center;
+            // Keep authored sleep meshes and clips in their measured frame;
+            // rotate the entire contact arrangement together toward the room.
+            center = Vector3.zero;
+            const float depthScale = HomeBedInteractionPlan.FurnitureDepthScale;
+            bounds = new Rect(-HomeBedInteractionPlan.FurnitureLength * .5f,
+                -HomeBedInteractionPlan.FurnitureDepth * .5f,
+                HomeBedInteractionPlan.FurnitureLength, HomeBedInteractionPlan.FurnitureDepth);
             var parts = new List<GameObject>();
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bed Frame",
@@ -837,6 +854,17 @@ namespace BarPromenade
                 DarkWood,
                 HomeSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXZ));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
+                "Home Sleeping Sofa Back", room,
+                center + new Vector3(0f, 0.80f, 0.755f * depthScale),
+                new Vector3(bounds.width, 0.56f, 0.16f * depthScale), Fabric,
+                HomeSurfaceKind.Upholstery, SurfaceProjection.BoxXY));
+            foreach (float side in new[] { -1f, 1f })
+                parts.Add(HomeSurfacePrimitives.CreateBox(
+                    side < 0f ? "Home Sleeping Sofa Arm Left" : "Home Sleeping Sofa Arm Right",
+                    room, center + new Vector3(side * 1.235f, 0.60f, 0f),
+                    new Vector3(0.08f, 0.60f, bounds.height), Fabric,
+                    HomeSurfaceKind.Upholstery, SurfaceProjection.BoxZY));
             // The mattress and pillow are deformable grids, not primitive
             // boxes: their tops dent under the sleeping hero and slowly
             // refill after he gets up. The pillow also owns its filled
@@ -851,7 +879,7 @@ namespace BarPromenade
                         new Vector3(
                             bounds.width - 0.16f,
                             BedMattressThickness,
-                            bounds.height - 0.18f),
+                            bounds.height - 0.18f * depthScale),
                         DirtyLinen,
                         HomeSurfaceKind.BedLinen,
                         SurfaceProjection.BoxXZ,
@@ -863,7 +891,7 @@ namespace BarPromenade
                 "Home Bed Crooked Blanket",
                 room,
                 center +
-                new Vector3(0.45f, 0.60f, 0.545f),
+                new Vector3(0.45f, 0.60f, 0.44f),
                 new Vector3(
                     bounds.width * 0.45f,
                     0.12f,
@@ -874,7 +902,7 @@ namespace BarPromenade
                 false);
             parts.Add(blanket);
             blanket.transform.localRotation =
-                Quaternion.Euler(0f, 5f, -2f);
+                Quaternion.Euler(0f, 0f, -2f);
             // The filled crown cups the back of the head while the near
             // seam leaves the Hero V2 jacket and shoulder free to rise.
             parts.Add(
@@ -890,15 +918,18 @@ namespace BarPromenade
                         new Vector3(
                             0.62f,
                             BedPillowThickness,
-                            1.05f),
+                            1.05f * depthScale),
                         new Color(0.47f, 0.43f, 0.34f),
                         HomeSurfaceKind.BedLinen,
                         SurfaceProjection.BoxXZ,
                         BedPillowSinkDepth));
-            RegisterFurnitureGroup(
-                occlusionRegistry,
-                BedOccluderId,
-                parts);
+            Quaternion furnitureRotation = HomeBedInteractionPlan.FurnitureRotation;
+            foreach (GameObject part in parts)
+            {
+                part.transform.localPosition = roomCenter + furnitureRotation * part.transform.localPosition;
+                part.transform.localRotation = furnitureRotation * part.transform.localRotation;
+            }
+            RegisterFurnitureGroup(occlusionRegistry, BedOccluderId, parts);
         }
 
         private static void BuildKitchen(
@@ -935,30 +966,15 @@ namespace BarPromenade
                 new Vector3(
                     leftCounter.center.x -
                     leftCounter.width * 0.06f,
-                    1.05f,
+                    1.01f,
                     leftCounter.center.y),
                 new Vector3(
                     Mathf.Min(0.85f, leftCounter.width - 0.16f),
-                    0.06f,
+                    0.18f,
                     0.55f),
                 new Color(0.32f, 0.38f, 0.36f),
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ,
-                false));
-            leftParts.Add(HomeSurfacePrimitives.CreateBox(
-                "Home Kitchen Broken Door",
-                room,
-                new Vector3(
-                    leftCounter.center.x,
-                    0.43f,
-                    leftCounter.yMin - 0.01f),
-                new Vector3(
-                    Mathf.Min(0.58f, leftCounter.width * 0.72f),
-                    0.70f,
-                    0.055f),
-                new Color(0.12f, 0.14f, 0.12f),
-                HomeSurfaceKind.DarkWood,
-                SurfaceProjection.BoxXY,
                 false));
             RegisterFurnitureGroup(
                 occlusionRegistry,
@@ -1096,26 +1112,36 @@ namespace BarPromenade
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Scarred Table",
                 room,
-                center + (Vector3.up * 0.82f),
+                center + (Vector3.up * 0.78f),
                 new Vector3(
                     bounds.width,
-                    0.12f,
+                    0.10f,
                     bounds.height),
                 Trim,
                 HomeSurfaceKind.WornLaminate,
                 SurfaceProjection.BoxXZ));
             parts.Add(HomeSurfacePrimitives.CreateBox(
-                "Home Table Base Crooked",
+                "Home Dining Table Base",
                 room,
                 center +
                 new Vector3(
-                    -bounds.width * 0.10f,
-                    0.40f,
-                    bounds.height * 0.08f),
-                new Vector3(0.28f, 0.80f, 0.28f),
+                    0f,
+                    0.365f,
+                    0f),
+                new Vector3(1.27f, 0.73f, 1.02f),
                 DarkWood,
                 HomeSurfaceKind.DarkWood,
-                SurfaceProjection.BoxXY));
+                SurfaceProjection.BoxXY,
+                false));
+            // Keep the void under the table traversable by seated knees.
+            for (int x = -1; x <= 1; x += 2)
+                for (int z = -1; z <= 1; z += 2)
+                {
+                    var leg = new GameObject("Home Dining Table Leg Collision");
+                    leg.transform.SetParent(room, false);
+                    leg.transform.localPosition = center + new Vector3(x * 0.59f, 0.365f, z * 0.465f);
+                    leg.AddComponent<BoxCollider>().size = new Vector3(0.09f, 0.73f, 0.09f);
+                }
             RegisterFurnitureGroup(
                 occlusionRegistry,
                 TableOccluderId,
@@ -1128,6 +1154,9 @@ namespace BarPromenade
             Rect bounds,
             HomeOcclusionRegistry occlusionRegistry)
         {
+            Vector3 roomCenter = center;
+            center = Vector3.zero;
+            bounds = new Rect(-0.325f, -0.55f, 0.65f, 1.10f);
             var parts = new List<GameObject>();
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Battered Cabinet",
@@ -1162,10 +1191,13 @@ namespace BarPromenade
                     false));
             }
 
-            RegisterFurnitureGroup(
-                occlusionRegistry,
-                BookcaseOccluderId,
-                parts);
+            Quaternion furnitureRotation = Quaternion.Euler(0f, -90f, 0f);
+            foreach (GameObject part in parts)
+            {
+                part.transform.localPosition = roomCenter + furnitureRotation * part.transform.localPosition;
+                part.transform.localRotation = furnitureRotation * part.transform.localRotation;
+            }
+            RegisterFurnitureGroup(occlusionRegistry, BookcaseOccluderId, parts);
         }
 
         private static void BuildCameraCornerJunk(

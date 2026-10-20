@@ -187,9 +187,12 @@ namespace BarPromenade
                 position = ResolveAimTransitionClearance(origin, position, rotation);
                 if (progress >= 1f) CancelAimTransition();
             }
-            controlledCamera.transform.SetPositionAndRotation(position, rotation);
-            controlledCamera.orthographic = false;
-            controlledCamera.fieldOfView = fieldOfView;
+            if (!PresentationSuspended)
+            {
+                controlledCamera.transform.SetPositionAndRotation(position, rotation);
+                controlledCamera.orthographic = false;
+                controlledCamera.fieldOfView = fieldOfView;
+            }
         }
 
         private Vector3 ResolveAimTransitionClearance(Vector3 origin, Vector3 position, Quaternion rotation)

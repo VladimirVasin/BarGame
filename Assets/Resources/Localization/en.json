@@ -1,5 +1,7 @@
 {
   "entries": [
+    {"key":"interaction.inspect_painting","value":"E — examine the painting"},
+    {"key":"interaction.sit_at_table","value":"E — sit at the table"},
     {"key":"cutscene.warehouse_door_ambush","value":"Ambush at the door"},
     {"key":"pause.cutscenes","value":"Cutscenes"},
     {"key":"cutscene.empty","value":"No cutscenes on this level yet."},

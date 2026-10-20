@@ -45,6 +45,7 @@ namespace BarPromenade
             Quaternion basinRotation = Quaternion.LookRotation(basin - Position, home.transform.up);
             Rotation = Quaternion.Slerp(mirrorRotation, valveRotation, Mathf.Clamp01(valveLook));
             Rotation = Quaternion.Slerp(Rotation, basinRotation, Mathf.Clamp01(spitLook));
+            if (DebugFreeCamera.IsInspecting(home.Player.GameObject)) blend = 0f;
             if (blend >= HeadHideBlend && hiddenHead == null)
                 hiddenHead = Player3DHeadVisibility.Hide(registry);
             else if (blend < HeadHideBlend) RestoreHead();

@@ -19,9 +19,9 @@ This is the first manual acceptance path for the vertical slice.
    must remain in the sleeping loop. Confirm the alarm then stops and only
    then does the camera glide smoothly to the sleeper and ease into the main
    Home shot without a cut. The startup wake takes about six seconds—three
-   times the ordinary bed wake—before normal movement, interaction and HUD
+   times the ordinary sofa wake—before normal movement, interaction and HUD
    return without another Home load.
-5. Confirm the clock and nightstand remain beside the bed as silent room
+5. Confirm the clock and nightstand remain beside the unfolded sofa as silent room
    dressing.
 6. Use the apartment exit, descend through the stairwell and use its street
    door. Confirm the player reaches the generated city beside their distinct

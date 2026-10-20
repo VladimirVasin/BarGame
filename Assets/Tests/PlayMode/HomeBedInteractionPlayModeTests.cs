@@ -1000,9 +1000,11 @@ namespace BarPromenade.Tests.PlayMode
                         home, clip, (float)(Time.timeAsDouble - motionStartedAt));
                     AssertContinuous3DPresentation(home, clip);
                     Assert.That(
-                        home.Room.InverseTransformPoint(
-                            presentation.Registry.Anchors.Pelvis.position).x,
-                        Is.EqualTo(home.BedInteractionPlan.ActionHipPosition.x).Within(0.015f),
+                        Vector3.Dot(home.Room.InverseTransformPoint(
+                            presentation.Registry.Anchors.Pelvis.position) -
+                            home.BedInteractionPlan.ActionHipPosition,
+                            home.BedInteractionPlan.HeadToFootAxis),
+                        Is.EqualTo(0f).Within(0.015f),
                         $"{clip} must keep the pelvis opposite the middle of the " +
                         "bed instead of sliding toward the pillow or foot end.");
                     AssertPosedVerticesClearMattress($"{clip} at {progress:P0}");

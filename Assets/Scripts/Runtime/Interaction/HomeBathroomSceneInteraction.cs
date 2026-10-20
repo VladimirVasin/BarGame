@@ -582,7 +582,7 @@ namespace BarPromenade
                     null);
                 stopPromptShown = false;
                 modalLock?.Restore();
-                Home?.FixedCamera?.ReapplyActiveShot();
+                Home?.FixedCamera?.RestoreGameplayCamera();
             }
             finally
             {

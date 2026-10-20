@@ -110,7 +110,7 @@ namespace BarPromenade
                 homeRoot.CameraFollow, homeRoot.InteractionPrompt, homeRoot.IntoxicationHud)
             {
                 Admission = () => homeRoot != null && homeRoot.AnimatedInteraction != null && !homeRoot.AnimatedInteraction.IsActive,
-                RestoreCamera = () => homeRoot?.FixedCamera?.ReapplyActiveShot(),
+                RestoreCamera = () => homeRoot?.FixedCamera?.RestoreGameplayCamera(),
                 DoorAmountChanged = amount => homeRoot?.Soundscape?.SetRefrigeratorDoorOpenAmount(amount),
                 PlayCue = (cue, position) => homeRoot?.Audio?.TryPlay(cue, position)
             };

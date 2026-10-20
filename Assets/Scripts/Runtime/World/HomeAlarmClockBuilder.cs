@@ -47,6 +47,7 @@ namespace BarPromenade
             alarmObject.transform.SetParent(room, false);
             alarmObject.transform.localPosition =
                 plan.ClockPosition;
+            alarmObject.transform.localRotation = plan.Rotation;
 
             occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Body",
@@ -91,6 +92,7 @@ namespace BarPromenade
             HomeAlarmClockPlan plan,
             List<GameObject> occluderParts)
         {
+            int firstPart = occluderParts.Count;
             occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Alarm Clock Nightstand",
                 room,
@@ -116,14 +118,18 @@ namespace BarPromenade
             occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Alarm Clock Nightstand Handle",
                 room,
-                new Vector3(
-                    plan.NightstandCenter.x,
-                    0.48f,
-                    plan.NightstandCenter.z -
-                    plan.NightstandSize.z * 0.51f),
+                new Vector3(0f, 0.48f, -plan.NightstandSize.z * 0.51f) +
+                    new Vector3(plan.NightstandCenter.x, 0f, plan.NightstandCenter.z),
                 new Vector3(0.21f, 0.035f, 0.035f),
                 new Color(0.27f, 0.17f, 0.09f),
                 false));
+            Vector3 pivot = new Vector3(plan.NightstandCenter.x, 0f, plan.NightstandCenter.z);
+            for (int index = firstPart; index < occluderParts.Count; index++)
+            {
+                Transform part = occluderParts[index].transform;
+                part.localPosition = pivot + plan.Rotation * (part.localPosition - pivot);
+                part.localRotation = plan.Rotation * part.localRotation;
+            }
         }
 
         private static GameObject[] BuildDisplay(

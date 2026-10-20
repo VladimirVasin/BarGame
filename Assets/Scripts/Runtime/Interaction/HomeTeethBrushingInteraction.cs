@@ -118,7 +118,7 @@ namespace BarPromenade
 
         public void ApplyBrushDelta(Vector2 mousePixels)
         {
-            if (timeline.Phase == HomeTeethBrushingPhase.Brushing && !PauseMenuController.IsAnyPaused)
+            if (timeline.Phase == HomeTeethBrushingPhase.Brushing && GameInput.CanRead(GameInputContext.Contextual))
                 progress.Move(mousePixels);
         }
 
@@ -129,6 +129,7 @@ namespace BarPromenade
             timeline.Advance(deltaTime);
             pendingSpitSeconds += timeline.EmissionSeconds - before;
             if (timeline.Phase != HomeTeethBrushingPhase.Brushing) return;
+            if (!GameInput.CanRead(GameInputContext.Contextual)) { discardMouse = true; return; }
             if (Mouse.current != null && !discardMouse) ApplyBrushDelta(Mouse.current.delta.ReadValue());
             if (Gamepad.current != null) ApplyBrushDelta(Gamepad.current.rightStick.ReadValue() * (1400f * deltaTime));
             discardMouse = false;

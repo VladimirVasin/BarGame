@@ -44,11 +44,14 @@ namespace BarPromenade
     public sealed class NarrativeInteractionDefinition
     {
         public NarrativeInteractionDefinition(string id, string promptKey, IReadOnlyList<NarrativePage> pages,
-            bool requiresRunningGameTime = true)
+            bool requiresRunningGameTime = true, bool silent = false)
         {
             if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A narrative needs a stable ID.", nameof(id));
             if (string.IsNullOrWhiteSpace(promptKey)) throw new ArgumentException("A narrative needs a keyed prompt.", nameof(promptKey));
-            if (pages == null || pages.Count == 0) throw new ArgumentException("A narrative needs pages.", nameof(pages));
+            if (pages == null || pages.Count == 0 && !silent)
+                throw new ArgumentException("A narrative needs pages or an explicit silent inspection.", nameof(pages));
+            if (silent && pages.Count != 0)
+                throw new ArgumentException("A silent inspection cannot contain written pages.", nameof(pages));
             var copy = new NarrativePage[pages.Count];
             for (int index = 0; index < copy.Length; index++)
             {
@@ -57,10 +60,13 @@ namespace BarPromenade
             }
             Id = id; PromptKey = promptKey; Pages = Array.AsReadOnly(copy);
             RequiresRunningGameTime = requiresRunningGameTime;
+            IsSilent = silent;
         }
         public string Id { get; }
         public string PromptKey { get; }
         public IReadOnlyList<NarrativePage> Pages { get; }
+        /// <summary>Frame the physical subject without a thought, document, caption or speech.</summary>
+        public bool IsSilent { get; }
         /// <summary>Story inspections require the calendar; isolated test scenes may opt out.</summary>
         public bool RequiresRunningGameTime { get; }
     }

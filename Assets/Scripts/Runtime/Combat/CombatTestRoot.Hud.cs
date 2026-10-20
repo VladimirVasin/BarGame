@@ -25,6 +25,11 @@ namespace BarPromenade
             (Taunt == null || !Taunt.IsActive) && !BarMinigameModalLock.IsAnyLocked &&
             GameInput.CanRead(GameInputContext.Gameplay);
         public bool GameplayHudVisible => HudCanRender && !DebugHudVisible;
+        public bool DefeatResultVisible => isActiveAndEnabled && IsInitialized && Hero != null &&
+            Hero.State.IsDefeated && pistolApplicationFocused && !PauseMenuController.IsAnyPaused &&
+            !GameTimeScaleRuntime.IsPaused &&
+            !SceneTransitionService.IsTransitioning &&
+            (GameplayHudVisible || DebugFreeCamera.IsInspecting(Player.GameObject));
         public float AmmunitionHudOpacity => HudOpacity(ammoHudFade);
         public float ReloadHudOpacity => HudOpacity(reloadHudFade);
         public float HealthHudOpacity => HudOpacity(healthHudFade);
@@ -124,7 +129,8 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            if (!HudCanRender) return;
+            bool inspectionDefeat = DefeatResultVisible && !HudCanRender;
+            if (!HudCanRender && !inspectionDefeat) return;
             EnsureHudStyles();
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
             Matrix4x4 matrix = RetroUiTheme.BeginCanvas(canvas);
@@ -132,9 +138,10 @@ namespace BarPromenade
             GUI.depth = -50; // Under shared speech, interaction prompts and modal menus.
             try
             {
-                if (DebugHudVisible) DrawDebugHud(canvas);
+                if (inspectionDefeat) DrawGameplayResult(canvas);
+                else if (DebugHudVisible) DrawDebugHud(canvas);
                 else DrawGameplayHud(canvas);
-                if (IsLaboratory) DrawLaboratoryControls(canvas);
+                if (IsLaboratory && !inspectionDefeat) DrawLaboratoryControls(canvas);
             }
             finally { GUI.depth = depth; RetroUiTheme.EndCanvas(matrix); }
         }

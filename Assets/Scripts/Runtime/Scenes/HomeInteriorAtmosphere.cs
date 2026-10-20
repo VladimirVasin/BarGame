@@ -12,7 +12,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class HomeInteriorAtmosphere : MonoBehaviour
     {
-        public const int MaximumPracticalLights = 2;
+        public const int MaximumPracticalLights = 3;
         public const int MaximumWindowLights = 1;
         public const int MaximumBathroomSpillLights = 1;
         public const int MaximumEntryDoorLights = 1;
@@ -28,9 +28,13 @@ namespace BarPromenade
             new Color(0.43f, 0.58f, 0.84f);
 
         internal static readonly Vector3 MainEmitterPosition =
-            new Vector3(-2.35f, 2.05f, 0.45f);
+            new Vector3(-2.35f, 2.60f, -1.10f);
         internal static readonly Vector3 MainLightPosition =
-            new Vector3(-2.35f, 2.00f, 0.45f);
+            MainEmitterPosition;
+        internal static readonly Vector3 KitchenEmitterPosition =
+            new Vector3(-5.20f, 1.72f, 2.50f);
+        internal static readonly Vector3 KitchenLightPosition =
+            KitchenEmitterPosition;
         internal static readonly Vector3 BathroomEmitterPosition =
             new Vector3(3.15f, 2.50f, 3.755f);
         internal static readonly Vector3 BathroomLightPosition =
@@ -76,6 +80,8 @@ namespace BarPromenade
         public Light WindowLight { get; private set; }
         public Light BathroomSpillLight { get; private set; }
         public Light EntryDoorLight { get; private set; }
+        public Light MainLight => practicalLights.Count > 0 ? practicalLights[0] : null;
+        public Light KitchenLight { get; private set; }
         public HomeBathroomLightFlicker BathroomFlicker
         {
             get;
@@ -132,9 +138,9 @@ namespace BarPromenade
                     "Home practical-light positions must be finite.");
             }
 
-            // The main lamp's range must reach the far walls of the
-            // ~9x7 m flat, or its inverse-square falloff leaves the
-            // corners pitch black.
+            // One pendant carries the living area; the separate
+            // under-cabinet practical lights the expanded west kitchen.
+            // Both are unshadowed within the bounded practical budget.
             practicalLights.Add(
                 CreatePracticalLight(
                     "Home Main Practical Light",
@@ -149,6 +155,13 @@ namespace BarPromenade
                 2.20f,
                 4.0f);
             practicalLights.Add(bathroomLight);
+            KitchenLight = CreatePracticalLight(
+                "Home Kitchen Practical Light",
+                KitchenLightPosition,
+                new Color(0.94f, 0.78f, 0.53f),
+                2.40f,
+                4.40f);
+            practicalLights.Add(KitchenLight);
             WindowLight = CreateWindowLight();
             BathroomSpillLight = CreateBathroomSpillLight();
             EntryDoorLight = CreateEntryDoorLight();

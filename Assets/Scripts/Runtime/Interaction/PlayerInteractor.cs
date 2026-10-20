@@ -177,6 +177,7 @@ namespace BarPromenade
         private void Update()
         {
             if (!InputEnabled ||
+                DebugFreeCamera.BlocksWorldInput ||
                 InteractKeyClaimed ||
                 SceneTransitionService.IsTransitioning)
             {
@@ -194,6 +195,7 @@ namespace BarPromenade
         private bool TryInteractActive()
         {
             if (!InputEnabled ||
+                DebugFreeCamera.BlocksWorldInput ||
                 InteractKeyClaimed ||
                 SceneTransitionService.IsTransitioning ||
                 (promptView != null &&

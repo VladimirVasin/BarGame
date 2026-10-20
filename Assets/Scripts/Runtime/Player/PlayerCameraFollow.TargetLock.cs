@@ -155,9 +155,12 @@ namespace BarPromenade
             Vector3 position = pivot - forward * targetLockDistance;
             Vector3 look = aim - position;
             if (look.sqrMagnitude < .0001f) look = forward;
-            controlledCamera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(look, Vector3.up));
-            controlledCamera.orthographic = false;
-            controlledCamera.fieldOfView = TargetLockFieldOfView;
+            if (!PresentationSuspended)
+            {
+                controlledCamera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(look, Vector3.up));
+                controlledCamera.orthographic = false;
+                controlledCamera.fieldOfView = TargetLockFieldOfView;
+            }
             currentFocusPoint = aim;
             previousTargetPosition = followTarget.position;
             targetLockInitialized = true;

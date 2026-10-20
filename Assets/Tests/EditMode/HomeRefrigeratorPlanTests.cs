@@ -24,11 +24,11 @@ namespace BarPromenade.Tests.EditMode
                 HomeRefrigeratorPlan.Create(layout);
 
             Assert.That(plan.KitchenBounds, Is.EqualTo(kitchen.Bounds));
-            Assert.That(plan.RootPosition.x, Is.InRange(-2.25f, -2.10f));
+            Assert.That(plan.RootPosition.x, Is.EqualTo(-4.6645f).Within(Tolerance));
             Assert.That(
                 plan.RootPosition.x,
-                Is.GreaterThan(-3.924f),
-                "The refrigerator must no longer sit at the shot edge.");
+                Is.EqualTo(kitchen.Bounds.xMax - 1.3845f).Within(Tolerance),
+                "The refrigerator must retain its cabinet gaps in the relocated west kitchen.");
             Assert.That(
                 Contains(kitchen.Bounds, plan.Footprint),
                 Is.True);
@@ -175,12 +175,11 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
 
             float passageWidth =
-                table.Bounds.yMin - bed.Bounds.yMax;
-            Assert.That(table.Bounds.yMin, Is.EqualTo(1.25f));
+                table.Bounds.xMin - bed.Bounds.xMax;
+            Assert.That(table.Bounds.xMin, Is.EqualTo(-2.65f).Within(Tolerance));
             Assert.That(
                 passageWidth,
-                Is.EqualTo(plan.ApproachClearance)
-                    .Within(Tolerance));
+                Is.GreaterThanOrEqualTo(plan.ApproachClearance - Tolerance));
             Assert.That(
                 passageWidth,
                 Is.GreaterThanOrEqualTo(
@@ -200,6 +199,11 @@ namespace BarPromenade.Tests.EditMode
                 plan.ApproachWaypoints[
                     plan.ApproachWaypoints.Count - 1],
                 plan.ApproachPosition);
+            Assert.That(plan.ApproachWaypoints, Has.Count.EqualTo(4));
+            AssertVector(plan.ApproachWaypoints[0], new Vector3(-.62f, layout.PlayerSpawn.y, -2.15f));
+            AssertVector(plan.ApproachWaypoints[1], new Vector3(-3.775f, layout.PlayerSpawn.y, -2.15f));
+            AssertVector(plan.ApproachWaypoints[2], new Vector3(-3.775f, layout.PlayerSpawn.y, 1.80f));
+            AssertVector(plan.ApproachWaypoints[3], new Vector3(-4.5245f, layout.PlayerSpawn.y, 1.80f));
 
             for (int segment = 1;
                  segment < plan.ApproachWaypoints.Count;

@@ -132,15 +132,13 @@ namespace BarPromenade
             Rect bathroomDoorway,
             IList<HomeInteriorZone> zones,
             IList<HomeInteriorPath> paths,
-            IList<HomeFurnitureFootprint> furniture)
+            IList<HomeFurnitureFootprint> furniture,
+            Vector2? roomCenter = null)
         {
             RoomSize = roomSize;
             RoomHeight = roomHeight;
-            RoomBounds = Rect.MinMaxRect(
-                roomSize.x * -0.5f,
-                roomSize.y * -0.5f,
-                roomSize.x * 0.5f,
-                roomSize.y * 0.5f);
+            Vector2 center = roomCenter ?? Vector2.zero;
+            RoomBounds = new Rect(center - roomSize * 0.5f, roomSize);
             float wallInset = PlayerHomeBalconyGeometry.WallThickness * 0.5f;
             InnerRoomBounds = Rect.MinMaxRect(
                 RoomBounds.xMin + wallInset, RoomBounds.yMin + wallInset,

@@ -48,12 +48,15 @@ namespace BarPromenade
             bool pauseMenuOpen,
             bool timePaused,
             bool modalLocked,
-            bool modalBlocksMovement)
+            bool modalBlocksMovement,
+            bool debugFreeCamera = false)
         {
             if (transitioning)
             {
                 return false;
             }
+
+            if (debugFreeCamera && !pauseMenuOpen) return false;
 
             switch (context)
             {
