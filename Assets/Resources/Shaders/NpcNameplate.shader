@@ -12,7 +12,6 @@ Shader "Bar Promenade/NPC Nameplate"
         Cull Off ZWrite Off ZTest Always
         HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Ps1VertexJitter.hlsl"
             TEXTURE2D_X_FLOAT(_NpcSceneDepth);
             TEXTURE2D(_NpcVisibleActors);
             TEXTURE2D(_NpcFontAtlas);
@@ -46,7 +45,7 @@ Shader "Bar Promenade/NPC Nameplate"
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 MaskVaryings output;
-                output.positionCS = Ps1SnapClipPosition(TransformObjectToHClip(input.positionOS.xyz));
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 return output;
             }
             half4 MaskFragment(MaskVaryings input) : SV_Target

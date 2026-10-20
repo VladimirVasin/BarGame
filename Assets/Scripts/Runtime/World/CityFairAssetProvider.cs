@@ -141,8 +141,8 @@ namespace BarPromenade
                 case "Bulb": color = new Color(.95f,.70f,.36f); break;
                 default: throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown fair surface.");
             }
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Fair requires the shared PS1 Lit shader.");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Fair requires the shared Lit shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture :
                 Resources.Load<Texture2D>("City/Port/Textures/" + texture);
             if (sheet == null) throw new InvalidOperationException("Fair shared city texture is missing: " + texture);

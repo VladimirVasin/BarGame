@@ -33,15 +33,10 @@
 //                                          which is how hard the wind blows
 //   phase     = f(positionWS.xz)         - who is out of step with whom
 //
-// PARAMETERS RIDE GLOBALS, for the same non-negotiable reason the vertex
-// snap's do: UnityPerMaterial must stay byte-identical to stock URP Lit or
-// the SRP Batcher stops batching every renderer in the game. Unlike the
-// snap's, these are written with a plain Shader.SetGlobalVector rather than
-// on a command buffer. The snap could not afford that - it is pushed on
-// EVERY camera, including the inventory preview and the fountain's cubemap
-// probe, which must not inherit the gameplay camera's grid. This global is
-// read by exactly one material, on geometry that exists only in the
-// mountain-road scene and that neither of those cameras ever draws.
+// Global parameters keep UnityPerMaterial byte-identical to stock URP Lit
+// and preserve SRP batching. The scene-owned wind controller writes these
+// without allocating material instances. Only the mountain foliage reads
+// them; inventory previews and fountain reflection captures draw no crowns.
 //
 // An unset global reads as zero, which means strength zero, which means an
 // exact passthrough - so material thumbnails and asset previews get the
@@ -69,8 +64,7 @@ float3 MountainWindOffsetWS(float3 positionWS, float2 uv)
 {
     float strength = _MountainWindParams.y;
 
-    // Load-bearing early out, exactly as the snap's is: with no wind set,
-    // this shader must be a bit-for-bit passthrough of stock URP Lit.
+    // With no wind set, retain the stock URP Lit position exactly.
     if (!(strength > 0.0))
     {
         return (float3)0.0;

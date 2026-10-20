@@ -10,10 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2fbc5dc8b11142f59fcc2df0e6d43432, type: 3}
-  m_Name: PS1 Composite
-  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.Rendering.Ps1CompositeRendererFeature
+  m_Name: Scene Composite
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.Rendering.SceneCompositeRendererFeature
   m_Active: 1
-  presentationSettings: {fileID: 11400000, guid: 4f1852022b8e4c00b3e497e6f12e5a20, type: 2}
   compositeMaterial: {fileID: 2100000, guid: 5f91357ad73049bba7d1a7106d810eef, type: 2}
   injectionPoint: 600
 --- !u!114 &11400000

@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// The dirty glass over the mirror's opening: one shared transparent
-    /// PS1 Lit material, built the way the toilet's liquid material is,
+    /// Lit material, built the way the toilet's liquid material is,
     /// so the reflection reads through a faint tint of the plate's colour.
     /// </summary>
     internal static class HomeBathroomMirrorResources
@@ -33,10 +33,10 @@ namespace BarPromenade
 
         private static Material CreateTransparent(string name, Color color, float smoothness)
         {
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Shader shader = Shader.Find("Bar Promenade/Lit");
             if (shader == null)
             {
-                throw new InvalidOperationException("Missing PS1 Lit shader for the bathroom mirror glass.");
+                throw new InvalidOperationException("Missing Lit shader for the bathroom mirror glass.");
             }
 
             var material = new Material(shader)

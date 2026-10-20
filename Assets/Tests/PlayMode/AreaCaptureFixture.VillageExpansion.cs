@@ -86,8 +86,8 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         Camera camera = Camera.main;
                         Assert.That(camera, Is.Not.Null);
-                        if (camera.GetComponent<BarPromenade.Rendering.Ps1VertexJitterExclusion>() == null)
-                            camera.gameObject.AddComponent<BarPromenade.Rendering.Ps1VertexJitterExclusion>();
+                        if (camera.GetComponent<BarPromenade.Rendering.ScenePresentationExclusion>() == null)
+                            camera.gameObject.AddComponent<BarPromenade.Rendering.ScenePresentationExclusion>();
                     });
                 break;
             }

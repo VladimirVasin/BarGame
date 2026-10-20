@@ -593,7 +593,7 @@ def draw_wall_grammar(
             wrap_rect(draw, (0, y - 3, SHEET_SIZE, y + 3), MORTAR - 16)
             wrap_rect(draw, (0, y + 4, SHEET_SIZE, y + 7), SEAM_LIGHT)
     elif spec.joint == "sheet":
-        # Vertical corrugation, quantised into flat steps to stay PS1-honest.
+        # Vertical corrugation, quantised into flat steps to retain the low-poly material register.
         x = 0
         while x < SHEET_SIZE:
             wrap_rect(draw, (x, 0, x + 5, SHEET_SIZE), MORTAR)

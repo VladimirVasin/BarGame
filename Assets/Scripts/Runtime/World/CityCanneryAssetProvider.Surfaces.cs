@@ -29,7 +29,7 @@ namespace BarPromenade
             if (!Surfaces.TryGetValue(role,out Surface definition)) return CityPortAssetProvider.GetSurfaceMaterial(role);
             if (SurfaceMaterials.TryGetValue(role,out Material material)&&material!=null) return material;
             Texture2D texture=Resources.Load<Texture2D>(ResourceFolder+"Textures/"+definition.Texture);
-            Shader shader=Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shader=Resources.Load<Shader>("Shaders/Lit");
             if (texture==null||shader==null) throw new InvalidOperationException("Cannery surface is missing: "+role);
             material=new Material(shader){name="Cannery "+role+" Shared",hideFlags=HideFlags.HideAndDontSave};
             material.SetTexture("_BaseMap",texture);

@@ -87,7 +87,7 @@ namespace BarPromenade
     /// <summary>No allocation while collecting; unsupported values are omitted, not reported as zero.</summary>
     internal sealed class PerformanceCaptureSamples
     {
-        internal const int MetricCount = 7;
+        internal const int MetricCount = 22;
         internal const int FrameInterval = 0;
         internal const int MainThread = 1;
         internal const int RenderThread = 2;
@@ -95,6 +95,21 @@ namespace BarPromenade
         internal const int GcBytes = 4;
         internal const int FootBake = 5;
         internal const int Reflection = 6;
+        internal const int CombatTotal = 7;
+        internal const int CombatPose = 8;
+        internal const int CombatCapture = 9;
+        internal const int CombatContact = 10;
+        internal const int CombatPhysicsSync = 11;
+        internal const int CombatFlight = 12;
+        internal const int CombatEffects = 13;
+        internal const int NpcAnimation = 14;
+        internal const int NpcComposition = 15;
+        internal const int NpcSnapshot = 16;
+        internal const int EditorLoop = 17;
+        internal const int WaitTargetFps = 18;
+        internal const int WaitPresent = 19;
+        internal const int WarehouseProbeSubmit = 20;
+        internal const int WarehouseProbePoll = 21;
         private readonly double[][] values;
         private readonly int[] counts = new int[MetricCount];
 

@@ -487,24 +487,28 @@
       "value": "OPTIONS"
     },
     {
-      "key": "options.graphics_style",
-      "value": "GRAPHICS STYLE"
-    },
-    {
-      "key": "options.style.ps1",
-      "value": "PS1"
-    },
-    {
-      "key": "options.style.clean_low_poly",
-      "value": "CLEAN LOW-POLY"
-    },
-    {
-      "key": "options.unavailable",
-      "value": "UNAVAILABLE"
-    },
-    {
       "key": "options.clean_aa",
       "value": "ANTI-ALIASING"
+    },
+    {
+      "key": "options.clean_reflections",
+      "value": "REFLECTIONS"
+    },
+    {
+      "key": "options.clean_volume",
+      "value": "VOLUMETRIC LIGHT"
+    },
+    {
+      "key": "options.clean_halation",
+      "value": "LIGHT HALOS"
+    },
+    {
+      "key": "options.clean_directional_highlights",
+      "value": "METAL HIGHLIGHTS"
+    },
+    {
+      "key": "options.clean_bounce",
+      "value": "BOUNCE LIGHT"
     },
     {
       "key": "options.dof",
@@ -515,24 +519,8 @@
       "value": "DRUNK LENS FX"
     },
     {
-      "key": "options.dither",
-      "value": "DITHERING"
-    },
-    {
-      "key": "options.scanlines",
-      "value": "SCANLINES"
-    },
-    {
       "key": "options.aspect_4_3",
       "value": "4:3 ASPECT"
-    },
-    {
-      "key": "options.vertex_jitter",
-      "value": "POLYGON JITTER"
-    },
-    {
-      "key": "options.begotten",
-      "value": "BEGOTTEN MODE"
     },
     {
       "key": "options.back",

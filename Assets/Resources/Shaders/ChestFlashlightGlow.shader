@@ -21,7 +21,6 @@ Shader "Bar Promenade/Chest Flashlight Glow"
             #pragma fragment SourceFragment
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
-            #include "Ps1VertexJitter.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _GlowColor;
@@ -48,7 +47,7 @@ Shader "Bar Promenade/Chest Flashlight Glow"
                 Varyings output;
                 float3 world = TransformObjectToWorld(input.positionOS.xyz);
                 float3 center = TransformObjectToWorld(input.centerOS);
-                output.positionCS = Ps1SnapClipPosition(TransformWorldToHClip(world));
+                output.positionCS = TransformWorldToHClip(world);
                 output.centerScreen = ComputeScreenPos(TransformWorldToHClip(center));
                 output.eyeDepth = -TransformWorldToView(world).z;
                 output.centerEyeDepth = -TransformWorldToView(center).z;

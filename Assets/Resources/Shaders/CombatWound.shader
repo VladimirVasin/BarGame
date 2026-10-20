@@ -25,7 +25,6 @@ Shader "Bar Promenade/Combat Wound"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Ps1VertexJitter.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -59,7 +58,7 @@ Shader "Bar Promenade/Combat Wound"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = Ps1SnapClipPosition(position.positionCS);
+                output.positionCS = position.positionCS;
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;
@@ -116,7 +115,7 @@ Shader "Bar Promenade/Combat Wound"
                     half blood = grain.a * (1.0 - smoothstep(1.5 * state.z, 2.45 * state.z, soakRadius));
                     blood *= lerp(1.0, .70, glove);
                     // Two unequal nicks avoid a periodic radial star. Their
-                    // coarse thread tips stay legible after the PS1 composite.
+                    // coarse thread tips stay legible at gameplay distance.
                     half nickA = smoothstep(.94, .99, cos(angle - shape.w)) *
                         (1.0 - smoothstep(1.15, 1.65, radius));
                     half nickB = smoothstep(.97, .995, cos(angle - shape.w * 1.9 - .8)) *

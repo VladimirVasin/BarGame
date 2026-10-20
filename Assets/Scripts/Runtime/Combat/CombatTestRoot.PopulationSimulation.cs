@@ -27,11 +27,13 @@ namespace BarPromenade
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                SimulationSubsteps++;
                 AdvanceJournalClock(hitStopSubsteps > 0);
                 if (hitStopSubsteps > 0)
                 {
                     Hero.CancelPendingPistolShot("hit_stop");
                     hitStopSubsteps--;
+                    SimulationHitStopSubsteps++;
                     HitStopSecondsConsumed += SimulationStep;
                     continue;
                 }
@@ -50,7 +52,9 @@ namespace BarPromenade
                     AdvanceOpponentMovement(SimulationStep);
                 }
                 RestoreSelectedOpponentContext();
+                long syncStarted = System.Diagnostics.Stopwatch.GetTimestamp();
                 using (PopulationSyncMarker.Auto()) Physics.SyncTransforms();
+                SimulationPhysicsSyncTicks += System.Diagnostics.Stopwatch.GetTimestamp() - syncStarted;
                 pendingContacts.Clear(); pendingShoves.Clear(); pendingKicks.Clear();
                 Hero.AdvanceSimulation(SimulationStep, true);
                 foreach (OpponentSlot slot in opponentSlots)
@@ -98,33 +102,38 @@ namespace BarPromenade
                     if (Hero.IsPistol) Casings.BeginShot(Hero);
                     PulsePistolCrosshair();
                 }
-                long contactStamp = JournalStamp();
-                sampled = Hero.CollectContacts(pendingContacts);
-                Hero.CollectShoveContacts(pendingShoves);
-                Hero.CollectKickContacts(pendingKicks);
-                foreach (OpponentSlot slot in opponentSlots)
+                long contactStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                using (SimulationContactMarker.Auto())
                 {
-                    if (!slot.Spawned || slot.Actor.State.IsDefeated) continue;
-                    sampled |= slot.Actor.CollectContacts(pendingContacts);
-                    slot.Actor.CollectShoveContacts(pendingShoves);
-                    slot.Actor.CollectKickContacts(pendingKicks);
-                }
-                JournalElapsed(contactStamp, ref journalContactTicks);
-                long impactStamp = JournalStamp();
-                CombatActor.ApplyContacts(pendingContacts);
-                foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
-                foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
-                ApplyProjectilePoolContacts();
-                JournalElapsed(impactStamp, ref journalImpactApplyTicks);
-                JournalTransitions("contacts_applied");
-                ObserveEndlessOutcome();
-                UpdateEndlessFocus();
-                if (!RoundFinished && hitStopSubsteps == 0)
-                {
-                    Hero.ContinueBufferedAttackAfterContacts();
+                    long contactStamp = JournalStamp();
+                    sampled = Hero.CollectContacts(pendingContacts);
+                    Hero.CollectShoveContacts(pendingShoves);
+                    Hero.CollectKickContacts(pendingKicks);
                     foreach (OpponentSlot slot in opponentSlots)
-                        if (slot.Spawned && !slot.Actor.State.IsDefeated) slot.Actor.ContinueBufferedAttackAfterContacts();
+                    {
+                        if (!slot.Spawned || slot.Actor.State.IsDefeated) continue;
+                        sampled |= slot.Actor.CollectContacts(pendingContacts);
+                        slot.Actor.CollectShoveContacts(pendingShoves);
+                        slot.Actor.CollectKickContacts(pendingKicks);
+                    }
+                    JournalElapsed(contactStamp, ref journalContactTicks);
+                    long impactStamp = JournalStamp();
+                    CombatActor.ApplyContacts(pendingContacts);
+                    foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
+                    foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
+                    ApplyProjectilePoolContacts();
+                    JournalElapsed(impactStamp, ref journalImpactApplyTicks);
+                    JournalTransitions("contacts_applied");
+                    ObserveEndlessOutcome();
+                    UpdateEndlessFocus();
+                    if (!RoundFinished && hitStopSubsteps == 0)
+                    {
+                        Hero.ContinueBufferedAttackAfterContacts();
+                        foreach (OpponentSlot slot in opponentSlots)
+                            if (slot.Spawned && !slot.Actor.State.IsDefeated) slot.Actor.ContinueBufferedAttackAfterContacts();
+                    }
                 }
+                SimulationContactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - contactStarted;
                 start = System.Diagnostics.Stopwatch.GetTimestamp();
                 using (PopulationEffectsMarker.Auto())
                 {
@@ -143,7 +152,12 @@ namespace BarPromenade
                 pendingSeconds = 0d;
                 AdvanceEndlessFinished(remaining);
             }
-            else if (!advanced || sampled) PresentCombatParticipants();
+            else if (!advanced || sampled)
+            {
+                long poseStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                using (PopulationPoseMarker.Auto()) PresentCombatParticipants();
+                SimulationPoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - poseStarted;
+            }
             SetDuelFrozen(hitStopSubsteps > 0 || roundEndFreeze > 0d);
             JournalRoundResult();
         }

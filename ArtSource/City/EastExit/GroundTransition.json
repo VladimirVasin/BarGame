@@ -6,7 +6,7 @@
   ],
   "worldRepeat": 24.0,
   "halfDepth": 4.0,
-  "surface": "opaque PS1 Lit / baked compensated linear-light mix",
+  "surface": "opaque project Lit / baked compensated linear-light mix",
   "uvOrigin": "world X; Z relative to church\u2013yard seam",
   "recipes": [
     {

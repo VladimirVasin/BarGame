@@ -9,7 +9,7 @@ This is the first manual acceptance path for the vertical slice.
 2. For five seconds confirm the whole red display flickers off very briefly
    at long intervals while the clock stays silent, no buttons are drawn and
    keyboard, mouse and gamepad cannot choose Wake Up or Quit.
-3. Confirm the localized PS1-style `ПРОСНУТЬСЯ / WAKE UP` and `ВЫЙТИ / QUIT`
+3. Confirm the localized shared `ПРОСНУТЬСЯ / WAKE UP` and `ВЫЙТИ / QUIT`
    buttons appear without the camera leaving the clock or the alarm starting.
    The display must still show and periodically flicker `05:59` for as long as
    no choice is made.

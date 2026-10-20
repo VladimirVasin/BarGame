@@ -7,11 +7,9 @@ namespace BarPromenade
     /// its speaker's head. Actions and silent descriptions use the prompt.
     /// See ai/speech-presentation-standard.md for the mandatory contract.
     ///
-    /// It is IMGUI on the shared 640x360 retro canvas, like everything
-    /// else in this project, and deliberately not a world-space mesh:
-    /// the PS1 composite pass averages the frame down and quantizes it
-    /// to RGB555 before UI is drawn, so a panel in the world would be
-    /// crushed while this one stays readable.
+    /// It uses IMGUI on the shared 640x360 logical canvas. Drawing after
+    /// world presentation keeps text readable through camera intoxication
+    /// and atmospheric effects; the speaker's projected anchor owns placement.
     ///
     /// The panel is measured once from the whole line and only the
     /// drawn substring grows, so the typing does not make the box jump

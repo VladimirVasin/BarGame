@@ -7692,7 +7692,7 @@ class PedestrianBuilder:
             "CLO_SquareNeck", make_box((0, -0.129, 1.330), (0.190, 0.022, 0.055)),
             "chest", "clothing_detail", "cafe_skin_pale",
         )
-        # Copper hair is deliberately planar and chunky: the PS1 read is one
+        # Copper hair is deliberately planar and chunky: the silhouette is one
         # red-orange halo, not individually modelled strands.
         self.add_part(
             "ACC_CopperHairCap",

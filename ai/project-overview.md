@@ -4,11 +4,11 @@
 
 - **Барный Променад / Bar Promenade**:Windows/PC Unity slice;runtime-composed
   coastal city,mountain road,alpine village/interiors. [World](current-world.md).
-- Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`;versions:
+- Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, Navigation `2.0.15`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC: PS1/default or native Clean/SMAA High; independent Begotten,
-  shared lighting/grade/UI.
+- PC: native scene presentation/SMAA High; optional warehouse effects,
+  shared grade/UI.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -70,10 +70,9 @@ City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map tr
 uses its last leg. It adds no text, story fact or travel time; art-bible §15a
 and the accepted architecture decision define this bounded exception.
 
-An optional bounded performance capture reports frame intervals, main/render
-threads, available GPU timing, allocations and foot-bake/reflection scopes.
-Unsupported metrics stay unavailable. Reports are measurements for the captured
-machine and scene, not a project-wide performance guarantee.
+Opt-in performance capture reports frame/GPU/GC, inclusive combat/NPC CPU and
+separate City-fountain/warehouse-probe work. Unsupported counters stay unavailable;
+Editor captures give local evidence, not a project-wide performance guarantee.
 
 `PlayerBuildAssetValidation` gates packaging with read-only asset checks and
 repair commands. Generation/publication: [../tools/README.md](../tools/README.md).

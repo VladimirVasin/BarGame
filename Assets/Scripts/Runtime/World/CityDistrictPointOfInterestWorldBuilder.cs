@@ -160,7 +160,7 @@ namespace BarPromenade
             new Color(0.72f, 0.84f, 0.92f);
         // The lens follows the bar-side yard spotlight's recipe: the
         // light colour boosted well past 1 so the source reads as a
-        // burning fixture through the PS1 composite, not a pale plate.
+        // bright source through the scene lighting.
         private static readonly Color FloodlightGlow =
             new Color(3.17f, 3.70f, 4.05f);
         // Street practicals run at 31 over a short drop; this beam
@@ -224,7 +224,7 @@ namespace BarPromenade
         // empty bench — it serves the emptiness, not a stage. Like
         // the drying yard's communal floodlight it is night-scaled,
         // shadowless and needs floodlight wattage for a 7-9 m throw
-        // to survive the night grade, fog and PS1 composite.
+        // to survive the night lighting and fog.
         private static readonly Color IslandFloodlightLightColor =
             new Color(0.80f, 0.74f, 0.92f);
         private static readonly Color IslandFloodlightGlow =

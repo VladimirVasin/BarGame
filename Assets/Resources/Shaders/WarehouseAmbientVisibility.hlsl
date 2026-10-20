@@ -1,12 +1,13 @@
 #ifndef BAR_PROMENADE_WAREHOUSE_AMBIENT_VISIBILITY_INCLUDED
 #define BAR_PROMENADE_WAREHOUSE_AMBIENT_VISIBILITY_INCLUDED
+#include "WarehouseCleanCommon.hlsl"
 
 // Scene globals, deliberately outside UnityPerMaterial: the single warehouse
 // hero owns them. No material clones, keywords or per-renderer property blocks.
 float4 _WarehouseAmbientOrigin;
 float4 _WarehouseAmbientFalloff;
 
-half4 Ps1WarehouseFragmentPBR(InputData inputData, SurfaceData surfaceData)
+half4 WarehouseFragmentPBR(InputData inputData, SurfaceData surfaceData)
 {
     UNITY_BRANCH
     if (_WarehouseAmbientOrigin.w > 0.5)
@@ -18,6 +19,9 @@ half4 Ps1WarehouseFragmentPBR(InputData inputData, SurfaceData surfaceData)
         // occlusion, specular response, shadows and emission, including the beam.
         inputData.bakedGI *= visibility;
     }
+    // This bounded irradiance comes from a real nearby lit floor patch. The
+    // hero-distance rule above owns ambient, not this local source's transport.
+    inputData.bakedGI += WarehouseLocalBounce(inputData.positionWS, inputData.normalWS);
     return UniversalFragmentPBR(inputData, surfaceData);
 }
 

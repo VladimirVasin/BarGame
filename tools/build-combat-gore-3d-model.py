@@ -276,7 +276,7 @@ def brain(source, skull_sources, centre, half_extent):
         ellipse_distance = 1 / math.sqrt(sum((direction[axis] / radii[axis]) ** 2
                                              for axis in range(3)))
         # Shallow winding sulci affect the shared outer hull, never individual
-        # pieces. Muted tissue colour/flat facets preserve the PS1 vocabulary.
+        # pieces. Muted tissue colour/flat facets preserve the low-poly vocabulary.
         ridge = .5 + .5 * math.cos(angle * 10 + math.sin(latitude * 6) * 1.8)
         fold = 1 - .055 * ridge * math.sin(latitude) ** 2
         radius = min(ellipse_distance, exit_distance - BRAIN_CLEARANCE_M) * fold

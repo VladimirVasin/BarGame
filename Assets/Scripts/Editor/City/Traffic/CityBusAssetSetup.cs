@@ -457,14 +457,12 @@ namespace BarPromenade.Editor
 
         private static Dictionary<CityBusMaterialSlot, Material> BuildMaterials()
         {
-            // The project's own Lit, so a bus rebuild keeps the vertex
-            // snap instead of quietly reverting all thirteen materials to
-            // the package shader.
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            // Retain the shared project Lit hooks when rebuilding bus materials.
+            Shader shader = Shader.Find("Bar Promenade/Lit");
             if (shader == null)
             {
                 throw new InvalidOperationException(
-                    "PS1 Lit shader is unavailable for City bus materials.");
+                    "Lit shader is unavailable for City bus materials.");
             }
 
             foreach (string texturePath in Enum

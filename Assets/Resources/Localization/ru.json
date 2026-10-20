@@ -487,24 +487,28 @@
       "value": "НАСТРОЙКИ"
     },
     {
-      "key": "options.graphics_style",
-      "value": "СТИЛЬ ГРАФИКИ"
-    },
-    {
-      "key": "options.style.ps1",
-      "value": "PS1"
-    },
-    {
-      "key": "options.style.clean_low_poly",
-      "value": "ЧИСТЫЙ LOW-POLY"
-    },
-    {
-      "key": "options.unavailable",
-      "value": "НЕДОСТУПНО"
-    },
-    {
       "key": "options.clean_aa",
       "value": "СГЛАЖИВАНИЕ"
+    },
+    {
+      "key": "options.clean_reflections",
+      "value": "ОТРАЖЕНИЯ"
+    },
+    {
+      "key": "options.clean_volume",
+      "value": "ОБЪЁМНЫЙ СВЕТ"
+    },
+    {
+      "key": "options.clean_halation",
+      "value": "СВЕТОВЫЕ ОРЕОЛЫ"
+    },
+    {
+      "key": "options.clean_directional_highlights",
+      "value": "БЛИКИ МЕТАЛЛА"
+    },
+    {
+      "key": "options.clean_bounce",
+      "value": "ОТРАЖЁННЫЙ СВЕТ"
     },
     {
       "key": "options.dof",
@@ -515,24 +519,8 @@
       "value": "ЭФФЕКТЫ ОПЬЯНЕНИЯ"
     },
     {
-      "key": "options.dither",
-      "value": "ДИЗЕРИНГ"
-    },
-    {
-      "key": "options.scanlines",
-      "value": "СКАНЛАЙНЫ"
-    },
-    {
       "key": "options.aspect_4_3",
       "value": "ФОРМАТ 4:3"
-    },
-    {
-      "key": "options.vertex_jitter",
-      "value": "ДРОЖАНИЕ ПОЛИГОНОВ"
-    },
-    {
-      "key": "options.begotten",
-      "value": "РЕЖИМ BEGOTTEN"
     },
     {
       "key": "options.back",

@@ -342,132 +342,73 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator OptionsPage_TogglesAndPersistsGraphicsFlag()
         {
-            string[] keys = { "graphics.style", "graphics.clean_aa", "graphics.dof", "graphics.intoxication_fx",
-                "graphics.dither", "graphics.scanlines", "graphics.aspect_4_3",
-                "graphics.vertex_jitter", "graphics.begotten" };
-            var saved = new Dictionary<string, int?>();
-            foreach (string key in keys)
+            var effects = new (PauseMenuOptionsRow Row, string Key, System.Func<bool> Read)[]
             {
-                saved[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key) : (int?)null;
-                PlayerPrefs.DeleteKey(key);
+                (PauseMenuOptionsRow.CleanAntialiasing, "graphics.clean_aa", () => GraphicsEffectsSettings.CleanAntialiasingEnabled),
+                (PauseMenuOptionsRow.DepthOfField, "graphics.dof", () => GraphicsEffectsSettings.DepthOfFieldEnabled),
+                (PauseMenuOptionsRow.IntoxicationFx, "graphics.intoxication_fx", () => GraphicsEffectsSettings.IntoxicationLensFxEnabled),
+                (PauseMenuOptionsRow.AspectRatio43, "graphics.aspect_4_3", () => GraphicsEffectsSettings.AspectRatio43Enabled),
+                (PauseMenuOptionsRow.CleanReflections, "graphics.clean_reflections", () => GraphicsEffectsSettings.CleanReflectionsEnabled),
+                (PauseMenuOptionsRow.CleanVolume, "graphics.clean_volume", () => GraphicsEffectsSettings.CleanVolumeEnabled),
+                (PauseMenuOptionsRow.CleanHalation, "graphics.clean_halation", () => GraphicsEffectsSettings.CleanHalationEnabled),
+                (PauseMenuOptionsRow.CleanDirectionalHighlights, "graphics.clean_directional_highlights", () => GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled),
+                (PauseMenuOptionsRow.CleanBounce, "graphics.clean_bounce", () => GraphicsEffectsSettings.CleanBounceEnabled),
+            };
+            var saved = new Dictionary<string, int?>();
+            foreach (var effect in effects)
+            {
+                saved[effect.Key] = PlayerPrefs.HasKey(effect.Key) ? PlayerPrefs.GetInt(effect.Key) : (int?)null;
+                PlayerPrefs.DeleteKey(effect.Key);
             }
             Gamepad gamepad = null;
             try
             {
                 GraphicsEffectsSettings.ResetLoadedStateForTests();
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
-                Assert.That(PlayerPrefs.HasKey("graphics.style"), Is.False);
-                Assert.That(System.Enum.GetValues(typeof(GraphicsStyle)), Has.Length.EqualTo(2));
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.True);
-                Assert.That(GraphicsEffectsSettings.IsCleanAntialiasingApplicable, Is.False);
-                Assert.That(PlayerPrefs.HasKey("graphics.clean_aa"), Is.False);
-
-                PlayerPrefs.SetInt("graphics.dither", 0);
-                PlayerPrefs.SetInt("graphics.vertex_jitter", 1);
-                foreach (int obsoleteOrUnknown in new[] { 1, 99 })
+                foreach (var effect in effects)
                 {
-                    PlayerPrefs.SetInt("graphics.style", obsoleteOrUnknown);
-                    GraphicsEffectsSettings.ResetLoadedStateForTests();
-                    Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
-                    Assert.That(GraphicsEffectsSettings.DitherEnabled, Is.False);
-                    Assert.That(GraphicsEffectsSettings.VertexJitterEnabled, Is.True);
+                    Assert.That(effect.Read(), Is.EqualTo(effect.Row != PauseMenuOptionsRow.AspectRatio43), effect.Key);
+                    Assert.That(PlayerPrefs.HasKey(effect.Key), Is.False, effect.Key);
                 }
-
-                GraphicsEffectsSettings.DitherEnabled = true;
-                GraphicsEffectsSettings.ScanlinesEnabled = true;
                 GraphicsEffectsSettings.DepthOfFieldEnabled = false;
                 GraphicsEffectsSettings.IntoxicationLensFxEnabled = false;
                 GraphicsEffectsSettings.AspectRatio43Enabled = true;
                 Assert.That(menu.Open(), Is.True);
                 menu.MoveSelection(1);
-                Assert.That(
-                    menu.SelectedOption,
-                    Is.EqualTo(PauseMenuOption.Options));
+                Assert.That(menu.SelectedOption, Is.EqualTo(PauseMenuOption.Options));
                 menu.ConfirmSelection();
                 Assert.That(menu.Page, Is.EqualTo(PauseMenuPage.Options));
-                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
-
-                int version = GraphicsEffectsSettings.Version;
-                menu.ConfirmSelection();
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
-                Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(version + 1));
-                menu.ConfirmSelection();
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
-                Assert.That(menu.CycleGraphicsStyle(-1), Is.True);
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
-                GraphicsEffectsSettings.ResetLoadedStateForTests();
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
-                Assert.That(menu.CycleGraphicsStyle(1), Is.True);
-
-                // Horizontal keyboard and pad input change the value, not the row.
+                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.CleanAntialiasing));
+                foreach (var effect in effects)
+                {
+                    SelectOptionsRow(effect.Row);
+                    bool before = effect.Read();
+                    Assert.That(menu.ConfirmSelection(), Is.True);
+                    Assert.That(effect.Read(), Is.EqualTo(!before), effect.Key);
+                    Assert.That(PlayerPrefs.GetInt(effect.Key, -1), Is.EqualTo(before ? 0 : 1), effect.Key);
+                    GraphicsEffectsSettings.ResetLoadedStateForTests();
+                    Assert.That(effect.Read(), Is.EqualTo(!before), effect.Key);
+                    Assert.That(menu.ConfirmSelection(), Is.True);
+                    Assert.That(effect.Read(), Is.EqualTo(before), effect.Key);
+                    yield return null;
+                }
+                SelectOptionsRow(PauseMenuOptionsRow.CleanAntialiasing);
                 yield return null;
                 yield return null;
-                inputFixture.Press(keyboard.rightArrowKey, queueEventOnly: true);
+                inputFixture.Press(keyboard.downArrowKey, queueEventOnly: true);
                 yield return null;
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
-                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
-                inputFixture.Release(keyboard.rightArrowKey, queueEventOnly: true);
+                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.DepthOfField));
+                inputFixture.Release(keyboard.downArrowKey, queueEventOnly: true);
                 yield return null;
                 gamepad = InputSystem.AddDevice<Gamepad>();
-                inputFixture.Press(gamepad.dpad.left, queueEventOnly: true);
+                inputFixture.Press(gamepad.dpad.down, queueEventOnly: true);
                 yield return null;
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.Ps1));
-                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
-                inputFixture.Release(gamepad.dpad.left, queueEventOnly: true);
-                yield return null;
-
-                menu.ConfirmSelection();
-                Assert.That(GraphicsEffectsSettings.IsCleanAntialiasingApplicable, Is.True);
-                SelectOptionsRow(PauseMenuOptionsRow.CleanAntialiasing);
-                Assert.That(menu.ConfirmSelection(), Is.True);
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.False);
-                Assert.That(PlayerPrefs.GetInt("graphics.clean_aa", 1), Is.Zero);
-                GraphicsEffectsSettings.ResetLoadedStateForTests();
-                Assert.That(GraphicsEffectsSettings.Style, Is.EqualTo(GraphicsStyle.CleanLowPoly));
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.False);
-                GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
-                Assert.That(PauseMenuController.IsGraphicsOptionAvailable(PauseMenuOptionsRow.CleanAntialiasing), Is.False);
-                Assert.That(menu.ConfirmSelection(), Is.False);
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.False);
-                GraphicsEffectsSettings.Style = GraphicsStyle.CleanLowPoly;
-                Assert.That(menu.ConfirmSelection(), Is.True);
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.True);
-
-                Assert.That(GraphicsEffectsSettings.IsDitherApplicable, Is.False);
-                Assert.That(GraphicsEffectsSettings.IsScanlinesApplicable, Is.False);
-                Assert.That(GraphicsEffectsSettings.IsVertexJitterApplicable, Is.False);
-                SelectOptionsRow(PauseMenuOptionsRow.Scanlines);
-                Assert.That(menu.ConfirmSelection(), Is.False);
-                Assert.That(GraphicsEffectsSettings.ScanlinesEnabled, Is.True,
-                    "Unavailable controls must preserve the stored preference.");
-                SelectOptionsRow(PauseMenuOptionsRow.VertexJitter);
-                Assert.That(menu.ConfirmSelection(), Is.False);
-                Assert.That(GraphicsEffectsSettings.VertexJitterEnabled, Is.True);
-                SelectOptionsRow(PauseMenuOptionsRow.Dither);
-                Assert.That(menu.ConfirmSelection(), Is.False);
-                Assert.That(GraphicsEffectsSettings.DitherEnabled, Is.True);
-                Assert.That(PauseMenuController.IsGraphicsOptionAvailable(PauseMenuOptionsRow.Dither), Is.False);
-                GraphicsEffectsSettings.Style = GraphicsStyle.Ps1;
-                Assert.That(PauseMenuController.IsGraphicsOptionAvailable(PauseMenuOptionsRow.Dither), Is.True);
-                Assert.That(menu.ConfirmSelection(), Is.True);
-                Assert.That(GraphicsEffectsSettings.DitherEnabled, Is.False);
-                Assert.That(PlayerPrefs.GetInt("graphics.dither", 1), Is.Zero);
-                Assert.That(GraphicsEffectsSettings.CleanAntialiasingEnabled, Is.True,
-                    "Returning to PS1 preserves the stored Clean smoothing choice.");
-                Assert.That(GraphicsEffectsSettings.ScanlinesEnabled, Is.True);
-                Assert.That(GraphicsEffectsSettings.VertexJitterEnabled, Is.True);
-                Assert.That(GraphicsEffectsSettings.DepthOfFieldEnabled, Is.False);
-                Assert.That(GraphicsEffectsSettings.IntoxicationLensFxEnabled, Is.False);
-                Assert.That(GraphicsEffectsSettings.AspectRatio43Enabled, Is.True);
-                Assert.That(GraphicsEffectsSettings.BegottenModeEnabled, Is.False);
+                Assert.That(menu.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.IntoxicationFx));
+                inputFixture.Release(gamepad.dpad.down, queueEventOnly: true);
                 Assert.That(menu.Page, Is.EqualTo(PauseMenuPage.Options));
                 Assert.That(Time.timeScale, Is.Zero);
                 Assert.That(motor.InputEnabled, Is.False);
-
                 Assert.That(menu.Cancel(), Is.True);
-                Assert.That(
-                    menu.Page,
-                    Is.EqualTo(PauseMenuPage.Main));
+                Assert.That(menu.Page, Is.EqualTo(PauseMenuPage.Main));
                 Assert.That(menu.Cancel(), Is.True);
                 yield return null;
                 Assert.That(menu.IsOpen, Is.False);
@@ -475,12 +416,11 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
-                foreach (string key in keys)
+                foreach (var effect in effects)
                 {
-                    if (saved[key].HasValue) PlayerPrefs.SetInt(key, saved[key].Value);
-                    else PlayerPrefs.DeleteKey(key);
+                    if (saved[effect.Key].HasValue) PlayerPrefs.SetInt(effect.Key, saved[effect.Key].Value);
+                    else PlayerPrefs.DeleteKey(effect.Key);
                 }
-
                 PlayerPrefs.Save();
                 GraphicsEffectsSettings.ResetLoadedStateForTests();
             }

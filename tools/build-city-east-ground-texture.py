@@ -77,7 +77,7 @@ def build():
         assert np.max(np.abs(sample(recipe, 0., probes) - sample(recipe, REPEAT, probes))) < 1e-6
     image = Image.fromarray(pixels[::-1])
     record = {"version": 1, "size": list(SIZE), "worldRepeat": REPEAT,
-              "halfDepth": HALF_DEPTH, "surface": "opaque PS1 Lit / baked compensated linear-light mix",
+              "halfDepth": HALF_DEPTH, "surface": "opaque project Lit / baked compensated linear-light mix",
               "uvOrigin": "world X; Z relative to church–yard seam",
               "recipes": [{"file": recipe[0], "metersPerTile": recipe[1], "tint": recipe[2],
                            "compensation": recipe[3], "sha256": hashlib.sha256((TEXTURES / recipe[0]).read_bytes()).hexdigest()}

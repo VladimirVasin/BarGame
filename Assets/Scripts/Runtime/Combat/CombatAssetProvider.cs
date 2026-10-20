@@ -201,8 +201,8 @@ namespace BarPromenade
                 case "Rubber": color = new Color(.13f,.15f,.14f); break;
                 default: throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown combat surface.");
             }
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Combat art requires the shared PS1 shader.");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Combat art requires the shared Lit shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>("Home/Textures/" + texture);
             if (sheet == null) throw new InvalidOperationException("Combat art is missing its shared concrete sheet.");
             var material = new Material(shader) { name = "Combat " + role + " Shared", hideFlags = HideFlags.HideAndDontSave };

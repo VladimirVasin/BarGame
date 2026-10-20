@@ -14,7 +14,6 @@ Shader "Bar Promenade/City Mountain Physical"
         _HandoffNear("Opaque Handoff Near", Float) = 31
         _HandoffFar("Opaque Handoff Far", Float) = 43
         _StableHazeHandoff("Stable Opaque Haze Handoff", Range(0, 1)) = 0
-        _Ps1VertexSnap("PS1 Vertex Snap", Range(0, 1)) = 0
     }
 
     SubShader
@@ -63,10 +62,8 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _HandoffNear;
                 half _HandoffFar;
                 half _StableHazeHandoff;
-                half _Ps1VertexSnap;
             CBUFFER_END
 
-            #include "Ps1VertexJitter.hlsl"
 
             struct Attributes
             {
@@ -95,11 +92,6 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
-                if (_Ps1VertexSnap >= 0.5h)
-                {
-                    output.positionCS = Ps1SnapClipPosition(
-                        output.positionCS);
-                }
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(
                     input.normalOS);
@@ -222,10 +214,8 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _HandoffNear;
                 half _HandoffFar;
                 half _StableHazeHandoff;
-                half _Ps1VertexSnap;
             CBUFFER_END
 
-            #include "Ps1VertexJitter.hlsl"
 
             struct MountainDepthAttributes
             {
@@ -250,11 +240,6 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
-                if (_Ps1VertexSnap >= 0.5h)
-                {
-                    output.positionCS = Ps1SnapClipPosition(
-                        output.positionCS);
-                }
                 output.positionWS = positionInputs.positionWS;
                 return output;
             }
@@ -319,10 +304,8 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _HandoffNear;
                 half _HandoffFar;
                 half _StableHazeHandoff;
-                half _Ps1VertexSnap;
             CBUFFER_END
 
-            #include "Ps1VertexJitter.hlsl"
 
             struct MountainDepthNormalsAttributes
             {
@@ -349,11 +332,6 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
-                if (_Ps1VertexSnap >= 0.5h)
-                {
-                    output.positionCS = Ps1SnapClipPosition(
-                        output.positionCS);
-                }
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(
                     input.normalOS);

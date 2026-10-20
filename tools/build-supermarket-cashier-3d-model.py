@@ -596,7 +596,7 @@ class CashierBuilder(base.PedestrianBuilder):
         pattern), so Unity imports plain MeshRenderers the runtime can
         re-parent under the pivots and scale individually. Each segment
         carries its own vertebra ring so the articulation stays legible
-        at PS1 resolution.
+        at gameplay distance.
         """
 
         for index in range(NECK_SEGMENT_COUNT):

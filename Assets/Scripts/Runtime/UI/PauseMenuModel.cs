@@ -22,15 +22,15 @@ namespace BarPromenade
 
     public enum PauseMenuOptionsRow
     {
-        GraphicsStyle = 0,
-        CleanAntialiasing = 1,
-        DepthOfField = 2,
-        IntoxicationFx = 3,
-        Dither = 4,
-        Scanlines = 5,
-        AspectRatio43 = 6,
-        VertexJitter = 7,
-        Begotten = 8,
+        CleanAntialiasing = 0,
+        DepthOfField = 1,
+        IntoxicationFx = 2,
+        AspectRatio43 = 3,
+        CleanReflections = 4,
+        CleanVolume = 5,
+        CleanHalation = 6,
+        CleanDirectionalHighlights = 7,
+        CleanBounce = 8,
         Back = 9,
         Count = 10
     }
@@ -43,7 +43,6 @@ namespace BarPromenade
         Quit = 3,
         ToggleGraphicsOption = 4,
         StartCutscene = 5,
-        CycleGraphicsStyle = 6
     }
 
     public sealed class PauseMenuModel
@@ -84,7 +83,7 @@ namespace BarPromenade
             SelectedOption = PauseMenuOption.Resume;
             ConfirmationTarget = PauseMenuOption.Resume;
             ConfirmationYesSelected = false;
-            SelectedOptionsRow = PauseMenuOptionsRow.GraphicsStyle;
+            SelectedOptionsRow = PauseMenuOptionsRow.CleanAntialiasing;
             SelectedCutsceneIndex = 0;
         }
 
@@ -182,7 +181,7 @@ namespace BarPromenade
         public bool SelectOptionsRow(PauseMenuOptionsRow row)
         {
             if (Page != PauseMenuPage.Options ||
-                row < PauseMenuOptionsRow.GraphicsStyle ||
+                row < PauseMenuOptionsRow.CleanAntialiasing ||
                 row >= PauseMenuOptionsRow.Count ||
                 SelectedOptionsRow == row)
             {
@@ -254,9 +253,7 @@ namespace BarPromenade
                     return PauseMenuAction.None;
                 }
 
-                return SelectedOptionsRow == PauseMenuOptionsRow.GraphicsStyle
-                    ? PauseMenuAction.CycleGraphicsStyle
-                    : PauseMenuAction.ToggleGraphicsOption;
+                return PauseMenuAction.ToggleGraphicsOption;
             }
 
             switch (SelectedOption)
@@ -266,7 +263,7 @@ namespace BarPromenade
                 case PauseMenuOption.Options:
                     Page = PauseMenuPage.Options;
                     SelectedOptionsRow =
-                        PauseMenuOptionsRow.GraphicsStyle;
+                        PauseMenuOptionsRow.CleanAntialiasing;
                     return PauseMenuAction.None;
                 case PauseMenuOption.Cutscenes:
                     Page = PauseMenuPage.Cutscenes;

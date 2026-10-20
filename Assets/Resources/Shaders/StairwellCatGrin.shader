@@ -91,8 +91,7 @@ Shader "Bar Promenade/Stairwell Cat Grin"
                 }
 
                 // Individual teeth: thin dark seams at regular arc
-                // intervals, cheaper and far more legible at PS1
-                // resolution than geometric gaps would be.
+                // intervals keep teeth legible with no extra geometry.
                 half toothPhase = abs(
                     frac((half)input.uv.x * _ToothCount) - 0.5h) *
                     2.0h;

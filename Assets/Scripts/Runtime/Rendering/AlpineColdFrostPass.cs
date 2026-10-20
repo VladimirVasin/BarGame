@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade.Rendering
 {
-    /// <summary>The current camera's image frosts before the shared PS1 finish and overlay HUD.</summary>
+    /// <summary>The current camera's image frosts before the shared scene composite and overlay HUD.</summary>
     internal sealed class AlpineColdFrostPass : ScriptableRenderPass
     {
         private static readonly int WindowId = Shader.PropertyToID("_FrostWindow");
@@ -43,7 +43,7 @@ namespace BarPromenade.Rendering
         public bool IsNeeded(Camera camera)
         {
             if (camera == null || camera.cameraType != CameraType.Game ||
-                camera.TryGetComponent(out Ps1VertexJitterExclusion _) ||
+                camera.TryGetComponent(out ScenePresentationExclusion _) ||
                 !AlpineColdExposure.IsVisible(camera) || AlpineColdExposure.FrostAmount <= 0f)
                 return false;
             if (mask == null)

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using BarPromenade.Rendering;
@@ -2590,10 +2589,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             private sealed class CompositeState
             {
-                public Ps1CompositeRendererFeature Feature;
-                public Ps1PresentationSettings Settings;
-                public Material Material;
-                public Ps1PresentationSettings Clone;
+                public SceneCompositeRendererFeature Feature;
+                public bool Active;
             }
 
             private readonly CityGameRoot city;
@@ -2608,7 +2605,7 @@ namespace BarPromenade.Tests.PlayMode
                 new Dictionary<long, RenderTexture>();
             private readonly Dictionary<long, Texture2D> frames =
                 new Dictionary<long, Texture2D>();
-            private readonly Ps1VertexJitterExclusion addedExclusion;
+            private readonly ScenePresentationExclusion addedExclusion;
 
             private readonly bool weatherEnabled;
             private readonly bool lightningEnabled;
@@ -2783,43 +2780,27 @@ namespace BarPromenade.Tests.PlayMode
                     savedShadowDistance = pipeline.shadowDistance;
                 }
 
-                // 7. The PS1 composite: the vertex snap is a screen-space
-                //    jitter that would drown a two-millimetre flicker diff,
-                //    and the print holds a picture across frames.
+                // 7. Bypass the shared final presentation for geometry-only
+                //    audit frames. Preserve each feature's active state.
                 if (disableComposite)
                 {
-                    if (camera.GetComponent<Ps1VertexJitterExclusion>() == null)
+                    if (camera.GetComponent<ScenePresentationExclusion>() == null)
                     {
-                        addedExclusion = camera.gameObject.AddComponent<Ps1VertexJitterExclusion>();
+                        addedExclusion = camera.gameObject.AddComponent<ScenePresentationExclusion>();
                     }
 
-                    FieldInfo field = typeof(Ps1PresentationSettings).GetField(
-                        "effectEnabled",
-                        BindingFlags.NonPublic | BindingFlags.Instance);
-                    Ps1CompositeRendererFeature[] features =
-                        Resources.FindObjectsOfTypeAll<Ps1CompositeRendererFeature>();
+                    SceneCompositeRendererFeature[] features =
+                        Resources.FindObjectsOfTypeAll<SceneCompositeRendererFeature>();
                     for (int index = 0; index < features.Length; index++)
                     {
-                        Ps1CompositeRendererFeature feature = features[index];
-                        Ps1PresentationSettings settings = feature != null ? feature.PresentationSettings : null;
-                        Material material = feature != null ? feature.CompositeMaterial : null;
-                        if (feature == null || settings == null || material == null || field == null)
-                        {
-                            Debug.Log(AuditLogPrefix + "composite feature left on: profile, material or field missing.");
-                            continue;
-                        }
-
-                        Ps1PresentationSettings clone = Object.Instantiate(settings);
-                        clone.name = settings.name + " (audit, effect off)";
-                        field.SetValue(clone, false);
-                        feature.SetConfiguration(clone, material);
+                        SceneCompositeRendererFeature feature = features[index];
+                        if (feature == null) continue;
                         composites.Add(new CompositeState
                         {
                             Feature = feature,
-                            Settings = settings,
-                            Material = material,
-                            Clone = clone
+                            Active = feature.isActive
                         });
+                        feature.SetActive(false);
                     }
 
                     Debug.Log(AuditLogPrefix + $"composite bypassed on {composites.Count} feature(s)");
@@ -2998,12 +2979,7 @@ namespace BarPromenade.Tests.PlayMode
                         CompositeState state = composites[index];
                         if (state.Feature != null)
                         {
-                            state.Feature.SetConfiguration(state.Settings, state.Material);
-                        }
-
-                        if (state.Clone != null)
-                        {
-                            Object.DestroyImmediate(state.Clone);
+                            state.Feature.SetActive(state.Active);
                         }
                     }
 

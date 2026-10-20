@@ -173,8 +173,8 @@ namespace BarPromenade
                 case "Flash": color = new Color(1f, .64f, .22f); break;
                 default: throw new ArgumentOutOfRangeException(nameof(role));
             }
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Pistol requires the shared PS1 shader.");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Pistol requires the shared Lit shader.");
             var material = new Material(shader) { name = "Combat Pistol " + role + " Shared", hideFlags = HideFlags.HideAndDontSave };
             material.SetTexture("_BaseMap", Texture2D.whiteTexture);
             material.SetColor("_BaseColor", color.linear);

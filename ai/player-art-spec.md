@@ -36,7 +36,7 @@
   Accepted `2026-10-14`, CombatTest only: worn, unbranded flashlight clipped
   on left upper M-65 chest/below collar; Chest carries model/forward Spot.
   No decorative strap/insignia/biography; belt/core rig stay.
-- Mood: restrained low-poly PS1 survival horror, with readable dark outlines
+- Mood: restrained low-poly survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
 - Do not mirror the character. Blender anatomical left is `+X`, the character
   faces `-Y` in source space, and imported `.L/.R` names remain physical sides.
@@ -103,7 +103,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   Six mouths (`Closed/Narrow/Open/Round/Wide/Teeth`) combine with five upper-face
   states (`Rest/HalfBlink/Blink/Emphasis/Skeptical`): thirty `64 px` cells and
   their thirty soiled twins at index `+32`. Broad opening, pursed rounding,
-  visible teeth, asymmetric brows and squint must read through the existing PS1
+  visible teeth, asymmetric brows and squint must read through the native scene
   dialogue shot. The hero remains weary; expression conveys delivery, never
   guilt, revelation or a smile. Bubble reveal owns approximate articulation;
   punctuation/tail close the mouth, independent blink continues, pause freezes.
@@ -200,7 +200,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   volume from final rig swing through `135°`, ignoring axial twist. Registered
   bones remain gameplay anchors. Shirt follows body fields; trousers and loose
   sleeves own wider fields/folds; hair chains own long-lock weights.
-  `CharacterSurfaceMaterialSetup` owns shared `Ps1Lit` Clothing/Skin/Hair;
+  `CharacterSurfaceMaterialSetup` owns shared shared lit shader Clothing/Skin/Hair;
   hero: `Player3DV2CharacterSurfaces`, manifest UV0 regions/map hashes.
   Linear mipmapped maps: normal `.65/.35/.5`; MPB colour/skin atlas stay.
   Cloth/mirror/arm tangents follow deformation; UV-less anatomy stays flat.

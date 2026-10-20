@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -24,6 +25,15 @@ namespace BarPromenade
         private ProfilerRecorder mainThread;
         private ProfilerRecorder renderThread;
         private ProfilerRecorder gcBytes;
+        private ProfilerRecorder editorLoop, waitTargetFps, waitPresent;
+        private const int MaximumNpcCounterActors = 6;
+        private CombatTestRoot combatRoot;
+        private IReadOnlyList<CombatActor> combatOpponents;
+        private readonly NpcCounterSnapshot[] npcCounters = new NpcCounterSnapshot[MaximumNpcCounterActors];
+        private int npcObservedCount;
+        private CombatCounterSnapshot combatCounters;
+        private WarehouseReflectionController warehouseProbe;
+        private ProbeCounterSnapshot probeCounters;
         private readonly FrameTiming[] gpuTiming = new FrameTiming[1];
         private PerformanceCaptureReport report;
         private double requestedAt;
@@ -37,6 +47,8 @@ namespace BarPromenade
         private bool collecting;
         private bool finished;
         private bool frameTimingEnabled;
+        private Camera requestedCamera;
+        private Camera captureCamera;
         private SceneHandle sceneHandle;
         private int graphicsSettingsVersion;
         private bool recordersSettled;
@@ -74,7 +86,8 @@ namespace BarPromenade
             }
         }
 
-        public static bool StartCapture(PerformanceCaptureOptions requested, string outputDirectory = null)
+        public static bool StartCapture(PerformanceCaptureOptions requested, string outputDirectory = null,
+            Camera renderCamera = null)
         {
             if (requested == null) throw new ArgumentNullException(nameof(requested));
             if (!Application.isPlaying || IsRunning) return false;
@@ -86,6 +99,7 @@ namespace BarPromenade
             active = host.AddComponent<RuntimePerformanceCapture>();
             active.options = requested;
             active.outputDirectory = directory;
+            active.requestedCamera = renderCamera;
             active.requestedAt = Time.realtimeSinceStartupAsDouble;
             Debug.Log("Performance capture armed for " + requested.Scene +
                       "; reports: " + directory);
@@ -173,6 +187,8 @@ namespace BarPromenade
                 captureStarted = now;
                 footTicks = reflectionTicks = 0;
                 footCalls = reflectionCalls = 0;
+                SnapshotCounterBaselines();
+                report.secondaryMotionAtStart = CaptureSecondaryMotion();
                 if (frameTimingEnabled) FrameTimingManager.CaptureFrameTimings();
                 return;
             }
@@ -182,6 +198,10 @@ namespace BarPromenade
             samples.Add(PerformanceCaptureSamples.GcBytes, ReadValue(gcBytes));
             samples.Add(PerformanceCaptureSamples.FootBake, footTicks * (1000d / Stopwatch.Frequency));
             samples.Add(PerformanceCaptureSamples.Reflection, reflectionTicks * (1000d / Stopwatch.Frequency));
+            samples.Add(PerformanceCaptureSamples.EditorLoop, ReadMilliseconds(editorLoop));
+            samples.Add(PerformanceCaptureSamples.WaitTargetFps, ReadMilliseconds(waitTargetFps));
+            samples.Add(PerformanceCaptureSamples.WaitPresent, ReadMilliseconds(waitPresent));
+            SampleWorkCounters();
             report.footBakeCalls += footCalls;
             report.reflectionCalls += reflectionCalls;
             if (Time.timeScale == 0) report.pausedFrames++;
@@ -195,11 +215,25 @@ namespace BarPromenade
 
         private void BeginSamples(double now)
         {
-            samples = new PerformanceCaptureSamples();
+            // Bound ordinary windows at a generous diagnostic ceiling; hitting it
+            // ends with sample_limit rather than silently dropping frame samples.
+            int capacity = Math.Min(PerformanceCaptureOptions.MaximumSamples,
+                (int)Math.Ceiling(options.DurationSeconds * 1000d) + 2);
+            samples = new PerformanceCaptureSamples(capacity);
             mainThread = TryRecorder(ProfilerCategory.Internal, "Main Thread");
             renderThread = TryRecorder(ProfilerCategory.Internal, "Render Thread");
             gcBytes = TryRecorder(ProfilerCategory.Memory, "GC Allocated In Frame");
+            editorLoop = TryRecorder(ProfilerCategory.Internal, "EditorLoop");
+            waitTargetFps = TryRecorder(ProfilerCategory.Internal, "WaitForTargetFPS");
+            waitPresent = TryRecorder(ProfilerCategory.Internal, "Gfx.WaitForPresentOnGfxThread");
+            // The only world lookup; source/list references are retained for the window.
+            combatRoot = UnityEngine.Object.FindAnyObjectByType<CombatTestRoot>();
+            combatOpponents = combatRoot != null ? combatRoot.Opponents : null;
+            warehouseProbe = WarehouseCleanPresentation.Current != null ? WarehouseCleanPresentation.Current.Reflection : null;
             frameTimingEnabled = FrameTimingManager.IsFeatureEnabled();
+            // Explicit render requests can use a disabled camera, which Camera.main
+            // omits. Keep its actual target size instead of falling back to the Editor window.
+            captureCamera = requestedCamera != null ? requestedCamera : Camera.main;
             report = new PerformanceCaptureReport
             {
                 utc = DateTime.UtcNow.ToString("O"),
@@ -220,30 +254,223 @@ namespace BarPromenade
                 width = Screen.width,
                 height = Screen.height,
                 renderScale = RenderScale(),
+                renderWidth = captureCamera != null ? captureCamera.pixelWidth : Screen.width,
+                renderHeight = captureCamera != null ? captureCamera.pixelHeight : Screen.height,
+                cleanAntialiasing = GraphicsEffectsSettings.CleanAntialiasingEnabled,
+                cleanReflections = GraphicsEffectsSettings.CleanReflectionsEnabled,
+                cleanVolume = GraphicsEffectsSettings.CleanVolumeEnabled,
+                cleanHalation = GraphicsEffectsSettings.CleanHalationEnabled,
+                cleanDirectionalHighlights = GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled,
+                cleanBounce = GraphicsEffectsSettings.CleanBounceEnabled,
                 qualityLevel = QualitySettings.GetQualityLevel(),
                 vSyncCount = QualitySettings.vSyncCount,
                 targetFrameRate = Application.targetFrameRate,
                 renderFrameInterval = OnDemandRendering.renderFrameInterval,
                 depthOfField = GraphicsEffectsSettings.DepthOfFieldEnabled,
                 intoxicationLens = GraphicsEffectsSettings.IntoxicationLensFxEnabled,
-                dither = GraphicsEffectsSettings.DitherEnabled,
-                scanlines = GraphicsEffectsSettings.ScanlinesEnabled,
                 aspect43 = GraphicsEffectsSettings.AspectRatio43Enabled,
-                vertexJitter = GraphicsEffectsSettings.VertexJitterEnabled,
-                begotten = GraphicsEffectsSettings.BegottenModeEnabled,
                 gameDayAtStart = GameSessionState.GameDayNumber,
                 gameMinuteAtStart = GameSessionState.GameMinuteOfDay,
                 intoxicationAtStart = GameSessionState.IntoxicationLevel,
                 globalWeatherAtStart = GameWeatherRules.EvaluateCurrent().Kind.ToString(),
                 gpuTimingEnabled = frameTimingEnabled,
+                sampleCapacity = capacity,
+                metricCount = PerformanceCaptureSamples.MetricCount,
                 managedBytesAtStart = GC.GetTotalMemory(false),
                 totalAllocatedBytesAtStart = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong()
+            };
+            report.recorders = new[]
+            {
+                DescribeRecorder(mainThread, "Internal", "Main Thread"),
+                DescribeRecorder(renderThread, "Internal", "Render Thread"),
+                DescribeRecorder(gcBytes, "Memory", "GC Allocated In Frame"),
+                DescribeRecorder(editorLoop, "Internal", "EditorLoop"),
+                DescribeRecorder(waitTargetFps, "Internal", "WaitForTargetFPS"),
+                DescribeRecorder(waitPresent, "Internal", "Gfx.WaitForPresentOnGfxThread")
             };
             captureStarted = now;
             sceneHandle = SceneManager.GetActiveScene().handle;
             graphicsSettingsVersion = GraphicsEffectsSettings.Version;
             collecting = true;
             if (frameTimingEnabled) FrameTimingManager.CaptureFrameTimings();
+        }
+
+        private readonly struct CombatCounterSnapshot
+        {
+            internal readonly long Total, Pose, Capture, Contact, PhysicsSync, Flight, Effects, Substeps, HitStop;
+            internal readonly double Dropped;
+            internal CombatCounterSnapshot(CombatTestRoot source)
+            {
+                Total = source.TotalSimulationTicks; Pose = source.SimulationPoseTicks;
+                Capture = source.SimulationCaptureTicks; Contact = source.SimulationContactTicks;
+                PhysicsSync = source.SimulationPhysicsSyncTicks; Flight = source.SimulationFlightTicks;
+                Effects = source.SimulationEffectsTicks; Substeps = source.SimulationSubsteps;
+                HitStop = source.SimulationHitStopSubsteps; Dropped = source.SimulationDroppedSeconds;
+            }
+        }
+
+        private readonly struct NpcCounterSnapshot
+        {
+            internal readonly CombatActor Actor;
+            internal readonly long Animation, Composition, Snapshot;
+            internal NpcCounterSnapshot(CombatActor source)
+            {
+                Actor = source; Animation = source.NpcAnimationSampleTicks;
+                Composition = source.NpcPoseCompositionTicks; Snapshot = source.NpcPoseSnapshotTicks;
+            }
+        }
+
+        private readonly struct ProbeCounterSnapshot
+        {
+            internal readonly int Starts, Completed, Failures, Cancelled, Timeouts;
+            internal readonly long Submit, Poll;
+            internal readonly double Latency;
+            internal ProbeCounterSnapshot(WarehouseReflectionController source)
+            {
+                Starts = source.CaptureCount; Completed = source.CaptureCompletedCount;
+                Failures = source.CaptureFailureCount; Cancelled = source.CaptureCancelledCount;
+                Timeouts = source.CaptureTimeoutCount; Submit = source.CaptureSubmitTicks;
+                Poll = source.CapturePollTicks; Latency = source.TotalCaptureLatencySeconds;
+            }
+        }
+
+        private void SnapshotCounterBaselines()
+        {
+            if (combatRoot != null) combatCounters = new CombatCounterSnapshot(combatRoot);
+            for (int i = 0; i < npcCounters.Length; i++) npcCounters[i] = default;
+            npcObservedCount = combatOpponents != null ? combatOpponents.Count : 0;
+            if (combatOpponents != null)
+            {
+                report.npcPopulationTruncated = combatOpponents.Count > MaximumNpcCounterActors;
+                for (int i = 0; i < combatOpponents.Count && i < npcCounters.Length; i++)
+                    if (combatOpponents[i] != null) npcCounters[i] = new NpcCounterSnapshot(combatOpponents[i]);
+            }
+            if (warehouseProbe != null) probeCounters = new ProbeCounterSnapshot(warehouseProbe);
+        }
+
+        private static double TickDeltaMilliseconds(long current, long previous) => current >= previous
+            ? (current - previous) * (1000d / Stopwatch.Frequency) : -1d;
+
+        private static long CountDelta(long current, long previous) => current >= previous ? current - previous : 0;
+
+        private void SampleWorkCounters()
+        {
+            if (combatRoot != null)
+            {
+                CombatCounterSnapshot current = new CombatCounterSnapshot(combatRoot);
+                samples.Add(PerformanceCaptureSamples.CombatTotal, TickDeltaMilliseconds(current.Total, combatCounters.Total));
+                samples.Add(PerformanceCaptureSamples.CombatPose, TickDeltaMilliseconds(current.Pose, combatCounters.Pose));
+                samples.Add(PerformanceCaptureSamples.CombatCapture, TickDeltaMilliseconds(current.Capture, combatCounters.Capture));
+                samples.Add(PerformanceCaptureSamples.CombatContact, TickDeltaMilliseconds(current.Contact, combatCounters.Contact));
+                samples.Add(PerformanceCaptureSamples.CombatPhysicsSync, TickDeltaMilliseconds(current.PhysicsSync, combatCounters.PhysicsSync));
+                samples.Add(PerformanceCaptureSamples.CombatFlight, TickDeltaMilliseconds(current.Flight, combatCounters.Flight));
+                samples.Add(PerformanceCaptureSamples.CombatEffects, TickDeltaMilliseconds(current.Effects, combatCounters.Effects));
+                report.combatSimulationSubsteps += CountDelta(current.Substeps, combatCounters.Substeps);
+                report.combatHitStopSubsteps += CountDelta(current.HitStop, combatCounters.HitStop);
+                if (current.Dropped >= combatCounters.Dropped && !double.IsNaN(current.Dropped) && !double.IsInfinity(current.Dropped))
+                    report.combatDroppedSeconds += current.Dropped - combatCounters.Dropped;
+                if (current.Total < combatCounters.Total) report.combatCounterResets++;
+                combatCounters = current;
+            }
+            SampleNpcCounters();
+            if (warehouseProbe != null)
+            {
+                ProbeCounterSnapshot current = new ProbeCounterSnapshot(warehouseProbe);
+                samples.Add(PerformanceCaptureSamples.WarehouseProbeSubmit, TickDeltaMilliseconds(current.Submit, probeCounters.Submit));
+                samples.Add(PerformanceCaptureSamples.WarehouseProbePoll, TickDeltaMilliseconds(current.Poll, probeCounters.Poll));
+                report.warehouseProbeCaptureStarts += CountDelta(current.Starts, probeCounters.Starts);
+                long completed = CountDelta(current.Completed, probeCounters.Completed);
+                report.warehouseProbeCaptureCompleted += completed;
+                report.warehouseProbeCaptureFailures += CountDelta(current.Failures, probeCounters.Failures);
+                report.warehouseProbeCaptureCancelled += CountDelta(current.Cancelled, probeCounters.Cancelled);
+                report.warehouseProbeCaptureTimeouts += CountDelta(current.Timeouts, probeCounters.Timeouts);
+                if (current.Latency >= probeCounters.Latency && !double.IsNaN(current.Latency) && !double.IsInfinity(current.Latency))
+                    report.warehouseProbeLatencyTotalSeconds += current.Latency - probeCounters.Latency;
+                if (completed > 0) report.warehouseProbeLatencyLastSeconds = warehouseProbe.LastCaptureLatencySeconds;
+                probeCounters = current;
+            }
+        }
+
+        private void SampleNpcCounters()
+        {
+            if (combatRoot == null || combatOpponents == null) return;
+            int count = combatOpponents.Count;
+            bool valid = count > 0 && count <= npcCounters.Length && count == npcObservedCount;
+            bool hasActor = false;
+            if (count != npcObservedCount) report.npcCounterRebaselines++;
+            npcObservedCount = count;
+            long animation = 0, composition = 0, snapshot = 0;
+            for (int i = 0; i < count && i < npcCounters.Length; i++)
+            {
+                CombatActor actor = combatOpponents[i];
+                NpcCounterSnapshot previous = npcCounters[i];
+                if (actor == null)
+                {
+                    if (previous.Actor != null) valid = false;
+                    npcCounters[i] = default;
+                    continue;
+                }
+                hasActor = true;
+                NpcCounterSnapshot current = new NpcCounterSnapshot(actor);
+                if (actor != previous.Actor || current.Animation < previous.Animation ||
+                    current.Composition < previous.Composition || current.Snapshot < previous.Snapshot)
+                {
+                    valid = false;
+                    report.npcCounterRebaselines++;
+                }
+                else
+                {
+                    animation += current.Animation - previous.Animation;
+                    composition += current.Composition - previous.Composition;
+                    snapshot += current.Snapshot - previous.Snapshot;
+                }
+                npcCounters[i] = current;
+            }
+            for (int i = count; i < npcCounters.Length; i++) npcCounters[i] = default;
+            if (!valid || !hasActor)
+            {
+                report.npcPopulationTruncated |= count > npcCounters.Length;
+                return; // Omit an incomplete frame instead of manufacturing a zero-cost observation.
+            }
+            double milliseconds = 1000d / Stopwatch.Frequency;
+            samples.Add(PerformanceCaptureSamples.NpcAnimation, animation * milliseconds);
+            samples.Add(PerformanceCaptureSamples.NpcComposition, composition * milliseconds);
+            samples.Add(PerformanceCaptureSamples.NpcSnapshot, snapshot * milliseconds);
+        }
+
+        private static PerformanceRecorderObservation DescribeRecorder(ProfilerRecorder recorder, string category, string name) =>
+            new PerformanceRecorderObservation { category = category, name = name, valid = recorder.Valid };
+
+        private void FinishAvailability()
+        {
+            int[] counts = { report.mainThreadMs.sampleCount, report.renderThreadMs.sampleCount,
+                report.gcAllocatedBytes.sampleCount, report.editorLoopMs.sampleCount,
+                report.waitForTargetFpsMs.sampleCount, report.waitForPresentMs.sampleCount };
+            for (int i = 0; i < counts.Length; i++)
+            {
+                report.recorders[i].sampleCount = counts[i];
+                report.recorders[i].available = report.recorders[i].valid && counts[i] > 0;
+            }
+            report.mainThreadAvailable = counts[0] > 0;
+            report.renderThreadAvailable = counts[1] > 0;
+            report.gcCounterAvailable = counts[2] > 0;
+            report.gpuTimingAvailable = report.gpuMs.sampleCount > 0;
+            report.combatCountersAvailable = report.combatTotalCpuMs.sampleCount > 0;
+            report.npcCountersAvailable = report.npcAnimationCpuMs.sampleCount > 0;
+            report.warehouseProbeCountersAvailable = report.warehouseProbeSubmitCpuMs.sampleCount > 0;
+        }
+
+        private static PerformanceSecondaryMotionSnapshot CaptureSecondaryMotion()
+        {
+            SecondaryMotionBakeRuntime.DiagnosticsSnapshot value = SecondaryMotionBakeRuntime.Diagnostics;
+            return new PerformanceSecondaryMotionSnapshot
+            {
+                cacheHits = value.CacheHits, cacheMisses = value.CacheMisses, decodeCount = value.DecodeCount,
+                loadTicks = value.LoadTicks, decodeTicks = value.DecodeTicks, largestDecodeTicks = value.LargestDecodeTicks,
+                decodedValues = value.DecodedValues, residentFloatValues = value.ResidentFloatValues,
+                evictions = value.Evictions, guardBuildCount = value.GuardBuildCount,
+                residentClips = value.ResidentClips, lastDecodedKey = value.LastDecodedKey
+            };
         }
 
         private void SampleGpu()
@@ -261,6 +488,8 @@ namespace BarPromenade
 
         private bool MatchesContext() => Screen.width == report.width &&
             Screen.height == report.height && RenderScale() == report.renderScale &&
+            (captureCamera == null || captureCamera.pixelWidth == report.renderWidth &&
+                captureCamera.pixelHeight == report.renderHeight) &&
             QualitySettings.GetQualityLevel() == report.qualityLevel &&
             QualitySettings.vSyncCount == report.vSyncCount &&
             Application.targetFrameRate == report.targetFrameRate &&
@@ -303,6 +532,23 @@ namespace BarPromenade
                 report.gcAllocatedBytes = samples.Summarize(PerformanceCaptureSamples.GcBytes);
                 report.footBakeMsPerFrame = samples.Summarize(PerformanceCaptureSamples.FootBake);
                 report.reflectionMsPerFrame = samples.Summarize(PerformanceCaptureSamples.Reflection);
+                report.combatTotalCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatTotal);
+                report.combatPoseCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatPose);
+                report.combatCaptureCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatCapture);
+                report.combatContactCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatContact);
+                report.combatPhysicsSyncCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatPhysicsSync);
+                report.combatFlightCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatFlight);
+                report.combatEffectsCpuMs = samples.Summarize(PerformanceCaptureSamples.CombatEffects);
+                report.npcAnimationCpuMs = samples.Summarize(PerformanceCaptureSamples.NpcAnimation);
+                report.npcCompositionCpuMs = samples.Summarize(PerformanceCaptureSamples.NpcComposition);
+                report.npcSnapshotCpuMs = samples.Summarize(PerformanceCaptureSamples.NpcSnapshot);
+                report.editorLoopMs = samples.Summarize(PerformanceCaptureSamples.EditorLoop);
+                report.waitForTargetFpsMs = samples.Summarize(PerformanceCaptureSamples.WaitTargetFps);
+                report.waitForPresentMs = samples.Summarize(PerformanceCaptureSamples.WaitPresent);
+                report.warehouseProbeSubmitCpuMs = samples.Summarize(PerformanceCaptureSamples.WarehouseProbeSubmit);
+                report.warehouseProbePollCpuMs = samples.Summarize(PerformanceCaptureSamples.WarehouseProbePoll);
+                FinishAvailability();
+                report.secondaryMotionAtEnd = CaptureSecondaryMotion();
                 report.frameP95WithinBudget = report.frameIntervalMs.sampleCount > 0 &&
                     report.frameIntervalMs.p95 <= report.frameBudgetMilliseconds;
                 report.managedBytesAtEnd = GC.GetTotalMemory(false);
@@ -349,7 +595,11 @@ namespace BarPromenade
             if (mainThread.Valid) mainThread.Dispose();
             if (renderThread.Valid) renderThread.Dispose();
             if (gcBytes.Valid) gcBytes.Dispose();
+            if (editorLoop.Valid) editorLoop.Dispose();
+            if (waitTargetFps.Valid) waitTargetFps.Dispose();
+            if (waitPresent.Valid) waitPresent.Dispose();
             mainThread = renderThread = gcBytes = default;
+            editorLoop = waitTargetFps = waitPresent = default;
         }
 
         private void OnApplicationQuit() { Finish("application_quit"); }
@@ -363,24 +613,65 @@ namespace BarPromenade
     [Serializable]
     internal sealed class PerformanceCaptureReport
     {
-        public int schemaVersion = 1;
+        public int schemaVersion = 2;
         public string interpretation = "Frame intervals include frame pacing; main/render-thread markers can include waits. " +
-            "Metric sampleCount=0 means unavailable, not zero cost. CPU work scopes measure only the named operation. " +
+            "Metric sampleCount=0 means unavailable, not zero cost. Recorder observations retain exact requested names/categories; " +
+            "absent optional markers are not subtracted or inferred. CPU counters are per-frame inclusive deltas after setup/warmup; " +
+            "stages and NPC timers overlap combat total and must not be summed. NPC animation covers shared sampling; " +
+            "composition/snapshot cover generic and zombie paths, not every special composition. Changed NPC slots omit an incomplete frame. " +
+            "reflectionCalls/reflectionMsPerFrame are City fountain work only, never warehouse probes. Warehouse submit/poll are CPU work; " +
+            "probe latency is completed wall time and can include a start before the measured window. Secondary motion snapshots are " +
+            "process-cumulative boundaries in Stopwatch ticks; their difference includes only the captured window. " +
+            "sampleCapacity is fixed at min(MaximumSamples, ceil(requestedSeconds*1000)+2); a full buffer ends as sample_limit. " +
             "GPU timings require supported Frame Timing Stats; capture does not enable that Player setting. " +
             "Compare the same scene, route, seed, weather and intoxication with matching focus/pause state. " +
             "Editor results are diagnostic and are not player benchmarks.";
         public string utc, scene, label, reason, unityVersion, applicationVersion, cpu, gpu, graphicsApi, gpuDriver;
-        public int seed, width, height, qualityLevel, vSyncCount, targetFrameRate, renderFrameInterval;
+        public int seed, width, height, renderWidth, renderHeight, qualityLevel, vSyncCount, targetFrameRate, renderFrameInterval;
         public bool editor, developmentBuild, gpuTimingEnabled, frameP95WithinBudget;
-        public bool depthOfField, intoxicationLens, dither, scanlines, aspect43, vertexJitter, begotten;
+        public bool mainThreadAvailable, renderThreadAvailable, gcCounterAvailable, gpuTimingAvailable;
+        public bool combatCountersAvailable, npcCountersAvailable, warehouseProbeCountersAvailable, npcPopulationTruncated;
+        public bool depthOfField, intoxicationLens, aspect43;
+        public bool cleanAntialiasing, cleanReflections, cleanVolume, cleanHalation, cleanDirectionalHighlights, cleanBounce;
         public int gameDayAtStart, gameDayAtEnd, gameMinuteAtStart, gameMinuteAtEnd;
         public int intoxicationAtStart, intoxicationAtEnd;
         public string globalWeatherAtStart, globalWeatherAtEnd;
         public float renderScale;
         public double warmupSeconds, requestedSeconds, measuredSeconds, frameBudgetMilliseconds;
         public int footBakeCalls, reflectionCalls, pausedFrames, unfocusedFrames;
+        public int sampleCapacity, metricCount, combatCounterResets, npcCounterRebaselines;
+        public long stopwatchFrequency = Stopwatch.Frequency;
+        public long combatSimulationSubsteps, combatHitStopSubsteps;
+        public double combatDroppedSeconds;
+        public long warehouseProbeCaptureStarts, warehouseProbeCaptureCompleted, warehouseProbeCaptureFailures;
+        public long warehouseProbeCaptureCancelled, warehouseProbeCaptureTimeouts;
+        public double warehouseProbeLatencyTotalSeconds, warehouseProbeLatencyLastSeconds;
         public long managedBytesAtStart, managedBytesAtEnd, totalAllocatedBytesAtStart, totalAllocatedBytesAtEnd;
         public PerformanceDistribution frameIntervalMs, mainThreadMs, renderThreadMs, gpuMs, gcAllocatedBytes;
         public PerformanceDistribution footBakeMsPerFrame, reflectionMsPerFrame;
+        public PerformanceDistribution combatTotalCpuMs, combatPoseCpuMs, combatCaptureCpuMs, combatContactCpuMs;
+        public PerformanceDistribution combatPhysicsSyncCpuMs, combatFlightCpuMs, combatEffectsCpuMs;
+        public PerformanceDistribution npcAnimationCpuMs, npcCompositionCpuMs, npcSnapshotCpuMs;
+        public PerformanceDistribution editorLoopMs, waitForTargetFpsMs, waitForPresentMs;
+        public PerformanceDistribution warehouseProbeSubmitCpuMs, warehouseProbePollCpuMs;
+        public PerformanceRecorderObservation[] recorders;
+        public PerformanceSecondaryMotionSnapshot secondaryMotionAtStart, secondaryMotionAtEnd;
+    }
+
+    [Serializable]
+    internal sealed class PerformanceRecorderObservation
+    {
+        public string category, name;
+        public bool valid, available;
+        public int sampleCount;
+    }
+
+    [Serializable]
+    internal sealed class PerformanceSecondaryMotionSnapshot
+    {
+        public long cacheHits, cacheMisses, decodeCount, loadTicks, decodeTicks, largestDecodeTicks;
+        public long decodedValues, residentFloatValues, evictions, guardBuildCount;
+        public int residentClips;
+        public string lastDecodedKey;
     }
 }

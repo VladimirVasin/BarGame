@@ -79,6 +79,10 @@ namespace BarPromenade
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                // Only static visual nodes enter the optional environment cube.
+                // Imported collision nodes above retain their original physics layer.
+                if (IsReflectionArchitecture(kind))
+                    renderer.gameObject.layer = WarehouseReflectionController.CaptureLayer;
             }
             // Measuring the instantiated renderers catches both broken import axes and a lost unit scale.
             if (!Measured.Contains(kind))
@@ -255,8 +259,8 @@ namespace BarPromenade
                 texture = "WarehouseMasterAtlas";
                 color = Color.white;
             }
-            Shader shader = Resources.Load<Shader>(layered ? "Shaders/WarehouseSurface" : "Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Warehouse requires its PS1 surface shader.");
+            Shader shader = Resources.Load<Shader>(layered ? "Shaders/WarehouseSurface" : "Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Warehouse requires its project surface shader.");
             Texture2D sheet = texture == null ? Texture2D.whiteTexture : Resources.Load<Texture2D>(ResourceFolder + "Textures/" + texture);
             if (sheet == null) throw new InvalidOperationException("Warehouse is missing its shared surface " + texture);
             var material = new Material(shader) { name = "Warehouse " + key.Replace('/', ' ') + " Shared", hideFlags = HideFlags.HideAndDontSave,
@@ -283,6 +287,10 @@ namespace BarPromenade
             if (layered)
             {
                 ConfigureMaterialResponse(material, role);
+                material.SetFloat("_WarehouseAnisotropy", role == "WornSteel" ? .38f :
+                    role == "Steel" || role == "LockSteel" ? .22f : 0f);
+                material.SetFloat("_WarehouseWetReflection", role == "Concrete" ? .65f :
+                    role == "ConcreteDark" ? .4f : 0f);
                 if (auxiliary)
                 {
                     LoadSurfaceVariants();
@@ -295,7 +303,7 @@ namespace BarPromenade
             if (role == "WearDecal")
             {
                 // Authored sparse planes use a cutout, preserving opaque depth
-                // and the existing PS1 light/shadow/ambient presentation.
+                // and the existing light/shadow/ambient presentation.
                 material.EnableKeyword("_ALPHATEST_ON");
                 material.SetFloat("_AlphaClip",1f);
                 material.SetFloat("_Cutoff",.16f);
@@ -326,6 +334,20 @@ namespace BarPromenade
             material.SetTexture("_WarehouseMaterialResponse", response);
             material.SetFloat("_WarehouseResponseStrength", .9f);
             material.SetFloat("_WarehouseNormalStrength", normal);
+        }
+
+        private static bool IsReflectionArchitecture(string kind)
+        {
+            switch (kind)
+            {
+                case "Shell": case "Platform": case "Stair": case "Rail":
+                case "Rack": case "Cargo": case "Pipes": case "PipeStraight":
+                case "PipeElbow": case "PipeEnd": case "RoomShell": case "FanHousing":
+                case "LiftFrame": case "PusherFrame": case "TechnicalProps": case "BreakProps":
+                case "Lamp": case "EmergencyLamp": case "EmergencyRoomLamp": case "FishStationLamp":
+                    return true;
+                default: return false;
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -626,7 +626,7 @@ namespace BarPromenade
         {
             Material material = forBrain ? brain : flesh;
             if (material != null) return material;
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
             Texture2D texture = Resources.Load<Texture2D>("CombatGore/" + (forBrain ? "BrainSurface" : "FleshSurface"));
             if (shader == null || texture == null) throw new InvalidOperationException("Combat fracture requires its authored shared surfaces.");
             material = new Material(shader) { name = forBrain ? "Combat Brain Shared" : "Combat Flesh Shared" };

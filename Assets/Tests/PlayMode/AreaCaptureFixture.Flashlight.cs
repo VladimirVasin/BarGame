@@ -104,7 +104,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(glow.LensRenderer.sharedMaterial, Is.Not.SameAs(litLens),
                     "Switching the real source off must also restore the unlit glass.");
                 Assert.That(frontOn, Is.GreaterThan(frontOff + .04f),
-                    "The lens must visibly read as switched on at the ordinary full-body scale after the PS1 composite.");
+                    "The lens must visibly read as switched on at the ordinary full-body scale after final presentation.");
                 spot.enabled = true;
 
                 Vector3 close = flashlight.Lens.position + flashlight.Lens.forward * .9f;
@@ -551,7 +551,7 @@ namespace BarPromenade.Tests.PlayMode
                 finally { spot.enabled = true; }
                 LogFlashlightAmbient(camera, root, wall, lit, dark);
                 Assert.That(dark, Is.GreaterThan(.001f),
-                    "The unlit warehouse surface must retain a readability floor after the PS1 composite.");
+                    "The unlit warehouse surface must retain a readability floor after final presentation.");
                 Assert.That(lit, Is.GreaterThan(dark + .025f),
                     "The real spotlight must visibly brighten the actual wall after post-processing.");
                 Assert.That(dark, Is.LessThan(lit * .5f),

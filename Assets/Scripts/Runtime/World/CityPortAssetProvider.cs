@@ -144,8 +144,8 @@ namespace BarPromenade
                 ? CityExteriorAppearance.RoadTextureResourcePath
                 : role == "RoadMarking" ? CityExteriorAppearance.RoadMarkingTextureResourcePath
                     : ResourceFolder + "Textures/" + surface.TextureName);
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Missing port PS1 Lit shader.");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Missing port Lit shader.");
             shared = new Material(shader)
             {
                 name = "Port " + role + (texture != null ? " Shared" : " Shared Missing-Texture Fallback"),
@@ -191,9 +191,9 @@ namespace BarPromenade
             {
                 if (opaqueMaterial == null)
                 {
-                    Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+                    Shader shader = Resources.Load<Shader>("Shaders/Lit");
                     Texture2D palette = Resources.Load<Texture2D>(ResourceFolder + "PortPalette");
-                    if (shader == null) throw new InvalidOperationException("Port requires packaged Shaders/Ps1Lit.");
+                    if (shader == null) throw new InvalidOperationException("Port requires packaged Shaders/Lit.");
                     if (palette == null) throw new InvalidOperationException("Port requires City/Port/PortPalette.");
                     opaqueMaterial = new Material(shader)
                     {

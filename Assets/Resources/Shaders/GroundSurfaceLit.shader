@@ -37,6 +37,8 @@ Shader "Bar Promenade/Layered Ground"
 
         [ToggleOff] _SpecularHighlights("Specular Highlights", Float) = 1.0
         [ToggleOff] _EnvironmentReflections("Environment Reflections", Float) = 1.0
+        [ToggleOff] _ScreenSpaceReflections("Screen Space Reflections", Float) = 1.0
+        [ToggleOff] _ScreenSpaceReflectionsContributeTransparent("Screen Space Reflections Contribute Transparent", Float) = 1.0
 
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
@@ -129,7 +131,7 @@ Shader "Bar Promenade/Layered Ground"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1LitPassVertex
+            #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
 
             // -------------------------------------
@@ -147,6 +149,7 @@ Shader "Bar Promenade/Layered Ground"
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
 
             // -------------------------------------
@@ -161,6 +164,7 @@ Shader "Bar Promenade/Layered Ground"
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_ATLAS
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_REFLECTION
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _SCREEN_SPACE_IRRADIANCE
@@ -198,20 +202,12 @@ Shader "Bar Promenade/Layered Ground"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            // Retain stock lighting before redirecting its forward PBR call.
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "WarehouseAmbientVisibility.hlsl"
+            #define UniversalFragmentPBR WarehouseFragmentPBR
             #include "GroundSurfaceForwardPass.hlsl"
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1LitPassVertex(Attributes input)
-            {
-                Varyings output = LitPassVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
+            #undef UniversalFragmentPBR
             ENDHLSL
         }
 
@@ -307,6 +303,7 @@ Shader "Bar Promenade/Layered Ground"
 
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 
@@ -317,6 +314,7 @@ Shader "Bar Promenade/Layered Ground"
             //#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_REFLECTION
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
             #pragma multi_compile_fragment _ _RENDER_PASS_ENABLED
@@ -373,12 +371,13 @@ Shader "Bar Promenade/Layered Ground"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1DepthOnlyVertex
+            #pragma vertex DepthOnlyVertex
             #pragma fragment DepthOnlyFragment
 
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _PARALLAXMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             // -------------------------------------
@@ -394,19 +393,6 @@ Shader "Bar Promenade/Layered Ground"
             // Includes
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1DepthOnlyVertex(Attributes input)
-            {
-                Varyings output = DepthOnlyVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
             ENDHLSL
         }
 
@@ -429,7 +415,7 @@ Shader "Bar Promenade/Layered Ground"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1DepthNormalsVertex
+            #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
 
             // -------------------------------------
@@ -439,6 +425,9 @@ Shader "Bar Promenade/Layered Ground"
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
             #pragma shader_feature_local _ALPHATEST_ON
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONSCONTRIBUTETRANSPARENT_OFF
 
             // -------------------------------------
             // Unity defined keywords
@@ -447,6 +436,8 @@ Shader "Bar Promenade/Layered Ground"
             // -------------------------------------
             // Universal Pipeline keywords
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
+            #pragma multi_compile _ _WRITE_SMOOTHNESS
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
 
             //--------------------------------------
             // GPU Instancing
@@ -457,19 +448,6 @@ Shader "Bar Promenade/Layered Ground"
             // Includes
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1DepthNormalsVertex(Attributes input)
-            {
-                Varyings output = DepthNormalsVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
             ENDHLSL
         }
 

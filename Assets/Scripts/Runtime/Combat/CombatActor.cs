@@ -729,9 +729,7 @@ namespace BarPromenade
                     if (newSwing || !(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
-                long sampleStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 SampleNpcAction(chosen, progress);
-                NpcAnimationSampleTicks += System.Diagnostics.Stopwatch.GetTimestamp() - sampleStart;
             }
             visibleAttackSequence = State.AttackSequence;
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
@@ -747,9 +745,7 @@ namespace BarPromenade
                 ApplyNpcCombatPose();
                 ApplyCorpseStepPose();
                 NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStart;
-                long snapshotStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 RememberNpcPresentedPose();
-                NpcPoseSnapshotTicks += System.Diagnostics.Stopwatch.GetTimestamp() - snapshotStart;
             }
             else
             {

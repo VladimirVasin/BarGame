@@ -471,7 +471,7 @@ namespace BarPromenade
             // closed; the shower action opens it only with the hand at
             // its leading edge, leaving the front-right walking opening.
             // Four overlapping fold strips alternate depth and tint so
-            // the folds read at PS1 fidelity.
+            // the folds read in the low-poly silhouette.
             var curtainGroup = new GameObject(
                 "Home Bathroom Shower Curtain");
             curtainGroup.transform.SetParent(room, false);

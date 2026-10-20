@@ -39,7 +39,6 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator AlpineFrostDiffusion()
         {
             bool previous43 = GraphicsEffectsSettings.AspectRatio43Enabled;
-            float? previousFilmWeight = BegottenModeRamp.DebugWeightOverride;
             bool previousDiffusion = AlpineColdFrostPass.DebugDisableDiffusion;
             float previousCaptureDelta = Time.captureDeltaTime;
             AlpineColdExposureDriver driver = null;
@@ -51,7 +50,6 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.BeginNewGame();
                 GameSessionState.TryStartGameTimeFromWake();
                 GraphicsEffectsSettings.AspectRatio43Enabled = false;
-                BegottenModeRamp.DebugWeightOverride = 0f;
                 AlpineColdFrostPass.DebugDisableDiffusion = false;
                 Time.captureDeltaTime = 1f / 60f;
                 yield return SceneManager.LoadSceneAsync(SceneIds.MothersHouseInterior, LoadSceneMode.Single);
@@ -130,7 +128,6 @@ namespace BarPromenade.Tests.PlayMode
                 if (driver != null) driver.enabled = true;
                 AlpineColdExposure.ResetSession();
                 GraphicsEffectsSettings.AspectRatio43Enabled = previous43;
-                BegottenModeRamp.DebugWeightOverride = previousFilmWeight;
                 AlpineColdFrostPass.DebugDisableDiffusion = previousDiffusion;
                 Time.captureDeltaTime = previousCaptureDelta;
             }
@@ -143,7 +140,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             AssertFrostClockAndAudio();
             bool previous43 = GraphicsEffectsSettings.AspectRatio43Enabled;
-            float? previousFilmWeight = BegottenModeRamp.DebugWeightOverride;
             float previousCaptureDelta = Time.captureDeltaTime;
             AlpineColdExposureDriver driver = null;
             IDisposable pause = null;
@@ -154,7 +150,6 @@ namespace BarPromenade.Tests.PlayMode
                 GraphicsEffectsSettings.AspectRatio43Enabled = false;
                 // Inspect frost in the ordinary game image without inheriting
                 // a saved film mode and its image-wide exposure/crop response.
-                BegottenModeRamp.DebugWeightOverride = 0f;
                 Time.captureDeltaTime = 1f / 60f;
                 yield return SceneManager.LoadSceneAsync(SceneIds.AlpineVillage, LoadSceneMode.Single);
                 yield return WaitForFrostRoot(false);
@@ -308,7 +303,6 @@ namespace BarPromenade.Tests.PlayMode
                 if (driver != null) driver.enabled = true;
                 AlpineColdExposure.ResetSession();
                 GraphicsEffectsSettings.AspectRatio43Enabled = previous43;
-                BegottenModeRamp.DebugWeightOverride = previousFilmWeight;
                 Time.captureDeltaTime = previousCaptureDelta;
             }
         }
@@ -401,7 +395,7 @@ namespace BarPromenade.Tests.PlayMode
                 house.FixedCamera.enabled = false;
                 house.CameraFollow.enabled = false;
                 AudioListener.pause = false;
-                // Reuse the existing Begotten audio fixture's throwaway first
+                // Reuse the shared audio fixture's throwaway first
                 // session: Unity's initial offline session may return silence.
                 AudioRenderer.Start();
                 capturing = true;
@@ -783,7 +777,7 @@ namespace BarPromenade.Tests.PlayMode
 
             int imageWidth = pillarboxed ? Mathf.RoundToInt(Height * (4f / 3f)) : Width;
             int imageLeft = (Width - imageWidth) / 2;
-            // Leave one low-resolution PS1 pixel around the protected centre
+            // Leave a small sampling margin around the protected centre
             // and image-window boundaries; sample both renders in one frame.
             const int border = 4;
             double edge = 0d, edgeNoise = 0d, centre = 0d, centreNoise = 0d;
@@ -915,7 +909,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             Assert.That(centreDifference / centrePixels,
                 Is.LessThanOrEqualTo(centreNoise / centrePixels * 1.5d + 0.25d),
-                "Enabling diffusion must preserve the exact central image, allowing one PS1 boundary pixel.");
+                "Enabling diffusion must preserve the exact central image outside the sampling margin.");
         }
 
         private static double MeasureFrostDiffusionRegion(Color32[] clear, Color32[] baseline,

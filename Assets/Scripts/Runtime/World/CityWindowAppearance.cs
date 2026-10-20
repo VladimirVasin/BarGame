@@ -28,7 +28,7 @@ namespace BarPromenade
     internal static class CityWindowAppearance
     {
         public const string TextureResourcePath = "Textures/CityWindowAlbedo";
-        public const string LitShaderResourcePath = "Shaders/Ps1Lit";
+        public const string LitShaderResourcePath = "Shaders/Lit";
         public const string NightFactorShaderProperty =
             "_CityWindowNightFactor";
         public const string FixtureFactorShaderProperty =

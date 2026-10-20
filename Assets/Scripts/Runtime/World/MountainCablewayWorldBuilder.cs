@@ -62,7 +62,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Broad-strokes PS1 cableway presentation. Only the station this scene
+    /// Broad-strokes low-poly cableway presentation. Only the station this scene
     /// builds is physical; remote towers, cables and cabins cannot create
     /// invisible airborne blockers.
     /// </summary>

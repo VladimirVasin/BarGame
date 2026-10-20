@@ -7,7 +7,6 @@
 #pragma warning(pop)
 #endif
 #include "TapeProcessor.h"
-#include "OpticalProcessor.h"
 #include <atomic>
 #include <cstdio>
 #include <cstring>
@@ -15,9 +14,7 @@
 
 namespace
 {
-// Both effects present the same three controls: an externally shaped amount,
-// a pause and an epoch that clears history at a lifecycle boundary. Only the
-// processor between them differs.
+// An externally shaped amount, pause and epoch control the tape processor.
 enum Parameter { Amount, Paused, ResetEpoch, Count };
 
 template <typename Processor>
@@ -93,11 +90,6 @@ UnityAudioParameterDefinition tapeParameters[Count] = {
     { "Paused", "", "Silence and clear tape history while gameplay audio is paused.", 0, 1, 0, 1, 1 },
     { "Reset", "", "Change this epoch to clear history on a new game, scene boundary or audio reset.", 0, 1000000, 0, 1, 1 }
 };
-UnityAudioParameterDefinition opticalParameters[Count] = {
-    { "Weight", "%", "Strength of the Begotten print; zero is exact dry bypass.", 0, 1, 0, 100, 1 },
-    { "Paused", "", "Silence the projector and clear its history while gameplay audio is paused.", 0, 1, 0, 1, 1 },
-    { "Reset", "", "Change this epoch to thread a fresh reel on a new game, scene boundary or audio reset.", 0, 1000000, 0, 1, 1 }
-};
 
 template <typename Processor>
 void Describe(UnityAudioEffectDefinition& definition, const char* name,
@@ -117,15 +109,13 @@ void Describe(UnityAudioEffectDefinition& definition, const char* name,
 }
 
 UnityAudioEffectDefinition tapeDefinition{};
-UnityAudioEffectDefinition opticalDefinition{};
-UnityAudioEffectDefinition* definitions[] = { &tapeDefinition, &opticalDefinition };
+UnityAudioEffectDefinition* definitions[] = { &tapeDefinition };
 }
 
 extern "C" UNITY_AUDIODSP_EXPORT_API int AUDIO_CALLING_CONVENTION
 UnityGetAudioEffectDefinitions(UnityAudioEffectDefinition*** result)
 {
     Describe<bar_audio::TapeProcessor>(tapeDefinition, "Intoxication VHS", tapeParameters);
-    Describe<bar_audio::OpticalProcessor>(opticalDefinition, "Begotten Optical", opticalParameters);
     *result = definitions;
-    return 2;
+    return 1;
 }

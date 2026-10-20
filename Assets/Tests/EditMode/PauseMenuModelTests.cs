@@ -97,7 +97,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void OptionsEntry_OpensPageOnStyleRow()
+        public void OptionsEntry_OpensPageOnSmoothingRow()
         {
             var model = new PauseMenuModel();
             model.Open();
@@ -111,7 +111,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PauseMenuPage.Options));
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
+                Is.EqualTo(PauseMenuOptionsRow.CleanAntialiasing));
         }
 
         [Test]
@@ -129,30 +129,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
+                Is.EqualTo(PauseMenuOptionsRow.CleanAntialiasing));
         }
 
-        [Test]
-        public void OptionsStyleRow_ReportsCycleAndStaysOnPage()
+        [TestCase(PauseMenuOptionsRow.CleanAntialiasing)]
+        [TestCase(PauseMenuOptionsRow.CleanReflections)]
+        [TestCase(PauseMenuOptionsRow.CleanVolume)]
+        [TestCase(PauseMenuOptionsRow.CleanHalation)]
+        [TestCase(PauseMenuOptionsRow.CleanDirectionalHighlights)]
+        [TestCase(PauseMenuOptionsRow.CleanBounce)]
+        public void OptionsToggleRow_ReportsToggleAndStaysOnPage(PauseMenuOptionsRow row)
         {
             var model = new PauseMenuModel();
             model.Open();
             model.SelectOption(PauseMenuOption.Options);
             model.Confirm();
-
-            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.CycleGraphicsStyle));
-            Assert.That(model.Page, Is.EqualTo(PauseMenuPage.Options));
-            Assert.That(model.SelectedOptionsRow, Is.EqualTo(PauseMenuOptionsRow.GraphicsStyle));
-        }
-
-        [Test]
-        public void OptionsToggleRow_ReportsToggleAndStaysOnPage()
-        {
-            var model = new PauseMenuModel();
-            model.Open();
-            model.SelectOption(PauseMenuOption.Options);
-            model.Confirm();
-            model.SelectOptionsRow(PauseMenuOptionsRow.CleanAntialiasing);
+            model.SelectOptionsRow(row);
 
             Assert.That(
                 model.Confirm(),
@@ -162,7 +154,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PauseMenuPage.Options));
             Assert.That(
                 model.SelectedOptionsRow,
-                Is.EqualTo(PauseMenuOptionsRow.CleanAntialiasing));
+                Is.EqualTo(row));
         }
 
         [Test]
@@ -198,7 +190,7 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 model.SelectOptionsRow(
-                    PauseMenuOptionsRow.Dither),
+                    PauseMenuOptionsRow.DepthOfField),
                 Is.False);
         }
 

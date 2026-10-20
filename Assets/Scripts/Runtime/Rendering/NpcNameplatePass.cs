@@ -97,7 +97,7 @@ namespace BarPromenade.Rendering
         {
             candidates.Clear();
             if (camera == null || camera.cameraType != CameraType.Game ||
-                camera.TryGetComponent(out Ps1VertexJitterExclusion _) ||
+                camera.TryGetComponent(out ScenePresentationExclusion _) ||
                 !camera.TryGetComponent(out NpcNameplateContext context) ||
                 context.IsSuppressed || NpcNameplateTarget.ActiveTargets.Count == 0)
                 return false;

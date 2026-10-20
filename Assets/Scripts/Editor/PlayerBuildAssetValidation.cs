@@ -213,8 +213,7 @@ namespace BarPromenade.Editor
         private static void ValidateCoreResources()
         {
             RequireAsset<Material>("Assets/Resources/Materials/RuntimePrimitiveLit.mat");
-            RequireAsset<Material>("Assets/Resources/Materials/Ps1Composite.mat");
-            RequireAsset<BarPromenade.Rendering.Ps1PresentationSettings>("Assets/Resources/Rendering/Ps1PresentationProfile.asset");
+            RequireAsset<Material>("Assets/Resources/Materials/SceneComposite.mat");
             RequireAsset<AudioMixer>("Assets/Resources/Audio/Mixers/BarPromenadeAudio.mixer");
             RequireAsset<Font>("Assets/Resources/Fonts/Roboto-Regular.ttf");
             RequireAsset<TextAsset>("Assets/Resources/Localization/ru.json");

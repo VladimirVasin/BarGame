@@ -1540,7 +1540,7 @@ namespace BarPromenade
         {
             Material material = skeleton ? bone : flesh;
             if (material != null) return material;
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
             Texture2D texture = Resources.Load<Texture2D>("CombatGore/" + (skeleton ? "BoneSurface" : "FleshSurface"));
             if (shader == null || texture == null) throw new InvalidOperationException("Missing authored body surfaces.");
             material = new Material(shader) { name = skeleton ? "Combat Bone Shared" : "Combat Flesh Shared" };

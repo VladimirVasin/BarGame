@@ -5,12 +5,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-20
 
-Door-ambush debug launch now commits its real prerequisites: source cans,
-fish assembly, key, lamp failure, stopped fan and open gate. Retained models,
-colliders and navigation synchronize; replay keeps progress without duplicate
-rewards. The debug boundary stages the hero at the door and restores his pose
-on cancellation. The door's ordinary admission stays conditional.
-`debug.log` identified `sample_failed`: closed gate blocked the entry route.
+Door-ambush debug commits cans/fish/key/lamp/fan/gate progress; retained models,
+colliders/navigation synchronize. Replay preserves progress without duplicate
+rewards; stages the hero at the door, cancellation restores his pose.
+Ordinary admission stays conditional. `debug.log`: `sample_failed` meant the
+closed gate blocked entry.
 `DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse` covers
 fresh-spawn preparation and retained progress; runtime proof remains manual.
 Door scene now attempts for three seconds, attacks for five, then punctures the
@@ -28,19 +27,23 @@ Cancellation restores its snapshot; replay clears the owned hang. Paired-bank
 pinned validation and hook/floor/ceiling contact checks passed; focused fixture
 updated for the new contract. Visual and physical tuning await manual review.
 `check-docs.py` and scoped `git diff --check` OK.
-User accepted saved PS1/default and native Clean; shared lighting/grade/DoF/
-intoxication/UI and retained retro flags. Clean-only optional SMAA High defaults
-on, persists separately and runs spatial edge/blend/neighbourhood passes after
-native/intoxication, before independently sourced film. Full Begotten skips AA;
-4:3 bars reapply after AA, UI/nameplates follow. Preview/reflection exclusions
-stay; film retains its authored grid/cadence/ramp. Shared targets/assets,
-canon exception recorded; performance gains unmeasured.
-`OptionsPage_TogglesAndPersistsGraphicsFlag` and
-`GameCamera_AveragesDetailAndPreservesTones` OK.
-`GameCamera_StylesSwitchImmediatelyAndRetainSharedEffects` OK.
-Warehouse SMAA comparison reviewed: thin diagonals soften without broad blur
-or lighting changes. Paired Editor AA diagnostics reviewed; GPU/render-thread
-timings unavailable, no performance gain or GPU-cost claim.
+Native-only presentation replaces styles; saved SMAA/lens/4:3/warehouse effects
+retain global fog/lights/gameplay. Canon exception and actual tool baseline recorded.
+Native VHS ABI/mixer-reference checks OK after optical-effect removal.
+`OptionsPage_TogglesAndPersistsGraphicsFlag` OK.
+`GameCamera_NativeEffectsAndWarehouseLightingRemainStable` baseline/optimized
+proof OK; CS0618/C#/shader errors absent. Volume rail gaps and the
+fixture's empty view fixed; thin-feature shadow aliasing can remain.
+Volume keeps exact strata/repair, skips empty optical depth, uses conservative
+screen bounds and additive RGB resolve without a native colour copy. Halation
+projects sources once per camera. Fan shadow allocation needed no tuning.
+Probe timeout/quality-lease release/recovery checked; source changes rearm it.
+Wardrobe indexed loops remove per-query enumerators; bake/pose/ticks stay.
+HomeUrineEffect refreshes for live packets/emission/revised residue; idle-liquid
+regression OK. Capture lookups use FindAnyObjectByType.
+Schema 2 separates inclusive combat/NPC CPU, workload/drop, probe CPU/wall and
+whole-frame GPU evidence; unavailable recorders stay unavailable. Editor timings
+are diagnostic; optimization gains and player frame-rate guarantees unclaimed.
 
 ## 2026-10-19
 

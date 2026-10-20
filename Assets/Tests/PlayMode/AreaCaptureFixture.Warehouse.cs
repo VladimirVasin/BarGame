@@ -924,7 +924,7 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(response.height, Is.EqualTo(2048));
                         }
                     }
-                    else Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
+                    else Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/Lit"));
                 }
             }
             Assert.That(families.Count, Is.EqualTo(1));
@@ -1247,7 +1247,7 @@ namespace BarPromenade.Tests.PlayMode
                     pixels[y * size + x] = new Color32(value,value,value,255);
                 }
             checker.SetPixels32(pixels); checker.Apply(true,false);
-            var material = new Material(Resources.Load<Shader>("Shaders/Ps1Lit"))
+            var material = new Material(Resources.Load<Shader>("Shaders/Lit"))
                 { name = "Test warehouse UV checker material" };
             material.SetTexture("_BaseMap",checker);
             material.SetColor("_BaseColor",Color.white);

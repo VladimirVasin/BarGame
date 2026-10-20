@@ -7,9 +7,8 @@ work which is worth doing once: wall runs that actually have openings,
 slabs that carry a skirting, mouldings swept along a path, and above all
 CHAMFERS.
 
-The chamfer is the whole argument.  A PS1-era flat-shaded box meets its
-neighbour in a single hard edge, and the composite renderer draws that
-edge as one black line; a real building has a two-millimetre arris on
+The chamfer is the whole argument. A plain flat-shaded box meets its
+neighbour in a single hard edge; a real building has a two-millimetre arris on
 everything a hand has ever touched, and it catches light instead.  That
 difference is most of what separates "assembled from primitives" from
 "modelled", and it cannot be expressed by a box at all.

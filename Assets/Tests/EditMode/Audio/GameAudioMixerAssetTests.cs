@@ -272,7 +272,8 @@ namespace BarPromenade.Tests.EditMode
             Object echo =
                 RequireEffects(effects, "Echo", 1)[0];
             Object tape = RequireEffects(effects, IntoxicationAudioDriver.EffectName, 1)[0];
-            Object projector = RequireEffects(effects, BegottenAudioRules.EffectName, 1)[0];
+            Assert.That(effects.ContainsKey("Begotten Optical"), Is.False,
+                "The retired film processor must not remain in the audio mixer.");
             List<Object> receives =
                 RequireEffects(effects, "Receive", 2);
             List<Object> sends =
@@ -332,21 +333,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(mixer.GetFloat(IntoxicationAudioDriver.PausedParameter, out _), Is.True);
             Assert.That(mixer.GetFloat(IntoxicationAudioDriver.ResetParameter, out _), Is.True);
 
-            // The print is outside everything else: the room, the water and
-            // the drink happen to the world, while the print happens to the
-            // picture of it. So the projector is last in the world chain, and
-            // like the tape it never reaches the interface.
-            Assert.That(GetSingleGroupEffect(perception, BegottenAudioRules.EffectName),
-                Is.SameAs(projector));
-            Assert.That(GetOrderedEffectNames(perception).Last(),
-                Is.EqualTo(BegottenAudioRules.EffectName),
-                "The Begotten projector must be the last effect on the world bus.");
-            Assert.That(GetGroupEffects(ui, BegottenAudioRules.EffectName), Is.Empty);
-            Assert.That(GetGroupEffects(master, BegottenAudioRules.EffectName), Is.Empty,
-                "The picture never touches IMGUI, so the print never touches the interface.");
-            Assert.That(mixer.GetFloat(BegottenAudioRules.WeightParameter, out _), Is.True);
-            Assert.That(mixer.GetFloat(BegottenAudioRules.PausedParameter, out _), Is.True);
-            Assert.That(mixer.GetFloat(BegottenAudioRules.ResetParameter, out _), Is.True);
+            foreach (string retired in new[] { "BegottenWeight", "BegottenPaused", "BegottenReset" })
+                Assert.That(mixer.GetFloat(retired, out _), Is.False,
+                    "A retired processor must not retain exposed controls.");
             Assert.That(
                 GetSingleGroupEffect(
                     reverbReturn,
@@ -413,15 +402,6 @@ namespace BarPromenade.Tests.EditMode
                     snapshotName + " perception gain");
                 AssertValue(GetEffectParameter(tape, mixer, snapshot, "Intensity"), 0f,
                     snapshotName + " sober tape default");
-                // The weight belongs to the transition, never to a room's mix.
-                AssertValue(
-                    GetEffectParameter(
-                        projector,
-                        mixer,
-                        snapshot,
-                        BegottenAudioRules.NativeWeightParameter),
-                    0f,
-                    snapshotName + " unprinted projector default");
 
                 AssertValue(
                     GetEffectParameter(

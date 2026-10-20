@@ -276,7 +276,7 @@ class OrdinaryBartenderBuilder(legacy.BartenderBuilder):
     def build_rolled_sleeves(self) -> None:
         # The legacy publican body has shirt-coloured forearms.  A slightly
         # wider skin sleeve masks those surfaces from below the elbow, while a
-        # thick cloth ring makes the rolled cuff readable at PS1 distance.
+        # thick cloth ring makes the rolled cuff readable at gameplay distance.
         points = {
             "L": (
                 (0.480, -0.011, 1.168),

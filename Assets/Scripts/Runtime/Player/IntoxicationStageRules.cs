@@ -206,8 +206,7 @@ namespace BarPromenade
                     0.32f,
                     0.45f),
                 // Small and negative: the frame pinches inward like a
-                // heavy lens, and |0.14| stays under the two internal
-                // pixels the PS1 point-sample can hide at the rim.
+                // heavy lens, with its authored magnitude bounded at 0.14.
                 Interpolate(
                     clampedLevel,
                     0f,

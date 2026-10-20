@@ -242,7 +242,7 @@ namespace BarPromenade
             get
             {
                 if (crateMaterial != null) return crateMaterial;
-                Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+                Shader shader = Resources.Load<Shader>("Shaders/Lit");
                 Texture2D atlas = Resources.Load<Texture2D>(ResourceFolder + "ZombieCrateAtlas");
                 if (shader == null || atlas == null) throw new InvalidOperationException("Missing shared porter crate surface.");
                 crateMaterial = new Material(shader) { name = "Porter Crate Shared", enableInstancing = true,

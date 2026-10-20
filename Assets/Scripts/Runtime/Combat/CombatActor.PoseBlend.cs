@@ -118,6 +118,7 @@ namespace BarPromenade
 
         private void RememberNpcPresentedPose()
         {
+            long snapshotStarted = System.Diagnostics.Stopwatch.GetTimestamp();
             bool advanced = npcPresentedPoseValid && poseClock > npcPresentedClock + .000001f;
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
@@ -132,6 +133,7 @@ namespace BarPromenade
             else if (!npcPresentedPoseValid) npcPreviousClock = poseClock;
             npcPresentedClock = poseClock;
             npcPresentedPoseValid = true;
+            NpcPoseSnapshotTicks += System.Diagnostics.Stopwatch.GetTimestamp() - snapshotStarted;
         }
 
         private void CancelPoseBlend()

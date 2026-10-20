@@ -989,7 +989,7 @@ namespace BarPromenade
 
             lowPolyCylinderMesh = new Mesh
             {
-                name = "Shared PS1 Eight-Sided Cylinder",
+                name = "Shared Eight-Sided Cylinder",
                 hideFlags = HideFlags.HideAndDontSave,
                 vertices = vertices,
                 normals = normals,

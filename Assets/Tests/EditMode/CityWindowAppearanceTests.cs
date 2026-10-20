@@ -139,7 +139,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.SameAs(expectedShader));
             Assert.That(
                 cold.shader.name,
-                Is.EqualTo("Bar Promenade/PS1 Lit"));
+                Is.EqualTo("Bar Promenade/Lit"));
             Assert.That(cold.IsKeywordEnabled("_EMISSION"), Is.True);
             Assert.That(bar.IsKeywordEnabled("_EMISSION"), Is.True);
             AssertColor(

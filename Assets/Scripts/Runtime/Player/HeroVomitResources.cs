@@ -8,7 +8,7 @@ namespace BarPromenade
     /// liquid, the lumps in it, and the film it leaves on whatever it hit —
     /// and the 32x32 slurry texture that film carries.
     ///
-    /// All three sit on the project's own PS1 Lit, not on the unlit
+    /// All three sit on the project's own Lit, not on the unlit
     /// atmosphere material the smoke uses. A yellow-green stream that ignores
     /// the lights would glow like neon on a night street (the art bible bans
     /// glow) and would read at the wrong brightness under the black-and-white
@@ -17,7 +17,7 @@ namespace BarPromenade
     /// </summary>
     public static class HeroVomitResources
     {
-        public const string ShaderName = "Bar Promenade/PS1 Lit";
+        public const string ShaderName = "Bar Promenade/Lit";
         public const int SlurryTextureSize = 32;
         public const float LiquidSmoothness = 0.75f;
         public const float ChunkSmoothness = 0.3f;

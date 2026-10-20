@@ -43,7 +43,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (attention != null) attention.enabled = false;
                 presentation.SetAttentionFocus(null);
 
-                // Keep the real scene camera, grade and PS1 composite. A raking
+                // Keep the real scene camera, grade and final presentation. A raking
                 // key light makes cloth, skin and hair response inspectable.
                 lighting = new GameObject("Temporary hero surface inspection lights");
                 foreach (var lamp in new[] {
@@ -120,7 +120,7 @@ namespace BarPromenade.Tests.PlayMode
                 AssertHeroSurfaceMaterialBindings(registry);
                 Assert.That(tangentIssues, Is.Empty, string.Join("\n", tangentIssues));
                 Debug.Log("HERO_CHARACTER_SURFACES_ACCEPTED: shared cloth/skin/hair maps, UV/tangent bases, " +
-                    "palette and wardrobe restoration, first-person/mirror/seated sharing and production PS1 frames.");
+                    "palette and wardrobe restoration, first-person/mirror/seated sharing and production frames.");
             }
             finally
             {
@@ -161,7 +161,7 @@ namespace BarPromenade.Tests.PlayMode
                 Material material = bindings[0].Renderer.sharedMaterial;
                 Assert.That(materials.Add(material), Is.True, "Cloth, skin and hair must retain independent shared response.");
                 Assert.That(material.name, Is.EqualTo(HeroSurfaceMaterials[family]));
-                Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/PS1 Lit"));
+                Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/Lit"));
                 Assert.That(material.GetTexture("_BumpMap")?.name, Is.EqualTo(HeroSurfaceMapStems[family] + "Normal"));
                 Assert.That(material.GetTexture("_MetallicGlossMap")?.name, Is.EqualTo(HeroSurfaceMapStems[family] + "Response"));
                 Assert.That(material.IsKeywordEnabled("_NORMALMAP"), Is.True);

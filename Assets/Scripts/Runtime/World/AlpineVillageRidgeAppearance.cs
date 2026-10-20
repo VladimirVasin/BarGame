@@ -20,10 +20,8 @@ namespace BarPromenade
     ///
     /// It still has no ShadowCaster pass, so the rise casts no shadow while
     /// the floor next to it does; a `60 m` wall can therefore never shade the
-    /// lane at low sun. The village material does opt into the same composite
-    /// vertex snap as `Ps1Lit`, however. Floor and rise are submeshes of one
-    /// grid and can therefore share their exact toe vertices without a broad
-    /// overlapping ring.
+    /// lane at low sun. Floor and rise use native projected vertices of the
+    /// same ground grid, sharing their toe without a broad overlapping ring.
     /// </summary>
     internal static class AlpineVillageRidgeAppearance
     {
@@ -64,10 +62,6 @@ namespace BarPromenade
         /// <summary>The shared shader keeps City's dither as its zero-default.
         /// Only this material selects the stable opaque village path.</summary>
         internal const float StableHazeHandoff = 1f;
-
-        /// <summary>The floor uses `Ps1Lit`; selecting the same projected
-        /// snap here keeps shared toe vertices coincident in every pass.</summary>
-        internal const float Ps1VertexSnap = 1f;
 
         /// <summary>
         /// The snow sheet on the bowl floor and the lying snow. The accepted
@@ -126,8 +120,6 @@ namespace BarPromenade
             Shader.PropertyToID("_HandoffFar");
         private static readonly int StableHazeHandoffId =
             Shader.PropertyToID("_StableHazeHandoff");
-        private static readonly int Ps1VertexSnapId =
-            Shader.PropertyToID("_Ps1VertexSnap");
 
         private static Material ridgeMaterial;
 
@@ -186,9 +178,6 @@ namespace BarPromenade
                     ridgeMaterial.SetFloat(
                         StableHazeHandoffId,
                         StableHazeHandoff);
-                    ridgeMaterial.SetFloat(
-                        Ps1VertexSnapId,
-                        Ps1VertexSnap);
                 }
 
                 return ridgeMaterial;
@@ -210,8 +199,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Authored rock and ledge snow share the wall's stable haze and
-        /// projected vertex snap. Their metre UVs come from their generator.
+        /// Authored rock and ledge snow share the wall's stable haze.
+        /// Their metre UVs come from their generator.
         /// No object receives an instanced material or its own fog clock.
         /// </summary>
         internal static void Apply(
@@ -240,7 +229,7 @@ namespace BarPromenade
             Color displayTint = MountainRoadSurfaceAppearance
                 .CreateDisplayTint(tint, surface);
             // A local presentation gain can keep the small snow shelves
-            // readable after shadow, haze and the PS1 colour grade. Apply it
+            // readable after shadow and haze. Apply it
             // after the recipe's bounded albedo compensation; the shader
             // still lights and fogs the surface normally.
             displayTint.r *= exposure;

@@ -868,7 +868,7 @@ namespace BarPromenade
                 default:
                     // Iron, rust, grass, sign paint and litter stay
                     // flat colour: their members are too thin for a
-                    // sheet to read through the PS1 composite.
+                    // sheet to read at gameplay distance.
                     return null;
             }
         }

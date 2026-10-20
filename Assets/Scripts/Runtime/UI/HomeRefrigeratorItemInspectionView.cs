@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Crisp post-composite UI for refrigerator hover labels and the nested
-    /// PS1-style item examination screen.
+    /// Low-poly item examination screen.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class HomeRefrigeratorItemInspectionView : MonoBehaviour

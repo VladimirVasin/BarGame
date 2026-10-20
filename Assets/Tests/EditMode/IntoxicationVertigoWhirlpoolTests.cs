@@ -299,7 +299,7 @@ namespace BarPromenade.Tests.EditMode
             string source = File.ReadAllText(
                 Path.Combine(
                     Application.dataPath,
-                    "Resources/Shaders/Ps1SceneComposite.hlsl"));
+                    "Resources/Shaders/SceneComposite.hlsl"));
 
             AssertShaderCarries(source, "_IntoxicationVertigo;");
             AssertShaderCarries(source, "_IntoxicationVertigoShape;");
@@ -331,12 +331,12 @@ namespace BarPromenade.Tests.EditMode
         public void Composite_StillCompiles()
         {
             var material = Resources.Load<Material>(
-                "Materials/Ps1Composite");
+                "Materials/SceneComposite");
             Assert.That(material, Is.Not.Null);
             Shader shader = material.shader;
             Assert.That(
                 shader.name,
-                Is.EqualTo("Hidden/BarPromenade/PS1Composite"));
+                Is.EqualTo("Hidden/BarPromenade/SceneComposite"));
 
             if (!UnityEditor.ShaderUtil.ShaderHasError(shader))
             {
@@ -344,7 +344,7 @@ namespace BarPromenade.Tests.EditMode
             }
 
             var report = new System.Text.StringBuilder(
-                "The PS1 composite does not compile:");
+                "The scene composite does not compile:");
             foreach (var message in
                      UnityEditor.ShaderUtil.GetShaderMessages(shader))
             {

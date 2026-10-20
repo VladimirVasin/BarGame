@@ -308,7 +308,7 @@ cemetery:own interiors/returns.
   Hero samples remaining snow/current + next step: `.20/.12 m` entry/exit,
   no sprint, `1.05/.65 m/s` forward/back; cleared paths restore ordinary motion.
   Snow foot contacts drive sound/kickup. Approaches fit planes/blend normals;
-  soil under `2 m` mouths shares path texture/tint/UV, PS1 edges conform.
+  soil under `2 m` mouths shares path texture/tint/UV, mesh edges conform.
   Ribbons end at nodes; snow follows mesh ground.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
@@ -324,8 +324,7 @@ cemetery:own interiors/returns.
   `AlpineVillageRidgeAppearance`'s `CityMountainPhysical` material (village
   haze colour, breathing density, `0.40` visibility floor and a stable opaque
   colour handoff over `96-108 m`, a dark layered-stone tint, no shadow because
-  the shader has no caster pass). The village opts into the floor's PS1 vertex
-  snap, floor and rise share exact edge indices instead of a buried overlap
+  the shader has no caster pass). Floor and rise share exact edge indices instead of a buried overlap
   ring, and floor/rise/lying-snow world UVs retain the existing baked metre pitch
   once under an identity `_BaseMap_ST`; neither screen-space coverage nor a
   second renderer-size scale can make the distant lower wall crawl. The
@@ -388,7 +387,7 @@ cemetery:own interiors/returns.
   edges and up to `18 %` in corners; the central `64 %` rectangle remains clear.
   A fixed fern-crystal bitmap appears in patches with an uneven growth front.
   Blur grows only under frozen patches; clear gaps/centre stay unaffected.
-  The layer follows URP post-processing and precedes the shared PS1/Begotten
+  The layer follows URP post-processing and precedes the shared presentation
   composite, inside its visible image window; HUD, black bars and loading art
   remain clear. Quiet dry crackles and a thin icy ring arrive in irregular
   swells while frost grows. At the cap, cues stop and the active tail fades
@@ -672,29 +671,29 @@ cemetery:own interiors/returns.
   `48 / 120 / 110 m` far planes are render distance rather than low physical
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
-- post-URP PS1/default: `640x360`, 35% RGB555/Bayer,
-  point upscale; `426x240`/`320x180` presets. Clean: native,
-  quantization/dither/scanlines/jitter0; saved optional SMAA High/default-on.
-  SMAA: spatial three-pass graph after native/intoxication, before independent
-  sourced Begotten; full film skips AA, 4:3 bars reapply after AA, UI/nameplates
-  draw later. Preview/reflection exclusions stay. Shared light/fog/SSAO/bloom/
-  DoF/intox/4:3; saved style/flags. Begotten keeps film grid/cadence/ramp.
+- post-URP native scene presentation with saved SMAA High/default-on.
+  SMAA: spatial three-pass after native/intoxication; 4:3 bars reapply,
+  UI/nameplates draw later. Preview/reflection exclusions. Clean warehouse:
+  saved/default-on reflections/fan volume/source halation/metal highlights/bounce;
+  one prefiltered 256 cube, 320x180/12-step existing-shadowmap beam,
+  WornSteel highlights, two validated floor bounce patches. Global fog/physical
+  Lights/geometry/gameplay stay; shared light/SSAO/bloom/DoF/intox/4:3.
   Intoxication: vignette/ghost/chromatic image/warp/warmth/exposure pulse;
-- two DoF tiers share one setting. Exteriors retain broad Gaussian far blur;
-  Bar/Supermarket/Stairwell/Home/Church/Mother's House cap radius at `0.55`
-  for legible nearby people/furniture/gestures. Priority-10 Bokeh owns active
-  modal close-ups only, then yields to the scene grade;
-- prompts, pause/start, inventory, shops, inspectors, journal, HUD and maps
-  share a crisp `640x360` IMGUI layer after the world composite: soot/charcoal/
+- DoF: shared setting, exterior Gaussian far blur;
+  Bar/Supermarket/Stairwell/Home/Church/Mother's House radius `0.55`
+  keeps nearby people/furniture/gestures legible. Priority-10 Bokeh serves
+  modal close-ups, then yields to the scene grade;
+- prompts/pause/start/inventory/shops/inspectors/journal/HUD/maps
+  use crisp `640x360` IMGUI after the world: soot/charcoal/
   dirty-bone, flat rectangular panels, thin nested frames, stable grain and
-  grayscale-readable focus. Packaged `Roboto-Regular` supplies RU/EN without
-  OS fonts; Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
+  grayscale focus. Packaged `Roboto-Regular`: RU/EN, no OS fonts;
+  Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
   checklist above the selected quest description. Unread entries blink a top-right
   notebook; its key persists until first opening, then appears for six seconds.
   Menus, inspectors and map omit persistent key guides/footers;commands appear once. Contextual prompts
   are full pointer targets for the same guarded keyboard/gamepad action. Loading
   retains framing/progress and its separately accepted painterly illustration;
-- localized PS1 pause:Esc/Start/input-time-audio;Resume/Options/default-No restart/quit.
+- localized pause:Esc/Start/input-time-audio;Resume/Options/default-No restart/quit.
   Warehouse ambush;Lab0. Debug commits cans/fish/key/lamp/fan/gate;
   stages entry;progress stays. Gate→door E. Prep clock0;door3s→attack5s→shin
   hook/jerk+fan720°/s+Spot↑5s/lit sparks. Inverted roof hoist→free camera/180°roll;
@@ -707,7 +706,7 @@ cemetery:own interiors/returns.
   repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared
   `GroundSurfaceLit` via `GroundSurfaceAppearance`, linear response companions
-  and MPBs (indexed in City); `Ps1Lit` parity and interior materials stay separate.
+  and MPBs (indexed in City); shared lit-shader parity and interior materials stay separate.
   UV4 road metres/width/seed place wear across/along actual roads; Home projects
   back into the same City frame. Open aprons omit lane bands. Existing snow
   state drives edge/substrate tint, without new collision or accumulation.
@@ -2269,7 +2268,7 @@ cemetery:own interiors/returns.
   completion, Home at its fixed shot. Home's cold strip/halo add no realtime
   `Light`; seal/hinge/thunk cues crossfade synchronized closed/open spatial loops;
 - while the outer refrigerator interaction holds the lit open state, one
-  nested PS1-style item browser highlights the vodka, egg or open stew can and
+  nested item browser highlights the vodka, egg or open stew can and
   shows its localized name beside the pointer; keyboard/gamepad cycling and
   confirm provide the same selection path. Click or confirm flies the chosen
   model into the center of the camera, fades in a dark camera-facing backdrop,
@@ -2281,7 +2280,7 @@ cemetery:own interiors/returns.
   disable and destroy restore the exact parent, sibling index, local transform,
   selection collider and original renderer colors without acquiring a second
   modal lock;
-- one localized fullscreen PS1-style hero inventory in City, BarInterior,
+- one localized fullscreen hero inventory in City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior. `I` or gamepad North
   captures the shared modal lock, freezes scaled time, hides the gameplay HUD
   and preserves the ambient audio bed; Escape, the same toggle or gamepad East

@@ -189,7 +189,7 @@ def draw_expression_mouth(canvas, ox, oy, column, expression, soiled):
         canvas.line(ox + 38, oy + mouth_y + 1, ox + 41, oy + mouth_y, SKIN_SHADOW)
     elif expression in ("TeethInspectHalf", "TeethInspect"):
         # Pull the lips apart vertically, leaving their corners level. Two
-        # broad ivory rows and a dark gap survive the small PS1 mirror image;
+        # broad ivory rows and a dark gap survive the small mirror image;
         # the unchanged upper face keeps this an inspection, not a smile.
         full = expression == "TeethInspect"
         left, right = (18, 47) if full else (21, 44)

@@ -171,7 +171,7 @@ half3 GroundReliefNormal(float3 world, half3 normal, half relief)
     float determinant = dot(dx, rx);
     float3 gradient = (ddx(relief) * rx + ddy(relief) * ry) /
         (abs(determinant) > 1e-8 ? determinant : 1.0);
-    // Keep subpixel grain quiet in the PS1 image and at grazing angles.
+    // Keep subpixel grain quiet at distance and at grazing angles.
     gradient *= saturate(1.0 - max(length(dx), length(dy)) * 1.5);
     gradient /= max(1.0, length(gradient) / 0.10);
     return normalize(normal - gradient);

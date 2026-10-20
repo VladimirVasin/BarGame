@@ -3,7 +3,7 @@
 
 The pack keeps separate load-bearing and animated parts; runtime only places
 these authored meshes. Semantic surfaces use physical metre UVs and shared
-textures; small hardware retains the palette in the shared PS1 Lit shader.
+textures; small hardware retains the palette in the shared project Lit shader.
 """
 import argparse
 import hashlib

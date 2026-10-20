@@ -705,7 +705,7 @@ def _belt(builder,api):
 
 
 def repaint_clothing(canvas, api):
-    """Cloth construction follows real geometry; pixel detail keeps the PS1 register."""
+    """Cloth construction follows real geometry; pixel detail keeps the low-poly register."""
     rect=api.atlas_rect_bottom_left; line=api.atlas_line_bottom_left
     color={k:api.rgba_from_hex(v) for k,v in api.V2_PALETTE_HEX.items()}
     x,y,w,h=api.clothing_region("JacketBody")

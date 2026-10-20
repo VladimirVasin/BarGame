@@ -396,21 +396,16 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 material.GetFloat("_StableHazeHandoff"),
                 Is.EqualTo(AlpineVillageRidgeAppearance.StableHazeHandoff));
-            Assert.That(
-                material.GetFloat("_Ps1VertexSnap"),
-                Is.EqualTo(AlpineVillageRidgeAppearance.Ps1VertexSnap));
+            Assert.That(material.HasProperty("_Ps1VertexSnap"), Is.False);
 
-            // Both switches are zero-default shader properties. The City
-            // material never writes them, so its existing screen-space
-            // dither and unsnapped vertex paths remain selected.
+            // City retains the zero-default screen-space haze handoff;
+            // both surfaces use native projected vertices.
             Material cityMaterial =
                 CityMountainSurfaceAppearance.PhysicalRidgeMaterial;
             Assert.That(
                 cityMaterial.GetFloat("_StableHazeHandoff"),
                 Is.Zero);
-            Assert.That(
-                cityMaterial.GetFloat("_Ps1VertexSnap"),
-                Is.Zero);
+            Assert.That(cityMaterial.HasProperty("_Ps1VertexSnap"), Is.False);
             Assert.That(
                 ColorDifference(
                     material.GetColor("_HazeColor"),

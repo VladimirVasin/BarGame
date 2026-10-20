@@ -21,7 +21,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(AudioListener.volume,Is.Zero,"The ordinary test run must remain muted.");
             float listenerVolume=AudioListener.volume, captureDelta=Time.captureDeltaTime;
             bool listenerPause=AudioListener.pause, capturing=false;
-            float? filmWeight=BegottenModeRamp.DebugWeightOverride;
             var muted=new Dictionary<AudioSource,bool>();
             CityGameRoot city=null;
             CityCanneryController cannery=null;
@@ -36,7 +35,6 @@ namespace BarPromenade.Tests.PlayMode
             {
                 GameSessionState.BeginNewGame();
                 GameSessionState.TryStartGameTimeFromWake();
-                BegottenModeRamp.DebugWeightOverride=0f;
                 yield return SceneManager.LoadSceneAsync(SceneIds.City,LoadSceneMode.Single);
                 float deadline=Time.realtimeSinceStartup+TimeoutSeconds;
                 while(Time.realtimeSinceStartup<deadline)
@@ -147,7 +145,6 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 if(camera!=null)camera.transform.SetPositionAndRotation(cameraPosition,cameraRotation);
                 if(follow!=null)follow.enabled=followEnabled;
-                BegottenModeRamp.DebugWeightOverride=filmWeight;
                 Time.captureDeltaTime=captureDelta;
                 AudioListener.pause=listenerPause;
                 AudioListener.volume=listenerVolume;

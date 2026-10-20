@@ -271,9 +271,9 @@ namespace BarPromenade
             foreach (AlpineVillageJunctionPort port in junction.Ports)
             {
                 if (port.Kind == AlpineVillagePathKind.AbandonedRoad) continue;
-                // Cover float-scale slivers at the shared rim too. PS1 snapping
-                // can magnify one into a pixel-wide line; the node consumes the
-                // inward margin first and snow hides the small lateral margin.
+                // Cover float-scale slivers at the shared rim. The node
+                // consumes the inward margin first, and snow hides the
+                // small lateral margin.
                 const float paintMargin = .025f;
                 Vector2 start = port.MouthCenter - port.Direction * paintMargin;
                 Vector2 end = port.MouthCenter + port.Direction * 2f;

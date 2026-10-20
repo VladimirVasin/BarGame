@@ -97,6 +97,7 @@ namespace BarPromenade
                 host.GetComponentInChildren<WarehouseFishLamp>().BindWarehouseLighting(host.transform,
                     valveLamp, valveLampFixture);
                 host.AddComponent<WarehouseAtmosphere>().Initialize(plan, owner, mechanisms);
+                host.AddComponent<WarehouseCleanPresentation>().Initialize(plan, owner, mechanisms);
                 return host;
             }
             catch

@@ -40,7 +40,6 @@ Shader "Bar Promenade/City Building Window Slots"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Ps1VertexJitter.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -94,8 +93,7 @@ Shader "Bar Promenade/City Building Window Slots"
                         input.slotUv.x * CITY_WINDOW_SLOT_DIVISOR),
                     0,
                     63);
-                output.positionCS = Ps1SnapClipPosition(
-                    positionInputs.positionCS);
+                output.positionCS = positionInputs.positionCS;
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = normalInputs.normalWS;
                 output.fogFactor = ComputeFogFactor(

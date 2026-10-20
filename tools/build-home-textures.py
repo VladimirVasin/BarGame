@@ -497,7 +497,7 @@ def draw_wallpaper(base: Image.Image, rng: random.Random) -> Image.Image:
         wrap_rect(draw, (x, 0, x + stripe // 2 - 1, SHEET_SIZE), BASE + 9)
         wrap_line(draw, (x, 0, x, SHEET_SIZE), BASE - 12, width=2)
     # Floral sprigs on a staggered 128 px lattice, quantised into a few
-    # rectangles so they survive the 512 import and the PS1 composite.
+    # rectangles so they survive the 512 import and distant viewing.
     cell = 128
     for row in range(SHEET_SIZE // cell):
         offset = (row % 2) * (cell // 2)

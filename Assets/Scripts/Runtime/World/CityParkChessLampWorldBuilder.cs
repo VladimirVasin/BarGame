@@ -138,9 +138,8 @@ namespace BarPromenade
 
         /// <summary>
         /// The span, as a short chain of thin boxes each rotated onto
-        /// its own chord of the sag. Twelve is chosen against the PS1
-        /// composite rather than against a curve error budget: past
-        /// that the extra joints land inside one downsampled pixel.
+        /// its own chord of the sag. Twelve segments keep the distant
+        /// service wire readable within a bounded geometry budget.
         /// </summary>
         private static void BuildWire(
             Transform root,

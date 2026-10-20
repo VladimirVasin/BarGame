@@ -17,7 +17,7 @@ namespace BarPromenade
         private static Transform blackoutOwner;
         private static Vector3 lastOrigin;
         // Unity's ambient colour is gamma-space. This remains faint after the
-        // dark painted-metal albedo and the final PS1 composite are applied.
+        // dark painted-metal albedo and scene lighting are applied.
         public static readonly Color AmbientColor = new Color(.36f, .40f, .375f);
 
         public static Camera EnsureCamera()

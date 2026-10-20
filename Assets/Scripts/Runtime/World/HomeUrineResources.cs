@@ -47,8 +47,8 @@ namespace BarPromenade
 
         private static Material Material(string name, Color color, float smoothness)
         {
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
-            if (shader == null) throw new InvalidOperationException("Missing PS1 Lit shader for toilet liquid.");
+            Shader shader = Shader.Find("Bar Promenade/Lit");
+            if (shader == null) throw new InvalidOperationException("Missing Lit shader for toilet liquid.");
             var material = new Material(shader) { name = name, hideFlags = HideFlags.HideAndDontSave, renderQueue = (int)RenderQueue.Transparent };
             material.SetColor("_BaseColor", color);
             material.SetFloat("_Smoothness", smoothness);

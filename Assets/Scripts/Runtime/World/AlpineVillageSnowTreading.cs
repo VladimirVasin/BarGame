@@ -9,7 +9,7 @@ namespace BarPromenade
     ///
     /// Deformation here is CPU-side and deliberately so. The industry answer
     /// is a top-down accumulation RenderTexture read by a vertex shader, and
-    /// this project cannot afford its price: `Ps1Lit` is a verbatim copy of
+    /// this project cannot afford its price: `Lit` is a verbatim copy of
     /// URP Lit that must stay re-copyable on a URP bump, so displacement
     /// would mean a THIRD clone to maintain, and the snapped clip position
     /// would quantise exactly the sub-decimetre amplitude a footprint is made

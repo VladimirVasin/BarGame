@@ -1205,9 +1205,8 @@ namespace BarPromenade
                     return CityCemeterySurfaceKind.Stone;
                 default:
                     // Iron rails, trunks, crowns, flowers and bench
-                    // planks stay flat colour: their members are too
-                    // thin for a sheet to read through the PS1
-                    // composite.
+                    // planks stay flat colour so their thin silhouettes
+                    // remain clear at gameplay distance.
                     return null;
             }
         }

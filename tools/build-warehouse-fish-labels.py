@@ -62,7 +62,7 @@ def drawing(draw, kind, top):
 
 def build():
     # Only faint paper grain; darker wear is confined to the edge so it cannot
-    # erase broad picture strokes after PS1 downsampling or mip filtering.
+    # erase broad picture strokes at distance or under mip filtering.
     yy, xx = np.mgrid[:SIZE, :SIZE]
     grain = ((xx * 13 + yy * 7 + xx * yy * 3) % 5 - 2).astype(np.int16)
     pixels = np.clip(np.array((220, 217, 188), dtype=np.int16) + grain[:, :, None], 0, 255).astype(np.uint8)

@@ -13,6 +13,9 @@ namespace BarPromenade
         private readonly Dictionary<AnimationClip, AnimationClipPlayable> npcAnimationClips =
             new Dictionary<AnimationClip, AnimationClipPlayable>(32);
         private AnimationClip npcSampledClip;
+        private int npcAnimationSampleDepth;
+        private static readonly Unity.Profiling.ProfilerMarker NpcAnimationMarker =
+            new Unity.Profiling.ProfilerMarker("BarPromenade.Combat.NpcAnimation");
         private Transform[] npcAnimationBaseBones;
         private Vector3[] npcAnimationBasePositions, npcAnimationBaseScales;
         private Quaternion[] npcAnimationBaseRotations;
@@ -66,6 +69,23 @@ namespace BarPromenade
         }
 
         internal void SampleNpcClip(AnimationClip clip, float absoluteTime)
+        {
+            // Every NPC path (including zombie/crane fast paths) shares this
+            // clock. A cold recursive bind-pose sample remains inclusive once.
+            bool outer = npcAnimationSampleDepth++ == 0;
+            long started = outer ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+            try
+            {
+                using (NpcAnimationMarker.Auto()) SampleNpcClipCore(clip, absoluteTime);
+            }
+            finally
+            {
+                npcAnimationSampleDepth--;
+                if (outer) NpcAnimationSampleTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+            }
+        }
+
+        private void SampleNpcClipCore(AnimationClip clip, float absoluteTime)
         {
             if (clip == null) throw new ArgumentNullException(nameof(clip));
             InitializeNpcAnimation();

@@ -90,7 +90,6 @@ namespace BarPromenade
 
             EnsureGameTimeRuntimeInstalled();
             IntoxicationAudioDriver.EnsureInstalled();
-            BegottenAudioDriver.EnsureInstalled();
 
             if (scene.name == SceneIds.MainMenu)
             {

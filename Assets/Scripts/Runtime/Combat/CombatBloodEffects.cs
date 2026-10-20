@@ -618,9 +618,9 @@ namespace BarPromenade
         private static Material RequireMaterial()
         {
             if (sharedMaterial != null) return sharedMaterial;
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
             Texture2D texture = Resources.Load<Texture2D>("CombatBlood/BloodSurface");
-            if (shader == null) throw new InvalidOperationException("Combat blood requires the shared PS1 shader.");
+            if (shader == null) throw new InvalidOperationException("Combat blood requires the shared Lit shader.");
             if (texture == null) throw new InvalidOperationException("Combat blood requires CombatBlood/BloodSurface as a 2D texture.");
             sharedMaterial = new Material(shader) { name = "Combat Blood Shared", hideFlags = HideFlags.HideAndDontSave, renderQueue = 2450 };
             sharedMaterial.SetTexture("_BaseMap", texture); sharedMaterial.SetColor("_BaseColor", Color.white);

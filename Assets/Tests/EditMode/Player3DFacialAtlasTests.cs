@@ -127,7 +127,7 @@ namespace BarPromenade.Tests.EditMode
         {
             GameObject face = new GameObject("Face Surface");
             Texture2D texture = new Texture2D(256, 256);
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Shader shader = Shader.Find("Bar Promenade/Lit");
             Assert.That(shader, Is.Not.Null);
             Material material = new Material(shader);
             try
@@ -250,7 +250,7 @@ namespace BarPromenade.Tests.EditMode
         {
             GameObject face = new GameObject("Face Surface");
             Texture2D texture = new Texture2D(256, 256);
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Shader shader = Shader.Find("Bar Promenade/Lit");
             Assert.That(shader, Is.Not.Null);
             Material material = new Material(shader);
             try
@@ -320,7 +320,7 @@ namespace BarPromenade.Tests.EditMode
         {
             GameObject face = new GameObject("Face Surface");
             Texture2D texture = new Texture2D(512, 256);
-            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Shader shader = Shader.Find("Bar Promenade/Lit");
             Assert.That(shader, Is.Not.Null);
             Material material = new Material(shader);
             try

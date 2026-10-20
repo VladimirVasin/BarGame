@@ -26,7 +26,7 @@ namespace BarPromenade.EditorTools
         public const string PrefabPath =
             "Assets/Resources/Vehicles/LastRouteCar3D.prefab";
         public const string ExpectedDesignId = "last_route_ferry_car_v1";
-        private const string ShaderName = "Bar Promenade/PS1 Lit";
+        private const string ShaderName = "Bar Promenade/Lit";
         private const string MaterialDirectory = "Assets/Vehicles/Materials";
         private const string TextureDirectory = "Assets/Vehicles/Textures";
 

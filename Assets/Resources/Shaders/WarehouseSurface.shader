@@ -6,6 +6,8 @@ Shader "Bar Promenade/Warehouse Surface"
         _WarehouseMaterialResponse("Unique slopes / roughness / cavity", 2D) = "gray" {}
         _WarehouseResponseStrength("Physical material response", Range(0,1)) = 0
         _WarehouseNormalStrength("Near material relief", Range(0,1)) = 0
+        _WarehouseAnisotropy("Directional metal response", Range(0,0.55)) = 0
+        _WarehouseWetReflection("Local wet reflection", Range(0,1)) = 0
         _WarehouseAuxRect("Bounded auxiliary surface patch", Vector) = (1,1,0,0)
         _WarehouseAuxiliary("Auxiliary surface coordinates", Float) = 0
         // Specular vs Metallic workflow
@@ -27,6 +29,8 @@ Shader "Bar Promenade/Warehouse Surface"
 
         [ToggleOff] _SpecularHighlights("Specular Highlights", Float) = 1.0
         [ToggleOff] _EnvironmentReflections("Environment Reflections", Float) = 1.0
+        [ToggleOff] _ScreenSpaceReflections("Screen Space Reflections", Float) = 1.0
+        [ToggleOff] _ScreenSpaceReflectionsContributeTransparent("Screen Space Reflections Contribute Transparent", Float) = 1.0
 
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
@@ -119,7 +123,7 @@ Shader "Bar Promenade/Warehouse Surface"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1LitPassVertex
+            #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
 
             // -------------------------------------
@@ -137,6 +141,7 @@ Shader "Bar Promenade/Warehouse Surface"
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
 
             // -------------------------------------
@@ -151,6 +156,7 @@ Shader "Bar Promenade/Warehouse Surface"
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_ATLAS
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_REFLECTION
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _SCREEN_SPACE_IRRADIANCE
@@ -188,26 +194,12 @@ Shader "Bar Promenade/Warehouse Surface"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             #include "WarehouseSurfaceInput.hlsl"
-            // Define the stock implementation before redirecting only the
-            // Forward pass call. Its include guard retains all URP lighting.
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            // Retain stock lighting before redirecting its forward PBR call.
+            #include "WarehouseDirectionalLighting.hlsl"
             #include "WarehouseAmbientVisibility.hlsl"
-            #define UniversalFragmentPBR Ps1WarehouseFragmentPBR
+            #define UniversalFragmentPBR WarehouseFragmentPBR
             #include "WarehouseSurfaceForwardPass.hlsl"
             #undef UniversalFragmentPBR
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1LitPassVertex(Attributes input)
-            {
-                Varyings output = LitPassVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
             ENDHLSL
         }
 
@@ -303,6 +295,7 @@ Shader "Bar Promenade/Warehouse Surface"
 
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 
@@ -313,6 +306,7 @@ Shader "Bar Promenade/Warehouse Surface"
             //#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_REFLECTION
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
             #pragma multi_compile_fragment _ _RENDER_PASS_ENABLED
@@ -369,12 +363,13 @@ Shader "Bar Promenade/Warehouse Surface"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1DepthOnlyVertex
+            #pragma vertex DepthOnlyVertex
             #pragma fragment DepthOnlyFragment
 
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _PARALLAXMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             // -------------------------------------
@@ -390,19 +385,6 @@ Shader "Bar Promenade/Warehouse Surface"
             // Includes
             #include "WarehouseSurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1DepthOnlyVertex(Attributes input)
-            {
-                Varyings output = DepthOnlyVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
             ENDHLSL
         }
 
@@ -425,7 +407,7 @@ Shader "Bar Promenade/Warehouse Surface"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex Ps1DepthNormalsVertex
+            #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
 
             // -------------------------------------
@@ -435,6 +417,9 @@ Shader "Bar Promenade/Warehouse Surface"
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
             #pragma shader_feature_local _ALPHATEST_ON
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONS_OFF
+            #pragma shader_feature_local_fragment _SCREENSPACEREFLECTIONSCONTRIBUTETRANSPARENT_OFF
 
             // -------------------------------------
             // Unity defined keywords
@@ -443,6 +428,8 @@ Shader "Bar Promenade/Warehouse Surface"
             // -------------------------------------
             // Universal Pipeline keywords
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
+            #pragma multi_compile _ _WRITE_SMOOTHNESS
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
 
             //--------------------------------------
             // GPU Instancing
@@ -453,19 +440,6 @@ Shader "Bar Promenade/Warehouse Surface"
             // Includes
             #include "WarehouseSurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
-            #include "Ps1VertexJitter.hlsl"
-
-            // Runs URP's own vertex stage untouched, then rounds only the
-            // projected XY. Copying Varyings by value is safe: the stereo
-            // and instancing macros are plain members.
-            Varyings Ps1DepthNormalsVertex(Attributes input)
-            {
-                Varyings output = DepthNormalsVertex(input);
-                output.positionCS =
-                    Ps1SnapClipPosition(output.positionCS);
-                return output;
-            }
-
             ENDHLSL
         }
 

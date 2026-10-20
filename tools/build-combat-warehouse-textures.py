@@ -43,7 +43,7 @@ def prepare_room_numbers():
     for number in range(1, 10):
         image = Image.new("RGB", (256, 288), (191, 185, 158))
         draw = ImageDraw.Draw(image)
-        # A quiet worn border leaves the numeral itself intact at PS1 resolution.
+        # A quiet worn border leaves the numeral itself legible at gameplay distance.
         draw.rectangle((4, 4, 251, 283), outline=(146, 143, 122), width=3)
         text = str(number)
         left, top, right, bottom = draw.textbbox((0, 0), text, font=font)

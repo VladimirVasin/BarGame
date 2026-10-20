@@ -144,8 +144,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 // Runners: sparse columns of drops sliding down the
                 // glass. Each column owns a hashed phase, speed and
                 // wobble; heavier rain wakes more columns. Sizes are
-                // deliberately chunky — a PS1 pane reads a 4-8 pixel
-                // trickle, not a hairline.
+                // deliberately broad so trickles remain legible at distance.
                 const float ColumnWidth = 0.16;
                 float column = floor(u / ColumnWidth);
                 float seed = Hash(column);

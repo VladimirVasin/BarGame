@@ -20,6 +20,7 @@
 // keep this file in sync with LitGBufferPass.hlsl
 
 #include "WarehouseSurfaceLayers.hlsl"
+#include "WarehouseReflection.hlsl"
 
 struct Attributes
 {
@@ -269,7 +270,10 @@ void LitPassFragment(
 
     InitializeBakedGIData(input, inputData);
 
+    WarehouseSetBrushFrame(input.positionWS, warehouseSurfaceUv, inputData.normalWS);
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
+    color.rgb += WarehouseWetReflection(input.positionWS, inputData.normalWS,
+        inputData.viewDirectionWS, surfaceData);
     color.rgb = MixFog(color.rgb, inputData.fogCoord);
     color.a = OutputAlpha(color.a, IsSurfaceTypeTransparent());
 

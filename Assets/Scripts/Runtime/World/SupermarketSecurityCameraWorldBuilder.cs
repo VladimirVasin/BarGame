@@ -187,7 +187,7 @@ namespace BarPromenade
             unit.transform.localPosition = headPosition;
 
             // Chunky enough to read from the shop floor: a thick
-            // ceiling stem and a fat boxy head, PS1 CCTV.
+            // ceiling stem and a broad boxy head, low-poly CCTV.
             float stemHeight =
                 plan.RoomHeight - headPosition.y;
             RuntimePrimitiveFactory.CreateBox(

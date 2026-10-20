@@ -305,7 +305,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            HoverClickInspectReturn_UsesNestedPs1Presentation()
+            HoverClickInspectReturn_UsesNestedPresentation()
         {
             yield return LoadHome();
             HomeRefrigeratorInteraction interaction =

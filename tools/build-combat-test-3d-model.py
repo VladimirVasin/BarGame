@@ -3461,7 +3461,7 @@ def action_payload(builder):
         impact = snapshot(name, peak)
         travel = (impact["SOCKET_Grip.R"].translation - start["SOCKET_Grip.R"].translation).length
         head_travel = (impact["head"].translation - start["head"].translation).length
-        if travel < .09: raise ValueError("Reaction is too small to read at PS1 scale: " + name)
+        if travel < .09: raise ValueError("Reaction is too small to read at gameplay distance: " + name)
         peak_tips.append(impact["SOCKET_Grip.R"] @ Vector((0, .595, .145)))
         peak_poses.append((name,impact))
         reactions.append(dict(name=name, peak_seconds=peak, entry_clip=enter, entry_seconds=enter_time,

@@ -188,7 +188,7 @@ namespace BarPromenade
         /// A 4.5 cm bowl tilts its facets under ten degrees, which is a
         /// few percent of brightness — invisible on this project's noisy
         /// albedos (verified by capture). Steepening the lateral component
-        /// of dented facet normals is the PS1-legitimate cheat: geometry
+        /// of dented facet normals suits the low-poly lighting: geometry
         /// stays honest, the light answers it three times louder.
         /// </summary>
         private void ExaggerateDentShading(Vector3[] current)

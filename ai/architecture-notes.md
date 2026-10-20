@@ -1,18 +1,56 @@
 # Architecture notes
 
 ## Current facts
-- **Accepted exception 2026-10-20, optional presentation styles — explicit user decision:**
-  Art §4/§15a; story §6. PS1 stays default and unchanged. `graphics.style`
-  persists exactly PS1/Clean in `GraphicsEffectsSettings`; unknown values→PS1.
-  Clean: native source, quantization/dither/scanlines/jitter0. Its optional
-  SMAA High defaults on and persists as `graphics.clean_aa`; PS1 never uses it.
-  Custom RenderGraph spatial SMAA: three passes after live native/intoxication,
-  before independently sourced Begotten; full film skips AA. Reapply 4:3 bars
-  after AA; UI/nameplates draw later. Preview/reflection exclusions stay.
-  Retro flags remain stored; unsupported controls disable without clearing them.
-  Shared lighting/fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay. Begotten is
-  an independent overlay: original film grid/cadence/ramp/soundtrack.
-  Shared passes/retained targets, no world copies; performance gains unmeasured.
+- **Accepted exception 2026-10-20, native-only presentation — explicit user decision:**
+  Art §4/§15a; story §6. The scene uses its native source resolution only;
+  style selection, low-resolution profiles, colour quantization, output dither,
+  scanlines and vertex snapping are removed. Optional SMAA High defaults on,
+  persisted as `graphics.clean_aa`. The nine effect flags remain independent;
+  4:3 is an optional aspect choice. Retired preference keys are ignored.
+  Custom RenderGraph spatial SMAA: three passes after live native/intoxication;
+  reapply 4:3 bars after AA. UI/nameplates draw later; preview/reflection exclusions stay.
+  Shared lighting/fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay.
+  Clean warehouse enhancements are independently saved/default-on:
+  `graphics.clean_reflections`, `graphics.clean_volume`, `graphics.clean_halation`,
+  `graphics.clean_directional_highlights`, `graphics.clean_bounce`.
+  One reused 256 cube is captured and properly prefiltered by a capture-only
+  probe: intensity zero and a tiny influence volume avoid automatic scene lighting;
+  a reference-counted lease enables realtime probes only while capture/
+  convolution is pending, then restores the original quality flag. No permanent
+  global probe enablement; cleanup releases the lease. A ten-second watchdog
+  destroys a stalled probe, clears its result/gain and releases the lease. At most
+  two attempts run per source-state generation; a new state or explicit setting
+  re-enable rearms recovery. CPU submit/poll and wall latency remain separate.
+  WornSteel receives directional highlights; bounce uses two validated floor
+  patches after ambient fade. Its visibility rays use authored physics colliders;
+  decorative rotor/motor meshes have none, so bounce does not promise their exact
+  occlusion. Direct light and the fan volume use the real shadow maps.
+  Source-masked halation follows native/intoxication and precedes SMAA. At most
+  24 sources are projected once per camera on the CPU using the actual GPU
+  projection/target Y convention; blur and HDR-headroom composite remain intact.
+  The one fan-light volume keeps its at-most 320x180 RGBA16F target and shared
+  twelve-step integrator, density `.0035`, using the real fan Light's URP shadow
+  atlas. Strata anchor to the full volume; depth clips only the partial segment.
+  Exactly zero optical depth skips light/shadow fetches without changing the
+  quadrature. A conservatively padded projected bound skips unsupported screen
+  regions; near-plane crossings keep a full-screen bound. Production resolve
+  additively blends RGB into the existing ReadWrite colour attachment, preserves
+  alpha and needs no full-resolution colour copy; diagnostic output stays separate.
+  The observed fan shadow slice is fully allocated at 1024 pixels; its budget
+  is unchanged. `GameCamera_NativeEffectsAndWarehouseLightingRemainStable`
+  verifies the optimized path, source/exclusion gates, probe timeout/lease-release/
+  recovery and idle-liquid regression. No CS0618 or C#/shader errors remain.
+  Upscale tries four depth-compatible taps and a bounded twelve-site neighbour ring. With
+  no safe prefix, that unsupported native pixel integrates an exact ray: up to
+  twelve extra shadow samples there. This rare fallback adds no target, pass
+  or history; its worst-case native-pixel cost remains part of the renderer.
+  Thin-feature shadow aliasing can remain.
+  Explicit art exception: this local lit beam/glow is allowed; global fog stays,
+  no new physical Light, world geometry, story or gameplay. Excluded cameras
+  retain exclusions through `ScenePresentationExclusion`.
+  Shared passes/retained targets, no world copies. Focused, unpaused Editor combat
+  frame/GPU timings are measured with verified camera content. Static differences
+  are noisy: no isolated effect-cost claim, player frame-rate or target-FPS guarantee.
 - **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
   rolls follow action;review framing/contacts.
 - **Accepted exception 2026-10-19, warehouse door ambush:**
@@ -108,7 +146,7 @@
   Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;
   orbit≤35full→90zero/rootlegs/Llight/actionpriority/pausemodal;
   cleanup-hotalloc0/Advance-repeatApply0timebend.
-- **Accepted exception 2026-10-19, chest fixture:** LM65/on:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/GIhero3D3→black12m/Ps1Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery-inventory-story0.
+- **Accepted exception 2026-10-19, chest fixture:** LM65/on:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/GIhero3D3→black12m/shared-Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery-inventory-story0.
 - **Accepted — 2026-10-14, combat cloth policy:**
   `PlayerClothPhysicsPolicy`:CombatTest jacket-scarf-sling0live-bake;
   hair/rig/hand-opening/anchors kept;solve-contact-wind0;
@@ -283,7 +321,7 @@
 
 - **Accepted — 2026-09-29, character surfaces:**
   User: reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair recipes
-  on shared `Ps1Lit`; hero adapter `Player3DV2CharacterSurfaces`. Manifest UV0
+  on shared shared lit shader; hero adapter `Player3DV2CharacterSurfaces`. Manifest UV0
   regions/map hashes validate imports. Skin/hair gain UVs; palette/base atlases,
   face/geometry/rig/actions stay. Direct specular only; no weather/SSS/anisotropy.
   Invalid Mikk frames repaired; cloth/copies follow. UV-less anatomy stays flat.
@@ -294,7 +332,7 @@
   User approved City/MountainRoad/AlpineVillage ground and retaining surfaces.
   Preserve base albedos/palettes/metre UVs/weather/collision; interiors stay
   outside this pass. `GroundSurfaceAppearance` binds one shared
-  `GroundSurfaceLit` variant, leaving `Ps1Lit`/its parity contract untouched.
+  `GroundSurfaceLit` variant, leaving shared lit shader/its parity contract untouched.
   Layer shading targets the current Forward+ path, not Deferred GBuffer.
   Deterministic linear response companions drive local roughness/relief/wear.
   `GroundSurfaceCoordinates`: UV4 lateral/longitudinal metres, halfwidth/seed
@@ -315,7 +353,7 @@
   NPC/event. Rig/§16/other §21/nine checks.
 
 - **Accepted architecture exception — 2026-09-25, lodge minibar photograph:**
-  User, 0 (§6/§12/§19): minibar/PS1 photo: art §10g;
+  User, 0 (§6/§12/§19): minibar/low-poly photo: art §10g;
   photo meaning/limits §12, faceless wall photo/passive bottles. Shared seats;
   E close-up→Next→shared Take/Cancel (one on Take), Esc exits. Frame gone/owned
   across scenes until New Game; shared standards/§16/§21/nine checks.
@@ -679,7 +717,7 @@
   Actor/head/ID via `NpcNameplateTarget`, camera/listener via `PlayerFactory`.
   `6→4 m`, shared `10 px`/charcoal, gaps `.25/.4/.5 m`.
   No edge clamp; speech/pause/modal/transition suppress. Overlap: selected→nearest.
-  After PS1: cleared actor-ID mask of existing meshes + camera/text depth rejects
+  After scene presentation: cleared actor-ID mask of existing meshes + camera/text depth rejects
   colliderless occlusion. Identity survives movement/reparenting/busy.
 
 - **Accepted — 2026-09-11, every spoken line above its speaker:**
@@ -1259,7 +1297,7 @@
   scene resets it. This state never drives needs, speed, collision or damage.
   `AlpineColdFrostPass` reveals
   the fixed `AlpineColdFrostMask.png` bitmap after URP post-processing and before
-  the existing PS1/Begotten composite. Both passes use event `600`; frost is
+  the shared presentation composite. Both passes use event `600`; frost is
   enqueued first. The mask is an explicit shader texture property retained by
   the pass, including after the house scene changes its resource lifetime.
   Built-in image generation authored its fine fern crystals and
@@ -1388,7 +1426,7 @@
   paintings guide the upper station. Art §10g's snow-only ridge may expose
   layered dark rock/snow ledges and bowl floor. Passive deterministic Blender
   rocks stay beyond the walkable toe; terrain owns continuous collision/cableway
-  cut. Opaque haze, `0.40` wall visibility floor, PS1 snap/closed bowl/no panorama
+  cut. Opaque haze, `0.40` wall visibility floor, closed bowl/no panorama
   remain binding.
   Two existing house archetypes gain structural timber courses, stone and
   roof detail, irregular roof snow and framed divided warm windows. A bounded
@@ -1499,11 +1537,11 @@
   The user explicitly requested illustrated loading screens with the progress
   bar at the bottom and approved four static painterly images based on the
   existing game. This narrowly replaces the empty black `AreaLoading`
-  presentation and art-bible §15a's empty-loading/strict PS1 raster treatment:
+  presentation and art-bible §15a's empty-loading treatment:
   the paintings retain their painterly detail and fill the actual viewport
   with aspect-preserving cropping rather than the centered logical canvas;
   the surrounding UI and the
-  gameplay world's PS1 composite keep their existing contracts.
+  gameplay world's native composite keep their existing contracts.
   `City -> MountainRoad`, `MountainRoad -> City`, `MountainRoad -> AlpineVillage`
   and `AlpineVillage -> MountainRoad` each own one fixed image under
   `Assets/Resources/UI/Loading/`: `city-to-mountain`, `mountain-to-city`,
@@ -1545,9 +1583,40 @@
   Generated puddle and village ground/path/snow/lane meshes use
   `RuntimeGeneratedMeshOwner`; imported and shared meshes keep their owners.
 - **Current — Opt-in performance evidence (2026-09-06):**
-  `RuntimePerformanceCapture`: bounded frames/context/foot-bake/reflection;
-  rendering/animation unchanged; unavailable≠free; Editor diagnostics.
-  `ai/debug-log.md`.
+  `RuntimePerformanceCapture` schema 2 preserves existing raw field names.
+  Frame intervals, main/render threads, GPU and GC have explicit availability;
+  recorder metadata retains exact requested names/categories and validity.
+  Optional EditorLoop/wait observations stay unavailable when absent; no wait
+  subtraction or inferred zero cost. Rendering and animation are unchanged.
+  Per-frame combat total/pose/capture/contact/physics-sync/flight/effects and
+  indexed NPC animation/composition/snapshot are inclusive CPU deltas, not
+  independent costs to sum. Special NPC composition remains partial. The combat
+  root, opponent list and warehouse probe are cached once; at most six NPC slots
+  are observed, with truncation and changed-slot rebaseline metadata.
+  Setup/warmup precede counter baselines. Substeps, hit-stop substeps and dropped
+  simulation time cover the measured window. Secondary-motion cache/decode/load/
+  guard diagnostics are boundary snapshots, outside recurring sampling.
+  Wardrobe sole queries index the existing renderer lists, removing interface
+  enumerators without caching poses or changing bake/probe/tick cadence.
+  Foot-bake scopes retain their meaning. `reflectionCalls`/`reflectionMsPerFrame`
+  cover City fountain work only. Warehouse probe submit/poll CPU, completion/
+  failure/cancellation/timeout totals and asynchronous wall latency are separate;
+  a completion can span a start before the window. First/refresh whole-frame GPU
+  windows include the scene and delayed timing boundaries, not isolated probe cost.
+  Fixed metric buffers use `min(36000, ceil(requestedSeconds * 1000) + 2)` capacity,
+  recorded with metric count; overflow finishes as `sample_limit`. No hot searches,
+  allocations or strings. `-bp-render-profile` adds a separate bounded Editor CPU
+  Timeline window; profiler overhead precludes comparison as an ordinary baseline.
+  Its CSV retains at most 1200 history frames and 150000 main/render-thread nodes
+  above 0.02 ms plus GC.Alloc; truncation/filtering makes it no complete event census.
+  Streamed raw trace retains the capture, with metadata correlating Unity frames.
+  Inclusive hierarchy, EditorLoop and waits overlap; do not sum or subtract them
+  as independent costs.
+  `StartCapture(options, outputDirectory = null, renderCamera = null)` accepts
+  an explicit camera, including a disabled render-request camera. Capture caches
+  that camera's actual target dimensions and stops on dimension/context changes;
+  missing explicit cameras fall back to `Camera.main`, then screen dimensions.
+  Editor diagnostics are local evidence, not a player guarantee. `ai/debug-log.md`.
 - **Current — Read-only build gate and checked authoring (2026-09-06):**
   `PlayerBuildAssetValidation` runs on all player-build paths, aggregating
   required-resource, owner-contract and Hero dependency-stamp failures with
@@ -1651,7 +1720,7 @@
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
-- **Accepted:** Unity `6000.6.4f1` (editor patch recorded 2026-10-02), URP `17.6.0` since 2026-09-04. Bundled packages: test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
+- **Accepted:** Unity `6000.6.6f1`, AI Navigation `2.0.15` (actual settings, 2026-10-20), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two
@@ -1891,7 +1960,7 @@
   already had as `SmoothRange`. A sweep found every other call in the project
   correct.
 - **Corrected — the village ground carried vertex colours no shader reads:**
-  `Ps1Lit`/`RuntimePrimitiveLit`: stock URP `Attributes` has no `COLOR` in any pass.
+  shared lit shader/`RuntimePrimitiveLit`: stock URP `Attributes` has no `COLOR` in any pass.
   Ground tint: surface sheet/path ribbons; vertex-colour field removed
   for re-copyable stock attributes.
 - **Accepted:** Small causal props in the village use
@@ -2268,8 +2337,8 @@
   breathing haze,
   visibility floor `0.40`, native fog `9/12 m`, tinted snow-shadow
   `(0.31, 0.35, 0.41)` and a stable opaque colour handoff over `96/108 m`.
-  `_StableHazeHandoff=1` and `_Ps1VertexSnap=1` match the floor without
-  screen-space crawl. City retains zero defaults/dither/depth behavior.
+  `_StableHazeHandoff=1` matches the floor without screen-space crawl.
+  City retains its existing haze/depth defaults.
   Floor/rise share toe indices; terrain/snow bake `WindSnow` metre UVs once,
   `_BaseMap_ST` identity. No `ShadowCaster`; spindrift excludes rise `>2 m`.
   The shared bounded fog stays; only per-area Exp2 breathes. No panorama,
@@ -2475,7 +2544,7 @@
   refracted sample is rejected when it lands nearer than the surface,
   otherwise anything standing in front of the river bleeds into it. Banding
   is applied to the specular, foam and rain terms rather than to the whole
-  colour, so the sheets still read through the PS1 composite. One consequence
+  colour, so the sheets retain their authored tones in native presentation. One consequence
   is easy to get wrong: because the shader composites its own colour rather
   than being lit, `_BaseColor` and `_DeepColor` are **rendered tones, not
   albedos**. Reusing a flat surface's authored albedo here emits at full
@@ -3405,8 +3474,8 @@
   gate on both ends, so they fall silent before their words begin to fade.
 - **Accepted — shared speech is projected above the speaker:**
   `NpcSpeechBubbleView`: shared-font IMGUI at `GUI.depth = -75`, above intoxication
-  HUD and below interaction prompt/map/pause. It stays readable after the world's
-  `640x360`/RGB555 PS1 pass; speech never covers controls or becomes world geometry.
+  HUD and below interaction prompt/map/pause. Speech stays readable over the
+  native scene and never covers controls or becomes world geometry.
 - **Accepted architecture exception, explicit user decision 2026-09-05 —
   roaming walkers curse the hero on the last stage, over their own heads:**
   the user asked for insults and, told that the literal request collides
@@ -4673,7 +4742,7 @@
   into opaque maps. Six opaque roles share one material/MPBs. WindowGlass decodes
   UV2 `(slotId + 0.5) / 256` into a 64-entry state table. Each row keeps warm/dark
   panes, lamp colour `(1, 0.72, 0.42)`, four-step brightness, shared fixture factor,
-  PS1 snap and curtain quadrant. Daylight retains the two-thirds emission floor.
+  curtain quadrant. Daylight retains the two-thirds emission floor.
 
   Geometry audit rejects positive-area same-facing coplanar exterior overlap
   and opaque overlap >= `0.05 m2` below `0.03 m` relief. Plinth/secondary margins
@@ -4976,7 +5045,7 @@
   `RequestClose`/interactor suspended. Return restores hero/shadow;
   completion-disable-destroy restores camera/input/HUD.
   Cold strip/`CityLightHalo`/no new Home lights/spatial seal-hinge-thunk.
-- **Accepted — Nested PS1 refrigerator item inspection:** Item browsing exists
+- **Accepted — Nested refrigerator item inspection:** Item browsing exists
   only in outer `Inspecting`, under its modal. Registered-trigger pointer ray:
   reversible MPB tint/cursor name; keyboard/gamepad cycle-confirm equivalent.
   Stock: pure Browsing→FlyingIn→Inspecting→FlyingOut;
@@ -5563,12 +5632,12 @@
   Bar, Home and Supermarket families retain texture/material identity but not
   a different hue. The remaining channels are implemented inputs, not yet
   claims about built geometry.
-- **Accepted — PC world composite:** One Unity 6 RenderGraph feature runs at
-  `AfterRenderingPostProcessing` for the final Game camera. PS1/default:
-  footprint-average `640x360`, 35% perceptual RGB555/Bayer, point upscale
-  (exact 2x/3x at 720p/1080p); authored `426x240`/`320x180` presets remain.
-  The `2026-10-20` styles share intoxication UV warp, ghost/chromatic sampling,
-  warmth, exposure pulse and vignette. Mobile integration remains deferred.
+- **Accepted - PC native scene composite:** `SceneCompositeRendererFeature` runs
+  at `AfterRenderingPostProcessing` for the final Game camera, preserving source
+  resolution. `SceneComposite.shader`/`SceneComposite.hlsl` share intoxication
+  warp/chromatic sampling/warmth/exposure/vignette, optional halation and SMAA.
+  `ScenePresentationExclusion` keeps preview/reflection cameras outside shared
+  lens/post effects. No low-resolution presentation profile remains.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
@@ -5670,7 +5739,7 @@
   `AlwaysLitLawTests` pins the number, both registries and the mountain
   ratios; the re-anchored fixture tests pin each consumer.
 - **Accepted — Exterior windows use emission, not realtime Lights:** special
-  Bar/Home/Supermarket panes reuse the packaged `Ps1Lit` emission variant and
+  Bar/Home/Supermarket panes reuse the packaged shared lit shader emission variant and
   the same window sheet for albedo and emission; ordinary Blender prototypes
   keep emission in `CityBuildingWindowSlots`. Both paths use the same `0.48`
   emission strength and §20 fixture factor. Dark panes stay dark, every lit
@@ -6354,6 +6423,9 @@
   on capture and closes on restoration. `HomeUrineEffect` advances emitted
   packets under gravity and sweeps their travelled segments against actual
   Home mesh surfaces, preserving the existing flight when the aim changes.
+  After initialization, surface transforms refresh before emission, for live
+  packets or revised residue projection, once per frame; idle attached marks
+  need no whole-room refresh.
   Bowl and solid impacts own their contact sound and splash. Imported effect
   meshes are reused; surface projection deforms the authored stain mesh.
   Nearby marks merge in the bounded `HomeUrineResidue` store (`384` deposits,
@@ -6426,7 +6498,7 @@
   ceramic floor lies at `(1.995, 0.720, 3.425)`; the old wide Hollow insert is
   entirely replaced by the small drain at `(1.995, 0.724, 3.425)`, preserving
   its semantic name. `HomeBrushingResources` shares the readable metre-scale
-  imported meshes and one PS1 Lit cream material. Sixteen downward cavity
+  imported meshes and one shared Lit cream material. Sixteen downward cavity
   rays, three incoming rays and FBX round trips validate the authored opening.
 
   The face atlas originally added `TeethDisplay` and `Spit` plus their soiled
@@ -6849,7 +6921,7 @@
 
   A later explicit user correction on `2026-09-07` removes the entire
   camera-lens water presentation. The component, lifecycle hooks and
-  per-camera composite payload are deleted; `Ps1Composite` again samples
+  per-camera composite payload are deleted; `SceneComposite` again samples
   the scene through its ordinary existing distortion path. Tray water,
   the stream, steam and final nozzle drips retain their world-space
   presentation and cleanup. No replacement overlay is introduced.
@@ -7298,16 +7370,15 @@
   previously hidden renderers off; wardrobe leases exclude the head.
   Torso and limbs remain visible; the camera moves
   out of the skull while the body still locates the player at the board.
-- **Accepted — saved graphics options:** `GraphicsEffectsSettings` lazily reads
-  `PlayerPrefs`, saves changes and exposes polled `Version`. `graphics.style`
-  joins seven flags: `graphics.dof`, `graphics.intoxication_fx`,
-  `graphics.dither`, `graphics.scanlines`, `graphics.aspect_4_3`,
-  `graphics.vertex_jitter`, `graphics.begotten`. First four default on;
-  4:3/jitter/Begotten opt in; Clean-only `graphics.clean_aa` defaults on.
-  Style gates dither/scanline/snap values without
-  clearing flags. Camera-specific snap globals retain exclusions; intoxication
-  forces zero when disabled. DoF changes runtime/cloned profiles only.
-- **Accepted — depth of field runs in two tiers around the PS1 crush:** the
+- **Accepted - saved graphics options:** `GraphicsEffectsSettings` lazily reads
+  `PlayerPrefs`, saves changes and exposes polled `Version`. The native options
+  are `graphics.dof`, `graphics.intoxication_fx`, `graphics.aspect_4_3`,
+  `graphics.clean_aa`, `graphics.clean_reflections`, `graphics.clean_volume`,
+  `graphics.clean_halation`, `graphics.clean_directional_highlights` and
+  `graphics.clean_bounce`. Only 4:3 defaults off. Every row remains available;
+  retired style/console-effect keys are ignored. DoF changes runtime/cloned
+  profiles only; disabled intoxication forces zero.
+- **Accepted — shared depth of field has two tiers:** the
   always-on tier is Gaussian in every scene grade (City `start 8 / end 28 /
   radius 1.5` — the band must sit inside the `48 m` far clip where exp² fog
   `0.070` has not yet flattened depth). The six true interiors share radius
@@ -7321,325 +7392,15 @@
   `SetFixedPose` trios. The bar begins Bokeh only after the menu is fully open,
   uses `35 mm / f/8`, and calls `EndImmediately` when the booklet rests,
   service begins or standing starts, so neither nearby bartender work nor a
-  returned seated/third-person camera inherits its tail. Because URP clamps
-  the Gaussian radius at `1.5` render
-  pixels, the far blur is deliberately subtle after the `640x360` downsample;
-  the documented fallback if it reads as invisible is Bokeh in the city grade
-  (aperture ~10), not a render-scale change, which would soften the whole PS1
-  look. Transparent depth-less surfaces (river water, glass, particles) blur by
-  the opaque depth behind them — accepted at this subtlety.
-- **Accepted — film stays in the composite, polygon jitter stays in Lit:**
-  Bayer 4x4 dithering perturbs the perceptual value by at most half an RGB555
-  step before quantization, indexed by internal-pixel coordinates so the
-  checker is chunky-pixel-locked; the scanline mask darkens the leading third
-  of each internal row on the upscale pass (a step, not a cosine — a symmetric
-  cosine cancels at exactly 2x vertical scale, the 720p case). Optional vertex
-  jitter instead wraps the stock URP Lit vertex functions in the project-owned
-  `Ps1Lit` shader and rounds clip XY onto the presented-pixel grid. Its strength
-  is a camera-scoped global rather than material state, preserving the SRP
-  Batcher; inventory-preview and reflection cameras carry an explicit
-  `Ps1VertexJitterExclusion`. Intoxication additionally drives URP
-  `ChromaticAberration` (`0 → 0.45`) and `LensDistortion` (`0 → -0.14`, small
-  and negative so the pinched rim stays under what the point-sample crop hides)
-  through `IntoxicationLensVolumeDriver` at volume priority `8`.
-- **Accepted (2026-09-04) — the Begotten mode is a print held in the
-  composite, not a change to the game's clock or its grade:** the option
-  replaces the point upscale with three passes of `Ps1Composite.shader`
-  (`BegottenSoft` half-size perceptual luma, `BegottenGlow` quarter-size
-  blur, `BegottenLevels` one pixel of scene statistics, `BegottenPrint` at
-  output size) and a pure seeded projector, `BegottenFilmModel`. The print
-  is exposed for the scene the way a printer exposes for a negative: the
-  levels pass sweeps the glow in `12x12` taps for the mean and deviation of
-  the light, the mean prints at the middle of the scale and two deviations
-  reach either end (`exposed = 0.5 + (light − mean) / 4σ`, σ floored at
-  `0.05`), a touch of local contrast (`light + 0.5·(light − glow)`) rims a
-  silhouette against a tone like its own, and the per-picture threshold
-  roll around `0.42` is judged inside that range with a `±0.06` band where
-  three octaves of value-noise grain decide the pixel, so the boundary
-  boils instead of aliasing. The width is the readability dial: the common
-  tone (fog, sky) burns to bone, a road one deviation darker prints as
-  sparse grain rather than solid soot so a black figure still stands on
-  it, two deviations down is soot. Narrower exposure ranges made night ground
-  and hero merge; fixed thresholds made common tones boil. Lamp flicker, vignette
-  and gate weave act on the light before the threshold, never on the
-  printed value, so a dark corner is soot with a boiling edge and never
-  grey. The film runs at `24` pictures a second of unscaled time with
-  `2-3-2-3` game frames per picture and a `3 %` chance per picture of
-  sticking for two to four ticks; between pictures no composite pass is
-  recorded and `cameraColor` is pointed at a persistent `RTHandle` imported
-  with `discardOnLastUse = false`, into which the print pass renders
-  directly — no copy. The reallocation check compares every descriptor
-  field including the name, so the descriptor is pinned field by field; a
-  reallocated texture holds nothing and always prints. `Application.targetFrameRate`
-  stays `60` because hero handling is calibrated to it. The mode forces the
-  4:3 gate, mutes dither, RGB555 and scanlines (meaningless under it) —
-  amended 2026-09-08: all four now cross the ramp below rather than
-  switching, and everything here describes the mode at full strength. Keeps
-  the chosen style's eligible vertex jitter and the player's drunk lens, and skips
-  cameras marked `Ps1VertexJitterExclusion` — the inventory preview stays in
-  colour (a documented residual) and the reflection probe never holds a
-  face. IMGUI (every menu, prompt, subtitle and fade) draws after the
-  camera, so the print never touches it. The grain is sized in output
-  pixels (`≈2.9 px` at 1080p), not on the internal grid, so it reads as
-  emulsion rather than blocks over the `640x360` upscale.
-- **Accepted (2026-09-08) — the Begotten mode arrives over fifteen seconds,
-  and the ramp belongs to the transition rather than to the setting:** the
-  boolean the composite read each frame is a strength in `0..1`
-  (`BegottenRampModel`, `BegottenModeRamp`), and the governing contract is
-  that at strength one the output is the picture the mode has always made,
-  so every existing print assertion stays meaningful. In takes `15 s`, out
-  takes `3 s` — coming in is the effect, going out is only getting out of
-  the way. Only a change made with the menu up is an arrival: it is armed
-  there and started by `PauseMenuController`'s deferred close, because the
-  world behind a paused menu is a still and a mode that arrived over that
-  still would have finished before the player saw a frame of it. A flag
-  moving with no menu open (a test, a debug key, a saved preference first
-  read) snaps, which is why the PlayMode print suite needed no change. A
-  scene that loads with the mode on starts at full strength. The clock is
-  `GameTimeScaleRuntime.CalendarDeltaTime`, so `Time.timeScale = 0` cannot
-  stop it, and the eased value is `c²(3−2c)` — exact at both ends.
-  **The gate genuinely narrows**: the aspect fraction is
-  `Lerp(1, AspectFraction43, weight)` and the output width is rounded from
-  it, so the picture is resampled into a shrinking window rather than
-  covered by growing bars (the user's choice, and
-  `Begotten_HalfArrivedNarrowsPartWayAndKeepsColour` is the regression).
-  **The blend is in `FragUpscale`, not `FragPrint`**: blending inside the
-  print writes into the persistent held texture, so at weight `0.01` the
-  whole game would drop to 24 fps — the exact snap the ramp exists to
-  remove. The colour layer stays live at 60 fps and the print composites
-  over it, sampled through `_BegottenStruckAspect` because a held picture
-  may be a tick old, from when the window was a hair wider. Both uniforms
-  are pushed from `Setup` every frame: written only inside the compose pass,
-  the shared material carried the last value into the ordinary path and the
-  picture stayed grained and vignetted after the mode was switched off.
-- **Accepted (2026-09-08) — the Begotten mode has a soundtrack, and it is
-  the optical soundtrack of the same print:** the picture was replaced by a
-  16 mm print while the world went on sounding exactly as clean as before,
-  which told the player nothing. A second native effect in the existing
-  plug-in, `Begotten Optical` (`tools/audio-vhs/OpticalProcessor.h`), now
-  stands **last on `Master/Perception`**, after the tape and the underwater
-  low-pass, because the room, the water and the drink happen to the world
-  while the print happens to the picture of it. `Master/UI` stays dry, which
-  is the same rule the picture already keeps: IMGUI draws after the camera
-  and is never printed. The effect is driven every `LateUpdate` by
-  `BegottenAudioDriver` from `BegottenModeRamp.Weight` — the SAME eased
-  `0..1` the composite prints with, only read and never advanced, so the
-  fifteen seconds cannot run at a different speed in the ear than in the eye
-  and a composite that is not printing cannot leave the sound printed.
-  `Assets/Scripts/Rules/BegottenAudioRules.cs` mirrors the header's published
-  constants and a contract test reads the header, so a retune of either side
-  fails the build rather than a listening session.
-  In order: the channels fold to one track (a 16 mm release print carries one
-  variable-area track); the print's surface joins at `-30 dBFS` with `-24 dBFS`
-  dust; the track swims `1.25 %` peak speed error; the band closes `10 → 200 Hz`
-  over two poles and `22000 → 3800 Hz` over three, in log frequency; the
-  emulsion saturates; **the frame line dips the track by `22 %` once per
-  picture**; the track is compressed `2.5:1` above `-18 dBFS` with no
-  make-up gain. The projector's transport joins after all of it at `-31 dBFS`,
-  neither band-limited nor compressed, because it stands in the room rather
-  than on the film. **Wow, the frame line, dust and transport all sit on a
-  twenty-four per second grid**, counted with a fractional accumulator because
-  `22050/24` is not an integer; the frame line is the strongest of those ties
-  and the intermittent term in the swim is the subtlest.
-  **Amended the same day after the user heard almost nothing:** the first
-  tuning was `-42/-34/-38 dBFS` into a `150 Hz - 5 kHz` band with `0.75 %`
-  swim and no frame line, and it read as a slightly muffled mix beside a
-  picture that had thrown away every mid-tone. Two causes, one of them a real
-  mistake: **the surface levels are PRE-band, and a three-pole gate throws away
-  roughly nine tenths of white noise's energy, so a `-42 dBFS` hiss reached the
-  ear at about `-51 dBFS`** — the settled `quiet_floor_rms` is the number that
-  means anything and it went `0.0029 -> 0.0074`. The frame line is the other,
-  and it is the change that ties the ear to the eye: a dip once per picture is
-  what a worn print does, and it is never a gate, because picture and sound are
-  read at different points of the film precisely so the intermittent cannot
-  reach the sound. Measured in the live Unity mixer, energy above 5 kHz on a
-  noise probe now goes `0.505 -> 0.075`. The stages answer the one weight with different curves — band and
-  fold first, swim next, surface as `w²` and apparatus as `w³` — so the
-  fifteen seconds read as the world receding and only then as the world being
-  projected. A single one-pole gate was tried first and rejected by
-  measurement: it still passed `58 %` of the energy above 5 kHz.
-- **Accepted exception, by explicit user decision on `2026-09-08`:** the
-  tape's rule that its effect «transforms existing audio only: no generated
-  hiss, voice, new sound source» does NOT bind this one. The user asked for
-  the filter, the print's own noise and the projector, having been told what
-  the tape's rule said. The surface, the dust and the transport are generated
-  sound with no in-fiction cause, and the art bible's §16 «Тест звука» is
-  amended for them exactly as it was amended for the tape on `2026-09-05`.
-  Nothing else is lifted: the print carries no voice, no drone and no content
-  of the 1990 film, because the picture does not carry Merhige's imagery
-  either — it photographs this game.
-  **The tape and the print are mutually exclusive**, by the user's decision
-  that the mode is being prepared for a hangover rather than for drunkenness:
-  `IntoxicationAudioDriver` multiplies its intensity by `1 - weight`, so the
-  two apparatus are never stacked and today's behaviour already equals the
-  logic that will drive the weight later.
-  Residual, untested: the mixer asset carries `m_EnableSuspend: 1` with a
-  `-80 dB` threshold, so a bus that fell digitally silent could in principle
-  suspend the graph and stop the projector with it. Gameplay always carries
-  ambience, so this has not been observed; it is recorded rather than fixed.
-- **Accepted (2026-09-08) — the print's soundtrack is a GEOMETRY, not a
-  channel with a waveshaper on it:** the user heard the effect above and said
-  it was still badly done, and that it should be distorted and sharp. Measuring
-  the shipping DLL proved him right and named the bug: the saturator was
-  `tanh(value·drive)/drive` with `drive = 1 + 1.8·w`, and at the levels a game
-  bus actually carries that curve is a straight line. **The print measured
-  1.4–4 % distortion at bus peaks of −8 to −26 dBFS — a warm tint, not a
-  distortion — sat 5 LU under the music it replaced and kept about a per cent
-  of its energy in 1–6 kHz.** Quiet, dull and warm: the exact opposite of the
-  brief. The `4.13 %` reading at `−26 dBFS` was not even distortion; it was the
-  print's own hiss landing in the harmonic bands, which is why the effect's
-  real behaviour was only ever discoverable by ear.
-  The fix is a change of topology, not of tuning. A variable-area track carries
-  the programme as the WIDTH of a clear wedge and gives it back as the AREA of
-  light through a slit, and the wedge cannot open past the mask nor close past
-  base fog — so **the nonlinearity must be referenced to the medium's own
-  100 % modulation and never to dBFS.** A PPM-ballistic meter reads the
-  post-highpass programme, a dubbing mixer's hand rides the dub so PEAKS sit
-  `9 dB` over full modulation, and the emulsion clips that modulation against a
-  mask spread `20 %` wider on the clear side than the dark. **Peak and not
-  RMS**: an RMS reference is crest-blind, so a 3 dB-crest sine would never
-  reach the knee while a 12 dB-crest bed tore, and the amount of grind would be
-  set by the source's crest factor rather than by the medium. The result is
-  measured at **37 % distortion, identical to two decimal places from `−34` to
-  `−8 dBFS`** — the whisper and the shout tear alike, which is the property the
-  whole redesign exists for.
-  Four supporting changes, each with its own measurement. **The slit was never
-  a slit:** three exponential poles at `3800 Hz` are `−3 dB` at `1937 Hz`, a
-  telephone, and they threw the harsh band away before the nonlinearity ever
-  saw it; it is now four TPT poles at the `29 µm` aperture null (`6307 Hz`,
-  `−3 dB` at `2740`). **The topology is part of the contract**: the exponential
-  pole `y += c(x−y)` has a stopband floor of `c/(2−c)`, which at `22050 Hz` is
-  `−2.9 dB` per pole, so the old cascade could never close the slit at that
-  rate at all — invisible because the old spectral loop ran only at `48000`.
-  **Record-side pre-emphasis, never undone** (`4×`, zero at `1200 Hz`), because
-  prints were cut bright to survive the Academy curve and the slit and horn
-  were the de-emphasis. **The cone in the lid**, a `+10 dB` bell at `4200 Hz`,
-  `Q 1.60` — the cheapest sharpness in the machine. And **cross-modulation**,
-  the classic named distortion of an optical track and the one mechanism that
-  makes this a print rather than a fuzz pedal. Measured linear response at full
-  weight, relative to `1 kHz`: `−18 dB` at `120 Hz`, `+11.2 dB` at `4.2 kHz`,
-  `−0.2` at `6.3 k` and `−15` at `10 k` — a presence peak with a cliff
-  immediately above it, and identical within `0.6 dB` at all four sample rates.
-  **The projector's fader is FIXED and is not the reciprocal of the ride.** A
-  reciprocal make-up was designed, attacked and rejected: it pins the output
-  peak to the bus level, so the rail becomes a permanent second clipper on a
-  hot bus, and it is a content-dependent compensation for a band loss. Fixed,
-  the printed peak is the mask's own height times the fader **for any input at
-  all** — a full-scale square prints at `0.153`, full-scale noise at `0.209`, a
-  quiet room at `0.181`, and DC and anything under the meter's hold peak print
-  exactly as silence does. The `2.5:1` compressor is deleted outright (it was
-  fed a signal whose crest the clipper had already destroyed) and the
-  input-referenced bound goes with it: the bound is now the amplifier's own
-  rail, absolute at `−6 dBFS`, with twelve decibels of headroom it provably
-  never uses. The price is stated rather than hidden: **a bus quieter than the
-  reference prints LOUDER**, bounded by `ExposureMaxGainDb + ProjectorGainDb`.
-  That also means the fader must be referenced to the level the GAME carries —
-  set on the validator's bed, which is six decibels under the themes, it put
-  the print `7.3 LU` below the music, which reads as the game turning itself
-  down rather than as a projector in the room; at `−19 dB` it lands `3.4 LU`
-  under `city_theme` with its peak still inside the master compressor's own
-  threshold.
-  **The frame line went `22 % → 34 %` and its sharpness `14 → 9`**: at the
-  first tuning its `24 Hz` comb line was a quarter of a decibel, far under the
-  roughness threshold, which is why the strongest tie between ear and eye read
-  as nothing. The emulsion runs at twice the rate with first-order
-  antiderivative antialiasing (naive is `−32 dBc` in band, either measure alone
-  about `−40`, the two together `−89`), and **both antiderivatives are
-  evaluated with the CURRENT sample's mask** — the mask moves every sample, so
-  a cached `F(m[n−1])` carries a term divided by a difference that is smallest
-  exactly where the material is quietest. The wet path's `15`-sample
-  oversampler latency is subtracted from the swim and bridged by a `64`-sample
-  crossfade into the exact bypass, because without it every disable was a
-  `0.31 ms` time jump of a full-amplitude signal that no test could see.
-  **Three of the old assertions encoded the old taste and were rewritten, not
-  loosened.** «Output ≤ input peak + noise floor» is false for a medium whose
-  density sets its own level; the monotone `energy_above_5k` decrease measured
-  a LINEAR claim with a NONLINEAR probe and is replaced by a multitone below
-  the meter's hold peak — where the mixer's hand stays off the fader and the
-  print is genuinely linear — run at all four rates; and every ramp threshold
-  became relative, because an absolute one silently loosens the moment the
-  print's level moves. Everything is now measured on the signal path,
-  `effect(x) − effect(zeros)` from two identically seeded instances, exact
-  while the rail is idle, which every probe asserts. New contracts the first
-  tuning had no equivalent of: the print tears above `20 %` at every bus level
-  and within `40 %` of itself across them; the tearing arrives monotonically
-  (`0 → 0.8 → 6 → 37 %`) and is exactly zero at rest; and **everything loud in
-  the apparatus must sit on the picture grid**, with nothing off that grid
-  louder than the picture itself — which is what polices the exciter lamp's
-  `100 Hz` ripple. `48 Hz` is not a rival there: the claw pulls once a picture
-  and the shutter's second blade falls halfway through it, so it is the
-  picture's own second harmonic.
-  **A constant published as an expression is a number nothing checks.** The
-  mirror's regex reads plain literals only, so `IntermittentHz` and
-  `ShutterHz`, written as products of `PicturesPerSecond`, were invisible to it
-  and `TheSwimIsLockedToThePictureRate` was vacuous against the header for a
-  whole release: `24` could have been retuned to `25` with a green build. Both
-  are literals now on both sides, and
-  `TheHeaderPublishesLiterals_BecauseTheMirrorCannotReadExpressions` fails the
-  build on any published constant that is not one. `SaturationDrive` and the
-  four compressor constants are gone from the header, the C# mirror and the
-  whitelist in the same commit; `CompressorRatioAt` is replaced by
-  `ModulationLimitAt`, and «at rest the track is not compressed» becomes «at
-  rest the emulsion is a straight line», which is the honest at-rest statement
-  for a chain whose point is that it tears.
-- **Accepted (2026-09-09) — the print must arrive THROUGHOUT the ramp, and a
-  quantity heard on a log scale cannot be interpolated linearly against the
-  weight:** the user judged the redesign above by ear and rejected its ARRIVAL —
-  «я ощущаю изменения только при 100 % применении фильтра, а оно должно
-  изменяться в звуке прям плавно, прям так же как визуал». The number was
-  already in the previous session's own report and had been read as a success:
-  tearing across the ramp went `0 → 0.79 → 1.4 → 16.5 → 37 %`, which is
-  monotone — the property that was asserted — while being five sixths spent in
-  the last fifth of the fifteen seconds. **Monotone is not the same as
-  gradual, and only the first was ever tested.**
-  Three causes, all the same mistake. The DRIVE is a RATIO against the mask;
-  scaled by the weight it left the dub twelve decibels under the reference at
-  half weight, where nothing tears however wide the mask stands. The BANDS
-  sweep four and a half octaves at the bottom and under two at the top, so at
-  half weight the slit stood at `11.8 kHz` and the highpass at `55 Hz`, neither
-  audible as it leaves. And the AMPLIFIER's voice sat on `w²`, put there in the
-  same session to hold down a mid-ramp swell — measured afterwards, that swell
-  was `0.1 LU` and the cost was the print's whole bite moving into the last
-  fifth.
-  The drive now starts a published `ArrivalHeadroomDb = 20` under the track's
-  own reference and closes on it as `w^0.20`. **Fixed decibels, not a fraction
-  of the mixer's ride:** the ride is `9 − 20log10(peak)` and therefore depends
-  on how loud the room happens to be, so scaling by it made a quiet scene reach
-  the tearing far later in the ramp than a loud one — the shape of an arrival
-  is a property of the print, not of the room. The projector's fader takes back
-  exactly what the early drive adds, so the published gain
-  `10^(w·(ride + fader)/20)` is arithmetically unchanged and **the loudness of
-  the ramp did not move at all**; only the ratio the emulsion sees moves
-  forward. The bands take `w^0.50` and the amplifier goes back to `w^1`. The
-  mixer also acquires his level on the first picture instead of slewing to it,
-  because otherwise six seconds of every threaded reel passed with the hand
-  still climbing; he still rides slowly afterwards, which is what keeps a loud
-  passage tearing harder than a quiet one.
-  Measured, the ramp is now `0 → 3.08 → 11.41 → 18.10 → 23.15 → 27.36 → 31.32 →
-  37.32 %` at weights `0, .1, .2, .35, .5, .65, .8, 1`, and **the shape is a
-  contract rather than a taste**: the validator fails under `4 %` a fifth of
-  the way in, `8 %` a third of the way and `15 %` at half. The response at full
-  weight, the rail, the 24 Hz grid and the exact bypass are untouched.
-- **Current — a measuring test threads a fresh reel (`DebugResetProjector`):** the
-  print's threshold and exposure drift on a five second cycle of the film's
-  own clock, so a measured picture depends on how much film has already run
-  through the gate — which is to say on whatever else rendered first. Six
-  extra pictures ahead of `Begotten_Sheet` moved its day median from `34 %`
-  to `66 %` and its night measure from `51.5 %` to `60.7 %` against a `60 %`
-  ceiling. A median over three pictures does not help: all three move
-  together, because this is phase and not noise.
-- **Accepted — the opt-in 4:3 mode is a composite crop, not a camera change:**
-  when `graphics.aspect_4_3` is on (default off), the feature computes the
-  internal resolution for the centered 4:3 window (`480x360` from a 16:9
-  output), pass 0 reads only that window (`sourceUv.x = 0.5 + (uv.x - 0.5) *
-  _Ps1AspectFraction`) and pass 1 pillarboxes with pure black bars. Because
-  Unity FOV is vertical, the central crop of the widescreen frame IS the exact
-  image of a 4:3 camera at the same vertical FOV — no FOV compensation, no
-  `Camera.rect` cleanup, and the crop/pillarbox pair cancels to an identity
-  mapping over the visible region (flat-tone byte values keep the exact RGB555
-  blend at unchanged screen positions, which the pillarbox PlayMode test
-  exploits). On displays at or narrower than 4:3 the fraction clamps to 1. The
-  IMGUI retro overlay deliberately stays full-screen above the bars.
+  returned seated/third-person camera inherits its tail. Transparent depth-less
+  surfaces (river water, glass, particles) blur by the opaque depth behind them.
+- **Accepted - shared intoxication lens:** `IntoxicationLensVolumeDriver` drives
+  URP chromatic aberration 0..0.45 and lens distortion 0..-0.14 at priority 8;
+  native scene effects retain the same shared input and exclusions.
+- **Accepted - optional 4:3 is an aspect choice:** `graphics.aspect_4_3` defaults
+  off. The native composite crops the central source window and adds black bars
+  at the same vertical FOV, without changing the camera rect. At or below 4:3
+  the aspect fraction clamps to one; the IMGUI canvas remains full-screen.
 - **Accepted — Cross-zone anchor-consumer dressing:** `CityWindDressingPlanner`
   is the first planner that consumes other plans' public descriptors instead
   of the layout alone: it reads decoration, seacoast, cemetery and fringe-yard
@@ -7843,8 +7604,7 @@
   brightness. The whole thing is one changed line in `FragDownsample`
   (`ApplyVertigoWhirlpool(input.texcoord)`) behind an early-out on still
   water, so every sober frame stays bit-exact and the boundary margin never
-  gets to zoom the picture; Begotten mode reuses pass 0 and inherits the
-  water for free. `IntoxicationWhirlpool` is the CPU mirror of that shader
+  gets to zoom the picture. `IntoxicationWhirlpool` is the CPU mirror of that shader
   function and the home of the constants —
   `IntoxicationVertigoWhirlpoolTests` proves on it that the disc is untouched,
   that equal radii in every direction twist equally at both aspects, that a

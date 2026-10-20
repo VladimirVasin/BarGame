@@ -380,8 +380,8 @@ namespace BarPromenade.Tests.PlayMode
                     "Footsteps must follow the visible material outline at " + point);
             }
 
-            // PS1 screen snapping exposes a T-junction even when height/UV
-            // probes agree. The close, unpaved seam needs the same vertices
+            // A T-junction can open a seam even when height/UV probes agree.
+            // The close, unpaved seam needs the same vertices
             // on both terrain owners, including the yard's extra detail cuts.
             var edges = new System.Collections.Generic.SortedDictionary<float, Vector3>[2];
             for (int side = 0; side < 2; side++)
@@ -399,10 +399,10 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(edges[0].Count, Is.GreaterThan(4));
             Assert.That(edges[0].Keys, Is.EquivalentTo(edges[1].Keys),
-                "Different seam edge subdivisions open black cracks under PS1 vertex snapping.");
+                "Both terrain owners must share the same seam subdivisions.");
             foreach (var edge in edges[0])
                 Assert.That(Vector3.Distance(edge.Value, edges[1][edge.Key]), Is.LessThan(.0001f),
-                    "Both ground skins must snap the exact same shared edge position.");
+                    "Both ground skins must use the exact same shared edge position.");
         }
 
         private static bool TryReadEastSurface(MeshFilter filter, Vector2 point, out float height, out Vector2 uv)

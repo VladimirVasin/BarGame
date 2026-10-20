@@ -652,7 +652,7 @@ namespace BarPromenade
         /// the village's. The bearing goes through the seeded
         /// azimuth fan with a physics clearance probe: the playtest
         /// caught flushed birds flying one scripted low line
-        /// THROUGH the buildings, and the PS1-honest answer is not
+        /// THROUGH the buildings, and the bounded presentation answer is not
         /// pathfinding — just a bird that picks, per flush, the
         /// first of nine seeded lines that does not start inside a
         /// wall.

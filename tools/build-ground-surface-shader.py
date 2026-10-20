@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Keep the exterior ground variant on the project's complete PS1/URP passes.
+"""Keep the exterior ground variant on the project's complete project Lit/URP passes.
 
-Ps1Lit remains untouched. Only the forward surface hook and two interpolators
-are added; lighting keywords, PS1 snap, shadows and depth passes stay upstream.
-Run --check after a URP or Ps1Lit upgrade. No Unity/package cache is modified.
+Lit remains untouched. Only the forward surface hook and two interpolators
+are added; lighting keywords, shadows and depth passes stay upstream.
+Run --check after a URP or Lit upgrade. No Unity/package cache is modified.
 """
 from pathlib import Path
 import argparse
@@ -20,9 +20,9 @@ def replace_once(text, old, new):
 
 
 def outputs():
-    shader = (SHADERS / "Ps1Lit.shader").read_text(encoding="utf-8")
+    shader = (SHADERS / "Lit.shader").read_text(encoding="utf-8")
     shader = shader[shader.index('Shader "'):]
-    shader = replace_once(shader, 'Shader "Bar Promenade/PS1 Lit"',
+    shader = replace_once(shader, 'Shader "Bar Promenade/Lit"',
                           'Shader "Bar Promenade/Layered Ground"')
     shader = replace_once(shader, '    Properties\n    {', '''    Properties
     {

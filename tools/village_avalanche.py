@@ -218,7 +218,7 @@ def build_avalanche(add):
     add("Avalanche", "OldSedimentInBrokenToe", _dirty_face_strata(), "LayeredStone", False,
         (.515,.53,.49,1), terrain_fit="surface")
     # Unequal ribbons leave dirt-dark folds exposed between old compacted snow
-    # and the most recent snowfall; broad value shapes survive storm/PS1 fog.
+    # and the most recent snowfall; broad value shapes remain legible through the storm fog.
     for i, (x,z,rx,rz) in enumerate(((-5,2.4,3.4,1.5),(2,3.0,4.1,1.9),
             (-8,7.5,4.2,2.4),(5.8,8.1,3.5,2.8),(-2,11.2,4.1,2.5),
             (-11,14.3,3.2,2.3),(10.4,15.2,3.6,3),(-2,17.3,5.4,2.7),

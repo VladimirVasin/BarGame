@@ -157,7 +157,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(fullLight / samples, Is.GreaterThan(shadowedLight / samples + .006f),
                 "Removing geometry shadows must visibly brighten the same floor.");
             Assert.That(fullLight / samples, Is.GreaterThan(darkLight / samples + .025f),
-                "The overhead source must really illuminate the warehouse after the PS1 composite.");
+                "The overhead source must really illuminate the warehouse after final presentation.");
         }
 
         private static float FanPixelLight(Color32 color) =>

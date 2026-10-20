@@ -90,6 +90,7 @@ namespace BarPromenade
 
         public int EmittedPacketCount { get; private set; }
         public int SurfaceHitCount { get; private set; }
+        internal int SurfaceRefreshCount { get; private set; }
         public int BowlHitCount { get; private set; }
         // Resolved settings applied by the latest valid emission step, including zero flow.
         public float LastEmissionFlow { get; private set; }
@@ -219,7 +220,9 @@ namespace BarPromenade
         {
             if (!initialized) return;
             float seconds = Mathf.Max(0f, Time.deltaTime);
-            RefreshSurfaces();
+            // EmitStep refreshes before emission. Once the last packet lands,
+            // unchanged attached films need no whole-room receiver update.
+            if (ActivePacketCount > 0) RefreshSurfaces();
             foreach (Packet packet in packets)
                 if (packet.Active) { SimulatePacket(packet, seconds); if (packet.Active) PlacePacket(packet); }
             foreach (Splash splash in splashes)
@@ -284,6 +287,7 @@ namespace BarPromenade
         {
             if (mapFrame == Time.frameCount) return;
             surfaces.Refresh();
+            SurfaceRefreshCount++;
             mapFrame = Time.frameCount;
         }
 
@@ -313,6 +317,9 @@ namespace BarPromenade
                     stains[index] = stain;
                 }
                 if (stain.Revision == deposit.Revision) continue;
+                // Deposits can also be revised/restored outside this emitter.
+                // Refresh lazily before projection so moved receivers stay exact.
+                RefreshSurfaces();
                 stain.Revision = deposit.Revision;
                 ProjectStain(stain, deposit, surface);
             }

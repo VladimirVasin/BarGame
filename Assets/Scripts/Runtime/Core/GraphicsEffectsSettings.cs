@@ -2,65 +2,31 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum GraphicsStyle
-    {
-        Ps1 = 0,
-        CleanLowPoly = 2
-    }
-
     public static class GraphicsEffectsSettings
     {
-        private const string StyleKey = "graphics.style";
         private const string CleanAntialiasingKey = "graphics.clean_aa";
+        private const string CleanReflectionsKey = "graphics.clean_reflections";
+        private const string CleanVolumeKey = "graphics.clean_volume";
+        private const string CleanHalationKey = "graphics.clean_halation";
+        private const string CleanDirectionalHighlightsKey = "graphics.clean_directional_highlights";
+        private const string CleanBounceKey = "graphics.clean_bounce";
         private const string DepthOfFieldKey = "graphics.dof";
         private const string IntoxicationLensFxKey =
             "graphics.intoxication_fx";
-        private const string DitherKey = "graphics.dither";
-        private const string ScanlinesKey = "graphics.scanlines";
         private const string AspectRatio43Key = "graphics.aspect_4_3";
-        private const string VertexJitterKey = "graphics.vertex_jitter";
-        private const string BegottenKey = "graphics.begotten";
 
         private static bool loaded;
-        private static GraphicsStyle style;
         private static bool cleanAntialiasingEnabled;
+        private static bool cleanReflectionsEnabled;
+        private static bool cleanVolumeEnabled;
+        private static bool cleanHalationEnabled;
+        private static bool cleanDirectionalHighlightsEnabled;
+        private static bool cleanBounceEnabled;
         private static bool depthOfFieldEnabled;
         private static bool intoxicationLensFxEnabled;
-        private static bool ditherEnabled;
-        private static bool scanlinesEnabled;
         private static bool aspectRatio43Enabled;
-        private static bool vertexJitterEnabled;
-        private static bool begottenModeEnabled;
 
         public static int Version { get; private set; }
-
-        public static GraphicsStyle Style
-        {
-            get
-            {
-                EnsureLoaded();
-                return style;
-            }
-            set
-            {
-                EnsureLoaded();
-                GraphicsStyle next = NormalizeStyle((int)value);
-                if (style == next) return;
-                style = next;
-                PlayerPrefs.SetInt(StyleKey, (int)next);
-                PlayerPrefs.Save();
-                Version++;
-                GameLog.Info("graphics", "style_changed",
-                    GameLog.Field("style", next.ToString()));
-            }
-        }
-
-        // Stored flags remain the player's choices even when the selected
-        // style cannot use them; switching back restores those choices.
-        public static bool IsDitherApplicable => Style == GraphicsStyle.Ps1;
-        public static bool IsScanlinesApplicable => Style == GraphicsStyle.Ps1;
-        public static bool IsVertexJitterApplicable => Style == GraphicsStyle.Ps1;
-        public static bool IsCleanAntialiasingApplicable => Style == GraphicsStyle.CleanLowPoly;
 
         public static bool CleanAntialiasingEnabled
         {
@@ -70,6 +36,36 @@ namespace BarPromenade
                 return cleanAntialiasingEnabled;
             }
             set => Apply(ref cleanAntialiasingEnabled, value, CleanAntialiasingKey);
+        }
+
+        public static bool CleanReflectionsEnabled
+        {
+            get { EnsureLoaded(); return cleanReflectionsEnabled; }
+            set => Apply(ref cleanReflectionsEnabled, value, CleanReflectionsKey);
+        }
+
+        public static bool CleanVolumeEnabled
+        {
+            get { EnsureLoaded(); return cleanVolumeEnabled; }
+            set => Apply(ref cleanVolumeEnabled, value, CleanVolumeKey);
+        }
+
+        public static bool CleanHalationEnabled
+        {
+            get { EnsureLoaded(); return cleanHalationEnabled; }
+            set => Apply(ref cleanHalationEnabled, value, CleanHalationKey);
+        }
+
+        public static bool CleanDirectionalHighlightsEnabled
+        {
+            get { EnsureLoaded(); return cleanDirectionalHighlightsEnabled; }
+            set => Apply(ref cleanDirectionalHighlightsEnabled, value, CleanDirectionalHighlightsKey);
+        }
+
+        public static bool CleanBounceEnabled
+        {
+            get { EnsureLoaded(); return cleanBounceEnabled; }
+            set => Apply(ref cleanBounceEnabled, value, CleanBounceKey);
         }
 
         public static bool DepthOfFieldEnabled
@@ -98,26 +94,6 @@ namespace BarPromenade
                 IntoxicationLensFxKey);
         }
 
-        public static bool DitherEnabled
-        {
-            get
-            {
-                EnsureLoaded();
-                return ditherEnabled;
-            }
-            set => Apply(ref ditherEnabled, value, DitherKey);
-        }
-
-        public static bool ScanlinesEnabled
-        {
-            get
-            {
-                EnsureLoaded();
-                return scanlinesEnabled;
-            }
-            set => Apply(ref scanlinesEnabled, value, ScanlinesKey);
-        }
-
         public static bool AspectRatio43Enabled
         {
             get
@@ -129,45 +105,6 @@ namespace BarPromenade
                 ref aspectRatio43Enabled,
                 value,
                 AspectRatio43Key);
-        }
-
-        /// <summary>
-        /// Rounds projected vertices onto the internal-resolution grid,
-        /// the way a console with no sub-pixel precision did. Off by
-        /// default: it changes how the whole world moves, so it is the
-        /// player's to switch on.
-        /// </summary>
-        public static bool VertexJitterEnabled
-        {
-            get
-            {
-                EnsureLoaded();
-                return vertexJitterEnabled;
-            }
-            set => Apply(
-                ref vertexJitterEnabled,
-                value,
-                VertexJitterKey);
-        }
-
-        /// <summary>
-        /// Presents the game as a rephotographed 16 mm print in the manner
-        /// of Merhige's <i>Begotten</i>: no mid-tones, boiling grain, a
-        /// flickering, weaving 4:3 frame shown at twenty-four pictures a
-        /// second. The third opt-in - it replaces the whole image and the
-        /// cadence it is shown at, so it is offered rather than imposed.
-        /// </summary>
-        public static bool BegottenModeEnabled
-        {
-            get
-            {
-                EnsureLoaded();
-                return begottenModeEnabled;
-            }
-            set => Apply(
-                ref begottenModeEnabled,
-                value,
-                BegottenKey);
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -190,26 +127,19 @@ namespace BarPromenade
                 return;
             }
 
-            style = NormalizeStyle(PlayerPrefs.GetInt(StyleKey, (int)GraphicsStyle.Ps1));
             cleanAntialiasingEnabled = ReadFlag(CleanAntialiasingKey);
+            cleanReflectionsEnabled = ReadFlag(CleanReflectionsKey);
+            cleanVolumeEnabled = ReadFlag(CleanVolumeKey);
+            cleanHalationEnabled = ReadFlag(CleanHalationKey);
+            cleanDirectionalHighlightsEnabled = ReadFlag(CleanDirectionalHighlightsKey);
+            cleanBounceEnabled = ReadFlag(CleanBounceKey);
             depthOfFieldEnabled = ReadFlag(DepthOfFieldKey);
             intoxicationLensFxEnabled =
                 ReadFlag(IntoxicationLensFxKey);
-            ditherEnabled = ReadFlag(DitherKey);
-            scanlinesEnabled = ReadFlag(ScanlinesKey);
             // The 4:3 pillarbox is the one opt-in effect: the game is
-            // authored widescreen, so the retro frame is a choice.
+            // authored widescreen, so the aspect ratio is a choice.
             aspectRatio43Enabled =
                 ReadFlag(AspectRatio43Key, false);
-            // The second opt-in. Vertex jitter is the loudest of the
-            // retro effects - it moves every silhouette in the game - so
-            // it is offered rather than imposed.
-            vertexJitterEnabled =
-                ReadFlag(VertexJitterKey, false);
-            // The third. A film print in place of the picture is a mode,
-            // not a polish, and it also holds the screen at 24 frames.
-            begottenModeEnabled =
-                ReadFlag(BegottenKey, false);
             loaded = true;
         }
 
@@ -220,15 +150,6 @@ namespace BarPromenade
             return PlayerPrefs.GetInt(
                 key,
                 defaultEnabled ? 1 : 0) != 0;
-        }
-
-        private static GraphicsStyle NormalizeStyle(int value)
-        {
-            // Keep Clean's persisted id stable; the retired style id 1
-            // and any unknown future/corrupt value fall back to PS1.
-            return value == (int)GraphicsStyle.CleanLowPoly
-                ? GraphicsStyle.CleanLowPoly
-                : GraphicsStyle.Ps1;
         }
 
         private static void Apply(

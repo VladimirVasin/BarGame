@@ -170,7 +170,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(material.shader, Is.Not.Null);
                 Assert.That(
                     material.shader.name,
-                    Is.EqualTo("Bar Promenade/PS1 Lit"));
+                    Is.EqualTo("Bar Promenade/Lit"));
                 Assert.That(
                     binding.Renderer.shadowCastingMode,
                     Is.EqualTo(ShadowCastingMode.Off));

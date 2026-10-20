@@ -148,18 +148,18 @@ namespace BarPromenade.Editor
         private static void ValidateShader()
         {
             Shader shader = Resources.Load<Shader>("Shaders/WarehouseSurface");
-            Shader shared = Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shared = Resources.Load<Shader>("Shaders/Lit");
             if (shader == null || shared == null || !shader.isSupported || ShaderUtil.ShaderHasError(shader))
-                throw new InvalidOperationException("Warehouse PS1 surface shader is absent, unsupported or has a compile error.");
+                throw new InvalidOperationException("Warehouse surface shader is absent, unsupported or has a compile error.");
             var warehouse = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             var baseline = new Material(shared) { hideFlags = HideFlags.HideAndDontSave };
             try
             {
                 if (warehouse.passCount != baseline.passCount)
-                    throw new InvalidOperationException("Warehouse shader lost a shared PS1/URP pass.");
+                    throw new InvalidOperationException("Warehouse shader lost a shared project Lit/URP pass.");
                 for (int index = 0; index < baseline.passCount; index++)
                     if (warehouse.GetPassName(index) != baseline.GetPassName(index))
-                        throw new InvalidOperationException("Warehouse shader pass order differs from shared PS1/URP.");
+                        throw new InvalidOperationException("Warehouse shader pass order differs from shared project Lit/URP.");
             }
             finally
             {

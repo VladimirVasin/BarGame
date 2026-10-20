@@ -17,7 +17,6 @@ Shader "Bar Promenade/Combat Surface Impact"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Ps1VertexJitter.hlsl"
 
             struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float2 uv : TEXCOORD0; };
             struct Varyings
@@ -32,7 +31,7 @@ Shader "Bar Promenade/Combat Surface Impact"
             {
                 Varyings output;
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = Ps1SnapClipPosition(position.positionCS);
+                output.positionCS = position.positionCS;
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;

@@ -44,7 +44,7 @@ Rules:
 
 ## Current baseline
 
-- Unity `6000.6.4f1`, Universal Render Pipeline `17.6.0`, Input System `1.20.0`.
+- Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, AI Navigation `2.0.15`.
 - Runtime composition builds near-empty scenes from validated pure plans.
 - Thirteen build scenes under `Assets/Scenes/`, all `.unity`, in build order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,

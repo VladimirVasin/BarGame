@@ -95,7 +95,7 @@ namespace BarPromenade
         public static Material GetMaterial(string textureName)
         {
             if (Materials.TryGetValue(textureName, out Material material) && material != null) return material;
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
             Texture2D texture = Resources.Load<Texture2D>(ResourceFolder + textureName);
             if (shader == null || texture == null) throw new InvalidOperationException("Missing child surface: " + textureName);
             material = new Material(shader) { name = "Fair Child " + textureName + " Shared", hideFlags = HideFlags.HideAndDontSave };

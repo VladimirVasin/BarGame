@@ -490,12 +490,18 @@ namespace BarPromenade
             }
             if (IsCraneFrenzied) PresentCraneFrenzy();
             else SampleNpcClip(clip, time);
+            long compositionStarted = System.Diagnostics.Stopwatch.GetTimestamp();
             handPose?.SetGrip(false, CombatCraneAssetProvider.RightHookGrip); handPose?.SetGrip(true, CombatCraneAssetProvider.LeftHookGrip);
             visibleClip = IsCraneFrenzied ? CombatZombieAssetProvider.FrenzyClip : clipName;
             ApplyNpcPoseBlend();
             ApplyCraneDynamicPose();
             KeepCranePoseClear(); RefreshCraneAttachmentSockets();
-            PresentCraneHook(); RememberNpcPresentedPose(); PresentCraneRopes();
+            PresentCraneHook();
+            NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStarted;
+            RememberNpcPresentedPose();
+            compositionStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+            PresentCraneRopes();
+            NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStarted;
         }
 
         private void ReceiveCraneImpulse(CombatImpact impact)

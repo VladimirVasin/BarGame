@@ -35,6 +35,8 @@ half _DetailNormalMapScale;
 UNITY_TEXTURE_STREAMING_DEBUG_VARS;
 half _WarehouseResponseStrength;
 half _WarehouseNormalStrength;
+half _WarehouseAnisotropy;
+half _WarehouseWetReflection;
 float4 _WarehouseAuxRect;
 half _WarehouseAuxiliary;
 CBUFFER_END

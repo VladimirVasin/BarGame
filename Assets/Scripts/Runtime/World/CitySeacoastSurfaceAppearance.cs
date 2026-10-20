@@ -31,8 +31,7 @@ namespace BarPromenade
     /// vocabulary carried to the sea — and the plank and hull sheets
     /// moved here from the lake with the boat station they dress. The
     /// iron, the rust, the grass, the sign paint and the litter stay
-    /// flat colour: their members are too thin for a sheet to read
-    /// through the PS1 composite.
+    /// flat colour so their thin silhouettes remain clear at distance.
     /// </summary>
     internal static class CitySeacoastSurfaceAppearance
     {

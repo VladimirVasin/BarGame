@@ -44,7 +44,7 @@ namespace BarPromenade
                 new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
             color.color = gradient;
             ParticleSystemRenderer renderer = pool.GetComponent<ParticleSystemRenderer>();
-            // The existing PS1 atmosphere shader already owns small emissive
+            // The existing atmosphere shader already owns small emissive
             // billboards. No material instance, light or post effect per impact.
             renderer.sharedMaterial = CityNightResources.AtmosphereMaterial;
             renderer.renderMode = ParticleSystemRenderMode.Stretch;

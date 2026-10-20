@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     /// <summary>Partitions the existing visible terrain triangles, never adds
     /// a competing sheet. Collision keeps the original continuous terrain.
-    /// Two submeshes share PS1 Lit; only their packaged albedo/UVs differ.</summary>
+    /// Two submeshes share Lit; only their packaged albedo/UVs differ.</summary>
     internal static class CityEastGroundTransition
     {
         private const float Epsilon = .00001f;
@@ -119,7 +119,7 @@ namespace BarPromenade
                 if (polygon.Count < 3) return;
                 // Starting on the seam would discard collinear inserted
                 // vertices as degenerate fan triangles and recreate the
-                // very T-junction this shared edge removes under PS1 snap.
+                // very T-junction this shared edge removes.
                 int origin = 0;
                 for (int index = 1; index < polygon.Count; index++)
                     if (Mathf.Abs(polygon[index].Position.z - plan.SeamZ) >

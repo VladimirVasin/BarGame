@@ -17,9 +17,8 @@ namespace BarPromenade
     /// Two invariants carry the reading. A letter starts EXACTLY where it was
     /// typed — the amplitude ramps in from zero over <see
     /// cref="RampSeconds"/> — so the line assembles legibly and only then falls
-    /// apart. And every glyph is snapped to whole pixels: sub-pixel sliding
-    /// shimmers under the point-sampled composite, where a whole-pixel jump is
-    /// the PS1 reading.
+    /// apart. Glyphs align to whole pixels on the shared logical canvas,
+    /// keeping their edges sharp while the scattered line moves.
     ///
     /// It does not wrap. Only the Very Drunk pool scatters and that pool is
     /// authored to one row, because reproducing Unity's own line breaking by

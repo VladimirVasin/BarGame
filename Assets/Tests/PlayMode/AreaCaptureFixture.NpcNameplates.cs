@@ -229,9 +229,7 @@ namespace BarPromenade.Tests.PlayMode
             speech.Initialize(camera, player.GameObject.transform);
             speech.UseManualClock = true;
             bool fog = RenderSettings.fog;
-            bool vertexJitter = GraphicsEffectsSettings.VertexJitterEnabled;
             RenderSettings.fog = false;
-            GraphicsEffectsSettings.VertexJitterEnabled = false;
             try
             {
                 using (var frame = new NameplateFrame(camera, player))
@@ -327,7 +325,6 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 RenderSettings.fog = fog;
-                GraphicsEffectsSettings.VertexJitterEnabled = vertexJitter;
                 Object.DestroyImmediate(stage);
                 Object.DestroyImmediate(cameraObject);
                 Object.DestroyImmediate(material);
@@ -368,7 +365,7 @@ namespace BarPromenade.Tests.PlayMode
         private sealed class NameplateFrame : IDisposable
         {
             public Camera Camera { get; }
-            public Ps1CompositeRendererFeature Feature { get; }
+            public SceneCompositeRendererFeature Feature { get; }
             private readonly RenderTexture target;
             private readonly Texture2D pixels;
             private readonly RenderTexture previousTarget;
@@ -403,7 +400,7 @@ namespace BarPromenade.Tests.PlayMode
                 target.Create();
                 pixels = new Texture2D(Width, Height, TextureFormat.RGB24, false);
                 camera.targetTexture = target;
-                Feature = Resources.FindObjectsOfTypeAll<Ps1CompositeRendererFeature>().FirstOrDefault(value => value.isActive);
+                Feature = Resources.FindObjectsOfTypeAll<SceneCompositeRendererFeature>().FirstOrDefault(value => value.isActive);
                 Assert.That(Feature, Is.Not.Null);
             }
 

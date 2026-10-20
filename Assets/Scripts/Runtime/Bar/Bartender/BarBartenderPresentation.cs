@@ -19,8 +19,8 @@ namespace BarPromenade
     [DefaultExecutionOrder(320)]
     public sealed class BarBartenderPresentation : MonoBehaviour
     {
-        // Broad enough to read across the dark hall at PS1
-        // resolution: the first pass at 4.5 degrees was invisible.
+        // Broad enough to read across the dark hall; the first pass
+        // at 4.5 degrees was invisible at gameplay distance.
         public const float IdleSwayDegrees = 10f;
         public const float ElbowSwayDegrees = 7f;
         public const float HeadSwayDegrees = 9f;

@@ -117,7 +117,7 @@ namespace BarPromenade
         /// Unlike the ground's two submeshes, this is an independently
         /// sampled mesh and cannot share exact boundary vertices with the
         /// terrain. A coplanar edge can therefore open a crawling hairline
-        /// along a path even though both materials use `Ps1Lit`. Buried, the
+        /// along a path even though both materials use `Lit`. Buried, the
         /// ground always wins that narrow seam.
         /// </summary>
         internal const float ToeBurial = 0.06f;

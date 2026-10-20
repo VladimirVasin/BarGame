@@ -174,8 +174,8 @@ namespace BarPromenade
                 "Flash" => new Color(1f, .64f, .22f),
                 _ => throw new ArgumentOutOfRangeException(nameof(role))
             };
-            Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
-            if (shader == null) throw new InvalidOperationException("Shotgun requires the shared PS1 shader.");
+            Shader shader = Resources.Load<Shader>("Shaders/Lit");
+            if (shader == null) throw new InvalidOperationException("Shotgun requires the shared Lit shader.");
             var material = new Material(shader) { name = "Combat Shotgun " + role + " Shared", hideFlags = HideFlags.HideAndDontSave };
             material.SetTexture("_BaseMap", Texture2D.whiteTexture);
             material.SetColor("_BaseColor", color.linear);

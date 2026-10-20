@@ -10,7 +10,7 @@ namespace BarPromenade
         public const string RootName = "Village Bedded Rock";
         // These are surface albedos before the shared ridge shader lights
         // and hazes them. Pre-darkening ledge snow as though it were already
-        // in shadow loses its contrast again to light, fog and the PS1 grade.
+        // in shadow loses its contrast again to light and fog.
         private static readonly Color StoneTint = new Color(0.36f, 0.385f, 0.385f, 1f);
         private static readonly Color SnowTint = new Color(0.84f, 0.86f, 0.85f, 1f);
 

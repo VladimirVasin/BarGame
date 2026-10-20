@@ -26,7 +26,6 @@ namespace BarPromenade
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private GUIStyle messageStyle;
-        private GUIStyle styleControlStyle;
         private IDisposable timePause;
         private bool previousAudioPause;
         private bool ownsPauseState;
@@ -47,17 +46,16 @@ namespace BarPromenade
         private static readonly (PauseMenuOptionsRow Row, string Key)[]
             OptionsRows =
             {
-                (PauseMenuOptionsRow.GraphicsStyle, "options.graphics_style"),
                 (PauseMenuOptionsRow.CleanAntialiasing, "options.clean_aa"),
                 (PauseMenuOptionsRow.DepthOfField, "options.dof"),
                 (PauseMenuOptionsRow.IntoxicationFx,
                     "options.intoxication_fx"),
-                (PauseMenuOptionsRow.Dither, "options.dither"),
-                (PauseMenuOptionsRow.Scanlines, "options.scanlines"),
                 (PauseMenuOptionsRow.AspectRatio43, "options.aspect_4_3"),
-                (PauseMenuOptionsRow.VertexJitter,
-                    "options.vertex_jitter"),
-                (PauseMenuOptionsRow.Begotten, "options.begotten"),
+                (PauseMenuOptionsRow.CleanReflections, "options.clean_reflections"),
+                (PauseMenuOptionsRow.CleanVolume, "options.clean_volume"),
+                (PauseMenuOptionsRow.CleanHalation, "options.clean_halation"),
+                (PauseMenuOptionsRow.CleanDirectionalHighlights, "options.clean_directional_highlights"),
+                (PauseMenuOptionsRow.CleanBounce, "options.clean_bounce"),
                 (PauseMenuOptionsRow.Back, "options.back")
             };
 
@@ -261,25 +259,10 @@ namespace BarPromenade
                 return false;
             }
 
-            if (Page == PauseMenuPage.Options && !IsGraphicsOptionAvailable(SelectedOptionsRow))
-                return false;
-
             RefreshCutscenes();
             PauseMenuAction action = model.Confirm();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             Execute(action);
-            return true;
-        }
-
-        public bool CycleGraphicsStyle(int delta)
-        {
-            if (!IsOpen || closePending || Page != PauseMenuPage.Options ||
-                SelectedOptionsRow != PauseMenuOptionsRow.GraphicsStyle || delta == 0)
-                return false;
-
-            GraphicsEffectsSettings.Style = GraphicsEffectsSettings.Style == GraphicsStyle.Ps1
-                ? GraphicsStyle.CleanLowPoly
-                : GraphicsStyle.Ps1;
             return true;
         }
 
@@ -326,9 +309,6 @@ namespace BarPromenade
                     return;
                 case PauseMenuAction.ToggleGraphicsOption:
                     ToggleGraphicsOption(model.SelectedOptionsRow);
-                    return;
-                case PauseMenuAction.CycleGraphicsStyle:
-                    CycleGraphicsStyle(1);
                     return;
                 case PauseMenuAction.StartCutscene:
                     if (cutscenes != null && cutscenes.Catalog != null &&
@@ -405,8 +385,6 @@ namespace BarPromenade
 
                         return;
                     }
-
-                    BegottenModeRamp.NotifyReturnedToPlay();
                 }
 
                 return;
@@ -434,19 +412,8 @@ namespace BarPromenade
                 return;
             }
 
-            bool selectingStyle = Page == PauseMenuPage.Options &&
-                                  SelectedOptionsRow == PauseMenuOptionsRow.GraphicsStyle;
-            int delta = selectingStyle
-                ? GameInput.ReadMenuVerticalSelectionDelta(GameInputContext.PauseMenu)
-                : ReadSelectionDelta();
-            if (delta != 0)
-            {
-                MoveSelection(delta);
-            }
-
-            if (selectingStyle && delta == 0 &&
-                CycleGraphicsStyle(GameInput.ReadMenuHorizontalSelectionDelta(GameInputContext.PauseMenu)))
-                RetroAudio.Play(RetroSfxId.UiMove);
+            int delta = ReadSelectionDelta();
+            if (delta != 0) MoveSelection(delta);
 
             if (WasConfirmPressed())
             {
@@ -801,8 +768,7 @@ namespace BarPromenade
         }
 
         // A stack of dots narrowing to a point, drawn as filled rects
-        // rather than a glyph so it survives the retro font and the
-        // RGB555 pass.
+        // rather than relying on a font glyph.
         private static void DrawScrollHint(
             Rect area,
             bool visible,
@@ -852,15 +818,6 @@ namespace BarPromenade
             bool selected = SelectedOptionsRow == row;
             DrawSelection(rect, selected);
             string label = LocalizationService.Get(localizationKey);
-            if (row == PauseMenuOptionsRow.GraphicsStyle)
-            {
-                DrawGraphicsStyleRow(rect, label, selected);
-                return;
-            }
-
-            bool available = IsGraphicsOptionAvailable(row);
-            bool previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && available;
             if (GUI.Button(
                     rect,
                     (selected ? "> " : "  ") + label,
@@ -869,20 +826,12 @@ namespace BarPromenade
                 model.SelectOptionsRow(row);
                 ConfirmSelection();
             }
-            GUI.enabled = previousEnabled;
 
             if (row != PauseMenuOptionsRow.Back)
             {
                 // Drawn after the button so the box sits on top of
                 // its background; clicking the box still lands on the
                 // row button underneath.
-                if (!available)
-                {
-                    GUI.Label(new Rect(rect.xMax - 94f, rect.y, 90f, rect.height),
-                        LocalizationService.Get("options.unavailable"), optionStyle);
-                    return;
-                }
-
                 DrawCheckbox(
                     new Rect(
                         rect.xMax - 28f,
@@ -892,31 +841,6 @@ namespace BarPromenade
                     IsGraphicsOptionEnabled(row),
                     selected);
             }
-        }
-
-        private void DrawGraphicsStyleRow(Rect rect, string label, bool selected)
-        {
-            // Fixed non-overlapping cells leave room for both localized
-            // labels and the longest style name on the logical canvas.
-            Rect labelRect = new Rect(rect.x, rect.y, 128f, rect.height);
-            Rect previousRect = new Rect(labelRect.xMax, rect.y, 24f, rect.height);
-            Rect nextRect = new Rect(rect.xMax - 24f, rect.y, 24f, rect.height);
-            Rect valueRect = new Rect(previousRect.xMax, rect.y,
-                nextRect.x - previousRect.xMax, rect.height);
-            GUI.Label(labelRect, (selected ? "> " : "  ") + label,
-                selected ? selectedStyle : optionStyle);
-
-            if (GUI.Button(previousRect, "<", styleControlStyle)) ChangeGraphicsStyleFromPointer(-1);
-            if (GUI.Button(valueRect,
-                LocalizationService.Get(GraphicsStyleKey(GraphicsEffectsSettings.Style)), styleControlStyle))
-                ChangeGraphicsStyleFromPointer(1);
-            if (GUI.Button(nextRect, ">", styleControlStyle)) ChangeGraphicsStyleFromPointer(1);
-        }
-
-        private void ChangeGraphicsStyleFromPointer(int delta)
-        {
-            model.SelectOptionsRow(PauseMenuOptionsRow.GraphicsStyle);
-            if (CycleGraphicsStyle(delta)) RetroAudio.Play(RetroSfxId.UiConfirm);
         }
 
         private static void DrawCheckbox(
@@ -946,12 +870,31 @@ namespace BarPromenade
         private static void ToggleGraphicsOption(
             PauseMenuOptionsRow row)
         {
-            if (!IsGraphicsOptionAvailable(row)) return;
             switch (row)
             {
                 case PauseMenuOptionsRow.CleanAntialiasing:
                     GraphicsEffectsSettings.CleanAntialiasingEnabled =
                         !GraphicsEffectsSettings.CleanAntialiasingEnabled;
+                    return;
+                case PauseMenuOptionsRow.CleanReflections:
+                    GraphicsEffectsSettings.CleanReflectionsEnabled =
+                        !GraphicsEffectsSettings.CleanReflectionsEnabled;
+                    return;
+                case PauseMenuOptionsRow.CleanVolume:
+                    GraphicsEffectsSettings.CleanVolumeEnabled =
+                        !GraphicsEffectsSettings.CleanVolumeEnabled;
+                    return;
+                case PauseMenuOptionsRow.CleanHalation:
+                    GraphicsEffectsSettings.CleanHalationEnabled =
+                        !GraphicsEffectsSettings.CleanHalationEnabled;
+                    return;
+                case PauseMenuOptionsRow.CleanDirectionalHighlights:
+                    GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled =
+                        !GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled;
+                    return;
+                case PauseMenuOptionsRow.CleanBounce:
+                    GraphicsEffectsSettings.CleanBounceEnabled =
+                        !GraphicsEffectsSettings.CleanBounceEnabled;
                     return;
                 case PauseMenuOptionsRow.DepthOfField:
                     GraphicsEffectsSettings.DepthOfFieldEnabled =
@@ -963,28 +906,10 @@ namespace BarPromenade
                         !GraphicsEffectsSettings
                             .IntoxicationLensFxEnabled;
                     return;
-                case PauseMenuOptionsRow.Dither:
-                    GraphicsEffectsSettings.DitherEnabled =
-                        !GraphicsEffectsSettings.DitherEnabled;
-                    return;
-                case PauseMenuOptionsRow.Scanlines:
-                    GraphicsEffectsSettings.ScanlinesEnabled =
-                        !GraphicsEffectsSettings.ScanlinesEnabled;
-                    return;
                 case PauseMenuOptionsRow.AspectRatio43:
                     GraphicsEffectsSettings.AspectRatio43Enabled =
                         !GraphicsEffectsSettings
                             .AspectRatio43Enabled;
-                    return;
-                case PauseMenuOptionsRow.VertexJitter:
-                    GraphicsEffectsSettings.VertexJitterEnabled =
-                        !GraphicsEffectsSettings
-                            .VertexJitterEnabled;
-                    return;
-                case PauseMenuOptionsRow.Begotten:
-                    GraphicsEffectsSettings.BegottenModeEnabled =
-                        !GraphicsEffectsSettings
-                            .BegottenModeEnabled;
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -994,27 +919,6 @@ namespace BarPromenade
             }
         }
 
-        internal static bool IsGraphicsOptionAvailable(PauseMenuOptionsRow row)
-        {
-            return row switch
-            {
-                PauseMenuOptionsRow.CleanAntialiasing => GraphicsEffectsSettings.IsCleanAntialiasingApplicable,
-                PauseMenuOptionsRow.Dither => GraphicsEffectsSettings.IsDitherApplicable,
-                PauseMenuOptionsRow.Scanlines => GraphicsEffectsSettings.IsScanlinesApplicable,
-                PauseMenuOptionsRow.VertexJitter => GraphicsEffectsSettings.IsVertexJitterApplicable,
-                _ => true
-            };
-        }
-
-        private static string GraphicsStyleKey(GraphicsStyle style)
-        {
-            return style switch
-            {
-                GraphicsStyle.CleanLowPoly => "options.style.clean_low_poly",
-                _ => "options.style.ps1"
-            };
-        }
-
         private static bool IsGraphicsOptionEnabled(
             PauseMenuOptionsRow row)
         {
@@ -1022,26 +926,25 @@ namespace BarPromenade
             {
                 case PauseMenuOptionsRow.CleanAntialiasing:
                     return GraphicsEffectsSettings.CleanAntialiasingEnabled;
+                case PauseMenuOptionsRow.CleanReflections:
+                    return GraphicsEffectsSettings.CleanReflectionsEnabled;
+                case PauseMenuOptionsRow.CleanVolume:
+                    return GraphicsEffectsSettings.CleanVolumeEnabled;
+                case PauseMenuOptionsRow.CleanHalation:
+                    return GraphicsEffectsSettings.CleanHalationEnabled;
+                case PauseMenuOptionsRow.CleanDirectionalHighlights:
+                    return GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled;
+                case PauseMenuOptionsRow.CleanBounce:
+                    return GraphicsEffectsSettings.CleanBounceEnabled;
                 case PauseMenuOptionsRow.DepthOfField:
                     return GraphicsEffectsSettings
                         .DepthOfFieldEnabled;
                 case PauseMenuOptionsRow.IntoxicationFx:
                     return GraphicsEffectsSettings
                         .IntoxicationLensFxEnabled;
-                case PauseMenuOptionsRow.Dither:
-                    return GraphicsEffectsSettings.DitherEnabled;
-                case PauseMenuOptionsRow.Scanlines:
-                    return GraphicsEffectsSettings
-                        .ScanlinesEnabled;
                 case PauseMenuOptionsRow.AspectRatio43:
                     return GraphicsEffectsSettings
                         .AspectRatio43Enabled;
-                case PauseMenuOptionsRow.VertexJitter:
-                    return GraphicsEffectsSettings
-                        .VertexJitterEnabled;
-                case PauseMenuOptionsRow.Begotten:
-                    return GraphicsEffectsSettings
-                        .BegottenModeEnabled;
                 default:
                     return false;
             }
@@ -1168,11 +1071,6 @@ namespace BarPromenade
                 12,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
-                false);
-            styleControlStyle = RetroUiTheme.CreateButtonStyle(
-                12,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
                 false);
             messageStyle = RetroUiTheme.CreateLabelStyle(
                 12,

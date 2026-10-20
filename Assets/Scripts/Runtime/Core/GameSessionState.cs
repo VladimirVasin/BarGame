@@ -352,7 +352,6 @@ namespace BarPromenade
             ResetToDefaults();
             GameTimeScaleRuntime.ResetSession();
             IntoxicationAudioDriver.ResetSession();
-            BegottenAudioDriver.ResetSession();
             GameLog.Info(
                 "session",
                 "new_game_started",

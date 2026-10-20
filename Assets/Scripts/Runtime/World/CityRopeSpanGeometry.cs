@@ -14,10 +14,8 @@ namespace BarPromenade
     internal static class CityRopeSpanGeometry
     {
         /// <summary>
-        /// Chord count for spans under about eight metres. Chosen
-        /// against the PS1 composite the way the chess-lamp wire's
-        /// twelve was: past this the extra joints land inside one
-        /// downsampled pixel.
+        /// Chord count for spans under about eight metres. This keeps
+        /// the sag readable at gameplay distance with bounded geometry.
         /// </summary>
         public const int DefaultSegments = 8;
 

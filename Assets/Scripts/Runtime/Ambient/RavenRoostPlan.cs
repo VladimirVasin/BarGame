@@ -451,7 +451,7 @@ namespace BarPromenade
         /// (<see cref="TakeoffFanDegrees"/>), walked in an order
         /// shuffled deterministically by the flight seed, taking the
         /// first direction the caller's clearance probe accepts.
-        /// This is deliberately NOT pathfinding — the PS1 bird owns
+        /// This is deliberately NOT pathfinding — the bird owns
         /// no map and plans no route; it simply refuses to fly
         /// through the first wall in front of it, and past the
         /// probed metres the fog owns the problem. The seeded

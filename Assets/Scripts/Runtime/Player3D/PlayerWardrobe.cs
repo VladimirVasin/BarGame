@@ -125,13 +125,19 @@ namespace BarPromenade
         public bool IsRendererWorn(Renderer renderer)
         {
             foreach (GarmentBinding item in garments)
-                foreach (Renderer garment in item.Renderers)
-                    if (garment == renderer) return IsEquipped(item.Id);
+            {
+                IReadOnlyList<Renderer> garmentRenderers = item.Renderers;
+                for (int index = 0; index < garmentRenderers.Count; index++)
+                    if (garmentRenderers[index] == renderer) return IsEquipped(item.Id);
+            }
             if (Array.IndexOf(bodyRenderers, renderer) < 0) return renderer != null && renderer.enabled;
             foreach (GarmentBinding item in garments)
                 if (IsEquipped(item.Id))
-                    foreach (Renderer covered in item.CoveredBodyRenderers)
-                        if (covered == renderer) return false;
+                {
+                    IReadOnlyList<Renderer> coveredRenderers = item.CoveredBodyRenderers;
+                    for (int index = 0; index < coveredRenderers.Count; index++)
+                        if (coveredRenderers[index] == renderer) return false;
+                }
             return true;
         }
 

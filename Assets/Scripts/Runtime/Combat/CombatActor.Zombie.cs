@@ -148,6 +148,7 @@ namespace BarPromenade
             if (visibleClip != chosen.name || !IsZombieFrenzied && visibleAttackSequence != State.AttackSequence)
             { BeginPoseBlend(IsZombieFrenzied ? .1f : State.IsAttacking ? .045f : .08f); visibleClip = chosen.name; }
             SampleNpcClip(chosen, time);
+            long compositionStarted = System.Diagnostics.Stopwatch.GetTimestamp();
             // Corpse clips own their slouch and loose arms; a living fighter's
             // gait/breath layer must not straighten that authored silhouette.
             if (ImpactMotion?.IsActive ?? false) bodyMotion?.Apply();
@@ -163,6 +164,7 @@ namespace BarPromenade
             handPose.SetGrip(false, IsDocker ? .12f : 0f);
             handPose.SetGrip(true, IsDocker ? .12f : 0f);
             visibleAttackSequence = State.AttackSequence;
+            NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStarted;
             RememberNpcPresentedPose();
             footwork?.CapturePresentedContacts();
         }

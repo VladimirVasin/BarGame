@@ -139,10 +139,9 @@ namespace BarPromenade
                 new Vector3(0f, 0f, -2f);
             cameraObject.transform.localRotation = Quaternion.identity;
             previewCamera = cameraObject.AddComponent<Camera>();
-            // An icon is a few centimetres wide through an orthographic
-            // lens, so the PS1 snap grid is coarse enough here to quantize
-            // a whole item onto a handful of positions. Icons stay smooth.
-            cameraObject.AddComponent<Rendering.Ps1VertexJitterExclusion>();
+            // Preview cameras keep the model independent of gameplay
+            // intoxication, aspect framing and scene-only presentation effects.
+            cameraObject.AddComponent<Rendering.ScenePresentationExclusion>();
             previewCamera.enabled = false;
             previewCamera.orthographic = true;
             previewCamera.orthographicSize = 0.40f;

@@ -9,7 +9,7 @@ namespace BarPromenade
     /// Materializes the close-range part of one planned mountain ridge.
     /// The geometry is deliberately faceted: every triangle owns its
     /// vertices and therefore its normal, which keeps the mountain readable
-    /// after the low-resolution PS1 composite.
+    /// through distance, lighting and haze.
     /// </summary>
     internal static class CityMountainBoundaryMeshFactory
     {

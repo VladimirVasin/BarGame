@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(cylinderMaterial, Is.SameAs(expected));
                 Assert.That(
                     expected.shader.name,
-                    Is.EqualTo("Bar Promenade/PS1 Lit"),
+                    Is.EqualTo("Bar Promenade/Lit"),
                     "Every runtime primitive in the game shares this " +
                     "material, so it is what carries the vertex snap; " +
                     "back on stock URP Lit the jitter reaches nothing.");
@@ -82,7 +82,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(firstMesh.triangles.Length / 3, Is.EqualTo(32));
                 Assert.That(
                     firstMesh.name,
-                    Is.EqualTo("Shared PS1 Eight-Sided Cylinder"));
+                    Is.EqualTo("Shared Eight-Sided Cylinder"));
                 Assert.That(first.GetComponent<Collider>(), Is.Null);
                 Assert.That(second.GetComponent<Collider>(), Is.Null);
             }

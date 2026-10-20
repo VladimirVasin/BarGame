@@ -28,7 +28,7 @@ namespace BarPromenade.Editor
     }
 
     /// <summary>
-    /// Shared authoring contract for PS1 Lit characters. Linear response RGBA:
+    /// Shared authoring contract for Lit characters. Linear response RGBA:
     /// R metallic, G/B authoring masks, A absolute smoothness. No character paths.
     /// </summary>
     public static class CharacterSurfaceMaterialSetup
@@ -71,9 +71,9 @@ namespace BarPromenade.Editor
         public static void Apply(Material material, CharacterSurfaceRecipe recipe,
             Texture2D normal, Texture2D response)
         {
-            if (material == null || material.shader == null || material.shader.name != "Bar Promenade/PS1 Lit" ||
+            if (material == null || material.shader == null || material.shader.name != "Bar Promenade/Lit" ||
                 normal == null || response == null)
-                throw new InvalidOperationException("Character surfaces require PS1 Lit and both companion maps.");
+                throw new InvalidOperationException("Character surfaces require Lit and both companion maps.");
             material.SetTexture("_BumpMap", normal);
             material.SetFloat("_BumpScale", NormalScale(recipe));
             material.SetTexture("_MetallicGlossMap", response);
@@ -118,7 +118,7 @@ namespace BarPromenade.Editor
 
         public static bool IsCanonical(Material material, CharacterSurfaceRecipe recipe,
             Texture2D normal, Texture2D response) =>
-            material != null && material.shader != null && material.shader.name == "Bar Promenade/PS1 Lit" &&
+            material != null && material.shader != null && material.shader.name == "Bar Promenade/Lit" &&
             normal != null && response != null &&
             material.GetTexture("_BumpMap") == normal &&
             material.GetTexture("_MetallicGlossMap") == response &&

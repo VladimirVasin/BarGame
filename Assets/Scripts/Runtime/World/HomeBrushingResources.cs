@@ -43,8 +43,8 @@ namespace BarPromenade
             get
             {
                 if (foam != null) return foam;
-                Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
-                if (shader == null) throw new InvalidOperationException("Missing PS1 Lit shader for brushing foam.");
+                Shader shader = Shader.Find("Bar Promenade/Lit");
+                if (shader == null) throw new InvalidOperationException("Missing Lit shader for brushing foam.");
                 foam = new Material(shader)
                 {
                     name = "Home Brushing Foam Shared",

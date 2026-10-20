@@ -4,8 +4,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>Clipping a terrain face can leave a vertex halfway along its
-    /// neighbour's edge. Split that neighbour too: PS1 vertex snapping otherwise
-    /// opens bright cracks even when the unsnapped triangles are coplanar.</summary>
+    /// neighbour's edge. Split that neighbour too so adjacent faces share
+    /// the same boundary vertices and avoid terrain T-junctions.</summary>
     internal static class AlpineVillageJunctionSeams
     {
         private const float BucketSize = .5f;

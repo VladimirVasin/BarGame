@@ -262,7 +262,7 @@ def draw_mirror_glass(base: Image.Image, rng) -> Image.Image:
 
 
 def draw_patterned_glass(base: Image.Image, rng) -> Image.Image:
-    """Pressed diamond glass whose broad relief survives the PS1 composite."""
+    """Pressed diamond glass with broad relief readable at gameplay distance."""
     draw = ImageDraw.Draw(base)
     pitch = 128
     for offset in range(-SHEET_SIZE, SHEET_SIZE * 2, pitch):

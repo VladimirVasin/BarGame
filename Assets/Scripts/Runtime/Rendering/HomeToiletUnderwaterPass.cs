@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade.Rendering
 {
-    /// <summary>Only the camera owning the bowl visit receives this pass, before the shared PS1 finish.</summary>
+    /// <summary>Only the camera owning the bowl visit receives this pass, before the shared scene composite.</summary>
     internal sealed class HomeToiletUnderwaterPass : ScriptableRenderPass
     {
         private Material material;

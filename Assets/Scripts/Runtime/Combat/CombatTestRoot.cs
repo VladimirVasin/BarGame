@@ -26,6 +26,11 @@ namespace BarPromenade
         public const float SimulationStep = 1f / 120f;
         internal const int MaximumFrameSubsteps = 4;
         private static readonly ProfilerMarker SimulationMarker = new ProfilerMarker("BarPromenade.Combat.Simulation");
+        private static readonly ProfilerMarker SimulationPoseMarker = new ProfilerMarker("BarPromenade.Combat.Pose");
+        private static readonly ProfilerMarker SimulationCaptureMarker = new ProfilerMarker("BarPromenade.Combat.CapturePose");
+        private static readonly ProfilerMarker SimulationContactMarker = new ProfilerMarker("BarPromenade.Combat.Contacts");
+        private static readonly ProfilerMarker SimulationSyncMarker = new ProfilerMarker("BarPromenade.Combat.SyncTransforms");
+        private static readonly ProfilerMarker SimulationEffectsMarker = new ProfilerMarker("BarPromenade.Combat.Effects");
         /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
         public const float RoundEndCameraReleaseSeconds = 1.5f;
         private double pendingSeconds, roundEndFreeze, roundEndElapsed;
@@ -105,6 +110,13 @@ namespace BarPromenade
         internal long SimulationFlightTicks { get; private set; }
         internal long SimulationEffectsTicks { get; private set; }
         internal long TotalSimulationTicks { get; private set; }
+        // Monotonic diagnostic totals survive round resets. Child CPU scopes
+        // are inclusive parts of TotalSimulationTicks, never independent costs.
+        internal long SimulationContactTicks { get; private set; }
+        internal long SimulationPhysicsSyncTicks { get; private set; }
+        internal long SimulationSubsteps { get; private set; }
+        internal long SimulationHitStopSubsteps { get; private set; }
+        internal double SimulationDroppedSeconds { get; private set; }
         internal int FinishedRoundSubsteps { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
@@ -324,7 +336,9 @@ namespace BarPromenade
             if (duelJournal != null && seconds > MaximumFrameSubsteps * SimulationStep)
                 duelJournal.Record(RoundFinished ? "post_round_time_discarded" : "time_discarded", f0: GameLog.Field("requested_seconds", seconds),
                     f1: GameLog.Field("discarded_seconds", seconds - MaximumFrameSubsteps * SimulationStep));
-            Tick(Mathf.Min(seconds, MaximumFrameSubsteps * SimulationStep));
+            float accepted = Mathf.Min(seconds, MaximumFrameSubsteps * SimulationStep);
+            if (seconds > accepted) SimulationDroppedSeconds += seconds - accepted;
+            Tick(accepted);
         }
 
         public void Tick(float seconds)
@@ -368,6 +382,7 @@ namespace BarPromenade
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                SimulationSubsteps++;
                 AdvanceJournalClock(hitStopSubsteps > 0);
                 if (hitStopSubsteps > 0)
                 {
@@ -375,6 +390,7 @@ namespace BarPromenade
                     // Hit-stop: both fighters, the opponent's mind and the blood hold on
                     // the frame of contact. Presentation keeps running, so the pose is seen.
                     hitStopSubsteps--;
+                    SimulationHitStopSubsteps++;
                     HitStopSecondsConsumed += SimulationStep;
                     continue;
                 }
@@ -390,7 +406,9 @@ namespace BarPromenade
                 if (Sparring && AutomaticOpponentDecisions) AdvanceOpponent(SimulationStep);
                 JournalOpponentDecision();
                 AdvanceOpponentMovement(SimulationStep);
-                Physics.SyncTransforms();
+                long syncStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                using (SimulationSyncMarker.Auto()) Physics.SyncTransforms();
+                SimulationPhysicsSyncTicks += System.Diagnostics.Stopwatch.GetTimestamp() - syncStarted;
                 pendingContacts.Clear();
                 pendingShoves.Clear();
                 pendingKicks.Clear();
@@ -404,22 +422,26 @@ namespace BarPromenade
                 long poseStamp = JournalStamp();
                 long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 bool freeAim = Hero.IsFreePistolAiming && CameraFollow.FreeAimActive;
-                if (freeAim)
+                using (SimulationPoseMarker.Auto())
                 {
-                    // Resolve against this step's completed target pose before
-                    // the hero aligns the muzzle, including a moving head.
-                    Opponent.Present();
-                    Hero.SetPistolAim(true, ResolveFreePistolAim(
-                        CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f))));
-                    Hero.Present();
+                    if (freeAim)
+                    {
+                        // Resolve against this step's completed target pose before
+                        // the hero aligns the muzzle, including a moving head.
+                        Opponent.Present();
+                        Hero.SetPistolAim(true, ResolveFreePistolAim(
+                            CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f))));
+                        Hero.Present();
+                    }
+                    else { Hero.Present(); Opponent.Present(); }
                 }
-                else { Hero.Present(); Opponent.Present(); }
                 SimulationPoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 JournalElapsed(poseStamp, ref journalPoseTicks);
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
                 stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
-                Hero.CaptureContactPose(); Opponent.CaptureContactPose(!freeAim);
+                using (SimulationCaptureMarker.Auto())
+                { Hero.CaptureContactPose(); Opponent.CaptureContactPose(!freeAim); }
                 SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 AdvanceProjectilePools(SimulationStep);
@@ -431,32 +453,40 @@ namespace BarPromenade
                     if (Hero.IsPistol) Casings.BeginShot(Hero);
                     PulsePistolCrosshair();
                 }
-                long contactStamp = JournalStamp();
-                sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
-                Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
-                sampledContacts |= Hero.State.IsKicking || Opponent.State.IsKicking;
-                Hero.CollectKickContacts(pendingKicks); Opponent.CollectKickContacts(pendingKicks);
-                JournalElapsed(contactStamp, ref journalContactTicks);
-                journalPoseSamples += Hero.ContactPoseSamples + Opponent.ContactPoseSamples;
-                // Registration for both actors precedes ANY damage, including lethal
-                // hits. Only contacts on a later tick can be cancelled by interruption.
-                long impactStamp = JournalStamp();
-                CombatActor.ApplyContacts(pendingContacts);
-                foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
-                foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
-                ApplyProjectilePoolContacts();
-                JournalElapsed(impactStamp, ref journalImpactApplyTicks);
-                JournalTransitions("contacts_applied");
-                if (!RoundFinished && hitStopSubsteps == 0)
+                long contactStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                using (SimulationContactMarker.Auto())
                 {
-                    Hero.ContinueBufferedAttackAfterContacts();
-                    Opponent.ContinueBufferedAttackAfterContacts();
+                    long contactStamp = JournalStamp();
+                    sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
+                    Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
+                    sampledContacts |= Hero.State.IsKicking || Opponent.State.IsKicking;
+                    Hero.CollectKickContacts(pendingKicks); Opponent.CollectKickContacts(pendingKicks);
+                    JournalElapsed(contactStamp, ref journalContactTicks);
+                    journalPoseSamples += Hero.ContactPoseSamples + Opponent.ContactPoseSamples;
+                    // Registration for both actors precedes ANY damage, including lethal
+                    // hits. Only contacts on a later tick can be cancelled by interruption.
+                    long impactStamp = JournalStamp();
+                    CombatActor.ApplyContacts(pendingContacts);
+                    foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
+                    foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
+                    ApplyProjectilePoolContacts();
+                    JournalElapsed(impactStamp, ref journalImpactApplyTicks);
+                    JournalTransitions("contacts_applied");
+                    if (!RoundFinished && hitStopSubsteps == 0)
+                    {
+                        Hero.ContinueBufferedAttackAfterContacts();
+                        Opponent.ContinueBufferedAttackAfterContacts();
+                    }
                 }
+                SimulationContactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - contactStarted;
                 stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
-                BloodEffects.Tick(SimulationStep);
-                HeadEffects.Tick(SimulationStep);
-                BodyEffects.Tick(SimulationStep);
-                SparkEffects.Tick(SimulationStep);
+                using (SimulationEffectsMarker.Auto())
+                {
+                    BloodEffects.Tick(SimulationStep);
+                    HeadEffects.Tick(SimulationStep);
+                    BodyEffects.Tick(SimulationStep);
+                    SparkEffects.Tick(SimulationStep);
+                }
                 SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
             if (RoundFinished)
@@ -472,7 +502,12 @@ namespace BarPromenade
             }
             // Contact previews alter the sampled rig; otherwise the last substep
             // already left both complete poses ready to render.
-            else if (!advanced || sampledContacts) { Hero.Present(); Opponent.Present(); }
+            else if (!advanced || sampledContacts)
+            {
+                long poseStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                using (SimulationPoseMarker.Auto()) { Hero.Present(); Opponent.Present(); }
+                SimulationPoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - poseStarted;
+            }
             if (hitStopSubsteps > 0 || roundEndFreeze > 0d) SetDuelFrozen(true);
             else if (advanced && !RoundFinished) SetDuelFrozen(false);
             JournalRoundResult();
@@ -532,6 +567,7 @@ namespace BarPromenade
                     }
                     pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
                     FinishedRoundSubsteps++;
+                    SimulationSubsteps++;
                     Hero.AdvanceRoundEnd(SimulationStep); Opponent.AdvanceRoundEnd(SimulationStep);
                     long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     // Newly committed bullets fly on the next substep. Until a
@@ -540,12 +576,17 @@ namespace BarPromenade
                     bool needsAnatomy = ActiveProjectileCount > 0 || Hero.HasPendingWeaponContact;
                     Hero.CaptureContactPose(needsAnatomy); Opponent.CaptureContactPose(needsAnatomy);
                     SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
-                    pendingContacts.Clear();
-                    Hero.CollectContacts(pendingContacts);
-                    long impactStamp = JournalStamp();
-                    CombatActor.ApplyContacts(pendingContacts);
-                    JournalElapsed(impactStamp, ref journalImpactApplyTicks);
-                    Hero.ContinueBufferedAttackAfterContacts();
+                    long contactStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                    using (SimulationContactMarker.Auto())
+                    {
+                        pendingContacts.Clear();
+                        Hero.CollectContacts(pendingContacts);
+                        long finishedImpactStamp = JournalStamp();
+                        CombatActor.ApplyContacts(pendingContacts);
+                        JournalElapsed(finishedImpactStamp, ref journalImpactApplyTicks);
+                        Hero.ContinueBufferedAttackAfterContacts();
+                    }
+                    SimulationContactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - contactStarted;
                     stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     AdvanceProjectilePools(SimulationStep);
                     SimulationFlightTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
@@ -556,8 +597,10 @@ namespace BarPromenade
                         if (Hero.IsPistol) Casings.BeginShot(Hero);
                         PulsePistolCrosshair();
                     }
-                    impactStamp = JournalStamp();
-                    ApplyProjectilePoolContacts();
+                    long impactStamp = JournalStamp();
+                    contactStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                    using (SimulationContactMarker.Auto()) ApplyProjectilePoolContacts();
+                    SimulationContactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - contactStarted;
                     JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                     stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     BloodEffects.Tick(SimulationStep);

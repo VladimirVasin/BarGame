@@ -62,7 +62,7 @@ source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 excep
 R blends asphalt, also beneath snow; G is reference-only, without geometry/depth effects.
 
 `python tools/build-ground-surface-maps.py [--check]`: linear response; source albedos unchanged.
-`python tools/build-ground-surface-shader.py [--check]`: derives complete PS1/URP passes;
+`python tools/build-ground-surface-shader.py [--check]`: derives complete URP passes;
 recheck after upstream changes. Both checks are read-only. After map generation,
 call `VillageJunctionTextureSetup.BuildOrThrow` to rebake both atlases.
 

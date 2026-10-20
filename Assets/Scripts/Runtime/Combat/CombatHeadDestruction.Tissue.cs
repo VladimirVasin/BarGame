@@ -52,7 +52,7 @@ namespace BarPromenade
             if (model == null) throw new InvalidOperationException("Missing authored combat skull.");
             if (bone == null)
             {
-                Shader shader = Resources.Load<Shader>("Shaders/Ps1Lit");
+                Shader shader = Resources.Load<Shader>("Shaders/Lit");
                 Texture2D texture = Resources.Load<Texture2D>("CombatGore/BoneSurface");
                 if (shader == null || texture == null) throw new InvalidOperationException("Missing authored skull surface.");
                 bone = new Material(shader) { name = "Combat Skull Shared" };

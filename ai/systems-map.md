@@ -26,7 +26,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Narrative inspection | 24 outdoor + 4 lodge RU/EN; low/right hatch close-up, compact choice, lid attempt→bottom reply. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Pause/modal priority; Alt cursor blocks mouse combat; focus guard. | `GameInput`, `GameInputPolicy`, `GameCursor` | Current |
-| Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
+| Performance capture | Camera-bound frame/GPU/GC, inclusive combat/NPC CPU and separate fountain/probe metrics; availability explicit. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
 | Player build asset gate | Read-only validators block stale/missing runtime assets with explicit repair instructions. | `PlayerBuildAssetValidation` | Current |
 | Reproducible asset tooling | Pinned tools, failure propagation, output checks and staged publication preserve existing metas. | `tools/run-blender.py`, `tools/asset_pipeline.py` | Current |
 | Offshore fishing boats | Two hero-local coastal passes avoid the working port; leaving shore releases models, sounds and wakes. | `CityOffshoreBoat*`, `build-city-offshore-boats-3d-model.py` | Current |
@@ -43,8 +43,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City Blender ordinary buildings | Twenty metre types; district heights, true passages and secondary wings share models/solid footprints. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.4f1`, `17.6.0` | Current |
-| Presentation styles | PS1/default or native Clean/optional SMAA High; shared grade/UI. Independent Begotten keeps film grid/cadence/ramp. | `Runtime/Rendering`, `GraphicsEffectsSettings`, `BegottenModeRamp` | Current |
+| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
+| Scene presentation | Native frame, optional SMAA High and saved warehouse effects. Shared grade/UI; independent 4:3. | `SceneCompositeRendererFeature`, `GraphicsEffectsSettings` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
@@ -139,7 +139,6 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
-| Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
 | Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
@@ -278,5 +277,5 @@ player -> interaction -> SceneTransitionService -> DoorTransition
 all gameplay results -> GameSessionState -> preserved across Single loads
 state boundaries     -> correlated rotating debug.log (NDJSON)
 scene root           -> audio mixer snapshot + scene music + ambience
-URP post-processing  -> selected style + optional Begotten -> crisp soot/bone IMGUI
+URP post-processing  -> native scene/effects/SMAA -> crisp soot/bone IMGUI
 ```

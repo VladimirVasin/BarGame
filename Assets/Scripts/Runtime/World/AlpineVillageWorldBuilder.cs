@@ -491,14 +491,14 @@ namespace BarPromenade
         /// into the mountain, which is what it is. The ride keeps its
         /// close-up honesty from the shader instead of from the split -
         /// inside `NativeFogNearDistance` the wall is on the same native
-        /// Exp2 the floor is. Both materials now apply the same projected PS1
-        /// vertex snap, so adjacent floor and rise cells share the grid's
-        /// exact toe indices. No duplicated coplanar ring is needed, and the
+        /// Exp2 the floor is. Adjacent floor and rise cells share the grid's
+        /// exact toe indices under native projection. No duplicated
+        /// coplanar ring is needed, and the
         /// collider remains the one unsplit grid mesh.
         ///
         /// IT CARRIES NO VERTEX COLOURS, and it never usefully did. Every
         /// vertex used to be tinted snow-to-soil by its distance from the
-        /// lane and the paths, on the reasoning above - and `Ps1Lit` is a
+        /// lane and the paths, on the reasoning above - and `Lit` is a
         /// verbatim copy of URP Lit, whose `Attributes` has no `COLOR`
         /// semantic at all, so not one of those colours ever reached a
         /// shader. The compacted ground a player actually sees is the path
