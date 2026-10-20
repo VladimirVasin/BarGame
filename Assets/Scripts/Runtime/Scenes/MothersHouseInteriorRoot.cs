@@ -66,6 +66,7 @@ namespace BarPromenade
             private set;
         }
         public MothersHouseKettleProp Kettle { get; private set; }
+        public MothersHouseLightingPresentation Lighting { get; private set; }
         public MothersHouseExit Exit { get; private set; }
         public WorldItemPickup ScarfPickup { get; private set; }
 
@@ -234,6 +235,10 @@ namespace BarPromenade
                 IntoxicationHud);
             GameLogPhases.Report("mothers_house", "pickup_and_ui", phaseTimer);
 
+            var lightingObject = new GameObject("Mother's House Lighting Presentation");
+            lightingObject.transform.SetParent(transform, false);
+            Lighting = lightingObject.AddComponent<MothersHouseLightingPresentation>();
+            Lighting.Initialize(this);
             IsInitialized = true;
             AlpineColdExposure.Bind(this, camera, () => IsInitialized, () => true);
             timer.Stop();

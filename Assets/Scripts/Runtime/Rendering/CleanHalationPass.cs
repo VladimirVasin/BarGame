@@ -11,11 +11,14 @@ namespace BarPromenade.Rendering
     {
         private const int MaximumSources = 24;
         private static readonly int SourcesId = Shader.PropertyToID("_CleanLightSources");
+        private static readonly int StrengthsId = Shader.PropertyToID("_CleanLightSourceStrengths");
         private static readonly int SourceCountId = Shader.PropertyToID("_CleanLightSourceCount");
         private static readonly int DepthId = Shader.PropertyToID("_CleanSceneDepth");
         private static readonly int GlowId = Shader.PropertyToID("_CleanHalationTexture");
         private static readonly int DirectionId = Shader.PropertyToID("_CleanBlurDirection");
         private readonly Vector4[] sources = new Vector4[MaximumSources];
+        private readonly float[] strengths = new float[MaximumSources];
+        private readonly float[] distances = new float[MaximumSources];
         private Material material;
         private int sourceCount;
 
@@ -37,36 +40,54 @@ namespace BarPromenade.Rendering
             // when that pool grows, then reused without per-frame array creation.
             internal readonly Vector4[] WorldSources = new Vector4[MaximumSources];
             internal readonly Vector4[] ProjectedSources = new Vector4[MaximumSources];
+            internal readonly float[] Strengths = new float[MaximumSources];
             internal int Count;
         }
 
-        internal bool Setup(Camera camera, WarehouseCleanPresentation warehouse)
+        internal bool Setup(Camera camera, SceneLightingPresentation presentation)
         {
             sourceCount = 0;
-            if (camera == null || warehouse == null || !warehouse.IsForCamera(camera)) return false;
+            if (camera == null || presentation == null || !presentation.IsForCamera(camera)) return false;
             if (material == null)
             {
                 Shader shader = Resources.Load<Shader>("Shaders/CleanHalation");
                 if (shader == null || !shader.isSupported) return false;
                 material = CoreUtils.CreateEngineMaterial(shader);
             }
-            var lights = warehouse.LightSources;
             float scale = 1f / (2f * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * .5f));
-            for (int i = 0; i < lights.Count && sourceCount < MaximumSources; i++)
+            Vector3 cameraPosition = camera.transform.position;
+            int candidateCount = presentation.HalationSourceCount;
+            for (int i = 0; i < candidateCount; i++)
             {
-                Light light = lights[i];
-                if (light == null || !light.isActiveAndEnabled || light.intensity <= .001f) continue;
-                Vector3 viewport = camera.WorldToViewportPoint(light.transform.position);
+                if (!presentation.TryGetHalationSource(i, out SceneHalationSource source) ||
+                    !(source.Strength > 0f) || !(source.Radius > 0f)) continue;
+                Vector3 viewport = camera.WorldToViewportPoint(source.Position);
                 if (viewport.z <= camera.nearClipPlane || viewport.x < -.05f || viewport.x > 1.05f ||
                     viewport.y < -.05f || viewport.y > 1.05f) continue;
                 float projectedRadius = camera.orthographic
-                    ? .18f / (2f * Mathf.Max(.01f, camera.orthographicSize))
-                    : .18f * scale / viewport.z;
+                    ? source.Radius / (2f * Mathf.Max(.01f, camera.orthographicSize))
+                    : source.Radius * scale / viewport.z;
                 float radius = Mathf.Clamp(projectedRadius, .003f, .025f);
+                float distance = (source.Position - cameraPosition).sqrMagnitude;
+                // Keep the nearest visible candidates in a fixed array. Strict
+                // comparison retains provider order for equal distances.
+                int slot = sourceCount;
+                while (slot > 0 && distance < distances[slot - 1]) slot--;
+                if (slot >= MaximumSources) continue;
+                int last = Mathf.Min(sourceCount, MaximumSources - 1);
+                for (int next = last; next > slot; next--)
+                {
+                    sources[next] = sources[next - 1];
+                    strengths[next] = strengths[next - 1];
+                    distances[next] = distances[next - 1];
+                }
                 // Preserve world sources until the pass snapshots the actual
                 // per-camera GPU projection and target's texture Y convention.
-                Vector3 position = light.transform.position;
-                sources[sourceCount++] = new Vector4(position.x, position.y, position.z, radius);
+                Vector3 position = source.Position;
+                sources[slot] = new Vector4(position.x, position.y, position.z, radius);
+                strengths[slot] = Mathf.Clamp01(source.Strength);
+                distances[slot] = distance;
+                sourceCount = Mathf.Min(sourceCount + 1, MaximumSources);
             }
             return sourceCount > 0;
         }
@@ -100,6 +121,7 @@ namespace BarPromenade.Rendering
                 data.Projection = cameraData.GetProjectionMatrix();
                 data.Count = sourceCount;
                 Array.Copy(sources, data.WorldSources, sourceCount);
+                Array.Copy(strengths, data.Strengths, sourceCount);
                 builder.UseTexture(source, AccessFlags.Read);
                 builder.UseTexture(depth, AccessFlags.Read);
                 builder.SetRenderAttachment(mask, 0, AccessFlags.WriteAll);
@@ -121,6 +143,7 @@ namespace BarPromenade.Rendering
                         pass.ProjectedSources[i] = new Vector4(x, y, sourceDepth, sourcePoint.w * sourcePoint.w);
                     }
                     pass.Material.SetVectorArray(SourcesId, pass.ProjectedSources);
+                    pass.Material.SetFloatArray(StrengthsId, pass.Strengths);
                     pass.Material.SetInt(SourceCountId, pass.Count);
                     pass.Material.SetTexture(DepthId, pass.Depth);
                     Blitter.BlitTexture(context.cmd, (RTHandle)pass.Source,

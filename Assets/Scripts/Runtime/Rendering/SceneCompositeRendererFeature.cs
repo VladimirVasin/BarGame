@@ -22,14 +22,30 @@ namespace BarPromenade.Rendering
         private NpcNameplatePass nameplatePass;
         private bool loggedMissingResources;
         private WarehouseFanVolumePass volumePass;
+        private AlpineVillageLightVolumePass villageVolumePass;
+        private MothersHouseLightVolumePass mothersHouseVolumePass;
         private bool volumeScheduled;
+        private bool villageVolumeScheduled;
+        private bool mothersHouseVolumeScheduled;
 
         public Material CompositeMaterial => compositeMaterial;
 
         internal bool DebugCleanSmaaApplied => pass != null && pass.SmaaApplied;
         internal bool DebugCleanHalationApplied => pass != null && pass.HalationApplied;
-        internal bool DebugCleanVolumeApplied => volumeScheduled && volumePass != null && volumePass.LastLightIndex >= 0;
-        internal Vector2Int DebugCleanVolumeResolution => volumePass?.LastResolution ?? Vector2Int.zero;
+        internal bool DebugCleanVolumeApplied =>
+            volumeScheduled && volumePass != null && volumePass.LastLightIndex >= 0 ||
+            villageVolumeScheduled && villageVolumePass != null && villageVolumePass.LastSourceCount > 0 ||
+            mothersHouseVolumeScheduled && mothersHouseVolumePass != null && mothersHouseVolumePass.LastSourceCount > 0;
+        internal Vector2Int DebugCleanVolumeResolution => mothersHouseVolumeScheduled
+            ? mothersHouseVolumePass?.LastResolution ?? Vector2Int.zero : villageVolumeScheduled
+            ? villageVolumePass?.LastResolution ?? Vector2Int.zero
+            : volumePass?.LastResolution ?? Vector2Int.zero;
+        internal int DebugAlpineVolumeSourceCount => villageVolumeScheduled
+            ? villageVolumePass?.LastSourceCount ?? 0 : 0;
+        internal int DebugMothersHouseVolumeSourceCount => mothersHouseVolumeScheduled
+            ? mothersHouseVolumePass?.LastSourceCount ?? 0 : 0;
+        internal Vector2Int DebugMothersHouseVolumeResolution => mothersHouseVolumeScheduled
+            ? mothersHouseVolumePass?.LastResolution ?? Vector2Int.zero : Vector2Int.zero;
 
         internal int DebugNameplateCandidateCount => nameplatePass?.CandidateCount ?? 0;
         internal Rect DebugNameplatePanelRect => nameplatePass?.LastPanelRect ?? default;
@@ -50,6 +66,10 @@ namespace BarPromenade.Rendering
             pass?.Dispose();
             volumePass?.Dispose();
             volumePass = new WarehouseFanVolumePass();
+            villageVolumePass?.Dispose();
+            villageVolumePass = new AlpineVillageLightVolumePass();
+            mothersHouseVolumePass?.Dispose();
+            mothersHouseVolumePass = new MothersHouseLightVolumePass();
             toiletUnderwaterPass?.Dispose();
             coldFrostPass?.Dispose();
             nameplatePass?.Dispose();
@@ -78,6 +98,8 @@ namespace BarPromenade.Rendering
             ref RenderingData renderingData)
         {
             volumeScheduled = false;
+            villageVolumeScheduled = false;
+            mothersHouseVolumeScheduled = false;
             pass?.ResetDebugState();
             CameraData cameraData = renderingData.cameraData;
             if (toiletUnderwaterPass != null && cameraData.resolveFinalTarget &&
@@ -100,17 +122,33 @@ namespace BarPromenade.Rendering
             // the picture itself always retains the full camera target resolution.
             Vector2Int referenceResolution = LensReferenceResolution(effectiveWidth, outputHeight);
 
-            WarehouseCleanPresentation warehouse = WarehouseCleanPresentation.Current;
+            SceneLightingPresentation lighting = SceneLightingPresentation.Resolve(cameraData.camera);
             bool cleanWorld = present && !excluded &&
-                warehouse != null && warehouse.IsForCamera(cameraData.camera);
-            warehouse?.PrepareForCamera(cameraData.camera);
+                lighting != null;
+            SceneLightingPresentation.ClearCameraGlobals();
+            if (lighting != null) lighting.PrepareForCamera(cameraData.camera);
             Vector4 cleanEffects = cleanWorld ? new Vector4(
                 GraphicsEffectsSettings.CleanReflectionsEnabled ? 1f : 0f,
                 GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled ? 1f : 0f,
                 GraphicsEffectsSettings.CleanBounceEnabled ? 1f : 0f, 0f) : Vector4.zero;
-            globalsPass.Setup(cleanEffects);
+            SceneLocalLightParameters localLights = null;
+            if (cleanWorld && GraphicsEffectsSettings.CleanVolumeEnabled && villageVolumePass != null &&
+                lighting is IAlpineVillageLightVolumeSource village && villageVolumePass.Setup(cameraData.camera, village))
+            {
+                villageVolumeScheduled = true;
+                localLights = villageVolumePass.Parameters;
+                renderer.EnqueuePass(villageVolumePass);
+            }
+            if (cleanWorld && GraphicsEffectsSettings.CleanVolumeEnabled && mothersHouseVolumePass != null &&
+                lighting is IMothersHouseLightVolumeSource interior && mothersHouseVolumePass.Setup(cameraData.camera, interior))
+            {
+                mothersHouseVolumeScheduled = true;
+                renderer.EnqueuePass(mothersHouseVolumePass);
+            }
+            globalsPass.Setup(cleanEffects, localLights, mothersHouseVolumeScheduled
+                ? mothersHouseVolumePass.ConfiguredSourceCount : 0);
             if (cleanWorld && GraphicsEffectsSettings.CleanVolumeEnabled &&
-                volumePass != null && volumePass.Setup(warehouse.FanLight))
+                volumePass != null && volumePass.Setup(lighting.VolumeLight))
             {
                 volumeScheduled = true;
                 renderer.EnqueuePass(volumePass);
@@ -159,7 +197,7 @@ namespace BarPromenade.Rendering
             pass.Setup(compositeMaterial, aspectFraction, intoxication,
                 vertigo, vertigoShape, referenceResolution,
                 GraphicsEffectsSettings.CleanAntialiasingEnabled && !excluded,
-                cleanWorld && GraphicsEffectsSettings.CleanHalationEnabled ? warehouse : null,
+                cleanWorld && GraphicsEffectsSettings.CleanHalationEnabled ? lighting : null,
                 cameraData.camera);
             if (pass.ShouldRender)
                 renderer.EnqueuePass(pass);
@@ -215,6 +253,10 @@ namespace BarPromenade.Rendering
             pass = null;
             volumePass?.Dispose();
             volumePass = null;
+            villageVolumePass?.Dispose();
+            villageVolumePass = null;
+            mothersHouseVolumePass?.Dispose();
+            mothersHouseVolumePass = null;
             globalsPass = null;
             toiletUnderwaterPass?.Dispose();
             toiletUnderwaterPass = null;
@@ -249,14 +291,30 @@ namespace BarPromenade.Rendering
         private sealed class CleanGlobalsPass : ScriptableRenderPass
         {
             private static readonly int CleanEffectsId = Shader.PropertyToID("_WarehouseCleanEffects");
+            private static readonly int InteriorAirCountId = Shader.PropertyToID("_MothersHouseAirSourceCount");
+            private static readonly int SurfaceReflectionCountId = Shader.PropertyToID("_SceneSurfaceReflectionCount");
             private Vector4 cleanEffects;
+            private SceneLocalLightParameters localLights;
+            private int interiorAirCount;
+            private int surfaceReflectionCount;
 
             private sealed class PassData
             {
                 public Vector4 CleanEffects;
+                public readonly SceneLocalLightParameters LocalLights = new SceneLocalLightParameters();
+                public int InteriorAirCount;
+                public int SurfaceReflectionCount;
             }
 
-            public void Setup(Vector4 effects) => cleanEffects = effects;
+            public void Setup(Vector4 effects, SceneLocalLightParameters lights, int houseAirCount)
+            {
+                cleanEffects = effects;
+                localLights = lights;
+                interiorAirCount = houseAirCount;
+                // Providers bind receivers during PrepareForCamera. Retain
+                // the count on this camera's GPU timeline, including zero.
+                surfaceReflectionCount = Shader.GetGlobalInt(SurfaceReflectionCountId);
+            }
 
             public override void RecordRenderGraph(
                 RenderGraph renderGraph,
@@ -264,9 +322,12 @@ namespace BarPromenade.Rendering
             {
                 using IUnsafeRenderGraphBuilder builder =
                     renderGraph.AddUnsafePass(
-                        "Warehouse Lighting Globals",
+                        "Scene Lighting Globals",
                         out PassData data);
                 data.CleanEffects = cleanEffects;
+                data.LocalLights.CopyFrom(localLights);
+                data.InteriorAirCount = interiorAirCount;
+                data.SurfaceReflectionCount = surfaceReflectionCount;
                 // The pass writes no texture, so the graph would prune it.
                 builder.AllowPassCulling(false);
                 builder.AllowGlobalStateModification(true);
@@ -274,6 +335,9 @@ namespace BarPromenade.Rendering
                     static (PassData passData, UnsafeGraphContext context) =>
                     {
                         context.cmd.SetGlobalVector(CleanEffectsId, passData.CleanEffects);
+                        passData.LocalLights.BindGlobals(context.cmd);
+                        context.cmd.SetGlobalInt(InteriorAirCountId, passData.InteriorAirCount);
+                        context.cmd.SetGlobalInt(SurfaceReflectionCountId, passData.SurfaceReflectionCount);
                     });
             }
         }
@@ -318,7 +382,7 @@ namespace BarPromenade.Rendering
                 Vector4 vertigoShape,
                 Vector2Int referenceResolution,
                 bool cleanAntialiasing,
-                WarehouseCleanPresentation warehouse, Camera camera)
+                SceneLightingPresentation lighting, Camera camera)
             {
                 material = composite;
                 antialiasing = cleanAntialiasing && smaa.IsAvailable;
@@ -361,7 +425,7 @@ namespace BarPromenade.Rendering
                 material.SetVector(
                     IntoxicationVertigoShapeId,
                     vertigoShape);
-                halationEnabled = warehouse != null && halation.Setup(camera, warehouse);
+                halationEnabled = lighting != null && halation.Setup(camera, lighting);
                 HalationApplied = false;
                 requiresIntermediateTexture = true;
             }

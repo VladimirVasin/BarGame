@@ -44,7 +44,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
-| Scene presentation | Native frame, optional SMAA High and saved warehouse effects. Shared grade/UI; independent 4:3. | `SceneCompositeRendererFeature`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | Native/SMAA; saved warehouse/village/house effects, grade/UI, optional 4:3. | `SceneCompositeRendererFeature`, `SceneLightingPresentation`, `GraphicsEffectsSettings` | Current |
+| Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
@@ -74,7 +75,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
 | Mountain Road area | Tunnel, ten hairpins, bridge, cafe/cableway; forest render chunks 48 m, all shadows, one trunk collider. | `MountainRoad*`, `MountainRoadBridge*` | Current |
 | Village above the cableway | Snow bowl, abandoned settlement, ski base; mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |
-| Mother's house interior | Two bedrooms and a passive bathroom in a supported rear wing; shared windows, walkable stairs, five cameras. | `MothersHouseInterior*`, `MothersHouseWindowLayout`, `HomeFixedCameraController` | Current |
+| Mother's house interior | Supported wing/bath, two bedrooms/stairs/five cameras; unique4K+2K/aux1K; room effects/two cubes, passive mirror. | `MothersHouseInterior*`, `MothersHouse{Lighting,Reflection}*`, `MothersHouseSurface*` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
 | City river and embankments | A `10 m` north-south channel preserves all 144 lots. | `CityRiver{Definition,Plan,Planner,Resources,SurfaceAppearance,WorldBuilder}`, `CityWaterSurfaceFactory` | Current |
 | Yard wheelchair rider | One staged yard rider follows its reserved circuit, with authored wheelchair motion and existing local lighting. | `YardWheelchair{Motion,Plan,Presentation,Actor,Factory,Provider}` | Current |

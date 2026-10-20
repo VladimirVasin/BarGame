@@ -99,14 +99,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.88, g: 0.85, b: 0.76, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.457143
-      y: 4.4857144
-      width: 8.87759
-      height: 1.8000002
-    baseMapTransform: {x: 0.027801486, y: 0.13711676, z: 0.09770861, w: -0.36347172}
+      x: 0.057654265
+      y: 0.8186386
+      width: 0.7557209
+      height: 0.15010613
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1105315722475194863}
   - sourceName: DRESS_Bathroom.BasinTap
     role: bathroom_fittings
@@ -114,14 +115,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.44, b: 0.25, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.12
-      y: 3.47
-      width: 5.63
-      height: 1.115
-    baseMapTransform: {x: 0.0438384, y: 0.22135444, z: 0.3445323, w: -0.516505}
+      x: 0.1712157
+      y: 0.9554197
+      width: 0.53529036
+      height: 0.036242604
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8960543674970184481}
   - sourceName: DRESS_Bathroom.LampGlobe
     role: bathroom_lamp_globe
@@ -129,6 +131,7 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.88, g: 0.82, b: 0.69, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -136,7 +139,7 @@ MonoBehaviour:
       y: 4.9357142
       width: 8.345964
       height: 2.6357145
-    baseMapTransform: {x: 0.0295724, y: 0.093640715, z: 0.09559287, w: -0.2105889}
+    baseMapTransform: {x: 0.029486556, y: 0.093368895, z: 0.09567824, w: -0.20888907}
     renderer: {fileID: 1417071329185040717}
   - sourceName: DRESS_Bathroom.LaundryBasket
     role: bathroom_laundry_basket
@@ -144,14 +147,15 @@ MonoBehaviour:
     sheet: Wicker
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.63, g: 0.5, b: 0.3, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -8.645454
-      y: 5.745455
-      width: 15.264317
-      height: 1.5818181
-    baseMapTransform: {x: 0.016169095, y: 0.15602945, z: 0.39138407, w: -0.8948652}
+      x: 0.02937837
+      y: 0.9087949
+      width: 0.9558876
+      height: 0.023041785
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1910812966144261396}
   - sourceName: DRESS_Bathroom.MirrorGlass
     role: bathroom_mirror_glass
@@ -159,6 +163,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.6, g: 0.65, b: 0.61, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -166,7 +171,7 @@ MonoBehaviour:
       y: 3.24325
       width: 5.6635
       height: 2.0367503
-    baseMapTransform: {x: 0.043579094, y: 0.121178426, z: 0.5854193, w: -0.14141701}
+    baseMapTransform: {x: 0.04345259, y: 0.12082667, z: 0.58553416, w: -0.13991795}
     renderer: {fileID: 3457216793451399919}
   - sourceName: DRESS_Bathroom.Soap
     role: bathroom_soap
@@ -174,14 +179,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.77, b: 0.64, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.8999999
-      y: 5.3125
-      width: 8.285714
-      height: 1.0296426
-    baseMapTransform: {x: 0.029787438, y: 0.23970473, z: 0.08797846, w: -1.0218365}
+      x: 0.39284423
+      y: 0.9901057
+      width: 0.27656743
+      height: 0.0017222166
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 6881404207351978479}
   - sourceName: DRESS_Bathroom.ToiletSeat
     role: bathroom_toilet_seat
@@ -189,14 +195,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.71, g: 0.64, b: 0.46, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.058696
-      y: 2.0347826
-      width: 6.4123573
-      height: 1.4452171
-    baseMapTransform: {x: 0.038489778, y: 0.17077725, z: 0.9078132, w: -0.34589967}
+      x: 0.0009767384
+      y: 0.9226733
+      width: 0.91982687
+      height: 0.071190834
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 9191098797192561256}
   - sourceName: DRESS_Bathroom.TowelRail
     role: bathroom_fittings
@@ -204,14 +211,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.44, b: 0.25, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.9
-      y: 3.1425
-      width: 8.62
-      height: 1.5725002
-    baseMapTransform: {x: 0.028632274, y: 0.156954, z: 0.39189306, w: -0.24163304}
+      x: 0.0010231098
+      y: 0.8457931
+      width: 0.5487763
+      height: 0.12781775
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 796252544332506846}
   - sourceName: DRESS_Bathroom.TubFittings
     role: bathroom_fittings
@@ -219,14 +227,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.55, b: 0.46, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.035
-      y: 3.705
-      width: 8.75
-      height: 1.0050001
-    baseMapTransform: {x: 0.02820688, y: 0.24558225, z: 0.36540964, w: -0.65828735}
+      x: 0.14219435
+      y: 0.8218977
+      width: 0.61701906
+      height: 0.0843128
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3009937213652758284}
   - sourceName: DRESS_Cupboard
     role: old_cupboard
@@ -234,14 +243,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.145, g: 0.052, b: 0.025, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.5909092
-      y: -3.5909092
-      width: 6.936364
-      height: 5.4545455
-    baseMapTransform: {x: 0.03558207, y: 0.045248535, z: 0.8793669, w: 0.9140783}
+      x: 0.0009958844
+      y: 0.60068256
+      width: 0.99629927
+      height: 0.31986618
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5267346621031166540}
   - sourceName: DRESS_FirePoker
     role: fireplace_tool
@@ -249,14 +259,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.1, g: 0.09, b: 0.075, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 2.0225
-      y: 0.02
-      width: 1.5974998
-      height: 3.5975
-    baseMapTransform: {x: 0.15449779, y: 0.06860603, z: -0.06087688, w: 0.25022277}
+      x: 0.16556641
+      y: 0.44752908
+      width: 0.8329669
+      height: 0.4840116
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 489616567240282016}
   - sourceName: DRESS_Firewood
     role: firewood
@@ -264,14 +275,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.18, g: 0.065, b: 0.024, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.0181818
-      y: 0.022727273
-      width: 2.1954546
-      height: 3.170939
-    baseMapTransform: {x: 0.11241872, y: 0.07783505, z: 0.6371322, w: 0.7498259}
+      x: 0.0010770292
+      y: 0.9219763
+      width: 0.93998456
+      height: 0.060819745
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 508339373476323927}
   - sourceName: DRESS_FloorLamp.Bulb
     role: floor_lamp_bulb
@@ -279,6 +291,7 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.56, b: 0.2, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -286,7 +299,7 @@ MonoBehaviour:
       y: -2.4093914
       width: 0.63020706
       height: 4.645106
-    baseMapTransform: {x: 0.3916335, y: 0.053133383, z: 1.1317374, w: 0.37961403}
+    baseMapTransform: {x: 0.39049664, y: 0.05297915, z: 1.1288148, w: 0.37960064}
     renderer: {fileID: 8149983081159842256}
   - sourceName: DRESS_FloorLamp.Frame
     role: floor_lamp
@@ -294,14 +307,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.32, g: 0.23, b: 0.12, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.2
-      y: -1.87
-      width: 0.7965064
-      height: 3.325
-    baseMapTransform: {x: 0.30986592, y: 0.07422863, z: 0.93329996, w: 0.39040244}
+      x: 0.1001925
+      y: 0.44003186
+      width: 0.8687542
+      height: 0.4802905
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4017655532218526171}
   - sourceName: DRESS_FloorLamp.Shade
     role: floor_lamp_shade
@@ -309,14 +323,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 1
     tint: {r: 0.8, g: 0.66, b: 0.43, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.511111
-      y: -2.1444445
-      width: 0.9546701
-      height: 4.1555557
-    baseMapTransform: {x: 0.2585293, y: 0.059392825, z: 0.9007907, w: 0.62895954}
+      x: 0.04063071
+      y: 0.8909163
+      width: 0.94076747
+      height: 0.051684737
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2680018294476010985}
   - sourceName: DRESS_Rug
     role: worn_rug
@@ -324,14 +339,15 @@ MonoBehaviour:
     sheet: Rug
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.31, g: 0.135, b: 0.075, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.2166667
-      y: -0.9121867
-      width: 2.4333334
-      height: 2.0910401
-    baseMapTransform: {x: 0.101428844, y: 0.11803226, z: 0.625, w: 0.60926235}
+      x: 0.0010273923
+      y: 0.45976764
+      width: 0.9572186
+      height: 0.53506786
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2746832746682013822}
   - sourceName: DRESS_Slippers
     role: slippers
@@ -339,14 +355,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.245, g: 0.17, b: 0.11, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.5888889
-      y: 0.016666666
-      width: 2.1444445
-      height: 2.6833334
-    baseMapTransform: {x: 0.11509284, y: 0.09197895, z: 0.18381801, w: 0.5000619}
+      x: 0.22168456
+      y: 0.921955
+      width: 0.7707422
+      height: 0.05308628
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4940964997027438234}
   - sourceName: DRESS_TeaService.CupsAndSugar
     role: tea_service
@@ -354,14 +371,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.58, g: 0.49, b: 0.36, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.7214286
-      y: -0.4142857
-      width: 1.6678572
-      height: 1.4514285
-    baseMapTransform: {x: 0.14798042, y: 0.1700464, z: 0.1083522, w: 0.3220427}
+      x: 0.040612094
+      y: 0.92217106
+      width: 0.9549818
+      height: 0.030855417
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2714308822763459104}
   - sourceName: DRESS_TeaService.Tray
     role: tea_tray
@@ -369,14 +387,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.22, g: 0.18, b: 0.12, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.23
-      y: -0.2
-      width: 0.78000003
-      height: 0.7055
-    baseMapTransform: {x: 0.31642333, y: 0.34983727, z: 0.32437226, w: 0.32156235}
+      x: 0.39805812
+      y: 0.8706464
+      width: 0.41436547
+      height: 0.123702526
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7140205439259180135}
   - sourceName: DRESS_UpperCorridor.CeilingLamp
     role: upper_corridor_lamp
@@ -384,14 +403,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.52, b: 0.41, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.5875
-      y: -0.6875
-      width: 2.049372
-      height: 6.5875
-    baseMapTransform: {x: 0.120432116, y: 0.037466444, z: 0.563213, w: 0.27735308}
+      x: 0.21682268
+      y: 0.9563076
+      width: 0.28292438
+      height: 0.006817341
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 905194223683139078}
   - sourceName: DRESS_UpperCorridor.HangingShawl
     role: upper_hanging_cloth
@@ -399,14 +419,15 @@ MonoBehaviour:
     sheet: BookCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.28, g: 0.33, b: 0.4, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.320588
-      y: -0.76323533
-      width: 2.4691176
-      height: 6.7279415
-    baseMapTransform: {x: 0.09995887, y: 0.036684357, z: 0.23355825, w: 0.029593693}
+      x: 0.18049163
+      y: 0.8685013
+      width: 0.6919605
+      height: 0.03744799
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4507133140963964355}
   - sourceName: DRESS_UpperCorridor.HighShelf
     role: upper_corridor_shelf
@@ -414,14 +435,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.42, g: 0.29, b: 0.16, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.8
-      y: -0.95652175
-      width: 2.0086956
-      height: 5.738261
-    baseMapTransform: {x: 0.12287088, y: 0.043011323, z: 0.97276247, w: 0.04273616}
+      x: 0.027645677
+      y: 0.732968
+      width: 0.75456166
+      height: 0.23591971
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5669874435887497214}
   - sourceName: DRESS_UpperCorridor.LampBulb
     role: upper_corridor_lamp_bulb
@@ -429,6 +451,7 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.82, b: 0.52, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -436,7 +459,7 @@ MonoBehaviour:
       y: -0.9028572
       width: 2.8057756
       height: 9.024285
-    baseMapTransform: {x: 0.08796505, y: 0.027349556, z: 0.31977704, w: 0.27628765}
+    baseMapTransform: {x: 0.0877097, y: 0.027270164, z: 0.31921166, w: 0.2765742}
     renderer: {fileID: 6404317659011803640}
   - sourceName: DRESS_UpperCorridor.LampGlass
     role: upper_corridor_lamp_glass
@@ -444,6 +467,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.94, g: 0.78, b: 0.52, a: 0.62}
     sourceUvBounds:
       serializedVersion: 2
@@ -451,7 +475,7 @@ MonoBehaviour:
       y: -0.754
       width: 2.1818247
       height: 6.418
-    baseMapTransform: {x: 0.113121, y: 0.038455933, z: 0.8018181, w: 0.28059068}
+    baseMapTransform: {x: 0.11279263, y: 0.038344305, z: 0.80130476, w: 0.28086475}
     renderer: {fileID: 64536622487274876}
   - sourceName: DRESS_UpperCorridor.LinenChest
     role: upper_linen_chest
@@ -459,14 +483,15 @@ MonoBehaviour:
     sheet: Wicker
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.52, g: 0.38, b: 0.18, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.8590908
-      y: 3.7159092
-      width: 7.8954544
-      height: 3.7250001
-    baseMapTransform: {x: 0.031259783, y: 0.06625777, z: 0.34096944, w: -0.24461295}
+      x: 0.3254565
+      y: 0.89112604
+      width: 0.2919581
+      height: 0.02918899
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8004549431563457474}
   - sourceName: DRESS_UpperCorridor.Pail
     role: upper_corridor_pail
@@ -474,14 +499,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.52, b: 0.4, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.921
-      y: 2.0254054
-      width: 6.3310003
-      height: 2.734219
-    baseMapTransform: {x: 0.03898439, y: 0.09026716, z: 0.4044527, w: 0.06876731}
+      x: 0.18313184
+      y: 0.61208713
+      width: 0.755273
+      height: 0.30800366
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4251304641281203211}
   - sourceName: DRESS_UpperCorridor.PegRail
     role: upper_peg_rail
@@ -489,14 +515,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.7759091
-      y: -0.6363636
-      width: 1.9577272
-      height: 5.306818
-    baseMapTransform: {x: 0.12606975, y: 0.046508133, z: 0.9754833, w: 0.781191}
+      x: 0.042573594
+      y: 0.8469335
+      width: 0.9554524
+      height: 0.14351475
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5168642348342609386}
   - sourceName: DRESS_UpperCorridor.Runner
     role: upper_corridor_runner
@@ -504,14 +531,15 @@ MonoBehaviour:
     sheet: Rug
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.32, g: 0.16, b: 0.095, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.0333333
-      y: -1.6968001
-      width: 3
-      height: 4.071467
-    baseMapTransform: {x: 0.08227006, y: 0.060619477, z: 0.66887736, w: 0.60445404}
+      x: 0.15239206
+      y: 0.3406151
+      width: 0.7465286
+      height: 0.6559012
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5124331195105339293}
   - sourceName: DRESS_UpperCorridor.ShelfLinen
     role: upper_shelf_linen
@@ -519,14 +547,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.81, g: 0.78, b: 0.69, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1605263
-      y: -0.99526316
-      width: 2.2973683
-      height: 6.9826317
-    baseMapTransform: {x: 0.10743171, y: 0.0353463, z: 0.7337039, w: 0.036773767}
+      x: 0.12705061
+      y: 0.65098447
+      width: 0.6133305
+      height: 0.3116529
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1841545920240813556}
   - sourceName: DRESS_UpperNorth.Bedding
     role: upper_double_bedding
@@ -534,14 +563,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.66, b: 0.55, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 2
-      y: 2.0473685
-      width: 1.9526317
-      height: 2.4421048
-    baseMapTransform: {x: 0.12639874, y: 0.10106454, z: 0.24879742, w: -0.20532146}
+      x: 0.15512238
+      y: 0.4665738
+      width: 0.810661
+      height: 0.47749475
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5557919267536384657}
   - sourceName: DRESS_UpperNorth.Bedside
     role: upper_bedroom_bedside
@@ -549,14 +579,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.44, g: 0.31, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.3869566
-      y: 2.9826088
-      width: 1.9782606
-      height: 0.63695645
-    baseMapTransform: {x: 0.12476122, y: 0.38748363, z: 0.57855654, w: -1.1541172}
+      x: 0.60776734
+      y: 0.89267534
+      width: 0.38944578
+      height: 0.050147653
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1872142449042714886}
   - sourceName: DRESS_UpperNorth.CeilingLamp
     role: upper_ceiling_lamp
@@ -564,14 +595,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.58, g: 0.53, b: 0.4, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.12
-      y: 1.52
-      width: 0.66999996
-      height: 4.38
-    baseMapTransform: {x: 0.36837345, y: 0.05634936, z: -0.16098337, w: 0.16594388}
+      x: 0.053022426
+      y: 0.9068261
+      width: 0.61416996
+      height: 0.025474966
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5862186324479366587}
   - sourceName: DRESS_UpperNorth.Chair
     role: upper_bedroom_chair
@@ -579,14 +611,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.15, g: 0.055, b: 0.026, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.6409091
-      y: 2.4818182
-      width: 2.2522726
-      height: 1.5795455
-    baseMapTransform: {x: 0.10958274, y: 0.15625393, z: 0.68136233, w: 0.36380103}
+      x: 0.13209483
+      y: 0.8482335
+      width: 0.8566172
+      height: 0.08362919
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7950284297948871007}
   - sourceName: DRESS_UpperNorth.ChairClothes
     role: upper_folded_clothes
@@ -594,14 +627,15 @@ MonoBehaviour:
     sheet: BookCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.29, g: 0.34, b: 0.42, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.85882354
-      y: 3.2941177
-      width: 2.8617647
-      height: 1.9352944
-    baseMapTransform: {x: 0.08624406, y: 0.12753108, z: -0.07247353, w: -0.4185075}
+      x: 0.029299071
+      y: 0.9339121
+      width: 0.6886881
+      height: 0.02939576
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8841893500538411681}
   - sourceName: DRESS_UpperNorth.Chest
     role: upper_bedroom_chest
@@ -609,14 +643,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.42, g: 0.29, b: 0.16, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.4152174
-      y: 2.854348
-      width: 4.8
-      height: 0.9195652
-    baseMapTransform: {x: 0.05141879, y: 0.2683988, z: 0.82436365, w: -0.76450866}
+      x: 0.09263082
+      y: 0.86994946
+      width: 0.9058368
+      height: 0.0503729
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3866363672930318048}
   - sourceName: DRESS_UpperNorth.Coverlet
     role: upper_double_coverlet
@@ -624,14 +659,15 @@ MonoBehaviour:
     sheet: BookCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.3, g: 0.36, b: 0.44, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 2.2470589
-      y: 2.2470589
-      width: 1.9294119
-      height: 2.7768764
-    baseMapTransform: {x: 0.12791991, y: 0.08888051, z: -0.28584868, w: -0.19812484}
+      x: 0.08084299
+      y: 0.68756306
+      width: 0.85756254
+      height: 0.28255677
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 180308779806714601}
   - sourceName: DRESS_UpperNorth.Curtain
     role: upper_window_curtain
@@ -639,14 +675,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.33, g: 0.27, b: 0.18, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.9916667
-      y: 4.088889
-      width: 6.139445
-      height: 2.2022223
-    baseMapTransform: {x: 0.040200736, y: 0.11207324, z: 0.33166137, w: 0.043339837}
+      x: 0.5176795
+      y: 0.73301387
+      width: 0.4402269
+      height: 0.26101643
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7580987504714827239}
   - sourceName: DRESS_UpperNorth.HangingRobe
     role: upper_hanging_robe
@@ -654,14 +691,15 @@ MonoBehaviour:
     sheet: BookCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.31, g: 0.36, b: 0.44, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.19705883
-      y: 0.20441176
-      width: 1.5588235
-      height: 5.8426466
-    baseMapTransform: {x: 0.15833108, y: 0.042242877, z: -0.02960564, w: -0.0070400448}
+      x: 0.1573049
+      y: 0.8450336
+      width: 0.73104453
+      height: 0.14861768
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8871424879407847146}
   - sourceName: DRESS_UpperNorth.LampBulb
     role: upper_lamp_bulb
@@ -669,6 +707,7 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.8, b: 0.52, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -676,7 +715,7 @@ MonoBehaviour:
       y: 2.3607144
       width: 0.6872679
       height: 5.596429
-    baseMapTransform: {x: 0.3591179, y: 0.044101372, z: -0.64096963, w: 0.14748415}
+    baseMapTransform: {x: 0.35807544, y: 0.043973353, z: -0.63874614, w: 0.1481446}
     renderer: {fileID: 3172817240950747016}
   - sourceName: DRESS_UpperNorth.PegRail
     role: upper_bedroom_pegs
@@ -684,14 +723,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.073181815
-      y: 0.073181815
-      width: 1.5631818
-      height: 4.660909
-    baseMapTransform: {x: 0.15788963, y: 0.052953232, z: 0.74004024, w: 0.7477197}
+      x: 0.0010696874
+      y: 0.97588956
+      width: 0.99159646
+      height: 0.012284219
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3324560186530808410}
   - sourceName: DRESS_UpperNorth.Rug
     role: upper_bedside_rug
@@ -699,14 +739,15 @@ MonoBehaviour:
     sheet: Rug
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.33, g: 0.15, b: 0.085, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.0333333
-      y: 1.3371733
-      width: 1.2
-      height: 1.0401601
-    baseMapTransform: {x: 0.20567515, y: 0.23728098, z: 0.2890639, w: 0.1843091}
+      x: 0.35574996
+      y: 0.73294723
+      width: 0.3263647
+      height: 0.26159716
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1610924326896066421}
   - sourceName: DRESS_UpperNorth.Slippers
     role: upper_slippers
@@ -714,14 +755,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.33, g: 0.26, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.8638889
-      y: 2.4819446
-      width: 0.9277779
-      height: 1.559722
-    baseMapTransform: {x: 0.26602295, y: 0.15823987, z: -0.24424231, w: 0.10885231}
+      x: 0.50171846
+      y: 0.9563283
+      width: 0.49582124
+      height: 0.030631304
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8568661448101635378}
   - sourceName: DRESS_UpperNorth.Trunk
     role: upper_bedroom_trunk
@@ -729,14 +771,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.4, g: 0.27, b: 0.15, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.0973912
-      y: 1.0973912
-      width: 2.0069566
-      height: 2.4347825
-    baseMapTransform: {x: 0.122977346, y: 0.10136848, z: 0.6166406, w: -0.109645985}
+      x: 0.08330974
+      y: 0.90898263
+      width: 0.7327945
+      height: 0.023786724
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3199668194994183184}
   - sourceName: DRESS_UpperNorth.TrunkLinen
     role: upper_folded_linen
@@ -744,14 +787,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.8, g: 0.77, b: 0.68, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.4210527
-      y: 1.4210527
-      width: 1.6442103
-      height: 3.0410526
-    baseMapTransform: {x: 0.15010865, y: 0.081159465, z: 0.2882826, w: -0.11373698}
+      x: 0.4426786
+      y: 0.90825474
+      width: 0.4659712
+      height: 0.061838627
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7006888765747773717}
   - sourceName: DRESS_UpperNorth.Washstand
     role: upper_washstand
@@ -759,14 +803,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.6, g: 0.56, b: 0.44, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.485
-      y: 3.4
-      width: 5.248875
-      height: 1.2149997
-    baseMapTransform: {x: 0.04702154, y: 0.20313603, z: 0.3214219, w: -0.4390676}
+      x: 0.14382605
+      y: 0.8703838
+      width: 0.6422602
+      height: 0.062445045
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 93498584935518421}
   - sourceName: DRESS_UpperSouth.Basket
     role: upper_laundry_basket
@@ -774,14 +819,15 @@ MonoBehaviour:
     sheet: Wicker
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.54, g: 0.4, b: 0.19, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.8636365
-      y: -2.8846192
-      width: 9.954546
-      height: 10.268255
-    baseMapTransform: {x: 0.024793718, y: 0.024036236, z: 0.3225951, w: 0.07093029}
+      x: 0.24011143
+      y: 0.90897137
+      width: 0.63998616
+      height: 0.02334416
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3337553841196917522}
   - sourceName: DRESS_UpperSouth.Bedding
     role: upper_child_bedding
@@ -789,14 +835,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.36, g: 0.3, b: 0.2, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.172222
-      y: -4.172222
-      width: 7.5277777
-      height: 8.833334
-    baseMapTransform: {x: 0.032786597, y: 0.027940774, z: 0.38838786, w: 0.61817}
+      x: 0.13625893
+      y: 0.6518607
+      width: 0.38730976
+      height: 0.31806064
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8083711836261015286}
   - sourceName: DRESS_UpperSouth.Casework
     role: upper_child_casework
@@ -804,14 +851,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.44, g: 0.31, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.0869565
-      y: -3.081739
-      width: 4.626087
-      height: 7.2626085
-    baseMapTransform: {x: 0.053351827, y: 0.033983685, z: 0.9162897, w: 0.10632374}
+      x: 0.099730395
+      y: 0.76521325
+      width: 0.7768576
+      height: 0.08037895
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7698785723438198673}
   - sourceName: DRESS_UpperSouth.CeilingLamp
     role: upper_child_lamp
@@ -819,14 +867,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.55, g: 0.5, b: 0.38, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.7871231
-      y: -1.8025
-      width: 3.0396233
-      height: 7.7025003
-    baseMapTransform: {x: 0.08119763, y: 0.03204287, z: 0.39670506, w: 0.30935216}
+      x: 0.33814004
+      y: 0.89116776
+      width: 0.56561685
+      height: 0.077332854
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8696628987995001136}
   - sourceName: DRESS_UpperSouth.Curtain
     role: upper_window_curtain
@@ -834,14 +883,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.35, g: 0.3, b: 0.21, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.1694446
-      y: -4.1569443
-      width: 3.663889
-      height: 10.448055
-    baseMapTransform: {x: 0.067362905, y: 0.023622597, z: 0.5324608, w: 0.5997927}
+      x: 0.2209919
+      y: 0.7308166
+      width: 0.7640717
+      height: 0.26325947
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1686625339293399587}
   - sourceName: DRESS_UpperSouth.DustSheet
     role: upper_dust_sheet
@@ -849,14 +899,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.78, g: 0.75, b: 0.66, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.8105261
-      y: -3.8105261
-      width: 7.0578947
-      height: 8.482105
-    baseMapTransform: {x: 0.03496938, y: 0.029097753, z: 0.6348466, w: 0.112472646}
+      x: 0.0010566587
+      y: 0.53938675
+      width: 0.83797455
+      height: 0.3294618
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1159247750316481216}
   - sourceName: DRESS_UpperSouth.LampBulb
     role: upper_child_lamp_bulb
@@ -864,6 +915,7 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.86, b: 0.62, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -871,7 +923,7 @@ MonoBehaviour:
       y: -2.5781224
       width: 4.3447113
       height: 10.453836
-    baseMapTransform: {x: 0.05680704, y: 0.023609534, z: 0.14635527, w: 0.31246316}
+    baseMapTransform: {x: 0.05664214, y: 0.023540998, z: 0.1462933, w: 0.3126447}
     renderer: {fileID: 8579378665445788825}
   - sourceName: DRESS_UpperSouth.LinenPress
     role: upper_linen_press
@@ -879,14 +931,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.43, g: 0.3, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.64869565
-      y: -0.64869565
-      width: 2.6278262
-      height: 4.7169566
-    baseMapTransform: {x: 0.09392181, y: 0.052324034, z: 0.8125216, w: 0.03553727}
+      x: 0.51227313
+      y: 0.81966496
+      width: 0.42076623
+      height: 0.10069597
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8850857309819377783}
   - sourceName: DRESS_UpperSouth.PressSheet
     role: upper_press_sheet
@@ -894,14 +947,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.79, g: 0.76, b: 0.67, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.79473686
-      y: -0.79473686
-      width: 3.2026315
-      height: 5.763158
-    baseMapTransform: {x: 0.07706481, y: 0.042825513, z: 0.5628412, w: 0.03562991}
+      x: 0.3220979
+      y: 0.84522945
+      width: 0.39957243
+      height: 0.087355256
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4490888614786230582}
   - sourceName: DRESS_UpperSouth.RolledRug
     role: upper_rolled_rug
@@ -909,14 +963,15 @@ MonoBehaviour:
     sheet: Rug
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.3, g: 0.14, b: 0.08, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.3999999
-      y: -2.3999999
-      width: 1.4799998
-      height: 4.9366665
-    baseMapTransform: {x: 0.16676368, y: 0.049995314, z: 0.9018277, w: 0.62158364}
+      x: 0.1579984
+      y: 0.6519499
+      width: 0.8177373
+      height: 0.317249
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5187278012945210615}
   - sourceName: DRESS_UpperSouth.Table
     role: upper_child_table
@@ -924,14 +979,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.45, g: 0.32, b: 0.18, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.252174
-      y: -3.241739
-      width: 3.9913044
-      height: 6.85913
-    baseMapTransform: {x: 0.061836977, y: 0.035982728, z: 0.9526995, w: 0.11824151}
+      x: 0.32214022
+      y: 0.846519
+      width: 0.45930737
+      height: 0.04254353
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1086930533185426814}
   - sourceName: DRESS_UpperSouth.Trunk
     role: upper_child_trunk
@@ -939,14 +995,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.2436364
-      y: -3.2327273
-      width: 7.0345454
-      height: 6.9527273
-    baseMapTransform: {x: 0.03508545, y: 0.03549833, z: 0.86539936, w: 0.8663513}
+      x: 0.41243413
+      y: 0.90657884
+      width: 0.41707507
+      height: 0.013731003
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8956689108220100399}
   - sourceName: DRESS_UpperSouth.TrunkBlankets
     role: upper_folded_blankets
@@ -954,14 +1011,15 @@ MonoBehaviour:
     sheet: BookCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.3, g: 0.35, b: 0.43, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.105882
-      y: -4.105882
-      width: 8.894117
-      height: 9.151764
-    baseMapTransform: {x: 0.027749825, y: 0.026968593, z: 0.115532406, w: 0.11232476}
+      x: 0.28600782
+      y: 0.9226086
+      width: 0.46631444
+      height: 0.046334326
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5009443422403668300}
   - sourceName: DRESS_UpperSouth.WoodenToy
     role: upper_wooden_toy
@@ -969,14 +1027,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.52, g: 0.36, b: 0.19, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.3778799
-      y: -3.396454
-      width: 2.6464016
-      height: 7.4086275
-    baseMapTransform: {x: 0.09326256, y: 0.03331389, z: 1.0666246, w: 0.11474399}
+      x: 0.5220822
+      y: 0.9647019
+      width: 0.47511637
+      height: 0.026497066
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5520882066312283865}
   - sourceName: DRESS_WallClock.Body
     role: wall_clock
@@ -984,14 +1043,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.1, g: 0.035, b: 0.018, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.5163636
-      y: -3.5163636
-      width: 6.3436365
-      height: 5.88
-    baseMapTransform: {x: 0.03890674, y: 0.041974522, z: 0.88840514, w: 0.8991926}
+      x: 0.14092149
+      y: 0.90772337
+      width: 0.8165365
+      height: 0.08391428
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7274123635567910367}
   - sourceName: DRESS_WallClock.Hands
     role: wall_clock_hands
@@ -999,14 +1059,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 1
     tint: {r: 0.18, g: 0.15, b: 0.11, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7975
-      y: -3.7925
-      width: 6.7606983
-      height: 6.2875
-    baseMapTransform: {x: 0.03650661, y: 0.039254107, z: 0.39022875, w: 0.4004661}
+      x: 0.49026206
+      y: 0.9550887
+      width: 0.3107569
+      height: 0.03919071
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5770679022299912536}
   - sourceName: DRESS_WindowCurtains.East
     role: window_curtain
@@ -1014,14 +1075,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.31, g: 0.25, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 2.036111
-      y: 0.8777778
-      width: 2.1125
-      height: 3.2708333
-    baseMapTransform: {x: 0.11683323, y: 0.07545789, z: 0.013709458, w: 0.43535963}
+      x: 0.17658588
+      y: 0.64805305
+      width: 0.68930876
+      height: 0.34597605
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7964736829148797708}
   - sourceName: DRESS_WindowCurtains.West
     role: window_curtain
@@ -1029,14 +1091,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.31, g: 0.25, b: 0.17, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.008333
-      y: 0.8777778
-      width: 9.172222
-      height: 4.286111
-    baseMapTransform: {x: 0.02690844, y: 0.057583716, z: 0.3594529, w: 0.45104918}
+      x: 0.33500144
+      y: 0.6448792
+      width: 0.66349316
+      height: 0.34703124
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2749700388810515682}
   - sourceName: DRESS_YarnBasket
     role: yarn_basket
@@ -1044,14 +1107,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.27, g: 0.12, b: 0.045, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.81963634
-      y: 0.018181818
-      width: 0.85990906
-      height: 1.6651613
-    baseMapTransform: {x: 0.28701895, y: 0.14822, z: 0.5163437, w: 0.7489}
+      x: 0.11845845
+      y: 0.9214192
+      width: 0.8797124
+      height: 0.010921359
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4037993092613560097}
   - sourceName: DRESS_YarnBasket.Yarn
     role: yarn
@@ -1059,14 +1123,15 @@ MonoBehaviour:
     sheet: BedLinen
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.25, b: 0.15, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.0900056
-      y: 0.45016354
-      width: 0.82649744
-      height: 1.4663396
-    baseMapTransform: {x: 0.29862186, y: 0.16831721, z: -0.07390461, w: 0.42582464}
+      x: 0.4431703
+      y: 0.9643605
+      width: 0.5543332
+      height: 0.0048633814
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8918731562696184183}
   - sourceName: FIX_BathroomDoor.Frame
     role: bathroom_door_frame
@@ -1074,14 +1139,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.8818183
-      y: 1.6254545
-      width: 4.7109094
-      height: 3.6409092
-    baseMapTransform: {x: 0.0523912, y: 0.067788064, z: 0.9025768, w: 0.6414085}
+      x: 0.20884463
+      y: 0.5640187
+      width: 0.78592396
+      height: 0.40535927
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7612486623126763090}
   - sourceName: FIX_BathroomDoor.OpenLeaf
     role: bathroom_door
@@ -1089,14 +1155,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.55, b: 0.34, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.702174
-      y: 1.7730435
-      width: 4.4334784
-      height: 3.1747823
-    baseMapTransform: {x: 0.05566965, y: 0.077740826, z: 0.8463543, w: -0.13624297}
+      x: 0.3577036
+      y: 0.35378963
+      width: 0.6412822
+      height: 0.48912853
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8075850030517175800}
   - sourceName: FIX_BathroomFloor
     role: bathroom_floor
@@ -1104,14 +1171,15 @@ MonoBehaviour:
     sheet: Concrete
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.76, g: 0.73, b: 0.63, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.0320833
-      y: 0.82625
-      width: 4.0225
-      height: 1.1641667
-    baseMapTransform: {x: 0.061357412, y: 0.2120059, z: 0.8762783, w: 0.32642502}
+      x: 0.15236859
+      y: 0.531519
+      width: 0.7838086
+      height: 0.46536976
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7716920833635484873}
   - sourceName: FIX_BathroomLamp
     role: bathroom_lamp
@@ -1119,14 +1187,15 @@ MonoBehaviour:
     sheet: PaintedMetal
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.56, g: 0.44, b: 0.25, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.13
-      y: 3.46375
-      width: 5.78
-      height: 1.88625
-    baseMapTransform: {x: 0.042700727, y: 0.13084702, z: 0.34254745, w: -0.20162645}
+      x: 0.15948135
+      y: 0.9558729
+      width: 0.63269746
+      height: 0.0074436665
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8925671067012689983}
   - sourceName: FIX_BathroomMirror
     role: bathroom_mirror_frame
@@ -1134,14 +1203,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.55, b: 0.34, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.752174
-      y: 2.7391305
-      width: 5.0913043
-      height: 1.8956518
-    baseMapTransform: {x: 0.04847681, y: 0.13019806, z: 0.83653474, w: -0.3550346}
+      x: 0.55593014
+      y: 0.8701665
+      width: 0.21919525
+      height: 0.033534467
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7210093516298788636}
   - sourceName: FIX_BathroomSouthWall
     role: bathroom_partition
@@ -1149,14 +1219,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.631579
-      y: 0.95947367
-      width: 3.6736841
-      height: 2.1457896
-    baseMapTransform: {x: 0.06718329, y: 0.115020685, z: 0.17839304, w: 0.6412356}
+      x: 0.52060795
+      y: 0.69806284
+      width: 0.4756298
+      height: 0.2887261
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5008366002437035926}
   - sourceName: FIX_BathroomSplashback
     role: bathroom_splashback
@@ -1164,14 +1235,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.83, g: 0.86, b: 0.76, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -6.91
-      y: 4.504286
-      width: 13.727858
-      height: 2.4914284
-    baseMapTransform: {x: 0.017978786, y: 0.09906373, z: 0.1258283, w: -0.19461647}
+      x: 0.0010222371
+      y: 0.542274
+      width: 0.8465884
+      height: 0.1137079
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7105785755193414742}
   - sourceName: FIX_BathroomTextiles
     role: bathroom_textiles
@@ -1179,14 +1251,15 @@ MonoBehaviour:
     sheet: TeaCloth
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.82, g: 0.8, b: 0.69, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -5.055263
-      y: 3.405263
-      width: 8.871053
-      height: 1.5105267
-    baseMapTransform: {x: 0.027821973, y: 0.16339347, z: 0.6422423, w: -0.55480283}
+      x: 0.08621282
+      y: 0.794452
+      width: 0.8715197
+      height: 0.12566131
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3385169861340598509}
   - sourceName: FIX_BathroomToilet
     role: bathroom_toilet
@@ -1194,14 +1267,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.88, g: 0.85, b: 0.76, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -6.835714
-      y: 3.3428571
-      width: 10.799999
-      height: 2.8999999
-    baseMapTransform: {x: 0.022852797, y: 0.08510697, z: 0.15781008, w: -0.032905538}
+      x: 0.32456493
+      y: 0.7600502
+      width: 0.565318
+      height: 0.1468246
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5178669131147230918}
   - sourceName: FIX_BathroomTub
     role: bathroom_tub
@@ -1209,14 +1283,15 @@ MonoBehaviour:
     sheet: Ceramic
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.9, g: 0.87, b: 0.77, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -6.5000005
-      y: 5.107143
-      width: 12.998574
-      height: 1.5785713
-    baseMapTransform: {x: 0.018987482, y: 0.15635036, z: 0.12501355, w: -0.54690874}
+      x: 0.10011531
+      y: 0.79543036
+      width: 0.8837121
+      height: 0.09368503
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3611569639590808957}
   - sourceName: FIX_BathroomVanity
     role: bathroom_vanity
@@ -1224,14 +1299,15 @@ MonoBehaviour:
     sheet: PaleWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.69, g: 0.53, b: 0.32, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1217391
-      y: 2.7343478
-      width: 5.456957
-      height: 0.99608684
-    baseMapTransform: {x: 0.04522854, y: 0.2477798, z: 0.8475581, w: -0.67592126}
+      x: 0.1990958
+      y: 0.87071526
+      width: 0.79834163
+      height: 0.036396325
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4077293315608692648}
   - sourceName: FIX_Cornice
     role: cornice
@@ -1239,14 +1315,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.4363637
-      y: -3.527273
-      width: 8.872727
-      height: 7.8727274
-    baseMapTransform: {x: 0.027816722, y: 0.031350024, z: 0.875, w: 0.862175}
+      x: 0.14365675
+      y: 0.0010803733
+      width: 0.75174725
+      height: 0.9871977
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2617418953798572820}
   - sourceName: FIX_Door.Frame
     role: entrance_frame
@@ -1254,14 +1331,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7454545
-      y: -3.7454545
-      width: 4.413636
-      height: 5.822727
-    baseMapTransform: {x: 0.055919923, y: 0.04238739, z: 0.96104044, w: 0.9103549}
+      x: 0.21928254
+      y: 0.53548974
+      width: 0.7381774
+      height: 0.43417728
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7258396601548015636}
   - sourceName: FIX_Door.OpenLeaf
     role: entrance_door
@@ -1269,14 +1347,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.4895456
-      y: -3.4895456
-      width: 5.162273
-      height: 5.453182
-    baseMapTransform: {x: 0.047810372, y: 0.04525985, z: 0.9184314, w: 0.9095312}
+      x: 0.4104362
+      y: 0.5688953
+      width: 0.57465136
+      height: 0.40569425
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 6563736243856402148}
   - sourceName: FIX_Fire.Ash
     role: fire_ash
@@ -1284,14 +1363,15 @@ MonoBehaviour:
     sheet: Concrete
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.21, g: 0.19, b: 0.16, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.23120117
-      y: 0.08416667
-      width: 1.7795135
-      height: 1.4697952
-    baseMapTransform: {x: 0.13869533, y: 0.16792148, z: 0.7836614, w: 0.4874615}
+      x: 0.58996093
+      y: 0.944675
+      width: 0.40465498
+      height: 0.049108744
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 20542804412277163}
   - sourceName: FIX_Fire.Embers
     role: fire_embers
@@ -1299,6 +1379,7 @@ MonoBehaviour:
     sheet: Fire
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.21, b: 0.025, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -1306,7 +1387,7 @@ MonoBehaviour:
       y: 0.42000002
       width: 7.6082973
       height: 6.2973385
-    baseMapTransform: {x: 0.032439608, y: 0.03919278, z: 0.78049725, w: 0.23513393}
+    baseMapTransform: {x: 0.032345444, y: 0.03907901, z: 0.7807716, w: 0.23553994}
     renderer: {fileID: 8555023490019498438}
   - sourceName: FIX_Fire.Flame.Back
     role: fire_flame
@@ -1314,6 +1395,7 @@ MonoBehaviour:
     sheet: Fire
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.47, b: 0.12, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -1321,7 +1403,7 @@ MonoBehaviour:
       y: 0.4909091
       width: 7.621793
       height: 6.2913632
-    baseMapTransform: {x: 0.03238217, y: 0.039230004, z: 0.77833813, w: 0.23233654}
+    baseMapTransform: {x: 0.03228817, y: 0.039116126, z: 0.7786187, w: 0.23275067}
     renderer: {fileID: 7082666782734070386}
   - sourceName: FIX_Fire.Flame.Front
     role: fire_flame
@@ -1329,6 +1411,7 @@ MonoBehaviour:
     sheet: Fire
     emissive: 1
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 1, g: 0.7, b: 0.26, a: 1}
     sourceUvBounds:
       serializedVersion: 2
@@ -1336,7 +1419,7 @@ MonoBehaviour:
       y: 0.5090909
       width: 7.2056684
       height: 5.8945456
-    baseMapTransform: {x: 0.034252226, y: 0.041870944, z: 0.77841926, w: 0.23027879}
+    baseMapTransform: {x: 0.0341528, y: 0.041749403, z: 0.77869964, w: 0.23069888}
     renderer: {fileID: 734896154037298652}
   - sourceName: FIX_Fire.Logs
     role: fire_logs
@@ -1344,14 +1427,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.25, g: 0.21, b: 0.18, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.5084846
-      y: 0.18555523
-      width: 3.9853084
-      height: 3.260045
-    baseMapTransform: {x: 0.061930012, y: 0.07570761, z: 0.78308535, w: 0.737547}
+      x: 0.5659973
+      y: 0.9345805
+      width: 0.4200387
+      height: 0.03437382
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3925420903876148859}
   - sourceName: FIX_Fireplace.Firebox
     role: firebox
@@ -1359,14 +1443,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.15, g: 0.13, b: 0.115, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.60227275
-      y: 0.18636364
-      width: 4.1613636
-      height: 3.3727272
-    baseMapTransform: {x: 0.059309933, y: 0.07317823, z: 0.78731567, w: 0.7379571}
+      x: 0.2957465
+      y: 0.8216525
+      width: 0.6975749
+      height: 0.09891504
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2169518961632294854}
   - sourceName: FIX_Fireplace.Stonework
     role: fireplace_stone
@@ -1374,14 +1459,15 @@ MonoBehaviour:
     sheet: Concrete
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.31, g: 0.275, b: 0.225, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.4895833
-      y: 0
-      width: 2.16875
-      height: 1.6708335
-    baseMapTransform: {x: 0.11380297, y: 0.14771682, z: 0.80731094, w: 0.5015949}
+      x: 0.19536291
+      y: 0.43997374
+      width: 0.79970384
+      height: 0.42768714
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3947086623569095108}
   - sourceName: FIX_Floor
     role: floor
@@ -1389,14 +1475,15 @@ MonoBehaviour:
     sheet: PlankFloor
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.55, g: 0.3, b: 0.13, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.125
-      y: -2.5
-      width: 6.25
-      height: 5.5625
-    baseMapTransform: {x: 0.03948963, y: 0.04437037, z: 0.625, w: 0.8625208}
+      x: 0.15729155
+      y: 0.18385196
+      width: 0.82135427
+      height: 0.81242335
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2182937394481896329}
   - sourceName: FIX_InterstoreyCeiling
     role: interstorey_ceiling
@@ -1404,14 +1491,15 @@ MonoBehaviour:
     sheet: CeilingPlaster
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.82, g: 0.77, b: 0.64, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.7857143
-      y: -1.4285715
-      width: 3.5714285
-      height: 3.1785715
-    baseMapTransform: {x: 0.069106854, y: 0.07764815, z: 0.375, w: 0.8625208}
+      x: 0.0010029167
+      y: 0.31407374
+      width: 0.92222804
+      height: 0.67806923
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7174462300238847563}
   - sourceName: FIX_RockingChair.Cushion
     role: rocking_chair_cushion
@@ -1419,14 +1507,15 @@ MonoBehaviour:
     sheet: Upholstery
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.29, g: 0.145, b: 0.095, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.31764707
-      y: 0.517647
-      width: 2.3970587
-      height: 1.5617647
-    baseMapTransform: {x: 0.10296377, y: 0.1580329, z: 0.034301035, w: 0.41978964}
+      x: 0.15505767
+      y: 0.9082279
+      width: 0.7960894
+      height: 0.083623886
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3789372357861964406}
   - sourceName: FIX_RockingChair.Frame
     role: rocking_chair
@@ -1434,14 +1523,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.145, g: 0.05, b: 0.022, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.3568182
-      y: 0.016196873
-      width: 2.35201
-      height: 1.9699459
-    baseMapTransform: {x: 0.10493586, y: 0.1252878, z: 0.78903794, w: 0.7495656}
+      x: 0.1338999
+      y: 0.7330087
+      width: 0.6946026
+      height: 0.058678627
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1296471492778148791}
   - sourceName: FIX_Skirting
     role: skirting
@@ -1449,14 +1539,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.46
-      y: -3.550909
-      width: 8.92
-      height: 7.92
-    baseMapTransform: {x: 0.027669305, y: 0.031162903, z: 0.875, w: 0.8622515}
+      x: 0.001024381
+      y: 0.0010261375
+      width: 0.89321315
+      height: 0.97819996
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4517162378121179399}
   - sourceName: FIX_Sofa.Cushions
     role: sofa_cushion
@@ -1464,14 +1555,15 @@ MonoBehaviour:
     sheet: Upholstery
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.255, g: 0.11, b: 0.078, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.2335024
-      y: -1.1705883
-      width: 4.2805614
-      height: 2.7120965
-    baseMapTransform: {x: 0.05765837, y: 0.09100347, z: 0.18803337, w: 0.60812247}
+      x: 0.16553462
+      y: 0.6016547
+      width: 0.8139241
+      height: 0.24477994
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8967537304627312531}
   - sourceName: FIX_Sofa.Frame
     role: sofa_frame
@@ -1479,14 +1571,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.12, g: 0.039, b: 0.02, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6454546
-      y: -1.0909091
-      width: 3.5909092
-      height: 2.3000002
-    baseMapTransform: {x: 0.06873195, y: 0.107308775, z: 0.93342215, w: 0.868659}
+      x: 0.0010018542
+      y: 0.58528924
+      width: 0.95478344
+      height: 0.20446563
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3508024119984063410}
   - sourceName: FIX_Stair.Rail
     role: stair_guard
@@ -1494,14 +1587,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.0295455
-      y: -2.595
-      width: 4.586364
-      height: 6.6812954
-    baseMapTransform: {x: 0.053813916, y: 0.03694047, z: 0.9146266, w: 0.84745544}
+      x: 0.67773753
+      y: 0.33382195
+      width: 0.29662454
+      height: 0.21589077
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 752803058704260296}
   - sourceName: FIX_Stair.Steps
     role: stair
@@ -1509,14 +1603,15 @@ MonoBehaviour:
     sheet: PlankFloor
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.55, g: 0.3, b: 0.13, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.05375
-      y: -2.42375
-      width: 4.1825
-      height: 4.63625
-    baseMapTransform: {x: 0.05901021, y: 0.053234875, z: 0.6817973, w: 0.8806229}
+      x: 0.57701075
+      y: 0.25295025
+      width: 0.41852129
+      height: 0.70960534
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4397803420820800695}
   - sourceName: FIX_Table.Frame
     role: tea_table_frame
@@ -1524,14 +1619,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.16, g: 0.055, b: 0.024, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.5931818
-      y: -0.3568182
-      width: 1.1863636
-      height: 0.77500004
-    baseMapTransform: {x: 0.20803925, y: 0.31846476, z: 0.875, w: 0.86522895}
+      x: 0.0010169614
+      y: 0.7619848
+      width: 0.8514817
+      height: 0.12492013
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3292862251336743929}
   - sourceName: FIX_Table.Top
     role: tea_table_top
@@ -1539,14 +1635,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.22, g: 0.085, b: 0.034, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.65909094
-      y: -0.4090909
-      width: 1.3181819
-      height: 0.8454546
-    baseMapTransform: {x: 0.18723531, y: 0.29192603, z: 0.875, w: 0.8710192}
+      x: 0.2681639
+      y: 0.735449
+      width: 0.72860694
+      height: 0.25648755
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 9158390633662066836}
   - sourceName: FIX_UpperCeiling
     role: upper_ceiling
@@ -1554,14 +1651,15 @@ MonoBehaviour:
     sheet: CeilingPlaster
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.82, g: 0.77, b: 0.64, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.7857143
-      y: -1.4264286
-      width: 3.5714285
-      height: 3.5835714
-    baseMapTransform: {x: 0.069106854, y: 0.06887269, z: 0.375, w: 0.8498369}
+      x: 0.0010854664
+      y: 0.43683788
+      width: 0.65505564
+      height: 0.55534685
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8926195971594530097}
   - sourceName: FIX_UpperChimney
     role: upper_chimney
@@ -1569,14 +1667,15 @@ MonoBehaviour:
     sheet: Concrete
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.6, g: 0.55, b: 0.45, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -0.21874999
-      y: 1.475
-      width: 1.8395834
-      height: 0.98333347
-    baseMapTransform: {x: 0.13416636, y: 0.2509934, z: 0.7809438, w: 0.13137963}
+      x: 0.111603886
+      y: 0.5127315
+      width: 0.876405
+      height: 0.45059204
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1039521487817196514}
   - sourceName: FIX_UpperDoorFrames
     role: upper_door_frame
@@ -1584,14 +1683,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.3018181
-      y: -2.3018181
-      width: 3.929091
-      height: 7.601818
-    baseMapTransform: {x: 0.062816106, y: 0.03246726, z: 0.8961862, w: 0.82632864}
+      x: 0.0010508987
+      y: 0.3406119
+      width: 0.99400675
+      height: 0.26042822
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2150547270682280001}
   - sourceName: FIX_UpperFloor
     role: upper_floor
@@ -1599,14 +1699,15 @@ MonoBehaviour:
     sheet: PlankFloor
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.55, g: 0.3, b: 0.13, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.125
-      y: -2.498125
-      width: 6.25
-      height: 5.560625
-    baseMapTransform: {x: 0.03948963, y: 0.044385333, z: 0.625, w: 0.86247504}
+      x: 0.18024077
+      y: 0.18387803
+      width: 0.7645185
+      height: 0.81296694
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 6825216009458014892}
   - sourceName: FIX_UpperNorth.Bed
     role: upper_double_bed
@@ -1614,14 +1715,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.135, g: 0.048, b: 0.024, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.6818182
-      y: 1.6818182
-      width: 1.8181818
-      height: 2.6727273
-    baseMapTransform: {x: 0.13574561, y: 0.09234395, z: 0.52329546, w: 0.59628916}
+      x: 0.13379698
+      y: 0.646293
+      width: 0.66005087
+      height: 0.17351103
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5737795219498546906}
   - sourceName: FIX_UpperNorth.Wardrobe
     role: upper_wardrobe
@@ -1629,14 +1731,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.125, g: 0.045, b: 0.022, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.106818184
-      y: 0.106818184
-      width: 3.5113637
-      height: 4.884091
-    baseMapTransform: {x: 0.070288986, y: 0.0505335, z: 0.74408674, w: 0.746197}
+      x: 0.22640021
+      y: 0.6335862
+      width: 0.728347
+      height: 0.2733094
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4447940771590726531}
   - sourceName: FIX_UpperNorth.WindowFrame
     role: upper_window_frame
@@ -1644,14 +1747,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -1.5454546
-      y: 3.4136364
-      width: 5.2909093
-      height: 1.7045453
-    baseMapTransform: {x: 0.046647973, y: 0.14479533, z: 0.82368726, w: 0.2573163}
+      x: 0.0010363878
+      y: 0.7912977
+      width: 0.93299204
+      height: 0.1719799
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 987901413457505035}
   - sourceName: FIX_UpperNorth.WindowGlass
     role: upper_window_glass
@@ -1659,6 +1763,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -1666,7 +1771,7 @@ MonoBehaviour:
       y: 3.811
       width: 5.35968
       height: 1.6839998
-    baseMapTransform: {x: 0.046049427, y: 0.14656189, z: 0.57228076, w: -0.30695248}
+    baseMapTransform: {x: 0.045915753, y: 0.14613645, z: 0.5724338, w: -0.3049729}
     renderer: {fileID: 6178480001025311805}
   - sourceName: FIX_UpperPartitions
     role: upper_partition
@@ -1674,14 +1779,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1052632
-      y: -2.1021051
-      width: 4.736842
-      height: 5.2073684
-    baseMapTransform: {x: 0.052104376, y: 0.04739634, z: 0.111288324, w: 0.851227}
+      x: 0.0010787906
+      y: 0.44004595
+      width: 0.92932004
+      height: 0.31843418
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8754462885076163961}
   - sourceName: FIX_UpperSkirting
     role: upper_skirting
@@ -1689,14 +1795,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.135, g: 0.048, b: 0.024, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.6363637
-      y: -3.6363637
-      width: 8.072727
-      height: 7.1636367
-    baseMapTransform: {x: 0.030573336, y: 0.0344532, z: 0.8627707, w: 0.8768793}
+      x: 0.0010537109
+      y: 0.0010394503
+      width: 0.96566606
+      height: 0.983035
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2790313795801631937}
   - sourceName: FIX_UpperSouth.Bed
     role: upper_child_bed
@@ -1704,14 +1811,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.145, g: 0.052, b: 0.026, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.4545455
-      y: -3.4399998
-      width: 6.227273
-      height: 7.5763636
-    baseMapTransform: {x: 0.03963375, y: 0.03257634, z: 0.8885115, w: 0.86365753}
+      x: 0.058603413
+      y: 0.6570361
+      width: 0.8180195
+      height: 0.21177763
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4219688727169386434}
   - sourceName: FIX_UpperSouth.WindowFrame
     role: upper_window_frame
@@ -1719,14 +1827,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7454545
-      y: -3.7345452
-      width: 3.4727273
-      height: 8.852727
-    baseMapTransform: {x: 0.071071, y: 0.027879568, z: 1.017788, w: 0.8557124}
+      x: 0.0010301345
+      y: 0.7915418
+      width: 0.6639491
+      height: 0.17124748
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4955934981828517849}
   - sourceName: FIX_UpperSouth.WindowGlass
     role: upper_window_glass
@@ -1734,6 +1843,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -1741,7 +1851,7 @@ MonoBehaviour:
       y: -3.829
       width: 3.3596802
       height: 9.323999
-    baseMapTransform: {x: 0.07346241, y: 0.026470423, z: 0.7825651, w: 0.35295016}
+    baseMapTransform: {x: 0.07324916, y: 0.026393583, z: 0.7821077, w: 0.35301414}
     renderer: {fileID: 3900904974867058158}
   - sourceName: FIX_UpperStairGuards
     role: stair_guard
@@ -1749,14 +1859,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.9386365
-      y: -2.090909
-      width: 4.593182
-      height: 6.2181816
-    baseMapTransform: {x: 0.053734034, y: 0.0396917, z: 0.9094997, w: 0.8345866}
+      x: 0.21128826
+      y: 0.35381004
+      width: 0.78626716
+      height: 0.53674996
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5125621734633393383}
   - sourceName: FIX_UpperWall.EastBase
     role: upper_wall
@@ -1764,14 +1875,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1052632
-      y: -2.1052632
-      width: 4.8
-      height: 4.684211
-    baseMapTransform: {x: 0.05141879, y: 0.052689813, z: 0.10984498, w: 0.8625208}
+      x: 0.09971828
+      y: 0.18492335
+      width: 0.8423115
+      height: 0.76934016
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 779116290227264200}
   - sourceName: FIX_UpperWall.EastUpper
     role: upper_wall
@@ -1779,14 +1891,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1052632
-      y: -2.1052632
-      width: 4.8
-      height: 5.2105265
-    baseMapTransform: {x: 0.05141879, y: 0.047367614, z: 0.10984498, w: 0.8513162}
+      x: 0.0009765687
+      y: 0.31407374
+      width: 0.89160156
+      height: 0.6558124
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 2968996763294345788}
   - sourceName: FIX_UpperWall.WestBase
     role: upper_wall
@@ -1794,14 +1907,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6947367
-      y: -2.1052632
-      width: 5.273684
-      height: 4.684211
-    baseMapTransform: {x: 0.046800338, y: 0.052689813, z: 0.12770948, w: 0.8625208}
+      x: 0.22569484
+      y: 0.0010854664
+      width: 0.76784754
+      height: 0.98963094
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5639598568112708535}
   - sourceName: FIX_UpperWall.WestUpper
     role: upper_wall
@@ -1809,14 +1923,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6947367
-      y: -2.1052632
-      width: 5.273684
-      height: 5.2105265
-    baseMapTransform: {x: 0.046800338, y: 0.047367614, z: 0.12770948, w: 0.8513162}
+      x: 0.34410408
+      y: 0.0010854664
+      width: 0.6441375
+      height: 0.9690448
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7197456920862900369}
   - sourceName: FIX_UpperWalls
     role: upper_wall
@@ -1824,14 +1939,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.631579
-      y: -2.168421
-      width: 5.2736845
-      height: 5.2736845
-    baseMapTransform: {x: 0.046800334, y: 0.046800334, z: 0.12475367, w: 0.8530777}
+      x: 0.0010029167
+      y: 0.18484098
+      width: 0.69477135
+      height: 0.54605126
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7650222041543661702}
   - sourceName: FIX_Wall.Back
     role: room_wall
@@ -1839,14 +1955,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.631579
-      y: 0
-      width: 5.2736845
-      height: 2.6421053
-    baseMapTransform: {x: 0.046800334, y: 0.09341422, z: 0.12475367, w: 0.7515949}
+      x: 0.0010029167
+      y: 0.5639982
+      width: 0.97433347
+      height: 0.36856872
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 1559113620845246430}
   - sourceName: FIX_Wall.EastCutaway
     role: camera_cutaway_wall
@@ -1854,14 +1971,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1052632
-      y: -2.1052632
-      width: 4.8
-      height: 4.684211
-    baseMapTransform: {x: 0.05141879, y: 0.052689813, z: 0.10984498, w: 0.8625208}
+      x: 0.0009765687
+      y: 0.33384913
+      width: 0.9609375
+      height: 0.6199261
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7681347135188041747}
   - sourceName: FIX_Wall.EastUpper
     role: room_wall
@@ -1869,14 +1987,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.1052632
-      y: -2.1052632
-      width: 4.8
-      height: 4.684211
-    baseMapTransform: {x: 0.05141879, y: 0.052689813, z: 0.10984498, w: 0.8625208}
+      x: 0.24620265
+      y: 0.34068507
+      width: 0.6721444
+      height: 0.60238624
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4995201141704170166}
   - sourceName: FIX_Wall.Front
     role: room_wall
@@ -1884,14 +2003,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.631579
-      y: -2.168421
-      width: 5.263158
-      height: 3.9578948
-    baseMapTransform: {x: 0.04689394, y: 0.062358957, z: 0.125, w: 0.88681537}
+      x: 0.05764354
+      y: 0.5517912
+      width: 0.86566997
+      height: 0.4222902
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3668425100359300155}
   - sourceName: FIX_Wall.Left
     role: room_wall
@@ -1899,14 +2019,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6947367
-      y: -2.1052632
-      width: 5.273684
-      height: 4.684211
-    baseMapTransform: {x: 0.046800338, y: 0.052689813, z: 0.12770948, w: 0.8625208}
+      x: 0.4400503
+      y: 0.0010854664
+      width: 0.55893344
+      height: 0.98963094
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 585998848565219068}
   - sourceName: FIX_Wall.WestUpper
     role: room_wall
@@ -1914,14 +2035,15 @@ MonoBehaviour:
     sheet: Wallpaper
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.72, g: 0.64, b: 0.48, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6947367
-      y: -2.1052632
-      width: 5.273684
-      height: 4.684211
-    baseMapTransform: {x: 0.046800338, y: 0.052689813, z: 0.12770948, w: 0.8625208}
+      x: 0.0010854664
+      y: 0.12706202
+      width: 0.9764139
+      height: 0.8160093
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8913234982594276762}
   - sourceName: FIX_Window.ground-east-north.Frame
     role: window_frame
@@ -1929,14 +2051,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.5227273
-      y: 0.6909091
-      width: 3.131818
-      height: 1.9681816
-    baseMapTransform: {x: 0.078807324, y: 0.12540011, z: 0.63159287, w: 0.66495484}
+      x: 0.028088802
+      y: 0.72463906
+      width: 0.916175
+      height: 0.095164955
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3300542231609116084}
   - sourceName: FIX_Window.ground-east-north.Glass
     role: window_glass
@@ -1944,6 +2067,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -1951,7 +2075,7 @@ MonoBehaviour:
       y: 0.915
       width: 2.9889998
       height: 1.845
-    baseMapTransform: {x: 0.08257284, y: 0.13377246, z: 0.34966087, w: 0.1291931}
+    baseMapTransform: {x: 0.08233314, y: 0.13338414, z: 0.35046014, w: 0.12990664}
     renderer: {fileID: 8470050775907627445}
   - sourceName: FIX_Window.ground-east-south.Frame
     role: window_frame
@@ -1959,14 +2083,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6590908
-      y: -2.6590908
-      width: 7.313636
-      height: 4.772727
-    baseMapTransform: {x: 0.03374658, y: 0.051712617, z: 0.8413301, w: 0.8891035}
+      x: 0.09889715
+      y: 0.7256156
+      width: 0.65249556
+      height: 0.09418839
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 271300148828206164}
   - sourceName: FIX_Window.ground-east-south.Glass
     role: window_glass
@@ -1974,6 +2099,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -1981,7 +2107,7 @@ MonoBehaviour:
       y: -2.76
       width: 7.5889997
       height: 4.9449997
-    baseMapTransform: {x: 0.032522097, y: 0.049911063, z: 0.59135586, w: 0.38934943}
+    baseMapTransform: {x: 0.03242769, y: 0.04976618, z: 0.59145355, w: 0.38930777}
     renderer: {fileID: 5352892010469284909}
   - sourceName: FIX_Window.ground-south-east.Frame
     role: window_frame
@@ -1989,14 +2115,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7454545
-      y: -3.7454545
-      width: 7.9181824
-      height: 5.859091
-    baseMapTransform: {x: 0.031170057, y: 0.042124316, z: 0.8683409, w: 0.9093696}
+      x: 0.41852912
+      y: 0.7256156
+      width: 0.5792639
+      height: 0.23677409
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3969161433863341433}
   - sourceName: FIX_Window.ground-south-east.Glass
     role: window_glass
@@ -2004,6 +2131,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2011,7 +2139,7 @@ MonoBehaviour:
       y: -3.829
       width: 8.254
       height: 6.014
-    baseMapTransform: {x: 0.02990189, y: 0.041039277, z: 0.6160892, w: 0.4087343}
+    baseMapTransform: {x: 0.02981509, y: 0.040920146, z: 0.6161151, w: 0.40863636}
     renderer: {fileID: 4671366474449912139}
   - sourceName: FIX_Window.ground-south-west.Frame
     role: window_frame
@@ -2019,14 +2147,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7454545
-      y: -3.7454545
-      width: 1.9954545
-      height: 5.859091
-    baseMapTransform: {x: 0.1236862, y: 0.042124316, z: 1.2148559, w: 0.9093696}
+      x: 0.12697333
+      y: 0.7256156
+      width: 0.64395064
+      height: 0.23701823
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 6069400169278279292}
   - sourceName: FIX_Window.ground-south-west.Glass
     role: window_glass
@@ -2034,6 +2163,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2041,7 +2171,7 @@ MonoBehaviour:
       y: -3.829
       width: 1.7390001
       height: 6.014
-    baseMapTransform: {x: 0.1419265, y: 0.041039277, z: 1.0450314, w: 0.4087343}
+    baseMapTransform: {x: 0.14151451, y: 0.040920146, z: 1.0438122, w: 0.40863636}
     renderer: {fileID: 7475915671500791633}
   - sourceName: FIX_Window.ground-west-north.Frame
     role: window_frame
@@ -2049,14 +2179,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.6545453
-      y: 0.6909091
-      width: 7.768182
-      height: 2.422727
-    baseMapTransform: {x: 0.03177194, y: 0.101872884, z: 0.89947885, w: 0.68121}
+      x: 0.18312567
+      y: 0.7256156
+      width: 0.5975639
+      height: 0.09418839
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3113963748466243679}
   - sourceName: FIX_Window.ground-west-north.Glass
     role: window_glass
@@ -2064,6 +2195,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2071,7 +2203,7 @@ MonoBehaviour:
       y: 0.915
       width: 8.089
       height: 2.345
-    baseMapTransform: {x: 0.030511832, y: 0.10524955, z: 0.6489365, w: 0.15529156}
+    baseMapTransform: {x: 0.030423261, y: 0.10494403, z: 0.6488671, w: 0.15592934}
     renderer: {fileID: 9177949064527028190}
   - sourceName: FIX_Window.ground-west-stair.Frame
     role: window_frame
@@ -2079,14 +2211,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.6545453
-      y: -0.62545455
-      width: 5.109091
-      height: 3.648182
-    baseMapTransform: {x: 0.04830805, y: 0.06765293, z: 0.9764469, w: 0.7939087}
+      x: 0.039604355
+      y: 0.790391
+      width: 0.8673245
+      height: 0.029373348
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4805353231336649375}
   - sourceName: FIX_Window.ground-west-stair.Glass
     role: window_glass
@@ -2094,6 +2227,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2101,7 +2235,7 @@ MonoBehaviour:
       y: -0.535
       width: 5.164
       height: 3.72
-    baseMapTransform: {x: 0.047794383, y: 0.066346824, z: 0.732394, w: 0.28709045}
+    baseMapTransform: {x: 0.047655646, y: 0.066154234, z: 0.73208225, w: 0.28734565}
     renderer: {fileID: 8670090201865107502}
   - sourceName: FIX_Window.upper-east-north.Frame
     role: upper_window_frame
@@ -2109,14 +2243,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.5454546
-      y: 1.5563637
-      width: 3.1090908
-      height: 3.5663638
-    baseMapTransform: {x: 0.0793834, y: 0.06920499, z: 0.62891144, w: 0.64388674}
+      x: 0.55836535
+      y: 0.76524454
+      width: 0.3849783
+      height: 0.056717098
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3822404320428367424}
   - sourceName: FIX_Window.upper-east-north.Glass
     role: upper_window_glass
@@ -2124,6 +2259,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2131,7 +2267,7 @@ MonoBehaviour:
       y: 1.865
       width: 2.964
       height: 3.6299999
-    baseMapTransform: {x: 0.0832693, y: 0.06799179, z: 0.34629765, w: 0.12479021}
+    baseMapTransform: {x: 0.08302758, y: 0.06779443, z: 0.3471067, w: 0.12551652}
     renderer: {fileID: 7998743069931283088}
   - sourceName: FIX_Window.upper-east-south.Frame
     role: upper_window_frame
@@ -2139,14 +2275,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -2.6363637
-      y: -2.6254547
-      width: 7.290909
-      height: 7.7481823
-    baseMapTransform: {x: 0.033851773, y: 0.031853948, z: 0.84084046, w: 0.835226}
+      x: 0.5593983
+      y: 0.7667094
+      width: 0.40250003
+      height: 0.055252254
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4618589879798893467}
   - sourceName: FIX_Window.upper-east-south.Glass
     role: upper_window_glass
@@ -2154,6 +2291,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2161,7 +2299,7 @@ MonoBehaviour:
       y: -2.735
       width: 7.564
       height: 8.23
-    baseMapTransform: {x: 0.032629587, y: 0.02998909, z: 0.5908368, w: 0.33361506}
+    baseMapTransform: {x: 0.032534868, y: 0.029902037, z: 0.590936, w: 0.3337352}
     renderer: {fileID: 4641790064273947870}
   - sourceName: FIX_Window.upper-north-bathroom.Frame
     role: upper_window_frame
@@ -2169,14 +2307,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.6727273
-      y: 4.235
-      width: 8.236363
-      height: 0.88772726
-    baseMapTransform: {x: 0.029965919, y: 0.2780248, z: 0.86165154, w: -0.42584014}
+      x: 0.2993459
+      y: 0.8485037
+      width: 0.6991171
+      height: 0.11461532
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7146454405160891700}
   - sourceName: FIX_Window.upper-north-bathroom.Glass
     role: upper_window_glass
@@ -2184,6 +2323,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.48, g: 0.57, b: 0.58, a: 0.92}
     sourceUvBounds:
       serializedVersion: 2
@@ -2191,7 +2331,7 @@ MonoBehaviour:
       y: 4.711
       width: 8.604
       height: 0.7839999
-    baseMapTransform: {x: 0.028685518, y: 0.31480896, z: 0.6127513, w: -1.2314701}
+    baseMapTransform: {x: 0.028602248, y: 0.31389514, z: 0.6127868, w: -1.2268069}
     renderer: {fileID: 6547146365615202308}
   - sourceName: FIX_Window.upper-north-east.Frame
     role: upper_window_frame
@@ -2199,14 +2339,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 0.6363636
-      y: 3.4168184
-      width: 3.1090908
-      height: 1.705909
-    baseMapTransform: {x: 0.0793834, y: 0.14467958, z: 0.7010782, w: 0.25725105}
+      x: 0.027647715
+      y: 0.7901469
+      width: 0.4820458
+      height: 0.17297214
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 8518808812556110516}
   - sourceName: FIX_Window.upper-north-east.Glass
     role: upper_window_glass
@@ -2214,6 +2355,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2221,7 +2363,7 @@ MonoBehaviour:
       y: 3.811
       width: 2.964
       height: 1.6839998
-    baseMapTransform: {x: 0.0832693, y: 0.14656189, z: 0.42956695, w: -0.30695248}
+    baseMapTransform: {x: 0.08302758, y: 0.14613645, z: 0.43013427, w: -0.3049729}
     renderer: {fileID: 5479886982640858250}
   - sourceName: FIX_Window.upper-south-east.Frame
     role: upper_window_frame
@@ -2229,14 +2371,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.7454545
-      y: -3.7345452
-      width: 5.4727273
-      height: 8.857273
-    baseMapTransform: {x: 0.045098208, y: 0.027865257, z: 0.9205082, w: 0.85565895}
+      x: 0.22295396
+      y: 0.790391
+      width: 0.6046229
+      height: 0.172728
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 5552409270585790852}
   - sourceName: FIX_Window.upper-south-east.Glass
     role: upper_window_glass
@@ -2244,6 +2387,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2251,7 +2395,7 @@ MonoBehaviour:
       y: -3.829
       width: 5.564
       height: 9.323999
-    baseMapTransform: {x: 0.04435841, y: 0.026470423, z: 0.6714432, w: 0.35295016}
+    baseMapTransform: {x: 0.044229645, y: 0.026393583, z: 0.67130846, w: 0.35301414}
     renderer: {fileID: 7674434709511521302}
   - sourceName: FIX_Window.upper-west-north.Frame
     role: upper_window_frame
@@ -2259,14 +2403,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.6545453
-      y: 1.8745455
-      width: 7.609091
-      height: 3.2481818
-    baseMapTransform: {x: 0.032436226, y: 0.075984105, z: 0.9025708, w: 0.60915923}
+      x: 0.30646858
+      y: 0.76890665
+      width: 0.6925391
+      height: 0.05305499
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 4507064420266756052}
   - sourceName: FIX_Window.upper-west-north.Glass
     role: upper_window_glass
@@ -2274,6 +2419,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.48, g: 0.57, b: 0.58, a: 0.92}
     sourceUvBounds:
       serializedVersion: 2
@@ -2281,7 +2427,7 @@ MonoBehaviour:
       y: 2.215
       width: 7.914
       height: 3.28
-    baseMapTransform: {x: 0.03118653, y: 0.07524701, z: 0.6521947, w: 0.084922776}
+    baseMapTransform: {x: 0.031096, y: 0.07502858, z: 0.6521157, w: 0.08576482}
     renderer: {fileID: 1936991007010755525}
   - sourceName: FIX_Window.upper-west-south.Frame
     role: upper_window_frame
@@ -2289,14 +2435,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -4.6545453
-      y: -2.6254547
-      width: 3.1090908
-      height: 7.7481823
-    baseMapTransform: {x: 0.0793834, y: 0.031853948, z: 1.1210885, w: 0.835226}
+      x: 0.32599983
+      y: 0.7901469
+      width: 0.65445316
+      height: 0.031814754
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 7176184776194815616}
   - sourceName: FIX_Window.upper-west-south.Glass
     role: upper_window_glass
@@ -2304,6 +2451,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2311,7 +2459,7 @@ MonoBehaviour:
       y: -2.735
       width: 2.964
       height: 8.23
-    baseMapTransform: {x: 0.0832693, y: 0.02998909, z: 0.9037023, w: 0.33361506}
+    baseMapTransform: {x: 0.08302758, y: 0.029902037, z: 0.9028933, w: 0.3337352}
     renderer: {fileID: 3012993627138582968}
   - sourceName: FIX_WindowFrame.East
     role: window_frame
@@ -2319,14 +2467,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: 1.7590909
-      y: 0.70181817
-      width: 1.9863636
-      height: 3.0436363
-    baseMapTransform: {x: 0.124252275, y: 0.08109057, z: 0.53302383, w: 0.6946841}
+      x: 0.4478535
+      y: 0.7256187
+      width: 0.35236734
+      height: 0.2276783
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 3062627663916557565}
   - sourceName: FIX_WindowFrame.West
     role: window_frame
@@ -2334,14 +2483,15 @@ MonoBehaviour:
     sheet: DarkWood
     emissive: 0
     castsShadows: 1
+    surfaceUniqueUv: 1
     tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
     sourceUvBounds:
       serializedVersion: 2
-      x: -3.1863637
-      y: 0.70181817
-      width: 7.75
-      height: 3.861818
-    baseMapTransform: {x: 0.03184648, y: 0.063910365, z: 0.85306937, w: 0.70674145}
+      x: 0.0010761509
+      y: 0.72757185
+      width: 0.975875
+      height: 0.23500252
+    baseMapTransform: {x: 1, y: 1, z: 0, w: 0}
     renderer: {fileID: 9158675295756693212}
   - sourceName: FIX_WindowGlass.East
     role: window_glass
@@ -2349,6 +2499,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2356,7 +2507,7 @@ MonoBehaviour:
       y: 0.915
       width: 1.7090001
       height: 2.9096801
-    baseMapTransform: {x: 0.1444179, y: 0.084823824, z: 0.19542898, w: 0.1739811}
+    baseMapTransform: {x: 0.14399867, y: 0.0845776, z: 0.19667597, w: 0.17456461}
     renderer: {fileID: 3217954656391222845}
   - sourceName: FIX_WindowGlass.West
     role: window_glass
@@ -2364,6 +2515,7 @@ MonoBehaviour:
     sheet: Glass
     emissive: 0
     castsShadows: 0
+    surfaceUniqueUv: 0
     tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
     sourceUvBounds:
       serializedVersion: 2
@@ -2371,19 +2523,19 @@ MonoBehaviour:
       y: 0.915
       width: 8.049
       height: 3.8140001
-    baseMapTransform: {x: 0.030663462, y: 0.06471164, z: 0.6033976, w: 0.19238375}
+    baseMapTransform: {x: 0.03057445, y: 0.064523794, z: 0.6034603, w: 0.19291385}
     renderer: {fileID: 2761430884804585086}
   positiveAtlas:
     texture: {fileID: 2800000, guid: d55f55c6ea864ac4f9c1b421abd70c5b, type: 3}
     resourcePath: MothersHouse/Textures/MothersHousePositiveAtlas
-    width: 1254
-    height: 1254
+    width: 1024
+    height: 1024
     columns: 4
     rows: 4
     insetPixels: 2
     sRgb: 1
-    mipmaps: 0
-    uncompressed: 1
+    mipmaps: 1
+    uncompressed: 0
     wrapMode: 1
     filterMode: 1
     cells:
@@ -2435,6 +2587,16 @@ MonoBehaviour:
     - sheet: PaleWood
       column: 3
       row: 0
+  surfaceContract:
+    albedo: {fileID: 2800000, guid: ace42e61f12d54008fc5020f984266a0, type: 3}
+    response: {fileID: 2800000, guid: 32bca1c954ad5389af50ead7a895cb0a, type: 3}
+    auxiliary: {fileID: 2800000, guid: d55f55c6ea864ac4f9c1b421abd70c5b, type: 3}
+    uvSignature: 0d52f32ddc77b640396a5ab9912173da5641066efc74d6a3d3bc0e5dcb9f1ebe
+    albedoSha256: 4c916a39eb83544c8bd314fcf3cc61b411be78cc35f547182da86bb59482fda8
+    responseSha256: 879514e76d74e6ce5c5b00ded5deb1eb16124dde42acb03759bb9202d93975ae
+    modelSha256: 7b16cd119ea2d202de3ea9bb5be29bdf4e876cdf2bd21c0f0ea8ac9e0ece6bd9
+    auxiliarySha256: c3e5380e1f73c9b9b51bd778acf4f9fd25076f57afbc1fec426da7a5fe62ec6b
+    uniquePartCount: 125
   localBounds:
     m_Center: {x: 0, y: 2.93, z: 0.4500003}
     m_Extent: {x: 5.12, y: 3.1100006, z: 4.5699997}
@@ -2446,9 +2608,9 @@ MonoBehaviour:
     doorWidth: 1.3
     doorHeight: 2.2
   sourceTriangleCount: 21760
-  sourceGeneratorVersion: 1.11.1
+  sourceGeneratorVersion: 1.12.0
   designId: mothers_house_interior_v1
-  buildSignature: 01fc5412432b5f9c835a442b4587d2d20545e8c6911e81a263e2ce90cf49b1b2
+  buildSignature: d083642282e0fe4399488d2d4dfa21ee7eb03f94064820a3fd114bc12c395fbe
 --- !u!1001 &4490380615483208827
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2460,23 +2622,23 @@ PrefabInstance:
     - target: {fileID: -9161020008944303688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -9159997977488079492, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8940969140034119688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8872564147564579911, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8735719062102641709, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8679921383154817045, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -2532,31 +2694,31 @@ PrefabInstance:
     - target: {fileID: -8604171893531664961, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8555640636999995134, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8446633635969839603, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8360620282002455909, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8336209007118616314, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8143062034342594615, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -8038295860477528543, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7950109827726655852, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2584,19 +2746,19 @@ PrefabInstance:
     - target: {fileID: -7790222790332444798, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7681437927436776412, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7538190475621261753, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7524256508361745545, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7492974232163528187, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2612,27 +2774,27 @@ PrefabInstance:
     - target: {fileID: -7471545772831839227, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7459671206323498855, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7428644713410987846, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -7207412937417595301, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6910122036946817038, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6662708163615574982, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6579589257844906050, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2648,23 +2810,23 @@ PrefabInstance:
     - target: {fileID: -6569173901537965713, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6365232501820766851, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6350228164544089713, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6338202659794588914, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -6252947161392329128, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5909994032815522506, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2680,23 +2842,23 @@ PrefabInstance:
     - target: {fileID: -5888613952725324101, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5787982501089937460, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5690342470711968364, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5673263467169701627, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5557745159238368643, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5448254627061657177, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2712,27 +2874,27 @@ PrefabInstance:
     - target: {fileID: -5431636628762628429, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5377911376866078043, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5144660207352284197, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -5089926746580740564, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4840916043521171822, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4748497208012040752, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4535220014492537947, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2748,31 +2910,31 @@ PrefabInstance:
     - target: {fileID: -4518465261529720153, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4285871360013947892, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4229820629810421103, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4211054856050785212, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4209534715755027188, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4094034859249145598, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -4005412996012376369, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -3944843141917755166, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2788,7 +2950,7 @@ PrefabInstance:
     - target: {fileID: -3584258715015908989, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -3509562988361880149, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2804,43 +2966,43 @@ PrefabInstance:
     - target: {fileID: -3367331133757315143, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -3136188645921264387, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2885130465506819543, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2711610376281445529, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2502292318854854628, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2487034785754594993, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2471480521174485782, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2467473332559795664, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2465747834423131397, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -2220659676700545644, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -1977876769996876673, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2856,7 +3018,7 @@ PrefabInstance:
     - target: {fileID: -1925822968835353953, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -1445840526823313338, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2872,19 +3034,19 @@ PrefabInstance:
     - target: {fileID: -1081293120944387195, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -1012826977552825695, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -909982551920663041, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -905017638933821718, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -857861457199404970, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2900,31 +3062,31 @@ PrefabInstance:
     - target: {fileID: -472644110944733028, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -464049690369684803, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -455460878953338740, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -390108944724448350, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -378060353946735903, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -300589846389023433, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -224896113521096988, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: -127233180597925723, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -2940,43 +3102,43 @@ PrefabInstance:
     - target: {fileID: -123410943747178528, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1088543187328333, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 62283300770706351, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 241271926044537036, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 337385602739873904, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 457357470132298586, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 587980212638255616, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 689223415703903648, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 818213787581557307, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 916997446258114624, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 919132149155446097, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_Name
       value: Model
@@ -2984,15 +3146,15 @@ PrefabInstance:
     - target: {fileID: 1153017067216394089, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1201198230969099414, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1312386036698146923, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1322111161054239731, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3008,11 +3170,11 @@ PrefabInstance:
     - target: {fileID: 1413260349264736719, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1500167904164499590, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1693710652930088387, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3028,7 +3190,7 @@ PrefabInstance:
     - target: {fileID: 1874616521492590447, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 1972681161090482578, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3040,35 +3202,35 @@ PrefabInstance:
     - target: {fileID: 1972681161090482578, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 2326856191297979325, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 3166625318716375973, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 3475677381758810009, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 3739309823419785072, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 3756977374425000115, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 3922894459060730503, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4436841046714302511, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4518323014411399431, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3084,39 +3246,39 @@ PrefabInstance:
     - target: {fileID: 4547831980539536558, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4704056689913758959, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4745772320998815251, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4758958589984747354, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4764109300630850388, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4765405210060440552, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 4964583252602941146, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5021863854238800202, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5035906874578360801, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5044964495872396373, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3132,11 +3294,11 @@ PrefabInstance:
     - target: {fileID: 5107548840666572107, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5240792833841140041, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5253596202503581117, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3164,15 +3326,15 @@ PrefabInstance:
     - target: {fileID: 5655980674882497165, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5765764289373048100, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5825798173403098999, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 5859243663794771691, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3188,11 +3350,11 @@ PrefabInstance:
     - target: {fileID: 6090728940929604586, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6109319697309906024, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6111412001415753837, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3208,11 +3370,11 @@ PrefabInstance:
     - target: {fileID: 6145456344767574194, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6297187422146851228, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6480328918899993386, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3228,11 +3390,11 @@ PrefabInstance:
     - target: {fileID: 6531320658740210084, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6551057542938705007, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6637081584199501321, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3248,15 +3410,15 @@ PrefabInstance:
     - target: {fileID: 6687241952074178605, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6875995343712908654, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 6983113438014795479, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 7399904132976729475, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3272,7 +3434,7 @@ PrefabInstance:
     - target: {fileID: 7668467075209902599, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 7945643455027424547, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3284,15 +3446,15 @@ PrefabInstance:
     - target: {fileID: 7945643455027424547, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8001667317418418624, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8075772599701204940, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8240867471464415473, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3308,27 +3470,27 @@ PrefabInstance:
     - target: {fileID: 8272854808809140898, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8595215241057895991, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8740432936976372710, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8785324079917674897, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8864084183971671757, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 8921704773716681709, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+      objectReference: {fileID: 2100000, guid: 01b43b8c2c57f4546a48e1c22fae4c35, type: 2}
     - target: {fileID: 9116708886448747824, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0

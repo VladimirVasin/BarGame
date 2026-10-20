@@ -101,6 +101,8 @@ Shader "Bar Promenade/City River Water"
         _ReflectionCube("Reflection Cubemap", Cube) = "black" {}
         _ReflectionStrength("Reflection Strength", Range(0, 2)) = 0
         _ReflectionDistortion("Reflection Distortion", Range(0, 1)) = 0.30
+        [HideInInspector] _SceneReflectionReceiver("Scene-owned reflection", Float) = 0
+        [HideInInspector] _SceneReflectionDecode("Scene HDR decode", Vector) = (1,1,0,0)
 
         // The puddle film. Wetness dissolves the whole surface into
         // the very background the shader composites from - at 0 the
@@ -218,6 +220,8 @@ Shader "Bar Promenade/City River Water"
                 half4 _FoamColor;
                 half _ReflectionStrength;
                 half _ReflectionDistortion;
+                half _SceneReflectionReceiver;
+                float4 _SceneReflectionDecode;
                 half _SurfaceWetness;
                 float4 _EdgeNoiseParams;
                 float4 _LanternPosition;
@@ -236,6 +240,7 @@ Shader "Bar Promenade/City River Water"
                 float4 _OffshoreBeam1;
             CBUFFER_END
 
+            #include "WarehouseCleanCommon.hlsl"
             #include "CityOffshoreBoatWater.hlsl"
 
             struct Attributes
@@ -648,7 +653,8 @@ Shader "Bar Promenade/City River Water"
                 // mirror at all. Night lives in the cube itself - the
                 // controller re-renders it as the lamps come on -
                 // and the glints, foam and fog stay on top.
-                if (_ReflectionStrength > 0.0h)
+                if (_ReflectionStrength > 0.0h &&
+                    (_SceneReflectionReceiver < .5h || _WarehouseCleanEffects.x > .5h))
                 {
                     // The mirror bends by only a fraction of the
                     // shading normal: the full ripple is right for
@@ -660,10 +666,11 @@ Shader "Bar Promenade/City River Water"
                     float3 reflectDir = reflect(
                         -viewDirWS,
                         mirrorNormal);
-                    half3 environment = SAMPLE_TEXTURECUBE(
-                        _ReflectionCube,
-                        sampler_ReflectionCube,
-                        reflectDir).rgb;
+                    half4 reflectedSample = SAMPLE_TEXTURECUBE(
+                        _ReflectionCube, sampler_ReflectionCube, reflectDir);
+                    half3 environment = _SceneReflectionReceiver > .5h
+                        ? DecodeHDREnvironment(reflectedSample, _SceneReflectionDecode)
+                        : reflectedSample.rgb;
                     half grazing = (half)pow(
                         1.0 - saturate(dot(normalWS, viewDirWS)),
                         2.0);

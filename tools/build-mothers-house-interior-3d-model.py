@@ -51,7 +51,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
-GENERATOR_VERSION = "1.11.1"
+GENERATOR_VERSION = "1.12.0"
 DESIGN_ID = "mothers_house_interior_v1"
 DISPLAY_NAME = "Bar Promenade Mother's House Interior"
 
@@ -421,6 +421,7 @@ class AssetBuild:
     collection: "bpy.types.Collection"
     parts: list[Part] = field(default_factory=list)
     anchors: dict[str, "bpy.types.Object"] = field(default_factory=dict)
+    surface_contract: dict = field(default_factory=dict)
 
 
 def stable(value: float) -> float:
@@ -4058,6 +4059,10 @@ def signature_for(asset: AssetBuild) -> str:
     payload = {
         "design_id": DESIGN_ID,
         "generator_version": GENERATOR_VERSION,
+        "surface_uv_signature": asset.surface_contract.get("uv_signature"),
+        "surface_source_provenance": asset.surface_contract.get("source_provenance"),
+        "surface_map_hashes": [asset.surface_contract.get(key) for key in
+            ("albedo_sha256", "response_sha256", "auxiliary_sha256", "recipe_sha256")],
         "dimensions": [ROOM_WIDTH, ROOM_DEPTH, ROOM_HEIGHT],
         "upper_storey": [
             UPPER_FLOOR_ELEVATION,
@@ -4115,6 +4120,7 @@ def manifest_part(part: Part) -> dict:
         "group": part.group,
         "sheet": part.sheet,
         "emissive": part.emissive,
+        "surface_unique_uv": bool(part.obj.get("bp_surface_unique_uv", False)),
         "casts_shadows": part.casts_shadows,
         "tint": [stable(value) for value in part.tint],
         "colliders": [],
@@ -4134,6 +4140,7 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
         "generator": "tools/build-mothers-house-interior-3d-model.py",
         "generator_version": GENERATOR_VERSION,
         "blender_version": bpy.app.version_string,
+        "surface_contract": asset.surface_contract,
         "fire_contract": {
             "layers": ["FIX_Fire.Flame.Back", "FIX_Fire.Flame.Front"],
             "tongues_per_layer": [3, 4],
@@ -4529,9 +4536,16 @@ def main() -> int:
         path = getattr(args, field_name)
         setattr(args, field_name, path if path.is_absolute() else ROOT / path)
     asset = build()
+    import mothers_house_surface_authoring as surfaces
+    recorded = json.loads(args.manifest.read_text(encoding="utf-8")) if args.manifest.is_file() else None
+    asset.surface_contract = surfaces.prepare(asset, args.validate_only,
+        recorded.get("surface_contract") if recorded else None)
     report = validate(asset)
     signature = signature_for(asset)
     if args.validate_only:
+        if (not args.fbx.is_file() or hashlib.sha256(args.fbx.read_bytes()).hexdigest() !=
+                asset.surface_contract.get("model_sha256")):
+            raise SystemExit("The exported house FBX differs from its unique-surface contract")
         if (not WINDOW_RUNTIME_PATH.is_file() or
                 WINDOW_RUNTIME_PATH.read_text(encoding="utf-8") != window_runtime_source()):
             raise SystemExit("The generated runtime window contract does not match WindowLayout.json")
@@ -4550,9 +4564,10 @@ def main() -> int:
     if (not WINDOW_RUNTIME_PATH.is_file() or
             WINDOW_RUNTIME_PATH.read_text(encoding="utf-8") != runtime_windows):
         WINDOW_RUNTIME_PATH.write_text(runtime_windows, encoding="utf-8", newline="\n")
+    export_fbx(asset, args.fbx)
+    asset.surface_contract["model_sha256"] = hashlib.sha256(args.fbx.read_bytes()).hexdigest()
     manifest = manifest_for(asset, report, signature)
     write_manifest(args.manifest, manifest)
-    export_fbx(asset, args.fbx)
     if not args.no_preview:
         render_preview(asset, args.preview)
     save_blend(args.blend)

@@ -1,6 +1,84 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-20, mother's house unique material surfaces — explicit user decision:**
+  Art §10g: house-owned palette, age through fading/repair/care, never grime
+  or new narrative. Geometry, collision, cameras, characters and the exact
+  NPC-kettle meshes/material/atlas stay unchanged. Non-emissive opaque house
+  parts except Glass/Fire receive unique authored UV0, a 4096px
+  `MothersHouseSurfaceAtlas` albedo and aligned 2048px material response:
+  RG signed physical height slopes, B roughness, A cavity. Structural height
+  fields and causal wear produce response, never albedo luminance. The old
+  1024px/4x4 `MothersHousePositiveAtlas` stays auxiliary for glass/emission/fire
+  and the shared scarf; taking a scarf need not load the large surface maps.
+  Four ImageGen source packs cover wood/fabric/plaster/finish; originals,
+  prompts and hashes: `ArtSource/MothersHouse/Textures/Source/generation.json`.
+  Offline authoring bakes their material fields into unique charts. No runtime
+  texture generation, procedural surface layering or per-instance materials.
+  `tools/build-mothers-house-shader.py` derives complete current Lit/URP passes
+  and one shared material layout. One aligned response sample precedes the
+  existing contact-smoothness floor; physical UV gradients drive near relief,
+  fading over 3–9 m. Shared metal/bounce/room-reflection hooks retain their gates.
+  BC7+mips target at most 30 MiB for 4K+2K+1K; about 28 MiB is an estimate,
+  not measured residency or a performance gain. The mother's half-shadow and
+  passive bathroom mirror remain accepted. Pinned model/texture validators,
+  shader source check and `MothersHouseNativeLighting` prove source/import,
+  response pairs, authored views/closeups, scarf and presentation lifecycle.
+- **Accepted exception 2026-10-20, mother's house local lighting — explicit user decision:**
+  Art §10g/§15a; story §6. `MothersHouseInterior` keeps its own profile while
+  reusing scene-owned native effects and saved `graphics.clean_*` flags.
+  At most 24 visible physical emitters receive halation; helper spill/bounce
+  Lights are not emitters. Bloom and source diffusion must retain source detail.
+  The house registry's Sheet/Role selects existing metal response, preserving
+  house-owned surface contracts and the exact NPC-kettle exception.
+  At most four validated floor patches transport their real source energy;
+  the existing chair-local `HearthBounceLight` is neither counted nor summed again.
+  Weak clean-air scattering uses at most two actual visible-room Lights,
+  at most 320x180 and ten steps. Physical room prisms/floor/partition blockers
+  remain authoritative when camera cutaway hides a wall. At most eight internal
+  blockers per source survive CPU pruning; existing URP shadow maps supply
+  furniture/hero occlusion, without another shadow render. No dust/particles,
+  new Light, global fog or warehouse darkness.
+  At most two filtered 256 HDR cubes serve finite living/tea and bathroom
+  receivers; only one capture is pending. Static architecture is captured with
+  complete walls, without characters, live flames or mirror feedback. Fire
+  on/off and semantic zone state may invalidate a capture; its live intensity,
+  colour, pose and flame clock never cause recapture. Direct light/air stay live.
+  The bathroom mirror stays passive. Mother remains in the accepted half-shadow;
+  rooms, cameras, source hierarchy, speech and narrative are unchanged.
+  Excluded/foreign/cube cameras clear receiver/air parameters; scene teardown
+  restores owned material/property bindings and releases capture resources.
+  This is a separate house profile, not a transfer of the village atmosphere.
+  Local costs remain unmeasured; verification claims are recorded only after checks.
+- **Accepted exception 2026-10-20, Alpine Village local lighting — explicit user decision:**
+  Transfer applicable native warehouse effects; the user separately permits
+  real windows/garlands to illuminate nearby air and falling snow (art §10g,
+  story §6). No new Light, global fog writer, prologue or story change.
+  `SceneLightingPresentation` registers at most four scene owners; cameras
+  resolve only their active, non-dormant scene. `ScenePresentationExclusion`
+  and reflection/foreign cameras clear camera-scoped lighting parameters.
+  Halation selects at most 24 actual geometry sources, including individual
+  moving bulbs, occupied windows and the switched lodge lantern; shared source
+  masks/blur/SMAA retain their order. Existing five window/garland practicals
+  supply at most four nearest local volumes: ten steps, at most 320x180,
+  existing fog transmittance, exact exterior facade planes and camera depth.
+  The same bounded light parameters illuminate actual falling-snow particles;
+  physics-clipped bounds/facades/depth do not promise full small-object shadows.
+  No shadowed warehouse fan column or warehouse darkness is imported.
+  Up to four validated, continuous snow patches bounce their actual source
+  light with terrain normals, snow albedo, finite bounds and occlusion refresh
+  at most 10 Hz. Warmth/source state stays owned by the village atmosphere.
+  `AlpineVillageMetalAppearance` opts selected existing steel into directional
+  response using reserved stock-Lit MPB slots, without material clones; disabled
+  flags retain original response and teardown restores the original blocks.
+  `SceneReflectionCapture` shares filtered 256-cube capture/watchdog/quality-lease
+  recovery with the warehouse: at most two attempts per state, ten-second timeout.
+  The village binds one finite spring-water/nearby-stone region. Meaningful
+  light/night/warmth drift invalidates it no more often than every five seconds;
+  gusts do not trigger recapture. The saved `graphics.clean_*` effect keys stay.
+  Dormancy releases capture resources/bindings; return restores scene ownership.
+  The same-scene lodge retains its profile; separate `MothersHouseInterior`
+  keeps its own presentation. Local effect costs remain unmeasured.
 - **Accepted exception 2026-10-20, native-only presentation — explicit user decision:**
   Art §4/§15a; story §6. The scene uses its native source resolution only;
   style selection, low-resolution profiles, colour quantization, output dither,
@@ -2207,10 +2285,8 @@
   authored floor-lamp fixture exposes a typed anchor; runtime lights that anchor
   instead of inventing a ceiling fill. The kettle on the table instantiates the existing
   Kettle Hat pedestrian prefab and exposes its original ten kettle renderers,
-  material and atlas rather than copying or remodelling them. Every surface
-  authored for the room uses the dedicated `MothersHousePositiveAtlas` instead
-  of a Home or City albedo; the exact NPC kettle is the deliberate exception,
-  not an environment-sheet dependency.
+  material and atlas rather than copying or remodelling them. The exact NPC
+  kettle is the deliberate environment-atlas exception, not a sheet dependency.
 - **Accepted architecture exception — 2026-09-01, explicit user request — the
   mother's-house fixed camera is lowered:** This supersedes only art-bible
   §10g's acceptance wording that the previously approved camera must not move.

@@ -10,6 +10,7 @@ Shader "Hidden/BarPromenade/CleanHalation"
         TEXTURE2D_X_FLOAT(_CleanSceneDepth);
         TEXTURE2D_X(_CleanHalationTexture);
         float4 _CleanLightSources[24];
+        float _CleanLightSourceStrengths[24];
         int _CleanLightSourceCount;
         float4 _CleanBlurDirection;
         ENDHLSL
@@ -36,7 +37,7 @@ Shader "Hidden/BarPromenade/CleanHalation"
                     float2 delta = uv - source.xy;
                     delta.x *= _ScreenParams.x / _ScreenParams.y;
                     float shape = saturate(1 - dot(delta, delta) / source.w);
-                    coverage = max(coverage, shape * step(source.z - .22, depth));
+                    coverage = max(coverage, shape * step(source.z - .22, depth) * _CleanLightSourceStrengths[i]);
                 }
                 half3 colour = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, 0).rgb;
                 half peak = max(colour.r, max(colour.g, colour.b));

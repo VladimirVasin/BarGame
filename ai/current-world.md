@@ -77,34 +77,32 @@ cemetery:own interiors/returns.
   hidden plan-owned ramp makes the
   visible collider-free steps continuously walkable; structural slabs,
   partitions, door openings and well guards are runtime collision. Five
-  height-aware fixed shots cover the ground room, stair/corridor and all three
-  rooms. The stair/corridor shot stands inside the southwest corner above the
-  stair's upper exit. It keeps its position while bounded focus (`25°/35°`)
-  and a `64°–84°` lens frame the nearby hero. The west wall, bathroom's
-  south partition and doorway remain visible. Only the bathroom's own shot
-  temporarily hides that partition and doorframe, leaving collision intact.
-  The ground shot stands inside the room's southeast corner and is a close shot
-  on the hero: it pans onto him within `30°/15°` when he reaches the edge of
-  the picture and re-lenses between `26°` and `50°` so he keeps about half the
-  frame's height wherever he stands.
-  Repairs, fading and soft wear carry age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
-  owns every room-authored surface instead of reusing Home or City albedos.
-  Its centred south-wall entrance faces the north-wall hearth and spawns the
-  hero looking north. The floor lamp stands at the sofa's front southeast
-  corner; its Point source lights the hero and sofa from inside the fabric
-  shade. The user's final accepted frame keeps the mother in partial shadow
-  beside the hearth, without adding story meaning. All five lamps and five window sources
-  cast soft realtime shadows. The hearth's warm source sits in the open firebox
-  and keeps its existing gentle movement and light variation. The flame
-  tongues carry faster independent rising eddies within their existing bounds,
-  keeping the hearth the main warm light
-  without adding ceiling fill. A small existing floor bounce stays under the
-  rocking chair, limited to `1.1 m`. Its strength follows the floor lamp and
-  hearth; both off leaves no reflected light. Fire, muffled wind, alternating clock ticks and
-  sparse timber settling form its calm sound bed. The hearth has its own
-  broadband wood-crackle loop, audible from the sofa, with gains and local falloff
-  adjusted for the fixed camera. Shared camera setup restores its missing or
-  disabled audio listener and leaves only one active listener across scene loads.
+  height-aware fixed shots cover ground, stair/corridor and the three rooms.
+  The corridor shot stays inside its southwest corner above the stair exit;
+  focus `25°/35°` and lens `64°–84°` frame the nearby hero. West wall, bathroom
+  south partition and doorway stay visible; only the bathroom shot temporarily
+  hides its partition/frame, with collision intact. The ground shot stays inside
+  the southeast corner, pans `30°/15°` at the picture edge and re-lenses `26°–50°`,
+  keeping the hero near half the frame height. Repairs, fading and soft wear
+  carry age without dirt or abandonment. Non-emissive opaque house surfaces
+  except Glass/Fire use unique UV0, a 4K `MothersHouseSurfaceAtlas` and aligned
+  2K response: physical height slopes RG, roughness B, cavity A. Glass, emission,
+  fire and scarf keep the auxiliary 1024px/4x4 `MothersHousePositiveAtlas`;
+  no Home/City albedos. Four ImageGen wood/fabric/plaster/finish source packs
+  feed offline baking. Shared `Mothers House Surface` preserves metal/room
+  lighting, without runtime generation or per-instance materials. BC7+mips
+  target at most 30 MiB; the estimated 28 MiB is not a measurement.
+  The centred south entrance faces the north hearth and spawns the hero north-facing.
+  A Point inside the fabric shade at the sofa's front southeast corner lights
+  hero/sofa; mother keeps the accepted partial shadow by the hearth, without
+  story meaning. Five lamps/five window sources cast soft realtime shadows.
+  The warm open-firebox source gently moves/varies; faster independent rising
+  flame eddies retain their bounds, hearth the main key, no ceiling fill.
+  Existing chair-local floor bounce stays within `1.1 m`, following floor lamp/
+  hearth; both off means zero. Fire, muffled wind, alternating ticks and sparse
+  timber settling stay calm. The hearth's broadband wood-crackle loop is audible
+  from the sofa, gains/falloff tuned for the fixed camera. Shared setup repairs
+  a missing/disabled listener, retaining one active listener across scene loads.
   The sofa's free cushion is clear: the former three-plate patched throw has
   been removed without changing the frame, cushions or seat contacts. The table
   instantiates the literal Kettle Hat pedestrian
@@ -671,14 +669,17 @@ cemetery:own interiors/returns.
   `48 / 120 / 110 m` far planes are render distance rather than low physical
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
-- post-URP native scene presentation with saved SMAA High/default-on.
-  SMAA: spatial three-pass after native/intoxication; 4:3 bars reapply,
-  UI/nameplates draw later. Preview/reflection exclusions. Clean warehouse:
-  saved/default-on reflections/fan volume/source halation/metal highlights/bounce;
-  one prefiltered 256 cube, 320x180/12-step existing-shadowmap beam,
-  WornSteel highlights, two validated floor bounce patches. Global fog/physical
-  Lights/geometry/gameplay stay; shared light/SSAO/bloom/DoF/intox/4:3.
-  Intoxication: vignette/ghost/chromatic image/warp/warmth/exposure pulse;
+- native/SMAA High/default-on: three passes after native/intoxication, then
+  4:3/UI/nameplates; no previews/probes. Saved warehouse/village/house flags:
+  `SceneLightingPresentation` (4 owners). Warehouse: 256 cube, fan 320x180/12-step
+  shadow volume, WornSteel/2 floor patches. Village: <=24 halos;
+  <=4 window/garland sources light air/snow at 320x180/10 steps, facade/depth clipping
+  no small-object shadows; <=4 terrain-normal snow bounces, aged-metal MPBs,
+  one filtered 256 water/stone cube via `SceneReflectionCapture`.
+  Mother's House: real-light halos/metal/room bounce/weak air;
+  two 256 HDR cubes: living/tea+bathroom, one pending. Roughness,
+  atlas/mother's half-shadow/passive mirror stay. Lights/fog/weather/story stay;
+  lodge stays. Intoxication: vignette/ghost/chromatic/warp/warmth/exposure;
 - DoF: shared setting, exterior Gaussian far blur;
   Bar/Supermarket/Stairwell/Home/Church/Mother's House radius `0.55`
   keeps nearby people/furniture/gestures legible. Priority-10 Bokeh serves
@@ -700,8 +701,7 @@ cemetery:own interiors/returns.
   struggle;E/next0. Crane/8guides;front1.18m/red36/pair/FOV.
   Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
   Space/A pause,R/X replay,Esc/B list before capture;
-- shared 8-sided cylinders, packaged shared URP/Lit runtime-primitive material,
-  hard directional shadows; camera MSAA stays off, Clean offers spatial SMAA;
+- shared 8-sided cylinders/URP Lit; hard directional shadows; MSAA off;
 - Exterior ground retains its albedos, palette and metre UVs: City's soil/asphalt
   repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared

@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "generated": "2026-10-20",
+  "mode": "built-in ImageGen",
+  "usage": "offline material source packs only; unique authored runtime atlas",
+  "original": "ArtSource/MothersHouse/Textures/Source/MothersHousePositiveAtlas.original.png",
+  "images": [
+    {
+      "name": "wood",
+      "source": "ArtSource/MothersHouse/Textures/Source/MothersHouseWood.source.png",
+      "sha256": "caba73997f777cdd554c84da01c161547e712670b2e4f4092e3dd8869725af9f",
+      "grid": [
+        2,
+        2
+      ],
+      "cell_origin": "top_left",
+      "cells": [
+        {
+          "sheet": "PlankFloor",
+          "column": 0,
+          "row": 0
+        },
+        {
+          "sheet": "DarkWood",
+          "column": 1,
+          "row": 0
+        },
+        {
+          "sheet": "PaleWood",
+          "column": 0,
+          "row": 1
+        },
+        {
+          "sheet": "Wicker",
+          "column": 1,
+          "row": 1
+        }
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a production material-source sheet for a hand-painted 3D game interior, used only as offline ingredients in a unique UV atlas. Create a square 2048 by 2048 image containing EXACTLY four equal square material swatches in an exact 2 columns by 2 rows edge-to-edge grid. All four swatches are perfectly front-facing flat orthographic textures, each independent and seamless at its own four edges. Neutral uniform albedo only. NO directional light, baked shadow, highlights, ambient-occlusion darkening, perspective, objects, furniture silhouettes, text, letters, logos, labels, borders, gutters or watermark. Restrained painted realism with tactile medium detail, familiar humble elderly mother's cared-for alpine home, warm light palette. Maintain simple readable surface structure rather than photoreal noise. Age through gentle fading and honest material grain; absolutely NO dirt, grime, damp stains, mold, rot, rust, sepia wash or dark grunge. Top-left: light honey-oak narrow floorboards with subtle staggered joins, realistic fine grain along vertical boards, about six to eight boards across swatch, small variation in warmth without dark gaps. Top-right: warm medium maple furniture wood, fine straight vertical grain, softly worn finish, no planks or joins. Bottom-left: pale warm birch or pine, clean soft straight vertical grain without coarse knots, for simple old furniture. Bottom-right: clean golden wicker, fine practical over-under woven reeds with restrained relief, not chunky rope."
+    },
+    {
+      "name": "fabric",
+      "source": "ArtSource/MothersHouse/Textures/Source/MothersHouseFabric.source.png",
+      "sha256": "5b2d78cbabec0a11162173220baa6ecbf8233a9da53b734e0a403e073e85d77e",
+      "grid": [
+        2,
+        2
+      ],
+      "cell_origin": "top_left",
+      "cells": [
+        {
+          "sheet": "Upholstery",
+          "column": 0,
+          "row": 0
+        },
+        {
+          "sheet": "BedLinen",
+          "column": 1,
+          "row": 0
+        },
+        {
+          "sheet": "Rug",
+          "column": 0,
+          "row": 1
+        },
+        {
+          "sheet": "TeaCloth",
+          "column": 1,
+          "row": 1
+        }
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a production material-source sheet for a hand-painted 3D game interior, used only as offline ingredients in a unique UV atlas. Create a square 2048 by 2048 image containing EXACTLY four equal square material swatches in an exact 2 columns by 2 rows edge-to-edge grid. All four swatches are perfectly front-facing flat orthographic textures, each independent and seamless at its own four edges. Neutral uniform albedo only. NO directional light, baked shadow, highlights, ambient-occlusion darkening, perspective, objects, furniture silhouettes, text, letters, logos, labels, borders, gutters or watermark. Restrained painted realism with tactile medium detail, familiar humble elderly mother's cared-for alpine home, warm light palette. Maintain simple readable surface structure rather than photoreal noise. Age through gentle fading and honest material grain; absolutely NO dirt, grime, damp stains, mold, rot, rust, sepia wash or dark grunge. Top-left: soft sage green fine woven upholstery, muted flat sage color with small evenly sized threads, no buttons or seams. Top-right: faded pale apricot linen with fine loose natural weave, very restrained variation. Bottom-left: a cream woven rug with a sparse traditional geometric pattern in muted cornflower blue, sage green and terracotta, softly faded and cared for, motifs remain medium scale and calm. Bottom-right: clean off-white tea cloth with very narrow muted blue woven stripes, fine threads, no broad bands. Make the pattern repeat across the edges."
+    },
+    {
+      "name": "plaster",
+      "source": "ArtSource/MothersHouse/Textures/Source/MothersHousePlaster.source.png",
+      "sha256": "91f7e067442f3ec2b10d0b0ccdc8730b41dab3f98b63a4eaef21a9503ba4c452",
+      "grid": [
+        2,
+        2
+      ],
+      "cell_origin": "top_left",
+      "cells": [
+        {
+          "sheet": "Wallpaper",
+          "column": 0,
+          "row": 0
+        },
+        {
+          "sheet": "CeilingPlaster",
+          "column": 1,
+          "row": 0
+        },
+        {
+          "sheet": "Concrete",
+          "column": 0,
+          "row": 1
+        },
+        {
+          "sheet": "BathroomTile",
+          "column": 1,
+          "row": 1
+        }
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a production material-source sheet for a hand-painted 3D game interior, used only as offline ingredients in a unique UV atlas. Create a square 2048 by 2048 image containing EXACTLY four equal square material swatches in an exact 2 columns by 2 rows edge-to-edge grid. All four swatches are perfectly front-facing flat orthographic textures, each independent and seamless at its own four edges. Neutral uniform albedo only. NO directional light, baked shadow, highlights, ambient-occlusion darkening, perspective, objects, furniture silhouettes, text, letters, logos, labels, borders, gutters or watermark. Restrained painted realism with tactile medium detail, familiar humble elderly mother's cared-for alpine home, warm light palette. Maintain simple readable surface structure rather than photoreal noise. Age through gentle fading and honest material grain; absolutely NO dirt, grime, damp stains, mold, rot, rust, sepia wash or dark grunge. Top-left: warm ivory lime plaster with very subtle hand-smoothed trowel variation and fine mineral grain, calm even tone, no cracks. Top-right: pale cream ceiling plaster, extremely subtle fine matte texture and soft variations from old repainting, no cracks or discoloration. Bottom-left: light oatmeal sandstone, fine warm mineral grain and faint natural variation, NO masonry joints, NO blocks. Bottom-right: ivory ceramic wall tiles with thin muted warm-gray grout lines in a regular small square grid, occasional tiny restrained cornflower-blue floral flecks, no embossed or raised ornament, no baked glaze highlights."
+    },
+    {
+      "name": "finish",
+      "source": "ArtSource/MothersHouse/Textures/Source/MothersHouseFinish.source.png",
+      "sha256": "19c4de92b8e0aed43ddbf2e9266ad9691b037dd8e97b7b27b0236269a19f1845",
+      "grid": [
+        2,
+        2
+      ],
+      "cell_origin": "top_left",
+      "cells": [
+        {
+          "sheet": "Brass",
+          "column": 0,
+          "row": 0
+        },
+        {
+          "sheet": "PaintedMetal",
+          "column": 1,
+          "row": 0
+        },
+        {
+          "sheet": "Ceramic",
+          "column": 0,
+          "row": 1
+        },
+        {
+          "sheet": "BookCloth",
+          "column": 1,
+          "row": 1
+        }
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a production material-source sheet for a hand-painted 3D game interior, used only as offline ingredients in a unique UV atlas. Create a square 2048 by 2048 image containing EXACTLY four equal square material swatches in an exact 2 columns by 2 rows edge-to-edge grid. All four swatches are perfectly front-facing flat orthographic textures, each independent and seamless at its own four edges. Neutral uniform albedo only. NO directional light, baked shadow, highlights, ambient-occlusion darkening, perspective, objects, furniture silhouettes, text, letters, logos, labels, borders, gutters or watermark. Restrained painted realism with tactile medium detail, familiar humble elderly mother's cared-for alpine home, warm light palette. Maintain simple readable surface structure rather than photoreal noise. Age through gentle fading and honest material grain; absolutely NO dirt, grime, damp stains, mold, rot, rust, sepia wash or dark grunge. Top-left: muted warm old brass surface with a soft brushed grain and restrained hand-polished variation, no tarnish crust, no orange rust, no sparkle. Top-right: old ivory painted metal, smooth cared-for coating, restrained tiny rubbed edges implied only through broad color variations, no peeling, no rust. Bottom-left: clean ivory porcelain glaze albedo with a few tiny muted cornflower-blue floral flecks, no tile grid, no cracks, no shadows, no specular highlights. Bottom-right: light muted blue book cloth, fine regular woven cotton, restrained simple flat blue tone with subtle pale threads, no text, no seams."
+    }
+  ],
+  "original_sha256": "d08b4f91c24b64ec080bdc059d0d40542bbbf4cb34f1d0a312e90f323afed4b5"
+}

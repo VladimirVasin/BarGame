@@ -50,9 +50,9 @@ Shader "Bar Promenade/Warehouse Surface"
         _DetailNormalMapScale("Scale", Range(0.0, 2.0)) = 1.0
         [Normal] _DetailNormalMap("Normal Map", 2D) = "bump" {}
 
-        // SRP batching compatibility for Clear Coat (Not used in Lit)
-        [HideInInspector] _ClearCoatMask("_ClearCoatMask", Float) = 0.0
-        [HideInInspector] _ClearCoatSmoothness("_ClearCoatSmoothness", Float) = 0.0
+        // Reserved URP slots: Lit never shades clear coat. Preserve its CBUFFER.
+        [HideInInspector] _ClearCoatMask("Directional metal response", Float) = 0.0
+        [HideInInspector] _ClearCoatSmoothness("Matte metal contact smoothness", Float) = 0.0
 
         // Blending state
         _Surface("__surface", Float) = 0.0

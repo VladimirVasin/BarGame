@@ -43,7 +43,7 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessTexture()
         {
-            if (!MothersHouseInteriorAssetSetup.IsPositiveAtlasPath(
+            if (!MothersHouseInteriorAssetSetup.IsTexturePath(
                     assetPath) ||
                 !(assetImporter is TextureImporter importer))
             {
@@ -52,18 +52,28 @@ namespace BarPromenade.Editor
 
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
-            importer.sRGBTexture = true;
-            importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.mipmapEnabled = false;
+            bool response = MothersHouseInteriorAssetSetup.IsSurfaceResponsePath(assetPath);
+            bool auxiliary = MothersHouseInteriorAssetSetup.IsPositiveAtlasPath(assetPath);
+            int size = auxiliary ? 1024 : response ? 2048 : 4096;
+            importer.sRGBTexture = !response;
+            importer.alphaSource = response ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            importer.alphaIsTransparency = false;
+            importer.mipmapEnabled = true;
             importer.wrapMode = TextureWrapMode.Clamp;
-            importer.filterMode = FilterMode.Bilinear;
+            importer.filterMode = auxiliary ? FilterMode.Bilinear : FilterMode.Trilinear;
             importer.anisoLevel = 1;
             importer.textureCompression =
-                TextureImporterCompression.Uncompressed;
+                TextureImporterCompression.CompressedHQ;
             importer.crunchedCompression = false;
             importer.npotScale = TextureImporterNPOTScale.None;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = size;
             importer.isReadable = false;
+            importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+            {
+                name = "Standalone", overridden = true, maxTextureSize = size,
+                format = TextureImporterFormat.BC7, textureCompression = TextureImporterCompression.CompressedHQ,
+                compressionQuality = 100, crunchedCompression = false
+            });
         }
 
         private static void OnPostprocessAllAssets(
@@ -82,7 +92,7 @@ namespace BarPromenade.Editor
                 string path = importedAssets[index];
                 if (MothersHouseInteriorAssetSetup.IsModelPath(path) ||
                     MothersHouseInteriorAssetSetup.IsManifestPath(path) ||
-                    MothersHouseInteriorAssetSetup.IsPositiveAtlasPath(path))
+                    MothersHouseInteriorAssetSetup.IsTexturePath(path))
                 {
                     MothersHouseInteriorAssetSetup.QueueBuildWhenSourcesExist();
                     return;
@@ -91,7 +101,7 @@ namespace BarPromenade.Editor
 
             for (int index = 0; index < movedAssets.Length; index++)
             {
-                if (MothersHouseInteriorAssetSetup.IsPositiveAtlasPath(
+                if (MothersHouseInteriorAssetSetup.IsTexturePath(
                         movedAssets[index]))
                 {
                     MothersHouseInteriorAssetSetup.QueueBuildWhenSourcesExist();

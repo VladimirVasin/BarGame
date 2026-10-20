@@ -20,6 +20,7 @@
 // keep this file in sync with LitGBufferPass.hlsl
 
 #include "GroundSurfaceLayers.hlsl"
+#include "VillageWetReflection.hlsl"
 
 struct Attributes
 {
@@ -274,6 +275,7 @@ void LitPassFragment(
     InitializeBakedGIData(input, inputData);
 
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
+    color.rgb += VillageWetStoneReflection(inputData, surfaceData, _GroundKind);
     color.rgb = MixFog(color.rgb, inputData.fogCoord);
     color.a = OutputAlpha(color.a, IsSurfaceTypeTransparent());
 

@@ -26,6 +26,13 @@ def outputs():
         raise ValueError("Expected one imported URP LitInput source")
     source_folder = packages[0].parent
     shader = (SHADERS / "Lit.shader").read_text(encoding="utf-8")
+    # Warehouse supplies its own surface UV/roughness hooks and brush frame.
+    # Both paths reuse DirectionalMetalLighting, never stack forward wrappers.
+    shader = shader.replace('            #include "ProjectLitDirectionalLighting.hlsl"\n', '')
+    shader = shader.replace('            #define InitializeStandardLitSurfaceData ProjectLitSurfaceData\n', '')
+    shader = shader.replace('            #undef InitializeStandardLitSurfaceData\n', '')
+    shader = shader.replace('#define UniversalFragmentPBR ProjectLitFragmentPBR',
+                            '#define UniversalFragmentPBR WarehouseFragmentPBR')
     shader = shader[shader.index('Shader "'):]
     shader = once(shader, 'Shader "Bar Promenade/Lit"',
                   'Shader "Bar Promenade/Warehouse Surface"')

@@ -1,5 +1,12 @@
 # MothersHousePositiveAtlas generation record
 
+Current pipeline (`2026-10-20`): this original painting is preserved under
+`Source/MothersHousePositiveAtlas.original.png`; the runtime copy is a 1024px
+BC7/mipped auxiliary atlas for glass, emission, fire and the scarf. Opaque room
+surfaces use unique UV0 with separate 4K colour and 2K response maps. New source
+packs, exact prompts and hashes are recorded in [Source/generation.json](Source/generation.json).
+The following record describes the original 2026-09-01 delivery.
+
 - Generated: 2026-09-01
 - Mode: built-in ImageGen
 - Runtime output: `Assets/Resources/MothersHouse/Textures/MothersHousePositiveAtlas.png`

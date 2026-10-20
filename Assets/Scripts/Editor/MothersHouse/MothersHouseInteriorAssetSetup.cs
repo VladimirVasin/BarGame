@@ -14,7 +14,7 @@ namespace BarPromenade.Editor
     /// emits the passive Resources prefab consumed by the pure interior plan.
     /// </summary>
     [InitializeOnLoad]
-    public static class MothersHouseInteriorAssetSetup
+    public static partial class MothersHouseInteriorAssetSetup
     {
         public const string ModelPath = "Assets/MothersHouse/Models/MothersHouseInterior3D.fbx";
         public const string ManifestPath = "Assets/MothersHouse/Models/MothersHouseInterior3D.json";
@@ -25,7 +25,7 @@ namespace BarPromenade.Editor
         public const string SharedFlameMaterialPath = "Assets/Resources/Materials/MothersHouseFlame.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.11.1";
+        private const string ExpectedGeneratorVersion = "1.12.0";
         private const int ExpectedAnchorCount = 15;
         private const int MaximumRenderers = 160;
         private const int MaximumTriangles = 22000;
@@ -247,7 +247,7 @@ namespace BarPromenade.Editor
         {
             return File.Exists(ModelPath) &&
                    File.Exists(ManifestPath) &&
-                   File.Exists(PositiveAtlasPath);
+                   File.Exists(PositiveAtlasPath) && File.Exists(SurfaceAtlasPath) && File.Exists(SurfaceResponsePath);
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -287,6 +287,8 @@ namespace BarPromenade.Editor
                     PositiveAtlasPath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(SurfaceAtlasPath, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(SurfaceResponsePath, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
                 MothersHouseManifest manifest =
                     LoadAndValidateManifest();
                 ValidatePositiveAtlasOrThrow();
@@ -350,6 +352,7 @@ namespace BarPromenade.Editor
                 registry,
                 positiveAtlas,
                 problems);
+            ValidateSurfaceRegistry(registry, manifest, problems);
 
             AppendDimensionProblems(registry.Dimensions, problems);
             AppendForbidden<Collider>(prefab, "collider", problems);
@@ -399,6 +402,7 @@ namespace BarPromenade.Editor
                 sharedLit,
                 sharedEmission,
                 AssetDatabase.LoadAssetAtPath<Material>(SharedFlameMaterialPath),
+                AssetDatabase.LoadAssetAtPath<Material>(SharedSurfaceMaterialPath),
                 problems);
             ValidateAnchorBindings(registry, manifest, prefab, problems);
 
@@ -430,48 +434,8 @@ namespace BarPromenade.Editor
 
         private static Texture2D ValidatePositiveAtlasOrThrow()
         {
-            Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(PositiveAtlasPath);
-            TextureImporter importer = AssetImporter.GetAtPath(PositiveAtlasPath) as TextureImporter;
-            if (atlas == null || importer == null)
-            {
-                throw new InvalidOperationException(
-                    $"The mother's-house positive atlas failed to load " +
-                    $"from '{PositiveAtlasPath}'.");
-            }
-
-            if (atlas.width != MothersHouseInteriorAssetRegistry.PositiveAtlasWidth ||
-                atlas.height != MothersHouseInteriorAssetRegistry.PositiveAtlasHeight ||
-                atlas.mipmapCount != 1 ||
-                atlas.wrapMode != TextureWrapMode.Clamp ||
-                atlas.filterMode != FilterMode.Bilinear)
-            {
-                throw new InvalidOperationException(
-                    "The mother's-house positive atlas runtime import " +
-                    $"contract drifted: got {atlas.width}x{atlas.height}, " +
-                    $"{atlas.mipmapCount} mip levels, {atlas.wrapMode} " +
-                    $"wrap and {atlas.filterMode} filtering.");
-            }
-
-            if (importer.textureType != TextureImporterType.Default ||
-                importer.textureShape != TextureImporterShape.Texture2D ||
-                !importer.sRGBTexture ||
-                importer.alphaSource != TextureImporterAlphaSource.None ||
-                importer.mipmapEnabled ||
-                importer.wrapMode != TextureWrapMode.Clamp ||
-                importer.filterMode != FilterMode.Bilinear ||
-                importer.textureCompression != TextureImporterCompression.Uncompressed ||
-                importer.crunchedCompression ||
-                importer.npotScale != TextureImporterNPOTScale.None ||
-                importer.maxTextureSize < MothersHouseInteriorAssetRegistry.PositiveAtlasWidth ||
-                importer.isReadable)
-            {
-                throw new InvalidOperationException(
-                    "The mother's-house positive atlas importer must stay " +
-                    "sRGB, 2D, clamp, bilinear, no-mips, uncompressed, " +
-                    "non-readable and preserve its NPOT dimensions.");
-            }
-
-            return atlas;
+            return ValidateImportedTexture(PositiveAtlasPath, MothersHouseInteriorAssetRegistry.PositiveAtlasWidth,
+                true, FilterMode.Bilinear, false);
         }
 
         private static MothersHouseInteriorAtlasContract CreatePositiveAtlasContract(Texture2D atlas)
@@ -483,7 +447,7 @@ namespace BarPromenade.Editor
                 MothersHouseInteriorAssetRegistry.PositiveAtlasColumns,
                 MothersHouseInteriorAssetRegistry.PositiveAtlasRows,
                 MothersHouseInteriorAssetRegistry.PositiveAtlasInsetPixels,
-                true, false, true, TextureWrapMode.Clamp, FilterMode.Bilinear,
+                true, true, false, TextureWrapMode.Clamp, FilterMode.Bilinear,
                 (MothersHouseInteriorAtlasCell[])AtlasCells.Clone());
         }
 
@@ -509,8 +473,8 @@ namespace BarPromenade.Editor
                 atlas.Rows != MothersHouseInteriorAssetRegistry.PositiveAtlasRows ||
                 atlas.InsetPixels != MothersHouseInteriorAssetRegistry.PositiveAtlasInsetPixels ||
                 !atlas.SRgb ||
-                atlas.Mipmaps ||
-                !atlas.Uncompressed ||
+                !atlas.Mipmaps ||
+                atlas.Uncompressed ||
                 atlas.WrapMode != TextureWrapMode.Clamp ||
                 atlas.FilterMode != FilterMode.Bilinear)
             {
@@ -577,6 +541,7 @@ namespace BarPromenade.Editor
                 AssetDatabase.LoadAssetAtPath<Material>(
                     SharedEmissionMaterialPath);
             Material sharedFlame = EnsureSharedFlameMaterial();
+            Material sharedSurface = EnsureSharedSurfaceMaterial();
             if (sharedLit == null || sharedEmission == null)
             {
                 throw new InvalidOperationException(
@@ -585,6 +550,7 @@ namespace BarPromenade.Editor
             Texture2D positiveAtlas = ValidatePositiveAtlasOrThrow();
             MothersHouseInteriorAtlasContract atlasContract =
                 CreatePositiveAtlasContract(positiveAtlas);
+            MothersHouseInteriorSurfaceContract surfaceContract = CreateSurfaceContract(manifest);
 
             var root = new GameObject("MothersHouseInterior3D");
             try
@@ -617,16 +583,17 @@ namespace BarPromenade.Editor
                     Renderer renderer = renderers[source.name];
                     renderer.sharedMaterial = source.role == "fire_flame"
                         ? sharedFlame
-                        : source.emissive ? sharedEmission : sharedLit;
+                        : source.emissive ? sharedEmission : source.surface_unique_uv ? sharedSurface : sharedLit;
                     renderer.shadowCastingMode = source.casts_shadows
                         ? ShadowCastingMode.On
                         : ShadowCastingMode.Off;
                     renderer.receiveShadows = source.casts_shadows;
                     Rect sourceUvBounds = CalculateUvBounds(renderer);
-                    if (!atlasContract.TryCreateBaseMapTransform(
+                    Vector4 baseMapTransform = new Vector4(1f, 1f, 0f, 0f);
+                    if (!source.surface_unique_uv && !atlasContract.TryCreateBaseMapTransform(
                             source.sheet,
                             sourceUvBounds,
-                            out Vector4 baseMapTransform))
+                            out baseMapTransform))
                     {
                         throw new InvalidOperationException(
                             $"Renderer '{source.name}' cannot normalize " +
@@ -643,7 +610,8 @@ namespace BarPromenade.Editor
                         ReadColor(source.tint, source.name),
                         sourceUvBounds,
                         baseMapTransform,
-                        renderer));
+                        renderer,
+                        source.surface_unique_uv));
                 }
 
                 var anchors = new List<MothersHouseInteriorAnchorBinding>();
@@ -707,7 +675,8 @@ namespace BarPromenade.Editor
                     manifest.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    surfaceContract);
 
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
@@ -1126,6 +1095,7 @@ namespace BarPromenade.Editor
             Material sharedLit,
             Material sharedEmission,
             Material sharedFlame,
+            Material sharedSurface,
             List<string> problems)
         {
             if (registry.Parts.Count != manifest.parts.Length)
@@ -1168,6 +1138,7 @@ namespace BarPromenade.Editor
                     !string.Equals(binding.Group, part.group) ||
                     !string.Equals(binding.Sheet, part.sheet) ||
                     binding.Emissive != part.emissive ||
+                    binding.SurfaceUniqueUv != part.surface_unique_uv ||
                     binding.CastsShadows != part.casts_shadows)
                 {
                     problems.Add(
@@ -1175,7 +1146,7 @@ namespace BarPromenade.Editor
                 }
                 Material expected = part.role == "fire_flame"
                     ? sharedFlame
-                    : part.emissive ? sharedEmission : sharedLit;
+                    : part.emissive ? sharedEmission : part.surface_unique_uv ? sharedSurface : sharedLit;
                 if (renderer.sharedMaterial != expected)
                 {
                     problems.Add(
@@ -1210,6 +1181,13 @@ namespace BarPromenade.Editor
                         $"{expectedUvBounds}");
                 }
 
+                if (part.surface_unique_uv)
+                {
+                    if (Vector4.Distance(binding.BaseMapTransform, new Vector4(1f, 1f, 0f, 0f)) > UvTolerance ||
+                        !Contains(new Rect(0f, 0f, 1f, 1f), expectedUvBounds, UvTolerance))
+                        problems.Add($"unique part '{part.name}' lost its authored 0..1 UV0 or identity transform");
+                    continue;
+                }
                 MothersHouseInteriorAtlasContract atlas =
                     registry.PositiveAtlas;
                 if (atlas == null ||
@@ -1636,6 +1614,7 @@ namespace BarPromenade.Editor
             public float[] unity_bounds_min;
             public float[] unity_bounds_max;
             public MothersHouseKettleContract kettle_contract;
+            public MothersHouseSurfaceManifest surface_contract;
             public MothersHouseManifestAnchor[] anchors;
             public MothersHouseManifestPart[] parts;
             public string build_signature;
@@ -1696,6 +1675,7 @@ namespace BarPromenade.Editor
             public string sheet;
             public bool emissive;
             public bool casts_shadows;
+            public bool surface_unique_uv;
             public float[] tint;
             public int vertices;
             public int triangles;

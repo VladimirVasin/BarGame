@@ -1,0 +1,52 @@
+{
+  "design_id": "mothers_house_unique_surface_v1",
+  "mipmaps": true,
+  "windows_compression": "BC7",
+  "estimated_gpu_bytes": 29360208,
+  "gpu_budget_bytes": 31457280,
+  "sheets": [
+    {
+      "name": "MothersHouseSurfaceAtlas",
+      "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHouseSurfaceAtlas.source.png",
+      "sha256": "4c916a39eb83544c8bd314fcf3cc61b411be78cc35f547182da86bb59482fda8",
+      "size": 4096,
+      "sRGB": true,
+      "wrap": "Clamp",
+      "filter": "Trilinear",
+      "channels": [
+        "albedo_r",
+        "albedo_g",
+        "albedo_b"
+      ]
+    },
+    {
+      "name": "MothersHouseMaterialResponse",
+      "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHouseMaterialResponse.source.png",
+      "sha256": "879514e76d74e6ce5c5b00ded5deb1eb16124dde42acb03759bb9202d93975ae",
+      "size": 2048,
+      "sRGB": false,
+      "wrap": "Clamp",
+      "filter": "Trilinear",
+      "channels": [
+        "height_slope_u",
+        "height_slope_v",
+        "roughness",
+        "cavity"
+      ]
+    },
+    {
+      "name": "MothersHousePositiveAtlas",
+      "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHousePositiveAtlas.source.png",
+      "sha256": "c3e5380e1f73c9b9b51bd778acf4f9fd25076f57afbc1fec426da7a5fe62ec6b",
+      "size": 1024,
+      "sRGB": true,
+      "wrap": "Clamp",
+      "filter": "Bilinear",
+      "channels": [
+        "albedo_r",
+        "albedo_g",
+        "albedo_b"
+      ]
+    }
+  ]
+}

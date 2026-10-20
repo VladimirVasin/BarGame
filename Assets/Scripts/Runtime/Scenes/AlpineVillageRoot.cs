@@ -43,6 +43,7 @@ namespace BarPromenade
         public RetroAudioService Audio { get; private set; }
         public AlpineVillageMusicPlayer Music { get; private set; }
         public AlpineVillageSoundscape Soundscape { get; private set; }
+        public AlpineVillageLightingPresentation Lighting { get; private set; }
         public AlpineVillageLifeController Life { get; private set; }
         public VillageWorkroomController Workroom { get; private set; }
         public VillageOutdoorHelpController OutdoorHelp { get; private set; }
@@ -396,6 +397,10 @@ namespace BarPromenade
             phaseTimer.Restart();
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
+            var lightingObject = new GameObject("Village Lighting Presentation");
+            lightingObject.transform.SetParent(transform, false);
+            Lighting = lightingObject.AddComponent<AlpineVillageLightingPresentation>();
+            Lighting.Initialize(this);
             IsInitialized = true;
             BindColdExposure();
             GameLogPhases.Report("alpine_village", "ready", phaseTimer);

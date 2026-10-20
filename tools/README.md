@@ -61,10 +61,14 @@ source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 excep
 `Regenerate Junction Masks And Bake` resets them; both bake albedo/response atlases.
 R blends asphalt, also beneath snow; G is reference-only, without geometry/depth effects.
 
-`python tools/build-ground-surface-maps.py [--check]`: linear response; source albedos unchanged.
-`python tools/build-ground-surface-shader.py [--check]`: derives complete URP passes;
-recheck after upstream changes. Both checks are read-only. After map generation,
-call `VillageJunctionTextureSetup.BuildOrThrow` to rebake both atlases.
+`build-ground-surface-{maps,shader}.py --check`: read-only response/URP parity,
+albedos kept. Generate→`VillageJunctionTextureSetup.BuildOrThrow`: both
+junction atlases; recheck upstream changes.
+
+House: `build-mothers-house-interior-3d-model.py` via launcher;
+`build-mothers-house-textures.py`: 4K+2K/aux1K; both `--validate-only`.
+`build-mothers-house-shader.py --check`: URP parity. Packs/prompts/hashes:
+`ArtSource/MothersHouse/Textures/Source/generation.json`.
 
 `python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: UV maps/regions/hash;
 `ArtSource/Player/player-{clothing,body-hair}-surfaces.json`.
@@ -113,10 +117,8 @@ Residents: retain six bodies/earlier banks; nine clips/metre poses/hand contacts
 cloth-lid hinges. Hero: own bone-only bank, unchanged production prefab.
 `AreaCaptureFixture.VillageWorkroom`: dedicated imports/room journey in `Captures/VillageWorkroom`.
 
-The image-generated Alpine frost texture is a fixed source asset; its final
-prompt, hash and linear-mask import settings are recorded in
-[alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime only reveals and
-tints that bitmap; it does not generate images.
+Fixed Alpine frost: ImageGen/prompt/hash/linear import:
+[alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime reveal/tint only.
 
 `toolchain.json` pins versions. Inspect pins:
 

@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     /// <summary>Scene-owned sources for optional Clean lighting. Never creates a Light.</summary>
     [DisallowMultipleComponent]
-    public sealed class WarehouseCleanPresentation : MonoBehaviour
+    public sealed class WarehouseCleanPresentation : SceneLightingPresentation
     {
         public const int MaximumBounceRegions = 4;
         private const int InitialBounceRegions = 2;
@@ -17,6 +17,7 @@ namespace BarPromenade
         private static readonly int BounceColorsId = Shader.PropertyToID("_WarehouseBounceColors");
         private static readonly int BounceMinId = Shader.PropertyToID("_WarehouseBounceMin");
         private static readonly int BounceMaxId = Shader.PropertyToID("_WarehouseBounceMax");
+        private static readonly int BounceNormalsId = Shader.PropertyToID("_SceneBounceNormals");
         private static readonly int EffectsId = Shader.PropertyToID("_WarehouseCleanEffects");
 
         private struct BounceRegion
@@ -48,6 +49,7 @@ namespace BarPromenade
         private readonly Vector4[] colors = new Vector4[MaximumBounceRegions];
         private readonly Vector4[] minima = new Vector4[MaximumBounceRegions];
         private readonly Vector4[] maxima = new Vector4[MaximumBounceRegions];
+        private readonly Vector4[] normals = new Vector4[MaximumBounceRegions];
         private CombatTestRoot owner;
         private Light[] sources = Array.Empty<Light>();
         private bool initialized;
@@ -55,7 +57,9 @@ namespace BarPromenade
         public static WarehouseCleanPresentation Current { get; private set; }
         public WarehouseArenaMechanisms Mechanisms { get; private set; }
         public Light FanLight => Mechanisms != null ? Mechanisms.FanLight : null;
+        public override Light VolumeLight => FanLight;
         public IReadOnlyList<Light> LightSources => sources;
+        public override int HalationSourceCount => sources.Length;
         public WarehouseReflectionController Reflection { get; private set; }
         public int BounceRegionCount { get; private set; }
         public bool IsBlackout => GameSessionState.WarehouseFishLamp.Phase == WarehouseFishLampPhase.Burst;
@@ -84,7 +88,7 @@ namespace BarPromenade
             RefreshBounceOcclusion();
         }
 
-        public bool IsForCamera(Camera camera) => initialized && isActiveAndEnabled &&
+        public override bool IsForCamera(Camera camera) => initialized && isActiveAndEnabled &&
             owner != null && owner.isActiveAndEnabled && camera != null &&
             camera.cameraType == CameraType.Game && camera.gameObject.scene == gameObject.scene &&
             !camera.TryGetComponent(out ScenePresentationExclusion _);
@@ -97,7 +101,17 @@ namespace BarPromenade
             return true;
         }
 
-        public void PrepareForCamera(Camera camera)
+        public override bool TryGetHalationSource(int index, out SceneHalationSource source)
+        {
+            source = default;
+            if (index < 0 || index >= sources.Length) return false;
+            Light light = sources[index];
+            if (light == null || !light.isActiveAndEnabled || light.intensity <= .001f) return false;
+            source = new SceneHalationSource(light.transform.position, .18f, 1f);
+            return true;
+        }
+
+        public override void PrepareForCamera(Camera camera)
         {
             bool eligible = IsForCamera(camera);
             Reflection?.Prepare(eligible && GraphicsEffectsSettings.CleanReflectionsEnabled);
@@ -119,6 +133,7 @@ namespace BarPromenade
             Shader.SetGlobalVectorArray(BounceColorsId, colors);
             Shader.SetGlobalVectorArray(BounceMinId, minima);
             Shader.SetGlobalVectorArray(BounceMaxId, maxima);
+            Shader.SetGlobalVectorArray(BounceNormalsId, normals);
         }
 
         private void TryAddFanBounce(int side)
@@ -190,6 +205,7 @@ namespace BarPromenade
                 regions[slot] = new BounceRegion { Source = light, Center = center, Bounds = bounds,
                     DistanceSquared = (center - origin).sqrMagnitude, Visibility = 1f };
                 centers[slot] = new Vector4(center.x, center.y, center.z, 3.2f);
+                normals[slot] = Vector3.up;
                 minima[slot] = min; maxima[slot] = max;
                 return true;
             }
@@ -250,9 +266,14 @@ namespace BarPromenade
             }
         }
 
-        private void OnEnable() { if (initialized) Current = this; }
-        private void OnDisable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+            if (initialized) Current = this;
+        }
+        protected override void OnDisable()
+        {
+            base.OnDisable();
             if (Current != this) return;
             Shader.SetGlobalVector(EffectsId, Vector4.zero);
             Shader.SetGlobalInt(BounceCountId, 0);

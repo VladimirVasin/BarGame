@@ -8,6 +8,7 @@ float4 _WarehouseBounceCenters[4];
 float4 _WarehouseBounceColors[4];
 float4 _WarehouseBounceMin[4];
 float4 _WarehouseBounceMax[4];
+float4 _SceneBounceNormals[4];
 
 half3 WarehouseLocalBounce(float3 world, half3 normal)
 {
@@ -24,7 +25,7 @@ half3 WarehouseLocalBounce(float3 world, half3 normal)
         float3 incoming = toPatch * rsqrt(max(squared, .04));
         float reach = saturate(1.0 - squared /
             (_WarehouseBounceCenters[i].w * _WarehouseBounceCenters[i].w));
-        float emitter = saturate(-incoming.y);
+        float emitter = saturate(dot(_SceneBounceNormals[i].xyz, -incoming));
         float receiver = saturate(dot(normal, incoming));
         // The AABB stops transport behind the first occluder. Do not fade at
         // that clipped face: it is the actual receiver, not a free-space edge.

@@ -5,45 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-20
 
-Door-ambush debug commits cans/fish/key/lamp/fan/gate progress; retained models,
-colliders/navigation synchronize. Replay preserves progress without duplicate
-rewards; stages the hero at the door, cancellation restores his pose.
-Ordinary admission stays conditional. `debug.log`: `sample_failed` meant the
-closed gate blocked entry.
-`DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse` covers
-fresh-spawn preparation and retained progress; runtime proof remains manual.
-Door scene now attempts for three seconds, attacks for five, then punctures the
-shin and jerks the hero into an inverted physical roof hoist. The camera eases
-upside down, then gives free look while the hero stays struggling; escape and
-further progression are disabled. Frontal framing, aimed red lamp and smooth
-shared fan overdrive accompany the action. The existing overhead spotlight and
-lens follow the motor's normalized speed; one reused local light illuminates
-spark bursts. Blackout elsewhere stays; the opening camera is higher.
-The door's existing red source gets an owned paired-shot profile: aimed at both
-actors, warmer red and stronger, with shallow voltage dips; normal settings
-return on cancellation or gameplay handoff. Coverage and restoration are in the
-same focused fixture. Preview preserves prior injuries.
-Cancellation restores its snapshot; replay clears the owned hang. Paired-bank
-pinned validation and hook/floor/ceiling contact checks passed; focused fixture
-updated for the new contract. Visual and physical tuning await manual review.
-`check-docs.py` and scoped `git diff --check` OK.
-Native-only presentation replaces styles; saved SMAA/lens/4:3/warehouse effects
-retain global fog/lights/gameplay. Canon exception and actual tool baseline recorded.
-Native VHS ABI/mixer-reference checks OK after optical-effect removal.
-`OptionsPage_TogglesAndPersistsGraphicsFlag` OK.
-`GameCamera_NativeEffectsAndWarehouseLightingRemainStable` baseline/optimized
-proof OK; CS0618/C#/shader errors absent. Volume rail gaps and the
-fixture's empty view fixed; thin-feature shadow aliasing can remain.
-Volume keeps exact strata/repair, skips empty optical depth, uses conservative
-screen bounds and additive RGB resolve without a native colour copy. Halation
-projects sources once per camera. Fan shadow allocation needed no tuning.
-Probe timeout/quality-lease release/recovery checked; source changes rearm it.
-Wardrobe indexed loops remove per-query enumerators; bake/pose/ticks stay.
-HomeUrineEffect refreshes for live packets/emission/revised residue; idle-liquid
-regression OK. Capture lookups use FindAnyObjectByType.
-Schema 2 separates inclusive combat/NPC CPU, workload/drop, probe CPU/wall and
-whole-frame GPU evidence; unavailable recorders stay unavailable. Editor timings
-are diagnostic; optimization gains and player frame-rate guarantees unclaimed.
+Door-ambush preview commits prerequisites, syncs models/collision/navigation,
+stages the hero and avoids duplicate rewards. Cancel restores pose/vitals/grip/
+fan/red; replay retains injuries/progress. Closed gate explained sample_failed.
+DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse OK;
+tuning remains manual. Shin puncture/inverted hoist, free look/struggling,
+paired red/fan/spot/lens/sparks retain blackout and disabled escape/next.
+Paired-bank and hook/floor/ceiling contact checks passed.
+
+Native-only replaces styles; saved SMAA/lens/4:3/effects and fog/gameplay stay.
+Native VHS ABI/mixer, OptionsPage_TogglesAndPersistsGraphicsFlag and
+GameCamera_NativeEffectsAndWarehouseLightingRemainStable baseline/optimized OK.
+Rail-volume gaps/empty view fixed; thin shadow aliasing can remain.
+Optical-depth rejection, bounds, additive RGB/cached halation retain integration/
+fan-shadow budgets. Probe timeout/lease/recovery checked. Wardrobe query
+enumerators removed; HomeUrineEffect idle-liquid regression OK; captures use
+FindAnyObjectByType. CPU/workload/probe/wall/GPU schema separates availability;
+no frame-rate/effect-cost gain claimed.
+
+Village real-emitter halos/metal/terrain-normal snow bounce/spring reflection
+share ownership. User permits local air/snow lighting; facade/depth clipping
+preserves weather/interiors without new Light. AlpineVillageNativeLighting
+and shader hooks OK; pairs/resume recapture reviewed. Native state initializes
+with scene; readiness follows shader warmup, no seed-gust dependency.
+Shared warehouse visual gates passed; Direct3D12 GPU timing unavailable.
+
+Mother's house owns room halos/metal/bounce/weak air/living+bath reflections.
+Physical blockers survive cutaways; new bounce excludes the chair pool and
+live fire does not invalidate captures. Unique opaque UV0 now uses house-owned
+ImageGen pigments and aligned colour/physical response; material fields and
+neat cushion repairs retain care/matte wood/fabric. Box-mip source filtering
+prevents weave aliasing; structural packed-map seams/metric derivatives checked.
+Auxiliary cloth/glass/fire preserves scarf binding without large room maps.
+Geometry/anchors/kettle, passive mirror and mother's half-shadow stay.
+Pinned model validation, build-mothers-house-textures.py --validate-only and
+build-mothers-house-shader.py --check OK. MothersHouseNativeLighting OK:
+authored views/closeups, response pairs, import/budget/scarf and capture cleanup/
+stable fire/disable-resume verified. Cube paths warm before normal acceptance;
+runtime timeouts unchanged. GPU cost unmeasured.
+check-docs.py and git diff --check OK.
+check-workspace.py retains preexisting cache, temporary-scene, old-log and
+sibling-worktree leftovers.
 
 ## 2026-10-19
 

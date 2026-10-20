@@ -1,6 +1,6 @@
 // Project Lit retains the complete pinned URP pass and keyword layout.
 // LitShaderParityTests guards upgrades. The only forward lighting addition is
-// the scene-owned warehouse ambient visibility and bounded local bounce.
+// the scene-owned ambient visibility, bounded bounce and opt-in metal response.
 Shader "Bar Promenade/Lit"
 {
     Properties
@@ -45,9 +45,9 @@ Shader "Bar Promenade/Lit"
         _DetailNormalMapScale("Scale", Range(0.0, 2.0)) = 1.0
         [Normal] _DetailNormalMap("Normal Map", 2D) = "bump" {}
 
-        // SRP batching compatibility for Clear Coat (Not used in Lit)
-        [HideInInspector] _ClearCoatMask("_ClearCoatMask", Float) = 0.0
-        [HideInInspector] _ClearCoatSmoothness("_ClearCoatSmoothness", Float) = 0.0
+        // Reserved URP slots: Lit never shades clear coat. Preserve its CBUFFER.
+        [HideInInspector] _ClearCoatMask("Directional metal response", Float) = 0.0
+        [HideInInspector] _ClearCoatSmoothness("Matte metal contact smoothness", Float) = 0.0
 
         // Blending state
         _Surface("__surface", Float) = 0.0
@@ -189,11 +189,14 @@ Shader "Bar Promenade/Lit"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            #include "ProjectLitDirectionalLighting.hlsl"
             // Retain stock lighting before redirecting its forward PBR call.
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "WarehouseAmbientVisibility.hlsl"
-            #define UniversalFragmentPBR WarehouseFragmentPBR
+            #define UniversalFragmentPBR ProjectLitFragmentPBR
+            #define InitializeStandardLitSurfaceData ProjectLitSurfaceData
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl"
+            #undef InitializeStandardLitSurfaceData
             #undef UniversalFragmentPBR
             ENDHLSL
         }

@@ -1161,8 +1161,8 @@ namespace BarPromenade.Tests.PlayMode
                     MothersHouseInteriorAssetRegistry
                         .PositiveAtlasInsetPixels));
             Assert.That(atlas.SRgb, Is.True);
-            Assert.That(atlas.Mipmaps, Is.False);
-            Assert.That(atlas.Uncompressed, Is.True);
+            Assert.That(atlas.Mipmaps, Is.True);
+            Assert.That(atlas.Uncompressed, Is.False);
             Assert.That(atlas.WrapMode, Is.EqualTo(TextureWrapMode.Clamp));
             Assert.That(atlas.FilterMode, Is.EqualTo(FilterMode.Bilinear));
             Assert.That(
@@ -1171,7 +1171,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 atlas.Texture.filterMode,
                 Is.EqualTo(FilterMode.Bilinear));
-            Assert.That(atlas.Texture.mipmapCount, Is.EqualTo(1));
+            Assert.That(atlas.Texture.mipmapCount, Is.GreaterThan(1));
+            Assert.That(atlas.Texture.format, Is.EqualTo(TextureFormat.BC7));
             Assert.That(
                 atlas.Cells.Count,
                 Is.EqualTo(PositiveAtlasSheets.Length));
@@ -1212,8 +1213,8 @@ namespace BarPromenade.Tests.PlayMode
                 parts.Select(part => part.Renderer.sharedMaterial)
                     .Distinct()
                     .Count(),
-                Is.EqualTo(3),
-                "The room shares its lit, emission and animated flame materials.");
+                Is.EqualTo(4),
+                "The room shares its unique surface, auxiliary lit, emission and animated flame materials.");
 
             int baseMapId = Shader.PropertyToID("_BaseMap");
             int baseMapTransformId = Shader.PropertyToID("_BaseMap_ST");
@@ -1231,7 +1232,7 @@ namespace BarPromenade.Tests.PlayMode
                 Texture boundTexture = properties.GetTexture(baseMapId);
                 Assert.That(
                     boundTexture,
-                    Is.SameAs(atlas.Texture),
+                    Is.SameAs(part.SurfaceUniqueUv ? registry.SurfaceAtlas : atlas.Texture),
                     $"'{part.SourceName}' does not use the room atlas.");
                 Assert.That(
                     forbiddenTextures.Contains(boundTexture),
@@ -1243,26 +1244,25 @@ namespace BarPromenade.Tests.PlayMode
                         part.BaseMapTransform),
                     Is.LessThanOrEqualTo(0.00001f),
                     $"'{part.SourceName}' lost its serialized atlas ST.");
-                Assert.That(
-                    atlas.TryGetInsetCellBounds(
-                        part.Sheet,
-                        out Rect cellBounds),
-                    Is.True,
-                    part.Sheet);
-                AssertRectContains(
-                    cellBounds,
-                    part.TransformedUvBounds,
-                    0.00001f,
-                    $"'{part.SourceName}' samples outside '{part.Sheet}'.");
-                AssertRectApproximately(
-                    part.TransformedUvBounds,
-                    cellBounds,
-                    0.00001f,
-                    $"'{part.SourceName}' UV bounds were not normalized.");
+                if (part.SurfaceUniqueUv)
+                {
+                    Assert.That(part.BaseMapTransform, Is.EqualTo(new Vector4(1, 1, 0, 0)));
+                    AssertRectContains(new Rect(0, 0, 1, 1), part.TransformedUvBounds,
+                        0.00001f, $"'{part.SourceName}' escaped its unique house atlas.");
+                    Assert.That(properties.GetTexture("_SceneMaterialResponse"), Is.SameAs(registry.SurfaceResponse));
+                }
+                else
+                {
+                    Assert.That(atlas.TryGetInsetCellBounds(part.Sheet, out Rect cellBounds), Is.True, part.Sheet);
+                    AssertRectContains(cellBounds, part.TransformedUvBounds, 0.00001f,
+                        $"'{part.SourceName}' samples outside '{part.Sheet}'.");
+                    AssertRectApproximately(part.TransformedUvBounds, cellBounds, 0.00001f,
+                        $"'{part.SourceName}' UV bounds were not normalized.");
+                }
 
                 Color expectedTint = Color.white;
-                if (part.Emissive || part.Role == "firebox" ||
-                    part.Role == "fire_logs" || part.Role == "fire_ash" ||
+                if (part.Emissive || (!part.SurfaceUniqueUv && (part.Role == "firebox" ||
+                    part.Role == "fire_logs" || part.Role == "fire_ash")) ||
                     string.Equals(
                         part.Sheet,
                         "Fire",

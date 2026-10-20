@@ -14,6 +14,7 @@ namespace BarPromenade
         [SerializeField] private string sheet;
         [SerializeField] private bool emissive;
         [SerializeField] private bool castsShadows;
+        [SerializeField] private bool surfaceUniqueUv;
         [SerializeField] private Color tint;
         [SerializeField] private Rect sourceUvBounds;
         [SerializeField] private Vector4 baseMapTransform;
@@ -29,7 +30,8 @@ namespace BarPromenade
             Color configuredTint,
             Rect configuredSourceUvBounds,
             Vector4 configuredBaseMapTransform,
-            Renderer configuredRenderer)
+            Renderer configuredRenderer,
+            bool configuredSurfaceUniqueUv = false)
         {
             sourceName = configuredSourceName ?? string.Empty;
             role = configuredRole ?? string.Empty;
@@ -41,6 +43,7 @@ namespace BarPromenade
             sourceUvBounds = configuredSourceUvBounds;
             baseMapTransform = configuredBaseMapTransform;
             renderer = configuredRenderer;
+            surfaceUniqueUv = configuredSurfaceUniqueUv;
         }
 
         public string SourceName => sourceName;
@@ -49,6 +52,7 @@ namespace BarPromenade
         public string Sheet => sheet;
         public bool Emissive => emissive;
         public bool CastsShadows => castsShadows;
+        public bool SurfaceUniqueUv => surfaceUniqueUv;
         public Color Tint => tint;
         public Rect SourceUvBounds => sourceUvBounds;
         public Vector4 BaseMapTransform => baseMapTransform;
@@ -158,7 +162,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Serialized runtime proof for the unique positive room atlas. Atlas
+    /// Serialized runtime proof for the auxiliary positive palette. Atlas
     /// rows use Unity UV order: row zero starts at the texture bottom.
     /// </summary>
     [Serializable]
@@ -364,8 +368,8 @@ namespace BarPromenade
     /// <summary>
     /// Typed bridge from the deterministic Blender room to runtime plans.
     /// The FBX remains passive: collision, lights, camera and interaction are
-    /// plan-owned. Renderers share the project's two material assets and use
-    /// property blocks here for their baked-metre UVs and authored tints.
+    /// plan-owned. Unique UV0 surfaces share one physical material; auxiliary
+    /// glass/emission/fire retain the palette and their existing shared owners.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MothersHouseInteriorAssetRegistry : MonoBehaviour
@@ -374,8 +378,8 @@ namespace BarPromenade
             "MothersHouse/MothersHouseInterior3D";
         public const string PositiveAtlasResourcePath =
             "MothersHouse/Textures/MothersHousePositiveAtlas";
-        public const int PositiveAtlasWidth = 1254;
-        public const int PositiveAtlasHeight = 1254;
+        public const int PositiveAtlasWidth = 1024;
+        public const int PositiveAtlasHeight = 1024;
         public const int PositiveAtlasColumns = 4;
         public const int PositiveAtlasRows = 4;
         public const int PositiveAtlasInsetPixels = 2;
@@ -394,6 +398,7 @@ namespace BarPromenade
             Shader.PropertyToID("_Metallic");
         private static readonly int EmissionColorId =
             Shader.PropertyToID("_EmissionColor");
+        private static readonly int ResponseId = Shader.PropertyToID("_SceneMaterialResponse");
 
         [SerializeField] private Transform modelRoot;
         [SerializeField] private MothersHouseInteriorAnchorBinding[] anchors =
@@ -402,6 +407,7 @@ namespace BarPromenade
             Array.Empty<MothersHouseInteriorPartBinding>();
         [SerializeField]
         private MothersHouseInteriorAtlasContract positiveAtlas;
+        [SerializeField] private MothersHouseInteriorSurfaceContract surfaceContract;
         [SerializeField] private Bounds localBounds;
         [SerializeField] private MothersHouseInteriorDimensions dimensions;
         [SerializeField] private int sourceTriangleCount;
@@ -415,6 +421,9 @@ namespace BarPromenade
         public IReadOnlyList<MothersHouseInteriorPartBinding> Parts => parts;
         public MothersHouseInteriorAtlasContract PositiveAtlas =>
             positiveAtlas;
+        public MothersHouseInteriorSurfaceContract SurfaceContract => surfaceContract;
+        public Texture2D SurfaceAtlas => surfaceContract?.Albedo;
+        public Texture2D SurfaceResponse => surfaceContract?.Response;
         public Bounds LocalBounds => localBounds;
         public MothersHouseInteriorDimensions Dimensions => dimensions;
         public int SourceTriangleCount => sourceTriangleCount;
@@ -475,7 +484,8 @@ namespace BarPromenade
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            MothersHouseInteriorSurfaceContract configuredSurfaceContract = null)
         {
             modelRoot = configuredModelRoot;
             anchors = configuredAnchors ??
@@ -483,6 +493,7 @@ namespace BarPromenade
             parts = configuredParts ??
                 Array.Empty<MothersHouseInteriorPartBinding>();
             positiveAtlas = configuredPositiveAtlas;
+            surfaceContract = configuredSurfaceContract;
             localBounds = configuredLocalBounds;
             dimensions = configuredDimensions;
             sourceTriangleCount = configuredSourceTriangleCount;
@@ -501,6 +512,7 @@ namespace BarPromenade
                     "missing or invalid.");
             }
 
+            bool surfaceValid = surfaceContract != null && surfaceContract.IsConfigured;
             var properties = new MaterialPropertyBlock();
             for (int index = 0; index < parts.Length; index++)
             {
@@ -511,6 +523,8 @@ namespace BarPromenade
                 }
 
                 Renderer renderer = part.Renderer;
+                if (part.SurfaceUniqueUv && !surfaceValid)
+                    throw new InvalidOperationException("The mother's house unique surface contract is missing or invalid.");
                 renderer.shadowCastingMode = part.CastsShadows
                     ? ShadowCastingMode.On
                     : ShadowCastingMode.Off;
@@ -519,7 +533,9 @@ namespace BarPromenade
                 ApplySheet(
                     properties,
                     part,
-                    positiveAtlas.Texture);
+                    part.SurfaceUniqueUv ? surfaceContract.Albedo : positiveAtlas.Texture);
+                if (part.SurfaceUniqueUv)
+                    properties.SetTexture(ResponseId, surfaceContract.Response);
                 renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }
@@ -535,7 +551,7 @@ namespace BarPromenade
             properties.SetTexture(BaseMapId, atlas);
             properties.SetVector(
                 BaseMapTransformId,
-                part.BaseMapTransform);
+                part.SurfaceUniqueUv ? new Vector4(1f, 1f, 0f, 0f) : part.BaseMapTransform);
 
             if (part.Emissive ||
                 string.Equals(part.Sheet, "Fire", StringComparison.Ordinal))
@@ -551,9 +567,9 @@ namespace BarPromenade
             Color cleanTint = Color.white;
             // Local soot and char belong only inside the hearth. The rest
             // of the cared-for room keeps its unmultiplied positive atlas.
-            if (string.Equals(part.Role, "firebox", StringComparison.Ordinal) ||
+            if (!part.SurfaceUniqueUv && (string.Equals(part.Role, "firebox", StringComparison.Ordinal) ||
                 string.Equals(part.Role, "fire_logs", StringComparison.Ordinal) ||
-                string.Equals(part.Role, "fire_ash", StringComparison.Ordinal))
+                string.Equals(part.Role, "fire_ash", StringComparison.Ordinal)))
             {
                 cleanTint = part.Tint;
             }
