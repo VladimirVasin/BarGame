@@ -26,19 +26,15 @@ namespace BarPromenade.Tests.EditMode
             Shader.PropertyToID("_BaseMap");
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
-        private static readonly int SmoothnessId =
-            Shader.PropertyToID("_Smoothness");
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
 
         private static readonly string[] ExpectedTextureSheets =
         {
-            "CafeExteriorDetail",
-            "CafeInteriorDetail",
-            "CafeCounterDetail",
-            "CafeMetalDetail",
-            "CafePropsDetail",
             "CafeGlassDetail",
+            "CafeCounterDetail",
+            "MountainRoadCafeSurfaceAtlas",
+            "MountainRoadCafeSurfaceResponse",
         };
 
         [Test]
@@ -77,13 +73,26 @@ namespace BarPromenade.Tests.EditMode
                 Has.Length.EqualTo(ExpectedPropCount));
             Assert.That(manifest.collider_descriptors,
                 Has.Length.EqualTo(ExpectedColliderDescriptorCount));
-            Assert.That(manifest.textures, Has.Length.EqualTo(6));
+            Assert.That(manifest.textures, Has.Length.EqualTo(4));
             Assert.That(
                 manifest.textures.Select(texture => texture.sheet),
                 Is.EquivalentTo(ExpectedTextureSheets));
-            Assert.That(manifest.textures.All(texture =>
-                    texture.width == 512 && texture.height == 512),
+            Assert.That(manifest.textures.All(texture => texture.width == texture.height &&
+                    texture.width == (texture.sheet == "MountainRoadCafeSurfaceAtlas" ? 4096 :
+                        texture.sheet == "MountainRoadCafeSurfaceResponse" ? 2048 : 512)),
                 Is.True);
+            Assert.That(manifest.surface_contract.base_texels_per_metre, Is.GreaterThanOrEqualTo(80f));
+            Assert.That(manifest.surface_contract.material_tint_baked_once, Is.True);
+            foreach (CafePart part in manifest.parts)
+            {
+                bool expectedUnique = !part.emissive && part.sheet != "CafeGlassDetail" &&
+                    part.sheet != "CafeWarmEmission" && part.sheet != "CafeCoffee" &&
+                    part.role != "menu_cover" && part.role != "menu_pages";
+                Assert.That(part.unique_surface, Is.EqualTo(expectedUnique), part.name);
+                Assert.That(part.uv_channel_count, Is.EqualTo(expectedUnique ? 2 : 1), part.name);
+                Assert.That(part.uv1_signature, Has.Length.EqualTo(64), part.name);
+                if (expectedUnique) Assert.That(part.uv0_signature, Has.Length.EqualTo(64), part.name);
+            }
             Assert.That(manifest.overlap_count, Is.Zero,
                 "Broad coplanar overlaps reintroduce visible flicker.");
             AssertDoorHeaderClosesFacade(manifest);
@@ -138,7 +147,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     part.uv_strategy,
                     Is.EqualTo(
-                        "single_inset_appliance_patch_without_pattern_edges"),
+                        "unique_guarded_uniform_metric_axes_uv0_original_uv1"),
                     name);
             }
             foreach (string name in new[] { "Cafe_Stove", "Cafe_FryingPan" })
@@ -150,7 +159,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     part.uv_strategy,
                     Is.EqualTo(
-                        "single_inset_appliance_patch_without_pattern_edges"),
+                        "unique_guarded_uniform_metric_axes_uv0_original_uv1"),
                     name);
             }
             CafePart taskLens = manifest.parts.Single(part =>
@@ -518,6 +527,24 @@ namespace BarPromenade.Tests.EditMode
             AssertPassiveKitchenBindings(registry);
             AssertPassiveHeroMenuBindings(registry);
             registry.ApplyAppearance();
+            MountainRoadCafePartBinding menuCover = RequirePart(registry, "Cafe_MenuCover");
+            Assert.That(MountainRoadCafeSurfaceAppearance.IsUnique(menuCover), Is.False);
+            Assert.That(menuCover.Renderer.sharedMaterial, Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+            var menuProperties = new MaterialPropertyBlock();
+            menuCover.Renderer.GetPropertyBlock(menuProperties);
+            Assert.That(menuProperties.GetTexture(BaseMapId),
+                Is.SameAs(Resources.Load<Texture2D>(MountainRoadCafeSurfaceAppearance.CounterTextureResourcePath)));
+            foreach (MountainRoadCafePartBinding part in registry.Parts)
+            {
+                if (!MountainRoadCafeSurfaceAppearance.IsUnique(part)) continue;
+                Assert.That(part.Renderer.sharedMaterial, Is.SameAs(MountainRoadSurfaceLibrary.SharedMaterial));
+                MeshFilter filter = part.Renderer.GetComponent<MeshFilter>();
+                Assert.That(filter, Is.Not.Null, part.SourceName);
+                Assert.That(filter.sharedMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord1),
+                    Is.True, part.SourceName);
+                Assert.That(filter.sharedMesh.GetVertexAttributeDimension(UnityEngine.Rendering.VertexAttribute.TexCoord1),
+                    Is.EqualTo(2), part.SourceName);
+            }
             AssertSharedTransparentGlass(registry);
             AssertApplianceAppearance(registry);
         }
@@ -525,42 +552,16 @@ namespace BarPromenade.Tests.EditMode
         private static void AssertApplianceAppearance(
             MountainRoadCafeAssetRegistry registry)
         {
-            AssertSurface(
-                RequirePart(registry, "Cafe_RefrigeratorBody").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
-                new Color(0.68f, 0.69f, 0.54f, 1f),
-                0.45f,
-                0.05f);
-            AssertSurface(
-                RequirePart(registry, "Cafe_RefrigeratorCavity").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
-                new Color(0.78f, 0.81f, 0.70f, 1f),
-                0.38f,
-                0.02f);
-            AssertSurface(
-                RequirePart(registry, "Cafe_RefrigeratorShelves").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
-                new Color(0.62f, 0.72f, 0.70f, 1f),
-                0.34f,
-                0.12f);
-            AssertSurface(
-                RequirePart(registry, "Cafe_FridgeDoor").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
-                new Color(0.68f, 0.69f, 0.54f, 1f),
-                0.45f,
-                0.05f);
-            AssertSurface(
-                RequirePart(registry, "Cafe_Stove").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail",
-                new Color(0.88f, 0.91f, 0.86f, 1f),
-                0.36f,
-                0.16f);
-            AssertSurface(
-                RequirePart(registry, "Cafe_FryingPan").Renderer,
-                "MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail",
-                new Color(0.56f, 0.59f, 0.56f, 1f),
-                0.30f,
-                0.35f);
+            foreach (var part in new[]
+                     {
+                         new { Name = "Cafe_RefrigeratorBody", Metallic = .05f },
+                         new { Name = "Cafe_RefrigeratorCavity", Metallic = .02f },
+                         new { Name = "Cafe_RefrigeratorShelves", Metallic = .12f },
+                         new { Name = "Cafe_FridgeDoor", Metallic = .05f },
+                         new { Name = "Cafe_Stove", Metallic = .16f },
+                         new { Name = "Cafe_FryingPan", Metallic = .35f },
+                     })
+                AssertSurface(RequirePart(registry, part.Name).Renderer, part.Metallic);
             AssertColdTaskLens(
                 RequirePart(registry, "Cafe_StoveTaskLens"));
         }
@@ -586,13 +587,10 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertSurface(
             Renderer renderer,
-            string texturePath,
-            Color expectedColor,
-            float expectedSmoothness,
             float expectedMetallic)
         {
-            Texture2D expectedTexture = Resources.Load<Texture2D>(texturePath);
-            Assert.That(expectedTexture, Is.Not.Null, texturePath);
+            Texture2D expectedTexture = Resources.Load<Texture2D>(MountainRoadCafeSurfaceAppearance.UniqueAlbedoResourcePath);
+            Assert.That(expectedTexture, Is.Not.Null);
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             Assert.That(
@@ -601,11 +599,11 @@ namespace BarPromenade.Tests.EditMode
                 renderer.name);
             AssertColorNear(
                 properties.GetColor(BaseColorId),
-                expectedColor,
+                Color.white,
                 renderer.name);
             Assert.That(
-                properties.GetFloat(SmoothnessId),
-                Is.EqualTo(expectedSmoothness).Within(0.001f),
+                properties.GetTexture(Shader.PropertyToID("_SceneMaterialResponse")),
+                Is.SameAs(Resources.Load<Texture2D>(MountainRoadCafeSurfaceAppearance.UniqueResponseResourcePath)),
                 renderer.name);
             Assert.That(
                 properties.GetFloat(MetallicId),
@@ -1007,11 +1005,19 @@ namespace BarPromenade.Tests.EditMode
             public int cup_assembly_count;
             public CafeKitchenContract kitchen_contract;
             public CafeMenuContract menu_contract;
+            public CafeSurfaceContract surface_contract;
             public CafeTexture[] textures;
             public CafePart[] parts;
             public CafeAnchor[] anchors;
             public CafeDynamicProp[] dynamic_props;
             public CafeCollider[] collider_descriptors;
+        }
+
+        [Serializable]
+        private sealed class CafeSurfaceContract
+        {
+            public float base_texels_per_metre;
+            public bool material_tint_baked_once;
         }
 
         [Serializable]
@@ -1058,6 +1064,10 @@ namespace BarPromenade.Tests.EditMode
             public string sheet;
             public string base_surface;
             public string uv_strategy;
+            public bool unique_surface;
+            public string uv0_signature;
+            public string uv1_signature;
+            public int uv_channel_count;
             public bool emissive;
             public bool shadows;
             public bool initially_visible;

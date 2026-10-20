@@ -133,7 +133,7 @@ namespace BarPromenade.Rendering
                 GraphicsEffectsSettings.CleanBounceEnabled ? 1f : 0f, 0f) : Vector4.zero;
             SceneLocalLightParameters localLights = null;
             if (cleanWorld && GraphicsEffectsSettings.CleanVolumeEnabled && villageVolumePass != null &&
-                lighting is IAlpineVillageLightVolumeSource village && villageVolumePass.Setup(cameraData.camera, village))
+                lighting is ISceneLocalLightVolumeSource local && villageVolumePass.Setup(cameraData.camera, local))
             {
                 villageVolumeScheduled = true;
                 localLights = villageVolumePass.Parameters;
@@ -326,6 +326,7 @@ namespace BarPromenade.Rendering
                         out PassData data);
                 data.CleanEffects = cleanEffects;
                 data.LocalLights.CopyFrom(localLights);
+                data.LocalLights.ResolveShadowIndices(frameData.Get<UniversalLightData>());
                 data.InteriorAirCount = interiorAirCount;
                 data.SurfaceReflectionCount = surfaceReflectionCount;
                 // The pass writes no texture, so the graph would prune it.

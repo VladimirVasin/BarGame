@@ -395,6 +395,9 @@ namespace BarPromenade
 
             if (instance.GetComponentInParent<VillageSurfaceScope>() != null)
                 VillageSurfaceAppearance.Apply(instance.GetComponent<Renderer>(), surface, tint);
+            else if (MountainRoadSurfaceLibrary.IsScoped(instance.GetComponent<Renderer>()))
+                MountainRoadSurfaceLibrary.Apply(instance.GetComponent<Renderer>(), surface,
+                    SurfaceAppearanceCore.ResolveBoxProjection(instance.GetComponent<Renderer>()), tint);
             else MountainRoadSurfaceAppearance.Apply(
                 instance.GetComponent<Renderer>(),
                 surface,
@@ -414,6 +417,8 @@ namespace BarPromenade
 
             if (instance.GetComponentInParent<VillageSurfaceScope>() != null)
                 VillageSurfaceAppearance.Apply(instance.GetComponent<Renderer>(), surface, projection, tint);
+            else if (MountainRoadSurfaceLibrary.IsScoped(instance.GetComponent<Renderer>()))
+                MountainRoadSurfaceLibrary.Apply(instance.GetComponent<Renderer>(), surface, projection, tint);
             else MountainRoadSurfaceAppearance.Apply(
                 instance.GetComponent<Renderer>(),
                 surface,

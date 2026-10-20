@@ -1,0 +1,57 @@
+{
+  "generator": "image_gen (built-in)",
+  "date": "2026-10-20",
+  "purpose": "Alpine Road-owned offline pigment ingredients; physical height slopes, roughness and cavity are authored independently in metres.",
+  "images": [
+    {
+      "name": "Mineral",
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: cold muted grey-green layered raw stone, broad bedding and restrained fractures/mineral seams, not outlined masonry. Top right: aged grey service concrete, fine aggregate, faint repairs and quiet weathering, no large dark stains. Bottom left: old muted grey-olive lime plaster and paint, fine mineral texture, soft maintained patches, no dramatic peeling. Bottom right: cold dark grey alpine asphalt, small non-directional aggregate, understated frost cracks and cut repairs; no lane marks, wheel tracks, travel direction, snow or standing water.",
+      "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadMineral.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "42be79973f7aff531966656457a166538194402c724c725868ddb869595ead64"
+    },
+    {
+      "name": "Nature",
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: cold grey-white wind-packed mountain snow, quiet fine grain and very faint sastrugi bands, sparse wind-carried grit; no footprints or blue shadows. Top right: dark damp humus with embedded needles, tiny stones and restrained scree, no grass or large leaf shapes. Bottom left: grey-brown conifer bark with vertical furrows and quiet age checks, natural broad scale; no tree silhouette or spiralling grain. Bottom right: dense desaturated dark green conifer needle pigment clusters with small dark gaps, no isolated repeated sprig, no leaves or branch silhouette, no alpha background.",
+      "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadNature.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "21f86afbd0d8d18a1bb126ddfc629320f48f26af82cf1d5c11e62943c8083511"
+    },
+    {
+      "name": "Finish",
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: restrained aged brown-grey iron oxidation mottling, patches of worn dull steel, quiet irregular pitting, no theatrical red rust or orange stripes. Top right: old muted grey-green painted steel, small rubbed edges and faint scuffs within pigment, no screws, rivets, grids or panel seams. Bottom left: used pale grey-ivory enamel, slight subdued colour variation, clean working surface, no gloss or chips drawn as shadows. Bottom right: faded grey-olive service paint with tiny restrained wear and soft brush texture, no flaking silhouettes, hardware or symbols. All colours are desaturated; no red paint.",
+      "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadFinish.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "fa9fcede519b46118dff9f13a7617e7255813649937fba738d65c25367df1849"
+    },
+    {
+      "name": "Wood",
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: weathered continuous grey-brown conifer timber grain with restrained age checks, vertical grain, no plank joints. Top right: muted pale oatmeal pine grain, vertical, sparse small soft knots, no plank joints. Bottom left: aged muted warm oak grain with quiet broad cathedrals, vertical, no decorative figure or plank joints. Bottom right: dark desaturated grey-brown walnut grain, vertical and restrained rubbed age, no black fissures or plank joints. Dry matte timber with calm structural variation, no varnish shine or photographic micro-noise.",
+      "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadWood.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "0458ba66adc4aef6d95eccdd06b8346830c3910cde35a3646a73218470d971b5"
+    },
+    {
+      "name": "Fabric",
+      "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: old undyed grey-beige linen canvas, calm visible regular weave, light handling wear, no seams. Top right: faded muted brown-burgundy cloth, dense quiet weave and modest rubbing, no patterns or stitching. Bottom left: blank warm grey-cream paper, faint fibres and restrained handling age, no writing, drawings, stains or tears. Bottom right: matte charcoal rubber, soft worn texture with sparse faint scuffs, no tread, holes or object contours.",
+      "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadFabric.source.png",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "0c8845051056004b2ac0b2580d05bc80a6cfcf3d2c480cb0f2e0a0594f802c4e"
+    }
+  ]
+}

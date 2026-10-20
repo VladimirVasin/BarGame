@@ -34,9 +34,15 @@ Shader "Bar Promenade/City Atmosphere Particle"
             #pragma fragment AtmosphereFragment
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            #define _SURFACE_TYPE_TRANSPARENT 1
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
+            #define BAR_PROMENADE_LOCAL_LIGHT_SHADOWS 1
             #include "AlpineVillageLocalLighting.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -62,6 +68,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 half fogFactor : TEXCOORD1;
                 float eyeDepth : TEXCOORD2;
                 half3 localLighting : TEXCOORD3;
+                float3 positionWS : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -76,7 +83,11 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 output.positionCS = positionInputs.positionCS;
                 output.uv = input.uv;
                 output.color = input.color * _BaseColor;
-                output.localLighting = AlpineLocalParticleLighting(positionInputs.positionWS);
+                output.positionWS = positionInputs.positionWS;
+                // Preserve the accepted village vertex path. Structural/road
+                // sources use exact particle fragments, not interpolated shadows.
+                output.localLighting = _AlpineLocalLightingPerPixel != 0 ? 0 :
+                    AlpineLocalParticleLighting(positionInputs.positionWS, false);
 
                 float viewZ =
                     -TransformWorldToView(positionInputs.positionWS).z;
@@ -121,8 +132,10 @@ Shader "Bar Promenade/City Atmosphere Particle"
                     max(_SoftParticleDistance, 0.01h));
 
                 half alpha = input.color.a * shape * depthFade;
+                half3 lighting = _AlpineLocalLightingPerPixel != 0 ?
+                    AlpineLocalParticleLighting(input.positionWS, true) : input.localLighting;
                 half3 color =
-                    MixFog(input.color.rgb + input.localLighting * input.color.rgb, input.fogFactor);
+                    MixFog(input.color.rgb + lighting * input.color.rgb, input.fogFactor);
                 return half4(color, alpha);
             }
             ENDHLSL

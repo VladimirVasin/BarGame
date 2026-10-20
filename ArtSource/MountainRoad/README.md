@@ -1,4 +1,13 @@
-# Mountain Road surface albedos
+# Mountain Road surface authoring
+
+The road scene uses local maps under `Surfaces/`: ImageGen pigment sources,
+independent physical fields and the cafe's unique charts. Publish/validate with
+`tools/build-mountain-road-surface-textures.py [--validate-only]`; shader parity:
+`tools/build-mountain-road-surface-shader.py --check`. The cafe model generator
+owns unique UV0 while preserving original UV1. Scope/budget: `ai/architecture-notes.md`.
+
+The remaining sections document retained **legacy donor tooling** and its raw
+recipes, still used outside the scoped road refresh.
 
 Source of record for the six sheets the mountain road prints for itself, in
 `Assets/Resources/Textures/MountainRoad*.png`, and for the nine sheets it

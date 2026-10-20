@@ -7,7 +7,7 @@
 - Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, Navigation `2.0.15`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC: native/SMAA High; saved effects for warehouse/village/mother's house; shared grade/UI.
+- PC: native/SMAA High; saved local effects for warehouse/road/village/mother's house; shared grade/UI.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -111,7 +111,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
-- Mountain/village areas, cableway/interiors; village local physical maps/unique closeups.
+- Mountain/village/cableway/interiors; local physical maps/unique closeups.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.

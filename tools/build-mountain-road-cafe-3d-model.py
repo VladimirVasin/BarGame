@@ -44,9 +44,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
+import mountain_road_cafe_surfaces as cafe_surfaces  # noqa: E402
 
 
-GENERATOR_VERSION = "1.2.1"
+GENERATOR_VERSION = "1.3.0"
 DESIGN_ID = "mountain_road_cafe_nighthawks_v1"
 DISPLAY_NAME = "Bar Promenade Mountain Road Nighthawks Cafe"
 EXPECTED_MESH_COUNT = 61
@@ -661,7 +662,7 @@ def generate_textures(write: bool) -> list[dict]:
     for kind, filename in TEXTURE_FILES.items():
         payload = texture_payload(kind)
         path = TEXTURE_DIR / filename
-        if write:
+        if write and kind == "CafeGlassDetail":
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(payload)
         records.append({
@@ -2453,6 +2454,10 @@ def signature_for(asset: AssetBuild, textures: Sequence[dict]) -> str:
         "colliders": COLLIDER_DESCRIPTORS,
         "textures": [{"sheet": item["sheet"], "sha256": item["sha256"]}
                      for item in textures],
+        "surface_uv": [{"name": part.name,
+                        "uv": [[stable(value) for value in loop.uv]
+                               for loop in part.obj.data.uv_layers[0].data]}
+                       for part in asset.parts],
     }
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True,
                          separators=(",", ":"))
@@ -2468,6 +2473,7 @@ def manifest_for(
     report: dict,
     signature: str,
     textures: Sequence[dict],
+    surface_contract: dict,
 ) -> dict:
     return {
         "generator": "tools/build-mountain-road-cafe-3d-model.py",
@@ -2535,6 +2541,15 @@ def manifest_for(
             "text_line_height_m": 0.028,
         },
         "surface_contract": {
+            "unique_surface_design": surface_contract["design_id"],
+            "albedo": surface_contract["albedo"],
+            "response": surface_contract["response"],
+            "albedo_size": surface_contract["albedo_size"],
+            "response_size": surface_contract["response_size"],
+            "geometry_signature": surface_contract["geometry_signature"],
+            "uv_signature": surface_contract["uv_signature"],
+            "base_texels_per_metre": surface_contract["projection"]["base_texels_per_metre"],
+            "material_tint_baked_once": True,
             "opaque_detail_min_clearance_m": OPAQUE_DETAIL_CLEARANCE,
             "glass_layers_per_pane": 1,
             "liquid_wall_clearance_m": LIQUID_WALL_CLEARANCE,
@@ -2550,7 +2565,7 @@ def manifest_for(
         "budgets": {
             "maximum_renderers": 90,
             "maximum_triangles": 45000,
-            "maximum_textures": 6,
+            "maximum_textures": 4,
             "runtime_collider_descriptors": 17,
             "imported_colliders": 0,
             "imported_lights": 0,
@@ -2596,7 +2611,15 @@ def manifest_for(
                 "group": part.group,
                 "sheet": part.sheet,
                 "base_surface": BASE_SURFACE[part.sheet],
+                **{key: row[key] for row in surface_contract["parts"] if row["mesh"] == part.name
+                   for key in ("unique_surface", "family", "uv1_signature", "uv_channel_count")},
+                "surface_family": next(row["family"] for row in surface_contract["parts"] if row["mesh"] == part.name),
+                **{key: row[key] for row in surface_contract["parts"] if row["mesh"] == part.name and row["unique_surface"]
+                   for key in ("uv0_signature",)},
                 "uv_strategy": (
+                    "unique_guarded_uniform_metric_axes_uv0_original_uv1"
+                    if cafe_surfaces.selected(part)
+                    else
                     "single_inset_appliance_patch_without_pattern_edges"
                     if uses_appliance_panel_patch(part)
                     else "semantic_sha256_quarter_turn_plus_offset_metres"
@@ -2724,6 +2747,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--preview", type=Path, default=DEFAULT_PREVIEW)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--skip-preview", action="store_true")
+    parser.add_argument("--surface-layout-only", action="store_true")
+    parser.add_argument("--reuse-surfaces", action="store_true",
+                        help="Validate and reuse unchanged physical maps while exporting model metadata.")
     arguments = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     return parser.parse_args(arguments)
 
@@ -2733,8 +2759,14 @@ def main() -> None:
     textures = generate_textures(write=not args.validate_only)
     asset = build()
     report = validate(asset, textures)
+    surfaces = cafe_surfaces.prepare(asset, validate_only=args.validate_only or args.reuse_surfaces,
+                                    layout_only=args.surface_layout_only,
+                                    sample_pixel=texture_pixel, panel_region=appliance_panel_region)
+    if args.surface_layout_only:
+        return
+    textures = [row for row in textures if row["sheet"] in {"CafeGlassDetail", "CafeCounterDetail"}] + cafe_surfaces.textures(surfaces)
     signature = signature_for(asset, textures)
-    payload = manifest_for(asset, report, signature, textures)
+    payload = manifest_for(asset, report, signature, textures, surfaces)
     if not args.validate_only:
         export_fbx(asset, args.fbx)
         if not args.skip_preview:

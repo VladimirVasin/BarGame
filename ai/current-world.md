@@ -671,17 +671,17 @@ cemetery:own interiors/returns.
   `48 / 120 / 110 m` far planes are render distance rather than low physical
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
-- native/SMAA High/default-on: three passes after native/intoxication, then
-  4:3/UI/nameplates; no previews/probes. Saved warehouse/village/house flags:
-  `SceneLightingPresentation` (4 owners). Warehouse: 256 cube, fan 320x180/12-step
-  shadow volume, WornSteel/2 floor patches. Village: <=24 halos;
-  <=4 window/garland sources light air/snow at 320x180/10 steps, facade/depth clipping
-  no small-object shadows; <=4 terrain-normal snow bounces, aged-metal MPBs,
-  one filtered 256 water/stone cube via `SceneReflectionCapture`.
-  Mother's House: real-light halos/metal/room bounce/weak air;
-  two 256 HDR cubes: living/tea+bathroom, one pending. Roughness,
-  atlas/mother's half-shadow/passive mirror stay. Lights/fog/weather/story stay;
-  lodge stays. Intoxication: vignette/ghost/chromatic/warp/warmth/exposure;
+- native/SMAA High/default-on:three passes after native/intoxication, then 4:3/UI;
+  previews/probes excluded. Saved warehouse/road/village/house effects:
+  `SceneLightingPresentation` (4 owners). Warehouse:shadowed fan/steel/floor bounce.
+  Village:bounded window/garland air-snow/facade-depth clip (no small-object
+  shadows), snow-normal bounce/metal/spring cube. House:room halos/metal/bounce/
+  weak air; living-tea/bath cubes, one pending; atlas/half-shadow/passive mirror stay.
+  Road:bounded air/snow/live headlights/halos/metal/bounce;cafe/station cubes,
+  one pending; moving actors/props/car/snow excluded; headlights/tunnel flicker
+  never recapture. Shared ownership/cleanup/filtered256; GPU cost unmeasured.
+  Lights/fog/weather/story/lodge stay.
+  Intoxication:vignette/ghost/chromatic/warp/warmth/exposure;
 - DoF: shared setting, exterior Gaussian far blur;
   Bar/Supermarket/Stairwell/Home/Church/Mother's House radius `0.55`
   keeps nearby people/furniture/gestures legible. Priority-10 Bokeh serves
@@ -1998,12 +1998,12 @@ cemetery:own interiors/returns.
   with a cold emissive lens. Its widened bisector cone contains the stove and
   pan task surface as well as all four figures, where it works with the wash to
   keep the tableau readable. These remain the cafe's three runtime Lights and
-  still miss the terrace, parapet and black brink. Six neutral semantic
-  detail sheets partition exterior, interior, counter, metal, props and glass;
-  authored UV regions and a zero-overlap validator prevent repeated samples,
-  stretching and flicker without a new base hue, readable brand, `PHILLIES`,
-  `5¢`, price, city background or object text beyond the menu's exactly three
-  localized item names.
+  still miss the terrace, parapet and black brink. `MountainRoadSurfaceLibrary`
+  owns 15 pigment/physical families; palette/metre UVs stay. Cafe
+  unique UV0 uses 4K colour/2K response, UV1 intact. Signed
+  slopes/roughness/cavity differ from pigment; ground keeps format,
+  UV4/wind. BC7≤80MiB includes auxiliary maps. Glass/emission/menu/water/
+  cast/car stay; no new text/brand/price/background.
   The four cast members also use role-specific `256 px` detail atlases and
   curved/multi-segment geometry at the current Hero V2 fidelity level; these
   atlases cover face, clothing, hair/headwear and shoes through the shared

@@ -1,6 +1,71 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-20, whole Mountain Road material surfaces — explicit user decision:**
+  Art §10f/story §6: local pigment/physical maps replace borrowed environment
+  sheets and the cafe's six-sheet format. The same fifteen road kinds retain
+  palette, tint and metre UVs. `MountainRoadSurfaceLibrary` scopes the new
+  resources to the road; City/village/Home donors and characters/car stay.
+  Repeat colour is mainly 1K, selected asphalt/stone/bark 2K; response is half
+  size. Cafe opaque charts use uniform guarded UV0 at least 80 px/m, 4K colour
+  and aligned 2K response; original metre UV1, mesh geometry, anchors/collision,
+  cast contacts and cameras remain intact. Glass/emission/menu/coffee preserve
+  their authored paths. The whole menu keeps its legacy cover material because
+  the shared page view derives separate folding leaves from it; unique UVs on
+  that donor do not apply to those runtime meshes. ImageGen provides pigment only; independent physical
+  fields store signed metre slopes RG, roughness B and cavity A. Offline
+  footprint filtering limits fine grain; no runtime baking or surface layers.
+  Ground retains its distinct smoothness/height/cavity format, UV4 road masks,
+  snow substrates/deformation and wind. Shared Lit/foliage variants retain
+  native halation, directional metal, bounce and finite reflection hooks.
+  New tiled/unique/ground maps use non-readable BC7/mips; protected auxiliary
+  maps retain their imports and are counted conservatively as RGBA32.
+  Calculated texture data is capped at 80 MiB, without a claim
+  of measured scene residency or speed. Model/texture/shader validators and
+  the extended `MountainRoadNativeLighting` own acceptance: imports/budget,
+  actual bindings, pigment/response A/B, authored views/closeups, all five
+  lighting flags and ownership/unload cleanup. Authoring checks and the extended
+  `MountainRoadNativeLighting` passed material/import/budget, pigment/physical
+  A/B, all five lighting effects, headlights, exclusion/return/unload. Reviewed
+  day/night/edge, cafe/stove/refrigerator, road/forest/station, lit tunnel beam
+  and terminal snow frames. Extra closeup framing now targets the exterior
+  portal and a plan-owned ploughed snow bank by code inspection.
+- **Accepted exception 2026-10-20, Mountain Road local lighting — explicit user decision:**
+  Art §10f/§15a; story §6. The road reuses the five saved native-lighting flags
+  through its own `MountainRoadLightingPresentation`, without new Light,
+  geometry, global fog, weather, text or narrative. Existing tunnel, yard,
+  apron, cafe and station practicals retain their power/hierarchy; the car's
+  actual low beams retain their moving pose. At most 24 visible physical
+  emitters receive source-masked halation, with no halo for a helper wash.
+  The shared outdoor integrator now accepts finite scene-owned support:
+  at most four sources, 320x180, ten steps, six clip planes and eight structural
+  blockers per source. The cafe prism and existing perimeter/roof exclude
+  interior/exterior leaks; tunnel support ends at its mouth. Actual light
+  transforms/cones/ranges drive air and falling snow, including moving
+  headlights, without another shadow render or a claim of full small-object
+  volume shadows. The terrace, parapet, brink and distant valley acquire no
+  new light; the cafe remains one warm patch against the cold working yard.
+  Up to four validated ground patches transport real source energy with their
+  measured normal/albedo, finite bounds and occlusion refresh at most 10 Hz.
+  Receiver reach is separate from the source footprint radius, preserving a
+  visible, bounded contribution on nearby surfaces instead of truncating it.
+  A semantic allowlist opts existing cafe/station metal into directional
+  response without material clones. Two finite cafe/station receiver zones
+  reuse filtered 256 HDR cubes and `SceneReflectionCapture`; only one capture
+  is pending. Static capture excludes actors, car, cabins, rotating mechanisms,
+  cafe dynamic props, precipitation and fire. Reflection-camera light masks
+  temporarily exclude moving lights and restore on camera end/recovery/teardown.
+  Meaningful stable sun/ambient/practical drift invalidates no more often than
+  every five seconds; headlight motion and tunnel flicker never invalidate it.
+  Shared capture timeout/retry/quality-lease recovery remains authoritative.
+  Foreign/excluded/probe cameras clear parameters; disable/return/unload restore
+  owned layers/material floats and release cubes. The last registered scene
+  owner clears camera, local-air and effect globals on menu/loading teardown;
+  overlapping live scene owners retain their bindings. `MountainRoadNativeLighting`
+  passed effect A/B, live headlights, camera exclusions, disable/return and
+  final unload cleanup; day/night terminal, cafe, dark-edge and effect frames
+  were reviewed. The focused shared warehouse renderer check also passed.
+  Local GPU cost and frame-rate gains remain unmeasured.
 - **Accepted 2026-10-20, whole Alpine Village material surfaces — explicit user decision:**
   Art §10g/story §12: apply the mother's-house surface principle to the complete
   environment, retaining age/care, occupied warmth and abandoned functions.
@@ -4631,17 +4696,9 @@
   the two ends geometrically; whole-prop/hand overlap alone is no longer proof
   of a valid grip. Ember and smoke remain phase-owned, silent and light-free.
 
-  The user's detailed-texture implementation request accepts one recorded
-  exception to the earlier one-sheet target: the set owns six `512 x 512`
-  colour-neutral semantic detail sheets (exterior, interior, counter, metal,
-  props and glass). They are not six new hue or base-albedo families; they
-  partition wear, grime, glass matting and small edge information so unrelated
-  elements do not stretch or repeat one sample. Their authored UV regions use
-  deterministic offsets/quarter-turns and the generator requires zero broad
-  coplanar overlaps. No sheet may contain readable text, `PHILLIES`, `5¢`, a
-  logo, price, menu, copied city background or a large pre-painted facade. The
-  Nighthawks reference governs only composition and value structure, not
-  setting, period, story, exact camera, costumes or poses.
+  Material maps contain no readable text, `PHILLIES`, `5¢`, logo, price,
+  copied background or pre-painted facade. The Nighthawks reference owns
+  composition/value, never setting, period, story, exact camera, costume or pose.
 - **Accepted — Every 3D object is assembled in Blender:** new geometry is
   authored by a deterministic generator under `tools/build-*-3d-model.py`,
   exported, and imported as a model asset. It is not composed at runtime
@@ -4961,13 +5018,6 @@
   `CrestFactor` costs `0.41 m` of ridge on that one seed and nothing on the
   other seven, and `Occluder_CrestClearsTheCableOnEverySeedResidue` walks all
   eight.
-- **Accepted — A borrowed albedo shares its bytes but not its
-  compensation:** MountainRoad prints asphalt/forest floor/wind snow/layered
-  stone/conifer needles/bark and borrows nine City/Home/Supermarket kinds.
-  `tools/build-mountain-road-textures.py` fits compensation to the mountain's
-  own tints, rejecting channel clamp or >`8%` linear-brightness drift. Source
-  SHA256 catches upstream changes. `PaintedMetal`/`PaleEnamel` share a park
-  sheet but differ in compensation; `WallPaint`/`InteriorPaint` likewise.
 - **Accepted — The mountain UVs were fixed before the sheets landed:**
   Kerb U continues the road halfwidth by slab thickness; welded road/plateau
   entry remains. Plateau/apron use the entry road frame plus travelled distance

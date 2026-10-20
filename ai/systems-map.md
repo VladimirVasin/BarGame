@@ -30,9 +30,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Player build asset gate | Read-only validators block stale/missing runtime assets with explicit repair instructions. | `PlayerBuildAssetValidation` | Current |
 | Reproducible asset tooling | Pinned tools, failure propagation, output checks and staged publication preserve existing metas. | `tools/run-blender.py`, `tools/asset_pipeline.py` | Current |
 | Offshore fishing boats | Two hero-local coastal passes avoid the working port; leaving shore releases models, sounds and wakes. | `CityOffshoreBoat*`, `build-city-offshore-boats-3d-model.py` | Current |
-| Mountain Road Blender misc wave 1 | Eight kinds / `102` placements from `19` passive Blender meshes; the plan retains placement, collision and sounds. | `MountainRoadMiscAssetProvider`, `MountainRoadWorldBuilder` | Current |
-| Mountain Road composition rhythm | Plan-validated forest openings, five debris chapters and cleared rails/kerbs preserve the climb rhythm. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
-| Mountain terminal cafe environment | Passive Blender cafe and seven prop assemblies retain plan-owned collision, lighting and appliance audio. | `MountainRoadCafe{AssetRegistry,WorldBuilder,CollisionWorldBuilder}`, `MountainRoadCafeAssetSetup` | Current |
+| Mountain Road Blender misc | 8 kinds/102 placements/19 meshes; plan-owned placement/collision/audio. | `MountainRoadMiscAssetProvider`, `MountainRoadWorldBuilder` | Current |
+| Road rhythm | Openings/five debris chapters/clear rails-kerbs retain the climb. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
+| Road surfaces/cafe | Local 15 families/4K+2K cafe; BC7≤80MiB, unchanged geometry/wind/light. | `MountainRoadSurfaceLibrary`, `MountainRoadCafeSurfaceAppearance` | Current |
 | Bar counter seat / shared physical menu | Four free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
 | Mountain terminal cafe cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
 | Mountain terminal cafe menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
@@ -44,8 +44,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
-| Scene presentation | Native/SMAA; saved warehouse/village/house effects, grade/UI, optional 4:3. | `SceneCompositeRendererFeature`, `SceneLightingPresentation`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | Native/SMAA; saved warehouse/road/village/house effects, grade/UI, optional 4:3. | `SceneCompositeRendererFeature`, `SceneLightingPresentation`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
+| Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |

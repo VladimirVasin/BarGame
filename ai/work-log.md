@@ -5,52 +5,51 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-20
 
-Door-ambush preview commits prerequisites, syncs models/collision/navigation,
-stages the hero and avoids duplicate rewards. Cancel restores pose/vitals/grip/
-fan/red; replay retains injuries/progress. Closed gate explained sample_failed.
+Door-ambush preview commits prerequisites, syncs world and stages hero once.
+Cancel restores pose/vitals/grip/fan/red; replay retains injuries/progress.
+Closed gate explained sample_failed.
 DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse OK;
-tuning remains manual. Shin puncture/inverted hoist, free look/struggling,
-paired red/fan/spot/lens/sparks retain blackout and disabled escape/next.
-Paired-bank and hook/floor/ceiling contact checks passed.
+tuning manual. Shin puncture/inverted hoist/free look/struggling, paired
+red/fan/spot/lens/sparks retain blackout/disabled escape-next. Paired-bank and
+hook/floor/ceiling contact checks passed.
 
 Native-only replaces styles; saved SMAA/lens/4:3/effects and fog/gameplay stay.
 Native VHS ABI/mixer, OptionsPage_TogglesAndPersistsGraphicsFlag and
 GameCamera_NativeEffectsAndWarehouseLightingRemainStable baseline/optimized OK.
-Rail-volume gaps/empty view fixed; thin shadow aliasing can remain.
-Optical-depth rejection, bounds, additive RGB/cached halation retain integration/
-fan-shadow budgets. Probe timeout/lease/recovery checked. Wardrobe query
-enumerators removed; HomeUrineEffect idle-liquid regression OK; captures use
-FindAnyObjectByType. CPU/workload/probe/wall/GPU schema separates availability;
-no frame-rate/effect-cost gain claimed.
+Rail-volume gaps/empty view fixed; thin shadow aliasing remains possible.
+Optical-depth rejection/bounds/additive RGB/cached halation retain integration/
+fan-shadow budgets. Probe timeout/lease/recovery checked. Wardrobe enumerators
+removed; HomeUrineEffect idle-liquid regression OK; captures:FindAnyObjectByType.
+CPU/workload/probe/wall/GPU availability distinct; no cost/FPS gain claimed.
 
 Village real-emitter halos/metal/terrain-normal snow bounce/spring reflection
-share ownership. User permits local air/snow lighting; facade/depth clipping
-preserves weather/interiors without new Light. AlpineVillageNativeLighting
-and shader hooks OK; pairs/resume recapture reviewed. Native state initializes
-with scene; readiness follows shader warmup, no seed-gust dependency.
-Shared warehouse visual gates passed; Direct3D12 GPU timing unavailable.
+share ownership. Accepted air/snow/facade/depth clipping retains weather/interiors,
+no new Light. Native initializes with scene; readiness follows shader warmup,
+no seed-gust dependency. Shared warehouse visual gates passed; D3D12 GPU unavailable.
 
-Mother's room effects retain physical cutaway blockers, the chair pool and
-stable fire captures. Unique opaque UV0 uses house-owned ImageGen pigments,
-filtered physical fields and neat repairs; auxiliary maps retain scarf binding.
-Geometry/anchors/kettle, passive mirror and mother's half-shadow stay.
-Pinned model validation, build-mothers-house-textures.py --validate-only,
-build-mothers-house-shader.py --check and MothersHouseNativeLighting OK:
-views/closeups, response/import/budget/scarf, fire and presentation cleanup.
-Cube warmup retains runtime timeouts; GPU cost unmeasured.
+Mother's room effects retain cutaway blockers/chair pool/stable fire captures.
+Unique opaque UV0:house-owned ImageGen pigments/filtered fields/neat repairs;
+auxiliary maps retain scarf. Geometry/anchors/kettle/mirror/half-shadow stay.
+Pinned model, mother texture validator/shader parity and MothersHouseNativeLighting OK:
+views/closeups/response/import/budget/scarf/fire/cleanup. Cube warmup keeps timeouts.
 
-Village environment now uses local pigment/physical families and a shared
-unique closeup atlas; original geometry/contact anchors/metre UV1 retained.
-Ground channels, editable junction masks and snow deformation stay distinct;
-new Lit/wind passes reuse lighting hooks. PNG transport/packed slopes checked;
-native photo content retained with bounded BC7 import. Pinned unique/model
-validation, surface texture validator and shader parity check OK.
-AlpineVillageNativeLighting OK: import/budget/bindings, response pairs,
-snow press/refill/clear and dormant return; authored views/closeups reviewed.
-Closeups clear test frost.
-check-docs.py and git diff --check OK.
-check-workspace.py retains preexisting cache, temporary-scene, old-log and
-sibling-worktree leftovers.
+Village local pigment/physical families/unique closeup atlas retain geometry/
+contacts/metre UV1. Ground channels/junction masks/snow deformation stay distinct;
+Lit/wind reuse lighting hooks. PNG/packed slopes checked; photos keep bounded BC7.
+Pinned unique/model validation, surface validator/shader parity OK.
+AlpineVillageNativeLighting OK:import/budget/bindings/response pairs/snow/dormancy;
+authored views/closeups/resume recapture reviewed; closeups clear test frost.
+
+Road:real-source halos/finite air-snow/headlights/metal/bounce, cafe-station cubes;
+moving lights/tunnel flicker do not recapture. Hierarchy/dark brink/weather stay.
+Bounce reach differs from footprint; last owner clears menu/loading globals.
+MountainRoadNativeLighting OK:imports/budget/pigment-response/lighting/
+headlights/exclusions/return/unload; day/night/edge and surface views reviewed.
+GPU cost unmeasured.
+Local pigment/physical maps/cafe unique charts retain UV1/geometry;
+ground format/masks/wind, glass/emission/menu/car/cast stay. BC7 budget bounded.
+Model/texture/shader OK.
+check-workspace.py: preexisting cache/temp-scene/old-log/sibling-worktree leftovers.
 
 ## 2026-10-19
 

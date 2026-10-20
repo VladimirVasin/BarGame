@@ -152,6 +152,7 @@ namespace BarPromenade
             Stopwatch blocksTotal = Stopwatch.StartNew();
             var root = new GameObject("Mountain Road World");
             root.transform.SetParent(parent, false);
+            root.AddComponent<MountainRoadSurfaceScope>();
             var physicalRoot = new GameObject("Physical World");
             physicalRoot.transform.SetParent(root.transform, false);
             var backdropRoot = new GameObject("Mountain Backdrop");
@@ -429,7 +430,7 @@ namespace BarPromenade
             GroundSurfaceAppearance.EnableVertexData(snowRenderer);
             var snowProperties = new MaterialPropertyBlock();
             snowRenderer.GetPropertyBlock(snowProperties);
-            snowProperties.SetColor("_GroundSubstrateColor", MountainRoadSurfaceAppearance.CreateDisplayTint(
+            snowProperties.SetColor("_GroundSubstrateColor", MountainRoadSurfaceLibrary.CreateDisplayTint(
                 SoilColor, MountainRoadSurfaceKind.ForestFloor));
             snowRenderer.SetPropertyBlock(snowProperties);
             // Two colliders cut from one grid, so soil and snow are told

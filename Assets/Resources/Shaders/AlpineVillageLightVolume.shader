@@ -8,6 +8,9 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+        #define _SURFACE_TYPE_TRANSPARENT 1
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
+        #define BAR_PROMENADE_LOCAL_LIGHT_SHADOWS 1
         #include "AlpineVillageLocalLighting.hlsl"
         TEXTURE2D_X_FLOAT(_AlpineAirDepth);
         TEXTURE2D_X(_AlpineAirVolume);
@@ -51,17 +54,24 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
 
         bool AlpineAirInterval(int index, float3 origin, float3 direction, out float enter, out float leave)
         {
-            float3 inverse = (step(0.0, direction) * 2.0 - 1.0) / max(abs(direction), .00001);
-            float3 a = (_AlpineLocalLightMinima[index].xyz - origin) * inverse;
-            float3 b = (_AlpineLocalLightMaxima[index].xyz - origin) * inverse;
-            float3 nearPlane = min(a, b), farPlane = max(a, b);
-            enter = max(0.0, max(nearPlane.x, max(nearPlane.y, nearPlane.z)));
-            leave = min(farPlane.x, min(farPlane.y, farPlane.z));
+            if (!AlpineLocalBoxInterval(_AlpineLocalLightMinima[index].xyz,
+                _AlpineLocalLightMaxima[index].xyz, origin, direction, enter, leave)) return false;
             float4 plane = _AlpineLocalLightPlanes[index];
             if (dot(plane.xyz, plane.xyz) > .5)
             {
                 float start = dot(plane.xyz, origin) + plane.w;
                 float slope = dot(plane.xyz, direction);
+                if (abs(slope) < .00001) { if (start < 0) return false; }
+                else if (slope > 0) enter = max(enter, -start / slope);
+                else leave = min(leave, -start / slope);
+            }
+            int count = (int)_AlpineLocalLightOptions[index].z;
+            [loop] for (int clip = 0; clip < count; clip++)
+            {
+                float4 boundary = _AlpineLocalLightClipPlanes[index * 6 + clip];
+                if (dot(boundary.xyz, boundary.xyz) < .0001) continue;
+                float start = dot(boundary.xyz, origin) + boundary.w;
+                float slope = dot(boundary.xyz, direction);
                 if (abs(slope) < .00001) { if (start < 0) return false; }
                 else if (slope > 0) enter = max(enter, -start / slope);
                 else leave = min(leave, -start / slope);
@@ -93,11 +103,14 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
                     float3 world = origin + direction * (start + segment * .5);
                     float3 radiance = AlpineLocalLightRadiance(lightIndex, world);
                     float peak = max(radiance.r, max(radiance.g, radiance.b));
+                    if (peak <= .00001) continue;
+                    float shadow = AlpineLocalShadowVisibility(lightIndex, world);
                     float nearToFarZ = max(-TransformWorldToView(world).z - _ProjectionParams.y, 0);
                     float visibility = ComputeFogIntensity(ComputeFogFactorZ0ToFar(nearToFarZ));
                     // Local scattering adds light; the existing village fog
                     // continues to own visibility and all weather timing.
-                    sum += radiance / (1 + peak * .35) * (segment * .012 * visibility);
+                    sum += radiance / (1 + peak * .35) *
+                        (segment * .012 * visibility * shadow * _AlpineLocalLightOptions[lightIndex].x);
                 }
             }
             return float4(sum, AlpineAirEyeDepth(raw));
@@ -156,6 +169,9 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
             #pragma vertex Vert
             #pragma fragment AlpineAirIntegrate
             #pragma multi_compile_fog
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             ENDHLSL
         }
         Pass

@@ -16,13 +16,17 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Applies the cafe's authored UV sheets through shared materials and
-    /// renderer property blocks. The six detail sheets remain inside the
-    /// existing Mountain Road palette families; no renderer gets a material
-    /// instance and no repeated object is forced onto the same texture patch.
+    /// Authored opaque cafe parts share one unique colour/physical-response
+    /// atlas; glass, emission, coffee and the whole menu retain their own contracts.
+    /// The renderer/kind overload preserves existing bar donor sheets. Both
+    /// paths use shared materials and retain live renderer property blocks.
     /// </summary>
     internal static class MountainRoadCafeSurfaceAppearance
     {
+        public const string UniqueAlbedoResourcePath =
+            "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceAtlas";
+        public const string UniqueResponseResourcePath =
+            "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceResponse";
         public const string ExteriorTextureResourcePath =
             "MountainRoad/Cafe/Textures/MountainRoadCafeExteriorDetail";
         public const string InteriorTextureResourcePath =
@@ -81,6 +85,12 @@ namespace BarPromenade
         private static Texture2D metal;
         private static Texture2D props;
         private static Texture2D glass;
+        private static Texture2D uniqueAlbedo, uniqueResponse;
+
+        internal static bool IsUnique(MountainRoadCafePartBinding binding) => binding != null &&
+            !binding.Emissive && binding.Sheet != "CafeGlassDetail" &&
+            binding.Sheet != "CafeWarmEmission" && binding.Sheet != "CafeCoffee" &&
+            binding.Role != "menu_cover" && binding.Role != "menu_pages";
 
         public static bool TryResolveSheet(
             string sheet,
@@ -122,6 +132,18 @@ namespace BarPromenade
         {
             if (binding == null || binding.Renderer == null)
             {
+                return;
+            }
+
+            if (IsUnique(binding))
+            {
+                float metallic = binding.Role == "frying_pan" ? .35f :
+                    binding.Role == "stove" ? .16f : binding.Role == "refrigerator_shelf" ? .12f :
+                    binding.Role == "refrigerator_body" || binding.Role == "fridge_door" ? .05f :
+                    binding.Role == "refrigerator_cavity" ? .02f : binding.Sheet == "CafeMetalDetail" ? .28f : 0f;
+                MountainRoadSurfaceLibrary.ApplyUnique(binding.Renderer,
+                    uniqueAlbedo ??= Load(UniqueAlbedoResourcePath, "unique albedo"),
+                    uniqueResponse ??= Load(UniqueResponseResourcePath, "unique response"), metallic);
                 return;
             }
 
@@ -367,6 +389,7 @@ namespace BarPromenade
             metal = null;
             props = null;
             glass = null;
+            uniqueAlbedo = uniqueResponse = null;
         }
     }
 }

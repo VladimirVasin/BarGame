@@ -23,6 +23,12 @@ tools/player_hand_frames.py text eol=lf
 tools/player_jacket_cloth.py text eol=lf
 tools/player_body_hair_surfaces.py text eol=lf
 
+# Road surface recipes are hashed by the published material provenance.
+tools/build-mountain-road-surface-shader.py text eol=lf
+tools/build-mountain-road-surface-textures.py text eol=lf
+tools/mountain_road_surface_authoring.py text eol=lf
+tools/mountain_road_cafe_surfaces.py text eol=lf
+
 # Configure UnityYAMLMerge as the `unityyamlmerge` driver in local Git config.
 [attr]unity-yaml text eol=lf merge=unityyamlmerge
 *.meta unity-yaml

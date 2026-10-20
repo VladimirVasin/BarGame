@@ -1,0 +1,326 @@
+{
+  "design_id": "mountain_road_material_surfaces_v1",
+  "generator_version": "1.0.0",
+  "gpu_budget_bytes": 83886080,
+  "estimated_gpu_bytes": 76547408,
+  "channels": [
+    "signed_physical_slope_u",
+    "signed_physical_slope_v",
+    "roughness",
+    "cavity"
+  ],
+  "ground_channels": [
+    "smoothness_multiplier",
+    "centred_height",
+    "cavity_tendency",
+    "opaque"
+  ],
+  "source_provenance": {
+    "generator": "image_gen (built-in)",
+    "source_manifest_sha256": "de8ec2482728132012c446aa41eca5d9f4542d0c672ee337b595288045101112",
+    "images": [
+      {
+        "name": "Mineral",
+        "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: cold muted grey-green layered raw stone, broad bedding and restrained fractures/mineral seams, not outlined masonry. Top right: aged grey service concrete, fine aggregate, faint repairs and quiet weathering, no large dark stains. Bottom left: old muted grey-olive lime plaster and paint, fine mineral texture, soft maintained patches, no dramatic peeling. Bottom right: cold dark grey alpine asphalt, small non-directional aggregate, understated frost cracks and cut repairs; no lane marks, wheel tracks, travel direction, snow or standing water.",
+        "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadMineral.source.png",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "42be79973f7aff531966656457a166538194402c724c725868ddb869595ead64"
+      },
+      {
+        "name": "Nature",
+        "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: cold grey-white wind-packed mountain snow, quiet fine grain and very faint sastrugi bands, sparse wind-carried grit; no footprints or blue shadows. Top right: dark damp humus with embedded needles, tiny stones and restrained scree, no grass or large leaf shapes. Bottom left: grey-brown conifer bark with vertical furrows and quiet age checks, natural broad scale; no tree silhouette or spiralling grain. Bottom right: dense desaturated dark green conifer needle pigment clusters with small dark gaps, no isolated repeated sprig, no leaves or branch silhouette, no alpha background.",
+        "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadNature.source.png",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "21f86afbd0d8d18a1bb126ddfc629320f48f26af82cf1d5c11e62943c8083511"
+      },
+      {
+        "name": "Finish",
+        "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: restrained aged brown-grey iron oxidation mottling, patches of worn dull steel, quiet irregular pitting, no theatrical red rust or orange stripes. Top right: old muted grey-green painted steel, small rubbed edges and faint scuffs within pigment, no screws, rivets, grids or panel seams. Bottom left: used pale grey-ivory enamel, slight subdued colour variation, clean working surface, no gloss or chips drawn as shadows. Bottom right: faded grey-olive service paint with tiny restrained wear and soft brush texture, no flaking silhouettes, hardware or symbols. All colours are desaturated; no red paint.",
+        "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadFinish.source.png",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "fa9fcede519b46118dff9f13a7617e7255813649937fba738d65c25367df1849"
+      },
+      {
+        "name": "Wood",
+        "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: weathered continuous grey-brown conifer timber grain with restrained age checks, vertical grain, no plank joints. Top right: muted pale oatmeal pine grain, vertical, sparse small soft knots, no plank joints. Bottom left: aged muted warm oak grain with quiet broad cathedrals, vertical, no decorative figure or plank joints. Bottom right: dark desaturated grey-brown walnut grain, vertical and restrained rubbed age, no black fissures or plank joints. Dry matte timber with calm structural variation, no varnish shine or photographic micro-noise.",
+        "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadWood.source.png",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "0458ba66adc4aef6d95eccdd06b8346830c3910cde35a3646a73218470d971b5"
+      },
+      {
+        "name": "Fabric",
+        "prompt": "Use case: stylized-concept. Asset type: production game pigment source pack for the low-poly Alpine Road in Bar Promenade. One square image, exactly four equal square full-bleed material swatches in a strict 2 by 2 grid. No borders or gaps. Each quadrant is a flat orthographic texture sample, no objects or scene. Restrained hand-painted pigment character, calm broad structure and legible native-resolution detail. Uniform diffuse pigment only: no baked lighting, shadows, specular highlights, ambient occlusion, normal-map colouring or perspective. Each quadrant should tile on all four of its own edges. Old, working municipal mountain infrastructure and cold natural materials; restrained age, never ornamental ruin. No text, letters, numbers, labels, logos, symbols, watermarks or framing. Top left: old undyed grey-beige linen canvas, calm visible regular weave, light handling wear, no seams. Top right: faded muted brown-burgundy cloth, dense quiet weave and modest rubbing, no patterns or stitching. Bottom left: blank warm grey-cream paper, faint fibres and restrained handling age, no writing, drawings, stains or tears. Bottom right: matte charcoal rubber, soft worn texture with sparse faint scuffs, no tread, holes or object contours.",
+        "source": "ArtSource/MountainRoad/Surfaces/Source/MountainRoadFabric.source.png",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "0c8845051056004b2ac0b2580d05bc80a6cfcf3d2c480cb0f2e0a0594f802c4e"
+      }
+    ]
+  },
+  "sheets": [
+    {
+      "family": "Asphalt",
+      "size": 2048,
+      "response_size": 1024,
+      "meters_per_tile": 3.5,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/AsphaltGroundResponse",
+      "ground_response_sha256": "801ca2b1fd04573e56714b57492f661f4cc74efedb276ed51af14a4308904600",
+      "mean_linear_luminance": 0.58000003,
+      "albedo": "MountainRoad/Surfaces/AsphaltAlbedo",
+      "albedo_sha256": "cb4041677c283b27c5cbfed0aaae23fec00f689fb53d460b0abc1c2e7aece053",
+      "response": "MountainRoad/Surfaces/AsphaltResponse",
+      "response_sha256": "225abfd72679fa01bac8e2d90f455ae4bf9a7e436691114c736df510a3011b46"
+    },
+    {
+      "family": "ForestFloor",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 5.0,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/ForestFloorGroundResponse",
+      "ground_response_sha256": "87648010e4c8515b64e5cf87d7fc0b0f2c82cc0d2dfc4b3459b280de2ee9fdc3",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/ForestFloorAlbedo",
+      "albedo_sha256": "32fe938cb66cb9aaeaaa4c80f54049845e3777b710de4322fc66d5b62d1830f5",
+      "response": "MountainRoad/Surfaces/ForestFloorResponse",
+      "response_sha256": "87b0d2925b2716d80952cfdce52ef2de885cbc1097712e66c898698970eea943"
+    },
+    {
+      "family": "WindSnow",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 5.0,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/WindSnowGroundResponse",
+      "ground_response_sha256": "3eca3dd38c2f2b0a9be5b1d8236c5c24b1cd2ce55755b899e5a03f45829eb3d0",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "MountainRoad/Surfaces/WindSnowAlbedo",
+      "albedo_sha256": "1d80e5ac7ab99708abd2f379821b638b6f983b41ede8c7cba01c398503e84283",
+      "response": "MountainRoad/Surfaces/WindSnowResponse",
+      "response_sha256": "5041e6e8f2208c607232e241b790758c4d2d9d153ce092690de53e770dd3ceef"
+    },
+    {
+      "family": "LayeredStone",
+      "size": 2048,
+      "response_size": 1024,
+      "meters_per_tile": 6.0,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/LayeredStoneGroundResponse",
+      "ground_response_sha256": "36a7acbf014bb4789e79ef6d8b3ff09c7a35b42a86e90a66f9abb0e5cde726ed",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/LayeredStoneAlbedo",
+      "albedo_sha256": "fd5850aac503e4f18b15326bacb67230f712b72323d2ecbd7b9443f4ab502564",
+      "response": "MountainRoad/Surfaces/LayeredStoneResponse",
+      "response_sha256": "3e1a3255255bdc824fbba3af5f34fde886e96934164e722886e4972adc875ea3"
+    },
+    {
+      "family": "ConiferNeedles",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.5,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "MountainRoad/Surfaces/ConiferNeedlesAlbedo",
+      "albedo_sha256": "e77d24272613378621c6a0f5c33f604a998ca91b243484535816170145665d3b",
+      "response": "MountainRoad/Surfaces/ConiferNeedlesResponse",
+      "response_sha256": "02a0ce9b2d82852f1818fdbbfaf6dd3ce1abb79512f76448472132aa34823645"
+    },
+    {
+      "family": "BarkAndDeadwood",
+      "size": 2048,
+      "response_size": 1024,
+      "meters_per_tile": 2.5,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/BarkAndDeadwoodAlbedo",
+      "albedo_sha256": "b7bd24ede7e358ea5c6df5af149c141f7cfd1431a9f0714f247c25f1df5d97c9",
+      "response": "MountainRoad/Surfaces/BarkAndDeadwoodResponse",
+      "response_sha256": "98fef8230013f13beb6ab541c82450f13f04cc8ccc68905f91db146ab6819b64"
+    },
+    {
+      "family": "Concrete",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 3.0,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/ConcreteGroundResponse",
+      "ground_response_sha256": "af1a6bd5716fe53ddaec1edb949b51f255c45196cc2e19032ba95118145434b6",
+      "mean_linear_luminance": 0.58,
+      "albedo": "MountainRoad/Surfaces/ConcreteAlbedo",
+      "albedo_sha256": "e3fd83da1c8a33317c539ab047e6ee66195ff79c20b9a0b88ecc40b8587d5c99",
+      "response": "MountainRoad/Surfaces/ConcreteResponse",
+      "response_sha256": "7a49c6095d814f5d41db026077be78e2fb91babccc59d98c5f9dda778a6030e1"
+    },
+    {
+      "family": "RustedIron",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "MountainRoad/Surfaces/RustedIronAlbedo",
+      "albedo_sha256": "e847a5396a83cf224a0ffe0d7cf675c9c0bf66b99f7d5e08e06250b2932df028",
+      "response": "MountainRoad/Surfaces/RustedIronResponse",
+      "response_sha256": "6bed1e22dff6246f9138bbb75677b6aa35673f69acdc1a739a8a73557f449b32"
+    },
+    {
+      "family": "PaintedMetal",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "MountainRoad/Surfaces/PaintedMetalAlbedo",
+      "albedo_sha256": "f2832a55360fd9d2477078fd9555eb34748094f70c80a0f081cea9101630b37c",
+      "response": "MountainRoad/Surfaces/PaintedMetalResponse",
+      "response_sha256": "3a71a62080711fa2b7341a5f8910744e34e31f14ded31745c08f0190f32339a8"
+    },
+    {
+      "family": "PaleEnamel",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "MountainRoad/Surfaces/PaleEnamelAlbedo",
+      "albedo_sha256": "f7ae14049bc11ec6502ab8f24aa9c7e4173f1f94b5d75521e6f5c602e07c1945",
+      "response": "MountainRoad/Surfaces/PaleEnamelResponse",
+      "response_sha256": "6382ebf276bcdb0455b392f014b1585670916ceb947305a32f5a39da6339d175"
+    },
+    {
+      "family": "Masonry",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/MasonryGroundResponse",
+      "ground_response_sha256": "a8048b03bac04de179ea7a36ea7f1a05c1a40ed1e2328e192d6dae868104850f",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/MasonryAlbedo",
+      "albedo_sha256": "e3e51323bcab5c91e47c9a89cfba6704c55041e8048b731c7c516039767446e0",
+      "response": "MountainRoad/Surfaces/MasonryResponse",
+      "response_sha256": "3c7610f1441299e2dc68d16a87ceb9390c0dc1ccebe3797023854a27eec672ec"
+    },
+    {
+      "family": "Linoleum",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "MountainRoad/Surfaces/LinoleumAlbedo",
+      "albedo_sha256": "f7ae14049bc11ec6502ab8f24aa9c7e4173f1f94b5d75521e6f5c602e07c1945",
+      "response": "MountainRoad/Surfaces/LinoleumResponse",
+      "response_sha256": "088089e77e689e68f659119f13562a2b73c16792afee16516fb857d4095a39ab"
+    },
+    {
+      "family": "Timber",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.4,
+      "full_color": false,
+      "ground_response": "MountainRoad/Surfaces/TimberGroundResponse",
+      "ground_response_sha256": "5beeae04e429f416dd0a60be2d8188123d2e5655a7c63c3e3ceed7d9f75d745e",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/TimberAlbedo",
+      "albedo_sha256": "69c09a870809d94cba1f8a0a053e913a07f32fbe6e14110977501740d0353e78",
+      "response": "MountainRoad/Surfaces/TimberResponse",
+      "response_sha256": "27731c6bf19a8b5d0504e40135a2b483b85220e97dc281233fba3c1d9055c303"
+    },
+    {
+      "family": "WallPaint",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.6,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/WallPaintAlbedo",
+      "albedo_sha256": "55633e377b034c5feb8214ed35f36b7478d47deda870b7a93aacc9a2d767600d",
+      "response": "MountainRoad/Surfaces/WallPaintResponse",
+      "response_sha256": "e05b54be228536978489c47808af4b8a7950bdafdc10b35e8ca78b9b0018653c"
+    },
+    {
+      "family": "InteriorPaint",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.6,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "MountainRoad/Surfaces/InteriorPaintAlbedo",
+      "albedo_sha256": "55633e377b034c5feb8214ed35f36b7478d47deda870b7a93aacc9a2d767600d",
+      "response": "MountainRoad/Surfaces/InteriorPaintResponse",
+      "response_sha256": "e05b54be228536978489c47808af4b8a7950bdafdc10b35e8ca78b9b0018653c"
+    }
+  ],
+  "additional_maps": [
+    {
+      "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceAtlas",
+      "sha256": "e76cbe075f46c9cc0c084fd6155782d04f69e1102823c327121006cc22097226",
+      "size": 4096,
+      "mipmaps": true,
+      "sRGB": true
+    },
+    {
+      "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceResponse",
+      "sha256": "8fa04d20de5e754879c0531c2bff34dc0629b75ed0408ae38b632c036c3e4dd0",
+      "size": 2048,
+      "mipmaps": true,
+      "sRGB": false
+    },
+    {
+      "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeGlassDetail",
+      "sha256": "f86058499b25c72b6d12c2e642241ea8f94dc44e35d4a248dc3ad96d2511b1a5",
+      "size": 512,
+      "mipmaps": true,
+      "sRGB": true,
+      "budget_format": "RGBA32 upper bound"
+    },
+    {
+      "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeCounterDetail",
+      "sha256": "19d96d69d50f5f701af32a3cb80becdd1d835d46120a6e02133474cf3f45ceca",
+      "size": 512,
+      "mipmaps": true,
+      "sRGB": true,
+      "budget_format": "RGBA32 upper bound"
+    },
+    {
+      "resource": "Textures/CityParkPaintedMetalAlbedo",
+      "sha256": "6ab63a91a276d6563acf0642d7684552a7ca5e7c8fa376f5cd5c3cd9d8cc9f4a",
+      "size": 512,
+      "mipmaps": true,
+      "sRGB": true,
+      "budget_format": "RGBA32 upper bound"
+    }
+  ]
+}

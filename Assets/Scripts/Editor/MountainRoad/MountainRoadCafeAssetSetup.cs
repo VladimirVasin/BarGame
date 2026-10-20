@@ -47,6 +47,10 @@ namespace BarPromenade.Editor
         public const string GlassTexturePath =
             "Assets/Resources/MountainRoad/Cafe/Textures/" +
             "MountainRoadCafeGlassDetail.png";
+        public const string UniqueAlbedoTexturePath =
+            "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceAtlas.png";
+        public const string UniqueResponseTexturePath =
+            "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceResponse.png";
 
         private const string SharedLitMaterialPath =
             "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
@@ -68,12 +72,10 @@ namespace BarPromenade.Editor
 
         private static readonly string[] TexturePaths =
         {
-            ExteriorTexturePath,
-            InteriorTexturePath,
-            CounterTexturePath,
-            MetalTexturePath,
-            PropsTexturePath,
             GlassTexturePath,
+            CounterTexturePath,
+            UniqueAlbedoTexturePath,
+            UniqueResponseTexturePath,
         };
 
         private static readonly string[] RequiredAnchorNames =
@@ -182,8 +184,16 @@ namespace BarPromenade.Editor
         public static bool IsClampTexturePath(string path)
         {
             return PathsEqual(path, PropsTexturePath) ||
-                PathsEqual(path, GlassTexturePath);
+                PathsEqual(path, GlassTexturePath) || IsUniqueTexturePath(path);
         }
+
+        public static bool IsUniqueTexturePath(string path) =>
+            PathsEqual(path, UniqueAlbedoTexturePath) || PathsEqual(path, UniqueResponseTexturePath);
+
+        public static bool IsResponseTexturePath(string path) => PathsEqual(path, UniqueResponseTexturePath);
+
+        public static int TextureSize(string path) => PathsEqual(path, UniqueAlbedoTexturePath) ? 4096 :
+            IsResponseTexturePath(path) ? 2048 : 512;
 
         public static bool IsSourcePath(string path)
         {
@@ -220,7 +230,7 @@ namespace BarPromenade.Editor
                     "Mountain Road cafe sources are incomplete. Run " +
                     "tools/build-mountain-road-cafe-3d-model.py through " +
                     "Blender first and retain its blend, FBX, manifest, " +
-                    "preview and six textures.");
+                    "preview, menu-cover/glass sheets and physical surface maps.");
             }
 
             IsBuilding = true;
@@ -686,7 +696,7 @@ namespace BarPromenade.Editor
                 manifest.stool_count != ExpectedStoolCount ||
                 manifest.cup_assembly_count != ExpectedCupCount ||
                 manifest.collider_descriptors.Length != ExpectedColliderCount ||
-                manifest.overlap_count != 0 || manifest.textures.Length != 6 ||
+                manifest.overlap_count != 0 || manifest.textures.Length != 4 ||
                 manifest.triangle_count > MaximumTriangles)
             {
                 throw new InvalidOperationException(
@@ -737,6 +747,12 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"Cafe manifest part '{part.name}' lacks semantic metadata.");
                 }
+                bool unique = !part.emissive && part.sheet != "CafeGlassDetail" &&
+                    part.sheet != "CafeWarmEmission" && part.sheet != "CafeCoffee" &&
+                    part.role != "menu_cover" && part.role != "menu_pages";
+                if (part.unique_surface != unique || part.uv_channel_count != (unique ? 2 : 1) ||
+                    !IsSha256(part.uv1_signature) || unique && !IsSha256(part.uv0_signature))
+                    throw new InvalidOperationException($"Cafe physical UV contract failed for '{part.name}'.");
             }
         }
 
@@ -748,8 +764,8 @@ namespace BarPromenade.Editor
             foreach (CafeTexture texture in manifest.textures)
             {
                 string path = NormalizePath(texture.file);
-                if (!expectedPaths.Remove(path) || texture.width != 512 ||
-                    texture.height != 512 || !IsSha256(texture.sha256) ||
+                if (!expectedPaths.Remove(path) || texture.width != TextureSize(path) ||
+                    texture.height != TextureSize(path) || !IsSha256(texture.sha256) ||
                     !File.Exists(path) ||
                     !string.Equals(
                         ComputeSha256(path),
@@ -764,7 +780,7 @@ namespace BarPromenade.Editor
             if (expectedPaths.Count != 0)
             {
                 throw new InvalidOperationException(
-                    "Cafe manifest does not cover all six detail textures.");
+                    "Cafe manifest does not cover the menu-cover/glass sheets and physical surface maps.");
             }
         }
 
@@ -799,7 +815,7 @@ namespace BarPromenade.Editor
                         StringComparison.Ordinal) ||
                     !string.Equals(
                         matches[0].uv_strategy,
-                        "single_inset_appliance_patch_without_pattern_edges",
+                        "unique_guarded_uniform_metric_axes_uv0_original_uv1",
                         StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
@@ -1009,14 +1025,16 @@ namespace BarPromenade.Editor
                 TextureImporter importer =
                     AssetImporter.GetAtPath(path) as TextureImporter;
                 bool glass = IsGlassTexturePath(path);
+                bool response = IsResponseTexturePath(path);
+                bool unique = IsUniqueTexturePath(path);
                 TextureWrapMode expectedWrap = IsClampTexturePath(path)
                     ? TextureWrapMode.Clamp
                     : TextureWrapMode.Repeat;
                 if (importer == null ||
                     importer.textureType != TextureImporterType.Default ||
                     importer.textureShape != TextureImporterShape.Texture2D ||
-                    !importer.sRGBTexture ||
-                    importer.alphaSource != (glass
+                    importer.sRGBTexture == response ||
+                    importer.alphaSource != (glass || response
                         ? TextureImporterAlphaSource.FromInput
                         : TextureImporterAlphaSource.None) ||
                     importer.alphaIsTransparency != glass ||
@@ -1024,11 +1042,13 @@ namespace BarPromenade.Editor
                     importer.isReadable ||
                     importer.npotScale != TextureImporterNPOTScale.None ||
                     importer.wrapMode != expectedWrap ||
-                    importer.filterMode != FilterMode.Bilinear ||
+                    importer.filterMode != (unique ? FilterMode.Trilinear : FilterMode.Bilinear) ||
                     importer.anisoLevel != 4 ||
-                    importer.textureCompression !=
-                        TextureImporterCompression.Uncompressed ||
-                    importer.maxTextureSize != 512)
+                    importer.textureCompression != (unique
+                        ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed) ||
+                    importer.maxTextureSize != TextureSize(path) ||
+                    unique && (!importer.GetPlatformTextureSettings("Standalone").overridden ||
+                        importer.GetPlatformTextureSettings("Standalone").format != TextureImporterFormat.BC7))
                 {
                     throw new InvalidOperationException(
                         $"Cafe texture importer contract drifted for '{path}'.");
@@ -1436,6 +1456,10 @@ namespace BarPromenade.Editor
             public string sheet;
             public string base_surface;
             public string uv_strategy;
+            public bool unique_surface;
+            public string uv0_signature;
+            public string uv1_signature;
+            public int uv_channel_count;
             public bool emissive;
             public bool shadows;
             public bool initially_visible;

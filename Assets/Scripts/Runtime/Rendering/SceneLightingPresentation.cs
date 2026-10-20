@@ -27,6 +27,8 @@ namespace BarPromenade.Rendering
         private static readonly int BounceCountId = Shader.PropertyToID("_WarehouseBounceCount");
         private static readonly int SurfaceReflectionCountId = Shader.PropertyToID("_SceneSurfaceReflectionCount");
         private static readonly int InteriorAirCountId = Shader.PropertyToID("_MothersHouseAirSourceCount");
+        private static readonly int LocalAirCountId = Shader.PropertyToID("_AlpineLocalLightCount");
+        private static readonly int CleanEffectsId = Shader.PropertyToID("_WarehouseCleanEffects");
         private static int presentationCount;
 
         public abstract bool IsForCamera(Camera camera);
@@ -73,6 +75,15 @@ namespace BarPromenade.Rendering
                 for (int next = i + 1; next < presentationCount; next++)
                     presentations[next - 1] = presentations[next];
                 presentations[--presentationCount] = null;
+                // A loading/menu camera may not have the world renderer feature.
+                // Release the last scene's globals immediately, while retaining
+                // another live owner's camera-scoped bindings during overlaps.
+                if (presentationCount == 0)
+                {
+                    ClearCameraGlobals();
+                    Shader.SetGlobalInt(LocalAirCountId, 0);
+                    Shader.SetGlobalVector(CleanEffectsId, Vector4.zero);
+                }
                 return;
             }
         }

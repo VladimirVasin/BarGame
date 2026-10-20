@@ -21,6 +21,7 @@ namespace BarPromenade
         public PlayerCameraFollow CameraFollow { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public MountainRoadAtmosphere Atmosphere { get; private set; }
+        public MountainRoadLightingPresentation Lighting { get; private set; }
         public MountainRoadSoundscape Soundscape { get; private set; }
         /// <summary>The precipitation field, which up here falls as snow.
         /// </summary>
@@ -294,6 +295,10 @@ namespace BarPromenade
             // lens on its very first frame and the seat resolves the follow
             // rig off the camera to do it.
             BuildLastRoute(camera);
+            // Moving headlights are created by LastRoute; register their actual
+            // lights only after the car and the complete static world exist.
+            Lighting = gameObject.AddComponent<MountainRoadLightingPresentation>();
+            Lighting.Initialize(this);
             IsInitialized = true;
             GameLogPhases.Report("mountain_road", "last_route", phaseTimer);
             // The road's own plan is held already; this starts the village

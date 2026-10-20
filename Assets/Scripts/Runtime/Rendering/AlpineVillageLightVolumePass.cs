@@ -10,25 +10,48 @@ namespace BarPromenade.Rendering
     /// <summary>A real practical and the finite outdoor air it can illuminate.</summary>
     public readonly struct SceneLocalLightSource
     {
+        public const int MaximumClipPlanes = 6, MaximumBlockers = 8;
         public readonly Light Light;
         public readonly Bounds Bounds;
         // World plane: dot(normal, position) + w >= 0 is the exterior.
         // Zero permits an open-air lamp with no supporting facade.
         public readonly Vector4 ExteriorPlane;
+        public readonly float ScatteringGain;
+        public readonly bool SampleExistingShadows;
+        // Optional normalized inward planes, dot(normal, world) + w >= 0,
+        // and solid structural AABBs. Zero entries are unused. Providers retain
+        // these bounded arrays; the renderer snapshots them per camera.
+        public readonly Vector4[] ClipPlanes;
+        public readonly Bounds[] Blockers;
 
         public SceneLocalLightSource(Light light, Bounds bounds, Vector4 exteriorPlane)
+            : this(light, bounds, exteriorPlane, 1f, false) { }
+
+        public SceneLocalLightSource(Light light, Bounds bounds, Vector4 exteriorPlane,
+            float scatteringGain, bool sampleExistingShadows,
+            Vector4[] clipPlanes = null, Bounds[] blockers = null)
         {
+            if (clipPlanes != null && clipPlanes.Length > MaximumClipPlanes)
+                throw new ArgumentException("Local light support exceeds six clip planes.", nameof(clipPlanes));
+            if (blockers != null && blockers.Length > MaximumBlockers)
+                throw new ArgumentException("Local light support exceeds eight structural blockers.", nameof(blockers));
             Light = light;
             Bounds = bounds;
             ExteriorPlane = exteriorPlane;
+            ScatteringGain = float.IsNaN(scatteringGain) ? 0f : Mathf.Clamp01(scatteringGain);
+            SampleExistingShadows = sampleExistingShadows;
+            ClipPlanes = clipPlanes;
+            Blockers = blockers;
         }
     }
 
-    public interface IAlpineVillageLightVolumeSource
+    public interface ISceneLocalLightVolumeSource
     {
         int VolumeSourceCount { get; }
         bool TryGetVolumeSource(int index, out SceneLocalLightSource source);
     }
+
+    public interface IAlpineVillageLightVolumeSource : ISceneLocalLightVolumeSource { }
 
     /// <summary>Fixed snapshots shared by outdoor air and moving snow particles.</summary>
     internal sealed class SceneLocalLightParameters
@@ -41,29 +64,68 @@ namespace BarPromenade.Rendering
         private static readonly int MinimaId = Shader.PropertyToID("_AlpineLocalLightMinima");
         private static readonly int MaximaId = Shader.PropertyToID("_AlpineLocalLightMaxima");
         private static readonly int PlanesId = Shader.PropertyToID("_AlpineLocalLightPlanes");
+        private static readonly int OptionsId = Shader.PropertyToID("_AlpineLocalLightOptions");
+        private static readonly int ClipsId = Shader.PropertyToID("_AlpineLocalLightClipPlanes");
+        private static readonly int BlockerMinimaId = Shader.PropertyToID("_AlpineLocalLightBlockerMinima");
+        private static readonly int BlockerMaximaId = Shader.PropertyToID("_AlpineLocalLightBlockerMaxima");
+        private static readonly int ShadowIndicesId = Shader.PropertyToID("_AlpineLocalLightShadowIndices");
+        private static readonly int PerPixelId = Shader.PropertyToID("_AlpineLocalLightingPerPixel");
         internal readonly Vector4[] Positions = new Vector4[MaximumSources];
         internal readonly Vector4[] Directions = new Vector4[MaximumSources];
         internal readonly Vector4[] Colors = new Vector4[MaximumSources];
         internal readonly Vector4[] Minima = new Vector4[MaximumSources];
         internal readonly Vector4[] Maxima = new Vector4[MaximumSources];
         internal readonly Vector4[] Planes = new Vector4[MaximumSources];
+        internal readonly Vector4[] Options = new Vector4[MaximumSources];
+        internal readonly Vector4[] ClipPlanes = new Vector4[MaximumSources * SceneLocalLightSource.MaximumClipPlanes];
+        internal readonly Vector4[] BlockerMinima = new Vector4[MaximumSources * SceneLocalLightSource.MaximumBlockers];
+        internal readonly Vector4[] BlockerMaxima = new Vector4[MaximumSources * SceneLocalLightSource.MaximumBlockers];
+        internal readonly Light[] Sources = new Light[MaximumSources];
+        internal Vector4 ShadowIndices;
+        internal bool PerPixel;
         internal int Count;
 
         internal void CopyFrom(SceneLocalLightParameters source)
         {
             Count = source != null ? source.Count : 0;
-            if (Count == 0) return;
+            PerPixel = source != null && source.PerPixel;
+            ShadowIndices = new Vector4(-1f, -1f, -1f, -1f);
+            if (Count == 0)
+            { Array.Clear(Sources, 0, Sources.Length); return; }
             Array.Copy(source.Positions, Positions, Count);
             Array.Copy(source.Directions, Directions, Count);
             Array.Copy(source.Colors, Colors, Count);
             Array.Copy(source.Minima, Minima, Count);
             Array.Copy(source.Maxima, Maxima, Count);
             Array.Copy(source.Planes, Planes, Count);
+            Array.Copy(source.Options, Options, Count);
+            Array.Copy(source.Sources, Sources, Count);
+            Array.Copy(source.ClipPlanes, ClipPlanes, ClipPlanes.Length);
+            Array.Copy(source.BlockerMinima, BlockerMinima, BlockerMinima.Length);
+            Array.Copy(source.BlockerMaxima, BlockerMaxima, BlockerMaxima.Length);
+        }
+
+        internal void ResolveShadowIndices(UniversalLightData data)
+        {
+            ShadowIndices = new Vector4(-1f, -1f, -1f, -1f);
+            for (int source = 0; source < Count; source++)
+            {
+                if (Options[source].y < .5f || Sources[source] == null) continue;
+                int additional = 0;
+                for (int visible = 0; visible < data.visibleLights.Length && additional < data.additionalLightsCount; visible++)
+                {
+                    if (visible == data.mainLightIndex) continue;
+                    if (data.visibleLights[visible].light == Sources[source])
+                    { ShadowIndices[source] = additional; break; }
+                    additional++;
+                }
+            }
         }
 
         internal void BindGlobals(UnsafeCommandBuffer command)
         {
             command.SetGlobalInt(CountId, Count);
+            command.SetGlobalInt(PerPixelId, PerPixel ? 1 : 0);
             if (Count == 0) return;
             command.SetGlobalVectorArray(PositionsId, Positions);
             command.SetGlobalVectorArray(DirectionsId, Directions);
@@ -71,6 +133,11 @@ namespace BarPromenade.Rendering
             command.SetGlobalVectorArray(MinimaId, Minima);
             command.SetGlobalVectorArray(MaximaId, Maxima);
             command.SetGlobalVectorArray(PlanesId, Planes);
+            command.SetGlobalVectorArray(OptionsId, Options);
+            command.SetGlobalVectorArray(ClipsId, ClipPlanes);
+            command.SetGlobalVectorArray(BlockerMinimaId, BlockerMinima);
+            command.SetGlobalVectorArray(BlockerMaximaId, BlockerMaxima);
+            command.SetGlobalVector(ShadowIndicesId, ShadowIndices);
         }
 
         internal void BindMaterial(Material material)
@@ -82,13 +149,18 @@ namespace BarPromenade.Rendering
             material.SetVectorArray(MinimaId, Minima);
             material.SetVectorArray(MaximaId, Maxima);
             material.SetVectorArray(PlanesId, Planes);
+            material.SetVectorArray(OptionsId, Options);
+            material.SetVectorArray(ClipsId, ClipPlanes);
+            material.SetVectorArray(BlockerMinimaId, BlockerMinima);
+            material.SetVectorArray(BlockerMaximaId, BlockerMaxima);
+            material.SetVector(ShadowIndicesId, ShadowIndices);
         }
     }
 
     /// <summary>
     /// Four local outdoor light pools, without new lights or shadow renders.
-    /// Facade planes exclude interiors; opaque camera depth clips scattering.
-    /// Small intervening objects do not receive independent light-space shadows.
+    /// Finite planes and structural blockers constrain optional road sources;
+    /// existing spotlight shadow maps can occlude air without another render.
     /// </summary>
     internal sealed class AlpineVillageLightVolumePass : ScriptableRenderPass, IDisposable
     {
@@ -120,12 +192,13 @@ namespace BarPromenade.Rendering
             renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
             ConfigureInput(ScriptableRenderPassInput.Depth);
             requiresIntermediateTexture = true;
-            profilingSampler = new ProfilingSampler("Alpine Village Local Lit Air");
+            profilingSampler = new ProfilingSampler("Scene Local Lit Air");
         }
 
-        internal bool Setup(Camera camera, IAlpineVillageLightVolumeSource presentation)
+        internal bool Setup(Camera camera, ISceneLocalLightVolumeSource presentation)
         {
             lights.Count = 0;
+            lights.PerPixel = false;
             LastSourceCount = 0;
             LastResolution = Vector2Int.zero;
             if (camera == null || presentation == null) return false;
@@ -136,6 +209,8 @@ namespace BarPromenade.Rendering
                 if (!presentation.TryGetVolumeSource(i, out SceneLocalLightSource source)) continue;
                 Light light = source.Light;
                 if (light == null || !light.isActiveAndEnabled || light.intensity <= .001f || light.range <= 0f ||
+                    source.ScatteringGain <= 0f ||
+                    source.SampleExistingShadows && (light.type != LightType.Spot || light.shadows == LightShadows.None) ||
                     light.type != LightType.Point && light.type != LightType.Spot ||
                     source.Bounds.size.x <= 0f || source.Bounds.size.y <= 0f || source.Bounds.size.z <= 0f ||
                     !GeometryUtility.TestPlanesAABB(frustum, source.Bounds)) continue;
@@ -152,6 +227,20 @@ namespace BarPromenade.Rendering
                 lights.Minima[slot] = source.Bounds.min;
                 lights.Maxima[slot] = source.Bounds.max;
                 lights.Planes[slot] = source.ExteriorPlane;
+                int clips = source.ClipPlanes != null ? source.ClipPlanes.Length : 0;
+                int blockers = source.Blockers != null ? source.Blockers.Length : 0;
+                lights.Options[slot] = new Vector4(source.ScatteringGain, source.SampleExistingShadows ? 1f : 0f,
+                    clips, blockers);
+                lights.Sources[slot] = light;
+                for (int clip = 0; clip < clips; clip++)
+                    lights.ClipPlanes[slot * SceneLocalLightSource.MaximumClipPlanes + clip] = source.ClipPlanes[clip];
+                for (int blocker = 0; blocker < blockers; blocker++)
+                {
+                    int entry = slot * SceneLocalLightSource.MaximumBlockers + blocker;
+                    lights.BlockerMinima[entry] = source.Blockers[blocker].min;
+                    lights.BlockerMaxima[entry] = source.Blockers[blocker].max;
+                }
+                lights.PerPixel |= clips > 0 || blockers > 0 || source.SampleExistingShadows;
             }
             if (lights.Count == 0) return false;
             if (material == null)
@@ -174,13 +263,18 @@ namespace BarPromenade.Rendering
             TextureHandle depth = resources.cameraDepthTexture;
             TextureHandle color = resources.activeColorTexture;
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            if (cameraData.camera == null || cameraData.camera.cameraType != CameraType.Game ||
+                !cameraData.resolveFinalTarget || cameraData.camera.TryGetComponent(out ScenePresentationExclusion _)) return;
+            lights.ResolveShadowIndices(frameData.Get<UniversalLightData>());
+            TextureHandle shadows = resources.additionalShadowsTexture;
+            if (!shadows.IsValid()) lights.ShadowIndices = new Vector4(-1f, -1f, -1f, -1f);
             TextureDesc descriptor = graph.GetTextureDesc(color);
             Vector2Int dimensions = descriptor.CalculateFinalDimensions();
             float scale = Mathf.Min(1f, Mathf.Min(MaximumWidth / (float)Mathf.Max(1, dimensions.x),
                 MaximumHeight / (float)Mathf.Max(1, dimensions.y)));
             int width = Mathf.Max(1, Mathf.FloorToInt(dimensions.x * scale));
             int height = Mathf.Max(1, Mathf.FloorToInt(dimensions.y * scale));
-            descriptor.name = "Alpine Village Local Lit Air";
+            descriptor.name = "Scene Local Lit Air";
             descriptor.sizeMode = TextureSizeMode.Explicit;
             descriptor.width = width;
             descriptor.height = height;
@@ -195,12 +289,14 @@ namespace BarPromenade.Rendering
             descriptor.clearBuffer = false;
             TextureHandle volume = graph.CreateTexture(descriptor);
             using (IRasterRenderGraphBuilder builder = graph.AddRasterRenderPass(
-                       "Alpine Village Air Integration", out PassData data))
+                       "Scene Local Air Integration", out PassData data))
             {
                 data.Material = material;
                 data.Depth = depth;
                 data.Lights.CopyFrom(lights);
+                data.Lights.ShadowIndices = lights.ShadowIndices;
                 builder.UseTexture(depth, AccessFlags.Read);
+                if (shadows.IsValid()) builder.UseTexture(shadows, AccessFlags.Read);
                 builder.SetRenderAttachment(volume, 0, AccessFlags.WriteAll);
                 builder.SetRenderFunc(static (PassData pass, RasterGraphContext context) =>
                 {
@@ -211,7 +307,7 @@ namespace BarPromenade.Rendering
                 });
             }
             using (IRasterRenderGraphBuilder builder = graph.AddRasterRenderPass(
-                       "Alpine Village Air Depth Resolve", out PassData data))
+                       "Scene Local Air Depth Resolve", out PassData data))
             {
                 data.Material = material;
                 data.Depth = depth;
@@ -223,6 +319,7 @@ namespace BarPromenade.Rendering
                 data.Projection = cameraData.GetProjectionMatrix();
                 data.NearClip = cameraData.camera.nearClipPlane;
                 data.Lights.CopyFrom(lights);
+                data.Lights.ShadowIndices = lights.ShadowIndices;
                 builder.UseTexture(depth, AccessFlags.Read);
                 builder.UseTexture(volume, AccessFlags.Read);
                 // Additive blending reads the attachment; no color texture sampling.
@@ -278,6 +375,8 @@ namespace BarPromenade.Rendering
             CoreUtils.Destroy(material);
             material = null;
             lights.Count = 0;
+            lights.PerPixel = false;
+            Array.Clear(lights.Sources, 0, lights.Sources.Length);
             LastSourceCount = 0;
             LastResolution = Vector2Int.zero;
         }

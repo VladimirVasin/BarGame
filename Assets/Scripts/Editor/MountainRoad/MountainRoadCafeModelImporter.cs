@@ -43,10 +43,12 @@ namespace BarPromenade.Editor
             }
 
             bool glass = MountainRoadCafeAssetSetup.IsGlassTexturePath(assetPath);
+            bool response = MountainRoadCafeAssetSetup.IsResponseTexturePath(assetPath);
+            bool unique = MountainRoadCafeAssetSetup.IsUniqueTexturePath(assetPath);
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
-            importer.sRGBTexture = true;
-            importer.alphaSource = glass
+            importer.sRGBTexture = !response;
+            importer.alphaSource = glass || response
                 ? TextureImporterAlphaSource.FromInput
                 : TextureImporterAlphaSource.None;
             importer.alphaIsTransparency = glass;
@@ -57,10 +59,17 @@ namespace BarPromenade.Editor
             importer.wrapMode = MountainRoadCafeAssetSetup.IsClampTexturePath(assetPath)
                 ? TextureWrapMode.Clamp
                 : TextureWrapMode.Repeat;
-            importer.filterMode = FilterMode.Bilinear;
+            importer.filterMode = unique ? FilterMode.Trilinear : FilterMode.Bilinear;
             importer.anisoLevel = 4;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.maxTextureSize = 512;
+            importer.textureCompression = unique ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+            importer.maxTextureSize = MountainRoadCafeAssetSetup.TextureSize(assetPath);
+            if (unique)
+                importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                {
+                    name = "Standalone", overridden = true, maxTextureSize = importer.maxTextureSize,
+                    format = TextureImporterFormat.BC7, textureCompression = TextureImporterCompression.CompressedHQ,
+                    compressionQuality = 50,
+                });
         }
 
         private static void OnPostprocessAllAssets(

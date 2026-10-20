@@ -330,6 +330,11 @@ namespace BarPromenade
                 return;
             }
 
+            if (MountainRoadSurfaceLibrary.IsScoped(renderer))
+            {
+                MountainRoadSurfaceLibrary.Apply(renderer, kind, projection, sourceTint, materialIndex);
+                return;
+            }
             HomeSurfaceRecipe recipe = GetRecipe(kind);
             ApplySharedProperties(
                 renderer,
@@ -392,6 +397,11 @@ namespace BarPromenade
                     "An indexed combined surface needs a material slot.");
             }
 
+            if (MountainRoadSurfaceLibrary.IsScoped(renderer))
+            {
+                MountainRoadSurfaceLibrary.ApplyCombined(renderer, kind, sourceTint, materialIndex);
+                return;
+            }
             ApplySharedProperties(
                 renderer,
                 kind,
@@ -426,6 +436,11 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(sharedMaterial));
             }
 
+            if (MountainRoadSurfaceLibrary.IsScoped(renderer))
+            {
+                MountainRoadSurfaceLibrary.ApplyCombined(renderer, kind, sourceTint, sharedMaterial);
+                return;
+            }
             ApplySharedProperties(
                 renderer,
                 kind,
