@@ -18,6 +18,8 @@ namespace BarPromenade.Editor
         private const int ContentSize = AlpineVillageJunctionAppearance.ContentSize;
 
         [MenuItem("Bar Promenade/Village/Bake Junction Textures")]
+        public static void RunMenu() => VillageSurfaceTextureSetup.BuildOrThrow();
+
         public static void BuildOrThrow() => Bake(false);
 
         [MenuItem("Bar Promenade/Village/Regenerate Junction Masks And Bake")]
@@ -128,14 +130,22 @@ namespace BarPromenade.Editor
             Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             bool response = path.EndsWith("-Response.png", StringComparison.OrdinalIgnoreCase) || path == ResponseAtlasPath;
+            bool runtimeAtlas = path == AtlasPath || path == ResponseAtlasPath;
             if (texture == null || importer == null || texture.width != size || texture.height != size ||
                 importer.textureType != TextureImporterType.Default || importer.sRGBTexture == mask ||
                 importer.alphaSource != (response ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None) ||
                 importer.isReadable || importer.mipmapEnabled || importer.streamingMipmaps ||
                 importer.filterMode != FilterMode.Bilinear || importer.wrapMode != TextureWrapMode.Clamp ||
-                importer.textureCompression != TextureImporterCompression.Uncompressed ||
+                importer.textureCompression != (runtimeAtlas ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed) ||
                 importer.npotScale != TextureImporterNPOTScale.None || importer.maxTextureSize != size)
                 throw new InvalidOperationException("Village junction texture import contract drift: " + path);
+            if (runtimeAtlas)
+            {
+                TextureImporterPlatformSettings platform = importer.GetPlatformTextureSettings("Standalone");
+                if (texture.format != TextureFormat.BC7 || texture.mipmapCount != 1 || importer.anisoLevel != 4 ||
+                    !importer.ignoreMipmapLimit || !platform.overridden || platform.format != TextureImporterFormat.BC7 || platform.maxTextureSize != size)
+                    throw new InvalidOperationException("Village junction runtime atlas must retain its guarded, single-level BC7 profile: " + path);
+            }
         }
 
         private static Color32[] CreateInitialMask(AlpineVillageJunctionPlan node)
@@ -217,20 +227,19 @@ namespace BarPromenade.Editor
 
             internal SourceSurface(MountainRoadSurfaceKind kind, Color sourceTint, bool response = false)
             {
-                string path = AssetDatabase.GetAssetPath(MountainRoadSurfaceAppearance.GetTexture(kind));
+                string path = AssetDatabase.GetAssetPath(VillageSurfaceAppearance.GetTexture(kind));
                 if (response)
-                    path = "Assets/Resources/Textures/SurfaceResponse/" +
-                           Path.GetFileNameWithoutExtension(path).Replace("Albedo", "Response") + ".png";
+                    path = AssetDatabase.GetAssetPath(VillageSurfaceAppearance.GetGroundResponse(VillageSurfaceAppearance.GetFamily(kind)));
                 Color32[] encoded = ReadPng(path, out int width, out int height);
                 if (width != height || !Mathf.IsPowerOfTwo(width))
                     throw new InvalidOperationException("Junction source must be a square power-of-two texture: " + path);
                 size = width;
-                pitch = MountainRoadSurfaceAppearance.GetRecipe(kind).MetersPerTile;
+                pitch = VillageSurfaceAppearance.GetRecipe(kind).MetersPerTile;
                 // The atlas uses the asphalt slot's scalar response. Preserve
                 // soil's own smoothness before mixing the two multipliers.
-                tint = response ? new Color(MountainRoadSurfaceAppearance.GetRecipe(kind).Smoothness /
-                    MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness, 1f, 1f, 1f) :
-                    MountainRoadSurfaceAppearance.CreateDisplayTint(sourceTint, kind).linear;
+                tint = response ? new Color(VillageSurfaceAppearance.GetRecipe(kind).Smoothness /
+                    VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness, 1f, 1f, 1f) :
+                    VillageSurfaceAppearance.CreateDisplayTint(sourceTint, kind).linear;
                 var level = new Color[encoded.Length];
                 for (int index = 0; index < level.Length; index++)
                     level[index] = response ? (Color)encoded[index] : ((Color)encoded[index]).linear;
@@ -289,6 +298,7 @@ namespace BarPromenade.Editor
             bool response = assetPath.EndsWith("-Response.png", StringComparison.OrdinalIgnoreCase) ||
                             assetPath == VillageJunctionTextureSetup.ResponseAtlasPath;
             bool data = response || assetPath.EndsWith("-Mask.png", StringComparison.OrdinalIgnoreCase);
+            bool runtimeAtlas = assetPath == VillageJunctionTextureSetup.AtlasPath || assetPath == VillageJunctionTextureSetup.ResponseAtlasPath;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = !data;
@@ -301,9 +311,17 @@ namespace BarPromenade.Editor
             importer.isReadable = false;
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.filterMode = FilterMode.Bilinear;
-            importer.anisoLevel = 1;
+            importer.anisoLevel = runtimeAtlas ? 4 : 1;
             importer.wrapMode = TextureWrapMode.Clamp;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.textureCompression = runtimeAtlas ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+            if (runtimeAtlas)
+            {
+                importer.ignoreMipmapLimit = true; importer.crunchedCompression = false;
+                TextureImporterPlatformSettings platform = importer.GetPlatformTextureSettings("Standalone");
+                platform.name = "Standalone"; platform.overridden = true; platform.format = TextureImporterFormat.BC7;
+                platform.maxTextureSize = AlpineVillageJunctionAppearance.AtlasSize; platform.compressionQuality = 100; platform.crunchedCompression = false;
+                importer.SetPlatformTextureSettings(platform);
+            }
             importer.maxTextureSize = assetPath == VillageJunctionTextureSetup.AtlasPath ||
                                      assetPath == VillageJunctionTextureSetup.ResponseAtlasPath ?
                 AlpineVillageJunctionAppearance.AtlasSize : AlpineVillageJunctionAppearance.TileSize;

@@ -60,7 +60,7 @@ namespace BarPromenade
                         throw new InvalidOperationException(
                             "Unknown upper canopy role: " + renderer.name);
                 }
-                MountainRoadSurfaceAppearance.ApplyCombined(renderer, surface, tint);
+                VillageSurfaceAppearance.ApplyCombined(renderer, surface, tint);
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.Off;

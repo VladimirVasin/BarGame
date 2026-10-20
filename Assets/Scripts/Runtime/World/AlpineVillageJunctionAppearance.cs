@@ -63,7 +63,7 @@ namespace BarPromenade
             properties.SetColor(ColorId, Color.white);
             properties.SetVector(BaseMapTransformId, new Vector4(1f, 1f, 0f, 0f));
             properties.SetFloat(SmoothnessId,
-                MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness);
+                VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness);
             properties.SetFloat(MetallicId, 0f);
             renderer.SetPropertyBlock(properties, materialIndex);
             GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Asphalt, Texture, materialIndex);

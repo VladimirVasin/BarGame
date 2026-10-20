@@ -16,15 +16,6 @@ namespace BarPromenade
         public const string GeneratorVersion = "1.1.0";
         public const int TextureSize = 1024;
         public const int TextureCount = 5;
-        private static readonly Texture2D[] textures = new Texture2D[TextureCount];
-        private static VillageFacadeTextureManifest manifest;
-        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
-        private static readonly int BaseMapTransformId = Shader.PropertyToID("_BaseMap_ST");
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId = Shader.PropertyToID("_Color");
-        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
-        private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
-
         public static string GetTextureName(int index)
         {
             switch (index)
@@ -46,68 +37,24 @@ namespace BarPromenade
             bool roofTimber = false)
         {
             if (renderer == null) return;
-            int index;
+            string family;
             switch (surface)
             {
-                case MountainRoadSurfaceKind.Timber:
-                    index = roofTimber ? 3 : verticalTimber ? 1 : 0;
-                    break;
-                case MountainRoadSurfaceKind.LayeredStone: index = 2; break;
-                case MountainRoadSurfaceKind.Masonry: index = 4; break;
+                case MountainRoadSurfaceKind.Timber: family = roofTimber ? "Roof" : verticalTimber ? "Joinery" : "Timber"; break;
+                case MountainRoadSurfaceKind.LayeredStone: family = "Stone"; break;
+                case MountainRoadSurfaceKind.Masonry: family = "Plaster"; break;
                 default:
-                    MountainRoadSurfaceAppearance.Apply(renderer, surface, sourceTint);
+                    VillageSurfaceAppearance.Apply(renderer, surface, sourceTint);
                     return;
             }
-            VillageFacadeTextureSheet sheet = LoadManifest().sheets[index];
-            if (textures[index] == null)
-                textures[index] = Resources.Load<Texture2D>(ResourceFolder + sheet.name);
-            if (textures[index] == null)
-                throw new InvalidOperationException("Missing village facade texture: " + sheet.name);
-
-            // The kit's UVs address its entire normalized descriptor cube,
-            // including roles whose mesh bounds occupy only part of that cube.
-            // Multiplying by each role's mesh bounds a second time stretches
-            // grain on small rafters and changes pitch between log courses.
+            // Descriptor UVs address the whole normalized kit cube. Mesh bounds
+            // cannot be applied again to small rafters or individual log courses.
             Vector3 scale = renderer.transform.localScale;
             float u = roofTimber ? Mathf.Abs(scale.x) : Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
             float v = roofTimber ? Mathf.Abs(scale.z) : Mathf.Abs(scale.y);
-            Vector4 uv = SurfaceAppearanceCore.CreateBaseMapTransform(
-                renderer.transform, u, v, sheet.meters_per_tile, .015f, 19077 + index);
-            Color tint = CompensateTint(sourceTint, sheet.mean_linear_luminance);
-            HomeSurfaceRecipe existing = MountainRoadSurfaceAppearance.GetRecipe(surface);
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, textures[index]);
-            properties.SetVector(BaseMapTransformId, uv);
-            properties.SetColor(BaseColorId, tint);
-            properties.SetColor(ColorId, tint);
-            properties.SetFloat(SmoothnessId, existing.Smoothness);
-            properties.SetFloat(MetallicId, existing.Metallic);
-            renderer.SetPropertyBlock(properties);
-        }
-
-        /// <summary>
-        /// Solve each channel in linear space. Neutral sheets preserve the
-        /// caller's hue and mean brightness, including dark weathered timber.
-        /// </summary>
-        private static Color CompensateTint(Color tint, float mean)
-        {
-            return new Color(
-                Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(tint.r) / mean)),
-                Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(tint.g) / mean)),
-                Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(tint.b) / mean)),
-                tint.a);
-        }
-
-        private static VillageFacadeTextureManifest LoadManifest()
-        {
-            if (manifest != null) return manifest;
-            TextAsset source = Resources.Load<TextAsset>(ManifestResourcePath);
-            if (source == null)
-                throw new InvalidOperationException("Missing measured village facade texture manifest.");
-            manifest = ParseManifestOrThrow(source.text);
-            return manifest;
+            float pitch = !roofTimber && surface == MountainRoadSurfaceKind.Timber ? 1.4f : 2.4f;
+            Vector4 uv = SurfaceAppearanceCore.CreateBaseMapTransform(renderer.transform, u, v, pitch, .015f, 19077 + Array.IndexOf(VillageSurfaceAppearance.Families, family));
+            VillageSurfaceAppearance.ApplyFamily(renderer, family, sourceTint, uv, MountainRoadSurfaceAppearance.GetRecipe(surface).Metallic);
         }
 
         public static VillageFacadeTextureManifest ParseManifestOrThrow(string json)
@@ -128,13 +75,6 @@ namespace BarPromenade
                     throw new InvalidOperationException("Village facade texture contract drift: " + GetTextureName(index));
             }
             return data;
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCachedResources()
-        {
-            manifest = null;
-            Array.Clear(textures, 0, textures.Length);
         }
     }
 

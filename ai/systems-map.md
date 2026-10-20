@@ -18,9 +18,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
+| Village scenery | 18 households/8 sheds/5 yards; local physical maps/unique closeups. | `AlpineVillage{AbandonmentPlan,ExpansionBuilder}`, `VillageSurfaceAppearance` | Current |
 | Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
-| Lodge shelter | Doors/wind/lamp/seats/photo/hatch; 7 wood maps. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `LodgeWoodAppearance`, `VillageInteriorAcoustics` | Partial |
+| Lodge shelter | Doors/wind/lamp/seats/photo/hatch; 7 wood identities. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `LodgeWoodAppearance`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six residents/31 homes; help persists; automatic greetings 5 Hz, E immediate; reusable visibility buffer. | `AlpineVillageLifeController`, `VillageWorkroomController`, `VillageHousehold*` | Current |
 | Narrative inspection | 24 outdoor + 4 lodge RU/EN; low/right hatch close-up, compact choice, lid attempt→bottom reply. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |

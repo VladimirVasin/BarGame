@@ -68,6 +68,7 @@ namespace BarPromenade.Editor
                 {
                     if (!meshes.TryGetValue(part.mesh, out MeshFilter filter))
                         throw new InvalidOperationException("Missing imported life prop part: " + part.mesh);
+                    VillageSurfaceTextureSetup.ValidateUniqueMeshOrThrow(filter.sharedMesh, part.unique_surface, part.surface_family, part.uv0_signature, part.uv1_signature);
                     Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
                     foreach (Vector3 vertex in filter.sharedMesh.vertices)
                     {

@@ -68,7 +68,12 @@
             1.2200000286102295,
             0.29
           ],
-          "triangles": 840
+          "triangles": 840,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "f6fcbfa6e8bd3e55d7c58f27183ccee6109493b0e58b7029e5b8694696844220",
+          "uv1_signature": "e396fb627a76f871c2ba463d7a7499a201c03955cacdd88ffc1311041450dad0",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N01_Cloth",
@@ -90,7 +95,12 @@
             0.6920000314712524,
             0.23800000000000002
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "47b9f420a8be3c6b621fa4c5a2ca7a442772aa575108325162528d2d0381ba84",
+          "uv1_signature": "f8ceb499ee40471c41c851b6feb4e8be857fcc37bc1cac7548ac78c3b09b04df",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -148,7 +158,12 @@
             1.445,
             0.41000000000000003
           ],
-          "triangles": 512
+          "triangles": 512,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "2ec6ac25aee812064b72c9ecc9f521b243116dbf84551b6e9e7184529b8215d9",
+          "uv1_signature": "8a3b6a04497481b7f7cf87489e438821b29aadc8b0fd0fe70be952ad6e4bb8db",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N02_Paper",
@@ -170,7 +185,8 @@
             1.4125,
             -0.13799999999999998
           ],
-          "triangles": 92
+          "triangles": 92,
+          "unique_surface": false
         }
       ]
     },
@@ -228,7 +244,12 @@
             0.7645175802707672,
             0.2962358295917511
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "1e8541b271d85705d4fb7e999f96b097d8fa14006b586ac6761b947bd232f17e",
+          "uv1_signature": "fcdea6ed9c061c5567fda41e23c069b1c1d7457f8c6ac61a3eed3ae5d6f33d20",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N03_Cloth",
@@ -250,7 +271,12 @@
             0.7725175802707672,
             0.225
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "7d941cb8506468e8c733c24047b592e5a7d2ca087310cc25e22f85e657f06b8c",
+          "uv1_signature": "b671e2e2af419a818e96e96ba60f1dae9365ef8a3e2aa496ba4c806baf769bb0",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N03_Iron",
@@ -272,7 +298,12 @@
             0.40701758027076723,
             0.0275
           ],
-          "triangles": 184
+          "triangles": 184,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "8c12ebca02e75a2e53e775e2498689e8878c142b42541f5afe139c7d265015cf",
+          "uv1_signature": "d4d35d4d38ba454aa7778dc85e444c622e258d507448c4433c82c66e7326595e",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -338,7 +369,8 @@
             1.7853423357009888,
             0.03997988998889923
           ],
-          "triangles": 20
+          "triangles": 20,
+          "unique_surface": false
         },
         {
           "mesh": "GEO_N04_Wood",
@@ -360,7 +392,12 @@
             1.7735,
             0.057999999999999996
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "c262c2cb46d654002e03aa84dd973fb0fc49b36d919f7465bc0b1a228f9b4ce2",
+          "uv1_signature": "c1d699a48595b7ba521ed4e5c6484d1970fccb3d0316a2f83ab959a48e9eaaae",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N04_Iron",
@@ -382,7 +419,12 @@
             1.761,
             0.07050000000000001
           ],
-          "triangles": 184
+          "triangles": 184,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "1b1b8ae41a0c2bf11563e3159297d110f860d8571f2d6b9b0a8f64c3dfc3f108",
+          "uv1_signature": "c47a761880b84271261e107826b519a6b4bd7d18dd222e65215a0467c68b96f3",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -440,7 +482,12 @@
             0.9059968590736389,
             0.33
           ],
-          "triangles": 672
+          "triangles": 672,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "5e0770e4e0adffa746829fdf430ee56197cb80fd0e65f883a66bb241e3072ea3",
+          "uv1_signature": "c3a8c2019ce293c7cca70219b16be9c19a4969154b0f9a9d29001db2782d6ba3",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N05_FreshWood",
@@ -462,7 +509,12 @@
             0.9015577435493469,
             0.2972898781299591
           ],
-          "triangles": 504
+          "triangles": 504,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "6ba2626c5894aa0117c7e882f8e3230480c02c2b57d5ef2cd9a3b9cfc6899679",
+          "uv1_signature": "b06d592cc539cccb88052d4c5da6b97e7edbc471c657cc460acd45c046d8443c",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N05_Iron",
@@ -484,7 +536,12 @@
             1.0056827068328857,
             0.29778680205345154
           ],
-          "triangles": 280
+          "triangles": 280,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "0fdeef9c21c5bdf8c31bd00a04a6d8cc156d9ae01384813d8a548679e9db19bc",
+          "uv1_signature": "d06a7bea2ad35d66bd1ac5072435f2be08f3d8b149f7dd7102b8007c9488d236",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -542,7 +599,12 @@
             1.1135690963268279,
             0.29000000000000004
           ],
-          "triangles": 252
+          "triangles": 252,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "fefdce200a028223c6c17dbc90c11091de32cb194577c4e627663576460aa7bc",
+          "uv1_signature": "ab4015f962241df202df628272b1295c906eb3b3827097e28e321cb3f049f873",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N06_FreshWood",
@@ -564,7 +626,12 @@
             1.076069096326828,
             0.0525
           ],
-          "triangles": 44
+          "triangles": 44,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "44ee6a4833765d155ce598d3217bfcdb023244ef1883c0e431a3ea1e00038176",
+          "uv1_signature": "743ec8139a7d9803f0450b46e8c6f6b3d93a8ec9ccf698ed6c393753fbace9c7",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N06_Iron",
@@ -586,7 +653,12 @@
             1.0445691049098969,
             0.1899999976158142
           ],
-          "triangles": 924
+          "triangles": 924,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "ed9b782fbeddeb4a9f4bc2849c5630d06a3680b73e3827cc3dd0fdbf673367c4",
+          "uv1_signature": "0e561e6d4efc4662a874c48d711646879bcd4ad6324b017af5071042cd262971",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N06_Cloth",
@@ -608,7 +680,12 @@
             1.0325691401958466,
             0.07899999618530273
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "f792f0777c1eb02239e7289e82e0862a9e16736299b5bce811633eb0a60c384c",
+          "uv1_signature": "566a9e1c256f22326dd3be938d712ca780ecd1d3df6315849efc1fdd7f52c1af",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -666,7 +743,12 @@
             1.66,
             -0.03
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "4a2e27eb24d494f18841d9ea35574e69bb63a14a2197c86ea3c9b8295f7f328b",
+          "uv1_signature": "96a29bdbfb1a8dc8ed51088e01cef7180ef274ae653ac4eb717c3abd5ac254cb",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N07_FreshWood",
@@ -688,7 +770,12 @@
             1.7016459703445435,
             0.03200000151991844
           ],
-          "triangles": 420
+          "triangles": 420,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "6daa9799b400124bde983be039be5cbb21d7a20af209f3e283ac59106abec884",
+          "uv1_signature": "f76a7a7be987834df428fbfbef5141b2d2095463e831ecb775168633ed7b8ee4",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N07_Iron",
@@ -710,7 +797,12 @@
             1.4925,
             0.0195
           ],
-          "triangles": 552
+          "triangles": 552,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "d320950e59a36a701823abe79ddc83d8b14106c5e86efec536e44fe0aecf2c1a",
+          "uv1_signature": "3e0497a20281c205e51f2bce5ff7382da382b80345494e87d142ba22a08e6db4",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -768,7 +860,12 @@
             0.8202230679988861,
             0.30000000000000004
           ],
-          "triangles": 280
+          "triangles": 280,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "c5f620d7b57715112b75aeacec205ad0bbe7b982623557cded15b3c333d90e1f",
+          "uv1_signature": "9960c4cb37f786b5d9fee9863e8dc6c23879b9258e2553a0dada405901ad7cd8",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N08_Cloth",
@@ -790,7 +887,12 @@
             0.8437230679988861,
             0.4069296419620514
           ],
-          "triangles": 364
+          "triangles": 364,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "bd093d91dfd71adf42e8f1a7bd59c60b9715dc43d420b3f27fda83d571edbb23",
+          "uv1_signature": "608e5535b25d8a8f2eb155f798198f922f1d2a3755334b6b739434182bffdd15",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N08_FreshWood",
@@ -812,7 +914,12 @@
             0.8427230679988861,
             0.335
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "d4aeb000c4cff2656a09bce87beb8db7994be2ac7d8c76d627149d0807efa4cb",
+          "uv1_signature": "e083eeb691c0f5b2a1baad865cd5e91b2ec0598be23c19ff20d8742239d3431f",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -870,7 +977,12 @@
             0.9259135127067566,
             0.3205024302005768
           ],
-          "triangles": 420
+          "triangles": 420,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "bb184b89c8f20bda9b30d1dffc1fb8d5c63bbb3e8fb57bb20270e9243069647d",
+          "uv1_signature": "8ac857622ebc0742c60a4daaa0b1bbf8767ebedc9ab36dc11d7ea3d1123945fc",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N09_Cloth",
@@ -892,7 +1004,12 @@
             0.9299135208129883,
             0.12999999523162842
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "377b05ad8d27533ac962e35cd1ff2c06a333fc19f80f34fc7c07377067371a19",
+          "uv1_signature": "5607e5b6e48eedfb259b7f416ba79eb99a9d6b954e74a8dad598ac9fe7a31879",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -950,7 +1067,12 @@
             1.6907647550106049,
             0.1694028526544571
           ],
-          "triangles": 532
+          "triangles": 532,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "e8cef1bbe038c382d01baef7283f0c539553f223d201ce49ca46c7b94ad67372",
+          "uv1_signature": "09baee12e3cec3020ef6660759f49fd5b1971e5e6b456332f764c912e8d8a545",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N10_Cloth",
@@ -972,7 +1094,12 @@
             1.6260437667369843,
             0.018995676189661026
           ],
-          "triangles": 20
+          "triangles": 20,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "f9cd2766ef770d29a1872d020e4e7bb88c13afa7a6c8eae7e06dedb7047d9481",
+          "uv1_signature": "42894eb7c29964f06975253a86e279122ff72f9280778542ef2c18179cccb204",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1030,7 +1157,12 @@
             1.259402871131897,
             0.25999999046325684
           ],
-          "triangles": 3024
+          "triangles": 3024,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "a437f0f24edf88cf637c8617e52b9ed1e72612a42e71e3faaacbf156efa61a38",
+          "uv1_signature": "5b8d4e0d30b502cb129f757edc7ef91258c59f8f62c7f53a72ada8ab2a446d8a",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N11_Rubber",
@@ -1052,7 +1184,12 @@
             0.9327604174613953,
             0.10300000756978989
           ],
-          "triangles": 1344
+          "triangles": 1344,
+          "unique_surface": true,
+          "surface_family": "Rubber",
+          "uv0_signature": "20124e87cc19dfa1b0f737f47a8706dbc675e0b234a62d5f564478c8b81d6024",
+          "uv1_signature": "cbe10fab46a2fc3c409f41ceeaa1bf6d0a7c1091ed6cdcfa05956f4af26ba6bb",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N11_Rust",
@@ -1074,7 +1211,12 @@
             0.6969950199127197,
             0.08699999749660492
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "6dac237b9fa8324fff5b1e1dd87ec7204f5884f6110f11a5db5fe18e6f4e3ba4",
+          "uv1_signature": "35b25a852ad7138c0ed5d4aeb313e9ae7aa497d502cfc5a224afa8cec79b4780",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1132,7 +1274,12 @@
             1.518580675125122,
             0.3744962811470032
           ],
-          "triangles": 392
+          "triangles": 392,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "ce4e4d1d358ceee0c993dd3bcb42c0d9b732357f15e3e2dd58a5fce34e2ecfee",
+          "uv1_signature": "3a2c549937d09d3daacf9620814e9ca0fd435d226f819bedbe4f2ead54a4eded",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N12_Iron",
@@ -1154,7 +1301,12 @@
             1.6806361675262451,
             0.016947269439697266
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "72616cc726816ef7158b300d0305ef5a3298dfa8d46926cd7414771cd44e4399",
+          "uv1_signature": "246d74d465b53ff9b92d40312eb09bbf074a4206b582b8aae66c8f89a7a23fff",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1212,7 +1364,12 @@
             1.544209361076355,
             0.305
           ],
-          "triangles": 252
+          "triangles": 252,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "90b0bc3332411335a3548e74c25ce28fb36f831241d2e555eda520ee11f4402b",
+          "uv1_signature": "6fcc68fe9f57aa75e5f778d6e982a2104e4426dab708ebe89f972cfcd1bfd5fa",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N13_Iron",
@@ -1234,7 +1391,12 @@
             1.593767523765564,
             0.34106069803237915
           ],
-          "triangles": 124
+          "triangles": 124,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "fe274aa6216ac9375a643c27548652a4fbcee5159a6ab62c99c5d50df9e4d15b",
+          "uv1_signature": "0de1e3d5902bc7216f4ffb8feb009d4ae29b61e5280e8ec61489b557e0b999a7",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N13_Stone",
@@ -1256,7 +1418,12 @@
             1.238829598426819,
             0.315
           ],
-          "triangles": 92
+          "triangles": 92,
+          "unique_surface": true,
+          "surface_family": "Stone",
+          "uv0_signature": "cbbd9f6daeca7f36b4d5513600481d8b7ef5577b89fa853d4e4064069e89b93c",
+          "uv1_signature": "8f841a81f9b577740cd1114b77c041aced6fdafc2df30c11aec8e341fba0eaad",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1314,7 +1481,12 @@
             1.642964780330658,
             0.6200000047683716
           ],
-          "triangles": 224
+          "triangles": 224,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "ea5699f212afc82bea0f7e531d9c6ac15121622a078889110d4bf6dcd9686aa7",
+          "uv1_signature": "e66d6081aafdcb9946e39b54b45e23bb176e1e7c5690a3c59fabb5f66a9f7d45",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N14_Iron",
@@ -1336,7 +1508,12 @@
             1.602964699268341,
             0.5900000333786011
           ],
-          "triangles": 800
+          "triangles": 800,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "8da1bc105ef78a577408d6cc4a8727e28c0a254fb16a2e9a7779d4c233fd7fc9",
+          "uv1_signature": "ea55b355f3058d3efa209c421784835804286f064a3a57234b57b681dc62cf79",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1394,7 +1571,12 @@
             1.1596760347978352,
             0.3333204984664917
           ],
-          "triangles": 196
+          "triangles": 196,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "e0f12c41966b1fa6773f2dd175a54d20509149017e7c5e51ba88f5a3e8d9ee03",
+          "uv1_signature": "734aa05a0c65c1579b9e45fd78fe97fd41e3a419f2fc03ec309dd2f01faec4b3",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N15_Iron",
@@ -1416,7 +1598,12 @@
             0.8701200938224792,
             0.17
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "10c96c6fb57a707ad4b7b985fe4a7f1592a695470ebc83c6ce4bf5263741bdf3",
+          "uv1_signature": "2a70c3747752e0984d4a743299aeb1ffab9065345427632905c856574e291ef8",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1482,7 +1669,8 @@
             1.7900644540786743,
             0.035999298095703125
           ],
-          "triangles": 20
+          "triangles": 20,
+          "unique_surface": false
         },
         {
           "mesh": "GEO_N16_Wood",
@@ -1504,7 +1692,12 @@
             1.7735,
             0.057999999999999996
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "e8efcd7d38db41b2660eff58ead6952edc1ca551dbb9a5fcf31f44789fe44445",
+          "uv1_signature": "da210904fbc9c164a20a4988f5b9aa9586d1e80fc27af3b57f2688c6f34ec539",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N16_Iron",
@@ -1526,7 +1719,12 @@
             1.761,
             0.07050000000000001
           ],
-          "triangles": 184
+          "triangles": 184,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "49d11e0503021b88755a39538e57aef77e43f3affceaf8b60f7a7293d5e55c86",
+          "uv1_signature": "c47a761880b84271261e107826b519a6b4bd7d18dd222e65215a0467c68b96f3",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1584,7 +1782,12 @@
             1.527364730834961,
             0.4750584065914154
           ],
-          "triangles": 312
+          "triangles": 312,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "c61570adf453e70a71ab975ef621100e5baca5434ae63c2bc4e683a6e1963e4e",
+          "uv1_signature": "4b1509157951fb4982ec0d5616facbfb2b7855abec1a453986c7631deb204df2",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N17_Rust",
@@ -1606,7 +1809,12 @@
             0.6849999999999999,
             0.098
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "3fac53da10736df1259d178a61b535e76bddd9735d3bffae5ee183e2a626c3cd",
+          "uv1_signature": "c1968675cd5383bfd019bf8bce95701cb22503ee6b9bea78c867d2ef0d9706c2",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1664,7 +1872,12 @@
             1.4430000595748425,
             0.2321922779083252
           ],
-          "triangles": 1372
+          "triangles": 1372,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "a08b3025e29edf14c8228c8f2a264690a1a81adf4c36fa09ee1ba9d55ca2e05c",
+          "uv1_signature": "5671aea3d27712a6458145446b4f0b84ef8ea9b3b442cb37941cd04836f5577f",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N18_Rust",
@@ -1686,7 +1899,12 @@
             0.21800002142786978,
             0.065
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "0a37881a4d27832c154be1808ef0c3b67a5ad752f91a27e3ed01ad434697f704",
+          "uv1_signature": "c838494e481a5faa8a160ef1ab1fc9016654fade23b949902b65825fbe214063",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1744,7 +1962,12 @@
             0.9512337744235992,
             0.21791940927505493
           ],
-          "triangles": 364
+          "triangles": 364,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "43b5d8bacdcabb594b9feeb47592b4c32410393f8d5f71e88bc63675b4622d4c",
+          "uv1_signature": "02f7fcb5633a1d03d84184408031c6d1c02df779b1983a33d7aa05f643c035e8",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N19_Iron",
@@ -1766,7 +1989,12 @@
             1.198945552110672,
             0.25200000405311584
           ],
-          "triangles": 280
+          "triangles": 280,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "37d87918d63e81482caea642804d3aa3f1abbc7a58440c6638fa1e934ab2ec30",
+          "uv1_signature": "136663f128c6c3eb620427807a1c7d022ede0514e89b9f2953ad3fc8fe0bb1a0",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1824,7 +2052,12 @@
             1.9139341711997986,
             0.1549699604511261
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "855c0d9d4e7d7ff45e78f49bc69938f6c4d07de5d5d6949cd1121f27fbb31dab",
+          "uv1_signature": "a968f4c8c7164a8da9a48a01a6fed973fb63cd4f91a3ccabb408ea93ce3faa8e",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N20_Cloth",
@@ -1846,7 +2079,12 @@
             1.6529542803764343,
             0.08944857120513916
           ],
-          "triangles": 12
+          "triangles": 12,
+          "unique_surface": true,
+          "surface_family": "Cloth",
+          "uv0_signature": "0c0de468721405befffc30bc2f27489cff6733583bcc4aa79733c6a3ec79c7a2",
+          "uv1_signature": "915dee54605ac423d9a943981e994b56b4b3d9016ee8c2a1b37399fd926a84a1",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N20_Paper",
@@ -1868,7 +2106,8 @@
             1.5119671320915222,
             0.0635
           ],
-          "triangles": 84
+          "triangles": 84,
+          "unique_surface": false
         },
         {
           "mesh": "GEO_N20_Iron",
@@ -1890,7 +2129,12 @@
             1.0549671320915222,
             0.0425
           ],
-          "triangles": 184
+          "triangles": 184,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "c67399516b3a3bb35135df88cbeed7e13ac80e79177716317c628ff6e1bab760",
+          "uv1_signature": "25c08c6763eb9b9b6b5a7bfbbbd6cfc7072fe6fed12db470c9cd48c184037569",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -1948,7 +2192,12 @@
             1.7626043856143951,
             0.24562998116016388
           ],
-          "triangles": 1792
+          "triangles": 1792,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "d3c7b2922f1f13d2a9a2e01d5b5e31498ae5324f234759475265aee03b6f3402",
+          "uv1_signature": "a1f21ee1141e1fec10c960ecee394388e9cbd70ac0a1ce21fc35762def04dfbd",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N21_Rubber",
@@ -1970,7 +2219,12 @@
             0.16838443279266357,
             0.2533034682273865
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Rubber",
+          "uv0_signature": "7347a83d73b5da4d88967bfbcd660543d16f78e557e8347a7a65703d0a966fd6",
+          "uv1_signature": "44ad2dca69b9d005c487d9cca9816d0fc897a97cd3835e5a9c017975078bbe64",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2028,7 +2282,12 @@
             1.0428456366062164,
             0.43781670928001404
           ],
-          "triangles": 104
+          "triangles": 104,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "6f00c3bc8f37af89f06a5000c10db600c7e8bfc9cee5c65449fe8e500af957fd",
+          "uv1_signature": "011e5770075073c0e4353f459adb22350622381bb47c5f6e351a460c5d54b217",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N22_Iron",
@@ -2050,7 +2309,12 @@
             0.0898481160402298,
             0.4548136591911316
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "f4b313d7aaa2805d4c45ac92355527f72404fc718b4436a51bf39e95e8ad63c1",
+          "uv1_signature": "c412e959d4eb444554fe0a36d235882bb0ff445f579954da2bbca266793d18f8",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2108,7 +2372,12 @@
             1.9768545031547546,
             0.047488968819379807
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "25c5252f6a41f9d4f5ea8f579684b8cc45430ad31dd69313af8126465f032fbc",
+          "uv1_signature": "421984b60da3987d6dd45403500123311fae8964a557ed7dc9e6693c22f4455e",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N23_Iron",
@@ -2130,7 +2399,12 @@
             1.8446733279228211,
             0.175
           ],
-          "triangles": 560
+          "triangles": 560,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "26e73e217f2cb367776fb18685613c0d8ac5c940b634f7f58d1d617380cca99b",
+          "uv1_signature": "2f924eece1756e2d85ea17f27a7b5be60d457eb02af53dbb4ed1f49bde4ce66c",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2188,7 +2462,12 @@
             0.8410000801086426,
             0.536927342414856
           ],
-          "triangles": 728
+          "triangles": 728,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "123da0e2172530438d37ad30071dc6698519501c408e829d6eafdac796887dff",
+          "uv1_signature": "2ddd709c24cb770b1f8b594598de583214b3b02b9250295a3efdfb68c9553a88",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N24_Iron",
@@ -2210,7 +2489,12 @@
             0.1972421407699585,
             0.7203025817871094
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "e5ec4d59109c344a8a5ad7da9635a565ea1d9a998870216c6062a03ccee6349c",
+          "uv1_signature": "a0568c6b85ea7c6263d4a0f81b42de03ea6d05ded41faf523e7e95348c0fe5bd",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2268,7 +2552,12 @@
             1.375,
             0.425
           ],
-          "triangles": 112
+          "triangles": 112,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "6b839a32741019eef7bdaeb477ca42cf3c9b9c7adff1ed9c3380563295739a10",
+          "uv1_signature": "66ca76e8814cf52b7e38477421bb27dc68a405c53ba700194988d6fec9ce96f1",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N25_Iron",
@@ -2290,7 +2579,12 @@
             1.36,
             0.32999999999999996
           ],
-          "triangles": 392
+          "triangles": 392,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "94e61bccaa4859e0943cd3bc8aec4c2cec7db915682103b984b84a555b9ad809",
+          "uv1_signature": "a474ffc60c3d18a9af86e51da5373f12ea77fa531a5bfa58daea63a389152d28",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2348,7 +2642,12 @@
             0.6782687187194825,
             0.255
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "5626737ff05a0354f303d3af49ef5e13cae442c6c24adb2f49dffef5b000862f",
+          "uv1_signature": "976894450c980cf3beb9cb77a472bf930a7f48459ace695657757bf47a0b068f",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N28_Iron",
@@ -2370,7 +2669,12 @@
             1.3032687187194825,
             0.33899998664855957
           ],
-          "triangles": 352
+          "triangles": 352,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "3ad20cfd2b107319e25c8914ed7a118a2303b981dab3a9b0ee8ed2b22eadcf3a",
+          "uv1_signature": "c627d1e69966894f40574691585c498c398b17790d33d9d5931663d578cc90cf",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N28_Rust",
@@ -2392,7 +2696,12 @@
             1.26210618019104,
             0.360042929649353
           ],
-          "triangles": 3388
+          "triangles": 3388,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "d0d1216872e2ba58db9a3ceca2167a697567d6e2d96f6b156186ea447c4bc668",
+          "uv1_signature": "c43b6c57960d4e585ab22c7bd99891293dd814284776b5426df4e953ac220d23",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2450,7 +2759,12 @@
             0.6750000789761543,
             0.5799999237060547
           ],
-          "triangles": 168
+          "triangles": 168,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "b6bb2d6448a28fe6d4c7e432e50fa317177c48f167f19ab21e464c5d89a9dbd3",
+          "uv1_signature": "309a659885907ea0a326390f217111caf7577cfe251e8f3a95ce34884a3a8744",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N29_Iron",
@@ -2472,7 +2786,12 @@
             1.0770000889897346,
             0.6961055397987366
           ],
-          "triangles": 8752
+          "triangles": 8752,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "eaedd72f8d285a630a03c9c257a142a3d6e51cf5b35450d2692b9e0063cb7e5a",
+          "uv1_signature": "dd7f5f70b7cc91b6aecc1b7253e6006e245974d155894894a01ca51812f86803",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N29_Rust",
@@ -2494,7 +2813,12 @@
             0.8650000527501107,
             0.18
           ],
-          "triangles": 44
+          "triangles": 44,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "70a82c9cd6ca4d6970cd2af1ead6a5eb82495ed803cde940b75c1dae361948da",
+          "uv1_signature": "885bddf90eb8ce59545a765b1f5126c651c0082be1d5918555f4ea1a27285c7c",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2552,7 +2876,12 @@
             0.9914892315864563,
             0.41138604283332825
           ],
-          "triangles": 196
+          "triangles": 196,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "f31e704658c9ecf27285a8a51e910ef79dc8faf9f46ca5b6feaccfcdaf1b7970",
+          "uv1_signature": "669ffa36d0b1c2b701f942ced3592089847c87a58e60feaae14e8ac3f05194de",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N30_Rust",
@@ -2574,7 +2903,12 @@
             1.4250453718387392,
             0.4875329166739195
           ],
-          "triangles": 992
+          "triangles": 992,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "488eaaccff0ea0d6e0840ed4f169f29ac6ad7ef7c84f8b516b1116f0de3e9246",
+          "uv1_signature": "4ba6efb94c1901b420344ac9231ae1ed4056f6337acea1569a587b822b4fc23a",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N30_Stone",
@@ -2596,7 +2930,12 @@
             1.1300539300879304,
             0.07941519881946679
           ],
-          "triangles": 56
+          "triangles": 56,
+          "unique_surface": true,
+          "surface_family": "Stone",
+          "uv0_signature": "fa30eb3a7cd9210ae58eb80b7d74f7256e226874e6408efe39bb7fadea210fff",
+          "uv1_signature": "73d6afee1a095424c85a30af7c7c2028389ed6f668b7bd31c52b0739695ee56c",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2654,7 +2993,12 @@
             0.86,
             0.185
           ],
-          "triangles": 4188
+          "triangles": 4188,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "0b0978fdef7ae6efd8f040536f7ed7cd5f51bdfd2d29094358be482b9507fb3d",
+          "uv1_signature": "a19f1440b6b33e9765fca9c455e283a4637c2aba78dc098cb89a77ce9a222f8e",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N31_Rust",
@@ -2676,7 +3020,12 @@
             0.35209569334983826,
             0.19017119705677032
           ],
-          "triangles": 24
+          "triangles": 24,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "6c962caaf0d2248db6a186d279f9d3aea44be4021a285fd4660a759605e945a5",
+          "uv1_signature": "878f9a4f076e8b688d45af3e2295fbc3b729673848b34377f8f35c2dd198187f",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N31_Wood",
@@ -2698,7 +3047,12 @@
             0.1650000512599945,
             0.6499999761581421
           ],
-          "triangles": 28
+          "triangles": 28,
+          "unique_surface": true,
+          "surface_family": "Timber",
+          "uv0_signature": "1cc76c9ca9b9ddeaeb03ebff28ae2ac4881512129bedb20c806b4edf18bb4163",
+          "uv1_signature": "f44a0d4c952b94d861c056d0db06f32901b3fd204b942cb53dfa16c8f89bb8db",
+          "uv_channel_count": 2
         }
       ]
     },
@@ -2756,7 +3110,12 @@
             1.9717362523078918,
             0.06300000846385956
           ],
-          "triangles": 756
+          "triangles": 756,
+          "unique_surface": true,
+          "surface_family": "RustedIron",
+          "uv0_signature": "30f5354a66bab6c6d50c78adbeb743689b88bd75317abb00820e2462fbf1fff6",
+          "uv1_signature": "de83755798c520f67dc4c4b8304da6a2d222f3d1f15adca88f09e7691b57fecf",
+          "uv_channel_count": 2
         },
         {
           "mesh": "GEO_N32_Glass",
@@ -2778,7 +3137,8 @@
             1.902035677433014,
             0.07700000000000005
           ],
-          "triangles": 92
+          "triangles": 92,
+          "unique_surface": false
         },
         {
           "mesh": "GEO_N32_Rubber",
@@ -2800,9 +3160,15 @@
             1.8732758164405823,
             0.10599856078624725
           ],
-          "triangles": 140
+          "triangles": 140,
+          "unique_surface": true,
+          "surface_family": "Rubber",
+          "uv0_signature": "ee2557c1b0d367bcea6d97a56436a58e732c59bbcc0ee715269defaddd8469a8",
+          "uv1_signature": "1e583c4c9123b8cb365ac98778703f7467118ddd3c1032f806a4291b6185e271",
+          "uv_channel_count": 2
         }
       ]
     }
-  ]
+  ],
+  "unique_surface_design": "village_unique_physical_surfaces_v1"
 }

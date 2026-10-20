@@ -143,7 +143,7 @@ namespace BarPromenade
                 }
             }
 
-            float metersPerTile = MountainRoadSurfaceAppearance.GetRecipe(
+            float metersPerTile = VillageSurfaceAppearance.GetRecipe(
                 MountainRoadSurfaceKind.BarkAndDeadwood).MetersPerTile;
             GameObject batch = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                 BranchesName,
@@ -156,7 +156,7 @@ namespace BarPromenade
             var renderer = batch.GetComponent<Renderer>();
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer, MountainRoadSurfaceKind.BarkAndDeadwood, DeadWoodColor);
         }
 
@@ -189,11 +189,11 @@ namespace BarPromenade
             // crown and shadow cannot disagree about the gust.
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer,
                 MountainRoadSurfaceKind.ConiferNeedles,
                 CrownColor,
-                MountainRoadSurfaceAppearance.FoliageMaterial);
+                VillageSurfaceAppearance.FoliageMaterial);
         }
 
         private static void BuildTrunks(
@@ -223,7 +223,7 @@ namespace BarPromenade
                     new Vector3(radius * 2f, height, radius * 2f)));
             }
 
-            float metersPerTile = MountainRoadSurfaceAppearance.GetRecipe(
+            float metersPerTile = VillageSurfaceAppearance.GetRecipe(
                 MountainRoadSurfaceKind.BarkAndDeadwood).MetersPerTile;
             GameObject batch = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                 name,
@@ -236,7 +236,7 @@ namespace BarPromenade
             var renderer = batch.GetComponent<Renderer>();
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer, MountainRoadSurfaceKind.BarkAndDeadwood, TrunkColor);
         }
     }

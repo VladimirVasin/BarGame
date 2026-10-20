@@ -98,6 +98,7 @@ namespace BarPromenade.Editor
 
         public static void ValidateOrThrow()
         {
+            VillageSurfaceTextureSetup.ValidateOrThrow();
             VillageManifest manifest = LoadAndValidateManifest();
             Dictionary<string, Mesh> meshes = LoadExactMeshes();
             ValidateImportedModel(manifest, meshes);

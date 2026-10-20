@@ -317,8 +317,8 @@ namespace BarPromenade
             int sourceSlots = ground.subMeshCount;
             var surfaces = new List<int>[5];
             for (int material = 0; material < surfaces.Length; material++) surfaces[material] = new List<int>();
-            float asphaltPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
-            float soilPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
+            float asphaltPitch = VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
+            float soilPitch = VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
             var candidates = new List<Footprint>();
             var timer = Application.isBatchMode ? System.Diagnostics.Stopwatch.StartNew() : null;
             long candidateCount = 0, rejectedPairs = 0;

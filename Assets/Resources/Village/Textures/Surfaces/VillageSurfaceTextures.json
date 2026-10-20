@@ -1,0 +1,526 @@
+{
+  "design_id": "village_material_surfaces_v1",
+  "generator_version": "1.0.0",
+  "gpu_budget_bytes": 100663296,
+  "estimated_gpu_bytes": 100228240,
+  "channels": [
+    "signed_physical_slope_u",
+    "signed_physical_slope_v",
+    "roughness",
+    "cavity"
+  ],
+  "ground_channels": [
+    "smoothness_multiplier",
+    "centred_height",
+    "cavity_tendency",
+    "opaque"
+  ],
+  "source_provenance": {
+    "generator": "image_gen (built-in)",
+    "source_manifest_sha256": "5e4852db498a952ed58329d071159381ed32ea3c8dedb77e39a9c70087bb1723",
+    "images": [
+      {
+        "name": "Wood",
+        "source": "ArtSource/Village/Surfaces/Source/VillageWood.source.png",
+        "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: continuous vertical weathered grey-brown conifer timber grain, restrained age checks, no plank joints. Top right: continuous vertical pale oatmeal pine grain with sparse soft small knots, no plank joints. Bottom left: continuous vertical muted warm oak open grain with soft broad cathedrals, no plank joints. Bottom right: continuous vertical deep desaturated walnut grain, quiet rubbed age, no plank joints. All wood remains dry matte. No large random stains or dramatic black cracks.",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "fe93232f349fe40076b606034b772edcba2a64f5f2e0315ad60770e11f38ed46"
+      },
+      {
+        "name": "Mineral",
+        "source": "ArtSource/Village/Surfaces/Source/VillageMineral.source.png",
+        "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: old alpine grey layered fieldstone mineral texture, broad bedding and sparse mineral seams, muted grey-green, not a wall of outlined bricks. Top right: maintained old ivory lime whitewash/plaster, softened small repaired patches, fine mineral texture, no severe peeling or wall openings. Bottom left: aged cool grey concrete, calm shallow pores and subtle aggregate, no panel seams. Bottom right: closely laid old grey-brown wooden roofing shingles in quiet staggered horizontal courses, subtle varied ends, no moss or snow.",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "8debbc8095b433f80696c34e45073231f37320bc212b6e18228580bb27454d8e"
+      },
+      {
+        "name": "Finish",
+        "source": "ArtSource/Village/Surfaces/Source/VillageFinish.source.png",
+        "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: matte decades-old dark brown iron oxide rust with charcoal pits and restrained burnt sienna, low contrast, no holes or hardware. Top right: faded desaturated grey-green painted steel, calm chipped edges of pigment exposing old grey metal, no plate seams or rivets. Bottom left: old maintained neutral ivory enamel, very subtle dull rubbed use and faint age marks, no floral decoration or cracks. Bottom right: faded matte grey-green painted wood with narrow vertical rubs exposing pale timber, continuous vertical grain, no plank seams. No saturated orange, glossy varnish or fresh paint.",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "edf97d3a4ed589c7751d1fd0bf9da5fa2160c71a619492bbb645331eeb844242"
+      },
+      {
+        "name": "Nature",
+        "source": "ArtSource/Village/Surfaces/Source/VillageNature.source.png",
+        "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: wind-packed cold off-white snow with very soft broad drifting bands, no footprints, glitter, rocks or objects. Top right: winter forest ground, muted dark brown humus and soil, sparse embedded mineral grains and restrained conifer litter, no live green grass. Bottom left: dark muted grey-brown conifer bark with vertical fissures and calm broad plates, no branch silhouette. Bottom right: muted dark grey-green conifer needle surface texture, layered short needle strokes evenly distributed over the entire quadrant, NO tree, branches or transparent gaps. No large high contrast patches.",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "ba4303e794cfdb6c7be8b20e7c0a8676c3d1647a9227f6340e7179a1e5553111"
+      },
+      {
+        "name": "Fabric",
+        "source": "ArtSource/Village/Surfaces/Source/VillageFabric.source.png",
+        "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: old undyed grey-beige linen canvas, regular visible calm weave, subtle flattened wear, no seams or objects. Top right: faded muted burgundy wool upholstery, dense soft woven fibres and restrained wear, no decorative motifs or seams. Bottom left: old blank cream paper, faint fibres, quiet age and handling, absolutely no text, stains, tears or drawings. Bottom right: old matte charcoal-black rubber, subtle smooth worn texture with sparse faint scuffs, no tread pattern or objects.",
+        "grid": [
+          2,
+          2
+        ],
+        "sha256": "31df4a30e5b331d4504776cea50f10969d283b7dcacdefc90be6a4571702b02c"
+      }
+    ]
+  },
+  "sheets": [
+    {
+      "family": "Timber",
+      "size": 2048,
+      "response_size": 1024,
+      "meters_per_tile": 1.4,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/TimberGroundResponse",
+      "ground_response_sha256": "5beeae04e429f416dd0a60be2d8188123d2e5655a7c63c3e3ceed7d9f75d745e",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/TimberAlbedo",
+      "albedo_sha256": "2cc2ee06c4639186b0cd6ee9ace3caf09c7c1dd31e7f5829f28ab24999138387",
+      "response": "Village/Textures/Surfaces/TimberResponse",
+      "response_sha256": "0905b51305f8b13b9aaac336d406afac27e8365b2faef4c811d29e8c62619d9a"
+    },
+    {
+      "family": "Joinery",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/JoineryAlbedo",
+      "albedo_sha256": "cc32c96c543310f83015c6fe062045777d8bb7ff4e76fc5ed204149b723f41c9",
+      "response": "Village/Textures/Surfaces/JoineryResponse",
+      "response_sha256": "b739772ac26646bdc6a9979636ba593d74efe9cbd69a39944859f44f3b8130bc"
+    },
+    {
+      "family": "Stone",
+      "size": 2048,
+      "response_size": 1024,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/StoneGroundResponse",
+      "ground_response_sha256": "c7ce0fe6569685a11a87c932d79cb2e3370807c9b0bf686e244b96f1d8e73fbe",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/StoneAlbedo",
+      "albedo_sha256": "52e077637a6a7fca937af46a8f030f893a6644a6f5add5fb3a85cb4e31394ebe",
+      "response": "Village/Textures/Surfaces/StoneResponse",
+      "response_sha256": "5e3907e3223dcdea2ad3ee5088408af1a91f447e4f577da5a3af881eac6830c7"
+    },
+    {
+      "family": "Roof",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/RoofAlbedo",
+      "albedo_sha256": "11f409590a331e1871886628ecb53149287b23b3de9869a6861874ae9ce8aebd",
+      "response": "Village/Textures/Surfaces/RoofResponse",
+      "response_sha256": "dafc6d622ae07c1205de67f077e7b68efd985fe2bfdf5740ab95bb99bb887a46"
+    },
+    {
+      "family": "Plaster",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/PlasterGroundResponse",
+      "ground_response_sha256": "a8048b03bac04de179ea7a36ea7f1a05c1a40ed1e2328e192d6dae868104850f",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/PlasterAlbedo",
+      "albedo_sha256": "3ffa742b3b2f166996bd9196c592d4a24d94b590acedc5b00072f219133085a0",
+      "response": "Village/Textures/Surfaces/PlasterResponse",
+      "response_sha256": "3c7610f1441299e2dc68d16a87ceb9390c0dc1ccebe3797023854a27eec672ec"
+    },
+    {
+      "family": "Concrete",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 3.0,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/ConcreteGroundResponse",
+      "ground_response_sha256": "af1a6bd5716fe53ddaec1edb949b51f255c45196cc2e19032ba95118145434b6",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "Village/Textures/Surfaces/ConcreteAlbedo",
+      "albedo_sha256": "1745897188e8857c2f29ac13178c7ddc7f7e79381a8db9626682d2f27a9e4b9c",
+      "response": "Village/Textures/Surfaces/ConcreteResponse",
+      "response_sha256": "7a49c6095d814f5d41db026077be78e2fb91babccc59d98c5f9dda778a6030e1"
+    },
+    {
+      "family": "RustedIron",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/RustedIronAlbedo",
+      "albedo_sha256": "b754c769104df3903b0d8d8d66693fc3d5dd9ae71611dfaf2f52a591f4b84b0f",
+      "response": "Village/Textures/Surfaces/RustedIronResponse",
+      "response_sha256": "6bed1e22dff6246f9138bbb75677b6aa35673f69acdc1a739a8a73557f449b32"
+    },
+    {
+      "family": "PaintedMetal",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/PaintedMetalAlbedo",
+      "albedo_sha256": "3b67cdcf94ac14f02d4ca81b49d36b81b6975d6eabc5255b5edbb7c88255506b",
+      "response": "Village/Textures/Surfaces/PaintedMetalResponse",
+      "response_sha256": "3a71a62080711fa2b7341a5f8910744e34e31f14ded31745c08f0190f32339a8"
+    },
+    {
+      "family": "Enamel",
+      "size": 512,
+      "response_size": 256,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/EnamelAlbedo",
+      "albedo_sha256": "fd6190d6ebf79d093b24835834cac792087c92dc22e1604a62a5e15d977183b7",
+      "response": "Village/Textures/Surfaces/EnamelResponse",
+      "response_sha256": "06211d47ad62d18c05bb8ca69d9c0d81722f5f22c73a53dec241f3e973100285"
+    },
+    {
+      "family": "Linoleum",
+      "size": 512,
+      "response_size": 256,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/LinoleumAlbedo",
+      "albedo_sha256": "fd6190d6ebf79d093b24835834cac792087c92dc22e1604a62a5e15d977183b7",
+      "response": "Village/Textures/Surfaces/LinoleumResponse",
+      "response_sha256": "85bc5377a81ce7f7bd60f707510e485cc9efb07f8b4254c6d3444359baab7541"
+    },
+    {
+      "family": "WallPaint",
+      "size": 512,
+      "response_size": 256,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "Village/Textures/Surfaces/WallPaintAlbedo",
+      "albedo_sha256": "14ef90ad49e1363337eb952a452290ea0a99e4695ee7843eb94c95979b796237",
+      "response": "Village/Textures/Surfaces/WallPaintResponse",
+      "response_sha256": "3006ac33f09ca1cef462d712abfbe69e677319e19f4bf980aeaff5cffcebc972"
+    },
+    {
+      "family": "Cloth",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.58,
+      "albedo": "Village/Textures/Surfaces/ClothAlbedo",
+      "albedo_sha256": "bac15bdfd2424559532fc6b672d8120a34f6925ff25ee685674d2d5b2d5f423c",
+      "response": "Village/Textures/Surfaces/ClothResponse",
+      "response_sha256": "6a64fdc0ad475684231764d798f8b8a9dafa241a6d588f9c086fb4721f25e814"
+    },
+    {
+      "family": "Asphalt",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 3.5,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/AsphaltGroundResponse",
+      "ground_response_sha256": "773258fffed9b1f0de77fe677c621262013b1a44985dd8cde61f7f543dfca71b",
+      "mean_linear_luminance": 0.58000001,
+      "albedo": "Village/Textures/Surfaces/AsphaltAlbedo",
+      "albedo_sha256": "1745897188e8857c2f29ac13178c7ddc7f7e79381a8db9626682d2f27a9e4b9c",
+      "response": "Village/Textures/Surfaces/AsphaltResponse",
+      "response_sha256": "ab0ff84dbd560c87d8e33ad8ba9b04e46145c785bf8c7ec0742743dacfeb45a9"
+    },
+    {
+      "family": "ForestFloor",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 5.0,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/ForestFloorGroundResponse",
+      "ground_response_sha256": "87648010e4c8515b64e5cf87d7fc0b0f2c82cc0d2dfc4b3459b280de2ee9fdc3",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/ForestFloorAlbedo",
+      "albedo_sha256": "8c80f42e2d70404708e55ee859a422915a70590efd34f082a2fc0e0a0283921d",
+      "response": "Village/Textures/Surfaces/ForestFloorResponse",
+      "response_sha256": "87b0d2925b2716d80952cfdce52ef2de885cbc1097712e66c898698970eea943"
+    },
+    {
+      "family": "Snow",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 5.0,
+      "full_color": false,
+      "ground_response": "Village/Textures/Surfaces/SnowGroundResponse",
+      "ground_response_sha256": "3eca3dd38c2f2b0a9be5b1d8236c5c24b1cd2ce55755b899e5a03f45829eb3d0",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/SnowAlbedo",
+      "albedo_sha256": "a0bca962c39c69cf481449850e667a7d29b604f1853e9dd66cdcf9cb8db94069",
+      "response": "Village/Textures/Surfaces/SnowResponse",
+      "response_sha256": "5041e6e8f2208c607232e241b790758c4d2d9d153ce092690de53e770dd3ceef"
+    },
+    {
+      "family": "Needles",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.5,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/NeedlesAlbedo",
+      "albedo_sha256": "500c87c97e223c47c880191036139fd060157a408845f265da852d234827c323",
+      "response": "Village/Textures/Surfaces/NeedlesResponse",
+      "response_sha256": "02a0ce9b2d82852f1818fdbbfaf6dd3ce1abb79512f76448472132aa34823645"
+    },
+    {
+      "family": "Bark",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.5,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/BarkAlbedo",
+      "albedo_sha256": "3edaa6191fa7ce7bfb306b7d306cf94c6d8ec9f1b5f3d71da269eca36d4dcbf8",
+      "response": "Village/Textures/Surfaces/BarkResponse",
+      "response_sha256": "07fe2352c1e3e80e6f425077d1e7191a7653d3b5a0c355204c238573650a3c49"
+    },
+    {
+      "family": "AbandonedWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.58,
+      "albedo": "Village/Textures/Surfaces/AbandonedWoodAlbedo",
+      "albedo_sha256": "a94ffe3ab4411983d592d456525e155cd465e6f92a128469c596903bded31d5b",
+      "response": "Village/Textures/Surfaces/AbandonedWoodResponse",
+      "response_sha256": "32c0f8f33a01bc5afbfbb432ac73514325ba73fc30550cd1d56d6646373eae99"
+    },
+    {
+      "family": "AbandonedPlaster",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999999,
+      "albedo": "Village/Textures/Surfaces/AbandonedPlasterAlbedo",
+      "albedo_sha256": "3ffa742b3b2f166996bd9196c592d4a24d94b590acedc5b00072f219133085a0",
+      "response": "Village/Textures/Surfaces/AbandonedPlasterResponse",
+      "response_sha256": "d4d597e8fd830275bb3495c50017625b5e1ceb5cfc712079fc0514c6623693b2"
+    },
+    {
+      "family": "AbandonedRoof",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": false,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.57999998,
+      "albedo": "Village/Textures/Surfaces/AbandonedRoofAlbedo",
+      "albedo_sha256": "11f409590a331e1871886628ecb53149287b23b3de9869a6861874ae9ce8aebd",
+      "response": "Village/Textures/Surfaces/AbandonedRoofResponse",
+      "response_sha256": "ccb8c4e20887ae2d0a61f99957126b57c471c7345821a1218a93240ca74d0545"
+    },
+    {
+      "family": "WreckRust",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.0788511,
+      "albedo": "Village/Textures/Surfaces/WreckRustAlbedo",
+      "albedo_sha256": "ae2bc347e4c7daedd207e45fdbc4cd813a01ded3d61ab37a00cbe2e2e7c71ce8",
+      "response": "Village/Textures/Surfaces/WreckRustResponse",
+      "response_sha256": "a60e5bad61c5f16cc4d109b7d69a1fdb3f6352a9ab739e360de34eecc1108b3b"
+    },
+    {
+      "family": "WreckPaint",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.19168353,
+      "albedo": "Village/Textures/Surfaces/WreckPaintAlbedo",
+      "albedo_sha256": "58b045c9b4f54b00b1d700aeb18dfe8ba049600c97840ac6978721885d50ecd3",
+      "response": "Village/Textures/Surfaces/WreckPaintResponse",
+      "response_sha256": "0eeb2d63519e49d6f9026075d594b02aa332118172c8f9b42744e85feecf78f2"
+    },
+    {
+      "family": "LodgeFloorWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 2.4,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.11625536,
+      "albedo": "Village/Textures/Surfaces/LodgeFloorWoodAlbedo",
+      "albedo_sha256": "b3c99c849bd23494ac3bd7ab862a45d5c01a77dea588943cc5da24decec497e3",
+      "response": "Village/Textures/Surfaces/LodgeFloorWoodResponse",
+      "response_sha256": "e1c23f397a02e04741b51b18d64c6b590074d7fb5bb87f8b8ac45ab62bc5ad15"
+    },
+    {
+      "family": "LodgeHatchWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.2,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.36242079,
+      "albedo": "Village/Textures/Surfaces/LodgeHatchWoodAlbedo",
+      "albedo_sha256": "6bb0e0bf21c7e053145f9ee747ec4929ec1f0f09c03870c0ff983cf8d26fcc37",
+      "response": "Village/Textures/Surfaces/LodgeHatchWoodResponse",
+      "response_sha256": "d91ad0264666933d3b932de736dd4123ed4cf392f5c35fe6787605e65863a0d9"
+    },
+    {
+      "family": "LodgePaintedWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 0.6,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.32403471,
+      "albedo": "Village/Textures/Surfaces/LodgePaintedWoodAlbedo",
+      "albedo_sha256": "70dcbdcecae531ee86b1f160b6903d4f17b39edce0379a4f7cfa9d828d90f20a",
+      "response": "Village/Textures/Surfaces/LodgePaintedWoodResponse",
+      "response_sha256": "e524c63daa9ba9cdcbda9bb8d17a2f7f034769e22528393381e99823e2cd85a1"
+    },
+    {
+      "family": "LodgeOakWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.6,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.24900576,
+      "albedo": "Village/Textures/Surfaces/LodgeOakWoodAlbedo",
+      "albedo_sha256": "cc126ac230706b00211e1bed09fd50b90ad17fad6c8247ccf0a70543f68196ad",
+      "response": "Village/Textures/Surfaces/LodgeOakWoodResponse",
+      "response_sha256": "791d1ad6e3f657fc0f94b3081992a93312eeb70acb3d208140a5ff4174dfa2c6"
+    },
+    {
+      "family": "LodgePaleWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.6,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.39818509,
+      "albedo": "Village/Textures/Surfaces/LodgePaleWoodAlbedo",
+      "albedo_sha256": "b69ec186bf451716be497178e4e92574b66832cea9778bfe41ad155d30fc196f",
+      "response": "Village/Textures/Surfaces/LodgePaleWoodResponse",
+      "response_sha256": "b0bbaf86c2ff8d358fb7f8111b6df3533f70bda0e156c9825155d7eb4c69e232"
+    },
+    {
+      "family": "LodgeDarkWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.25,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.06054137,
+      "albedo": "Village/Textures/Surfaces/LodgeDarkWoodAlbedo",
+      "albedo_sha256": "09d1404d2a2246b42c10335a51bd6c0330a862ecf195c4de34a714d308dbc49e",
+      "response": "Village/Textures/Surfaces/LodgeDarkWoodResponse",
+      "response_sha256": "87a72cd4516920acaf1de7b9786a7debe3db7ffa7e368faf0939f231da80888c"
+    },
+    {
+      "family": "LodgeRoughWood",
+      "size": 1024,
+      "response_size": 512,
+      "meters_per_tile": 1.8,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.12761739,
+      "albedo": "Village/Textures/Surfaces/LodgeRoughWoodAlbedo",
+      "albedo_sha256": "aef9fcda0f2f2b463d4a1246232b3a89c1cb69f4fc469dd3f8f255fc19c8af16",
+      "response": "Village/Textures/Surfaces/LodgeRoughWoodResponse",
+      "response_sha256": "ae950bd41e7e3cbbe731c8160b4cadbbc38654ff01cac735e98535115f0a4181"
+    }
+  ],
+  "additional_maps": [
+    {
+      "resource": "Village/Textures/Surfaces/VillageUniqueAlbedo",
+      "size": 4096,
+      "mipmaps": true,
+      "sRGB": true,
+      "sha256": "ca2d5d1d32fa731907a57b4ab5f15af8f64acaf3a5cefbd572324d42893ad59c"
+    },
+    {
+      "resource": "Village/Textures/Surfaces/VillageUniqueResponse",
+      "size": 2048,
+      "mipmaps": true,
+      "sRGB": false,
+      "sha256": "27d21c9f07476cfb45dbb98682b6a070f3b2e18d2ca3e7132cc29a661a4f4102"
+    },
+    {
+      "resource": "Village/Textures/Junctions/VillageJunctionAtlas",
+      "size": 2048,
+      "mipmaps": false,
+      "sRGB": true,
+      "sha256": "6c2134d3ad42b3e848ec37ce518b6e3a81e41645f9097dc9841f75b0954ced24"
+    },
+    {
+      "resource": "Village/Textures/Junctions/VillageJunctionResponseAtlas",
+      "size": 2048,
+      "mipmaps": false,
+      "sRGB": false,
+      "sha256": "f3f7440cf1ed92520864e7585567a321f86cf200c40fce10d649168397e6656a"
+    },
+    {
+      "resource": "Village/Textures/LodgePictures",
+      "size": 1024,
+      "mipmaps": true,
+      "sRGB": true,
+      "sha256": "d347390c8ea1373ce71cb69f1adcbfb94caf85e065f0cf3c6a7438055ac3d11f"
+    },
+    {
+      "resource": "Village/Textures/LodgeGroupPhotograph",
+      "size": 2048,
+      "mipmaps": true,
+      "sRGB": true,
+      "sha256": "e1d3e306a718c46df9bf2df304d9188f50a67a2ed05dc4d544037cb212687001"
+    }
+  ]
+}

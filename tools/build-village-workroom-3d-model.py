@@ -357,6 +357,9 @@ def main():
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     first,_=build_pack();data,objects=build_pack();assert first==data,"Non-deterministic workroom geometry"
+    from village_unique_surfaces import apply as apply_unique, DESIGN as UNIQUE_DESIGN
+    apply_unique(objects, data["parts"], "Workroom")
+    data["unique_surface_design"] = UNIQUE_DESIGN
     if args.validate_only: assert json.loads((args.model_dir/"VillageWorkroom3D.json").read_text())==json.loads(json.dumps(data))
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)

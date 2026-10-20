@@ -428,7 +428,7 @@ namespace BarPromenade
                     rights,
                     halfWidths,
                     WetGroundCrossSteps);
-                MountainRoadSurfaceAppearance.Apply(
+                VillageSurfaceAppearance.Apply(
                     seepLine.GetComponent<Renderer>(),
                     MountainRoadSurfaceKind.ForestFloor,
                     SeepGroundColor);
@@ -458,7 +458,7 @@ namespace BarPromenade
             for (int strip = 0; strip < Strips; strip++)
             {
                 bool bank = strip < 2 || strip >= Strips - 2;
-                float pitch = MountainRoadSurfaceAppearance.GetRecipe(bank
+                float pitch = VillageSurfaceAppearance.GetRecipe(bank
                     ? MountainRoadSurfaceKind.ForestFloor
                     : MountainRoadSurfaceKind.LayeredStone).MetersPerTile;
                 int start = vertices.Count;
@@ -509,9 +509,9 @@ namespace BarPromenade
             renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial,
                 RuntimePrimitiveFactory.DefaultMaterial };
             renderer.shadowCastingMode = ShadowCastingMode.Off;
-            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+            VillageSurfaceAppearance.ApplyCombined(renderer,
                 MountainRoadSurfaceKind.LayeredStone, BedColor, 0);
-            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+            VillageSurfaceAppearance.ApplyCombined(renderer,
                 MountainRoadSurfaceKind.ForestFloor, WetGroundColor, 1);
         }
 
@@ -604,7 +604,7 @@ namespace BarPromenade
             // its exposed sliver entirely intersection foam.
             GameObject bed = CreateGroundRibbon(
                 "Spring Bowl Bed", parent, centres, rights, halfWidths, 3);
-            MountainRoadSurfaceAppearance.Apply(bed.GetComponent<Renderer>(),
+            VillageSurfaceAppearance.Apply(bed.GetComponent<Renderer>(),
                 MountainRoadSurfaceKind.LayeredStone, BedColor);
             for (int index = 0; index < centres.Count; index++)
             {

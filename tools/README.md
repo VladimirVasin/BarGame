@@ -48,15 +48,16 @@ Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (
 `build-village-expansion-3d-model.py`: houses/yards/lodge/stove/flue/warehouse/bridge;
 `VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
-`build-lodge-wood-textures.py [--validate-only]`: 7 RGB ImageGen maps;
-`Assets/Resources/Village/Textures/LodgeWood`; originals/prompts/hashes:
-`ArtSource/Village/LodgeWood/generation.json`. `village_lodge_wood.py`: member
-UVs/roles; `LodgeWoodAppearance`: shared material/metre pitch.
+`build-village-unique-surfaces.py`:4K/2K; rebuild expansion/workroom/
+life/narrative models. `build-village-surface-textures.py [--validate-only]`:
+BC7≤96MiB. `build-village-surface-shader.py --check`: Lit/wind parity.
+`ArtSource/Village/Surfaces/Source/generation.json`.
+`VillageSurfaceTextureSetup.BuildOrThrow`: junction bake/masks kept/hash/gate;
+publish.
 `build-village-narrative-3d-model.py`: 30 props; same launcher/check.
 `Assets/Resources/VillageNarrative/VillageNarrative3D.{fbx,json}`;
 source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 except
 26/27, `Create/GetBounds/GetAnchor`; importer `VillageNarrativeAssetSetup`.
-`build-village-abandonment-textures.py [--validate-only]`: 3 aged maps.
 `Bar Promenade/Village`: `Bake Junction Textures` keeps masks;
 `Regenerate Junction Masks And Bake` resets them; both bake albedo/response atlases.
 R blends asphalt, also beneath snow; G is reference-only, without geometry/depth effects.

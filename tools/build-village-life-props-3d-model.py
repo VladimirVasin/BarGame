@@ -448,24 +448,27 @@ def main():
     props = make_props()
     count = validate(props)
     data = manifest(props, count)
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    groups, objects = [], []
+    for prop in props:
+        root = bpy.data.objects.new(prop["kind"], None)
+        bpy.context.scene.collection.objects.link(root)
+        groups.append(root)
+        for part in prop["parts"]:
+            objects.append(make_mesh(part, root))
+        for name, (x, y, z) in prop["anchors"].items():
+            anchor = bpy.data.objects.new(f"ANCHOR_{prop['kind']}_{name}", None)
+            bpy.context.scene.collection.objects.link(anchor)
+            anchor.parent = root
+            anchor.location = (x, z, y)
+    from village_unique_surfaces import apply as apply_unique, DESIGN as UNIQUE_DESIGN
+    apply_unique(objects, [part for prop in data["props"] for part in prop["parts"]], "Life")
+    data["unique_surface_design"] = UNIQUE_DESIGN
     if args.validate_only:
         existing = json.loads((args.model_dir / "VillageLifeProps3D.json").read_text(encoding="utf-8"))
         assert existing == json.loads(json.dumps(data)), "Published manifest differs from regeneration"
     else:
-        bpy.ops.object.select_all(action="SELECT")
-        bpy.ops.object.delete(use_global=False)
-        groups = []
-        for prop in props:
-            root = bpy.data.objects.new(prop["kind"], None)
-            bpy.context.scene.collection.objects.link(root)
-            groups.append(root)
-            for part in prop["parts"]:
-                make_mesh(part, root)
-            for name, (x, y, z) in prop["anchors"].items():
-                anchor = bpy.data.objects.new(f"ANCHOR_{prop['kind']}_{name}", None)
-                bpy.context.scene.collection.objects.link(anchor)
-                anchor.parent = root
-                anchor.location = (x, z, y)
         args.model_dir.mkdir(parents=True, exist_ok=True)
         args.source_dir.mkdir(parents=True, exist_ok=True)
         bpy.ops.object.select_all(action="SELECT")

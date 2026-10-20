@@ -13,7 +13,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Focused Alpine Village native lighting and lifecycle acceptance.")]
+        [Explicit("Focused Alpine Village surfaces, native lighting and lifecycle acceptance.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageNativeLighting()
         {
@@ -25,6 +25,7 @@ namespace BarPromenade.Tests.PlayMode
                 preferences[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key) : (int?)null;
             float previousCaptureDelta = Time.captureDeltaTime;
             AlpineVillageRoot village = null;
+            VillageSurfaceAudit surfaces = null;
             try
             {
                 Time.captureDeltaTime = 1f / 60f;
@@ -41,7 +42,13 @@ namespace BarPromenade.Tests.PlayMode
                         village = Object.FindAnyObjectByType<AlpineVillageRoot>();
                         return village != null && village.IsInitialized ? village : null;
                     },
-                    () => VillageNativeLightingShots(village));
+                    () =>
+                    {
+                        surfaces = AssertVillageSurfaceContracts(village);
+                        var shots = new List<Shot>(VillageNativeLightingShots(village));
+                        shots.InsertRange(1, VillageSurfaceShots(village, surfaces));
+                        return shots.ToArray();
+                    });
 
                 // Each A/B pair above renders synchronously without yielding:
                 // clock, moving snow, camera and world geometry are identical.
@@ -49,7 +56,11 @@ namespace BarPromenade.Tests.PlayMode
                 AssertVillageLightingDifference("Test village - Spring baseline", "Test village - Spring reflection");
                 AssertVillageLightingDifference("Test village - Night baseline", "Test village - Night native lighting");
                 AssertVillageLightingDifference("Test village - Window air baseline", "Test village - Window air and snow");
+                foreach (string subject in new[] { "Mother facade", "Lodge wood and cloth", "Workroom materials" })
+                    AssertVillageLightingDifference("Test village - " + subject + " flat response",
+                        "Test village - " + subject + " material response");
                 yield return VerifyVillageLightingRouting(village);
+                surfaces.AssertRestoredBindings();
                 SceneReflectionCapture reflection = village.Lighting.Reflection;
                 double tickMilliseconds = 1000d / System.Diagnostics.Stopwatch.Frequency;
                 Debug.Log($"Village reflection diagnostics: {reflection.CaptureCount} submissions, " +
@@ -62,6 +73,7 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (village != null && village.IsDormant) village.ResumeFromDormant();
+                surfaces?.Restore();
                 foreach (KeyValuePair<string, int?> preference in preferences)
                     if (preference.Value.HasValue) PlayerPrefs.SetInt(preference.Key, preference.Value.Value);
                     else PlayerPrefs.DeleteKey(preference.Key);
@@ -237,7 +249,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertVillageNativeShaders()
         {
-            foreach (string name in new[] { "Bar Promenade/Lit", "Hidden/BarPromenade/Alpine Village Local Lit Air" })
+            foreach (string name in new[] { "Bar Promenade/Lit", "Bar Promenade/Village Surface",
+                         "Bar Promenade/Village Surface Foliage", "Hidden/BarPromenade/Alpine Village Local Lit Air" })
             {
                 Shader shader = Shader.Find(name);
                 Assert.That(shader, Is.Not.Null, name);

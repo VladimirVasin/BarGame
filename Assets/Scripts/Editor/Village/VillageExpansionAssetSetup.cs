@@ -118,6 +118,7 @@ namespace BarPromenade.Editor
             {
                 if (!names.Add(part.mesh) || !found.TryGetValue(part.mesh, out MeshFilter source))
                     throw new InvalidOperationException("Expansion manifest differs from imported mesh catalog.");
+                VillageSurfaceTextureSetup.ValidateUniqueMeshOrThrow(source.sharedMesh, part.unique_surface, part.surface_family, part.uv0_signature, part.uv1_signature);
                 Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
                 Vector3[] vertices = source.sharedMesh.vertices;
                 foreach (Vector3 vertex in vertices)
@@ -199,7 +200,7 @@ namespace BarPromenade.Editor
                 part.name == "LodgeStoveChair" ? "LodgePaintedWood" : null;
             if (expected != null && part.appearance != expected)
                 throw new InvalidOperationException("Lodge floor, hatch and chair require separate wood families: " + part.name);
-            Vector2[] uv = mesh.uv;
+            Vector2[] uv = part.unique_surface ? mesh.uv2 : mesh.uv;
             if (uv.Length != mesh.vertexCount || uv.Length == 0)
                 throw new InvalidOperationException("Lodge wood lost its authored metre UVs: " + part.mesh);
             Vector2 min = Vector2.positiveInfinity, max = Vector2.negativeInfinity;
@@ -232,6 +233,8 @@ namespace BarPromenade.Editor
                 assetPath != VillageExpansionAssetSetup.LodgePicturesPath &&
                 assetPath != VillageExpansionAssetSetup.LodgeGroupPhotographPath) ||
                 !(assetImporter is TextureImporter importer)) return;
+            bool artwork = assetPath == VillageExpansionAssetSetup.LodgePicturesPath || assetPath == VillageExpansionAssetSetup.LodgeGroupPhotographPath;
+            int artworkSize = assetPath == VillageExpansionAssetSetup.LodgeGroupPhotographPath ? 2048 : 1024;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = true;
@@ -239,15 +242,24 @@ namespace BarPromenade.Editor
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = false;
             importer.isReadable = false;
-            importer.npotScale = TextureImporterNPOTScale.None;
-            importer.filterMode = FilterMode.Bilinear;
+            importer.npotScale = assetPath == VillageExpansionAssetSetup.LodgeGroupPhotographPath
+                ? TextureImporterNPOTScale.ToLarger : TextureImporterNPOTScale.None;
+            importer.filterMode = artwork ? FilterMode.Trilinear : FilterMode.Bilinear;
             importer.anisoLevel = 4;
             importer.wrapMode = assetPath == VillageExpansionAssetSetup.LodgePicturesPath ||
                 assetPath == VillageExpansionAssetSetup.LodgeGroupPhotographPath
                 ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.textureCompression = artwork ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+            if (artwork)
+            {
+                importer.ignoreMipmapLimit = true; importer.crunchedCompression = false;
+                TextureImporterPlatformSettings platform = importer.GetPlatformTextureSettings("Standalone");
+                platform.name = "Standalone"; platform.overridden = true; platform.format = TextureImporterFormat.BC7;
+                platform.maxTextureSize = artworkSize; platform.compressionQuality = 100; platform.crunchedCompression = false;
+                importer.SetPlatformTextureSettings(platform);
+            }
             importer.maxTextureSize = VillageExpansionAssetSetup.IsLodgeWoodTexturePath(assetPath)
-                ? LodgeWoodAppearance.TextureSize : 1024;
+                ? LodgeWoodAppearance.TextureSize : artwork ? artworkSize : 1024;
         }
 
         private void OnPreprocessModel()

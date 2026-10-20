@@ -57,6 +57,7 @@ namespace BarPromenade.Editor
                 foreach (var part in definition.parts)
                 {
                     if (!meshes.TryGetValue(part.mesh, out var filter)) throw new InvalidOperationException("Missing " + part.mesh);
+                    VillageSurfaceTextureSetup.ValidateUniqueMeshOrThrow(filter.sharedMesh, part.unique_surface, part.surface_family, part.uv0_signature, part.uv1_signature);
                     Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
                     foreach (var vertex in filter.sharedMesh.vertices)
                     {

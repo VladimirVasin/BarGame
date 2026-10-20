@@ -136,7 +136,8 @@ namespace BarPromenade
         public static MountainCablewayWorldResult Build(
             Transform parent,
             MountainRoadCablewayPlan plan,
-            MountainCablewayStationKind stationKind)
+            MountainCablewayStationKind stationKind,
+            bool villageSurfaces = false)
         {
             if (parent == null)
             {
@@ -157,6 +158,7 @@ namespace BarPromenade
 
             var root = new GameObject("Operating Mountain Cableway");
             root.transform.SetParent(parent, false);
+            if (villageSurfaces) root.AddComponent<VillageSurfaceScope>();
             var semanticObjects = new Dictionary<string, Transform>(
                 StringComparer.Ordinal)
             {
@@ -391,7 +393,9 @@ namespace BarPromenade
                 return;
             }
 
-            MountainRoadSurfaceAppearance.Apply(
+            if (instance.GetComponentInParent<VillageSurfaceScope>() != null)
+                VillageSurfaceAppearance.Apply(instance.GetComponent<Renderer>(), surface, tint);
+            else MountainRoadSurfaceAppearance.Apply(
                 instance.GetComponent<Renderer>(),
                 surface,
                 tint);
@@ -408,7 +412,9 @@ namespace BarPromenade
                 return;
             }
 
-            MountainRoadSurfaceAppearance.Apply(
+            if (instance.GetComponentInParent<VillageSurfaceScope>() != null)
+                VillageSurfaceAppearance.Apply(instance.GetComponent<Renderer>(), surface, projection, tint);
+            else MountainRoadSurfaceAppearance.Apply(
                 instance.GetComponent<Renderer>(),
                 surface,
                 projection,

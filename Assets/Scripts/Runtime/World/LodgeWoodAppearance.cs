@@ -10,14 +10,6 @@ namespace BarPromenade
         public const string ResourceFolder = "Village/Textures/LodgeWood/";
         public const int TextureSize = 512;
         public const int TextureCount = 7;
-        private static readonly Texture2D[] textures = new Texture2D[TextureCount];
-        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
-        private static readonly int BaseMapTransformId = Shader.PropertyToID("_BaseMap_ST");
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId = Shader.PropertyToID("_Color");
-        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
-        private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
-
         public static string GetTextureName(int index)
         {
             switch (index)
@@ -51,24 +43,10 @@ namespace BarPromenade
 
         public static void Apply(Renderer renderer, string appearance, Vector3 placementScale)
         {
-            int index = GetIndex(appearance);
-            if (index < 0) throw new InvalidOperationException("Unknown lodge wood appearance: " + appearance);
-            if (textures[index] == null)
-                textures[index] = Resources.Load<Texture2D>(ResourceFolder + appearance);
-            if (textures[index] == null)
-                throw new InvalidOperationException("Missing lodge wood albedo: " + appearance);
+            if (!IsKnown(appearance)) throw new InvalidOperationException("Unknown lodge wood appearance: " + appearance);
             float pitch = GetMetersPerTile(appearance);
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, textures[index]);
-            properties.SetVector(BaseMapTransformId,
+            VillageSurfaceAppearance.ApplyFamily(renderer, appearance, Color.white,
                 new Vector4(placementScale.x / pitch, placementScale.y / pitch, 0f, 0f));
-            properties.SetColor(BaseColorId, Color.white);
-            properties.SetColor(ColorId, Color.white);
-            properties.SetFloat(SmoothnessId, .02f);
-            properties.SetFloat(MetallicId, 0f);
-            renderer.SetPropertyBlock(properties);
         }
 
         private static int GetIndex(string appearance)
@@ -77,8 +55,5 @@ namespace BarPromenade
                 if (GetTextureName(i) == appearance) return i;
             return -1;
         }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCache() => Array.Clear(textures, 0, textures.Length);
     }
 }

@@ -259,7 +259,9 @@ cemetery:own interiors/returns.
   four-side views. Dry `18 x 12 m` lodge (§10g): wall-headed bunks/cot,
   rug/kettle/table/two three-seat benches/lamp. Beams/cloth clear masonry/mattress;
   wall chest/clear cot; front-left hatch/props, sill/path.
-  `LodgeWoodAppearance`: 7 RGB maps/member UVs/shared material.
+  `VillageSurfaceAppearance`: local maps/seven lodge woods; unique4K/2K/UV1.
+  Contacts/snow/ridge deformation stay.
+  BC7≤96MiB includes pictures/junctions; shared donors stay.
   Hatch E: centred/oblique/no hero, Yes/No; lift/stop/shut→bottom reply;
   E/Esc ends/repeat, No restores. `LodgeInteriorInteractions`: shared RU/EN
   E seats/photo/skis. Group photo: close-up/text→Next→shared Take/Cancel;

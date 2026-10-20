@@ -853,6 +853,9 @@ def main():
               avalanche_origin=AVALANCHE_ORIGIN,
               avalanche_footprint=[value for point in AVALANCHE_FOOTPRINT for value in point],
               colliders=False,lights=False,cameras=False,animation_count=0,parts=rows,anchors=ANCHORS)
+    from village_unique_surfaces import apply as apply_unique, DESIGN as UNIQUE_DESIGN
+    apply_unique(objects, rows, "Expansion")
+    data["unique_surface_design"] = UNIQUE_DESIGN
     target=args.model_dir/"VillageExpansion3D.json"
     if args.validate_only:assert json.loads(target.read_text())==json.loads(json.dumps(data)),"Stale expansion manifest"
     else:

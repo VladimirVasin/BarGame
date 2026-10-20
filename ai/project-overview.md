@@ -111,7 +111,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
-- Mountain/village areas, cableway/interiors; abandoned village surrounds its lived-in core.
+- Mountain/village areas, cableway/interiors; village local physical maps/unique closeups.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.

@@ -34,7 +34,7 @@ namespace BarPromenade
                 host.gameObject.AddComponent<MeshFilter>().sharedMesh = template.sharedMesh;
                 var renderer = host.gameObject.AddComponent<MeshRenderer>();
                 if (part.surface == "Water") renderer.sharedMaterial = AlpineSpringWaterResources.PoolMaterial;
-                else MountainRoadSurfaceAppearance.ApplyCombined(renderer, MountainRoadSurfaceKind.RustedIron,
+                else VillageSurfaceAppearance.ApplyCombined(renderer, MountainRoadSurfaceKind.RustedIron,
                     new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]));
             }
             foreach (var anchor in definition.anchors)

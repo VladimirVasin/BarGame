@@ -1,6 +1,32 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-20, whole Alpine Village material surfaces — explicit user decision:**
+  Art §10g/story §12: apply the mother's-house surface principle to the complete
+  environment, retaining age/care, occupied warmth and abandoned functions.
+  Scene-local `VillageSurfaceAppearance` replaces environment donors without
+  changing shared City/Mountain Road assets. Repeatable facade/nature/finish
+  families retain authored metre UVs and tints; lodge wood keeps seven identities.
+  Close-view lodge/workroom/life/narrative parts share one unique 4K colour/2K
+  response atlas. UV1 preserves original metre coordinates; uniform guarded UV0
+  charts fix legacy per-face projection-axis swaps without moving geometry,
+  anchors, collision, pivots or character contacts. Final part tint is baked once.
+  ImageGen pigment packs and prompts/hashes live in
+  `ArtSource/Village/Surfaces/Source/generation.json`; independent physical fields
+  provide signed metre slopes RG, roughness B and cavity A. Offline footprint
+  filtering controls fine grain/weave; no runtime image baking or new surface layers.
+  Complete generated Lit/wind passes reuse `SurfaceMaterialResponse`; wind,
+  directional metal, snow bounce and finite spring reflection retain ownership.
+  Ground/ridge/snow retain their distinct height/smoothness/cavity format and
+  vertex substrate/deformation contracts. Junction bakes keep editable masks,
+  bilinear guarded tiles/no mips, and refresh local colour/response together.
+  Glass/fire/emission, water, photo/paper content and NPC identity remain authored.
+  BC7/non-readable maps target at most 96 MiB, including unique maps, junctions
+  and retained pictures; this is calculated texture data, not measured scene
+  residency or a frame-rate gain. Shared bounded materials/caches avoid instance
+  creation. Metal cleanup restores only owned floats, preserving live blocks.
+  Pinned unique/model validation, surface publisher/shader checks and the focused
+  `AlpineVillageNativeLighting` own acceptance, including snow and resume bindings.
 - **Accepted 2026-10-20, mother's house unique material surfaces — explicit user decision:**
   Art §10g: house-owned palette, age through fading/repair/care, never grime
   or new narrative. Geometry, collision, cameras, characters and the exact

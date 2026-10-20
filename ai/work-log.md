@@ -30,19 +30,24 @@ and shader hooks OK; pairs/resume recapture reviewed. Native state initializes
 with scene; readiness follows shader warmup, no seed-gust dependency.
 Shared warehouse visual gates passed; Direct3D12 GPU timing unavailable.
 
-Mother's house owns room halos/metal/bounce/weak air/living+bath reflections.
-Physical blockers survive cutaways; new bounce excludes the chair pool and
-live fire does not invalidate captures. Unique opaque UV0 now uses house-owned
-ImageGen pigments and aligned colour/physical response; material fields and
-neat cushion repairs retain care/matte wood/fabric. Box-mip source filtering
-prevents weave aliasing; structural packed-map seams/metric derivatives checked.
-Auxiliary cloth/glass/fire preserves scarf binding without large room maps.
+Mother's room effects retain physical cutaway blockers, the chair pool and
+stable fire captures. Unique opaque UV0 uses house-owned ImageGen pigments,
+filtered physical fields and neat repairs; auxiliary maps retain scarf binding.
 Geometry/anchors/kettle, passive mirror and mother's half-shadow stay.
-Pinned model validation, build-mothers-house-textures.py --validate-only and
-build-mothers-house-shader.py --check OK. MothersHouseNativeLighting OK:
-authored views/closeups, response pairs, import/budget/scarf and capture cleanup/
-stable fire/disable-resume verified. Cube paths warm before normal acceptance;
-runtime timeouts unchanged. GPU cost unmeasured.
+Pinned model validation, build-mothers-house-textures.py --validate-only,
+build-mothers-house-shader.py --check and MothersHouseNativeLighting OK:
+views/closeups, response/import/budget/scarf, fire and presentation cleanup.
+Cube warmup retains runtime timeouts; GPU cost unmeasured.
+
+Village environment now uses local pigment/physical families and a shared
+unique closeup atlas; original geometry/contact anchors/metre UV1 retained.
+Ground channels, editable junction masks and snow deformation stay distinct;
+new Lit/wind passes reuse lighting hooks. PNG transport/packed slopes checked;
+native photo content retained with bounded BC7 import. Pinned unique/model
+validation, surface texture validator and shader parity check OK.
+AlpineVillageNativeLighting OK: import/budget/bindings, response pairs,
+snow press/refill/clear and dormant return; authored views/closeups reviewed.
+Closeups clear test frost.
 check-docs.py and git diff --check OK.
 check-workspace.py retains preexisting cache, temporary-scene, old-log and
 sibling-worktree leftovers.

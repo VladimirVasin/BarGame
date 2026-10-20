@@ -47,6 +47,7 @@ namespace BarPromenade.Editor
                 if (!names.Add(part.name) || !meshes.TryGetValue(part.mesh, out MeshFilter mesh) ||
                     (!string.IsNullOrEmpty(part.parent) && !names.Contains(part.parent)))
                     throw new InvalidOperationException("Workroom part hierarchy is incomplete: " + part.name);
+                VillageSurfaceTextureSetup.ValidateUniqueMeshOrThrow(mesh.sharedMesh, part.unique_surface, part.surface_family, part.uv0_signature, part.uv1_signature);
                 Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
                 foreach (Vector3 vertex in mesh.sharedMesh.vertices)
                 {

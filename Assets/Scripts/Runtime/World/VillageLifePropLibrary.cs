@@ -21,6 +21,8 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageLifePropPart
     {
+        public bool unique_surface;
+        public string surface_family, uv0_signature, uv1_signature;
         public string mesh;
         public string role;
         public string surface;
@@ -44,6 +46,7 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageLifePropManifest
     {
+        public string unique_surface_design;
         public string generator_version;
         public string design_id;
         public string build_signature;
@@ -160,26 +163,22 @@ namespace BarPromenade
 
         private static void ApplySurface(MeshRenderer renderer, VillageLifePropPart part)
         {
+            if (part.unique_surface)
+            {
+                VillageSurfaceAppearance.ApplyUnique(renderer, part.surface);
+                return;
+            }
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             if (part.surface == "Cloth")
             {
-                const CityPointOfInterestSurfaceKind cloth = CityPointOfInterestSurfaceKind.Cloth;
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                var block = new MaterialPropertyBlock();
-                block.SetTexture("_BaseMap", CityPointOfInterestSurfaceAppearance.GetTexture(cloth));
-                Color display = CityPointOfInterestSurfaceAppearance.CreateDisplayTint(tint, cloth);
-                block.SetColor("_BaseColor", display);
-                block.SetColor("_Color", display);
-                float pitch = 1f / CityPointOfInterestSurfaceAppearance.GetRecipe(cloth).MetersPerTile;
-                block.SetVector("_BaseMap_ST", new Vector4(pitch, pitch, 0f, 0f));
-                block.SetFloat("_Smoothness", 0f);
-                block.SetFloat("_Metallic", 0f);
-                renderer.SetPropertyBlock(block);
+                float pitch = VillageSurfaceAppearance.GetSheet("Cloth").meters_per_tile;
+                VillageSurfaceAppearance.ApplyFamily(renderer, "Cloth", tint,
+                    new Vector4(1f / pitch, 1f / pitch, 0f, 0f));
                 return;
             }
             if (!Enum.TryParse(part.surface, out MountainRoadSurfaceKind surface))
                 throw new InvalidOperationException("Unknown Village Life surface: " + part.surface);
-            MountainRoadSurfaceAppearance.ApplyCombined(renderer, surface, tint);
+            VillageSurfaceAppearance.ApplyCombined(renderer, surface, tint);
             float uvScale = 1f / MountainRoadSurfaceAppearance.GetRecipe(surface).MetersPerTile;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);

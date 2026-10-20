@@ -103,7 +103,7 @@ namespace BarPromenade
                 }
                 else
                 {
-                    MountainRoadSurfaceAppearance.Apply(
+                    VillageSurfaceAppearance.Apply(
                         mote.GetComponent<Renderer>(),
                         AlpineVillageRidgeAppearance.Surface,
                         Color.white);

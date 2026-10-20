@@ -330,7 +330,8 @@
       ],
       "parent": "",
       "solid": true,
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_ShellPlinth",
@@ -371,7 +372,8 @@
       ],
       "parent": "",
       "solid": true,
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_ShellTimber",
@@ -412,7 +414,8 @@
       ],
       "parent": "",
       "solid": true,
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_Floor",
@@ -453,7 +456,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_PrivateFloor",
@@ -494,7 +498,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_Ceiling",
@@ -535,7 +540,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_FrontLining",
@@ -576,7 +582,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_LeftLining",
@@ -617,7 +624,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_RearLining",
@@ -658,7 +666,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_PrivatePartition",
@@ -699,7 +708,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_PrivateScreen",
@@ -740,7 +750,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_FrontWindowFrame",
@@ -781,7 +792,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "8fb254f63c2b22d007600ceeab3e7f929eaf0349baa67dc770dcae8d2ab6cc70",
+      "uv1_signature": "d76f48f7cd80f4e6462013787abfca44cdf208d5aad44d90158e55e71c1ab913",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_FrontWindowGlass",
@@ -822,7 +838,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_LeftWindowFrame",
@@ -863,7 +880,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "6cb1b75eaa9e73bb70f31a2c2f55530cd885cba2c2c26df549013e3ae45b9250",
+      "uv1_signature": "bc5918dd6f1d580cc5a713ebcf98f4ae291b2e2a42d1d010e45e2569a2762da3",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_LeftWindowGlass",
@@ -904,7 +926,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_Workbench",
@@ -945,7 +968,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "a8a3a0890022f7b46a26ca37c6dfdb7d045d00b053e616fa69d976dd31bfb3d6",
+      "uv1_signature": "214d23ec353eec056a5f0970b6501e9082b2c3ae3bc2eea503bdcbb7f2aeac35",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_SewingTable",
@@ -986,7 +1014,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "7b46087824a7e585e2b4c52dac9f0092aaa38e0f7dc87b2cfb0c0cd76e1957d4",
+      "uv1_signature": "7cf7fdf8c1e6de759c5d999e99483afa233fe0ba6b9d85936c4dd2e41608d0c3",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_BoxShelf",
@@ -1027,7 +1060,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "a9c4de619fd02c5bbcd67f47854efb1f0175c915fd0a49fe53c37398365bb3a8",
+      "uv1_signature": "6460a5ce1e18b4e34f6f2f767e1895661e0fc0913186200c7468e3ba6da42c4c",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_SewingSeat",
@@ -1068,7 +1106,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "2b1f8fa7d0a77530fe0a30a32118048636314088d5a1196296cc4f26d4c5eef0",
+      "uv1_signature": "c8114baa57584a435b652a89df152965babc74839dd3913d9defa59ea4022d3f",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Bench",
@@ -1109,7 +1152,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "0c6d8f84a323441db000bafec89660ef7f577fa331b85a91f6e3b577c81fcbe8",
+      "uv1_signature": "f1f53e354d287ded4592e5b378eb473682346505b3e589946150d19937878269",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Cabinet",
@@ -1150,7 +1198,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "a95e18bb2cc0fb61ae3c90abb93310db2cfd66e780c81fab06d6850ecf37a18f",
+      "uv1_signature": "144155e098d9f71f0f121fc0bffe4b0d7c1734b9ff6d36710b08bc616cac2df1",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Shelves",
@@ -1191,7 +1244,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "2bdd5cb8958e1864937f984aa2fa6f6bbd4632e49a6ed26c2bf326be01922f66",
+      "uv1_signature": "28d791f968bd5f640af77dcaac8224e82316ea14c1aa53c896d28ec680c7efb6",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_ShelfStock",
@@ -1232,7 +1290,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "690874d0003611e57139b505b6d7b2c14044ee1bda4fa2f3f498b777dda3df53",
+      "uv1_signature": "e7692c0aa4f1ce6fca92f69c4d65770c5de1c50a97f30b2d43668f20f6be8a0c",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_BasketStand",
@@ -1273,7 +1336,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "83ce9f0b45250d84ecb9c56dcc2934a621e87bb1b7eef22ebe1c5bbf31e34fe5",
+      "uv1_signature": "30525bf939bd259ee81a1f7511b4be631a96bb12f7d1a3214c015161f4e01590",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_ChairFrame",
@@ -1314,7 +1382,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "5380237f668938f54c2f4eafb154c006f0035a161b426d7269972614a1735267",
+      "uv1_signature": "b80fe79f79976ccefd1ac5a05cba8f6e81fe6205ca79f01ec45b2c7b9bf41843",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_RepairRail",
@@ -1388,7 +1461,12 @@
             -0.03
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "ebb8414bdc9457de5ded1a35578721afe5e16659ced809016effaef3485433be",
+      "uv1_signature": "fbdf6a419617875305ff8aab9832a33a506a2404d3d116adf1d0eda1865587f2",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_RepairClamp",
@@ -1429,7 +1507,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "1a70b82d92f1a6908f661a435fb602d73049605b6567db291d083309052ca3de",
+      "uv1_signature": "6b501843e3d877be96c9b7f327287dcd6d850ab607e227f20c17c06684eb114f",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Hammer",
@@ -1487,7 +1570,12 @@
             0
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "fd1cdedc0d1c3cab84f81c156f35b836147555bea33cca23378b26bcb099700e",
+      "uv1_signature": "5e1cf3cba033fdfe66027c7bc281e35d173ff44c913eaf9be60128578f281fd3",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_HammerHead",
@@ -1528,7 +1616,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "8e00570aa1f5e91ae9d9045f538e9b566e9970ae63da5c4ff1d235d1860eef98",
+      "uv1_signature": "476a1f7d9ca2883db4e32a3fca0ce19efd79c9c0805995d5bfd5f6303fd65829",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Cloth",
@@ -1610,7 +1703,12 @@
             0.09
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "7fd3996e2671d815f160825439d2b6f263dee7e647ac999dd5147af919ea39d6",
+      "uv1_signature": "682667496c772410ee7b566db5ae4ef75e829a50deca4f3642776181bb5f9267",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_ClothFlap",
@@ -1660,7 +1758,12 @@
             -0.08
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "6c25fb4d0d6f614614b099958834c657af48c4cb600f9f4e077e5bf32a6a2838",
+      "uv1_signature": "12adfb8b2e242b00309c62df09f5c2832916a94991c65fe490ba0aa0c18d7d04",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Mitten",
@@ -1718,7 +1821,12 @@
             0.015
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "618aaf4439361e314b24b81e8137dd0b941e030ea93bbe695799a4ec747dea93",
+      "uv1_signature": "620c8d92298d8adc9fa4bfec91f399f97ed08a3df73c50e4f946a69c076582fe",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Box",
@@ -1784,7 +1892,12 @@
             -0.16
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "04cc2ee7cd585a248e9abf1296d4e7f62f43dc1c7d17950987f3d538cabc2f61",
+      "uv1_signature": "be4e3e10a1c1972fa7881cc6925c01c410708d8d676efa1bdefe9c4267abcced",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_BoxLid",
@@ -1834,7 +1947,12 @@
             -0.31
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "a70f6f9a51a3bb44e482c2c5a8047cd7995c6d9948b03f04c07f61ce78218153",
+      "uv1_signature": "6bd9d5e5de40a460deded9e8325ea9410a28bdd100c06bb61a0d51c4a31e8bb4",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_Thread",
@@ -1892,7 +2010,12 @@
             0
           ]
         }
-      ]
+      ],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "eea02b3f93e985511131584edfc899540a529f5355429758cc93383ef45dc350",
+      "uv1_signature": "7d3f1824ac6a1ec2e8a4b86dc2ddf8c1a4fd6198eaa4ee6841ceef6d194654f7",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_RoomLampShade",
@@ -1933,7 +2056,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_RoomLampBulb",
@@ -1974,7 +2098,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_RoomLampStem",
@@ -2015,7 +2140,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "1e1845f9c6f494b795479cf2eeb270ec7cb25afe787663d320f1594c4f6e9803",
+      "uv1_signature": "f2c18327fee61a730b61c7a040add229c662a8482cbdaa301ca2507a71a5196c",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_RepairLampShade",
@@ -2056,7 +2186,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_RepairLampBulb",
@@ -2097,7 +2228,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_RepairLampStem",
@@ -2138,7 +2270,12 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "09979a59861e2f4106442fe218f42eab776630be51740b61e8c0ecd320b774d5",
+      "uv1_signature": "83a4b78b03b18f3c28f94641b5eef96729a2eaca4cf7821986db12b6e296c9b9",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_SewingLampShade",
@@ -2179,7 +2316,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_SewingLampBulb",
@@ -2220,7 +2358,8 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": false
     },
     {
       "mesh": "GEO_Workroom_SewingLampStem",
@@ -2261,7 +2400,13 @@
         1,
         1
       ],
-      "anchors": []
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "d2c5290a941d7ba11e01e853da46b80f84d748e96e215415633976fec8f5c5af",
+      "uv1_signature": "3c5c6677e2f88f6365fa2f5b8ce8f7d4499fafe8201656e15130ec6415837d08",
+      "uv_channel_count": 2
     }
-  ]
+  ],
+  "unique_surface_design": "village_unique_physical_surfaces_v1"
 }

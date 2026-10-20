@@ -71,7 +71,8 @@
         0.01999999999999999,
         5.68
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -95,7 +96,8 @@
         -0.16000000000000003,
         6.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -119,7 +121,8 @@
         3.6,
         -5.68
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -143,7 +146,8 @@
         3.6,
         6.0
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -167,7 +171,8 @@
         3.6,
         5.68
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -195,7 +200,8 @@
         5.0,
         6.0
       ],
-      "triangles": 8
+      "triangles": 8,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -219,7 +225,8 @@
         3.6,
         5.68
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -247,7 +254,8 @@
         5.0,
         6.0
       ],
-      "triangles": 8
+      "triangles": 8,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -275,7 +283,8 @@
         5.143462451419126,
         6.673834803444289
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -299,7 +308,8 @@
         5.28933070681937,
         6.6259810280168985
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -323,7 +333,12 @@
         0.075,
         0.68
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Stone",
+      "uv0_signature": "f93852169543e398ec362025825f316894e6a2302145e4ece87834b1c665ffb6",
+      "uv1_signature": "ba580c7e512c6ed3e728ae667b7dd39e959007647ad170906109a1ae1d56888e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -347,7 +362,12 @@
         0.34160953760147095,
         0.41100000000000003
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "b54efb3b6d718d61ecbdb5bd93733c9d14feefc68b21c6758a56e8b2cff2a235",
+      "uv1_signature": "0399b8f01043c4afdd541bcb2d40b2b70e47425252303c726eeb79178c561643",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -371,7 +391,12 @@
         1.1500000000000001,
         0.42500000000000004
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "8f45d02e4f73b33c7dd4bd2798662ce1cbad36d8beebf088b9d7715f6fd90d46",
+      "uv1_signature": "d1c9901fdab91015d16efccd859b03844620a787e012c0c8024f03812494f7bd",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -395,7 +420,12 @@
         1.1749999999999998,
         0.45
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "377122c4da69570b61274f571528dc76d72641649cdf1d9df4037e7ea000b14a",
+      "uv1_signature": "83abe60d02a9ca1dd9f8b929564f92e037513823a5831391b55e7b7367c4a8c7",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -419,7 +449,12 @@
         0.57,
         0.275
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "e0f7796dec915b82c431c0725fdc3b50c1bec530fc33d022ab192fb27455405f",
+      "uv1_signature": "afdec3717f19e5f1db06c7ccf61b7e83cbafdda3c2587d0ff41a016f7a4c3ed5",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -444,7 +479,12 @@
         1.06,
         -0.40349999999999997
       ],
-      "triangles": 448
+      "triangles": 448,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "be76791cc4cfee9061e559b9ca5dbc2f89db2a5a2e8ebc8f96d1924f02ec9113",
+      "uv1_signature": "5ba1b0b534f424a1ba0a163ffd590cdd630260dfcf890fa1c58ef8070d05b3ac",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -469,7 +509,12 @@
         1.005,
         -0.44699999999999995
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "4f5748e36c15c8c3117f213da6a13a27ba8b4c53caf92e09a9ae609faa568ec9",
+      "uv1_signature": "88b8a1d62c08d7b8a90afbc619567cabbe02094d6869783f227fddd5d1a7f8ae",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -493,7 +538,12 @@
         6.2,
         0.13
       ],
-      "triangles": 128
+      "triangles": 128,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "6e92a8aa7c7bbaf691b1dc3d742a1cae68ff6ccce0eb9d5970118b49a7b65a46",
+      "uv1_signature": "f382714fc41842ff863784afa9ef7436fa10639d3ac97c7d362b071449783c1c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -517,7 +567,12 @@
         5.63,
         0.145
       ],
-      "triangles": 480
+      "triangles": 480,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "ac0be0fe78c713f57cd184db528b8c33d2f41fda75c3be88085b28efdaa9d479",
+      "uv1_signature": "b5d8f91f23066266d9292c6165d631d4cc6d856dfd4a5275bf46f43e3925cb60",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -541,7 +596,8 @@
         5.48,
         0.44
       ],
-      "triangles": 256
+      "triangles": 256,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -565,7 +621,8 @@
         6.46,
         0.27
       ],
-      "triangles": 152
+      "triangles": 152,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -590,7 +647,12 @@
         0.895,
         -0.492
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "716131d68bb14f9ca49ee2ae93c1543f0b186fe3b57bfa288174b13be99c5de8",
+      "uv1_signature": "23a791ee4b0699432625d4754291e2c2ef6210c9a3282f3b708c4d09b3c70f04",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -614,7 +676,12 @@
         0.7949999999999999,
         0.20500000000000002
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "3d1694a0eeca82c744d96a2449236abfbafecec9f9c151780709d59eba7e5abd",
+      "uv1_signature": "fa51114f8d1a1f70f5de0cefad5198e44281b5c307ba92058e9cbb6bc2a377f0",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -642,7 +709,8 @@
         3.56,
         6.0729999999999995
       ],
-      "triangles": 392
+      "triangles": 392,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -670,7 +738,8 @@
         2.945,
         6.08
       ],
-      "triangles": 792
+      "triangles": 792,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -694,7 +763,8 @@
         2.85,
         5.8445
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -722,7 +792,8 @@
         2.8,
         -3.75
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -750,7 +821,8 @@
         2.8,
         -3.75
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -778,7 +850,12 @@
         1.9,
         5.15
       ],
-      "triangles": 588
+      "triangles": 588,
+      "unique_surface": true,
+      "surface_family": "LodgePaleWood",
+      "uv0_signature": "46ccc91e931dfbe1be7e2351ea4cba69d4060dc41484dcb7ec31de6e3d76df32",
+      "uv1_signature": "60f6c9aae778e7273905b50874090f1bba3be472fd9aa3c34177ecf75262de6c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -803,7 +880,8 @@
         2.15,
         4.6625
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -831,7 +909,8 @@
         1.06,
         2.9
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -859,7 +938,8 @@
         0.47,
         -5.992
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -883,7 +963,8 @@
         0.0,
         3.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -907,7 +988,8 @@
         3.1,
         3.0
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -931,7 +1013,8 @@
         3.933674790637535,
         3.4181901718777246
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -955,7 +1038,8 @@
         4.079077015863743,
         3.39463313731693
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -979,7 +1063,8 @@
         3.8600000000000003,
         3.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "ServiceShed",
@@ -1003,7 +1088,8 @@
         2.4,
         -2.9749999999999996
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "LiftBase",
@@ -1027,7 +1113,8 @@
         0.4,
         0.35
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "LiftBase",
@@ -1051,7 +1138,8 @@
         5.1,
         0.15
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "LiftBase",
@@ -1075,7 +1163,8 @@
         4.985,
         1.3
       ],
-      "triangles": 60
+      "triangles": 60,
+      "unique_surface": false
     },
     {
       "kind": "LiftBase",
@@ -1099,7 +1188,8 @@
         1.225,
         0.325
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "LiftTop",
@@ -1123,7 +1213,8 @@
         0.4,
         0.35
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "LiftTop",
@@ -1147,7 +1238,8 @@
         5.1,
         0.15
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "LiftTop",
@@ -1171,7 +1263,8 @@
         4.985,
         1.3
       ],
-      "triangles": 60
+      "triangles": 60,
+      "unique_surface": false
     },
     {
       "kind": "RoadBarrier",
@@ -1195,7 +1288,8 @@
         0.66,
         0.225
       ],
-      "triangles": 336
+      "triangles": 336,
+      "unique_surface": false
     },
     {
       "kind": "RoadBarrier",
@@ -1219,7 +1313,8 @@
         1.06,
         0.215
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "RoadSurface",
@@ -1243,7 +1338,8 @@
         0.0,
         0.5
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "RoadBrokenLip",
@@ -1267,7 +1363,8 @@
         0.0,
         1.1
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "RoadBrokenLip",
@@ -1291,7 +1388,8 @@
         0.055,
         1.1
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1315,7 +1413,8 @@
         0.8,
         7.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1339,7 +1438,8 @@
         4.0,
         7.0
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1363,7 +1463,8 @@
         4.0,
         7.0
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1387,7 +1488,8 @@
         5.3,
         7.000000000000001
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1411,7 +1513,8 @@
         5.402688842432061,
         7.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1435,7 +1538,8 @@
         5.528827597130973,
         7.465
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1459,7 +1563,8 @@
         4.08,
         7.085
       ],
-      "triangles": 1456
+      "triangles": 1456,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1483,7 +1588,8 @@
         3.76,
         2.0
       ],
-      "triangles": 768
+      "triangles": 768,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1507,7 +1613,8 @@
         3.0900000000000003,
         1.875
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1531,7 +1638,8 @@
         0.8,
         2.8
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1555,7 +1663,8 @@
         0.6950000000000001,
         2.44
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1579,7 +1688,8 @@
         3.802412908085302,
         3.275
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1603,7 +1713,8 @@
         3.5888731479644775,
         3.1199999999999997
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1627,7 +1738,8 @@
         0.24,
         3.1999999999999997
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1651,7 +1763,8 @@
         3.894419536617758,
         3.23
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1675,7 +1788,8 @@
         2.025,
         4.819999999999999
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TradeWarehouse",
@@ -1699,7 +1813,8 @@
         0.7500000000000001,
         6.415000000000001
       ],
-      "triangles": 1148
+      "triangles": 1148,
+      "unique_surface": false
     },
     {
       "kind": "TradeYardProps",
@@ -1723,7 +1838,8 @@
         0.5895,
         0.74
       ],
-      "triangles": 1400
+      "triangles": 1400,
+      "unique_surface": false
     },
     {
       "kind": "TradeYardProps",
@@ -1747,7 +1863,8 @@
         0.5075,
         0.71
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "TradeYardProps",
@@ -1771,7 +1888,8 @@
         1.227500081062317,
         0.7550000000000001
       ],
-      "triangles": 288
+      "triangles": 288,
+      "unique_surface": false
     },
     {
       "kind": "TradeYardProps",
@@ -1795,7 +1913,8 @@
         0.495,
         0.6950000000000001
       ],
-      "triangles": 144
+      "triangles": 144,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1819,7 +1938,8 @@
         0.6674655166089032,
         2.987965666854061
       ],
-      "triangles": 660
+      "triangles": 660,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1843,7 +1963,8 @@
         2.70566916011035,
         3.25714736924369
       ],
-      "triangles": 440
+      "triangles": 440,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1867,7 +1988,8 @@
         1.5389390564587686,
         3.224983917733597
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1891,7 +2013,8 @@
         0.7874225185853847,
         2.6155658079770974
       ],
-      "triangles": 312
+      "triangles": 312,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1915,7 +2038,8 @@
         2.545705086772689,
         1.0388620410482572
       ],
-      "triangles": 312
+      "triangles": 312,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1939,7 +2063,8 @@
         2.423124918158331,
         1.0307406731401092
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1963,7 +2088,8 @@
         1.5787706231399936,
         2.222509152594481
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "RustedTruck",
@@ -1987,7 +2113,8 @@
         2.7340529310843973,
         2.732238812143717
       ],
-      "triangles": 340
+      "triangles": 340,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2011,7 +2138,8 @@
         0.7959858006515277,
         -0.44152505388641905
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2035,7 +2163,8 @@
         0.6520012259997329,
         -0.6277425482202799
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2059,7 +2188,8 @@
         1.1209462176222944,
         -0.8155211955597534
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2083,7 +2213,8 @@
         0.7414941252832252,
         -0.4089521478976912
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2107,7 +2238,8 @@
         0.820362212110404,
         -0.33331169056573906
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2131,7 +2263,8 @@
         0.6130836846310754,
         1.5868982602875201
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2155,7 +2288,8 @@
         0.8203622121104038,
         1.4139632960987183
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2179,7 +2313,8 @@
         1.15243666897332,
         1.5220980628135767
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2203,7 +2338,8 @@
         0.8245594699441253,
         1.659693763027604
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2227,7 +2363,8 @@
         0.8172005638014375,
         1.4440437276577125
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2251,7 +2388,8 @@
         1.2139806156602664,
         0.3848120012385454
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2275,7 +2413,8 @@
         0.8835973060691535,
         0.3598778035239919
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2299,7 +2438,8 @@
         0.6329629040508653,
         0.41261684501331836
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2323,7 +2463,8 @@
         0.9883178757962525,
         0.33671120713272074
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2347,7 +2488,8 @@
         1.803696170441811,
         1.0541286828646637
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2371,7 +2513,8 @@
         1.8376171307467528,
         1.0694271464470677
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2395,7 +2538,8 @@
         1.394039276037202,
         0.06465643322076103
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2419,7 +2563,8 @@
         1.6629645138667972,
         -0.1217756825157078
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2443,7 +2588,8 @@
         2.444687315335092,
         0.20165687455911824
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2467,7 +2613,8 @@
         2.018847256798943,
         1.0215022070708881
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2491,7 +2638,8 @@
         2.5167322941429564,
         1.0535378372769557
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2515,7 +2663,8 @@
         1.810715694566286,
         1.6594433773955082
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2539,7 +2688,8 @@
         2.1941921467238585,
         0.49327440483565577
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2563,7 +2713,8 @@
         2.286775774523978,
         -0.7172201138730169
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2587,7 +2738,8 @@
         2.4988481979751587,
         1.5095493096110717
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2611,7 +2763,8 @@
         2.74064398875465,
         1.5806817981133356
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2635,7 +2788,8 @@
         2.7359085083007812,
         1.2941793203353882
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2659,7 +2813,8 @@
         1.1536348332879034,
         -0.5700328604291653
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2683,7 +2838,8 @@
         1.4706693289522452,
         -0.46916663878602805
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2707,7 +2863,8 @@
         1.5731742767401047,
         -0.291929842774575
       ],
-      "triangles": 188
+      "triangles": 188,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2731,7 +2888,8 @@
         1.1730579601913884,
         -0.43109188195831205
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2755,7 +2913,8 @@
         0.2293896849807826,
         0.45153405195841484
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2779,7 +2938,8 @@
         0.8828861326960296,
         0.49482672370393954
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2803,7 +2963,8 @@
         0.24419428217798625,
         0.44911600387264744
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2827,7 +2988,8 @@
         0.7607600247677598,
         0.5329103928649732
       ],
-      "triangles": 188
+      "triangles": 188,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2851,7 +3013,8 @@
         1.159290717354955,
         1.2456856553309332
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2875,7 +3038,8 @@
         0.8457217697045328,
         1.3838106364091098
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2899,7 +3063,8 @@
         1.5679122429907517,
         1.4458038537060123
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2923,7 +3088,8 @@
         0.8093596258698068,
         1.2626371433591645
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2947,7 +3113,8 @@
         1.616959123304087,
         0.08116743593908948
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2971,7 +3138,8 @@
         0.9182493713007669,
         0.007103168383419345
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -2995,7 +3163,8 @@
         1.4692008030098465,
         0.15811377611998445
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3019,7 +3188,8 @@
         0.8814059803123642,
         0.8694343997919936
       ],
-      "triangles": 188
+      "triangles": 188,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3043,7 +3213,8 @@
         0.794051106095876,
         0.8926334852046218
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3067,7 +3238,8 @@
         1.1530371914141329,
         0.9109255034625234
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3091,7 +3263,8 @@
         1.839002314278814,
         0.1071778797226996
       ],
-      "triangles": 236
+      "triangles": 236,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3115,7 +3288,8 @@
         1.8815745611852532,
         0.8947330557795754
       ],
-      "triangles": 236
+      "triangles": 236,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3139,7 +3313,8 @@
         2.111982391321334,
         1.0235211790635736
       ],
-      "triangles": 236
+      "triangles": 236,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3163,7 +3338,8 @@
         2.1874742473909414,
         1.3057811878299006
       ],
-      "triangles": 236
+      "triangles": 236,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3187,7 +3363,8 @@
         1.3474067063797928,
         -0.5067352309042015
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "DiscardedChairPile",
@@ -3211,7 +3388,8 @@
         2.3259645502673214,
         1.0105487206269486
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3235,7 +3413,8 @@
         0.78,
         -0.42000000000000015
       ],
-      "triangles": 80
+      "triangles": 80,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3259,7 +3438,8 @@
         0.3425000000000001,
         -1.6315
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3283,7 +3463,8 @@
         0.8,
         -0.5925
       ],
-      "triangles": 448
+      "triangles": 448,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3307,7 +3488,8 @@
         0.08,
         7.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3331,7 +3513,8 @@
         0.8425,
         6.185
       ],
-      "triangles": 392
+      "triangles": 392,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3355,7 +3538,8 @@
         1.01,
         6.09
       ],
-      "triangles": 60
+      "triangles": 60,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3379,7 +3563,8 @@
         1.049380898475647,
         5.6850000000000005
       ],
-      "triangles": 392
+      "triangles": 392,
+      "unique_surface": false
     },
     {
       "kind": "ConservedRepair",
@@ -3403,7 +3588,8 @@
         1.093,
         5.170192652433931
       ],
-      "triangles": 136
+      "triangles": 136,
+      "unique_surface": false
     },
     {
       "kind": "RoadsideRail",
@@ -3427,7 +3613,8 @@
         1.06,
         2
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "RoadsideRail",
@@ -3451,7 +3638,8 @@
         1.015,
         1.6800000000000002
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "BrookFootbridge",
@@ -3475,7 +3663,8 @@
         0.18,
         2.4
       ],
-      "triangles": 564
+      "triangles": 564,
+      "unique_surface": false
     },
     {
       "kind": "BrookFootbridge",
@@ -3499,7 +3688,8 @@
         0.1,
         1.725
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "BrookFootbridge",
@@ -3523,7 +3713,8 @@
         1.02,
         1.82
       ],
-      "triangles": 320
+      "triangles": 320,
+      "unique_surface": false
     },
     {
       "kind": "BrookFootbridge",
@@ -3547,7 +3738,8 @@
         0.988,
         1.709093266739737
       ],
-      "triangles": 960
+      "triangles": 960,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3571,7 +3763,8 @@
         0.62,
         5.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3595,7 +3788,8 @@
         0.5859,
         5.0295
       ],
-      "triangles": 2240
+      "triangles": 2240,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3619,7 +3813,8 @@
         6.22,
         5.0
       ],
-      "triangles": 2632
+      "triangles": 2632,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3643,7 +3838,8 @@
         5.5065,
         4.81
       ],
-      "triangles": 336
+      "triangles": 336,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3667,7 +3863,8 @@
         5.579,
         5.1899999999999995
       ],
-      "triangles": 4592
+      "triangles": 4592,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3691,7 +3888,8 @@
         5.541563687688328,
         5.234999999999999
       ],
-      "triangles": 3040
+      "triangles": 3040,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3715,7 +3913,8 @@
         3.1950000000000003,
         5.1
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3739,7 +3938,8 @@
         6.1225000000000005,
         5.58
       ],
-      "triangles": 120
+      "triangles": 120,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3763,7 +3963,8 @@
         6.22,
         5.109999999999999
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3787,7 +3988,8 @@
         3.85,
         5.0225
       ],
-      "triangles": 384
+      "triangles": 384,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3811,7 +4013,8 @@
         7.683790298340583,
         5.520268108374061
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3835,7 +4038,8 @@
         7.7247004848637975,
         5.5223591788066235
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3859,7 +4063,8 @@
         7.831541718308593,
         5.444666519099368
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3883,7 +4088,8 @@
         7.654045769606798,
         5.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3907,7 +4113,8 @@
         6.21,
         5.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3931,7 +4138,8 @@
         7.8149999999999995,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3955,7 +4163,8 @@
         7.58,
         5.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -3979,7 +4188,8 @@
         0.48,
         7.11
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -4003,7 +4213,8 @@
         3.3600000000000003,
         5.32
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -4027,7 +4238,8 @@
         6.255,
         5.1899999999999995
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHall",
@@ -4051,7 +4263,8 @@
         5.8950000000000005,
         5.24
       ],
-      "triangles": 896
+      "triangles": 896,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4075,7 +4288,8 @@
         0.48,
         4.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4099,7 +4313,8 @@
         0.4536,
         4.0295
       ],
-      "triangles": 2072
+      "triangles": 2072,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4123,7 +4338,8 @@
         4.24,
         4.0
       ],
-      "triangles": 1176
+      "triangles": 1176,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4147,7 +4363,8 @@
         3.4325,
         3.81
       ],
-      "triangles": 144
+      "triangles": 144,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4171,7 +4388,8 @@
         3.5050000000000003,
         4.1899999999999995
       ],
-      "triangles": 1968
+      "triangles": 1968,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4195,7 +4413,8 @@
         3.4674480065103173,
         4.234999999999999
       ],
-      "triangles": 1192
+      "triangles": 1192,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4219,7 +4438,8 @@
         3.075,
         4.1
       ],
-      "triangles": 216
+      "triangles": 216,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4243,7 +4463,8 @@
         4.142500000000001,
         4.58
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4267,7 +4488,8 @@
         4.24,
         4.109999999999999
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4291,7 +4513,8 @@
         0.9099999999999999,
         4.0225
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4315,7 +4538,8 @@
         5.5429835255331055,
         4.521954938300155
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4339,7 +4563,8 @@
         5.583624470469261,
         4.525300635482842
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4363,7 +4588,8 @@
         5.688594919935243,
         5.301963271948399
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4387,7 +4613,8 @@
         5.513177928190896,
         4.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4411,7 +4638,8 @@
         4.23,
         4.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4435,7 +4663,8 @@
         5.675,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4459,7 +4688,8 @@
         5.44,
         4.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4483,7 +4713,8 @@
         0.48,
         5.36
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4507,7 +4738,8 @@
         3.205166864255535,
         5.359547524473934
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4531,7 +4763,8 @@
         2.927132742060861,
         5.19
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "School",
@@ -4555,7 +4788,8 @@
         5.433677901722539,
         3.716528275548812
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4579,7 +4813,8 @@
         0.48,
         4.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4603,7 +4838,8 @@
         0.4536,
         4.5295
       ],
-      "triangles": 1848
+      "triangles": 1848,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4627,7 +4863,8 @@
         3.64,
         4.5
       ],
-      "triangles": 812
+      "triangles": 812,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4651,7 +4888,8 @@
         2.8725,
         4.31
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4675,7 +4913,8 @@
         2.945,
         4.6899999999999995
       ],
-      "triangles": 1148
+      "triangles": 1148,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4699,7 +4938,8 @@
         2.9074754046840567,
         4.734999999999999
       ],
-      "triangles": 712
+      "triangles": 712,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4723,7 +4963,8 @@
         3.135,
         4.6
       ],
-      "triangles": 504
+      "triangles": 504,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4747,7 +4988,8 @@
         3.5425,
         5.08
       ],
-      "triangles": 180
+      "triangles": 180,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4771,7 +5013,8 @@
         3.64,
         4.609999999999999
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4795,7 +5038,8 @@
         0.9099999999999999,
         4.5225
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4819,7 +5063,8 @@
         4.894275915505885,
         5.019202254554267
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4843,7 +5088,8 @@
         4.935344819817814,
         5.020503921617985
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4867,7 +5113,8 @@
         5.043334724935009,
         4.941053769559792
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4891,7 +5138,8 @@
         4.8645378436628475,
         4.91
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4915,7 +5163,8 @@
         3.63,
         5.0
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4939,7 +5188,8 @@
         5.0249999999999995,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4963,7 +5213,8 @@
         4.79,
         4.5
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -4987,7 +5238,8 @@
         0.48,
         4.920000000000001
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -5011,7 +5263,8 @@
         6.359999999999999,
         -1.46
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -5035,7 +5288,8 @@
         6.529999999999999,
         -1.365
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -5059,7 +5313,8 @@
         6.5495,
         -1.635
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakery",
@@ -5083,7 +5338,8 @@
         6.335,
         -1.4380000000000002
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5107,7 +5363,8 @@
         0.48,
         4.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5131,7 +5388,8 @@
         0.4536,
         4.0295
       ],
-      "triangles": 1624
+      "triangles": 1624,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5155,7 +5413,8 @@
         4.130000000000001,
         4.0
       ],
-      "triangles": 756
+      "triangles": 756,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5179,7 +5438,8 @@
         3.535,
         4.1
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5203,7 +5463,8 @@
         4.0325,
         4.58
       ],
-      "triangles": 120
+      "triangles": 120,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5227,7 +5488,8 @@
         2.9425,
         3.81
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5251,7 +5513,8 @@
         3.015,
         4.1899999999999995
       ],
-      "triangles": 1148
+      "triangles": 1148,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5275,7 +5538,8 @@
         2.977575864654434,
         4.1875
       ],
-      "triangles": 716
+      "triangles": 716,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5299,7 +5563,8 @@
         4.13,
         4.115
       ],
-      "triangles": 1392
+      "triangles": 1392,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5323,7 +5588,8 @@
         5.353578297222981,
         4.520721042006066
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5347,7 +5613,8 @@
         5.394418374121415,
         4.523148351827496
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5371,7 +5638,8 @@
         5.500763680587414,
         4.446209271847774
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5395,7 +5663,8 @@
         5.323801562470894,
         4.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5419,7 +5688,8 @@
         4.12,
         4.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5443,7 +5713,8 @@
         5.484999999999999,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5467,7 +5738,8 @@
         5.25,
         4.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5491,7 +5763,8 @@
         0.48,
         4.86
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5515,7 +5788,8 @@
         0.36,
         -3.9099999999999997
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5539,7 +5813,8 @@
         1.9700000000000002,
         -4.03
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "Workshop",
@@ -5563,7 +5838,8 @@
         0.7443888561422882,
         -4.1643030223126285
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5587,7 +5863,8 @@
         0.48,
         4.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5611,7 +5888,8 @@
         0.4536,
         4.0295
       ],
-      "triangles": 1792
+      "triangles": 1792,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5635,7 +5913,8 @@
         4.220000000000001,
         4.0
       ],
-      "triangles": 980
+      "triangles": 980,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5659,7 +5938,8 @@
         3.655,
         4.1
       ],
-      "triangles": 600
+      "triangles": 600,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5683,7 +5963,8 @@
         4.122500000000001,
         4.58
       ],
-      "triangles": 180
+      "triangles": 180,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5707,7 +5988,8 @@
         2.9825000000000004,
         3.81
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5731,7 +6013,8 @@
         3.055,
         4.1899999999999995
       ],
-      "triangles": 1476
+      "triangles": 1476,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5755,7 +6038,8 @@
         3.017597174345121,
         4.1875
       ],
-      "triangles": 896
+      "triangles": 896,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5779,7 +6063,8 @@
         4.220000000000001,
         4.109999999999999
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5803,7 +6088,8 @@
         0.9099999999999999,
         4.0225
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5827,7 +6113,8 @@
         5.413796885591443,
         4.520253918413543
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5851,7 +6138,8 @@
         5.454709242827616,
         4.522334462374332
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5875,7 +6163,8 @@
         5.561565937733821,
         4.44461825890037
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5899,7 +6188,8 @@
         5.384030597343097,
         4.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5923,7 +6213,8 @@
         4.210000000000001,
         4.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5947,7 +6238,8 @@
         5.545,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5971,7 +6263,8 @@
         5.3100000000000005,
         4.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -5995,7 +6288,8 @@
         0.48,
         4.79
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescue",
@@ -6019,7 +6313,8 @@
         3.835,
         4.18
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6043,7 +6338,8 @@
         0.48,
         3.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6067,7 +6363,8 @@
         0.4536,
         3.5295
       ],
-      "triangles": 1400
+      "triangles": 1400,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6091,7 +6388,8 @@
         3.7500000000000004,
         3.5
       ],
-      "triangles": 840
+      "triangles": 840,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6115,7 +6413,8 @@
         2.624,
         3.31
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6139,7 +6438,8 @@
         2.6965,
         3.69
       ],
-      "triangles": 1312
+      "triangles": 1312,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6163,7 +6463,8 @@
         2.6415,
         3.6875
       ],
-      "triangles": 960
+      "triangles": 960,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6187,7 +6488,8 @@
         2.805,
         3.5999999999999996
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6211,7 +6513,8 @@
         3.6525,
         4.08
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6235,7 +6538,8 @@
         3.75,
         3.6149999999999998
       ],
-      "triangles": 1200
+      "triangles": 1200,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6259,7 +6563,8 @@
         5.021972594522775,
         4.023940794325094
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6283,7 +6588,8 @@
         5.062267697115961,
         4.028772019019698
       ],
-      "triangles": 120
+      "triangles": 120,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6307,7 +6613,8 @@
         5.164951148744955,
         4.795476968302761
       ],
-      "triangles": 308
+      "triangles": 308,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6331,7 +6638,8 @@
         4.992068471098697,
         3.91
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6355,7 +6663,8 @@
         3.7399999999999998,
         4.0
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6379,7 +6688,8 @@
         5.154999999999999,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6403,7 +6713,8 @@
         4.92,
         3.5
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6427,7 +6738,8 @@
         0.48,
         4.86
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6451,7 +6763,8 @@
         3.128374301132494,
         4.852882348980237
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseA",
@@ -6475,7 +6788,8 @@
         2.921082179145116,
         4.69
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6499,7 +6813,8 @@
         0.62,
         4.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6523,7 +6838,8 @@
         0.5859,
         4.0295
       ],
-      "triangles": 1512
+      "triangles": 1512,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6547,7 +6863,8 @@
         2.73,
         4.0
       ],
-      "triangles": 840
+      "triangles": 840,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6571,7 +6888,8 @@
         4.231,
         3.81
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6595,7 +6913,8 @@
         4.3035,
         4.1899999999999995
       ],
-      "triangles": 2624
+      "triangles": 2624,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6619,7 +6938,8 @@
         4.2485,
         4.1875
       ],
-      "triangles": 1920
+      "triangles": 1920,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6643,7 +6963,8 @@
         2.745,
         4.1
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6667,7 +6988,8 @@
         4.742500000000001,
         4.58
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6691,7 +7013,8 @@
         4.84,
         4.115
       ],
-      "triangles": 1024
+      "triangles": 1024,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6715,7 +7038,8 @@
         1.05,
         4.0225
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6739,7 +7063,8 @@
         4.84,
         4.0
       ],
-      "triangles": 784
+      "triangles": 784,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6763,7 +7088,8 @@
         6.192603377257103,
         4.522717204276544
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6787,7 +7113,8 @@
         6.233115299706659,
         4.526632021015759
       ],
-      "triangles": 120
+      "triangles": 120,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6811,7 +7138,8 @@
         6.337218812229606,
         5.295476968302761
       ],
-      "triangles": 308
+      "triangles": 308,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6835,7 +7163,8 @@
         6.162779098325171,
         4.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6859,7 +7188,8 @@
         4.83,
         4.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6883,7 +7213,8 @@
         6.324999999999999,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6907,7 +7238,8 @@
         6.09,
         4.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6931,7 +7263,8 @@
         0.48,
         5.36
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6955,7 +7288,8 @@
         3.128374301132494,
         5.352882348980237
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -6979,7 +7313,8 @@
         2.921082179145116,
         5.19
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedHouseB",
@@ -7003,7 +7338,8 @@
         2.7427137481661825,
         4.37575915637403
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7027,7 +7363,8 @@
         0.48,
         3.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7051,7 +7388,8 @@
         0.4536,
         3.5295
       ],
-      "triangles": 1400
+      "triangles": 1400,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7075,7 +7413,8 @@
         3.7500000000000004,
         3.5
       ],
-      "triangles": 840
+      "triangles": 840,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7099,7 +7438,8 @@
         2.624,
         3.31
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7123,7 +7463,8 @@
         2.6965,
         3.69
       ],
-      "triangles": 1312
+      "triangles": 1312,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7147,7 +7488,8 @@
         2.659148926451073,
         3.6875
       ],
-      "triangles": 776
+      "triangles": 776,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7171,7 +7513,8 @@
         2.805,
         3.5999999999999996
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7195,7 +7538,8 @@
         3.6525,
         4.08
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7219,7 +7563,8 @@
         3.75,
         3.6149999999999998
       ],
-      "triangles": 1200
+      "triangles": 1200,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7243,7 +7588,8 @@
         5.021972594522775,
         4.023940794325094
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7267,7 +7613,8 @@
         5.062267697115961,
         4.028772019019698
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7291,7 +7638,8 @@
         5.164951148744955,
         4.800207140979975
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7315,7 +7663,8 @@
         4.992068471098697,
         3.91
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7339,7 +7688,8 @@
         3.7399999999999998,
         4.0
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7363,7 +7713,8 @@
         5.154999999999999,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7387,7 +7738,8 @@
         4.92,
         3.5
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7411,7 +7763,8 @@
         0.48,
         4.86
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7435,7 +7788,8 @@
         3.185094195435954,
         4.85779139350551
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7459,7 +7813,8 @@
         2.921082179145116,
         4.69
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseA",
@@ -7483,7 +7838,8 @@
         0.265,
         4.484449195468482
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7507,7 +7863,8 @@
         0.62,
         4.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7531,7 +7888,8 @@
         0.5859,
         4.0295
       ],
-      "triangles": 1512
+      "triangles": 1512,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7555,7 +7913,8 @@
         2.73,
         4.0
       ],
-      "triangles": 840
+      "triangles": 840,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7579,7 +7938,8 @@
         4.231,
         3.81
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7603,7 +7963,8 @@
         4.3035,
         4.1899999999999995
       ],
-      "triangles": 2624
+      "triangles": 2624,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7627,7 +7988,8 @@
         4.266215899764658,
         4.234999999999999
       ],
-      "triangles": 1848
+      "triangles": 1848,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7651,7 +8013,8 @@
         2.745,
         4.1
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7675,7 +8038,8 @@
         4.742500000000001,
         4.58
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7699,7 +8063,8 @@
         4.84,
         4.115
       ],
-      "triangles": 1024
+      "triangles": 1024,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7723,7 +8088,8 @@
         1.05,
         4.0225
       ],
-      "triangles": 192
+      "triangles": 192,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7747,7 +8113,8 @@
         4.84,
         4.0
       ],
-      "triangles": 784
+      "triangles": 784,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7771,7 +8138,8 @@
         6.192603377257103,
         4.522717204276544
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7795,7 +8163,8 @@
         6.233115299706659,
         4.526632021015759
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7819,7 +8188,8 @@
         6.337218812229606,
         5.300207140979975
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7843,7 +8213,8 @@
         6.162779098325171,
         4.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7867,7 +8238,8 @@
         4.83,
         4.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7891,7 +8263,8 @@
         6.324999999999999,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7915,7 +8288,8 @@
         6.09,
         4.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7939,7 +8313,8 @@
         0.48,
         5.36
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7963,7 +8338,8 @@
         3.185094195435954,
         5.35779139350551
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -7987,7 +8363,8 @@
         2.921082179145116,
         5.19
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -8011,7 +8388,8 @@
         2.7427137481661825,
         4.37575915637403
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "WornHouseB",
@@ -8035,7 +8413,8 @@
         0.265,
         4.484449195468482
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8059,7 +8438,8 @@
         0.2,
         3.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8083,7 +8463,8 @@
         3.83,
         3.5
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8107,7 +8488,8 @@
         0.6000000000000001,
         3.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8131,7 +8513,8 @@
         4.959841418974325,
         1.9142076822762553
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8155,7 +8538,8 @@
         4.928777717310407,
         0.019352013562511816
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8179,7 +8563,8 @@
         5.020261853410382,
         -0.07609556877474888
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8203,7 +8588,8 @@
         0.545703680367075,
         1.8691587721691771
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8227,7 +8613,8 @@
         0.5490242675863102,
         0.10337137605613156
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8251,7 +8638,8 @@
         0.265,
         2.3449999999999998
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8275,7 +8663,8 @@
         3.3,
         -1.7
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedHouse",
@@ -8299,7 +8688,8 @@
         0.98,
         -1.675
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8323,7 +8713,8 @@
         0.2,
         3.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8347,7 +8738,8 @@
         0.54,
         3.5
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8371,7 +8763,8 @@
         0.6000000000000001,
         3.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8395,7 +8788,8 @@
         0.5490242675863102,
         -0.5279551284495221
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8419,7 +8813,8 @@
         0.265,
         2.3449999999999998
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8443,7 +8838,8 @@
         1.92,
         -1.7
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdFoundation",
@@ -8467,7 +8863,8 @@
         0.98,
         -1.675
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8491,7 +8888,8 @@
         0.48,
         2.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8515,7 +8913,8 @@
         0.4536,
         2.0295
       ],
-      "triangles": 784
+      "triangles": 784,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8539,7 +8938,8 @@
         2.64,
         2.0
       ],
-      "triangles": 672
+      "triangles": 672,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8563,7 +8963,8 @@
         2.545,
         2.1
       ],
-      "triangles": 216
+      "triangles": 216,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8587,7 +8988,8 @@
         2.5425,
         2.58
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8611,7 +9013,8 @@
         2.64,
         2.115
       ],
-      "triangles": 912
+      "triangles": 912,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8635,7 +9038,8 @@
         1.811,
         1.2225000000000001
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8659,7 +9063,8 @@
         1.8835000000000002,
         1.345
       ],
-      "triangles": 984
+      "triangles": 984,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8683,7 +9088,8 @@
         1.9332791008615324,
         1.6201564709893814
       ],
-      "triangles": 596
+      "triangles": 596,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8707,7 +9113,8 @@
         3.520615233448913,
         2.526420118525274
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8731,7 +9138,8 @@
         3.5604335887191976,
         2.533119236897779
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8755,7 +9163,8 @@
         3.6601300188808077,
         2.4660151466833016
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8779,7 +9188,8 @@
         3.490172221090643,
         2.41
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8803,7 +9213,8 @@
         2.63,
         2.5
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8827,7 +9238,8 @@
         3.6550000000000002,
         0.125
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8851,7 +9263,8 @@
         3.42,
         2.0
       ],
-      "triangles": 16
+      "triangles": 16,
+      "unique_surface": false
     },
     {
       "kind": "AbandonedShed",
@@ -8875,7 +9288,8 @@
         0.48,
         2.74
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -8899,7 +9313,8 @@
         0.2,
         2.0
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -8923,7 +9338,8 @@
         2.55,
         2.0
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -8947,7 +9363,8 @@
         0.6000000000000001,
         2.0
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -8971,7 +9388,8 @@
         3.489784753176348,
         1.109957495396578
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -8995,7 +9413,8 @@
         3.4547753471140665,
         0.02661324178595681
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -9019,7 +9438,8 @@
         3.5371538501171402,
         -0.08293193896033202
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -9043,7 +9463,8 @@
         0.5455550404231113,
         1.1106705444705247
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -9067,7 +9488,8 @@
         0.5490242675863102,
         0.7633713760561316
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": false
     },
     {
       "kind": "RuinedShed",
@@ -9091,7 +9513,8 @@
         0.265,
         1.3399999999999999
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9115,7 +9538,8 @@
         0.09,
         15.1
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9139,7 +9563,8 @@
         0.17,
         14.313505087980884
       ],
-      "triangles": 2520
+      "triangles": 2520,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9163,7 +9588,8 @@
         0.72,
         15.14
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9187,7 +9613,8 @@
         0.52,
         14.205
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9211,7 +9638,8 @@
         1.05,
         14.159
       ],
-      "triangles": 448
+      "triangles": 448,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9235,7 +9663,8 @@
         3.1999999999999997,
         6.585
       ],
-      "triangles": 464
+      "triangles": 464,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9259,7 +9688,8 @@
         3.1,
         6.484999999999999
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9283,7 +9713,8 @@
         0.905,
         -5.15
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9307,7 +9738,8 @@
         1.82,
         -5.29
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9331,7 +9763,8 @@
         0.6656887920937931,
         -5.400669933031009
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9355,7 +9788,8 @@
         0.6749999999999999,
         14.982500000000002
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "TownHallYard",
@@ -9379,7 +9813,8 @@
         0.9,
         14.139361904021165
       ],
-      "triangles": 144
+      "triangles": 144,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9403,7 +9838,8 @@
         0.44,
         14.91
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9427,7 +9863,8 @@
         1.56,
         14.969999999999999
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9451,7 +9888,8 @@
         1.6800000000000002,
         14.774999999999999
       ],
-      "triangles": 1540
+      "triangles": 1540,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9475,7 +9913,8 @@
         1.503592355686074,
         14.493429765744937
       ],
-      "triangles": 308
+      "triangles": 308,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9499,7 +9938,8 @@
         2.7025,
         11.22
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9523,7 +9963,8 @@
         2.560762287578897,
         10.511845812352396
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9547,7 +9988,8 @@
         0.6703098059708308,
         10.193089373236722
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9571,7 +10013,8 @@
         1.06,
         11.031860393295888
       ],
-      "triangles": 200
+      "triangles": 200,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9595,7 +10038,8 @@
         0.52,
         13.705
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9619,7 +10063,8 @@
         1.05,
         13.659
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9643,7 +10088,8 @@
         1.02,
         -4.4
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9667,7 +10113,8 @@
         1.0036359827239933,
         -4.492574126430917
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9691,7 +10138,8 @@
         0.17,
         9.459302947846462
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "SchoolYard",
@@ -9715,7 +10163,8 @@
         0.97,
         13.634758790482296
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9739,7 +10188,8 @@
         0.17,
         9.709494895078326
       ],
-      "triangles": 952
+      "triangles": 952,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9763,7 +10213,8 @@
         0.4,
         -4.550000000000001
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9787,7 +10238,8 @@
         3.015,
         8.65280819817052
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9811,7 +10263,8 @@
         3.024916313325617,
         8.708819609327614
       ],
-      "triangles": 420
+      "triangles": 420,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9835,7 +10288,8 @@
         2.9099999999999997,
         5.449296521341326
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9859,7 +10313,8 @@
         1.2407751952862762,
         8.865193679972961
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9883,7 +10338,8 @@
         1.3399999999999999,
         -5.85977186985742
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9907,7 +10363,8 @@
         1.095,
         -5.941081716858047
       ],
-      "triangles": 200
+      "triangles": 200,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9931,7 +10388,8 @@
         1.04,
         -5.344916883894877
       ],
-      "triangles": 756
+      "triangles": 756,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9955,7 +10413,8 @@
         0.36,
         -3.2
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -9979,7 +10438,8 @@
         2.27,
         -3.3249999999999997
       ],
-      "triangles": 336
+      "triangles": 336,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -10003,7 +10463,8 @@
         0.76,
         -3.73
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
@@ -10027,7 +10488,8 @@
         3.1964091390629066,
         8.45635810712027
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10051,7 +10513,8 @@
         0.2,
         13.205517324534268
       ],
-      "triangles": 1400
+      "triangles": 1400,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10075,7 +10538,8 @@
         1.84,
         13.860000000000001
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10099,7 +10563,8 @@
         1.5808714208608245,
         13.547031358041542
       ],
-      "triangles": 616
+      "triangles": 616,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10123,7 +10588,8 @@
         3.0245161618323286,
         4.525
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10147,7 +10613,8 @@
         3.100950659720365,
         4.35
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10171,7 +10638,8 @@
         3.0014843635079815,
         1.039416578427367
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10195,7 +10663,8 @@
         1.0150000000000001,
         3.33
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10219,7 +10688,8 @@
         1.3900000000000001,
         3.7565000000000004
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10243,7 +10713,8 @@
         0.875,
         1.165
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10267,7 +10738,8 @@
         1.36,
         4.020685259434535
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10291,7 +10763,8 @@
         0.3414327978773143,
         4.0825
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10315,7 +10788,8 @@
         0.18,
         4.590000000000001
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "WorkshopYard",
@@ -10339,7 +10813,8 @@
         3.2258574356177836,
         4.184902926271878
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10363,7 +10838,8 @@
         0.14,
         12.649999999999999
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10387,7 +10863,8 @@
         0.32,
         12.649999999999999
       ],
-      "triangles": 672
+      "triangles": 672,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10411,7 +10888,8 @@
         2.984465735813745,
         3.2399999999999998
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10435,7 +10913,8 @@
         3.0670712040515706,
         2.935
       ],
-      "triangles": 448
+      "triangles": 448,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10459,7 +10938,8 @@
         3.051161766651343,
         -2.05
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10483,7 +10963,8 @@
         1.21,
         1.860255563599898
       ],
-      "triangles": 60
+      "triangles": 60,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10507,7 +10988,8 @@
         0.6,
         1.33
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10531,7 +11013,8 @@
         1.0592486333027642,
         2.823319863349983
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10555,7 +11038,8 @@
         1.9900000000000002,
         2.1
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10579,7 +11063,8 @@
         2.183571374662666,
         -0.20500000000000002
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10603,7 +11088,8 @@
         1.99,
         1.7825
       ],
-      "triangles": 420
+      "triangles": 420,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10627,7 +11113,8 @@
         2.3850000000000002,
         -6.4799999999999995
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10651,7 +11138,8 @@
         0.21,
         3.335
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "MountainRescueYard",
@@ -10675,7 +11163,8 @@
         3.2082845478851536,
         2.49426098324176
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10699,7 +11188,8 @@
         0.46,
         8.85
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10723,7 +11213,8 @@
         1.71,
         8.46
       ],
-      "triangles": 532
+      "triangles": 532,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10747,7 +11238,8 @@
         1.5408714208608245,
         8.605
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10771,7 +11263,8 @@
         0.42,
         4.375
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10795,7 +11288,8 @@
         0.6344284612383643,
         3.6557087308528247
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10819,7 +11313,8 @@
         1.64,
         5.0520932424456415
       ],
-      "triangles": 420
+      "triangles": 420,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10843,7 +11338,8 @@
         0.2645339207526392,
         5.116465083957065
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10867,7 +11363,8 @@
         0.7949999999999999,
         3.485456020677555
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardA",
@@ -10891,7 +11388,8 @@
         0.66,
         8.679521428015873
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -10915,7 +11413,8 @@
         0.46,
         8.85
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -10939,7 +11438,8 @@
         1.71,
         8.46
       ],
-      "triangles": 532
+      "triangles": 532,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -10963,7 +11463,8 @@
         1.5408714208608245,
         8.605
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -10987,7 +11488,8 @@
         0.42,
         4.375
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -11011,7 +11513,8 @@
         0.6344284612383643,
         3.6557087308528247
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -11035,7 +11538,8 @@
         0.97,
         6.449170679748175
       ],
-      "triangles": 560
+      "triangles": 560,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -11059,7 +11563,8 @@
         0.725,
         6.401853435543259
       ],
-      "triangles": 200
+      "triangles": 200,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -11083,7 +11588,8 @@
         0.7949999999999999,
         3.485456020677555
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardB",
@@ -11107,7 +11613,8 @@
         0.66,
         8.679521428015873
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11131,7 +11638,8 @@
         0.46,
         8.85
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11155,7 +11663,8 @@
         1.71,
         8.46
       ],
-      "triangles": 532
+      "triangles": 532,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11179,7 +11688,8 @@
         1.5408714208608245,
         8.605
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11203,7 +11713,8 @@
         0.42,
         4.375
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11227,7 +11738,8 @@
         0.6344284612383643,
         3.6557087308528247
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11251,7 +11763,8 @@
         0.56,
         6.216
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11275,7 +11788,8 @@
         1.42,
         6.29725
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11299,7 +11813,8 @@
         1.3375000000000001,
         -1.3824999999999998
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11323,7 +11838,8 @@
         0.7949999999999999,
         3.485456020677555
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": false
     },
     {
       "kind": "HouseholdYardC",
@@ -11347,7 +11863,8 @@
         0.66,
         8.679521428015873
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11372,7 +11889,8 @@
         5.324389556440735,
         25.0
       ],
-      "triangles": 1520
+      "triangles": 1520,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11397,7 +11915,8 @@
         3.9789032005181735,
         5.409725393206756
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11422,7 +11941,8 @@
         5.314688925884397,
         4.089128513114792
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11447,7 +11967,8 @@
         5.285124119192864,
         4.978817295500289
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11472,7 +11993,8 @@
         5.005949971744088,
         9.821291830049251
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11497,7 +12019,8 @@
         5.265676378556683,
         10.822355380633933
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11522,7 +12045,8 @@
         5.068046520148797,
         13.5869235618142
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11547,7 +12071,8 @@
         4.444910106502003,
         16.752089777847342
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11572,7 +12097,8 @@
         3.8736530099573283,
         18.58973066161169
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11597,7 +12123,8 @@
         3.525391104872638,
         20.200490101250658
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11622,7 +12149,8 @@
         2.190474248657401,
         23.780793717838588
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11647,7 +12175,8 @@
         1.812490254578145,
         24.046958925225372
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11672,7 +12201,8 @@
         5.3329670480155,
         6.520694832262311
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11697,7 +12227,8 @@
         4.801400803570137,
         11.449867606715898
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11722,7 +12253,8 @@
         4.322746750470338,
         12.46097885892857
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11747,7 +12279,8 @@
         2.9620177610594927,
         22.82512840275415
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11777,7 +12310,8 @@
         5.52984644411874,
         13.274868037990863
       ],
-      "triangles": 1136
+      "triangles": 1136,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11807,7 +12341,8 @@
         5.16,
         12.650070135695723
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11837,7 +12372,8 @@
         5.637675523971675,
         13.537609024580558
       ],
-      "triangles": 1136
+      "triangles": 1136,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11867,7 +12403,8 @@
         5.220000000000001,
         12.938382118183537
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11897,7 +12434,8 @@
         4.893450021671228,
         13.091283346841468
       ],
-      "triangles": 1136
+      "triangles": 1136,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11927,7 +12465,8 @@
         4.535,
         12.652501712285387
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11957,7 +12496,8 @@
         5.3460863345355,
         11.642211395311874
       ],
-      "triangles": 1136
+      "triangles": 1136,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -11987,7 +12527,8 @@
         4.2700000000000005,
         11.269084422155471
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12017,7 +12558,8 @@
         4.785666670935283,
         13.141640848991388
       ],
-      "triangles": 1136
+      "triangles": 1136,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12047,7 +12589,8 @@
         3.7,
         12.534986971579176
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12077,7 +12620,8 @@
         4.75,
         2.4108622993578566
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12107,7 +12651,8 @@
         4.6,
         2.1637959321636586
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12137,7 +12682,8 @@
         4.949999999999999,
         3.23571778017426
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12167,7 +12713,8 @@
         4.9,
         4.723192938464747
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12197,7 +12744,8 @@
         4.95,
         8.728534204511934
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12227,7 +12775,8 @@
         4.6,
         10.329430626735874
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12257,7 +12806,8 @@
         5.35,
         9.48652817955047
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12287,7 +12837,8 @@
         4.45,
         11.162648408968632
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12317,7 +12868,8 @@
         4.45,
         14.56962479118961
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12347,7 +12899,8 @@
         6.74167348188759,
         9.000757626879349
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12377,7 +12930,8 @@
         7.389645096966408,
         10.703318506694261
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12407,7 +12961,8 @@
         4.138102913527164,
         17.097963429861014
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12437,7 +12992,8 @@
         4.229942525380686,
         18.50016701952073
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12467,7 +13023,8 @@
         2.466121096237208,
         22.286345565170027
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12497,7 +13054,8 @@
         6.231627768321817,
         4.195394880048742
       ],
-      "triangles": 1104
+      "triangles": 1104,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12527,7 +13085,8 @@
         5.85593576721307,
         7.282671874372112
       ],
-      "triangles": 252
+      "triangles": 252,
+      "unique_surface": false
     },
     {
       "kind": "Avalanche",
@@ -12557,7 +13116,8 @@
         5.327478310792342,
         7.272510439344277
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12581,7 +13141,8 @@
         0.18,
         3.5
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12605,7 +13166,8 @@
         3.335,
         -3.125
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12629,7 +13191,8 @@
         3.335,
         -0.26
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12653,7 +13216,8 @@
         1.1600000000000001,
         3.49
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12677,7 +13241,8 @@
         1.46,
         3.526289009608833
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12701,7 +13266,8 @@
         2.6035,
         -0.34500000000000003
       ],
-      "triangles": 288
+      "triangles": 288,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12725,7 +13291,8 @@
         2.68,
         -1.175
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12749,7 +13316,8 @@
         4.53026158624249,
         3.402902000016632
       ],
-      "triangles": 336
+      "triangles": 336,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12773,7 +13341,8 @@
         4.633379631132027,
         0.0842196919485898
       ],
-      "triangles": 308
+      "triangles": 308,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12797,7 +13366,8 @@
         4.28189853839541,
         -1.162904325653406
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12821,7 +13391,8 @@
         2.435,
         -2.3699999999999997
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12845,7 +13416,8 @@
         0.9199999999999999,
         -2.3445
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12869,7 +13441,8 @@
         1.1292607800651613,
         1.6626236291337704
       ],
-      "triangles": 156
+      "triangles": 156,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12893,7 +13466,8 @@
         0.72,
         2.7379014769989785
       ],
-      "triangles": 416
+      "triangles": 416,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12917,7 +13491,8 @@
         0.4048924463037594,
         2.9564524733673614
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "AvalancheRuinedHouse",
@@ -12941,7 +13516,8 @@
         0.25,
         2.075
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": false
     },
     {
       "kind": "StoveFire",
@@ -12966,7 +13542,8 @@
         0.1158742478725859
       ],
       "triangles": 372,
-      "flame_field_vertex_count": 192
+      "flame_field_vertex_count": 192,
+      "unique_surface": false
     },
     {
       "kind": "StoveFire",
@@ -12991,7 +13568,8 @@
         0.01118486790426415
       ],
       "triangles": 248,
-      "flame_field_vertex_count": 128
+      "flame_field_vertex_count": 128,
+      "unique_surface": false
     },
     {
       "kind": "Lighter",
@@ -13015,7 +13593,12 @@
         0.043,
         0.007
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "dc9098a54e6536b8497fa388c00fb9023b95971e52c5018ea9131b03322af2fd",
+      "uv1_signature": "c8596143232877b1e23ba9ddbc855b7ac6c9947e07526bacb6df13f785e28c29",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13040,7 +13623,12 @@
         0.065,
         0.007
       ],
-      "triangles": 76
+      "triangles": 76,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "751cc21517d259461bec1f952075a9dcab4301c0ff78024449609c2b6c59420c",
+      "uv1_signature": "21300e5dc7ab24a4e536bd9fe60f8119a5dcd1e0911c66e2c47748f7030b3c14",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13065,7 +13653,12 @@
         0.047,
         0.003
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "0340695cf3ea391257dfb8324d8f877b234b2eb4eac368205f018071068a0820",
+      "uv1_signature": "c62727cd8258c1348b870e7db26f912561d314a3a7f0fbd61a0f5dfeffea6622",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13089,7 +13682,12 @@
         0.045,
         0.0036
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "c356ac0e2da66bb31780867f93613bc46d572f48495b50ecfc8338cdbe54c18a",
+      "uv1_signature": "e416db666dacbb36fe64711c97bde3d081dbb166be35ed0e6b455aeefa80e6e7",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13113,7 +13711,12 @@
         0.0625,
         0.0052499999999999995
       ],
-      "triangles": 156
+      "triangles": 156,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "1a0badce500a30c492616827cd7f82f698b91300d00a6636ad85e6d85203f7d1",
+      "uv1_signature": "66e5b976bfb8a907873a3de65bae7663a945a04c5ad74bc7f2bb10871739b9e6",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13137,7 +13740,12 @@
         0.062,
         0.0016
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "d6c8dd0d16b43b2f26bc4232fa5e1ff802df7b34101e601f60626336b4094000",
+      "uv1_signature": "f69bcdc9c9cc51106a494ffc081359f1e999b1559d5807da8821b0572156130b",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13162,7 +13770,12 @@
         0.06295,
         0.004
       ],
-      "triangles": 188
+      "triangles": 188,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "68cc781b37e6a37339e699331bf5aa9e1192229d667dd69ff7a50e1e982e6671",
+      "uv1_signature": "ce28d60f409ccb4b9b3cb1f36aa50820cd99996e63b15647e222a70cb21a5913",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13187,7 +13800,12 @@
         0.051500000000000004,
         0.004
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "8be10cbd05b5f98a98eaa937d55e0ebbd17f68af3f2af863d4f76fa82d4f7b75",
+      "uv1_signature": "f3ad1d29ef4bd28b1a8f2cb9b4bb08d846030890ab90ba03ad34e0172bbf9652",
+      "uv_channel_count": 2
     },
     {
       "kind": "Lighter",
@@ -13213,7 +13831,8 @@
         0.0018519303138338598
       ],
       "triangles": 92,
-      "flame_field_vertex_count": 48
+      "flame_field_vertex_count": 48,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -13241,7 +13860,12 @@
         2.89,
         -5.755
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "299df060b0c7e92c3dbb17784ccd763b490731f3c9c5668c32ef0fe1db555c89",
+      "uv1_signature": "1a9ab0539c537a219228377e2570cda8dd55d7c17cf7612cc58e60ddcc2e3e27",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13269,7 +13893,12 @@
         0.07,
         -5.66
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "311e83cc410dcdd5268a6c10a41481fe9ac1222a8ea96bdf87f258ccfaa23da6",
+      "uv1_signature": "6f5986a32831e6c561c4fb9d7605c2bf6e526afbad8cc38588417b43aa02f87e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13298,7 +13927,12 @@
         2.68,
         -5.9350000000000005
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "13f1ab4d6da3d6fdc020bbbf24e27f47f5314b00c3aeb73b85a20bf1d2a4a5cd",
+      "uv1_signature": "a58c3751d0a86ecd3f9b81bf1344806d867b233489c0892d772cc545ce63c5e4",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13327,7 +13961,12 @@
         2.68,
         -5.8725
       ],
-      "triangles": 308
+      "triangles": 308,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "87d695f77c303d9153145a4cadb1a3722c2f4816ed41a5c2f08d971c2c50ac92",
+      "uv1_signature": "9e8b075717aad669d8c191757db2e28ae77c2b61c1de12c33da72f008d238ad8",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13352,7 +13991,12 @@
         2.395,
         -6.0675
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "7e5424e523291374733053e9fb3a286887fa8786d2cc07571a8c25b5855f3f68",
+      "uv1_signature": "6f53b28905cd54aa1e2e5d30550ca08b4f5a3025416955918c55187f8f43d7e0",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13377,7 +14021,12 @@
         1.1925000000000001,
         -5.844608296194323
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "d97e17a069319dfc47e18dfc4d423e706131d0cdb1477804e60a8efc1bb8a7fd",
+      "uv1_signature": "35785d98d0d94a88c64d786f8632392a7c008922d6be8414d5ecffcbef47b050",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13406,7 +14055,12 @@
         2.68,
         -5.9350000000000005
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "5f5946894f98c93c5a06a6c6d3925f358c29661c35158427c3730baf27b9c644",
+      "uv1_signature": "29cd74d93c5c3dd275b5f9070801a037549ac826e8ce210ae0a857f556e6c7fb",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13435,7 +14089,12 @@
         2.625,
         -5.8725
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "d328bb02747a01f57c5a7cdd04493b6a7dea79561a9940c3e81899246163a9f8",
+      "uv1_signature": "b93786d7cc73b79ca65566461a23616fcf75c8880a59f8d1c08c24e81e9eef5a",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13460,7 +14119,12 @@
         2.395,
         -6.0675
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "fc62806cf946c93f3a8aef767bb9e551d3d5f3573282186167f95154a3921455",
+      "uv1_signature": "918239aff81edeb80d6215814ef20b87b847a1af90107f06168a0121a8fa69d4",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13485,7 +14149,12 @@
         1.1925000000000001,
         -5.844608296194323
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "73925645f81da4bb128644d0128e27c28ac605f3e97accc40a09d4740dbcbe17",
+      "uv1_signature": "b0f68af2cafcf96130977b097dcbb93c1b219fcf6157ad5dcb0958aa3ecdbf39",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13513,7 +14182,12 @@
         0.78,
         0.8875000000000004
       ],
-      "triangles": 532
+      "triangles": 532,
+      "unique_surface": true,
+      "surface_family": "LodgePaleWood",
+      "uv0_signature": "428a6335670cd3ea94d1bf0974cd2ffa435ec5f53e6601e32f538f15062c40b9",
+      "uv1_signature": "12343de0d9603a4af0531455aec160c08fe021d5548d020f6de306f5678bbc33",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13537,7 +14211,12 @@
         0.648,
         0.8500000000000003
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "b289eb8f0effe15846de48dc79a574f91229e9b9ee81898806b7f665bc5e0baa",
+      "uv1_signature": "bc02266fcd1923464fc0e81f928800400ea5f320a3ff10adfb6aee5a17f3f209",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13561,7 +14240,12 @@
         0.725968581622493,
         0.9175000000000001
       ],
-      "triangles": 612
+      "triangles": 612,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "69b4ab64552d7d9d8fb14e4fcd7f441bcd0f301f849a74cda1017b2e01c9dba2",
+      "uv1_signature": "2a90cf97bfc4a527313a94fdaac8dc7c1ba1c698d5f5589b13c7dbdbaf20f36e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13585,7 +14269,12 @@
         0.7909999999999999,
         0.74
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "45a0863e4b50e9dfe88ce06164df3e155a8bd649a46514aa2175ecba9a2c1e97",
+      "uv1_signature": "71867c55fa246891770425284d8c905983f750c91a1c198fa69ad49d2bcc0987",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13609,7 +14298,12 @@
         0.46,
         -0.08299999999999969
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "78bf556ef6341e1cfb42d36d5e7af8e5db66b7c8f13b49b6a1c816b2e5981a10",
+      "uv1_signature": "120efc65d446ce505e72c79cdda8c466111e30cf9eb3552eeff41a38c5b6b17f",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13633,7 +14327,12 @@
         1.08,
         2.6100000000000003
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Stone",
+      "uv0_signature": "5795c15e09647371c126a7de18667bd427585453adc989c921095262050823f6",
+      "uv1_signature": "9ef479a4d31d2d2987c0372ba034f99bc08ccc164eaa84b7e8fa06ecad4b9cac",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13657,7 +14356,12 @@
         1.351,
         2.5650000000000004
       ],
-      "triangles": 276
+      "triangles": 276,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "a5860a8b7fd9f9e002015b2683c5a4be24f47cf64dd219f0edde1062f51ee44d",
+      "uv1_signature": "df987773d844cd72fd8ad576fe2cd90cc4387c6175229956fea77b4923e1833c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13681,7 +14385,12 @@
         1.379,
         2.5170000000000003
       ],
-      "triangles": 156
+      "triangles": 156,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "d55fe3009c4d9a92de57833cddea3bf5bf29e3189e2647f367279a8205b59878",
+      "uv1_signature": "8e6067584d925acb79f0972cd4bef116ec26326d92e6918f569c2db6517b771f",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13705,7 +14414,12 @@
         1.415,
         2.4250000000000003
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "0f9ea1c7a812448cb204c40eaaf71a9305d5bed1d066f5ab6dff107dfa5df2cc",
+      "uv1_signature": "a454ec103c83fcd9f276609056fbbb248224302f401231fcb212c036c93c9176",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13729,7 +14443,12 @@
         1.3725316054943064,
         2.69729740824146
       ],
-      "triangles": 92
+      "triangles": 92,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "3fe5b9f70fbdb933a84a2bbbc4fa2765d5cdacc0a71b8269447a4d16f7eb30f9",
+      "uv1_signature": "1dff3e3562df65bd39859f4380e3d3d10bdd2113bec7e1eefb06bedbe7a0037f",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13753,7 +14472,12 @@
         1.3712257509566594,
         2.693665334315872
       ],
-      "triangles": 44
+      "triangles": 44,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "7c18d4301590036990b3c1694cbcb9a0ea01787464f97c83de91f949cb3b3bc5",
+      "uv1_signature": "b9a39d27cd41b4c4b307b304b1f57957f13b562d405e6fd4da5b0e1d9b680a64",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13777,7 +14501,12 @@
         1.511,
         2.5639190751475027
       ],
-      "triangles": 150
+      "triangles": 150,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "60b74855d867c7bcb98c08edcb521765661f9a83d94108f768effd75617a4832",
+      "uv1_signature": "8a783c30b5e53f59f48e0dee8f56d8eb69fc023faae86f4081ecbbd989ab1a3b",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13805,7 +14534,12 @@
         1.5199999999999998,
         2.451556812924646
       ],
-      "triangles": 38
+      "triangles": 38,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "a592681979a523435df2713dfb1d2b553bd123b2664ca413b40d52c38780d89e",
+      "uv1_signature": "b41b7cd1987f28246085fb875b736a3bdd06d219001d5ab2459d7a3aceac5c59",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13829,7 +14563,12 @@
         1.175,
         1.9650000000000003
       ],
-      "triangles": 188
+      "triangles": 188,
+      "unique_surface": true,
+      "surface_family": "Enamel",
+      "uv0_signature": "dec46e22164f0d4e878bae0b899f2b922ccb044f6275548fe30145df67984977",
+      "uv1_signature": "b97444bec94d07e053dfb01443bac883795597ff1ffe9574569f28e9167c7a48",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13853,7 +14592,12 @@
         1.168734069307342,
         1.8321716430034773
       ],
-      "triangles": 104
+      "triangles": 104,
+      "unique_surface": true,
+      "surface_family": "Enamel",
+      "uv0_signature": "87c9a294f8b2880f33001373192c8672da0680267bda79d1fd438539a02565e7",
+      "uv1_signature": "8bcc3707759f6904626c2a65ca9a6dd4f0c66a5bb0583986cb8bde115d791041",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13877,7 +14621,12 @@
         0.9337500000000001,
         -0.20920912778612666
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "8fa7210d89d858686e8318a0424957459b297bb0395d6d2b3766df861daf037a",
+      "uv1_signature": "133264702611b4e06b6d6e169bd0d52a5a7409aca468d7004dd8f21524e4654d",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13901,7 +14650,12 @@
         1.0050000000000001,
         -0.27247226428113613
       ],
-      "triangles": 144
+      "triangles": 144,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "ab6419b5b19e628d4e244c04e65cb4cc0ee76410b9ee4373e0d569b8fd8f9c64",
+      "uv1_signature": "00f039d94f01d5475c8f562ad6258868a54967aa70b06e3d87bc059dd029f4d1",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13925,7 +14679,8 @@
         1.21875,
         -0.2321059080436605
       ],
-      "triangles": 284
+      "triangles": 284,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -13949,7 +14704,8 @@
         1.14975,
         -0.28475000000000006
       ],
-      "triangles": 124
+      "triangles": 124,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -13973,7 +14729,12 @@
         1.2225,
         -0.22310288568296993
       ],
-      "triangles": 360
+      "triangles": 360,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "79ce80dfa2979fe90c0cfdc6f94fd975f0b19f8ff884f376a4d0caf10a6bde5d",
+      "uv1_signature": "d8e4c10986e80125352b380d0eb59f3d2012aee94bc176e5331a20cfd4421cc0",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -13997,7 +14758,12 @@
         1.31625,
         -0.21290215685992248
       ],
-      "triangles": 212
+      "triangles": 212,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "0d7d699a88746378b16b74253fd9f4cf2983f07ab9e993fb14f9023e40ede1ad",
+      "uv1_signature": "032d08da6a7bf879df6469a41c6f084e791e441e81d0d4845906a98c2913ec27",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14021,7 +14787,12 @@
         1.27875,
         -0.2510000000000001
       ],
-      "triangles": 336
+      "triangles": 336,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "49dcf795c8229c58d2d8c8e569f7e245a8ce51fd091ed0e38bb08e6775eb62e4",
+      "uv1_signature": "cce6327e0fbed6d852e8c6d0452a5f2996d526ca8d75f7282d3c73e190d8c557",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14045,7 +14816,12 @@
         1.45425,
         -0.31341923659277277
       ],
-      "triangles": 178
+      "triangles": 178,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "894d26c03e7c9ce15715ecca61f8cee57ec06d0776553c0b71dd12b611b7970b",
+      "uv1_signature": "f2c72540c89f3549fc32c5f4ebdd4b792e04beb5b8156ac1ac46c5d0a169bfa6",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14073,7 +14849,12 @@
         0.78,
         2.1500000000000004
       ],
-      "triangles": 760
+      "triangles": 760,
+      "unique_surface": true,
+      "surface_family": "LodgeOakWood",
+      "uv0_signature": "11b81c24d8f21dca0aa5ed187817be1d568247a4522ee0a75f6af7e1fc7c9b74",
+      "uv1_signature": "69dc8e2f2b41bcaa30bb2801b6bab9fe983fd6d981ba8e656afd6c09bb517ee7",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14101,7 +14882,12 @@
         0.673,
         1.7889106575469267
       ],
-      "triangles": 96
+      "triangles": 96,
+      "unique_surface": true,
+      "surface_family": "LodgeOakWood",
+      "uv0_signature": "2b55f49aec08dac692ff1255ff9063ede1f3552260994321d0643b30f9cd2fc3",
+      "uv1_signature": "49ab755481d2227deb9f6f35f278e27a328629375e0660ff0273c5120ef48a61",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14129,7 +14915,12 @@
         0.45999999999999996,
         2.1500000000000004
       ],
-      "triangles": 564
+      "triangles": 564,
+      "unique_surface": true,
+      "surface_family": "LodgeOakWood",
+      "uv0_signature": "e1551ff6c13f112ed48752a5ed819c10000ee47b8f5b75d6735dd615c41bec82",
+      "uv1_signature": "a73d43e496f05b26006a74a37fa364f1b52269de0a5f875234b0548b89fde4c8",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14157,7 +14948,12 @@
         0.45999999999999996,
         2.1500000000000004
       ],
-      "triangles": 564
+      "triangles": 564,
+      "unique_surface": true,
+      "surface_family": "LodgeOakWood",
+      "uv0_signature": "36dc9904c13d52176e586048a27a7813f7b755b135a7abe01ed498b063078797",
+      "uv1_signature": "510489122b8c7b0264d5c2b60413bd3a415944b1f9618209e894425e3cde8600",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14185,7 +14981,12 @@
         2.09,
         2.8375
       ],
-      "triangles": 1428
+      "triangles": 1428,
+      "unique_surface": true,
+      "surface_family": "LodgePaleWood",
+      "uv0_signature": "9cf37d27c970d21193ea6c03a9ab8a37f61b7f826f646058aedccdfb933c64ca",
+      "uv1_signature": "50fa383a9960b82a4aebc73c1f5dc0009701f15025cf79c54f1ed7f93cbfbb60",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14209,7 +15010,12 @@
         1.5825,
         2.675
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "e5086dabd8cb191a4974096f1fb3a26aa6f490cb4e7d4e38b243d79f0f462f40",
+      "uv1_signature": "2f8bd8fed603e5da09f2b1b3613f1093715e16e5311b5dec9f71de98ee636ce8",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14233,7 +15039,12 @@
         1.6655,
         2.56
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "fb6f6620c1fb160e75b073ce8b389315de49fff24d3807b028db692995ee0e4d",
+      "uv1_signature": "88db755fa6d4ad5bffb747e7edf26ff9db5c8f03eb7aa8c61201786942e69cf3",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14257,7 +15068,12 @@
         1.637,
         2.688
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "7256b0b185261b85613219ce765dc0df264bc86ba80ec982a860e9b0e54265e2",
+      "uv1_signature": "4e6d2feddfd15f13696eb3b097617bf0c0131016f18f94864805dee06110ab17",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14285,7 +15101,12 @@
         2.09,
         4.6875
       ],
-      "triangles": 1428
+      "triangles": 1428,
+      "unique_surface": true,
+      "surface_family": "LodgePaleWood",
+      "uv0_signature": "6a649ecfcc5d66724f5df4c776b7b4539bff9fd25e4d23292eaf7802e33e1c31",
+      "uv1_signature": "e09c4243185f1620e84c6d8de8b14c923583954fb2e0fbae88e25fc93c71bf0e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14309,7 +15130,12 @@
         1.5825,
         4.5249999999999995
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "28476692e0086e2464cb1196d087cd32bb04140ee78e1f5aff5610948b05efec",
+      "uv1_signature": "88ceee645dd3ef2a3a55bf641ff917a397ab5c4fff2f167885c1477eddc4a1bc",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14333,7 +15159,12 @@
         1.6655,
         4.41
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "0437779db49f81bd6341f6c08e44f828c31f7b9f647c0493e0737ebadfa3f5e0",
+      "uv1_signature": "04d63503bc06e48d55e019e46c42de1c0f81b35fe5c07592fcfab775c5845cc8",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14357,7 +15188,12 @@
         1.637,
         4.537999999999999
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "b7dcc7729d99e17834e713a7278470fc3d53807e087728dec31c3d251dd998c4",
+      "uv1_signature": "6873474e5ca1529e1c23f95d71ab4f1ef73b2cefd11d6fcc5b6a7bd46716f2af",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14381,7 +15217,12 @@
         0.033,
         4.300000000000001
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "40547649c2f5582bbb324f43b5f987b235bd0ec25be2bc07bc37390ed1aeaafd",
+      "uv1_signature": "207c3c5e213658e126b2577184dd409f0918b052ca07c356bab1d56cb4e75a29",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14405,7 +15246,12 @@
         0.036000000000000004,
         4.36
       ],
-      "triangles": 1120
+      "triangles": 1120,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "c740f21ce64260905e2b3edfe1401acdb1fd8b222d87c9974316adc9633ad0fc",
+      "uv1_signature": "9271589fa3f4f076ade96b50113f564f149a4a391a399f0fd2c20349e528bda9",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14433,7 +15279,12 @@
         1.08,
         -0.9401507505623917
       ],
-      "triangles": 892
+      "triangles": 892,
+      "unique_surface": true,
+      "surface_family": "LodgePaintedWood",
+      "uv0_signature": "c5e89f2902873b5e24aa8e4b7fde9e0cf408bbec3489a3771861e1dc7a50ddb1",
+      "uv1_signature": "22909f68b7f60e257bb8c48bc80f2fd481bb65f958262b1a889ced7b71cacba3",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14461,7 +15312,12 @@
         0.675,
         -0.3999999999999999
       ],
-      "triangles": 224
+      "triangles": 224,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "109126f02a0f4a7a4fb156155c3b2cdc6572966c1ef3e53cfb1a1ccd3159f749",
+      "uv1_signature": "ab3996bed07e82b5463d45899e3e18646962ff2fd992d45a148977ebc08f7011",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14485,7 +15341,12 @@
         0.6025,
         -0.901
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "f6a3b4bf851da12f3b0309a64ee67de5cc6e97c84998d989022d0e305ddfbf9e",
+      "uv1_signature": "5e862770b6e9bbf7bccb09ac6da3d091faf4e495720cf6c397fca9825c5ea203",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14509,7 +15370,12 @@
         0.8825,
         -0.575
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "890579d65e78e074a35e07cbbfe51839f690cd062174b6f0ba0dd97820b76258",
+      "uv1_signature": "b54b2722adaec4f16b7d14b27cf4d82913e99445516dc0014654c00d3d1c07fd",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14537,7 +15403,12 @@
         1.86,
         -5.54
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "50fa508b3fb54ce6ecfc38d3038f52df3bca3312fcf2dddc4f6bd2d7e1428552",
+      "uv1_signature": "f0128aac0f6abca4479d1d863c191fbb51b8dc02667097cf9568c3f8249d7d1c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14561,7 +15432,12 @@
         1.7960191552719844,
         -5.394968074546693
       ],
-      "triangles": 190
+      "triangles": 190,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "765b17ff59a6f7f63987310b77fc620d99508a7b39007e6cbcaa8c96900ea341",
+      "uv1_signature": "17dfb745cbef28365132650769a670684527bec0d700044cc8b25e14db78fc3e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14589,7 +15465,12 @@
         1.7575,
         4.96
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "1933389554fdbca61316920e62de0f8a0d4145c6a10f2b734af58f06b751c67c",
+      "uv1_signature": "e3b9d81f1735b9d79dc149ece775e14ced7e6d016b03b22a35317d35b36ef133",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14613,7 +15494,12 @@
         1.883,
         4.752999999999999
       ],
-      "triangles": 552
+      "triangles": 552,
+      "unique_surface": true,
+      "surface_family": "Enamel",
+      "uv0_signature": "8e3835bf02949d1d0fcb2b37510fafb55feefd4d6168178cf241a72931569911",
+      "uv1_signature": "15cad3305da6af31a369c29898bf974d629c5e3b76352ae4728d6bd78715e0fb",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14641,7 +15527,12 @@
         2.439,
         -0.025999999999999912
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "56ed7c77011f44dafa3ccbf7f6d9392da6c371f53a84ea8accd24e9f7a246c79",
+      "uv1_signature": "9e714a4b83af623a96da5776b267918dc2f9cb5b47403b93c9f027450c88ae0d",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14665,7 +15556,8 @@
         2.375,
         -0.08999999999999997
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -14693,7 +15585,12 @@
         2.664,
         5.633
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "3c9a7f58a917b360afc3afe9fc613c7518c43197701b71b181d89bc5fb8a2f96",
+      "uv1_signature": "4cb0fb4fc5aec371943f85f3bea2c20855f937163aae5056fb0da12e812fac8e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14717,7 +15614,8 @@
         2.6,
         5.553999999999999
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -14745,7 +15643,12 @@
         2.694,
         -5.5205
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "d80f330fb1fa6f092bf632022eafe924e814c43467c5f0ed7eac9bfe63ad15f0",
+      "uv1_signature": "be731c257d0a9aa81bcbbbac9197f428d5e7c25fdfc4d612694944722f510860",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14769,7 +15672,8 @@
         2.63,
         -5.536
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -14797,7 +15701,12 @@
         2.5700000000000003,
         5.656997116487274
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "e9b156d3f547d0d461daad7cf70df48835cab3cb5f5e483416a254b04b4e4fe0",
+      "uv1_signature": "3b8146687b8f5ed5ccd562b01ad75445e2f8c06b1a32ce420b7c5898383aa7cb",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14821,7 +15730,12 @@
         2.5300000000000002,
         5.655487024192729
       ],
-      "triangles": 576
+      "triangles": 576,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "02e57cc1949f5331dc1ad4f64b55e007b3417987b54adce6cf4fb6eeb0c0c9d9",
+      "uv1_signature": "1a8495a59bfb09d055239fcb498f6363ced9b060f32b977810d41f5a1f9b1496",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14845,7 +15759,12 @@
         2.2470000000000003,
         5.429747967345311
       ],
-      "triangles": 160
+      "triangles": 160,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "476b7d7922542ff5b838f94773f5447dc73292fc1a0c3b002281cd1b61e79c95",
+      "uv1_signature": "bc8a1b822eda3f52e1e9c6bb9bc3bf2da97d97a34696958e2b6e215863f5193a",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14869,7 +15788,12 @@
         2.395,
         5.284000000000001
       ],
-      "triangles": 176
+      "triangles": 176,
+      "unique_surface": true,
+      "surface_family": "Rubber",
+      "uv0_signature": "d61dc4fc8a5148debf7e671fd9a93a67e1ec5964ffe0eee3898a8afa688ee11c",
+      "uv1_signature": "edb2ff0c168fe4b08b950bce4ba158167442acdb6e1be46825f50ca8b95151e1",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14893,7 +15817,12 @@
         3.1314559898328893,
         5.480441695009069
       ],
-      "triangles": 360
+      "triangles": 360,
+      "unique_surface": true,
+      "surface_family": "Paper",
+      "uv0_signature": "83d82b4e225047679c166c9e4eb2e87116f6c0a7a55a49048507dba7459f61a2",
+      "uv1_signature": "ea62b55477792484e2597fb9777f80493e8390a48bbfa61ffda74dcb8c5778cf",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14918,7 +15847,12 @@
         0.6269999999999999,
         4.825
       ],
-      "triangles": 168
+      "triangles": 168,
+      "unique_surface": true,
+      "surface_family": "Rubber",
+      "uv0_signature": "da2e627720c1ca934781678c5609aee69a96c3d232e7f9e84389e4b8ccd0f4ad",
+      "uv1_signature": "ac7d6fd525885b5bceb55f61bce9df0c8b6a9b755ce3d19d9e80a8bb87a9da9c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14943,7 +15877,12 @@
         0.546,
         4.6025
       ],
-      "triangles": 112
+      "triangles": 112,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "1e387ca72ebc6c075bfca5ffc6084d5e14b445c6cebf94b4489326d509e64396",
+      "uv1_signature": "5b33e0e8f0d27788fa97e056ff64d0b3c2da7b46f1295e89e6e6c70bcf0a9d29",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14968,7 +15907,12 @@
         1.845,
         4.716084521303612
       ],
-      "triangles": 256
+      "triangles": 256,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "71e8e1bbff50ac93507474d98912254391469b8d7b9162b58d6606317eaafe72",
+      "uv1_signature": "788122ec59f30464e49587ce2a23b07bab00751f64de3c2a3692df3bca860704",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -14996,7 +15940,12 @@
         0.9,
         -5.125
       ],
-      "triangles": 196
+      "triangles": 196,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "883f6f0bc1a447656627f0f17f5696ef51914aa5bf1b2b547d5c84e565169c44",
+      "uv1_signature": "df0f298550192bddce4e8c39e1dc1a852b21fb59f79c888c6abd6b03425bd0fb",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15024,7 +15973,12 @@
         0.535,
         -5.1465
       ],
-      "triangles": 280
+      "triangles": 280,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "a5111be58f54ae3cb4f64716aec69872333df52d76662d197aaf228c53044231",
+      "uv1_signature": "683bbcea326b1b297c3d5acf2020e92876aecc73b257badd705720f9d217f1ee",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15048,7 +16002,12 @@
         0.4319282032302755,
         -5.108682022482088
       ],
-      "triangles": 88
+      "triangles": 88,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "0aa03cd69e21d144117ba090b5e37cc706e2afb197535f1b13d7d9a00d3329f4",
+      "uv1_signature": "f92800b8be1ecd250c1c31e65b88a72703d3860ffad28186aa3832dbadb34b93",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15072,7 +16031,8 @@
         0.7979999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15096,7 +16056,8 @@
         0.8119999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15120,7 +16081,8 @@
         0.7849999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15144,7 +16106,8 @@
         0.7979999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15168,7 +16131,8 @@
         0.8119999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15192,7 +16156,8 @@
         0.7849999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15216,7 +16181,8 @@
         0.7979999999999999,
         -5.326296806022131
       ],
-      "triangles": 68
+      "triangles": 68,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15240,7 +16206,12 @@
         0.825,
         -5.35141154273188
       ],
-      "triangles": 140
+      "triangles": 140,
+      "unique_surface": true,
+      "surface_family": "Bark",
+      "uv0_signature": "1d228ca95b32a7e40d2cf99b01c59986e2cc5b37a915a4108f532e82bff57d99",
+      "uv1_signature": "9de39852cfce921c13509bb22d6756ab9cc9fe5ea4e9c5fa77eb8543b83feb61",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15264,7 +16235,12 @@
         0.9480000000000001,
         -5.239999999999999
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": true,
+      "surface_family": "Bark",
+      "uv0_signature": "f522782eec961f79327bba09ac85163be648c4c54ecc0efb858e8a69c187dcc2",
+      "uv1_signature": "d3424f1bb2ade6dc3f1b0d3b4392323b1a214b27eb1a81a66d92d1e21f765637",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15292,7 +16268,12 @@
         0.928,
         -5.265000000000001
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "b851a74c909bc036818a198f363fcec65246b91a4f20293c7b5bafde9fc5598d",
+      "uv1_signature": "39f498d93e625f33a23b3a77c357111e1672d2251a391c78c0a43c1cc43742de",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15316,7 +16297,12 @@
         0.9182469161171133,
         -5.219360934955149
       ],
-      "triangles": 100
+      "triangles": 100,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "52cbe575c57cacad5fd2eceef80f40c0869ece99c613947512e1055479e5a302",
+      "uv1_signature": "18f9f4e6baf666d0db73ca4b8be02161d297552b0d22c930af63981c49f0dd48",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15344,7 +16330,12 @@
         1.393,
         -4.142579753893451
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "863db7bf92bb5ef7ef4c6fffd7061f9bd2957b85d39370c6561986adadf2bc0e",
+      "uv1_signature": "9e502e9ca87a96cb5ff2bd79b72c2e1f711b528fb01de9de48e152ae1aeabe64",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15368,7 +16359,12 @@
         1.34,
         -4.197385885807901
       ],
-      "triangles": 172
+      "triangles": 172,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "adfbe4ef2b226e50e6a84d6e2edfdc211b3b90111f05b98f2183ab6f2dab5554",
+      "uv1_signature": "d3221f86f4f96e5c2f9c59736fa376d1a56333d1627b370d1ab01483fdd99cb6",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15392,7 +16388,12 @@
         0.482,
         -4.273188907423094
       ],
-      "triangles": 46
+      "triangles": 46,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "41a821f8617d23805d5e818062a92deb96e13dd367388207730f74dcc5843bf0",
+      "uv1_signature": "f517ad604fc73dddf25a8179d8e124982a9f7b4d241c75f7116a87a98dd70849",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15420,7 +16421,12 @@
         1.393,
         -3.9293681330978765
       ],
-      "triangles": 396
+      "triangles": 396,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "0b2e77ec1d51df37e78e3003246b5ac0164039f21255285de94c6b772c0e6ecf",
+      "uv1_signature": "758425661ec041d21eedd3b54ee4bd0b2663116163c991ee592fedb3fd183cc4",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15444,7 +16450,12 @@
         1.34,
         -3.9803154526820337
       ],
-      "triangles": 172
+      "triangles": 172,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "6a56ba55624064998ea6e52ee16dd25e3a3767fe316e6313dadb26e0e266efdb",
+      "uv1_signature": "a95629125bf62155001634c55a78bc1263383bfb08540855f1c91b85cb18fcec",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15468,7 +16479,12 @@
         0.482,
         -4.066091764619999
       ],
-      "triangles": 46
+      "triangles": 46,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "7294a158932134d99952cefeeeb8e393f9d0fce17cbafbaaafb53973729dbb96",
+      "uv1_signature": "c6094923689499d270cd70e329ac9ed195c75dc66d87fa935c417ec0dead1314",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15492,7 +16508,12 @@
         0.764,
         -4.013232479933464
       ],
-      "triangles": 56
+      "triangles": 56,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "f5808d43a5c232e7ffd1247271a005312144f760d2075d0c14604a68b71cd490",
+      "uv1_signature": "063674d95881d6709a14cbaf1eeeb1b0577dc9b047b563675a7311af4014e2b6",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15516,7 +16537,12 @@
         0.735,
         -4.05664288362032
       ],
-      "triangles": 36
+      "triangles": 36,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "0897e11b6567dcb96040c18be376ca8554cd2bd8d31b83424aa08a69b9df5aa3",
+      "uv1_signature": "bbf5125de21e5d370b8af2ac66fc16328f74e779a04c94b3fad433cf9e16ac56",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15544,7 +16570,12 @@
         0.57,
         -4.180000000000001
       ],
-      "triangles": 364
+      "triangles": 364,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "ffa7b06c97175fdb5a05f1c50c33da3ae177d60bbf742674d101dd8923925c21",
+      "uv1_signature": "a5bbb8c2f1f6d3b990097f66283e41daa3042a3d98e1c65f315633a1bf648c54",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15568,7 +16599,12 @@
         0.59,
         -4.40444
       ],
-      "triangles": 116
+      "triangles": 116,
+      "unique_surface": true,
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "b21f51786e295c7c7badfd269bf2448a19184fc58aae832d56a262865506688d",
+      "uv1_signature": "48cc92c5e84c569395fd931daea73cbd5367df3eed43255475a5df44add45848",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15592,7 +16628,8 @@
         0.6709999999999999,
         -4.49
       ],
-      "triangles": 184
+      "triangles": 184,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15616,7 +16653,12 @@
         0.032,
         -3.0799999999999996
       ],
-      "triangles": 28
+      "triangles": 28,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "59e0157ff0dcef4fbce51978d683e589c350acb87f7ff353ce23ff98686fb612",
+      "uv1_signature": "59c6afaa8949791266f8e3e0277ad101ba911193285321719cddfec39b6d278b",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15640,7 +16682,12 @@
         0.034,
         -3.1475
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "0f9986aae2031ceb90ec97f2ae360d083fa511309a066c6581c732b4c598d825",
+      "uv1_signature": "771f17b09dcba58a3ebdde87cd96e222ac96f4c3abe80fd9b9097eea9e5d06e7",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15669,7 +16716,12 @@
         1.1488277877728588,
         -5.198593988002613
       ],
-      "triangles": 124
+      "triangles": 124,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "44e90fcdcd89c35abf27886768850493bde6b76e83f0a0dcbf3d4dc8445c43d9",
+      "uv1_signature": "b714da3047a5d2a624f901f079f47fe2ccd92174e8e00a3b105c2a459809d982",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15698,7 +16750,12 @@
         1.1128167886996618,
         -5.189
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "ae35f7f7ad7c0840ea4bdfcfef123b9cc7a332c2c4a513e8d6fd9e50373accbe",
+      "uv1_signature": "12d49b376e2c3f99e1eb83f3153a8ee17458ee4ca1f0828d50e7c54eafb0913e",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15723,7 +16780,8 @@
         1.1264343488013902,
         -5.205967826730719
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": false
     },
     {
       "kind": "SkiLodge",
@@ -15752,7 +16810,12 @@
         0.020000000000000004,
         -3.49
       ],
-      "triangles": 48
+      "triangles": 48,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "55268ad2cff08ea2aa4b43485f84787db91adfedad97084b0aff5c18aece16c6",
+      "uv1_signature": "44341de386aa652ee82c90dc0308281fd71a66073b1bc8595c208109c69c8f88",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15781,7 +16844,12 @@
         0.019999999999999997,
         -3.6
       ],
-      "triangles": 84
+      "triangles": 84,
+      "unique_surface": true,
+      "surface_family": "LodgeHatchWood",
+      "uv0_signature": "df2bb49a1f7014752421f081fa462f798843334ae5d57d8a015c70cf030d7b24",
+      "uv1_signature": "c8c3fc2ad581c51d55498a8eaf72ceee3768ec91f7061870b494cfb24be9b67c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15810,7 +16878,12 @@
         -0.057,
         -3.6
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": true,
+      "surface_family": "LodgeDarkWood",
+      "uv0_signature": "6e39fc9079e493e5bca0329627d06bb9833a87ba307329ca75d91a5e52fcd1ba",
+      "uv1_signature": "f509ee851860d9043b449b464626e463e6ce0584916a2190950925294feb91bd",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15835,7 +16908,12 @@
         -0.025,
         -4.13
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "80a32338c018c150188295357b74099e1ce8d6326534b82715b8ff12c6a46fe4",
+      "uv1_signature": "b5d44faea3cf44c604113a0c35772f627c05f7c2c0489fa6182b4c2c2601fa22",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15860,7 +16938,12 @@
         0.036000000000000004,
         -3.7875
       ],
-      "triangles": 104
+      "triangles": 104,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "20277e01f73c49b9d26d454145a470f9ea5ec66a4b077d035a2b047c6768d4c0",
+      "uv1_signature": "818f6ff3eb92f210d1b31639f1bedaa894092b341d7820be7d1b127d7ba1a8c2",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15885,7 +16968,12 @@
         0.04472243186433546,
         -3.7740000000000005
       ],
-      "triangles": 64
+      "triangles": 64,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "509b08363677607cbec67a6e83325acb6e0432b019c7fc6fafe40b1bc017353f",
+      "uv1_signature": "fc7ae8bb43b9c9257cebefbb920697e4f87fbca0ac436eb0a9a05167085db286",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15909,7 +16997,12 @@
         0.34,
         -3.228320392229824
       ],
-      "triangles": 136
+      "triangles": 136,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "7a0d7f911db1821fe287a8d1dbda01a84f4d89e104abdacb420978daa2467b6d",
+      "uv1_signature": "219c9b4ede31c09ca8ba97ed36ce0403cc2d52f540ce2ef96808fa37a2a5a0c7",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15933,7 +17026,12 @@
         0.506,
         -3.3840000000000003
       ],
-      "triangles": 52
+      "triangles": 52,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "6995f621199be50aa3753fb728eef87393341a0cef6a3d047683df012984c818",
+      "uv1_signature": "ac941e8fc2d11458f767f18a0441f7618b3c3e18f8813ca1fa182b44fec141cc",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15961,7 +17059,12 @@
         0.474,
         -3.3475
       ],
-      "triangles": 24
+      "triangles": 24,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "1fac69ea6fd0b690a90a759c1e65299f5fa1d8ee9cb8efb7ea06215b32198b18",
+      "uv1_signature": "a79aa12d8cd68aa83006ff7f5600b312c02772c220dd166b36e7f7977816e7a7",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -15985,7 +17088,12 @@
         0.094,
         -3.351
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "a29640948bdd4e6fa5e6a4431eb4527f0af00d353a5364482302d3b681e2c68e",
+      "uv1_signature": "e45ebc08e087c15c486a6dad0e253ee003f35b84937b9be21f4e4f92e58bcdcc",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16013,7 +17121,12 @@
         1.65,
         -4.906576606241341
       ],
-      "triangles": 20
+      "triangles": 20,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "ab7f5790992a3c3c79343c1d6798fbe0541768f19f774d190e60626de0655d1b",
+      "uv1_signature": "b4015422dfb11f993ceafb6af66b0aac74d0a83ef90a836719a551ce90018f6c",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16037,7 +17150,12 @@
         0.53,
         -4.8825
       ],
-      "triangles": 12
+      "triangles": 12,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "12ff24a3749b8a1d554f38630d161b1d2223efbf844cecb80a060b267c38f2e2",
+      "uv1_signature": "12fd9f7009f8eeba0a23a5d0d2072334210cf40b66e1a0a1677c17bcb7746d7f",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16061,7 +17179,12 @@
         1.6355470019622522,
         -4.8785
       ],
-      "triangles": 44
+      "triangles": 44,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "426d9b4a5845cc9da45852ed805014c2a42a0c42ff46a085ad03e91499c2aadb",
+      "uv1_signature": "b7ac9e7db03acc74c14e3eba5c95f24b32b0098bc2adf66bd5114a9399ca83ad",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16089,7 +17212,12 @@
         0.33749999999999997,
         -5.130999999999999
       ],
-      "triangles": 108
+      "triangles": 108,
+      "unique_surface": true,
+      "surface_family": "LodgeRoughWood",
+      "uv0_signature": "bf0e1c1344900d247094400acee6cba8f03a13f35c7280699b8cc9ec086b3ffd",
+      "uv1_signature": "b656f4bc20d1311e0ee45211e91ca0b88c5457f88de08d7a502bf9aed88eb900",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16113,7 +17241,12 @@
         0.154,
         -5.215
       ],
-      "triangles": 72
+      "triangles": 72,
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "b6301aa2a2a6efc69611b6779b7183be8b4216dee706a9516429057396d262b5",
+      "uv1_signature": "9396445fd19c935e216fe0acc58dbadeb3e7af327909cac6e3a9afe084694dab",
+      "uv_channel_count": 2
     },
     {
       "kind": "SkiLodge",
@@ -16137,7 +17270,12 @@
         0.166,
         -5.2475
       ],
-      "triangles": 36
+      "triangles": 36,
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "f6ca5124c9b2f72a572cef9051270fda76f8897b812051884da969e76dbf2dd8",
+      "uv1_signature": "e06e4f8689eee1084614de339e8b6d2e7c3c45fe2881e5b0e16a3b70445f76f9",
+      "uv_channel_count": 2
     }
   ],
   "anchors": [
@@ -16534,5 +17672,6 @@
       ],
       "parent": "LodgeCellarHatch"
     }
-  ]
+  ],
+  "unique_surface_design": "village_unique_physical_surfaces_v1"
 }

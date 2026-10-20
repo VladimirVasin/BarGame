@@ -22,14 +22,15 @@ namespace BarPromenade
                 if (!TryGetResponse(renderer.name, out Vector2 response)) continue;
                 Material material = renderer.sharedMaterial;
                 if (material == null || material.shader == null ||
-                    material.shader.name != "Bar Promenade/Lit") continue;
+                    (material.shader.name != "Bar Promenade/Lit" &&
+                     material.shader.name != VillageSurfaceAppearance.ShaderName)) continue;
                 // Only single-slot semantic parts are selected. No imported
                 // multi-material shell, snow, wood or facade enters this path.
-                var original = new MaterialPropertyBlock();
-                renderer.GetPropertyBlock(original);
-                lease.Remember(renderer, original);
                 properties.Clear();
                 renderer.GetPropertyBlock(properties);
+                lease.Remember(renderer,
+                    properties.HasProperty(DirectionalAmountId) ? properties.GetFloat(DirectionalAmountId) : material.GetFloat(DirectionalAmountId),
+                    properties.HasProperty(ContactSmoothnessId) ? properties.GetFloat(ContactSmoothnessId) : material.GetFloat(ContactSmoothnessId));
                 properties.SetFloat(DirectionalAmountId, response.x);
                 properties.SetFloat(ContactSmoothnessId, response.y);
                 renderer.SetPropertyBlock(properties);
@@ -75,31 +76,43 @@ namespace BarPromenade
             private readonly List<Entry> entries = new List<Entry>(96);
             private bool disposed;
 
-            internal void Remember(Renderer renderer, MaterialPropertyBlock original)
+            internal void Remember(Renderer renderer, float directional, float contact)
             {
-                entries.Add(new Entry(renderer, original));
+                entries.Add(new Entry(renderer, directional, contact));
             }
 
             public void Dispose()
             {
                 if (disposed) return;
                 disposed = true;
+                var properties = new MaterialPropertyBlock();
                 foreach (Entry entry in entries)
+                {
                     if (entry.Renderer != null)
-                        entry.Renderer.SetPropertyBlock(entry.Original.isEmpty ? null : entry.Original);
+                    {
+                        // Other owners may have refreshed texture/tint/response since
+                        // this lease began. Restore only the two values we own.
+                        properties.Clear();
+                        entry.Renderer.GetPropertyBlock(properties);
+                        properties.SetFloat(DirectionalAmountId, entry.Directional);
+                        properties.SetFloat(ContactSmoothnessId, entry.Contact);
+                        entry.Renderer.SetPropertyBlock(properties);
+                    }
+                }
                 entries.Clear();
             }
 
             private readonly struct Entry
             {
-                internal Entry(Renderer renderer, MaterialPropertyBlock original)
+                internal Entry(Renderer renderer, float directional, float contact)
                 {
                     Renderer = renderer;
-                    Original = original;
+                    Directional = directional; Contact = contact;
                 }
 
                 internal Renderer Renderer { get; }
-                internal MaterialPropertyBlock Original { get; }
+                internal float Directional { get; }
+                internal float Contact { get; }
             }
         }
     }

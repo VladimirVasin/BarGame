@@ -53,7 +53,7 @@ namespace BarPromenade
                 MeshRenderer renderer = host.AddComponent<MeshRenderer>();
                 renderer.shadowCastingMode = ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
-                MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+                VillageSurfaceAppearance.ApplyCombined(renderer,
                     MountainRoadSurfaceKind.ForestFloor, tint);
             }
             AlpineVillageWorldBuilder.ReportTerrainMesh(
@@ -101,7 +101,7 @@ namespace BarPromenade
             ValidateCoverage(points, triangles, origin, chain);
             var vertices = new List<Vector3>(points.Count);
             var uvs = new List<Vector2>(points.Count);
-            float pitch = MountainRoadSurfaceAppearance.GetRecipe(
+            float pitch = VillageSurfaceAppearance.GetRecipe(
                 MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
             foreach (Vector2 local in points)
             {

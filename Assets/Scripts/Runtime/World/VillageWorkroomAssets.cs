@@ -6,6 +6,8 @@ namespace BarPromenade
 {
     [Serializable] public sealed class VillageWorkroomPart
     {
+        public bool unique_surface;
+        public string surface_family, uv0_signature, uv1_signature;
         public string name, mesh, role, surface, parent;
         public float[] position, euler, scale, tint, bounds_min, bounds_max;
         public bool solid;
@@ -14,6 +16,7 @@ namespace BarPromenade
     }
     [Serializable] public sealed class VillageWorkroomManifest
     {
+        public string unique_surface_design;
         public string generator_version, design_id, scale_mode, build_signature, house_id;
         public int mesh_count, triangle_count;
         public float[] room_min, room_max;
@@ -97,6 +100,11 @@ namespace BarPromenade
         }
         private static void ApplySurface(MeshRenderer renderer, VillageWorkroomPart part)
         {
+            if (part.unique_surface)
+            {
+                VillageSurfaceAppearance.ApplyUnique(renderer, part.surface);
+                return;
+            }
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
             if (part.surface == "Glass")
@@ -106,14 +114,10 @@ namespace BarPromenade
             }
             if (part.surface == "Cloth")
             {
-                const CityPointOfInterestSurfaceKind cloth = CityPointOfInterestSurfaceKind.Cloth;
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                block.SetTexture("_BaseMap", CityPointOfInterestSurfaceAppearance.GetTexture(cloth));
-                Color display = CityPointOfInterestSurfaceAppearance.CreateDisplayTint(tint, cloth);
-                block.SetColor("_BaseColor", display); block.SetColor("_Color", display);
-                float pitch = 1f / CityPointOfInterestSurfaceAppearance.GetRecipe(cloth).MetersPerTile;
-                block.SetVector("_BaseMap_ST", new Vector4(pitch, pitch, 0f, 0f));
-                renderer.SetPropertyBlock(block); return;
+                float pitch = VillageSurfaceAppearance.GetSheet("Cloth").meters_per_tile;
+                VillageSurfaceAppearance.ApplyFamily(renderer, "Cloth", tint,
+                    new Vector4(1f / pitch, 1f / pitch, 0f, 0f));
+                return;
             }
             if (part.surface == "Lamp")
             {

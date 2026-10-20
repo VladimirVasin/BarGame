@@ -64,18 +64,19 @@ namespace BarPromenade
         }
 
         internal static void Apply(Renderer renderer, GroundSurfaceKind kind,
-            Texture2D albedo, int materialIndex = -1)
+            Texture2D albedo, int materialIndex = -1, Texture2D responseOverride = null,
+            bool configureSnowSubstrate = true)
         {
             if (renderer == null) return;
             // The editable junction atlas supplies its own response after this
             // call; all tiled surfaces use the deterministic source companion.
-            Texture2D response = albedo != null && albedo.name == "VillageJunctionAtlas"
-                ? null : GetResponse(albedo);
+            Texture2D response = responseOverride != null ? responseOverride :
+                albedo != null && albedo.name == "VillageJunctionAtlas" ? null : GetResponse(albedo);
             AssignSharedMaterial(renderer, SharedMaterial, materialIndex);
             Read(renderer, materialIndex);
             Properties.SetFloat(KindId, (float)kind);
             if (response != null) Properties.SetTexture(ResponseId, response);
-            if (kind == GroundSurfaceKind.Snow)
+            if (kind == GroundSurfaceKind.Snow && configureSnowSubstrate)
             {
                 Properties.SetTexture(SubstrateId,
                     MountainRoadSurfaceAppearance.GetTexture(MountainRoadSurfaceKind.ForestFloor));
@@ -119,10 +120,11 @@ namespace BarPromenade
             Write(renderer, materialIndex);
         }
 
-        internal static void ApplyRidgeResponse(Renderer renderer, Texture2D texture, int materialIndex = -1)
+        internal static void ApplyRidgeResponse(Renderer renderer, Texture2D texture, int materialIndex = -1,
+            Texture2D responseOverride = null)
         {
             Read(renderer, materialIndex);
-            Properties.SetTexture(ResponseId, GetResponse(texture));
+            Properties.SetTexture(ResponseId, responseOverride != null ? responseOverride : GetResponse(texture));
             Properties.SetFloat(Shader.PropertyToID("_GroundRockLayers"), 1f);
             Write(renderer, materialIndex);
         }

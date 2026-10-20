@@ -326,7 +326,8 @@ namespace BarPromenade
                 MountainCablewayWorldBuilder.Build(
                     root.transform,
                     plan.Station.Cableway,
-                    MountainCablewayStationKind.Return);
+                    MountainCablewayStationKind.Return,
+                    villageSurfaces: true);
             foreach (KeyValuePair<string, Transform> entry in
                      cableway.SemanticObjects)
             {
@@ -619,7 +620,7 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.DefaultMaterial
             };
             renderer.sharedMaterials = materials;
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer,
                 AlpineVillageRidgeAppearance.Surface,
                 SnowColor,
@@ -628,14 +629,14 @@ namespace BarPromenade
             AlpineVillageRidgeAppearance.Apply(
                 renderer,
                 TerrainRiseMaterialIndex);
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer,
                 MountainRoadSurfaceKind.Asphalt,
                 AlpineVillageRoadSurfaceBuilder.AsphaltTint,
                 TerrainAsphaltMaterialIndex);
             GroundSurfaceCoordinates.Enable(renderer, TerrainAsphaltMaterialIndex);
             AlpineVillageJunctionAppearance.Apply(renderer, TerrainJunctionMaterialIndex);
-            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+            VillageSurfaceAppearance.ApplyCombined(renderer,
                 MountainRoadSurfaceKind.ForestFloor,
                 AlpineVillageRoadSurfaceBuilder.JunctionSoilTint,
                 TerrainSoilMaterialIndex);
@@ -879,7 +880,7 @@ namespace BarPromenade
             renderer.receiveShadows = true;
             // The floor's own sheet and tint, so the drift is the ground
             // getting deeper rather than a second material lying on it.
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer,
                 AlpineVillageRidgeAppearance.Surface,
                 SnowColor,
@@ -889,7 +890,7 @@ namespace BarPromenade
             GroundSurfaceAppearance.SetSnowJunctions(renderer, plan, 0);
             var snowProperties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(snowProperties, 0);
-            snowProperties.SetColor("_GroundSubstrateColor", MountainRoadSurfaceAppearance.CreateDisplayTint(
+            snowProperties.SetColor("_GroundSubstrateColor", VillageSurfaceAppearance.CreateDisplayTint(
                 LaneColor, MountainRoadSurfaceKind.ForestFloor));
             renderer.SetPropertyBlock(snowProperties, 0);
 
@@ -1387,7 +1388,7 @@ namespace BarPromenade
         {
             IReadOnlyList<AlpineVillageLaneSample> samples =
                 plan.Lane.Samples;
-            float texturePitch = MountainRoadSurfaceAppearance.GetRecipe(
+            float texturePitch = VillageSurfaceAppearance.GetRecipe(
                 MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
             // ACROSS AS WELL AS ALONG, and each vertex on its own ground.
             //
@@ -1459,7 +1460,7 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.DefaultMaterial;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = true;
-            MountainRoadSurfaceAppearance.ApplyCombined(
+            VillageSurfaceAppearance.ApplyCombined(
                 renderer,
                 MountainRoadSurfaceKind.ForestFloor,
                 LaneColor);
@@ -1601,7 +1602,7 @@ namespace BarPromenade
                 }
                 else
                 {
-                    MountainRoadSurfaceAppearance.Apply(
+                    VillageSurfaceAppearance.Apply(
                         renderer, part.Surface, tintFor(role));
                 }
             }
@@ -3056,7 +3057,7 @@ namespace BarPromenade
                 return;
             }
 
-            MountainRoadSurfaceAppearance.Apply(
+            VillageSurfaceAppearance.Apply(
                 instance.GetComponent<Renderer>(),
                 surface,
                 tint);

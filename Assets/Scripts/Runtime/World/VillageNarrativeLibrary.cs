@@ -17,6 +17,7 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageNarrativeManifest
     {
+        public string unique_surface_design;
         public string generator_version, design_id, build_signature, scale_mode, uv_mode, forward;
         public bool colliders, lights, cameras;
         public int animation_count, prop_count, mesh_count, triangle_count;
@@ -124,8 +125,19 @@ namespace BarPromenade
 
         private static void ApplySurface(MeshRenderer renderer, VillageLifePropPart part)
         {
+            if (part.unique_surface)
+            {
+                VillageSurfaceAppearance.ApplyUnique(renderer, part.surface);
+                return;
+            }
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
-            if (part.surface == "Cloth" || part.surface == "Paper")
+            if (part.surface == "Cloth")
+            {
+                float pitch = VillageSurfaceAppearance.GetSheet("Cloth").meters_per_tile;
+                VillageSurfaceAppearance.ApplyFamily(renderer, "Cloth", tint, new Vector4(1f / pitch, 1f / pitch, 0f, 0f));
+                return;
+            }
+            if (part.surface == "Paper")
             {
                 var kind = part.surface == "Paper" ? CityPointOfInterestSurfaceKind.Paper : CityPointOfInterestSurfaceKind.Cloth;
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
@@ -151,7 +163,7 @@ namespace BarPromenade
             var surfaceName = part.surface == "BareStone" ? "LayeredStone" : part.surface;
             if (!Enum.TryParse(surfaceName, out MountainRoadSurfaceKind surface))
                 throw new InvalidOperationException("Unknown village narrative surface: " + part.surface);
-            MountainRoadSurfaceAppearance.ApplyCombined(renderer, surface, tint);
+            VillageSurfaceAppearance.ApplyCombined(renderer, surface, tint);
             var block = new MaterialPropertyBlock(); renderer.GetPropertyBlock(block);
             float uvScale = 1f / MountainRoadSurfaceAppearance.GetRecipe(surface).MetersPerTile;
             block.SetVector("_BaseMap_ST", new Vector4(uvScale, uvScale, 0, 0));

@@ -82,7 +82,7 @@ namespace BarPromenade
         /// applying the primitive transform again would scale the sheet
         /// twice and make it crawl over the distant wall.</summary>
         internal static float UvUnitsPerMeter =>
-            1f / MountainRoadSurfaceAppearance.GetRecipe(Surface).MetersPerTile;
+            1f / VillageSurfaceAppearance.GetRecipe(Surface).MetersPerTile;
 
         internal static readonly Vector4 BakedUvTransform =
             new Vector4(1f, 1f, 0f, 0f);
@@ -225,8 +225,8 @@ namespace BarPromenade
             }
 
             HomeSurfaceRecipe recipe =
-                MountainRoadSurfaceAppearance.GetRecipe(surface);
-            Color displayTint = MountainRoadSurfaceAppearance
+                VillageSurfaceAppearance.GetRecipe(surface);
+            Color displayTint = VillageSurfaceAppearance
                 .CreateDisplayTint(tint, surface);
             // A local presentation gain can keep the small snow shelves
             // readable after shadow and haze. Apply it
@@ -239,7 +239,7 @@ namespace BarPromenade
             renderer.GetPropertyBlock(properties, materialIndex);
             properties.SetTexture(
                 BaseMapId,
-                MountainRoadSurfaceAppearance.GetTexture(surface));
+                VillageSurfaceAppearance.GetTexture(surface));
             properties.SetVector(BaseMapTransformId, uvTransform);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
@@ -247,7 +247,8 @@ namespace BarPromenade
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties, materialIndex);
             GroundSurfaceAppearance.ApplyRidgeResponse(renderer,
-                MountainRoadSurfaceAppearance.GetTexture(surface), materialIndex);
+                VillageSurfaceAppearance.GetTexture(surface), materialIndex,
+                VillageSurfaceAppearance.GetGroundResponse(VillageSurfaceAppearance.GetFamily(surface)));
         }
 
         /// <summary>

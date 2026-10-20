@@ -1,0 +1,57 @@
+{
+  "generator": "image_gen (built-in)",
+  "date": "2026-10-20",
+  "purpose": "Village-owned offline pigment ingredients; physical response is authored independently in metres.",
+  "images": [
+    {
+      "name": "Wood",
+      "source": "ArtSource/Village/Surfaces/Source/VillageWood.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: continuous vertical weathered grey-brown conifer timber grain, restrained age checks, no plank joints. Top right: continuous vertical pale oatmeal pine grain with sparse soft small knots, no plank joints. Bottom left: continuous vertical muted warm oak open grain with soft broad cathedrals, no plank joints. Bottom right: continuous vertical deep desaturated walnut grain, quiet rubbed age, no plank joints. All wood remains dry matte. No large random stains or dramatic black cracks.",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "fe93232f349fe40076b606034b772edcba2a64f5f2e0315ad60770e11f38ed46"
+    },
+    {
+      "name": "Mineral",
+      "source": "ArtSource/Village/Surfaces/Source/VillageMineral.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: old alpine grey layered fieldstone mineral texture, broad bedding and sparse mineral seams, muted grey-green, not a wall of outlined bricks. Top right: maintained old ivory lime whitewash/plaster, softened small repaired patches, fine mineral texture, no severe peeling or wall openings. Bottom left: aged cool grey concrete, calm shallow pores and subtle aggregate, no panel seams. Bottom right: closely laid old grey-brown wooden roofing shingles in quiet staggered horizontal courses, subtle varied ends, no moss or snow.",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "8debbc8095b433f80696c34e45073231f37320bc212b6e18228580bb27454d8e"
+    },
+    {
+      "name": "Finish",
+      "source": "ArtSource/Village/Surfaces/Source/VillageFinish.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: matte decades-old dark brown iron oxide rust with charcoal pits and restrained burnt sienna, low contrast, no holes or hardware. Top right: faded desaturated grey-green painted steel, calm chipped edges of pigment exposing old grey metal, no plate seams or rivets. Bottom left: old maintained neutral ivory enamel, very subtle dull rubbed use and faint age marks, no floral decoration or cracks. Bottom right: faded matte grey-green painted wood with narrow vertical rubs exposing pale timber, continuous vertical grain, no plank seams. No saturated orange, glossy varnish or fresh paint.",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "edf97d3a4ed589c7751d1fd0bf9da5fa2160c71a619492bbb645331eeb844242"
+    },
+    {
+      "name": "Nature",
+      "source": "ArtSource/Village/Surfaces/Source/VillageNature.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: wind-packed cold off-white snow with very soft broad drifting bands, no footprints, glitter, rocks or objects. Top right: winter forest ground, muted dark brown humus and soil, sparse embedded mineral grains and restrained conifer litter, no live green grass. Bottom left: dark muted grey-brown conifer bark with vertical fissures and calm broad plates, no branch silhouette. Bottom right: muted dark grey-green conifer needle surface texture, layered short needle strokes evenly distributed over the entire quadrant, NO tree, branches or transparent gaps. No large high contrast patches.",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "ba4303e794cfdb6c7be8b20e7c0a8676c3d1647a9227f6340e7179a1e5553111"
+    },
+    {
+      "name": "Fabric",
+      "source": "ArtSource/Village/Surfaces/Source/VillageFabric.source.png",
+      "prompt": "Use case: stylized-concept. Asset type: production game material pigment source pack for a low-poly alpine village. Generate one square image containing exactly FOUR equal square material swatches in a strict 2 by 2 grid, full-bleed edge to edge, no borders or gaps. Each quadrant is a flat orthographic texture sample, NO perspective, NO object or scene, NO labels, letters, numbers, logos, symbols, framing or watermark. Restrained hand-painted material character with calm broad structure, enough detail for native-resolution gameplay but not photographic noise. Uniform diffuse pigment only, NO baked light, shadow, highlights or ambient occlusion. Each quadrant should tile on all four of its own edges. Existing objects are old and used, never newly polished, never ruinously dirty. Top left: old undyed grey-beige linen canvas, regular visible calm weave, subtle flattened wear, no seams or objects. Top right: faded muted burgundy wool upholstery, dense soft woven fibres and restrained wear, no decorative motifs or seams. Bottom left: old blank cream paper, faint fibres, quiet age and handling, absolutely no text, stains, tears or drawings. Bottom right: old matte charcoal-black rubber, subtle smooth worn texture with sparse faint scuffs, no tread pattern or objects.",
+      "grid": [
+        2,
+        2
+      ],
+      "sha256": "31df4a30e5b331d4504776cea50f10969d283b7dcacdefc90be6a4571702b02c"
+    }
+  ]
+}

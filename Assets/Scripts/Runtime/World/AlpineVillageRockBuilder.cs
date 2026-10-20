@@ -57,7 +57,7 @@ namespace BarPromenade
             tint.r += placement.TintVariation;
             tint.g += placement.TintVariation;
             tint.b += placement.TintVariation;
-            float uv = 1f / MountainRoadSurfaceAppearance.GetRecipe(surface).MetersPerTile;
+            float uv = 1f / VillageSurfaceAppearance.GetRecipe(surface).MetersPerTile;
             AlpineVillageRidgeAppearance.Apply(renderer, 0, surface, tint,
                 new Vector4(uv, uv, 0f, 0f), snow ? 1.6f : 1f);
         }

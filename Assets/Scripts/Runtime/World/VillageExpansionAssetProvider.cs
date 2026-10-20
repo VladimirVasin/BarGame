@@ -7,6 +7,8 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageExpansionPart
     {
+        public bool unique_surface;
+        public string surface_family, uv0_signature, uv1_signature;
         public string kind, name, mesh, surface, parent;
         public string appearance, wood_uv_mode, wood_uv_signature;
         public int wood_uv_loop_count;
@@ -28,6 +30,7 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageExpansionManifest
     {
+        public string unique_surface_design;
         public string generator_version, design_id, scale_mode, uv_mode, build_signature;
         public int mesh_count, triangle_count, animation_count;
         public bool colliders, lights, cameras;
@@ -48,9 +51,8 @@ namespace BarPromenade
         public const string LodgePicturesTexturePath = "Village/Textures/LodgePictures";
         public const string LodgeGroupPhotographTexturePath = "Village/Textures/LodgeGroupPhotograph";
         private static VillageExpansionAssetProvider instance;
-        private static Texture2D wreckRust, wreckPaint, lodgePictures, lodgeGroupPhotograph;
+        private static Texture2D lodgePictures, lodgeGroupPhotograph;
         private static Material flameMaterial;
-        private static readonly Dictionary<string, Texture2D> agedTextures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, MeshFilter> meshes;
         public VillageExpansionManifest Manifest { get; }
 
@@ -190,6 +192,11 @@ namespace BarPromenade
 
         private static void ApplySurface(MeshRenderer renderer, VillageExpansionPart part, Vector3 scale)
         {
+            if (part.unique_surface)
+            {
+                VillageSurfaceAppearance.ApplyUnique(renderer, part.surface);
+                return;
+            }
             if (!string.IsNullOrEmpty(part.appearance))
             {
                 LodgeWoodAppearance.Apply(renderer, part.appearance, scale);
@@ -231,59 +238,37 @@ namespace BarPromenade
             }
             if (part.surface == "LighterMetal")
             {
+                VillageSurfaceAppearance.ApplyFamily(renderer, "PaintedMetal", tint,
+                    new Vector4(scale.x / 1.2f, scale.y / 1.2f, 0f, 0f), .72f);
+                return;
+            }
+            if (part.surface == "DarkWindow")
+            {
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                block.SetColor("_BaseColor", tint);
-                block.SetColor("_Color", tint);
-                block.SetFloat("_Metallic", .72f);
-                block.SetFloat("_Smoothness", .32f);
+                block.SetColor("_BaseColor", tint); block.SetColor("_Color", tint);
+                block.SetColor("_EmissionColor", Color.black);
+                block.SetFloat("_Smoothness", .02f); block.SetFloat("_Metallic", 0f);
                 renderer.SetPropertyBlock(block);
                 return;
             }
-            if (part.surface == "DarkWindow" || part.surface.StartsWith("Abandoned", StringComparison.Ordinal))
+            if (part.surface.StartsWith("Abandoned", StringComparison.Ordinal))
             {
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                if (part.surface != "DarkWindow")
-                {
-                    if (!agedTextures.TryGetValue(part.surface, out Texture2D texture))
-                    {
-                        texture = Resources.Load<Texture2D>("Village/Textures/" + part.surface);
-                        if (texture == null) throw new InvalidOperationException("Missing aged village surface " + part.surface);
-                        agedTextures.Add(part.surface, texture);
-                    }
-                    block.SetTexture("_BaseMap", texture);
-                    tint = new Color(Compensate(tint.r), Compensate(tint.g), Compensate(tint.b), tint.a);
-                }
-                block.SetColor("_BaseColor", tint);
-                block.SetColor("_Color", tint);
-                block.SetColor("_EmissionColor", Color.black);
-                block.SetFloat("_Smoothness", .02f);
-                block.SetFloat("_Metallic", 0f);
                 float agedPitch = part.surface == "AbandonedWood" ? 1.4f : 2.4f;
-                block.SetVector("_BaseMap_ST", new Vector4(scale.x / agedPitch, scale.y / agedPitch, 0f, 0f));
-                renderer.SetPropertyBlock(block);
+                VillageSurfaceAppearance.ApplyFamily(renderer, part.surface, tint,
+                    new Vector4(scale.x / agedPitch, scale.y / agedPitch, 0f, 0f));
                 return;
             }
             if (part.surface == "WreckRust" || part.surface == "WreckPaint")
             {
-                bool paint = part.surface == "WreckPaint";
-                if (paint && wreckPaint == null) wreckPaint = Resources.Load<Texture2D>(WreckPaintTexturePath);
-                if (!paint && wreckRust == null) wreckRust = Resources.Load<Texture2D>(WreckRustTexturePath);
-                Texture2D texture = paint ? wreckPaint : wreckRust;
-                if (texture == null) throw new InvalidOperationException("Missing truck wreck albedo: " + part.surface);
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                block.SetTexture("_BaseMap", texture);
-                block.SetColor("_BaseColor", tint);
-                block.SetColor("_Color", tint);
-                block.SetFloat("_Smoothness", .04f);
-                block.SetFloat("_Metallic", .02f);
-                block.SetVector("_BaseMap_ST", new Vector4(scale.x / 1.65f, scale.y / 1.65f, 0f, 0f));
-                renderer.SetPropertyBlock(block);
+                VillageSurfaceAppearance.ApplyFamily(renderer, part.surface, tint,
+                    new Vector4(scale.x / 1.65f, scale.y / 1.65f, 0f, 0f), .02f);
                 return;
             }
             if (part.surface == "Canvas")
             {
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                CityPointOfInterestSurfaceAppearance.ApplyClothPanel(renderer, tint, 1f, 1f);
+                float clothPitch = VillageSurfaceAppearance.GetSheet("Cloth").meters_per_tile;
+                VillageSurfaceAppearance.ApplyFamily(renderer, "Cloth", tint,
+                    new Vector4(scale.x / clothPitch, scale.y / clothPitch, 0f, 0f));
                 return;
             }
             if (part.surface == "Glass")
@@ -317,7 +302,7 @@ namespace BarPromenade
             // house wall, roof, lodge interior or piece of furniture.
             if (part.kind == "BrookFootbridge" && part.name == "DeckAndApproaches")
             {
-                GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Timber);
+                VillageSurfaceAppearance.ApplyAuthoredGround(renderer, GroundSurfaceKind.Timber, "Timber");
                 return;
             }
             bool paving = part.name == "WornEntranceSteps" ||
@@ -332,19 +317,17 @@ namespace BarPromenade
                 ((part.kind == "HouseholdYardA" || part.kind == "HouseholdYardB" ||
                   part.kind == "HouseholdYardC") && part.name == "OldYardStone");
             if (paving && (part.surface == "LayeredStone" || part.surface == "Masonry"))
-                GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Paving);
+                VillageSurfaceAppearance.ApplyAuthoredGround(renderer, GroundSurfaceKind.Paving,
+                    part.surface == "Masonry" ? "Plaster" : "Stone");
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
             instance = null;
-            wreckRust = wreckPaint = lodgePictures = lodgeGroupPhotograph = null;
+            lodgePictures = lodgeGroupPhotograph = null;
             flameMaterial = null;
-            agedTextures.Clear();
         }
 
-        private static float Compensate(float gamma) =>
-            Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(gamma) / .58f));
     }
 }
