@@ -4,10 +4,8 @@ using UnityEditor;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Import settings for the Blender bar model. These are a contract,
-    /// not a preference, and they are copied verbatim from
-    /// `ChurchModelImporter`; two Blender assets in one project that
-    /// import differently are two conventions.
+    /// Shared Blender import convention for the bar. The isolated native GI
+    /// pilot additionally needs CPU buffers on its two contributor models.
     ///
     /// The two that everything else rests on:
     /// `materialImportMode = None`, so district tints stay the runtime's
@@ -38,7 +36,16 @@ namespace BarPromenade.Editor
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.CalculateMikk;
             importer.meshCompression = ModelImporterMeshCompression.Off;
+#if SURFACE_CACHE
+            // The pinned native GI provider creates Raw buffers at runtime and
+            // requires the CPU source data to do so. Bound that copy to the two
+            // interior contributor assets; the City facade keeps GPU-only data.
+            importer.isReadable = string.Equals(assetPath, BarAssetSetup.InteriorModelPath,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assetPath, BarAssetSetup.ServicePropsModelPath, StringComparison.OrdinalIgnoreCase);
+#else
             importer.isReadable = false;
+#endif
             importer.weldVertices = true;
             importer.keepQuads = false;
             importer.generateSecondaryUV = false;

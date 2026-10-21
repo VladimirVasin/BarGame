@@ -403,7 +403,7 @@ Shader "Bar Promenade/Warehouse Surface"
             Cull[_Cull]
 
             HLSLPROGRAM
-            #pragma target 2.0
+            #pragma target 3.5
 
             // -------------------------------------
             // Shader Stages
@@ -439,7 +439,7 @@ Shader "Bar Promenade/Warehouse Surface"
             // -------------------------------------
             // Includes
             #include "WarehouseSurfaceInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
+            #include "WarehouseSurfaceDepthNormalsPass.hlsl"
             ENDHLSL
         }
 

@@ -105,6 +105,14 @@ namespace BarPromenade
         public override void PrepareForCamera(Camera camera)
         {
             if (!IsForCamera(camera)) { Shader.SetGlobalInt(BounceCountId, 0); return; }
+#if SURFACE_CACHE
+            if (BarSurfaceCacheGiPilot.Current != null &&
+                BarSurfaceCacheGiPilot.Current.ReplacesFiniteBounce(camera))
+            {
+                Shader.SetGlobalInt(BounceCountId, 0);
+                return;
+            }
+#endif
             bool enabled = GraphicsEffectsSettings.CleanBounceEnabled;
             if (appliedBounce != enabled || !GameTimeScaleRuntime.IsPaused && Time.unscaledTime >= refreshAt)
                 RefreshVisibility();

@@ -3,6 +3,7 @@ using System.Linq;
 using BarPromenade.Rendering;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade.Editor
@@ -13,6 +14,7 @@ namespace BarPromenade.Editor
         private const string RendererPath = "Assets/Settings/PC_Renderer.asset";
         private const string MaterialPath =
             "Assets/Resources/Materials/SceneComposite.mat";
+        private const string BaselineProfilePath = "Assets/Settings/PCPresentationBaselineVolumeProfile.asset";
 
         static ScenePresentationAssetSetup()
         {
@@ -46,7 +48,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void EnsureInstalled()
+        public static void EnsureInstalled()
         {
             Material material =
                 AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
@@ -69,6 +71,7 @@ namespace BarPromenade.Editor
             SceneCompositeRendererFeature feature = rendererData.rendererFeatures
                 .OfType<SceneCompositeRendererFeature>()
                 .FirstOrDefault();
+            bool changed = false;
             bool created = feature == null;
             if (created)
             {
@@ -78,36 +81,70 @@ namespace BarPromenade.Editor
                 feature.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(feature, rendererData);
                 rendererData.rendererFeatures.Add(feature);
+            }
+            if (created || feature.CompositeMaterial != material)
+            {
                 feature.SetConfiguration(material);
                 EditorUtility.SetDirty(feature);
-                EditorUtility.SetDirty(rendererData);
-                // Persist the new sub-asset BEFORE the feature map is
-                // stamped: an unsaved sub-asset yields localId 0 and
-                // poisons the map until the next reload rebuilds it.
-                AssetDatabase.SaveAssets();
+                changed = true;
             }
 
-            bool mapChanged = UpdateFeatureMap(rendererData);
+            SceneScreenSpaceReflectionFeature reflection = rendererData.rendererFeatures
+                .OfType<SceneScreenSpaceReflectionFeature>().FirstOrDefault();
+            if (reflection == null)
+            {
+                reflection = ScriptableObject.CreateInstance<SceneScreenSpaceReflectionFeature>();
+                reflection.name = "Scene Screen Space Reflections";
+                reflection.hideFlags = HideFlags.HideInHierarchy;
+                AssetDatabase.AddObjectToAsset(reflection, rendererData);
+                rendererData.rendererFeatures.Add(reflection);
+                created = true;
+                changed = true;
+            }
+            if (reflection.afterOpaque || !reflection.isActive)
+            {
+                reflection.afterOpaque = false;
+                reflection.SetActive(true);
+                EditorUtility.SetDirty(reflection);
+                changed = true;
+            }
+            changed |= EnsureReflectionBaseline();
+
+            // Persist new sub-assets before resolving their nonzero local IDs.
             if (created)
             {
-                if (mapChanged)
-                {
-                    AssetDatabase.SaveAssets();
-                }
-
-                return;
+                EditorUtility.SetDirty(rendererData);
+                AssetDatabase.SaveAssets();
             }
-
-            if (!mapChanged &&
-                feature.CompositeMaterial == material)
+            changed |= UpdateFeatureMap(rendererData);
+            if (changed)
             {
-                return;
+                rendererData.SetDirty();
+                EditorUtility.SetDirty(rendererData);
+                AssetDatabase.SaveAssets();
             }
+        }
 
-            feature.SetConfiguration(material);
-            EditorUtility.SetDirty(feature);
-            EditorUtility.SetDirty(rendererData);
-            AssetDatabase.SaveAssets();
+        private static bool EnsureReflectionBaseline()
+        {
+            VolumeProfile profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(BaselineProfilePath);
+            if (profile == null) throw new InvalidOperationException("PC presentation baseline profile is missing.");
+            bool created = !profile.TryGet(out ScreenSpaceReflectionVolumeSettings settings);
+            if (created)
+            {
+                settings = profile.Add<ScreenSpaceReflectionVolumeSettings>(true);
+                settings.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                AssetDatabase.AddObjectToAsset(settings, profile);
+            }
+            bool changed = created || !settings.active || !settings.mode.overrideState ||
+                settings.mode.value != ScreenSpaceReflectionVolumeSettings.ReflectionMode.Disabled;
+            if (!changed) return false;
+            settings.active = true;
+            // Native default is OpaquesOnly: explicitly opt every other scene out.
+            settings.mode.Override(ScreenSpaceReflectionVolumeSettings.ReflectionMode.Disabled);
+            EditorUtility.SetDirty(settings);
+            EditorUtility.SetDirty(profile);
+            return true;
         }
 
         private static bool UpdateFeatureMap(

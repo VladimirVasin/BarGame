@@ -2,6 +2,7 @@
 #define BAR_PROMENADE_PROJECT_LIT_DIRECTIONAL_LIGHTING_INCLUDED
 #include "WarehouseCleanCommon.hlsl"
 #include "DirectionalMetalLighting.hlsl"
+#include "ProjectScreenSpaceReflection.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "WarehouseAmbientVisibility.hlsl"
 #include "SceneSurfaceReflection.hlsl"

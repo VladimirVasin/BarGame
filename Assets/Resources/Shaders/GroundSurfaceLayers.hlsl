@@ -22,6 +22,14 @@ float _CityGroundWetness;
 half4 _GroundSubstrateColor;
 half4 _GroundAsphaltColor;
 
+half GroundScreenSpaceReceiver()
+{
+    // Registered City roads carry their real road frame; painted markings,
+    // park paths, snow, indoor floors and other wet grounds remain separate.
+    return _GroundKind < .5h && _GroundRoadCoordinates > .5h
+        ? saturate(_GroundWetness) : 0;
+}
+
 float GroundHash(float2 p)
 {
     float3 q = frac(float3(p.xyx) * 0.1031);

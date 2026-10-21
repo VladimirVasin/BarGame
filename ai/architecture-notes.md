@@ -2,41 +2,60 @@
 
 ## Current facts
 - **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
-  Every scene change/visual task follows `ai/visual-effects-standard.md`:
-  all three groups, including post-processing; actual coverage, reasoned omissions,
-  scoped additions and bounded cost. No all-on rule or canon override.
+  Every scene change follows `ai/visual-effects-standard.md`: all three groups,
+  now including SSR/SSGI/SCGI. Coverage/fit/cost audit, not all-on/canon override.
+- **Accepted 2026-10-21, SSR rollout and SCGI gate — explicit user decision:**
+  SceneScreenSpaceReflectionFeature uses URP preview on PC Forward+:
+  BeforeOpaque, Half/Bilateral, 20 m/32 steps/5 refinement, strength .35,
+  minSmoothness .2/fade .45/Gaussian roughness; no sky/temporal filtering.
+  Reflections gate every City Road slot by wetness/existing warehouse wet patches
+  (smoothness .55); dry concrete stays. Confidence blends existing
+  cubes (City two), without duplicate energy. Approved gameplay cameras only;
+  Home balcony/water/mirror/preview/capture remain excluded. Camera cuts, pose/lens/
+  target/dormancy/source changes restore safe fallback; blackout disables immediately.
+  Coastal MotionVectors use matching previous-frame wind.
+  Shared-material cache cap 1024; restores bindings, no immutable edits.
+  RealtimeLightingPolish passed; City/warehouse fallback/blackout frames reviewed.
+  BarSurfaceCacheGiPilot/RendererFeature native gate passed: bounded proxies/material
+  snapshots/shared meshes, 1,202,160 B CPU mesh data;
+  two imports readable. SURFACE_CACHE builds the provider, but normal gameplay does
+  not create it. The scoped fixture clones global settings/disables static batching,
+  restores both, and uses a dedicated contributor layer/effective MPB material bridge.
+  Low/32 m/32 resolution/one cascade/single bounce; six existing practicals. Active
+  resources/keyword suppress finite bounce; saved-off/cleanup release resources
+  and Current. Baseline/GI/moving frames reviewed. Unfocused DX12 RTX3060 Editor
+  at 1280x720: mean 32.66→38.72 ms, p95 39.49→44.74 ms; no GPU timing/player benchmark.
+  Therefore SCGI stays fixture-only: normal bar retains two finite bounces.
+  Gap: gameplay activation/player budget. Prior Persistent-allocation shutdown
+  warning predates GI; cold-compile capture leases recover/Ready passes. No shader errors.
+  No engine upgrade/broad GI rollout. Sources/palette/darkness/story §16/§21/art §16 stay.
 - **Accepted 2026-10-21, restrained interior post-processing — user decision:**
-  Bar/Home grain 0.04; Stairwell grain 0.05/vignette 0.23; palette/light/intoxication
-  stay. Inventory preview: local 4x MSAA/supported-format fallback, same exclusions;
-  gameplay SMAA stays. Inspection uses the shared owned Bokeh contract below.
+  Bar/Home grain .04; Stairwell grain .05/vignette .23; palette/light/intoxication
+  stay. Inventory: local 4x MSAA/device fallback, same exclusions/gameplay SMAA;
+  inspection reuses the shared owned Bokeh contract.
 - **Accepted 2026-10-21, material/motion pilots — explicit user decision:**
-  BarCounterMaterialResponse binds ten wood/brass receivers to response maps,
-  preserving albedo/mean smoothness; one cached shared-shader material, no new
-  cubes/Lights. CityCoastalGrassWind reuses flat-colour stems: common weather wind,
-  one 0.65 m hero radius, rooted bases, identical forward/shadow/depth/normals and
-  padded culling; disable restores material/MPB/UV/bounds. No per-stem physics/new
-  geometry. One physical 48 m Road chunk uses a scoped shader/COLOR multiplier
-  0.93–1; silhouette/UV/ground response/wind stay. Only pistol Slide__Steel corner
-  normals blend 35% toward weighted normals on existing bevels; geometry/UV/anchors stay.
-  CityRiverWater defaults _EdgeFoamStrength=1/_ReflectionBlur=0; basin overrides
-  0/0.65 keep the fountain foam-free. Existing fountain/puddle 128 cubes use mipmaps/
-  Trilinear and GenerateMips only after rare captures: no new cube/frequency/sky/
-  caustics. No canon prohibition is lifted; story §16/§21/all nine art §16 checks
-  apply. Costs remain unmeasured.
+  BarCounterMaterialResponse: ten wood/brass receivers, response maps, unchanged
+  albedo/mean smoothness; one cached material. CityCoastalGrassWind: existing
+  flat stems/weather wind, one 0.65 m hero radius, rooted bases, forward/shadow/
+  depth/normal parity and padded bounds; disable restores material/MPB/UV/bounds.
+  No per-stem physics/new geometry. One physical 48 m Road chunk: scoped shader/
+  COLOR 0.93–1; silhouette/UV/ground/wind stay. Pistol Slide__Steel corner normals
+  blend 35% toward weighted normals on existing bevels; geometry/UV/anchors stay.
+  CityRiverWater defaults foam=1/blur=0; basin 0/0.65 stays foam-free. Existing
+  fountain/puddle 128 cubes use Trilinear/mips generated only after rare captures.
+  No new cubes/frequency/sky/caustics/Lights or canon exception. Story §16/§21,
+  nine art §16 checks apply; costs unmeasured.
 - **Accepted exception 2026-10-21, bounded lighting polish — explicit user decision:**
-  Art §4/story §6/§20: City/clock/Home balcony use Soft; Home's indoor mode returns.
-  Bias/normal bias/near plane and URP distance/cascades/atlases stay; yard/island
-  spots remain hard/no-volume. Art §12: BarLightingPresentation/saved bounce flag
-  own two finite source-derived countertop bounces; six practicals/hierarchy/warmth/
-  dust stay. Matched Neutral/ACES selects Neutral for skin/wood/shadows, without
-  City grade/new light. Art §10g: house air retraces only where all four low-res
-  depths fail: same room/blocker/shadow/intensity, two sources/320x180/ten steps;
-  no target/Light/global fog. Mother stays half-shadowed; geometry/sources/fiction/
-  gameplay stay. Extra native integrations: GPU cost unmeasured. Story §16/§21
-  and all nine art §16 checks apply. GI/APV remain Deferred: runtime has no offline
-  bake representation/stable lightmap/probe bindings. Baking needs matching
-  geometry/time/door scenarios, shader sampling, import checks and bounded
-  loading/memory, beyond the counter pilot.
+  Art §4/story §6/§20: City/clock/Home balcony Soft; indoor mode restored. Bias/normal bias/
+  near plane/URP distance/cascades/atlases stay; yard/island hard/no-volume.
+  Art §12: BarLightingPresentation/saved flag own two finite countertop bounces;
+  six practicals/hierarchy/warmth/dust stay. Neutral/ACES comparison retains Neutral
+  for skin/wood/shadows, without City grade/new light. Art §10g: exact house-air
+  retrace only if all four low-res depths fail: same room/blocker/shadow/strength,
+  two sources/320x180/ten steps; no new target/Light/fog. Mother stays half-shadowed;
+  geometry/fiction/gameplay stay. GPU cost unmeasured; story §16/§21/nine art §16 checks.
+  Baked GI/APV Deferred: no offline bake geometry/stable bindings. Requires matching
+  time/door scenarios, shader sampling/import proof, bounded loading/memory.
 - **Accepted exception 2026-10-21, Home remodel — explicit user decision:**
   Apartment `12 x 8 x 3.4 m`, same locked room `13.04 m²`; art §7/story §6/§11
   replace old dimensions/bed placement. Door/reply/contents/bathroom/balcony stay.
@@ -78,47 +97,33 @@
   dead-hero input/reset. This tool adds no fiction, room content or clues;
   story §16/§21 and all nine art §16 checks remain mandatory.
 - **Accepted 2026-10-20, City material surfaces — explicit user decision:**
-  The user accepted implementation of all nine areas in `city-texture-plan.md`.
-  Art §6–11/§15a and story §6 allow City-owned pigment/physical maps and the
-  close bar facade atlas. Exact source identities retain district palettes,
-  causal wear, four-side facade atlases, full-face plinths and metre UVs.
-  ImageGen sources/prompts/hashes live under `ArtSource/City/Surfaces/Source`;
-  independent physical fields encode metre slopes RG, roughness B, cavity A.
-  Ground retains its distinct smoothness/height/cavity packing, indexed MPBs,
-  road coordinates, wetness and wind. No lighting is baked into pigment.
-  The opaque bar facade uses guarded uniform unique UV0, original UV1 and
-  full-colour tint once; geometry, anchors, collision and interior/service
-  donors remain intact. Glass, emission, pictures, text, water and characters
-  retain their own presentation. Cemetery thin iron/crowns and coastal flat
-  iron/rust/grass/litter stay flat; the accepted large-port exception remains.
-  `CitySurfaceLibrary` binds exact sources within City and Home's reconstructed
-  exterior, using bounded shared material clones and packaged maps. Other
-  scenes' donor maps remain unchanged. BC7/mips/non-readable imports share a
-  calculated cap of 224 MiB, not measured residency or a frame-rate claim.
-  The focused `CityNativeLighting` extends its nine-area day/night, boundary,
-  five-effect and Home/dormancy/return/unload proof with imported map budgets,
-  actual slots, close views and frozen pigment/response pairs. Authoring
-  validators own physical filtering, source hashes and exact facade UVs.
-  No new place, story trace, writing, damage, light, fog or sky is introduced;
-  story §16/§21 and all nine art §16 checks still apply.
-  Authoring/shader/FBX checks and `CityNativeLighting` passed; reviewed area,
-  close/boundary and real balcony/return frames. The separate old Home test
-  still assumes enabled source ground meshes despite sector consolidation;
-  its updated material assertions pass before that unrelated expectation.
+  All nine `city-texture-plan.md` areas; art §6–11/§15a, story §6. Exact City
+  sources retain palettes/causal wear/four-side facades/full plinths/metre UVs.
+  `ArtSource/City/Surfaces/Source` owns images/prompts/hashes; physical fields:
+  metre slopes RG/roughness B/cavity A, no baked light. Ground retains its own
+  packing/indexed MPBs/road coordinates/wetness/wind. Opaque bar facade: guarded
+  unique UV0/original UV1/tint once; geometry/anchors/collision/service donors stay.
+  Glass/emission/pictures/text/water/characters keep their presentation; cemetery
+  thin iron/crowns and coastal iron/rust/grass/litter stay flat, port exception stays.
+  CitySurfaceLibrary binds City/Home exterior through bounded shared clones/maps;
+  other donors unchanged. BC7/mips/non-readable imports: calculated 224 MiB cap,
+  not measured residency/performance. Authoring/shader/FBX checks and
+  CityNativeLighting passed: budgets/hashes/filtering/facade UVs/slots, nine-area
+  day/night/boundary/five-effects/Home/dormancy/return/unload, frozen response pairs;
+  area/close/balcony frames reviewed. Old Home test expects enabled pre-consolidation
+  ground sources; updated material assertions pass before that unrelated failure.
+  No new place/story/writing/damage/light/fog/sky; story §16/§21/nine art §16 checks.
 - **Accepted exception 2026-10-20, City local lighting — explicit user decision:**
-  Art §4/§6–11/§15a; story §6/§20: the accepted nine-area queue shares finite
-  air, source halation, metal, source-derived bounce and static reflections.
-  One owner/frame budget; no new districts, sky/fog/weather/grade/lights/story.
-  The twelve-light pool keeps power/leases; live headlights follow their source
-  without duplicate halos. Bar-yard/island spots have no volume; the park keeps
-  one chess lamp and church its garden support. Beach/boat approaches, river
-  cave, tunnel destination and eastern distance gain no light. Structural/finite
-  support does not promise small-object volume shadows. Two filtered 256 HDR
-  slots use SceneReflectionCapture, excluding actors/vehicles/precipitation;
-  static receiver bounds constrain metal/water, preserving fountain/spring owners.
-  Home borrows the profile only for the balcony camera. Dormancy/return/unload
-  restore owned layers/materials and release cubes. Acceptance: CityNativeLighting
-  and reviewed area/boundary/effect frames; local costs require measurements.
+  Art §4/§6–11/§15a/story §6/§20: nine areas share finite air/halation/metal/bounce/
+  static reflections, one owner/frame budget; no new district/sky/fog/weather/grade/
+  light/story. Twelve-light pool retains power/leases; headlights follow sources
+  without duplicate halos. Yard/island have no volume; park keeps one chess lamp,
+  church garden support. Beach/boat/cave/tunnel/eastern distance gain no light.
+  Structural/finite support promises no small-object volume shadows. Two filtered
+  256 HDR slots exclude actors/vehicles/precipitation via SceneReflectionCapture;
+  receiver bounds preserve metal/water/fountain/spring owners. Home borrows only
+  for balcony camera. Dormancy/return/unload restore layers/materials/release cubes.
+  CityNativeLighting/area-boundary-effect frames accepted; local costs unmeasured.
 - **Accepted 2026-10-20, whole Mountain Road material surfaces — explicit user decision:**
   Art §10f/story §6: local pigment/physical maps replace borrowed environment
   sheets and the cafe's six-sheet format. The same fifteen road kinds retain
@@ -277,33 +282,27 @@
   Clean warehouse enhancements are independently saved/default-on:
   `graphics.clean_reflections`, `graphics.clean_volume`, `graphics.clean_halation`,
   `graphics.clean_directional_highlights`, `graphics.clean_bounce`.
-  One reused 256 cube is captured and properly prefiltered by a capture-only
-  probe: intensity zero and a tiny influence volume avoid automatic scene lighting;
-  a reference-counted lease enables realtime probes only while capture/
-  convolution is pending, then restores the original quality flag. No permanent
-  global probe enablement; cleanup releases the lease. The watchdog starts after
-  `RenderProbe` returns: ten seconds and at least sixteen engine frames, capped
-  at thirty seconds for sparse frames. Completion is polled first. Expiry destroys
-  a stalled probe, clears its result/gain and releases the lease. At most
-  two attempts run per source-state generation; a new state or explicit setting
-  re-enable rearms recovery. CPU submit/poll and wall latency remain separate.
+  One reused prefiltered 256 cube uses a capture-only probe: zero intensity/tiny
+  influence avoid automatic lighting. A ref-counted quality lease enables realtime
+  probes only during capture/convolution, restores the flag on completion/cleanup.
+  Watchdog starts after RenderProbe returns: ten seconds/at least sixteen frames,
+  capped at thirty seconds for sparse frames; completion polled first. Expiry
+  destroys the stalled probe/clears result-gain/releases lease. Two attempts per
+  source generation; new state or setting re-enable rearms. CPU submit/poll and wall
+  latency stay separate; no permanent global probe enablement.
   WornSteel receives directional highlights; bounce uses two validated floor
   patches after ambient fade. Its visibility rays use authored physics colliders;
   decorative rotor/motor meshes have none, so bounce does not promise their exact
   occlusion. Direct light and the fan volume use the real shadow maps.
-  Source-masked halation follows native/intoxication and precedes SMAA. At most
-  24 sources are projected once per camera on the CPU using the actual GPU
-  projection/target Y convention; blur and HDR-headroom composite remain intact.
-  The one fan-light volume keeps its at-most 320x180 RGBA16F target and shared
-  twelve-step integrator, density `.0035`, using the real fan Light's URP shadow
-  atlas. Strata anchor to the full volume; depth clips only the partial segment.
-  Exactly zero optical depth skips light/shadow fetches without changing the
-  quadrature. A conservatively padded projected bound skips unsupported screen
-  regions; near-plane crossings keep a full-screen bound. Production resolve
-  additively blends RGB into the existing ReadWrite colour attachment, preserves
-  alpha and needs no full-resolution colour copy; diagnostic output stays separate.
-  The observed fan shadow slice is fully allocated at 1024 pixels; its budget
-  is unchanged. `GameCamera_NativeEffectsAndWarehouseLightingRemainStable`
+  Source-masked halation follows native/intoxication before SMAA: at most 24
+  sources projected once/camera on CPU with actual GPU projection/target Y;
+  blur/HDR-headroom composite stay. Fan volume: at most 320x180 RGBA16F,
+  twelve steps/density `.0035`, real URP shadow atlas. Full-volume strata/depth-clipped
+  segments retain quadrature; exactly zero optical depth skips light/shadow fetches.
+  Padded projected bounds skip unsupported regions; near crossings use full screen.
+  Resolve adds RGB to existing ReadWrite colour, preserves alpha, no full-res copy;
+  diagnostics separate. Fan shadow slice remains fully allocated at 1024 pixels.
+  `GameCamera_NativeEffectsAndWarehouseLightingRemainStable`
   verifies the optimized path, source/exclusion gates, probe timeout/lease-release/
   recovery and idle-liquid regression. No CS0618 or C#/shader errors remain.
   Upscale tries four depth-compatible taps and a bounded twelve-site neighbour ring. With

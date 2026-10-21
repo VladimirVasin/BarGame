@@ -414,7 +414,7 @@ Shader "Bar Promenade/Layered Ground"
             Cull[_Cull]
 
             HLSLPROGRAM
-            #pragma target 2.0
+            #pragma target 3.5
 
             // -------------------------------------
             // Shader Stages
@@ -450,7 +450,7 @@ Shader "Bar Promenade/Layered Ground"
             // -------------------------------------
             // Includes
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
+            #include "GroundSurfaceDepthNormalsPass.hlsl"
             ENDHLSL
         }
 

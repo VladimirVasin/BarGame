@@ -1,32 +1,31 @@
 # Visual effects standard
 
-Accepted user decision `2026-10-21`: automatically review all three groups
-(24 categories), including post-processing, for every scene change and future
-world/art work without a user reminder. This permanent audit is neither all-on by
-default nor a new approval gate.
+Accepted user decision `2026-10-21`: every scene change/world/art task reviews
+all three groups (24 categories), including SSR and SSGI/SCGI, without reminders.
+This is neither all-on by default nor a new approval gate.
 
 ## When and how to audit
 
-Triggers: every scene change; prefab/model/material/shader/lighting/camera/
-environment planning or changes, including generators/importers.
-Read both bibles/accepted architecture; inspect live assets, owners,
-composition, settings and focused checks. Shader support/preferences/plans
-do not prove coverage.
+Includes prefab/model/material/shader/lighting/camera/environment plans and
+generators/importers. Read both bibles/architecture; inspect assets,
+owners, composition, settings and checks. Dormant package code, shader support
+or preferences do not prove an active compatible provider or receiver coverage.
 
 Use a compact working matrix:
 
 | Effect | Coverage | Gap/fit | Action | Cost/bound | Proof |
 | --- | --- | --- | --- | --- | --- |
 
-Assess each of the 24 categories: coverage, gaps, suitability and improvements. Use
-project statuses from ai/README.md; applicability is separate. Trivial work
-needs a grouped summary. Update lasting facts/decisions; avoid per-scene
-inventories duplicating code.
+Assess all categories: coverage, gaps, fit and improvements. Use ai/README.md
+statuses; applicability is separate. Group trivial work; record lasting facts,
+without inventories duplicating code.
 
 ## Six scene-shaping effects
 
-1. **Global illumination:** reflected colour/energy, baking and object probes;
-   distinguish baked GI/APV from finite source-derived bounce.
+1. **Global illumination:** distinguish baked GI/APV, finite source-derived
+   bounce, SSGI (screen-space) and SCGI (surface cache). Assess changing sources,
+   doors, material sampling, SSGI visibility/history, leaks, cache/update/memory
+   bounds; replace existing bounce to avoid duplicate energy.
 2. **SSAO:** contact and recess readability; control radius, strength and halos
    on faces, thin members, vegetation and moving geometry.
 3. **Height/depth fog:** depth layers, visibility and shelters; preserve
@@ -40,8 +39,10 @@ inventories duplicating code.
 
 ## Ten material, motion and accent effects
 
-7. **Reflection probes:** receiver coverage/filtering, capture exclusions,
-   invalidation, cube count/resolution and lifetime.
+7. **Reflection probes + SSR:** receiver coverage, wetness/roughness and filtering;
+   SSR blends to probes without double energy. Check offscreen/hidden
+   sources, edges, motion/history/cuts; exclude preview/capture
+   cameras. Bound tracing, cube captures/resolution, invalidation and lifetime.
 8. **Stylized water:** depth colour, Fresnel, shoreline foam, moving normals,
    sky/local reflection and shallow caustics, each assessed separately by water type.
 9. **Roughness/smoothness and wetness:** variation/causal wear; preserve
@@ -49,7 +50,7 @@ inventories duplicating code.
 10. **Bevels/weighted normals:** edge highlights/face stability without
     needless geometry, softened silhouettes or changed contacts.
 11. **Vertex colour gradients:** subtle material/vegetation variation; inspect
-    actual COLOR/UV channels and shader consumption before assuming support.
+    COLOR/UV channels and shader consumption.
 12. **Wind and interaction:** shared weather, rooted vegetation, free branches,
     cloth and nearby body response; distinguish surface grass from real stems.
 13. **Decals:** causal moisture, moss, wear, cracks and dirt; choose existing
@@ -68,8 +69,8 @@ inventories duplicating code.
     washing out albedo, silhouettes or nearby detail.
 18. **Depth of field:** scene bands, inspection/cinematic focus; keep gameplay,
     contacts and UI clear. Reuse shared scoped owners/settings/focus cleanup.
-19. **Anti-aliasing:** actual URP/renderer/camera/target path; compare MSAA/SMAA/
-    TAA on thin/moving detail, vegetation/previews. TAA needs correct motion/history.
+19. **Anti-aliasing:** actual renderer/camera/target; compare MSAA/SMAA/TAA on
+    moving detail, vegetation/previews. TAA needs correct motion/history.
 20. **Vignette:** restrained intensity; check combined scene/state strength and
     corner/route readability, including intoxication.
 21. **Film grain + dithering:** grain by style; technical dither only for proven
@@ -84,23 +85,21 @@ inventories duplicating code.
 
 ## Implementation boundaries
 
-Reuse owners/passes/assets/buffers. Follow AGENTS.md optimization/lifecycle
-rules; bound work/loading, measure gains and label unknown costs.
-Implement within scope; larger work is a proposal, no mass rollout/rewrite/
-canon override. Rollout uses shared type/area profiles, spatial/range bounds
-and justified exclusions. A pilot is not project-wide completion.
-Baked GI/APV needs matching bake geometry/data, bindings/sampling and bounded loading;
+Reuse owners/passes/assets/buffers; follow AGENTS.md optimization/lifecycle.
+Measure gains; label unknown costs. Scope rollout by shared type/area profiles,
+spatial bounds and exclusions. Pilots are not project-wide completion or canon
+overrides. Preview providers need proven pipeline/platform/shader compatibility;
+global batching/buffer changes need a focused gate, not silent activation.
+Baked GI/APV needs matching geometry/data, bindings/sampling and bounded loading;
 ambient/painted/local bounce is not baked GI.
-Reserve channels/UVs/topology/anchors/metas. Deformation must match active
-forward/shadow/depth/normal/GBuffer/motion/meta passes; expand bounds and retain
-root/rig/camera/physical contacts and pause/disable/dormancy/return/unload cleanup.
+Reserve channels/UVs/topology/anchors/metas. Deformation matches forward/shadow/
+depth/normal/GBuffer/motion/meta passes; retain bounds, root/rig/camera/contacts
+and pause/disable/dormancy/return/unload cleanup.
 Preserve ordinary causes, local darkness/cleanliness/water/palette/silence. No
 new clues/supernatural signals/text as polish. Absence is not a canon ban.
 
 ## Completion check
 
-- Review all three groups for coverage/gaps, suitability and scoped action.
-- Follow FAST/shared-framework allowance: focused check/reviewed captures for
-  appearance changes; broader checks need existing AGENTS.md authorization.
-- Report assessment/changes/evidence/omissions/unknown costs; update facts and
-  delete temporary captures.
+- Review all groups: coverage/gaps, fit and scoped action.
+- Follow FAST: focused check/reviewed frames for appearance changes.
+- Report changes/proof/omissions/unknown costs; update facts; delete captures.

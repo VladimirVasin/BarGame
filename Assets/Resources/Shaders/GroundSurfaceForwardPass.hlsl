@@ -274,6 +274,9 @@ void LitPassFragment(
 
     InitializeBakedGIData(input, inputData);
 
+    projectScreenSpaceReceiver = GroundScreenSpaceReceiver();
+    projectReflectionFallbackWeight = _GroundKind < .5h && _GroundRoadCoordinates > .5h
+        ? projectScreenSpaceReceiver : 1.0h;
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
     color.rgb += VillageWetStoneReflection(inputData, surfaceData, _GroundKind);
     color.rgb = MixFog(color.rgb, inputData.fogCoord);

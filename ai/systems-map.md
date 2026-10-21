@@ -43,8 +43,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City Blender ordinary buildings | Twenty metre types; district heights, true passages and secondary wings share models/solid footprints. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
-| Scene presentation | Native/SMAA; restrained interior grain/vignette; saved light/grade/4:3. | `SceneCompositeRendererFeature`, `*LightingPresentation`, `GraphicsEffectsSettings` | Current |
+| Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.6f1`, `17.6.0` | Current |
+| Scene presentation | Native/SMAA/4:3; City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
@@ -213,7 +213,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
 | Bar patrons and bartender | Eleven patrons and the ordinary two-armed bartender use grounded shared props; six-arm art remains legacy-only. | `BarPatron{WorldBuilder,DrinkingBehavior}` | Current |
-| Bar cinematic atmosphere | Reveal/six practicals/local audio; Neutral/two countertop bounces/cleanup. | `BarInteriorAtmosphere`, `BarLightingPresentation`, `BarMusicPlayer` | Current |
+| Bar cinematic atmosphere | Six practicals/Neutral/two finite bounces; reveal/audio/cleanup. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
+| Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |
 | Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |
 | Automated tests | Focused EditMode/PlayMode contracts share infrastructure; complete suites need an explicit regression request. | `Assets/Tests/{EditMode,PlayMode,Infrastructure}` | Current |
 | Automated test audio guard | Silence the global listener for every EditMode and PlayMode run without pausing sources, then restore volume. | `BarPromenade.TestSupport`, `AutomaticTestAudioMute` | Current |

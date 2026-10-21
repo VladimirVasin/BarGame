@@ -16,6 +16,8 @@ namespace BarPromenade
         private const int MaximumSceneRenderers = 131072;
         private const int MaximumCaptureRenderers = 8192;
         private static readonly int ContactId = Shader.PropertyToID("_ClearCoatSmoothness");
+        private static readonly int GroundKindId = Shader.PropertyToID("_GroundKind");
+        private static readonly int RoadCoordinatesId = Shader.PropertyToID("_GroundRoadCoordinates");
         private static readonly int CountId = Shader.PropertyToID("_SceneSurfaceReflectionCount");
         private static readonly int Cube0Id = Shader.PropertyToID("_SceneSurfaceReflectionCube0");
         private static readonly int Cube1Id = Shader.PropertyToID("_SceneSurfaceReflectionCube1");
@@ -62,6 +64,7 @@ namespace BarPromenade
         public bool CaptureInProgress => zones[0] != null && zones[0].CaptureInProgress || zones[1] != null && zones[1].CaptureInProgress;
         public int CaptureRendererCount => leasedGeometry.Count;
         public int ReceiverCount => receivers.Count;
+        public int RoadReceiverCount { get; private set; }
         public int MovingLightCount => movingLights.Length;
         public int CompletedEligibleCameraFrames => completedEligibleFrames;
         public uint LightingGeneration => lightingGeneration;
@@ -211,8 +214,13 @@ namespace BarPromenade
                 {
                     int index = CitySurfaceLibrary.PropertyIndex(renderer, materials.Length, slot, properties);
                     Material receiverMaterial = materials[slot];
-                    if (!CityMetalAppearance.TryGetResponse(renderer, receiverMaterial, properties, index, out _)) continue;
+                    bool metal = CityMetalAppearance.TryGetResponse(renderer, receiverMaterial, properties, index, out _);
                     CitySurfaceLibrary.ReadProperties(renderer, index, properties);
+                    bool road = receiverMaterial != null && receiverMaterial.shader != null &&
+                        receiverMaterial.shader.name == "Bar Promenade/Layered Ground" &&
+                        properties.GetFloat(RoadCoordinatesId) > .5f && properties.GetFloat(GroundKindId) < .5f;
+                    if (!metal && !road) continue;
+                    if (road) RoadReceiverCount++;
                     receivers.Add(new Receiver { Renderer = renderer, MaterialIndex = index,
                         OriginalFloor = properties.HasProperty(ContactId) ? properties.GetFloat(ContactId) : receiverMaterial.GetFloat(ContactId) });
                 }

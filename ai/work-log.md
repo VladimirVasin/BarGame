@@ -5,47 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-21
 
-PostProcessingPolish passed; UI/A-B reviewed: Bar/Home/Stair grain reduced,
-Stair vignette eased; found-item owned Bokeh/no outer-stale takeover.
-Pause-safe input/instant DoF-off paused; focus/busy/cleanup/unload correct.
-Preview MSAA/device fallback follows saved AA. Native overcast sky/fog/
-dark interiors: no objectionable coherent bands; dither off.
+SSR: City Road/warehouse wet patches, cube confidence fallback/camera exclusions/
+saved flag/source/blackout/history/coastal wind. RealtimeLightingPolish passed;
+SSR/Bar GI/moving frames reviewed. Native SCGI passed, but stays fixture-only:
+Editor cost higher; no GPU/player proof; normal bar keeps finite bounces.
 
-Every scene change reviews all three effects groups incl. post-processing:
+PostProcessingPolish passed/reviewed UI/A-B: reduced room grain/Stair vignette,
+owned inspection Bokeh/no stale takeover, paused input/DoF-off and focus/busy/
+cleanup/unload; preview MSAA/device fallback follows AA. Real sky/fog/dark bands
+not objectionable; dither off. Every scene reviews all groups incl. SSR/SSGI/SCGI:
 coverage/fit/omissions/cost; check-docs/diff reviewed.
 
-MaterialMotionPolish: bar response/coastal rooted wind-contact/foam-free fountain/
-filtered snapshots A/B passed. Road occluded; crown/slide A/B in
-MaterialMotionPolishGeometry passed/reviewed. Stable light reused capture;
-counter shader/response and slide determinism passed; geometry/UV/contacts intact.
-No new cube/light/population; cost unmeasured.
+MaterialMotionPolish passed: bar response/coastal rooted wind-contact/fountain
+foam/mips A/B. Road occluded; MaterialMotionPolishGeometry crown/slide A/B passed/
+reviewed. Capture reused; counter shader/response/slide determinism passed;
+geometry/UV/contacts intact, no new cube/light/population; cost unmeasured.
 
-LightingPolish: City/balcony Soft; shared bar source bounce/flag; matched Neutral
-over ACES; house depth repair retains room/shadow caps. Effects/ownership/unload/
-Residential A/B passed/reviewed; repeat hit prior BarDrinkShopController arm teardown.
-Fixture: service/arms before camera. GI/APV deferred: offline form/stable bindings/
-bounded loading needed; GPU timings unavailable.
+LightingPolish passed/reviewed effects/ownership/unload/Residential A/B: City/balcony
+Soft, bar bounce/flag/Neutral over ACES, house depth repair within room/shadow caps.
+Repeat hit prior BarDrinkShopController teardown; fixture disposes service/arms
+before camera. Baked GI/APV lacks offline form/bindings/loading; GPU timings absent.
 
-Home west: enlarged locked room/sofa-sleep/visual kitchen; sheets/practical keep
-bathroom/balcony. Sofa narrower/same length/west back; head-clock S; table flush/
-room-width. Chair strip→side/rear; endpoints/sleep/deformation/board routes intact;
-fridge independent. Junk/slippers gone; bookcase-radio SW/shelves E. Aspect-correct
-anonymous door painting: silent shared no-page inspection/cache survives cleanup;
-no caption/speech/reward/interpretation. Seat E/filter avoids stand interception.
-Shower old handoff before unlock→walk/F4; separate camera fault not reproduced.
-Dressed approach/offscreen undress/bare entry; mouse-stick before soap/RMB only wash.
-F4 owns action/defeat inputs, no snapshots; live timeline/current-camera return.
+Home: larger locked room/sofa-sleep/visual kitchen/sheets/practical; bathroom/balcony
+stay. Sofa narrower/same length/west back/head-clock S; table flush/room-width;
+chair side/rear, contacts/sleep/deformation/board routes stay; fridge independent.
+Junk/slippers gone; bookcase-radio SW/shelves E. Aspect-correct anonymous painting:
+silent shared no-page view/cache cleanup, no caption/speech/reward/interpretation.
+Seat E filters stand; shower handoff before unlock fixes walk/F4; separate camera
+fault unreproduced. Dressed approach/offscreen undress/bare entry; mouse-stick
+before soap/RMB washing. F4 owns action/defeat input/live timeline/current-camera
+return, no snapshots.
 DebugFreeCameraPlayModeTests(reset), AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed
 (raw E/filter/bed-chair-painting flight/views), Shower_CancelMidWashDressesHimAndShutsTheWater
 (entry/look/wash-exit flight/cancel-Q handoff/W gait) passed. Prior temp/retention faults.
 
-City pigment/filtered fields retain palette/facade/metre UVs/indexed ground MPBs/
-road/wetness. Bar guarded UV0 keeps UV1/geometry/anchors/service donors; Home scoped.
-Flat coast/cemetery/cast/glass/emission/text/water stay; capped BC7/donors retained,
-residency unmeasured. Surface validator/shader parity/pinned FBX round-trip OK.
-CityNativeLighting(import/binding/response/effects/Home/dormancy/return/unload/
-area-close-boundary-balcony) passed/reviewed. HomeScene_BuildsWalkableBalconyOnSeededStreet:
-materials pass; prior foundGround expects enabled pre-consolidation sources.
+City maps retain palette/facade/metre UVs/indexed ground MPBs/road/wetness; guarded
+bar UV0 keeps UV1/geometry/anchors/service; Home scoped. Flat coast/cemetery/cast/
+glass/emission/text/water/donors stay, BC7 capped/residency unmeasured. Surface/
+shader/pinned FBX validators and CityNativeLighting(import/binding/response/effects/
+Home/dormancy/return/unload/area-close-boundary-balcony) passed/reviewed.
+HomeScene_BuildsWalkableBalconyOnSeededStreet materials pass; prior foundGround
+expects enabled pre-consolidation sources.
 Watchdog excludes submit stalls; bounded native-frame grace/expiry releases quality/
 retries. ReflectionCapture_ColdStallAndTimeoutRecovery OK.
 

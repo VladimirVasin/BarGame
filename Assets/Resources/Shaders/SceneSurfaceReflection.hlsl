@@ -50,7 +50,10 @@ half3 SceneSurfaceReflection(InputData input, SurfaceData surface)
         half3 f0 = lerp(half3(.04h, .04h, .04h), surface.albedo, surface.metallic);
 #endif
         half3 fresnel = f0 + (1.0h - f0) * Pow4(1.0h - saturate(dot(input.normalWS, input.viewDirectionWS)));
-        return environment * fresnel * (origin.w * surface.occlusion / (1.0 + roughness * roughness));
+        half fallback = 1.0h - ProjectScreenSpaceConfidence(ProjectScreenSpaceUv(world),
+            world, surface.smoothness);
+        return environment * fresnel * (origin.w * surface.occlusion * fallback *
+            projectReflectionFallbackWeight / (1.0 + roughness * roughness));
     }
     return 0;
 }

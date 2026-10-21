@@ -270,6 +270,8 @@ void LitPassFragment(
 
     InitializeBakedGIData(input, inputData);
 
+    ApplyWarehouseWetSmoothness(input.positionWS, inputData.normalWS, surfaceData);
+    projectScreenSpaceReceiver = WarehouseScreenSpaceReceiver(input.positionWS, inputData.normalWS);
     WarehouseSetBrushFrame(input.positionWS, warehouseSurfaceUv, inputData.normalWS);
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
     color.rgb += WarehouseWetReflection(input.positionWS, inputData.normalWS,
