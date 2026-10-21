@@ -22,6 +22,7 @@ namespace BarPromenade
             MaximumBathroomSpillLights +
             MaximumEntryDoorLights;
         public const int MaximumDustParticles = 12;
+        public const float FilmGrainIntensity = 0.04f;
         public const float NightWindowLightIntensity = 5.25f;
 
         public static readonly Color NightWindowLightColor =
@@ -317,7 +318,7 @@ namespace BarPromenade
 
             FilmGrain grain = runtimeProfile.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin1);
-            grain.intensity.Override(0.14f);
+            grain.intensity.Override(FilmGrainIntensity);
             grain.response.Override(0.74f);
 
             RuntimeSceneSetup.AddIndoorGaussianDepthOfField(

@@ -14,6 +14,8 @@ namespace BarPromenade
     {
         public const int MaximumPracticalLights = 3;
         public const int MaximumDustParticles = 14;
+        public const float FilmGrainIntensity = 0.05f;
+        public const float VignetteIntensity = 0.23f;
 
         internal static readonly Vector3 GroundEmitterPosition =
             new Vector3(-1.45f, 2.70f, -3.40f);
@@ -146,13 +148,13 @@ namespace BarPromenade
 
             Vignette vignette =
                 runtimeProfile.Add<Vignette>(true);
-            vignette.intensity.Override(0.31f);
+            vignette.intensity.Override(VignetteIntensity);
             vignette.smoothness.Override(0.56f);
 
             FilmGrain grain =
                 runtimeProfile.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin2);
-            grain.intensity.Override(0.19f);
+            grain.intensity.Override(FilmGrainIntensity);
             grain.response.Override(0.78f);
 
             RuntimeSceneSetup.AddIndoorGaussianDepthOfField(

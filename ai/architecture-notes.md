@@ -2,8 +2,13 @@
 
 ## Current facts
 - **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
-  All future visual work follows `ai/visual-effects-standard.md`: both sets,
-  actual coverage, justified omissions and scoped additions; no canon override.
+  Every scene change/visual task follows `ai/visual-effects-standard.md`:
+  all three groups, including post-processing; actual coverage, reasoned omissions,
+  scoped additions and bounded cost. No all-on rule or canon override.
+- **Accepted 2026-10-21, restrained interior post-processing — user decision:**
+  Bar/Home grain 0.04; Stairwell grain 0.05/vignette 0.23; palette/light/intoxication
+  stay. Inventory preview: local 4x MSAA/supported-format fallback, same exclusions;
+  gameplay SMAA stays. Inspection uses the shared owned Bokeh contract below.
 - **Accepted 2026-10-21, material/motion pilots — explicit user decision:**
   BarCounterMaterialResponse binds ten wood/brass receivers to response maps,
   preserving albedo/mean smoothness; one cached shared-shader material, no new
@@ -263,12 +268,11 @@
   keeps its own presentation. Local effect costs remain unmeasured.
 - **Accepted exception 2026-10-20, native-only presentation — explicit user decision:**
   Art §4/§15a; story §6. The scene uses its native source resolution only;
-  style selection, low-resolution profiles, colour quantization, output dither,
-  scanlines and vertex snapping are removed. Optional SMAA High defaults on,
-  persisted as `graphics.clean_aa`. The nine effect flags remain independent;
-  4:3 is an optional aspect choice. Retired preference keys are ignored.
-  Custom RenderGraph spatial SMAA: three passes after live native/intoxication;
-  reapply 4:3 bars after AA. UI/nameplates draw later; preview/reflection exclusions stay.
+  style/low-resolution selection, colour quantization, output dither, scanlines
+  and vertex snapping are removed. Saved `graphics.clean_aa` SMAA High defaults
+  on; nine flags stay independent, 4:3 optional, retired keys ignored.
+  Three RenderGraph SMAA passes follow native/intoxication; bars follow AA,
+  then UI/nameplates. Preview/reflection exclusions stay.
   Shared lighting/fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay.
   Clean warehouse enhancements are independently saved/default-on:
   `graphics.clean_reflections`, `graphics.clean_volume`, `graphics.clean_halation`,
@@ -7599,21 +7603,18 @@
   retired style/console-effect keys are ignored. DoF changes runtime/cloned
   profiles only; disabled intoxication forces zero.
 - **Accepted — shared depth of field has two tiers:** the
-  always-on tier is Gaussian in every scene grade (City `start 8 / end 28 /
-  radius 1.5` — the band must sit inside the `48 m` far clip where exp² fog
-  `0.070` has not yet flattened depth). The six true interiors share radius
-  `0.55` while retaining their bands: Bar `6/18`, Home `5/14`, Stairwell
+  scene tier is Gaussian: City `8/28/1.5`, inside its `48 m` far clip/exp² fog
+  `0.070`; six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
   `5/16`, Supermarket `7/20`, Church `7/26`, Mother's House `4.5/13`.
-  Exterior profiles, including Mountain Road `20/92/0.65`, are unchanged.
-  The modal tier is one
-  shared `CinematicDepthOfField` Bokeh volume at priority `10` (above scene
-  grades `4-5`) whose weight blends `0.35 s` in / `0.45 s` out; modal
-  controllers call `Begin`/`SetFocusDistance`/`End` around their existing
-  `SetFixedPose` trios. The bar begins Bokeh only after the menu is fully open,
-  uses `35 mm / f/8`, and calls `EndImmediately` when the booklet rests,
-  service begins or standing starts, so neither nearby bartender work nor a
-  returned seated/third-person camera inherits its tail. Transparent depth-less
-  surfaces (river water, glass, particles) blur by the opaque depth behind them.
+  Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`
+  shares one priority-10 Bokeh volume above grades `4-5`, blending `0.35/0.45 s`.
+  Existing modal Begin/focus/End follows fixed poses. The fully open bar menu
+  uses `35 mm/f8`; rest/service/standing immediately clears its blur before
+  camera return. `2026-10-21`: WorldItemInspectionPresenter borrows `35 mm/f8`
+  only while settled Inspecting on an eligible postprocessed gameplay camera;
+  projected pivot depth sets focus. It cannot steal/retune/end an outer owner's
+  shot and releases only its own token immediately on restore/detach/cleanup.
+  The saved DoF flag applies; depth-less water/glass/particles use opaque depth.
 - **Accepted - shared intoxication lens:** `IntoxicationLensVolumeDriver` drives
   URP chromatic aberration 0..0.45 and lens distortion 0..-0.14 at priority 8;
   native scene effects retain the same shared input and exclusions.

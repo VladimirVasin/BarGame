@@ -1,27 +1,27 @@
 # Visual effects standard
 
-Accepted user decision `2026-10-21`: automatically review all sixteen effects
-in future scene/world/art work. This permanent audit is neither all-on by
+Accepted user decision `2026-10-21`: automatically review all three groups
+(24 categories), including post-processing, for every scene change and future
+world/art work without a user reminder. This permanent audit is neither all-on by
 default nor a new approval gate.
 
 ## When and how to audit
 
-Triggers: scene/prefab/model/material/shader/lighting/camera/environment
-planning or changes, including generators/importers.
-Read both world bibles and accepted architecture. Inspect actual assets,
-enabled runtime owners, composition, settings and checks. Shader
-capability, a preference key or a plan alone does not prove active coverage.
+Triggers: every scene change; prefab/model/material/shader/lighting/camera/
+environment planning or changes, including generators/importers.
+Read both bibles/accepted architecture; inspect live assets, owners,
+composition, settings and focused checks. Shader support/preferences/plans
+do not prove coverage.
 
 Use a compact working matrix:
 
-| Effect | Actual coverage | Gap or reason not needed | Proposed action | Performance bound | Evidence |
+| Effect | Coverage | Gap/fit | Action | Cost/bound | Proof |
 | --- | --- | --- | --- | --- | --- |
 
-Consider all sixteen, including absence and reasoned omissions. Project
-statuses remain Current/Partial/Planned/Deferred; not-needed is applicability,
-not a fifth status. Trivial work needs only a grouped summary, not sixteen
-user-facing rows. Do not keep growing per-scene inventories duplicating code;
-record lasting decisions and update existing documents when facts change.
+Assess each of the 24 categories: coverage, gaps, suitability and improvements. Use
+project statuses from ai/README.md; applicability is separate. Trivial work
+needs a grouped summary. Update lasting facts/decisions; avoid per-scene
+inventories duplicating code.
 
 ## Six scene-shaping effects
 
@@ -62,44 +62,45 @@ record lasting decisions and update existing documents when facts change.
     thin distance-aware presentation; distinguish interaction affordances from
     permanent hero/world outlines.
 
+## Eight post-processing categories
+
+17. **Bloom:** justified bright sources/highlights; tune threshold/spread without
+    washing out albedo, silhouettes or nearby detail.
+18. **Depth of field:** scene bands, inspection/cinematic focus; keep gameplay,
+    contacts and UI clear. Reuse shared scoped owners/settings/focus cleanup.
+19. **Anti-aliasing:** actual URP/renderer/camera/target path; compare MSAA/SMAA/
+    TAA on thin/moving detail, vegetation/previews. TAA needs correct motion/history.
+20. **Vignette:** restrained intensity; check combined scene/state strength and
+    corner/route readability, including intoxication.
+21. **Film grain + dithering:** grain by style; technical dither only for proven
+    real sky/fog/dark banding within native/canon constraints, before crisp UI.
+    Distinguish it from retro quantization; inspect the final output.
+22. **Lens flares:** justified existing bright sources, occlusion/camera response;
+    respect cloudy/dark areas and narrative silence.
+23. **Motion blur:** camera/genre, correct motion and readability; if used,
+    provide a saved player off switch.
+24. **Chromatic aberration/lens distortion:** brief justified state/optics effects;
+    retain shared owners/settings and sober-state clarity.
+
 ## Implementation boundaries
 
-Reuse owners, global passes, material families, buffers and capture lifecycles.
-Implement appropriate work within the authorized task without
-routine confirmation; larger/unrelated changes remain proposals. The standing
-audit does not authorize mass rollout or rendering rewrites. Canon deviations
-follow existing accepted-decision/story-registry rules; no exception is granted here.
-
-For requested rollout, cover all appropriate instances through shared type/area
-profiles. A pilot is not project-wide completion. Bound active work spatially
-and by distance, not permanently to one showcase group; explain exclusions.
-
-Budget CPU/GPU, memory/GC and loading from design onward: bound populations,
-passes, textures, probes, update/capture rates and nearby interaction sources.
-Cache references/share assets/reuse buffers. Distance/culling may scale
-presentation while time/input/collision/simulation remain correct. Preserve
-pause/disable/dormancy/return/unload cleanup. Compare measured views before
-claiming gains; label unmeasured costs.
-
-GI/APV in runtime composition require matching bake geometry/data, stable
-lightmap/probe bindings, shader sampling and bounded scenario/data loading.
-Ambient fill, painted light and local bounce are not baked GI.
-Reserve vertex channels; preserve relevant UVs, topology, anchors and asset
-`.meta` files. Deformation must agree in forward, shadow, depth and normals,
-plus any active GBuffer/motion/meta paths; expand bounds and retain rooted,
-rig, camera and physical contact continuity.
-
-Effects need ordinary material/weather/light causes; respect local darkness,
-clean interiors, water, palette and narrative silence. Add no fresh clues,
-supernatural signals or text as polish. Absence is not a canon prohibition;
-identify the actual local rule before requiring an exception.
+Reuse owners/passes/assets/buffers. Follow AGENTS.md optimization/lifecycle
+rules; bound work/loading, measure gains and label unknown costs.
+Implement within scope; larger work is a proposal, no mass rollout/rewrite/
+canon override. Rollout uses shared type/area profiles, spatial/range bounds
+and justified exclusions. A pilot is not project-wide completion.
+Baked GI/APV needs matching bake geometry/data, bindings/sampling and bounded loading;
+ambient/painted/local bounce is not baked GI.
+Reserve channels/UVs/topology/anchors/metas. Deformation must match active
+forward/shadow/depth/normal/GBuffer/motion/meta passes; expand bounds and retain
+root/rig/camera/physical contacts and pause/disable/dormancy/return/unload cleanup.
+Preserve ordinary causes, local darkness/cleanliness/water/palette/silence. No
+new clues/supernatural signals/text as polish. Absence is not a canon ban.
 
 ## Completion check
 
-- All sixteen reviewed; actual coverage/gaps and scope verified.
-- Shared ownership, budgets, vertex/visibility/contact and cleanup retained.
-- Follow FAST: one focused primary check with reviewed capture for appearance
-  changes, within the existing shared-framework allowance. Full suites/build/
-  smoke need their existing AGENTS.md authorization.
-- Briefly report assessment, changes, evidence, intentional omissions/larger
-  proposals and unmeasured costs. Update facts; delete temporary captures.
+- Review all three groups for coverage/gaps, suitability and scoped action.
+- Follow FAST/shared-framework allowance: focused check/reviewed captures for
+  appearance changes; broader checks need existing AGENTS.md authorization.
+- Report assessment/changes/evidence/omissions/unknown costs; update facts and
+  delete temporary captures.

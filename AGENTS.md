@@ -7,7 +7,8 @@ These instructions apply to the entire repository.
 Read `AI.md` and relevant `ai/` files; inspect reality before trusting plans.
 Separate facts from proposals. Assess every user plan for project fit under
 `ai/prompt-templates.md`.
-Visual work must follow [the effects standard](ai/visual-effects-standard.md).
+Every scene change/visual task reviews all three groups, including
+post-processing: [effects standard](ai/visual-effects-standard.md).
 
 ## World canon
 

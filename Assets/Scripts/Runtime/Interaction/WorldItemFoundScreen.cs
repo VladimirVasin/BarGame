@@ -68,6 +68,8 @@ namespace BarPromenade
 
         /// <summary>Whether the item is held still and the panel is up.</summary>
         public bool IsShowing => pickup != null && pickup.IsShowing;
+        public bool OwnsDepthOfField => presenter != null && presenter.OwnsDepthOfField;
+        public float InspectionFocusDistance => presenter != null ? presenter.FocusDistance : 0f;
 
         public string FeedbackKey => feedbackKey;
         public string ActionKey => alreadyReceived ? CloseActionKey : TakeActionKey;
@@ -299,6 +301,8 @@ namespace BarPromenade
                 Finish(pickup.IsTaken);
                 return;
             }
+
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
 
             HandleInput();
             if (pickup == null)

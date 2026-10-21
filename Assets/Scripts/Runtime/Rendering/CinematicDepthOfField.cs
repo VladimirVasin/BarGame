@@ -76,6 +76,9 @@ namespace BarPromenade.Rendering
             if (ReferenceEquals(leaseOwner, token) && owner != null) owner.SetFocusDistance(distance);
         }
 
+        internal static bool IsOwnedBy(object token) =>
+            token != null && ReferenceEquals(leaseOwner, token);
+
         internal static void SetOwnedFocalLength(object token, float millimeters)
         {
             if (ReferenceEquals(leaseOwner, token) && owner != null)
@@ -213,10 +216,10 @@ namespace BarPromenade.Rendering
             // The bus ride is a modal shot the pause menu can open
             // over, so an already-engaged volume still honors a live
             // toggle change.
-            if (IsEngaged &&
-                !GraphicsEffectsSettings.DepthOfFieldEnabled)
+            if (!GraphicsEffectsSettings.DepthOfFieldEnabled)
             {
-                IsEngaged = false;
+                DisengageImmediately();
+                return;
             }
 
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;

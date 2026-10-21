@@ -357,7 +357,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 grain.intensity.value,
-                Is.InRange(0.08f, 0.2f));
+                Is.InRange(0.02f, 0.06f));
             Assert.That(
                 profile.TryGet(out DepthOfField depthOfField),
                 Is.True);

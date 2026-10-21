@@ -25,6 +25,8 @@ namespace BarPromenade
         public const float PreviewWidthFraction = 0.42f;
         public const float MinimumPreviewScale = 0.55f;
         public const float MaximumPreviewScale = 5.5f;
+        public const float InspectionAperture = 8f;
+        public const float InspectionFocalLength = 35f;
         // Bit 4 belongs to the seated toilet episode. This pair lights only
         // the borrowed inspection model, without lifting the surrounding world.
         private const uint InspectionLightLayer = 1u << 5;
@@ -57,6 +59,9 @@ namespace BarPromenade
         private Vector3 pivotTargetLocalPosition;
         private Quaternion pivotTargetLocalRotation;
         private float pivotTargetScale;
+        private UniversalAdditionalCameraData inspectionCameraData;
+        private bool inspectionCameraExcluded;
+        private bool depthOfFieldAttempted;
 
         public WorldItemInspectionPresenter(Camera camera, string label)
         {
@@ -72,6 +77,12 @@ namespace BarPromenade
         public Transform Pivot => pivot;
         public Renderer BackdropRenderer => backdropRenderer;
         public bool IsHolding => heldRoot != null;
+        public bool OwnsDepthOfField =>
+            CinematicDepthOfField.IsOwnedBy(this) && CinematicDepthOfField.IsActive;
+        public float FocusDistance => targetCamera != null && pivot != null
+            ? Mathf.Max(CinematicDepthOfField.MinimumFocusDistance,
+                Vector3.Dot(pivot.position - targetCamera.transform.position, targetCamera.transform.forward))
+            : 0f;
 
         /// <summary>
         /// Takes the model out of the world and onto the camera-local pivot.
@@ -101,6 +112,9 @@ namespace BarPromenade
             savedLocalPosition = itemRoot.localPosition;
             savedLocalRotation = itemRoot.localRotation;
             savedLocalScale = itemRoot.localScale;
+            depthOfFieldAttempted = false;
+            targetCamera.TryGetComponent(out inspectionCameraData);
+            inspectionCameraExcluded = targetCamera.TryGetComponent<ScenePresentationExclusion>(out _);
 
             PreparePivot(worldBounds, baseRotation, authoredScale);
             itemRoot.SetParent(pivot, true);
@@ -116,6 +130,7 @@ namespace BarPromenade
         {
             if (targetCamera == null)
             {
+                EndDepthOfField();
                 return;
             }
 
@@ -124,6 +139,7 @@ namespace BarPromenade
                 // Nothing is being held, but the veil still belongs to the
                 // frame: an item taken out of the world leaves the screen
                 // empty and the darkness has to lift rather than blink.
+                EndDepthOfField();
                 ApplyBackdrop(frame.BackdropAlpha);
                 return;
             }
@@ -144,15 +160,13 @@ namespace BarPromenade
                 Vector3.one * Mathf.Lerp(1f, pivotTargetScale, blend);
             UpdateLightingPosition();
             ApplyBackdrop(frame.BackdropAlpha);
-            CinematicDepthOfField.SetFocusDistance(
-                Vector3.Distance(
-                    targetCamera.transform.position,
-                    pivot.position));
+            ApplyDepthOfField(frame.Phase);
         }
 
         /// <summary>Puts the model back where it was lying.</summary>
         public bool Restore()
         {
+            EndDepthOfField();
             if (!IsHolding)
             {
                 EndLighting();
@@ -190,6 +204,7 @@ namespace BarPromenade
         /// </summary>
         public bool Detach()
         {
+            EndDepthOfField();
             if (!IsHolding)
             {
                 EndLighting();
@@ -242,11 +257,41 @@ namespace BarPromenade
 
         private void ClearHeld()
         {
+            EndDepthOfField();
             EndLighting();
             heldRoot = null;
             savedParent = null;
             HideBackdrop();
         }
+
+        private void ApplyDepthOfField(WorldItemInspectionPhase phase)
+        {
+            // Shelf/service shots retain their outer owner's optics. A held
+            // collectible may borrow the shared lens only once it is settled.
+            bool eligible = phase == WorldItemInspectionPhase.Inspecting &&
+                heldRoot.gameObject.activeInHierarchy &&
+                targetCamera.isActiveAndEnabled && !targetCamera.orthographic &&
+                targetCamera.cameraType == CameraType.Game &&
+                inspectionCameraData != null && inspectionCameraData.renderPostProcessing &&
+                (inspectionCameraData.volumeLayerMask.value & 1) != 0 &&
+                !inspectionCameraExcluded &&
+                GraphicsEffectsSettings.DepthOfFieldEnabled;
+            if (!eligible)
+            {
+                EndDepthOfField();
+                return;
+            }
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (!depthOfFieldAttempted)
+            {
+                depthOfFieldAttempted = true;
+                CinematicDepthOfField.TryBeginOwned(this, FocusDistance,
+                    InspectionAperture, InspectionFocalLength);
+            }
+            CinematicDepthOfField.SetOwnedFocusDistance(this, FocusDistance);
+        }
+
+        private void EndDepthOfField() => CinematicDepthOfField.EndOwned(this, true);
 
         private void BeginLighting(Transform itemRoot)
         {

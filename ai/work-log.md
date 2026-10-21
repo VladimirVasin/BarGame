@@ -5,48 +5,49 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-21
 
-Mandatory effects audit: both sets linked from AGENTS/AI/workflows; actual
-coverage/omissions, canon and bounded cost per visual task. check-docs/diff review.
+PostProcessingPolish passed; UI/A-B reviewed: Bar/Home/Stair grain reduced,
+Stair vignette eased; found-item owned Bokeh/no outer-stale takeover.
+Pause-safe input/instant DoF-off paused; focus/busy/cleanup/unload correct.
+Preview MSAA/device fallback follows saved AA. Native overcast sky/fog/
+dark interiors: no objectionable coherent bands; dither off.
 
-MaterialMotionPolish: bar wood/brass response, rooted coastal wind/contact,
-foam-free fountain/filtered snapshots A/B passed; stable light reused capture.
-Road view was occluded; measured crown/slide A/B passed in
-MaterialMotionPolishGeometry, frames reviewed. Counter response/shader checks
-and slide normal determinism passed; geometry/UV/contacts retained. No new
-cube/light/population; performance unmeasured.
+Every scene change reviews all three effects groups incl. post-processing:
+coverage/fit/omissions/cost; check-docs/diff reviewed.
 
-LightingPolish: City/balcony Soft exception; bar lamps/shared shader/flag bounce,
-matched ACES/Neutral→Neutral; house unsupported-depth repair within room/shadow caps.
-Effects/ownership/unload/Residential A/B passed; frames reviewed,
-repeat hit prior arm-subset teardown in BarDrinkShopController. Fixture:service/arms
-before camera. GI/APV local; bake:offline form/stable bindings/load caps.
-Editor:no GPU timings.
+MaterialMotionPolish: bar response/coastal rooted wind-contact/foam-free fountain/
+filtered snapshots A/B passed. Road occluded; crown/slide A/B in
+MaterialMotionPolishGeometry passed/reviewed. Stable light reused capture;
+counter shader/response and slide determinism passed; geometry/UV/contacts intact.
+No new cube/light/population; cost unmeasured.
 
-Home west: enlarged locked room/sofa sleep/full visual kitchen; living sheets/
-kitchen practical keep bathroom/balcony. Sofa narrow/same length/west back,
-head-clock south; table flush/locked-room width. Chair front-strip→side/rear corner;
-endpoints/sleep contacts/deformation/board routes kept; fridge independent.
-Corner junk/slippers gone; bookcase-radio SW/shelves E. Anon aspect-correct
-door painting: shared silent no-page inspect;cache survives cleanup;no caption/speech/
-reward/interpretation. Seat E/prompt filter:no stand interception/cleanup.
-Shower prior handoff before unlock→walk/F4; no separate camera fault reproduced.
-Dressed approach/offscreen undress/bare entry; mouse-stick before soap/pointer-RMB
-only Washing. F4 reserves action/defeat commands without snapshots; live timeline/
-current-camera return; dead-hero input owned. DebugFreeCameraPlayModeTests(reset),
-AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed(raw E/filter/bed-chair-painting
-flight/reviewed views), Shower_CancelMidWashDressesHimAndShutsTheWater(entry/look/
-live wash-exit flight/cancel-Q handoff/W boot gait) passed. Prior temp/retention faults.
+LightingPolish: City/balcony Soft; shared bar source bounce/flag; matched Neutral
+over ACES; house depth repair retains room/shadow caps. Effects/ownership/unload/
+Residential A/B passed/reviewed; repeat hit prior BarDrinkShopController arm teardown.
+Fixture: service/arms before camera. GI/APV deferred: offline form/stable bindings/
+bounded loading needed; GPU timings unavailable.
 
-City ImageGen pigment/filtered fields: palette/facade/metre UVs/ground indexed MPBs/
-road/wetness kept. Bar guarded UV0 retains UV1/geometry/anchors/interior-service donors;
-Home scoped. Flat coast/cemetery, cast/glass/emission/text/water stay. BC7 capped
-plus retained donors; residency unmeasured. City surface validator/shader parity/
-pinned facade FBX round-trip OK. CityNativeLighting(imports/bindings/pigment-response/
-effects/Home/dormancy/return/unload/area-close-boundary-balcony) passed/reviewed.
-HomeScene_BuildsWalkableBalconyOnSeededStreet: materials pass; prior foundGround
-expects enabled pre-consolidation sources. Watchdog excludes submit stalls;
-bounded native-frame grace/expiry releases quality/retries.
-ReflectionCapture_ColdStallAndTimeoutRecovery OK.
+Home west: enlarged locked room/sofa-sleep/visual kitchen; sheets/practical keep
+bathroom/balcony. Sofa narrower/same length/west back; head-clock S; table flush/
+room-width. Chair strip→side/rear; endpoints/sleep/deformation/board routes intact;
+fridge independent. Junk/slippers gone; bookcase-radio SW/shelves E. Aspect-correct
+anonymous door painting: silent shared no-page inspection/cache survives cleanup;
+no caption/speech/reward/interpretation. Seat E/filter avoids stand interception.
+Shower old handoff before unlock→walk/F4; separate camera fault not reproduced.
+Dressed approach/offscreen undress/bare entry; mouse-stick before soap/RMB only wash.
+F4 owns action/defeat inputs, no snapshots; live timeline/current-camera return.
+DebugFreeCameraPlayModeTests(reset), AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed
+(raw E/filter/bed-chair-painting flight/views), Shower_CancelMidWashDressesHimAndShutsTheWater
+(entry/look/wash-exit flight/cancel-Q handoff/W gait) passed. Prior temp/retention faults.
+
+City pigment/filtered fields retain palette/facade/metre UVs/indexed ground MPBs/
+road/wetness. Bar guarded UV0 keeps UV1/geometry/anchors/service donors; Home scoped.
+Flat coast/cemetery/cast/glass/emission/text/water stay; capped BC7/donors retained,
+residency unmeasured. Surface validator/shader parity/pinned FBX round-trip OK.
+CityNativeLighting(import/binding/response/effects/Home/dormancy/return/unload/
+area-close-boundary-balcony) passed/reviewed. HomeScene_BuildsWalkableBalconyOnSeededStreet:
+materials pass; prior foundGround expects enabled pre-consolidation sources.
+Watchdog excludes submit stalls; bounded native-frame grace/expiry releases quality/
+retries. ReflectionCapture_ColdStallAndTimeoutRecovery OK.
 
 ## 2026-10-20
 

@@ -69,17 +69,17 @@ a new deliberate interaction. Never emulate a grant by a success label alone.
   round equipment or destroys its temporary receipt model. Disable, destroy and
   scene unload must release the screen, model, locks and callbacks. No camera
   child may survive its owner.
+- Settled inspection may borrow shared Bokeh at `35 mm/f8` on an eligible
+  postprocessed gameplay camera. Never steal, retune or release an outer shot;
+  restore/detach/cleanup immediately release only the presenter's token.
+  The saved DoF flag applies. Inventory preview keeps local MSAA/fallback.
 
 ## Focused acceptance
 
-Extend relevant coverage rather than copying a fixture per source. Verify the
-visible key, actual model/name/description/success, one credit, refusal at
-capacity, cancellation before credit, dismissal after credit and owner cleanup.
-Drive a real confirmation key through close and the next world Update to catch
-input reuse; direct method calls alone missed the woodpile regression.
-Capture and inspect the actual UI frame when its presentation changes.
-
-Current integration example: `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`.
-Run it with Game View rendering (omit `-batchmode`) to save its actual UI frames.
-`WorldItemPickupModelTests` covers the normal pre-credit pickup transaction.
-Session inventory and ordinary scene travel are current; disk saves are not.
+Extend focused coverage for key/model/text, one credit, capacity refusal,
+cancellation, receipt dismissal and cleanup. Exercise real confirmation through
+close and the next world Update: direct calls missed woodpile input reuse.
+Inspect actual UI captures when presentation changes. Current examples:
+`AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (Game View, no `-batchmode`)
+and `WorldItemPickupModelTests` (pre-credit pickup). Session inventory/travel
+are current; disk saves remain deferred.

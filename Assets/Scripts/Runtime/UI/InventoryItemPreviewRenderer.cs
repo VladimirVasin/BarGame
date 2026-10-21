@@ -15,6 +15,7 @@ namespace BarPromenade
     {
         public const int TextureWidth = 160;
         public const int TextureHeight = 128;
+        public const int RequestedMsaaSamples = 4;
 
         private const int PreviewLayer = 5;
         private const float RotationSpeed = 18f;
@@ -30,12 +31,14 @@ namespace BarPromenade
         private InventoryItemId currentItemId;
         private Quaternion baseRotation = Quaternion.identity;
         private float rotationDegrees;
+        private bool appliedAntialiasing;
 
         public Texture Texture => previewTexture;
         public Camera PreviewCamera => previewCamera;
         public Transform ModelRoot => modelRoot;
         public InventoryItemId CurrentItemId => currentItemId;
         public float RotationDegrees => rotationDegrees;
+        public int MsaaSamples => previewTexture != null ? previewTexture.antiAliasing : 1;
         public bool IsRendering =>
             previewStage != null &&
             previewStage.gameObject.activeSelf &&
@@ -70,6 +73,7 @@ namespace BarPromenade
             }
 
             EnsureStage();
+            SynchronizeAntialiasing();
             InventoryItemId selected = controller.SelectedStack.ItemId;
             if (selected != currentItemId || modelRoot == null)
             {
@@ -130,6 +134,8 @@ namespace BarPromenade
                 autoGenerateMips = false,
                 antiAliasing = 1
             };
+            appliedAntialiasing = GraphicsEffectsSettings.CleanAntialiasingEnabled;
+            previewTexture.antiAliasing = ResolveMsaaSamples(appliedAntialiasing);
             previewTexture.Create();
 
             GameObject cameraObject = new GameObject(
@@ -152,7 +158,7 @@ namespace BarPromenade
             previewCamera.cullingMask = 1 << PreviewLayer;
             previewCamera.targetTexture = previewTexture;
             previewCamera.allowHDR = false;
-            previewCamera.allowMSAA = false;
+            previewCamera.allowMSAA = previewTexture.antiAliasing > 1;
             previewCamera.useOcclusionCulling = false;
             previewCamera.depthTextureMode = DepthTextureMode.None;
             UniversalAdditionalCameraData cameraData =
@@ -172,6 +178,32 @@ namespace BarPromenade
                 1.15f);
             SetLayerRecursively(previewStage, PreviewLayer);
             previewStage.gameObject.SetActive(false);
+        }
+
+        private void SynchronizeAntialiasing()
+        {
+            bool enabled = GraphicsEffectsSettings.CleanAntialiasingEnabled;
+            if (appliedAntialiasing == enabled) return;
+            appliedAntialiasing = enabled;
+            int samples = ResolveMsaaSamples(enabled);
+            if (samples == previewTexture.antiAliasing) return;
+
+            // URP takes MSAA from a camera's explicit target independently of
+            // the PC asset. Reuse this tiny texture; never multisample UI/world.
+            previewCamera.targetTexture = null;
+            previewTexture.Release();
+            previewTexture.antiAliasing = samples;
+            previewTexture.Create();
+            previewCamera.allowMSAA = samples > 1;
+            previewCamera.targetTexture = previewTexture;
+        }
+
+        private int ResolveMsaaSamples(bool enabled)
+        {
+            if (!enabled) return 1;
+            var descriptor = previewTexture.descriptor;
+            descriptor.msaaSamples = RequestedMsaaSamples;
+            return Mathf.Max(1, SystemInfo.GetRenderTextureSupportedMSAASampleCount(descriptor));
         }
 
         private void BuildPreviewLight(

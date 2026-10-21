@@ -77,6 +77,7 @@ namespace BarPromenade
     {
         public const int MaximumPracticalLights = 6;
         public const int MaximumDustParticles = 24;
+        public const float FilmGrainIntensity = 0.04f;
 
         private readonly List<Light> practicalLights =
             new List<Light>(MaximumPracticalLights);
@@ -192,7 +193,7 @@ namespace BarPromenade
 
             FilmGrain grain = runtimeProfile.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin1);
-            grain.intensity.Override(0.12f);
+            grain.intensity.Override(FilmGrainIntensity);
             grain.response.Override(0.72f);
 
             RuntimeSceneSetup.AddIndoorGaussianDepthOfField(
