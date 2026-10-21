@@ -1113,6 +1113,7 @@ namespace BarPromenade
                     (BusRide != null && BusRide.IsPassengerAboard) ||
                     (TunnelShelter != null && TunnelShelter.IsSheltered),
                 new CityEternalRainShaper());
+            World.Root.GetComponentInChildren<CityCoastalGrassWind>(true)?.Initialize(Weather, Player.GameObject.transform);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
             Clouds = ExteriorCloudField.Create(

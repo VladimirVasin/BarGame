@@ -1,0 +1,53 @@
+{
+  "design_id": "bar_counter_physical_response_v1",
+  "generator_version": "1.0.0",
+  "channels": {
+    "RG": "neutral signed metre slope",
+    "B": "independent roughness",
+    "A": "neutral cavity"
+  },
+  "albedo_read": false,
+  "normal_strength": 0,
+  "response_strength": 1,
+  "maximum_shared_materials": 1,
+  "gpu_budget_bytes": 786432,
+  "estimated_bc7_bytes_with_mips": 699104,
+  "sheets": [
+    {
+      "resource": "Bar/Response/BarCounterWoodResponse",
+      "size": 512,
+      "linear": true,
+      "meters_per_tile": 0.75,
+      "roughness_min": 0.447059,
+      "roughness_mean": 0.659996,
+      "roughness_max": 0.87451,
+      "receiver_names": [
+        "Counter Top",
+        "Counter Return Top"
+      ],
+      "sha256": "bd7318aee85a04da8170fa1bfe4cd118b372a2e923d951fe9051d18846b31f28",
+      "bc7_bytes_with_mips": 349552
+    },
+    {
+      "resource": "Bar/Response/BarCounterBrassResponse",
+      "size": 512,
+      "linear": true,
+      "meters_per_tile": 0.42,
+      "roughness_min": 0.376471,
+      "roughness_mean": 0.579997,
+      "roughness_max": 0.784314,
+      "receiver_names": [
+        "Counter Foot Rail",
+        "Counter Return Foot Rail",
+        "Beer Tap Stem 1",
+        "Beer Tap Spout 1",
+        "Beer Tap Stem 2",
+        "Beer Tap Spout 2",
+        "Beer Tap Stem 3",
+        "Beer Tap Spout 3"
+      ],
+      "sha256": "46077462d0c45d5b3c847b9bfb5bbdbdc94a5583640f4f7327832c596274f708",
+      "bc7_bytes_with_mips": 349552
+    }
+  ]
+}

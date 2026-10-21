@@ -67,7 +67,7 @@ namespace BarPromenade.Tests.PlayMode
                     .Within(0.001f));
             Assert.That(
                 RenderSettings.sun.shadows,
-                Is.EqualTo(LightShadows.Hard));
+                Is.EqualTo(LightShadows.Soft));
             AssertPlayerShadow(city.Player);
             AssertCityDecorations(city.World, city.Layout);
 
@@ -361,6 +361,7 @@ namespace BarPromenade.Tests.PlayMode
             Color backgroundColor = cityCamera.backgroundColor;
             float farClipPlane = cityCamera.farClipPlane;
             Light directional = RenderSettings.sun;
+            Assert.That(directional.shadows, Is.EqualTo(LightShadows.Soft));
             float nightIntensity = directional.intensity;
             Color nightAmbient = RenderSettings.ambientLight;
             float nightReflection =
@@ -399,6 +400,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(GameSessionState.GameHour, Is.EqualTo(12));
             Assert.That(GameSessionState.GameMinute, Is.EqualTo(0));
+            Assert.That(directional.shadows, Is.EqualTo(LightShadows.Soft));
             Assert.That(
                 directional.intensity,
                 Is.GreaterThan(nightIntensity));
@@ -483,6 +485,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 city.DayNight.AppliedMinute,
                 Is.EqualTo(12 * 60 + 1));
+            Assert.That(directional.shadows, Is.EqualTo(LightShadows.Soft));
 
             // The sun MOVES now, so a minute of daylight is no longer a
             // no-op and this test used to assert that it was. It has to
@@ -579,6 +582,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(GameSessionState.GameHour, Is.EqualTo(20));
             Assert.That(GameSessionState.GameMinute, Is.EqualTo(0));
+            Assert.That(directional.shadows, Is.EqualTo(LightShadows.Soft));
             Assert.That(
                 directional.intensity,
                 Is.EqualTo(nightIntensity).Within(0.0001f));

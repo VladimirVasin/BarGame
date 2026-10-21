@@ -7,6 +7,7 @@ These instructions apply to the entire repository.
 Read `AI.md` and relevant `ai/` files; inspect reality before trusting plans.
 Separate facts from proposals. Assess every user plan for project fit under
 `ai/prompt-templates.md`.
+Visual work must follow [the effects standard](ai/visual-effects-standard.md).
 
 ## World canon
 
@@ -51,9 +52,7 @@ Rules:
   `SupermarketInterior`, `StairwellInterior`, `HomeInterior`, `MountainRoad`,
   `AreaLoading`, `ChurchInterior`, `AlpineVillage`, `MothersHouseInterior`,
   `CombatTest`.
-  Ten are gameplay roots: City, BarInterior, SupermarketInterior,
-  StairwellInterior, HomeInterior, MountainRoad, ChurchInterior, AlpineVillage
-  MothersHouseInterior and CombatTest. Each instantiates
+  Ten gameplay roots exclude MainMenu, DoorTransition and AreaLoading; each instantiates
   `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Rules/` owns engine-independent rules and contracts;
   `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns

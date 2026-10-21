@@ -167,6 +167,9 @@ namespace BarPromenade
             runtimeProfile.hideFlags = HideFlags.HideAndDontSave;
             PostProcessVolume.profile = runtimeProfile;
 
+            Tonemapping tonemapping = runtimeProfile.Add<Tonemapping>(true);
+            tonemapping.mode.Override(TonemappingMode.Neutral);
+
             Bloom bloom = runtimeProfile.Add<Bloom>(true);
             bloom.intensity.Override(0.22f);
             bloom.threshold.Override(1.05f);

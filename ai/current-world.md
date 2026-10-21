@@ -705,7 +705,8 @@ cemetery:own interiors/returns.
   struggle;E/next0. Crane/8guides;front1.18m/red36/pair/FOV.
   Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
   Space/A pause,R/X replay,Esc/B list before capture;
-- shared 8-sided cylinders/URP Lit; hard directional shadows; MSAA off;
+- shared 8-sided cylinders/URP Lit; soft City/balcony directional shadows;
+  Home interior keeps its hard directional mode; MSAA off;
 - City/Home recipes below feed `CitySurfaceLibrary`: scoped ImageGen pigment/
   physical maps, exact sources, consolidated ground; palette/layout/UVs kept.
   Bar facade: guarded UV0/original UV1. Flat coast/cemetery exceptions and
@@ -2168,10 +2169,9 @@ cemetery:own interiors/returns.
   UV scale survives import and the same textures feed the `.blend` preview
   nodes. These are diverse material albedos with scalar surface response, not
   a separate set of PBR maps;
-- six shadowless practical light pools, a bar-only Bloom/color/vignette/grain
-  grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
-  Bezier reveal establish the interior without changing the chase-camera
-  contract or the fog-free `220 m` bar range;
+- six shadowless practicals, a bar-only grade, local dust, a slow ceiling fan
+  and a skippable `1.35 s` Bezier reveal retain the chase-camera contract and
+  fog-free `220 m` range;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
   profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
   fluorescent housings and articulated CCTV pivots are one deterministic

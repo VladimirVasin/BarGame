@@ -46,6 +46,11 @@ namespace BarPromenade.Rendering
             ? mothersHouseVolumePass?.LastSourceCount ?? 0 : 0;
         internal Vector2Int DebugMothersHouseVolumeResolution => mothersHouseVolumeScheduled
             ? mothersHouseVolumePass?.LastResolution ?? Vector2Int.zero : Vector2Int.zero;
+        internal bool DebugMothersHouseDepthRepairDisabled
+        {
+            get => mothersHouseVolumePass?.DebugDisableDepthRepair ?? false;
+            set { if (mothersHouseVolumePass != null) mothersHouseVolumePass.DebugDisableDepthRepair = value; }
+        }
 
         internal int DebugNameplateCandidateCount => nameplatePass?.CandidateCount ?? 0;
         internal Rect DebugNameplatePanelRect => nameplatePass?.LastPanelRect ?? default;

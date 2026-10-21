@@ -49,6 +49,7 @@ namespace BarPromenade
         public BarAmbiencePlayer Ambience { get; private set; }
         public BarSoundscape Soundscape { get; private set; }
         public BarInteriorAtmosphere Atmosphere { get; private set; }
+        public BarLightingPresentation Lighting { get; private set; }
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
 
         /// <summary>
@@ -315,6 +316,8 @@ namespace BarPromenade
             }
 
             Atmosphere.Initialize(lights);
+            Lighting = atmosphereObject.AddComponent<BarLightingPresentation>();
+            Lighting.Initialize(this);
         }
 
         private void BuildMusic()

@@ -567,6 +567,14 @@ namespace BarPromenade
             if (forest == null) throw new ArgumentNullException(nameof(forest));
             var root = new GameObject("Batched Melancholic Forest");
             root.transform.SetParent(parent, false);
+            Vector2Int? gradientChunk = null;
+            foreach (MountainRoadForestDescriptor tree in forest)
+            {
+                if (tree.Layer != MountainRoadForestLayer.Physical) continue;
+                gradientChunk = new Vector2Int(Mathf.FloorToInt(tree.Position.x / ForestChunkSize),
+                    Mathf.FloorToInt(tree.Position.z / ForestChunkSize));
+                break;
+            }
             MountainRoadForestLayer[] layers =
             {
                 MountainRoadForestLayer.Physical,
@@ -618,18 +626,22 @@ namespace BarPromenade
                 // effect thrown away.
                 foreach (KeyValuePair<Vector2Int, List<MountainRoadForestDescriptor>> entry in chunks)
                 {
+                    bool gradientPilot = layerIndex == 0 && gradientChunk.HasValue && entry.Key == gradientChunk.Value;
                     var chunk = new GameObject($"Forest {layers[layerIndex]} {entry.Key.x} {entry.Key.y}");
                     chunk.transform.SetParent(root.transform, false);
-                    CreateMeshObject(
+                    GameObject crowns = CreateMeshObject(
                         $"{layers[layerIndex]} Conifer Crowns",
                         chunk.transform,
                         MountainRoadSceneryMeshFactory.CreateConiferCrowns(
-                            $"{layers[layerIndex]} Conifer Crowns", entry.Value),
+                            $"{layers[layerIndex]} Conifer Crowns", entry.Value, gradientPilot),
                         crownColors[layerIndex],
                         false,
                         ShadowCastingMode.On,
                         MountainRoadSurfaceKind.ConiferNeedles,
                         MountainRoadSurfaceAppearance.FoliageMaterial);
+                    if (gradientPilot)
+                        crowns.AddComponent<MountainRoadCrownGradientPilot>().Initialize(
+                            crowns.GetComponent<Renderer>(), entry.Key, entry.Value[0].Position);
                     var trunks = new List<RuntimeOrientedBox>(entry.Value.Count);
                     foreach (MountainRoadForestDescriptor tree in entry.Value)
                         trunks.Add(CreateForestTrunkBox(tree));

@@ -19,6 +19,7 @@ Shader "Hidden/BarPromenade/Mothers House Clean Lit Air"
         float4 _MothersHouseAirBlockerMinima[16];
         float4 _MothersHouseAirBlockerMaxima[16];
         float4 _MothersHouseAirTexelSize, _MothersHouseAirScreenBounds;
+        float _MothersHouseAirDisableDepthRepair;
 
         float HouseAirRaw(float2 uv)
         { return SAMPLE_TEXTURE2D_X_LOD(_MothersHouseAirDepth, sampler_PointClamp, uv, 0).r; }
@@ -159,7 +160,13 @@ Shader "Hidden/BarPromenade/Mothers House Clean Lit Air"
                     float weight = spatial.x * spatial.y * saturate(1 - behind / max(.04, eye * .002));
                     sum += tap.rgb * weight; weights += weight;
                 }
-            return float4(weights > .00001 ? sum / weights : 0, 0);
+            [branch] if (weights > .00001) return float4(sum / weights, 0);
+            [branch] if (_MothersHouseAirDisableDepthRepair > .5) return 0;
+            // A foreground furniture/hero edge may reject all four coarse
+            // depths even though this native ray crosses lit room air. A black
+            // fallback cuts a dark fringe into that air. Trace only this rare
+            // unsupported pixel with the same room, structural and shadow gates.
+            return float4(HouseAirIntegrateRay(uv, raw).rgb, 0);
         }
         ENDHLSL
         Pass
@@ -183,6 +190,9 @@ Shader "Hidden/BarPromenade/Mothers House Clean Lit Air"
             #pragma target 3.5
             #pragma vertex Vert
             #pragma fragment HouseAirResolve
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             ENDHLSL
         }
     }

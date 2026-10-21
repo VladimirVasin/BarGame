@@ -699,7 +699,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.001f));
             Assert.That(
                 expectedSun.shadows,
-                Is.EqualTo(LightShadows.Hard));
+                Is.EqualTo(LightShadows.Soft));
             Assert.That(
                 expectedSun.shadowStrength,
                 Is.EqualTo(

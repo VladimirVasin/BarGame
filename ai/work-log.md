@@ -5,47 +5,48 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-21
 
-Home expanded west: same larger locked room, sleeping sofa/full visual kitchen.
-Shared chair side entry keeps endpoints and live sleep contacts/deformation.
-Local living sheets and kitchen practical preserve
-bathroom/balcony presentation. F4 reserves flight commands over busy actions/
-defeat; timelines continue. No input snapshots; exit returns the current camera.
-Defeat stays live; its own owner keeps dead-hero input off.
-DebugFreeCameraPlayModeTests OK: busy completion/current camera, defeat/reset.
-Refrigerator approach is independent of sleep.
-Sofa narrowed, length/west back fixed, head/clock south. Table flush to locked-room
-front within its width; chair/sleep contacts follow the frames.
-Corner junk/slippers removed; bookcase/radio move south-west, shelves east.
-Anonymous painting keeps aspect; shared silent inspection has no pages/caption/
-speech/reward or interpretation. Left-of-door image cache survives scene cleanup.
-DiningChair always joins the rear corner from the admitted front strip; game
-boards keep their routes. Shower captures prior handoff once at scene capture,
-avoiding recapture of its pending unlock so normal exit restores walking.
-The same stale handoff blocked F4; no separate fixed-camera fault reproduced.
-AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed OK: raw E stand/prompt/
-filter release; bed/chair/painting flight; game views reviewed.
-Shower_CancelMidWashDressesHimAndShutsTheWater OK: bare first entry, initial
-mouse/RMB, live wash/exit flight, cancel/Q handoff and W boot gait.
-Owned seat E/prompt filter keeps painting from intercepting stand; cleanup releases it.
-Shower enters bare after offscreen undress, with dressed exterior approach.
-Before soap, direct mouse/stick look; pointer/RMB belongs only to Washing.
-Workspace audit reports pre-existing temporary files and retention violations.
+Mandatory effects audit: both sets linked from AGENTS/AI/workflows; actual
+coverage/omissions, canon and bounded cost per visual task. check-docs/diff review.
 
-City material queue: local ImageGen pigment/independent filtered physical maps
-preserve district palette, facade grammar and metre UVs; ground keeps indexed
-MPBs/road coordinates/wetness. Guarded bar UV0 retains original UV1/geometry/
-anchors and interior/service donors. Shared scoped maps also serve Home exterior;
-flat coast/cemetery, characters/glass/emission/text/water retain their owners.
-New BC7 pack is bounded separately from retained donors; residency unmeasured.
-City surface validator, native shader parity and pinned facade FBX round-trip OK.
-CityNativeLighting OK:imports/bindings/pigment-response/effects/Home/dormancy/
-return/unload; area/close/boundary/balcony views reviewed.
-HomeScene_BuildsWalkableBalconyOnSeededStreet:material assertions OK; unrelated
-foundGround expectation still assumes enabled source meshes before consolidation.
+MaterialMotionPolish: bar wood/brass response, rooted coastal wind/contact,
+foam-free fountain/filtered snapshots A/B passed; stable light reused capture.
+Road view was occluded; measured crown/slide A/B passed in
+MaterialMotionPolishGeometry, frames reviewed. Counter response/shader checks
+and slide normal determinism passed; geometry/UV/contacts retained. No new
+cube/light/population; performance unmeasured.
 
-Shared reflection watchdog excludes synchronous submit stalls and gives the native
-frame cycle bounded grace; genuine expiry still releases quality and retries.
-ReflectionCapture_ColdStallAndTimeoutRecovery OK in the real warehouse.
+LightingPolish: City/balcony Soft exception; bar lamps/shared shader/flag bounce,
+matched ACES/Neutral→Neutral; house unsupported-depth repair within room/shadow caps.
+Effects/ownership/unload/Residential A/B passed; frames reviewed,
+repeat hit prior arm-subset teardown in BarDrinkShopController. Fixture:service/arms
+before camera. GI/APV local; bake:offline form/stable bindings/load caps.
+Editor:no GPU timings.
+
+Home west: enlarged locked room/sofa sleep/full visual kitchen; living sheets/
+kitchen practical keep bathroom/balcony. Sofa narrow/same length/west back,
+head-clock south; table flush/locked-room width. Chair front-strip→side/rear corner;
+endpoints/sleep contacts/deformation/board routes kept; fridge independent.
+Corner junk/slippers gone; bookcase-radio SW/shelves E. Anon aspect-correct
+door painting: shared silent no-page inspect;cache survives cleanup;no caption/speech/
+reward/interpretation. Seat E/prompt filter:no stand interception/cleanup.
+Shower prior handoff before unlock→walk/F4; no separate camera fault reproduced.
+Dressed approach/offscreen undress/bare entry; mouse-stick before soap/pointer-RMB
+only Washing. F4 reserves action/defeat commands without snapshots; live timeline/
+current-camera return; dead-hero input owned. DebugFreeCameraPlayModeTests(reset),
+AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed(raw E/filter/bed-chair-painting
+flight/reviewed views), Shower_CancelMidWashDressesHimAndShutsTheWater(entry/look/
+live wash-exit flight/cancel-Q handoff/W boot gait) passed. Prior temp/retention faults.
+
+City ImageGen pigment/filtered fields: palette/facade/metre UVs/ground indexed MPBs/
+road/wetness kept. Bar guarded UV0 retains UV1/geometry/anchors/interior-service donors;
+Home scoped. Flat coast/cemetery, cast/glass/emission/text/water stay. BC7 capped
+plus retained donors; residency unmeasured. City surface validator/shader parity/
+pinned facade FBX round-trip OK. CityNativeLighting(imports/bindings/pigment-response/
+effects/Home/dormancy/return/unload/area-close-boundary-balcony) passed/reviewed.
+HomeScene_BuildsWalkableBalconyOnSeededStreet: materials pass; prior foundGround
+expects enabled pre-consolidation sources. Watchdog excludes submit stalls;
+bounded native-frame grace/expiry releases quality/retries.
+ReflectionCapture_ColdStallAndTimeoutRecovery OK.
 
 ## 2026-10-20
 

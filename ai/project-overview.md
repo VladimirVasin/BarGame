@@ -2,13 +2,15 @@
 
 ## Current baseline
 
-- **Барный Променад / Bar Promenade**:Windows/PC Unity slice;runtime-composed
-  coastal city,mountain road,alpine village/interiors. [World](current-world.md).
+- Windows/PC Unity; runtime-composed coastal city/road/alpine village/interiors.
+  [World](current-world.md).
 - Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, Navigation `2.0.15`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC: native/SMAA High; saved City/warehouse/road/village/house effects; grade/UI.
-  City/Home: scoped material maps; bar facade UV0/UV1.
+- PC:native/SMAA High/saved effects/grade/UI;City/balcony Soft;bar Neutral/bounce.
+  City/Home maps/bar facade UV0+1;house air repair. Accepted pilots:
+  counter/brass roughness;coastal stems(City crowns static);one road RGB chunk/
+  pistol slide normals;fountain foam/mips. Caps/geometry retained.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -43,11 +45,9 @@ Near-empty scenes compose validated plans. Geometry: Blender/canon in [../AI.md]
 | `BarPromenade.EditModeTests`, `BarPromenade.PlayModeTests` | Pure/asset contracts and focused runtime scenarios |
 | `tools/` | Deterministic generators, pinned toolchain, staging/publishing and native-audio build |
 
-`GameSessionState` remains the public session facade. Calendar rules and
-`VehicleActivityState` have separate owners; the latter resets itself and
-returns ride leases that cannot affect a later session. Persistent journey
-progression is distinct from this temporary ownership. Disk save/load is not
-implemented.
+`GameSessionState`: session facade; separate calendar/`VehicleActivityState`
+ownership. Vehicle reset/ride leases cannot affect later sessions. Journey
+progress is distinct from temporary rides; no disk save/load.
 
 `GameInput`/`GameInputPolicy`: bindings; pause/transition/modal priority.
 Balance recovery live; unfocused movement=0; return:neutral WASD/stick.

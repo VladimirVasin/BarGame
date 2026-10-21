@@ -72,7 +72,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(RenderSettings.sun, Is.SameAs(directional));
                 Assert.That(directional.isActiveAndEnabled, Is.True);
                 Assert.That(directional.type, Is.EqualTo(LightType.Directional));
-                Assert.That(directional.shadows, Is.EqualTo(LightShadows.Hard));
+                Assert.That(
+                    directional.shadows,
+                    Is.EqualTo(profile == "City" ? LightShadows.Soft : LightShadows.Hard));
                 Assert.That(directional.shadowStrength, Is.GreaterThan(0f));
                 Assert.That(directional.cullingMask, Is.EqualTo(~0));
                 Assert.That(

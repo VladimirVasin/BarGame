@@ -44,7 +44,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.6f1`, `17.6.0` | Current |
-| Scene presentation | Native/SMAA; saved City/warehouse/road/village/house lighting, grade/UI and 4:3. | `SceneCompositeRendererFeature`, `*LightingPresentation`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | Native/SMAA; saved scene lighting, grade/UI and 4:3. | `SceneCompositeRendererFeature`, `*LightingPresentation`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
@@ -74,9 +74,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
-| Mountain Road area | Tunnel, ten hairpins, bridge, cafe/cableway; forest render chunks 48 m, all shadows, one trunk collider. | `MountainRoad*`, `MountainRoadBridge*` | Current |
+| Mountain Road area | Tunnel/ten hairpins/bridge/cafe/cableway; forest 48m chunks/shadows/trunk collider. | `MountainRoad*`, `MountainRoadBridge*` | Current |
+| Crown/slide pilots | One forest RGB chunk/one authored slide normal field; A/B reviewed. | `MountainRoadCrownGradientPilot`, `pistol_normal_pilot.py` | Current |
 | Village above the cableway | Snow bowl, abandoned settlement, ski base; mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |
-| Mother's house interior | Supported wing/bath, two bedrooms/stairs/five cameras; unique4K+2K/aux1K; room effects/two cubes, passive mirror. | `MothersHouseInterior*`, `MothersHouse{Lighting,Reflection}*`, `MothersHouseSurface*` | Current |
+| Mother's house interior | Wing/bath, two bedrooms/stairs/five shots; unique4K+2K/aux1K; room effects/depth repair/two cubes; passive mirror. | `MothersHouse{Interior,Lighting,Reflection,Surface}*` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
 | City river and embankments | A `10 m` north-south channel preserves all 144 lots. | `CityRiver{Definition,Plan,Planner,Resources,SurfaceAppearance,WorldBuilder}`, `CityWaterSurfaceFactory` | Current |
 | Yard wheelchair rider | One staged yard rider follows its reserved circuit, with authored wheelchair motion and existing local lighting. | `YardWheelchair{Motion,Plan,Presentation,Actor,Factory,Provider}` | Current |
@@ -132,11 +133,12 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Supermarket cashier | One staged cashier uses the imported rig, authored service motions and existing shop interaction. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Two corner cameras use authored mounts and bounded mechanical scanning without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Apply one time sample to directional/ambient/reflection light, windows and registered electric glow. | `RuntimeSceneSetup`, `CityDayNightController` | Current |
+| City day/night presentation | Shared time/light/windows/glow; City/balcony Soft directional shadows; Home mode restores. | `RuntimeSceneSetup`, `CityDayNightController` | Current |
 | Deterministic exterior weather | Shared weather drives area rain/snow/wetness and causal audio. Gap: rain does not dim ambient light or alter grading. | `GameWeatherRules`, `CityWeatherController` | Partial |
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
-| City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
+| City wind dressing | Shared wind drives props/cloth; City crowns remain static. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
+| Coastal stems | Root mask/hero radius drive existing stems; A/B reviewed. | `CityCoastalGrassWind` | Current |
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
@@ -211,7 +213,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
 | Bar patrons and bartender | Eleven patrons and the ordinary two-armed bartender use grounded shared props; six-arm art remains legacy-only. | `BarPatron{WorldBuilder,DrinkingBehavior}` | Current |
-| Bar cinematic atmosphere | A bounded arrival reveal, six practicals and source-owned room/jukebox audio retain independent cleanup. | `BarInteriorAtmosphere`, `BarMusicPlayer` | Current |
+| Bar cinematic atmosphere | Reveal/six practicals/local audio; Neutral/two countertop bounces/cleanup. | `BarInteriorAtmosphere`, `BarLightingPresentation`, `BarMusicPlayer` | Current |
+| Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |
 | Automated tests | Focused EditMode/PlayMode contracts share infrastructure; complete suites need an explicit regression request. | `Assets/Tests/{EditMode,PlayMode,Infrastructure}` | Current |
 | Automated test audio guard | Silence the global listener for every EditMode and PlayMode run without pausing sources, then restore volume. | `BarPromenade.TestSupport`, `AutomaticTestAudioMute` | Current |
 

@@ -40,6 +40,7 @@ namespace BarPromenade.Rendering
         private static readonly int VolumeId = Shader.PropertyToID("_MothersHouseAirVolume");
         private static readonly int TexelId = Shader.PropertyToID("_MothersHouseAirTexelSize");
         private static readonly int ScreenId = Shader.PropertyToID("_MothersHouseAirScreenBounds");
+        private static readonly int DisableDepthRepairId = Shader.PropertyToID("_MothersHouseAirDisableDepthRepair");
         private readonly Light[] sources = new Light[MaximumSources];
         private readonly Plane[] frustum = new Plane[6];
         private readonly Parameters configured = new Parameters();
@@ -48,6 +49,8 @@ namespace BarPromenade.Rendering
         internal int ConfiguredSourceCount => configured.Count;
         internal int LastSourceCount { get; private set; }
         internal Vector2Int LastResolution { get; private set; }
+        // Capture-only A/B against the former unsupported-depth black fallback.
+        internal bool DebugDisableDepthRepair { get; set; }
 
         private sealed class Parameters
         {
@@ -87,6 +90,7 @@ namespace BarPromenade.Rendering
             internal UniversalCameraData CameraData;
             internal Matrix4x4 View, Projection;
             internal float NearClip;
+            internal bool DisableDepthRepair;
             internal readonly Parameters Lights = new Parameters();
         }
 
@@ -213,6 +217,9 @@ namespace BarPromenade.Rendering
                 FillData(data, cameraData, depth, color, configured, width, height);
                 data.Volume = volume;
                 builder.UseTexture(depth, AccessFlags.Read); builder.UseTexture(volume, AccessFlags.Read);
+                // Unsupported native silhouettes reuse the actual URP atlas;
+                // the exact-ray fallback does not render another shadow map.
+                builder.UseTexture(shadows, AccessFlags.Read);
                 builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
                 builder.SetRenderFunc(static (PassData pass, RasterGraphContext context) =>
                 {
@@ -231,12 +238,14 @@ namespace BarPromenade.Rendering
             data.TexelSize = new Vector4(1f / width, 1f / height, width, height);
             data.CameraData = camera; data.View = camera.GetViewMatrix(); data.Projection = camera.GetProjectionMatrix();
             data.NearClip = camera.camera.nearClipPlane; data.Lights.CopyFrom(parameters);
+            data.DisableDepthRepair = DebugDisableDepthRepair;
         }
 
         private static void Bind(PassData pass, RTHandle output)
         {
             pass.Lights.Bind(pass.Material);
             pass.Material.SetTexture(DepthId, pass.Depth); pass.Material.SetVector(TexelId, pass.TexelSize);
+            pass.Material.SetFloat(DisableDepthRepairId, pass.DisableDepthRepair ? 1f : 0f);
             bool flipped = pass.CameraData.IsRenderTargetProjectionMatrixFlipped(output);
             Matrix4x4 projection = GL.GetGPUProjectionMatrix(pass.Projection, flipped);
             pass.Material.SetVector(ScreenId, ProjectBounds(pass.Lights, pass.View, projection, pass.NearClip, pass.TexelSize));

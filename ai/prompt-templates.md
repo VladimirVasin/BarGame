@@ -11,6 +11,10 @@ adjustment or conflicts, explain why, and suggest the smallest compatible
 adjustment where needed. Keep proposals separate from accepted decisions;
 the assessment is not an extra approval gate.
 
+For visual work, follow [the effects standard](visual-effects-standard.md):
+review both sets against actual coverage, explain omissions, and assess useful
+additions within the task's scope before implementation.
+
 ## FAST (default)
 
 Use for ordinary implementation, including end-to-end features and shared

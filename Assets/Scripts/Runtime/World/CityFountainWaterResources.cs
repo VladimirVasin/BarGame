@@ -119,6 +119,8 @@ namespace BarPromenade
             Shader.PropertyToID("_ScrollSpeed");
         private static readonly int ReflectionStrengthId =
             Shader.PropertyToID("_ReflectionStrength");
+        private static readonly int ReflectionBlurId = Shader.PropertyToID("_ReflectionBlur");
+        private static readonly int EdgeFoamStrengthId = Shader.PropertyToID("_EdgeFoamStrength");
 
         private static Material basinMaterial;
         private static Material streamMaterial;
@@ -216,6 +218,10 @@ namespace BarPromenade
             material.SetFloat(
                 ReflectionStrengthId,
                 ReflectionStrength);
+            // A basin has splash rings, not the river's shoreline foam.
+            // A small filtered reflection keeps rippled stone/tree edges stable.
+            material.SetFloat(EdgeFoamStrengthId, 0f);
+            material.SetFloat(ReflectionBlurId, .65f);
         }
 
         private static void ConfigureLace(Material material)

@@ -90,6 +90,7 @@ Shader "Bar Promenade/City River Water"
         // choice.
         _AdditionalSpecular("Additional Light Specular", Range(0, 2)) = 0
         _FoamColor("Foam Colour", Color) = (1, 1, 1, 1)
+        _EdgeFoamStrength("Edge Foam Strength", Range(0, 1)) = 1
 
         // The Morrowind mirror: an environment cubemap reflected
         // about the rippled normal. Black and zero by default: the
@@ -101,6 +102,7 @@ Shader "Bar Promenade/City River Water"
         _ReflectionCube("Reflection Cubemap", Cube) = "black" {}
         _ReflectionStrength("Reflection Strength", Range(0, 2)) = 0
         _ReflectionDistortion("Reflection Distortion", Range(0, 1)) = 0.30
+        _ReflectionBlur("Environment Reflection Blur", Range(0, 4)) = 0
         [HideInInspector] _SceneReflectionReceiver("Scene-owned reflection", Float) = 0
         [HideInInspector] _SceneReflectionDecode("Scene HDR decode", Vector) = (1,1,0,0)
 
@@ -218,8 +220,10 @@ Shader "Bar Promenade/City River Water"
                 float _BandSteps;
                 half _AdditionalSpecular;
                 half4 _FoamColor;
+                half _EdgeFoamStrength;
                 half _ReflectionStrength;
                 half _ReflectionDistortion;
+                half _ReflectionBlur;
                 half _SceneReflectionReceiver;
                 float4 _SceneReflectionDecode;
                 half _SurfaceWetness;
@@ -673,8 +677,8 @@ Shader "Bar Promenade/City River Water"
                     float3 reflectDir = reflect(
                         -viewDirWS,
                         mirrorNormal);
-                    half4 reflectedSample = SAMPLE_TEXTURECUBE(
-                        _ReflectionCube, sampler_ReflectionCube, reflectDir);
+                    half4 reflectedSample = SAMPLE_TEXTURECUBE_BIAS(
+                        _ReflectionCube, sampler_ReflectionCube, reflectDir, _ReflectionBlur);
                     half3 environment = _SceneReflectionReceiver > .5h
                         ? DecodeHDREnvironment(reflectedSample, _SceneReflectionDecode)
                         : reflectedSample.rgb;
@@ -840,7 +844,7 @@ Shader "Bar Promenade/City River Water"
                 half foam = saturate(
                     foamEdge *
                     (foamMask * 1.5h + 0.25h) *
-                    (0.85h + 0.35h * _RainIntensity));
+                    (0.85h + 0.35h * _RainIntensity) * _EdgeFoamStrength);
                 foam = floor(foam * steps) / steps;
                 half foamTone = lerp(1.0h, 0.55h, _NightFactor);
                 color = lerp(

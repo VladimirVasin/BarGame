@@ -289,7 +289,8 @@ namespace BarPromenade
                     Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
                     Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
                     part.Style,
-                    part.Kind == CitySeacoastPartKind.EsplanadeSlab);
+                    part.Kind == CitySeacoastPartKind.EsplanadeSlab,
+                    part.Kind == CitySeacoastPartKind.ShoreGrass);
                 if (importedIds.Contains(part.StableId))
                 {
                     if (part.BlocksMovement)
@@ -316,6 +317,7 @@ namespace BarPromenade
 
             var keys = new List<BatchKey>(batches.Keys);
             keys.Sort(BatchKey.Compare);
+            CityCoastalGrassWind grassWind = null;
             for (int index = 0; index < keys.Count; index++)
             {
                 BatchKey key = keys[index];
@@ -327,13 +329,21 @@ namespace BarPromenade
                     : (float?)null;
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                        $"Seacoast {(key.Ground ? "Ground Chunk" : "Chunk")} {key.X} {key.Z} {key.Style}",
+                        $"Seacoast {(key.Ground ? "Ground Chunk" : key.GrassWind ? "Grass Chunk" : "Chunk")} {key.X} {key.Z} {key.Style}",
                         root,
                         batches[key],
                         ResolveColor(key.Style),
                         CitySeacoastRules.BlocksMovement(key.Style),
                         uvTileSize,
-                        keepReadable: key.Ground);
+                        keepReadable: key.Ground || key.GrassWind);
+                if (key.GrassWind)
+                {
+                    // Flat-colour beach wrack shares the Grass style but remains static.
+                    // Only the existing upright stems receive rooted UV metadata.
+                    if (grassWind == null) grassWind = root.gameObject.AddComponent<CityCoastalGrassWind>();
+                    grassWind.ConfigureChunk(chunk.GetComponent<Renderer>(),
+                        chunk.GetComponent<MeshFilter>().sharedMesh, batches[key]);
+                }
                 if (surface.HasValue)
                 {
                     CitySeacoastSurfaceAppearance.ApplyCombined(
@@ -1074,25 +1084,27 @@ namespace BarPromenade
 
         private readonly struct BatchKey : IEquatable<BatchKey>
         {
-            public BatchKey(int x, int z, CitySeacoastStyle style, bool ground = false)
+            public BatchKey(int x, int z, CitySeacoastStyle style, bool ground = false, bool grassWind = false)
             {
                 X = x;
                 Z = z;
                 Style = style;
                 Ground = ground;
+                GrassWind = grassWind;
             }
 
             public int X { get; }
             public int Z { get; }
             public CitySeacoastStyle Style { get; }
             public bool Ground { get; }
+            public bool GrassWind { get; }
 
             public bool Equals(BatchKey other)
             {
                 return X == other.X &&
                        Z == other.Z &&
                        Style == other.Style &&
-                       Ground == other.Ground;
+                       Ground == other.Ground && GrassWind == other.GrassWind;
             }
 
             public override bool Equals(object obj)
@@ -1107,7 +1119,8 @@ namespace BarPromenade
                     int hash = X;
                     hash = (hash * 397) ^ Z;
                     hash = (hash * 397) ^ (int)Style;
-                    return (hash * 397) ^ Ground.GetHashCode();
+                    hash = (hash * 397) ^ Ground.GetHashCode();
+                    return (hash * 397) ^ GrassWind.GetHashCode();
                 }
             }
 
@@ -1122,7 +1135,9 @@ namespace BarPromenade
                 int z = left.Z.CompareTo(right.Z);
                 if (z != 0) return z;
                 int style = left.Style.CompareTo(right.Style);
-                return style != 0 ? style : left.Ground.CompareTo(right.Ground);
+                if (style != 0) return style;
+                int ground = left.Ground.CompareTo(right.Ground);
+                return ground != 0 ? ground : left.GrassWind.CompareTo(right.GrassWind);
             }
         }
     }

@@ -369,6 +369,7 @@ namespace BarPromenade
             properties.SetVector(BaseMapTransformId, baseMapTransform);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
+            BarCounterMaterialResponse.Apply(renderer, kind, properties);
             renderer.SetPropertyBlock(properties);
         }
 

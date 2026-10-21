@@ -1,8 +1,7 @@
 # AI memory index
 
-Versioned project memory. Start with [`AI.md`](../AI.md), then the overview,
-system index and relevant detailed sections. Keep world descriptions out of
-entry documents; AI.md owns the source-of-truth order.
+Start with [`AI.md`](../AI.md), then the overview, system index and relevant
+details. AI.md owns source order; entry documents do not catalogue the world.
 
 Every document below has a **type** and a **byte budget**, both owned by
 [`tools/docs-budget.json`](../tools/docs-budget.json) and enforced by
@@ -26,6 +25,7 @@ compares them, so this index cannot quietly drift out of date again.
 | `contextual-animation-standard.md` | canon | 8000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
 | `speech-presentation-standard.md` | canon | 4000 | Mandatory shared bubbles for all speech, including E replies; ownership, ordering, pause and cleanup |
 | `item-interaction-standard.md` | canon | 6000 | Mandatory keyed prompts, shared 3D pickup/receipt screen, single credit, input and cleanup |
+| `visual-effects-standard.md` | canon | 6000 | Mandatory review of both effects sets for visual work |
 | `bartender-spec.md` | canon | 13000 | The active two-armed bar worker; the six-armed design is quarantined in its appendix |
 | `city-zones-art-bible.md` | canon | 473000 | Locked target visual, spatial, emotional, light and sound identity. Binding: §16 holds nine acceptance checks |
 | `city-story-bible.md` | canon | 305000 | Binding story canon: the crime, the hero, the poisoning scale, the Cat, what every built place means, and the register every written line must keep. §16 is hard, §6 is the dated registry, §21 governs text |

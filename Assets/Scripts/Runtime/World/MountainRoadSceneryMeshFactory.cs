@@ -18,7 +18,8 @@ namespace BarPromenade
 
         internal static Mesh CreateConiferCrowns(
             string name,
-            IReadOnlyList<MountainRoadForestDescriptor> trees)
+            IReadOnlyList<MountainRoadForestDescriptor> trees,
+            bool crownGradient = false)
         {
             if (trees == null)
             {
@@ -30,9 +31,11 @@ namespace BarPromenade
             var vertices = new List<Vector3>(trees.Count * 96);
             var uvs = new List<Vector2>(trees.Count * 96);
             var triangles = new List<int>(trees.Count * 96);
+            var colors = crownGradient ? new List<Color32>(trees.Count * 96) : null;
             for (int index = 0; index < trees.Count; index++)
             {
                 MountainRoadForestDescriptor tree = trees[index];
+                int firstVertex = vertices.Count;
                 Quaternion rotation = Quaternion.Euler(
                     0f,
                     tree.YawDegrees,
@@ -81,9 +84,23 @@ namespace BarPromenade
                     vertices,
                     uvs,
                     triangles);
+                if (colors != null)
+                {
+                    // Pigment only: muted older needles below, slightly fresher
+                    // tips. Never bake a light direction or change the wind UVs.
+                    float variation = (Mathf.Abs(tree.PaletteIndex) % 3 - 1) * .008f;
+                    for (int vertex = firstVertex; vertex < vertices.Count; vertex++)
+                    {
+                        float height = Mathf.Clamp01((vertices[vertex].y - tree.Position.y) / tree.Height);
+                        float value = Mathf.Lerp(.94f, 1f, height) + variation;
+                        colors.Add((Color32)new Color(Mathf.Min(1f, value), Mathf.Min(1f, value + .004f),
+                            Mathf.Min(1f, value - .004f), 1f));
+                    }
+                }
             }
 
             Mesh mesh = CreateMesh(name, uvs, vertices, triangles);
+            if (colors != null) mesh.SetColors(colors);
 
             // The crowns bend in the shader, and Unity culls against the
             // bounds the CPU baked. Without this headroom a stand at the

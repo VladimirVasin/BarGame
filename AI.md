@@ -7,9 +7,9 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 - Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, AI Navigation `2.0.15` are pinned in the
   project/package settings. The current target is Windows/PC.
 - Scene presentation uses native resolution, saved SMAA/lens/4:3/local-light effects and crisp UI.
-- Thirteen build scenes contain ten gameplay roots, including the isolated
-  `CombatTest` polygon. Gameplay is runtime-composed
-  from validated plans; every root uses `Resources/Player/Player3DV2.prefab`.
+- Visual work must follow [the effects standard](ai/visual-effects-standard.md).
+- Thirteen scenes contain ten gameplay roots, including `CombatTest`.
+  Roots compose validated plans and use `Resources/Player/Player3DV2.prefab`.
 - City, Mountain Road and Alpine Village occupy separate Single-loaded scenes.
   Area travel keeps its loading overlay until incremental world construction
   finishes; isolated synchronous builder entry points remain available.

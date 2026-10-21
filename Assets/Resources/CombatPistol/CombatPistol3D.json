@@ -573,5 +573,14 @@
         }
       ]
     }
+  },
+  "normal_pilot": {
+    "mesh": "Slide__Steel",
+    "method": "area-weighted bevel corner blend",
+    "bevel_area_limit_m2": 0.00025,
+    "blend": 0.35,
+    "preserve_large_planes": true,
+    "baseline": "flat indexed-face normals",
+    "geometry_uv_contacts": "unchanged"
   }
 }

@@ -357,7 +357,8 @@ namespace BarPromenade
                 sample.DirectionalLightColor,
                 sample.DirectionalLightIntensity,
                 sample.AmbientLightColor,
-                sample.ShadowStrength);
+                sample.ShadowStrength,
+                shadows: LightShadows.Soft);
             directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =

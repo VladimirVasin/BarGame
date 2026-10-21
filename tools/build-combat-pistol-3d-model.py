@@ -20,6 +20,7 @@ from mathutils.bvhtree import BVHTree
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 sys.dont_write_bytecode = True
+import pistol_normal_pilot as normal_pilot
 
 
 def module(name, filename):
@@ -168,6 +169,7 @@ def payload(items):
         raise ValueError("Pistol geometry is not deterministic")
     data = kit.manifest(items, signature)
     data.update(generator="tools/build-combat-pistol-3d-model.py", generator_version="1.2.0", test_only=True)
+    data["normal_pilot"] = normal_pilot.SETTINGS
     data["models"][0]["collision_shapes"] = dict(space="grip_local_unity_metres", boxes=COLLISION)
     data["mechanism"] = dict(slide="Slide", barrel="Barrel", slide_back_axis=[0., 0., -1.],
                              slide_travel_m=SLIDE_TRAVEL, magazine="Magazine", magazine_seat="MagazineSeat",
@@ -828,11 +830,39 @@ def main():
     parser.add_argument("--source-dir", type=Path, default=ROOT / "ArtSource/Combat")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--preview-dir", type=Path)
+    parser.add_argument("--normal-pilot-only", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     if args.preview_dir is not None:
         args.preview_dir = (ROOT / args.preview_dir).resolve()
     items = make_items()
     data = payload(items)
+    if args.normal_pilot_only:
+        from asset_pipeline import workspace_temporary_directory, publish_files
+        # Only the passive source and Pistol FBX change. Preserve all action
+        # metadata/banks and the magazine/bullet/casing assets exactly.
+        before = normal_pilot.read_fbx(args.model_dir / "Pistol.fbx")
+        roots = kit.build_objects(items)
+        normal_pilot.author(roots[0])
+        with workspace_temporary_directory("pistol-normals-") as temporary:
+            temporary = Path(temporary)
+            common.save_blend(temporary / "CombatPistol.blend")
+            kit.export(roots[0], temporary / "Pistol.fbx")
+            after = normal_pilot.read_fbx(temporary / "Pistol.fbx")
+            normal_pilot.compare(before, after, args.validate_only)
+            old_manifest = json.loads((args.model_dir / "CombatPistol3D.json").read_text(encoding="utf8"))
+            if args.validate_only:
+                if old_manifest.get("normal_pilot") != normal_pilot.SETTINGS:
+                    raise ValueError("Published slide normal settings differ from authoring")
+                print("SLIDE NORMAL PILOT DETERMINISM / PUBLISHED ASSET OK", flush=True)
+                verify_mechanism(args.model_dir)
+                return
+            old_manifest["normal_pilot"] = normal_pilot.SETTINGS
+            (temporary / "CombatPistol3D.json").write_text(json.dumps(old_manifest, indent=2)+"\n", encoding="utf8")
+            publish_files([(temporary / "Pistol.fbx", args.model_dir / "Pistol.fbx"),
+                           (temporary / "CombatPistol.blend", args.source_dir / "CombatPistol.blend"),
+                           (temporary / "CombatPistol3D.json", args.model_dir / "CombatPistol3D.json")])
+        verify_mechanism(args.model_dir)
+        return
     builder = author_actions()
     data["actions"]["animation_signature"] = action_signature(builder)
     data["actions"]["hand_mesh_validation"] = validate_actions(builder)
@@ -854,6 +884,7 @@ def main():
     common.export_animation_fbx(args.model_dir / "PistolActions.fbx", builder.result)
     common.save_blend(args.source_dir / "PistolActions.blend")
     roots = kit.build_objects(items)
+    normal_pilot.author(roots[0])
     common.save_blend(args.source_dir / "CombatPistol.blend")
     for item, root in zip(items, roots):
         kit.export(root, args.model_dir / (item.name + ".fbx"))

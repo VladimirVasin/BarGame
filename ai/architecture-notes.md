@@ -1,6 +1,37 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
+  All future visual work follows `ai/visual-effects-standard.md`: both sets,
+  actual coverage, justified omissions and scoped additions; no canon override.
+- **Accepted 2026-10-21, material/motion pilots — explicit user decision:**
+  BarCounterMaterialResponse binds ten wood/brass receivers to response maps,
+  preserving albedo/mean smoothness; one cached shared-shader material, no new
+  cubes/Lights. CityCoastalGrassWind reuses flat-colour stems: common weather wind,
+  one 0.65 m hero radius, rooted bases, identical forward/shadow/depth/normals and
+  padded culling; disable restores material/MPB/UV/bounds. No per-stem physics/new
+  geometry. One physical 48 m Road chunk uses a scoped shader/COLOR multiplier
+  0.93–1; silhouette/UV/ground response/wind stay. Only pistol Slide__Steel corner
+  normals blend 35% toward weighted normals on existing bevels; geometry/UV/anchors stay.
+  CityRiverWater defaults _EdgeFoamStrength=1/_ReflectionBlur=0; basin overrides
+  0/0.65 keep the fountain foam-free. Existing fountain/puddle 128 cubes use mipmaps/
+  Trilinear and GenerateMips only after rare captures: no new cube/frequency/sky/
+  caustics. No canon prohibition is lifted; story §16/§21/all nine art §16 checks
+  apply. Costs remain unmeasured.
+- **Accepted exception 2026-10-21, bounded lighting polish — explicit user decision:**
+  Art §4/story §6/§20: City/clock/Home balcony use Soft; Home's indoor mode returns.
+  Bias/normal bias/near plane and URP distance/cascades/atlases stay; yard/island
+  spots remain hard/no-volume. Art §12: BarLightingPresentation/saved bounce flag
+  own two finite source-derived countertop bounces; six practicals/hierarchy/warmth/
+  dust stay. Matched Neutral/ACES selects Neutral for skin/wood/shadows, without
+  City grade/new light. Art §10g: house air retraces only where all four low-res
+  depths fail: same room/blocker/shadow/intensity, two sources/320x180/ten steps;
+  no target/Light/global fog. Mother stays half-shadowed; geometry/sources/fiction/
+  gameplay stay. Extra native integrations: GPU cost unmeasured. Story §16/§21
+  and all nine art §16 checks apply. GI/APV remain Deferred: runtime has no offline
+  bake representation/stable lightmap/probe bindings. Baking needs matching
+  geometry/time/door scenarios, shader sampling, import checks and bounded
+  loading/memory, beyond the counter pilot.
 - **Accepted exception 2026-10-21, Home remodel — explicit user decision:**
   Apartment `12 x 8 x 3.4 m`, same locked room `13.04 m²`; art §7/story §6/§11
   replace old dimensions/bed placement. Door/reply/contents/bathroom/balcony stay.
@@ -70,28 +101,19 @@
   still assumes enabled source ground meshes despite sector consolidation;
   its updated material assertions pass before that unrelated expectation.
 - **Accepted exception 2026-10-20, City local lighting — explicit user decision:**
-  The user accepted the nine-area queue and requested implementation. Art
-  §4/§6–11/§15a and story §6/§20 permit the same five saved lighting effects
-  on existing City emitters: finite air, source halation, metal response,
-  source-derived bounce and static local reflections. One City presentation
-  owns the whole frame budget; work areas do not create new districts or
-  independent sky, fog, weather, grade, lights or narrative. The existing
-  twelve-light street/quay/practical pool keeps its leases and power; effects
-  follow live transforms, including moving headlights, without double halos.
-  The bar-yard and island spotlights retain their no-volume constraints;
-  the park keeps its sole chess lamp, church lighting stays within its
-  accepted garden support, and beach/boat approaches, river cave, tunnel
-  destination and eastern distance gain no lighting. Structural occlusion
-  and finite support limit air/bounce; small-object volume shadows are not
-  promised. At most two local 256 HDR capture slots share the filtered
-  SceneReflectionCapture lifecycle; moving actors/vehicles/precipitation are
-  excluded. Static receiver bounds constrain metal and river/sea/puddle
-  reflections; existing fountain/spring reflections retain their owner.
-  Home's reconstructed balcony exterior reuses the City profile only during
-  its outdoor camera, preserving the apartment. Dormancy, return and unload
-  restore owned layers/material values and release cubes. Acceptance is the
-  focused CityNativeLighting with reviewed area/boundary and effect frames;
-  local GPU cost and frame-rate gains require measurements.
+  Art §4/§6–11/§15a; story §6/§20: the accepted nine-area queue shares finite
+  air, source halation, metal, source-derived bounce and static reflections.
+  One owner/frame budget; no new districts, sky/fog/weather/grade/lights/story.
+  The twelve-light pool keeps power/leases; live headlights follow their source
+  without duplicate halos. Bar-yard/island spots have no volume; the park keeps
+  one chess lamp and church its garden support. Beach/boat approaches, river
+  cave, tunnel destination and eastern distance gain no light. Structural/finite
+  support does not promise small-object volume shadows. Two filtered 256 HDR
+  slots use SceneReflectionCapture, excluding actors/vehicles/precipitation;
+  static receiver bounds constrain metal/water, preserving fountain/spring owners.
+  Home borrows the profile only for the balcony camera. Dormancy/return/unload
+  restore owned layers/materials and release cubes. Acceptance: CityNativeLighting
+  and reviewed area/boundary/effect frames; local costs require measurements.
 - **Accepted 2026-10-20, whole Mountain Road material surfaces — explicit user decision:**
   Art §10f/story §6: local pigment/physical maps replace borrowed environment
   sheets and the cafe's six-sheet format. The same fifteen road kinds retain
@@ -122,41 +144,28 @@
   and terminal snow frames. Extra closeup framing now targets the exterior
   portal and a plan-owned ploughed snow bank by code inspection.
 - **Accepted exception 2026-10-20, Mountain Road local lighting — explicit user decision:**
-  Art §10f/§15a; story §6. The road reuses the five saved native-lighting flags
-  through its own `MountainRoadLightingPresentation`, without new Light,
-  geometry, global fog, weather, text or narrative. Existing tunnel, yard,
-  apron, cafe and station practicals retain their power/hierarchy; the car's
-  actual low beams retain their moving pose. At most 24 visible physical
-  emitters receive source-masked halation, with no halo for a helper wash.
-  The shared outdoor integrator now accepts finite scene-owned support:
-  at most four sources, 320x180, ten steps, six clip planes and eight structural
-  blockers per source. The cafe prism and existing perimeter/roof exclude
-  interior/exterior leaks; tunnel support ends at its mouth. Actual light
-  transforms/cones/ranges drive air and falling snow, including moving
-  headlights, without another shadow render or a claim of full small-object
-  volume shadows. The terrace, parapet, brink and distant valley acquire no
-  new light; the cafe remains one warm patch against the cold working yard.
-  Up to four validated ground patches transport real source energy with their
-  measured normal/albedo, finite bounds and occlusion refresh at most 10 Hz.
-  Receiver reach is separate from the source footprint radius, preserving a
-  visible, bounded contribution on nearby surfaces instead of truncating it.
-  A semantic allowlist opts existing cafe/station metal into directional
-  response without material clones. Two finite cafe/station receiver zones
-  reuse filtered 256 HDR cubes and `SceneReflectionCapture`; only one capture
-  is pending. Static capture excludes actors, car, cabins, rotating mechanisms,
-  cafe dynamic props, precipitation and fire. Reflection-camera light masks
-  temporarily exclude moving lights and restore on camera end/recovery/teardown.
-  Meaningful stable sun/ambient/practical drift invalidates no more often than
-  every five seconds; headlight motion and tunnel flicker never invalidate it.
-  Shared capture timeout/retry/quality-lease recovery remains authoritative.
-  Foreign/excluded/probe cameras clear parameters; disable/return/unload restore
-  owned layers/material floats and release cubes. The last registered scene
-  owner clears camera, local-air and effect globals on menu/loading teardown;
-  overlapping live scene owners retain their bindings. `MountainRoadNativeLighting`
-  passed effect A/B, live headlights, camera exclusions, disable/return and
-  final unload cleanup; day/night terminal, cafe, dark-edge and effect frames
-  were reviewed. The focused shared warehouse renderer check also passed.
-  Local GPU cost and frame-rate gains remain unmeasured.
+  Art §10f/§15a; story §6: `MountainRoadLightingPresentation` reuses five saved
+  flags without new Light/geometry/global fog/weather/text/story. Existing
+  tunnel/yard/apron/cafe/station sources keep power/hierarchy and car beams move.
+  Halation: 24 physical emitters, no helper wash. Air/snow: four sources,
+  320x180, ten steps, six clip planes/eight blockers each; cafe prism/perimeter/
+  roof prevent leaks, tunnel support ends at its mouth. Real transforms/cones/
+  ranges and existing shadows apply; no extra shadow render or full small-object
+  shadow promise.
+  Terrace/parapet/brink/valley stay dark; cafe is one warm patch in a cold yard.
+  Four validated patches use source energy, measured normals/albedo, finite
+  bounds and ≤10 Hz occlusion. Receiver reach is separate from footprint radius.
+  Existing allowlisted cafe/station metal responds without material clones.
+  Two finite receiver zones use filtered 256 HDR cubes/SceneReflectionCapture,
+  one pending. Captures omit actors/car/cabins/rotors/dynamic props/rain/fire;
+  temporary moving-light masks restore on camera end/recovery/teardown.
+  Stable light drift invalidates at most every five seconds; beam motion and
+  flicker do not. Shared timeout/retry/quality recovery owns failures. Foreign/
+  excluded/probe cameras clear parameters; disable/return/unload restore layers/
+  material floats and release cubes. Last-owner teardown clears globals while
+  overlapping owners retain bindings. MountainRoadNativeLighting passed effect
+  A/B, headlights, exclusions and lifecycle; reviewed terminal/cafe/dark-edge
+  day/night/effect frames. Shared warehouse renderer check passed. Costs unmeasured.
 - **Accepted 2026-10-20, whole Alpine Village material surfaces — explicit user decision:**
   Art §10g/story §12: apply the mother's-house surface principle to the complete
   environment, retaining age/care, occupied warmth and abandoned functions.
@@ -207,31 +216,22 @@
   shader source check and `MothersHouseNativeLighting` prove source/import,
   response pairs, authored views/closeups, scarf and presentation lifecycle.
 - **Accepted exception 2026-10-20, mother's house local lighting — explicit user decision:**
-  Art §10g/§15a; story §6. `MothersHouseInterior` keeps its own profile while
-  reusing scene-owned native effects and saved `graphics.clean_*` flags.
-  At most 24 visible physical emitters receive halation; helper spill/bounce
-  Lights are not emitters. Bloom and source diffusion must retain source detail.
-  The house registry's Sheet/Role selects existing metal response, preserving
-  house-owned surface contracts and the exact NPC-kettle exception.
-  At most four validated floor patches transport their real source energy;
-  the existing chair-local `HearthBounceLight` is neither counted nor summed again.
-  Weak clean-air scattering uses at most two actual visible-room Lights,
-  at most 320x180 and ten steps. Physical room prisms/floor/partition blockers
-  remain authoritative when camera cutaway hides a wall. At most eight internal
-  blockers per source survive CPU pruning; existing URP shadow maps supply
-  furniture/hero occlusion, without another shadow render. No dust/particles,
-  new Light, global fog or warehouse darkness.
-  At most two filtered 256 HDR cubes serve finite living/tea and bathroom
-  receivers; only one capture is pending. Static architecture is captured with
-  complete walls, without characters, live flames or mirror feedback. Fire
-  on/off and semantic zone state may invalidate a capture; its live intensity,
-  colour, pose and flame clock never cause recapture. Direct light/air stay live.
-  The bathroom mirror stays passive. Mother remains in the accepted half-shadow;
-  rooms, cameras, source hierarchy, speech and narrative are unchanged.
-  Excluded/foreign/cube cameras clear receiver/air parameters; scene teardown
-  restores owned material/property bindings and releases capture resources.
-  This is a separate house profile, not a transfer of the village atmosphere.
-  Local costs remain unmeasured; verification claims are recorded only after checks.
+  Art §10g/§15a; story §6: own house profile, native scene effects and saved
+  `graphics.clean_*`. Bloom/halation retain detail on 24 physical emitters; helper
+  washes/bounces are not emitters. Registry Sheet/Role selects metal, preserving
+  house surfaces and exact NPC-kettle. Four validated floor patches transport
+  source energy without recounting chair-local `HearthBounceLight`.
+  Weak air: two visible-room Lights, 320x180/ten steps, physical room/floor/
+  partition support even during cutaway, eight CPU-pruned blockers per source
+  and existing furniture/hero shadow maps. No new shadow render/dust/particles/
+  Light/global fog/warehouse darkness. Two finite living/tea and bathroom zones
+  use filtered 256 HDR cubes, one pending; complete-wall static captures omit
+  people/flames/mirror feedback. Fire on/off or semantic zone state may invalidate,
+  never live intensity/colour/pose/flame time; direct light/air remain live.
+  Mother stays in half-shadow; mirror passive. Rooms/cameras/source hierarchy/
+  speech/story stay. Excluded/foreign/cube cameras clear receiver/air parameters;
+  teardown restores material/property bindings and releases captures. Village
+  atmosphere is not imported. Local costs unmeasured; claims follow checks.
 - **Accepted exception 2026-10-20, Alpine Village local lighting — explicit user decision:**
   Transfer applicable native warehouse effects; the user separately permits
   real windows/garlands to illuminate nearby air and falling snow (art §10g,
@@ -2920,16 +2920,10 @@
   fringe practical, which has no static duplicate) so an arriving
   spot never doubles the blob. Street-mast halos stand apart from the
   lamp anchors — the night presentation test pins anchors bare.
-- **Accepted — The channel has a floor:** The city deliberately emits no
-  terrain under a river cell, so while the water was an opaque lid the
-  channel was a hole with a lid on it. `CityRiverWorldBuilder.BuildRiverbed`
-  now lays a silt floor `RiverBedDepth = 1.10 m` under the water top plus two
-  submerged sides starting `SubmergedSideTop = 0.08 m` down, which laps the
-  full quay wall's underside at `0.12 m` by four centimetres. The alternative
-  — extending the quay wall skirt — would have re-pinned wall geometry that
-  was corrected twice in the same week. Bridge piers now bottom out on that
-  floor; they used to stop at the plan datum, a hand's width *above* the
-  waterline, which only an opaque surface was hiding.
+- **Accepted — The channel has a floor:** River cells omit terrain.
+  CityRiverWorldBuilder.BuildRiverbed lays a silt floor RiverBedDepth=1.10 m below
+  water, plus sides starting SubmergedSideTop=0.08 m down: a 0.04 m overlap with
+  the quay wall's 0.12 m underside. Bridge piers bottom on that floor.
 - **Accepted — The water sheets are not albedos:** `CityRiverWaterNormal` is
   a derivative map stored as `(-dH/du, -dH/dv, 1)` and imported **linear**
   (`sRGBTexture: 0`, the project's first such texture); `CityRiverWaterFoam`

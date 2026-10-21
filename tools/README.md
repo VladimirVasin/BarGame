@@ -4,19 +4,22 @@
 
 Home: `build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
 `--validate-only`; maps `build-home-textures.py --room-only`.
+Bar: `build-bar-counter-response.py [--check]`: linear roughness pair/shared material;
+albedo kept. `ArtSource/Bar/bar-counter-response.json`.
+`build-mountain-road-surface-shader.py --check`: includes one crown RGB pilot.
 
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
 (`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
 source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-buildings-3d-model.py` v3.0.0: 20 types/140 meshes/13,480 triangles/
-719 slots; `Assets/City/Models/CityBuildings3D.{fbx,json}`.
-`run-blender.py`/`--validate-only`; import `CityBuildingAssetSetup.BuildOrThrow`.
+`build-city-buildings-3d-model.py` v3.0.0:20 types/140 meshes/13,480tris/719 slots;
+`Assets/City/Models/CityBuildings3D.{fbx,json}`. Launcher/`--validate-only`;
+import `CityBuildingAssetSetup.BuildOrThrow`.
 
-`build-city-litter-3d-model.py`: 36 props; `--validate-only`: geometry/determinism.
+`build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 
-`build-city-fair-3d-model.py`: 10 props; `--verify-fbx`.
+`build-city-fair-3d-model.py`:10 props;`--verify-fbx`.
 `build-city-fair-child-3d-model.py`: child base/3 outfits/toys.
 FBXs/JSON: `Assets/Resources/City/{Fair,FairChild}`;
 source: `ArtSource/City/{Fair,FairChild}`.
@@ -40,11 +43,11 @@ Validate through `run-blender.py`/`--validate-only`.
 originals/prompts/hashes `ArtSource/City/Port/Textures/generation.json`, outside mesh hashes;
 asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman`
 model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
-`python tools/dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
+`dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
 
 `build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.
-`run-blender.py`/`--validate-only`: determinism, winding, compartment/light
-clearance. Outputs: `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
+Launcher/`--validate-only`:determinism/winding/compartment-light clearance.
+`Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 `LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
@@ -98,7 +101,7 @@ python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --exp
 ```
 
 Validate: launcher/generator `--validate-only`, keep `--phase-two`.
-Worker retains five other bodies/actions; later banks retain earlier ones.
+Worker keeps five other bodies/actions;later banks keep earlier ones.
 `Bar Promenade/Default NPC/Rebuild Ordinary Worker`: worker/12 face-hair atlases;
 Inspector selects faces/hair/presets/slots.
 Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
@@ -106,9 +109,9 @@ global assignment avoids repeats and restores the same look across loads.
 Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
 six concealed docks behind vestibule turns.
 
-Sources: `ArtSource/VillageLife`; captures: `Captures/VillageLife`.
+Source:`ArtSource/VillageLife`;captures:`Captures/VillageLife`.
 `VillageLife`: bodies, held props, doors/clearance, yielding, gusts, pause/returns.
-Compare at hero scale; counts do not prove quality.
+Judge at hero scale;counts do not prove quality.
 
 Part 3 uses three separate generators with Unity closed:
 
@@ -123,35 +126,33 @@ Residents: retain six bodies/earlier banks; nine clips/metre poses/hand contacts
 cloth-lid hinges. Hero: own bone-only bank, unchanged production prefab.
 `AreaCaptureFixture.VillageWorkroom`: dedicated imports/room journey in `Captures/VillageWorkroom`.
 
-Fixed Alpine frost: ImageGen/prompt/hash/linear import:
-[alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime reveal/tint only.
+Alpine frost:ImageGen/prompt/hash/linear import;runtime reveal/tint:
+[alpine-cold-frost-mask.md](alpine-cold-frost-mask.md).
 
-`toolchain.json` pins versions. Inspect pins:
+`toolchain.json` pins:
 
 ```powershell
 python tools/toolchain.py --scope all
 ```
 
 Python: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
-`BP_BLENDER`/`--blender`:another installation of the same pinned build;
-native launcher:MSVC/SDK pins.
+`BP_BLENDER`/`--blender`:same pinned build elsewhere;native:MSVC/SDK pins.
 
-From repo root; after `--`:generator args. Launcher:pins/startup/errors/fresh
+Repo root;after `--`:generator args. Launcher:pins/startup/errors/fresh
 `--expect`/JSON; `--validate-only` on both validates.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
-Stage via repeated
-`--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`; other args stay.
-`--expect` maps destinations. Publish checked/Unity closed;
-keep `.meta`/rollback on failure. Import is not atomic.
+Stage:repeated `--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`;
+other args stay;`--expect` maps destinations. Publish checked/Unity closed;
+keep `.meta`/rollback;import is not atomic.
 
-`tools/audio-vhs/build.ps1` validates the staged DLL before publishing.
-`-Validate` remains; `-CompileOnly` stays in `Captures` without publication.
+`tools/audio-vhs/build.ps1`:validate staged DLL→publish;
+`-Validate` stays;`-CompileOnly`:temporary, no publication.
 See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`: 31 body/12 hair bones; `--surfaces-only`: UVs.
+`build-player-3d-model-v2.py`:31 body/12 hair bones;`--surfaces-only`:UVs.
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
@@ -159,6 +160,8 @@ See [audio-vhs/README.md](audio-vhs/README.md).
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
+Pistol: `run-blender.py tools/build-combat-pistol-3d-model.py --validate-only -- --normal-pilot-only`;
+`Slide__Steel` normals only;geometry/UV/contacts/action bank kept.
 `build-combat-crane-surfaces.py`:sculpt/2K+1K.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
 `build-combat-room-attack-3d-model.py`:clips/tableau.
@@ -200,18 +203,14 @@ Unity's
 `Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
 the imported clips against the production Idle pose and world grip targets.
 
-Mother scarf: folded/worn Blender pack. Its
-45 cm rear tail uses a 6 by 20 cloth grid; the wrap and knot retain their
-authored silhouette, and the `MouthLowered` shape opens the actual face.
-Both forms sample the existing mother's-house `BookCloth` atlas tile.
+Scarf:folded/worn Blender pack;45cm tail/6×20 cloth, authored wrap/knot;
+`MouthLowered` opens the face. Both use mother's-house `BookCloth` tile.
 
 ```powershell
 python tools/run-blender.py tools/build-player-scarf-3d-model.py --expect Assets/Resources/Player/Scarf/ScarfWorn.fbx --expect Assets/Resources/Player/Scarf/ScarfFolded.fbx --expect Assets/Resources/Player/Scarf/PlayerScarf3D.json
 python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only -- --validate-only --no-preview
 ```
 
-Command one renders front/lowered/rear views
-under `ArtSource/PlayerScarf`; `-- --no-preview` skips them. Validation checks
-weights, geometry/shapes, determinism and face clearance.
-`PlayerScarfAssetSetup.BuildOrThrow` only imports/measures FBXs;
-player builds use its read-only `ValidateOrThrow` gate.
+Views:front/lowered/rear→`ArtSource/PlayerScarf`;`-- --no-preview` skips.
+Validation:weights/geometry/shapes/determinism/face clearance.
+`PlayerScarfAssetSetup`:BuildOrThrow imports/measures;ValidateOrThrow gates(read-only).

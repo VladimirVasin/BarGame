@@ -38,6 +38,9 @@ namespace BarPromenade
         private Camera reflectionCamera;
         private Material target;
         private float lastRenderedNight = float.MinValue;
+        public int CaptureCount { get; private set; }
+        internal Material TargetMaterial => target;
+        internal RenderTexture ReflectionTexture => cubemap;
 
         public void Initialize(Material material)
         {
@@ -53,7 +56,9 @@ namespace BarPromenade
                 name = "Fountain Reflection Cubemap",
                 dimension = TextureDimension.Cube,
                 hideFlags = HideFlags.HideAndDontSave,
-                useMipMap = false
+                useMipMap = true,
+                autoGenerateMips = false,
+                filterMode = FilterMode.Trilinear
             };
 
             var cameraObject = new GameObject(
@@ -125,7 +130,11 @@ namespace BarPromenade
             using (MirrorMarker.Auto())
             using (RuntimePerformanceCapture.MeasureReflection())
             {
-                reflectionCamera.RenderToCubemap(cubemap);
+                if (reflectionCamera.RenderToCubemap(cubemap))
+                {
+                    cubemap.GenerateMips();
+                    CaptureCount++;
+                }
             }
         }
 

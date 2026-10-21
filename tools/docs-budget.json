@@ -135,6 +135,10 @@
       "type": "canon",
       "budget": 6000
     },
+    "ai/visual-effects-standard.md": {
+      "type": "canon",
+      "budget": 6000
+    },
     "ai/work-log.md": {
       "type": "ledger",
       "entry_heading": "## ",
