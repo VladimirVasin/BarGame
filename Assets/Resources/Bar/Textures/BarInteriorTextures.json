@@ -114,7 +114,7 @@
     {
       "resource": "Bar/Textures/BarInteriorAlbedo",
       "size": 4096,
-      "sha256": "5a5a8ad01826699a83b9430522cbff7a2a1fe06fd7ee262d6570fa24f88c234c",
+      "sha256": "e987843fa565989e0f96e29d5a45381dbef13bfeca585a4508dbbb339b9edd70",
       "sRGB": true,
       "wrap": "Clamp",
       "readable": false
@@ -122,7 +122,7 @@
     {
       "resource": "Bar/Textures/BarInteriorResponse",
       "size": 2048,
-      "sha256": "03c31db6a50331482f7073f4f5b01fd98c664b01d1128fa5412f0052da28addf",
+      "sha256": "80053e2338fd04bae2400ca93fb0a0c4c16028afc67cd8049575714131b75614",
       "sRGB": false,
       "wrap": "Clamp",
       "readable": false
@@ -132,5 +132,5 @@
   "windows_compression": "BC7",
   "estimated_gpu_bytes": 27962080,
   "gpu_budget_bytes": 29360128,
-  "surface_contract_sha256": "72ab9dd683a5acc26d19ea30c84b0f8921b9ab9a17a6c99fcf79a28041eb8b5f"
+  "surface_contract_sha256": "d5a5832628fc1eb8b63cf86e7678cf708cebe345744dd087345f588762e5dbb2"
 }

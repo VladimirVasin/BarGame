@@ -1421,12 +1421,12 @@ MonoBehaviour:
   - sourceName: Fan Blade 1
     role: fan_blade
     group: pivot:Slow Ceiling Fan
-    sheet: DarkWood
+    sheet: PaintedMetal
     emissive: 0
     castsShadows: 0
     tint:
-      field: DarkWoodTint
-      rgb: {r: 0, g: 0, b: 0, a: 1}
+      field:
+      rgb: {r: 0.68, g: 0.58, b: 0.38, a: 1}
       scale: 1
       lerpField:
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -1436,12 +1436,12 @@ MonoBehaviour:
   - sourceName: Fan Blade 2
     role: fan_blade
     group: pivot:Slow Ceiling Fan
-    sheet: DarkWood
+    sheet: PaintedMetal
     emissive: 0
     castsShadows: 0
     tint:
-      field: DarkWoodTint
-      rgb: {r: 0, g: 0, b: 0, a: 1}
+      field:
+      rgb: {r: 0.68, g: 0.58, b: 0.38, a: 1}
       scale: 1
       lerpField:
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -1451,12 +1451,12 @@ MonoBehaviour:
   - sourceName: Fan Blade 3
     role: fan_blade
     group: pivot:Slow Ceiling Fan
-    sheet: DarkWood
+    sheet: PaintedMetal
     emissive: 0
     castsShadows: 0
     tint:
-      field: DarkWoodTint
-      rgb: {r: 0, g: 0, b: 0, a: 1}
+      field:
+      rgb: {r: 0.68, g: 0.58, b: 0.38, a: 1}
       scale: 1
       lerpField:
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -1466,12 +1466,12 @@ MonoBehaviour:
   - sourceName: Fan Blade 4
     role: fan_blade
     group: pivot:Slow Ceiling Fan
-    sheet: DarkWood
+    sheet: PaintedMetal
     emissive: 0
     castsShadows: 0
     tint:
-      field: DarkWoodTint
-      rgb: {r: 0, g: 0, b: 0, a: 1}
+      field:
+      rgb: {r: 0.68, g: 0.58, b: 0.38, a: 1}
       scale: 1
       lerpField:
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -2284,9 +2284,9 @@ MonoBehaviour:
     doorWidth: 1.45
     doorHeight: 2.34
   sourceTriangleCount: 11268
-  sourceGeneratorVersion: 4.0.5
+  sourceGeneratorVersion: 4.0.6
   designId: bar_interior_v3
-  buildSignature: f330463f8ceb213f76c3df7409af5cc26701f4b38a2edbbeb9f0c2426d18acf2
+  buildSignature: e37fa17a3cd469ff1e42f1f620bf8d6ce69e2cc7ccef31d1aff87f4ee45750b0
 --- !u!1001 &7990514647565248362
 PrefabInstance:
   m_ObjectHideFlags: 0

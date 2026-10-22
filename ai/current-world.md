@@ -2158,7 +2158,7 @@ cemetery:own interiors/returns.
   Residential; explicit legacy district layouts retain their own profiles;
 - six compact practicals (one bounded key shadow), two finite countertop
   bounces, one bounded `256` HDR reflection, Neutral grade, refitted dust/DOF
-  and the slow fan keep the warm dry pub. The skippable `1.35 s` reveal settles
+  and the slow Ø≈1.38m fan with pale warm matte blades keep the warm dry pub. The skippable `1.35 s` reveal settles
   its lens/roll into the indoor chase camera. SSR and experimental SCGI remain
   outside ordinary bar gameplay;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,

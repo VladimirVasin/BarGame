@@ -213,6 +213,22 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         [PrebuildSetup(typeof(CompactBarAssetsSetup))]
+        public IEnumerator BarCeilingFan()
+        {
+            GameSessionState.EnterBar("bar-capture", BarActivityKind.SplitTheG,
+                CityDistrictKind.Residential);
+            yield return Capture(SceneIds.BarInterior, Root<BarInteriorRoot>(), new[]
+            {
+                Shot.At("Test compact ceiling fan from entrance",
+                    new Vector3(0f, 1.72f, -3.35f), new Vector3(0f, 2.72f, -.65f), 65f),
+                Shot.At("Test compact ceiling fan at eye height",
+                    new Vector3(1.1f, 1.7f, -1.4f), new Vector3(0f, 2.72f, -.65f), 65f)
+            });
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator Bar()
         {
             foreach (BarActivityKind activity in new[] { BarActivityKind.BeerPong,

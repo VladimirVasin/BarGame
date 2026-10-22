@@ -56,7 +56,7 @@ import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 import bar_compact_interior as compact  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "4.0.5"
+INTERIOR_GENERATOR_VERSION = "4.0.6"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -461,6 +461,7 @@ def resolve_default_sheet(name: str, role: str) -> str:
         "poster": "Paper",
         "entrance_curtain_rail": "AgedBrass",
         "fan_hub": "AgedBrass",
+        "fan_blade": "PaintedMetal",
         "jukebox_grille": "PaintedMetal",
         "jukebox_key": "AgedBrass",
         "practical_cable": "PaintedMetal",
@@ -1022,9 +1023,12 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
 
 def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
     group = "pivot:Slow Ceiling Fan"
+    # Bake the compact 1.3825 m fan into its meshes; the shared pivot and
+    # runtime rotation retain their original unit transforms.
+    scale = (0.35, 0.35, 0.35)
     add_part(
         asset, materials, "Fan Hub",
-        bp.u_cylinder((0.0, 0.0, 0.0), (0.28, 0.10, 0.28)),
+        kit.scaled(bp.u_cylinder((0.0, 0.0, 0.0), (0.28, 0.10, 0.28)), scale),
         "fan_hub", bp.ident("MetalTint"), group=group, shadows=False)
     for index in range(4):
         #  Each blade is placed by rotating its own offset, exactly as
@@ -1033,8 +1037,8 @@ def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
         blade = bp.u_box((1.10, -0.05, 0.0), (1.75, 0.08, 0.34), 0.01)
         add_part(
             asset, materials, f"Fan Blade {index + 1}",
-            bp.u_rotated(blade, (0.0, index * 90.0, 0.0)),
-            "fan_blade", bp.ident("DarkWoodTint"), sheet="DarkWood",
+            kit.scaled(bp.u_rotated(blade, (0.0, index * 90.0, 0.0)), scale),
+            "fan_blade", bp.rgb(0.68, 0.58, 0.38),
             group=group, shadows=False)
 
 

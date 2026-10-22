@@ -22,6 +22,9 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   source: player_counter_seat_actions.validate_result.
   Проверен возврат: VodkaService_ReturnsToSeatedViewAfterEmptyShot.
   Уборка проверена/просмотрена: EmptyVesselCleanup_StepsBackAndBracesBeforeHiding.
+- Вентилятор бара меньше; лопасти светлые матовые тёплого оттенка,
+  крепление/вращение прежние. Проверено/просмотрено:
+  AreaCaptureFixture.BarCeilingFan (размер/отделка).
 
 ### 2026-10-21
 

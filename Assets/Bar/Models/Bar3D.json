@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "4.0.5",
+  "generator_version": "4.0.6",
   "blender_version": "5.0.1",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -4446,15 +4446,15 @@
       "name": "Fan Blade 1",
       "role": "fan_blade",
       "group": "pivot:Slow Ceiling Fan",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
-        "field": "DarkWoodTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.68,
+          0.58,
+          0.38
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -4473,15 +4473,15 @@
       "name": "Fan Blade 2",
       "role": "fan_blade",
       "group": "pivot:Slow Ceiling Fan",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
-        "field": "DarkWoodTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.68,
+          0.58,
+          0.38
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -4500,15 +4500,15 @@
       "name": "Fan Blade 3",
       "role": "fan_blade",
       "group": "pivot:Slow Ceiling Fan",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
-        "field": "DarkWoodTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.68,
+          0.58,
+          0.38
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -4527,15 +4527,15 @@
       "name": "Fan Blade 4",
       "role": "fan_blade",
       "group": "pivot:Slow Ceiling Fan",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
-        "field": "DarkWoodTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.68,
+          0.58,
+          0.38
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -4902,7 +4902,7 @@
       "triangles": 28
     }
   ],
-  "build_signature": "f330463f8ceb213f76c3df7409af5cc26701f4b38a2edbbeb9f0c2426d18acf2",
+  "build_signature": "e37fa17a3cd469ff1e42f1f620bf8d6ce69e2cc7ccef31d1aff87f4ee45750b0",
   "interior_surface_contract": {
     "design_id": "compact_bar_unique_surfaces_v1",
     "albedo": "Bar/Textures/BarInteriorAlbedo",
@@ -4910,7 +4910,7 @@
     "albedo_size": 4096,
     "response_size": 2048,
     "unique_part_count": 108,
-    "uv_signature": "f23044e0af3cc05398e7480d55be9e2622b8f212cacb21f6f3b88431bf5e79fa"
+    "uv_signature": "e96025682ac6d9429dece9619e3370e0a3e6c68548eee132fc857160850544dc"
   },
   "containment_contract": {
     "exterior_door_m": [

@@ -30,6 +30,13 @@ Carry is low/forward to avoid a raised folded elbow; disable clears brace goal.
 EmptyVesselCleanup_StepsBackAndBracesBeforeHiding passed/reviewed: facing/backstep,
 open elbow, fixed palm, continuous grip/vertical path, furniture clearance,
 hidden old vessel before new service and unchanged payment ownership.
+Bar ceiling fan uniformly reduced; pivot/topology/rotation stay.
+Pale warm matte PaintedMetal blades contrast ceiling; aged-brass hub stays.
+No emission/lights/shaders/instances added.
+build-bar-3d-model validation/publish passed; unique UV0/maps regenerated.
+Non-fan geometry/UV1 and service/facade asset bytes preserved.
+Existing effects/providers retained; no new canon exception or cost claim.
+AreaCaptureFixture.BarCeilingFan size/finish passed/reviewed from entrance and eye-height.
 
 ## 2026-10-21
 
