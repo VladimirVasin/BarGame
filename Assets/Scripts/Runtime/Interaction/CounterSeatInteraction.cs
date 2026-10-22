@@ -17,6 +17,11 @@ namespace BarPromenade
         public const string EnterClipName = "BusBoardEnter";
         public const string LoopClipName = "BusRideLoop";
         public const string ExitClipName = "BusAlightExit";
+        public const string BarLoopClipName = "CounterSeatLoop";
+        public const string EnterRightClipName = "CounterSeatEnterRight";
+        public const string ExitRightClipName = "CounterSeatExitRight";
+        public const string EnterLeftClipName = "CounterSeatEnterLeft";
+        public const string ExitLeftClipName = "CounterSeatExitLeft";
         public const string StandPromptKey = "interaction.stand_up";
         public const int TransferFrameCount = 36;
         public const float TransferFramesPerSecond = 12f;
@@ -89,18 +94,42 @@ namespace BarPromenade
             player = playerRuntime;
             controller = interactionController;
             plan = counterSeatPlan;
-            definition = CreateDefinition();
+            definition = CreateDefinition(plan.AccessSide);
             controller.PhaseChanged += HandlePhaseChanged;
             controller.InteractionCompleted += HandleInteractionCompleted;
             IsInitialized = true;
         }
 
-        public static PlayerAnimatedInteractionDefinition CreateDefinition()
+        public static PlayerAnimatedInteractionDefinition CreateDefinition(
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
+            string enter;
+            string loop;
+            string exit;
+            switch (accessSide)
+            {
+                case CounterSeatAccessSide.None:
+                    enter = EnterClipName;
+                    loop = LoopClipName;
+                    exit = ExitClipName;
+                    break;
+                case CounterSeatAccessSide.Left:
+                    enter = EnterLeftClipName;
+                    loop = BarLoopClipName;
+                    exit = ExitLeftClipName;
+                    break;
+                case CounterSeatAccessSide.Right:
+                    enter = EnterRightClipName;
+                    loop = BarLoopClipName;
+                    exit = ExitRightClipName;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(accessSide));
+            }
             return new PlayerAnimatedInteractionDefinition(
-                EnterClipName,
-                LoopClipName,
-                ExitClipName,
+                enter,
+                loop,
+                exit,
                 enterFrameCount: TransferFrameCount,
                 enterFramesPerSecond: TransferFramesPerSecond,
                 loopFrameCount: LoopFrameCount,
@@ -266,6 +295,7 @@ namespace BarPromenade
                 shadow.enabled = previousContactShadowEnabled;
             }
         }
+
 
         private void OnDisable()
         {

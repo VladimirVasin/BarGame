@@ -34,9 +34,6 @@ namespace BarPromenade.Tests.EditMode
 
         private static readonly string[] StandaloneManifests =
         {
-            "Assets/Bar/Bartender/Models/" +
-            "BarBartenderOrdinary3D.json",
-            "Assets/Bar/Bartender/Models/BarBartender3D.json",
             "Assets/Vehicles/Drivers/Models/CityBusDriver3D.json",
             "Assets/Cemetery/Raven/Models/CemeteryRaven3D.json",
             "Assets/Stairwell/Cat/Models/StairwellCat3D.json",
@@ -110,29 +107,6 @@ namespace BarPromenade.Tests.EditMode
                     out NpcDesignAppearance watcher),
                 Is.True);
             Assert.That(watcher, Is.EqualTo(NpcDesignAppearance.Bizarre));
-        }
-
-        [Test]
-        [Category("NPC")]
-        public void BartenderVariants_KeepTheirDistinctVerdicts()
-        {
-            Dictionary<string, string> onDisk = ReadDesignIds();
-            Assert.That(onDisk.ContainsKey("bar_bartender_v2"), Is.True);
-            Assert.That(
-                onDisk.ContainsKey("six_armed_bartender_v1"),
-                Is.True);
-            Assert.That(
-                NpcDesignAppearanceCatalog.TryGet(
-                    "bar_bartender_v2",
-                    out NpcDesignAppearance ordinary),
-                Is.True);
-            Assert.That(ordinary, Is.EqualTo(NpcDesignAppearance.Normal));
-            Assert.That(
-                NpcDesignAppearanceCatalog.TryGet(
-                    "six_armed_bartender_v1",
-                    out NpcDesignAppearance legacy),
-                Is.True);
-            Assert.That(legacy, Is.EqualTo(NpcDesignAppearance.Bizarre));
         }
 
         /// <summary>

@@ -2,7 +2,7 @@
 """Build Bar Promenade's production Hero V2 model.
 
 Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
-face and complete 50-action bank. Shared rig, action, export and validation
+face and complete 55-action bank. Shared rig, action, export and validation
 helpers live in ``player_3d_model_common.py`` so this remains the only runnable
 hero model generator.
 
@@ -34,6 +34,7 @@ from mathutils.bvhtree import BVHTree
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
@@ -44,6 +45,7 @@ import player_face_paint  # noqa: E402
 import player_jacket_cloth  # noqa: E402
 import player_hand_grip  # noqa: E402
 import player_snow_actions  # noqa: E402
+import player_counter_seat_actions  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -272,7 +274,8 @@ def load_common_authoring():
 common = load_common_authoring()
 V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME,
                        player_cold_actions.HOLD_NAME, player_cold_actions.RUB_NAME,
-                       player_cold_actions.SHIVER_NAME, *player_snow_actions.NAMES)
+                       player_cold_actions.SHIVER_NAME, *player_snow_actions.NAMES,
+                       *player_counter_seat_actions.NAMES)
 
 V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(
@@ -298,7 +301,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -325,6 +328,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Keep the existing animation FBX when only model geometry changes.")
     parser.add_argument("--hand-grip-only", action="store_true",
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
+    parser.add_argument("--counter-seat-only", action="store_true",
+                        help="Refresh only the bar's measured side-entry/exit bone actions on the verified Hero V2 source.")
     parser.add_argument("--surfaces-only", action="store_true",
                         help="Author skin/hair UVs in the verified production source without changing geometry or actions.")
     parser.add_argument("--joint-surfaces-only", action="store_true",
@@ -427,6 +432,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.hand_grip_only,
         args.surfaces_only,
         args.joint_surfaces_only,
+        args.counter_seat_only,
     )
 
 
@@ -1343,6 +1349,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
                                 False, 1, 24, ((0., relaxed), (1., relaxed)))
             return
         super().build_actions()
+        player_counter_seat_actions.build(self, common)
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
         for action_name in (
@@ -2453,6 +2460,7 @@ def validate_v2_result(
         common.validate_recovery_routes(result, errors)
         player_cold_actions.validate_cold_actions(result, common, errors)
         player_snow_actions.validate_snow_actions(result, common, errors)
+        player_counter_seat_actions.validate_result(result)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -3356,6 +3364,9 @@ def write_v2_manifest(
         if keys:
             action["face_keys"] = keys
     player_snow_actions.attach_metadata(payload, result)
+    payload["counter_seat"] = player_counter_seat_actions.contract()
+    payload["counter_seat_authoring_sha256"] = hashlib.sha256(
+        Path(player_counter_seat_actions.__file__).read_bytes()).hexdigest()
     player_jacket_cloth.attach_metadata(payload)
     payload["surface_bindings"] = player_body_hair_surfaces.make_bindings(payload)
     player_body_hair_surfaces.validate_uvs(result, payload["surface_bindings"])
@@ -3494,7 +3505,11 @@ def main() -> None:
         hand_grip_only,
         surfaces_only,
         joint_surfaces_only,
+        counter_seat_only,
     ) = parse_args()
+    if counter_seat_only:
+        player_counter_seat_actions.refresh(sys.modules[__name__], config)
+        return
     if joint_surfaces_only:
         import player_joint_refresh
         player_joint_refresh.refresh(sys.modules[__name__],config,clothing_atlas_path)

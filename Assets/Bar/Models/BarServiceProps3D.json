@@ -616,7 +616,7 @@
       "name": "ShotGlassGrip",
       "role": "service_vessel_grip:ShotGlass",
       "local_position": [
-        0.085,
+        0.0,
         0.0,
         0.075
       ],
@@ -712,9 +712,9 @@
       "name": "SnifterGrip",
       "role": "service_vessel_grip:Snifter",
       "local_position": [
-        0.155,
         0.0,
-        0.19
+        0.0,
+        0.18
       ],
       "unity_right": [
         1.0,
@@ -976,9 +976,9 @@
       "name": "WineGlassGrip",
       "role": "service_vessel_grip:WineGlass",
       "local_position": [
-        0.027,
         0.0,
-        0.085
+        0.0,
+        0.25
       ],
       "unity_right": [
         1.0,
@@ -1965,5 +1965,5 @@
       "triangles": 28
     }
   ],
-  "build_signature": "9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd"
+  "build_signature": "77511cdfd9b212dafb5d30bae2060a085a10ccbfee2171966e48d164782ba627"
 }

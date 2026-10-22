@@ -135,7 +135,7 @@ namespace BarPromenade
         /// <summary>
         /// Which district's bar the hero is in (or entering) — the
         /// key the interior reads its district identity by. Falls
-        /// back to Nightlife for direct scene loads, the character
+        /// back to the Residential pub for direct scene loads, the character
         /// the shared bar has always effectively worn.
         /// </summary>
         public static CityDistrictKind ActiveBarDistrict

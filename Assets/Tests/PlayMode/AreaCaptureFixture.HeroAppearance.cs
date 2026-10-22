@@ -17,8 +17,6 @@ namespace BarPromenade.Tests.PlayMode
 #if UNITY_EDITOR
             Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
-            Type.GetType("BarPromenade.Editor.BarBartenderV2AssetSetup, BarPromenade.Editor", true)
-                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
 #endif
         }
     }

@@ -12,6 +12,8 @@ namespace BarPromenade
         public const string CanneryRetort = "cannery.retort";
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
+        // Added after existing allocation identities: preserve their appearances.
+        public const string BarBartender = "zzz.bar.bartender";
         // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
@@ -97,6 +99,8 @@ namespace BarPromenade
         public static IReadOnlyList<CharacterDefinition> Characters { get; } = Array.AsReadOnly(BuildCharacters());
         private static string cachedCatalog;
         private static IReadOnlyList<Assignment> assignments;
+        private static ulong visitSerial;
+        public const int MaximumVisitGroupSize = 32;
 
         public static string FairVendorId(int index) => FairIds[index];
         public static string FairVisitorId(int index)
@@ -117,6 +121,44 @@ namespace BarPromenade
             if (index < 0 || index >= PedestrianCount)
                 throw new ArgumentOutOfRangeException(nameof(index), "The street pool holds " + PedestrianCount + " permanent walkers.");
             return PedestrianIdPrefix + index.ToString("00");
+        }
+
+        /// <summary>
+        /// Allocates a fresh, bounded temporary cast through the same catalog,
+        /// face and wardrobe selector as permanent characters. These identities
+        /// are never registered or retained; existing world assignments do not
+        /// change. Within the visit an appearance is reused only after the
+        /// available visible combinations are exhausted.
+        /// </summary>
+        public static IReadOnlyList<Assignment> AllocateVisitGroup(
+            string scope, int count, string modelId, params SlotConstraint[] constraints)
+        {
+            if (string.IsNullOrWhiteSpace(scope))
+                throw new ArgumentException("A visit group needs a scope.", nameof(scope));
+            if (count <= 0 || count > MaximumVisitGroupSize)
+                throw new ArgumentOutOfRangeException(nameof(count));
+            if (constraints == null) throw new ArgumentNullException(nameof(constraints));
+            Prepare();
+            var models = new SortedDictionary<string, ModelDefinition>(StringComparer.Ordinal);
+            var signature = new StringBuilder();
+            string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
+            foreach (string available in modelId == AnyCatalogModel ? catalogModels : new[] { modelId })
+                models.Add(available, ReadModel(available, signature));
+            var usage = new Dictionary<string, int>(StringComparer.Ordinal);
+            var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (Assignment assigned in assignments)
+            {
+                modelUsage[assigned.ModelId] = modelUsage.TryGetValue(assigned.ModelId,
+                    out int modelUsed) ? modelUsed + 1 : 1;
+            }
+            string visit = scope + ".visit." + checked(++visitSerial).ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+            var visitors = new Assignment[count];
+            for (int index = 0; index < count; index++)
+                visitors[index] = SelectAppearance(new CharacterDefinition(
+                    visit + ".guest." + index.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    modelId, constraints), models, catalogModels, usage, modelUsage);
+            return Array.AsReadOnly(visitors);
         }
 
         private static CharacterDefinition[] BuildCharacters()
@@ -192,6 +234,13 @@ namespace BarPromenade
                     new SlotConstraint("gloves", "gloves.work"),
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
+            roster.Add(new CharacterDefinition(BarBartender, model,
+                new SlotConstraint("outerwear", "outerwear.work"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", "apron.work")));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }
@@ -231,41 +280,46 @@ namespace BarPromenade
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
             foreach (CharacterDefinition character in Characters)
-            {
-                // The model is the first choice and follows the same rule as the
-                // rest: an unused catalog model first, then the least used one, so
-                // a second model splits the pavement instead of waiting its turn.
-                string modelId = character.UsesAnyCatalogModel
-                    ? DefaultNpcAppearanceSelection.Choose(character.Id, new[] { catalogModels }, choice => choice[0], modelUsage)[0]
-                    : character.ModelId;
-                ModelDefinition model = models[modelId];
-                var dimensions = new List<string[]> { model.Faces, model.HairColors };
-                var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
-                foreach (SlotConstraint slot in character.Slots)
-                {
-                    if (!model.Slots.ContainsKey(slot.Slot) || constraints.ContainsKey(slot.Slot))
-                        throw new InvalidOperationException("Character constraints must name unique authored slots: " + character.Id);
-                    constraints.Add(slot.Slot, slot);
-                }
-                foreach (var slot in model.Slots)
-                {
-                    if (!constraints.TryGetValue(slot.Key, out SlotConstraint constraint)) { dimensions.Add(slot.Value); continue; }
-                    var allowed = new SortedSet<string>(StringComparer.Ordinal);
-                    foreach (string id in constraint.AllowedItemIds)
-                    {
-                        if (id != null && Array.IndexOf(slot.Value, id) < 0)
-                            throw new InvalidOperationException("Character allows an unauthored item: " + character.Id + "/" + id);
-                        allowed.Add(id ?? string.Empty);
-                    }
-                    dimensions.Add(new List<string>(allowed).ToArray());
-                }
-                string Visible(string[] candidate) => VisibleSignature(modelId, model, candidate);
-                string[] chosen = DefaultNpcAppearanceSelection.Choose(character.Id, dimensions, Visible, usage);
-                var equipped = new List<string>();
-                for (int i = 2; i < chosen.Length; i++) if (!string.IsNullOrEmpty(chosen[i])) equipped.Add(chosen[i]);
-                next.Add(new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), Visible(chosen)));
-            }
+                next.Add(SelectAppearance(character, models, catalogModels, usage, modelUsage));
             assignments = next.AsReadOnly(); cachedCatalog = catalog;
+        }
+
+        private static Assignment SelectAppearance(CharacterDefinition character,
+            IDictionary<string, ModelDefinition> models, string[] catalogModels,
+            IDictionary<string, int> usage, IDictionary<string, int> modelUsage)
+        {
+            // The model is the first choice and follows the same rule as the
+            // rest: an unused catalog model first, then the least used one, so
+            // a second model splits the pavement instead of waiting its turn.
+            string modelId = character.UsesAnyCatalogModel
+                ? DefaultNpcAppearanceSelection.Choose(character.Id, new[] { catalogModels }, choice => choice[0], modelUsage)[0]
+                : character.ModelId;
+            ModelDefinition model = models[modelId];
+            var dimensions = new List<string[]> { model.Faces, model.HairColors };
+            var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
+            foreach (SlotConstraint slot in character.Slots)
+            {
+                if (!model.Slots.ContainsKey(slot.Slot) || constraints.ContainsKey(slot.Slot))
+                    throw new InvalidOperationException("Character constraints must name unique authored slots: " + character.Id);
+                constraints.Add(slot.Slot, slot);
+            }
+            foreach (var slot in model.Slots)
+            {
+                if (!constraints.TryGetValue(slot.Key, out SlotConstraint constraint)) { dimensions.Add(slot.Value); continue; }
+                var allowed = new SortedSet<string>(StringComparer.Ordinal);
+                foreach (string id in constraint.AllowedItemIds)
+                {
+                    if (id != null && Array.IndexOf(slot.Value, id) < 0)
+                        throw new InvalidOperationException("Character allows an unauthored item: " + character.Id + "/" + id);
+                    allowed.Add(id ?? string.Empty);
+                }
+                dimensions.Add(new List<string>(allowed).ToArray());
+            }
+            string Visible(string[] candidate) => VisibleSignature(modelId, model, candidate);
+            string[] chosen = DefaultNpcAppearanceSelection.Choose(character.Id, dimensions, Visible, usage);
+            var equipped = new List<string>();
+            for (int i = 2; i < chosen.Length; i++) if (!string.IsNullOrEmpty(chosen[i])) equipped.Add(chosen[i]);
+            return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), Visible(chosen));
         }
 
         private static ModelDefinition ReadModel(string modelId, StringBuilder signature)
@@ -354,12 +408,15 @@ namespace BarPromenade
         }
 
         public static void Apply(VillageResidentPresentation actor, string characterId)
+            => Apply(actor, GetAssignment(characterId));
+
+        public static void Apply(VillageResidentPresentation actor, Assignment assignment)
         {
             if (actor == null) throw new ArgumentNullException(nameof(actor));
-            Assignment assignment = GetAssignment(characterId);
+            if (assignment == null) throw new ArgumentNullException(nameof(assignment));
             var appearance = actor.GetComponent<DefaultNpcAppearance>();
             if (appearance == null) throw new InvalidOperationException("The default NPC has no appearance owner.");
-            appearance.ApplySelection(characterId, assignment.FaceId, assignment.HairColorId, assignment.ItemIds);
+            appearance.ApplySelection(assignment.CharacterId, assignment.FaceId, assignment.HairColorId, assignment.ItemIds);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using BarPromenade.Rendering;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -43,6 +44,20 @@ namespace BarPromenade.Tests.PlayMode
     /// Frames land in `Captures/&lt;area&gt;/`, which is gitignored. Look at
     /// them; that is the whole point.
     /// </summary>
+    public sealed class CompactBarAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            // Rebind cloth and hand anchors to the newly imported production rig.
+            Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.BarAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         private const int Width = 1280;
@@ -61,6 +76,25 @@ namespace BarPromenade.Tests.PlayMode
         /// instead of hanging it.
         /// </summary>
         private const int MaximumReadyFrames = 900;
+
+        // Dispose this scene's camera-local service before the next Single
+        // load destroys the camera hierarchy in an unspecified order.
+        [UnityTearDown]
+        public IEnumerator ReleaseBarServiceAfterCapture()
+        {
+            yield return ReleaseBarService();
+        }
+
+        internal static IEnumerator ReleaseBarService()
+        {
+            BarInteriorRoot bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+            if (bar == null || bar.DrinkShop == null) yield break;
+            BarDrinkFirstPersonArms arms = bar.DrinkShop.FirstPersonArms;
+            Object.Destroy(bar.DrinkShop);
+            yield return null;
+            if (arms != null) Object.Destroy(arms);
+            yield return null;
+        }
 
         /// <summary>A standing eye, as every village shot uses.</summary>
         private const float EyeHeight = 1.72f;
@@ -178,89 +212,294 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator Bar()
         {
-            GameSessionState.EnterBar("bar-capture");
+            foreach (BarActivityKind activity in new[] { BarActivityKind.BeerPong,
+                BarActivityKind.Cocktail, BarActivityKind.SplitTheG, BarActivityKind.TinctureMatch })
+                BarInteriorLayoutValidator.ValidateOrThrow(
+                    BarInteriorLayoutPlanner.Generate(47, "Test bar", activity));
+            GameSessionState.EnterBar("bar-capture", BarActivityKind.SplitTheG,
+                CityDistrictKind.Residential);
             yield return Capture(
                 SceneIds.BarInterior,
                 Root<BarInteriorRoot>(),
                 new[]
                 {
-                    Shot.NearHero(
-                        "00-over-the-shoulder",
-                        new Vector3(0f, 1.5f, -3.2f),
-                        new Vector3(0f, 1.2f, 9f), 62f),
-                    Shot.At(
-                        "01-from-the-door",
-                        new Vector3(0f, 1.72f, -7.2f),
-                        new Vector3(0f, 1.5f, 5.5f), 62f),
-                    Shot.At(
-                        "02-counter",
-                        new Vector3(-1.6f, 1.65f, 1.4f),
-                        new Vector3(-0.6f, 1.35f, 6.2f), 55f),
-                    Shot.At(
-                        "02-counter-drink",
-                        new Vector3(-6.5f, 1.55f, 3.85f),
-                        new Vector3(-4.2f, 1.35f, 4.70f), 45f,
-                        readyWhen: () => IsBarDrinkAtLips(
-                            "counter-seat-left")),
-                    Shot.At(
-                        "02-counter-rest",
-                        new Vector3(-6.5f, 1.55f, 3.85f),
-                        new Vector3(-4.2f, 1.25f, 5.05f), 45f,
-                        readyWhen: () => IsBarDrinkRestingOnSurface(
-                            "counter-seat-left")),
-                    Shot.At(
-                        "03-booths-and-stage",
-                        new Vector3(-2.5f, 1.8f, -2.2f),
-                        new Vector3(-9.5f, 1.2f, 2.0f), 62f),
-                    Shot.At(
-                        "03-table-drink",
-                        new Vector3(-3.8f, 1.75f, -6.1f),
-                        new Vector3(-3.85f, 1.15f, -3.55f), 48f,
-                        readyWhen: () => IsBarDrinkAtLips(
-                            "social-left-front")),
-                    Shot.At(
-                        "03-table-rest",
-                        new Vector3(-3.8f, 1.75f, -6.1f),
-                        new Vector3(-3.85f, 1.05f, -3.55f), 48f,
-                        readyWhen: () => IsBarDrinkRestingOnSurface(
-                            "social-left-front")),
-                    Shot.At(
-                        "03-table-grip",
-                        new Vector3(-3.55f, 1.32f, -4.85f),
-                        new Vector3(-3.80f, 1.00f, -3.70f), 36f,
-                        readyWhen: () => IsBarDrinkRestingOnSurface(
-                            "social-left-front")),
-                    Shot.At(
-                        "04-activity-bay",
-                        new Vector3(1.5f, 1.75f, -4.2f),
-                        new Vector3(7.0f, 1.1f, 0.4f), 58f),
-                    Shot.At(
-                        "05-pendants-and-ceiling",
-                        new Vector3(0f, 1.55f, 0.5f),
-                        new Vector3(-0.5f, 3.9f, 5.6f), 62f),
-                    Shot.At(
-                        "06-overview",
-                        new Vector3(-9.4f, 4.2f, -7.0f),
-                        new Vector3(1.5f, 0.9f, 4.0f), 72f),
-                    Shot.At(
-                        "07-jukebox-and-entrance",
-                        new Vector3(1.0f, 1.6f, -2.6f),
-                        new Vector3(6.6f, 1.1f, -6.9f), 58f),
-                    Shot.At(
-                        "08-standard-entrance-door",
-                        new Vector3(0f, 1.62f, -4.55f),
-                        new Vector3(0f, 1.20f, -7.82f), 45f),
+                    Shot.At("00-from-the-door",
+                        new Vector3(0f, 1.72f, -3.35f),
+                        new Vector3(0f, 1.35f, 1.8f), 65f),
+                    Shot.At("01-counter-and-worker",
+                        new Vector3(0f, 1.65f, -0.65f),
+                        new Vector3(0.2f, 1.35f, 2.7f), 58f),
+                    Shot.At("02-counter-drink",
+                        new Vector3(-1.8f, 1.5f, 1.95f),
+                        new Vector3(-1.65f, 1.35f, 0.95f), 48f,
+                        readyWhen: () => IsBarDrinkAtLips("counter-seat-left")),
+                    Shot.At("03-counter-rest",
+                        new Vector3(-1.85f, 1.65f, 1.95f),
+                        new Vector3(-1.65f, 1.17f, 1.35f), 46f,
+                        readyWhen: () => IsBarDrinkRestingOnSurface("counter-seat-left")),
+                    Shot.At("04-booths",
+                        new Vector3(-0.7f, 2.35f, -0.4f),
+                        new Vector3(-4.38f, 0.85f, -0.75f), 78f),
+                    Shot.At("05-activity-and-music",
+                        new Vector3(1.8f, 1.9f, -0.4f),
+                        new Vector3(4.7f, 0.95f, -1.6f), 65f),
+                    Shot.At("06-pendants-and-ceiling",
+                        new Vector3(1f, 1.7f, -1f),
+                        new Vector3(0f, 2.65f, 2f), 65f),
+                    Shot.At("07-overview",
+                        new Vector3(4.8f, 1.95f, -3.2f),
+                        new Vector3(-0.6f, 1.2f, 1.1f), 70f),
+                    Shot.At("08-counter-materials",
+                        new Vector3(-2f, 1.15f, 0.7f),
+                        new Vector3(0.5f, 1.03f, 2f), 50f),
+                    Shot.At("09-standard-entrance-door",
+                        new Vector3(0f, 1.62f, -1.7f),
+                        new Vector3(0f, 1.2f, -3.83f), 48f),
+                    Shot.At("10-karaoke-from-exit",
+                        new Vector3(2.6f, 1.65f, -3.05f),
+                        new Vector3(4.65f, 1f, -2.7f), 62f),
+                    Shot.At("11-tap-corner-cleared",
+                        new Vector3(3.8f, 1.65f, 0.4f),
+                        new Vector3(4.85f, 0.65f, 2.95f), 58f),
+                    Shot.At("12-opposing-sofas",
+                        new Vector3(-2.5f, 1.35f, -2.15f),
+                        new Vector3(-4.38f, 0.85f, -2.15f), 70f),
+                    Shot.At("13-sofa-front-drink",
+                        new Vector3(-2.8f, 1.45f, -2.62f),
+                        new Vector3(-4.38f, 1.15f, -2.97f), 50f,
+                        readyWhen: () => IsBarDrinkAtLips("booth-1-near")),
+                    Shot.At("14-sofa-opposite-drink",
+                        new Vector3(-2.8f, 1.45f, -1.68f),
+                        new Vector3(-4.38f, 1.15f, -1.33f), 50f,
+                        readyWhen: () => IsBarDrinkAtLips("booth-1-far")),
+                    Shot.At("15-second-sofa-front-drink",
+                        new Vector3(-2.8f, 1.45f, 0.18f),
+                        new Vector3(-4.38f, 1.15f, -0.17f), 50f,
+                        readyWhen: () => IsBarDrinkAtLips("booth-2-near")),
+                    Shot.At("16-second-sofa-opposite-drink",
+                        new Vector3(-2.8f, 1.45f, 1.12f),
+                        new Vector3(-4.38f, 1.15f, 1.47f), 50f,
+                        readyWhen: () => IsBarDrinkAtLips("booth-2-far")),
+                    Shot.At("17-shortened-counter-left",
+                        new Vector3(-3f, 1.7f, -0.3f),
+                        new Vector3(0.25f, 0.95f, 1.95f), 65f),
                 });
-            AssertBarPatronPlacement();
+            BarInteriorRoot posedBar = Object.FindAnyObjectByType<BarInteriorRoot>();
+            foreach (BarPatron patron in posedBar.Patrons)
+            {
+                Animator animator = patron.Registry.Animator;
+                Assert.That(animator.cullingMode, Is.EqualTo(AnimatorCullingMode.AlwaysAnimate),
+                    patron.Anchor.Id + " must keep the body, both hands and vessel in the same pose off camera.");
+                patron.Drinking.enabled = false;
+                Assert.That(animator.cullingMode, Is.EqualTo(AnimatorCullingMode.CullUpdateTransforms),
+                    patron.Anchor.Id + " must release its animation mode when drinking stops.");
+                patron.Drinking.enabled = true;
+                Assert.That(animator.cullingMode, Is.EqualTo(AnimatorCullingMode.AlwaysAnimate));
+            }
+            yield return VerifyAllBarDrinkCycles(posedBar);
+            var finalPose = posedBar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            yield return AtWarehouseFridgePresentation(finalPose, AssertBarPatronPlacement);
+            Object.Destroy(finalPose);
+            BarInteriorRoot bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+            BarInteriorLayoutValidator.ValidateOrThrow(bar.Layout);
+            Assert.That(bar.Room.Find("Social Pub Table 4"), Is.Null);
+            Assert.That(bar.Room.Find("Social Pub Table 4 Leg"), Is.Null);
+            Assert.That(bar.Room.Find("Social Pub Table 4 Collision"), Is.Null);
+            Assert.That(bar.Room.Find("Pub Table 4 Coaster"), Is.Null);
+            Assert.That(bar.Room.Find("Booth Table Top 3"), Is.Null);
+            Assert.That(Array.FindAll(bar.Room.GetComponentsInChildren<Renderer>(),
+                renderer => renderer.name.StartsWith("Booth Cushion ")).Length, Is.EqualTo(4));
+            Assert.That(Array.FindAll(bar.Room.GetComponentsInChildren<Renderer>(),
+                renderer => renderer.name.StartsWith("Booth Table Top ")).Length, Is.EqualTo(2));
+            Physics.SyncTransforms();
+            Assert.That(Physics.OverlapBox(bar.Room.TransformPoint(new Vector3(4.85f, .78f, 2.95f)),
+                new Vector3(.28f, .05f, .28f), bar.Room.rotation, ~0, QueryTriggerInteraction.Ignore),
+                Is.Empty, "The removed corner table must leave no solid collision behind.");
+            Transform musicCabinet = bar.Room.Find("Bar Jukebox");
+            Assert.That(musicCabinet, Is.Not.Null);
+            Assert.That(Vector3.Distance(musicCabinet.localPosition,
+                new Vector3(5f, 0f, -0.65f)), Is.LessThan(0.001f));
+            Assert.That(Vector3.Dot(musicCabinet.right, -bar.Room.right),
+                Is.GreaterThan(0.999f), "The jukebox face must point into the room.");
+            foreach (Transform part in bar.Room.GetComponentsInChildren<Transform>(true))
+                Assert.That(part.name.Contains(" Console") ||
+                    part.name.StartsWith("SplitTheG Vessel ") ||
+                    part.name.StartsWith("Cocktail Vessel ") ||
+                    part.name.StartsWith("TinctureMatch Vessel "), Is.False,
+                    "The removed table must leave no visible part or collision: " + part.name);
+            Assert.That(Vector3.Distance(bar.Music.transform.position,
+                musicCabinet.Find("Jukebox Grille").GetComponent<Renderer>().bounds.center),
+                Is.LessThan(0.001f), "Music must follow the relocated grille.");
+            Bounds stageBounds = bar.Room.Find("Small Stage").GetComponent<Renderer>().bounds;
+            Bounds microphoneBounds = bar.Room.Find("Stage Microphone").GetComponent<Renderer>().bounds;
+            Vector3 micLocal = bar.Room.InverseTransformPoint(microphoneBounds.center);
+            Assert.That(Vector3.Distance(micLocal, BarInteriorLayoutPlanner.StageMicrophonePosition),
+                Is.LessThan(0.001f), "The microphone must occupy the exit side of the stage.");
+            Vector3 stageFront = Vector3.ProjectOnPlane(microphoneBounds.center - stageBounds.center, bar.Room.up);
+            Vector3 towardExit = Vector3.ProjectOnPlane(bar.Room.TransformPoint(new Vector3(0f, 0f, -3.9f)) - microphoneBounds.center, bar.Room.up);
+            Assert.That(Vector3.Dot(stageFront.normalized, -bar.Room.right), Is.GreaterThan(.99999f),
+                "The whole karaoke assembly must retain its authored quarter-turn toward the exit side.");
+            Assert.That(Vector3.Dot(stageFront, towardExit), Is.GreaterThan(0f));
+            Bounds stageCollision = bar.Room.Find("Small Stage Collision").GetComponent<BoxCollider>().bounds;
+            Assert.That(Vector3.Distance(stageBounds.center, stageCollision.center), Is.LessThan(0.001f));
+            Assert.That(Vector3.Distance(stageBounds.size, stageCollision.size), Is.LessThan(0.001f),
+                "The platform collision must turn with the visible platform.");
+            Assert.That(stageBounds.size.x, Is.EqualTo(2.1f).Within(.001f));
+            Assert.That(stageBounds.size.z, Is.EqualTo(1.65f).Within(.001f));
+            foreach (Transform part in bar.Room.GetComponentsInChildren<Transform>(true))
+                Assert.That(part.name.StartsWith("Coat Rack"), Is.False,
+                    "The coat rack, hooks and collision must be removed together.");
+            BarDrinkServicePlan servicePlan = BarDrinkServicePlan.FromLayout(bar.Layout);
+            foreach (BarCounterStation station in bar.CounterStations)
+            {
+                float guestX = station.Seat.Plan.EntryPose.RootPosition.x;
+                Assert.That(Mathf.Abs(servicePlan.ResolveBottlePreparationPosition(guestX).x - guestX),
+                    Is.GreaterThan(1.4f), "Pouring must leave the guest's resting menu clear.");
+            }
+            // Measure placed renderers as well as data: import-unit mistakes
+            // can leave every anchor correct while shrinking the visible room.
+            Renderer[] surfaces = bar.Room.GetComponentsInChildren<Renderer>();
+            Bounds placed = surfaces[0].bounds;
+            foreach (Renderer surface in surfaces)
+                if (!(surface is ParticleSystemRenderer)) placed.Encapsulate(surface.bounds);
+            Assert.That(placed.size.x, Is.InRange(11.3f, 11.9f));
+            Assert.That(placed.size.z, Is.InRange(7.7f, 8.2f));
+            Assert.That(placed.max.y, Is.LessThan(3.3f));
+            Renderer counter = bar.Room.Find("Counter Top").GetComponent<Renderer>();
+            Assert.That(bar.Layout.CounterPosition.x, Is.EqualTo(0.875f));
+            Assert.That(bar.Layout.CounterSize.x, Is.EqualTo(5.95f));
+            Assert.That(counter.bounds.min.x - bar.Room.position.x,
+                Is.EqualTo(-3.225f + 0.9f).Within(0.002f),
+                "The left countertop end must retract by exactly one stool pitch.");
+            Assert.That(counter.bounds.max.x - bar.Room.position.x,
+                Is.EqualTo(4.075f).Within(0.002f), "The right countertop end must stay fixed.");
+            Assert.That(bar.Room.Find("Bar Stool 1"), Is.Null);
+            Assert.That(bar.Room.Find("Bar Stool 1 Leg"), Is.Null);
+            Assert.That(bar.Room.Find("Bar Stool 1 Collision"), Is.Null);
+            Assert.That(bar.CounterStations, Has.Count.EqualTo(3));
+            Assert.That(Array.FindAll(surfaces, surface => surface.name == "Bar Drink Service Stool" ||
+                (surface.name.StartsWith("Bar Stool ") && !surface.name.EndsWith(" Leg"))).Length,
+                Is.EqualTo(5), "Exactly one counter seat must be removed.");
+            Physics.SyncTransforms();
+            Assert.That(Physics.OverlapBox(bar.Room.TransformPoint(new Vector3(-2.65f, .5f, 1.95f)),
+                new Vector3(.25f, .45f, .35f), bar.Room.rotation, ~0, QueryTriggerInteraction.Ignore),
+                Is.Empty, "The removed left counter bay must leave no collision.");
+            Mesh counterMesh = counter.GetComponent<MeshFilter>().sharedMesh;
+            Assert.That(counterMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord0), Is.True);
+            Assert.That(counterMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord1), Is.True);
+            Assert.That(counter.sharedMaterial.shader.name,
+                Is.EqualTo("Bar Promenade/City Surface"));
+            var response = new MaterialPropertyBlock();
+            counter.GetPropertyBlock(response);
+            Assert.That(response.GetTexture("_BaseMap").name,
+                Is.EqualTo("BarInteriorAlbedo"));
+            Assert.That(response.GetTexture("_SceneMaterialResponse").name,
+                Is.EqualTo("BarInteriorResponse"));
+            Assert.That(bar.Lighting.BounceRegionCount, Is.EqualTo(2));
+            Assert.That(bar.Lighting.Reflection.ReceiverCount, Is.GreaterThan(0));
+            if (GraphicsEffectsSettings.CleanReflectionsEnabled)
+            {
+                float reflectionDeadline = Time.realtimeSinceStartup + 8f;
+                while (!bar.Lighting.Reflection.IsReady &&
+                       Time.realtimeSinceStartup < reflectionDeadline)
+                    yield return null;
+                Assert.That(bar.Lighting.Reflection.IsReady, Is.True);
+            }
+            yield return VerifyBarKaraokeStanding(bar);
+        }
+
+        private static IEnumerator VerifyBarKaraokeStanding(BarInteriorRoot bar)
+        {
+            bar.ArrivalPresentation.Skip();
+            PlayerMotor motor = bar.Player.Motor;
+            Transform hero = bar.Player.GameObject.transform;
+            CharacterController capsule = hero.GetComponent<CharacterController>();
+            Camera camera = Camera.main;
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            bool wasFollowing = follow.enabled, inputEnabled = motor.InputEnabled;
+            Vector3 previousPosition = hero.position, previousCameraPosition = camera.transform.position;
+            Quaternion previousRotation = hero.rotation, previousCameraRotation = camera.transform.rotation;
+            float previousFov = camera.fieldOfView;
+            var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            try
+            {
+                motor.SetInputEnabled(false);
+                follow.enabled = false;
+                motor.Teleport(bar.Room.TransformPoint(BarInteriorLayoutPlanner.StageApproachPosition));
+                hero.rotation = Quaternion.LookRotation(bar.Room.right, bar.Room.up);
+                Physics.SyncTransforms();
+                foreach (Vector3 local in new[] { BarInteriorLayoutPlanner.StageEntryPosition,
+                             BarInteriorLayoutPlanner.StageStandingPosition })
+                {
+                    Vector3 target = bar.Room.TransformPoint(local);
+                    float deadline = Time.realtimeSinceStartup + 6f;
+                    bool reached = false;
+                    while (!reached && Time.realtimeSinceStartup < deadline)
+                    {
+                        reached = motor.MoveTowardsApproachWaypoint(target, .015f, Time.deltaTime);
+                        Assert.That(motor.InteractionPoseMoveStalled, Is.False,
+                            "The ordinary hero capsule must walk onto the low stage and behind the microphone.");
+                        yield return null;
+                    }
+                    Assert.That(reached, Is.True, "The stage approach must be physically traversable.");
+                }
+                Quaternion facing = Quaternion.LookRotation(-bar.Room.right, bar.Room.up);
+                float turnDeadline = Time.realtimeSinceStartup + 3f;
+                bool faced = false;
+                while (!faced && Time.realtimeSinceStartup < turnDeadline)
+                {
+                    faced = motor.MoveTowardsInteractionPose(hero.position, facing, Time.deltaTime);
+                    yield return null;
+                }
+                Assert.That(faced, Is.True);
+                motor.CancelInteractionPoseMove();
+                for (int frame = 0; frame < 5; frame++) yield return null;
+                Bounds platform = bar.Room.Find("Small Stage Collision").GetComponent<BoxCollider>().bounds;
+                Vector3 position = bar.Room.InverseTransformPoint(hero.position);
+                Assert.That(position.x, Is.EqualTo(4.2f).Within(.025f));
+                Assert.That(position.z, Is.EqualTo(-2.7f).Within(.025f));
+                Assert.That(capsule.bounds.min.y, Is.EqualTo(platform.max.y).Within(.05f),
+                    "The hero must stand on the platform without hovering or sinking.");
+                Assert.That(capsule.bounds.min.x, Is.GreaterThan(platform.min.x));
+                Assert.That(capsule.bounds.max.x, Is.LessThan(platform.max.x));
+                Assert.That(capsule.bounds.min.z, Is.GreaterThan(platform.min.z));
+                Assert.That(capsule.bounds.max.z, Is.LessThan(platform.max.z));
+                Bounds microphone = bar.Room.Find("Stage Microphone").GetComponent<Renderer>().bounds;
+                Assert.That(capsule.bounds.min.x, Is.GreaterThan(microphone.max.x + .04f),
+                    "The hero must fit behind the microphone, facing out into the hall.");
+                Assert.That(Vector3.Dot(hero.forward, -bar.Room.right), Is.GreaterThan(.999f));
+                camera.transform.SetPositionAndRotation(bar.Room.TransformPoint(new Vector3(2.35f, 1.8f, -1.85f)),
+                    Quaternion.LookRotation(bar.Room.TransformPoint(new Vector3(4.1f, 1f, -2.7f)) -
+                        bar.Room.TransformPoint(new Vector3(2.35f, 1.8f, -1.85f)), bar.Room.up));
+                camera.fieldOfView = 64f;
+                yield return null;
+                yield return AtWarehouseFridgePresentation(probe,
+                    () => CaptureCurrentCamera(camera, SceneIds.BarInterior, "18-hero-behind-karaoke-microphone"));
+            }
+            finally
+            {
+                probe.CancelPending();
+                Object.Destroy(probe);
+                motor.CancelInteractionPoseMove();
+                motor.Teleport(previousPosition);
+                hero.rotation = previousRotation;
+                motor.SetInputEnabled(inputEnabled);
+                camera.transform.SetPositionAndRotation(previousCameraPosition, previousCameraRotation);
+                camera.fieldOfView = previousFov;
+                follow.enabled = wasFollowing;
+            }
         }
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator BarMenu()
         {
-            GameSessionState.EnterBar("bar-menu-capture");
+            GameSessionState.EnterBar("bar-menu-capture", BarActivityKind.SplitTheG,
+                CityDistrictKind.Residential);
             AsyncOperation operation = SceneManager.LoadSceneAsync(
                 SceneIds.BarInterior,
                 LoadSceneMode.Single);
@@ -315,12 +554,12 @@ namespace BarPromenade.Tests.PlayMode
             bartender.enabled = false;
             bartender.Advance(wipeAdvance);
             camera.transform.SetPositionAndRotation(
-                bar.Room.TransformPoint(new Vector3(-1.6f, 1.55f, 3.75f)),
+                bar.Room.TransformPoint(new Vector3(-1.5f, 1.55f, 0.6f)),
                 Quaternion.LookRotation(
                     bar.Room.TransformPoint(
-                        new Vector3(-0.55f, 1.04f, 6.28f)) -
+                        new Vector3(-0.15f, 1.04f, 2.1f)) -
                     bar.Room.TransformPoint(
-                        new Vector3(-1.6f, 1.55f, 3.75f)),
+                        new Vector3(-1.5f, 1.55f, 0.6f)),
                     Vector3.up));
             camera.fieldOfView = 48f;
             CaptureCurrentCamera(
@@ -333,8 +572,7 @@ namespace BarPromenade.Tests.PlayMode
             BarCounterStation station = bar.CounterStation;
             Assert.That(station, Is.Not.Null);
             CounterSeatPlan seatPlan = station.Seat.Plan;
-            Vector3 entry = bar.Room.TransformPoint(
-                new Vector3(-1.15f, 0f, 3.93f));
+            Vector3 entry = seatPlan.ApproachWaypoints[0];
             entry.y = seatPlan.EntryPose.RootPosition.y;
             bar.Player.Motor.Teleport(entry);
             bar.Player.GameObject.transform.rotation =
@@ -422,23 +660,14 @@ namespace BarPromenade.Tests.PlayMode
                     BarPatronDrinkingArmPose.BottleLipContactTolerance &&
                     drinking.BottleGripError <=
                     BarPatronDrinkingArmPose.BottleGripContactTolerance &&
-                    drinking.BottleHandRadialClearance >=
-                    BarPatronDrinkingArmPose
-                        .MinimumBottleHandRadialClearance &&
-                    drinking.BottleHandRightSideAlignment >=
-                    BarPatronDrinkingArmPose
-                        .MinimumRightHandSideAlignment &&
                     drinking.BottleHandOrientationErrorDegrees <=
                     BarPatronDrinkingArmPose
                         .BottleHandOrientationToleranceDegrees &&
                     drinking.BottleSipAxisErrorDegrees <= 5f &&
-                    drinking.BottleHorizontalErrorDegrees <= 5f &&
                     drinking.MeasuredTorsoLeanBackDegrees >=
-                    BarPatronDrinkingArmPose
-                        .MinimumSipTorsoLeanBackDegrees &&
+                    Mathf.Max(0f, drinking.ExpectedSipTorsoLeanBackDegrees - 2.2f) &&
                     drinking.MeasuredHeadLeanBackDegrees >=
-                    BarPatronDrinkingArmPose
-                        .MinimumSipHeadLeanBackDegrees)
+                    Mathf.Max(0f, drinking.ExpectedSipHeadLeanBackDegrees - 2.2f))
                 {
                     if (patron.Anchor.Role == BarNpcRole.CounterPatron)
                     {
@@ -453,11 +682,29 @@ namespace BarPromenade.Tests.PlayMode
                         return drinking.IsTableLean;
                     }
 
-                    return true;
+                    return patron.Presentation.IsSeated && drinking.IsSeatedTable;
                 }
             }
 
             return false;
+        }
+
+        private static string DescribeBarDrinkMoments()
+        {
+            BarInteriorRoot bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+            var detail = new System.Text.StringBuilder();
+            foreach (BarPatron patron in bar.Patrons)
+            {
+                BarPatronDrinkingArmPose pose = patron.Drinking;
+                if (pose == null) continue;
+                detail.Append($"\n{patron.Anchor.Id}/{pose.DrinkProp?.Kind}: {pose.Timeline.Phase}, " +
+                    $"drinks={pose.Timeline.CompletedDrinks}, base={pose.BottleSurfaceContactError:F4}, " +
+                    $"upright={pose.BottleRestUprightErrorDegrees:F2}, grip={pose.BottleGripError:F4}, " +
+                    $"roll={pose.BottleHandOrientationErrorDegrees:F2}, mouth={pose.BottleMouthDistance:F4}, axis={pose.BottleSipAxisErrorDegrees:F2}, support={pose.TableSupportError:F4}, " +
+                    $"head={pose.RestHeadMotionDegrees:F2}; {DescribeBarSupportPose(patron)}");
+            }
+
+            return detail.ToString();
         }
 
         private static bool IsBarDrinkRestingOnSurface(string anchorId)
@@ -494,12 +741,6 @@ namespace BarPromenade.Tests.PlayMode
                        drinking.BottleGripError <=
                            BarPatronDrinkingArmPose
                                .BottleGripContactTolerance &&
-                       drinking.BottleHandRadialClearance >=
-                           BarPatronDrinkingArmPose
-                               .MinimumBottleHandRadialClearance &&
-                       drinking.BottleHandRightSideAlignment >=
-                           BarPatronDrinkingArmPose
-                               .MinimumRightHandSideAlignment &&
                        drinking.BottleHandOrientationErrorDegrees <=
                            BarPatronDrinkingArmPose
                                .BottleHandOrientationToleranceDegrees &&
@@ -517,21 +758,45 @@ namespace BarPromenade.Tests.PlayMode
             BarInteriorRoot bar =
                 Object.FindAnyObjectByType<BarInteriorRoot>();
             Assert.That(bar, Is.Not.Null);
-            Assert.That(bar.Patrons, Has.Count.EqualTo(11));
+            Assert.That(bar.Patrons, Has.Count.EqualTo(9));
 
             int boothCount = 0;
             int counterCount = 0;
             int tableCount = 0;
+            var appearances = new HashSet<string>(StringComparer.Ordinal);
+            var occupiedSofas = new HashSet<Transform>();
+            var vesselKinds = new HashSet<BarPatronDrinkPropKind>();
             for (int index = 0; index < bar.Patrons.Count; index++)
             {
                 BarPatron patron = bar.Patrons[index];
                 Assert.That(patron.Registry, Is.Not.Null);
                 Assert.That(patron.Presentation, Is.Not.Null);
+                Assert.That(DefaultNpcCatalog.ModelIds,
+                    Does.Contain(patron.Registry.DesignId), patron.Anchor.Id);
+                Assert.That(patron.Registry.SourceGeneratorVersion,
+                    Is.EqualTo(CityPedestrianDefaultNpcBody.SourceGeneratorVersion));
+                Assert.That(patron.Registry.GetComponent<CityPedestrianDefaultNpcBody>(),
+                    Is.Not.Null, patron.Anchor.Id);
+                Assert.That(appearances.Add(patron.Registry.BuildSignature), Is.True,
+                    "The visible visit cast repeats an appearance: " + patron.Anchor.Id);
                 Assert.That(
                     patron.Registry.DesignId,
                     Is.Not.EqualTo(
                         CityPedestrianResources.BabushkaDesignId),
                     patron.Anchor.Id);
+
+                Assert.That(patron.Drinking, Is.Not.Null, patron.Anchor.Id);
+                Assert.That(patron.Drinking.DrinkProp, Is.Not.Null, patron.Anchor.Id);
+                vesselKinds.Add(patron.Drinking.DrinkProp.Kind);
+                if (patron.Drinking != null)
+                {
+                    BarInteriorSpawnPlayModeTests.AssertHandWrap(
+                        patron.Drinking.HandPose, false,
+                        patron.Drinking.DrinkGripWorldPosition,
+                        patron.Drinking.DrinkOpeningDirection, patron.Anchor.Id);
+                    BarDrinkServiceWorldBuilderPlayModeTests.AssertBottleDoesNotIntersectHand(
+                        patron.Drinking.HandPose, false, patron.Drinking.BottleRoot, patron.Anchor.Id);
+                }
 
                 Vector3 expectedRoot =
                     bar.transform.TransformPoint(patron.Anchor.Position);
@@ -607,88 +872,32 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(
                             patron.Drinking.IsTableLean,
                             Is.False);
-                        AssertBarSurfaceRestTargets(
-                            bar,
-                            patron,
-                            bar.Layout.CounterPosition.y +
-                            bar.Layout.CounterSize.y * 0.5f +
-                            BarPatronWorldBuilder.CounterTopBuildUp,
-                            BarPatronWorldBuilder.CounterBottleRestInset,
-                            BarPatronWorldBuilder.CounterSurfaceHandInset,
-                            BarPatronWorldBuilder
-                                .CounterSurfaceHandSideOffset);
-                        if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
-                        {
-                            Assert.That(
-                                patron.Drinking.BottleMouthDistance,
-                                Is.LessThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .BottleLipContactTolerance),
-                                $"{patron.Anchor.Id} bottle neck does not " +
-                                "meet the authored mouth anchor.");
-                            Assert.That(
-                                patron.Drinking.BottleGripError,
-                                Is.LessThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .BottleGripContactTolerance),
-                                $"{patron.Anchor.Id} hand is detached from " +
-                                "the bottle grip.");
-                            Assert.That(
-                                patron.Drinking.BottleHandRadialClearance,
-                                Is.GreaterThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .MinimumBottleHandRadialClearance),
-                                $"{patron.Anchor.Id} wrist intersects the " +
-                                "bottle body.");
-                            Assert.That(
-                                patron.Drinking
-                                    .BottleHandRightSideAlignment,
-                                Is.GreaterThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .MinimumRightHandSideAlignment),
-                                $"{patron.Anchor.Id} right hand reaches the " +
-                                "bottle from its left side.");
-                            Assert.That(
-                                patron.Drinking
-                                    .BottleHandOrientationErrorDegrees,
-                                Is.LessThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .BottleHandOrientationToleranceDegrees),
-                                $"{patron.Anchor.Id} right wrist has the " +
-                                "wrong grip roll.");
-                            Assert.That(
-                                patron.Drinking.BottleSipAxisErrorDegrees,
-                                Is.LessThanOrEqualTo(5f),
-                                $"{patron.Anchor.Id} bottle is not horizontal " +
-                                "at the drinker's mouth.");
-                            Assert.That(
-                                patron.Drinking.BottleHorizontalErrorDegrees,
-                                Is.LessThanOrEqualTo(5f),
-                                $"{patron.Anchor.Id} bottle is tilted away " +
-                                "from the horizontal drinking pose.");
-                            Assert.That(
-                                patron.Drinking.MeasuredTorsoLeanBackDegrees,
-                                Is.GreaterThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .MinimumSipTorsoLeanBackDegrees),
-                                $"{patron.Anchor.Id} does not lean back for " +
-                                "the bottle sip.");
-                            Assert.That(
-                                patron.Drinking.MeasuredHeadLeanBackDegrees,
-                                Is.GreaterThanOrEqualTo(
-                                    BarPatronDrinkingArmPose
-                                        .MinimumSipHeadLeanBackDegrees),
-                                $"{patron.Anchor.Id} does not tip the head " +
-                                "back for the bottle sip.");
-                        }
+                        AssertBarSurfaceRestTargets(bar, patron);
+                        AssertTypedBarSip(patron);
                     }
                     else
                     {
-                        Assert.That(
-                            patron.Drinking,
-                            Is.Null,
-                            "Booth patrons keep both hands clear of the " +
-                            "table and upholstery.");
+                        Assert.That(patron.Drinking, Is.Not.Null, patron.Anchor.Id);
+                        Assert.That(patron.Drinking.IsSeatedTable, Is.True, patron.Anchor.Id);
+                        Assert.That(patron.Drinking.IsTableLean, Is.True, patron.Anchor.Id);
+                        Assert.That(patron.Presentation.AuthoredActionWeight, Is.LessThan(.001f),
+                            "A sofa drink must preserve its shared seated lower body.");
+                        AssertBarSurfaceRestTargets(bar, patron);
+                        AssertTypedBarSip(patron);
+                        string[] seatId = patron.Anchor.Id.Split('-');
+                        string side = seatId[2] == "near" ? "Near" : "Far";
+                        Transform cushion = bar.Room.Find($"Booth Cushion {seatId[1]} {side}");
+                        Assert.That(cushion, Is.Not.Null, patron.Anchor.Id);
+                        Assert.That(occupiedSofas.Add(cushion), Is.True,
+                            "Each sofa has exactly one guest: " + patron.Anchor.Id);
+                        Bounds support = cushion.GetComponent<Renderer>().bounds;
+                        Assert.That(pelvis.x, Is.InRange(support.min.x, support.max.x), patron.Anchor.Id);
+                        Assert.That(pelvis.z, Is.InRange(support.min.z, support.max.z), patron.Anchor.Id);
+                        Assert.That(support.max.y, Is.EqualTo(
+                            patron.Presentation.SeatAnchor.position.y).Within(.002f), patron.Anchor.Id);
+                        Vector3 facing = Quaternion.Euler(0f, patron.Anchor.YawDegrees, 0f) * Vector3.forward;
+                        Assert.That(Vector3.Dot(facing, side == "Near" ? Vector3.forward : Vector3.back),
+                            Is.GreaterThan(.999f), "Sofas must face each other across the table.");
                     }
 
                     continue;
@@ -717,177 +926,127 @@ namespace BarPromenade.Tests.PlayMode
                     "silhouette for a standing pub pose.");
                 Assert.That(patron.Drinking, Is.Not.Null);
                 Assert.That(patron.Drinking.IsTableLean, Is.True);
-                AssertBarSurfaceRestTargets(
-                    bar,
-                    patron,
-                    BarPatronWorldBuilder.PubTableTopHeight,
-                    BarPatronWorldBuilder.PubTableBottleRestInset,
-                    BarPatronWorldBuilder.PubTableHandInset,
-                    BarPatronWorldBuilder.PubTableHandSideOffset);
-                if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
-                {
-                    Assert.That(
-                        patron.Drinking.BottleMouthDistance,
-                        Is.LessThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .BottleLipContactTolerance),
-                        $"{patron.Anchor.Id} bottle neck does not meet the " +
-                        "authored mouth anchor.");
-                    Assert.That(
-                        patron.Drinking.BottleGripError,
-                        Is.LessThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .BottleGripContactTolerance),
-                        $"{patron.Anchor.Id} hand is detached from the " +
-                        "bottle grip.");
-                    Assert.That(
-                        patron.Drinking.BottleHandRadialClearance,
-                        Is.GreaterThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .MinimumBottleHandRadialClearance),
-                        $"{patron.Anchor.Id} wrist intersects the bottle " +
-                        "body.");
-                    Assert.That(
-                        patron.Drinking.BottleHandRightSideAlignment,
-                        Is.GreaterThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .MinimumRightHandSideAlignment),
-                        $"{patron.Anchor.Id} right hand reaches the bottle " +
-                        "from its left side.");
-                    Assert.That(
-                        patron.Drinking.BottleHandOrientationErrorDegrees,
-                        Is.LessThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .BottleHandOrientationToleranceDegrees),
-                        $"{patron.Anchor.Id} right wrist has the wrong " +
-                        "grip roll.");
-                    Assert.That(
-                        patron.Drinking.BottleSipAxisErrorDegrees,
-                        Is.LessThanOrEqualTo(5f),
-                        $"{patron.Anchor.Id} bottle is not horizontal at " +
-                        "the drinker's mouth.");
-                    Assert.That(
-                        patron.Drinking.BottleHorizontalErrorDegrees,
-                        Is.LessThanOrEqualTo(5f),
-                        $"{patron.Anchor.Id} bottle is tilted away from the " +
-                        "horizontal drinking pose.");
-                    Assert.That(
-                        patron.Drinking.MeasuredTorsoLeanBackDegrees,
-                        Is.GreaterThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .MinimumSipTorsoLeanBackDegrees),
-                        $"{patron.Anchor.Id} does not lean back for the " +
-                        "bottle sip.");
-                    Assert.That(
-                        patron.Drinking.MeasuredHeadLeanBackDegrees,
-                        Is.GreaterThanOrEqualTo(
-                            BarPatronDrinkingArmPose
-                                .MinimumSipHeadLeanBackDegrees),
-                        $"{patron.Anchor.Id} does not tip the head back for " +
-                        "the bottle sip.");
-                }
+                AssertBarSurfaceRestTargets(bar, patron);
+                AssertTypedBarSip(patron);
             }
 
-            Assert.That(boothCount, Is.EqualTo(6));
+            Assert.That(vesselKinds.Count, Is.EqualTo(5), "Each visit must mix all five vessel forms.");
+            Assert.That(boothCount, Is.EqualTo(4));
+            Assert.That(occupiedSofas.Count, Is.EqualTo(4));
             Assert.That(counterCount, Is.EqualTo(2));
             Assert.That(tableCount, Is.EqualTo(3));
         }
 
-        private static void AssertBarSurfaceRestTargets(
-            BarInteriorRoot bar,
-            BarPatron patron,
-            float surfaceHeight,
-            float bottleForwardInset,
-            float supportForwardInset,
-            float sideOffset)
+        private static string DescribeBarSupportPose(BarPatron patron)
         {
-            Quaternion patronRotation = Quaternion.Euler(
-                0f,
-                patron.Anchor.YawDegrees,
-                0f);
-            Vector3 localCenter =
-                patron.Anchor.Position +
-                Vector3.up * surfaceHeight;
-            Vector3 expectedBottlePoint =
-                localCenter +
-                patronRotation * Vector3.forward *
-                bottleForwardInset +
-                patronRotation * Vector3.right * sideOffset +
-                Vector3.up *
-                BarPatronWorldBuilder.BottleSurfaceClearance;
-            Vector3 expectedSupportPoint =
-                localCenter +
-                patronRotation * Vector3.forward *
-                supportForwardInset +
-                patronRotation * Vector3.left * sideOffset +
-                Vector3.up * BarPatronWorldBuilder.HandSurfaceClearance;
-
-            Assert.That(
-                Vector3.Distance(
-                    patron.Drinking.BottleRestPoint,
-                    bar.transform.TransformPoint(expectedBottlePoint)),
-                Is.LessThanOrEqualTo(0.002f),
-                $"{patron.Anchor.Id} uses a bottle dock in the wrong " +
-                "coordinate space.");
-            Assert.That(
-                Vector3.Distance(
-                    patron.Drinking.TableSupportPoint,
-                    bar.transform.TransformPoint(expectedSupportPoint)),
-                Is.LessThanOrEqualTo(0.002f),
-                $"{patron.Anchor.Id} uses a support point in the wrong " +
-                "coordinate space.");
-            if (patron.Drinking.Timeline.Phase != BarPatronDrinkPhase.Rest)
+            var description = new System.Text.StringBuilder();
+            description.Append("target=").Append(patron.Drinking.TableSupportPoint)
+                .Append(" owner=").Append(patron.Registry.transform.position)
+                .Append(" model=").Append(patron.Registry.ModelRoot.position)
+                .Append(" rotation=").Append(patron.Registry.ModelRoot.eulerAngles);
+            foreach (Transform bone in
+                     patron.Registry.GetComponentsInChildren<Transform>(true))
             {
-                return;
+                if (bone.name == "SOCKET_Vessel.L" ||
+                    bone.name == "clavicle.L" ||
+                    bone.name == "upper_arm.L" ||
+                    bone.name == "forearm.L" || bone.name == "hand.L")
+                {
+                    description.Append(' ').Append(bone.name)
+                        .Append('=').Append(bone.position.ToString("F3"));
+                }
             }
 
-            Assert.That(
-                patron.Drinking.TableSupportError,
-                Is.LessThanOrEqualTo(
-                    BarPatronDrinkingArmPose.TableSupportContactTolerance),
-                $"{patron.Anchor.Id} is not resting the free hand on the " +
-                "surface between drinks.");
+            return description.ToString();
+        }
 
-            Assert.That(
-                patron.Drinking.BottleSurfaceContactError,
-                Is.LessThanOrEqualTo(
-                    BarPatronDrinkingArmPose
-                        .BottleSurfaceContactTolerance),
-                $"{patron.Anchor.Id} does not put the bottle base on the " +
-                "surface between drinks.");
-            Assert.That(
-                patron.Drinking.BottleRestUprightErrorDegrees,
-                Is.LessThanOrEqualTo(
-                    BarPatronDrinkingArmPose
-                        .BottleRestUprightToleranceDegrees),
-                $"{patron.Anchor.Id} leaves the resting bottle tilted.");
-            Assert.That(
-                patron.Drinking.BottleGripError,
-                Is.LessThanOrEqualTo(
-                    BarPatronDrinkingArmPose.BottleGripContactTolerance),
-                $"{patron.Anchor.Id} detaches the hand from the resting " +
-                "bottle.");
-            Assert.That(
-                patron.Drinking.BottleHandRadialClearance,
-                Is.GreaterThanOrEqualTo(
-                    BarPatronDrinkingArmPose
-                        .MinimumBottleHandRadialClearance),
-                $"{patron.Anchor.Id} wrist intersects the resting bottle " +
-                "body.");
-            Assert.That(
-                patron.Drinking.BottleHandRightSideAlignment,
-                Is.GreaterThanOrEqualTo(
-                    BarPatronDrinkingArmPose
-                        .MinimumRightHandSideAlignment),
-                $"{patron.Anchor.Id} right hand reaches the resting bottle " +
-                "from its left side.");
-            Assert.That(
-                patron.Drinking.BottleHandOrientationErrorDegrees,
-                Is.LessThanOrEqualTo(
-                    BarPatronDrinkingArmPose
-                        .BottleHandOrientationToleranceDegrees),
-                $"{patron.Anchor.Id} right wrist has the wrong resting " +
-                "grip roll.");
+        private static void AssertTypedBarSip(BarPatron patron)
+        {
+            BarPatronDrinkingArmPose pose = patron.Drinking;
+            if (pose.Timeline.Phase != BarPatronDrinkPhase.Sip || pose.Timeline.VesselTipWeight < .95f) return;
+            string label = patron.Anchor.Id + "/" + pose.DrinkProp.Kind;
+            Assert.That(pose.BottleMouthDistance, Is.LessThanOrEqualTo(.015f), label + " rim misses mouth");
+            Assert.That(pose.BottleGripError, Is.LessThanOrEqualTo(.015f), label + " grip misses hand");
+            Assert.That(pose.BottleHandOrientationErrorDegrees, Is.LessThanOrEqualTo(1f), label + " palm faces away");
+            Assert.That(pose.BottleSipAxisErrorDegrees, Is.LessThanOrEqualTo(5f), label + " wrong typed tilt");
+            Assert.That(Mathf.Abs(Vector3.Angle(pose.DrinkOpeningDirection, patron.Registry.transform.up) - pose.SipTiltDegrees),
+                Is.LessThanOrEqualTo(5f), label + " wrong vessel opening direction");
+            Assert.That(pose.MeasuredTorsoLeanBackDegrees,
+                Is.GreaterThanOrEqualTo(Mathf.Max(0f, pose.ExpectedSipTorsoLeanBackDegrees - 2.2f)), label);
+            Assert.That(pose.MeasuredHeadLeanBackDegrees,
+                Is.GreaterThanOrEqualTo(Mathf.Max(0f, pose.ExpectedSipHeadLeanBackDegrees - 2.2f)), label);
+        }
+
+        private static void AssertBarSurfaceRestTargets(BarInteriorRoot bar, BarPatron patron)
+        {
+            BarPatronDrinkingArmPose pose = patron.Drinking;
+            Assert.That(pose.SurfaceRenderer, Is.Not.Null, patron.Anchor.Id);
+            Bounds top = pose.SurfaceRenderer.bounds;
+            Assert.That(pose.BottleRestPoint.y, Is.EqualTo(top.max.y + .002f).Within(.002f), patron.Anchor.Id);
+            Assert.That(pose.TableSupportPoint.y, Is.EqualTo(top.max.y + .015f).Within(.002f), patron.Anchor.Id);
+            Assert.That(pose.BottleRestPoint.x, Is.InRange(top.min.x, top.max.x), patron.Anchor.Id);
+            Assert.That(pose.BottleRestPoint.z, Is.InRange(top.min.z, top.max.z), patron.Anchor.Id);
+            if (pose.Timeline.Phase != BarPatronDrinkPhase.Rest) return;
+            Assert.That(pose.TableSupportError, Is.LessThanOrEqualTo(.04f),
+                patron.Anchor.Id + " support misses table: " + DescribeBarSupportPose(patron));
+            Assert.That(pose.BottleSurfaceContactError, Is.LessThanOrEqualTo(.025f), patron.Anchor.Id);
+            Assert.That(pose.BottleRestUprightErrorDegrees, Is.LessThanOrEqualTo(2f), patron.Anchor.Id);
+            Assert.That(pose.BottleGripError, Is.LessThanOrEqualTo(.015f), patron.Anchor.Id);
+            Assert.That(pose.BottleHandOrientationErrorDegrees, Is.LessThanOrEqualTo(1f), patron.Anchor.Id);
+            Bounds local = pose.DrinkProp.PhysicalLocalBounds;
+            float minimumY = float.PositiveInfinity;
+            bool round = patron.Anchor.Role == BarNpcRole.StandingPatron;
+            for (int index = 0; index < 8; index++)
+            {
+                Vector3 point = local.center + Vector3.Scale(local.extents,
+                    new Vector3((index & 1) == 0 ? -1f : 1f,
+                        (index & 2) == 0 ? -1f : 1f, (index & 4) == 0 ? -1f : 1f));
+                Vector3 world = pose.BottleRoot.position + pose.BottleRoot.rotation * point;
+                minimumY = Mathf.Min(minimumY, world.y);
+                Assert.That(world.x, Is.InRange(top.min.x - .002f, top.max.x + .002f), patron.Anchor.Id);
+                Assert.That(world.z, Is.InRange(top.min.z - .002f, top.max.z + .002f), patron.Anchor.Id);
+                if (round)
+                    Assert.That(Vector2.Distance(new Vector2(world.x, world.z), new Vector2(top.center.x, top.center.z)),
+                        Is.LessThanOrEqualTo(Mathf.Min(top.extents.x, top.extents.z) + .002f), patron.Anchor.Id);
+            }
+            Assert.That(minimumY, Is.EqualTo(top.max.y + .002f).Within(.003f),
+                patron.Anchor.Id + " vessel penetrates or floats above the table");
+        }
+
+        private static IEnumerator VerifyAllBarDrinkCycles(BarInteriorRoot bar)
+        {
+            var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            var sips = new bool[bar.Patrons.Count];
+            var rests = new bool[bar.Patrons.Count];
+            bool complete = false;
+            Action sample = () =>
+            {
+                complete = true;
+                for (int index = 0; index < bar.Patrons.Count; index++)
+                {
+                    BarPatron patron = bar.Patrons[index];
+                    BarPatronDrinkingArmPose pose = patron.Drinking;
+                    bool sip = pose.Timeline.Phase == BarPatronDrinkPhase.Sip && pose.Timeline.VesselTipWeight >= .95f;
+                    bool rest = pose.Timeline.Phase == BarPatronDrinkPhase.Rest && pose.Timeline.CompletedDrinks > 0;
+                    if ((sip && !sips[index]) || (rest && !rests[index]))
+                    {
+                        AssertTypedBarSip(patron);
+                        AssertBarSurfaceRestTargets(bar, patron);
+                        BarInteriorSpawnPlayModeTests.AssertHandWrap(pose.HandPose, false,
+                            pose.DrinkGripWorldPosition, pose.DrinkOpeningDirection, patron.Anchor.Id + "/" + pose.DrinkProp.Kind);
+                        BarDrinkServiceWorldBuilderPlayModeTests.AssertBottleDoesNotIntersectHand(
+                            pose.HandPose, false, pose.BottleRoot, patron.Anchor.Id + "/" + pose.DrinkProp.Kind);
+                        if (sip) sips[index] = true;
+                        if (rest) rests[index] = true;
+                    }
+                    complete &= sips[index] && rests[index];
+                }
+            };
+            float deadline = Time.realtimeSinceStartup + 25f;
+            while (!complete && Time.realtimeSinceStartup < deadline)
+                yield return AtWarehouseFridgePresentation(probe, sample);
+            Object.Destroy(probe);
+            Assert.That(complete, Is.True, "Every visitor must drink and return the same prop: " + DescribeBarDrinkMoments());
         }
 
         //  Every area below is photographed from the hero, because his
@@ -4537,6 +4696,9 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 previousPosition = camera.transform.position;
             Quaternion previousRotation = camera.transform.rotation;
             float previousFieldOfView = camera.fieldOfView;
+            PlayerCameraFollow barCameraFollow = sceneName == SceneIds.BarInterior
+                ? camera.GetComponent<PlayerCameraFollow>() : null;
+            bool barCameraWasFollowing = barCameraFollow != null && barCameraFollow.enabled;
 
             //  The main camera is the PLAYER's camera, so the hero stands
             //  in front of it and his head fills the middle of every shot.
@@ -4558,16 +4720,40 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
+            WarehouseRefrigeratorPresentationProbe finalBarPose =
+                sceneName == SceneIds.BarInterior
+                    ? camera.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>() : null;
             try
             {
                 camera.targetTexture = target;
+                if (barCameraFollow != null) barCameraFollow.enabled = false;
                 foreach (Shot shot in shots)
                 {
-                    //  A weather proof may deliberately wait before a shot.
-                    //  The camera is positioned only AFTER that wait, so its
-                    //  follow script can run normally and still cannot pull
-                    //  the actual capture pose away between positioning and
-                    //  rendering.
+                    Action stageCamera = () =>
+                    {
+                        Vector3 from = shot.Position;
+                        Vector3 to = shot.Target;
+                        if (shot.RelativeToHero)
+                        {
+                            Assert.That(player, Is.Not.Null,
+                                $"'{sceneName}/{shot.Name}' is framed on the hero, and this scene has none.");
+                            from = player.transform.TransformPoint(from);
+                            to = player.transform.TransformPoint(to);
+                        }
+                        camera.transform.SetPositionAndRotation(from,
+                            Quaternion.LookRotation((to - from).normalized, Vector3.up));
+                        camera.fieldOfView = shot.FieldOfView;
+                    };
+                    if (sceneName == SceneIds.BarInterior)
+                    {
+                        // Camera.Render may reuse this frame's skinned vertex buffer.
+                        // Expose this shot's actors for a complete skinning frame first.
+                        stageCamera();
+                        yield return null;
+                    }
+                    // Weather proofs may wait with the camera following normally.
+                    // The bar instead holds its staged view throughout the wait
+                    // so modular skins update in the view that will be rendered.
                     for (int frame = 0;
                          frame < shot.DelayFrames;
                          frame++)
@@ -4578,14 +4764,20 @@ namespace BarPromenade.Tests.PlayMode
                     //  Then, if the shot names a condition, wait for the
                     //  scene to reach it - bounded, so a condition that is
                     //  never met is a failed frame, not a hung run.
-                    if (shot.ReadyWhen != null)
+                    if (finalBarPose == null && shot.ReadyWhen != null)
                     {
                         int waited = 0;
                         while (!shot.ReadyWhen() &&
                                waited < MaximumReadyFrames)
                         {
                             waited++;
-                            yield return null;
+                            // Bar hand contacts publish in LateUpdate, after
+                            // the Animator's native transform write. Inspect
+                            // that rendered pose before the next graph sample.
+                            if (sceneName == SceneIds.BarInterior)
+                                yield return new WaitForFixedUpdate();
+                            else
+                                yield return null;
                         }
 
                         Assert.That(
@@ -4593,53 +4785,59 @@ namespace BarPromenade.Tests.PlayMode
                             Is.True,
                             $"'{sceneName}/{shot.Name}' waited " +
                             $"{MaximumReadyFrames} frames and its moment " +
-                            "never came.");
+                            "never came." + (sceneName == SceneIds.BarInterior
+                                ? DescribeBarDrinkMoments() : string.Empty));
                     }
 
-                    Vector3 from = shot.Position;
-                    Vector3 to = shot.Target;
-                    if (shot.RelativeToHero)
+                    Action captureShot = () =>
                     {
+                        stageCamera();
+                        camera.Render();
+
+                        RenderTexture previousActive = RenderTexture.active;
+                        RenderTexture.active = target;
+                        frameBuffer.ReadPixels(
+                            new Rect(0f, 0f, Width, Height), 0, 0);
+                        frameBuffer.Apply();
+                        RenderTexture.active = previousActive;
+
+                        string path = Path.Combine(
+                            folder,
+                            $"{shot.Name}.png");
+                        File.WriteAllBytes(path, frameBuffer.EncodeToPNG());
+                        Debug.Log($"Area capture wrote {path}");
+
                         Assert.That(
-                            player,
-                            Is.Not.Null,
-                            $"'{sceneName}/{shot.Name}' is framed on the " +
-                            "hero, and this scene has none.");
-                        from = player.transform.TransformPoint(from);
-                        to = player.transform.TransformPoint(to);
+                            IsBlank(frameBuffer),
+                            Is.False,
+                            $"'{sceneName}/{shot.Name}' came out a single flat " +
+                            "colour: the camera saw nothing. Wrong place, wrong " +
+                            "culling mask, or a world that never built.");
+                    };
+                    if (finalBarPose == null) captureShot();
+                    else
+                    {
+                        bool captured = false;
+                        for (int waited = 0; waited < MaximumReadyFrames && !captured; waited++)
+                            yield return AtWarehouseFridgePresentation(finalBarPose, () =>
+                            {
+                                if (shot.ReadyWhen != null && !shot.ReadyWhen()) return;
+                                captureShot();
+                                captured = true;
+                            });
+                        Assert.That(captured, Is.True,
+                            $"'{sceneName}/{shot.Name}' never reached its final presentation moment." +
+                            DescribeBarDrinkMoments());
                     }
-
-                    camera.transform.SetPositionAndRotation(
-                        from,
-                        Quaternion.LookRotation(
-                            (to - from).normalized,
-                            Vector3.up));
-                    camera.fieldOfView = shot.FieldOfView;
-                    camera.Render();
-
-                    RenderTexture previousActive = RenderTexture.active;
-                    RenderTexture.active = target;
-                    frameBuffer.ReadPixels(
-                        new Rect(0f, 0f, Width, Height), 0, 0);
-                    frameBuffer.Apply();
-                    RenderTexture.active = previousActive;
-
-                    string path = Path.Combine(
-                        folder,
-                        $"{shot.Name}.png");
-                    File.WriteAllBytes(path, frameBuffer.EncodeToPNG());
-                    Debug.Log($"Area capture wrote {path}");
-
-                    Assert.That(
-                        IsBlank(frameBuffer),
-                        Is.False,
-                        $"'{sceneName}/{shot.Name}' came out a single flat " +
-                        "colour: the camera saw nothing. Wrong place, wrong " +
-                        "culling mask, or a world that never built.");
                 }
             }
             finally
             {
+                if (finalBarPose != null)
+                {
+                    finalBarPose.CancelPending();
+                    Object.Destroy(finalBarPose);
+                }
                 foreach (Renderer renderer in hiddenPlayer)
                 {
                     if (renderer != null)
@@ -4653,6 +4851,7 @@ namespace BarPromenade.Tests.PlayMode
                     previousPosition,
                     previousRotation);
                 camera.fieldOfView = previousFieldOfView;
+                if (barCameraFollow != null) barCameraFollow.enabled = barCameraWasFollowing;
                 Object.DestroyImmediate(frameBuffer);
                 target.Release();
                 Object.DestroyImmediate(target);

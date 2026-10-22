@@ -1,171 +1,73 @@
-using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
-using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarBartenderAssetTests
     {
-        private const string PlayerModelPath =
-            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
-        private const string ServiceAnimationPath =
-            "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx";
-        private const string WalkAnimationPath =
-            "Assets/Bar/Bartender/Animations/BarBartenderWalk.anim";
-
         [Test]
-        public void Provider_SelectsOrdinaryPrefab_AndRetainsLegacy()
+        public void DefaultPopulation_OwnsBartenderAppearanceAndServiceRig()
         {
-            BarBartenderProvider provider = BarBartenderProvider.Load();
-            Assert.That(
-                provider,
-                Is.Not.Null,
-                "The bartender provider asset must be addressable.");
-            Assert.That(provider.BartenderPrefab, Is.Not.Null);
-            Assert.That(provider.LegacyBartenderPrefab, Is.Not.Null);
-            Assert.That(
-                provider.BartenderPrefab,
-                Is.Not.SameAs(provider.LegacyBartenderPrefab));
-
-            BarBartenderAssetRegistry active =
-                provider.BartenderPrefab.GetComponent<
-                    BarBartenderAssetRegistry>();
-            Assert.That(active, Is.Not.Null);
-            Assert.That(active.Animator, Is.Not.Null);
-            Assert.That(active.Animator.avatar, Is.Not.Null);
-            Assert.That(
-                AssetDatabase.GetAssetPath(active.Animator.avatar),
-                Is.EqualTo(PlayerModelPath));
-            Assert.That(
-                active.DesignId,
-                Is.EqualTo(BarBartenderProvider.DesignId));
-            Assert.That(active.BuildSignature, Has.Length.EqualTo(64));
-            Assert.That(active.SourceTriangleCount, Is.InRange(4500, 8000));
-            Assert.That(active.Renderers.Count, Is.InRange(60, 110));
-            Assert.That(active.DetailAtlas, Is.Not.Null);
-            Assert.That(active.DetailAtlasRenderers.Count, Is.EqualTo(active.Renderers.Count));
-            foreach (string side in new[] { "L", "R" })
-                for (int finger = 0; finger < 4; finger++)
-                    Assert.That(active.RendererBindings.Any(binding =>
-                        binding.RendererName == $"GEO_Finger{finger}.{side}" &&
-                        binding.BoneName == $"hand.{side}"), Is.True);
-            Assert.That(
-                active.RendererBindings.Count,
-                Is.EqualTo(active.Renderers.Count));
-            Assert.That(active.ExtraArmChains, Is.Empty);
-            Assert.That(active.UsesAuthoredServiceClips, Is.True);
-            Assert.That(active.ClipBindings.Count, Is.EqualTo(5));
-            BarBartenderClipBinding walk = active.ClipBindings.Single(
-                binding => binding.Kind == BarBartenderClipKind.Walk);
-            Assert.That(
-                AssetDatabase.GetAssetPath(walk.Clip),
-                Is.EqualTo(WalkAnimationPath));
-            Assert.That(walk.Clip.name, Is.EqualTo("BarBartenderWalk"));
-            Assert.That(walk.Clip.length, Is.EqualTo(1f).Within(0.002f));
-            Assert.That(walk.Loop, Is.True);
-            BarBartenderClipBinding serviceStep =
-                active.ClipBindings.Single(
-                    binding => binding.Kind ==
-                        BarBartenderClipKind.ServiceStep);
-            Assert.That(
-                AssetDatabase.GetAssetPath(serviceStep.Clip),
-                Is.EqualTo(ServiceAnimationPath));
-            Assert.That(
-                serviceStep.Clip.name,
-                Is.EqualTo("CafeAttendantWalk"));
-            Assert.That(active.LeftGripSocket, Is.Not.Null);
-            Assert.That(active.LeftVesselSocket, Is.Not.Null);
-            Assert.That(active.RightGripSocket, Is.Not.Null);
-            Assert.That(active.RightBottleSocket, Is.Not.Null);
-            Assert.That(active.VesselGripAnchor, Is.Not.Null);
-            Assert.That(active.BottleGripAnchor, Is.Not.Null);
-            Assert.That(
-                provider.BartenderPrefab
-                    .GetComponentsInChildren<Collider>(true),
-                Is.Empty);
-            Assert.That(
-                provider.BartenderPrefab
-                    .GetComponentsInChildren<Light>(true),
-                Is.Empty);
-            Assert.That(
-                provider.BartenderPrefab
-                    .GetComponentsInChildren<Rigidbody>(true),
-                Is.Empty);
-            Assert.That(
-                active.LocalBounds.size.y,
-                Is.EqualTo(1.75f).Within(0.05f));
-
-            BarBartenderAssetRegistry legacy =
-                provider.LegacyBartenderPrefab.GetComponent<
-                    BarBartenderAssetRegistry>();
-            Assert.That(legacy, Is.Not.Null);
-            Assert.That(
-                legacy.DesignId,
-                Is.EqualTo(BarBartenderProvider.LegacyDesignId));
-            Assert.That(legacy.UsesAuthoredServiceClips, Is.False);
-            Assert.That(
-                legacy.ExtraArmChains.Count,
-                Is.EqualTo(
-                    BarBartenderAssetRegistry.ExtraArmChainCount));
-            var expectedChainIds = new[]
+            GameObject instance = CreateBartender();
+            try
             {
-                "Arm2.L",
-                "Arm2.R",
-                "Arm3.L",
-                "Arm3.R"
-            };
-            var seenGrips = new HashSet<Transform>();
-            for (int index = 0;
-                 index < legacy.ExtraArmChains.Count;
-                 index++)
-            {
-                BarBartenderArmChain chain =
-                    legacy.ExtraArmChains[index];
-                Assert.That(
-                    chain.ChainId,
-                    Is.EqualTo(expectedChainIds[index]));
-                Assert.That(chain.ShoulderPivot, Is.Not.Null);
-                Assert.That(chain.ElbowPivot, Is.Not.Null);
-                Assert.That(chain.WristPivot, Is.Not.Null);
-                Assert.That(chain.GripPivot, Is.Not.Null);
-                Assert.That(seenGrips.Add(chain.GripPivot), Is.True);
+                var registry = instance.GetComponent<BarBartenderAssetRegistry>();
+                var assignment = DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.BarBartender);
+                Assert.That(registry.DesignId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+                Assert.That(registry.Actor.GetComponent<DefaultNpcAppearance>().AppearanceKey,
+                    Is.EqualTo(DefaultNpcPopulation.BarBartender));
+                Assert.That(assignment.ItemIds, Does.Contain("apron.work"));
+                Assert.That(registry.Actor.IsInitialized, Is.False,
+                    "The population sampler must release the Animator to the bar sampler.");
+                Assert.That(registry.ServiceTowel, Is.Not.Null);
+                Assert.That(registry.ServiceTowel.Id, Is.EqualTo(CityPedestrianHandPropId.ServiceTowel));
+                foreach (BarBartenderClipKind kind in System.Enum.GetValues(typeof(BarBartenderClipKind)))
+                    Assert.That(registry.TryGetClip(kind, out _, out _), Is.True);
+                Assert.That(registry.Actor.GetComponent<NpcWardrobe>().IsModular, Is.True);
             }
+            finally { Object.DestroyImmediate(instance); }
         }
 
         [Test]
         public void OrdinaryPresentation_ReadsServiceTimelineIntoServiceClips()
         {
-            BarBartenderProvider provider = BarBartenderProvider.Load();
-            GameObject instance = Object.Instantiate(
-                provider.BartenderPrefab);
+            var root = new GameObject("Test bartender service");
             try
             {
+                GameObject instance = CreateBartender(root.transform);
+                GameObject roomPrefab = BarModelResources.LoadInteriorPrefab();
+                Assert.That(roomPrefab, Is.Not.Null);
+                GameObject room = Object.Instantiate(roomPrefab, root.transform);
+                Renderer counter = room.GetComponent<BarAssetRegistry>().Parts
+                    .Single(part => part.SourceName == "Counter Top").Renderer;
+                BarNpcAnchor placement = BarInteriorLayoutPlanner.Generate(
+                    31, "Test bartender service", BarActivityKind.BeerPong,
+                    CityDistrictKind.Nightlife).NpcAnchors.Single(anchor => anchor.Role == BarNpcRole.Bartender);
+                instance.transform.localPosition = placement.Position;
+                instance.transform.localRotation = Quaternion.Euler(0f, placement.YawDegrees, 0f);
                 BarBartenderAssetRegistry registry =
                     instance.GetComponent<BarBartenderAssetRegistry>();
+                registry.ConfigureWipeSurface(counter);
                 BarBartenderPresentation presentation =
                     instance.AddComponent<BarBartenderPresentation>();
                 presentation.Initialize(registry);
+                // PlayMode creates this same manual graph on Initialize.
+                // EditMode steps it explicitly, with no player-loop timing.
+                MethodInfo createGraph = typeof(BarBartenderPresentation).GetMethod(
+                    "CreateOrdinaryGraph", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(createGraph, Is.Not.Null);
+                createGraph.Invoke(presentation, null);
+                presentation.Advance(0f);
 
-                Renderer serviceTowel = null;
-                for (int index = 0;
-                     index < registry.RendererBindings.Count;
-                     index++)
-                {
-                    BarBartenderRendererBinding binding =
-                        registry.RendererBindings[index];
-                    if (binding != null &&
-                        binding.RendererName == "ACC_ServiceTowel")
-                    {
-                        serviceTowel = binding.Renderer;
-                        break;
-                    }
-                }
+                Renderer serviceTowel = registry.ServiceTowel.Renderers[0];
+                CityPedestrianHandPropRegistry originalTowel = registry.ServiceTowel;
 
                 Assert.That(presentation.UsesOrdinaryRig, Is.True);
                 Assert.That(serviceTowel, Is.Not.Null);
                 Assert.That(serviceTowel.enabled, Is.True);
+                Assert.That(presentation.TowelPresentation.WipeContactError, Is.LessThanOrEqualTo(.003f));
                 Assert.That(
                     presentation.ChainCount,
                     Is.EqualTo(
@@ -186,16 +88,28 @@ namespace BarPromenade.Tests.EditMode
                 presentation.ApplyServiceFrame(
                     timeline.CurrentFrame,
                     leftHandCarriesMenu: true);
+                Assert.That(presentation.TowelPresentation.State, Is.EqualTo(BarBartenderTowelState.Stowing));
                 Assert.That(
                     presentation.CurrentClipKind,
-                    Is.EqualTo(BarBartenderClipKind.Notice));
-                Assert.That(serviceTowel.enabled, Is.False,
-                    "Menu delivery must free the bartender's left hand towel.");
+                    Is.EqualTo(BarBartenderClipKind.Wipe),
+                    "The notice action must wait for the real towel movement.");
+                Vector3 wipeHand = registry.LeftHand.position;
+                presentation.Advance(.18f);
+                Assert.That(serviceTowel.enabled, Is.True, "The towel must stay visible while lifted from the counter.");
+                Assert.That(Vector3.Distance(wipeHand, registry.LeftHand.position), Is.GreaterThan(.03f));
+                AdvanceUntilTowelStored(presentation, originalTowel);
+                presentation.Advance(0f);
+                Assert.That(presentation.CurrentClipKind, Is.EqualTo(BarBartenderClipKind.Notice));
+                Assert.That(serviceTowel.enabled, Is.False);
 
                 timeline.Advance(
                     BarDrinkServiceTimeline
                         .CameraApproachDurationSeconds);
                 presentation.ApplyServiceFrame(timeline.CurrentFrame);
+                presentation.ResetServicePose();
+                Assert.That(presentation.TowelPresentation.State, Is.EqualTo(BarBartenderTowelState.Drawing));
+                Assert.That(serviceTowel.enabled, Is.False, "The empty hand must reach behind the back before drawing the towel.");
+                AdvanceUntilTowelDrawn(presentation, originalTowel);
                 Assert.That(
                     presentation.CurrentClipKind,
                     Is.EqualTo(BarBartenderClipKind.Wipe));
@@ -205,6 +119,10 @@ namespace BarPromenade.Tests.EditMode
                 presentation.ApplyServiceFrame(
                     timeline.CurrentFrame,
                     leftHandCarriesMenu: true);
+                Assert.That(presentation.IsTowelServiceReady, Is.False);
+                Assert.That(serviceTowel.enabled, Is.True, "Retrieval first carries the visible towel behind the back.");
+                AdvanceUntilTowelStored(presentation, originalTowel);
+                presentation.Advance(0f);
                 Assert.That(
                     presentation.CurrentClipKind,
                     Is.EqualTo(BarBartenderClipKind.ServiceStep));
@@ -243,6 +161,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(1f).Within(0.001f));
 
                 presentation.ResetServicePose();
+                presentation.SetChainTarget(BarBartenderPresentation.OrdinaryBottleHandIndex, Vector3.zero, 0f);
+                Assert.That(presentation.IsTowelWipeReady, Is.False,
+                    "Reset must draw the towel before returning to wiping.");
+                AdvanceUntilTowelDrawn(presentation, originalTowel);
                 Assert.That(
                     presentation.CurrentClipKind,
                     Is.EqualTo(BarBartenderClipKind.Wipe));
@@ -250,21 +172,64 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
-                Object.DestroyImmediate(instance);
+                Object.DestroyImmediate(root);
             }
+        }
+
+        private static void AdvanceUntilTowelStored(
+            BarBartenderPresentation presentation, CityPedestrianHandPropRegistry original)
+        {
+            bool reachedBack = false;
+            for (int step = 0; step < 90 && !presentation.IsTowelServiceReady; step++)
+            {
+                presentation.Advance(.02f);
+                BarBartenderTowelPresentation towel = presentation.TowelPresentation;
+                Assert.That(towel.Towel, Is.SameAs(original));
+                if (towel.State == BarBartenderTowelState.Stowing)
+                    Assert.That(towel.IsTowelVisible, Is.True);
+                else if (towel.State == BarBartenderTowelState.Stowed)
+                {
+                    if (!reachedBack)
+                    {
+                        Assert.That(towel.HandBehindBack, Is.True);
+                        Assert.That(towel.LastGripError, Is.LessThanOrEqualTo(.003f));
+                        reachedBack = true;
+                    }
+                    Assert.That(towel.IsTowelVisible, Is.False);
+                }
+            }
+            Assert.That(reachedBack && presentation.IsTowelServiceReady, Is.True,
+                $"The towel never completed stow: {presentation.TowelPresentation.State}, " +
+                $"grip={presentation.TowelPresentation.LastGripError:F4}.");
+        }
+
+        private static void AdvanceUntilTowelDrawn(
+            BarBartenderPresentation presentation, CityPedestrianHandPropRegistry original)
+        {
+            bool sawCloth = false;
+            for (int step = 0; step < 90 && !presentation.IsTowelWipeReady; step++)
+            {
+                presentation.Advance(.02f);
+                BarBartenderTowelPresentation towel = presentation.TowelPresentation;
+                Assert.That(towel.Towel, Is.SameAs(original));
+                if (!sawCloth && towel.IsTowelVisible)
+                {
+                    Assert.That(towel.HandBehindBack, Is.True,
+                        "The same towel must reappear in the hand behind the back.");
+                    Assert.That(towel.LastGripError, Is.LessThanOrEqualTo(.003f));
+                    sawCloth = true;
+                }
+            }
+            Assert.That(sawCloth && presentation.IsTowelWipeReady, Is.True,
+                $"The towel never completed draw: {presentation.TowelPresentation.State}, " +
+                $"grip={presentation.TowelPresentation.LastGripError:F4}.");
+            Assert.That(presentation.TowelPresentation.WipeContactError, Is.LessThanOrEqualTo(.003f));
         }
 
         [Test]
         public void OrdinaryWalkClip_ContainsVisibleFootTravel()
         {
-            BarBartenderProvider provider = BarBartenderProvider.Load();
-            BarBartenderAssetRegistry registry =
-                provider.BartenderPrefab.GetComponent<
-                    BarBartenderAssetRegistry>();
-            BarBartenderClipBinding walk = registry.ClipBindings.Single(
-                binding => binding.Kind == BarBartenderClipKind.Walk);
-            GameObject instance = Object.Instantiate(
-                provider.BartenderPrefab);
+            GameObject instance = CreateBartender();
             try
             {
                 BarBartenderAssetRegistry instanceRegistry =
@@ -275,12 +240,13 @@ namespace BarPromenade.Tests.EditMode
                 Transform rightFoot = instance
                     .GetComponentsInChildren<Transform>(true)
                     .Single(transform => transform.name == "foot.R");
-                walk.Clip.SampleAnimation(
+                instanceRegistry.TryGetClip(BarBartenderClipKind.Walk, out AnimationClip walk, out _);
+                walk.SampleAnimation(
                     instanceRegistry.Animator.gameObject,
                     0f);
                 Vector3 leftStart = leftFoot.position;
                 Vector3 rightStart = rightFoot.position;
-                walk.Clip.SampleAnimation(
+                walk.SampleAnimation(
                     instanceRegistry.Animator.gameObject,
                     0.25f);
 
@@ -305,16 +271,11 @@ namespace BarPromenade.Tests.EditMode
             // right must swing the first one's face right; a hero walking
             // off behind him must leave the head and neck exactly where the
             // twin's rig holds them.
-            BarBartenderProvider provider = BarBartenderProvider.Load();
             var root = new GameObject("Bartender Attention Root");
             try
             {
-                GameObject glancingObject = Object.Instantiate(
-                    provider.BartenderPrefab,
-                    root.transform);
-                GameObject twinObject = Object.Instantiate(
-                    provider.BartenderPrefab,
-                    root.transform);
+                GameObject glancingObject = CreateBartender(root.transform);
+                GameObject twinObject = CreateBartender(root.transform);
                 BarBartenderAssetRegistry registry =
                     glancingObject.GetComponent<BarBartenderAssetRegistry>();
                 BarBartenderAssetRegistry twinRegistry =
@@ -390,6 +351,15 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        private static GameObject CreateBartender(Transform parent = null)
+        {
+            var actor = DefaultNpcFactory.CreateForCharacter(parent, DefaultNpcPopulation.BarBartender);
+            CityPortCrew.AlignWorkerModelWithPlacement(actor);
+            actor.ReleaseAnimation();
+            actor.gameObject.AddComponent<BarBartenderAssetRegistry>().Configure(actor);
+            return actor.gameObject;
         }
 
         /// <summary>

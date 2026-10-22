@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the redesigned British-pub bar and its existing exterior.
+"""Build the compact urban bar and its existing exterior.
 
 Every visible interior object is authored here: the panelled L counter,
 brass rails and taps, mirrored backbar, snug screens, booths, small pub
@@ -7,8 +7,8 @@ tables, carpet fields, music nook, grounded service markers, reusable
 service props, jukebox, fan and practical lights.  Unity owns
 only behaviour, placement state, logical collision and lighting.
 
-The late-Victorian exterior and the established ``22 x 16 x 4.8 m`` room
-envelope remain fixed.  The interior is a compact, worn urban public
+The late-Victorian exterior remains fixed; the ``11.4 x 7.8 x 3.0 m`` room
+fits its main ground-floor range. The interior is a compact, worn urban public
 house rather than a themed attraction: there are no flags, brands, pub
 name, legible advertising or tourist props.  The manifest records every
 fixed-metre part and semantic anchor so the Unity contract can be proven
@@ -41,6 +41,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence
 
+sys.dont_write_bytecode = True
+
 try:
     import bpy
 except ImportError as error:  # pragma: no cover - Blender entry point.
@@ -52,15 +54,16 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
+import bar_compact_interior as compact  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "3.3.3"
+INTERIOR_GENERATOR_VERSION = "4.0.5"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
 # --- the layout contract, mirrored from BarInteriorLayoutPlanner --------
-ROOM_WIDTH = 22.0
-ROOM_DEPTH = 16.0
-ROOM_HEIGHT = 4.8
+ROOM_WIDTH = 11.4
+ROOM_DEPTH = 7.8
+ROOM_HEIGHT = 3.0
 WALL_THICKNESS = 0.3
 DOOR_WIDTH = exterior.DOOR_WIDTH
 DOOR_HEIGHT = exterior.DOOR_HEIGHT
@@ -69,22 +72,24 @@ FLOOR_THICKNESS = 0.24
 CEILING_THICKNESS = 0.20
 
 #: `plan.CounterPosition` / `plan.CounterSize`.
-COUNTER_POS = (0.0, 0.43, 5.75)
-COUNTER_SIZE = (11.2, 0.86, 1.0)
-COUNTER_STATION = (-1.15, 0.9, 4.75)
-COUNTER_RETURN_POS = (5.08, 0.43, 4.12)
-COUNTER_RETURN_SIZE = (1.04, 0.86, 3.25)
+# Remove exactly the leftmost 0.90 m stool bay; keep the right end fixed.
+COUNTER_POS = (0.875, 0.43, 1.95)
+COUNTER_SIZE = (5.95, 0.86, 1.0)
+COUNTER_STATION = (-0.75, 0.9, 0.55)
+COUNTER_RETURN_POS = (3.57, 0.43, 1.55)
+COUNTER_RETURN_SIZE = (1.04, 0.86, 1.8)
 COUNTER_SURFACE_Y = (
     COUNTER_POS[1] + COUNTER_SIZE[1] * 0.5 + 0.16)
-HERO_SEAT = (-1.15, 0.8175, 4.53)
-HERO_APPROACH = (-1.15, 0.0, 3.35)
-HERO_STAND = (-1.15, 0.0, 3.89)
-BARTENDER_POSITION = (-0.55, 0.0, 6.50)
-ACTIVITY_STATION = (5.1, 0.9, -1.55)
+HERO_SEAT = (-0.75, 0.8175, 0.91)
+HERO_APPROACH = (-0.75, 0.0, -0.27)
+HERO_STAND = (-0.75, 0.0, 0.27)
+BARTENDER_POSITION = (-0.15, 0.0, 2.85)
+ACTIVITY_STATION = (2.7, 0.9, -0.45)
+STOOL_XS = (-1.65, -0.75, 0.15, 1.05, 1.95)
 
 #: The three decorative beer taps form one compact bank at the right end of
 #: the main counter, above its overlap with the return. That end has no stool
-#: beneath it; the last customer stool remains clear at x = 4.00.
+#: beneath it; the last customer stool remains clear at x = 1.95.
 BEER_TAP_CLUSTER_CENTER_X = COUNTER_RETURN_POS[0]
 BEER_TAP_SPACING = 0.33
 BEER_TAP_XS = tuple(
@@ -94,11 +99,11 @@ BEER_TAP_XS = tuple(
 BEER_TAP_Z = COUNTER_POS[2]
 BEER_TAP_STEM_TOP_Y = 1.58
 BEER_TAP_BRANCH_Y = 1.52
-BEER_TAP_SPOUT_Z = 6.13
+BEER_TAP_SPOUT_Z = 2.33
 BEER_TAP_SPOUT_Y = 1.45
 BEER_TAP_HANDLE_TOP_Y = 1.88
 BEER_TAP_SERVER_DOCK = (
-    BEER_TAP_CLUSTER_CENTER_X, 0.0, 6.72)
+    BEER_TAP_CLUSTER_CENTER_X, 0.0, 2.92)
 BEER_TAP_VESSEL_DOCK = (
     BEER_TAP_CLUSTER_CENTER_X, COUNTER_SURFACE_Y + 0.005,
     BEER_TAP_SPOUT_Z)
@@ -113,8 +118,8 @@ BEER_TAP_HANDLE_GRIP = (
     BEER_TAP_STEM_TOP_Y +
     (BEER_TAP_HANDLE_TOP_Y - BEER_TAP_STEM_TOP_Y) * 0.72,
     BEER_TAP_Z)
-SERVICE_MENU_DOCK_Z = 5.96
-SERVICE_VESSEL_DOCK_Z = 5.43
+SERVICE_MENU_DOCK_Z = 2.16
+SERVICE_VESSEL_DOCK_Z = 1.63
 SERVICE_PROP_MINIMUM_GAP = 0.08
 
 #: Mountain Road Cafe stool silhouette, dimensions and palette. Every Bar
@@ -131,23 +136,18 @@ CAFE_STOOL_SEAT_RGB = (0.34, 0.095, 0.035)
 
 #: Furniture footprints, from `BarInteriorLayoutPlanner.CreateFurniture`.
 #: Rects are (xMin, yMin, width, height) in the plan's XZ.
-BACKBAR_RECT = (-5.55, 7.125, 11.1, 0.55)
-BACKBAR_HEIGHT = 1.44
-STAGE_RECT = (-10.0, 4.75, 3.8, 2.35)
-STAGE_HEIGHT = 0.32
-BOOTH_ZS = (-3.9, -0.35, 3.15)
-BOOTH_RECT_WIDTH = 3.07
-BOOTH_RECT_HEIGHT = 2.3
-BOOTH_RECT_X = -10.66
-PUB_TABLES = ((-3.5, -3.65), (3.5, -3.65),
-              (-3.5, 2.5), (3.25, 2.55))
-COAT_RACK = (-8.85, -6.45)
+BACKBAR_RECT = (-3.0, 3.25, 6.85, 0.45)
+BACKBAR_HEIGHT = 1.30
+STAGE_RECT = (3.05, -3.525, 2.1, 1.65)
+STAGE_HEIGHT = 0.12
+BOOTH_ZS = (-2.15, 0.65)
+BOOTH_RECT_WIDTH = 2.05
+BOOTH_RECT_HEIGHT = 2.8
+BOOTH_RECT_X = -5.4
+PUB_TABLES = ((-1.75, -2.8), (1.75, -2.8), (-4.2, 2.7))
 
 ACTIVITY_RECTS = {
-    "BeerPong": (5.825, -1.545, 2.35, 4.25),
-    "Cocktail": (5.825, -0.075, 2.65, 1.05),
-    "SplitTheG": (5.825, -0.075, 2.65, 1.05),
-    "TinctureMatch": (5.825, -0.075, 2.65, 1.05),
+    "BeerPong": (3.85, -1.75, 0.76, 1.83),
 }
 
 #: `BarDistrictMood`. The group key is the enum name so the runtime
@@ -455,8 +455,6 @@ def resolve_default_sheet(name: str, role: str) -> str:
         "pub_carpet_pattern": "PubCarpet",
         "bay_rug": "PubCarpet",
         "bay_border": "AgedBrass",
-        "coat_rack": "PolishedWood",
-        "coat_hook": "AgedBrass",
         "service_door": "PaintedMetal",
         "service_door_frame": "PolishedWood",
         "poster_frame": "PolishedWood",
@@ -640,9 +638,9 @@ def add_anchor(
     anchor.rotation_mode = "QUATERNION"
     anchor.rotation_quaternion = source_rotation.to_quaternion()
     anchor["bp_role"] = role
-    anchor["bp_unity_right"] = list(unity_right)
-    anchor["bp_unity_up"] = list(unity_up)
-    anchor["bp_unity_forward"] = list(unity_forward)
+    anchor["bp_unity_right"] = [float(value) for value in unity_right]
+    anchor["bp_unity_up"] = [float(value) for value in unity_up]
+    anchor["bp_unity_forward"] = [float(value) for value in unity_forward]
     asset.anchors[name] = anchor
 
 
@@ -821,7 +819,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
     cross = [
         bp.u_box((x, ROOM_HEIGHT - 0.18, 0.0),
                  (0.22, 0.34, ROOM_DEPTH - 0.35))
-        for x in (-9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0)
+        for x in (-4.5, -2.25, 0.0, 2.25, 4.5)
     ]
     add_part(
         asset, materials, "Ceiling Cross Beams", kit.merge_all(cross),
@@ -830,7 +828,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
     long_beams = [
         bp.u_box((x, ROOM_HEIGHT - 0.28, 0.0),
                  (0.32, 0.50, ROOM_DEPTH - 0.30))
-        for x in (-5.4, 5.4)
+        for x in (-3.1, 3.1)
     ]
     add_part(
         asset, materials, "Ceiling Long Beams", kit.merge_all(long_beams),
@@ -893,8 +891,9 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         "counter_rail", bp.ident("MetalTint"))
 
     panels = []
-    panel_width = (sx - 0.65) / 7.0
-    for index in range(7):
+    panel_count = len(STOOL_XS) + 1
+    panel_width = (sx - 0.65) / panel_count
+    for index in range(panel_count):
         x = -sx * 0.5 + 0.33 + panel_width * (index + 0.5)
         panels.append(bp.u_box(
             (cx + x, cy, cz - sz * 0.51),
@@ -905,8 +904,8 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         shadows=False)
 
     return_panels = []
-    for index in range(3):
-        panel_z = rz - rsz * 0.5 + 0.34 + index * 0.88
+    for index in range(2):
+        panel_z = rz - rsz * 0.5 + 0.43 + index * 0.82
         return_panels.append(bp.u_box(
             (rx - rsx * 0.51, ry, panel_z),
             (0.08, rsy - 0.20, 0.72), 0.006))
@@ -917,14 +916,14 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
 
     # The regular stools leave the service bay clear. The hero stool occupies
     # that opening but otherwise uses the exact same cafe geometry.
-    stool_z = cz - sz * 0.5 - 0.72
-    for index, x in enumerate((-4.25, -2.55, -0.85, 0.85, 2.55, 4.00)):
+    stool_z = HERO_SEAT[2]
+    for index, x in enumerate(STOOL_XS, start=2):
         dx = x - COUNTER_STATION[0]
         dz = stool_z - COUNTER_STATION[2]
-        if dx * dx + dz * dz < 1.35 * 1.35:
+        if abs(x - HERO_SEAT[0]) < 0.001:
             continue
 
-        name = f"Bar Stool {index + 1}"
+        name = f"Bar Stool {index}"
         pedestal, foot, seat = cafe_stool_geometry(
             x, stool_z, HERO_SEAT[1])
         add_part(
@@ -1021,367 +1020,6 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
             else bp.ident("GlassTint"))
 
 
-def build_backbar(asset: AssetBuild, materials: dict) -> None:
-    center_x, center_z = rect_center(BACKBAR_RECT)
-    back_z = rect_max(BACKBAR_RECT)[1] - 0.025
-
-    add_part(
-        asset, materials, "Backbar Cabinet",
-        bp.u_box((center_x, BACKBAR_HEIGHT * 0.5, center_z),
-                 (BACKBAR_RECT[2], BACKBAR_HEIGHT, BACKBAR_RECT[3])),
-        "backbar", bp.ident("CounterWoodTint"), sheet="DarkWood",
-        colliders=[((center_x, BACKBAR_HEIGHT * 0.5, center_z), (BACKBAR_RECT[2], BACKBAR_HEIGHT, BACKBAR_RECT[3]))])
-
-    mirrors = [
-        bp.u_box((-4.25 + index * 2.125, 2.72, back_z - 0.04),
-                 (1.82, 2.55, 0.055), 0.01)
-        for index in range(5)
-    ]
-    add_part(
-        asset, materials, "Backbar Mirror Panels", kit.merge_all(mirrors),
-        "backbar_mirror", bp.ident("GlassTint"), shadows=False)
-
-    mirror_frames = []
-    mirror_lattice = []
-    for index in range(5):
-        panel_x = -4.25 + index * 2.125
-        for x_offset in (-0.95, 0.95):
-            mirror_frames.append(bp.u_box(
-                (panel_x + x_offset, 2.72, back_z - 0.09),
-                (0.10, 2.72, 0.10), 0.008))
-        for y in (1.42, 4.02):
-            mirror_frames.append(bp.u_box(
-                (panel_x, y, back_z - 0.09),
-                (2.00, 0.10, 0.10), 0.008))
-        for pitch in (-34.0, 34.0):
-            mirror_lattice.append(kit.translated(
-                bp.u_rotated(
-                    bp.u_box((0.0, 0.0, 0.0),
-                             (1.76, 0.035, 0.045), 0.005),
-                    (0.0, 0.0, pitch)),
-                (panel_x, 2.72, back_z - 0.125)))
-    add_part(
-        asset, materials, "Backbar Mirror Frames",
-        kit.merge_all(mirror_frames), "backbar_mirror_frame",
-        bp.ident("DarkWoodTint"), sheet="DarkWood", shadows=False)
-    add_part(
-        asset, materials, "Backbar Patterned Glass Lattice",
-        kit.merge_all(mirror_lattice), "backbar_patterned_glass",
-        bp.ident("MetalTint"), shadows=False)
-
-    shelves = [
-        bp.u_box((0.0, 1.62 + row * 0.72, back_z - 0.12),
-                 (10.7, 0.10, 0.36), 0.008)
-        for row in range(3)
-    ]
-    shelves += [
-        bp.u_box((-5.15 + column * 2.06, 2.52, back_z - 0.13),
-                 (0.09, 2.58, 0.34), 0.008)
-        for column in range(6)
-    ]
-    add_part(
-        asset, materials, "Backbar Shelves", kit.merge_all(shelves),
-        "backbar_shelf", bp.ident("MetalTint"), shadows=False)
-
-    glass_rack = [
-        bp.u_box((x, 3.77, back_z - 0.48), (0.06, 0.08, 0.72), 0.006)
-        for x in (-3.85, -1.95, -0.05, 1.85, 3.75)
-    ]
-    glass_rack += [
-        bp.u_box((0.0, 3.77, back_z - 0.78), (9.2, 0.07, 0.06), 0.006),
-        bp.u_box((0.0, 3.77, back_z - 0.18), (9.2, 0.07, 0.06), 0.006),
-    ]
-    add_part(
-        asset, materials, "Backbar Hanging Glass Rack",
-        kit.merge_all(glass_rack), "backbar_glass_rack",
-        bp.ident("MetalTint"), shadows=False)
-
-    build_bottles(asset, materials, back_z - 0.28)
-
-    add_part(
-        asset, materials, "Backbar Crown",
-        bp.u_box((0.0, 4.14, back_z - 0.12), (11.35, 0.34, 0.42)),
-        "backbar_crown", bp.ident("DarkWoodTint"), sheet="DarkWood")
-    add_part(
-        asset, materials, "Backbar Amber Sign",
-        bp.u_box((0.0, 4.12, back_z - 0.35), (4.6, 0.18, 0.08), 0.01),
-        "sign_glow", bp.ident("SignGlowColor"),
-        emissive=True, shadows=False)
-
-
-def build_bottles(asset: AssetBuild, materials: dict, z: float) -> None:
-    colors = (
-        bp.rgb(0.72, 0.22, 0.07),
-        bp.rgb(0.12, 0.38, 0.25),
-        bp.rgb(0.46, 0.15, 0.40),
-        bp.rgb(0.72, 0.62, 0.32),
-    )
-    batches: list[list[kit.Geometry]] = [[] for _ in colors]
-    for row in range(3):
-        for column in range(18):
-            x = -4.85 + column * 0.57
-            #  The lower central shelf stays empty: the drink service
-            #  puts the visible menu's centred bottle row there (four in
-            #  the current player-facing catalog).
-            if row == 0 and -4.35 <= x <= 2.0:
-                continue
-
-            height = 0.25 + ((column * 7 + row * 3) % 4) * 0.045
-            #  A bottle, not a block: the neck is the whole silhouette
-            #  and the primitives could not have one.
-            body = bp.u_box((x, 1.83 + row * 0.72 - height * 0.16, z),
-                            (0.15, height * 0.68, 0.14), 0.008)
-            neck = bp.u_tapered_cylinder(
-                (x, 1.83 + row * 0.72 + height * 0.38, z),
-                (0.075, height * 0.18, 0.07), 0.62)
-            batches[(column + row * 2) % len(colors)].append(
-                kit.merge(body, neck))
-
-    for index, batch in enumerate(batches):
-        add_part(
-            asset, materials, f"Bottle Silhouettes {index + 1}",
-            kit.merge_all(batch), "bottle", colors[index], shadows=False)
-
-
-def build_booths(asset: AssetBuild, materials: dict) -> None:
-    for booth_index, center_z in enumerate(BOOTH_ZS, start=1):
-        rect = (BOOTH_RECT_X, center_z - 1.15,
-                BOOTH_RECT_WIDTH, BOOTH_RECT_HEIGHT)
-        z = rect_center(rect)[1]
-        base_x = -9.86
-        table_x = rect_max(rect)[0] - 0.59
-        back_x = -10.32
-        depth = rect[3] - 0.02
-
-        add_part(
-            asset, materials, f"Booth Base {booth_index}",
-            bp.u_box((base_x, 0.20, z), (0.78, 0.40, depth)),
-            "booth_base", bp.ident("CounterWoodTint"), sheet="DarkWood",
-            colliders=[((base_x, 0.20, z), (0.78, 0.40, depth))])
-        add_part(
-            asset, materials, f"Booth Cushion {booth_index}",
-            bp.u_box((base_x + 0.02, 0.435, z),
-                     (0.76, 0.09, depth - 0.10), 0.022),
-            "booth_cushion", bp.ident("UpholsteryTint"),
-            sheet="WornLeather")
-        add_part(
-            asset, materials, f"Booth Back {booth_index}",
-            bp.u_box((back_x, 0.90, z), (0.18, 0.95, rect[3]), 0.02),
-            "booth_back", bp.ident("UpholsteryTint"), sheet="WornLeather",
-            colliders=[((back_x, 0.90, z), (0.18, 0.95, rect[3]))])
-        add_part(
-            asset, materials, f"Booth Table Top {booth_index}",
-            bp.u_box((table_x, 0.88, z), (1.18, 0.12, 1.48), 0.018),
-            "booth_table", bp.ident("MetalTint"),
-            colliders=[((table_x, 0.88, z), (1.18, 0.12, 1.48))])
-        add_part(
-            asset, materials, f"Booth Table Leg {booth_index}",
-            bp.u_cylinder((table_x, 0.43, z), (0.18, 0.43, 0.18)),
-            "booth_table_leg", bp.ident("DarkWoodTint"), sheet="DarkWood",
-            colliders=[((table_x, 0.43, z), (0.18, 0.86, 0.18))])
-
-    divider_timber = []
-    divider_glass = []
-    for z in (-5.05, -2.75, 0.80, 4.30):
-        divider_timber += [
-            bp.u_box((-10.42, 1.25, z), (0.13, 2.50, 0.14), 0.01),
-            bp.u_box((-7.72, 1.25, z), (0.13, 2.50, 0.14), 0.01),
-            bp.u_box((-9.07, 1.08, z), (2.78, 0.13, 0.14), 0.01),
-            bp.u_box((-9.07, 2.38, z), (2.78, 0.13, 0.14), 0.01),
-            bp.u_box((-9.07, 0.55, z), (2.56, 0.86, 0.11), 0.012),
-        ]
-        for x in (-9.94, -9.07, -8.20):
-            divider_glass.append(bp.u_box(
-                (x, 1.72, z), (0.73, 0.98, 0.055), 0.008))
-    add_part(
-        asset, materials, "Snug Divider Timber",
-        kit.merge_all(divider_timber), "snug_divider_timber",
-        bp.ident("DarkWoodTint"), sheet="DarkWood")
-    add_part(
-        asset, materials, "Snug Divider Patterned Glass",
-        kit.merge_all(divider_glass), "snug_divider_glass",
-        bp.ident("GlassTint"), shadows=False)
-
-
-def build_stage(asset: AssetBuild, materials: dict) -> None:
-    center_x, center_z = rect_center(STAGE_RECT)
-    x_min, x_max = STAGE_RECT[0], rect_max(STAGE_RECT)[0]
-    curtain_z = rect_max(STAGE_RECT)[1] + 0.24
-
-    add_part(
-        asset, materials, "Small Stage",
-        bp.u_box((center_x, STAGE_HEIGHT * 0.5, center_z),
-                 (STAGE_RECT[2], STAGE_HEIGHT, STAGE_RECT[3]), 0.016),
-        "stage", bp.ident("CounterWoodTint"), sheet="WornPlank",
-        colliders=[((center_x, STAGE_HEIGHT * 0.5, center_z), (STAGE_RECT[2], STAGE_HEIGHT, STAGE_RECT[3]))])
-
-    #  A curtain hangs in folds. Three tapering slabs cost eight
-    #  triangles more than the box did and stop it reading as a plank.
-    for label, x in (("Left", x_min + 0.16), ("Right", x_max - 0.16)):
-        folds = [
-            bp.u_box((x + offset * 0.11, 2.55, curtain_z + offset * 0.05),
-                     (0.16, 4.25, 0.30), 0.012)
-            for offset in (-1, 0, 1)
-        ]
-        add_part(
-            asset, materials, f"Stage {label} Curtain",
-            kit.merge_all(folds), "stage_curtain",
-            bp.ident("UpholsteryTint"), sheet="WornFabric")
-
-    add_part(
-        asset, materials, "Stage Valance",
-        bp.u_box((center_x, 4.34, curtain_z),
-                 (STAGE_RECT[2] + 0.12, 0.62, 0.35), 0.014),
-        "stage_curtain", bp.ident("UpholsteryTint"), sheet="WornFabric")
-
-    for label, x in (("Left", x_min + 0.55), ("Right", x_max - 0.55)):
-        add_part(
-            asset, materials, f"Stage {label} Speaker",
-            bp.u_box((x, 0.92, center_z + 0.42), (0.72, 1.45, 0.62)),
-            "stage_speaker", bp.rgb(0.035, 0.035, 0.04),
-            colliders=[((x, 0.92, center_z + 0.42), (0.72, 1.45, 0.62))])
-
-    add_part(
-        asset, materials, "Stage Microphone Stand",
-        bp.u_cylinder((center_x, 0.95, center_z - 0.55),
-                      (0.055, 0.80, 0.055)),
-        "stage_mic", bp.ident("MetalTint"))
-    add_part(
-        asset, materials, "Stage Microphone",
-        bp.u_tapered_cylinder((center_x, 1.78, center_z - 0.60),
-                              (0.12, 0.11, 0.12), 0.68),
-        "stage_mic", bp.rgb(0.06, 0.06, 0.065))
-
-
-def build_tables_and_bay(asset: AssetBuild, materials: dict) -> None:
-    carpet_fields = [
-        bp.u_box((-0.75, 0.018, -0.65), (7.50, 0.035, 8.05), 0.006),
-        bp.u_box((-8.72, 0.018, -0.40), (4.10, 0.035, 10.75), 0.006),
-        bp.u_box((0.0, 0.018, -6.20), (2.05, 0.035, 2.25), 0.006),
-    ]
-    add_part(
-        asset, materials, "Pub Carpet Fields", kit.merge_all(carpet_fields),
-        "pub_carpet", bp.rgb(0.22, 0.055, 0.052), shadows=False)
-
-    carpet_borders = [
-        bp.u_box((-0.75, 0.044, -4.66), (7.56, 0.018, 0.075), 0.004),
-        bp.u_box((-0.75, 0.044, 3.36), (7.56, 0.018, 0.075), 0.004),
-        bp.u_box((-4.47, 0.044, -0.65), (0.075, 0.018, 7.96), 0.004),
-        bp.u_box((2.97, 0.044, -0.65), (0.075, 0.018, 7.96), 0.004),
-        bp.u_box((-8.72, 0.044, -5.74), (4.16, 0.018, 0.075), 0.004),
-        bp.u_box((-8.72, 0.044, 4.94), (4.16, 0.018, 0.075), 0.004),
-        bp.u_box((-10.73, 0.044, -0.40), (0.075, 0.018, 10.62), 0.004),
-        bp.u_box((-6.71, 0.044, -0.40), (0.075, 0.018, 10.62), 0.004),
-    ]
-    add_part(
-        asset, materials, "Pub Carpet Borders", kit.merge_all(carpet_borders),
-        "pub_carpet_border", bp.rgb(0.36, 0.27, 0.10), shadows=False)
-
-    carpet_motifs = []
-    for x in (-3.7, -2.2, -0.7, 0.8, 2.3):
-        for z in (-3.8, -2.2, -0.6, 1.0, 2.6):
-            carpet_motifs.append(kit.translated(
-                bp.u_rotated(
-                    bp.u_box((0.0, 0.0, 0.0),
-                             (0.28, 0.022, 0.28), 0.004),
-                    (0.0, 45.0, 0.0)),
-                (x, 0.052, z)))
-    add_part(
-        asset, materials, "Pub Carpet Diamond Motifs",
-        kit.merge_all(carpet_motifs), "pub_carpet_pattern",
-        bp.rgb(0.42, 0.31, 0.12), shadows=False)
-
-    add_part(
-        asset, materials, "Activity Bay Rug",
-        bp.u_box((7.00, 0.018, 0.55), (6.15, 0.035, 5.65), 0.006),
-        "bay_rug", bp.rgb(0.16, 0.065, 0.055), shadows=False)
-
-    border = [
-        bp.u_box((7.0, 0.045, -2.28), (6.22, 0.06, 0.08), 0.006),
-        bp.u_box((7.0, 0.045, 3.38), (6.22, 0.06, 0.08), 0.006),
-        bp.u_box((3.92, 0.045, 0.55), (0.08, 0.06, 5.58), 0.006),
-        bp.u_box((10.08, 0.045, 0.55), (0.08, 0.06, 5.58), 0.006),
-    ]
-    add_part(
-        asset, materials, "Activity Bay Border", kit.merge_all(border),
-        "bay_border", bp.rgb(0.36, 0.27, 0.10), shadows=False)
-
-    for index, (x, z) in enumerate(PUB_TABLES, start=1):
-        name = f"Social Pub Table {index}"
-        add_part(
-            asset, materials, f"{name} Leg",
-            kit.merge_all([
-                bp.u_cylinder((x, 0.35, z), (0.18, 0.35, 0.18)),
-                bp.u_cylinder((x, 0.07, z), (0.48, 0.07, 0.48)),
-            ]),
-            "table_leg", bp.rgb(0.075, 0.024, 0.017), sheet="DarkWood",
-            colliders=[((x, 0.35, z), (0.18, 0.70, 0.18))])
-        add_part(
-            asset, materials, name,
-            bp.u_cylinder((x, 0.76, z), (0.92, 0.06, 0.92), sides=12),
-            "table_top", bp.ident("WoodTint"), sheet="PolishedWood",
-            colliders=[((x, 0.76, z), (0.92, 0.12, 0.92))])
-
-
-def build_dressing(asset: AssetBuild, materials: dict) -> None:
-    rack_x, rack_z = COAT_RACK
-    add_part(
-        asset, materials, "Coat Rack",
-        bp.u_cylinder((rack_x, 0.92, rack_z), (0.12, 0.92, 0.12)),
-        "coat_rack", bp.ident("MetalTint"),
-        colliders=[((rack_x, 0.92, rack_z), (0.12, 1.84, 0.12))])
-    for index in range(4):
-        add_part(
-            asset, materials, f"Coat Rack Hook {index + 1}",
-            kit.translated(
-                bp.u_rotated(
-                    bp.u_box((0.0, 0.0, 0.0), (0.52, 0.08, 0.08), 0.008),
-                    (0.0, index * 45.0, 18.0)),
-                (rack_x, 1.70, rack_z)),
-            "coat_hook", bp.ident("MetalTint"))
-
-    add_part(
-        asset, materials, "Service Door",
-        bp.u_box((9.65, 1.25, 7.76), (1.65, 2.50, 0.12), 0.012),
-        "service_door", bp.ident("GlassTint"))
-    add_part(
-        asset, materials, "Service Door Frame",
-        bp.u_box((9.65, 2.57, 7.70), (1.92, 0.14, 0.20), 0.01),
-        "service_door_frame", bp.ident("MetalTint"))
-
-    posters = (
-        ("Burgundy Poster", (10.78, 2.55, -4.30),
-         bp.lerp(bp.ident("WallTint"), bp.ident("SignAccentColor"), 0.68)),
-        ("Teal Poster", (10.78, 2.55, 4.25), bp.ident("GlassTint", 1.35)),
-        ("Entrance Notice", (-10.78, 2.45, -6.20),
-         bp.ident("SignAccentColor")),
-    )
-    for name, position, tint in posters:
-        x, y, z = position
-        add_part(
-            asset, materials, f"{name} Frame",
-            bp.u_box((x, y, z), (0.08, 1.72, 1.20), 0.008),
-            "poster_frame", bp.rgb(0.86, 0.46, 0.14), shadows=False)
-        add_part(
-            asset, materials, name,
-            bp.u_plate((x - 0.055, y, z), (0.06, 1.50, 0.98)),
-            "poster", tint, shadows=False)
-
-    exit_y = DOOR_HEIGHT + 0.32
-    exit_z = -ROOM_DEPTH * 0.5 + 0.18
-    add_part(
-        asset, materials, "Exit Header Frame",
-        bp.u_box((0.0, exit_y, exit_z), (1.64, 0.28, 0.20), 0.018),
-        "exit_header_frame", bp.ident("DarkWoodTint"),
-        sheet="DarkWood", shadows=False)
-    add_part(
-        asset, materials, "Exit Header",
-        bp.u_box((0.0, exit_y, exit_z - 0.115),
-                 (1.40, 0.08, 0.035), 0.006),
-        "exit_header", bp.ident("SignGlowColor", 0.58),
-        emissive=True, shadows=False)
-
-
 def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
     group = "pivot:Slow Ceiling Fan"
     add_part(
@@ -1476,256 +1114,10 @@ def build_practical_prefab(asset: AssetBuild, materials: dict) -> None:
 # --------------------------------------------------------- variants ---
 
 
-def wall_cards(y: float, count: int, spacing: float,
-               height: float, width: float) -> list[kit.Geometry]:
-    center = (count - 1) * 0.5
-    return [
-        bp.u_plate((10.69, y, (index - center) * spacing),
-                   (0.05, height, width))
-        for index in range(count)
-    ]
-
-
-def build_districts(asset: AssetBuild, materials: dict) -> None:
-    memory = "district:Memory"
-    add_part(
-        asset, materials, "Old Town Ledger Field",
-        bp.u_plate((10.76, 2.68, 0.0), (0.06, 2.32, 4.80)),
-        "district_field",
-        bp.lerp(bp.ident("WallTint"), bp.rgb(0.48, 0.31, 0.15), 0.46),
-        group=memory, shadows=False)
-    add_part(
-        asset, materials, "Old Town Missing Portraits",
-        kit.merge_all(wall_cards(2.88, 3, 1.22, 0.72, 0.62)),
-        "district_cards", bp.ident("SignAccentColor"),
-        group=memory, shadows=False)
-
-    household = "district:Household"
-    add_part(
-        asset, materials, "Residential Curtain Field",
-        bp.u_plate((10.76, 2.68, 0.0), (0.06, 2.35, 4.80)),
-        "district_field", bp.ident("UpholsteryTint"),
-        group=household, sheet="WornFabric", shadows=False)
-    add_part(
-        asset, materials, "Residential Curtain Pleats",
-        kit.merge_all(wall_cards(2.68, 7, 0.64, 2.18, 0.14)),
-        "district_cards", bp.ident("WallPanelTint"),
-        group=household, shadows=False)
-
-    shift = "district:AfterShift"
-    add_part(
-        asset, materials, "Industrial Safety Band",
-        bp.u_plate((10.76, 1.82, 0.0), (0.06, 0.34, 6.25)),
-        "district_field", bp.ident("SignAccentColor"),
-        group=shift, shadows=False)
-    add_part(
-        asset, materials, "Industrial Utility Pipes",
-        kit.merge_all([
-            bp.u_cylinder((10.69, 2.78, (index - 1.5) * 1.28),
-                          (0.16, 1.60, 0.16))
-            for index in range(4)
-        ]),
-        "district_cards", bp.ident("MetalTint"),
-        group=shift, shadows=False)
-
-    night = "district:Escape"
-    for label, z, pitch, tint in (
-        ("Cyan", -1.05, 24.0, bp.ident("PendantColor", 2.8)),
-        ("Magenta", 1.05, -24.0, bp.ident("SignAccentColor", 2.8)),
-    ):
-        add_part(
-            asset, materials, f"Nightlife Neon {label}",
-            kit.translated(
-                bp.u_rotated(
-                    bp.u_box((0.0, 0.0, 0.0), (0.06, 0.16, 2.65), 0.008),
-                    (pitch, 0.0, 0.0)),
-                (10.73, 2.72, z)),
-            "neon", tint, group=night, emissive=True, shadows=False)
-
-
-def activity_console(
-    asset: AssetBuild,
-    materials: dict,
-    group: str,
-    name: str,
-    accent: dict,
-    rect: Sequence[float],
-) -> tuple[float, float, float]:
-    center_x, center_z = rect_center(rect)
-    center = (center_x, 0.64, center_z)
-    add_part(
-        asset, materials, name,
-        bp.u_box(center, (rect[2], 1.20, rect[3])),
-        "activity_console", bp.rgb(0.075, 0.024, 0.017),
-        group=group, sheet="DarkWood",
-        colliders=[(center, (rect[2], 1.20, rect[3]))])
-    add_part(
-        asset, materials, f"{name} Top",
-        bp.u_box((center_x, center[1] + 0.66, center_z),
-                 (2.85, 0.12, 1.22), 0.016),
-        "activity_console_top", bp.rgb(0.86, 0.46, 0.14), group=group)
-    add_part(
-        asset, materials, f"{name} Accent",
-        bp.u_plate((center_x, center[1], center_z - 0.56),
-                   (2.20, 0.52, 0.06)),
-        "activity_accent", accent, group=group,
-        emissive=True, shadows=False)
-    return center_x, center[1] + 0.78, center_z
-
-
-def build_activities(asset: AssetBuild, materials: dict) -> None:
-    # --- Beer pong ------------------------------------------------
-    group = "activity:BeerPong"
-    rect = ACTIVITY_RECTS["BeerPong"]
-    center_x, center_z = rect_center(rect)
-    center = (center_x, 0.92, center_z)
-    add_part(
-        asset, materials, "Beer Pong Table",
-        bp.u_box(center, (rect[2], 0.14, rect[3]), 0.014),
-        "activity_table", bp.rgb(0.055, 0.26, 0.29), group=group,
-        colliders=[(center, (rect[2], 0.14, rect[3]))])
-    leg_x = rect[2] * 0.5 - 0.275
-    leg_z = rect[3] * 0.5 - 0.445
-    for index, (dx, dz) in enumerate(
-            ((-leg_x, -leg_z), (leg_x, -leg_z),
-             (-leg_x, leg_z), (leg_x, leg_z)), start=1):
-        leg_center = (center_x + dx, 0.92 - 0.49, center_z + dz)
-        add_part(
-            asset, materials, f"Beer Pong Table Leg {index}",
-            bp.u_box(leg_center, (0.16, 0.86, 0.16), 0.01),
-            "activity_table_leg", bp.rgb(0.075, 0.024, 0.017),
-            group=group, sheet="DarkWood",
-            colliders=[(leg_center, (0.16, 0.86, 0.16))])
-    add_part(
-        asset, materials, "Beer Pong Center Line",
-        bp.u_plate((center_x, 1.00, center_z),
-                   (rect[2] - 0.25, 0.025, 0.06)),
-        "activity_line", bp.rgb(0.86, 0.46, 0.14), group=group,
-        shadows=False)
-    for index, (dx, dz) in enumerate((
-            (0.0, 1.02), (-0.27, 1.32), (0.27, 1.32),
-            (-0.54, 1.62), (0.0, 1.62), (0.54, 1.62)), start=1):
-        add_part(
-            asset, materials, f"Beer Pong Cup {index}",
-            #  A cup tapers. This is the shape the primitive could not
-            #  make and the reason six of them read as cups now.
-            bp.u_tapered_cylinder(
-                (center_x + dx, 1.15, center_z + dz),
-                (0.22, 0.16, 0.22), 0.74),
-            "activity_cup", bp.rgb(0.82, 0.12, 0.10), group=group,
-            shadows=False)
-
-    # --- Cocktail -------------------------------------------------
-    group = "activity:Cocktail"
-    x, y, z = activity_console(
-        asset, materials, group, "Cocktail Service Cart",
-        bp.rgb(0.10, 0.24, 0.22), ACTIVITY_RECTS["Cocktail"])
-    add_part(
-        asset, materials, "Cocktail Shaker",
-        bp.u_tapered_cylinder((x, y, z), (0.20, 0.31, 0.20), 0.62),
-        "activity_prop", bp.rgb(0.64, 0.68, 0.66), group=group)
-    add_part(
-        asset, materials, "Cocktail Glass",
-        bp.u_tapered_cylinder((x + 0.55, y - 0.04, z),
-                              (0.24, 0.25, 0.24), 1.55),
-        "activity_prop", bp.rgb(0.24, 0.58, 0.62), group=group)
-
-    # --- Split the G ----------------------------------------------
-    group = "activity:SplitTheG"
-    x, y, z = activity_console(
-        asset, materials, group, "Split the G Tap Cart",
-        bp.rgb(0.10, 0.18, 0.13), ACTIVITY_RECTS["SplitTheG"])
-    add_part(
-        asset, materials, "Split the G Coaster",
-        bp.u_cylinder((x, y, z), (0.38, 0.035, 0.38)),
-        "activity_prop", bp.rgb(0.075, 0.024, 0.017), group=group,
-        sheet="DarkWood")
-    add_part(
-        asset, materials, "Split the G Pint",
-        bp.u_tapered_cylinder((x, y + 0.30, z), (0.25, 0.30, 0.25), 1.18),
-        "activity_prop", bp.rgb(0.36, 0.16, 0.055), group=group)
-    add_part(
-        asset, materials, "Split the G Foam",
-        bp.u_cylinder((x, y + 0.61, z), (0.295, 0.045, 0.295)),
-        "activity_prop", bp.rgb(0.94, 0.83, 0.61), group=group)
-    add_part(
-        asset, materials, "Split the G Target",
-        bp.u_plate((x, y + 0.32, z - 0.26), (0.31, 0.045, 0.025)),
-        "activity_prop", bp.rgb(0.86, 0.46, 0.14), group=group,
-        shadows=False)
-
-    # --- Tincture match -------------------------------------------
-    group = "activity:TinctureMatch"
-    x, y, z = activity_console(
-        asset, materials, group, "Tincture Apothecary Cart",
-        bp.rgb(0.16, 0.08, 0.22), ACTIVITY_RECTS["TinctureMatch"])
-    add_part(
-        asset, materials, "Tincture Match Tray",
-        bp.u_box((x, y, z), (2.15, 0.08, 0.62), 0.01),
-        "activity_prop", bp.rgb(0.075, 0.024, 0.017), group=group,
-        sheet="DarkWood")
-    shot_colors = (
-        bp.rgb(0.66, 0.08, 0.10), bp.rgb(0.94, 0.44, 0.08),
-        bp.rgb(0.20, 0.12, 0.48), bp.rgb(0.13, 0.48, 0.24),
-        bp.rgb(0.74, 0.57, 0.20),
-    )
-    for index, tint in enumerate(shot_colors, start=1):
-        add_part(
-            asset, materials, f"Tincture Shot {index}",
-            bp.u_tapered_cylinder(
-                (x - 0.76 + (index - 1) * 0.38, y + 0.18, z),
-                (0.22, 0.16, 0.22), 1.22),
-            "activity_prop", tint, group=group, shadows=False)
-
-    bottle = (x + 1.55, y + 0.29, z)
-    add_part(
-        asset, materials, "Tincture XXX Bottle",
-        bp.u_tapered_cylinder(bottle, (0.34, 0.34, 0.34), 0.52),
-        "activity_prop", bp.rgb(0.70, 0.82, 0.78), group=group)
-    add_part(
-        asset, materials, "Tincture XXX Bottle Neck",
-        bp.u_cylinder((bottle[0], bottle[1] + 0.42, bottle[2]),
-                      (0.16, 0.12, 0.16)),
-        "activity_prop", bp.rgb(0.70, 0.82, 0.78), group=group)
-
-    sign = (bottle[0], bottle[1] + 0.02, bottle[2] - 0.22)
-    add_part(
-        asset, materials, "Tincture XXX Sign",
-        bp.u_plate(sign, (0.74, 0.38, 0.035)),
-        "activity_prop", bp.rgb(0.86, 0.46, 0.14), group=group,
-        shadows=False)
-    marks = []
-    for x_index in range(3):
-        mark_x = sign[0] - 0.22 + x_index * 0.22
-        for stroke in range(2):
-            marks.append(kit.translated(
-                bp.u_rotated(
-                    bp.u_plate((0.0, 0.0, 0.0), (0.055, 0.29, 0.025)),
-                    (0.0, 0.0, 38.0 if stroke == 0 else -38.0)),
-                (mark_x, sign[1], sign[2] - 0.03)))
-    add_part(
-        asset, materials, "Tincture XXX Marks", kit.merge_all(marks),
-        "activity_prop", bp.rgb(0.16, 0.08, 0.04), group=group,
-        shadows=False)
-
-
-# ------------------------------------------------------ service props -
-
-
 SERVICE_BOTTLE_STYLES = (
-    "WaterBottle",
-    "BeerLongneck",
-    "WineBottle",
-    "VodkaBottle",
-    "CognacBottle",
+    "WaterBottle", "BeerLongneck", "WineBottle", "VodkaBottle", "CognacBottle",
 )
 
-# The physical menu deliberately follows the Mountain Plateau Cafe's
-# authored open-book language: two thin dark covers, two warm paper leaves,
-# a raised spine and semantic text sockets. The passive compatibility pack
-# retains its original nine sockets, while the current four-choice runtime
-# uses the outer pair on each leaf. Its closed booklet remains a little taller
-# and runtime never has to guess which leaf a line belongs to.
 SERVICE_MENU_COVER_WIDTH = 0.58
 SERVICE_MENU_COVER_DEPTH = 0.50
 SERVICE_MENU_COVER_THICKNESS = 0.006
@@ -1817,14 +1209,14 @@ SERVICE_VESSEL_PROFILES = {
         ),
         "liquid": ((0.058, 0.0), (0.132, 0.085), (0.116, 0.172)),
         "liquid_base": 0.165,
-        "grip": (0.027, 0.085, 0.0),
+        "grip": (0.0, 0.25, 0.0),
         "drink_rim": (0.0, 0.37, -0.13),
     },
     "ShotGlass": {
         "glass": ((0.065, 0.0), (0.09, 0.145)),
         "liquid": ((0.052, 0.0), (0.076, 0.112)),
         "liquid_base": 0.018,
-        "grip": (0.085, 0.075, 0.0),
+        "grip": (0.0, 0.075, 0.0),
         "drink_rim": (0.0, 0.145, -0.09),
     },
     "Snifter": {
@@ -1835,7 +1227,7 @@ SERVICE_VESSEL_PROFILES = {
         ),
         "liquid": ((0.058, 0.0), (0.145, 0.075), (0.098, 0.175)),
         "liquid_base": 0.115,
-        "grip": (0.155, 0.19, 0.0),
+        "grip": (0.0, 0.18, 0.0),
         "drink_rim": (0.0, 0.32, -0.105),
     },
 }
@@ -2724,16 +2116,10 @@ def build_interior(materials: dict) -> AssetBuild:
 
     build_shell(asset, materials)
     build_counter(asset, materials)
-    build_backbar(asset, materials)
-    build_booths(asset, materials)
-    build_stage(asset, materials)
-    build_tables_and_bay(asset, materials)
-    build_dressing(asset, materials)
+    compact.build(sys.modules[__name__], asset, materials)
     build_ceiling_fan(asset, materials)
     build_jukebox(asset, materials)
     build_practical_prefab(asset, materials)
-    build_districts(asset, materials)
-    build_activities(asset, materials)
 
     add_anchor(asset, "Entrance", "entrance", (0.0, 0.0, -ROOM_DEPTH * 0.5))
     add_anchor(asset, "RoomCentre", "room_centre", (0.0, 0.0, 0.0))
@@ -2746,7 +2132,7 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "HeroCamera", "hero_camera",
                (HERO_SEAT[0], HERO_SEAT[1] + 0.80, HERO_SEAT[2] + 0.12))
     add_anchor(asset, "HeroCameraLook", "hero_camera_look",
-               (HERO_SEAT[0], HERO_SEAT[1] + 0.90, 7.37))
+               (HERO_SEAT[0], HERO_SEAT[1] + 0.90, 3.395))
     add_anchor(asset, "ServicePosition", "bartender_service_position",
                BARTENDER_POSITION)
     add_anchor(
@@ -2780,8 +2166,10 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "PourTarget", "service_pour_target",
                (COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.015,
                 SERVICE_VESSEL_DOCK_Z))
-    add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", (0.0, 4.35, 0.75))
-    add_anchor(asset, "Jukebox", "jukebox_pivot", (6.4, 0.0, -6.78))
+    add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", (0.0, 2.72, -0.65))
+    add_anchor(asset, "Jukebox", "jukebox_pivot", (5.0, 0.0, -0.65))
+    compact.add_frame_anchors(sys.modules[__name__], asset)
+    asset.containment_contract = compact.containment_contract()
     return asset
 
 
@@ -2825,6 +2213,21 @@ def validate(asset: AssetBuild) -> None:
             f"{ROOM_WIDTH + WALL_THICKNESS:.3f}")
     if low[2] > -FLOOR_THICKNESS + 0.001:
         problems.append("the floor slab is missing its thickness")
+    # Verify the entire fixed shell against the MAIN exterior range. Its
+    # asymmetric rear store is deliberately not used to inflate this bound.
+    for part in fixed:
+        for x, z, y in part.geometry[0]:
+            exterior_x = -z - 4.06
+            if not (-8.58 - .001 <= exterior_x <= .001 and
+                    -6.001 <= x <= 6.001 and y <= 3.28 + .001):
+                problems.append(f"'{part.name}' leaves the facade's ground-floor contour")
+                break
+    door_part = next(part for part in exterior.build_parts()
+                     if part.role == "exterior_door")
+    door_low, door_high = kit.bounds(door_part.geometry)
+    measured_door_x = (door_low[0] + door_high[0]) * .5
+    if abs(measured_door_x - (-(-ROOM_DEPTH * .5) - 4.06)) > .001:
+        problems.append("interior entrance does not meet the measured facade door")
 
     for part in asset.parts:
         if part.name != "Front Wall":
@@ -2860,10 +2263,11 @@ def validate(asset: AssetBuild) -> None:
             "Entrance Curtain Brass Rail" in names:
         problems.append("the former full-height entrance portal returned")
 
-    for kind in ACTIVITY_KINDS:
-        if not any(part.group == f"activity:{kind}"
-                   for part in asset.parts):
-            problems.append(f"activity set '{kind}' is missing")
+    if not any(part.group == "activity:BeerPong" for part in asset.parts):
+        problems.append("the retained beer-pong table is missing")
+    if any(part.group in {"activity:Cocktail", "activity:SplitTheG",
+                          "activity:TinctureMatch"} for part in asset.parts):
+        problems.append("a removed three-vessel activity console returned")
     for mood in DISTRICT_MOODS:
         if not any(part.group == f"district:{mood}"
                    for part in asset.parts):
@@ -2898,7 +2302,7 @@ def validate(asset: AssetBuild) -> None:
         problems.append("the three beer taps are not evenly clustered")
     if BEER_TAP_SPACING > 0.36:
         problems.append("the beer taps are spaced too far apart")
-    if BEER_TAP_XS[0] - 4.00 < 0.70:
+    if BEER_TAP_XS[0] - STOOL_XS[-1] < 0.70:
         problems.append("the beer-tap bank intrudes into the last stool bay")
 
     tap_anchor_contract = {
@@ -3122,6 +2526,10 @@ def write_manifest(
     }
     if getattr(asset, "city_surface_contract", None) is not None:
         manifest["city_surface_contract"] = asset.city_surface_contract
+    if getattr(asset, "interior_surface_contract", None) is not None:
+        manifest["interior_surface_contract"] = asset.interior_surface_contract
+    if getattr(asset, "containment_contract", None) is not None:
+        manifest["containment_contract"] = asset.containment_contract
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(manifest, indent=2, sort_keys=False) + "\n",
@@ -3211,6 +2619,9 @@ def main() -> None:
     validate(interior)
     validate_service_props(service_props)
     validate_facade(facade)
+    import bar_interior_unique_surfaces as interior_surfaces
+    interior_surfaces.prepare(interior, write=not args.validate_only)
+    interior_surfaces.review_materials(interior)
     import city_bar_unique_surfaces as city_surfaces
     if city_surfaces.MANIFEST.exists():
         city_surfaces.prepare(facade)
@@ -3230,20 +2641,37 @@ def main() -> None:
 
     manifest = write_manifest(interior, args.manifest)
     export_fbx(interior, args.fbx)
-    service_manifest = write_manifest(
-        service_props,
-        SERVICE_MANIFEST,
-        SERVICE_DESIGN_ID,
-        generator_version=SERVICE_GENERATOR_VERSION,
-        display_name=SERVICE_DISPLAY_NAME,
-        dimensions=(SERVICE_MENU_COVER_WIDTH,
-                    SERVICE_MENU_COVER_DEPTH,
-                    2.0),
-        wall_thickness=0.0,
-        door_opening=(0.0, 0.0),
-        activity_kinds=(),
-        district_moods=())
-    export_fbx(service_props, SERVICE_FBX)
+    # Interior-only remodelling must not rewrite this shared passive pack:
+    # FBX export embeds a timestamp and fresh IDs even for identical geometry.
+    service_signature = signature_for(
+        service_props, SERVICE_DESIGN_ID, SERVICE_GENERATOR_VERSION)
+    preserve_service = False
+    if SERVICE_MANIFEST.exists() and SERVICE_FBX.exists():
+        try:
+            previous_service = json.loads(
+                SERVICE_MANIFEST.read_text(encoding="utf-8"))
+            preserve_service = (
+                previous_service.get("design_id") == SERVICE_DESIGN_ID and
+                previous_service.get("build_signature") == service_signature)
+        except (OSError, ValueError):
+            preserve_service = False
+    if preserve_service:
+        service_manifest = previous_service
+    else:
+        service_manifest = write_manifest(
+            service_props,
+            SERVICE_MANIFEST,
+            SERVICE_DESIGN_ID,
+            generator_version=SERVICE_GENERATOR_VERSION,
+            display_name=SERVICE_DISPLAY_NAME,
+            dimensions=(SERVICE_MENU_COVER_WIDTH,
+                        SERVICE_MENU_COVER_DEPTH,
+                        2.0),
+            wall_thickness=0.0,
+            door_opening=(0.0, 0.0),
+            activity_kinds=(),
+            district_moods=())
+        export_fbx(service_props, SERVICE_FBX)
 
     facade_signature = signature_for(
         facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
@@ -3274,13 +2702,15 @@ def main() -> None:
             district_moods=())
         export_fbx(facade, FACADE_FBX)
     args.blend.parent.mkdir(parents=True, exist_ok=True)
+    bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(args.blend))
     print(
         f"Bar interior written: {manifest['mesh_count']} parts, "
         f"{manifest['triangle_count']} triangles, "
         f"signature {manifest['build_signature'][:12]}.")
     print(
-        f"Bar service props written: {service_manifest['mesh_count']} parts, "
+        f"Bar service props {'preserved' if preserve_service else 'written'}: "
+        f"{service_manifest['mesh_count']} parts, "
         f"{service_manifest['triangle_count']} triangles, "
         f"signature {service_manifest['build_signature'][:12]}.")
     print(

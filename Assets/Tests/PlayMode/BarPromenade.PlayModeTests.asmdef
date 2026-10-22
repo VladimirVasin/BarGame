@@ -5,6 +5,7 @@
     "BarPromenade.Rules",
     "BarPromenade.TestSupport",
     "BarPromenade.Runtime",
+    "Unity.Collections",
     "Unity.InputSystem",
     "Unity.InputSystem.TestFramework",
     "Unity.RenderPipelines.Core.Runtime",

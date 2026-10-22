@@ -5,9 +5,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// A pooled street walker built from the default NPC population: one
-    /// permanent `city.pedestrian.NN` identity dressed by the whole-world
-    /// allocation, wearing a <see cref="CityPedestrianAssetRegistry"/> so the
+    /// A default NPC body from a permanent world or transient visit assignment,
+    /// wearing a <see cref="CityPedestrianAssetRegistry"/> so the
     /// director, the routes, Route 01 and the personal-space rules drive it
     /// exactly like a library walker.
     ///
@@ -37,23 +36,31 @@ namespace BarPromenade
             Transform parent,
             string characterId,
             CityPedestrianAssetRegistry clipDonor)
+            => Create(parent, DefaultNpcPopulation.GetAssignment(characterId), clipDonor);
+
+        /// <summary>Adapts a shared visit allocation without registering a permanent character.</summary>
+        public static CityPedestrianAssetRegistry Create(
+            Transform parent,
+            DefaultNpcPopulation.Assignment assignment,
+            CityPedestrianAssetRegistry clipDonor)
         {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
             }
 
-            DefaultNpcPopulation.Assignment assignment =
-                DefaultNpcPopulation.GetAssignment(characterId);
+            if (assignment == null)
+                throw new ArgumentNullException(nameof(assignment));
+            string characterId = assignment.CharacterId;
             GameObject root = new GameObject(
                 $"Pedestrian {characterId} ({assignment.ModelId})");
             root.transform.SetParent(parent, false);
             VillageResidentPresentation actor = null;
             try
             {
-                actor = DefaultNpcFactory.CreateForCharacter(
+                actor = DefaultNpcFactory.CreateForAssignment(
                     root.transform,
-                    characterId);
+                    assignment);
                 actor.name = "Character";
                 // Face the wrapper's +Z the way every route-driven walker
                 // does, measured live as the port and the fair measure it.
@@ -139,8 +146,7 @@ namespace BarPromenade
         /// <summary>
         /// The renderers the population left showing. The wardrobe disables
         /// every garment it did not equip and every part a garment covers,
-        /// and the assignment is permanent, so the visible set is fixed for
-        /// the life of the body.
+        /// so the visible set is fixed for the life of the body.
         /// </summary>
         private static Renderer[] CollectVisibleRenderers(
             VillageResidentPresentation actor)

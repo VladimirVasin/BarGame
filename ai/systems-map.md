@@ -33,7 +33,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Mountain Road Blender misc | 8 kinds/102 placements/19 meshes; plan-owned placement/collision/audio. | `MountainRoadMiscAssetProvider`, `MountainRoadWorldBuilder` | Current |
 | Road rhythm | Openings/five debris chapters/clear rails-kerbs retain the climb. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
 | Road surfaces/cafe | Local 15 families/4K+2K cafe; BC7≤80MiB, unchanged geometry/wind/light. | `MountainRoadSurfaceLibrary`, `MountainRoadCafeSurfaceAppearance` | Current |
-| Bar counter seat / shared physical menu | Four free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
+| Bar counter seat / shared physical menu | Three free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
 | Mountain terminal cafe cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
 | Mountain terminal cafe menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
 | City Blender misc catalog | CityMisc `4.10.0`: `82` kinds / `122` assemblies / `259` passive meshes; plans retain placement and collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
@@ -152,10 +152,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home camera | Fixed shots/pan with explicit contextual ownership. | `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |
+| Modular 3D hero presentation | V2: 31 body/12 hair bones, 55 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Recorded bones; pose/gear guards; live wind/falls/pause/mirror. | `PlayerHair`, `SecondaryMotionBakeRuntime` | Current |
-| Hero jacket cloth | World:recorded/live/mirror/arms;Combat:rig/hand-opening,0physics. | `PlayerJacketCloth*`, `PlayerClothPhysicsPolicy` | Current |
+| Hero jacket cloth | Gameplay:rig/folds/hand-opening,0physics;Editor authoring kept. | `PlayerJacketCloth*`, `PlayerClothPhysicsPolicy` | Current |
 | Wearable scarf | Hero/mouth/mirror;5s area height;Combat:rig,0physics. Owned ray buffers/pose-mask leases. | `PlayerScarf*`, `PlayerClothPhysicsPolicy`, `GameSessionState` | Current |
 | Alpine Village cold hero | Hug/rubs persist running; scarf halves shiver. Warmth stops cold/breath. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Alpine frost presentation | Session frost; scarf halves growth, full frost stops cues; warm zones thaw. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
@@ -184,12 +184,12 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
 | Door transition presentation | A deterministic `1.6 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |
-| Bar drink retail and physical service | The inset 2x2 menu offers exactly four low-grade drinks; either order-key family pays once. | `BarDrink{Catalog,MenuPresentation,ServicePlan,ServiceTimeline,ShopController,VesselView}` | Current |
+| Bar drink service | Four drinks; grips/reach, empty-first service and rear towel handoff. | `BarDrink{ShopController,ServiceTimeline,VesselView}`, `BarPlayerDrinkReach`, `BarBartenderTowelPresentation` | Current |
 | Intoxication stages and presentation | Session alcohol drives reversible visual/audio/body presentation and bounded passive recovery. | `IntoxicationStageRules`, `IntoxicationStatusController` | Current |
 | Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
-| Bar interior and exterior | Imported bar shell/service assets keep plan-owned collision, entrance geometry and shared resources. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |
+| Bar interior and exterior | Compact hall fits facade; measured entrance, plan-owned collision and shared service assets. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |
 | Player home interior | 12×8m; sofa sleep/full kitchen/locked room; chair shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Exact days `1–7` accumulate domestic neglect; later days keep state seven. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | A shared ramp/step plan joins street and home with height-selected cameras and an authored atmosphere. | `StairwellLayout*` | Current |
@@ -212,8 +212,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Home bathroom scenes | The shower hero exits fully offscreen before redressing; cleanup restores rig and input. | `HomeBathroomSceneInteraction`, `HomeShower{Interaction,CameraPath}`, `HomeTeethBrushingInteraction` | Current |
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
-| Bar patrons and bartender | Eleven patrons and the ordinary two-armed bartender use grounded shared props; six-arm art remains legacy-only. | `BarPatron{WorldBuilder,DrinkingBehavior}` | Current |
-| Bar cinematic atmosphere | Six practicals/Neutral/two finite bounces; reveal/audio/cleanup. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
+| Bar patrons and bartender | Nine visitors reroll bodies/vessels each entry; all drink. Stable default bartender. | `BarPatron{WorldBuilder,DrinkingBehavior,DrinkProp}` | Current |
+| Bar cinematic atmosphere | Six practicals/one key shadow/Neutral/two bounces/one cube; compact reveal/DOF. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
 | Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |
 | Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |
 | Automated tests | Focused EditMode/PlayMode contracts share infrastructure; complete suites need an explicit regression request. | `Assets/Tests/{EditMode,PlayMode,Infrastructure}` | Current |
@@ -263,7 +263,7 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 50 actions: Idle / Walk / Run / SnowWalk + backward / drink / recovery / cold
+  -> 55 actions: Idle / Walk / Run / SnowWalk + backward / drink / recovery / cold
   -> Shift or L3 + forward -> 4.2 m/s run except deep snow; backpedal/approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit

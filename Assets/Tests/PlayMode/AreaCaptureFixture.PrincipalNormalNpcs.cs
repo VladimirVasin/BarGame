@@ -94,8 +94,7 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     var actor = Object.FindAnyObjectByType<BarBartenderPresentation>();
                     Assert.That(actor, Is.Not.Null);
-                    Assert.That(actor.Registry.DesignId, Is.EqualTo("bar_bartender_v2"));
-                    Assert.That(actor.Registry.SourceTriangleCount, Is.InRange(4500, 8000));
+                    Assert.That(actor.Registry.DesignId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
                     actor.Registry.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                     return PrincipalActorShots("normal-bartender", actor.Registry.transform, actor.Registry.Head);
                 });

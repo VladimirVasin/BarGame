@@ -4,8 +4,8 @@
 
 Home: `build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
 `--validate-only`; maps `build-home-textures.py --room-only`.
-Bar: `build-bar-counter-response.py [--check]`: linear roughness pair/shared material;
-albedo kept. `ArtSource/Bar/bar-counter-response.json`.
+Bar: `build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`.
+`check-bar-interior-surfaces.py --validate-only`: FBX UV0/1 registry.
 `build-mountain-road-surface-shader.py --check`: includes one crown RGB pilot.
 
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
@@ -141,7 +141,7 @@ Python: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
 Repo root;after `--`:generator args. Launcher:pins/startup/errors/fresh
 `--expect`/JSON; `--validate-only` on both validates.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
-(cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
+(cashier/driver). `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
 Stage:repeated `--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`;

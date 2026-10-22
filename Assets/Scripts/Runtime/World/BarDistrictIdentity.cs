@@ -122,14 +122,13 @@ namespace BarPromenade
     /// <summary>
     /// Resolves which supported district profile a lot belongs to and serves
     /// its identity. Districts that carry no bar (park, river
-    /// banks, service kinds) normalize to Nightlife — the safe
-    /// default the direct-loaded bar scene has always effectively
-    /// been.
+    /// banks, service kinds) use the canonical Residential pub. Explicit
+    /// district layouts retain their own profiles.
     /// </summary>
     public static class BarDistrictIdentityCatalog
     {
         public const CityDistrictKind FallbackDistrict =
-            CityDistrictKind.Nightlife;
+            CityDistrictKind.Residential;
 
         public static CityDistrictKind Normalize(
             CityDistrictKind district)

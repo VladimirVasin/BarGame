@@ -33,7 +33,8 @@ namespace BarPromenade
         ActivityFixture = 5,
         CoatRack = 6,
         CounterReturn = 7,
-        PubTable = 8
+        PubTable = 8,
+        Jukebox = 9
     }
 
     public enum BarNpcRole

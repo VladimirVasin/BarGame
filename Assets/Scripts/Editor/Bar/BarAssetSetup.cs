@@ -57,9 +57,9 @@ namespace BarPromenade.Editor
         //  Mirrors `BarInteriorLayoutPlanner`. Duplicated deliberately:
         //  the point of the check is that the model and the planner
         //  agree, and a shared constant would make the check vacuous.
-        private const float ExpectedWidth = 22f;
-        private const float ExpectedDepth = 16f;
-        private const float ExpectedHeight = 4.8f;
+        private const float ExpectedWidth = 11.4f;
+        private const float ExpectedDepth = 7.8f;
+        private const float ExpectedHeight = 3f;
         private const float ExpectedWallThickness = 0.3f;
         private const float ExpectedDoorWidth = 1.45f;
         private const float ExpectedDoorHeight = 2.34f;

@@ -1786,9 +1786,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(serviceView.transform));
             Assert.That(controller.BottleGripError, Is.LessThan(0.0001f));
             Assert.That(
-                controller.BottleHandRadialClearance,
-                Is.GreaterThanOrEqualTo(
-                    BarDrinkServiceView.MinimumBottleHandRadialClearance));
+                Vector3.Distance(serviceView.CarriedBottleHandContactWorldPosition,
+                    serviceView.CarriedBottleGripCenterWorldPosition),
+                Is.LessThan(0.0001f),
+                "The reachable hand target must surround the actual bottle " +
+                "axis instead of preserving the former radial socket gap.");
             Assert.That(
                 Vector3.Distance(
                     shoulderObject.transform.position,

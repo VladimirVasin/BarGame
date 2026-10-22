@@ -21,6 +21,9 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Catalog_CoversTheFourBarDistrictsDistinctly()
         {
+            Assert.That(BarDistrictIdentityCatalog.FallbackDistrict,
+                Is.EqualTo(CityDistrictKind.Residential),
+                "Direct bar loads must use the canonical warm neighbourhood pub.");
             var nameKeys = new HashSet<string>(StringComparer.Ordinal);
             var moods = new HashSet<BarDistrictMood>();
             var wallTints = new HashSet<Color>();

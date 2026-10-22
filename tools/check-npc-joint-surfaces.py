@@ -44,7 +44,6 @@ def check_npcs():
             print("NPC joint failure:", spec.key, error, flush=True)
     standalone = (
         ("driver", "build-city-bus-driver-3d-model.py", "DriverBuilder", "validate_driver_result"),
-        ("bartender", "build-ordinary-bartender-3d-model.py", "OrdinaryBartenderBuilder", "validate_result"),
     )
     for name, filename, builder_name, validator_name in standalone:
         try:

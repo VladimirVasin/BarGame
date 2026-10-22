@@ -32,12 +32,43 @@ namespace BarPromenade
             }
 
             ValidateRoom(plan);
+            ValidateExteriorContainment(plan);
             ValidateZones(plan);
             ValidatePaths(plan);
             ValidateFurniture(plan);
+            ValidateCounterSeatAccess(plan);
             ValidateNpcAnchors(plan);
             ValidateLightAnchors(plan);
             ValidateAudioAnchors(plan);
+        }
+
+        private static void ValidateExteriorContainment(BarInteriorLayoutPlan plan)
+        {
+            float halfWall = plan.WallThickness * 0.5f;
+            for (int x = -1; x <= 1; x += 2)
+            {
+                for (int z = -1; z <= 1; z += 2)
+                {
+                    Vector3 corner = BarInteriorLayoutPlanner.ToExteriorPosition(
+                        new Vector3(x * (plan.RoomSize.x * 0.5f + halfWall),
+                            0f, z * (plan.RoomSize.y * 0.5f + halfWall)));
+                    if (!Contains(BarInteriorLayoutPlanner.ExteriorMainRange, corner))
+                    {
+                        throw new InvalidOperationException(
+                            "The room shell leaves the exterior's main ground-floor contour.");
+                    }
+                }
+            }
+
+            Vector3 door = BarInteriorLayoutPlanner.ToExteriorPosition(
+                new Vector3(0f, 0f, -plan.RoomSize.y * 0.5f));
+            if ((door - BarInteriorLayoutPlanner.ExteriorDoorPosition).sqrMagnitude >
+                Tolerance * Tolerance || plan.RoomHeight + 0.20f >
+                BarInteriorLayoutPlanner.ExteriorFirstFloorUnderside + Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The bar must share the facade's recessed door and fit below its first floor.");
+            }
         }
 
         private static void ValidateRoom(BarInteriorLayoutPlan plan)
@@ -271,6 +302,7 @@ namespace BarPromenade
             int counterCount = 0;
             int stageCount = 0;
             int activityFixtureCount = 0;
+            int jukeboxCount = 0;
             BarInteriorFurnitureFootprint counter = default;
             for (int index = 0;
                  index < plan.FurnitureFootprints.Count;
@@ -304,6 +336,11 @@ namespace BarPromenade
                     stageCount++;
                 }
                 else if (footprint.Kind ==
+                         BarInteriorFurnitureKind.Jukebox)
+                {
+                    jukeboxCount++;
+                }
+                else if (footprint.Kind ==
                          BarInteriorFurnitureKind.ActivityFixture)
                 {
                     activityFixtureCount++;
@@ -333,13 +370,12 @@ namespace BarPromenade
                 }
             }
 
-            if (counterCount != 1 ||
-                stageCount != 1 ||
-                activityFixtureCount != 1)
+            int expectedActivityFixtures = plan.Activity == BarActivityKind.BeerPong ? 1 : 0;
+            if (counterCount != 1 || stageCount != 1 || jukeboxCount != 1 ||
+                activityFixtureCount != expectedActivityFixtures)
             {
                 throw new InvalidOperationException(
-                    "The plan requires one counter, stage and activity " +
-                    "fixture.");
+                    "The plan requires one counter, stage and jukebox; only BeerPong has activity furniture.");
             }
 
             ValidateCounterContract(plan, counter);
@@ -524,6 +560,54 @@ namespace BarPromenade
                     }
                 }
             }
+        }
+
+        private static void ValidateCounterSeatAccess(BarInteriorLayoutPlan plan)
+        {
+            IReadOnlyList<BarCounterSeatDescriptor> seats =
+                BarCounterSeatPlanner.CreateAvailable(plan);
+            for (int seatIndex = 0; seatIndex < seats.Count; seatIndex++)
+            {
+                BarCounterSeatDescriptor seat = seats[seatIndex];
+                RequireInsideWithRadius(plan.WalkableBounds,
+                    seat.ApproachGroundLocalPosition, PlayerRadius, "Stool approach");
+                RequireInsideWithRadius(plan.WalkableBounds,
+                    seat.EntryGroundLocalPosition, PlayerRadius, "Stool entry");
+                for (int index = 0; index < plan.FurnitureFootprints.Count; index++)
+                {
+                    BarInteriorFurnitureFootprint furniture = plan.FurnitureFootprints[index];
+                    if (!furniture.BlocksMovement) continue;
+                    Rect clearance = Rect.MinMaxRect(
+                        furniture.Bounds.xMin - PlayerRadius,
+                        furniture.Bounds.yMin - PlayerRadius,
+                        furniture.Bounds.xMax + PlayerRadius,
+                        furniture.Bounds.yMax + PlayerRadius);
+                    Vector3 from = seat.ApproachGroundLocalPosition;
+                    Vector3 to = seat.EntryGroundLocalPosition;
+                    float near = 0f;
+                    float far = 1f;
+                    if (ClipSegmentAxis(from.x, to.x - from.x,
+                            clearance.xMin, clearance.xMax, ref near, ref far) &&
+                        ClipSegmentAxis(from.z, to.z - from.z,
+                            clearance.yMin, clearance.yMax, ref near, ref far))
+                    {
+                        throw new InvalidOperationException(
+                            $"Stool '{seat.StableId}' approach/entry capsule intersects '{furniture.Id}'.");
+                    }
+                }
+            }
+        }
+
+        private static bool ClipSegmentAxis(float start, float delta,
+            float minimum, float maximum, ref float near, ref float far)
+        {
+            if (Mathf.Abs(delta) <= Tolerance)
+                return start > minimum + Tolerance && start < maximum - Tolerance;
+            float first = (minimum - start) / delta;
+            float second = (maximum - start) / delta;
+            near = Mathf.Max(near, Mathf.Min(first, second));
+            far = Mathf.Min(far, Mathf.Max(first, second));
+            return near < far - Tolerance;
         }
 
         private static void ValidateLightAnchors(

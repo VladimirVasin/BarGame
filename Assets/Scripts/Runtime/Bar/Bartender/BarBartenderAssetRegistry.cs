@@ -6,418 +6,356 @@ namespace BarPromenade
 {
     public enum BarBartenderClipKind
     {
-        Wipe = 0,
-        Walk = 1,
-        Pour = 2,
-        Notice = 3,
-        ServiceStep = 4
-    }
-
-    [Serializable]
-    public sealed class BarBartenderClipBinding
-    {
-        [SerializeField] private BarBartenderClipKind kind;
-        [SerializeField] private AnimationClip clip;
-        [SerializeField] private bool loop;
-
-        public BarBartenderClipBinding(
-            BarBartenderClipKind configuredKind,
-            AnimationClip configuredClip,
-            bool configuredLoop)
-        {
-            kind = configuredKind;
-            clip = configuredClip != null
-                ? configuredClip
-                : throw new ArgumentNullException(
-                    nameof(configuredClip));
-            loop = configuredLoop;
-        }
-
-        public BarBartenderClipKind Kind => kind;
-        public AnimationClip Clip => clip;
-        public bool Loop => loop;
-    }
-
-    [Serializable]
-    public sealed class BarBartenderRendererBinding
-    {
-        [SerializeField] private string rendererName;
-        [SerializeField] private string role;
-        [SerializeField] private string boneName;
-        [SerializeField] private string paletteName;
-        [SerializeField] private Renderer renderer;
-        [SerializeField] private Color baseColor = Color.white;
-
-        public BarBartenderRendererBinding(
-            string configuredRendererName,
-            string configuredRole,
-            string configuredBoneName,
-            string configuredPaletteName,
-            Renderer configuredRenderer,
-            Color configuredBaseColor)
-        {
-            rendererName = configuredRendererName ?? string.Empty;
-            role = configuredRole ?? string.Empty;
-            boneName = configuredBoneName ?? string.Empty;
-            paletteName = configuredPaletteName ?? string.Empty;
-            renderer = configuredRenderer;
-            baseColor = configuredBaseColor;
-        }
-
-        public string RendererName => rendererName;
-        public string Role => role;
-        public string BoneName => boneName;
-        public string PaletteName => paletteName;
-        public Renderer Renderer => renderer;
-        public Color BaseColor => baseColor;
+        Wipe = 0, Walk = 1, Pour = 2, Notice = 3, ServiceStep = 4
     }
 
     /// <summary>
-    /// One rigid extra-arm chain of the Six-Armed Bartender: four
-    /// authored pivot empties from shoulder to grip that procedural
-    /// pose code rotates, wheelchair-mechanism style, without bones.
-    /// </summary>
-    [Serializable]
-    public sealed class BarBartenderArmChain
-    {
-        [SerializeField] private string chainId;
-        [SerializeField] private Transform shoulderPivot;
-        [SerializeField] private Transform elbowPivot;
-        [SerializeField] private Transform wristPivot;
-        [SerializeField] private Transform gripPivot;
-
-        public BarBartenderArmChain(
-            string configuredChainId,
-            Transform configuredShoulderPivot,
-            Transform configuredElbowPivot,
-            Transform configuredWristPivot,
-            Transform configuredGripPivot)
-        {
-            chainId = configuredChainId ?? string.Empty;
-            shoulderPivot = configuredShoulderPivot;
-            elbowPivot = configuredElbowPivot;
-            wristPivot = configuredWristPivot;
-            gripPivot = configuredGripPivot;
-        }
-
-        public string ChainId => chainId;
-        public Transform ShoulderPivot => shoulderPivot;
-        public Transform ElbowPivot => elbowPivot;
-        public Transform WristPivot => wristPivot;
-        public Transform GripPivot => gripPivot;
-    }
-
-    /// <summary>
-    /// Serialized editor-built bindings shared by both bartender assets.
-    /// The inactive legacy prefab owns four rigid extra-arm chains; the
-    /// active ordinary prefab owns four authored service clips, one full
-    /// locomotion clip and explicit left-vessel/right-bottle sockets. Both keep
-    /// the exact NpcHumanV2 bones and per-renderer manifest colours.
+    /// Scene-local service bindings over a population-owned default character.
+    /// The population keeps the model, face and wardrobe; this adapter only
+    /// lends the common rig to the bar's existing service clock.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarBartenderAssetRegistry : MonoBehaviour
     {
-        public const int ExtraArmChainCount = 4;
+        private VillageResidentPresentation actor;
+        private MountainRoadCafeCastAssetRegistry serviceClips;
+        private CityPedestrianHandPropRegistry serviceTowel;
+        private Renderer[] renderers = Array.Empty<Renderer>();
+        private Vector3[] towelBoundsInGrip = Array.Empty<Vector3>();
+        private Vector3[] towelVerticesInRoot = Array.Empty<Vector3>();
+        private Vector3 towelPocketCentreInPelvis;
+        private Quaternion towelPocketHandRotationInPelvis;
+        private Vector3 towelRearPlaneInPelvis, towelRearNormalInPelvis;
+        private Plane wipeSurface;
+        private bool hasWipeSurface;
 
-        private static readonly int BaseColorId =
-            Shader.PropertyToID("_BaseColor");
-        private static readonly int LegacyColorId =
-            Shader.PropertyToID("_Color");
-        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
-        private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
-
-        [SerializeField] private Animator animator;
-        [SerializeField] private Transform modelRoot;
-        [SerializeField] private Renderer[] renderers =
-            Array.Empty<Renderer>();
-        [SerializeField]
-        private BarBartenderRendererBinding[] rendererBindings =
-            Array.Empty<BarBartenderRendererBinding>();
-        [SerializeField] private Texture2D detailAtlas;
-        [SerializeField] private Renderer[] detailAtlasRenderers = Array.Empty<Renderer>();
-
-        [Header("Torso and face")]
-        [SerializeField] private Transform pelvis;
-        [SerializeField] private Transform spine;
-        [SerializeField] private Transform chest;
-        [SerializeField] private Transform neck;
-        [SerializeField] private Transform head;
-        [SerializeField] private Transform faceEyeLeft;
-        [SerializeField] private Transform faceEyeRight;
-
-        [Header("Limbs")]
-        [SerializeField] private Transform leftUpperArm;
-        [SerializeField] private Transform leftForearm;
-        [SerializeField] private Transform leftHand;
-        [SerializeField] private Transform rightUpperArm;
-        [SerializeField] private Transform rightForearm;
-        [SerializeField] private Transform rightHand;
-
-        [Header("Extra arm chains")]
-        [SerializeField] private BarBartenderArmChain[] extraArmChains =
-            Array.Empty<BarBartenderArmChain>();
-
-        [Header("Ordinary service")]
-        [SerializeField] private BarBartenderClipBinding[] clipBindings =
-            Array.Empty<BarBartenderClipBinding>();
-        [SerializeField] private Transform leftGripSocket;
-        [SerializeField] private Transform leftVesselSocket;
-        [SerializeField] private Transform rightGripSocket;
-        [SerializeField] private Transform rightBottleSocket;
-        [SerializeField] private Transform vesselGripAnchor;
-        [SerializeField] private Transform bottleGripAnchor;
-
-        [Header("Source contract")]
-        [SerializeField] private Bounds localBounds;
-        [SerializeField] private int sourceTriangleCount;
-        [SerializeField] private string sourceGeneratorVersion;
-        [SerializeField] private string designId;
-        [SerializeField] private string buildSignature;
-
-        public Animator Animator => animator;
-        public Transform ModelRoot => modelRoot;
+        public VillageResidentPresentation Actor => actor;
+        public Animator Animator => actor.Animator;
+        public Transform ModelRoot => actor.ModelRoot;
         public IReadOnlyList<Renderer> Renderers => renderers;
-        public IReadOnlyList<BarBartenderRendererBinding>
-            RendererBindings => rendererBindings;
-        public Texture2D DetailAtlas => detailAtlas;
-        public IReadOnlyList<Renderer> DetailAtlasRenderers => detailAtlasRenderers;
-
-        public Transform Pelvis => pelvis;
-        public Transform Spine => spine;
-        public Transform Chest => chest;
-        public Transform Neck => neck;
-        public Transform Head => head;
-        public Transform FaceEyeLeft => faceEyeLeft;
-        public Transform FaceEyeRight => faceEyeRight;
-        public Transform LeftUpperArm => leftUpperArm;
-        public Transform LeftForearm => leftForearm;
-        public Transform LeftHand => leftHand;
-        public Transform RightUpperArm => rightUpperArm;
-        public Transform RightForearm => rightForearm;
-        public Transform RightHand => rightHand;
-        public IReadOnlyList<BarBartenderArmChain> ExtraArmChains =>
-            extraArmChains;
-        public IReadOnlyList<BarBartenderClipBinding> ClipBindings =>
-            clipBindings ?? Array.Empty<BarBartenderClipBinding>();
-        public Transform LeftGripSocket => leftGripSocket;
-        public Transform LeftVesselSocket => leftVesselSocket;
-        public Transform RightGripSocket => rightGripSocket;
-        public Transform RightBottleSocket => rightBottleSocket;
-        public Transform VesselGripAnchor => vesselGripAnchor;
-        public Transform BottleGripAnchor => bottleGripAnchor;
-        public bool UsesAuthoredServiceClips =>
-            clipBindings != null && clipBindings.Length > 0;
-
-        public Bounds LocalBounds => localBounds;
-        public int SourceTriangleCount => sourceTriangleCount;
-        public string SourceGeneratorVersion => sourceGeneratorVersion;
-        public string DesignId => designId;
-        public string BuildSignature => buildSignature;
-
-        public void Configure(
-            Animator configuredAnimator,
-            Transform configuredModelRoot,
-            Renderer[] configuredRenderers,
-            BarBartenderRendererBinding[] configuredBindings,
-            Transform configuredPelvis,
-            Transform configuredSpine,
-            Transform configuredChest,
-            Transform configuredNeck,
-            Transform configuredHead,
-            Transform configuredFaceEyeLeft,
-            Transform configuredFaceEyeRight,
-            Transform configuredLeftUpperArm,
-            Transform configuredLeftForearm,
-            Transform configuredLeftHand,
-            Transform configuredRightUpperArm,
-            Transform configuredRightForearm,
-            Transform configuredRightHand,
-            BarBartenderArmChain[] configuredExtraArmChains,
-            Bounds configuredLocalBounds,
-            int configuredSourceTriangleCount,
-            string configuredSourceGeneratorVersion,
-            string configuredDesignId,
-            string configuredBuildSignature)
+        public CityPedestrianHandPropRegistry ServiceTowel => serviceTowel;
+        public NpcHandPose HandPose { get; private set; }
+        public Transform Pelvis { get; private set; }
+        public Transform Spine { get; private set; }
+        public Transform Chest { get; private set; }
+        public Transform Neck { get; private set; }
+        public Transform Head => actor.Head;
+        public Transform FaceEyeLeft { get; private set; }
+        public Transform FaceEyeRight { get; private set; }
+        public Transform LeftClavicle { get; private set; }
+        public Transform LeftUpperArm { get; private set; }
+        public Transform LeftForearm { get; private set; }
+        public Transform LeftHand { get; private set; }
+        public Transform RightClavicle { get; private set; }
+        public Transform RightUpperArm { get; private set; }
+        public Transform RightForearm { get; private set; }
+        public Transform RightHand { get; private set; }
+        public Transform LeftThigh { get; private set; }
+        public Transform LeftShin { get; private set; }
+        public Transform LeftFoot { get; private set; }
+        public Transform RightThigh { get; private set; }
+        public Transform RightShin { get; private set; }
+        public Transform RightFoot { get; private set; }
+        public Transform LeftGripSocket => actor.LeftGrip;
+        public Transform LeftVesselSocket { get; private set; }
+        public Transform RightGripSocket => actor.RightGrip;
+        public Transform RightBottleSocket { get; private set; }
+        public Transform VesselGripAnchor { get; private set; }
+        public Transform BottleGripAnchor { get; private set; }
+        public string DesignId { get; private set; }
+        public Vector3 TowelCentreInHand { get; private set; }
+        // Forward is the cloth's thin axis; up is its longer broad axis.
+        public Quaternion TowelPlaneRotationInHand { get; private set; }
+        public Vector3 TowelPocketWorldPosition => Pelvis.position +
+            Pelvis.rotation * towelPocketCentreInPelvis;
+        public bool IsTowelHandBehindBack => Vector3.Dot(
+            LeftHand.position - (Pelvis.position + Pelvis.rotation * towelRearPlaneInPelvis),
+            Pelvis.rotation * towelRearNormalInPelvis) >= 0f;
+        public Bounds TowelWorldBounds
         {
-            animator = configuredAnimator;
-            modelRoot = configuredModelRoot;
-            renderers = configuredRenderers ?? Array.Empty<Renderer>();
-            rendererBindings = configuredBindings ??
-                Array.Empty<BarBartenderRendererBinding>();
-            pelvis = configuredPelvis;
-            spine = configuredSpine;
-            chest = configuredChest;
-            neck = configuredNeck;
-            head = configuredHead;
-            faceEyeLeft = configuredFaceEyeLeft;
-            faceEyeRight = configuredFaceEyeRight;
-            leftUpperArm = configuredLeftUpperArm;
-            leftForearm = configuredLeftForearm;
-            leftHand = configuredLeftHand;
-            rightUpperArm = configuredRightUpperArm;
-            rightForearm = configuredRightForearm;
-            rightHand = configuredRightHand;
-            extraArmChains = configuredExtraArmChains ??
-                Array.Empty<BarBartenderArmChain>();
-            localBounds = configuredLocalBounds;
-            sourceTriangleCount = configuredSourceTriangleCount;
-            sourceGeneratorVersion =
-                configuredSourceGeneratorVersion ?? string.Empty;
-            designId = configuredDesignId ?? string.Empty;
-            buildSignature = configuredBuildSignature ?? string.Empty;
-            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
-            ApplyBaseColors();
-        }
-
-        public void ConfigureOrdinaryService(
-            BarBartenderClipBinding[] configuredClipBindings,
-            Transform configuredLeftGripSocket,
-            Transform configuredLeftVesselSocket,
-            Transform configuredRightGripSocket,
-            Transform configuredRightBottleSocket,
-            Transform configuredVesselGripAnchor,
-            Transform configuredBottleGripAnchor)
-        {
-            if (configuredClipBindings == null ||
-                configuredClipBindings.Length != 5)
+            get
             {
-                throw new ArgumentException(
-                    "Ordinary bartender service requires exactly five " +
-                    "authored clip bindings.",
-                    nameof(configuredClipBindings));
+                var bounds = new Bounds(serviceTowel.transform.TransformPoint(towelVerticesInRoot[0]), Vector3.zero);
+                for (int index = 1; index < towelVerticesInRoot.Length; index++)
+                    bounds.Encapsulate(serviceTowel.transform.TransformPoint(towelVerticesInRoot[index]));
+                return bounds;
             }
+        }
+        public float TowelWipeContactError => hasWipeSurface
+            ? Mathf.Abs(ResolveLowestTowelWipeCorner()) : float.PositiveInfinity;
 
-            clipBindings = configuredClipBindings;
-            leftGripSocket = configuredLeftGripSocket != null
-                ? configuredLeftGripSocket
-                : throw new ArgumentNullException(
-                    nameof(configuredLeftGripSocket));
-            leftVesselSocket = configuredLeftVesselSocket != null
-                ? configuredLeftVesselSocket
-                : throw new ArgumentNullException(
-                    nameof(configuredLeftVesselSocket));
-            rightGripSocket = configuredRightGripSocket != null
-                ? configuredRightGripSocket
-                : throw new ArgumentNullException(
-                    nameof(configuredRightGripSocket));
-            rightBottleSocket = configuredRightBottleSocket != null
-                ? configuredRightBottleSocket
-                : throw new ArgumentNullException(
-                    nameof(configuredRightBottleSocket));
-            vesselGripAnchor = configuredVesselGripAnchor != null
-                ? configuredVesselGripAnchor
-                : throw new ArgumentNullException(
-                    nameof(configuredVesselGripAnchor));
-            bottleGripAnchor = configuredBottleGripAnchor != null
-                ? configuredBottleGripAnchor
-                : throw new ArgumentNullException(
-                    nameof(configuredBottleGripAnchor));
+        public void Configure(VillageResidentPresentation character)
+        {
+            actor = character != null ? character
+                : throw new ArgumentNullException(nameof(character));
+            DesignId = DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.BarBartender).ModelId;
+            // Exactly one graph drives this Animator. Appearance and wardrobe
+            // stay enabled, and this adapter never rewrites their MPBs.
+            actor.ReleaseAnimation();
+            var provider = MountainRoadCafeCastProvider.Load();
+            serviceClips = provider != null && provider.AttendantPrefab != null
+                ? provider.AttendantPrefab.GetComponent<MountainRoadCafeCastAssetRegistry>()
+                : null;
+            if (serviceClips == null)
+                throw new InvalidOperationException("The shared cafe service clips are missing.");
+
+            Transform Require(string name) =>
+                CityPedestrianHandProps.FindSocket(ModelRoot, name)
+                ?? throw new InvalidOperationException("Default bartender lost joint/socket " + name);
+            Pelvis = Require("pelvis"); Spine = Require("spine");
+            Chest = Require("chest"); Neck = Require("neck");
+            FaceEyeLeft = Require("face.eye.L"); FaceEyeRight = Require("face.eye.R");
+            LeftClavicle = Require("clavicle.L");
+            LeftUpperArm = Require("upper_arm.L"); LeftForearm = Require("forearm.L");
+            LeftHand = Require("hand.L");
+            RightClavicle = Require("clavicle.R");
+            RightUpperArm = Require("upper_arm.R"); RightForearm = Require("forearm.R");
+            RightHand = Require("hand.R");
+            LeftThigh = Require("thigh.L"); LeftShin = Require("shin.L"); LeftFoot = Require("foot.L");
+            RightThigh = Require("thigh.R"); RightShin = Require("shin.R"); RightFoot = Require("foot.R");
+            LeftVesselSocket = Require("SOCKET_Vessel.L");
+            RightBottleSocket = Require("SOCKET_Bottle.R");
+            HandPose = actor.GetComponent<NpcHandPose>();
+            if (HandPose == null)
+                throw new InvalidOperationException("The default bartender needs its shared authored hand grips.");
+            VesselGripAnchor = CreateAnatomicalGrip(LeftHand, true,
+                "Bar Left Vessel Grasp Centre");
+            BottleGripAnchor = CreateAnatomicalGrip(RightHand, false,
+                "Bar Right Bottle Grasp Centre");
+            renderers = actor.GetComponentsInChildren<Renderer>(true);
+            Material shared = renderers.Length > 0 ? renderers[0].sharedMaterial : null;
+            serviceTowel = CityPedestrianHandProps.Attach(
+                LeftGripSocket, CityPedestrianHandPropId.ServiceTowel, shared, 0);
+            CacheTowelBounds();
+            CacheTowelPocket();
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(ModelRoot);
+            foreach (BarBartenderClipKind kind in Enum.GetValues(typeof(BarBartenderClipKind)))
+                if (!TryGetClip(kind, out _, out _))
+                    throw new InvalidOperationException("Default bartender lost shared service clip " + kind);
         }
 
-        public bool TryGetClip(
-            BarBartenderClipKind kind,
-            out AnimationClip clip,
-            out bool loop)
+        private Transform CreateAnatomicalGrip(Transform hand, bool isLeft, string name)
         {
-            if (clipBindings != null)
+            var grip = new GameObject(name).transform;
+            grip.SetPositionAndRotation(HandPose.AnatomicalCylinderCentre(isLeft), hand.rotation);
+            grip.SetParent(hand, true);
+            return grip;
+        }
+
+        public void ConfigureGripKind(bool isLeft, NpcHandGripKind kind)
+        {
+            Transform hand = isLeft ? LeftHand : RightHand;
+            Transform grip = isLeft ? VesselGripAnchor : BottleGripAnchor;
+            AnatomicalHandFrame frame = HandPose.GetAnatomicalFrame(isLeft, kind);
+            grip.position = hand.position + hand.rotation * frame.CylinderCentreInHand;
+        }
+
+        /// <summary>Bind the imported counter's measured top after the room is placed.</summary>
+        public void ConfigureWipeSurface(Renderer counterSurface)
+        {
+            if (counterSurface == null)
+                throw new ArgumentNullException(nameof(counterSurface));
+            Bounds bounds = counterSurface.bounds;
+            wipeSurface = new Plane(Vector3.up,
+                new Vector3(bounds.center.x, bounds.max.y, bounds.center.z));
+            hasWipeSurface = true;
+        }
+
+        private void CacheTowelBounds()
+        {
+            towelBoundsInGrip = new Vector3[serviceTowel.Renderers.Count * 8];
+            var vertices = new List<Vector3>();
+            Quaternion inverseHand = Quaternion.Inverse(LeftHand.rotation);
+            bool hasPlane = false;
+            int point = 0;
+            foreach (Renderer renderer in serviceTowel.Renderers)
             {
-                for (int index = 0;
-                     index < clipBindings.Length;
-                     index++)
+                var filter = renderer.GetComponent<MeshFilter>();
+                if (filter == null || filter.sharedMesh == null)
+                    throw new InvalidOperationException("The shared service towel needs its rigid mesh.");
+                Bounds bounds = filter.sharedMesh.bounds;
+                for (int corner = 0; corner < 8; corner++)
                 {
-                    BarBartenderClipBinding binding =
-                        clipBindings[index];
-                    if (binding != null && binding.Kind == kind)
+                    Vector3 signs = new Vector3((corner & 1) == 0 ? -1f : 1f,
+                        (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f);
+                    Vector3 local = bounds.center + Vector3.Scale(bounds.extents, signs);
+                    towelBoundsInGrip[point++] = LeftGripSocket.InverseTransformPoint(
+                        renderer.transform.TransformPoint(local));
+                }
+                foreach (Vector3 vertex in filter.sharedMesh.vertices)
+                {
+                    Vector3 world = renderer.transform.TransformPoint(vertex);
+                    vertices.Add(serviceTowel.transform.InverseTransformPoint(world));
+                    TowelCentreInHand += inverseHand * (world - LeftHand.position);
+                }
+                if (!hasPlane)
+                {
+                    Vector3 size = bounds.size;
+                    int thin = size.x <= size.y && size.x <= size.z ? 0 : size.y <= size.z ? 1 : 2;
+                    int longest = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
+                    Vector3 normal = inverseHand * renderer.transform.TransformVector(Axis(thin));
+                    Vector3 up = inverseHand * renderer.transform.TransformVector(Axis(longest));
+                    TowelPlaneRotationInHand = Quaternion.LookRotation(normal.normalized,
+                        Vector3.ProjectOnPlane(up, normal).normalized);
+                    hasPlane = true;
+                }
+            }
+            towelVerticesInRoot = vertices.ToArray();
+            TowelCentreInHand /= vertices.Count;
+        }
+
+        private static Vector3 Axis(int index) => index == 0 ? Vector3.right
+            : index == 1 ? Vector3.up : Vector3.forward;
+
+        private void CacheTowelPocket()
+        {
+            var clothingPoints = new List<Vector3>();
+            Bounds trousers = default;
+            bool foundTrousers = false;
+            Quaternion inverseActor = Quaternion.Inverse(transform.rotation);
+            foreach (Renderer candidate in renderers)
+            {
+                if (!(candidate is SkinnedMeshRenderer renderer) || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy) continue;
+                bool isTrousers = renderer.name.StartsWith("CLO_Trousers_", StringComparison.Ordinal) &&
+                    renderer.name.EndsWith("Upper", StringComparison.Ordinal);
+                bool isCoat = renderer.name.StartsWith("CLO_Outer_", StringComparison.Ordinal) &&
+                    renderer.name.EndsWith("Body", StringComparison.Ordinal);
+                if (!isTrousers && !isCoat) continue;
+                foreach (Vector3 world in MeasureInitialGarmentVertices(renderer))
+                {
+                    Vector3 local = inverseActor * (world - transform.position);
+                    clothingPoints.Add(local);
+                    if (!isTrousers) continue;
+                    if (!foundTrousers) { trousers = new Bounds(local, Vector3.zero); foundTrousers = true; }
+                    else trousers.Encapsulate(local);
+                }
+            }
+            if (!foundTrousers || clothingPoints.Count == 0)
+                throw new InvalidOperationException("The bartender's rear towel dock needs its actual trouser and coat surfaces.");
+
+            // The user permits disappearance/appearance once the actual hand
+            // reaches behind the back. Measure that plane and the reachable
+            // dock once; clothing geometry is not retained or skinned again.
+            float left = trousers.center.x - trousers.extents.x * .5f;
+            float mouthHeight = trousers.max.y - .05f;
+            Quaternion bestHand = default;
+            float bestScore = float.NegativeInfinity;
+            float halfHeight = 0f;
+            for (int normalSign = -1; normalSign <= 1; normalSign += 2)
+                for (int upSign = -1; upSign <= 1; upSign += 2)
+                {
+                    Quaternion hand = Quaternion.LookRotation(transform.forward * normalSign,
+                        transform.up * upSign) * Quaternion.Inverse(TowelPlaneRotationInHand);
+                    Vector3 wristFromCentre = -(hand * TowelCentreInHand);
+                    float score = Vector3.Dot(wristFromCentre, transform.up) -
+                        Vector3.Dot(wristFromCentre, transform.forward);
+                    if (score <= bestScore) continue;
+                    bestScore = score;
+                    bestHand = hand;
+                    halfHeight = 0f;
+                    foreach (Vector3 rootVertex in towelVerticesInRoot)
                     {
-                        clip = binding.Clip;
-                        loop = binding.Loop;
-                        return clip != null;
+                        Vector3 inHand = Quaternion.Inverse(LeftHand.rotation) *
+                            (serviceTowel.transform.TransformPoint(rootVertex) - LeftHand.position);
+                        halfHeight = Mathf.Max(halfHeight,
+                            Mathf.Abs(Vector3.Dot(hand * (inHand - TowelCentreInHand), transform.up)));
                     }
                 }
-            }
-
-            clip = null;
-            loop = false;
-            return false;
+            float rear = trousers.min.z;
+            foreach (Vector3 local in clothingPoints)
+                if (Mathf.Abs(local.y - mouthHeight) <= .11f)
+                    rear = Mathf.Min(rear, local.z);
+            Vector3 centre = transform.position + transform.rotation *
+                new Vector3(left, mouthHeight - halfHeight, rear - .03f);
+            towelPocketCentreInPelvis = Quaternion.Inverse(Pelvis.rotation) * (centre - Pelvis.position);
+            towelPocketHandRotationInPelvis = Quaternion.Inverse(Pelvis.rotation) * bestHand;
+            Vector3 plane = transform.position + transform.rotation * new Vector3(left, mouthHeight, rear);
+            towelRearPlaneInPelvis = Quaternion.Inverse(Pelvis.rotation) * (plane - Pelvis.position);
+            towelRearNormalInPelvis = Quaternion.Inverse(Pelvis.rotation) * -transform.forward;
         }
 
-        public void SetServiceTowelVisible(bool visible)
+        public Pose ResolveTowelPocketHandPose()
         {
-            if (rendererBindings == null)
+            Quaternion rotation = Pelvis.rotation * towelPocketHandRotationInPelvis;
+            return new Pose(TowelPocketWorldPosition - rotation * TowelCentreInHand, rotation);
+        }
+
+        private static Vector3[] MeasureInitialGarmentVertices(SkinnedMeshRenderer renderer)
+        {
+            Mesh mesh = renderer.sharedMesh;
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] delta = null;
+            for (int shape = 0; shape < mesh.blendShapeCount; shape++)
             {
-                return;
+                float amount = renderer.GetBlendShapeWeight(shape) * .01f;
+                if (Mathf.Abs(amount) <= .00001f) continue;
+                if (delta == null) delta = new Vector3[vertices.Length];
+                mesh.GetBlendShapeFrameVertices(shape, 0, delta, null, null);
+                for (int index = 0; index < vertices.Length; index++)
+                    vertices[index] += delta[index] * amount;
             }
-
-            for (int index = 0;
-                 index < rendererBindings.Length;
-                 index++)
+            BoneWeight[] weights = mesh.boneWeights;
+            Transform[] bones = renderer.bones;
+            Matrix4x4[] bindPoses = mesh.bindposes;
+            var skin = new Matrix4x4[bones.Length];
+            for (int index = 0; index < skin.Length; index++)
+                skin[index] = bones[index].localToWorldMatrix * bindPoses[index];
+            for (int index = 0; index < vertices.Length; index++)
             {
-                BarBartenderRendererBinding binding =
-                    rendererBindings[index];
-                if (binding != null &&
-                    string.Equals(
-                        binding.RendererName,
-                        "ACC_ServiceTowel",
-                        StringComparison.Ordinal) &&
-                    binding.Renderer != null)
-                {
-                    binding.Renderer.enabled = visible;
-                    return;
-                }
+                Vector3 vertex = vertices[index];
+                BoneWeight weight = weights[index];
+                vertices[index] = skin[weight.boneIndex0].MultiplyPoint3x4(vertex) * weight.weight0 +
+                    skin[weight.boneIndex1].MultiplyPoint3x4(vertex) * weight.weight1 +
+                    skin[weight.boneIndex2].MultiplyPoint3x4(vertex) * weight.weight2 +
+                    skin[weight.boneIndex3].MultiplyPoint3x4(vertex) * weight.weight3;
             }
+            return vertices;
         }
 
-        public void ConfigureDetailAtlas(Texture2D texture, Renderer[] surfaces)
+        internal bool TryResolveWipeHandTarget(out Vector3 target)
         {
-            detailAtlas = texture;
-            detailAtlasRenderers = surfaces ?? Array.Empty<Renderer>();
-            ApplyBaseColors();
+            target = VesselGripAnchor.position;
+            if (!hasWipeSurface || towelBoundsInGrip.Length == 0)
+                return false;
+            float lowest = ResolveLowestTowelWipeCorner();
+            if (Mathf.Abs(lowest) < 0.0005f)
+                return false;
+            target -= wipeSurface.normal * lowest;
+            return true;
         }
 
-        public void ApplyBaseColors()
+        private float ResolveLowestTowelWipeCorner()
         {
-            MaterialPropertyBlock properties =
-                new MaterialPropertyBlock();
-            for (int index = 0;
-                 index < rendererBindings.Length;
-                 index++)
+            float lowest = float.PositiveInfinity;
+            for (int index = 0; index < towelBoundsInGrip.Length; index++)
+                lowest = Mathf.Min(lowest, wipeSurface.GetDistanceToPoint(
+                    LeftGripSocket.TransformPoint(towelBoundsInGrip[index])));
+            return lowest;
+        }
+
+        public bool TryGetClip(BarBartenderClipKind kind, out AnimationClip clip, out bool loop)
+        {
+            if (kind == BarBartenderClipKind.Walk)
             {
-                BarBartenderRendererBinding binding =
-                    rendererBindings[index];
-                if (binding == null || binding.Renderer == null)
-                {
-                    continue;
-                }
-
-                binding.Renderer.GetPropertyBlock(properties);
-                properties.SetColor(BaseColorId, binding.BaseColor);
-                properties.SetColor(LegacyColorId, binding.BaseColor);
-                if (detailAtlas != null && detailAtlasRenderers != null &&
-                    Array.IndexOf(detailAtlasRenderers, binding.Renderer) >= 0)
-                {
-                    properties.SetTexture(BaseMapId, detailAtlas);
-                    properties.SetTexture(MainTexId, detailAtlas);
-                }
-                binding.Renderer.SetPropertyBlock(properties);
-                properties.Clear();
+                clip = actor != null ? actor.GetClip(VillageResidentAction.Walk) : null;
+                loop = true;
+                return clip != null;
             }
+            MountainRoadCafeCastClipKind shared = kind switch
+            {
+                BarBartenderClipKind.Wipe => MountainRoadCafeCastClipKind.Wipe,
+                BarBartenderClipKind.ServiceStep => MountainRoadCafeCastClipKind.Walk,
+                BarBartenderClipKind.Pour => MountainRoadCafeCastClipKind.Pour,
+                _ => MountainRoadCafeCastClipKind.Notice
+            };
+            clip = null; loop = false;
+            return serviceClips != null && serviceClips.TryGetClip(shared, out clip, out loop);
         }
 
-        private void Awake()
-        {
-            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
-        }
+        public void SetServiceTowelVisible(bool visible) => serviceTowel?.SetVisible(visible);
 
-        private void OnDisable()
-        {
-            NpcFootstepSources.Unregister(transform);
-        }
-
-        private void OnEnable()
-        {
-            NpcFootstepSources.Register(transform);
-            ApplyBaseColors();
-            SetServiceTowelVisible(true);
-        }
+        private void OnEnable() => NpcFootstepSources.Register(transform);
+        private void OnDisable() => NpcFootstepSources.Unregister(transform);
     }
 }

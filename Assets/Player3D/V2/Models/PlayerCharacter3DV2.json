@@ -9,10 +9,10 @@
   "seed": 17301,
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "object_count": 93,
+  "object_count": 105,
   "mesh_count": 85,
   "triangle_count": 9744,
-  "action_count": 50,
+  "action_count": 55,
   "socket_count": 6,
   "bounds_min": [
     -0.775209,
@@ -589,6 +589,76 @@
       "frame_end": 60.0,
       "root_motion": false,
       "event_count": 0
+    },
+    {
+      "name": "CounterSeatEnterLeft",
+      "category": "counter_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12.0,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true
+    },
+    {
+      "name": "CounterSeatEnterRight",
+      "category": "counter_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12.0,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true
+    },
+    {
+      "name": "CounterSeatExitLeft",
+      "category": "counter_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12.0,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true
+    },
+    {
+      "name": "CounterSeatExitRight",
+      "category": "counter_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12.0,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true
+    },
+    {
+      "name": "CounterSeatLoop",
+      "category": "counter_seat",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "source_frame_count": 16,
+      "source_fps": 8.0,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true
     },
     {
       "name": "DoorUseEnter",
@@ -2190,7 +2260,83 @@
         ]
       }
     ],
-    "shape_signature": "1e68f257f5c85a43263ed139f613bcec4d5a5327006f27ba4a887a77a7031247",
+    "shape_signature": "da903b4a4da9fa91aca61a95697407c66def4b776cd8cd7b09b6a752673e3c1d",
+    "variants": [
+      {
+        "shape_name": "WineBowlGrip",
+        "cylinder_radius_m": 0.037,
+        "hands": [
+          {
+            "side": "L",
+            "bone": "hand.L",
+            "centre_anchor": "ANCHOR_WineBowlGripCentre.L",
+            "axis_anchor": "ANCHOR_WineBowlGripAxis.L",
+            "palm_anchor": "ANCHOR_WineBowlGripPalm.L",
+            "renderers": [
+              "GEO_Hand.L",
+              "GEO_Thumb.L",
+              "GEO_Finger0.L",
+              "GEO_Finger1.L",
+              "GEO_Finger2.L",
+              "GEO_Finger3.L"
+            ]
+          },
+          {
+            "side": "R",
+            "bone": "hand.R",
+            "centre_anchor": "ANCHOR_WineBowlGripCentre.R",
+            "axis_anchor": "ANCHOR_WineBowlGripAxis.R",
+            "palm_anchor": "ANCHOR_WineBowlGripPalm.R",
+            "renderers": [
+              "GEO_Hand.R",
+              "GEO_Thumb.R",
+              "GEO_Finger0.R",
+              "GEO_Finger1.R",
+              "GEO_Finger2.R",
+              "GEO_Finger3.R"
+            ]
+          }
+        ],
+        "shape_signature": "fab75cd1706849d859858af2e6312a32ffe233d9b80e168decace919d0e2b92f"
+      },
+      {
+        "shape_name": "SnifterBowlGrip",
+        "cylinder_radius_m": 0.046,
+        "hands": [
+          {
+            "side": "L",
+            "bone": "hand.L",
+            "centre_anchor": "ANCHOR_SnifterBowlGripCentre.L",
+            "axis_anchor": "ANCHOR_SnifterBowlGripAxis.L",
+            "palm_anchor": "ANCHOR_SnifterBowlGripPalm.L",
+            "renderers": [
+              "GEO_Hand.L",
+              "GEO_Thumb.L",
+              "GEO_Finger0.L",
+              "GEO_Finger1.L",
+              "GEO_Finger2.L",
+              "GEO_Finger3.L"
+            ]
+          },
+          {
+            "side": "R",
+            "bone": "hand.R",
+            "centre_anchor": "ANCHOR_SnifterBowlGripCentre.R",
+            "axis_anchor": "ANCHOR_SnifterBowlGripAxis.R",
+            "palm_anchor": "ANCHOR_SnifterBowlGripPalm.R",
+            "renderers": [
+              "GEO_Hand.R",
+              "GEO_Thumb.R",
+              "GEO_Finger0.R",
+              "GEO_Finger1.R",
+              "GEO_Finger2.R",
+              "GEO_Finger3.R"
+            ]
+          }
+        ],
+        "shape_signature": "6efa0dda17fae64ec9d5bb400cd8fb54e1771ac6998550ea5e459bb1686ea5bf"
+      }
+    ],
     "validation": {
       "surface_clearances_m": {
         "GEO_Hand.L": 0.001,
@@ -2218,6 +2364,51 @@
         "GEO_Finger2.R": 0.01295,
         "GEO_Finger3.R": 0.004712
       },
+      "bowl_surface_clearances_m": {
+        "WineBowlGrip:GEO_Hand.L": 0.001,
+        "WineBowlGrip:GEO_Thumb.L": 0.00375,
+        "WineBowlGrip:GEO_Finger0.L": 0.002595,
+        "WineBowlGrip:GEO_Finger1.L": 0.002244,
+        "WineBowlGrip:GEO_Finger2.L": 0.002332,
+        "WineBowlGrip:GEO_Finger3.L": 0.002603,
+        "WineBowlGrip:GEO_Hand.R": 0.001,
+        "WineBowlGrip:GEO_Thumb.R": 0.004232,
+        "WineBowlGrip:GEO_Finger0.R": 0.001954,
+        "WineBowlGrip:GEO_Finger1.R": 0.001565,
+        "WineBowlGrip:GEO_Finger2.R": 0.001691,
+        "WineBowlGrip:GEO_Finger3.R": 0.002038,
+        "SnifterBowlGrip:GEO_Hand.L": 0.001,
+        "SnifterBowlGrip:GEO_Thumb.L": 0.003937,
+        "SnifterBowlGrip:GEO_Finger0.L": 0.002695,
+        "SnifterBowlGrip:GEO_Finger1.L": 0.002402,
+        "SnifterBowlGrip:GEO_Finger2.L": 0.002472,
+        "SnifterBowlGrip:GEO_Finger3.L": 0.00269,
+        "SnifterBowlGrip:GEO_Hand.R": 0.001,
+        "SnifterBowlGrip:GEO_Thumb.R": 0.004392,
+        "SnifterBowlGrip:GEO_Finger0.R": 0.002053,
+        "SnifterBowlGrip:GEO_Finger1.R": 0.001721,
+        "SnifterBowlGrip:GEO_Finger2.R": 0.001829,
+        "SnifterBowlGrip:GEO_Finger3.R": 0.002124
+      },
+      "bowl_finger_root_surface_gaps_m": {
+        "WineBowlGrip:GEO_Finger0.L": 0.0,
+        "WineBowlGrip:GEO_Finger1.L": 0.0,
+        "WineBowlGrip:GEO_Finger2.L": 0.0,
+        "WineBowlGrip:GEO_Finger3.L": 0.0,
+        "WineBowlGrip:GEO_Finger0.R": 0.0,
+        "WineBowlGrip:GEO_Finger1.R": 0.0,
+        "WineBowlGrip:GEO_Finger2.R": 0.0,
+        "WineBowlGrip:GEO_Finger3.R": 0.0,
+        "SnifterBowlGrip:GEO_Finger0.L": 0.0,
+        "SnifterBowlGrip:GEO_Finger1.L": 0.0,
+        "SnifterBowlGrip:GEO_Finger2.L": 0.0,
+        "SnifterBowlGrip:GEO_Finger3.L": 0.0,
+        "SnifterBowlGrip:GEO_Finger0.R": 0.0,
+        "SnifterBowlGrip:GEO_Finger1.R": 0.0,
+        "SnifterBowlGrip:GEO_Finger2.R": 0.0,
+        "SnifterBowlGrip:GEO_Finger3.R": 0.0
+      },
+      "bowl_maximum_segment_length_error_m": 1e-07,
       "finger_root_surface_gaps_m": {
         "GEO_Finger0.L": 0.0,
         "GEO_Finger1.L": 0.0,
@@ -2232,10 +2423,10 @@
       "wrist_unchanged": true
     }
   },
-  "hand_grip_authoring_sha256": "a54f30087360b47fefd54a0fa42f125426352fd5203b95a918d85c08ad8a8bea",
+  "hand_grip_authoring_sha256": "12cf2af95da13b06122452fa8d47cdbf165b8fafe6e4377accabe844960160a3",
   "design_version": "HeroV2",
   "cold_authoring_sha256": "43e4d28adc2d45c8f1e679635306b733f134e011410f875a04649d19d57d3791",
-  "detail_authoring_sha256": "1005ed633302cde3d9c4a09b0b7d895785b5100f934f41e48bd56c3fb804b037",
+  "detail_authoring_sha256": "159b3c9aaf89039694ead7692c46925a1dd7e3238222a01ad3637d4932d3df49",
   "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
   "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
@@ -2263,10 +2454,10 @@
       ]
     ],
     "maximum_ring_gap_m": 0.05,
-    "action_count": 50,
+    "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "3a33690ea060752d82aa8da6fdfcbbec2540264683d0f2201231840e7d5fb3b1",
+  "content_signature_sha256": "9ed6330dd54e686e3cb4823e6c67d4fad7c4462771faea59e911136466c74f97",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -6772,5 +6963,31 @@
     "sha256": "063a7ac2ab88338b14ecf4d6497bff79d8088dbec2b350dd920a98d3ce3b4431"
   },
   "joint_surface_authoring_sha256": "2d43005ce21ccc7308459166c42cfb005a758bb0f2fc385c33164b49e317c59a",
-  "footwear_authoring_sha256": "625bec75bc3be2412502806cd51c3048d50e18480ab6830c5b4abf9b5fc084a1"
+  "footwear_authoring_sha256": "625bec75bc3be2412502806cd51c3048d50e18480ab6830c5b4abf9b5fc084a1",
+  "counter_seat": {
+    "contract": "counter_seat_side_v1",
+    "source": "all evaluated body/clothing triangles",
+    "stool_seat_top_m": 0.8175,
+    "stool_diameter_m": 0.48,
+    "stool_pitch_m": 0.9,
+    "action_hip_clearance_m": 0.105,
+    "raised_hip_clearance_m": 0.15,
+    "side_offset_m": 0.45,
+    "enter_key_times": [
+      0.0,
+      0.18,
+      0.4,
+      0.58,
+      0.68,
+      0.82,
+      1.0
+    ],
+    "bar_thigh_down_degrees": 6.0,
+    "bar_thigh_splay_degrees": 20.0,
+    "bar_shin_tuck_degrees": 5.0,
+    "raised_extra_knee_down_degrees": 8.0,
+    "loop": "CounterSeatLoop",
+    "unchanged_bus_cafe": true
+  },
+  "counter_seat_authoring_sha256": "20e47bf713071648826f6a5dc79c774c20ba234affc563fa2d39c1059c11ba9d"
 }

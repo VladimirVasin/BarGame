@@ -1089,6 +1089,36 @@ MonoBehaviour:
     authoredDuration: 2.5
     looping: 0
     facialExpressionKeys: []
+  - clipName: CounterSeatEnterLeft
+    category: counter_seat
+    clip: {fileID: 5753779457387843258, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 3
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: CounterSeatEnterRight
+    category: counter_seat
+    clip: {fileID: 2682573263362162577, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 3
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: CounterSeatExitLeft
+    category: counter_seat
+    clip: {fileID: -7749300919579505045, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 3
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: CounterSeatExitRight
+    category: counter_seat
+    clip: {fileID: -587259288967466186, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 3
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: CounterSeatLoop
+    category: counter_seat
+    clip: {fileID: 4057797579200833327, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2
+    looping: 1
+    facialExpressionKeys: []
   - clipName: DoorUseEnter
     category: door_use
     clip: {fileID: -3819571249170146038, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -1320,7 +1350,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 9744
-  buildSignature: 956337fbe0186fb5aba66e557d0dbf21
+  buildSignature: d0e98d59ea1b94afe83bd49804e0b65f
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

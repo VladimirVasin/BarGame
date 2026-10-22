@@ -448,6 +448,9 @@ namespace BarPromenade
 
         private void SetClothPhysicsEnabled(bool value)
         {
+            // Gameplay uses CombatTest's rig-only jacket presentation everywhere.
+            // Offline editor authoring can still generate secondary-motion bakes.
+            if (Application.isPlaying) value = false;
             if (clothPhysicsEnabled == value) return;
             clothPhysicsEnabled = value;
             initialized = false;

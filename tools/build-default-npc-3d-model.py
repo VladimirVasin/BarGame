@@ -28,6 +28,7 @@ spec.loader.exec_module(resident)
 base = resident.base
 from player_3d_model_common import hex_to_linear_rgba
 from atlas_kit import PixelCanvas, read_generated_png
+import hand_bowl_grip
 
 VERSION = "2.0.0"
 HAND_SIZE_SCALE = 1.20
@@ -231,6 +232,8 @@ class WorkerBuilder(base.PedestrianBuilder):
         self.active_item=None
         self.hand_grip_frames=[]
         self.hand_grip_segments=[]
+        self.hand_bowl_frames=[]
+        self.hand_bowl_segments=[]
 
     def remap_geometry_point(self,point,bone_name,role,name):
         return Vector(point)
@@ -312,6 +315,9 @@ class WorkerBuilder(base.PedestrianBuilder):
             prefix="CLO_Glove" if gloves else "GEO_Hand"
             color="glove" if gloves else "skin"
             centre=a+direction*.063+normal*.030
+            bowls=[(name,world_radius/(1.78/1.75),
+                    a+direction*.063+normal*((world_radius+.008)/(1.78/1.75)))
+                   for name,world_radius in hand_bowl_grip.VARIANTS]
             if not gloves:
                 anchors={}
                 for label,point in (("Centre",centre),("Axis",centre-across*.05),("Palm",centre+normal*.05)):
@@ -322,8 +328,20 @@ class WorkerBuilder(base.PedestrianBuilder):
                     self.result.anchors[name]=anchor;anchors[label.lower()+"_anchor"]=name
                 self.hand_grip_frames.append({"side":side,"bone":bone,**anchors,
                     "source_centre":list(centre),"source_axis":list(-across),"source_palm":list(normal)})
-            def shape(obj,closed):
-                obj.shape_key_add(name="Basis");key=obj.shape_key_add(name=HAND_GRIP_SHAPE)
+                for shape_name,radius,bowl_centre in bowls:
+                    anchors={}
+                    for label,point in (("Centre",bowl_centre),("Axis",bowl_centre-across*.05),("Palm",bowl_centre+normal*.05)):
+                        name="ANCHOR_"+shape_name+label+"."+side
+                        anchor=bpy.data.objects.new(name,None);self.result.export_collection.objects.link(anchor)
+                        anchor.parent=self.result.rig;anchor.parent_type="BONE";anchor.parent_bone=bone
+                        bpy.context.view_layer.update();anchor.matrix_world=Matrix.Translation(point)
+                        self.result.anchors[name]=anchor;anchors[label.lower()+"_anchor"]=name
+                    self.hand_bowl_frames.append({"shape_name":shape_name,"source_cylinder_radius_m":radius,
+                        "side":side,"bone":bone,**anchors,"source_centre":list(bowl_centre),
+                        "source_axis":list(-across),"source_palm":list(normal)})
+            def shape(obj,closed,name=HAND_GRIP_SHAPE):
+                if obj.data.shape_keys is None:obj.shape_key_add(name="Basis")
+                key=obj.shape_key_add(name=name)
                 for vertex,point in zip(key.data,closed):vertex.co=point-obj.location
                 key.value=0.
             def local(along,x,z):
@@ -350,6 +368,14 @@ class WorkerBuilder(base.PedestrianBuilder):
                 inset=max(0,depth-(.030-HAND_GRIP_RADIUS-.001)) if along>.038 else 0
                 closed.append(point-normal*inset)
             shape(palm,closed)
+            for shape_name,radius,bowl_centre in bowls:
+                closed=[]
+                tangent=(bowl_centre-a).dot(normal)-radius-.001
+                for point in vertices:
+                    along=(point-a).dot(direction);depth=(point-a).dot(normal)
+                    inset=max(0,depth-tangent) if along>.038 else 0
+                    closed.append(point-normal*inset)
+                shape(palm,closed,shape_name)
             for i,(offset,length,radius) in enumerate(((-.023,.035,.0088),(-.007,.044,.0093),(.009,.041,.0088),(.024,.032,.0078))):
                 points=[local(.055,offset,0),local(.065+length*.35,offset,.002),local(.055+length,offset,.005)]
                 radii=tuple(radius*f*factor*HAND_SIZE_SCALE*HAND_GIRTH_SCALE for f in (1,.96,.70))
@@ -363,6 +389,10 @@ class WorkerBuilder(base.PedestrianBuilder):
                 closed_points=[centre+across*(offset*HAND_SIZE_SCALE)+direction*(ring_radius*math.sin(t))-normal*(ring_radius*math.cos(t)) for t in angles]
                 shape(obj,tube(closed_points,radii,7,.9)[0])
                 self.hand_grip_segments.append((obj.name,points,closed_points,radii,7))
+                for shape_name,radius,bowl_centre in bowls:
+                    closed_points=hand_bowl_grip.finger_centres(points,bowl_centre,direction,normal,radius,radii[0])
+                    shape(obj,tube(closed_points,radii,7,.9)[0],shape_name)
+                    self.hand_bowl_segments.append((shape_name,obj.name,points,closed_points,radii,7))
             points=[local(.018,-.023,0),local(.037,-.037,.002),local(.056,-.041,.004)]
             radii=tuple(r*factor*HAND_SIZE_SCALE*HAND_GIRTH_SCALE for r in (.014,.013,.009))
             obj=self.add(prefix+"Thumb."+side,tube(points,radii,8,.82),bone,color,"clothing" if gloves else "body_detail")
@@ -372,6 +402,10 @@ class WorkerBuilder(base.PedestrianBuilder):
                 closed_points.append(closed_points[-1]+(wanted-closed_points[-1]).normalized()*(points[index+1]-points[index]).length)
             shape(obj,tube(closed_points,radii,8,.82)[0])
             self.hand_grip_segments.append((obj.name,points,closed_points,radii,8))
+            for shape_name,radius,bowl_centre in bowls:
+                closed_points=hand_bowl_grip.thumb_centres(points,bowl_centre,direction,normal,radius,radii[-1])
+                shape(obj,tube(closed_points,radii,8,.82)[0],shape_name)
+                self.hand_bowl_segments.append((shape_name,obj.name,points,closed_points,radii,8))
 
     def head(self):
         # A single adjoining face/back surface, not floating eyes on a skull.
@@ -747,7 +781,16 @@ def hand_grip_manifest(builder):
     for frame in builder.hand_grip_frames:
         names=[p.obj.name for p in builder.result.parts if p.obj.name.startswith(("GEO_Hand","CLO_Glove")) and p.obj.name.endswith("."+frame["side"])]
         hands.append({**frame,"renderers":names})
-    return {"shape_name":HAND_GRIP_SHAPE,"cylinder_radius_m":HAND_GRIP_WORLD_RADIUS,
+    variants=[]
+    for shape_name,radius in hand_bowl_grip.VARIANTS:
+        frames=[{**frame,"renderers":[p.obj.name for p in builder.result.parts
+                    if p.obj.name.startswith(("GEO_Hand","CLO_Glove")) and p.obj.name.endswith("."+frame["side"])]}
+                for frame in builder.hand_bowl_frames if frame["shape_name"]==shape_name]
+        variants.append({"shape_name":shape_name,"cylinder_radius_m":radius,"hands":frames,
+            "shape_signature":digest([(p.obj.name,[[round(float(c),7) for c in v.co]
+                for v in p.obj.data.shape_keys.key_blocks[shape_name].data])
+                for p in builder.result.parts if p.obj.data.shape_keys and shape_name in p.obj.data.shape_keys.key_blocks])})
+    return {"shape_name":HAND_GRIP_SHAPE,"cylinder_radius_m":HAND_GRIP_WORLD_RADIUS,"variants":variants,
             "source_cylinder_radius_m":HAND_GRIP_RADIUS,"hands":hands,
             "shape_signature":digest([(p.obj.name,[[round(float(c),7) for c in v.co] for v in p.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].data])
                 for p in builder.result.parts if p.obj.data.shape_keys and HAND_GRIP_SHAPE in p.obj.data.shape_keys.key_blocks])}
@@ -780,7 +823,8 @@ def validate_grip(builder):
         for name,obj in parts.items():
             if not name.startswith(("GEO_Hand","CLO_Glove")) or not name.endswith("."+frame["side"]):continue
             keys=obj.data.shape_keys.key_blocks
-            if len(keys)!=2 or HAND_GRIP_SHAPE not in keys:raise RuntimeError("Missing authored grip: "+name)
+            if set(keys.keys())!={"Basis",HAND_GRIP_SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS)}:
+                raise RuntimeError("Missing authored grip: "+name)
             if any((v.co-keys["Basis"].data[v.index].co).length>1e-8 for v in obj.data.vertices):raise RuntimeError("Grip changed neutral mesh")
             vertices=[v.co+obj.location for v in keys[HAND_GRIP_SHAPE].data]
             volume=sum(vertices[p.vertices[0]].dot(vertices[p.vertices[i]].cross(vertices[p.vertices[i+1]]))/6 for p in obj.data.polygons for i in range(1,len(p.vertices)-1))
@@ -798,7 +842,43 @@ def validate_grip(builder):
             radial=(closed[-1]-centre).dot(direction)
             if ("Thumb" in name and radial>=-.01) or ("Finger" in name and radial<=.01):raise RuntimeError("Grip thumb is not opposed: "+name)
     if segment_error>1e-6 or radius_error>1e-6:raise RuntimeError("Grip stretches finger lengths or girth")
-    return {"surface_clearances_m":clearances,"maximum_segment_length_error_m":round(segment_error,8),
+    bowl_clearances={};root_gaps={}
+    for frame in builder.hand_bowl_frames:
+        shape_name=frame["shape_name"];radius=frame["source_cylinder_radius_m"]
+        centre=Vector(frame["source_centre"]);normal=Vector(frame["source_palm"])
+        direction=(Vector(base.BONE_BY_NAME[frame["bone"]].tail)-Vector(base.BONE_BY_NAME[frame["bone"]].head)).normalized()
+        for prefix in ("GEO_Hand","CLO_Glove"):
+            palm=parts[prefix+"Palm."+frame["side"]]
+            points=[v.co+palm.location for v in palm.data.shape_keys.key_blocks[shape_name].data]
+            palm_triangles=[tuple(points[p.vertices[j]] for j in (0,i,i+1))
+                            for p in palm.data.polygons for i in range(1,len(p.vertices)-1)]
+            for name,obj in parts.items():
+                if not name.startswith(prefix) or not name.endswith("."+frame["side"]):continue
+                keys=obj.data.shape_keys.key_blocks
+                vertices=[v.co+obj.location for v in keys[shape_name].data]
+                projected=[Vector(((v-centre).dot(direction),(v-centre).dot(normal))) for v in vertices]
+                gap=min(distance([projected[p.vertices[j]] for j in (0,i,i+1)])
+                        for p in obj.data.polygons for i in range(1,len(p.vertices)-1))-radius
+                bowl_clearances[shape_name+":"+name]=round(gap*(1.78/1.75),6)
+                if not -.0025 <= gap*(1.78/1.75) <= .008:
+                    raise RuntimeError(f"Bowl grip surface misses cylinder: {shape_name} {name} {gap*(1.78/1.75):.6f}m")
+                if "Palm" in name and any((keys[shape_name].data[i].co-keys["Basis"].data[i].co).length>1e-8 for i in range(20)):
+                    raise RuntimeError("Bowl grip moved wrist/palm base: "+name)
+                if "Finger" in name:
+                    sides=7
+                    gap=min(hand_bowl_grip.outside_surface_gap(vertices[i],palm_triangles) for i in range(sides))
+                    root_gaps[shape_name+":"+name]=round(gap*(1.78/1.75),6)
+                    if gap*(1.78/1.75)>.003:
+                        raise RuntimeError(f"Bowl finger root separates from palm: {shape_name} {name} {gap:.6f}m")
+        for variant,name,neutral,closed,radii,sides in builder.hand_bowl_segments:
+            if variant!=shape_name or not name.endswith("."+frame["side"]):continue
+            for before,after,next_before,next_after in zip(neutral,closed,neutral[1:],closed[1:]):
+                segment_error=max(segment_error,abs((next_before-before).length-(next_after-after).length))
+            if "Thumb" in name and (closed[-1]-centre).dot(direction)>=-.01:
+                raise RuntimeError("Bowl thumb is not opposed: "+name)
+    if segment_error>1e-6:raise RuntimeError("Bowl grip stretches original phalange lengths")
+    return {"surface_clearances_m":clearances,"bowl_surface_clearances_m":bowl_clearances,
+            "bowl_finger_root_gaps_m":root_gaps,"maximum_segment_length_error_m":round(segment_error,8),
             "maximum_cross_section_radius_error_m":round(radius_error,8),"wrist_unchanged":True,"opposed_thumb":True}
 
 

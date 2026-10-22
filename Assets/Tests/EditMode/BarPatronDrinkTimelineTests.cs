@@ -298,26 +298,5 @@ namespace BarPromenade.Tests.EditMode
                 "The bottle roll reference must stay stable at full sip.");
         }
 
-        [Test]
-        public void RightBottleSocket_UsesRightHandedGripFrame()
-        {
-            Quaternion socket = BarPatronDrinkingArmPose
-                .ResolveRightBottleSocketRotation(
-                    Vector3.right,
-                    Vector3.up);
-
-            Assert.That(
-                Vector3.Angle(socket * Vector3.right, Vector3.left),
-                Is.LessThan(0.001f),
-                "Socket X must point inward from the right-hand contact.");
-            Assert.That(
-                Vector3.Angle(socket * Vector3.up, Vector3.down),
-                Is.LessThan(0.001f),
-                "Socket Y must follow the bottle from grip toward base.");
-            Assert.That(
-                Vector3.Angle(socket * Vector3.forward, Vector3.forward),
-                Is.LessThan(0.001f),
-                "Socket roll must preserve the authored right-hand frame.");
-        }
     }
 }

@@ -13,7 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 FAMILIES = (
     ("Assets/Pedestrians", "ArtSource/Pedestrians/Blender"),
     ("Assets/Vehicles/Drivers/Models", "ArtSource/Vehicles/Drivers/Blender"),
-    ("Assets/Bar/Bartender/Models", "ArtSource/Bar/Bartender/Blender"),
     ("Assets/Supermarket/Cashier/Models", "ArtSource/Supermarket/Cashier/Blender"),
     ("Assets/Resources/VillageLife", "ArtSource/VillageLife"),
     ("Assets/Resources/City/Cannery/Receiver", "ArtSource/City/CanneryReceiver"),

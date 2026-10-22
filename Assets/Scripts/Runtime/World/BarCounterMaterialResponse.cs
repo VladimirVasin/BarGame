@@ -24,7 +24,7 @@ namespace BarPromenade
         private static Texture2D wood, brass;
         private static readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
 
-        public static int SharedMaterialCount => sharedMaterial != null ? 1 : 0;
+        public static int SharedMaterialCount => sharedMaterial != null ? 1 : BarInteriorSurfaceAppearance.SharedMaterialCount;
 
         internal static void Apply(Renderer renderer, BarSurfaceKind kind, MaterialPropertyBlock target)
         {
@@ -45,11 +45,12 @@ namespace BarPromenade
             {
                 Transform part = room.Find(receiverNames[i]);
                 Renderer renderer = part != null ? part.GetComponent<Renderer>() : null;
-                if (renderer == null || renderer.sharedMaterial != sharedMaterial || sharedMaterial == null) continue;
+                bool unique = BarInteriorSurfaceAppearance.UsesSharedMaterial(renderer);
+                if (renderer == null || !unique && (renderer.sharedMaterial != sharedMaterial || sharedMaterial == null)) continue;
                 properties.Clear(); renderer.GetPropertyBlock(properties);
                 if (properties.GetTexture(ResponseId) == null) continue;
                 properties.SetFloat(ResponseStrengthId, enabled ? ResponseStrength : 0f);
-                properties.SetFloat(NormalStrengthId, NormalStrength);
+                properties.SetFloat(NormalStrengthId, unique && enabled ? BarInteriorSurfaceAppearance.ReliefStrength : NormalStrength);
                 renderer.SetPropertyBlock(properties);
                 count++;
             }
@@ -59,7 +60,8 @@ namespace BarPromenade
         public static bool TryGetResponse(Renderer renderer, out Texture2D map, out float strength)
         {
             map = null; strength = 0f;
-            if (renderer == null || sharedMaterial == null || renderer.sharedMaterial != sharedMaterial) return false;
+            if (renderer == null || !BarInteriorSurfaceAppearance.UsesSharedMaterial(renderer) &&
+                (sharedMaterial == null || renderer.sharedMaterial != sharedMaterial)) return false;
             properties.Clear(); renderer.GetPropertyBlock(properties);
             map = properties.GetTexture(ResponseId) as Texture2D;
             strength = properties.GetFloat(ResponseStrengthId);

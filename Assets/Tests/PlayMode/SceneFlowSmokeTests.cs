@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -1037,9 +1038,17 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(0f).Within(0.05f),
                 "the hero has no floor at his own feet");
             Assert.That(interiorRoot.Room.Find("Backbar Amber Sign"), Is.Not.Null);
-            Assert.That(interiorRoot.Room.Find("Booth Base 1"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Booth Base 1 Near"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Booth Base 1 Far"), Is.Not.Null);
             Assert.That(interiorRoot.Room.Find("Small Stage"), Is.Not.Null);
-            Assert.That(interiorRoot.Room.Find("Social Pub Table 4"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Coat Rack"), Is.Null);
+            Assert.That(interiorRoot.Room.Find("Coat Rack Hooks"), Is.Null);
+            Assert.That(interiorRoot.Room.Find("Coat Rack Collision"), Is.Null);
+            Assert.That(interiorRoot.Room.Find("Social Pub Table 4"), Is.Null);
+            Assert.That(interiorRoot.Room.GetComponentsInChildren<Transform>(true).Count(part =>
+                part.name.StartsWith("Social Pub Table ", StringComparison.Ordinal) &&
+                !part.name.EndsWith(" Leg", StringComparison.Ordinal) &&
+                part.GetComponent<Renderer>() != null), Is.EqualTo(3));
             Assert.That(interiorRoot.Room.Find("Activity Bay Rug"), Is.Not.Null);
             Collider stageCollider = interiorRoot.Room
                 .Find("Small Stage Collision")
@@ -1047,6 +1056,10 @@ namespace BarPromenade.Tests.PlayMode
             Collider counterCollider = interiorRoot.Room
                 .Find("Bar Counter Collision")
                 .GetComponent<Collider>();
+            Assert.That(stageCollider.bounds.center.x, Is.EqualTo(4.1f).Within(.001f));
+            Assert.That(stageCollider.bounds.center.z, Is.EqualTo(-2.7f).Within(.001f));
+            Assert.That(stageCollider.bounds.size.x, Is.EqualTo(2.1f).Within(.001f));
+            Assert.That(stageCollider.bounds.size.z, Is.EqualTo(1.65f).Within(.001f));
             Assert.That(
                 stageCollider.bounds.Intersects(
                     counterCollider.bounds),
@@ -1079,6 +1092,7 @@ namespace BarPromenade.Tests.PlayMode
             int boothPatrons = 0;
             int counterPatrons = 0;
             int tablePatrons = 0;
+            var drinkKinds = new HashSet<BarPatronDrinkPropKind>();
             foreach (BarPatron patron in interiorRoot.Patrons)
             {
                 Assert.That(patron.Registry, Is.Not.Null);
@@ -1101,7 +1115,14 @@ namespace BarPromenade.Tests.PlayMode
                         boothPatrons++;
                         Assert.That(patron.IsSeated, Is.True);
                         Assert.That(patron.Presentation.IsSeated, Is.True);
-                        Assert.That(patron.Drinking, Is.Null);
+                        Assert.That(patron.Drinking, Is.Not.Null);
+                        Assert.That(patron.Drinking.IsTableLean, Is.True);
+                        Assert.That(patron.Drinking.IsSeatedTable, Is.True);
+                        Assert.That(patron.Drinking.AuthoredDrinkClip, Is.Null,
+                            "Sofa drinking must retain the shared seated lower body.");
+                        Assert.That(patron.Drinking.SurfaceRenderer, Is.Not.Null);
+                        Assert.That(patron.Drinking.SurfaceRenderer.name,
+                            Does.StartWith("Booth Table Top "));
                         break;
                     case BarNpcRole.CounterPatron:
                         counterPatrons++;
@@ -1114,6 +1135,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(
                             patron.Drinking.IsTableLean,
                             Is.False);
+                        Assert.That(patron.Drinking.IsSeatedTable, Is.False);
                         break;
                     case BarNpcRole.StandingPatron:
                         tablePatrons++;
@@ -1125,6 +1147,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(
                             patron.Drinking.IsTableLean,
                             Is.True);
+                        Assert.That(patron.Drinking.IsSeatedTable, Is.False);
                         break;
                 }
 
@@ -1134,6 +1157,16 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 drinkingPatrons++;
+                Assert.That(patron.Drinking.DrinkProp, Is.Not.Null);
+                BarPatronDrinkProp drink = patron.Drinking.DrinkProp;
+                drinkKinds.Add(drink.Kind);
+                Assert.That(drink.Root, Is.SameAs(patron.Drinking.BottleRoot));
+                Assert.That(drink.Mouth, Is.SameAs(patron.Drinking.BottleMouth));
+                Assert.That(patron.Drinking.GripKind, Is.EqualTo(drink.GripKind));
+                Assert.That(patron.Drinking.HandPose.GetGripKind(false),
+                    Is.EqualTo(drink.GripKind),
+                    "Each drink must select its matching authored hand shape.");
+                Assert.That(patron.Drinking.SurfaceRenderer, Is.Not.Null);
                 Assert.That(
                     patron.Drinking.BottleRoot,
                     Is.Not.Null);
@@ -1141,21 +1174,29 @@ namespace BarPromenade.Tests.PlayMode
                     patron.Drinking.BottleRoot.IsChildOf(
                         patron.Registry.transform),
                     Is.True,
-                    "The stable bottle rig must stay owned by its guest.");
+                    "The visit-owned drink rig must stay owned by its guest.");
                 Assert.That(
                     patron.Drinking.BottleRoot
                         .GetComponentsInChildren<Renderer>(true),
                     Is.Not.Empty,
-                    "The held bottle must be a visible prop.");
+                    "The held drink must be a visible authored prop.");
             }
 
             Assert.That(
                 drinkingPatrons,
-                Is.EqualTo(5),
-                "Both counter patrons and all three table patrons drink.");
+                Is.EqualTo(9),
+                "All four sofa, two counter and three standing guests drink.");
+            Assert.That(drinkKinds, Is.EquivalentTo(new[]
+            {
+                BarPatronDrinkPropKind.Bottle,
+                BarPatronDrinkPropKind.Pint,
+                BarPatronDrinkPropKind.WineGlass,
+                BarPatronDrinkPropKind.ShotGlass,
+                BarPatronDrinkPropKind.Snifter
+            }), "The fresh visit's drink allocation includes every supported vessel.");
             Assert.That(
                 boothPatrons,
-                Is.EqualTo(6));
+                Is.EqualTo(4));
             Assert.That(counterPatrons, Is.EqualTo(2));
             Assert.That(tablePatrons, Is.EqualTo(3));
 
@@ -1294,8 +1335,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CounterStation.SeatView, Is.Not.Null);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(4));
-            Assert.That(interiorRoot.CounterStations, Has.Count.EqualTo(4));
+                Has.Length.EqualTo(3));
+            Assert.That(interiorRoot.CounterStations, Has.Count.EqualTo(3));
             Transform drinkOrderPoint =
                 interiorRoot.Room.Find("Drink Order Point");
             Transform drinkOrderSign =
@@ -1488,8 +1529,8 @@ namespace BarPromenade.Tests.PlayMode
                 () => interiorRoot.IsInitialized,
                 "Beer-pong flavoured interior did not initialize.");
 
-            // The minigames are cut; the activity survives as the
-            // interior's furniture flavour.
+            // BeerPong retains its table after the three other activity
+            // consoles make room for the relocated jukebox.
             Assert.That(
                 interiorRoot.ActiveActivity,
                 Is.EqualTo(BarActivityKind.BeerPong));
@@ -1498,9 +1539,23 @@ namespace BarPromenade.Tests.PlayMode
                     $"Interior {barId}/Beer Pong Table"),
                 Is.Not.Null,
                 "The beer pong table survives as dressing.");
+            Transform jukebox = interiorRoot.Room.Find("Bar Jukebox");
+            Assert.That(jukebox, Is.Not.Null);
+            Assert.That(Vector3.Distance(jukebox.localPosition, new Vector3(5f, 0f, -.65f)),
+                Is.LessThan(.001f));
+            Bounds beerPong = interiorRoot.Room.Find("Beer Pong Table").GetComponent<Renderer>().bounds;
+            Assert.That(beerPong.center.x, Is.EqualTo(4.23f).Within(.001f));
+            Assert.That(beerPong.center.z, Is.EqualTo(-.835f).Within(.001f));
+            Assert.That(beerPong.max.x, Is.LessThanOrEqualTo(jukebox.GetComponent<BoxCollider>().bounds.min.x - .079f));
+            Assert.That(Vector3.Dot(jukebox.TransformDirection(Vector3.right), Vector3.left),
+                Is.GreaterThan(.999f));
+            Assert.That(interiorRoot.Room.GetComponentsInChildren<Transform>(true).Any(part =>
+                part.name.StartsWith("Cocktail Console", StringComparison.Ordinal) ||
+                part.name.StartsWith("SplitTheG Console", StringComparison.Ordinal) ||
+                part.name.StartsWith("TinctureMatch Console", StringComparison.Ordinal)), Is.False);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(4));
+                Has.Length.EqualTo(3));
         }
 
         [UnityTest]

@@ -53,8 +53,8 @@ namespace BarPromenade
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
 
         /// <summary>
-        /// The ordinary two-armed bartender behind the counter, or <c>null</c>
-        /// when his prefab or anchor is unavailable.
+        /// The population-owned bartender behind the counter, or <c>null</c>
+        /// when his authored anchor is unavailable.
         /// </summary>
         public BarBartenderPresentation Bartender
         {
@@ -315,7 +315,7 @@ namespace BarPromenade
                     anchor.SpotAngle));
             }
 
-            Atmosphere.Initialize(lights);
+            Atmosphere.Initialize(lights, Layout.RoomSize, Layout.RoomHeight);
             Lighting = atmosphereObject.AddComponent<BarLightingPresentation>();
             Lighting.Initialize(this);
         }
@@ -323,7 +323,7 @@ namespace BarPromenade
         private void BuildMusic()
         {
             Vector3 fallbackPosition =
-                new Vector3(6.4f, 0.5f, -6.5f);
+                BarInteriorLayoutPlanner.JukeboxSpeakerPosition;
             float maximumDistance =
                 BarMusicPlayer.DefaultMaximumDistance;
             float gain = 1f;
@@ -444,11 +444,12 @@ namespace BarPromenade
             // The sprite crowd is retired: the production 3D
             // pedestrians take the same authored anchors, and the
             // dedicated pass finally fills the bartender's spot.
-            Patrons = BarPatronWorldBuilder.Build(transform, Layout);
+            Patrons = BarPatronWorldBuilder.Build(transform, Layout, Room);
             Bartender = BarBartenderWorldBuilder.TryBuild(
                 transform,
                 Layout,
-                Player.GameObject.transform);
+                Player.GameObject.transform,
+                Room.Find("Counter Top").GetComponent<Renderer>());
             if (Bartender != null && DrinkShop != null)
             {
                 if (DrinkShop.HasPhysicalMenuPresentation)
@@ -476,9 +477,12 @@ namespace BarPromenade
                 camera,
                 follow,
                 transform.TransformPoint(
-                    new Vector3(7.35f, 3.15f, -6.2f)),
+                    new Vector3(Layout.RoomSize.x * 0.30f,
+                        Mathf.Min(2.45f, Layout.RoomHeight - 0.45f),
+                        Layout.RoomBounds.yMin + 1.05f)),
                 transform.TransformPoint(
-                    new Vector3(-0.6f, 1.25f, 2.6f)),
+                    new Vector3(-0.25f, 1.25f,
+                        Layout.CounterPosition.z - 0.4f)),
                 61f,
                 1.35f);
         }
@@ -557,7 +561,8 @@ namespace BarPromenade
                         new Pose(entryWorld, facingRotation),
                         cameraPose,
                         cameraLook,
-                        descriptor.StableId);
+                        descriptor.StableId,
+                        accessSide: descriptor.AccessSide);
                 BarCounterStation counterStation =
                     station.AddComponent<BarCounterStation>();
                 counterStation.ConfigureSeated(

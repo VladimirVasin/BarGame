@@ -4893,7 +4893,7 @@
     "037055e31e57b052881d8a3ba64b27bd1fdde9d8524fa19399f36640445d51fa",
     "c358695eebb5c92658cd9e6a6e19893264b011a61e31be2267cfe08647ea0985"
   ],
-  "geometry_signature": "a322b902a310571598f611d1004ddb4ed8547793e0bf1a84d7ae591916e50eb1",
+  "geometry_signature": "9cb06a6fba97823046439b71dc358dc8a74a92fa674bbdacaed867fc01cae794",
   "validation": {
     "outfit_triangle_counts": {
       "everyday": 4852,
@@ -4941,6 +4941,90 @@
         "CLO_GloveFinger3.R": 0.001042,
         "CLO_GloveThumb.R": -0.001021
       },
+      "bowl_surface_clearances_m": {
+        "WineBowlGrip:GEO_HandPalm.L": 0.001017,
+        "WineBowlGrip:GEO_HandFinger0.L": 0.001101,
+        "WineBowlGrip:GEO_HandFinger1.L": 0.000632,
+        "WineBowlGrip:GEO_HandFinger2.L": 0.000756,
+        "WineBowlGrip:GEO_HandFinger3.L": 0.00117,
+        "WineBowlGrip:GEO_HandThumb.L": 0.002612,
+        "WineBowlGrip:CLO_GlovePalm.L": 0.001017,
+        "WineBowlGrip:CLO_GloveFinger0.L": 0.001195,
+        "WineBowlGrip:CLO_GloveFinger1.L": 0.000749,
+        "WineBowlGrip:CLO_GloveFinger2.L": 0.000862,
+        "WineBowlGrip:CLO_GloveFinger3.L": 0.00125,
+        "WineBowlGrip:CLO_GloveThumb.L": 0.002381,
+        "SnifterBowlGrip:GEO_HandPalm.L": 0.001017,
+        "SnifterBowlGrip:GEO_HandFinger0.L": 0.00139,
+        "SnifterBowlGrip:GEO_HandFinger1.L": 0.00099,
+        "SnifterBowlGrip:GEO_HandFinger2.L": 0.001097,
+        "SnifterBowlGrip:GEO_HandFinger3.L": 0.001448,
+        "SnifterBowlGrip:GEO_HandThumb.L": 0.002594,
+        "SnifterBowlGrip:CLO_GlovePalm.L": 0.001017,
+        "SnifterBowlGrip:CLO_GloveFinger0.L": 0.001469,
+        "SnifterBowlGrip:CLO_GloveFinger1.L": 0.001088,
+        "SnifterBowlGrip:CLO_GloveFinger2.L": 0.001185,
+        "SnifterBowlGrip:CLO_GloveFinger3.L": 0.001516,
+        "SnifterBowlGrip:CLO_GloveThumb.L": 0.002305,
+        "WineBowlGrip:GEO_HandPalm.R": 0.001017,
+        "WineBowlGrip:GEO_HandFinger0.R": 0.001101,
+        "WineBowlGrip:GEO_HandFinger1.R": 0.000632,
+        "WineBowlGrip:GEO_HandFinger2.R": 0.000756,
+        "WineBowlGrip:GEO_HandFinger3.R": 0.00117,
+        "WineBowlGrip:GEO_HandThumb.R": 0.002612,
+        "WineBowlGrip:CLO_GlovePalm.R": 0.001017,
+        "WineBowlGrip:CLO_GloveFinger0.R": 0.001195,
+        "WineBowlGrip:CLO_GloveFinger1.R": 0.000749,
+        "WineBowlGrip:CLO_GloveFinger2.R": 0.000862,
+        "WineBowlGrip:CLO_GloveFinger3.R": 0.00125,
+        "WineBowlGrip:CLO_GloveThumb.R": 0.002381,
+        "SnifterBowlGrip:GEO_HandPalm.R": 0.001017,
+        "SnifterBowlGrip:GEO_HandFinger0.R": 0.001389,
+        "SnifterBowlGrip:GEO_HandFinger1.R": 0.00099,
+        "SnifterBowlGrip:GEO_HandFinger2.R": 0.001097,
+        "SnifterBowlGrip:GEO_HandFinger3.R": 0.001448,
+        "SnifterBowlGrip:GEO_HandThumb.R": 0.002594,
+        "SnifterBowlGrip:CLO_GlovePalm.R": 0.001017,
+        "SnifterBowlGrip:CLO_GloveFinger0.R": 0.001469,
+        "SnifterBowlGrip:CLO_GloveFinger1.R": 0.001088,
+        "SnifterBowlGrip:CLO_GloveFinger2.R": 0.001185,
+        "SnifterBowlGrip:CLO_GloveFinger3.R": 0.001516,
+        "SnifterBowlGrip:CLO_GloveThumb.R": 0.002305
+      },
+      "bowl_finger_root_gaps_m": {
+        "WineBowlGrip:GEO_HandFinger0.L": 0.0,
+        "WineBowlGrip:GEO_HandFinger1.L": 0.0,
+        "WineBowlGrip:GEO_HandFinger2.L": 0.0,
+        "WineBowlGrip:GEO_HandFinger3.L": 0.0,
+        "WineBowlGrip:CLO_GloveFinger0.L": 0.0,
+        "WineBowlGrip:CLO_GloveFinger1.L": 0.0,
+        "WineBowlGrip:CLO_GloveFinger2.L": 0.0,
+        "WineBowlGrip:CLO_GloveFinger3.L": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger0.L": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger1.L": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger2.L": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger3.L": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger0.L": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger1.L": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger2.L": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger3.L": 0.0,
+        "WineBowlGrip:GEO_HandFinger0.R": 0.0,
+        "WineBowlGrip:GEO_HandFinger1.R": 0.0,
+        "WineBowlGrip:GEO_HandFinger2.R": 0.0,
+        "WineBowlGrip:GEO_HandFinger3.R": 0.0,
+        "WineBowlGrip:CLO_GloveFinger0.R": 0.0,
+        "WineBowlGrip:CLO_GloveFinger1.R": 0.0,
+        "WineBowlGrip:CLO_GloveFinger2.R": 0.0,
+        "WineBowlGrip:CLO_GloveFinger3.R": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger0.R": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger1.R": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger2.R": 0.0,
+        "SnifterBowlGrip:GEO_HandFinger3.R": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger0.R": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger1.R": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger2.R": 0.0,
+        "SnifterBowlGrip:CLO_GloveFinger3.R": 0.0
+      },
       "maximum_segment_length_error_m": 1.2e-07,
       "maximum_cross_section_radius_error_m": 9e-08,
       "wrist_unchanged": true,
@@ -4981,6 +5065,174 @@
   "hand_grip": {
     "shape_name": "CylindricalGrip",
     "cylinder_radius_m": 0.022,
+    "variants": [
+      {
+        "shape_name": "WineBowlGrip",
+        "cylinder_radius_m": 0.037,
+        "hands": [
+          {
+            "shape_name": "WineBowlGrip",
+            "source_cylinder_radius_m": 0.03637640449438202,
+            "side": "L",
+            "bone": "hand.L",
+            "centre_anchor": "ANCHOR_WineBowlGripCentre.L",
+            "axis_anchor": "ANCHOR_WineBowlGripAxis.L",
+            "palm_anchor": "ANCHOR_WineBowlGripPalm.L",
+            "source_centre": [
+              0.7110894322395325,
+              -0.022598490118980408,
+              1.0046223402023315
+            ],
+            "source_axis": [
+              -0.03533041849732399,
+              -0.9991490840911865,
+              0.021283412352204323
+            ],
+            "source_palm": [
+              -0.5160131454467773,
+              -0.0,
+              -0.8565806150436401
+            ],
+            "renderers": [
+              "GEO_HandPalm.L",
+              "GEO_HandFinger0.L",
+              "GEO_HandFinger1.L",
+              "GEO_HandFinger2.L",
+              "GEO_HandFinger3.L",
+              "GEO_HandThumb.L",
+              "CLO_GlovePalm.L",
+              "CLO_GloveFinger0.L",
+              "CLO_GloveFinger1.L",
+              "CLO_GloveFinger2.L",
+              "CLO_GloveFinger3.L",
+              "CLO_GloveThumb.L"
+            ]
+          },
+          {
+            "shape_name": "WineBowlGrip",
+            "source_cylinder_radius_m": 0.03637640449438202,
+            "side": "R",
+            "bone": "hand.R",
+            "centre_anchor": "ANCHOR_WineBowlGripCentre.R",
+            "axis_anchor": "ANCHOR_WineBowlGripAxis.R",
+            "palm_anchor": "ANCHOR_WineBowlGripPalm.R",
+            "source_centre": [
+              -0.7090895175933838,
+              -0.018598491325974464,
+              0.9986224174499512
+            ],
+            "source_axis": [
+              0.03533044457435608,
+              -0.9991490840911865,
+              0.021283378824591637
+            ],
+            "source_palm": [
+              0.5160122513771057,
+              0.0,
+              -0.8565811514854431
+            ],
+            "renderers": [
+              "GEO_HandPalm.R",
+              "GEO_HandFinger0.R",
+              "GEO_HandFinger1.R",
+              "GEO_HandFinger2.R",
+              "GEO_HandFinger3.R",
+              "GEO_HandThumb.R",
+              "CLO_GlovePalm.R",
+              "CLO_GloveFinger0.R",
+              "CLO_GloveFinger1.R",
+              "CLO_GloveFinger2.R",
+              "CLO_GloveFinger3.R",
+              "CLO_GloveThumb.R"
+            ]
+          }
+        ],
+        "shape_signature": "256ac112b8434cdf68e43f20a4004e60bbc12f080df492a9c80152076dbf825f"
+      },
+      {
+        "shape_name": "SnifterBowlGrip",
+        "cylinder_radius_m": 0.046,
+        "hands": [
+          {
+            "shape_name": "SnifterBowlGrip",
+            "source_cylinder_radius_m": 0.04522471910112359,
+            "side": "L",
+            "bone": "hand.L",
+            "centre_anchor": "ANCHOR_SnifterBowlGripCentre.L",
+            "axis_anchor": "ANCHOR_SnifterBowlGripAxis.L",
+            "palm_anchor": "ANCHOR_SnifterBowlGripPalm.L",
+            "source_centre": [
+              0.706523597240448,
+              -0.022598490118980408,
+              0.9970430731773376
+            ],
+            "source_axis": [
+              -0.03533041849732399,
+              -0.9991490840911865,
+              0.021283412352204323
+            ],
+            "source_palm": [
+              -0.5160131454467773,
+              -0.0,
+              -0.8565806150436401
+            ],
+            "renderers": [
+              "GEO_HandPalm.L",
+              "GEO_HandFinger0.L",
+              "GEO_HandFinger1.L",
+              "GEO_HandFinger2.L",
+              "GEO_HandFinger3.L",
+              "GEO_HandThumb.L",
+              "CLO_GlovePalm.L",
+              "CLO_GloveFinger0.L",
+              "CLO_GloveFinger1.L",
+              "CLO_GloveFinger2.L",
+              "CLO_GloveFinger3.L",
+              "CLO_GloveThumb.L"
+            ]
+          },
+          {
+            "shape_name": "SnifterBowlGrip",
+            "source_cylinder_radius_m": 0.04522471910112359,
+            "side": "R",
+            "bone": "hand.R",
+            "centre_anchor": "ANCHOR_SnifterBowlGripCentre.R",
+            "axis_anchor": "ANCHOR_SnifterBowlGripAxis.R",
+            "palm_anchor": "ANCHOR_SnifterBowlGripPalm.R",
+            "source_centre": [
+              -0.7045236825942993,
+              -0.018598491325974464,
+              0.9910431504249573
+            ],
+            "source_axis": [
+              0.03533044457435608,
+              -0.9991490840911865,
+              0.021283378824591637
+            ],
+            "source_palm": [
+              0.5160122513771057,
+              0.0,
+              -0.8565811514854431
+            ],
+            "renderers": [
+              "GEO_HandPalm.R",
+              "GEO_HandFinger0.R",
+              "GEO_HandFinger1.R",
+              "GEO_HandFinger2.R",
+              "GEO_HandFinger3.R",
+              "GEO_HandThumb.R",
+              "CLO_GlovePalm.R",
+              "CLO_GloveFinger0.R",
+              "CLO_GloveFinger1.R",
+              "CLO_GloveFinger2.R",
+              "CLO_GloveFinger3.R",
+              "CLO_GloveThumb.R"
+            ]
+          }
+        ],
+        "shape_signature": "a48dc2e98137021f01522d64cb88b9cc2c9891fedc431aed5f2bf4ed6dc13b22"
+      }
+    ],
     "source_cylinder_radius_m": 0.021629213483146066,
     "hands": [
       {
@@ -5101,5 +5353,5 @@
     }
   ],
   "uv_signature": "5e7f059f1e9aac51137f19f04eb8081c752e714ca758ab91d95449243f21a38b",
-  "signature": "eea0d0611fe04d178e63ba7ff4fd1962d58684c3cabce86f8d0dacb79b5fab57"
+  "signature": "5210ffc977765ea866d2e89b40e54aa9500d5d5a1b0e63214f9b3739d4b8e94e"
 }

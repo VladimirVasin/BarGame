@@ -73,13 +73,11 @@ namespace BarPromenade.Tests.PlayMode
                 MountainRoadCafeCastProvider.Load();
             SupermarketCashierProvider cashier =
                 SupermarketCashierProvider.Load();
-            BarBartenderProvider bartender = BarBartenderProvider.Load();
 
             Assert.That(mother, Is.Not.Null, "Mother provider is missing.");
             Assert.That(shelter, Is.Not.Null, "Shelter provider is missing.");
             Assert.That(cafe, Is.Not.Null, "Cafe provider is missing.");
             Assert.That(cashier, Is.Not.Null, "Cashier provider is missing.");
-            Assert.That(bartender, Is.Not.Null, "Bartender provider is missing.");
 
             return new[]
             {
@@ -90,7 +88,7 @@ namespace BarPromenade.Tests.PlayMode
                 new PrefabCase("shelter resident", shelter.StandingPrefab),
                 new PrefabCase("cafe woman", cafe.PairWomanPrefab),
                 new PrefabCase("cashier", cashier.CashierPrefab),
-                new PrefabCase("bartender", bartender.BartenderPrefab),
+                new PrefabCase("default bartender", DefaultNpcCatalog.GetPrefab()),
                 new PrefabCase(
                     "bus driver",
                     CityBusDriverResources.LoadPrefab())

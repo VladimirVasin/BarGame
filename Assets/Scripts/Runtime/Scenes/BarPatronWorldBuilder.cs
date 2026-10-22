@@ -29,8 +29,7 @@ namespace BarPromenade
         public bool IsSeated { get; }
 
         /// <summary>
-        /// The guest's bottle presentation. Booth guests deliberately keep
-        /// their hands clear; every counter/table drinker owns one.
+        /// One visit-owned drink shared by standing and seated guests.
         /// </summary>
         public BarPatronDrinkingArmPose Drinking { get; }
     }
@@ -67,10 +66,9 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Replaces the retired sprite crowd: the same authored NPC anchors
-    /// of the interior layout now seat and stand the production 3D
-    /// pedestrian models around the bar. Bartender anchors stay empty
-    /// until the dedicated 3D bartender pass.
+    /// A fresh default-model visitor cast is allocated for each bar entry.
+    /// The global appearance/wardrobe selector owns the temporary assignments;
+    /// this builder owns placement, seats and the silent drinking tableau.
     /// </summary>
     public static class BarPatronWorldBuilder
     {
@@ -80,13 +78,16 @@ namespace BarPromenade
         public const float CounterSeatHeight =
             MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float PubTableTopHeight = 0.82f;
-        public const float PubTableHandInset = 0.28f;
-        public const float PubTableBottleRestInset = 0.42f;
+        public const float PubTableHandInset = 0.40f;
+        public const float PubTableBottleRestInset = 0.50f;
         public const float CounterTopBuildUp = 0.16f;
         public const float CounterBottleRestInset = 0.68f;
         public const float CounterSurfaceHandInset = 0.68f;
         public const float CounterSurfaceHandSideOffset = 0.16f;
         public const float PubTableHandSideOffset = 0.10f;
+        public const float BoothBottleRestInset = 0.49f;
+        public const float BoothHandInset = 0.50f;
+        public const float BoothHandSideOffset = 0.16f;
         public const float HandSurfaceClearance = 0.015f;
         public const float BottleSurfaceClearance = 0.002f;
 
@@ -97,7 +98,6 @@ namespace BarPromenade
         public const float BottlePropScale = 0.42f;
 
         /// <summary>The fist wraps the bottle at this height share.</summary>
-        public const float BottleGripHeightShare = 0.55f;
 
         public const string BottleSocketName = "SOCKET_Bottle.R";
         public const string MouthSocketName = "SOCKET_Mouth";
@@ -112,18 +112,6 @@ namespace BarPromenade
         public const string SpineBoneName = "spine";
         public const string ChestBoneName = "chest";
         public const string HeadBoneName = "head";
-
-        private static readonly string[] SeatedDesignIds =
-        {
-            CityPedestrianResources.WeighAttendantDesignId,
-            CityPedestrianResources.WatchmanDesignId
-        };
-
-        private static readonly string[] TableDesignIds =
-        {
-            CityPedestrianResources.WeighAttendantDesignId,
-            CityPedestrianResources.WatchmanDesignId
-        };
 
         // A dim bar crowd drinks what the shelf actually sells: mostly
         // beer, the odd vodka and cognac. Water stays behind the bar.
@@ -141,7 +129,8 @@ namespace BarPromenade
 
         public static IReadOnlyList<BarPatron> Build(
             Transform parent,
-            BarInteriorLayoutPlan layout)
+            BarInteriorLayoutPlan layout,
+            Transform room)
         {
             if (parent == null)
             {
@@ -153,13 +142,38 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            if (room == null) throw new ArgumentNullException(nameof(room));
+            var surfaces = new Dictionary<string, Renderer>(StringComparer.Ordinal)
+            {
+                { "counter", RequireSurface(room, "Counter Top") },
+                { "booth-1", RequireSurface(room, "Booth Table Top 1") },
+                { "booth-2", RequireSurface(room, "Booth Table Top 2") },
+                { "pub-table-left-front", RequireSurface(room, "Social Pub Table 1") },
+                { "pub-table-right-front", RequireSurface(room, "Social Pub Table 2") },
+                { "pub-table-left-rear", RequireSurface(room, "Social Pub Table 3") }
+            };
+
             var patrons = new List<BarPatron>(layout.NpcAnchors.Count);
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
+            int visitorCount = 0;
+            for (int index = 0; index < layout.NpcAnchors.Count; index++)
+                if (layout.NpcAnchors[index].Role != BarNpcRole.Bartender) visitorCount++;
+            BarPatronDrinkPropKind[] drinkKinds = AllocateDrinkKinds(visitorCount);
+            IReadOnlyList<DefaultNpcPopulation.Assignment> visitors =
+                DefaultNpcPopulation.AllocateVisitGroup("bar.visitors", visitorCount,
+                    DefaultNpcPopulation.AnyCatalogModel,
+                    new DefaultNpcPopulation.SlotConstraint("apron", new string[] { null }),
+                    new DefaultNpcPopulation.SlotConstraint("gloves", null, "gloves.work"),
+                    new DefaultNpcPopulation.SlotConstraint("scarf", null, "scarf.warm"),
+                    new DefaultNpcPopulation.SlotConstraint("headwear", null,
+                        "headwear.everyday", "headwear.work", "headwear.warm"));
+            CityPedestrianAssetRegistry clipDonor =
+                CityPedestrianResources.LoadStreetClipDonor();
+            if (clipDonor == null || clipDonor.SitClip == null)
+                throw new InvalidOperationException("Bar visitors require the shared seated clip donor.");
             int patronIndex = 0;
-            int seatedDesignIndex = 0;
-            int tableDesignIndex = 0;
             AnimationClip counterDrinkClip = LoadCafeDrinkClip();
             for (int index = 0; index < layout.NpcAnchors.Count; index++)
             {
@@ -169,42 +183,23 @@ namespace BarPromenade
                     continue;
                 }
 
-                patronIndex++;
-                string designId = ResolveDesignId(
-                    anchor,
-                    ref seatedDesignIndex,
-                    ref tableDesignIndex);
+                CityPedestrianAssetRegistry registry = CityPedestrianDefaultNpcBody.Create(
+                    root, visitors[patronIndex++], clipDonor);
                 if (!CityPedestrianResources.TryGetArchetype(
-                        designId,
+                        registry.DesignId,
                         out CityPedestrianArchetype archetype))
                 {
-                    GameLog.Warning(
-                        "bar",
-                        "patron_design_missing",
-                        GameLog.Field("design", designId));
-                    continue;
-                }
-
-                GameObject prefab =
-                    CityPedestrianResources.LoadPrefab(archetype);
-                if (!CityPedestrianResources.TryInstantiate(
-                        prefab,
-                        root,
-                        out CityPedestrianAssetRegistry registry))
-                {
-                    continue;
+                    throw new InvalidOperationException(
+                        $"Default bar visitor model '{registry.DesignId}' has no compatible seat contract.");
                 }
 
                 registry.gameObject.name = $"Bar Patron {anchor.Id}";
                 registry.transform.localPosition = anchor.Position;
                 registry.transform.localRotation =
                     Quaternion.Euler(0f, anchor.YawDegrees, 0f);
-                registry.ApplyPaletteVariant(anchor.VisualVariant);
-
-                // The bar mints its own pooled bodies rather than going
-                // through CityPedestrianFactory, and it attaches no hand
-                // prop: a body ships empty-handed, so a grandmother at the
-                // counter holds no carpet beater without any rule here.
+                // The body adapter has already released the village graph;
+                // only this presentation drives the rig. Wardrobe colours
+                // stay population-owned, without a scene palette repaint.
                 CityPedestrianPresentation presentation =
                     registry.GetComponent<CityPedestrianPresentation>();
                 if (presentation == null)
@@ -253,14 +248,26 @@ namespace BarPromenade
                         presentation,
                         counterDrinkClip,
                         layout,
-                        patronIndex);
+                        patronIndex,
+                        surfaces["counter"],
+                        drinkKinds[patronIndex - 1]);
                 }
-                else if (anchor.Role == BarNpcRole.StandingPatron)
+                else if (anchor.Role == BarNpcRole.StandingPatron ||
+                         anchor.Role == BarNpcRole.SeatedPatron)
                 {
+                    bool booth = anchor.Role == BarNpcRole.SeatedPatron;
+                    string surfaceId = booth
+                        ? anchor.Id.Substring(0, anchor.Id.LastIndexOf('-'))
+                        : anchor.RouteId;
                     drinking = TryAttachTableDrinking(
                         anchor,
                         registry,
-                        patronIndex);
+                        presentation,
+                        layout,
+                        patronIndex,
+                        surfaces[surfaceId],
+                        booth,
+                        drinkKinds[patronIndex - 1]);
                 }
                 patrons.Add(new BarPatron(
                     anchor,
@@ -320,7 +327,9 @@ namespace BarPromenade
             CityPedestrianPresentation pedestrianPresentation,
             AnimationClip drinkClip,
             BarInteriorLayoutPlan layout,
-            int patronIndex)
+            int patronIndex,
+            Renderer surface,
+            BarPatronDrinkPropKind propKind)
         {
             Transform socket = FindDeep(
                 registry.transform,
@@ -380,17 +389,9 @@ namespace BarPromenade
             }
 
             int seed = StableSeed(anchor.Id, patronIndex);
-            CreateBottle(
-                registry,
-                seed,
-                out Transform bottleRoot,
-                out Transform bottleMouth,
-                out float gripToLipDistance,
-                out float gripToBaseDistance);
+            BarPatronDrinkProp prop = CreateDrinkProp(registry.transform, propKind, seed);
             float counterSurfaceHeight =
-                layout.CounterPosition.y +
-                layout.CounterSize.y * 0.5f +
-                CounterTopBuildUp;
+                registry.transform.parent.InverseTransformPoint(surface.bounds.max).y;
             ResolveSurfaceRestPoints(
                 anchor,
                 registry,
@@ -400,6 +401,8 @@ namespace BarPromenade
                 CounterSurfaceHandSideOffset,
                 out Vector3 bottleRestPoint,
                 out Vector3 supportPoint);
+            ClampSurfacePoints(registry.transform, prop, surface, false,
+                ref bottleRestPoint, ref supportPoint);
             BarPatronDrinkingArmPose pose =
                 registry.gameObject.AddComponent<
                     BarPatronDrinkingArmPose>();
@@ -421,19 +424,26 @@ namespace BarPromenade
                 chest,
                 head,
                 mouth,
-                bottleRoot,
-                bottleMouth,
-                gripToLipDistance,
-                gripToBaseDistance,
+                prop.Root,
+                prop.Mouth,
+                prop.GripToLipDistance,
+                prop.GripToBaseDistance,
                 bottleRestPoint,
-                supportPoint);
+                supportPoint,
+                restingSurface: surface,
+                drinkProp: prop);
             return pose;
         }
 
         private static BarPatronDrinkingArmPose TryAttachTableDrinking(
             BarNpcAnchor anchor,
             CityPedestrianAssetRegistry registry,
-            int patronIndex)
+            CityPedestrianPresentation pedestrianPresentation,
+            BarInteriorLayoutPlan layout,
+            int patronIndex,
+            Renderer surface,
+            bool isSeatedTable,
+            BarPatronDrinkPropKind propKind)
         {
             Transform rightSocket = FindDeep(
                 registry.transform,
@@ -493,27 +503,32 @@ namespace BarPromenade
             }
 
             int seed = StableSeed(anchor.Id, patronIndex);
-            CreateBottle(
-                registry,
-                seed,
-                out Transform bottleRoot,
-                out Transform bottleMouth,
-                out float gripToLipDistance,
-                out float gripToBaseDistance);
+            BarPatronDrinkProp prop = CreateDrinkProp(registry.transform, propKind, seed);
+            if (!isSeatedTable && (!layout.TryGetFurniture(anchor.RouteId,
+                    out BarInteriorFurnitureFootprint table) ||
+                table.Kind != BarInteriorFurnitureKind.PubTable))
+            {
+                throw new InvalidOperationException(
+                    $"Patron '{anchor.Id}' has no authored pub table.");
+            }
+
             ResolveSurfaceRestPoints(
                 anchor,
                 registry,
-                PubTableTopHeight,
-                PubTableBottleRestInset,
-                PubTableHandInset,
-                PubTableHandSideOffset,
+                registry.transform.parent.InverseTransformPoint(surface.bounds.max).y,
+                isSeatedTable ? BoothBottleRestInset : PubTableBottleRestInset,
+                isSeatedTable ? BoothHandInset : PubTableHandInset,
+                isSeatedTable ? BoothHandSideOffset : PubTableHandSideOffset,
                 out Vector3 bottleRestPoint,
                 out Vector3 supportPoint);
+            ClampSurfacePoints(registry.transform, prop, surface, !isSeatedTable,
+                ref bottleRestPoint, ref supportPoint);
             BarPatronDrinkingArmPose pose =
                 registry.gameObject.AddComponent<
                     BarPatronDrinkingArmPose>();
             pose.InitializeTable(
                 new BarPatronDrinkTimeline(seed),
+                pedestrianPresentation,
                 registry.transform,
                 rightClavicle,
                 rightUpperArm,
@@ -528,60 +543,113 @@ namespace BarPromenade
                 chest,
                 head,
                 mouth,
-                bottleRoot,
-                bottleMouth,
-                gripToLipDistance,
-                gripToBaseDistance,
+                prop.Root,
+                prop.Mouth,
+                prop.GripToLipDistance,
+                prop.GripToBaseDistance,
                 bottleRestPoint,
-                supportPoint);
+                supportPoint,
+                restingSurface: surface,
+                isSeatedTable: isSeatedTable,
+                drinkProp: prop);
             return pose;
         }
 
-        private static void CreateBottle(
-            CityPedestrianAssetRegistry registry,
-            int seed,
-            out Transform bottleRoot,
-            out Transform bottleMouth,
-            out float gripToLipDistance,
-            out float gripToBaseDistance)
+        private static Renderer RequireSurface(Transform room, string name)
         {
-            BarDrinkPresentation drink =
-                BarDrinkPresentationCatalog.Get(
-                    PatronDrinks[(seed & int.MaxValue) %
-                                 PatronDrinks.Length]);
+            Transform part = room.Find(name);
+            Renderer surface = part != null ? part.GetComponent<Renderer>() : null;
+            if (surface == null)
+                throw new InvalidOperationException($"Bar guests require authored surface '{name}'.");
+            return surface;
+        }
 
-            var bottleObject = new GameObject(
-                $"Patron Bottle {drink.StableId}");
-            bottleRoot = bottleObject.transform;
-            bottleRoot.SetParent(registry.transform, false);
+        private static BarPatronDrinkPropKind[] AllocateDrinkKinds(int count)
+        {
+            // A fresh balanced bag keeps every visit varied, independently of
+            // permanent character identities and the deterministic floor plan.
+            var random = new System.Random(Guid.NewGuid().GetHashCode());
+            var kinds = new BarPatronDrinkPropKind[count];
+            int firstKind = random.Next(5);
+            for (int index = 0; index < count; index++)
+                kinds[index] = (BarPatronDrinkPropKind)((index + firstKind) % 5);
+            for (int index = count - 1; index > 0; index--)
+            {
+                int other = random.Next(index + 1);
+                BarPatronDrinkPropKind value = kinds[index];
+                kinds[index] = kinds[other];
+                kinds[other] = value;
+            }
+            return kinds;
+        }
 
-            var rigObject = new GameObject("Bottle Rig");
-            Transform rig = rigObject.transform;
-            rig.SetParent(bottleRoot, false);
-            rig.localRotation = Quaternion.identity;
-            rig.localScale = Vector3.one * BottlePropScale;
-            float bottleHeight =
-                BarDrinkServiceWorldBuilder.BuildBottleVisual(
-                    rig,
-                    drink);
-            rig.localPosition = Vector3.down *
-                (bottleHeight *
-                 BottlePropScale *
-                 BottleGripHeightShare);
+        private static BarPatronDrinkProp CreateDrinkProp(
+            Transform parent, BarPatronDrinkPropKind kind, int seed)
+        {
+            bool alternate = (seed & 1) != 0;
+            DrinkId drink = kind switch
+            {
+                BarPatronDrinkPropKind.Pint => alternate ? DrinkId.DarkBeer : DrinkId.LightBeer,
+                BarPatronDrinkPropKind.WineGlass => alternate ? DrinkId.RedWine : DrinkId.WhiteWine,
+                BarPatronDrinkPropKind.ShotGlass => alternate ? DrinkId.PepperVodka : DrinkId.Vodka,
+                BarPatronDrinkPropKind.Snifter => alternate ? DrinkId.CognacVsop : DrinkId.CognacVs,
+                _ => PatronDrinks[(seed & int.MaxValue) % PatronDrinks.Length]
+            };
+            return BarPatronDrinkProp.Create(parent, kind, BarDrinkPresentationCatalog.Get(drink));
+        }
 
-            var mouthAnchor = new GameObject("Bottle Mouth Anchor");
-            mouthAnchor.transform.SetParent(rig, false);
-            mouthAnchor.transform.localPosition =
-                Vector3.up * bottleHeight;
-            bottleMouth = mouthAnchor.transform;
-            gripToLipDistance =
-                bottleHeight *
-                BottlePropScale *
-                (1f - BottleGripHeightShare);
-            gripToBaseDistance =
-                bottleHeight *
-                BottlePropScale *
-                BottleGripHeightShare;
+        private static void ClampSurfacePoints(Transform owner, BarPatronDrinkProp prop,
+            Renderer surface, bool round, ref Vector3 basePoint, ref Vector3 supportPoint)
+        {
+            Vector3 worldForward = Vector3.Cross(owner.right, owner.up).normalized;
+            Vector3 localForward = Vector3.Cross(prop.HandleLocalAxis, prop.OpeningLocalAxis).normalized;
+            Quaternion rotation = Quaternion.LookRotation(worldForward, owner.up) *
+                Quaternion.Inverse(Quaternion.LookRotation(localForward, prop.OpeningLocalAxis));
+            Bounds bounds = prop.PhysicalLocalBounds;
+            Bounds offsets = new Bounds(Vector3.zero, Vector3.zero);
+            float footprintRadius = 0f;
+            for (int index = 0; index < 8; index++)
+            {
+                Vector3 corner = bounds.center + Vector3.Scale(bounds.extents,
+                    new Vector3((index & 1) == 0 ? -1f : 1f,
+                        (index & 2) == 0 ? -1f : 1f, (index & 4) == 0 ? -1f : 1f));
+                Vector3 offset = rotation * (corner - prop.BaseLocalPosition);
+                offsets.Encapsulate(offset);
+                footprintRadius = Mathf.Max(footprintRadius,
+                    new Vector2(offset.x, offset.z).magnitude);
+            }
+            Bounds top = surface.bounds;
+            if (round)
+            {
+                // The sixteen-sided round tabletop fits inside this inradius.
+                float radius = Mathf.Min(top.extents.x, top.extents.z) * Mathf.Cos(Mathf.PI / 16f);
+                Vector2 centre = new Vector2(top.center.x, top.center.z);
+                Vector2 position = centre + Vector2.ClampMagnitude(
+                    new Vector2(basePoint.x, basePoint.z) - centre,
+                    Mathf.Max(0f, radius - footprintRadius - .01f));
+                basePoint.x = position.x;
+                basePoint.z = position.y;
+                position = centre + Vector2.ClampMagnitude(
+                    new Vector2(supportPoint.x, supportPoint.z) - centre, radius - .055f);
+                supportPoint.x = position.x;
+                supportPoint.z = position.y;
+            }
+            else
+            {
+                const float margin = .015f;
+                float minX = top.min.x + margin - offsets.min.x;
+                float maxX = top.max.x - margin - offsets.max.x;
+                float minZ = top.min.z + margin - offsets.min.z;
+                float maxZ = top.max.z - margin - offsets.max.z;
+                if (minX > maxX || minZ > maxZ)
+                    throw new InvalidOperationException("A guest's vessel cannot fit its real tabletop.");
+                basePoint.x = Mathf.Clamp(basePoint.x, minX, maxX);
+                basePoint.z = Mathf.Clamp(basePoint.z, minZ, maxZ);
+                supportPoint.x = Mathf.Clamp(supportPoint.x, top.min.x + .055f, top.max.x - .055f);
+                supportPoint.z = Mathf.Clamp(supportPoint.z, top.min.z + .055f, top.max.z - .055f);
+            }
+            basePoint.y = top.max.y + BottleSurfaceClearance;
+            supportPoint.y = top.max.y + HandSurfaceClearance;
         }
 
         private static void ResolveSurfaceRestPoints(
@@ -635,26 +703,6 @@ namespace BarPromenade
             }
 
             return clip;
-        }
-
-        private static string ResolveDesignId(
-            BarNpcAnchor anchor,
-            ref int seatedIndex,
-            ref int tableIndex)
-        {
-            if (anchor.Role == BarNpcRole.SeatedPatron ||
-                anchor.Role == BarNpcRole.CounterPatron)
-            {
-                string design = SeatedDesignIds[
-                    seatedIndex % SeatedDesignIds.Length];
-                seatedIndex++;
-                return design;
-            }
-
-            string tableDesign = TableDesignIds[
-                tableIndex % TableDesignIds.Length];
-            tableIndex++;
-            return tableDesign;
         }
 
         private static void LogMissingDrinkRig(

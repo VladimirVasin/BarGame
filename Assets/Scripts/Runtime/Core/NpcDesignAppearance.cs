@@ -158,14 +158,6 @@ namespace BarPromenade
                 ["cafe_attendant_v2"] = NpcDesignAppearance.Normal,
 
                 // --- Dedicated one-offs ----------------------------------
-                // The active replacement is an ordinary two-armed publican;
-                // his waistcoat, apron and towel are clothing and props.
-                ["bar_bartender_v2"] = NpcDesignAppearance.Normal,
-
-                // Retained as a dormant design rather than overwritten when
-                // the ordinary bartender becomes active.
-                ["six_armed_bartender_v1"] = NpcDesignAppearance.Bizarre,
-
                 // The production supermarket clerk keeps the Watcher's
                 // uniform and identity on an ordinary adult body, with a
                 // fixed human neck instead of the pursuing periscope chain.

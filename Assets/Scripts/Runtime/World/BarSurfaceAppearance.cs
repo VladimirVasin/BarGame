@@ -318,6 +318,11 @@ namespace BarPromenade
                 return;
             }
 
+            if (BarInteriorSurfaceAppearance.TryApply(renderer, kind, sourceTint))
+            {
+                return;
+            }
+
             Apply(renderer, kind, sourceTint, IdentityBaseMapTransform);
         }
 

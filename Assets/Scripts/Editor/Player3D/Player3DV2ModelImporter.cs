@@ -32,6 +32,7 @@ namespace BarPromenade.Editor
                 "CatFeedLoop",
                 "DoorUseLoop",
                 "BusRideLoop",
+                "CounterSeatLoop",
                 "BarDrinkSipLoop",
                 "ChessSeatPlayLoop"
             };

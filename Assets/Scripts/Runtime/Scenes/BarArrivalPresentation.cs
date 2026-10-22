@@ -90,6 +90,9 @@ namespace BarPromenade
                     lookDirection.normalized,
                     Vector3.up)
                 : followRotation;
+            // The short diagonal reveal settles its horizon together with
+            // the lens and path before ordinary control returns.
+            establishingRotation *= Quaternion.Euler(0f, 0f, -2.5f);
             establishingFieldOfView = Mathf.Clamp(
                 shotFieldOfView,
                 20f,

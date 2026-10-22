@@ -89,8 +89,7 @@ def main():
         for selector in (("--archetype", "all"), ("--mother",), ("--cafe-cast",), ("--shelter-residents",)):
             invoke(base, (*common, *selector))
         for name, filename, source_path, model_path, stem in (
-                ("driver", "build-city-bus-driver-3d-model.py", "Vehicles/Drivers/Blender", "Vehicles/Drivers/Models", "CityBusDriver3D"),
-                ("bartender", "build-ordinary-bartender-3d-model.py", "Bar/Bartender/Blender", "Bar/Bartender/Models", "BarBartenderOrdinary3D")):
+                ("driver", "build-city-bus-driver-3d-model.py", "Vehicles/Drivers/Blender", "Vehicles/Drivers/Models", "CityBusDriver3D"),):
             module = load("joint_publish_" + name, filename)
             invoke(module, ("--output", sources / source_path / (stem + ".blend"),
                             "--fbx", assets / model_path / (stem + ".fbx"),

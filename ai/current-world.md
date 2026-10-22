@@ -835,11 +835,10 @@ cemetery:own interiors/returns.
   `3 s` cooldown;
   staged roles, bus/bench activity and a player already under action or fall
   ownership do not participate. The reaction adds no dialogue or audio.
-  The on-disk humanoid-NPC asset set comprises `27` rigged designs: five
-  production-folder pedestrian models, `17` staged residents, the active
-  ordinary and retained inactive six-armed bartenders, the active normal and
-  retained inactive Watcher cashiers, and the bus driver. The active humanoid
-  cast does not grow because both ordinary replacements are one-for-one. Every
+  The authored humanoid-NPC asset set comprises `25` rigged designs: five
+  production-folder pedestrian models, `17` staged residents, the active normal
+  and retained inactive Watcher cashiers, and the bus driver. The bartender
+  uses the existing global default-worker model; both bespoke versions are removed. Every
   rigged design uses
   `NpcHumanV2`, the Hero V2 31-bone body core and compatible A-pose Avatar from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
@@ -858,11 +857,10 @@ cemetery:own interiors/returns.
   them; pooled walkers and bar patrons attach nothing, and the laid grave
   bouquet is the same prefab placed on the slab. The six prop-bearing
   bodies exclude their skinned prop parts. The accepted `2026-09-29` ordinary
-  refinement shapes anatomy, separate fingers, clothes and shoes on five models:
+  refinement shapes anatomy, separate fingers, clothes and shoes on four models:
   fisherman `45` meshes / `7,760` triangles; mother `49` / `7,872`;
-  bartender `75` / `7,428`; cashier `40` / `6,828`; driver `48` / `6,876`.
-  Fisherman/mother retain generator `4.5.2`; bartender uses `4.0.0`, cashier
-  `2.0.0`, driver `3.0.0`. Four share the palette-neutral `256 px`
+  cashier `40` / `6,828`; driver `48` / `6,876`. Fisherman/mother retain
+  generator `4.5.2`; cashier `2.0.0`, driver `3.0.0`. Three share the palette-neutral `256 px`
   `OrdinaryCharacterDetailAtlas`; the cashier retains his own garment atlas.
   The mother's original expression grid remains, with its surface ahead of
   the skull. Shared rig/sockets remain; both fishing clips bring the left grip closer.
@@ -872,24 +870,22 @@ cemetery:own interiors/returns.
   hood clears the skull. Ember/light show
   only on inhale; shared mouth exhale follows clip phase. PNG faces are the Normal/default standard;
   remaining solid Normal features await migration.
-  The inactive six-armed bartender (`2.0.0`) and Watcher cashier (`2.2.0`,
+  The inactive Watcher cashier (`2.2.0`,
   `2.05 m`, `44` meshes / `1,588` triangles) remain unchanged.
   Every modular `SkinnedMeshRenderer` is governed by
-  `NpcSkinnedMeshCullingGuard`: the seven humanoid authoring pipelines serialize
-  dynamic bounds, and the six registry families reassert that contract once
+  `NpcSkinnedMeshCullingGuard`: humanoid authoring pipelines serialize
+  dynamic bounds, and their registry families reassert that contract once
   when an instance wakes. Clip-driven limbs and procedural bones therefore
   cannot be frustum-culled by the small A-pose boxes imported from the separate
-  model FBXs. The ordinary two-armed bartender remains `1.75 m`.
+  model FBXs. The ordinary bartender uses the catalog worker anatomy.
   This is a shared adult anatomical substrate,
   not a flattening of character identity: the mouthless Long-Arm, kettle and
-  hopper silhouettes remain, the inactive legacy bartender alone keeps six
-  arms, and the driver keeps his horizontal eyes. The active cashier keeps the same uniform, face, blink
+  hopper silhouettes remain, and the driver keeps his horizontal eyes. The active cashier keeps the same uniform, face, blink
   and attentive gaze, but uses an ordinary head and non-scaling human neck;
   the former `18 m` treatment survives only in the inactive
-  `watcher_cashier_v1` asset. The appearance catalog covers all `29` designs on
-  disk — `8` bizarre and `21` normal. The active bartender and cashier are
-  normal; their retained six-armed/Watcher predecessors are bizarre and never
-  create duplicate active roles.
+  `watcher_cashier_v1` asset. The appearance catalog covers `27` authored designs — `7` bizarre and `20` normal.
+  The active cashier is normal; his retained Watcher predecessor is bizarre
+  and never creates a duplicate active role. The default-worker bartender is ordinary.
   The pool holds one presentation per registered design — Lampshade Walker,
   Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
   each with four material-property-block palettes. All five use dedicated
@@ -1669,7 +1665,7 @@ cemetery:own interiors/returns.
   exactly one reachable Residential bar at `(12,6)`, one non-bar player home
   across its shared street frontage at `(12,5)`, and exactly one ordinary
   street-front supermarket. The retained bar keeps stable ID
-  `bar-01352777-12-06` and `SplitTheG` interior dressing; the former Industrial,
+  `bar-01352777-12-06` and `SplitTheG` activity assignment; the former Industrial,
   Nightlife and Old Town bar lots are ordinary buildings again. Custom
   generated layouts may still request multiple graph-separated bars;
 - a default `8.8 m` player-home body with a recognizable supported upper
@@ -1688,15 +1684,14 @@ cemetery:own interiors/returns.
 ### The hero
 
 - sole `Resources/Player/Player3DV2` in ten roots;arms/portrait.
-  Lean `1.75 m`:31 body bones/50 actions/tapered torso/male hips-two buttocks/
+  Lean `1.75 m`:31 body bones/55 actions/tapered torso/male hips-two buttocks/
   slim arms/refined hands. Loose M-65/right patch; separate trousers/knee folds,
   burgundy1460 boots/ankle-ball flex.
   `PlayerWardrobe`:shirt-jacket-trousers-boots-belt/coverage/atomic slots/leases.
   `hero_field_workwear` only; outfits/UI/save Deferred. Curtains12 bones;
-  jacket hem-cuffs16 nodes/owned meshes/pinned shoulders-chest.
-  Garment folds/joint boundaries-volume.
-  Hair/world-jacket:bounded motion/cached contacts/pause-reset/mirrors;
-  arms copy jacket;hair→scarf;jacket0self.
+  Jacket:gameplay rig-only;elbow folds/hand-opening;0live/baked cloth.
+  Editor authoring/scarf-sling policy stay;garment folds/joint volume.
+  Hair:bounded motion/contacts/pause-reset/mirrors;arms copy jacket;hair→scarf.
   Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
   `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames) and snow clips from
@@ -2134,44 +2129,38 @@ cemetery:own interiors/returns.
 
 ### Interiors
 
-- one deterministic `22 x 16 x 4.8 m` bar interior with seven authored zones
-  and four validated circulation paths. Its visible permanent environment is
-  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.3.3`
-  (`174` semantic meshes / `12,832` triangles, signature
-  `cc252752752c27aa69d0fa57de8ab8222bd3f265bef92e145bd3fe1989c6b512`):
-  a long dark panelled counter with a right-hand
-  return, brass foot rail and exactly three taps banked at `0.33 m` intervals
-  over its seat-free right overlap, a mirror-and-bottle backbar, three booths
-  with a snug, four small round pub tables, a reduced music pocket, the
-  facade-matched standard `1.45 x 2.34 m` panelled entrance, worn carpet/plank
-  and low warm practicals. The old room-height curtained portal is absent.
-  Unity retains the plan,
-  collision, lighting, state and interaction authority rather than rebuilding
-  the furniture from runtime primitives. The Residential identity and
-  `SplitTheG` dressing remain without turning the British-pub reference into a
-  flag, brand, readable advertisement or new lore. Its visible counter top is
-  `1.02 m` rather than `1.56 m`, matching the plan's `0.43 m` centre /
-  `0.86 m` height. Every regular and hero counter stool uses the exact Mountain
-  Road cafe geometry: `0.8175 m` top, `0.48 m` seat diameter and `0.055 m`
-  thickness. Two stools are occupied by counter patrons and all four
-  unoccupied stools receive independent interaction stations, safe approach /
-  exit poses and matching camera/service offsets at local `z = 4.53`. The
-  rightmost stool is held at local `x = 4.00`, clear of the counter return; the
-  former single-seat floor marker and yellow emissive counter sign are absent
-  from play. The authored eye/look heights are `1.6175 / 1.7175 m`, and the
-  menu/vessel docks track the surface at `1.045 / 1.035 m`. The menu dock is
-  laterally collinear with the selected stool, so the bartender lays it
-  directly before the hero as in the Mountain Road cafe. Fifteen
-  deterministic `1024 px` source albedo families import at `512 px`; ordinary
-  non-emissive interior parts use recognized bar sheets, while the stool metal
-  and seats reuse the exact runtime `CafeMetalDetail` / `CafeCounterDetail`
-  textures and service parts use five bar sheets. Their measured world-metric
-  UV scale survives import and the same textures feed the `.blend` preview
-  nodes. These are diverse material albedos with scalar surface response, not
-  a separate set of PBR maps;
-- six shadowless practicals, a bar-only grade, local dust, a slow ceiling fan
-  and a skippable `1.35 s` Bezier reveal retain the chase-camera contract and
-  fog-free `220 m` range;
+- the deterministic `11.4 x 7.8 x 3 m` bar fits the ground-floor facade including
+  walls/ceiling and recessed `1.45 x 2.34 m` entrance; a measured frame keeps it inside.
+  Blender/interior-kit owns passive geometry; Unity owns collision/layout/light/actions.
+  Counter body spans
+  X[-2.1,3.85], top X[-2.325,4.075]: left shortened .9m, backbar/right end stay.
+  The right return, brass rail and three taps at its seat-free end remain;
+  two booths with opposed sofas and three round pub tables furnish the hall. The
+  unoccupied `pub-table-right-rear` at `(4.85,2.95)` is gone. Booths at X-4.38,
+  Z-2.15/.65 have `2.05 x 2.8 m` footprints and `1.05 x .85 m` tables;
+  door-side/opposite benches at centreZ-.95/+.95 face +Z/-Z, one visitor each.
+  Jukebox replaces the right-side activity console/three vessels:
+  pivot `(5,0,-.65)`, yaw180, grille toward `-X` into the hall. Its audio, collision
+  and emissive pulses follow. Cocktail/SplitTheG/TinctureMatch build no console
+  or vessels in any layout; activity IDs/assignments remain. Coat rack/hooks/
+  collision are gone. Karaoke faces exit `-X`: podium centre `(4.1,0,-2.7)`,
+  Rect `(3.05,-3.525,2.1,1.65)`. Solid `.12 m` floor is below the hero's `.28 m`
+  step, without a logical movement block. Mic `(3.75,1.6,-2.7)`, stand `(4.2,.16,-2.7)`;
+  approach `(2.6,.04,-2.15)` via side entry `(4.2,.16,-2.15)`.
+  Speakers/curtains/valance/lights stay; no singing action. BeerPong table at
+  `(3.85,-1.75,.76,1.83)`. Effect providers/bounds follow.
+  Five stools remain: two occupied and
+  three independent hero stations, with safe approach/exit and selected-stool
+  menu/drink docks. Counter top `1.02 m`, stool tops `0.8175 m`; the rightmost
+  stool is at `x = 1.95, z = 0.91`. Unique UV0 albedo/response preserves metre UV1/
+  source wear; shared opaque/glass/emission/service paths stay. Residential
+  identity, `SplitTheG`, menu and gameplay stay. Direct bar loads also select
+  Residential; explicit legacy district layouts retain their own profiles;
+- six compact practicals (one bounded key shadow), two finite countertop
+  bounces, one bounded `256` HDR reflection, Neutral grade, refitted dust/DOF
+  and the slow fan keep the warm dry pub. The skippable `1.35 s` reveal settles
+  its lens/roll into the indoor chase camera. SSR and experimental SCGI remain
+  outside ordinary bar gameplay;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
   profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
   fluorescent housings and articulated CCTV pivots are one deterministic
@@ -2697,51 +2686,53 @@ cemetery:own interiors/returns.
 
 ### People, diagnostics and money
 
-- a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
-  prefabs: six compatible designs sit at the booth anchors on concrete
-  `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,
-  and three stand at pub-table edges. The bar owns this bounded cast instead
-  of sampling the roaming order; the Yard Babushka and the crouched
-  Chess/Checkers designs are excluded because they cannot satisfy their
-  furniture contact contracts. Counter patrons sample the exact
-  `CafeManDrink` authored clip and hold bottles; its bottle-specific overlay
-  leans torso and head back, keeps the bottle horizontal and places its actual
-  neck anchor at the mouth. Table patrons use the same sip while standing and
-  keeping their left hands planted on the tabletop. After every `Lower`, all five
-  drinkers return the bottle upright with its base on the real counter or table,
-  retain a right-side grip whose complete `hand.R` bind-space rotation keeps
-  the palm and wrist outside the bottle mesh, and support the free hand on the
-  same surface. Round-table bottle docks sit
-  clearly inside the tabletop instead of on its rim. Their heads keep a slight
-  deterministic, non-referential drift until
-  the next `Raise` rather than freezing in one terminal sample.
-  Seating, action and prop pose are evaluated before the first
-  visible frame, so no patron begins suspended or embedded in furniture;
-- one dedicated full-body `bar_bartender_v2` occupies the authored bartender
-  anchor. `BarBartenderProvider` selects the rebuilt
-  `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab` and retains the
-  former six-armed prefab only as an inactive legacy reference. The active
-  `1.75 m`, `75`-mesh / `7,428`-triangle ordinary two-armed publican wears a
-  dark-green waistcoat, rolled sleeves and apron. It reuses all four
-  `CafeAttendant*` service clips, while counter locomotion uses a deterministic
-  copy of the compatible Hero V2 `Walk` cycle with its exported root paths
-  remapped onto the bartender hierarchy;
+- nine transient default NPC visitors: each entry uses the shared catalog/
+  body/face/hair/wardrobe allocator anew, without permanent IDs or changes to
+  permanent characters. Appearances do not repeat within the visit.
+  Four sit on opposed booth `0.48 m` seats, two at counter X-1.65/1.05 on
+  cafe `0.8175 m` stools, and three stand at pub-table edges. Placement and
+  actions stay local; the default body adapter owns shared rig compatibility.
+  All nine drink. Each entry independently shuffles a balanced
+  Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared service assets.
+  `BarPatronDrinkProp` caches physical grip/rim/base/bounds and typed sip/torso
+  profiles. Counter patrons retain the exact `CafeManDrink` in their single
+  graph; booth patrons keep their seated graph. The shared seeded
+  Rest/Raise/Sip/Lower cadence brings each rim to the mouth with its matching
+  handle/cupped/cylinder grip. After `Lower`, each vessel returns upright to
+  the actual counter/booth/pub tabletop with the free hand supported; its full
+  footprint, including handles, stays inside rectangular/circular surfaces.
+  Slight deterministic, non-referential head drift lasts until the next `Raise`.
+  Base pose is sampled before caching contacts. The nine drinkers lease
+  `AlwaysAnimate` so offscreen body/hands/props stay aligned; disable/destroy
+  restores prior culling, enable reacquires it;
+- one global default-worker bartender occupies the authored floor-level anchor.
+  `DefaultNpcFactory.CreateForCharacter` resolves permanent `zzz.bar.bartender`
+  after the existing roster, preserving its earlier assignments. The role
+  adapter releases the default animation graph, reuses cafe service clips,
+  default locomotion and one towel, and leaves clothing/appearance
+  to the global population. Both bespoke bartender model/source/provider/import
+  families are removed;
   `BarBartenderServiceChoreography` turns the root into its path, advances it
   with that complete stride and then restores its working orientation while
-  binding the hands to the physical menu, bottle, central tap or vessel. For
+  binding socket-aware two-bone IK to the menu, bottle, tap or vessel. Total
+  torso tilt is capped at 38 degrees. Measured scaled shell bounds keep carry
+  and lift/transfer/lower placement above the real counter and outside the menu.
+  Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer remains 15.515 cm. For
   beer he walks to the tap, pulls its handle over the slightly enlarged
   handled mug, carries the full mug upright to the selected stool, aligns his
   body opposite it and leans over the counter while the left palm follows the
   handle through a smooth placement directly before the hero. For wine,
   cognac and vodka he uses the same full Walk to reach the selected live shelf
   bottle, takes it only at right-hand contact, carries it to the server-edge
-  preparation vessel, pours into the matching `WineGlass`, `Snifter` or
+  preparation vessel on the opposite side from the guest booklet, pours into the matching `WineGlass`, `Snifter` or
   `ShotGlass`, carries the full vessel to the selected stool and sets it down,
   then walks the bottle back to its exact shelf pose. The active root and feet
   remain on the authored floor: the legacy `0.42 m` duckboard and matching
   actor lift are absent. During the quiet shared Wipe, that grounded placement
   puts the towel against the real `Y = 1.02 m` counter top and the clip carries
-  it along the surface instead of through the air. Central-tap beer and all
+  it along the surface. The same arm hides/reveals it behind the back before
+  other actions/wiping; rear hand contact gates service.
+  Central-tap beer and all
   three single-bottle routes are live; multi-ingredient mixing and simultaneous
   multi-bottle choreography remain deferred;
 - the soundscape keeps one diffuse occupied-room bed, then places two
@@ -2779,15 +2770,15 @@ cemetery:own interiors/returns.
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
   stock and the bar's four-item visible drink menu. The bar now uses the same
   physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe.
-  `BarCounterSeatPlanner` exposes all four stools not occupied by patrons; each
-  owns a collision-safe entry/exit, and the rightmost sits at local `x = 4.00`
+  `BarCounterSeatPlanner` exposes all three stools not occupied by patrons; each
+  owns a collision-safe entry/exit, and the rightmost sits at local `x = 1.95`
   clear of the counter return. Three closely spaced taps occupy the seat-free
-  counter end beyond it. The world rig walks to the chosen stool and
-  sits, then the bartender carries a booklet from the passive
-  `bar_service_props_v1` `1.4.1` library
-  (`34` meshes / `4,136` triangles, signature
-  `9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd`)
-  to a dock exactly on that stool's lateral axis, directly before the hero.
+  counter end beyond it. Bar-only side enter/exit clips turn the visible hero
+  through the gap and lift before crossing the stool; the reverse returns him.
+  `CounterSeatLoop` holds pelvis; upper body breathes. Bar drinks keep its legs;
+  cafe/bus stay.
+  Body/garments must clear actual furniture. The bartender then carries a
+  `bar_service_props_v1` `1.4.1` booklet to the selected stool's axis before him.
   The shared model/input/page/focus/hint/prop-motion layer focuses
   the larger bar spread over `0.45 s` at `0.45 m` and FOV `72`, using a
   near-overhead solve centred over the booklet. Its bar-only cinematic DOF is
@@ -2827,24 +2818,30 @@ cemetery:own interiors/returns.
   cognac and vodka use the selected shelf bottle. The bartender reaches its
   live position with the full Walk, takes it only when the right hand makes
   contact, then walks to a stable upright preparation vessel at the server edge
-  of the counter. He pours into the matching `WineGlass`, `Snifter` or
+  opposite the resting menu. Its scaled shell stays above the counter through
+  lift, transfer and lowering; the tilted bottle also retains wood clearance. He pours into the matching `WineGlass`, `Snifter` or
   `ShotGlass`, carries the full vessel to the selected place and sets it down,
   then returns the bottle to its exact shelf pose. While every full vessel
   waits, the same gaze predicate
   drives its thin yellow contour and the localized `E` drink prompt. The seated
-  world body remains authoritative and runs `2 s` pickup, `3 s` sip and `2 s`
-  return actions. For beer its right hand grips the handle directly. The seated
+  world body owns base `2 s` pickup, `3 s` sip and `2 s` return clips.
+  For beer its right hand grips the handle directly. The seated
   first-person camera starts from the gaze that accepted the mug and keeps its
   captured eye-space offset through the animated head's complete pose. It eases
   `0.02 m` back along that gaze at the mouth and temporarily uses a `0.03 m`
   near plane. During the sip the drinking rim stays at the
   mouth, the mug reaches horizontal and remains in frame, and the head and
   torso rise with it in the same restrained motion as the corrected bar
-  patrons. Every other served vessel likewise uses an explicit visible Hero V2
-  pickup, sip and return with the right hand. The empty vessel remains on the
-  counter, and the pending order is consumed exactly once only after that
-  visible action completes. The old camera-local bar arm meshes remain
-  disabled; only the seated camera hides the hero's head.
+  patrons. All drinks use continuous right-hand Hero V2. Lean precedes contact;
+  wrists lift for approach, carry until counter support, then retract.
+  Clavicle reach uses upper arm, not nested wrist.
+  Completion restores seated camera/look.
+  Cached palm/thumb/finger anatomy orients grip; fingers close post-animation.
+  Wine/snifter use cupped bowl grips, shot its body, beer its handle. The order
+  consumes once after action. Next order: contact pickup, .25m straight back
+  with facing held, vertical lower at fixed X/Z. Open right palm braces a fixed
+  top point. Hide only fully below/guest-occluded, then fetch next.
+  Camera-local arms stay off; seated camera hides only head.
   Completing an order leaves the closed booklet available to reopen or to
   leave behind. Closing restores the exact seated camera; ordinary room DOF,
   not the menu override, is already active before service or third-person view.
@@ -2897,7 +2894,6 @@ cemetery:own interiors/returns.
   surviving `BarMinigameModalLock` rather than the removed catalog.
 - Multi-ingredient cocktail ordering, mixture state/UI and multi-bottle
   choreography. The active ordinary bartender, physical menu, central-tap beer
-  service and all three single-bottle routes are already present; the former six-arm return chord is a
-  superseded legacy proposal, not the upgrade path.
+  service and all three single-bottle routes are already present.
 
 South City Rollers/Skaters: procedural-world/sprite reference only; no imported code/assets.

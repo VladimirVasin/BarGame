@@ -3,51 +3,86 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-22
+
+Bar-only side Enter/Exit turn the continuous hero into the stool gap, lift
+before transfer and reverse to stand. CounterSeatLoop fixes pelvis support,
+retains upper-body breath and supplies bar-drink legs; Bus/cafe stay.
+player_counter_seat_actions.validate_result passed actual skinned furniture,
+floor/seam checks; refresh repeat and unrelated source/upper-body preservation passed.
+User decision: jacket rig-only throughout gameplay, as CombatTest; no live/baked
+cloth/contact/wind. Rig/folds/hand-opening/mirror-arms and Editor authoring stay;
+scarf/sling/hair policy unchanged.
+CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed/reviewed, including
+jacket-off persistence through component re-enable. Existing effects fit pose,
+materials/shadows/camera; no new providers. Performance unmeasured.
+Vodka return freeze: clavicle reach now uses the upper-arm origin, not the
+nested clip's retracting wrist. The latter prevented exact support/release and
+kept the first-person/look lease; contact tolerance and shoulder cap stay.
+VodkaService_ReturnsToSeatedViewAfterEmptyShot passed: empty counter support,
+release/retraction, nested exit, seated first-person view and unlocked look;
+purchase commitment intact.
+Empty cleanup now holds pickup facing, steps straight back, then lowers at
+fixed X/Z. The free open right palm braces a fixed counter point and blends
+out afterward. Full vessel bounds and guest occlusion gate hide/next service;
+same prop/grip, rig/materials/IK/camera/economy stay.
+Carry is low/forward to avoid a raised folded elbow; disable clears brace goal.
+EmptyVesselCleanup_StepsBackAndBracesBeforeHiding passed/reviewed: facing/backstep,
+open elbow, fixed palm, continuous grip/vertical path, furniture clearance,
+hidden old vessel before new service and unchanged payment ownership.
+
 ## 2026-10-21
 
-SSR: City Road/warehouse wet patches, cube confidence fallback/camera exclusions/
-saved flag/source/blackout/history/coastal wind. RealtimeLightingPolish passed;
-SSR/Bar GI/moving frames reviewed. Native SCGI passed, but stays fixture-only:
-Editor cost higher; no GPU/player proof; normal bar keeps finite bounces.
+Bar: facade-fit/maps/light;
+Counter left-.9m/3 free stools; 2 opposed booths/9 drinkers/3 tables; corner gone.
+Entry cast/roster kept; default bartender; bespoke deleted.
+Vessels reroll on entry; typed grips/sips.
+Offscreen arms aligned from first sight; owned culling.
+Small vessels clear counter/menu; hero contact/carry/support;
+empty stowed first; towel hides/draws behind back before work/Wipe.
+Console/coat rack gone; jukebox faces -X; wider stage faces exit;
+hero behind mic; BeerPong X-.25/IDs stay.
+validate_grip/player_hand_grip.validate/FBX roundtrip passed;
+BarInteriorSpawn(contacts/cleanup)/AreaCaptureFixture.Bar(karaoke approach/standing)
+passed/seen; mixed props/arms/culling lifecycle.
+Wipe/menu/BarMenu;
+VisitGroups_SelectFreshUniqueCastWithoutChangingPermanentPopulation passed.
+Bar geometry/texture/FBX UV passed.
 
-PostProcessingPolish passed/reviewed UI/A-B: reduced room grain/Stair vignette,
-owned inspection Bokeh/no stale takeover, paused input/DoF-off and focus/busy/
-cleanup/unload; preview MSAA/device fallback follows AA. Real sky/fog/dark bands
-not objectionable; dither off. Every scene reviews all groups incl. SSR/SSGI/SCGI:
-coverage/fit/omissions/cost; check-docs/diff reviewed.
+SSR: City Road/warehouse wet patches, cube confidence/camera exclusions/saved
+flag/source/blackout/history/coastal wind. RealtimeLightingPolish passed;
+SSR/Bar GI/motion reviewed. Native SCGI stays fixture-only: higher Editor cost,
+no GPU/player proof; normal bar keeps finite bounces.
 
-MaterialMotionPolish passed: bar response/coastal rooted wind-contact/fountain
-foam/mips A/B. Road occluded; MaterialMotionPolishGeometry crown/slide A/B passed/
-reviewed. Capture reused; counter shader/response/slide determinism passed;
-geometry/UV/contacts intact, no new cube/light/population; cost unmeasured.
+PostProcessingPolish passed/reviewed UI/A-B: room grain/Stair vignette,
+owned inspection Bokeh/off/pause/focus/busy/cleanup/unload, preview MSAA fallback.
+Gradients acceptable; dither off. Scene tasks review all effects incl.
+SSR/SSGI/SCGI; docs/diff reviewed.
 
-LightingPolish passed/reviewed effects/ownership/unload/Residential A/B: City/balcony
-Soft, bar bounce/flag/Neutral over ACES, house depth repair within room/shadow caps.
-Repeat hit prior BarDrinkShopController teardown; fixture disposes service/arms
-before camera. Baked GI/APV lacks offline form/bindings/loading; GPU timings absent.
+MaterialMotionPolish passed: bar response/coastal rooted wind-contact/fountain foam/mips;
+MaterialMotionPolishGeometry crown/slide A/B passed/reviewed. Geometry/UV/contacts
+intact; costs unmeasured.
 
-Home: larger locked room/sofa-sleep/visual kitchen/sheets/practical; bathroom/balcony
-stay. Sofa narrower/same length/west back/head-clock S; table flush/room-width;
-chair side/rear, contacts/sleep/deformation/board routes stay; fridge independent.
-Junk/slippers gone; bookcase-radio SW/shelves E. Aspect-correct anonymous painting:
-silent shared no-page view/cache cleanup, no caption/speech/reward/interpretation.
-Seat E filters stand; shower handoff before unlock fixes walk/F4; separate camera
-fault unreproduced. Dressed approach/offscreen undress/bare entry; mouse-stick
-before soap/RMB washing. F4 owns action/defeat input/live timeline/current-camera
-return, no snapshots.
+LightingPolish effects/ownership/unload/Residential A/B passed/reviewed:
+City/balcony Soft, bar bounce/flag/Neutral, house bounded depth repair.
+Prior BarDrinkShopController teardown: fixture disposes service before camera.
+Baked GI/APV lacks offline form/bindings/loading; GPU timings absent.
+
+Home: larger locked room/sofa-sleep/kitchen/sheets/practical; bathroom/balcony stay.
+Sofa west/head-clock S; table flush/room-width, chair side/rear, contacts/sleep/
+deformation/board routes intact; fridge independent. Junk removed, bookcase-radio
+SW/shelves E. Silent owned painting inspection. Seat E filters stand; shower
+handoff fixes walk/F4. Dressed approach/offscreen undress/bare entry, look before
+soap/RMB wash. F4 owns live action/defeat/current-camera return.
 DebugFreeCameraPlayModeTests(reset), AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed
-(raw E/filter/bed-chair-painting flight/views), Shower_CancelMidWashDressesHimAndShutsTheWater
-(entry/look/wash-exit flight/cancel-Q handoff/W gait) passed. Prior temp/retention faults.
+and Shower_CancelMidWashDressesHimAndShutsTheWater passed; prior temp/retention faults.
 
-City maps retain palette/facade/metre UVs/indexed ground MPBs/road/wetness; guarded
-bar UV0 keeps UV1/geometry/anchors/service; Home scoped. Flat coast/cemetery/cast/
-glass/emission/text/water/donors stay, BC7 capped/residency unmeasured. Surface/
-shader/pinned FBX validators and CityNativeLighting(import/binding/response/effects/
-Home/dormancy/return/unload/area-close-boundary-balcony) passed/reviewed.
-HomeScene_BuildsWalkableBalconyOnSeededStreet materials pass; prior foundGround
-expects enabled pre-consolidation sources.
-Watchdog excludes submit stalls; bounded native-frame grace/expiry releases quality/
-retries. ReflectionCapture_ColdStallAndTimeoutRecovery OK.
+City maps retain palette/facade/metre UVs/ground MPBs/road/wetness; bar UV0 keeps
+UV1/geometry/anchors/service, Home scoped. Donors/cast/glass/text/water stay;
+BC7 capped/residency unmeasured. Surface/shader/pinned FBX validators and
+CityNativeLighting passed/reviewed. HomeScene_BuildsWalkableBalconyOnSeededStreet
+materials pass; prior foundGround expects old sources.
+ReflectionCapture_ColdStallAndTimeoutRecovery bounds cold stalls/retries: OK.
 
 ## 2026-10-20
 

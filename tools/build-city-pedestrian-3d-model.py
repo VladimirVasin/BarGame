@@ -1607,7 +1607,6 @@ NPC_HEAD_SCALES = {
     "kettle_hat": (0.90, 0.95),
     "long_arm": (0.88, 0.94),
     "helmet_lamp": (0.87, 0.93),
-    "six_armed_bartender": (0.86, 0.92),
     # The Watcher's little head is a story silhouette, not an anatomy error.
     "watcher_cashier": (1.00, 1.00),
     # The old driver skull was 0.308 m wide.  This stronger X correction puts

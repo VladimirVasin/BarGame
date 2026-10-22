@@ -217,8 +217,8 @@ namespace BarPromenade
             // a softer shadow lets the directional act as fill.
             ConfigureDirectionalLighting(
                 new Color(0.92f, 0.82f, 0.72f),
-                0.95f,
-                new Color(0.28f, 0.20f, 0.17f),
+                0.55f,
+                new Color(0.24f, 0.19f, 0.16f),
                 0.42f);
 
             RenderSettings.fog = false;

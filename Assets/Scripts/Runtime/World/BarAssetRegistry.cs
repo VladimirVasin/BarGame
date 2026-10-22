@@ -222,9 +222,9 @@ namespace BarPromenade
     ///
     /// Parts are a flat LIST here rather than one field apiece, unlike
     /// `ChurchAssetRegistry`. The church has a closed set of five
-    /// anchors; this room has a large flat part set across twelve groups, four of
-    /// which are mutually exclusive activity sets and four mutually
-    /// exclusive district sets.
+    /// anchors; this room groups structural parts, movable assemblies,
+    /// reusable templates, the optional BeerPong table and mutually
+    /// exclusive district dressing.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarAssetRegistry : MonoBehaviour

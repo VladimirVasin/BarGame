@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// Stands the active ordinary bartender on the layout's authored
-    /// Bartender anchor. The six-armed prefab remains provider-addressable
-    /// as legacy data but is never selected here.
-    /// </summary>
+    /// <summary>Places the permanent population-owned publican at the authored service anchor.</summary>
     public static class BarBartenderWorldBuilder
     {
         /// <summary>
@@ -18,7 +14,8 @@ namespace BarPromenade
         public static BarBartenderPresentation TryBuild(
             Transform parent,
             BarInteriorLayoutPlan layout,
-            Transform heroRoot = null)
+            Transform heroRoot = null,
+            Renderer counterSurface = null)
         {
             if (parent == null)
             {
@@ -51,46 +48,22 @@ namespace BarPromenade
                 return null;
             }
 
-            BarBartenderProvider provider =
-                BarBartenderProvider.Load();
-            if (provider == null ||
-                provider.BartenderPrefab == null)
-            {
-                GameLog.Warning("bar", "bartender_prefab_missing");
-                return null;
-            }
-
-            GameObject bartender = UnityEngine.Object.Instantiate(
-                provider.BartenderPrefab,
-                parent);
+            VillageResidentPresentation actor = DefaultNpcFactory.CreateForCharacter(
+                parent, DefaultNpcPopulation.BarBartender);
+            CityPortCrew.AlignWorkerModelWithPlacement(actor);
+            actor.ReleaseAnimation();
+            GameObject bartender = actor.gameObject;
             bartender.name = "Bar Bartender";
-            // The authored human service clips were built against a
-            // ground-level human and the bar counter has the same 1.02 m
-            // working height. Keeping the former six-arm duckboard lift here
-            // raises the towel by exactly 0.42 m and makes Wipe clean air.
+            // The authored anchor owns the floor contact and service facing.
             bartender.transform.localPosition = anchor.Position;
-
-            // The sprite-era anchor yaw runs along the service alley;
-            // the 3D publican must face his guests across the counter,
-            // so he looks from the anchor toward the hall's center and
-            // only falls back to the authored yaw at the room origin.
-            Vector3 towardHall = -anchor.Position;
-            towardHall.y = 0f;
             bartender.transform.localRotation =
-                towardHall.sqrMagnitude > 0.0001f
-                    ? Quaternion.LookRotation(
-                        towardHall.normalized,
-                        Vector3.up)
-                    : Quaternion.Euler(0f, anchor.YawDegrees, 0f);
+                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
 
             BarBartenderAssetRegistry registry =
-                bartender.GetComponent<BarBartenderAssetRegistry>();
-            if (registry == null)
-            {
-                GameLog.Warning("bar", "bartender_registry_missing");
-                UnityEngine.Object.Destroy(bartender);
-                return null;
-            }
+                bartender.AddComponent<BarBartenderAssetRegistry>();
+            registry.Configure(actor);
+            if (counterSurface != null)
+                registry.ConfigureWipeSurface(counterSurface);
 
             BarBartenderPresentation presentation =
                 bartender.AddComponent<BarBartenderPresentation>();
@@ -112,12 +85,7 @@ namespace BarPromenade
             return presentation;
         }
 
-        /// <summary>
-        /// The bartender looks up from his glasses: the hero's own head
-        /// turn, run behind the presentation's own late pass, held back
-        /// while an authored service clip owns the body. The legacy rig
-        /// has no clips and glances whenever the hero is in the cone.
-        /// </summary>
+        /// <summary>Shared attention yields while the service sampler owns the body.</summary>
         public static NpcHeroAttentionLook AttachHeroAttention(
             BarBartenderPresentation presentation,
             BarBartenderAssetRegistry registry,
@@ -140,8 +108,7 @@ namespace BarPromenade
                 registry.Head,
                 registry.Neck,
                 heroRoot,
-                () => !presentation.UsesOrdinaryRig ||
-                      presentation.CurrentClipKind ==
+                () => presentation.CurrentClipKind ==
                       BarBartenderClipKind.Wipe);
             return look;
         }

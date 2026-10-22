@@ -54,6 +54,7 @@ namespace BarPromenade.Editor
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const string ColdAuthoringPath = "tools/player_cold_actions.py";
         private const string SnowAuthoringPath = "tools/player_snow_actions.py";
+        private const string CounterSeatAuthoringPath = "tools/player_counter_seat_actions.py";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 11000;
         // Eight columns: the expressions on the left, their soiled twins four
@@ -128,6 +129,11 @@ namespace BarPromenade.Editor
                 { "BarDrinkPickupEnter", new ActionContract("bar_drink", false) },
                 { "BarDrinkReturnExit", new ActionContract("bar_drink", false) },
                 { "BarDrinkSipLoop", new ActionContract("bar_drink", true) },
+                { "CounterSeatEnterRight", new ActionContract("counter_seat", false) },
+                { "CounterSeatExitRight", new ActionContract("counter_seat", false) },
+                { "CounterSeatEnterLeft", new ActionContract("counter_seat", false) },
+                { "CounterSeatExitLeft", new ActionContract("counter_seat", false) },
+                { "CounterSeatLoop", new ActionContract("counter_seat", true) },
                 { "CarAlightExit", new ActionContract("car_ride", false) },
                 { "CarBoardEnter", new ActionContract("car_ride", false) },
                 { "CatFeedEnter", new ActionContract("cat_feeding", false) },
@@ -477,6 +483,15 @@ namespace BarPromenade.Editor
                     "Hero V2 snow actions do not match tools/player_snow_actions.py. " +
                     "Regenerate them with tools/run-blender.py " +
                     "tools/player_snow_actions.py before packaging.");
+            }
+
+            if (!string.Equals(manifest.counter_seat_authoring_sha256,
+                    AuthoringSignature(CounterSeatAuthoringPath), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 counter-seat actions do not match tools/player_counter_seat_actions.py. " +
+                    "Regenerate them with tools/run-blender.py tools/build-player-3d-model-v2.py " +
+                    "--counter-seat-only before packaging.");
             }
 
             if (!string.Equals(
@@ -1536,7 +1551,8 @@ namespace BarPromenade.Editor
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerBootDeformation.cs"),
                 AuthoringSignature("tools/player_boots.py"),
                 ColdAuthoringSignature(),
-                AuthoringSignature(SnowAuthoringPath)
+                AuthoringSignature(SnowAuthoringPath),
+                AuthoringSignature(CounterSeatAuthoringPath)
             };
             return Hash128.Compute(string.Join("|", inputs)).ToString();
         }
@@ -1764,6 +1780,7 @@ namespace BarPromenade.Editor
             public string generator_version;
             public string cold_authoring_sha256;
             public string snow_authoring_sha256;
+            public string counter_seat_authoring_sha256;
             public string design_version;
             public bool runtime_integrated;
             public float height_m;

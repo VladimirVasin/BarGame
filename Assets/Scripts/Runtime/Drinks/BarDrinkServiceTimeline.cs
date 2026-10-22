@@ -28,7 +28,11 @@ namespace BarPromenade
         BottleCarryToPour = 21,
         BottleCarryToGuest = 22,
         BottleVesselPlacement = 23,
-        BottleWalkToShelfReturn = 24
+        BottleWalkToShelfReturn = 24,
+        EmptyVesselWalkToGuest = 25,
+        EmptyVesselPickup = 26,
+        EmptyVesselCarryToStorage = 27,
+        EmptyVesselStow = 28
     }
 
     /// <summary>
@@ -112,6 +116,9 @@ namespace BarPromenade
         public const float BottleVesselPlacementDurationSeconds = 0.70f;
         public const float PlayerPickupDurationSeconds = 2f;
         public const float PlayerVesselReturnDurationSeconds = 2f;
+        public const float EmptyVesselPickupDurationSeconds = 1.4f;
+        public const float EmptyVesselPickupContactProgress = .42f;
+        public const float EmptyVesselStowDurationSeconds = 1.1f;
 
         // Legacy camera-only callers have no physical arrival gates. Seated
         // beer and bottle service intentionally have no fixed total duration.
@@ -144,6 +151,12 @@ namespace BarPromenade
             Phase == BarDrinkServicePhase.AwaitingDrink;
         public bool HasEmptyVessel =>
             Phase == BarDrinkServicePhase.EmptyOnCounter;
+        public bool IsClearingEmptyVessel =>
+            Phase == BarDrinkServicePhase.EmptyVesselWalkToGuest ||
+            Phase == BarDrinkServicePhase.EmptyVesselPickup ||
+            Phase == BarDrinkServicePhase.EmptyVesselCarryToStorage ||
+            Phase == BarDrinkServicePhase.EmptyVesselStow;
+        public bool EmptyVesselGripConfirmed { get; private set; }
         public bool CanBeginDrink => IsCommitted && IsAwaitingDrink;
         public bool CanBeginOpen => Phase == BarDrinkServicePhase.Closed;
         public bool CanConfirm => IsBrowsing && !IsCommitted;
@@ -167,6 +180,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.CameraApproach);
@@ -185,16 +199,65 @@ namespace BarPromenade
                 return false;
             }
 
+            bool clearsEmptyVessel = HasEmptyVessel;
             IsCommitted = true;
+            EmptyVesselGripConfirmed = false;
             IsBeerService = drinkId == DrinkId.LightBeer;
             IsBottleService =
                 drinkId != DrinkId.None && !IsBeerService;
+            if (clearsEmptyVessel)
+                SetPhase(BarDrinkServicePhase.EmptyVesselWalkToGuest);
+            else
+                BeginOrderedService();
+            return true;
+        }
+
+        private void BeginOrderedService()
+        {
             SetPhase(
                 IsBeerService
                     ? BarDrinkServicePhase.BeerWalkToTap
                     : IsBottleService
                         ? BarDrinkServicePhase.BottleWalkToShelf
                         : BarDrinkServicePhase.BottlePickup);
+        }
+
+        public bool ReportEmptyVesselServerAtGuest(bool atTarget)
+        {
+            if (!atTarget || Phase != BarDrinkServicePhase.EmptyVesselWalkToGuest) return false;
+            SetPhase(BarDrinkServicePhase.EmptyVesselPickup);
+            return true;
+        }
+
+        public bool ReportEmptyVesselGrip(bool inContact)
+        {
+            if (!inContact || Phase != BarDrinkServicePhase.EmptyVesselPickup ||
+                PhaseProgress + .0001f < EmptyVesselPickupContactProgress) return false;
+            EmptyVesselGripConfirmed = true;
+            return true;
+        }
+
+        public bool ReportEmptyVesselServerAtStorage(bool atTarget)
+        {
+            if (!atTarget || Phase != BarDrinkServicePhase.EmptyVesselCarryToStorage) return false;
+            SetPhase(BarDrinkServicePhase.EmptyVesselStow);
+            return true;
+        }
+
+        public bool ReportEmptyVesselRetracted(bool atCarryPoint)
+        {
+            if (!atCarryPoint || Phase != BarDrinkServicePhase.EmptyVesselPickup ||
+                !EmptyVesselGripConfirmed || PhaseProgress < 1f) return false;
+            SetPhase(BarDrinkServicePhase.EmptyVesselCarryToStorage);
+            return true;
+        }
+
+        public bool ReportEmptyVesselStored(bool hiddenBehindCounter)
+        {
+            if (!hiddenBehindCounter || Phase != BarDrinkServicePhase.EmptyVesselStow ||
+                PhaseProgress < 1f) return false;
+            EmptyVesselGripConfirmed = false;
+            BeginOrderedService();
             return true;
         }
 
@@ -300,6 +363,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.Closed);
@@ -314,6 +378,9 @@ namespace BarPromenade
             }
 
             phaseElapsedSeconds += deltaTime;
+            if (Phase == BarDrinkServicePhase.EmptyVesselPickup && !EmptyVesselGripConfirmed)
+                phaseElapsedSeconds = Math.Min(phaseElapsedSeconds,
+                    EmptyVesselPickupDurationSeconds * EmptyVesselPickupContactProgress);
             if (IsPersistentPhase(Phase))
             {
                 return;
@@ -322,6 +389,14 @@ namespace BarPromenade
             while (IsActive && !IsPersistentPhase(Phase))
             {
                 double duration = GetPhaseDurationSeconds(Phase);
+                // The hand must finish retracting before the actor turns, and
+                // the actual hidden prop must prove storage before new service.
+                if (Phase == BarDrinkServicePhase.EmptyVesselPickup ||
+                    Phase == BarDrinkServicePhase.EmptyVesselStow)
+                {
+                    phaseElapsedSeconds = Math.Min(phaseElapsedSeconds, duration);
+                    return;
+                }
                 if (phaseElapsedSeconds + PhaseBoundaryEpsilonSeconds <
                     duration)
                 {
@@ -524,6 +599,14 @@ namespace BarPromenade
                     vesselVisibility = 1f;
                     serviceVesselTravel = 1f;
                     break;
+                case BarDrinkServicePhase.EmptyVesselWalkToGuest:
+                case BarDrinkServicePhase.EmptyVesselPickup:
+                case BarDrinkServicePhase.EmptyVesselCarryToStorage:
+                case BarDrinkServicePhase.EmptyVesselStow:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
                 case BarDrinkServicePhase.CameraReturn:
                     float returnAmount = 1f - SmootherStep(progress);
                     cameraBlend =
@@ -700,6 +783,10 @@ namespace BarPromenade
                     return DrinkingDurationSeconds;
                 case BarDrinkServicePhase.PlayerVesselReturn:
                     return PlayerVesselReturnDurationSeconds;
+                case BarDrinkServicePhase.EmptyVesselPickup:
+                    return EmptyVesselPickupDurationSeconds;
+                case BarDrinkServicePhase.EmptyVesselStow:
+                    return EmptyVesselStowDurationSeconds;
                 default:
                     return 0f;
             }
@@ -717,7 +804,9 @@ namespace BarPromenade
                    phase ==
                        BarDrinkServicePhase.BottleWalkToShelfReturn ||
                    phase == BarDrinkServicePhase.AwaitingDrink ||
-                   phase == BarDrinkServicePhase.EmptyOnCounter;
+                   phase == BarDrinkServicePhase.EmptyOnCounter ||
+                   phase == BarDrinkServicePhase.EmptyVesselWalkToGuest ||
+                   phase == BarDrinkServicePhase.EmptyVesselCarryToStorage;
         }
 
         private static void ValidateDeltaTime(float deltaTime)

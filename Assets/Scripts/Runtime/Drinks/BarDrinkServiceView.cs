@@ -42,10 +42,17 @@ namespace BarPromenade
     public sealed class BarDrinkServiceView : MonoBehaviour
     {
         public const float CarriedBottleScale = 0.42f;
-        public const float CarriedBottleGripHeightShare = 0.55f;
+        // The measured 22 mm finger cylinder fits the bottle neck. The body
+        // station intersects the palm on the square service bottle profiles.
+        public const float CarriedBottleGripHeightShare = 0.84f;
         public const float BottleHandSurfaceOffset = 0.06f;
         public const float MinimumBottleHandRadialClearance = 0.055f;
         public const float BeerTapPourGap = 0.06f;
+
+        public static float ResolveBottleGripHeightShare(BarDrinkBottleStyle style)
+            // The square vodka shoulder reaches higher under the pinky and
+            // palm than the other profiles. Seat this same hand on the neck.
+            => style == BarDrinkBottleStyle.VodkaBottle ? .88f : CarriedBottleGripHeightShare;
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -77,6 +84,8 @@ namespace BarPromenade
         private Transform carriedBottleRoot;
         private Transform carriedBottleContact;
         private float carriedBottleHeight;
+        private float carriedBottleGripHeightShare = CarriedBottleGripHeightShare;
+        private Bounds carriedBottleLocalBounds;
         private Renderer[] carriedSourceRenderers = Array.Empty<Renderer>();
         private bool[] carriedSourceRendererStates = Array.Empty<bool>();
         private Transform beerTapDynamicHandleGrip;
@@ -90,6 +99,8 @@ namespace BarPromenade
         private bool initialized;
 
         public BarDrinkServicePlan Plan => plan;
+        public float CounterSurfaceWorldHeight { get; private set; }
+        public Bounds CounterSurfaceWorldBounds { get; private set; }
         public IReadOnlyList<BarDrinkBottleView> Bottles =>
             bottlesView ??= Array.AsReadOnly(
                 bottles ?? Array.Empty<BarDrinkBottleView>());
@@ -121,7 +132,7 @@ namespace BarPromenade
                 ? carriedBottleRoot.TransformPoint(
                     Vector3.up *
                     (carriedBottleHeight *
-                     CarriedBottleGripHeightShare))
+                     carriedBottleGripHeightShare))
                 : Vector3.positiveInfinity;
         public Vector3 CarriedBottleHandContactWorldPosition =>
             IsCarriedBottleVisible && carriedBottleContact != null
@@ -194,6 +205,8 @@ namespace BarPromenade
             BarBeerTapRuntimeBinding beerTapBinding)
         {
             plan = newPlan ?? throw new ArgumentNullException(nameof(newPlan));
+            CounterSurfaceWorldHeight = transform.TransformPoint(
+                plan.VesselCounterPose.Position - Vector3.up * 0.015f).y;
             if (newBottles == null ||
                 newBottles.Count != BarDrinkServicePlan.RequiredBottleCount)
             {
@@ -443,6 +456,8 @@ namespace BarPromenade
                 BarDrinkServiceWorldBuilder.BuildBottleVisual(
                     carriedBottleRoot,
                     presentation);
+            carriedBottleGripHeightShare = ResolveBottleGripHeightShare(presentation.BottleStyle);
+            CacheCarriedBottleBounds();
             var contactObject = new GameObject(
                 "Carried Bottle Hand Contact");
             carriedBottleContact = contactObject.transform;
@@ -519,11 +534,22 @@ namespace BarPromenade
                 ? carriedBottleRoot.TransformVector(
                     Vector3.up *
                     (carriedBottleHeight *
-                     CarriedBottleGripHeightShare)).magnitude
+                     carriedBottleGripHeightShare)).magnitude
                 : carriedBottleHeight * CarriedBottleScale *
-                  CarriedBottleGripHeightShare;
+                  carriedBottleGripHeightShare;
             Vector3 gripCenter = bottleBaseWorldPosition +
                 bottleUp * gripDistance;
+            return gripCenter;
+        }
+
+        public Vector3 ResolveCarriedBottleHandRadial(
+            Vector3 bottleBaseWorldPosition,
+            Quaternion bottleWorldRotation,
+            Vector3 holderWorldPosition)
+        {
+            Vector3 bottleUp = bottleWorldRotation * Vector3.up;
+            Vector3 gripCenter = ResolveCarriedBottleHandContact(
+                bottleBaseWorldPosition, bottleWorldRotation, holderWorldPosition);
             Vector3 towardHolder = Vector3.ProjectOnPlane(
                 holderWorldPosition - gripCenter,
                 bottleUp);
@@ -561,8 +587,7 @@ namespace BarPromenade
                     : Vector3.forward;
             }
 
-            return gripCenter +
-                   radial.normalized * BottleHandSurfaceOffset;
+            return radial.normalized;
         }
 
         public Vector3 ResolveCarriedBottleRootPositionForMouth(
@@ -573,8 +598,45 @@ namespace BarPromenade
                 ? carriedBottleRoot.TransformVector(
                     Vector3.up * carriedBottleHeight).magnitude
                 : carriedBottleHeight * CarriedBottleScale;
-            return mouthWorldPosition -
-                   bottleWorldRotation * Vector3.up * mouthDistance;
+            Vector3 rootPosition = mouthWorldPosition -
+                bottleWorldRotation * Vector3.up * mouthDistance;
+            // A short shot glass can put the upright end of a tilted bottle
+            // below the counter. Keep the real bottle envelope above it;
+            // the shared pour stream follows the resulting live mouth.
+            float lowest = float.PositiveInfinity;
+            Vector3 scale = carriedBottleRoot != null ? carriedBottleRoot.lossyScale
+                : Vector3.one * CarriedBottleScale;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 signs = new Vector3((corner & 1) == 0 ? -1f : 1f,
+                    (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f);
+                Vector3 local = carriedBottleLocalBounds.center +
+                    Vector3.Scale(carriedBottleLocalBounds.extents, signs);
+                lowest = Mathf.Min(lowest,
+                    (bottleWorldRotation * Vector3.Scale(local, scale)).y);
+            }
+            rootPosition.y = Mathf.Max(rootPosition.y,
+                CounterSurfaceWorldHeight + 0.02f - lowest);
+            return rootPosition;
+        }
+
+        private void CacheCarriedBottleBounds()
+        {
+            bool found = false;
+            foreach (Renderer renderer in carriedBottleRoot.GetComponentsInChildren<Renderer>(true))
+            {
+                Bounds bounds = renderer.localBounds;
+                Matrix4x4 toBottle = carriedBottleRoot.worldToLocalMatrix * renderer.localToWorldMatrix;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 signs = new Vector3((corner & 1) == 0 ? -1f : 1f,
+                        (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f);
+                    Vector3 point = toBottle.MultiplyPoint3x4(
+                        bounds.center + Vector3.Scale(bounds.extents, signs));
+                    if (!found) { carriedBottleLocalBounds = new Bounds(point, Vector3.zero); found = true; }
+                    else carriedBottleLocalBounds.Encapsulate(point);
+                }
+            }
         }
 
         public bool SetPourStreamFromCarriedBottle(
@@ -598,6 +660,53 @@ namespace BarPromenade
         {
             RestoreCarriedSource();
             DestroyCarriedBottleVisual();
+        }
+
+        internal void ConfigureCounterSurface(Renderer surface)
+        {
+            if (surface != null)
+            {
+                CounterSurfaceWorldHeight = surface.bounds.max.y;
+                CounterSurfaceWorldBounds = surface.bounds;
+            }
+        }
+
+        public bool TryGetRestingMenuBounds(out Bounds bounds)
+        {
+            bounds = default;
+            if (menuPresentation == null ||
+                !menuPresentation.IsRestingOnCounter ||
+                menuPresentation.Page == null)
+            {
+                return false;
+            }
+
+            // The page caches its closed-book renderers when it is built.
+            // Exclude the decorative interaction highlight from clearance.
+            IReadOnlyList<Renderer> renderers =
+                menuPresentation.Page.RestingPropRenderers;
+            bool found = false;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return found;
         }
 
         public bool ShowVesselForDrink(DrinkId drinkId)

@@ -328,6 +328,29 @@ namespace BarPromenade.Tests.EditMode
                 manifest.door_opening_m.height,
                 Is.EqualTo(facade.door_opening_m.height).Within(0.001f));
 
+            // Measure the complete shell in the facade's door frame. A width
+            // comparison against its larger rear-wing AABB is insufficient.
+            BarManifestPart[] shell = manifest.parts.Where(part =>
+                part.name == "Floor" || part.name.EndsWith("Wall", StringComparison.Ordinal) ||
+                part.name == "Ceiling").ToArray();
+            Assert.That(shell, Is.Not.Empty);
+            foreach (BarManifestPart part in shell)
+            {
+                foreach (BarManifestCollider box in part.colliders ?? Array.Empty<BarManifestCollider>())
+                {
+                    for (int x = -1; x <= 1; x += 2)
+                    for (int z = -1; z <= 1; z += 2)
+                    {
+                        Vector3 corner = new Vector3(
+                            box.center[0] + x * box.size[0] * .5f,
+                            0f, box.center[2] + z * box.size[2] * .5f);
+                        Vector3 exteriorCorner = BarInteriorLayoutPlanner.ToExteriorPosition(corner);
+                        Assert.That(exteriorCorner.x, Is.InRange(-8.58f, 0f), part.name);
+                        Assert.That(exteriorCorner.z, Is.InRange(-6f, 6f), part.name);
+                    }
+                }
+            }
+
             BarManifestPart frontWall = manifest.parts.Single(part =>
                 part.name == "Front Wall");
             Assert.That(
@@ -368,33 +391,33 @@ namespace BarPromenade.Tests.EditMode
                 AssertAnchor(
                     registry, instance.transform, "entrance",
                     new Vector3(0f, 0f, -plan.RoomSize.y * 0.5f));
+                AssertAnchor(registry, instance.transform, "exterior_door",
+                    new Vector3(0f, 0f, -3.9f));
+                Assert.That(BarInteriorLayoutPlanner.ToExteriorPosition(
+                    new Vector3(0f, 0f, -3.9f)),
+                    Is.EqualTo(new Vector3(-0.16f, 0f, 0f)));
                 AssertAnchor(
                     registry, instance.transform, "room_centre",
                     Vector3.zero);
                 AssertAnchor(
                     registry, instance.transform, "hero_seat",
-                    new Vector3(-1.15f, 0.8175f, 4.53f));
+                    new Vector3(-0.75f, 0.8175f, 0.91f));
                 AssertAnchor(
                     registry, instance.transform, "hero_approach",
-                    new Vector3(-1.15f, 0f, 3.35f));
+                    new Vector3(-0.75f, 0f, -0.27f));
                 AssertAnchor(
                     registry, instance.transform, "hero_stand",
-                    new Vector3(
-                        -1.15f,
-                        0f,
-                        registry.SourceGeneratorVersion == "3.2.1"
-                            ? 4.02f
-                            : 3.89f));
+                    new Vector3(-0.75f, 0f, 0.27f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera",
-                    new Vector3(-1.15f, 1.6175f, 4.65f));
+                    new Vector3(-0.75f, 1.6175f, 0.85f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera_look",
-                    new Vector3(-1.15f, 1.7175f, 7.37f));
+                    new Vector3(-0.75f, 1.7175f, 3.395f));
                 AssertAnchor(
                     registry, instance.transform,
                     "bartender_platform_top",
-                    new Vector3(-0.55f, 0f, 6.50f));
+                    new Vector3(-0.15f, 0f, 2.85f));
 
                 BarDrinkServicePlan servicePlan =
                     BarDrinkServicePlan.FromLayout(plan);
@@ -481,9 +504,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(tapHandles, Has.Length.EqualTo(3));
 
             BarManifestPart regularSeat = manifest.parts.Single(part =>
-                part.name == "Bar Stool 1");
+                part.name == "Bar Stool 2");
             BarManifestPart regularMetal = manifest.parts.Single(part =>
-                part.name == "Bar Stool 1 Leg");
+                part.name == "Bar Stool 2 Leg");
             BarManifestPart heroSeat = manifest.parts.Single(part =>
                 part.name == "Bar Drink Service Stool");
             BarManifestPart heroLegs = manifest.parts.Single(part =>
@@ -514,7 +537,7 @@ namespace BarPromenade.Tests.EditMode
                     "solid seat contract");
             }
 
-            for (int index = 1; index <= 4; index++)
+            for (int index = 1; index <= 3; index++)
             {
                 Assert.That(
                     manifest.parts.Any(part =>
@@ -894,14 +917,12 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BarModel_CarriesEveryActivitySetAndDistrictDressing()
+        public void BarModel_KeepsBeerPongWithoutConsolesAndRetainsDistrictDressing()
         {
             BarManifest manifest = LoadManifest();
 
-            //  Four activity sets and four district dressings, because
-            //  the room varies in exactly those two ways and no other.
-            //  If an enum ever gains a member with no authored set, the
-            //  bar would silently lose its dressing rather than fail.
+            // Only BeerPong keeps physical activity furniture; the three
+            // former consoles and their vessel props were removed.
             foreach (BarActivityKind activity in
                      Enum.GetValues(typeof(BarActivityKind))
                          .Cast<BarActivityKind>())
@@ -914,8 +935,8 @@ namespace BarPromenade.Tests.EditMode
                 string group = $"activity:{activity}";
                 Assert.That(
                     manifest.parts.Any(part => part.group == group),
-                    Is.True,
-                    $"the model has no authored set for {activity}");
+                    Is.EqualTo(activity == BarActivityKind.BeerPong),
+                    $"the physical activity set is wrong for {activity}");
             }
 
             foreach (BarDistrictMood mood in
@@ -975,35 +996,96 @@ namespace BarPromenade.Tests.EditMode
                     plan);
 
                 AssertPlaced(room, "Bar Jukebox",
-                    new Vector3(6.4f, 0f, -6.78f));
+                    new Vector3(5f, 0f, -.65f));
+                Transform jukebox = room.Find("Bar Jukebox");
+                Assert.That(Vector3.Dot(jukebox.TransformDirection(Vector3.right), Vector3.left),
+                    Is.GreaterThan(.999f), "The jukebox front must face into the hall.");
+                BarInteriorFurnitureFootprint jukeboxFootprint = plan.FurnitureFootprints.Single(
+                    item => item.Kind == BarInteriorFurnitureKind.Jukebox);
+                Bounds jukeboxCollider = jukebox.GetComponent<BoxCollider>().bounds;
+                Assert.That(jukeboxCollider.min.x, Is.EqualTo(jukeboxFootprint.Bounds.xMin).Within(.001f));
+                Assert.That(jukeboxCollider.max.x, Is.EqualTo(jukeboxFootprint.Bounds.xMax).Within(.001f));
+                Assert.That(jukeboxCollider.min.z, Is.EqualTo(jukeboxFootprint.Bounds.yMin).Within(.001f));
+                Assert.That(jukeboxCollider.max.z, Is.EqualTo(jukeboxFootprint.Bounds.yMax).Within(.001f));
+                Bounds stage = room.Find("Small Stage").GetComponent<Renderer>().bounds;
+                Assert.That(stage.center.x, Is.EqualTo(4.1f).Within(.001f));
+                Assert.That(stage.center.z, Is.EqualTo(-2.7f).Within(.001f));
+                Assert.That(stage.size.x, Is.EqualTo(2.1f).Within(.001f));
+                Assert.That(stage.size.z, Is.EqualTo(1.65f).Within(.001f));
+                Collider stageFloor = room.Find("Small Stage Collision").GetComponent<Collider>();
+                Assert.That(stageFloor.enabled, Is.True);
+                Assert.That(stageFloor.isTrigger, Is.False);
+                Assert.That(stageFloor.bounds.max.y, Is.EqualTo(.12f).Within(.001f));
+                Assert.That(Vector3.Distance(stageFloor.bounds.size, stage.size), Is.LessThan(.001f),
+                    "The enlarged walkable stage must retain its physical floor.");
+                Assert.That(room.Find("Coat Rack"), Is.Null);
+                Assert.That(room.Find("Coat Rack Hooks"), Is.Null);
+                Assert.That(room.Find("Coat Rack Collision"), Is.Null);
+                Bounds microphone = room.Find("Stage Microphone").GetComponent<Renderer>().bounds;
+                Assert.That(microphone.center.x, Is.EqualTo(3.75f).Within(.001f));
+                Assert.That(microphone.center.z, Is.EqualTo(-2.7f).Within(.001f));
+                Assert.That(room.Find("Stage Valance").GetComponent<Renderer>().bounds.center.x,
+                    Is.GreaterThan(stage.center.x), "The rotated backdrop must stand behind the microphone.");
+                Assert.That(room.GetComponentsInChildren<Renderer>(true).Count(renderer =>
+                    renderer.name.StartsWith("Booth Cushion ", StringComparison.Ordinal)), Is.EqualTo(4));
+                Assert.That(room.Find("Booth Table Top 3"), Is.Null);
+                Assert.That(room.Find("Social Pub Table 4"), Is.Null);
+                Assert.That(room.Find("Social Pub Table 4 Collision"), Is.Null);
+                foreach (BarNpcAnchor anchor in plan.NpcAnchors.Where(item => item.Role == BarNpcRole.SeatedPatron))
+                {
+                    int booth = anchor.Id.StartsWith("booth-1-", StringComparison.Ordinal) ? 1 : 2;
+                    string side = anchor.Id.EndsWith("-near", StringComparison.Ordinal) ? "Near" : "Far";
+                    Transform cushion = room.Find($"Booth Cushion {booth} {side}");
+                    Assert.That(cushion, Is.Not.Null, anchor.Id);
+                    Bounds support = cushion.GetComponent<Renderer>().bounds;
+                    Assert.That(support.max.y, Is.EqualTo(.48f).Within(.001f));
+                    Vector3 forward = Quaternion.Euler(0f, anchor.YawDegrees, 0f) * Vector3.forward;
+                    Vector3 expectedPelvis = new Vector3(support.center.x, 0f, support.center.z) + forward * .13f;
+                    Assert.That(Vector3.Distance(expectedPelvis, anchor.Position), Is.LessThan(.001f), anchor.Id);
+                    Bounds table = room.Find($"Booth Table Top {booth}").GetComponent<Renderer>().bounds;
+                    Vector3 towardTable = table.center - support.center;
+                    towardTable.y = 0f;
+                    Assert.That(Vector3.Dot(forward, towardTable.normalized), Is.GreaterThan(.999f));
+                }
+                Assert.That(room.GetComponentsInChildren<Transform>(true).Any(part =>
+                    part.name.StartsWith("Cocktail Console", StringComparison.Ordinal) ||
+                    part.name.StartsWith("SplitTheG Console", StringComparison.Ordinal) ||
+                    part.name.StartsWith("TinctureMatch Console", StringComparison.Ordinal)), Is.False);
                 AssertPlaced(room, "Slow Ceiling Fan",
-                    new Vector3(0f, 4.35f, 0.75f));
+                    new Vector3(0f, 2.72f, -0.65f));
                 AssertPlaced(room, "HeroSeat",
-                    new Vector3(-1.15f, 0.8175f, 4.53f));
+                    new Vector3(-0.75f, 0.8175f, 0.91f));
                 AssertPlaced(room, "HeroApproach",
-                    new Vector3(-1.15f, 0f, 3.35f));
+                    new Vector3(-0.75f, 0f, -0.27f));
                 AssertPlaced(room, "HeroStand",
-                    new Vector3(
-                        -1.15f,
-                        0f,
-                        room.Find("HeroStand").localPosition.z < 3.95f
-                            ? 3.89f
-                            : 4.02f));
+                    new Vector3(-0.75f, 0f, 0.27f));
                 AssertPlaced(room, "HeroCamera",
-                    new Vector3(-1.15f, 1.6175f, 4.65f));
+                    new Vector3(-0.75f, 1.6175f, 0.85f));
                 AssertPlaced(room, "HeroCameraLook",
-                    new Vector3(-1.15f, 1.7175f, 7.37f));
+                    new Vector3(-0.75f, 1.7175f, 3.395f));
                 AssertPlaced(room, "MenuDock",
-                    new Vector3(-1.15f, 1.045f, 5.44f));
+                    new Vector3(-0.75f, 1.045f, 2.16f));
                 Assert.That(room.Find("Drink Order Point"), Is.Null);
                 Assert.That(room.Find("Exit Header"), Is.Not.Null);
                 Assert.That(room.Find("Bartender Duckboard"), Is.Null);
+
+                Assert.That(room.Find("Bar Stool 1"), Is.Null);
+                Assert.That(room.Find("Bar Stool 1 Leg"), Is.Null);
+                Assert.That(room.Find("Bar Stool 1 Collision"), Is.Null,
+                    "The removed left stool must leave no phantom seat collider.");
+                Bounds counterTop = room.Find("Counter Top").GetComponent<Renderer>().bounds;
+                Assert.That(counterTop.min.x, Is.EqualTo(-2.325f).Within(Tolerance),
+                    "The visible left end must shorten by exactly one stool pitch.");
+                Assert.That(counterTop.max.x, Is.EqualTo(4.075f).Within(Tolerance),
+                    "The existing right overhang must stay fixed.");
+                Assert.That(room.Find("Bar Stool 2").GetComponent<Renderer>().bounds.center.x,
+                    Is.EqualTo(-1.65f).Within(Tolerance));
 
                 Transform rightmostStool = room.Find("Bar Stool 6");
                 Assert.That(rightmostStool, Is.Not.Null);
                 Assert.That(
                     rightmostStool.GetComponent<Renderer>().bounds.center.x,
-                    Is.EqualTo(4.00f).Within(Tolerance));
+                    Is.EqualTo(1.95f).Within(Tolerance));
 
                 Renderer[] tapStems = room
                     .GetComponentsInChildren<Renderer>(true)
@@ -1021,7 +1103,7 @@ namespace BarPromenade.Tests.EditMode
                     .ToArray();
                 Assert.That(tapStems, Has.Length.EqualTo(3));
                 Assert.That(tapHandles, Has.Length.EqualTo(3));
-                float[] expectedTapXs = { 4.75f, 5.08f, 5.41f };
+                float[] expectedTapXs = { 3.24f, 3.57f, 3.90f };
                 for (int index = 0; index < expectedTapXs.Length; index++)
                 {
                     Assert.That(
@@ -1049,7 +1131,7 @@ namespace BarPromenade.Tests.EditMode
                             .bounds.max.x),
                     "the beer taps intrude into the last seating bay");
 
-                Transform regularStool = room.Find("Bar Stool 1");
+                Transform regularStool = room.Find("Bar Stool 2");
                 Transform heroStool = room.Find(
                     "Bar Drink Service Stool");
                 Assert.That(regularStool, Is.Not.Null);
@@ -1084,7 +1166,6 @@ namespace BarPromenade.Tests.EditMode
 
                 string[] regularStoolNames =
                 {
-                    "Bar Stool 1",
                     "Bar Stool 2",
                     "Bar Stool 4",
                     "Bar Stool 5",

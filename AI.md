@@ -78,7 +78,7 @@ repository evidence. This does not require running every test layer.
   deterministic generator under `tools/build-*-3d-model.py`, exported and
   imported as a model asset; it is not composed at runtime out of
   `RuntimePrimitiveFactory` boxes and cylinders. The existing generators are
-  the pattern to copy — player, pedestrians, bus, bus driver, bartender,
+  the pattern to copy — player, pedestrians, bus, bus driver,
   cashier, supermarket interior and product pack, cat, chess set, Last Route
   car, church, Mountain Road misc and City misc — each pairing its script with
   a measured JSON manifest and a

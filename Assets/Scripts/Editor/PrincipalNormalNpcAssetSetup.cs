@@ -12,7 +12,7 @@ namespace BarPromenade.Editor
         public static void Run()
         {
             BuildOrThrow();
-            Debug.Log("Principal ordinary actors: fisherman, bartender, cashier, bus driver and mother rebuilt.");
+            Debug.Log("Principal ordinary actors: fisherman, cashier, bus driver and mother rebuilt.");
         }
 
         public static void BuildOrThrow()
@@ -22,7 +22,6 @@ namespace BarPromenade.Editor
             try
             {
                 CityPedestrianAssetSetup.BuildLakeFishermanOrThrow();
-                BarBartenderV2AssetSetup.BuildOrThrow();
                 SupermarketCashierAssetSetup.BuildNormalOrThrow();
                 CityBusDriverAssetSetup.BuildOrThrow();
                 MothersHouseMotherAssetSetup.BuildOrThrow();
@@ -37,7 +36,6 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             CityPedestrianAssetSetup.ValidateLakeFishermanOrThrow();
-            BarBartenderV2AssetSetup.ValidateOrThrow();
             SupermarketCashierAssetSetup.ValidateNormalOrThrow();
             CityBusDriverAssetSetup.ValidateOrThrow();
             MothersHouseMotherAssetSetup.ValidateOrThrow();

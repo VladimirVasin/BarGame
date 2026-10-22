@@ -67,6 +67,12 @@ namespace BarPromenade
         public float TargetFill => targetFill;
         public float FillProgress { get; private set; }
         public float DisplayedFill => FillProgress * targetFill;
+        /// <summary>
+        /// Full shell/handle and liquid bounds in unscaled vessel-root space.
+        /// Captured once before fill animation; the decorative selection outline
+        /// is excluded. Callers apply the live root scale and candidate pose.
+        /// </summary>
+        public Bounds LocalVisualBounds { get; private set; }
 
         internal void Initialize(
             BarDrinkVesselKind newKind,
@@ -161,18 +167,40 @@ namespace BarPromenade
             authoredHandleLocalDirection = Vector3.ProjectOnPlane(
                 authoredGripLocalPosition,
                 authoredOpeningLocalDirection);
+            // Handleless vessels are grasped around their real body axis.
+            // Their orientation side is independent of the contact position.
             if (authoredHandleLocalDirection.sqrMagnitude < 0.000001f)
-            {
-                throw new ArgumentException(
-                    "The vessel grip must identify a radial handle side.",
-                    nameof(newGripAnchor));
-            }
+                authoredHandleLocalDirection = Vector3.right;
 
             authoredHandleLocalDirection.Normalize();
+            LocalVisualBounds = CalculateLocalVisualBounds();
             targetFill = 1f;
             initialized = true;
             SetInteractionHighlight(false);
             SetFillProgress(0f);
+        }
+
+        private Bounds CalculateLocalVisualBounds()
+        {
+            Bounds result = default;
+            bool found = false;
+            // Imported meshes can be GPU-only: Renderer.localBounds supplies
+            // their measured box without retaining CPU vertex buffers.
+            foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == interactionHighlightRenderer) continue;
+                Bounds bounds = renderer.localBounds;
+                Matrix4x4 toVessel = transform.worldToLocalMatrix * renderer.localToWorldMatrix;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 point = toVessel.MultiplyPoint3x4(bounds.center + Vector3.Scale(bounds.extents,
+                        new Vector3((corner & 1) == 0 ? -1f : 1f,
+                            (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f)));
+                    if (!found) { result = new Bounds(point, Vector3.zero); found = true; }
+                    else result.Encapsulate(point);
+                }
+            }
+            return result;
         }
 
         public void ConfigureLiquid(Color color, float newTargetFill)

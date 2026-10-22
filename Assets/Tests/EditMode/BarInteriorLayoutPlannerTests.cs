@@ -9,7 +9,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class BarInteriorLayoutPlannerTests
     {
         [Test]
-        public void Generate_CreatesLargeZonedInteriorWithBoundedAnchors()
+        public void Generate_CreatesCompactZonedInteriorInsideExterior()
         {
             BarInteriorLayoutPlan plan =
                 BarInteriorLayoutPlanner.Generate(
@@ -19,21 +19,23 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 plan.RoomSize,
-                Is.EqualTo(new Vector2(22f, 16f)));
-            Assert.That(plan.RoomHeight, Is.EqualTo(4.8f));
+                Is.EqualTo(new Vector2(11.4f, 7.8f)));
+            Assert.That(plan.RoomHeight, Is.EqualTo(3f));
             Assert.That(plan.WallThickness, Is.EqualTo(0.3f));
             Assert.That(
                 plan.PlayerSpawn,
-                Is.EqualTo(new Vector3(0f, 0.12f, -5.35f)));
+                Is.EqualTo(new Vector3(0f, 0.12f, -1.8f)));
             Assert.That(
                 plan.ExitPosition,
-                Is.EqualTo(new Vector3(0f, 0.9f, -7.25f)));
+                Is.EqualTo(new Vector3(0f, 0.9f, -3.55f)));
             Assert.That(
                 plan.CounterSize,
-                Is.EqualTo(new Vector3(11.2f, 0.86f, 1f)));
+                Is.EqualTo(new Vector3(5.95f, 0.86f, 1f)));
+            Assert.That(plan.CounterPosition,
+                Is.EqualTo(new Vector3(0.875f, 0.43f, 1.95f)));
             Assert.That(
                 plan.CounterStationPosition,
-                Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
+                Is.EqualTo(new Vector3(-0.75f, 0.9f, 0.55f)));
             Assert.That(
                 plan.CounterStationTriggerSize,
                 Is.EqualTo(new Vector3(1.1f, 1.8f, 0.85f)));
@@ -41,8 +43,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.Paths, Has.Count.EqualTo(4));
             Assert.That(
                 plan.FurnitureFootprints,
-                Has.Count.EqualTo(13));
-            Assert.That(plan.NpcAnchors, Has.Count.EqualTo(12));
+                Has.Count.EqualTo(10));
+            Assert.That(plan.NpcAnchors, Has.Count.EqualTo(10));
             Assert.That(
                 BarInteriorLayoutValidator.MaximumNpcAnchors,
                 Is.EqualTo(14));
@@ -90,6 +92,11 @@ namespace BarPromenade.Tests.EditMode
                 counter.Center,
                 Is.EqualTo(plan.CounterPosition));
             Assert.That(counter.Size, Is.EqualTo(plan.CounterSize));
+            Assert.That(counter.Bounds.xMin,
+                Is.EqualTo(-3f + BarCounterSeatPlanner.StoolPitch).Within(.0001f),
+                "The left end must shorten by exactly one stool pitch.");
+            Assert.That(counter.Bounds.xMax, Is.EqualTo(3.85f).Within(.0001f),
+                "The right end must retain the tap and return placement.");
             Assert.That(
                 plan.TryGetFurniture(
                     BarInteriorFurnitureKind.CounterReturn,
@@ -97,12 +104,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             Assert.That(
                 counterReturn.Bounds,
-                Is.EqualTo(new Rect(4.56f, 2.495f, 1.04f, 3.25f)));
+                Is.EqualTo(new Rect(3.05f, 0.65f, 1.04f, 1.8f)));
             Assert.That(counterReturn.Height, Is.EqualTo(0.86f));
             Assert.That(
                 plan.FurnitureFootprints.Count(
                     item => item.Kind == BarInteriorFurnitureKind.PubTable),
-                Is.EqualTo(4));
+                Is.EqualTo(3));
             Assert.That(
                 plan.FurnitureFootprints
                     .Where(item =>
@@ -162,13 +169,13 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(BarActivityKind.BeerPong)]
         [TestCase(BarActivityKind.SplitTheG)]
         [TestCase(BarActivityKind.TinctureMatch)]
-        public void Generate_EveryActivityOwnsOneReachableFixture(
+        public void Generate_KeepsJukeboxAndOnlyBeerPongOwnsActivityFurniture(
             BarActivityKind activity)
         {
             BarInteriorLayoutPlan plan =
                 BarInteriorLayoutPlanner.Generate(
                     -8821,
-                    "bar-activity-test",
+                    "Test jukebox activity",
                     activity);
 
             Assert.That(plan.Activity, Is.EqualTo(activity));
@@ -176,14 +183,64 @@ namespace BarPromenade.Tests.EditMode
                 plan.TryGetFurniture(
                     BarInteriorFurnitureKind.ActivityFixture,
                     out BarInteriorFurnitureFootprint fixture),
-                Is.True);
-            Assert.That(fixture.Activity, Is.EqualTo(activity));
+                Is.EqualTo(activity == BarActivityKind.BeerPong));
+            if (activity == BarActivityKind.BeerPong)
+            {
+                Assert.That(fixture.Activity, Is.EqualTo(activity));
+                Assert.That(fixture.Bounds, Is.EqualTo(new Rect(3.85f, -1.75f, .76f, 1.83f)));
+            }
             Assert.That(
                 plan.FurnitureFootprints.Count(
                     item =>
                         item.Kind ==
                         BarInteriorFurnitureKind.ActivityFixture),
-                Is.EqualTo(1));
+                Is.EqualTo(activity == BarActivityKind.BeerPong ? 1 : 0));
+            BarInteriorFurnitureFootprint jukebox = plan.FurnitureFootprints.Single(
+                item => item.Kind == BarInteriorFurnitureKind.Jukebox);
+            Assert.That(jukebox.Bounds.xMin, Is.EqualTo(4.69f).Within(.0001f));
+            Assert.That(jukebox.Bounds.yMin, Is.EqualTo(-1.14f).Within(.0001f));
+            Assert.That(jukebox.Bounds.size, Is.EqualTo(new Vector2(.62f, .98f)));
+            Assert.That(jukebox.BlocksMovement, Is.True);
+            Assert.That(jukebox.Height, Is.EqualTo(1.75f));
+            Assert.That(plan.FurnitureFootprints.Where(item => item.Id != jukebox.Id)
+                .All(item => !item.Bounds.Overlaps(jukebox.Bounds)), Is.True);
+            BarInteriorAudioAnchor music = plan.AudioAnchors.Single(
+                anchor => anchor.Kind == BarInteriorAudioKind.Music);
+            Assert.That(Vector3.Distance(music.Position, new Vector3(4.725f, .42f, -.6525f)),
+                Is.LessThan(.0001f));
+            BarInteriorFurnitureFootprint platform = plan.FurnitureFootprints.Single(
+                item => item.Kind == BarInteriorFurnitureKind.Stage);
+            Assert.That(platform.Bounds,
+                Is.EqualTo(new Rect(3.05f, -3.525f, 2.1f, 1.65f)));
+            Assert.That(plan.Zones.Single(zone => zone.Kind == BarInteriorZoneKind.Stage).Bounds,
+                Is.EqualTo(platform.Bounds));
+            Assert.That(platform.BlocksMovement, Is.False,
+                "The low physical stage is a walkable floor, not an aisle obstacle.");
+            Assert.That(platform.Height, Is.EqualTo(.12f));
+            Assert.That(platform.Height, Is.LessThan(PlayerFactory.StepOffset));
+            Assert.That(plan.FurnitureFootprints.Any(item => item.Kind == BarInteriorFurnitureKind.CoatRack),
+                Is.False);
+            foreach (Vector3 stageDock in new[] { BarInteriorLayoutPlanner.StageEntryPosition,
+                BarInteriorLayoutPlanner.StageStandingPosition })
+            {
+                float radius = BarInteriorLayoutValidator.PlayerRadius;
+                Assert.That(stageDock.x, Is.InRange(platform.Bounds.xMin + radius,
+                    platform.Bounds.xMax - radius));
+                Assert.That(stageDock.z, Is.InRange(platform.Bounds.yMin + radius,
+                    platform.Bounds.yMax - radius));
+                Assert.That(stageDock.y,
+                    Is.EqualTo(platform.Height + PlayerFactory.GroundedRootOffset));
+            }
+            Assert.That(BarInteriorLayoutPlanner.StageStandingPosition.x -
+                BarInteriorLayoutPlanner.StageMicrophonePosition.x,
+                Is.GreaterThan(BarInteriorLayoutValidator.PlayerRadius + .03f),
+                "The hero must fit behind the microphone without crossing its pole.");
+            Assert.That(plan.FurnitureFootprints.Where(item => item.Id != platform.Id)
+                .All(item => !item.Bounds.Overlaps(platform.Bounds)), Is.True,
+                "The expanded floor must retain the BeerPong and jukebox separation.");
+            BarInteriorLightAnchor stageLight = plan.LightAnchors.Single(light => light.Kind == BarInteriorLightKind.StageKey);
+            Assert.That(stageLight.Position, Is.EqualTo(new Vector3(4.5f, 2.5f, -2.825f)));
+            Assert.That(Vector3.Dot(stageLight.Direction, new Vector3(-.1f, -1f, 0f).normalized), Is.GreaterThan(.999f));
             Assert.That(
                 plan.Paths.Any(
                     path =>
@@ -193,7 +250,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             Assert.That(
                 plan.CounterStationPosition,
-                Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
+                Is.EqualTo(new Vector3(-0.75f, 0.9f, 0.55f)));
             Assert.That(
                 plan.CounterStationTriggerSize,
                 Is.EqualTo(new Vector3(1.1f, 1.8f, 0.85f)));
@@ -338,7 +395,7 @@ namespace BarPromenade.Tests.EditMode
                 plan.NpcAnchors.Count(
                     anchor =>
                         anchor.Role == BarNpcRole.SeatedPatron),
-                Is.EqualTo(6));
+                Is.EqualTo(4));
             Assert.That(
                 plan.NpcAnchors.Count(
                     anchor =>
@@ -370,67 +427,55 @@ namespace BarPromenade.Tests.EditMode
                 (
                     "booth-1-near",
                     BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, -3.9f - 0.55f),
-                    90f,
+                    new Vector3(-4.38f, 0f, -2.15f - 0.82f),
+                    0f,
                     string.Empty),
                 (
                     "booth-1-far",
                     BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, -3.9f + 0.55f),
-                    90f,
+                    new Vector3(-4.38f, 0f, -2.15f + 0.82f),
+                    180f,
                     string.Empty),
                 (
                     "booth-2-near",
                     BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, -0.35f - 0.55f),
-                    90f,
+                    new Vector3(-4.38f, 0f, 0.65f - 0.82f),
+                    0f,
                     string.Empty),
                 (
                     "booth-2-far",
                     BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, -0.35f + 0.55f),
-                    90f,
-                    string.Empty),
-                (
-                    "booth-3-near",
-                    BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, 3.15f - 0.55f),
-                    90f,
-                    string.Empty),
-                (
-                    "booth-3-far",
-                    BarNpcRole.SeatedPatron,
-                    new Vector3(-9.5f, 0f, 3.15f + 0.55f),
-                    90f,
+                    new Vector3(-4.38f, 0f, 0.65f + 0.82f),
+                    180f,
                     string.Empty),
                 (
                     "counter-seat-left",
                     BarNpcRole.CounterPatron,
-                    new Vector3(-4.25f, 0f, 4.53f),
+                    new Vector3(-1.65f, 0f, 0.91f),
                     0f,
                     string.Empty),
                 (
                     "counter-seat-right",
                     BarNpcRole.CounterPatron,
-                    new Vector3(2.55f, 0f, 4.53f),
+                    new Vector3(1.05f, 0f, 0.91f),
                     0f,
                     string.Empty),
                 (
                     "social-left-front",
                     BarNpcRole.StandingPatron,
-                    new Vector3(-4.2f, 0f, -3.65f),
-                    90f,
+                    new Vector3(-1.75f, 0f, -3.45f),
+                    0f,
                     "pub-table-left-front"),
                 (
                     "social-right-front",
                     BarNpcRole.StandingPatron,
-                    new Vector3(4.2f, 0f, -3.65f),
-                    270f,
+                    new Vector3(1.75f, 0f, -3.45f),
+                    0f,
                     "pub-table-right-front"),
                 (
                     "social-left-rear",
                     BarNpcRole.StandingPatron,
-                    new Vector3(-4.2f, 0f, 2.5f),
+                    new Vector3(-4.85f, 0f, 2.7f),
                     90f,
                     "pub-table-left-rear")
             };
@@ -481,7 +526,7 @@ namespace BarPromenade.Tests.EditMode
                     new BarInteriorFurnitureFootprint(
                         "main-path-blocker",
                         BarInteriorFurnitureKind.HighTopTable,
-                        new Rect(-0.5f, -4f, 1f, 1f),
+                        new Rect(-0.5f, -2f, 1f, 1f),
                         1f,
                         true)
                 };
@@ -521,6 +566,23 @@ namespace BarPromenade.Tests.EditMode
                         valid,
                         counterStationPosition:
                             new Vector3(3f, 0.9f, 4.75f))));
+        }
+
+        [Test]
+        public void Validator_RejectsFurnitureAcrossFreeStoolEntry()
+        {
+            BarInteriorLayoutPlan valid = BarInteriorLayoutPlanner.Generate(
+                100, "Test bar with a blocked stool", BarActivityKind.Cocktail);
+            var furniture = new List<BarInteriorFurnitureFootprint>(valid.FurnitureFootprints)
+            {
+                new BarInteriorFurnitureFootprint(
+                    "Test table beside the counter", BarInteriorFurnitureKind.PubTable,
+                    new Rect(-1.95f, -0.35f, 0.6f, 0.6f), 0.82f, true)
+            };
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(valid, furnitureFootprints: furniture)));
+            Assert.That(error.Message, Does.Contain("approach/entry capsule"));
         }
 
         [Test]
@@ -575,10 +637,11 @@ namespace BarPromenade.Tests.EditMode
                                 StringComparison.Ordinal))
                     .ToArray();
 
-                Assert.That(stools, Has.Length.EqualTo(5));
+                Assert.That(stools, Has.Length.EqualTo(4));
                 for (int index = 0; index < stools.Length; index++)
                 {
-                    Vector3 stoolPosition = stools[index].localPosition;
+                    Vector3 stoolPosition = room.InverseTransformPoint(
+                        stools[index].GetComponent<Renderer>().bounds.center);
                     float distance = Vector2.Distance(
                         new Vector2(stoolPosition.x, stoolPosition.z),
                         new Vector2(
@@ -586,7 +649,7 @@ namespace BarPromenade.Tests.EditMode
                             plan.CounterStationPosition.z));
                     Assert.That(
                         distance,
-                        Is.GreaterThanOrEqualTo(1.349f),
+                        Is.GreaterThanOrEqualTo(0.879f),
                         stools[index].name);
                 }
             }
@@ -608,10 +671,10 @@ namespace BarPromenade.Tests.EditMode
             IReadOnlyList<BarCounterSeatDescriptor> seats =
                 BarCounterSeatPlanner.CreateAvailable(plan);
 
-            Assert.That(seats, Has.Count.EqualTo(4));
+            Assert.That(seats, Has.Count.EqualTo(3));
             Assert.That(
                 seats.Select(item => item.SeatTopLocalPosition.x),
-                Is.EquivalentTo(new[] { -2.55f, -1.15f, 0.85f, 4.00f }));
+                Is.EquivalentTo(new[] { -0.75f, 0.15f, 1.95f }));
             Assert.That(
                 seats.Select(item => item.StableId).Distinct().Count(),
                 Is.EqualTo(seats.Count));
@@ -631,6 +694,18 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(
                         seat.SeatTopLocalPosition.x -
                         plan.CounterStationPosition.x).Within(0.0001f));
+                CounterSeatAccessSide expectedSide = Mathf.Approximately(
+                    seat.SeatTopLocalPosition.x, .15f)
+                    ? CounterSeatAccessSide.Left : CounterSeatAccessSide.Right;
+                Assert.That(seat.AccessSide, Is.EqualTo(expectedSide),
+                    "The side entry must use the gap away from the occupied neighbour.");
+                PlayerAnimatedInteractionDefinition seatClips =
+                    CounterSeatInteraction.CreateDefinition(seat.AccessSide);
+                Assert.That(seatClips.EnterClipName, Is.EqualTo(expectedSide == CounterSeatAccessSide.Left
+                    ? CounterSeatInteraction.EnterLeftClipName : CounterSeatInteraction.EnterRightClipName));
+                Assert.That(seatClips.ExitClipName, Is.EqualTo(expectedSide == CounterSeatAccessSide.Left
+                    ? CounterSeatInteraction.ExitLeftClipName : CounterSeatInteraction.ExitRightClipName));
+                Assert.That(seatClips.LoopClipName, Is.EqualTo(CounterSeatInteraction.BarLoopClipName));
             }
 
             BarCounterSeatDescriptor rightmost = seats.Single(

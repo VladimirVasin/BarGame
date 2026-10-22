@@ -79,6 +79,24 @@ namespace BarPromenade.Editor
             importer.textureCompression =
                 TextureImporterCompression.Uncompressed;
             importer.maxTextureSize = 512;
+
+            bool uniqueColour = assetPath.EndsWith("/BarInteriorAlbedo.png", StringComparison.OrdinalIgnoreCase);
+            bool uniqueResponse = assetPath.EndsWith("/BarInteriorResponse.png", StringComparison.OrdinalIgnoreCase);
+            if (uniqueColour || uniqueResponse)
+            {
+                importer.sRGBTexture = !uniqueResponse;
+                importer.alphaSource = uniqueResponse ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+                importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
+                importer.filterMode = UnityEngine.FilterMode.Trilinear;
+                importer.maxTextureSize = uniqueColour ? 4096 : 2048;
+                importer.textureCompression = TextureImporterCompression.CompressedHQ;
+                importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                {
+                    name = "Standalone", overridden = true, maxTextureSize = importer.maxTextureSize,
+                    format = TextureImporterFormat.BC7, textureCompression = TextureImporterCompression.CompressedHQ,
+                    compressionQuality = 100
+                });
+            }
         }
 
         private static void OnPostprocessAllAssets(

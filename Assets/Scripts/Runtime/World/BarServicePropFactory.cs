@@ -154,13 +154,37 @@ namespace BarPromenade
             }
 
             string suffix = kind.ToString();
-            return Create(
+            BarServicePropInstance vessel = Create(
                 parent,
                 VesselGroupPrefix + suffix,
                 $"Bar Service Vessel {suffix}",
                 role => role.EndsWith(
                     ":" + suffix,
                     StringComparison.Ordinal));
+            // The old non-beer profiles were display-scale shapes. Keep one
+            // physical scale on their metre wrapper, so shell, liquid, grip,
+            // drinking edge, pour target and selection outline stay together.
+            vessel.transform.localScale = GetVesselScale(kind);
+            return vessel;
+        }
+
+        public static Vector3 GetVesselScale(BarDrinkVesselKind kind)
+        {
+            switch (kind)
+            {
+                case BarDrinkVesselKind.Pint:
+                    return Vector3.one;
+                case BarDrinkVesselKind.WineGlass:
+                    return new Vector3(.25f, .50f, .25f);
+                case BarDrinkVesselKind.Snifter:
+                    return new Vector3(.28f, .40f, .28f);
+                case BarDrinkVesselKind.ShotGlass:
+                    return new Vector3(.25f, .40f, .25f);
+                case BarDrinkVesselKind.Tumbler:
+                    return new Vector3(.28f, .35f, .28f);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
         }
 
         public static BarServicePropInstance CreateMenu(Transform parent)

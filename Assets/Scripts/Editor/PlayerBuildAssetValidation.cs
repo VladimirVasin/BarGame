@@ -45,7 +45,6 @@ namespace BarPromenade.Editor
             Register("Warehouse chest flashlight", CombatFlashlightAssetSetup.ValidateOrThrow,
                 "Run tools/build-player-flashlight-3d-model.py through tools/run-blender.py, then BarPromenade.Editor.CombatFlashlightAssetSetup.RebuildBatch.");
             RegisterGenerated("Bar", BarAssetSetup.ValidateOrThrow, "BarAssetSetup");
-            RegisterGenerated("Bartender", BarBartenderV2AssetSetup.ValidateOrThrow, "BarBartenderV2AssetSetup");
             RegisterGenerated("City buildings", CityBuildingAssetSetup.ValidateOrThrow, "CityBuildingAssetSetup");
             RegisterGenerated("City misc", CityMiscAssetSetup.ValidateOrThrow, "CityMiscAssetSetup");
             Register("City fair", CityFairAssetSetup.ValidateOrThrow,

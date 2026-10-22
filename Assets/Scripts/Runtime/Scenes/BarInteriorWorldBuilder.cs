@@ -99,10 +99,10 @@ namespace BarPromenade
             //  builder holds no state between calls.
             Vector3 fanPivot = AnchorPosition(
                 registry, room, "ceiling_fan_pivot",
-                new Vector3(0f, 4.35f, 0.75f));
+                new Vector3(0f, 2.72f, -0.65f));
             Vector3 jukeboxPivot = AnchorPosition(
                 registry, room, "jukebox_pivot",
-                new Vector3(6.4f, 0f, -6.78f));
+                BarInteriorLayoutPlanner.JukeboxPosition);
 
             PreserveAuthoredAnchors(room, registry);
             ApplySurfaces(registry, plan);
@@ -366,14 +366,13 @@ namespace BarPromenade
         /// </summary>
         private static readonly RuntimeOrientedBox[] CarpetFields =
         {
-            RoomBox(-0.75f, 0.018f, -0.65f, 7.50f, 0.035f, 8.05f),
-            RoomBox(-8.72f, 0.018f, -0.40f, 4.10f, 0.035f, 10.75f),
-            RoomBox(0.0f, 0.018f, -6.20f, 2.05f, 0.035f, 2.25f)
+            RoomBox(0f, 0.018f, -1.42f, 6.6f, 0.035f, 4.15f),
+            RoomBox(-4.38f, 0.018f, -0.75f, 2.04f, 0.035f, 5.6f)
         };
 
         private static readonly RuntimeOrientedBox[] BayRug =
         {
-            RoomBox(7.00f, 0.018f, 0.55f, 6.15f, 0.035f, 5.65f)
+            RoomBox(4.5f, 0.018f, -0.65f, 1.8f, 0.035f, 2.4f)
         };
 
         private static RuntimeOrientedBox RoomBox(
@@ -651,7 +650,7 @@ namespace BarPromenade
             if (jukebox != null)
             {
                 jukebox.localPosition = jukeboxPivot;
-                jukebox.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                jukebox.localRotation = Quaternion.Euler(0f, BarInteriorLayoutPlanner.JukeboxYawDegrees, 0f);
                 WireJukebox(jukebox);
             }
         }
@@ -842,8 +841,8 @@ namespace BarPromenade
         private static void WireJukebox(Transform jukebox)
         {
             BoxCollider solid = jukebox.gameObject.AddComponent<BoxCollider>();
-            solid.center = new Vector3(0f, 0.85f, 0f);
-            solid.size = new Vector3(0.62f, 1.75f, 0.98f);
+            solid.center = BarInteriorLayoutPlanner.JukeboxColliderCenter;
+            solid.size = BarInteriorLayoutPlanner.JukeboxColliderSize;
 
             var trigger = new GameObject("Jukebox Trigger");
             trigger.transform.SetParent(jukebox, false);

@@ -23,7 +23,6 @@ namespace BarPromenade.Editor
             MothersHouseMotherAssetSetup.IsBuilding ||
             MountainRoadCafeCastAssetSetup.IsBuilding ||
             CityPedestrianHandPropAssetSetup.IsBuilding ||
-            BarBartenderAssetSetup.IsBuilding ||
             SupermarketCashierAssetSetup.IsBuilding ||
             CityBusDriverAssetSetup.IsBuilding ||
             CityMiscAssetSetup.IsBuilding;
@@ -46,7 +45,6 @@ namespace BarPromenade.Editor
                 // After the bodies: the hand props are measured against
                 // the freshly imported reference body FBXs.
                 CityPedestrianHandPropAssetSetup.BuildOrThrow();
-                BarBartenderAssetSetup.BuildOrThrow();
                 SupermarketCashierAssetSetup.BuildOrThrow();
                 CityBusDriverAssetSetup.BuildOrThrow();
                 CityMiscAssetSetup.BuildOrThrow();
@@ -56,7 +54,6 @@ namespace BarPromenade.Editor
                 MothersHouseMotherAssetSetup.ValidateOrThrow();
                 MountainRoadCafeCastAssetSetup.ValidateOrThrow();
                 CityPedestrianHandPropAssetSetup.ValidateOrThrow();
-                BarBartenderAssetSetup.ValidateOrThrow();
                 SupermarketCashierAssetSetup.ValidateOrThrow();
                 CityBusDriverAssetSetup.ValidateOrThrow();
                 CityMiscAssetSetup.ValidateOrThrow();

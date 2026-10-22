@@ -91,6 +91,46 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [Test]
+        [PrebuildSetup(typeof(DefaultNpcWardrobeAssetsSetup))]
+        public void VisitGroups_SelectFreshUniqueCastWithoutChangingPermanentPopulation()
+        {
+            string[] permanent = DefaultNpcPopulation.GetAssignments()
+                .Select(item => item.CharacterId + "|" + item.VisibleSignature).ToArray();
+            int registered = DefaultNpcPopulation.Characters.Count;
+            var constraints = new[]
+            {
+                new DefaultNpcPopulation.SlotConstraint("apron", new string[] { null })
+            };
+            var first = DefaultNpcPopulation.AllocateVisitGroup(
+                "Test pub visitors", 9, DefaultNpcPopulation.AnyCatalogModel, constraints);
+            var second = DefaultNpcPopulation.AllocateVisitGroup(
+                "Test pub visitors", 9, DefaultNpcPopulation.AnyCatalogModel, constraints);
+            foreach (var visit in new[] { first, second })
+            {
+                Assert.That(visit, Has.Count.EqualTo(9));
+                Assert.That(visit.Select(item => item.VisibleSignature).Distinct().Count(),
+                    Is.EqualTo(visit.Count), "A visit must exhaust valid appearances before repeating one.");
+                foreach (var item in visit)
+                {
+                    Assert.That(DefaultNpcCatalog.ModelIds, Does.Contain(item.ModelId));
+                    Assert.That(item.ItemIds, Does.Not.Contain("apron.work"));
+                    Assert.Throws<ArgumentException>(() => DefaultNpcPopulation.GetCharacter(item.CharacterId));
+                }
+            }
+            Assert.That(first.Select(item => item.CharacterId)
+                .Intersect(second.Select(item => item.CharacterId)), Is.Empty,
+                "Successive visits must use fresh allocation seeds, rather than persistent visitor identities.");
+            Assert.That(DefaultNpcPopulation.Characters.Count, Is.EqualTo(registered));
+            CollectionAssert.AreEqual(permanent, DefaultNpcPopulation.GetAssignments()
+                .Select(item => item.CharacterId + "|" + item.VisibleSignature).ToArray());
+            Assert.Throws<ArgumentOutOfRangeException>(() => DefaultNpcPopulation.AllocateVisitGroup(
+                "Test empty visit", 0, DefaultNpcPopulation.AnyCatalogModel, constraints));
+            Assert.Throws<ArgumentOutOfRangeException>(() => DefaultNpcPopulation.AllocateVisitGroup(
+                "Test oversized visit", DefaultNpcPopulation.MaximumVisitGroupSize + 1,
+                DefaultNpcPopulation.AnyCatalogModel, constraints));
+        }
+
         [UnityTest]
         [PrebuildSetup(typeof(DefaultNpcCatalogAssetsSetup))]
         public IEnumerator OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges()

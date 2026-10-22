@@ -1,73 +1,45 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// Presentation shared by the active ordinary bartender and the retained
-    /// six-armed legacy asset. The ordinary path plays authored service and
-    /// locomotion clips on the common NpcHumanV2 Avatar, then applies a light
-    /// two-hand contact pass toward the independently driven bar service props.
-    /// The legacy
-    /// path keeps its original four procedural chains so that prefab remains
-    /// inspectable without ever being selected by the runtime provider.
-    /// </summary>
+    /// <summary>One service sampler and two-hand contact pass over the default NPC rig.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(320)]
     public sealed class BarBartenderPresentation : MonoBehaviour
     {
-        // Broad enough to read across the dark hall; the first pass
-        // at 4.5 degrees was invisible at gameplay distance.
-        public const float IdleSwayDegrees = 10f;
-        public const float ElbowSwayDegrees = 7f;
-        public const float HeadSwayDegrees = 9f;
         public const float ReachBlendSeconds = 0.28f;
         public const float BeerPlacementTorsoLeanDegrees = 38f;
         public const float BeerPlacementTorsoBlendSeconds = 0.18f;
+        public const float MaximumCounterHipLeanDegrees = 20f;
         public const int OrdinaryHandCount = 2;
         public const int OrdinaryVesselHandIndex = 0;
         public const int OrdinaryBottleHandIndex = 1;
-        private const int SolveIterations = 3;
-        private const int OrdinarySolveIterations = 8;
-
-        // Root-local rest points retained for the inspectable legacy
-        // six-arm path. The active ordinary bartender stays ground-level and
-        // uses the shared authored human clips. World-space aiming is
-        // deliberate — imported FBX bone axes are not trustworthy for local
-        // Euler folds.
-        private static readonly Vector3 LeftHandRestLocal =
-            new Vector3(0.27f, 1.16f, 0.42f);
-        private static readonly Vector3 RightHandRestLocal =
-            new Vector3(-0.27f, 1.16f, 0.42f);
-
-        private readonly float[] chainPhases =
-        {
-            0.00f, 1.73f, 3.31f, 4.87f
-        };
-        private readonly float[] chainSpeeds =
-        {
-            0.53f, 0.41f, 0.61f, 0.47f
-        };
-
+        public const float CounterHandSupportClearance = 0.002f;
+        private const float MaximumClavicleReachDegrees = 15f;
+        private const float ClavicleReachThresholdMeters = 0.002f;
         private BarBartenderAssetRegistry registry;
+        private NpcHandPose handPose;
         private Transform[] chainShoulders;
+        private Transform[] chainClavicles;
+        private Quaternion[] authoredClavicleRotations;
         private Transform[] chainElbows;
-        private Transform[] chainWrists;
         private Transform[] chainGrips;
-        private Quaternion[] shoulderRestRotations;
-        private Quaternion[] elbowRestRotations;
-        private Quaternion[] wristRestRotations;
+        private Transform[] chainHands;
+        private SeatedArmHandAttachment[] handAttachments;
+        private AnatomicalHandFrame[] anatomicalHands;
+        private NpcHandGripKind[] chainGripKinds;
+        private Quaternion[] chainHandRotations;
+        private bool[] chainHasGripFrame;
+        private Vector3[] chainElbowDirections;
+        private bool[] chainHasElbowDirection;
         private Vector3[] chainTargets;
         private float[] chainWeights;
         private float[] chainGoalWeights;
-        private Quaternion leftUpperRest;
-        private Quaternion leftForearmRest;
-        private Quaternion rightUpperRest;
-        private Quaternion rightForearmRest;
-        private Quaternion headRest;
+        private Transform[] proceduralBones;
+        private Quaternion[] authoredRotations;
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable defaultPlayable;
@@ -76,21 +48,43 @@ namespace BarPromenade
         private BarBartenderClipKind currentClipKind =
             BarBartenderClipKind.Wipe;
         private float currentClipTimeSeconds;
+        private BarBartenderClipKind requestedClipKind = BarBartenderClipKind.Wipe;
+        private float requestedClipTimeSeconds;
         private float ordinaryIdleElapsedSeconds;
         private Vector3 ordinaryTorsoLeanTarget;
         private float ordinaryTorsoLeanWeight;
         private float ordinaryTorsoLeanGoalWeight;
+        private AnatomicalHandFrame counterSupportHandFrame;
+        private Vector3 counterSupportContactInHand;
+        private Vector3 counterSupportSurfaceTarget;
+        private float counterSupportWeight;
+        private float counterSupportGoalWeight;
         private bool hasGraph;
         private bool hasActionPlayable;
-        private bool usesOrdinaryRig;
-        private float elapsed;
         private bool isInitialized;
 
         public bool IsInitialized => isInitialized;
         public BarBartenderAssetRegistry Registry => registry;
-        public bool UsesOrdinaryRig => usesOrdinaryRig;
+        public bool UsesOrdinaryRig => isInitialized;
         public BarBartenderClipKind CurrentClipKind => currentClipKind;
         public float CurrentClipTimeSeconds => currentClipTimeSeconds;
+        public BarBartenderTowelPresentation TowelPresentation { get; private set; }
+        public bool IsTowelServiceReady => TowelPresentation != null && TowelPresentation.ServiceReady;
+        public bool IsTowelWipeReady => TowelPresentation != null && TowelPresentation.WipeReady;
+        public bool IsTowelTransitioning => TowelPresentation != null && TowelPresentation.IsTransitioning;
+        public float CounterHandSupportWeight => counterSupportWeight;
+        /// <summary>Desired physical palm contact, including the two millimetre surface clearance.</summary>
+        public Vector3 CounterHandSupportTarget => counterSupportSurfaceTarget + transform.up * CounterHandSupportClearance;
+        public Vector3 CounterHandSupportPalmContact => isInitialized
+            ? registry.RightHand.position + registry.RightHand.rotation * counterSupportContactInHand : Vector3.zero;
+        public float CounterHandSupportContactError => isInitialized
+            ? Vector3.Distance(CounterHandSupportPalmContact, CounterHandSupportTarget) : float.PositiveInfinity;
+        public Vector3 CounterHandSupportPalmNormal => isInitialized
+            ? registry.RightHand.rotation * counterSupportHandFrame.PalmNormalInHand : Vector3.zero;
+        public Vector3 CounterHandSupportFingerDirection => isInitialized
+            ? registry.RightHand.rotation * counterSupportHandFrame.FingerDirectionInHand : Vector3.zero;
+
+        public void RequestTowelService(bool serviceRequested) => TowelPresentation?.RequestService(serviceRequested);
         public int ChainCount =>
             chainShoulders != null ? chainShoulders.Length : 0;
 
@@ -108,6 +102,7 @@ namespace BarPromenade
                 ? assetRegistry
                 : throw new ArgumentNullException(
                     nameof(assetRegistry));
+            handPose = registry.Actor.GetComponent<NpcHandPose>();
             if (registry.Chest == null ||
                 registry.Head == null ||
                 registry.LeftUpperArm == null ||
@@ -118,20 +113,30 @@ namespace BarPromenade
                     "canonical bones.");
             }
 
-            usesOrdinaryRig = registry.UsesAuthoredServiceClips;
-            if (usesOrdinaryRig)
-            {
-                InitializeOrdinaryRig();
-            }
-            else
-            {
-                InitializeLegacyRig();
-            }
+            InitializeOrdinaryRig();
+            CacheCounterHandSupportContact();
             chainTargets = new Vector3[ChainCount];
             chainWeights = new float[ChainCount];
             chainGoalWeights = new float[ChainCount];
+            chainHandRotations = new Quaternion[ChainCount];
+            chainHasGripFrame = new bool[ChainCount];
+            chainElbowDirections = new Vector3[ChainCount];
+            chainHasElbowDirection = new bool[ChainCount];
+            chainGripKinds = new NpcHandGripKind[ChainCount];
+            proceduralBones = new[]
+            {
+                registry.Pelvis, registry.Spine, registry.Chest, registry.Neck, registry.Head,
+                registry.LeftClavicle, registry.RightClavicle,
+                registry.LeftUpperArm, registry.LeftForearm, registry.LeftHand,
+                registry.RightUpperArm, registry.RightForearm, registry.RightHand,
+                registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
+                registry.RightThigh, registry.RightShin, registry.RightFoot
+            };
+            authoredRotations = new Quaternion[proceduralBones.Length];
+            CaptureAuthoredPose();
             isInitialized = true;
-            if (usesOrdinaryRig && Application.isPlaying)
+            TowelPresentation = new BarBartenderTowelPresentation(this, registry);
+            if (Application.isPlaying)
             {
                 CreateOrdinaryGraph();
             }
@@ -140,8 +145,7 @@ namespace BarPromenade
 
         private void InitializeOrdinaryRig()
         {
-            if (registry.ExtraArmChains.Count != 0 ||
-                registry.Animator == null ||
+            if (registry.Animator == null ||
                 registry.Animator.avatar == null ||
                 registry.LeftVesselSocket == null ||
                 registry.RightBottleSocket == null ||
@@ -158,51 +162,34 @@ namespace BarPromenade
                 registry.LeftUpperArm,
                 registry.RightUpperArm
             };
+            chainClavicles = new[] { registry.LeftClavicle, registry.RightClavicle };
+            authoredClavicleRotations = new Quaternion[OrdinaryHandCount];
             chainElbows = new[]
             {
                 registry.LeftForearm,
                 registry.RightForearm
-            };
-            chainWrists = new[]
-            {
-                registry.LeftHand,
-                registry.RightHand
             };
             chainGrips = new[]
             {
                 registry.VesselGripAnchor,
                 registry.BottleGripAnchor
             };
+            chainHands = new[] { registry.LeftHand, registry.RightHand };
+            handAttachments = new[]
+            {
+                new SeatedArmHandAttachment(registry.LeftHand, registry.VesselGripAnchor),
+                new SeatedArmHandAttachment(registry.RightHand, registry.BottleGripAnchor)
+            };
+            anatomicalHands = new[]
+            {
+                registry.HandPose.GetAnatomicalFrame(true),
+                registry.HandPose.GetAnatomicalFrame(false)
+            };
             registry.Animator.enabled = true;
             registry.SetServiceTowelVisible(true);
         }
 
-        private void InitializeLegacyRig()
-        {
-            if (registry.ExtraArmChains.Count !=
-                BarBartenderAssetRegistry.ExtraArmChainCount)
-            {
-                throw new InvalidOperationException(
-                    "The legacy bartender registry lacks its four " +
-                    "extra-arm chains.");
-            }
-
-            // The imported Animator carries the shared Avatar but no
-            // controller; nothing may fight the retained procedural pose.
-            if (registry.Animator != null)
-            {
-                registry.Animator.enabled = false;
-            }
-
-            ReparentChains();
-            CaptureRestPose();
-        }
-
-        /// <summary>
-        /// Points one service hand at a world position. On the active model
-        /// indices 0/1 are the ordinary left-vessel/right-bottle hands; on
-        /// the retained legacy model they are its original extra-arm chains.
-        /// </summary>
+        /// <summary>Indices zero and one address the left vessel and right bottle hands.</summary>
         public void SetChainTarget(
             int chainIndex,
             Vector3 worldPosition,
@@ -216,6 +203,8 @@ namespace BarPromenade
             }
 
             float goalWeight = Mathf.Clamp01(weight);
+            chainHasGripFrame[chainIndex] = false;
+            chainHasElbowDirection[chainIndex] = false;
             // A released chain still blends out for ReachBlendSeconds. Keep
             // its last meaningful target during that fade instead of aiming
             // the partly weighted arm at the world origin.
@@ -229,34 +218,55 @@ namespace BarPromenade
             chainGoalWeights[chainIndex] = goalWeight;
         }
 
-        internal bool ResolveOrdinaryGripContactAfterWristRoll(
-            int chainIndex,
-            Vector3 worldPosition)
+        public void SetChainGripFrame(int chainIndex, Vector3 cylinderAxis, Vector3 palmTowardObject,
+            NpcHandGripKind kind = NpcHandGripKind.Cylindrical)
         {
-            if (!isInitialized || !usesOrdinaryRig ||
-                chainIndex < 0 || chainIndex >= ChainCount ||
-                chainWeights[chainIndex] < 0.95f ||
-                worldPosition == Vector3.zero)
-            {
+            if (!isInitialized || chainIndex < 0 || chainIndex >= ChainCount)
+                return;
+            SelectGripKind(chainIndex, kind);
+            chainHandRotations[chainIndex] = anatomicalHands[chainIndex]
+                .ResolveCylinderPose(Vector3.zero, cylinderAxis, palmTowardObject).rotation;
+            chainHasGripFrame[chainIndex] = true;
+        }
+
+        public void SetChainElbowDirection(int chainIndex, Vector3 worldDirection)
+        {
+            if (!isInitialized || chainIndex < 0 || chainIndex >= ChainCount ||
+                worldDirection.sqrMagnitude < .000001f) return;
+            chainElbowDirections[chainIndex] = worldDirection;
+            chainHasElbowDirection[chainIndex] = true;
+        }
+
+        public bool ResolveAnatomicalGripContactAfterWristRoll(
+            int chainIndex, Vector3 cylinderCentre, Vector3 cylinderAxis, Vector3 palmTowardObject,
+            NpcHandGripKind kind = NpcHandGripKind.Cylindrical)
+        {
+            if (!isInitialized || chainIndex < 0 || chainIndex >= ChainCount)
                 return false;
-            }
-
-            Transform shoulder = chainShoulders[chainIndex];
-            Transform elbow = chainElbows[chainIndex];
-            Transform grip = chainGrips[chainIndex];
-            for (int iteration = 0;
-                 iteration < OrdinarySolveIterations;
-                 iteration++)
-            {
-                RotateTowards(elbow, grip, worldPosition);
-                RotateTowards(shoulder, grip, worldPosition);
-            }
-
+            SetChainGripFrame(chainIndex, cylinderAxis, palmTowardObject, kind);
+            if (chainWeights[chainIndex] >= 0.95f)
+                SolveOrdinaryReach(chainIndex, cylinderCentre, 1f);
+            else
+                // Carry walks keep their authored elbow/shoulder motion.
+                // Roll the held hand anatomically, then the prop owner seats
+                // its real grasp centre back onto that same moving hand.
+                chainHands[chainIndex].rotation = chainHandRotations[chainIndex];
+            handPose.SetGrip(chainIndex == OrdinaryVesselHandIndex, 1f, kind);
             return true;
         }
 
+        private void SelectGripKind(int index, NpcHandGripKind kind)
+        {
+            if (chainGripKinds[index] == kind) return;
+            chainGripKinds[index] = kind;
+            bool isLeft = index == OrdinaryVesselHandIndex;
+            anatomicalHands[index] = handPose.GetAnatomicalFrame(isLeft, kind);
+            registry.ConfigureGripKind(isLeft, kind);
+            handAttachments[index] = new SeatedArmHandAttachment(chainHands[index], chainGrips[index]);
+        }
+
         /// <summary>
-        /// Bends the ordinary service rig from the spine toward a reachable
+        /// Bends the ordinary service rig from the hips toward a reachable
         /// counter contact. The hand solver then runs from that leaned pose,
         /// so a placed mug remains in the palm instead of finishing the route
         /// as an independently moving prop.
@@ -270,6 +280,59 @@ namespace BarPromenade
             {
                 ordinaryTorsoLeanTarget = worldTarget;
             }
+        }
+
+        /// <summary>Brace the free right palm on a measured counter point; zero releases with the ordinary reach blend.</summary>
+        public void SetCounterHandSupport(Vector3 palmTarget, float weight)
+        {
+            if (!isInitialized || !float.IsFinite(weight)) return;
+            float goal = Mathf.Clamp01(weight);
+            if (goal > 0.0001f)
+            {
+                if (!float.IsFinite(palmTarget.x) || !float.IsFinite(palmTarget.y) || !float.IsFinite(palmTarget.z)) return;
+                counterSupportSurfaceTarget = palmTarget;
+            }
+            counterSupportGoalWeight = goal;
+        }
+
+        private void CacheCounterHandSupportContact()
+        {
+            counterSupportHandFrame = anatomicalHands[OrdinaryBottleHandIndex];
+            Transform hand = registry.RightHand;
+            Quaternion inverse = Quaternion.Inverse(hand.rotation);
+            Vector3 normal = counterSupportHandFrame.PalmNormalInHand;
+            Vector3 contact = Vector3.zero;
+            float depth = float.NegativeInfinity;
+            int count = 0;
+            foreach (NpcHandPose.HandBinding binding in handPose.Hands)
+            {
+                if (binding.IsLeft) continue;
+                foreach (SkinnedMeshRenderer renderer in binding.Renderers)
+                {
+                    if (renderer == null || !(renderer.name.StartsWith("GEO_Hand.", StringComparison.Ordinal) ||
+                        renderer.name.Contains("HandPalm."))) continue;
+                    Mesh mesh = renderer.sharedMesh;
+                    int bone = Array.IndexOf(renderer.bones, hand);
+                    if (mesh == null || bone < 0) continue;
+                    Matrix4x4 bindPose = mesh.bindposes[bone];
+                    // The same immutable neutral, rotation-only metre space
+                    // used by NpcHandPose. No live mesh bake or frame search.
+                    foreach (Vector3 vertex in mesh.vertices)
+                    {
+                        Vector3 point = inverse * hand.TransformVector(bindPose.MultiplyPoint3x4(vertex));
+                        float projection = Vector3.Dot(point, normal);
+                        if (projection > depth + 0.000001f)
+                        { depth = projection; contact = point; count = 1; }
+                        else if (Mathf.Abs(projection - depth) <= 0.000001f)
+                        { contact += point; count++; }
+                    }
+                }
+            }
+            if (count == 0)
+                throw new InvalidOperationException("A counter hand support needs the default NPC's neutral palm geometry.");
+            // Averaging the supporting face's corners retains an actual
+            // contact on that face instead of aiming the wrist/socket at wood.
+            counterSupportContactInHand = contact / count;
         }
 
         public float GetChainWeight(int chainIndex)
@@ -299,7 +362,7 @@ namespace BarPromenade
             BarDrinkServiceFrame frame,
             bool leftHandCarriesMenu = false)
         {
-            if (!isInitialized || !usesOrdinaryRig)
+            if (!isInitialized)
             {
                 return;
             }
@@ -342,26 +405,12 @@ namespace BarPromenade
                     break;
             }
 
-            bool leftHandServing =
-                leftHandCarriesMenu ||
-                frame.Phase ==
-                    BarDrinkServicePhase.VesselPlacement ||
-                frame.Phase == BarDrinkServicePhase.Pouring ||
-                frame.Phase == BarDrinkServicePhase.BottleReturn ||
-                frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
-                frame.Phase == BarDrinkServicePhase.BeerPouring ||
-                frame.Phase == BarDrinkServicePhase.BeerCarryToGuest ||
-                frame.Phase == BarDrinkServicePhase.BeerGlassPlacement ||
-                frame.Phase ==
-                    BarDrinkServicePhase.BottleCarryToGuest ||
-                frame.Phase ==
-                    BarDrinkServicePhase.BottleVesselPlacement;
-            registry.SetServiceTowelVisible(!leftHandServing);
+            if (leftHandCarriesMenu) RequestTowelService(true);
         }
 
         public void ResetServicePose()
         {
-            if (!isInitialized || !usesOrdinaryRig)
+            if (!isInitialized)
             {
                 return;
             }
@@ -369,29 +418,33 @@ namespace BarPromenade
             SetOrdinaryClip(
                 BarBartenderClipKind.Wipe,
                 ordinaryIdleElapsedSeconds);
-            registry.SetServiceTowelVisible(true);
+            RequestTowelService(false);
         }
 
         public void ApplyCounterTravelPose(
             float elapsedSeconds,
-            bool leftHandCarriesMenu = false)
+            bool leftHandCarriesMenu = false,
+            bool walkingBackwards = false)
         {
-            if (!isInitialized || !usesOrdinaryRig)
+            if (!isInitialized)
             {
                 return;
             }
 
-            SetOrdinaryClip(
-                BarBartenderClipKind.Walk,
-                Mathf.Max(0f, elapsedSeconds));
-            registry.SetServiceTowelVisible(!leftHandCarriesMenu);
+            float time = Mathf.Max(0f, elapsedSeconds);
+            if (walkingBackwards)
+            {
+                float length = ResolveClipLength(BarBartenderClipKind.Walk);
+                if (length > 0.0001f) time = length - Mathf.Repeat(time, length);
+            }
+            SetOrdinaryClip(BarBartenderClipKind.Walk, time);
         }
 
         public void ApplyCounterTurnPose(
             float elapsedSeconds,
             bool leftHandCarriesMenu = false)
         {
-            if (!isInitialized || !usesOrdinaryRig)
+            if (!isInitialized)
             {
                 return;
             }
@@ -399,7 +452,6 @@ namespace BarPromenade
             SetOrdinaryClip(
                 BarBartenderClipKind.ServiceStep,
                 Mathf.Max(0f, elapsedSeconds));
-            registry.SetServiceTowelVisible(!leftHandCarriesMenu);
         }
 
         /// <summary>
@@ -413,30 +465,7 @@ namespace BarPromenade
                 return;
             }
 
-            elapsed += Mathf.Max(0f, deltaTime);
-            if (usesOrdinaryRig)
-            {
-                AdvanceOrdinary(deltaTime);
-                return;
-            }
-
-            ApplyCanonicalRest();
-            ApplyHeadSway();
-            for (int index = 0; index < ChainCount; index++)
-            {
-                float goal = chainGoalWeights[index];
-                chainWeights[index] = Mathf.MoveTowards(
-                    chainWeights[index],
-                    goal,
-                    deltaTime <= 0f
-                        ? 0f
-                        : deltaTime / ReachBlendSeconds);
-                ApplyChainIdle(index);
-                if (chainWeights[index] > 0.0001f)
-                {
-                    SolveChainReach(index);
-                }
-            }
+            AdvanceOrdinary(deltaTime);
         }
 
         private void LateUpdate()
@@ -446,7 +475,9 @@ namespace BarPromenade
 
         private void AdvanceOrdinary(float deltaTime)
         {
-            ordinaryIdleElapsedSeconds += Mathf.Max(0f, deltaTime);
+            if (!IsTowelTransitioning)
+                ordinaryIdleElapsedSeconds += Mathf.Max(0f, deltaTime);
+            ResolveTowelSafeClip();
             if (currentClipKind == BarBartenderClipKind.Wipe)
             {
                 currentClipTimeSeconds = ordinaryIdleElapsedSeconds;
@@ -457,13 +488,20 @@ namespace BarPromenade
                 CreateOrdinaryGraph();
             }
 
+            // Imported clips may omit constant channels. Remove the previous
+            // procedural pass before sampling, so an unkeyed spine or wrist
+            // never treats last frame's correction as its authored baseline.
+            RestoreAuthoredPose();
             EvaluateOrdinaryAnimation();
+            CaptureAuthoredPose();
             ordinaryTorsoLeanWeight = Mathf.MoveTowards(
                 ordinaryTorsoLeanWeight,
                 ordinaryTorsoLeanGoalWeight,
                 Mathf.Max(0f, deltaTime) /
                 BeerPlacementTorsoBlendSeconds);
             ApplyOrdinaryTorsoLean();
+            counterSupportWeight = Mathf.MoveTowards(counterSupportWeight, counterSupportGoalWeight,
+                Mathf.Max(0f, deltaTime) / ReachBlendSeconds);
             for (int index = 0; index < ChainCount; index++)
             {
                 chainWeights[index] = Mathf.MoveTowards(
@@ -477,11 +515,75 @@ namespace BarPromenade
                     SolveOrdinaryReach(index);
                 }
             }
+            ApplyWipeSurfaceContact();
+            ApplyCounterHandSupport();
+            handPose?.SetGrip(true, chainWeights[OrdinaryVesselHandIndex], chainGripKinds[OrdinaryVesselHandIndex]);
+            handPose?.SetGrip(false, chainWeights[OrdinaryBottleHandIndex] * (1f - counterSupportWeight),
+                chainGripKinds[OrdinaryBottleHandIndex]);
+            TowelPresentation.Advance(deltaTime, new Pose(registry.LeftHand.position, registry.LeftHand.rotation));
+        }
+
+        private void ApplyCounterHandSupport()
+        {
+            if (counterSupportWeight <= 0.0001f) return;
+            Quaternion rotation = counterSupportHandFrame.ResolveHandRotation(-transform.up, transform.forward);
+            Vector3 wrist = CounterHandSupportTarget - rotation * counterSupportContactInHand;
+            // Preserve the already blended ordinary right arm at entry and
+            // release. Its clavicle assistance is blended from that same pose.
+            Quaternion beforeClavicle = registry.RightClavicle.localRotation;
+            ApplyClavicleReach(OrdinaryBottleHandIndex, wrist, 1f);
+            registry.RightClavicle.localRotation = Quaternion.Slerp(beforeClavicle,
+                registry.RightClavicle.localRotation, counterSupportWeight);
+            Vector3 hint = registry.RightUpperArm.position + transform.right * 0.35f - transform.up * 0.25f;
+            LimbTwoBoneIk.Solve(registry.RightUpperArm, registry.RightForearm, registry.RightHand,
+                wrist, rotation, hint, counterSupportWeight, float.PositiveInfinity, true);
+        }
+
+        internal void SolveTowelHand(Pose wrist)
+        {
+            ApplyClavicleReach(OrdinaryVesselHandIndex, wrist.position, 1f);
+            Vector3 hint = registry.LeftUpperArm.position - transform.right * .35f - transform.up * .15f;
+            LimbTwoBoneIk.Solve(registry.LeftUpperArm, registry.LeftForearm, registry.LeftHand,
+                wrist.position, wrist.rotation, hint, 1f, float.PositiveInfinity, true);
+        }
+
+        private void RestoreAuthoredPose()
+        {
+            if (proceduralBones == null)
+                return;
+            for (int index = 0; index < proceduralBones.Length; index++)
+                proceduralBones[index].localRotation = authoredRotations[index];
+        }
+
+        private void CaptureAuthoredPose()
+        {
+            for (int index = 0; index < proceduralBones.Length; index++)
+                authoredRotations[index] = proceduralBones[index].localRotation;
+            for (int index = 0; index < chainClavicles.Length; index++)
+                authoredClavicleRotations[index] = chainClavicles[index].localRotation;
+        }
+
+        private void ApplyWipeSurfaceContact()
+        {
+            if (currentClipKind != BarBartenderClipKind.Wipe ||
+                chainWeights[OrdinaryVesselHandIndex] > 0.0001f)
+                return;
+            // Keep the towel in its authored hand mount and move that hand,
+            // rather than separating the cloth from the default character.
+            Quaternion handRotation = registry.LeftHand.rotation;
+            for (int iteration = 0; iteration < 3; iteration++)
+            {
+                if (!registry.TryResolveWipeHandTarget(out Vector3 target))
+                    return;
+                SolveOrdinaryReach(OrdinaryVesselHandIndex, target, 1f);
+                registry.LeftHand.rotation = handRotation;
+            }
         }
 
         private void ApplyOrdinaryTorsoLean()
         {
-            if (ordinaryTorsoLeanWeight <= 0.0001f ||
+            if ((ordinaryTorsoLeanGoalWeight <= 0.0001f &&
+                 ordinaryTorsoLeanWeight <= 0.0001f) ||
                 registry.Spine == null || registry.Chest == null)
             {
                 return;
@@ -508,21 +610,88 @@ namespace BarPromenade
                 return;
             }
 
-            float angle = Mathf.Min(
-                Vector3.Angle(torsoDirection, targetDirection),
-                BeerPlacementTorsoLeanDegrees *
-                Mathf.SmoothStep(0f, 1f, ordinaryTorsoLeanWeight));
-            registry.Spine.rotation = Quaternion.AngleAxis(
-                angle,
-                axis.normalized) * registry.Spine.rotation;
+            // The shared cafe pose already leans forward. This is a total
+            // torso limit, not another full bend added to that authored pose.
+            float budget = Mathf.Max(0f, BeerPlacementTorsoLeanDegrees -
+                Vector3.Angle(torsoDirection, transform.up));
+            Vector3 spineOffset = registry.Spine.position - registry.Pelvis.position;
+            Vector3 shoulderOffset = registry.LeftUpperArm.position - registry.Spine.position;
+            Quaternion handRotation = chainHasGripFrame[OrdinaryVesselHandIndex]
+                ? chainHandRotations[OrdinaryVesselHandIndex] : registry.LeftHand.rotation;
+            Vector3 wristTarget = ordinaryTorsoLeanTarget - handRotation *
+                handAttachments[OrdinaryVesselHandIndex].SocketPositionInHand;
+            float reach = LimbTwoBoneIk.ChainLength(registry.LeftUpperArm,
+                registry.LeftForearm, registry.LeftHand) * 0.98f;
+            if (Vector3.Distance(registry.LeftUpperArm.position, wristTarget) <= reach)
+                return;
+            float low = 0f;
+            float high = budget;
+            for (int iteration = 0; iteration < 6; iteration++)
+            {
+                float middle = (low + high) * 0.5f;
+                Vector3 shoulder = PredictCounterLeanShoulder(middle, axis.normalized,
+                    registry.Pelvis.position, spineOffset, shoulderOffset);
+                if (Vector3.Distance(shoulder, wristTarget) <= reach)
+                    high = middle;
+                else
+                    low = middle;
+            }
+            // The moving vessel already supplies a continuous entry path:
+            // its first target is at the carried hand, requiring zero lean.
+            // Fading the required contact angle again detaches the fingers
+            // midway through placement. Only the release is time-blended.
+            float contactWeight = ordinaryTorsoLeanGoalWeight > 0.0001f
+                ? 1f
+                : Mathf.SmoothStep(0f, 1f, ordinaryTorsoLeanWeight);
+            float angle = high * contactWeight;
+            // A waist-only bend wastes the pelvis-to-spine lever and makes a
+            // low shot glass unreachable even with the torso at its limit.
+            // Move that pivot with a bounded hip hinge, then spend the rest
+            // of the same total angle at the spine. The feet keep the clip's
+            // original contacts; neither the actor nor the served dock moves.
+            Pose leftContact = new Pose(registry.LeftFoot.position, registry.LeftFoot.rotation);
+            Pose rightContact = new Pose(registry.RightFoot.position, registry.RightFoot.rotation);
+            Vector3 leftKnee = registry.LeftShin.position;
+            Vector3 rightKnee = registry.RightShin.position;
+            Quaternion pelvisBase = registry.Pelvis.rotation;
+            Quaternion spineBase = registry.Spine.rotation;
+            Quaternion hipBend = Quaternion.AngleAxis(
+                Mathf.Min(angle, MaximumCounterHipLeanDegrees), axis.normalized);
+            registry.Pelvis.rotation = hipBend * pelvisBase;
+            registry.Spine.rotation = Quaternion.AngleAxis(angle, axis.normalized) * spineBase;
+            LimbTwoBoneIk.Solve(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
+                leftContact.position, leftContact.rotation, leftKnee);
+            LimbTwoBoneIk.Solve(registry.RightThigh, registry.RightShin, registry.RightFoot,
+                rightContact.position, rightContact.rotation, rightKnee);
+        }
+
+        private static Vector3 PredictCounterLeanShoulder(float angle, Vector3 axis,
+            Vector3 pelvis, Vector3 spineOffset, Vector3 shoulderOffset)
+        {
+            return pelvis + Quaternion.AngleAxis(Mathf.Min(angle, MaximumCounterHipLeanDegrees), axis) *
+                spineOffset + Quaternion.AngleAxis(angle, axis) * shoulderOffset;
         }
 
         private void SetOrdinaryClip(
             BarBartenderClipKind kind,
             float elapsedSeconds)
         {
-            currentClipKind = kind;
-            currentClipTimeSeconds = Mathf.Max(0f, elapsedSeconds);
+            requestedClipKind = kind;
+            requestedClipTimeSeconds = Mathf.Max(0f, elapsedSeconds);
+            if (kind != BarBartenderClipKind.Wipe) RequestTowelService(true);
+            ResolveTowelSafeClip();
+        }
+
+        private void ResolveTowelSafeClip()
+        {
+            currentClipKind = IsTowelServiceReady
+                ? requestedClipKind == BarBartenderClipKind.Wipe
+                    ? BarBartenderClipKind.Notice : requestedClipKind
+                : BarBartenderClipKind.Wipe;
+            // A stored towel cannot wipe. Wait in the shared attentive pose
+            // until the idle owner requests the physical draw at home.
+            currentClipTimeSeconds = IsTowelServiceReady && requestedClipKind == BarBartenderClipKind.Wipe
+                ? ResolveClipLength(BarBartenderClipKind.Notice) : requestedClipTimeSeconds;
         }
 
         private float ResolveClipLength(BarBartenderClipKind kind)
@@ -575,264 +744,70 @@ namespace BarPromenade
         }
 
         private void SolveOrdinaryReach(int index)
+            => SolveOrdinaryReach(index, chainTargets[index], chainWeights[index]);
+
+        private void SolveOrdinaryReach(int index, Vector3 target, float weight)
         {
             Transform shoulder = chainShoulders[index];
             Transform elbow = chainElbows[index];
-            Transform grip = chainGrips[index];
-            Quaternion shoulderBase = shoulder.rotation;
-            Quaternion elbowBase = elbow.rotation;
-            for (int iteration = 0;
-                 iteration < OrdinarySolveIterations;
-                 iteration++)
-            {
-                RotateTowards(elbow, grip, chainTargets[index]);
-                RotateTowards(shoulder, grip, chainTargets[index]);
-            }
-
-            shoulder.rotation = Quaternion.Slerp(
-                shoulderBase,
-                shoulder.rotation,
-                chainWeights[index]);
-            elbow.rotation = Quaternion.Slerp(
-                elbowBase,
-                elbow.rotation,
-                chainWeights[index]);
+            Transform hand = chainHands[index];
+            Quaternion rotation = chainHasGripFrame[index]
+                ? chainHandRotations[index]
+                : hand.rotation;
+            Vector3 wrist = target - rotation * handAttachments[index].SocketPositionInHand;
+            ApplyClavicleReach(index, wrist, weight);
+            Vector3 hint = shoulder.position +
+                transform.right * (index == OrdinaryVesselHandIndex ? -0.35f : 0.35f) -
+                transform.up * 0.25f;
+            if (chainHasElbowDirection[index]) hint = shoulder.position + chainElbowDirections[index];
+            LimbTwoBoneIk.Solve(shoulder, elbow, hand, wrist, rotation, hint,
+                weight, float.PositiveInfinity, true);
         }
 
-        /// <summary>
-        /// The wheelchair/cashier mechanism: segments bind to the
-        /// static root in the FBX so Unity imports plain renderers;
-        /// at runtime each segment re-parents under its pivot and the
-        /// pivots chain shoulder → elbow → wrist → grip beneath the
-        /// chest bone, so the whole fan rides the torso.
-        /// </summary>
-        private void ReparentChains()
+        private void ApplyClavicleReach(int index, Vector3 wrist, float weight)
         {
-            int count = registry.ExtraArmChains.Count;
-            chainShoulders = new Transform[count];
-            chainElbows = new Transform[count];
-            chainWrists = new Transform[count];
-            chainGrips = new Transform[count];
-            Dictionary<string, Transform> segments =
-                IndexSegments();
-            for (int index = 0; index < count; index++)
-            {
-                BarBartenderArmChain chain =
-                    registry.ExtraArmChains[index];
-                chainShoulders[index] = chain.ShoulderPivot;
-                chainElbows[index] = chain.ElbowPivot;
-                chainWrists[index] = chain.WristPivot;
-                chainGrips[index] = chain.GripPivot;
-
-                chain.ShoulderPivot.SetParent(registry.Chest, true);
-                chain.ElbowPivot.SetParent(chain.ShoulderPivot, true);
-                chain.WristPivot.SetParent(chain.ElbowPivot, true);
-                chain.GripPivot.SetParent(chain.WristPivot, true);
-
-                AttachSegment(
-                    segments,
-                    $"ARM{chain.ChainId.Substring(3, 1)}_Upper." +
-                    chain.ChainId.Substring(5, 1),
-                    chain.ShoulderPivot);
-                AttachSegment(
-                    segments,
-                    $"ARM{chain.ChainId.Substring(3, 1)}_Fore." +
-                    chain.ChainId.Substring(5, 1),
-                    chain.ElbowPivot);
-                AttachSegment(
-                    segments,
-                    $"ARM{chain.ChainId.Substring(3, 1)}_Hand." +
-                    chain.ChainId.Substring(5, 1),
-                    chain.WristPivot);
-            }
-
-            AttachSegment(
-                segments,
-                "ARM2_BrassBand.R",
-                registry.ExtraArmChains[1].ElbowPivot);
-        }
-
-        private Dictionary<string, Transform> IndexSegments()
-        {
-            var segments = new Dictionary<string, Transform>(
-                StringComparer.Ordinal);
-            IReadOnlyList<BarBartenderRendererBinding> bindings =
-                registry.RendererBindings;
-            for (int index = 0; index < bindings.Count; index++)
-            {
-                BarBartenderRendererBinding binding = bindings[index];
-                if (binding?.Renderer != null)
-                {
-                    segments[binding.RendererName] =
-                        binding.Renderer.transform;
-                }
-            }
-
-            return segments;
-        }
-
-        private static void AttachSegment(
-            IReadOnlyDictionary<string, Transform> segments,
-            string segmentName,
-            Transform pivot)
-        {
-            if (!segments.TryGetValue(
-                    segmentName,
-                    out Transform segment))
-            {
-                throw new InvalidOperationException(
-                    $"The bartender model lost segment " +
-                    $"'{segmentName}'.");
-            }
-
-            segment.SetParent(pivot, true);
-        }
-
-        private void CaptureRestPose()
-        {
-            int count = registry.ExtraArmChains.Count;
-            shoulderRestRotations = new Quaternion[count];
-            elbowRestRotations = new Quaternion[count];
-            wristRestRotations = new Quaternion[count];
-            for (int index = 0; index < count; index++)
-            {
-                shoulderRestRotations[index] =
-                    chainShoulders[index].localRotation;
-                elbowRestRotations[index] =
-                    chainElbows[index].localRotation;
-                wristRestRotations[index] =
-                    chainWrists[index].localRotation;
-            }
-
-            leftUpperRest = registry.LeftUpperArm.localRotation;
-            leftForearmRest = registry.LeftForearm.localRotation;
-            rightUpperRest = registry.RightUpperArm.localRotation;
-            rightForearmRest = registry.RightForearm.localRotation;
-            headRest = registry.Head.localRotation;
-        }
-
-        /// <summary>
-        /// Folds the canonical pair from the imported A-pose to a
-        /// braced counter rest with the slowest sway of the three
-        /// pairs — solved in world space against root-local rest
-        /// points, the axis-safe way to pose imported FBX bones.
-        /// </summary>
-        private void ApplyCanonicalRest()
-        {
-            registry.LeftUpperArm.localRotation = leftUpperRest;
-            registry.LeftForearm.localRotation = leftForearmRest;
-            registry.RightUpperArm.localRotation = rightUpperRest;
-            registry.RightForearm.localRotation = rightForearmRest;
-
-            float sway = Mathf.Sin(elapsed * 0.37f) * 0.035f;
-            Vector3 leftTarget = transform.TransformPoint(
-                LeftHandRestLocal + new Vector3(0f, sway, 0f));
-            Vector3 rightTarget = transform.TransformPoint(
-                RightHandRestLocal - new Vector3(0f, sway, 0f));
-            FoldCanonicalArm(
-                registry.LeftUpperArm,
-                registry.LeftForearm,
-                registry.LeftHand,
-                leftTarget);
-            FoldCanonicalArm(
-                registry.RightUpperArm,
-                registry.RightForearm,
-                registry.RightHand,
-                rightTarget);
-        }
-
-        private static void FoldCanonicalArm(
-            Transform upperArm,
-            Transform forearm,
-            Transform hand,
-            Vector3 target)
-        {
-            for (int iteration = 0;
-                 iteration < SolveIterations;
-                 iteration++)
-            {
-                RotateTowards(forearm, hand, target);
-                RotateTowards(upperArm, hand, target);
-            }
-        }
-
-        private void ApplyHeadSway()
-        {
-            float yaw = Mathf.Sin(elapsed * 0.21f) * HeadSwayDegrees;
-            float pitch = Mathf.Sin(elapsed * 0.13f + 1.1f) * 1.8f;
-            registry.Head.localRotation =
-                headRest * Quaternion.Euler(pitch, yaw, 0f);
-        }
-
-        /// <summary>
-        /// Each free chain does quiet desynchronized business: its
-        /// own phase, its own speed, small amplitudes — polishing,
-        /// drumming, bracing, without literal props.
-        /// </summary>
-        private void ApplyChainIdle(int index)
-        {
-            float phase = elapsed * chainSpeeds[index] +
-                chainPhases[index];
-            float shoulderSwing =
-                Mathf.Sin(phase) * IdleSwayDegrees;
-            float shoulderLift =
-                Mathf.Sin(phase * 0.7f + 0.6f) * 2.6f;
-            float elbowSwing =
-                Mathf.Sin(phase * 1.3f + 2.1f) * ElbowSwayDegrees;
-            chainShoulders[index].localRotation =
-                shoulderRestRotations[index] *
-                Quaternion.Euler(
-                    shoulderLift,
-                    shoulderSwing,
-                    shoulderSwing * 0.4f);
-            chainElbows[index].localRotation =
-                elbowRestRotations[index] *
-                Quaternion.Euler(
-                    elbowSwing,
-                    0f,
-                    elbowSwing * 0.5f);
-            chainWrists[index].localRotation =
-                wristRestRotations[index];
-        }
-
-        /// <summary>
-        /// CCD toward the chain target: shoulder and elbow pivots
-        /// steer the grip pivot, then slerp back by the eased weight —
-        /// the shared procedural-arm idiom.
-        /// </summary>
-        private void SolveChainReach(int index)
-        {
-            float weight = chainWeights[index];
-            Vector3 target = chainTargets[index];
+            Transform clavicle = chainClavicles[index];
+            // A right-wrist roll can request a second solve in the same frame.
+            // Always guide from this frame's sampled shoulder, never compound
+            // the first solve's protraction on an unkeyed animation channel.
+            clavicle.localRotation = authoredClavicleRotations[index];
             Transform shoulder = chainShoulders[index];
-            Transform elbow = chainElbows[index];
-            Transform grip = chainGrips[index];
-
-            Quaternion shoulderBase = shoulder.rotation;
-            Quaternion elbowBase = elbow.rotation;
-            for (int iteration = 0;
-                 iteration < SolveIterations;
-                 iteration++)
+            float reach = LimbTwoBoneIk.ChainLength(
+                shoulder, chainElbows[index], chainHands[index]) * 0.98f;
+            if (Vector3.Distance(shoulder.position, wrist) <=
+                reach + ClavicleReachThresholdMeters)
             {
-                RotateTowards(elbow, grip, target);
-                RotateTowards(shoulder, grip, target);
+                return;
             }
 
-            shoulder.rotation = Quaternion.Slerp(
-                shoulderBase,
-                shoulder.rotation,
-                weight);
-            elbow.rotation = Quaternion.Slerp(
-                elbowBase,
-                elbow.rotation,
-                weight);
+            Vector3 offset = shoulder.position - clavicle.position;
+            Vector3 towardWrist = wrist - clavicle.position;
+            Vector3 axis = Vector3.Cross(offset, towardWrist);
+            if (axis.sqrMagnitude < 0.000001f)
+                return;
+            axis.Normalize();
+            float low = 0f;
+            float high = Mathf.Min(MaximumClavicleReachDegrees,
+                Vector3.Angle(offset, towardWrist));
+            for (int iteration = 0; iteration < 6; iteration++)
+            {
+                float middle = (low + high) * 0.5f;
+                Vector3 guidedShoulder = clavicle.position +
+                    Quaternion.AngleAxis(middle, axis) * offset;
+                if (Vector3.Distance(guidedShoulder, wrist) <= reach)
+                    high = middle;
+                else
+                    low = middle;
+            }
+
+            clavicle.rotation = Quaternion.AngleAxis(
+                high * Mathf.Clamp01(weight), axis) * clavicle.rotation;
         }
 
         private void OnEnable()
         {
             if (Application.isPlaying &&
                 isInitialized &&
-                usesOrdinaryRig &&
                 !hasGraph)
             {
                 CreateOrdinaryGraph();
@@ -841,18 +816,22 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            counterSupportGoalWeight = counterSupportWeight = 0f;
+            RestoreAuthoredPose();
+            TowelPresentation?.HoldDisabledPose();
             DestroyOrdinaryGraph();
-            registry?.SetServiceTowelVisible(true);
+            handPose?.ResetGrip();
         }
 
         private void OnDestroy()
         {
+            counterSupportGoalWeight = counterSupportWeight = 0f;
             DestroyOrdinaryGraph();
         }
 
         private void CreateOrdinaryGraph()
         {
-            if (hasGraph || !usesOrdinaryRig)
+            if (hasGraph)
             {
                 return;
             }
@@ -939,23 +918,5 @@ namespace BarPromenade
             actionClip = null;
         }
 
-        private static void RotateTowards(
-            Transform joint,
-            Transform end,
-            Vector3 target)
-        {
-            Vector3 toEnd = end.position - joint.position;
-            Vector3 toTarget = target - joint.position;
-            if (toEnd.sqrMagnitude < 0.000001f ||
-                toTarget.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            joint.rotation = Quaternion.FromToRotation(
-                    toEnd,
-                    toTarget) *
-                joint.rotation;
-        }
     }
 }

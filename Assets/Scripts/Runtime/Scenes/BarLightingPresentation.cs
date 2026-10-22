@@ -56,6 +56,7 @@ namespace BarPromenade
         public int BounceRegionCount { get; private set; }
         public Bounds RoomBounds { get; private set; }
         public Renderer CounterSurface { get; private set; }
+        public BarReflectionController Reflection { get; private set; }
 
         public void Initialize(BarInteriorRoot bar)
         {
@@ -95,6 +96,8 @@ namespace BarPromenade
             }
             initialized = true;
             RefreshVisibility();
+            Reflection = gameObject.AddComponent<BarReflectionController>();
+            Reflection.Initialize(owner, this, RoomBounds);
         }
 
         public override bool IsForCamera(Camera camera) => initialized && isActiveAndEnabled &&
@@ -104,7 +107,9 @@ namespace BarPromenade
 
         public override void PrepareForCamera(Camera camera)
         {
-            if (!IsForCamera(camera)) { Shader.SetGlobalInt(BounceCountId, 0); return; }
+            bool eligible = IsForCamera(camera);
+            Reflection?.Prepare(eligible && GraphicsEffectsSettings.CleanReflectionsEnabled);
+            if (!eligible) { Shader.SetGlobalInt(BounceCountId, 0); return; }
 #if SURFACE_CACHE
             if (BarSurfaceCacheGiPilot.Current != null &&
                 BarSurfaceCacheGiPilot.Current.ReplacesFiniteBounce(camera))
@@ -234,10 +239,12 @@ namespace BarPromenade
         {
             base.OnEnable();
             refreshAt = 0f;
+            if (Reflection != null) Reflection.enabled = true;
         }
 
         protected override void OnDisable()
         {
+            if (Reflection != null) Reflection.enabled = false;
             Array.Clear(colors, 0, colors.Length);
             base.OnDisable();
         }

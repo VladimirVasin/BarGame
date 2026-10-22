@@ -18,6 +18,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+sys.dont_write_bytecode = True
 import toolchain
 from asset_pipeline import (repository_path, output_stamp, validate_output, publish_files,
                             workspace_temporary_directory)

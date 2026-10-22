@@ -504,8 +504,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(anchors.Spine.parent, Is.SameAs(anchors.Pelvis));
                 Assert.That(anchors.Chest.parent, Is.SameAs(anchors.Spine));
                 Assert.That(registry.AnatomicalParts.Count, Is.EqualTo(16));
-                Assert.That(registry.Animations.Count, Is.EqualTo(50));
-                Assert.That(manifest.actions, Has.Length.EqualTo(50));
+                Assert.That(registry.Animations.Count, Is.EqualTo(55));
+                Assert.That(manifest.actions, Has.Length.EqualTo(55));
 
                 SkinnedMeshRenderer renderer =
                     FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
@@ -719,8 +719,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
-            Assert.That(manifest.action_count, Is.EqualTo(50));
-            Assert.That(manifest.actions, Has.Length.EqualTo(50));
+            Assert.That(manifest.action_count, Is.EqualTo(55));
+            Assert.That(manifest.actions, Has.Length.EqualTo(55));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,
@@ -769,6 +769,7 @@ namespace BarPromenade.Tests.EditMode
             AssertRunManifestContract(manifest);
             AssertColdManifestContract(manifest);
             AssertBarDrinkManifestContract(manifest);
+            AssertCounterSeatManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);
 
             V2Part facePart = Array.Find(
@@ -829,6 +830,31 @@ namespace BarPromenade.Tests.EditMode
                 expectedDuration: 2f,
                 expectedFramesPerSecond: 12f,
                 expectedLoop: false);
+        }
+
+        private static void AssertCounterSeatManifestContract(V2Manifest manifest)
+        {
+            foreach (string name in new[]
+            {
+                CounterSeatInteraction.EnterRightClipName,
+                CounterSeatInteraction.ExitRightClipName,
+                CounterSeatInteraction.EnterLeftClipName,
+                CounterSeatInteraction.ExitLeftClipName,
+                CounterSeatInteraction.BarLoopClipName
+            })
+            {
+                bool loop = name == CounterSeatInteraction.BarLoopClipName;
+                AssertRuntimeTiming(manifest, name,
+                    loop ? CounterSeatInteraction.LoopFrameCount : CounterSeatInteraction.TransferFrameCount,
+                    loop ? CounterSeatInteraction.LoopFramesPerSecond : CounterSeatInteraction.TransferFramesPerSecond);
+                V2Action action = Array.Find(manifest.actions, candidate => candidate.name == name);
+                Assert.That(action.category, Is.EqualTo("counter_seat"));
+                Assert.That(action.loop, Is.EqualTo(loop));
+                Assert.That(action.root_motion, Is.False);
+                Assert.That(action.event_count, Is.Zero);
+                Assert.That(action.bone_only, Is.True);
+                Assert.That(action.in_place, Is.True);
+            }
         }
 
         private static void AssertColdManifestContract(V2Manifest manifest)

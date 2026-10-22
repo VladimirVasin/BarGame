@@ -4,6 +4,49 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2 }
+
+    /// <summary>Neutral hand anatomy measured in rotation-only hand space, in metres.</summary>
+    public readonly struct AnatomicalHandFrame
+    {
+        public AnatomicalHandFrame(Vector3 palmCentre, Vector3 fingerDirection,
+            Vector3 thumbDirection, Vector3 palmNormal, Vector3 cylinderCentre)
+        {
+            PalmCentreInHand = palmCentre;
+            FingerDirectionInHand = fingerDirection.normalized;
+            ThumbDirectionInHand = thumbDirection.normalized;
+            PalmNormalInHand = palmNormal.normalized;
+            CylinderCentreInHand = cylinderCentre;
+        }
+
+        public Vector3 PalmCentreInHand { get; }
+        public Vector3 FingerDirectionInHand { get; }
+        public Vector3 ThumbDirectionInHand { get; }
+        public Vector3 PalmNormalInHand { get; }
+        public Vector3 CylinderCentreInHand { get; }
+
+        public Quaternion ResolveHandRotation(Vector3 targetPalmNormal, Vector3 targetDistalAxis)
+        {
+            Vector3 distal = targetDistalAxis.normalized;
+            Vector3 palm = Vector3.ProjectOnPlane(targetPalmNormal, distal).normalized;
+            return Quaternion.LookRotation(distal, palm) * Quaternion.Inverse(
+                Quaternion.LookRotation(FingerDirectionInHand, PalmNormalInHand));
+        }
+
+        public Vector3 ResolveHandPosition(Vector3 targetPalmCentre, Quaternion rotation)
+            => targetPalmCentre - rotation * PalmCentreInHand;
+
+        /// <summary>The wrist pose that puts the authored curled fingers around a physical cylinder.</summary>
+        public Pose ResolveCylinderPose(Vector3 centre, Vector3 axis, Vector3 palmTowardObject)
+        {
+            Vector3 cylinderAxis = axis.normalized;
+            Vector3 palm = Vector3.ProjectOnPlane(palmTowardObject, cylinderAxis).normalized;
+            Quaternion rotation = Quaternion.LookRotation(cylinderAxis, palm) *
+                Quaternion.Inverse(Quaternion.LookRotation(ThumbDirectionInHand, PalmNormalInHand));
+            return new Pose(centre - rotation * CylinderCentreInHand, rotation);
+        }
+    }
+
     /// <summary>Authored hand shapes on the existing rig. Contact owners apply them after sampling a body action.</summary>
     [DisallowMultipleComponent]
     public sealed class NpcHandPose : MonoBehaviour
@@ -43,6 +86,46 @@ namespace BarPromenade
         public float LeftGripWeight => left?.Weight ?? 0f;
         public float RightGripWeight => right?.Weight ?? 0f;
 
+        public AnatomicalHandFrame GetAnatomicalFrame(bool isLeft)
+            => Hand(isLeft).AnatomicalFrame;
+
+        public AnatomicalHandFrame GetAnatomicalFrame(bool isLeft, NpcHandGripKind kind)
+            => Hand(isLeft).GetVariantFrame(kind);
+
+        public NpcHandGripKind GetGripKind(bool isLeft) => Hand(isLeft).Kind;
+
+        public static NpcHandGripKind GripKindForVessel(BarDrinkVesselKind vessel)
+            => vessel == BarDrinkVesselKind.WineGlass ? NpcHandGripKind.WineBowl
+                : vessel == BarDrinkVesselKind.Snifter ? NpcHandGripKind.SnifterBowl
+                : NpcHandGripKind.Cylindrical;
+
+        public float GripRadius(NpcHandGripKind kind) => kind switch
+        {
+            NpcHandGripKind.Cylindrical => cylinderRadius,
+            NpcHandGripKind.WineBowl => .037f,
+            NpcHandGripKind.SnifterBowl => .046f,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        public Vector3 AnatomicalPalmNormal(bool isLeft)
+        {
+            BoundHand bound = Hand(isLeft);
+            return bound.Binding.Hand.rotation * bound.AnatomicalFrame.PalmNormalInHand;
+        }
+
+        public Vector3 AnatomicalFingerDirection(bool isLeft)
+        {
+            BoundHand bound = Hand(isLeft);
+            return bound.Binding.Hand.rotation * bound.AnatomicalFrame.FingerDirectionInHand;
+        }
+
+        public Vector3 AnatomicalCylinderCentre(bool isLeft)
+        {
+            BoundHand bound = Hand(isLeft);
+            Transform hand = bound.Binding.Hand;
+            return hand.position + hand.rotation * bound.GetVariantFrame(bound.Kind).CylinderCentreInHand;
+        }
+
         public void Configure(HandBinding[] bindings, string authoredShapeName, float authoredCylinderRadius)
         {
             if (bindings == null || bindings.Length != 2)
@@ -77,9 +160,12 @@ namespace BarPromenade
         }
 
         public void SetGrip(bool isLeft, float weight)
+            => SetGrip(isLeft, weight, NpcHandGripKind.Cylindrical);
+
+        public void SetGrip(bool isLeft, float weight, NpcHandGripKind kind)
         {
             if (!Finite(weight)) throw new ArgumentOutOfRangeException(nameof(weight));
-            Hand(isLeft).SetWeight(Mathf.Clamp01(weight));
+            Hand(isLeft).SetWeight(Mathf.Clamp01(weight), kind);
         }
 
         public void ResetGrip()
@@ -151,7 +237,25 @@ namespace BarPromenade
             public readonly HandBinding Binding;
             public readonly Quaternion FrameInHand;
             public float Weight { get; private set; } = -1f;
+            public NpcHandGripKind Kind { get; private set; }
             private readonly int[] shapes;
+            private readonly Dictionary<NpcHandGripKind, int[]> variantShapes = new();
+            private readonly Dictionary<NpcHandGripKind, AnatomicalHandFrame> variantFrames = new();
+            private AnatomicalHandFrame anatomicalFrame;
+            private bool hasAnatomicalFrame;
+
+            public AnatomicalHandFrame AnatomicalFrame
+            {
+                get
+                {
+                    if (!hasAnatomicalFrame)
+                    {
+                        anatomicalFrame = MeasureAnatomy();
+                        hasAnatomicalFrame = true;
+                    }
+                    return anatomicalFrame;
+                }
+            }
 
             public BoundHand(HandBinding binding, string shape, Transform owner, HashSet<SkinnedMeshRenderer> owned)
             {
@@ -189,15 +293,141 @@ namespace BarPromenade
                 }
             }
 
-            public void SetWeight(float weight)
+            public void SetWeight(float weight, NpcHandGripKind kind = NpcHandGripKind.Cylindrical)
+            {
+                GetVariantShapes(kind);
+                foreach (KeyValuePair<NpcHandGripKind, int[]> variant in variantShapes)
+                    WriteWeights(variant.Value, variant.Key == kind ? weight : 0f);
+                WriteWeights(shapes, kind == NpcHandGripKind.Cylindrical ? weight : 0f);
+                Kind = kind;
+                Weight = weight;
+            }
+
+            private void WriteWeights(int[] indices, float weight)
             {
                 // Sampling a body clip can restore renderer defaults without
                 // changing this owner's cached weight. Reconcile the actual
                 // mesh after sampling, including an unchanged held grip.
-                for (int i = 0; i < shapes.Length; i++)
-                    if (Binding.Renderers[i] != null && Binding.Renderers[i].GetBlendShapeWeight(shapes[i]) != weight * 100f)
-                        Binding.Renderers[i].SetBlendShapeWeight(shapes[i], weight * 100f);
-                Weight = weight;
+                for (int i = 0; i < indices.Length; i++)
+                    if (Binding.Renderers[i] != null && Binding.Renderers[i].GetBlendShapeWeight(indices[i]) != weight * 100f)
+                        Binding.Renderers[i].SetBlendShapeWeight(indices[i], weight * 100f);
+            }
+
+            private int[] GetVariantShapes(NpcHandGripKind kind)
+            {
+                if (kind == NpcHandGripKind.Cylindrical) return shapes;
+                if (variantShapes.TryGetValue(kind, out int[] found)) return found;
+                string shape = VariantName(kind);
+                found = new int[Binding.Renderers.Count];
+                for (int index = 0; index < found.Length; index++)
+                {
+                    found[index] = CharacterJointDeformation.FindShape(Binding.Renderers[index].sharedMesh, shape);
+                    if (found[index] < 0)
+                        throw new InvalidOperationException("Missing " + shape + " on " + Binding.Renderers[index].name);
+                }
+                variantShapes.Add(kind, found);
+                return found;
+            }
+
+            public AnatomicalHandFrame GetVariantFrame(NpcHandGripKind kind)
+            {
+                if (kind == NpcHandGripKind.Cylindrical) return AnatomicalFrame;
+                if (variantFrames.TryGetValue(kind, out AnatomicalHandFrame frame)) return frame;
+                GetVariantShapes(kind);
+                string prefix = "ANCHOR_" + VariantName(kind);
+                string suffix = Binding.IsLeft ? ".L" : ".R";
+                Transform centre = FindAnchor(Binding.Hand, prefix + "Centre" + suffix);
+                if (centre == null || FindAnchor(Binding.Hand, prefix + "Axis" + suffix) == null ||
+                    FindAnchor(Binding.Hand, prefix + "Palm" + suffix) == null)
+                    throw new InvalidOperationException("The shared grip variant lost its authored hand anchors: " + prefix);
+                AnatomicalHandFrame anatomy = AnatomicalFrame;
+                Vector3 offset = Quaternion.Inverse(Binding.Hand.rotation) *
+                    (centre.position - Binding.Hand.position);
+                frame = new AnatomicalHandFrame(anatomy.PalmCentreInHand, anatomy.FingerDirectionInHand,
+                    anatomy.ThumbDirectionInHand, anatomy.PalmNormalInHand, offset);
+                variantFrames.Add(kind, frame);
+                return frame;
+            }
+
+            private static string VariantName(NpcHandGripKind kind) => kind switch
+            {
+                NpcHandGripKind.WineBowl => "WineBowlGrip",
+                NpcHandGripKind.SnifterBowl => "SnifterBowlGrip",
+                _ => throw new ArgumentOutOfRangeException(nameof(kind))
+            };
+
+            private static Transform FindAnchor(Transform root, string name)
+            {
+                if (root.name == name) return root;
+                for (int index = 0; index < root.childCount; index++)
+                {
+                    Transform found = FindAnchor(root.GetChild(index), name);
+                    if (found != null) return found;
+                }
+                return null;
+            }
+
+            private AnatomicalHandFrame MeasureAnatomy()
+            {
+                Vector3 palm = default, thumb = default, index = default, fingers = default;
+                bool hasPalm = false, hasThumb = false, hasIndex = false;
+                int fingerCount = 0;
+                foreach (SkinnedMeshRenderer renderer in Binding.Renderers)
+                {
+                    string name = renderer.name;
+                    // Default NPC catalogs also bind the optional glove copy.
+                    // Anatomy comes from the original skin, independently of
+                    // the wardrobe selection; both copies receive the grip.
+                    if (!name.StartsWith("GEO_", StringComparison.Ordinal))
+                        continue;
+                    bool isThumb = name.Contains("Thumb.");
+                    bool isFinger = name.Contains("Finger");
+                    bool isPalm = name.Contains("HandPalm.") ||
+                        name.StartsWith("GEO_Hand.", StringComparison.Ordinal);
+                    if (!isThumb && !isFinger && !isPalm)
+                        continue;
+                    Vector3 centre = MeasureNeutralCentre(renderer);
+                    if (isPalm) { palm = centre; hasPalm = true; }
+                    if (isThumb) { thumb = centre; hasThumb = true; }
+                    if (isFinger)
+                    {
+                        fingers += centre;
+                        fingerCount++;
+                        if (name.Contains("Finger0.")) { index = centre; hasIndex = true; }
+                    }
+                }
+
+                if (!hasPalm || !hasThumb || !hasIndex || fingerCount != 4)
+                    throw new InvalidOperationException("An anatomical grip needs the existing palm, thumb and four finger meshes.");
+                Vector3 distal = (fingers / fingerCount - palm).normalized;
+                Vector3 towardThumb = Vector3.ProjectOnPlane(thumb - index, distal).normalized;
+                // Unity's imported coordinates reflect Blender's hand frame.
+                // Named left/right anatomy fixes which side of this measured
+                // thumb/index plane is palm, independently of socket rotation.
+                Vector3 normal = Vector3.Cross(distal, towardThumb).normalized *
+                    (Binding.IsLeft ? -1f : 1f);
+                if (distal.sqrMagnitude < 0.9f || normal.sqrMagnitude < 0.9f)
+                    throw new InvalidOperationException("The measured hand anatomy is degenerate.");
+                Transform hand = Binding.Hand;
+                Vector3 cylinder = Quaternion.Inverse(hand.rotation) *
+                    (Binding.CentreAnchor.position - hand.position);
+                return new AnatomicalHandFrame(palm, distal, towardThumb, normal, cylinder);
+            }
+
+            private Vector3 MeasureNeutralCentre(SkinnedMeshRenderer renderer)
+            {
+                Mesh mesh = renderer.sharedMesh;
+                Transform[] bones = renderer.bones;
+                int bone = Array.IndexOf(bones, Binding.Hand);
+                if (bone < 0)
+                    throw new InvalidOperationException("An anatomical hand mesh must retain its original hand bone.");
+                Matrix4x4 bindPose = mesh.bindposes[bone];
+                Vector3[] vertices = mesh.vertices;
+                Vector3 sum = Vector3.zero;
+                Quaternion inverse = Quaternion.Inverse(Binding.Hand.rotation);
+                for (int index = 0; index < vertices.Length; index++)
+                    sum += inverse * Binding.Hand.TransformVector(bindPose.MultiplyPoint3x4(vertices[index]));
+                return sum / vertices.Length;
             }
         }
     }

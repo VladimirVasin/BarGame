@@ -56,24 +56,19 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   M-65: broad flatter panels, gentle waist shaping, smooth rear fall;
   defined armholes, shaped sleeves with elbow room/taper/bunched cuffs.
   Restrained drape folds give cloth weight without padding. Identity,
-  `31` core bones/`50` actions stay; `12` hair bones extend the rig.
+  `31` core bones/`55` actions stay; `12` hair bones extend the rig.
 - The open M-65 has four constructed pockets and flaps, a standing collar,
   plackets, cuff thickness and a lined front opening. Its faded olive fabric
   keeps the right-shoulder ochre repair patch, restrained seams and wear;
   the two forearm atlas cells retain identical painting. Shirt, trousers and
   boots are independent garments over actual bare anatomy. No satchel strap,
   bandage, insignia, text or copied film marking supplies a military biography.
-- `PlayerJacketCloth`/`hero_jacket_cloth_v1`: eight hem/four cuff nodes;
-  Shoulders/chest pin;open front;pockets/plackets follow hem.
-  Damped gravity/inertia/wind/edges: `7.5/2.5 cm`.
-  Wide sleeve fields/folds: `135°`, then cloth; seams match.
-  Hem clears trousers; posed skin/correctives follow hips/legs.
-  Material edges cap contact strain;lining/outer move jointly.
-  Deep folds:pockets/flaps;free:feasible whole exit first/fewer passes/fallback.
-  Body/hand/clothes/gear;0jacket/ribbon;pinned/area Burst/shared read-only snapshot/fallback.
-  Recorded vertices/normals;live fallback120Hz/≤3 steps;0debt.
-  Removal/discontinuity resets;hide retains;pause freezes.
-  Hero;mirror/arms copy/local folds;no live body bake.
+- `PlayerJacketCloth`/`hero_jacket_cloth_v1`: accepted `2026-10-22`,
+  all gameplay uses rig-only jacket, as CombatTest; no live/baked secondary
+  motion, cloth contacts or wind. Bones/elbow folds/hand-opening/mirror-arms stay.
+  Editor authoring retains eight hem/four cuff nodes, pinned shoulders/chest,
+  material strain/paired lining, body/gear contacts, recorded vertices/normals
+  and bounded live fallback. Sources/materials remain immutable.
 - Geometry: construction; the `256 x 256` Point clothing atlas retains
   seams, weave and wear. Accepted `2026-09-29`: UV0 normal/response companions
   add subtle cloth/leather, skin and directional hair relief/smoothness;
@@ -91,10 +86,10 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   There is no ponytail. A fixed cap and three weighted regions
   each use three joints and a terminal point. `PlayerHair` replays physical bones;
   pose/gear mismatch→live inertia/gravity/wind/bends after final body pose.
-  Hair/jacket:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
+  Hair:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
   Torso:jacket→shirt→skin;limbs:worn sleeves/trousers/boots. Camera hiding keeps
   worn envelopes;undressing uses bare anatomy;no body bake. Thin collar boxes
-  prevent voids/trapped cuffs. Gear contacts:jacket/hair/scarf;0pistol-holster/world.
+  prevent voids/trapped cuffs. Gear contacts:hair/scarf;0pistol-holster/world.
   Hair:scarf/tail/strand contacts;persistent Burst/fallback;managed bends;120Hz/≤2/0debt.
   Pause/transition freeze;discontinuity/teleport resets. Live hero only;mirror copies
   solved pose/first-person subsets passive.
@@ -262,7 +257,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   the hero, changes his gait or drives health. Canon boundaries live in the
   story-bible §6 registry and art-bible §10g; this is ordinary rig animation
   without an atlas replacement.
-- All `50` actions carry the independent
+- All `55` actions carry the independent
   `pelvis -> spine -> chest` tracks on the preserved 31-bone core. Their
   timings, sockets, hand/foot contacts and contextual seams remain the same;
   the newly weighted shirt and jacket now visibly follow each spinal region.

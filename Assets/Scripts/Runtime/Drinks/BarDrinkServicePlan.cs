@@ -74,19 +74,19 @@ namespace BarPromenade
         {
             return new BarBeerTapServicePlan(
                 new BarDrinkServicePose(
-                    new Vector3(5.08f, 0f, 6.72f),
+                    new Vector3(3.57f, 0f, 2.92f),
                     Quaternion.Euler(0f, 180f, 0f)),
                 new BarDrinkServicePose(
-                    new Vector3(5.08f, 1.025f, 6.13f),
+                    new Vector3(3.57f, 1.025f, 2.33f),
                     Quaternion.identity),
                 new BarDrinkServicePose(
-                    new Vector3(5.08f, 1.45f, 6.13f),
+                    new Vector3(3.57f, 1.45f, 2.33f),
                     Quaternion.Euler(90f, 0f, 0f)),
                 new BarDrinkServicePose(
-                    new Vector3(5.08f, 1.58f, 5.75f),
+                    new Vector3(3.57f, 1.58f, 1.95f),
                     Quaternion.identity),
                 new BarDrinkServicePose(
-                    new Vector3(5.08f, 1.796f, 5.75f),
+                    new Vector3(3.57f, 1.796f, 1.95f),
                     Quaternion.identity));
         }
     }
@@ -105,6 +105,7 @@ namespace BarPromenade
         public const float MinimumMenuVesselClearance = 0.08f;
 
         private readonly IReadOnlyList<BarDrinkBottleSlotPlan> bottleSlots;
+        private Vector2 preparationLanes;
 
         public BarDrinkServicePlan(
             string barId,
@@ -135,6 +136,7 @@ namespace BarPromenade
             BottleHandPose = bottleHandPose;
             BottlePourPose = bottlePourPose;
             BeerTap = beerTap ?? BarBeerTapServicePlan.CreateDefault();
+            preparationLanes = new Vector2(vesselHandPose.Position.x, vesselHandPose.Position.x);
 
             if (slots == null)
             {
@@ -171,6 +173,16 @@ namespace BarPromenade
         public IReadOnlyList<BarDrinkBottleSlotPlan> BottleSlots =>
             bottleSlots;
 
+        public Vector3 ResolveBottlePreparationPosition(float guestX)
+        {
+            Vector3 position = BottlePreparationVesselPose.Position;
+            // The booklet stays at the guest's place. Work on the opposite
+            // side of the counter, including the whole tilted bottle envelope.
+            position.x = guestX <= (preparationLanes.x + preparationLanes.y) * 0.5f
+                ? preparationLanes.y : preparationLanes.x;
+            return position;
+        }
+
         public static BarDrinkServicePlan FromLayout(
             BarInteriorLayoutPlan layout)
         {
@@ -200,7 +212,7 @@ namespace BarPromenade
             }
 
             float serviceX = layout.CounterStationPosition.x;
-            float customerZ = counter.Bounds.yMin - 0.72f;
+            float customerZ = BarCounterSeatPlanner.StoolZ;
             float counterSurfaceY =
                 layout.CounterPosition.y +
                 layout.CounterSize.y * 0.5f +
@@ -277,6 +289,8 @@ namespace BarPromenade
                         new Vector3(0.72f, 0.66f, 0.02f),
                     Quaternion.Euler(0f, 0f, 111f)),
                 slots);
+            plan.preparationLanes = new Vector2(counter.Bounds.xMin + 1.4f,
+                counter.Bounds.xMax - 1.4f);
             plan.ValidateOrThrow(layout);
             return plan;
         }

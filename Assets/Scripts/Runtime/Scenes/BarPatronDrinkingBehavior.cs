@@ -312,15 +312,14 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Bottle presentation shared by counter and table patrons. Counter
+    /// Drink presentation shared by counter and table patrons. Counter
     /// patrons sample the cafe's authored full-body Drink clip through the
     /// existing city graph. Table patrons keep planted feet, lean toward the
     /// real tabletop and use a bounded arm solve. Between sips both types put
-    /// the bottle upright on their real surface, support the other hand and
-    /// keep a faint non-referential head drift. In both cases the coffee action
-    /// receives a bottle-specific sip overlay: torso and head lean back, the
-    /// bottle turns horizontally toward the mouth, and its authored neck
-    /// anchor meets the mouth instead of inheriting arbitrary hand axes.
+    /// the vessel upright on their real surface, support the other hand and
+    /// keep a faint non-referential head drift. Low-sofa guests retain their
+    /// seated graph beneath the procedural upper-body pose. The vessel's own
+    /// grip, drinking edge and sip angle determine its final hand contact.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(310)]
@@ -328,9 +327,6 @@ namespace BarPromenade
     {
         public const float BottleLipContactTolerance = 0.015f;
         public const float BottleGripContactTolerance = 0.015f;
-        public const float BottleHandSurfaceOffset = 0.06f;
-        public const float MinimumBottleHandRadialClearance = 0.055f;
-        public const float MinimumRightHandSideAlignment = 0.95f;
         public const float BottleHandOrientationToleranceDegrees = 1f;
         public const float TableSupportContactTolerance = 0.04f;
         public const float BottleSurfaceContactTolerance = 0.025f;
@@ -350,16 +346,19 @@ namespace BarPromenade
 
         private BarPatronDrinkTimeline timeline;
         private CityPedestrianPresentation presentation;
+        private Animator contactAnimator;
+        private AnimatorCullingMode previousAnimatorCulling;
+        private bool ownsAnimatorCulling;
         private AnimationClip authoredDrinkClip;
         private Transform ownerRoot;
         private Transform rightClavicle;
         private Transform rightUpperArm;
         private Transform rightForearm;
         private Transform rightHand;
-        private Transform rightHandSocket;
         private Transform leftClavicle;
         private Transform leftUpperArm;
         private Transform leftForearm;
+        private Transform leftHand;
         private Transform leftHandSocket;
         private Transform spine;
         private Transform chest;
@@ -367,17 +366,30 @@ namespace BarPromenade
         private Transform mouthSocket;
         private Transform bottleRoot;
         private Transform bottleMouth;
-        private float bottleGripToLipDistance;
-        private float bottleGripToBaseDistance;
+        private BarPatronDrinkProp drinkProp;
+        private Vector3 gripLocalPosition;
+        private Vector3 rimLocalPosition;
+        private Vector3 baseLocalPosition;
+        private Vector3 openingLocalAxis = Vector3.up;
+        private Vector3 handleLocalAxis = Vector3.forward;
+        private NpcHandGripKind gripKind;
+        private float maximumSipTiltDegrees = 90f;
+        private float sipTorsoLeanBackDegrees =
+            SipSpineLeanBackDegrees + SipChestLeanBackDegrees;
+        private float sipHeadLeanBackDegrees =
+            SipHeadLeanBackDegrees + HeadTiltDegrees;
         private Vector3 bottleRestPoint;
         private Vector3 tableSupportPoint;
         private Quaternion rightClavicleBaseLocalRotation;
         private Quaternion rightUpperBaseLocalRotation;
         private Quaternion rightForearmBaseLocalRotation;
-        private SeatedArmHandAttachment rightHandAttachment;
+        private SeatedArmHandAttachment leftHandAttachment;
+        private NpcHandPose handPose;
+        private AnatomicalHandFrame rightAnatomicalHand;
         private Quaternion leftClavicleBaseLocalRotation;
         private Quaternion leftUpperBaseLocalRotation;
         private Quaternion leftForearmBaseLocalRotation;
+        private Quaternion leftHandBaseLocalRotation;
         private Quaternion spineBaseLocalRotation;
         private Quaternion chestBaseLocalRotation;
         private Quaternion headBaseLocalRotation;
@@ -385,20 +397,38 @@ namespace BarPromenade
         private float measuredHeadLeanBackDegrees;
         private float restHeadMotionDegrees;
         private bool tableLean;
+        private bool seatedTable;
+        private Renderer surfaceRenderer;
+        private Bounds surfaceBounds;
         private bool actionWasActive;
         private bool isInitialized;
+        private bool gulpCuePending;
 
         public BarPatronDrinkTimeline Timeline => timeline;
         public Transform BottleRoot => bottleRoot;
         public Transform BottleMouth => bottleMouth;
+        public BarPatronDrinkProp DrinkProp => drinkProp;
         public bool IsTableLean => tableLean;
+        public bool IsSeatedTable => seatedTable;
+        public Renderer SurfaceRenderer => surfaceRenderer;
+        public Bounds SurfaceBounds => surfaceBounds;
+        public NpcHandGripKind GripKind => gripKind;
+        public float SipTiltDegrees => maximumSipTiltDegrees;
+        public float ExpectedSipTorsoLeanBackDegrees => sipTorsoLeanBackDegrees;
+        public float ExpectedSipHeadLeanBackDegrees => sipHeadLeanBackDegrees;
         public Vector3 TableSupportPoint => tableSupportPoint;
         public Vector3 BottleRestPoint => bottleRestPoint;
         public Vector3 BottleBasePosition =>
             bottleRoot != null
-                ? bottleRoot.position -
-                  bottleRoot.up * bottleGripToBaseDistance
+                ? bottleRoot.position +
+                  bottleRoot.rotation * baseLocalPosition
                 : Vector3.positiveInfinity;
+        public Vector3 DrinkGripWorldPosition => bottleRoot != null
+            ? bottleRoot.position + bottleRoot.rotation * gripLocalPosition
+            : Vector3.positiveInfinity;
+        public Vector3 DrinkOpeningDirection => bottleRoot != null
+            ? bottleRoot.rotation * openingLocalAxis
+            : Vector3.up;
         public AnimationClip AuthoredDrinkClip => authoredDrinkClip;
         public float BottleMouthDistance =>
             bottleMouth != null && mouthSocket != null
@@ -407,59 +437,21 @@ namespace BarPromenade
                     mouthSocket.position)
                 : float.PositiveInfinity;
         public float BottleGripError =>
-            bottleRoot != null && rightHandSocket != null
+            bottleRoot != null && handPose != null
                 ? Vector3.Distance(
-                    ResolveBottleHandContact(
-                        bottleRoot.position,
-                        bottleRoot.up),
-                    rightHandSocket.position)
+                    DrinkGripWorldPosition,
+                    handPose.AnatomicalCylinderCentre(false))
                 : float.PositiveInfinity;
-        public float BottleHandRadialClearance =>
-            bottleRoot != null && rightHandSocket != null
-                ? Vector3.ProjectOnPlane(
-                    rightHandSocket.position - bottleRoot.position,
-                    bottleRoot.up).magnitude
-                : 0f;
-        public float BottleHandRightSideAlignment
-        {
-            get
-            {
-                if (bottleRoot == null ||
-                    rightHandSocket == null ||
-                    ownerRoot == null)
-                {
-                    return -1f;
-                }
-
-                Vector3 radial = Vector3.ProjectOnPlane(
-                    rightHandSocket.position - bottleRoot.position,
-                    bottleRoot.up);
-                Vector3 rightSide = Vector3.ProjectOnPlane(
-                    ownerRoot.right,
-                    bottleRoot.up);
-                if (radial.sqrMagnitude < 0.000001f ||
-                    rightSide.sqrMagnitude < 0.000001f)
-                {
-                    return -1f;
-                }
-
-                return Vector3.Dot(
-                    radial.normalized,
-                    rightSide.normalized);
-            }
-        }
         public float BottleHandOrientationErrorDegrees =>
-            bottleRoot != null && rightHandSocket != null
-                ? Quaternion.Angle(
-                    rightHandSocket.rotation,
-                    ResolveRightBottleSocketRotation(
-                        ownerRoot.right,
-                        bottleRoot.up))
+            bottleRoot != null && handPose != null
+                ? Vector3.Angle(handPose.AnatomicalPalmNormal(false),
+                    -ResolveBottleHandRadial(bottleRoot.rotation))
                 : float.PositiveInfinity;
+        public NpcHandPose HandPose => handPose;
         public float BottleSipAxisErrorDegrees =>
             bottleRoot != null && ownerRoot != null
                 ? Vector3.Angle(
-                    bottleRoot.up,
+                    DrinkOpeningDirection,
                     ResolveSipBottleUp())
                 : float.PositiveInfinity;
         public float BottleHorizontalErrorDegrees =>
@@ -467,7 +459,7 @@ namespace BarPromenade
                 ? Mathf.Abs(
                     90f - Vector3.Angle(
                         ownerRoot.up,
-                        bottleRoot.up))
+                        DrinkOpeningDirection))
                 : float.PositiveInfinity;
         public float MeasuredTorsoLeanBackDegrees =>
             measuredTorsoLeanBackDegrees;
@@ -488,7 +480,7 @@ namespace BarPromenade
                 : float.PositiveInfinity;
         public float BottleRestUprightErrorDegrees =>
             bottleRoot != null && ownerRoot != null
-                ? Vector3.Angle(bottleRoot.up, ownerRoot.up)
+                ? Vector3.Angle(DrinkOpeningDirection, ownerRoot.up)
                 : float.PositiveInfinity;
 
         public void InitializeCounter(
@@ -514,7 +506,9 @@ namespace BarPromenade
             float gripToLipDistance,
             float gripToBaseDistance,
             Vector3 restingBottlePoint,
-            Vector3 supportPoint)
+            Vector3 supportPoint,
+            Renderer restingSurface = null,
+            BarPatronDrinkProp drinkProp = null)
         {
             InitializeCommon(
                 drinkTimeline,
@@ -526,7 +520,8 @@ namespace BarPromenade
                 heldBottleMouth,
                 gripToLipDistance,
                 gripToBaseDistance,
-                restingBottlePoint);
+                restingBottlePoint,
+                drinkProp);
             rightClavicle = Require(
                 rightShoulder,
                 nameof(rightShoulder));
@@ -550,11 +545,14 @@ namespace BarPromenade
             authoredDrinkClip = drinkClip != null
                 ? drinkClip
                 : throw new ArgumentNullException(nameof(drinkClip));
+            surfaceRenderer = restingSurface;
+            surfaceBounds = restingSurface != null ? restingSurface.bounds : default;
             CompleteInitialization(false);
         }
 
         public void InitializeTable(
             BarPatronDrinkTimeline drinkTimeline,
+            CityPedestrianPresentation pedestrianPresentation,
             Transform patronRoot,
             Transform rightShoulder,
             Transform rightArm,
@@ -574,7 +572,10 @@ namespace BarPromenade
             float gripToLipDistance,
             float gripToBaseDistance,
             Vector3 restingBottlePoint,
-            Vector3 supportPoint)
+            Vector3 supportPoint,
+            Renderer restingSurface = null,
+            bool isSeatedTable = false,
+            BarPatronDrinkProp drinkProp = null)
         {
             InitializeCommon(
                 drinkTimeline,
@@ -586,7 +587,8 @@ namespace BarPromenade
                 heldBottleMouth,
                 gripToLipDistance,
                 gripToBaseDistance,
-                restingBottlePoint);
+                restingBottlePoint,
+                drinkProp);
             rightClavicle = Require(
                 rightShoulder,
                 nameof(rightShoulder));
@@ -603,20 +605,39 @@ namespace BarPromenade
             spine = Require(spineBone, nameof(spineBone));
             chest = Require(chestBone, nameof(chestBone));
             head = Require(headBone, nameof(headBone));
+            presentation = pedestrianPresentation != null
+                ? pedestrianPresentation
+                : throw new ArgumentNullException(nameof(pedestrianPresentation));
+            surfaceRenderer = restingSurface;
+            surfaceBounds = restingSurface != null ? restingSurface.bounds : default;
+            seatedTable = isSeatedTable;
             CompleteInitialization(true);
         }
 
-        private void Update()
+        private void OnPresentationAdvanced(float deltaTime)
         {
-            if (!isInitialized)
+            if (!isInitialized || !isActiveAndEnabled)
             {
                 return;
             }
 
+            timeline.Advance(deltaTime);
+            gulpCuePending |= timeline.ConsumeGulpCue();
+        }
+
+        private void LateUpdate()
+        {
+            if (!isInitialized || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            // A manually evaluated Animator still owns its native transform
+            // write stage after Update. Keep time on Advanced, but publish
+            // these final contacts after that stage, as the bartender does.
             measuredTorsoLeanBackDegrees = 0f;
             measuredHeadLeanBackDegrees = 0f;
             restHeadMotionDegrees = 0f;
-            timeline.Advance(Time.deltaTime);
             if (tableLean)
             {
                 ApplyTablePose();
@@ -627,9 +648,11 @@ namespace BarPromenade
             }
 
             PlaceBottle();
+            ApplyFingerGrip();
 
-            if (timeline.ConsumeGulpCue())
+            if (gulpCuePending)
             {
+                gulpCuePending = false;
                 RetroAudioService.EnsureInstalled()?.TryPlay(
                     RetroSfxId.DrinkGulp,
                     mouthSocket.position);
@@ -714,6 +737,7 @@ namespace BarPromenade
             leftClavicle.localRotation = leftClavicleBaseLocalRotation;
             leftUpperArm.localRotation = leftUpperBaseLocalRotation;
             leftForearm.localRotation = leftForearmBaseLocalRotation;
+            leftHand.localRotation = leftHandBaseLocalRotation;
             rightClavicle.localRotation =
                 rightClavicleBaseLocalRotation;
             rightUpperArm.localRotation = rightUpperBaseLocalRotation;
@@ -780,10 +804,21 @@ namespace BarPromenade
                     leftHandSocket,
                     tableSupportPoint);
             }
+
+            // Preserve this pose's wrist roll, but close on the wrist rather
+            // than treating its offset grip socket as a third limb segment.
+            // Near full extension CCD alone left the hand centimetres short.
+            Quaternion handRotation = leftHand.rotation;
+            Vector3 wrist = tableSupportPoint - handRotation *
+                leftHandAttachment.SocketPositionInHand;
+            SeatedArmIk.SolveTwoBone(leftUpperArm, leftForearm, leftHand,
+                wrist, handRotation, ResolveElbowHint(leftUpperArm, false));
         }
 
         private void ApplyBottleSipLean()
         {
+            // Each vessel has its own body motion as well as its own tilt.
+            // A broad bowl meets the lips without the bottle's deep lean.
             float weight = timeline.VesselTipWeight;
             if (weight <= 0.0001f)
             {
@@ -794,16 +829,18 @@ namespace BarPromenade
             Quaternion spineBefore = spine.rotation;
             Quaternion chestBefore = chest.rotation;
             Quaternion headBefore = head.rotation;
+            float torsoScale = sipTorsoLeanBackDegrees /
+                (SipSpineLeanBackDegrees + SipChestLeanBackDegrees);
             spine.rotation = Quaternion.AngleAxis(
-                    -SipSpineLeanBackDegrees * weight,
+                    -SipSpineLeanBackDegrees * torsoScale * weight,
                     axis) *
                 spine.rotation;
             chest.rotation = Quaternion.AngleAxis(
-                    -SipChestLeanBackDegrees * weight,
+                    -SipChestLeanBackDegrees * torsoScale * weight,
                     axis) *
                 chest.rotation;
             head.rotation = Quaternion.AngleAxis(
-                    -(SipHeadLeanBackDegrees + HeadTiltDegrees) * weight,
+                    -sipHeadLeanBackDegrees * weight,
                     axis) *
                 head.rotation;
             measuredTorsoLeanBackDegrees =
@@ -818,33 +855,38 @@ namespace BarPromenade
             Vector3 horizontalIntoMouth = -Vector3.ProjectOnPlane(
                 ownerRoot.forward,
                 ownerRoot.up);
-            return horizontalIntoMouth.sqrMagnitude > 0.000001f
+            Vector3 towardMouth = horizontalIntoMouth.sqrMagnitude > 0.000001f
                 ? horizontalIntoMouth.normalized
                 : -ownerRoot.forward;
+            return Vector3.Slerp(ownerRoot.up, towardMouth,
+                maximumSipTiltDegrees / 90f).normalized;
         }
 
-        private Vector3 ResolveRestingBottleGrip()
+        private Quaternion ResolvePropRotation(float tipWeight)
         {
-            return bottleRestPoint +
-                   ownerRoot.up * bottleGripToBaseDistance;
+            Vector3 opening = Vector3.Slerp(ownerRoot.up,
+                ResolveSipBottleUp(), Mathf.Clamp01(tipWeight)).normalized;
+            Vector3 handle = Vector3.ProjectOnPlane(ownerRoot.right, opening).normalized;
+            Vector3 localForward = Vector3.Cross(handleLocalAxis,
+                openingLocalAxis).normalized;
+            Vector3 worldForward = Vector3.Cross(handle, opening).normalized;
+            return Quaternion.LookRotation(worldForward, opening) *
+                Quaternion.Inverse(Quaternion.LookRotation(localForward, openingLocalAxis));
         }
 
-        private Vector3 ResolveBottleHandContact(
-            Vector3 bottleGrip,
-            Vector3 bottleUp)
+        private Vector3 ResolveBottleHandRadial(Quaternion rotation)
         {
             Vector3 radial = Vector3.ProjectOnPlane(
-                ownerRoot.right,
-                bottleUp);
+                rotation * handleLocalAxis,
+                rotation * openingLocalAxis);
             if (radial.sqrMagnitude < 0.000001f)
             {
                 radial = Vector3.ProjectOnPlane(
                     -ownerRoot.forward,
-                    bottleUp);
+                    rotation * openingLocalAxis);
             }
 
-            return bottleGrip +
-                   radial.normalized * BottleHandSurfaceOffset;
+            return radial.normalized;
         }
 
         private void ResolveBottlePose(
@@ -852,17 +894,14 @@ namespace BarPromenade
             out Quaternion bottleRotation)
         {
             float tipWeight = timeline.VesselTipWeight;
-            bottleRotation = ResolveBottleRotation(
-                ownerRoot.right,
-                ownerRoot.up,
-                ResolveSipBottleUp(),
-                tipWeight);
-            Vector3 bottleUp = bottleRotation * Vector3.up;
-            Vector3 lipSolvedGrip = mouthSocket.position -
-                                    bottleUp * bottleGripToLipDistance;
+            bottleRotation = ResolvePropRotation(tipWeight);
+            Vector3 restingRoot = bottleRestPoint -
+                ResolvePropRotation(0f) * baseLocalPosition;
+            Vector3 lipSolvedRoot = mouthSocket.position -
+                bottleRotation * rimLocalPosition;
             bottlePosition = Vector3.Lerp(
-                ResolveRestingBottleGrip(),
-                lipSolvedGrip,
+                restingRoot,
+                lipSolvedRoot,
                 timeline.ArmWeight);
         }
 
@@ -879,20 +918,12 @@ namespace BarPromenade
             ResolveBottlePose(
                 out Vector3 bottlePosition,
                 out Quaternion bottleRotation);
-            Vector3 bottleUp = bottleRotation * Vector3.up;
-            Vector3 socketPosition = ResolveBottleHandContact(
-                bottlePosition,
-                bottleUp);
-            Quaternion socketRotation =
-                ResolveRightBottleSocketRotation(
-                    ownerRoot.right,
-                    bottleUp);
-            Quaternion handRotation = socketRotation *
-                Quaternion.Inverse(
-                    rightHandAttachment.SocketRotationInHand);
-            Vector3 handPosition = socketPosition -
-                handRotation *
-                rightHandAttachment.SocketPositionInHand;
+            Vector3 bottleUp = bottleRotation * openingLocalAxis;
+            Vector3 gripPosition = bottlePosition + bottleRotation * gripLocalPosition;
+            Pose grip = rightAnatomicalHand.ResolveCylinderPose(
+                gripPosition, bottleUp, -ResolveBottleHandRadial(bottleRotation));
+            Quaternion handRotation = grip.rotation;
+            Vector3 handPosition = grip.position;
 
             for (int iteration = 0;
                  iteration < SolveIterations;
@@ -912,11 +943,18 @@ namespace BarPromenade
                     handPosition);
             }
 
-            // The point solve above cannot choose wrist roll. Write the full
-            // right-hand frame after it: socket Y follows the bottle down,
-            // socket X points inward, and the model's bind-space hand/socket
-            // relation keeps the thumb on the anatomical right-hand side.
-            rightHand.rotation = handRotation;
+            // A point contact alone cannot distinguish palm from dorsum.
+            // The measured thumb/index frame puts the physical curled fingers
+            // around the bottle axis and its palm toward the glass.
+            SeatedArmIk.SolveTwoBone(rightUpperArm, rightForearm, rightHand,
+                handPosition, handRotation, ResolveElbowHint(rightUpperArm, true));
+        }
+
+        private Vector3 ResolveElbowHint(Transform upper, bool right)
+        {
+            return upper.position - ownerRoot.up * 0.30f +
+                ownerRoot.right * (right ? 0.10f : -0.10f) +
+                ownerRoot.forward * 0.06f;
         }
 
         private void PlaceBottle()
@@ -927,34 +965,6 @@ namespace BarPromenade
             bottleRoot.SetPositionAndRotation(
                 bottlePosition,
                 bottleRotation);
-        }
-
-        public static Quaternion ResolveRightBottleSocketRotation(
-            Vector3 ownerRight,
-            Vector3 bottleUp)
-        {
-            Vector3 normalizedUp = bottleUp.normalized;
-            Vector3 radial = Vector3.ProjectOnPlane(
-                ownerRight,
-                normalizedUp);
-            if (radial.sqrMagnitude < 0.000001f)
-            {
-                radial = Vector3.Cross(normalizedUp, Vector3.forward);
-            }
-
-            if (radial.sqrMagnitude < 0.000001f)
-            {
-                radial = Vector3.Cross(normalizedUp, Vector3.right);
-            }
-
-            radial.Normalize();
-            Vector3 socketForward = Vector3.Cross(
-                    radial,
-                    normalizedUp)
-                .normalized;
-            return Quaternion.LookRotation(
-                socketForward,
-                -normalizedUp);
         }
 
         public static Quaternion ResolveBottleRotation(
@@ -1023,7 +1033,8 @@ namespace BarPromenade
             Transform heldBottleMouth,
             float gripToLipDistance,
             float gripToBaseDistance,
-            Vector3 restingBottlePoint)
+            Vector3 restingBottlePoint,
+            BarPatronDrinkProp heldDrink)
         {
             if (isInitialized || timeline != null)
             {
@@ -1057,19 +1068,19 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(drinkTimeline));
             ownerRoot = Require(patronRoot, nameof(patronRoot));
             rightHand = Require(handBone, nameof(handBone));
-            rightHandSocket = Require(
+            Transform handSocketBinding = Require(
                 handSocket,
                 nameof(handSocket));
-            if (rightHandSocket.parent != rightHand)
+            if (handSocketBinding.parent != rightHand)
             {
                 throw new ArgumentException(
                     "The bottle socket must be a direct child of hand.R.",
                     nameof(handSocket));
             }
 
-            rightHandAttachment = new SeatedArmHandAttachment(
-                rightHand,
-                rightHandSocket);
+            handPose = rightHand.GetComponentInParent<NpcHandPose>();
+            if (handPose == null)
+                throw new InvalidOperationException("A default bar patron needs its shared authored hand grip.");
             mouthSocket = Require(mouthAnchor, nameof(mouthAnchor));
             bottleRoot = Require(
                 heldBottleRoot,
@@ -1077,8 +1088,27 @@ namespace BarPromenade
             bottleMouth = Require(
                 heldBottleMouth,
                 nameof(heldBottleMouth));
-            bottleGripToLipDistance = gripToLipDistance;
-            bottleGripToBaseDistance = gripToBaseDistance;
+            // Legacy bottle callers use a root at the physical neck grasp.
+            // Cup descriptors replace these rotation-only metre offsets.
+            gripLocalPosition = Vector3.zero;
+            rimLocalPosition = Vector3.up * gripToLipDistance;
+            baseLocalPosition = Vector3.down * gripToBaseDistance;
+            drinkProp = heldDrink;
+            if (drinkProp != null)
+            {
+                if (drinkProp.Root != bottleRoot || drinkProp.Mouth != bottleMouth)
+                    throw new ArgumentException("The drink descriptor must bind the patron's actual prop root and rim.", nameof(heldDrink));
+                gripLocalPosition = drinkProp.GripLocalPosition;
+                rimLocalPosition = drinkProp.RimLocalPosition;
+                baseLocalPosition = drinkProp.BaseLocalPosition;
+                openingLocalAxis = drinkProp.OpeningLocalAxis;
+                handleLocalAxis = drinkProp.HandleLocalAxis;
+                gripKind = drinkProp.GripKind;
+                maximumSipTiltDegrees = drinkProp.MaxSipTiltDegrees;
+                sipTorsoLeanBackDegrees = drinkProp.SipTorsoLeanBackDegrees;
+                sipHeadLeanBackDegrees = drinkProp.SipHeadLeanBackDegrees;
+            }
+            rightAnatomicalHand = handPose.GetAnatomicalFrame(false, gripKind);
             bottleRestPoint = restingBottlePoint;
         }
 
@@ -1105,22 +1135,32 @@ namespace BarPromenade
             leftHandSocket = Require(
                 supportSocket,
                 nameof(supportSocket));
+            leftHand = Require(leftHandSocket.parent, "supportHand");
+            leftHandAttachment = new SeatedArmHandAttachment(leftHand, leftHandSocket);
             tableSupportPoint = supportPoint;
         }
 
         private void CompleteInitialization(bool usesTableLean)
         {
+            AcquireAnimatorCulling();
+            // The city graph normally culls transform updates off camera.
+            // Sample the actual seated/standing base before caching it; this
+            // contact actor must also render its solved limbs on first sight.
+            presentation.Advance(0f, false);
             rightClavicleBaseLocalRotation = rightClavicle.localRotation;
             rightUpperBaseLocalRotation = rightUpperArm.localRotation;
             rightForearmBaseLocalRotation = rightForearm.localRotation;
             leftClavicleBaseLocalRotation = leftClavicle.localRotation;
             leftUpperBaseLocalRotation = leftUpperArm.localRotation;
             leftForearmBaseLocalRotation = leftForearm.localRotation;
+            leftHandBaseLocalRotation = leftHand.localRotation;
             spineBaseLocalRotation = spine.localRotation;
             chestBaseLocalRotation = chest.localRotation;
             headBaseLocalRotation = head.localRotation;
             tableLean = usesTableLean;
             isInitialized = true;
+            // The graph owns the clock; LateUpdate owns final hand contacts.
+            presentation.Advanced += OnPresentationAdvanced;
             if (tableLean)
             {
                 ApplyTablePose();
@@ -1131,6 +1171,15 @@ namespace BarPromenade
             }
 
             PlaceBottle();
+            ApplyFingerGrip();
+        }
+
+        private void ApplyFingerGrip()
+        {
+            // The shared body sampler restores renderer defaults. Reapply
+            // the actual authored curled-finger shape after the final solve.
+            handPose.SetGrip(false, 1f, gripKind);
+            handPose.SetGrip(true, 0f);
         }
 
         private static bool IsFinite(Vector3 value)
@@ -1173,12 +1222,59 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            handPose?.ResetGrip();
+            gulpCuePending = false;
+            UnsubscribePresentation();
             ReleaseAuthoredAction();
+            RestoreAnimatorCulling();
         }
 
         private void OnDestroy()
         {
+            UnsubscribePresentation();
             ReleaseAuthoredAction();
+            RestoreAnimatorCulling();
+        }
+
+        private void OnEnable()
+        {
+            if (isInitialized && presentation != null)
+            {
+                AcquireAnimatorCulling();
+                presentation.Advanced -= OnPresentationAdvanced;
+                presentation.Advanced += OnPresentationAdvanced;
+            }
+        }
+
+        private void AcquireAnimatorCulling()
+        {
+            if (ownsAnimatorCulling || presentation == null ||
+                presentation.Registry == null || presentation.Registry.Animator == null)
+                return;
+            contactAnimator = presentation.Registry.Animator;
+            previousAnimatorCulling = contactAnimator.cullingMode;
+            // These nine bounded tableaux solve hands and props every frame.
+            // CullUpdateTransforms can retain an old modular skin pose while
+            // the separately rendered vessel already follows its new contact.
+            contactAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            ownsAnimatorCulling = true;
+        }
+
+        private void RestoreAnimatorCulling()
+        {
+            if (!ownsAnimatorCulling) return;
+            if (contactAnimator != null)
+                contactAnimator.cullingMode = previousAnimatorCulling;
+            ownsAnimatorCulling = false;
+            contactAnimator = null;
+        }
+
+        private void UnsubscribePresentation()
+        {
+            if (presentation != null)
+            {
+                presentation.Advanced -= OnPresentationAdvanced;
+            }
         }
 
         private void ReleaseAuthoredAction()

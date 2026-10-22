@@ -151,6 +151,12 @@ namespace BarPromenade
                 : 0f;
         }
 
+        /// <summary>Finalizes the existing camera after a seated world-rig reach moves the head.</summary>
+        public void RefreshActionCameraPose()
+        {
+            if (IsFirstPerson && actionLookLocked) ApplyView();
+        }
+
         public void Initialize(
             CounterSeatInteraction configuredSeat,
             PlayerRuntime player,

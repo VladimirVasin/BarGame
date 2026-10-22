@@ -83,6 +83,8 @@ namespace BarPromenade
             new List<Light>(MaximumPracticalLights);
         private ReadOnlyCollection<Light> readOnlyPracticalLights;
         private VolumeProfile runtimeProfile;
+        private Vector2 roomSize = new Vector2(11.4f, 7.8f);
+        private float roomHeight = 3f;
 
         public IReadOnlyList<Light> PracticalLights =>
             readOnlyPracticalLights ??
@@ -91,7 +93,9 @@ namespace BarPromenade
         public ParticleSystem Dust { get; private set; }
 
         public void Initialize(
-            IReadOnlyList<BarPracticalLightSpec> lightSpecs)
+            IReadOnlyList<BarPracticalLightSpec> lightSpecs,
+            Vector2? configuredRoomSize = null,
+            float configuredRoomHeight = 3f)
         {
             if (lightSpecs == null)
             {
@@ -111,6 +115,9 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The bar atmosphere is already initialized.");
             }
+
+            roomSize = configuredRoomSize ?? roomSize;
+            roomHeight = Mathf.Max(2f, configuredRoomHeight);
 
             for (int index = 0; index < lightSpecs.Count; index++)
             {
@@ -132,7 +139,19 @@ namespace BarPromenade
             light.color = spec.Color;
             light.intensity = spec.Intensity;
             light.range = spec.Range;
-            light.shadows = LightShadows.None;
+            // One bounded spot map gives the counter and serving hands real
+            // contact depth; the remaining practicals retain their cheap pools.
+            bool key = spec.Name == "counter-pendant-left" && spec.Type == LightType.Spot;
+            light.shadows = key ? LightShadows.Hard : LightShadows.None;
+            if (key)
+            {
+                light.shadowBias = .025f;
+                light.shadowNormalBias = .08f;
+                light.shadowNearPlane = .05f;
+                var data = lightObject.AddComponent<UniversalAdditionalLightData>();
+                data.usePipelineSettings = false;
+                data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
+            }
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.12f;
             if (spec.Type == LightType.Spot)
@@ -197,7 +216,7 @@ namespace BarPromenade
             grain.response.Override(0.72f);
 
             RuntimeSceneSetup.AddIndoorGaussianDepthOfField(
-                runtimeProfile, 6f, 18f);
+                runtimeProfile, 3.8f, 10f);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(runtimeProfile);
@@ -209,7 +228,7 @@ namespace BarPromenade
                 "Bar Local Dust");
             dustObject.transform.SetParent(transform, false);
             dustObject.transform.localPosition =
-                new Vector3(0f, 2.45f, 1.6f);
+                new Vector3(0f, roomHeight * .56f, 0f);
             Dust = dustObject.AddComponent<ParticleSystem>();
 
             ParticleSystem.MainModule main = Dust.main;
@@ -217,7 +236,7 @@ namespace BarPromenade
             main.playOnAwake = false;
             main.maxParticles = MaximumDustParticles;
             main.startLifetime = new ParticleSystem.MinMaxCurve(9f, 14f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.01f, 0.045f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0f);
             main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.22f);
             main.startColor = new ParticleSystem.MinMaxGradient(
                 new Color(1f, 0.72f, 0.42f, 0.028f),
@@ -229,14 +248,17 @@ namespace BarPromenade
 
             ParticleSystem.ShapeModule shape = Dust.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(16f, 2.6f, 10f);
+            shape.scale = new Vector3(Mathf.Max(.5f, roomSize.x - 1.2f),
+                Mathf.Max(.5f, roomHeight - 1.2f), Mathf.Max(.5f, roomSize.y - 1.2f));
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 Dust.velocityOverLifetime;
             velocity.enabled = false;
-            velocity.x = new ParticleSystem.MinMaxCurve(-0.02f, 0.02f);
-            velocity.y = new ParticleSystem.MinMaxCurve(0.015f, 0.045f);
-            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            // Lifetime travel plus sprite radius stays within the .6 m wall
+            // margin and below the low ceiling, without particle collisions.
+            velocity.x = new ParticleSystem.MinMaxCurve(-0.006f, 0.006f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0.003f, 0.008f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-0.004f, 0.004f);
             velocity.enabled = true;
 
             ParticleSystemRenderer renderer =

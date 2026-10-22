@@ -61,8 +61,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(0.001f));
         }
 
-        [Test]
-        public void FromServiceAnchors_UsesAuthoredSeatApproachAndDock()
+        [TestCase(CounterSeatAccessSide.None)]
+        [TestCase(CounterSeatAccessSide.Left)]
+        [TestCase(CounterSeatAccessSide.Right)]
+        public void FromServiceAnchors_UsesAuthoredSeatApproachAndDock(CounterSeatAccessSide accessSide)
         {
             Transform serviceSpace = CreateServiceSpace();
             BarDrinkServicePlan service = CreateServicePlan();
@@ -83,12 +85,24 @@ namespace BarPromenade.Tests.EditMode
                     seat,
                     approach,
                     stand,
-                    stand);
+                    stand,
+                    accessSide: accessSide);
 
             AssertVector(plan.InteractionPosition, seat.position);
+            Assert.That(plan.AccessSide, Is.EqualTo(accessSide));
+            PlayerAnimatedInteractionDefinition clips =
+                CounterSeatInteraction.CreateDefinition(plan.AccessSide);
+            Assert.That(clips.LoopClipName, Is.EqualTo(
+                accessSide == CounterSeatAccessSide.None
+                    ? CounterSeatInteraction.LoopClipName
+                    : CounterSeatInteraction.BarLoopClipName));
+            Assert.That(clips.LoopFrameCount, Is.EqualTo(16));
+            Assert.That(clips.LoopFramesPerSecond, Is.EqualTo(8f));
+            Assert.That(clips.LoopDurationSeconds, Is.EqualTo(2d));
             AssertVector(
                 plan.ActionHipPosition,
-                new Vector3(-1.15f, 0.85f, 4.77f));
+                new Vector3(-1.15f,
+                    .82f + (accessSide == CounterSeatAccessSide.None ? .03f : .105f), 4.77f));
             AssertVector(
                 plan.EntryPose.RootPosition,
                 new Vector3(
@@ -139,6 +153,31 @@ namespace BarPromenade.Tests.EditMode
                     -1.15f,
                     PlayerFactory.GroundedRootOffset,
                     3.35f));
+
+            if (accessSide == CounterSeatAccessSide.None) return;
+            Vector3 side = Vector3.right * ((int)accessSide * .45f);
+            Vector3 raisedCentre = seat.position + Vector3.up * .15f;
+            AssertVector(plan.PelvisTransition.EvaluateEntering(
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, .40f),
+                new Vector3(seat.position.x, plan.EntryPose.HipPosition.y, seat.position.z) + side);
+            AssertVector(plan.PelvisTransition.EvaluateEntering(
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, .58f), raisedCentre + side);
+            AssertVector(plan.PelvisTransition.EvaluateEntering(
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, .68f), raisedCentre + side);
+            AssertVector(plan.PelvisTransition.EvaluateEntering(
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, .82f), raisedCentre);
+            for (int sample = 0; sample <= 100; sample++)
+            {
+                float progress = sample / 100f;
+                Vector3 entering = plan.PelvisTransition.EvaluateEntering(
+                    plan.EntryPose.HipPosition, plan.ActionHipPosition, progress);
+                Vector3 leaving = plan.PelvisTransition.EvaluateExiting(
+                    plan.ActionHipPosition, plan.ExitPose.HipPosition, 1f - progress);
+                AssertVector(entering, leaving);
+                if (progress >= .68f && progress <= .82f)
+                    Assert.That(entering.y, Is.EqualTo(raisedCentre.y).Within(.0001f),
+                        "The body must stay lifted throughout the sideways transfer over the seat.");
+            }
         }
 
         [Test]
@@ -197,8 +236,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0.9999f));
         }
 
-        [Test]
-        public void FromServiceAnchors_UsesAuthoredCameraWithoutHiddenClamping()
+        [TestCase(CounterSeatAccessSide.None)]
+        [TestCase(CounterSeatAccessSide.Left)]
+        [TestCase(CounterSeatAccessSide.Right)]
+        public void FromServiceAnchors_UsesAuthoredCameraWithoutHiddenClamping(CounterSeatAccessSide accessSide)
         {
             Transform serviceSpace = CreateServiceSpace();
             BarDrinkServicePlan service = CreateServicePlan();
@@ -223,7 +264,8 @@ namespace BarPromenade.Tests.EditMode
                 entryGroundAnchor: stand,
                 exitGroundAnchor: stand,
                 cameraAnchor: camera,
-                cameraLookAtAnchor: cameraLook);
+                cameraLookAtAnchor: cameraLook,
+                accessSide: accessSide);
             plan.EvaluateCamera(
                 plan.ActionHipPosition,
                 0f,
@@ -231,11 +273,15 @@ namespace BarPromenade.Tests.EditMode
                 out Vector3 position,
                 out Quaternion rotation);
 
-            AssertVector(position, new Vector3(-1.15f, 1.6175f, 4.65f));
+            Vector3 cameraLift = accessSide == CounterSeatAccessSide.None
+                ? Vector3.zero : Vector3.up * .075f;
+            AssertVector(position, new Vector3(-1.15f, 1.6175f, 4.65f) + cameraLift);
+            Assert.That(plan.CameraOffsetFromActionHip.y, Is.EqualTo(.77f).Within(.0001f),
+                "The bar's measured seat correction must preserve the camera offset from the pelvis.");
             Assert.That(
                 Vector3.Dot(
                     rotation * Vector3.forward,
-                    (cameraLook.position - position).normalized),
+                    (cameraLook.position + cameraLift - position).normalized),
                 Is.GreaterThan(0.9999f));
         }
 

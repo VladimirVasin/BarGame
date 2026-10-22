@@ -104,6 +104,9 @@ namespace BarPromenade
                 streamRenderer,
                 menu,
                 beerTap);
+            Transform counterSurface = parent.Find("Counter Top");
+            if (counterSurface != null)
+                serviceView.ConfigureCounterSurface(counterSurface.GetComponent<Renderer>());
             return serviceView;
         }
 
@@ -288,7 +291,7 @@ namespace BarPromenade
             }
         }
 
-        private static BarDrinkVesselView BuildVessel(
+        internal static BarDrinkVesselView BuildVessel(
             Transform parent,
             BarDrinkVesselKind kind)
         {

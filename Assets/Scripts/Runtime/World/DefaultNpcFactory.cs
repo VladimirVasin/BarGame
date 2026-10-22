@@ -4,8 +4,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds default characters through the global population's stable appearance
-    /// assignments. Placement, actions and interactions belong to the caller.
+    /// Builds default characters from shared world or visit appearance assignments.
+    /// Placement, actions and interactions belong to the caller.
     /// </summary>
     public static class DefaultNpcFactory
     {
@@ -13,11 +13,18 @@ namespace BarPromenade
         {
             // Assign the whole population before spawning any scene's subset.
             // Scene order therefore cannot change a person's face or garments.
-            var assignment = DefaultNpcPopulation.GetAssignment(characterId);
+            return CreateForAssignment(parent, DefaultNpcPopulation.GetAssignment(characterId));
+        }
+
+        /// <summary>Builds one selection already allocated by the shared population owner.</summary>
+        public static VillageResidentPresentation CreateForAssignment(
+            Transform parent, DefaultNpcPopulation.Assignment assignment)
+        {
+            if (assignment == null) throw new ArgumentNullException(nameof(assignment));
             VillageResidentPresentation actor = Create(parent, assignment.ModelId);
             try
             {
-                DefaultNpcPopulation.Apply(actor, characterId);
+                DefaultNpcPopulation.Apply(actor, assignment);
                 return actor;
             }
             catch

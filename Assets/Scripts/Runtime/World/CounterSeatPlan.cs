@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum CounterSeatAccessSide
+    {
+        None = 0,
+        Left = -1,
+        Right = 1
+    }
+
     /// <summary>
     /// World-space contract for one counter seat. Entry and exit are kept as
     /// independent poses even when both use the same authored standing dock.
@@ -13,6 +20,18 @@ namespace BarPromenade
     public sealed class CounterSeatPlan
     {
         public const float SeatClearance = 0.03f;
+        // Measured against the bar-specific CounterSeatLoop trousers over
+        // the 0.48 m stool disk and below the counter lip. Lift before any
+        // lateral transfer across the disk.
+        public const float BarSeatClearance = 0.105f;
+        public const float BarRaisedSeatClearance = 0.15f;
+        public const float SideOffset = 0.45f;
+        public const float SideFrontStep = 0.09f;
+        public const float SideStepProgress = 0.18f;
+        public const float SideArrivalProgress = 0.40f;
+        public const float LiftArrivalProgress = 0.58f;
+        public const float SeatTransferStartProgress = 0.68f;
+        public const float SeatTransferEndProgress = 0.82f;
         public const float FallbackSeatTopHeight =
             MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float FallbackSeatDepth = 0.48f;
@@ -34,7 +53,8 @@ namespace BarPromenade
             Vector3 cameraPosition,
             Quaternion cameraRotation,
             float cameraFieldOfView,
-            IReadOnlyList<Vector3> authoredApproachWaypoints = null)
+            IReadOnlyList<Vector3> authoredApproachWaypoints = null,
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -46,6 +66,7 @@ namespace BarPromenade
             entryPose.Validate(nameof(entryPose));
             exitPose.Validate(nameof(exitPose));
             pelvisTransition.Validate(nameof(pelvisTransition));
+            ValidateAccessSide(accessSide);
             RequireFinite(interactionPosition, nameof(interactionPosition));
             RequireFinite(actionHipPosition, nameof(actionHipPosition));
             RequireFinite(cameraPosition, nameof(cameraPosition));
@@ -87,6 +108,7 @@ namespace BarPromenade
             CameraOffsetFromActionHip = cameraPosition - actionHipPosition;
             CameraRotation = Normalize(cameraRotation);
             CameraFieldOfView = cameraFieldOfView;
+            AccessSide = accessSide;
         }
 
         public string Id { get; }
@@ -102,6 +124,7 @@ namespace BarPromenade
         public Vector3 CameraOffsetFromActionHip { get; }
         public Quaternion CameraRotation { get; }
         public float CameraFieldOfView { get; }
+        public CounterSeatAccessSide AccessSide { get; }
         public int ApproachWaypointCount => approachWaypoints.Length;
         public IReadOnlyList<Vector3> ApproachWaypoints =>
             approachWaypoints;
@@ -168,7 +191,8 @@ namespace BarPromenade
         /// </summary>
         public static CounterSeatPlan FromService(
             Transform serviceSpace,
-            BarDrinkServicePlan servicePlan)
+            BarDrinkServicePlan servicePlan,
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
             return FromServicePoses(
                 serviceSpace,
@@ -178,7 +202,8 @@ namespace BarPromenade
                 authoredEntryGroundPose: null,
                 authoredExitGroundPose: null,
                 authoredCameraPose: null,
-                authoredCameraLookAt: null);
+                authoredCameraLookAt: null,
+                accessSide: accessSide);
         }
 
         /// <summary>
@@ -196,7 +221,8 @@ namespace BarPromenade
             Transform exitGroundAnchor = null,
             Transform cameraAnchor = null,
             Transform cameraLookAtAnchor = null,
-            string seatId = null)
+            string seatId = null,
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
             if (serviceSpace == null)
             {
@@ -232,7 +258,8 @@ namespace BarPromenade
                 exit,
                 camera,
                 cameraLookAt,
-                seatId);
+                seatId,
+                accessSide);
         }
 
         /// <summary>
@@ -248,7 +275,8 @@ namespace BarPromenade
             Pose? authoredExitGroundPose,
             Pose? authoredCameraPose,
             Vector3? authoredCameraLookAt,
-            string seatId = null)
+            string seatId = null,
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
             if (serviceSpace == null)
             {
@@ -302,8 +330,9 @@ namespace BarPromenade
             PlayerAnimatedInteractionPose exit = CreateRootPose(
                 exitGround,
                 seatFacing);
-            Vector3 actionHip = seat.position +
-                Vector3.up * SeatClearance;
+            float clearance = accessSide == CounterSeatAccessSide.None
+                ? SeatClearance : BarSeatClearance;
+            Vector3 actionHip = seat.position + Vector3.up * clearance;
 
             Vector3 transitionGround = seat.position -
                 facing * (FallbackSeatDepth * 0.5f + 0.10f);
@@ -316,6 +345,9 @@ namespace BarPromenade
                     enterDepartureProgress: 0.54f,
                     exitArrivalProgress: 0.46f,
                     exitDepartureProgress: 0.60f);
+            if (accessSide != CounterSeatAccessSide.None)
+                transition = CreateSideTransition(seat, seatFacing, entry, exit,
+                    actionHip, accessSide);
 
             Vector3 fallbackCameraPosition =
                 serviceSpace.TransformPoint(servicePlan.CameraPosition);
@@ -324,9 +356,11 @@ namespace BarPromenade
             Pose camera = authoredCameraPose ?? new Pose(
                 fallbackCameraPosition,
                 fallbackCameraRotation);
+            Vector3 cameraLift = Vector3.up * (clearance - SeatClearance);
+            camera.position += cameraLift;
             if (authoredCameraLookAt.HasValue)
             {
-                Vector3 look = authoredCameraLookAt.Value - camera.position;
+                Vector3 look = authoredCameraLookAt.Value + cameraLift - camera.position;
                 if (look.sqrMagnitude < 0.0001f)
                 {
                     throw new ArgumentException(
@@ -362,7 +396,48 @@ namespace BarPromenade
                 camera.position,
                 camera.rotation,
                 servicePlan.CameraFieldOfView,
-                waypoints);
+                waypoints,
+                accessSide);
+        }
+
+        private static PlayerAnimatedInteractionPelvisTransition CreateSideTransition(
+            Pose seat,
+            Quaternion seatFacing,
+            PlayerAnimatedInteractionPose entry,
+            PlayerAnimatedInteractionPose exit,
+            Vector3 actionHip,
+            CounterSeatAccessSide accessSide)
+        {
+            Vector3 side = seatFacing * Vector3.right * ((int)accessSide * SideOffset);
+            Vector3 forwardStep = seatFacing * Vector3.forward * SideFrontStep;
+            Vector3 entrySideFront = entry.HipPosition + side + forwardStep;
+            Vector3 exitSideFront = exit.HipPosition + side + forwardStep;
+            Vector3 entrySide = new Vector3(seat.position.x, entry.HipPosition.y,
+                seat.position.z) + side;
+            Vector3 exitSide = new Vector3(seat.position.x, exit.HipPosition.y,
+                seat.position.z) + side;
+            Vector3 raisedCentre = seat.position + Vector3.up * BarRaisedSeatClearance;
+            Vector3 raisedSide = raisedCentre + side;
+            var enterPath = new PlayerAnimatedInteractionPelvisPath(
+                new PlayerAnimatedInteractionPelvisPath.Key(0f, entry.HipPosition),
+                new PlayerAnimatedInteractionPelvisPath.Key(SideStepProgress, entrySideFront),
+                new PlayerAnimatedInteractionPelvisPath.Key(SideArrivalProgress, entrySide),
+                new PlayerAnimatedInteractionPelvisPath.Key(LiftArrivalProgress, raisedSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(SeatTransferStartProgress, raisedSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(SeatTransferEndProgress, raisedCentre),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f, actionHip));
+            var exitPath = new PlayerAnimatedInteractionPelvisPath(
+                new PlayerAnimatedInteractionPelvisPath.Key(0f, actionHip),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - SeatTransferEndProgress, raisedCentre),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - SeatTransferStartProgress, raisedSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - LiftArrivalProgress, raisedSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - SideArrivalProgress, exitSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - SideStepProgress, exitSideFront),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f, exit.HipPosition));
+            return new PlayerAnimatedInteractionPelvisTransition(entrySide,
+                SideArrivalProgress, SideArrivalProgress,
+                1f - SideArrivalProgress, 1f - SideArrivalProgress,
+                authoredEnterPath: enterPath, authoredExitPath: exitPath);
         }
 
         public void EvaluateCamera(
@@ -510,6 +585,14 @@ namespace BarPromenade
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
+
+        private static void ValidateAccessSide(CounterSeatAccessSide side)
+        {
+            if (side != CounterSeatAccessSide.None &&
+                side != CounterSeatAccessSide.Left &&
+                side != CounterSeatAccessSide.Right)
+                throw new ArgumentOutOfRangeException(nameof(side));
+        }
     }
 
     public readonly struct BarCounterSeatDescriptor
@@ -522,7 +605,8 @@ namespace BarPromenade
             Vector3 triggerLocalPosition,
             Vector3 triggerSize,
             Vector3 serviceLocalOffset,
-            bool mirrorServiceHorizontally)
+            bool mirrorServiceHorizontally,
+            CounterSeatAccessSide accessSide = CounterSeatAccessSide.None)
         {
             StableId = stableId ?? string.Empty;
             SeatTopLocalPosition = seatTopLocalPosition;
@@ -532,6 +616,7 @@ namespace BarPromenade
             TriggerSize = triggerSize;
             ServiceLocalOffset = serviceLocalOffset;
             MirrorServiceHorizontally = mirrorServiceHorizontally;
+            AccessSide = accessSide;
         }
 
         public string StableId { get; }
@@ -542,6 +627,7 @@ namespace BarPromenade
         public Vector3 TriggerSize { get; }
         public Vector3 ServiceLocalOffset { get; }
         public bool MirrorServiceHorizontally { get; }
+        public CounterSeatAccessSide AccessSide { get; }
     }
 
     /// <summary>
@@ -551,18 +637,19 @@ namespace BarPromenade
     /// </summary>
     public static class BarCounterSeatPlanner
     {
-        public const float StoolZ = 4.53f;
-        public const float EntryZ = 3.89f;
-        public const float ApproachZ = 3.30f;
-        public const float RightReturnSafeSeatX = 4.00f;
+        public const float StoolPitch = 0.9f;
+        public const float LeftmostStoolX = -1.65f;
+        public const float StoolZ = 0.91f;
+        public const float EntryZ = 0.27f;
+        public const float ApproachZ = -0.27f;
+        public const float RightReturnSafeSeatX = 1.95f;
 
         private static readonly float[] StoolXPositions =
         {
-            -1.15f,
-            -4.25f,
-            -2.55f,
-            0.85f,
-            2.55f,
+            -0.75f,
+            LeftmostStoolX,
+            0.15f,
+            1.05f,
             RightReturnSafeSeatX
         };
 
@@ -574,7 +661,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
-            var available = new List<BarCounterSeatDescriptor>(4);
+            var available = new List<BarCounterSeatDescriptor>(3);
             for (int index = 0; index < StoolXPositions.Length; index++)
             {
                 float stoolX = StoolXPositions[index];
@@ -601,7 +688,10 @@ namespace BarPromenade
                         0f),
                     Mathf.Approximately(
                         stoolX,
-                        RightReturnSafeSeatX)));
+                        RightReturnSafeSeatX),
+                    Mathf.Approximately(stoolX, 0.15f)
+                        ? CounterSeatAccessSide.Left
+                        : CounterSeatAccessSide.Right));
             }
 
             return available.AsReadOnly();

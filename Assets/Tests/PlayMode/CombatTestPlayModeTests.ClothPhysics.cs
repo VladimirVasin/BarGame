@@ -264,12 +264,13 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(SecondaryMotionBakeRuntime.Diagnostics.DecodeCount, Is.EqualTo(decodeCount));
                 CaptureRigidCombatCloth("Test combat rigid cloth reset", rear: false);
 
-                // The area policy is reversible. Restoring ordinary simulation
-                // exercises every solver once, then disabling it discards inertia.
+                // The area policy can restore accessory simulation, while the
+                // jacket stays rig-only throughout gameplay.
                 policy.SetSimulationEnabled(true);
-                Assert.That(jacket.ClothPhysicsEnabled && scarf.PhysicsSimulationEnabled && sling.PhysicsSimulationEnabled, Is.True);
+                Assert.That(jacket.ClothPhysicsEnabled, Is.False);
+                Assert.That(scarf.PhysicsSimulationEnabled && sling.PhysicsSimulationEnabled, Is.True);
                 yield return AdvanceRigidCombatCloth(8);
-                Assert.That(jacket.TotalSimulationSteps, Is.GreaterThan(off.JacketSteps));
+                Assert.That(jacket.TotalSimulationSteps, Is.EqualTo(off.JacketSteps));
                 Assert.That(scarf.TotalSimulationSteps, Is.GreaterThan(off.ScarfSteps));
                 Assert.That(sling.TotalSimulationSteps, Is.GreaterThan(off.SlingSteps));
                 policy.SetSimulationEnabled(false);
