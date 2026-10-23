@@ -43,6 +43,10 @@ git integration/content-preservation review passed; check-docs passed.
 BarModel_CarriesTheAuthoredPubAndInteractionFixtures fails its unchanged
 table assertion: base/current already omit the former rear table.
 
+Unity asset cleanup: removed inactive WebGL/default fields and serialization drift;
+restored shared Avatar and premultiplied glass. Cloth deltas were endpoint float
+ties, not authoring. Asset diff audit verified HEAD equality; check-docs passed.
+
 ## 2026-10-22
 
 Bar Enter/Exit: stool-gap turn/lift before pelvis transfer/reverse;
