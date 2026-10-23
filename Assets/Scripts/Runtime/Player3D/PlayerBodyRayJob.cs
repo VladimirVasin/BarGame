@@ -345,6 +345,9 @@ namespace BarPromenade
 
         private int CollectFour(int proxy, Range range, Tree tree, bool inside)
         {
+            // Keep the feature guard in the method that contains intrinsics;
+            // a caller-side check alone does not protect ARM Burst compilation.
+            if (!Sse.IsSseSupported) return CollectFast(proxy, range, tree, inside);
             const float threshold = .0000001f;
             double entryLower = double.NegativeInfinity, exitUpper = double.PositiveInfinity;
             if (!CachePointFour(proxy)) return CollectTree(proxy, range, tree, !inside);
@@ -421,6 +424,9 @@ namespace BarPromenade
         private static int RejectedFour(bool inside, v128 slopes, v128 slopeErrors, v128 distanceUpper,
             v128 exitScores, v128 entryScores, v128 exitErrors, v128 entryErrors)
         {
+            // Burst requires SSE2 for these packed comparisons even though
+            // their API lives on Sse. Keep unsupported lanes for scalar checks.
+            if (!Unity.Burst.Intrinsics.X86.Sse2.IsSse2Supported) return 0;
             var threshold = new v128(.0000001f);
             var zero = new v128(0f);
             var maximum = new v128(float.MaxValue);
@@ -478,6 +484,7 @@ namespace BarPromenade
 
         private bool CachePointFour(int proxy)
         {
+            if (!Sse.IsSseSupported) return false;
             if (PackPointVersions[proxy] == PointVersion) return true;
             Range range = PackRanges[proxy];
             Vector3 absolutePoint = Absolute(Point);
@@ -495,16 +502,33 @@ namespace BarPromenade
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static v128 DotFour(PlanePack plane, Vector3 value)
-            => Sse.add_ps(Sse.add_ps(Sse.mul_ps(plane.X, new v128(value.x)), Sse.mul_ps(plane.Y, new v128(value.y))),
-                Sse.mul_ps(plane.Z, new v128(value.z)));
+        {
+            if (Sse.IsSseSupported)
+                return Sse.add_ps(Sse.add_ps(Sse.mul_ps(plane.X, new v128(value.x)), Sse.mul_ps(plane.Y, new v128(value.y))),
+                    Sse.mul_ps(plane.Z, new v128(value.z)));
+            return new v128(
+                (plane.X.Float0 * value.x + plane.Y.Float0 * value.y) + plane.Z.Float0 * value.z,
+                (plane.X.Float1 * value.x + plane.Y.Float1 * value.y) + plane.Z.Float1 * value.z,
+                (plane.X.Float2 * value.x + plane.Y.Float2 * value.y) + plane.Z.Float2 * value.z,
+                (plane.X.Float3 * value.x + plane.Y.Float3 * value.y) + plane.Z.Float3 * value.z);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static v128 DotAbsoluteFour(PlanePack plane, Vector3 value)
-            => Sse.add_ps(Sse.add_ps(Sse.mul_ps(Absolute(plane.X), new v128(value.x)), Sse.mul_ps(Absolute(plane.Y), new v128(value.y))),
-                Sse.mul_ps(Absolute(plane.Z), new v128(value.z)));
+        {
+            if (Sse.IsSseSupported)
+                return Sse.add_ps(Sse.add_ps(Sse.mul_ps(Absolute(plane.X), new v128(value.x)), Sse.mul_ps(Absolute(plane.Y), new v128(value.y))),
+                    Sse.mul_ps(Absolute(plane.Z), new v128(value.z)));
+            plane.X = Absolute(plane.X); plane.Y = Absolute(plane.Y); plane.Z = Absolute(plane.Z);
+            return DotFour(plane, value);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static v128 Absolute(v128 value) => Sse.and_ps(value, new v128(int.MaxValue));
+        private static v128 Absolute(v128 value)
+        {
+            if (Sse.IsSseSupported) return Sse.and_ps(value, new v128(int.MaxValue));
+            return new v128(Mathf.Abs(value.Float0), Mathf.Abs(value.Float1), Mathf.Abs(value.Float2), Mathf.Abs(value.Float3));
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Finite(v128 value) => Finite(value.Float0) && Finite(value.Float1) && Finite(value.Float2) && Finite(value.Float3);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

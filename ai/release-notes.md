@@ -8,23 +8,23 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-23
 
-- Бар: туалет за кабинками, крыло/крыша совпадают; дверь/`E` с двух сторон.
-  Грязный кафель/побитая штукатурка, корзина/мусор/ёршик/бумага,
-  пошлые картинки/стикеры без букв; разбитое настоящее зеркало.
-  WC мягко освещает угол/дверь; отскок на полу раскрывает подход.
-  Унитаз рядом/по взгляду, дверь доступна; стойки вблизи.
-- BarPrompts_KeepDoorReachableAndCounterLocal прошёл.
-- Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera прошёл:
-  дверь/действия/камера/зеркало/очистка. Проверены свет всего угла и отражение;
-  повторяющихся точек на кафеле нет.
-- Toilet_FirstPersonStreamStainsAndRestores прошёл.
-- PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit прошёл: обзор мышью и выход.
-- Заказ/повтор: видимый взмах левой, затем стук указательным; обычный сидячий обзор.
-  При повторе пива правая подаёт пустую кружку/возвращается до оплаты;
-  меню/край стойки ограничивают ход. Гости допивают/машут/ждут долив в тот же сосуд,
-  согнутая правая подаёт пустой/подтягивает полный. Общая очередь с героем;
-  бармен смотрит/кивает, сохраняя подачу.
-- BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt прошёл, кадры проверены.
+- Бар: туалет за кабинками, унитаз/раковина; крыло/крыша совпадают.
+  Дверь/`E` с двух сторон; унитаз рядом/по взгляду, стойки вблизи.
+  Грязный кафель/сколы штукатурки, мусор/ёршик/бумага/дозатор,
+  картинки/стикеры без букв; настоящее разбитое зеркало с героем.
+  WC мягко освещает дверь/угол; отскок раскрывает подход, точки на кафеле убраны.
+- Заказ/повтор: видимый взмах левой/стук указательным; сидячий обзор.
+  Правая подаёт пустую кружку/возвращается до оплаты; меню/край ограничивают ход.
+  Гости машут/ждут долив в тот же сосуд; общая очередь, бармен смотрит/кивает.
+- Mac: Burst поддерживает ARM; universal Intoxication VHS сохраняет общий DSP.
+  MainMenu→AlpineVillage без Burst/VHS ошибок; очередь Hub 64 МиБ устранила
+  Graphics Ring Buffer warning.
+- Проверено: BarPrompts_KeepDoorReachableAndCounterLocal;
+  Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera (зеркало/очистка);
+  Toilet_FirstPersonStreamStainsAndRestores;
+  PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit;
+  BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt; свет/отражение/позы проверены.
+  PlayerBodyQueryBurstTests; Mac native ABI/DSP validator прошли.
 
 ### 2026-10-22
 

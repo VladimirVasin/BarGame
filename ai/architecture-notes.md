@@ -1491,8 +1491,7 @@
   cushion. Generator `1.11.1` keeps all other `152` parts and `15` anchors
   unchanged (`21,760` triangles); sofa frame, cushions, contact and approach
   remain authoritative. No lighting or character change accompanies removal.
-  `AlpineFrostJourney` passes in `52.339248 s` in
-  `TestResults/mothers-hearth-frost.xml`, including actual sofa enter/exit and
+  `AreaCaptureFixture.AlpineFrostJourney` passed, including actual sofa enter/exit and
   the removed-part check. Captured post-distance/mixer hearth RMS is `0.007914`
   at the fixed camera, `0.013354` at the sofa head and `0.015800` at the rocker
   head, with audible-band energy and no clipping. The camera reference with
@@ -1635,45 +1634,25 @@
   separate low-density gate; brightness of individual needles no longer
   punches sharp holes through the blurred background.
   `AlpineFrostDiffusion` compares same-frame house GPU renders with fixed
-  crystals, switching only diffusion.
-  Blur-only edge difference grows from `0.33504` at 25% to `1.65606` at 50%
-  and `4.81550/255` at full frost. Clear-scene gradient contrast falls to
-  `0.327` on the left window and `0.264` on the ceiling beam at full frost.
-  Half-thawed pixels exactly match 50% growth; fully thawed pixels match the
-  clear source. Both house 16:9 and 4:3 keep the protected centre exactly
-  unchanged and black bars black. The fixture pins ordinary presentation
-  without changing saved preferences. A/B and staged stills are temporary
-  review output, removed after inspection.
-  `AlpineFrostJourney` checks the village/house round trip, warm cue timing,
-  pause, repeat intervals and cold re-entry.
+  crystals and switched diffusion: increasing blur at 25/50/100%, identical
+  half-thaw/half-growth, clear full thaw, protected centre/black bars at 16:9
+  and 4:3. It pins presentation without changing saved preferences.
+  `AlpineFrostJourney` checks village/house round trip, warm cue timing, pause,
+  repeat intervals and cold re-entry. Stills/reports are temporary review output.
 
-  **Source and focused animation verification, 2026-09-08:**
-  Hold makes two quiet sleeve passes per `4 s`,
-  with authored contact travel `18 mm` left / `16 mm` right; Rub makes three
-  `60 mm` passes, left down and right up the opposite upper sleeve. The
-  focused source refresh preserves the rig, meshes, weights and all `45`
-  unrelated actions, including their exported FBX tracks. That bank contained
-  `47` bone-only clips. Its curves are deterministic, endpoints agree, and
-  the source validator rejects a static half-second interval in Hold.
-  Half-frame evaluated-mesh SAT over all `36` opposing arm pairs reports
-  minimum source separation `+0.893 mm` Hold / `+0.168 mm` Rub.
-  The updated `AreaCaptureFixture.AlpineVillageColdHero` passes in `99.136954 s`,
-  including idle/running/shiver captures, same-time lower-body isolation and
-  protective/visibility/pause gates. Its `1,704` final Unity poses produce
-  `61,344` pair checks with no violation of the unchanged `2 mm` tolerance;
-  the tightest palm/sleeve contact is `-0.359 mm`, not strictly positive
-  separation everywhere. Shiver shoulder travel measures `15.8/13.8 mm`
-  and chest rotation `0.98°`.
-  Evidence: the cold-hero case in `TestResults/alpine-shiver-frost.xml` and
-  `AreaCaptureFixture.AlpineVillageColdHero`; its reports and motion captures
-  are temporary review output, removed after inspection. Actual cabin travel and
-  broad suites/player builds were not part of this focused check.
-  The subsequent `ColdShiver` source publication contains `48` actions and
-  preserves all previous `47` source curves and exported FBX tracks. Half-frame
-  source SAT reports minimum separation `+1.849 mm`, no intersections, matching
-  Hold-zero endpoints and neutral root/pelvis/legs. Source verification uses
-  `tools/player_cold_actions.py --validate-only`;
-  runtime, screen and sound verification are recorded separately in the work log.
+  **Source and focused animation verification, 2026-09-08:** Hold has two
+  sleeve passes per `4 s` (`18/16 mm` left/right); Rub has three `60 mm` passes,
+  left down/right up opposite sleeves. Deterministic curves preserve rig,
+  meshes, weights and unrelated exported tracks; Hold rejects a static `0.5 s`.
+  Half-frame SAT separation: Hold `+0.893 mm`, Rub `+0.168 mm` over 36 arm pairs.
+  `AreaCaptureFixture.AlpineVillageColdHero` checks idle/run/shiver, lower-body
+  isolation, protective/visibility/pause gates and unchanged `2 mm` tolerance;
+  tightest palm/sleeve contact `-0.359 mm` is not strictly separated. Shiver
+  shoulder travel `15.8/13.8 mm`, chest `0.98°`. The later 48-action bank
+  preserves 47 prior curves/tracks; ColdShiver SAT separation `+1.849 mm`, no
+  intersections, Hold-zero endpoints and neutral root/pelvis/legs.
+  Source: `tools/player_cold_actions.py --validate-only`; runtime/screen/sound
+  evidence belongs in the work log; review reports/captures are temporary.
 
 - **Accepted and verified 2026-09-06 — recovery follows the lying body and
   preserves the complete moving pose:** the user reported visible
@@ -1734,7 +1713,7 @@
   `ai/work-log.md`; no broad regression is implied.
 
 - **Accepted exception — Alpine Village material and mass pass (2026-09-06):**
-  User-approved form: `Art/Collection/16-alpine-village.png`; cableway loading
+  User-approved village form reference; cableway loading
   paintings guide the upper station. Art §10g's snow-only ridge may expose
   layered dark rock/snow ledges and bowl floor. Passive deterministic Blender
   rocks stay beyond the walkable toe; terrain owns continuous collision/cableway
@@ -2020,8 +1999,8 @@
   playback. Sobering fades to exact bypass without persistent delay. Episode
   length/spacing, host smoothing, world tempo and visuals stay unchanged.
   DSP details: `tools/audio-vhs/README.md`; source/native validation:
-  `tools/audio-vhs`; packaged Windows x86_64 plugin:
-  `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`.
+  `tools/audio-vhs`; Windows x86_64 DLL in `Assets/Plugins/AudioVhs/x86_64`,
+  macOS arm64/x86_64 bundle in `Assets/Plugins/AudioVhs/macOS`; same DSP/ABI.
   `GameTimeScaleState`/persistent `GameTimeScaleRuntime` alone own world speed
   and independent pause leases. Pause forces zero; release restores the current,
   never captured, intoxication factor. The physics step follows non-debug world
@@ -2032,7 +2011,7 @@
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
-- **Accepted:** Unity `6000.6.6f1`, AI Navigation `2.0.15` (actual settings, 2026-10-20), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
+- **Accepted:** Unity `6000.6.7f1`, AI Navigation `2.0.16`, Input System `1.20.1` (settings, 2026-10-23), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two
@@ -3219,168 +3198,97 @@
   clear actual poles by `0.30 m`, else `StaticFixtureOverlap` rejects the turn.
   Asphalt/sidewalk/paint retain their three albedos as regions of the common
   ground. Home includes surfaces touching its retained slice without collision.
-- **Accepted — One route-driven real-scale bus on canonical Route 01:** City
-  layout produces immutable `bus-route:default-coastal:route-01`, one
-  deterministic right-hand, Street-only closed winding service loop. The target
-  set contains every district point of interest that actually exists plus
-  `PlayerHome`, and its **order is a shortest closed tour over the target
-  centres**, not the district enum. The enum order was nominal — Industrial,
-  Nightlife, Residential, Old Town, home — and on the default layout it ran
-  west, south centre, far north-east, back west and out east again: two full
-  crossings, `1166 m` of straight-line tour where `754 m` was available, and a
-  `2592 m` road loop. Five targets
-  are solved exactly by fixing the first and permuting the rest; a layout with
-  more than `8` falls back to nearest neighbour plus 2-opt. Equal-length tours
-  are broken by the ordered target IDs, and the cycle is rotated so
-  `PlayerHome` is served first with its direction fixed the same way, because
-  a closed loop has no last stop to lose and home is the one stop the hero can
-  name. The default is therefore Home, Residential, Old Town, Industrial and
-  Nightlife. Each semantic stop is assigned to a safe straight on the
-  target frontage or one connected road edge away. The river layout preserves
-  that Home rule but lets a POI use the nearest cyclic Street in the same
-  district, bounded to five grid edges and `120 m` from its public access. Its
-  roadside cell differs from the target cell, and the physical blue `01` pole
-  stays outside POI public/access bounds or the Home footprint.
-  The selected target straights are connected through one deterministic
-  accepted-link graph. Ordinary straights and analytic `6 m`-radius left turns
-  are retained after full-body surface and signal-fixture clearance. At selected
-  Road v2.1 nodes only, a two-edge safe-right macro starts at the incoming
-  Street departure, uses a long symmetric S-merge toward the centerline,
-  follows a `4.5 m` quarter-turn through the clear core and uses a second long
-  symmetric S to the outgoing Street arrival. The macro marks both physical
-  road edges occupied so pathfinding cannot use it to bypass a selected stop
-  edge. Ordinary unselected `3 m` right turns remain rejected as
-  `CurvatureTooTight`. Every retained path is sampled at `0.1 m` against the
-  inflated envelope of the real `8.25 x 2.38 x 2.95 m` body, `4.5 m` wheelbase
-  and `0.1 m` clearance margin. A physical link may recur in a connector, but
-  every ordered route occurrence receives unique link/node IDs and exactly one
-  successor. Runtime never chooses a random branch or steers the route toward
-  the player.
-  The default layout owns five target-derived stops with stable IDs,
-  localization keys, lap distances and roadside poses; random roadside
-  decoration does not emit bus shelters. The actor serves every stop once per
-  lap, clears its service set at the loop seam and holds a fixed `10 s` total
-  dwell, including the existing `0.70 s` opening and `0.70 s` closing
-  transitions for both doors. Nightlife's Last Route Island has a working
-  Route 01 pole nearby but outside its public ground and approaches. The
-  abandoned island structures remain a distinct place rather than becoming
-  the live pole.
-  Runtime owns exactly one reusable actor/model slot. Obstacle-safe activation
-  prefers the fixed-fog `76-86 m` band and falls back to `56-86 m` only when
-  forward travel on the same loop can approach the player; no spawn is accepted
-  when the route is directed away from every encounter sample. Recycling waits
-  until the closest point of the complete oriented body is at least `92 m` from
-  the player. The slot cap means at most one active or potentially visible
-  vehicle, not a guarantee that a bus is always visible. While the hero is
-  outside it yields to predicted player and pedestrian motion. That prediction
-  extrapolates `0.75 s` ahead, so its input is smoothed over `0.2 s` and
-  clamped to the `5.2 m/s` the motor can actually produce: an unsmoothed
-  single-frame delta turned a `0.05 m` wobble on a `5 ms` frame into `10 m/s`
-  and braked the bus for a phantom six metres away, and a frame that moves the
-  hero past `4 m` is read as a teleport and yields no velocity at all.
-  Route travel likewise carries any sub-`DistanceTolerance` remainder into the
-  next frame instead of discarding it. Dropping it was a latch rather than a
-  rounding loss: approach speed rides the service-braking curve exactly, so at
-  `60 fps` a frame moves under `0.02 m` once the stop is within `0.31 m`, and
-  because the discarded travel left the distance unchanged the speed cap never
-  recovered. The bus parked a third of a metre short of the stop node,
-  `BeginDwell` never ran, and the dwell-driven doors stayed shut until a long
-  enough frame happened along. While the hero
-  is attached as the sole passenger, that same hero is omitted from obstacle
-  prediction but pedestrian yielding remains active. Camera direction, frustum
-  membership and far-clip state never control spawning or recycling. The kinematic box
-  body uses the dedicated `CityBus` layer: it collides with the player and
-  pedestrians, ignores another bus and is excluded from camera and interaction
-  queries. The passive production prefab stays collider- and `Light`-free, owns
-  a modeled driver area, dashboard, twelve passenger seats, rails and two
-  double-leaf doors, and matches the same real dimensions without runtime scale
-  correction.
-  The separate passive `CityBusDriver3D` production prefab uses the shared
-  `Player3DLit` material and an exact 31-bone rig. Its normal low-poly head keeps
-  the slightly bizarre identity in long horizontal eyes rather than distorted
-  anatomy. Runtime procedural seated IK keeps both hands aligned to the rotating
-  steering-wheel grips. The deterministic door/driver timeline moves only the
-  right hand to the physical dashboard button for opening and closing, drives
-  its real `12 mm` press travel and leaves the left hand on the wheel. During
-  `Opening` the driver turns toward the front door, holds that look through the
-  open phase, then returns during `Closing`. The four separate eye renderers
-  provide deterministic pooled blinking. A hero within the `2.25-2.75 m`
-  front-entry focus band on the door side overrides the static look anchor;
-  the driver tracks the hero head and extends the connected neck/head segment
-  by up to `0.10 m`, capped at `1.35x`, before restoring position and scale. The
-  timeline preserves the fixed `10 s` dwell and `0.70 s` opening/closing
-  transitions; driver bones, wheel, button, look and timeline all return to
-  neutral when the actor enters its pool.
-  Each doorway keeps its outer posts fixed while independently hinged leaves
-  rotate in opposite directions around the vehicle vertical and fold inward.
-  Presentation inserts one runtime-only `Suspension Visual` pivot above the
-  imported body and keeps all four wheel assemblies outside that sprung
-  hierarchy. Travel distance and speed drive cartoon road heave capped at
-  `0.045 m`, acceleration contributes pitch capped at `0.8` degrees, and
-  steering plus the road wave contribute roll capped at `1` degree. The wheels
-  remain grounded, while the authoritative actor transform, kinematic collider
-  and route pose stay unchanged. Presentation also articulates steering and
-  wheel travel, synthesizes a `22050 Hz` engine loop, and scales head,
-  tail/brake and cabin emission with motion and current night factor. At runtime
-  only, it creates two shadowless headlight `Spot` lights and two soft
-  shadowless cabin `Spot` lights under the sprung body. The shared `NightFactor`
-  scales them, disables them at zero and resets them off with the rest of the
-  pooled presentation. These four bus-owned lights sit outside the fixed
-  12-light city-atmosphere pool, so atmosphere plus one active bus reaches a
-  16-light subtotal. The single pooled helmet Spot and the fixed yard Spot can
-  add one each, making the bounded worst case `18` local realtime lights; the
-  scene Directional and transient lightning Directional are separate. The City
-  map consumes the same immutable plan, simplifies its closed geometry, draws
-  a pale neutral loop and adds five
-  numbered localized stops in the default layout plus a compact legend. It
-  deliberately has no live bus marker.
-  The City-only passenger MVP uses three ordinary Default-layer trigger children
-  instead of admitting the solid `CityBus` body to general interaction queries:
-  one at each front/rear passenger door and one at passenger seat `07`
-  (zero-based anchor index `6`), the first window seat on the lateral side
-  opposite the driver.
-  Both exterior triggers use the ordinary `PlayerInteractor` and
-  `InteractionPromptView` E/Enter/gamepad/pointer path. A board prompt is valid
-  only while the bus is dwelling with doors fully open and a deterministic
-  walkable external dock exists. Each dock keeps the complete player capsule
-  outside the bus obstacle corridor, so a waiting passenger does not make the
-  bus yield before reaching its service pose. The controller resolves the
-  closest valid door-specific plan and retains that front/rear choice for the
-  later exit. Every entry and exit candidate resolves its grounded root height
-  from the same deterministic `CityStreetSurfacePlan.Sidewalks` bounds used to
-  construct physical City geometry: a raised sidewalk uses its `Bounds.max.y`,
-  while a cut-back bus-intersection apron uses `RoadTop`, in both cases plus the
-  player grounded-root offset. A road-to-sidewalk curb delta is accepted only
-  when it fits the live `CharacterController.stepOffset`; the shared positioned
-  approach still rejects genuinely unreachable levels.
-  `CityBusRideController` acquires an owner-scoped service hold so the `10 s`
-  dwell cannot close the doors mid-transfer, then uses the shared
-  positioned-interaction path and `BusBoardEnter` to pass through the selected
-  live doorway waypoint into that fixed opposite-driver seat. The production
-  rig remains
-  visible; its pelvis follows the sprung seat Transform during entry and the
-  looping `BusRideLoop`. At loop handoff the gameplay root remains under its
-  original parent while ordinary motor, `CharacterController` and contact
-  shadow are disabled. `CityBusRideController` runs after the director and
-  late-synchronizes that root to the stable actor-local seat pose; this preserves
-  moving-frame alignment without making Player a child of a slot that may be
-  deactivated. The seated camera follows the sprung seat at a safe aisle-side
-  offset; actor-forward/world-up orientation excludes suspension pitch/roll
-  and axis coupling. Its lateral-side default looks through the nearest window.
-  Entry/exit interpolate look directions reconstructed with world up, without
-  roll. Shared mouse orbit (no button), right stick and arrows rotate bounded
-  yaw/pitch; the orbit-input flag gates modals, not bus ownership. Fixed-pose
-  entry/exit transactions restore the ordinary camera exactly.
-  One passenger owner prevents pooling/release; the director's cleanup callback
-  handles forced disable/shutdown. Exit requires service ordinal greater than
-  at boarding (next/later stop). It reacquires the service hold, detaches the
-  moving-frame binding, freezes the seat target and runs `BusAlightExit` through
-  the selected live door to its independent grounded roadside dock; camera
-  blends to resolved chase. Completion/cancellation/lifecycle cleanup restores
-  motor/collider/contact shadow/camera once, without hierarchy mutation,
-  releases service/passenger ownership and falls back to the last safe exterior
-  dock if exit fails. Fare/payment, destinations, passenger persistence,
-  traffic signals and live bus tracking remain deferred.
+- **Accepted — One route-driven real-scale bus on canonical Route 01:**
+  Immutable `bus-route:default-coastal:route-01` is a deterministic right-hand,
+  Street-only closed loop through existing district POIs plus `PlayerHome`.
+  Order is the shortest closed tour over target centres, not district enum:
+  fix one target/permute the rest through eight targets; beyond eight use
+  nearest neighbour + 2-opt. Ordered IDs break ties and fix direction;
+  rotate Home first. Default: Home, Residential, Old Town, Industrial, Nightlife.
+  Stops use a safe frontage straight or one connected edge away. River-layout
+  POIs may use the nearest cyclic Street in their district within five edges/
+  `120 m` of public access. Their cell and blue `01` pole stay outside the
+  target cell, POI/access bounds and Home footprint.
+
+  One accepted-link graph admits straights and `6 m` left arcs after full-body
+  surface/fixture checks. Selected Road v2.1 nodes allow safe-right macros:
+  long symmetric S-merges around a `4.5 m` core quarter-turn, reserving both
+  physical edges without bypassing a stop edge. Unselected `3 m` right turns
+  fail `CurvatureTooTight`. Sample paths every `0.1 m` against the inflated
+  `8.25 x 2.38 x 2.95 m` body, `4.5 m` wheelbase, `0.1 m` clearance. Repeated
+  physical links get unique ordered link/node IDs and one successor. No random
+  branches or player pursuit. Five default stops own stable IDs/localization/
+  lap distances/poses, each served once per lap. Dwell is `10 s`, including
+  `0.70 s` opening and closing of both doors. Clear service set at loop seam.
+  Random decoration creates no shelters. Last Route Island's working pole
+  stays outside the abandoned public ground/approaches.
+
+  Exactly one reusable actor/model slot. Obstacle-safe activation prefers
+  `76–86 m` fog, falling back to `56–86 m` only if forward loop travel approaches
+  an encounter sample. Recycle only when the closest oriented-body point is
+  at least `92 m` from the hero; camera/frustum/far clip never decide lifetime.
+  Empty intervals are valid. Yield to predicted hero/pedestrian motion:
+  horizon `0.75 s`, hero smoothing `0.2 s`, velocity cap `5.2 m/s`, displacement
+  over `4 m` treated as teleport/zero velocity. Carry sub-`DistanceTolerance`
+  travel into the next frame to prevent braking short of a stop. Omit the
+  attached hero from prediction; retain pedestrian yielding.
+  Kinematic `CityBus` box collides with hero/pedestrians, ignores other buses
+  and stays outside camera/interaction queries. Passive prefab has no colliders
+  or Lights, preserves real scale and models driver/dashboard/rails/twelve
+  seats/two double-leaf doors. City map uses the immutable simplified loop,
+  five numbered localized stops and legend; no live marker.
+
+- **Accepted — Route 01 driver and sprung presentation:** The separate passive
+  `CityBusDriver3D` uses `Player3DLit`, the exact 31-bone rig and a normal
+  low-poly head with long horizontal eyes. Seated IK holds wheel grips;
+  opening/closing moves only the right hand to the dashboard button's `12 mm`
+  press, left stays on wheel. Driver looks toward front door during Opening,
+  holds through open, returns during Closing. Four eye renderers blink from
+  a deterministic pool. A hero in the door-side `2.25–2.75 m` band overrides
+  the static look target; connected neck/head extend at most `0.10 m`/`1.35x`.
+  Pooling restores bones, wheel, button, look and timeline to neutral.
+  Fixed outer posts retain independently hinged, oppositely folding leaves.
+
+  Runtime `Suspension Visual` contains body, excluding all four wheel assemblies.
+  Distance/speed heave caps at `0.045 m`, acceleration pitch at `0.8°`, steering/
+  road-wave roll at `1°`; authoritative route pose/collider stay unchanged.
+  Steering/wheel travel animate; synthesized engine is `22050 Hz`. Motion/night
+  drive head/tail/brake/cabin emission. Two shadowless headlight Spots plus two
+  soft shadowless cabin Spots follow shared `NightFactor`, disable at zero and
+  pool-reset off. They are outside the 12-light city-atmosphere pool: subtotal
+  16; helmet and yard Spots make worst-case 18 local realtime lights. Scene/
+  lightning Directionals are separate.
+
+- **Accepted — City-only Route 01 passenger MVP:** Three Default-layer trigger
+  children serve front/rear doors and seat `07` (anchor `6`), opposite the driver;
+  solid `CityBus` never enters general interaction queries. Doors use shared
+  `PlayerInteractor`/`InteractionPromptView` E/Enter/gamepad/pointer input.
+  Board only during fully open dwell with a deterministic walkable dock outside
+  the bus obstacle corridor. Resolve nearest valid door plan and keep that door
+  for exit. Ground roots from actual `CityStreetSurfacePlan.Sidewalks` bounds:
+  raised sidewalk `Bounds.max.y`, cut-back apron `RoadTop`, plus grounded-root
+  offset. Curb delta must fit live controller stepOffset; reject unreachable levels.
+
+  `CityBusRideController` holds service through transfer and uses shared positioned
+  approach/`BusBoardEnter` through the live door waypoint. The same visible rig's
+  pelvis follows the sprung seat through entry/`BusRideLoop`. Gameplay root stays
+  under its original parent; disable motor/controller/contact shadow at loop
+  handoff. After director movement, late-sync root to actor-local seat pose.
+  Camera follows the sprung seat from aisle side, defaults through the nearest
+  lateral window, and uses actor-forward/world-up without suspension pitch/roll.
+  Entry/exit interpolate world-up look without roll. Shared mouse/right-stick/
+  arrow bounded orbit remains available except during modals; fixed-pose
+  transactions restore ordinary camera exactly.
+
+  Passenger ownership blocks pooling; director cleanup handles forced shutdown.
+  Exit needs a later service ordinal than boarding, reacquires service hold,
+  detaches moving-frame binding, freezes seat target and uses `BusAlightExit`
+  through the retained door to its grounded dock, blending camera to chase.
+  Completion/cancellation/lifecycle restore motor/controller/shadow/camera once,
+  without hierarchy mutation; release both owners. Failed exit uses last safe
+  exterior dock. Fares, destinations, passenger persistence, traffic signals
+  and live tracking remain deferred.
+
 - **Accepted — A three-place cabin counting the hero, with declared seated
   riders:** `CityBusActor` owns `CabinCapacity = 3` occupants and a shared
   per-owner service hold. Both replace single-owner fields, and both had to:
@@ -4014,135 +3922,57 @@
   is eight.
 
 - **Accepted — Two more designs taken off the street the same day
-  (2026-09-02), and the courtyards recast:** the entry above left two things
-  standing that the user found by walking the city. The Lake Fisherman roamed
-  although he is a story figure with a permanent post on the мостки, and the
-  Chair Carrier roamed although a man who carries a chair everywhere is not an
-  ordinary man — the user ruled him `bizarre` against the catalog's own
-  body-versus-prop line, which still holds for the two Park players. The
-  street pool is SIX, and the population profile was deliberately not raised
-  to compensate: a thinner street was the accepted price.
+  (2026-09-02), and the courtyards recast:** The Lake Fisherman keeps his
+  permanent post on the мостки; the Chair Carrier is user-classified `bizarre`.
+  Neither roams. The street pool is six, without raising population to compensate.
+  `CityCourtyardResidentPlan` uses the ordinary Cemetery Watchman, Weigh
+  Attendant and Yard Babushka; the former faceless/long-arm/chair cast had no
+  story-bible §6 permission.
 
-  The courtyard vignettes were the other half. `CityCourtyardResidentPlan`
-  hard-coded the roaming pool OF THE DAY IT WAS WRITTEN — the Lampshade
-  Walker, the Long-Arm Walker and the Chair Carrier — so when the strange
-  walkers came off the street the courtyards kept them, and the one place a
-  player meets a figure with no face became a residential yard a metre from
-  the pavement, at every seed. That was never a story beat: the story bible's
-  §6 registry has no row for any of them and none for the pockets. They are
-  recast to the three ordinary designs that own a working loop of their own —
-  the Cemetery Watchman, the Weigh Attendant and the Yard Babushka.
+  `CityPedestrianClipSource` selects `IdleClip` for placed work and
+  `RoamingIdleClip` by default elsewhere. `ConfigureCycle` seeds against the
+  selected playable's length, avoiding a `4 s` phase seek into a `2 s` clip.
+  `CityCourtyardResidentTests` consults `NpcDesignAppearanceCatalog` and rejects
+  `bizarre` residents; runtime does not consult that appearance table.
 
-  Three things fell out of it that are worth naming:
+  `OrderedArchetypes` owns roaming; `NonRoamingArchetypes` retains withdrawn
+  designs. `TryGetArchetype` resolves both; `CityPedestrianResources.Roams`
+  answers pool eligibility. Retain non-roaming assets: the mother's teapot
+  uses ten renderers from the Kettle Hat prefab. `staged` means shared-library
+  authoring/manual placement, independently of `pool_eligible`. Both editor
+  gates query `Roams`. Roaming prefabs live in `Assets/Resources`; others in
+  `Assets/Pedestrians/Staged/`; models/manifests remain staged.
 
-  - **`CityPedestrianClipSource`.** Every promoted resident carries two clip
-    pairs: its own working loop and a shared citizen gait. The graph only ever
-    built the roaming one, so a body POSED at a dock played a pavement breath
-    for ever while its six seconds of authored business sat one field away.
-    A placed body now asks for `IdleClip`; everything else still gets
-    `RoamingIdleClip` by default.
-  - **A phase-seeding bug went with it.** `ConfigureCycle` seeded from
-    `registry.IdleClip.length` while the playable had been built from
-    `RoamingIdleClip` — for the babushka a `phase x 4.0 s` seek into a `2.0 s`
-    clip. It wrapped rather than threw, quietly collapsing the phase spread
-    the director asks for.
-  - **`NpcDesignAppearanceCatalog` is finally consulted — by a test.** The
-    runtime still does not read it and the rule above still holds; but
-    `CityCourtyardResidentTests` now asserts that no courtyard resident is
-    `bizarre`. Nothing had ever asked the table the question it was written
-    for, which is why the leftover survived three weeks of green suites.
+  Each promoted prefab keeps working `IdleClip`/`WalkClip` plus optional
+  `ambient_idle`/`ambient_walk` in `ArchetypeSpec`, editor descriptor and registry.
+  Roaming reads `RoamingIdleClip`/`RoamingWalkClip`, falling back to work clips.
+  This preserves the drying yard's planted `BabushkaBeat`.
+  Street gait is re-authored in `CityPedestrianLocomotion.fbx`: the pedestrian
+  importer locks root Y/XZ and `keepOriginal*`, unlike the hero importer, and
+  Animator disables root motion. Reusing the hero clip would lose pelvis motion;
+  editor gates require the pedestrian bank.
+  `CITIZEN_WALK_CYCLE` copies the hero's eight keys, including arms. Since
+  `2026-09-05`, `BonePose.target_direction`/`apply_pose` use the hero generator's
+  arithmetic. Keys own pelvis/spine/chest/head; idle zeros spine/chest/head.
+  The design retains neck, plus idle pelvis/legs; clavicles reset to rest.
+  Do not replace aim vectors with local X rotations: that abducts the A-pose
+  arms instead of swinging. Park players use `chess_player_stand_pose`, not
+  their board perch. Personal-space frames `0`/`24` match each of the six
+  street-idle first keys. `CityPedestrianStreetGaitTests` pins arm hang
+  (`<22°` idle, `<40°` walk), sideways share `<0.35`, fore/aft swing,
+  heel-contact opposition and standing thighs. Rebuild via `--locomotion-only`.
 
-  Four consequences worth naming, because each one is a rule that used to hold
-  and no longer does:
+  Route 01 seating measures every seated clip, not only the ride pose.
+  A rider's pelvis-to-underside drop must be hip-like (`0.05–0.13 m`).
+  Mourner/babushka garments hang `0.4256/0.3347 m` below; the fisherman's rod
+  rises `1.9047 m`, Park jeers `1.19 m`, beyond the cabin ceiling. Eligible
+  designs are Chair Carrier, Weigh Attendant and Cemetery Watchman; eligibility
+  does not itself put a non-roaming design on the street.
 
-  1. **The catalog is two tables, not one.** `OrderedArchetypes` is what
-     roams; `NonRoamingArchetypes` holds the four that were withdrawn.
-     `TryGetArchetype` searches both and answers "can this design be
-     resolved"; the new `CityPedestrianResources.Roams` answers "is it on the
-     street". The four are NOT dead weight and must not be deleted:
-     `CityCourtyardResidentPlan` casts the Lampshade, the Long-Arm and the
-     Chair Carrier by name, and `MothersHouseKettleProp` instantiates the
-     Kettle Hat walker whole in order to borrow ten of his renderers for the
-     mother's teapot.
-  2. **`staged` and `pool_eligible` stopped being opposites.** They were the
-     same bit inverted, and both `ValidateDescriptorScope` and the manifest
-     check enforced that. `staged` still means "authored by the shared art
-     library and placed by hand"; `pool_eligible` now means exactly what the
-     runtime catalog says, and both editor gates ask `Roams` rather than
-     inferring it. The prefab of a design that roams must live under
-     `Assets/Resources`; the prefab of one that does not must stay under
-     `Assets/Pedestrians/Staged/`. Models and manifests stay staged either
-     way.
-  3. **A promoted design carries two clip pairs on one prefab.** Its walk slot
-     could not simply be rewritten: the babushka's `walk_clip` is
-     `BabushkaBeat`, a carpet beaten on the spot with the feet planted, and
-     the drying yard plays exactly that. So `ArchetypeSpec`, the editor
-     descriptor and `CityPedestrianAssetRegistry` each gained an optional
-     `ambient_idle`/`ambient_walk` pair. Staged presentations go on reading
-     `IdleClip`/`WalkClip` untouched; the roaming pool reads
-     `RoamingIdleClip`/`RoamingWalkClip`, which fall back to the first pair
-     when no street gait is declared.
-  4. **The street gait is the hero's walk re-authored, not referenced.**
-     `CityPedestrianModelImporter` forces `lockRootHeightY` /
-     `lockRootPositionXZ` / `keepOriginal*`, baking the vertical pelvis arc
-     into the pose, and the hero's importer does not; the pedestrian
-     `Animator` also runs with `applyRootMotion = false`. Pointing at the
-     hero's own clip asset would therefore produce a walk with a dead pelvis,
-     and three editor gates require the clip to live in
-     `CityPedestrianLocomotion.fbx` besides. The generator's
-     `CITIZEN_WALK_CYCLE` is the hero's eight-key cycle copied key for key,
-     arms included: since 2026-09-05 the pedestrian `BonePose` carries his
-     `target_direction` and `apply_pose` solves it with his generator's
-     arithmetic, so his upper-arm aim vectors, forearm and hand rotations
-     travel verbatim. It is a recipe merged onto each design's STANDING
-     base pose, and it owns more of it than the arms: the walk keys pelvis,
-     spine, chest and head from the hero's cycle and the idle's breath
-     zeroes spine, chest and head, so on the street a design keeps only its
-     neck (and, in the idle, its pelvis and legs) — an authored stoop in
-     spine/chest/head never reaches the street clips — and the base's
-     clavicles are reset so the hang is measured from a rest shoulder.
-     **The first version got the arms wrong, and for three days every
-     street copy stood in the bind A-pose.** It re-expressed the aims as
-     bone-local X rotations "of the same magnitude" and merged them over
-     the design's base arms. On the shared A-pose rig the upper arm's
-     local X axis points back and up, not sideways, so an X turn abducts
-     rather than swings: the base's hang was discarded, the arms sat
-     `56°` out (the A-pose) and flapped `±25°` up and down, and the street
-     idle (`1.2°` of X on the bare rest) WAS the A-pose. The park players
-     were worse: their street pair was built on the board perch, so a
-     chess player waiting at a crossing sat brooding in mid-air; both now
-     build on `chess_player_stand_pose`, and the personal-space bank takes
-     its frame `0`/`24` from the street idle's first key for all six
-     designs, so a guard or shove blends from the very arms the actor is
-     playing. `CityPedestrianStreetGaitTests` samples the shipped clips
-     through the production presentation and pins the hang (`< 22°` idle,
-     `< 40°` walk, sideways share `< 0.35`), the fore-and-aft swing, the
-     opposition at heel contact and the standing thighs. Rebuild the bank
-     alone with `--locomotion-only`.
-
-  **Three of the eight ride Route 01, and the five refusals are
-  measurements.** Seating aligns the shared rest pelvis to the cushion, so a
-  design can sit only if the drop from that bone to the underside of its own
-  seated body is a hip: `0.05-0.13 m` for every design that rides. The
-  mourner's coat hem hangs `0.4256 m` below it and the babushka's housecoat
-  `0.3347 m` — lifting either by its own contact distance floats the body,
-  and not lifting it drives the garment through the cushion. The fisherman's
-  shouldered rod rises `1.9047 m` above the pelvis, and the park players'
-  `ChessJeer`/`CheckersJeer` shout rises `1.19 m`, both past the cabin
-  ceiling; the clearance band applies to every seated clip a design owns, not
-  only to the one it would ride in. Riders: the Chair Carrier, the Weigh
-  Attendant and the Cemetery Watchman.
-
-  **The story bible's concern, recorded rather than resolved.**
-  `ai/city-story-bible.md` §14 builds the mortality register on "six to eight
-  specific people" — the watchman, the fisherman, the old men at the boards,
-  the babushkas, the weigh attendant — and warns outright that with fewer, the
-  epidemic would have to be shown through anonymous passers-by. Letting those
-  same people wander the whole city dilutes exactly the namedness that section
-  depends on. This was raised before the change and the change was confirmed;
-  if the register is ever written, the fix is a per-zone spawn weighting that
-  keeps each of them common where they belong and rare elsewhere, not a
-  reversal of the promotion.
+  Story §14's mortality register needs six–eight recognizable people. The
+  user confirmed promotion despite the risk that city-wide roaming dilutes
+  their identity. If that register is implemented, use per-zone weighting to
+  make each common locally and rare elsewhere rather than reverse promotion.
 
 - **Corrected by the bar's explicit composition decision:**
   `BarPatronWorldBuilder` still resolves ordinary city pedestrian prefabs, but
@@ -7100,8 +6930,8 @@
   cue is emitted only for credited scrubbing. Runtime verification of this
   addition is recorded separately in the work log.
 
-  The contact-path optimization retains the same physical checks.
-  `HomeShowerWashPose` caches obstacle vertices and prepared ray-triangle
+- **Accepted — Interactive shower contact-path optimization:** Physical checks
+  remain unchanged. `HomeShowerWashPose` caches obstacle vertices and prepared ray-triangle
   data until exact bone/actor transforms change, and invalidates exposed
   samples when their obstacle revision or rest frame changes. Bounds in
   the ray's perpendicular plane reject impossible triangle hits. The
@@ -7115,7 +6945,7 @@
   improve the current minimum. Actual contact and intersection tests keep
   their tolerances; this is reduced redundant work, not disabled physics.
 
-  The next user-requested water presentation uses the imported Blender
+- **Accepted — User-requested shower water presentation:** Imported Blender
   water sheet and a real perforated `0.15 m` corner drain at local
   `(4.32, 0.215, 3.32)`. `HomeShowerTrayWater`, a partial of the existing
   water effect, accumulates a `0…0.01 m` layer from inflow and drains it
@@ -7916,9 +7746,9 @@
   side, the root is back under the pelvis at `Rising`, the frozen pose is let
   go by `PushingUp`), `PlayerBalancePlayModeTests` (the lean and chest-pitch
   sign probes settle the springs first; the tightrope hand-span measure skips
-  brace frames); `Player3DToppleRiseCapturePlayModeTests` writes the six-tile
-  `TestResults/topple-rise-sheet.png` (lunge, brace, stirring, slump,
-  half-kneel, wobble).
+  brace frames); `Player3DToppleRiseCapturePlayModeTests.ToppleAndRise_RenderSheet`
+  checks lunge, brace, stirring, slump, half-kneel and wobble.
+  Its rendered sheet is temporary review output.
 
 - **Current — one item-examination screen (2026-09-09):**
   `WorldItemInspectionPresenter`: pivot/fit/near backdrop/focus;

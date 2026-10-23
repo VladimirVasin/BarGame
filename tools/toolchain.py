@@ -58,7 +58,7 @@ def check_blender(config: dict, executable: Path) -> None:
 
 def find_visual_studio(config: dict) -> Path:
     if sys.platform != config["native"]["platform"]:
-        raise RuntimeError("The native audio toolchain currently supports Windows x64 only")
+        raise RuntimeError("The MSVC native audio toolchain requires Windows x64")
     program_files = os.environ.get("ProgramFiles(x86)")
     if not program_files:
         raise RuntimeError("Visual Studio Installer/vswhere.exe is required")
@@ -78,6 +78,24 @@ def find_visual_studio(config: dict) -> Path:
     raise RuntimeError(f"Install MSVC tools {version} with the Visual Studio Desktop C++ workload")
 
 
+def find_macos_toolchain(config: dict) -> tuple[Path, Path, Path]:
+    """Locate and verify Apple's installed compiler/SDK without changing them."""
+    if sys.platform != "darwin":
+        raise RuntimeError("The macOS native audio toolchain requires macOS")
+    expected = config["native"]["macos"]
+
+    def xcrun(*arguments: str) -> str:
+        return subprocess.run(["xcrun", "--sdk", "macosx", *arguments],
+                              capture_output=True, text=True, check=True, timeout=15).stdout.strip()
+
+    compiler = Path(xcrun("--find", "clang++"))
+    version = subprocess.run([str(compiler), "--version"], capture_output=True,
+                             text=True, check=True, timeout=15).stdout.splitlines()[0]
+    require_version("Apple clang", version, "Apple clang version " + expected["apple_clang"])
+    require_version("macOS SDK", xcrun("--show-sdk-version"), expected["sdk"])
+    return compiler, Path(xcrun("--show-sdk-path")), Path(xcrun("--find", "lipo"))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scope", choices=("python", "blender", "native", "all"), default="all")
@@ -91,11 +109,15 @@ def main() -> int:
         return 0
     packages = tuple(config["packages"]) if args.scope in ("python", "all") else (
         ("numpy",) if args.scope == "native" else ())
-    check_python(config, packages)
+    python_config = config["native"]["macos"] if args.scope == "native" and sys.platform == "darwin" else config
+    check_python(python_config, packages)
     if args.scope in ("blender", "all"):
         check_blender(config, blender_path(config, args.blender))
     if args.scope in ("native", "all"):
-        find_visual_studio(config)
+        if sys.platform == "darwin":
+            find_macos_toolchain(config)
+        else:
+            find_visual_studio(config)
     print(f"Toolchain preflight passed ({args.scope}).")
     return 0
 

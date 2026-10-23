@@ -43,7 +43,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City Blender ordinary buildings | Twenty metre types; district heights, true passages and secondary wings share models/solid footprints. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.6f1`, `17.6.0` | Current |
+| Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.7f1`, `17.6.0` | Current |
 | Scene presentation | Native/SMAA/4:3; City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
@@ -142,7 +142,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
-| Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
+| Intoxication sound perception | Windows/macOS VHS uses bounded history and smoothed strength; sober returns to exact bypass. | `IntoxicationAudioDriver`, `tools/audio-vhs` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
 | Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
@@ -221,67 +221,28 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 
 ## Primary intended flow
 
-Structural backbone only. Exact world behavior lives in `ai/current-world.md`;
-implementation decisions live in `ai/architecture-notes.md`. Earlier verbose
-rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded snapshot.
+Behavior: [current world](current-world.md); decisions: [architecture](architecture-notes.md).
+Earlier rows: [superseded snapshot](archive/systems-map-2026-09-06.md).
 
 ```text
-build index 0 -> MainMenu -> New Game / Combat Test / Quit card
-  -> Combat Test -> kit + Standard/Endless -> Start -> reset/kit/menu
-  -> New Game -> twelve locations / Back -> confirmed choice
-  -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
-     -> chosen root (City: docks/cannery; village: ski lodge)
-     -> village default: lane-foot, 2 m up, facing mother's house
-     -> ordinary controls and existing travel routes
-  retained, unreached: MainMenuRoot -> HomeInterior sleeping opening
-     -> 05:59 clock shot -> 5 s input lock -> Wake Up / Quit
-     -> Wake -> 06:00 + session clock starts -> alarm hold -> 6 s wake
-     -> ordinary Home control -> StairwellInterior -> City
-     -> debug F9 -> 06:00 if needed -> direct City at home
-                 -> teleport enabled + map opens after transition
+MainMenu (index 0)
+  -> Combat Test -> kit + Standard/Endless -> start/reset/kit/menu
+  -> New Game -> twelve locations/Back -> confirm -> day 1, 07:40
+     -> area/scene loading -> chosen root; village lane-foot is default
+Retained Home opening (unreached): 05:59 -> Wake/Quit -> 06:00 -> Home -> City
 
-session clock -> one-based day -> DAY N announcement + inventory day/time
-              -> day/night sample -> City + Home lighting, Home clock display
-              -> elapsed minutes -> hunger (1440) + fatigue (1080) -> inventory bars
-seed + session clock -> weather slots -> rain intensity -> rain field + rain bed
-                     -> storm windows -> lightning flash + delayed thunder
-
-map -> City / Mountain Road / Village tabs -> confirm other area
-  -> AreaLoading Single -> directed still + bottom bar -> destination Single (20%)
-  -> staged RuntimeComposition (80%) -> root ready -> restore audio/time/input
-  -> MountainRoad -> tunnel -> ten-hairpin climb around high bridge -> plateau
-
-blueprint ID + seed -> immutable blueprint -> validated sparse layout
-  -> typed area cells -> surfaces, navigation, city map
-  -> one Residential bar across from home / supermarket / district public places
-  -> street surface plan -> priority-partitioned City ground/paint sectors
-     -> pedestrian graph -> profile-sized player-relative walker population
-     -> Route 01 loop -> stops + poles -> one pooled bus actor
-        -> board prompt -> seat 07 -> ride -> alight at a later stop
-  -> night fixture plan -> lamps, signals, halos
-  -> decoration plan -> visuals + collision proxies
-  -> fence plan -> rails with clearance openings
+blueprint + seed -> validated plans -> surfaces/navigation/map/night/decor/fences
+  -> pedestrian population; Route 01 -> stops/poles -> pooled bus -> board/ride/alight
+clock -> day announcement/needs/day-night; weather -> rain/lightning/thunder
+map/travel -> AreaLoading -> destination Single (20%) -> staged composition (80%)
+  -> ready -> restore audio/time/input
 
 ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 55 actions: Idle / Walk / Run / SnowWalk + backward / drink / recovery / cold
-  -> Shift or L3 + forward -> 4.2 m/s run except deep snow; backpedal/approaches walk
-  -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
-  -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit
-  -> continuous balance: drift / support / topple -> bounded ragdoll -> seated or all-fours rise -> stagger
-  -> refrigerator camera/door without separate hand; bar drink stays on nested seated rig
-  -> inventory portrait
-
-player -> interaction -> SceneTransitionService -> DoorTransition
-  -> preload destination -> activate at blackout
-  -> BarInterior   -> activity-flavoured dressing + seated/standing 3D patrons
-                   -> counter station -> physical drink service
-  -> SupermarketInterior -> finite shelves -> atomic purchase
-  -> StairwellInterior   -> cat -> Talk / feed
-  -> HomeInterior        -> bed, balcony smoking, refrigerator, three fixed shots
-                         -> bounded same-seed exterior reconstruction
-
-all gameplay results -> GameSessionState -> preserved across Single loads
-state boundaries     -> correlated rotating debug.log (NDJSON)
-scene root           -> audio mixer snapshot + scene music + ambience
-URP post-processing  -> native scene/effects/SMAA -> crisp soot/bone IMGUI
+  -> locomotion/balance/ragdoll/rise/contextual actions/inventory portrait
+interaction -> SceneTransitionService -> DoorTransition -> destination
+  -> Bar: seated service; Supermarket: finite stock/atomic purchase
+  -> Stairwell: cat; Home: sleep/balcony/fridge/fixed views/exterior slice
+results -> GameSessionState -> survive scene loads, not process exit
+boundaries -> rotating NDJSON diagnostics; scene -> scoped audio
+URP -> native effects/SMAA -> crisp UI
 ```

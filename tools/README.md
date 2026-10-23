@@ -2,7 +2,7 @@
 
 [City](../ai/city-texture-plan.md).
 
-Home: `build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
+Home:`build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
 `--validate-only`; maps `build-home-textures.py --room-only`.
 Bar: `build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`.
 `check-bar-interior-surfaces.py --validate-only`: FBX UV0/1 registry.
@@ -29,62 +29,59 @@ source: `ArtSource/City/{Fair,FairChild}`.
 Use `run-blender.py`/`--validate-only`.
 
 `build-city-cannery-3d-model.py`:10 FBXs/JSON→`Assets/Resources/City/Cannery`;
-source `ArtSource/City/Cannery`; port maps/scale/`CartonStack`, contacts/truck/
+source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/
 `.29m` clearance/UVs/determinism.
 `build-cannery-{woman,receiver}-3d-model.py`: `Woman/CanneryWoman{,Actions}` and
 `Receiver/CanneryReceiver{,Actions}` FBX/JSONs, wardrobe/painted-face PNGs;
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
-mesh/atlas hashes, layered clothes; woman hair/receiver glasses contacts.
-Validate through `run-blender.py`/`--validate-only`.
+mesh/atlas hashes/layered clothes/hair-glasses contacts;launcher/`--validate-only`.
 
-`build-city-port-3d-model.py`: same launcher/`--validate-only`, nine FBXs/`CityPort3D.json` in
+`build-city-port-3d-model.py`: launcher/`--validate-only`;nine FBXs/`CityPort3D.json` in
 `Assets/Resources/City/Port`, source `ArtSource/City/Port`, grips/store/beam/
 `PortAccessLayout.json`/metre UVs. Twelve `512 px` ImageGen maps (sRGB/mipmap/repeat):
-originals/prompts/hashes `ArtSource/City/Port/Textures/generation.json`, outside mesh hashes;
+originals/prompts/hashes:`ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
 asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman`
 model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
-`dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
+`dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
 `build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.
 Launcher/`--validate-only`:determinism/winding/compartment-light clearance.
 `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
-`LastRouteCoinAssetValidation` measures import bounds at the build gate.
+`LastRouteCoinAssetValidation`:build-gate import bounds.
 
 Village: `build-village-{outdoor-player-actions,errands}-3d-model.py` via `run-blender.py`.
 Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (completion).
-`build-village-expansion-3d-model.py`: houses/yards/lodge/stove/flue/warehouse/bridge;
+`build-village-expansion-3d-model.py`:houses/yards/lodge/stove/flue/warehouse/bridge;
 `VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
-`--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
-`build-village-unique-surfaces.py`:4K/2K; rebuild expansion/workroom/
-life/narrative models. `build-village-surface-textures.py [--validate-only]`:
+`--validate-only`:bounds/winding/openings/determinism;`--preview-kind`:views.
+`build-village-unique-surfaces.py`:4K/2K;rebuild expansion/workroom/life/narrative. `build-village-surface-textures.py [--validate-only]`:
 BC7≤96MiB. `build-village-surface-shader.py --check`: Lit/wind parity.
 `ArtSource/Village/Surfaces/Source/generation.json`.
-`VillageSurfaceTextureSetup.BuildOrThrow`: junction bake/masks kept/hash/gate;
-publish.
-`build-village-narrative-3d-model.py`: 30 props; same launcher/check.
+`VillageSurfaceTextureSetup.BuildOrThrow`:junction bake/masks kept/hash/gate/publish.
+`build-village-narrative-3d-model.py`:30 props;launcher/check;
 `Assets/Resources/VillageNarrative/VillageNarrative3D.{fbx,json}`;
-source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 except
-26/27, `Create/GetBounds/GetAnchor`; importer `VillageNarrativeAssetSetup`.
-`Bar Promenade/Village`: `Bake Junction Textures` keeps masks;
+source:`ArtSource/VillageNarrative`. `VillageNarrativeLibrary`:IDs1–32 except26/27,
+`Create/GetBounds/GetAnchor`;import:`VillageNarrativeAssetSetup`.
+`Bar Promenade/Village`:`Bake Junction Textures` keeps masks;
 `Regenerate Junction Masks And Bake` resets them; both bake albedo/response atlases.
-R blends asphalt, also beneath snow; G is reference-only, without geometry/depth effects.
+R:asphalt incl.under snow;G:reference only,no geometry/depth effects.
 
-`build-ground-surface-{maps,shader}.py --check`: read-only response/URP parity,
+`build-ground-surface-{maps,shader}.py --check`:read-only response/URP parity,
 albedos kept. Generate→`VillageJunctionTextureSetup.BuildOrThrow`: both
 junction atlases; recheck upstream changes.
 
-House: `build-mothers-house-interior-3d-model.py` via launcher;
-`build-mothers-house-textures.py`: 4K+2K/aux1K; both `--validate-only`.
-`build-mothers-house-shader.py --check`: URP parity. Packs/prompts/hashes:
+House:`build-mothers-house-interior-3d-model.py` via launcher;
+`build-mothers-house-textures.py`:4K+2K/aux1K;both `--validate-only`.
+`build-mothers-house-shader.py --check`:URP parity;packs/prompts/hashes:
 `ArtSource/MothersHouse/Textures/Source/generation.json`.
 
 `python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: UV maps/regions/hash;
 `ArtSource/Player/player-{clothing,body-hair}-surfaces.json`.
 
-Close Unity. Rebuild order: hero source → `build-default-npc-3d-model.py` →
-`refresh-default-npc-damage.py` (launcher), then `DefaultNpcAssetSetup`.
-Residents: WoodWoman/actions; `--phase-two`:four; prebuild imports props/doors.
+Close Unity. Order:hero source→`build-default-npc-3d-model.py`→
+`refresh-default-npc-damage.py` (launcher)→`DefaultNpcAssetSetup`.
+Residents:WoodWoman/actions;`--phase-two`:four;prebuild imports props/doors.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
@@ -108,11 +105,11 @@ global assignment avoids repeats and restores the same look across loads.
 Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
 six concealed docks behind vestibule turns.
 
-Source:`ArtSource/VillageLife`;captures:`Captures/VillageLife`.
-`VillageLife`: bodies, held props, doors/clearance, yielding, gusts, pause/returns.
-Judge at hero scale;counts do not prove quality.
+Source:`ArtSource/VillageLife`;review:`Captures/VillageLife`.
+`VillageLife`:bodies/props/doors/clearance/yielding/gusts/pause/returns.
+Judge at hero scale, not by counts.
 
-Part 3 uses three separate generators with Unity closed:
+Workroom generators (close Unity):
 
 ```powershell
 python tools/run-blender.py tools/build-village-workroom-3d-model.py --expect Assets/Resources/VillageLife/VillageWorkroom3D.fbx --expect Assets/Resources/VillageLife/VillageWorkroom3D.json -- --no-preview
@@ -120,35 +117,37 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py --expect A
 python tools/run-blender.py tools/build-village-workroom-player-actions.py --expect Assets/Resources/Player/VillageWorkroomPlayerActions.fbx --expect Assets/Resources/Player/VillageWorkroomPlayerActions.json -- --preview
 ```
 
-Room: `interior_kit`, measured house `08`, two windows/finite furniture/props.
-Residents: retain six bodies/earlier banks; nine clips/metre poses/hand contacts/
-cloth-lid hinges. Hero: own bone-only bank, unchanged production prefab.
-`AreaCaptureFixture.VillageWorkroom`: dedicated imports/room journey in `Captures/VillageWorkroom`.
+Room:`interior_kit`/house `08`/two windows/finite props-furniture.
+Residents:six bodies/prior banks;nine clips/metre poses/hand contacts/cloth-lid hinges.
+Hero:bone-only bank;prefab kept.
+`AreaCaptureFixture.VillageWorkroom`:imports/room journey→`Captures/VillageWorkroom`.
 
-Alpine frost:ImageGen/prompt/hash/linear import;runtime reveal/tint:
+Frost:ImageGen/prompt/hash/linear import;runtime reveal/tint:
 [alpine-cold-frost-mask.md](alpine-cold-frost-mask.md).
 
-`toolchain.json` pins:
+Windows art/toolchain pins:
 
 ```powershell
 python tools/toolchain.py --scope all
 ```
 
-Python: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
-`BP_BLENDER`/`--blender`:same pinned build elsewhere;native:MSVC/SDK pins.
+`python -m pip install Pillow==12.3.0 numpy==2.4.4`.
+`BP_BLENDER`/`--blender`:same pinned build; native Windows:MSVC/SDK.
+Mac:`native.macos` pins Python/NumPy/clang/SDK;
+`python3 tools/toolchain.py --scope native`.
 
-Repo root;after `--`:generator args. Launcher:pins/startup/errors/fresh
-`--expect`/JSON; `--validate-only` on both validates.
+Repo root;`--`:args. Launcher:pins/startup/errors/fresh `--expect`/JSON;
+both launcher/generator:`--validate-only`.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver). `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
-Stage:repeated `--stage-output=--model-dir=Assets/path` into empty `Captures/Tooling`;
-other args stay;`--expect` maps destinations. Publish checked/Unity closed;
-keep `.meta`/rollback;import is not atomic.
+Empty `Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`;
+other args kept;`--expect`:destinations. Publish checked/Unity closed;
+keep `.meta`/rollback;import non-atomic.
 
-`tools/audio-vhs/build.ps1`:validate staged DLL→publish;
-`-Validate` stays;`-CompileOnly`:temporary, no publication.
+VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
+Both validate ABI/DSP;compile-only retains temporary output.
 See [audio-vhs/README.md](audio-vhs/README.md).
 
 `build-player-3d-model-v2.py`:31core+12hair;`--surfaces-only`:UV
@@ -197,11 +196,8 @@ python tools/run-blender.py tools/build-home-shower-curtain-actions.py --expect 
 python tools/run-blender.py tools/build-home-shower-curtain-actions.py --validate-only -- --validate-only
 ```
 
-Checks:neutral ends/fixed pelvis-feet/moving grip/both arms
-against evaluated body at60Hz. Second command:manifest comparison,0publication.
-Unity's
-`Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
-the imported clips against the production Idle pose and world grip targets.
+Checks:neutral ends/pelvis-feet/grip/posed arms at60Hz;second:manifest/no publication.
+Unity `Bar Promenade/Player 3D/Validate Shower Curtain Actions`:imports/Idle/world grips.
 
 Scarf:folded/worn Blender pack;45cm tail/6×20 cloth, authored wrap/knot;
 `MouthLowered` opens the face. Both use mother's-house `BookCloth` tile.
@@ -213,4 +209,4 @@ python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only
 
 Views:front/lowered/rear→`ArtSource/PlayerScarf`;`-- --no-preview` skips.
 Validation:weights/geometry/shapes/determinism/face clearance.
-`PlayerScarfAssetSetup`:BuildOrThrow imports/measures;ValidateOrThrow gates(read-only).
+`PlayerScarfAssetSetup`:BuildOrThrow imports/measures;ValidateOrThrow:read-only gate.

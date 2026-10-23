@@ -2,9 +2,9 @@
 
 ## Current baseline
 
-- Windows/PC Unity; runtime-composed coastal city/road/alpine village/interiors.
+- Windows/PC Unity, Mac Editor supported; runtime-composed city/road/village/interiors.
   [World](current-world.md).
-- Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, Navigation `2.0.15`:
+- Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - PC:native/SMAA High/saved effects/grade/UI;City/balcony Soft;bar Neutral/bounce.
@@ -133,15 +133,11 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Map/inventory/journal/pause/options/localized;warehouse door ambush/debug.
 - Shared styles, causal audio and bounded diagnostics.
 
-See [current-world.md](current-world.md) for gameplay and
-[systems-map.md](systems-map.md) for owners. Paths: `git ls-files`/`rg`; the bibles own canon.
-
 ## Deferred
 
 Long-term saves, broader economy/story progression, release/platform work and
 other omissions are itemized in [current-world.md#deferred](current-world.md#deferred).
-A `Partial` system states its own gap in the systems map. Existing code and
-coverage do not imply that any broad regression or player build has just run.
+A `Partial` system states its own gap in the systems map. Code and coverage do not imply a fresh regression or build.
 
 ## Verification policy
 

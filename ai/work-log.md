@@ -5,44 +5,43 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-23
 
-Bar rear table/guest→WC/toilet/passive basin; matching wing/roof/contours.
-Shared toilet host keeps both actions/hero; solid DoorUse leaf works both sides.
-Hall/door/WC union keeps collision/camera clearance.
-WC polish: authored dirt/chipped tile/plaster,bin/litter/brush/paper/dispenser,
-text-free vulgar pictures/stickers; broken geometric room/hero mirror.
-Wide soft sign light fills door/corner from in front of lintel; its bounded
-shadow blocks spill through the moving leaf. Door-corner floor bounce reveals approach.
-WC adds scoped shadow/bounce/cube for ceramic/metal.
-Hall lighting/air stay bounded; shared presentation owns resources/cleanup.
-Blender anchor names guarded against global duplicate suffixes.
-build-bar-3d-model and check-bar-interior-surfaces passed authored geometry/UV/maps.
-Outward roof slope keeps aligned eaves/masonry/flashings/gutter.
-One rig handoff owner spans both lid phases, preventing a deferred unlock from
-being recaptured as the next phase's original state.
-Bar toilet prompt now requires a nearby approach/facing; counter sit reach is
-local to its dock. Broad-phase overlaps no longer let WC hide the inside door.
-BarPrompts_KeepDoorReachableAndCounterLocal passed actual target selection/E.
-Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera passed door/toilet branches,
-input/camera restore, mirror pose/layers/visibility/fallback and template teardown.
-Broad door/floor/wall light, fixtures and mirror reviewed; repeated tile dots removed.
+Bar table/guest→WC/toilet/passive basin; wing/roof/contours match.
+Solid DoorUse both sides/shared toilet host; hall/door/WC collision/camera union.
+WC: chipped tile/plaster, dirt/bin/litter/brush/paper/dispenser, text-free rude art;
+broken geometric room/hero mirror with pose/layers/visibility/fallback/cleanup.
+Soft sign illuminates door/corner; leaf blocks spill, floor bounce reveals approach.
+WC shadow/bounce/cube serve ceramic/metal; hall lighting/air stay bounded.
+Blender guards duplicate anchor suffixes; roof/eaves/masonry/flashings/gutter match.
+build-bar-3d-model and check-bar-interior-surfaces passed geometry/UV/maps/contours.
+One rig handoff spans lid phases, preventing deferred-unlock recapture.
+Nearby/facing WC prompt and dock-local counter reach keep inside door usable.
+BarPrompts_KeepDoorReachableAndCounterLocal passed target selection/E.
+Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera passed door/toilet,
+input/camera/mirror/teardown; broad light/fixtures/reflection reviewed, tile dots removed.
 Toilet_FirstPersonStreamStainsAndRestores passed; roof reviewed.
-check-docs passed; existing user-asset whitespace retained.
 
-Bar continuation: forward L wave fits initial gaze once.
-Menu/repeat requests use ordinary seated look (yaw±70/pitch−25…55), retaining
-the chosen gaze; pickup/sip/return keep±12/±10. Only input bounds change.
-PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit passed mouse/gaze/cleanup; frames reviewed.
-Menu/repeat share wave/index contacts before one accepted charge/receipt;
-interrupted gestures are free. Empty-beer repeat adds typed R grip/supported
-short offer, release/hand return before payment; whole-cup/menu/edge clearance
-and actual arm reach shorten travel. Other vessels/no-cup orders have no offer.
-Counter guests: independent sip drain/L wave/bent R support, same empty mug
-offered to server; full mug pulled to original dock before FIFO release.
-Deduped hero/guest FIFO; accepted requests get look/one nod without preemption.
-Shared rigs/assets/cues/effect providers kept; no measured performance claim.
-Shared phase endpoints prevent a false held-loop timeout after hand withdrawal.
+Bar: visible L wave/index contacts; menu/repeat retain seated yaw±70/pitch−25…55,
+pickup/sip/return±12/±10. PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit passed.
+One charge/receipt; interrupted gestures free. Empty-beer typed R grip/short offer,
+release/return before payment; cup/menu/edge/arm reach bound travel, other orders unchanged.
+Guests drain/L-wave/bent-R support; same mug returns full before deduped FIFO release.
+Look/nod do not preempt; shared rigs/assets/cues/providers; phase endpoints avoid false timeout.
 BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt passed; poses reviewed.
-check-workspace: existing old logs and other-worktree cache backlog remain.
+check-workspace: existing old logs/other-worktree cache backlog remains.
+
+Docs match Unity/Input System/Navigation; absent local evidence became named
+checks/references. Duplicate prose/bus/shower blocks tightened; budgets/canon kept.
+
+Mac Burst guards x86 intrinsics, retaining conservative ARM scalar candidates.
+PlayerBodyQueryBurstTests support/ray passed with Burst enabled. Universal VHS
+keeps DSP/API; Mac native ABI/DSP validator passed. Pinned Mac build signs and
+validates before rollback-safe publication; staging removed.
+MainMenu→AlpineVillage passed without Burst/VHS errors. Hub stores
+-gfx-ring-buffer-size 67108864: +48 MiB; startup has no Graphics Ring Buffer warning.
+Local integration of 22dfdb4c retains WC polish, Mac fixes and document budgets;
+git integration/content-preservation review passed; check-docs passed.
+BarModel_CarriesTheAuthoredPubAndInteractionFixtures fails its unchanged
+table assertion: base/current already omit the former rear table.
 
 ## 2026-10-22
 

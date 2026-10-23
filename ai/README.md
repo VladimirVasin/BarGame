@@ -49,12 +49,8 @@ Do not introduce a fifth term.
 
 ## Retention
 
-The previous rule here kept "the current and the previous full month" in the two
-ledgers. It fired exactly once — in the commit that introduced it — and at the
-rate this project writes, a correct pass would have left `work-log.md` **larger**
-than before it ran. A monthly window is the wrong instrument: it is off by a
-factor of about twelve, and it covered only two of the eighteen documents. What
-follows replaces it, and `python tools/check-docs.py` enforces it.
+Retention follows byte budgets rather than a calendar window;
+`python tools/check-docs.py` enforces it.
 
 **Everything is bounded by bytes, and the type says how you write.**
 

@@ -4,7 +4,7 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 
 ## Reality check
 
-- Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, AI Navigation `2.0.15` are pinned in the
+- Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16` are pinned in the
   project/package settings. The current target is Windows/PC.
 - Scene presentation uses native resolution, saved SMAA/lens/4:3/local-light effects and crisp UI.
 - Every scene change/visual task reviews all three groups, including
@@ -137,22 +137,10 @@ repository evidence. This does not require running every test layer.
   through XY. Inverted normals survive wireframes, triangle counts and every
   dimension assertion; check the signed volume of each solid at generation
   time, as `tools/bar_parts.py` does.
-- **One working copy per concurrent session.** Two agents in the same checkout
-  fight over one Unity project: only one instance may open it, so the other's
-  runs abort with "another Unity instance is running", and a half-written file
-  from one breaks the other's compilation and wastes a whole ten-minute test
-  run. In one session that cost three broken compilations, several aborted
-  runs and two foreign red tests in every report. Give each session its own
-  checkout — `Library/`, `Temp/` and `Logs/` are already gitignored, so a
-  worktree is self-sufficient:
-
-  ```
-  git worktree add ../БП-<branch> <branch>
-  ```
-
-  The first Unity launch there is slow while `Library/` is rebuilt; that is the
-  whole price, and it is paid once. Branches still merge the ordinary way — the
-  gain is that until they merge the sessions cannot break each other.
+- **One working copy per concurrent session.** Give each concurrent session its
+  own checkout: Unity permits only one instance per project, and shared edits
+  can break another session's compilation. Use `git worktree add ../БП-<branch> <branch>`.
+  Each worktree rebuilds its ignored `Library/` on first launch; branches merge normally.
 - **Look at what you changed.** `Assets/Tests/PlayMode/AreaCaptureFixture.cs`
   renders any world scene to `Captures/<area>/`. Run it for any scene whose
   appearance changed and open the frames. Numbers cannot see an object in the

@@ -2,18 +2,17 @@
 
 Status: **Current**. Accepted user decision `2026-10-21`: the bartender uses
 `DefaultNpcCatalog.OrdinaryWorker` through `DefaultNpcFactory.CreateForCharacter`.
-Both former bespoke models, including the six-armed version, their providers,
-source assets and regeneration/import paths are removed.
+Former bespoke models, providers, sources and regeneration/import paths are removed.
 
 ## 1. Active character contract
 
-The bartender remains an ordinary silent worker. The four-offer drink menu,
+The bartender is an ordinary silent worker. The four-offer drink menu,
 prices, payment, deferred consumption effects and closing state remain owned
 by the shared drink controllers. No replacement strange trait or speech is added.
 His permanent identity is `zzz.bar.bartender`: registration sorts after the
 existing roster so the migration does not redistribute other characters.
 The global population owns face, hair and work clothes; the local bar owns
-placement, actions and contacts. No separate bartender body or wardrobe exists.
+placement, actions and contacts. No bespoke body or wardrobe.
 
 ## 2. Model and asset pipeline
 

@@ -23,16 +23,13 @@
   Gaussian sigma is `0.045 * FrostAmount` image height; the final blend also
   scales by `FrostAmount`, so radius and strength recede together on thaw.
 - Source-size/hash/import-setting checks were performed without Unity.
-  Current focused `AlpineFrostDiffusion` passes in `3.761200 s` in
-  `TestResults/alpine-frost-diffusion.xml`: same-frame GPU comparisons hold
+  `AreaCaptureFixture.AlpineFrostDiffusion` passed: same-frame GPU comparisons hold
   crystal drawing fixed, verify increasing blur at 25/50/100%, and keep the
   centre and black 4:3 bars unchanged. Half/full thaw exactly match half
-  growth/clear pixels. Current stills and visually inspected A/B are
-  `Captures/MothersHouseInterior/diffusion-*.png`.
-  The earlier `AlpineFrostJourney` passed in `52.339248 s` in
-  `TestResults/mothers-hearth-frost.xml`; its `frost-*.png` captures and
-  eight-second thaw video show the previous renderer and verify unchanged
-  journey timing and sound behavior.
+  growth/clear pixels. Stills and A/B comparisons were visually inspected.
+  The earlier `AreaCaptureFixture.AlpineFrostJourney` passed; its captures and
+  thaw video verified unchanged journey timing and sound behavior with the
+  previous renderer. Reports, stills and videos are temporary review output.
 
 ## Final generation prompt
 

@@ -13,8 +13,7 @@
   webbing belt with a muted metal buckle, and burgundy Dr. Martens 1460
   Smooth Leather Lace Up Boots: rounded toe, eight eyelets/black laces,
   yellow welt stitching and grooved sole; ankle/forefoot flex on the same rig.
-- The accepted `2026-09-09` optional scarf is a separate yellow garment,
-  following the user's same-day colour correction:
+- Accepted `2026-09-09`: optional separate yellow scarf:
   neck/nape wrap, lower face covered when raised, back knot and a hanging cloth
   tail. Decision `2026-09-19`: the shared left-hand pull lowers it outside Alpine
   Village and raises it there after five seconds of free third-person play,
@@ -23,15 +22,13 @@
   ordinary clothing from the parents' bedroom, never the father's relic.
   `tools/build-player-scarf-3d-model.py` authors both forms against this rig;
   `PlayerScarfResources` shares the mother's-house `BookCloth` atlas tile.
-  The user's same-day clarification lengthens the pinned cloth back tail
-  to approximately `45 cm`, reaching mid-back. Its lightweight simulation and
+  The pinned back tail is approximately `45 cm`, reaching mid-back. Its lightweight simulation and
   wrap/knot corrections use the hero's current body/clothing envelopes;
-  external objects are ignored. The shared source
-  mesh remains immutable; every drawn part owns its deformation buffer.
+  external objects are ignored. Source mesh is immutable; drawn parts own deformation buffers.
   An authored `MouthLowered`
   shape and the original rig's left hand provide temporary mouth access;
   head/body hiding, bathing and the bathroom mirror include the accessory.
-  Core mesh/bone/action counts below exclude this optional pack.
+  Core counts exclude this pack.
 - Asymmetry: muted ochre **right** shoulder patch; sleeves match, no bandage.
   Accepted `2026-10-14`, CombatTest only: worn, unbranded flashlight clipped
   on left upper M-65 chest/below collar; Chest carries model/forward Spot.
@@ -43,12 +40,11 @@
 
 ## Production Hero V2
 
-Hero V2 is the sole packaged production player. All ten gameplay roots,
-prefab-derived first-person subsets and the inventory portrait resolve through
-the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
+All ten gameplay roots, prefab-derived first-person subsets and inventory
+portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
 
 - Same lean `1.75 m` man/face/six sockets, shaped hands and work boots.
-  `2026-10-10`: torso broadens into continuous shoulders;
+  `2026-10-10`: continuous broad shoulders;
   waist/ribcage widths `26.6/38 cm`. Matching tapered neck follows the jaw:
   base/top `14.8/10.8 cm`, `32 mm` visible above collar. Male hips/two modest
   rounded buttocks with a cleft join thighs. Independent trousers retain
@@ -61,8 +57,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   plackets, cuff thickness and a lined front opening. Its faded olive fabric
   keeps the right-shoulder ochre repair patch, restrained seams and wear;
   the two forearm atlas cells retain identical painting. Shirt, trousers and
-  boots are independent garments over actual bare anatomy. No satchel strap,
-  bandage, insignia, text or copied film marking supplies a military biography.
+  boots are independent garments over actual bare anatomy. No satchel strap, bandage, insignia, text or film marking implies military biography.
 - `PlayerJacketCloth`/`hero_jacket_cloth_v1`: accepted `2026-10-22`,
   all gameplay uses rig-only jacket, as CombatTest; no live/baked secondary
   motion, cloth contacts or wind. Bones/elbow folds/hand-opening/mirror-arms stay.
@@ -282,9 +277,8 @@ This opt-in applies only during the interaction handoff without an active clip.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing. Hero V2 resolves authored
   clip keys through its atlas. The fall's clips (`Fall`, `Down`, `Rise`) no longer own
-  the face at all: the presentation reads the moment — the fight for balance,
-  the floor, the stir, the crawl — and the level, and draws it, under the
-  ragdoll too.
+  the face at all: presentation derives the face from balance/floor/stir/crawl state and
+  intoxication level, including during ragdoll.
 - Rise, framewise: shin `armature_direction` KNEE→ANKLE/frontward knee
   (`cross(thigh, shin).x >= 0`); knee/elbow≤`8°` beyond straight/≤`130°` fold;
   lie/rise vertices≤`2 cm` below neutral floor; foot keys quarter-turn, never half.
@@ -313,9 +307,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   with his head toward the pillow. Waking is a sit-up rather than a roll and
   has four separate beats: he curls onto his elbows and pushes up into a
   half-crouch on the mattress with both boots drawn under him, drops the right
-  leg over the near edge, then the left, and only then stands. The right leg
-  goes first because it is the one nearest the door-side edge; the left is
-  held up on the bedding until the right boot is down. Because runtime pins these clips by the pelvis bone and grounds
+  leg over the near edge, then the left, and only then stands. The door-side right leg leads; the left stays on bedding until the right boot lands. Because runtime pins these clips by the pelvis bone and grounds
   nothing while they play, the generator measures how far his back, the back of
   his lifted head and his seated weight hang below that bone, and
   `PlayerCharacterDimensions` mirrors those three numbers. The mattress is the
@@ -445,20 +437,15 @@ This opt-in applies only during the interaction handoff without an active clip.
   exported Rise frames' floor boundary and final `Relaxed`. Door-use checks
   cover family seams, fixed root/feet, physical-right grip, bounded forward
   reach and subtle chest lean.
-- Direct `.blend` and GLB imports are not production paths. The deterministic
-  FBX, animation FBX and JSON manifest are the Unity inputs; the generated
-  transparent portrait is a separate Resources asset.
+- Unity inputs: deterministic model FBX, animation FBX and JSON manifest;
+  no direct `.blend`/GLB import. Transparent portrait is a separate Resources asset.
 - The locked 2D design source remains
   `ArtSource/Player/PlayerDirectionalTurntable.png` for visual lineage and
   regression reference.
 
 ## Retired 2D player contract
 
-The former active hero used
-`PlayerDirectionalAtlas`, `PlayerDirectionalPartsAtlas`,
-`PlayerDirectionalBodyExpressionsAtlas`, 16 detailed fall atlases and separate
-bed/smoking/cat-feeding atlases. Their historical cell order, no-mirror rules,
-foot pivots and deterministic builders remain in repository history and source
-art, but they are not the production player presentation. The stairwell-cat
-sprites are unaffected by the hero migration; the former bar-NPC and minigame
-sprites were later removed together with those systems.
+Retired hero atlases: `PlayerDirectionalAtlas`, `PlayerDirectionalPartsAtlas`,
+`PlayerDirectionalBodyExpressionsAtlas`, 16 falls and bed/smoking/cat-feeding.
+Cell order, no-mirror rules, pivots and builders remain in history/source art.
+Stairwell-cat sprites remain; bar-NPC/minigame sprites were removed with their systems.

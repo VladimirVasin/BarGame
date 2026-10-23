@@ -1,24 +1,23 @@
 # Visual effects standard
 
 Accepted user decision `2026-10-21`: every scene change/world/art task reviews
-all three groups (24 categories), including SSR and SSGI/SCGI, without reminders.
-This is neither all-on by default nor a new approval gate.
+all three groups (24 categories), including SSR and SSGI/SCGI.
+No default all-on or new approval gate.
 
-## When and how to audit
+## Audit
 
-Includes prefab/model/material/shader/lighting/camera/environment plans and
-generators/importers. Read both bibles/architecture; inspect assets,
-owners, composition, settings and checks. Dormant package code, shader support
+Covers prefab/model/material/shader/lighting/camera/environment plans,
+generators and importers. Read bibles/architecture; inspect assets, owners,
+composition, settings and checks. Dormant package code, shader support
 or preferences do not prove an active compatible provider or receiver coverage.
 
-Use a compact working matrix:
+Working matrix:
 
 | Effect | Coverage | Gap/fit | Action | Cost/bound | Proof |
 | --- | --- | --- | --- | --- | --- |
 
-Assess all categories: coverage, gaps, fit and improvements. Use ai/README.md
-statuses; applicability is separate. Group trivial work; record lasting facts,
-without inventories duplicating code.
+Assess coverage/gap/fit/improvement per category; use ai/README.md statuses,
+with applicability separate. Group trivial work; record lasting facts.
 
 ## Six scene-shaping effects
 
@@ -92,7 +91,7 @@ overrides. Preview providers need proven pipeline/platform/shader compatibility;
 global batching/buffer changes need a focused gate, not silent activation.
 Baked GI/APV needs matching geometry/data, bindings/sampling and bounded loading;
 ambient/painted/local bounce is not baked GI.
-Reserve channels/UVs/topology/anchors/metas. Deformation matches forward/shadow/
+Preserve channels/UVs/topology/anchors/metas. Deformation matches forward/shadow/
 depth/normal/GBuffer/motion/meta passes; retain bounds, root/rig/camera/contacts
 and pause/disable/dormancy/return/unload cleanup.
 Preserve ordinary causes, local darkness/cleanliness/water/palette/silence. No

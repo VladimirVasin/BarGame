@@ -59,9 +59,8 @@ own non-speaking UI semantics.
 
 Do not add feature-specific speech panels, typewriters, letter audio, voice
 pools, earshot logic or independent copies of lifetime/CPS/click constants.
-Extend the shared owner and reuse its contracts. New dialogue content cannot
-be an excuse to fork presentation. Any deviation requires an explicit user
-decision recorded in `architecture-notes.md`; do not infer an exception.
+Extend the shared owner. Any deviation requires an explicit user decision
+recorded in `architecture-notes.md`; new content grants no exception.
 
 Use one focused existing check for the changed contract: shared bubble routing,
 RU/EN full-line fit, speaker/voice/earshot, admission/order, pause and teardown

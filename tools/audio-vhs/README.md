@@ -32,7 +32,7 @@ stays smooth at episode boundaries and during changes of strength.
 
 ## Build and validation
 
-On Windows with the pinned Visual Studio Desktop C++ workload, Python and NumPy:
+Windows uses the pinned Visual Studio Desktop C++ workload, Python and NumPy:
 
 ```powershell
 ./tools/audio-vhs/build.ps1 -Validate
@@ -50,6 +50,23 @@ zero intensity and silence bypass, pause/epoch/gap resets, transitions and finit
 output. It writes a report, six comparative levels and one smooth-transition WAV
 under temporary `Captures/AudioVhs`. Inspect and delete task outputs afterwards.
 
+On macOS with the pinned Apple command-line tools, Python and NumPy:
+
+```sh
+python3 tools/audio-vhs/build-macos.py
+```
+
+The `native.macos` block in `tools/toolchain.json` pins that host's Python/NumPy,
+Apple clang and SDK separately from Windows. The build uses a macOS 11.0 minimum,
+compiles arm64 + x86_64 without floating-point contraction, checks both slices,
+ad-hoc signs, runs the same ABI/DSP validator against the host slice and publishes
+`Assets/Plugins/AudioVhs/macOS/AudioPluginIntoxicationVhs.bundle` with rollback.
+Its importer preloads Mac Editor/Player only; the Windows DLL stays separate.
+Default staging/references are removed automatically. `--compile-only` retains a
+candidate under temporary `Captures/AudioVhs/native-build-macos`; delete after review.
+Restart Unity after first installing or replacing a preloaded native plugin.
+Intel execution and distributable signing require their own target validation.
+
 The vendored `AudioPluginInterface.h` and `LICENSE.Unity.txt` are unchanged from
 Unity Technologies' NativeAudioPlugins commit
 `188a776e2d9f217af1afa574b92a11cd82600271` (API `0x010402`, compatible with this
@@ -57,6 +74,6 @@ project's Unity 6000.6). Upstream:
 https://github.com/Unity-Technologies/NativeAudioPlugins/tree/188a776e2d9f217af1afa574b92a11cd82600271
 
 The later upstream `0x010403` API targets Unity 6.7 and is intentionally not used.
-Unity's MIT license is preserved beside the header. The plugin currently targets
-the repository's Windows x86_64 editor/player; other platforms require a native
-build and matching PluginImporter platform entry before shipping there.
+Unity's MIT license is preserved beside the header. Windows x86_64 and macOS
+arm64/x86_64 have native plugins; other platforms need a matching native build
+and PluginImporter entry before shipping.

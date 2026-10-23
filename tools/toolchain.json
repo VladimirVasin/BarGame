@@ -15,6 +15,16 @@
     "architecture": "x64",
     "msvc_tools": "14.51.36231",
     "windows_sdk": "10.0.26100.0",
-    "visual_studio_observed": "18.8.1"
+    "visual_studio_observed": "18.8.1",
+    "macos": {
+      "python": "3.12.14",
+      "packages": {
+        "numpy": "2.3.5"
+      },
+      "apple_clang": "21.0.0 (clang-2100.1.1.101)",
+      "sdk": "26.5",
+      "deployment_target": "11.0",
+      "architectures": ["arm64", "x86_64"]
+    }
   }
 }

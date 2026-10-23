@@ -1,62 +1,59 @@
-# Structured session diagnostics
+# Session diagnostics
 
-`debug.log`:context/actions/pending/Unity faults.
-`DuelJournal`: CombatTest rounds.
+`debug.log`:context/actions/pending/Unity faults;`DuelJournal`:CombatTest rounds.
 
-## General profiles
+## Profiles
 
-Editor:`verbose`,repository root `debug.log`.
-Player dev/release:`verbose`/`basic`,`Application.persistentDataPath/Logs/debug.log`.
-Batch tests:`off`,no file.
+Editor:`verbose`→root `debug.log`;Player dev/release:`verbose`/`basic`→
+`Application.persistentDataPath/Logs/debug.log`;batch:`off`,no file.
 
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
-`F8`:snapshot;CombatTest:legacy HUD only. `Shift+F8`:log directory.
-Snapshot API keeps duel marks.
+F8:snapshot (CombatTest:legacy HUD);Shift+F8:log directory. API keeps duel marks.
 
-## General format
+## Format
 
-UTF-8 NDJSON:schema_version/utc/mono_ms/seq/level/category/event/
+NDJSON/UTF-8:schema_version/utc/mono_ms/seq/level/category/event/
 session_id/scene/city_seed/data(typed). Order:utc/mono/seq;
 Join:operation_id(transition)/sequence(balance)/snapshot_id(support).
 Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 
-| Category | Boundaries/results |
+| Category | Events |
 | --- | --- |
-| `session` | start/end/seed/bar/return/drinking;resolved drink purchases/cash before-after |
-| `needs`, `inventory` | visible progression,explicit needs,committed alcohol/item-use results |
-| `scene` | load/ready/transition outcomes;composition_frames:frames/path/budget/CPU-wall;door duration incl.build |
-| World categories | world/layout/spawn/initialize_phase;cemetery_first_grave_sealed/cemetery_raven_*;raven_roost_* provider/plot results |
-| Outdoor categories (verbose) | world_build_block/terrain mesh-cook/grid/water/cloth/inventory/cannery;city_plans_prime started/finished/joined:pool-thread City plans |
+| `session` | start/end/seed/bar/return/drinking;drink purchases/cash before-after |
+| `needs`, `inventory` | visible progression/explicit needs/committed alcohol-item use |
+| `scene` | load/ready/transition;composition_frames:frames/path/budget/CPU-wall;door time incl.build |
+| World | world/layout/spawn/initialize_phase;cemetery_first_grave_sealed/cemetery_raven_*;raven_roost_* provider/plot |
+| Outdoor (verbose) | world_build_block/terrain mesh-cook/grid/water/cloth/inventory/cannery;city_plans_prime started/finished/joined:pool-thread City plans |
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
-| `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
+| `interaction`, `map` | entrance/exit/map lifecycle/City test-teleport mode-results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
 | `combat` | Cached movement_summary before close/disable/exit:keys/request/focus/gates/motor/capsule/phase/scale/speed/turn;min-scale requires has_request_sample |
-| `diagnostics` | manual snapshots/directory commands |
-| `unity` | warnings/assertions/errors/exceptions and stacks |
+| `diagnostics` | snapshots/directory |
+| `unity` | warnings/assertions/errors/exceptions + stacks |
 
-`session/new_game_started`: `menu_reset`=menu; `combat_test_start`=range;
-`new_game_start`=normal/legacy; `new_game_start_rejected`=transition rollback.
+session/new_game_started:menu_reset=menu;combat_test_start=range;
+new_game_start=normal/legacy;new_game_start_rejected=transition rollback.
 
 No per-frame/motion/physics samples or Debug.Log;strings≤16,384.
 needs/passive_progressed:visible integers.
 Unity repeats:3 full then10s summaries;per10s:32 warnings/64 errors-assertions-exceptions;
-messages_rate_limited:drops/severity;separate exception budget.
+messages_rate_limited:drops/severity;exceptions separately budgeted.
 
-## General retention
+## Retention
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
-Fault→F8→Shift+F8;collect archives/round;join error/`operation_id`.
-No user/save paths/frames;review stacks before sharing.
+Fault→F8→Shift+F8;collect archives/round;join by error/`operation_id`.
+Exclude user/save paths/frames;review stacks before sharing.
 
 ## DuelJournal
 
--bp-duel-log on|off:default on,batch off.
-Editor:CombatLogs;Player:persistentDataPath/CombatLogs.
+-bp-duel-log on|off (default on,batch off).
+Editor:CombatLogs;Player:persistentDataPath/CombatLogs;
 duel_<session>_<round>:{summary.txt,duel.ndjson}.
 
 Melee:MeleeCommandRejection→reason/reason_checked/cost/remaining/cooldown_seconds/phase/stamina.
 recovery_step: rescue; fall_committed: refusal; observed_counter: whiff.
-Standard20Hz/Endless10Hz pose/support/CPU/pistol;impact/F8 force.
+Pose/support/CPU/pistol:Standard20Hz/Endless10Hz;impact/F8 force.
 *_shot_{requested,rejected,pose}/*_fired:request/action/reason/stage/phase/aim_error;
 pose:muzzle/target/reachable;*_state:loaded/aim/reload/body;vectors:muzzle-target/forward-support.
 ammunition_snapshot:both guns/rounds/reserve/cap/location/pending/progress/load_mask.
@@ -108,7 +105,7 @@ secondary_motion_cache:decode/load/eviction/residency;part/reason counts in snap
 Prior frames;nested≠sum;unsupported=null;GPU latest.
 
 Editor:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`:
-trace/manifest;timeout/scene/Play/reload restores Profiler;active refuses;overhead.
+trace/manifest;timeout/scene/Play/reload restores Profiler;refuses while active;overhead.
 Rendered Editor explicit:`Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`.
 
 Queue2048/max4096+8controls;reused chars;envelope=v1.
@@ -124,22 +121,17 @@ file_limit:telemetry_budget|round_budget;causal survives sample cap.
 Flush live/end final/reset clear;≤2workers/I/O explicit;10closed/100MiB;
 ordinary→marked/abandoned;never live/foreign;bounded marks/no sweep.
 
-## Area performance capture
+## Performance capture
 
-CLI:
+CLI:`-bp-perf-scene=City -bp-perf-seconds=30`.
 
-```text
--bp-perf-scene=City -bp-perf-seconds=30
-```
+Waits scene/transition;pose/render kept. API:`RuntimePerformanceCapture.StartCapture`.
+Editor:`Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
 
-Waits scene/transition;keeps pose/render.
-Editor: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
-API: `RuntimePerformanceCapture.StartCapture`.
+Output:`Application.persistentDataPath/PerformanceCaptures`;8 JSON/≤36,000 samples.
+Capture1–120s/warmup≤60s/wait≤300s;scene/render change ends with reason.
 
-Default:`Application.persistentDataPath/PerformanceCaptures`;8 JSON/≤36,000 samples.
-Capture1–120s/warmup≤60s/wait≤300s;scene/render changes end:reason.
-
-Reports:context/frame/CPU/GPU/GC/foot-bake/reflection quantiles/max.
-Markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
-GPU needs Frame Timing Stats;sampleCount=0 unavailable.
-Frames incl.waits;Editor≠player;match route/render/pause/focus.
+Reports:context + frame/CPU/GPU/GC/foot-bake/reflection quantiles/max;
+markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
+GPU:Frame Timing Stats;sampleCount=0 unavailable. Frames include waits;
+Editor≠player;match route/render/pause/focus.

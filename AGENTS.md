@@ -1,10 +1,8 @@
 # Repository instructions
 
-These instructions apply to the entire repository.
-
 ## Before changing the project
 
-Read `AI.md` and relevant `ai/` files; inspect reality before trusting plans.
+Read `AI.md`/relevant `ai/` files; verify reality before plans.
 Separate facts from proposals. Assess every user plan for project fit under
 `ai/prompt-templates.md`.
 Every scene change/visual task reviews all three groups, including
@@ -46,7 +44,7 @@ Rules:
 
 ## Current baseline
 
-- Unity `6000.6.6f1`, URP `17.6.0`, Input System `1.20.0`, AI Navigation `2.0.15`.
+- Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
 - Runtime composition builds near-empty scenes from validated pure plans.
 - Thirteen build scenes under `Assets/Scenes/`, all `.unity`, in build order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,
@@ -167,12 +165,10 @@ Fix growing writers or shorten retention; never raise it.
 
 ## Interactive fast iteration
 
-Use **fast mode by default for every ordinary request**, including shared,
-cross-system and lifecycle changes. Risk changes which focused check is most
-valuable; it does not automatically authorize a broad regression run.
+Use **fast mode by default**, including shared, cross-system and lifecycle
+changes. Risk selects the focused check; it does not authorize broad regression.
 
-- Briefly state fast mode at the start of non-trivial work so the user can
-  override it.
+- State fast mode at the start of non-trivial work; the user may override it.
 - Use release verification only when the user explicitly requests a full
   regression, complete EditMode/PlayMode run or release validation. Words such
   as "finish" or "final" by themselves do not request broad verification.
@@ -213,10 +209,7 @@ invocations for a shared framework.
   change—an affected scene test, a manual smoke or a player build. Do not stack
   them by default.
 
-Never build Runtime/EditModeTests/PlayModeTests redundantly or stack complete
-EditMode/PlayMode suites, a Windows build and startup smoke in ordinary work.
-Use focused or explicitly requested release checks; test counts never justify
-a full run.
+Never redundantly build dependent projects or stack full test suites, player
+builds and smoke checks in ordinary work. Test counts do not justify a full run.
 
-Record unrelated known failures briefly and continue the task; do not broaden
-the run or repair them outside scope.
+Record unrelated failures; continue without broadening checks or repairs.

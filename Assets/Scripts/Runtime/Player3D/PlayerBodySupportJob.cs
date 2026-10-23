@@ -165,6 +165,11 @@ namespace BarPromenade
 
         private bool ExactPair(int first, int second, Vector3 normal, ref float maximum, ref int support)
         {
+            // Burst validates each helper for its target ISA, independently of
+            // the caller's feature test. ARM keeps the same ordered scalar dots.
+            if (!Sse2.IsSse2Supported)
+                return ExactVertex(first, normal, ref maximum, ref support) &&
+                    ExactVertex(second, normal, ref maximum, ref support);
             Vector3 a = Vertices[first], b = Vertices[second];
             // Each double lane repeats one scalar dot, with separate multiply
             // and left-grouped add instructions. Winner updates keep visit order.

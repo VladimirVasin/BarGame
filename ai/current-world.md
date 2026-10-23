@@ -40,85 +40,27 @@ cemetery:own interiors/returns.
   work persist in `GameSessionState.VillageHousehold` across visits, reset on
   New Game; no disk save.
 
-- one separate `MothersHouseInterior` gameplay root entered through the
-  existing summit-house exterior door and exited back to a one-shot safe
-  arrival outside that same threshold. Its deterministic imported room keeps
-  a low central tea table, north rocking chair, west sofa, a burning fireplace
-  between two north windows and a light, clean, cared-for but old and modest
-  domestic dressing. Behind the sofa, a real north-entry stair rises south
-  through a split slab to a narrow west corridor and three separate,
-  accessible, furnished upper rooms: the parents' room north, still slept in
-  and warmed by the hearth flue carried up its outer wall, and the hero's
-  childhood room south, taken out of use under a dust sheet, and a combined
-  bathroom at the corridor's north end. Each bedroom has three real windows;
-  one lights the stair landing and two frosted windows serve the bathroom.
-  All seventeen house windows match the exterior through one shared opening
-  table. Each bedroom keeps one hanging fitting
-  of its own - a fabric bowl over the bed still slept in, a bare bulb over the
-  one that is not. Both are furnished rather than indicated: wardrobe, chests,
-  chair, peg rail and slippers in the bedroom, linen press, table, chest and
-  wicker basket in the childhood room, a shortened high linen shelf, peg rail
-  and a warm opal ceiling fitting in the corridor, and skirting along the upper walls.
-  The cleaning pail/broom stand against the bathroom's south wall, leaving
-  the full stair landing and its turn clear. The `3.05 x 2.8 m` bathroom
-  contains a `1.70 x 0.75 m` enamel bath, toilet and cistern, basin on a wooden
-  cabinet, mirror, one warm wall fitting and modest linen/soap furnishings.
-  Its cream tile, matte stone and worn wood use the house's own atlas.
-  The west stone wing continues `0.9 m` behind the main body from foundation
-  to roof, with a shallow open common-room niche below it and the northwest
-  ground window on that niche's rear wall. The main body, stair, bedroom
-  sizes, front threshold and `3.54/5.90 m` upper floor/ceiling remain fixed.
-  The parents' doorway moves slightly south; the northern corridor chest
-  moves into that bedroom and the linen shelf is shortened. One folded scarf
-  is found on that chest through `WorldItemPickup`, which holds it up on the
-  shared found-item screen before it is taken; the remaining upstairs
-  furnishings are passive. Collection is atomic, happens only on the
-  player's confirm, and its source stays empty on later visits that session. One
-  hidden plan-owned ramp makes the
-  visible collider-free steps continuously walkable; structural slabs,
-  partitions, door openings and well guards are runtime collision. Five
-  height-aware fixed shots cover ground, stair/corridor and the three rooms.
-  The corridor shot stays inside its southwest corner above the stair exit;
-  focus `25°/35°` and lens `64°–84°` frame the nearby hero. West wall, bathroom
-  south partition and doorway stay visible; only the bathroom shot temporarily
-  hides its partition/frame, with collision intact. The ground shot stays inside
-  the southeast corner, pans `30°/15°` at the picture edge and re-lenses `26°–50°`,
-  keeping the hero near half the frame height. Repairs, fading and soft wear
-  carry age without dirt or abandonment. Non-emissive opaque house surfaces
-  except Glass/Fire use unique UV0, a 4K `MothersHouseSurfaceAtlas` and aligned
-  2K response: physical height slopes RG, roughness B, cavity A. Glass, emission,
-  fire and scarf keep the auxiliary 1024px/4x4 `MothersHousePositiveAtlas`;
-  no Home/City albedos. Four ImageGen wood/fabric/plaster/finish source packs
-  feed offline baking. Shared `Mothers House Surface` preserves metal/room
-  lighting, without runtime generation or per-instance materials. BC7+mips
-  target at most 30 MiB; the estimated 28 MiB is not a measurement.
-  The centred south entrance faces the north hearth and spawns the hero north-facing.
-  A Point inside the fabric shade at the sofa's front southeast corner lights
-  hero/sofa; mother keeps the accepted partial shadow by the hearth, without
-  story meaning. Five lamps/five window sources cast soft realtime shadows.
-  The warm open-firebox source gently moves/varies; faster independent rising
-  flame eddies retain their bounds, hearth the main key, no ceiling fill.
-  Existing chair-local floor bounce stays within `1.1 m`, following floor lamp/
-  hearth; both off means zero. Fire, muffled wind, alternating ticks and sparse
-  timber settling stay calm. The hearth's broadband wood-crackle loop is audible
-  from the sofa, gains/falloff tuned for the fixed camera. Shared setup repairs
-  a missing/disabled listener, retaining one active listener across scene loads.
-  The sofa's free cushion is clear: the former three-plate patched throw has
-  been removed without changing the frame, cushions or seat contacts. The table
-  instantiates the literal Kettle Hat pedestrian
-  prefab and leaves only its ten authored kettle renderers visible, preserving
-  the source meshes, material and detail atlas as the explicit atlas exception;
-  the mother sits in the rocking chair. Its measured runner edges
-  stay on the rug at `Y=0.032 m` throughout the unchanged `±2.5° / 3.2 s`
-  cycle; chair and sitter share one motion, with hip contact corrected along
-  the tilted chair's local up. She turns her head to the hero on the shared
-  NPC attention and speaks in an overhead bubble. Coming through the door
-  always draws the same greeting; while he is within `6 m` and on her floor
-  she says a short line every `35-55 s`, and `E` at a trigger in front of the
-  chair answers out of the same shuffled bag, so nothing repeats before the
-  pool is spent. The bag: ten domestic lines plus a scarf request retired when
-  worn; a separate first request raises the quest. Door reload keeps the bag.
-  Empty hands, silent hero, no branch/choice; Cat/dinner/news outside this MVP;
+- `MothersHouseInterior`: summit-house door returns to the same safe threshold.
+  Imported modest, clean, cared-for old home: central tea table, north rocker/
+  fireplace, west sofa; mother sits in the rocker. Real stairs lead to the
+  furnished parents' bedroom, disused childhood room and passive bathroom.
+  Shared opening table matches all seventeen windows to the exterior; runtime
+  collision follows slabs/partitions/openings, one hidden ramp serves visible steps.
+  Five fixed height-aware cameras cover ground/stair/corridor/rooms; bathroom
+  cutaway affects rendering only. Geometry, furnishings, dimensions, camera/light
+  bounds and texture contracts: art bible §10g and `architecture-notes.md`.
+  Unique 4K UV0/2K response plus auxiliary 1K atlas use shared house materials,
+  BC7+mips ≤30 MiB (28 MiB estimate, unmeasured). Kettle Hat's ten renderers are
+  the explicit atlas exception. Hearth/window/practical lighting, finite bounce,
+  crackle, muffled wind/ticks/timber and one repaired listener remain scoped.
+  Free sofa cushion has no patched throw; rocker/sitter share measured contact.
+  Scarf uses shared `WorldItemPickup`/found screen: confirm commits once, source
+  stays empty across visits that session; other upstairs furnishings are passive.
+  Mother uses shared attention/speech bubble: same door greeting, shuffled
+  domestic lines every `35–55 s` within `6 m` on her floor, E from the same bag.
+  Ten lines plus scarf request; separate first request raises quest, wearing
+  retires request, reload keeps bag. Empty hands/silent hero/no choice;
+  Cat/dinner/news remain outside this MVP.
 - `MainMenu`:index0/EditorPlay;NewGame/Combat/OldArena/Quit;
   12starts:9story,City docks-cannery,lodge;village first/default;Back;mouse-keys-pad.
   `NewGameStartService`:day1/07:40;areas AreaLoading/6interiors direct;

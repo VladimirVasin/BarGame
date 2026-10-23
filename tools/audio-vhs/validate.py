@@ -1,8 +1,9 @@
-"""Exercise the shipping DLL through Unity's ABI and render listening references."""
+"""Exercise the native plugin through Unity's ABI and render listening references."""
 import argparse
 import ctypes as C
 import json
 import math
+import os
 from pathlib import Path
 import time
 import wave
@@ -26,7 +27,7 @@ class Parameter(C.Structure):
                 ("scale", C.c_float), ("exponent", C.c_float)]
 
 
-CALL = C.WINFUNCTYPE
+CALL = C.WINFUNCTYPE if os.name == 'nt' else C.CFUNCTYPE
 StateCall = CALL(C.c_int, C.POINTER(State))
 ProcessCall = CALL(C.c_int, C.POINTER(State), C.POINTER(C.c_float),
                    C.POINTER(C.c_float), C.c_uint, C.c_int, C.c_int)
@@ -275,7 +276,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    dll = C.WinDLL(str(args.plugin.resolve()))
+    loader = C.WinDLL if os.name == 'nt' else C.CDLL
+    dll = loader(str(args.plugin.resolve()))
     definitions = C.POINTER(C.POINTER(Definition))()
     dll.UnityGetAudioEffectDefinitions.argtypes = [C.POINTER(C.POINTER(C.POINTER(Definition)))]
     dll.UnityGetAudioEffectDefinitions.restype = C.c_int
