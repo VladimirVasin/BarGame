@@ -6,7 +6,7 @@ namespace BarPromenade
     /// <summary>Reads the shared service clock into the default bartender's movement and contacts.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(315)]
-    public sealed class BarBartenderServiceChoreography : MonoBehaviour
+    public sealed partial class BarBartenderServiceChoreography : MonoBehaviour
     {
         public const int VesselChainIndex = 0;
         public const int BottleChainIndex = 1;
@@ -27,11 +27,17 @@ namespace BarPromenade
         private Vector3 vesselCarryStartWorldPosition;
         private BarDrinkServicePhase vesselCarryPhase = BarDrinkServicePhase.Closed;
         private const float VesselCarryHandoffSeconds = 0.28f;
+        private bool repeatVesselCarryPrepared;
+        private Vector3 repeatVesselCarryStartWorldPosition;
+        private Vector3 repeatVesselCarryTargetInActor;
+        private float repeatVesselCarryElapsedSeconds;
+        private float repeatVesselCarryDurationSeconds;
         private float counterTravelElapsedSeconds;
         private bool isInitialized;
         private BarDrinkServicePhase emptyReachPhase;
         private Vector3 emptyReachStartWorldPosition;
         private Vector3 emptySupportPalmWorldPosition;
+        private Vector3 menuShoulderInActor;
 
         public bool IsInitialized => isInitialized;
 
@@ -55,6 +61,8 @@ namespace BarPromenade
                 : throw new ArgumentNullException(
                     nameof(shopController));
             BarBartenderAssetRegistry registry = presentation.Registry;
+            registry.ConfigureServiceView(shop.ServiceView);
+            if (shop.HasPhysicalMenuPresentation) shop.ConfigureMenuCarrier(registry.MenuGripAnchor);
             shop.ConfigureBartenderPresentation(presentation);
             shop.ConfigureBottleReachChain(
                 transform,
@@ -81,27 +89,37 @@ namespace BarPromenade
             }
 
             vesselPostSolve.Initialize(registry, shop);
+            var menuPostSolve = GetComponent<BarBartenderMenuGripPostSolve>();
+            if (menuPostSolve == null) menuPostSolve = gameObject.AddComponent<BarBartenderMenuGripPostSolve>();
+            menuPostSolve.Initialize(shop);
             vesselCarryTargetLocalPosition =
                 transform.InverseTransformPoint(
                     registry.VesselGripAnchor.position);
 
             homeLocalPosition = transform.localPosition;
             homeLocalRotation = transform.localRotation;
+            menuShoulderInActor = Quaternion.Inverse(transform.rotation) *
+                (registry.LeftUpperArm.position - transform.position);
+            wipePatchTargetLocalPosition = homeLocalPosition;
             isInitialized = true;
         }
 
-        private void LateUpdate()
+        private void LateUpdate() => Advance(Time.deltaTime);
+
+        public void Advance(float deltaTime)
         {
-            if (!isInitialized || !presentation.IsInitialized)
+            if (!isInitialized || !presentation.IsInitialized || GameTimeScaleRuntime.IsPaused)
             {
                 return;
             }
+            deltaTime = Mathf.Max(0f, deltaTime);
+            if (!IsRepeatFilledBeerCarry) repeatVesselCarryPrepared = false;
 
             presentation.SetCounterHandSupport(Vector3.zero, 0f);
 
-            bool awayFromHome = (transform.localPosition - homeLocalPosition).sqrMagnitude > PositionToleranceSquared ||
-                Quaternion.Angle(transform.localRotation, homeLocalRotation) > AuthoredFacingToleranceDegrees;
-            bool serviceRequested = shop.WantsBartenderService || shop.IsReturningCounterMenuHome || awayFromHome;
+            bool servesGuest = shop.WantsBartenderService || shop.IsReturningCounterMenuHome;
+            AdvanceWipeWork(deltaTime, servesGuest);
+            bool serviceRequested = servesGuest || !IsAtWipePatch;
             presentation.RequestTowelService(serviceRequested);
             if (serviceRequested ? !presentation.IsTowelServiceReady : !presentation.IsTowelWipeReady)
             {
@@ -109,12 +127,24 @@ namespace BarPromenade
                 return;
             }
 
-            CounterTravelFrame counterTravel =
-                UpdateCounterPosition(Time.deltaTime);
+            bool retractingRepeatVessel = AdvanceRepeatVesselCarryHandoff(deltaTime);
+            CounterTravelFrame counterTravel;
+            if (retractingRepeatVessel)
+            {
+                // Retract the full mug before turning away from the tap.
+                // Combining that reach, a turn and the first walking step
+                // otherwise sends the hand through a visibly abrupt route.
+                counterTravelElapsedSeconds = 0f;
+                shop.ReportCounterServerAtTarget(false);
+                shop.ReportBeerServerAtGuest(false);
+                counterTravel = default;
+            }
+            else counterTravel = UpdateCounterPosition(deltaTime);
             shop.RefreshEmptyVesselForServerPose();
             if (shop.IsReturningCounterMenuHome)
             {
                 ReleaseAll();
+                presentation.SetMenuHandPose(shop.MenuPresentation.GripAnchor, true);
                 if (counterTravel.IsActive)
                 {
                     ApplyCounterMotionPose(
@@ -164,11 +194,13 @@ namespace BarPromenade
             {
                 ApplyCounterMotionPose(counterTravel, IsLeftHandOccupied(frame, menuHandled));
             }
+            if (menuHandled) presentation.SetMenuHandPose(menu.GripAnchor, menu.IsFollowingCarrier);
         }
 
         private CounterTravelFrame UpdateCounterPosition(float deltaTime)
         {
-            Vector3 target = homeLocalPosition;
+            Vector3 target = shop.WantsBartenderService || shop.IsReturningCounterMenuHome
+                ? homeLocalPosition : wipePatchTargetLocalPosition;
             Quaternion targetRotation = homeLocalRotation;
             BarDrinkServicePhase phase = shop != null
                 ? shop.Phase
@@ -256,15 +288,17 @@ namespace BarPromenade
             }
             else if (targetsCounter)
             {
-                target = shop.ResolveActiveServiceLocalPosition(
-                    homeLocalPosition);
+                target = ResolveMenuServerLocalPosition();
             }
 
             // Retreat while still facing the guest; the occupied hand keeps
             // the same side of the body instead of sweeping through a turn.
             bool carriesEmpty = phase == BarDrinkServicePhase.EmptyVesselCarryToStorage;
+            bool carriesRepeatBeer = shop.Timeline != null && shop.Timeline.IsRepeatService &&
+                phase == BarDrinkServicePhase.BeerWalkToTap;
             float step = Mathf.Max(0f, deltaTime) *
-                (carriesEmpty ? EmptyVesselCarrySpeed : CounterTravelSpeed);
+                (carriesEmpty || carriesRepeatBeer || IsRepeatFilledBeerCarry ? EmptyVesselCarrySpeed :
+                    !shop.WantsBartenderService && !shop.IsReturningCounterMenuHome ? IdleWipeTravelSpeed : CounterTravelSpeed);
             float turnStep = Mathf.Max(0f, deltaTime) * CounterTurnSpeedDegrees;
             Vector3 previous = transform.localPosition;
             Quaternion previousRotation = transform.localRotation;
@@ -382,6 +416,22 @@ namespace BarPromenade
                 : worldPose.rotation;
         }
 
+        private Vector3 ResolveMenuServerLocalPosition()
+        {
+            Vector3 local = shop.ResolveActiveServiceLocalPosition(homeLocalPosition);
+            BarDrinkMenuPresentation menu = shop.MenuPresentation;
+            if (menu == null || menu.PropRoot == null || menu.GripAnchor == null) return local;
+            Pose dock = menu.DockWorldPose;
+            Vector3 gripInProp = menu.PropRoot.InverseTransformPoint(menu.GripAnchor.position);
+            Vector3 gripAtDock = dock.position + dock.rotation * Vector3.Scale(gripInProp, menu.PropRoot.lossyScale);
+            Transform parent = transform.parent;
+            Quaternion facing = parent != null ? parent.rotation * homeLocalRotation : homeLocalRotation;
+            Vector3 right = facing * Vector3.right;
+            Vector3 world = parent != null ? parent.TransformPoint(local) : local;
+            world += right * Vector3.Dot(gripAtDock - (world + facing * menuShoulderInActor), right);
+            return parent != null ? parent.InverseTransformPoint(world) : world;
+        }
+
         private void ApplyCounterMotionPose(
             CounterTravelFrame frame,
             bool leftHandOccupied = false)
@@ -404,6 +454,8 @@ namespace BarPromenade
             BarDrinkServiceFrame frame,
             bool menuHandled)
         {
+            if (shop.Timeline != null && shop.Timeline.IsRepeatService &&
+                frame.Phase == BarDrinkServicePhase.BeerWalkToTap) return true;
             if (menuHandled ||
                 shop.MenuState ==
                     BarPromenade.Runtime.World.CounterMenuState.Delivering ||
@@ -564,9 +616,11 @@ namespace BarPromenade
             bool placesVessel = vessel != null &&
                 frame.Phase ==
                     BarDrinkServicePhase.BottleVesselPlacement;
+            bool reachesRepeatVessel = vessel != null && shop.Timeline.IsRepeatService &&
+                (frame.Phase == BarDrinkServicePhase.VesselPlacement || frame.Phase == BarDrinkServicePhase.Pouring);
             presentation.SetCounterReachLean(
-                placesVessel ? vessel.GripWorldPosition : Vector3.zero,
-                placesVessel ? 1f : 0f);
+                placesVessel || reachesRepeatVessel ? vessel.GripWorldPosition : Vector3.zero,
+                placesVessel || reachesRepeatVessel ? 1f : 0f);
             presentation.SetChainTarget(
                 BarBartenderPresentation.OrdinaryBottleHandIndex,
                 service.IsCarriedBottleVisible && bottleWeight > 0f
@@ -635,14 +689,13 @@ namespace BarPromenade
             BarDrinkVesselView vessel = service.ActiveVessel;
             bool placesVessel = vessel != null &&
                 frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
-            presentation.SetCounterReachLean(
-                placesVessel ? vessel.GripWorldPosition : Vector3.zero,
-                placesVessel ? 1f : 0f);
             service.SetBeerTapHandlePull(frame.TapHandlePull);
             bool carriesVessel =
                 frame.Phase == BarDrinkServicePhase.BeerCarryToGuest;
+            bool carriesRepeatVessel = shop.Timeline.IsRepeatService &&
+                frame.Phase == BarDrinkServicePhase.BeerWalkToTap;
             float vesselWeight = vessel != null &&
-                frame.Phase != BarDrinkServicePhase.BeerWalkToTap
+                (frame.Phase != BarDrinkServicePhase.BeerWalkToTap || shop.Timeline.IsRepeatService)
                     ? CarryWeight
                     : 0f;
             float handleWeight =
@@ -650,7 +703,7 @@ namespace BarPromenade
                     ? Mathf.Max(frame.TapHandlePull, 0.35f)
                     : 0f;
             service.SetBeerTapBartenderContact(
-                carriesVessel,
+                carriesVessel || carriesRepeatVessel,
                 vesselWeight,
                 handleWeight);
 
@@ -661,6 +714,15 @@ namespace BarPromenade
                     ? ResolveVesselCarryTarget(frame)
                     : vessel.GripWorldPosition;
             }
+
+            // The tap sits beyond a straight arm for some catalogue bodies.
+            // Close that same measured contact before the filled mug becomes
+            // hand-owned, and retain it through the continuous carry handoff.
+            bool supportsContact = placesVessel || carriesVessel ||
+                frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
+                frame.Phase == BarDrinkServicePhase.BeerPouring;
+            presentation.SetCounterReachLean(vesselTarget,
+                supportsContact ? vesselWeight : 0f);
 
             presentation.SetChainTarget(
                 BarBartenderPresentation.OrdinaryVesselHandIndex,
@@ -688,6 +750,13 @@ namespace BarPromenade
 
         private Vector3 ResolveVesselCarryTarget(BarDrinkServiceFrame frame)
         {
+            if (IsRepeatFilledBeerCarry && repeatVesselCarryPrepared)
+            {
+                float progress = Mathf.SmoothStep(0f, 1f,
+                    repeatVesselCarryElapsedSeconds / repeatVesselCarryDurationSeconds);
+                return Vector3.Lerp(repeatVesselCarryStartWorldPosition,
+                    transform.TransformPoint(repeatVesselCarryTargetInActor), progress);
+            }
             if (vesselCarryPhase != frame.Phase)
             {
                 vesselCarryStartWorldPosition = shop.ServiceView.ActiveVessel.GripWorldPosition;
@@ -698,6 +767,33 @@ namespace BarPromenade
             float amount = Mathf.SmoothStep(0f, 1f,
                 Mathf.Clamp01(frame.PhaseElapsedSeconds / VesselCarryHandoffSeconds));
             return Vector3.Lerp(vesselCarryStartWorldPosition, destination, amount);
+        }
+
+        private bool IsRepeatFilledBeerCarry => shop?.Timeline != null &&
+            shop.Timeline.IsRepeatService && shop.Phase == BarDrinkServicePhase.BeerCarryToGuest;
+
+        private bool AdvanceRepeatVesselCarryHandoff(float deltaTime)
+        {
+            if (!IsRepeatFilledBeerCarry) return false;
+            if (!repeatVesselCarryPrepared)
+            {
+                repeatVesselCarryStartWorldPosition = shop.ServiceView.ActiveVessel.GripWorldPosition;
+                Vector3 destination = shop.ResolveBartenderVesselCarryTarget(
+                    transform.TransformPoint(vesselCarryTargetLocalPosition));
+                repeatVesselCarryTargetInActor = transform.InverseTransformPoint(destination);
+                // SmoothStep's peak speed is 1.5 times its mean speed.
+                repeatVesselCarryDurationSeconds = Mathf.Max(VesselCarryHandoffSeconds,
+                    1.5f * Vector3.Distance(repeatVesselCarryStartWorldPosition, destination) /
+                    EmptyVesselCarrySpeed);
+                repeatVesselCarryElapsedSeconds = 0f;
+                repeatVesselCarryPrepared = true;
+            }
+
+            bool holdRoot = repeatVesselCarryElapsedSeconds < repeatVesselCarryDurationSeconds;
+            repeatVesselCarryElapsedSeconds = Mathf.Min(repeatVesselCarryDurationSeconds,
+                repeatVesselCarryElapsedSeconds + deltaTime);
+            // Render the exact retracted endpoint before the first turn.
+            return holdRoot;
         }
 
         private static bool IsBottleBartenderServicePhase(
@@ -733,6 +829,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            changingWipePatch = false;
+            counterTravelElapsedSeconds = 0f;
             if (isInitialized && presentation != null) ReleaseAll();
         }
 
@@ -748,6 +846,19 @@ namespace BarPromenade
 
             public bool IsActive { get; }
             public bool IsTranslating { get; }
+        }
+    }
+
+    [DisallowMultipleComponent]
+    [DefaultExecutionOrder(327)]
+    internal sealed class BarBartenderMenuGripPostSolve : MonoBehaviour
+    {
+        private BarDrinkShopController shop;
+        public void Initialize(BarDrinkShopController controller) => shop = controller;
+        private void LateUpdate()
+        {
+            BarDrinkMenuPresentation menu = shop != null ? shop.MenuPresentation : null;
+            if (menu != null && menu.IsVisible && menu.IsFollowingCarrier) menu.RefreshCarrierPose();
         }
     }
 
@@ -813,11 +924,28 @@ namespace BarPromenade
             }
             if (!service.IsActiveVesselCarriedByBartender) return;
 
+            if (shop.Timeline.IsRepeatService && shop.Phase == BarDrinkServicePhase.BeerWalkToTap)
+            {
+                BarDrinkVesselView carried = service.ActiveVessel;
+                Quaternion rotation = carried.transform.rotation;
+                presentation?.ResolveAnatomicalGripContactAfterWristRoll(
+                    BarBartenderPresentation.OrdinaryVesselHandIndex, carried.GripWorldPosition,
+                    carried.OpeningDirection, -carried.HandleDirection,
+                    NpcHandPose.GripKindForVessel(carried.Kind));
+                service.AlignActiveVesselGripPositionTo(registry.VesselGripAnchor, rotation);
+                return;
+            }
+
             Pose counter = shop.ResolveServedCounterWorldPose(
                 service.ActiveVessel);
+            // Keep the refilled mug's grip orientation during travel;
+            // placement owns its smooth turn to the guest dock.
+            Quaternion carriedRotation = shop.Timeline.IsRepeatService &&
+                shop.Phase == BarDrinkServicePhase.BeerCarryToGuest
+                    ? service.ActiveVessel.transform.rotation : counter.rotation;
             service.AlignActiveVesselGripPositionTo(
                 registry.VesselGripAnchor,
-                counter.rotation);
+                carriedRotation);
         }
     }
 
@@ -856,7 +984,7 @@ namespace BarPromenade
                 ? shop.ServiceView
                 : null;
             if (!initialized ||
-                !shop.IsServing ||
+                (!shop.IsServing && !shop.IsPatronServiceActive) ||
                 service == null ||
                 !service.IsCarriedBottleVisible ||
                 (shop.Timeline.IsBottleService &&

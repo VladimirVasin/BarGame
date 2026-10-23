@@ -65,10 +65,13 @@ namespace BarPromenade
             /// <summary>A catalog model, or <see cref="AnyCatalogModel"/> to let the population choose one.</summary>
             public string ModelId { get; }
             public bool UsesAnyCatalogModel => ModelId == AnyCatalogModel;
+            public bool UsesRandomBody { get; }
             public IReadOnlyList<SlotConstraint> Slots { get; }
             public CharacterDefinition(string id, string modelId, params SlotConstraint[] slots)
+                : this(id, modelId, true, slots) { }
+            public CharacterDefinition(string id, string modelId, bool usesRandomBody, params SlotConstraint[] slots)
             {
-                Id = id; ModelId = modelId;
+                Id = id; ModelId = modelId; UsesRandomBody = usesRandomBody;
                 Slots = Array.AsReadOnly((SlotConstraint[])slots.Clone());
             }
         }
@@ -81,10 +84,19 @@ namespace BarPromenade
             public string HairColorId { get; }
             public IReadOnlyList<string> ItemIds { get; }
             public string VisibleSignature { get; }
-            internal Assignment(CharacterDefinition character, string modelId, string face, string hairColor, string[] items, string signature)
+            public int HeightCm { get; }
+            public float Build { get; }
+            public bool UsesRandomBody { get; }
+            internal Assignment(CharacterDefinition character, string modelId, string face, string hairColor, string[] items,
+                string signature, int referenceHeightCm)
             {
                 CharacterId = character.Id; ModelId = modelId; FaceId = face; HairColorId = hairColor;
                 ItemIds = Array.AsReadOnly((string[])items.Clone()); VisibleSignature = signature;
+                UsesRandomBody = character.UsesRandomBody;
+                // Independent channels never enter the existing face/hair/garment traversal.
+                HeightCm = UsesRandomBody ? DefaultNpcBodyShape.MinimumHeightCm + DefaultNpcAppearanceSelection.Index(
+                    character.Id, "height-cm", DefaultNpcBodyShape.MaximumHeightCm - DefaultNpcBodyShape.MinimumHeightCm + 1) : referenceHeightCm;
+                Build = UsesRandomBody ? DefaultNpcAppearanceSelection.Index(character.Id, "body-build", 10001) / 10000f : .5f;
             }
         }
 
@@ -94,6 +106,7 @@ namespace BarPromenade
             public readonly Dictionary<string, NpcWardrobe.ItemBinding> Items = new Dictionary<string, NpcWardrobe.ItemBinding>(StringComparer.Ordinal);
             public string[] Faces;
             public string[] HairColors;
+            public int ReferenceHeightCm;
         }
 
         public static IReadOnlyList<CharacterDefinition> Characters { get; } = Array.AsReadOnly(BuildCharacters());
@@ -145,6 +158,7 @@ namespace BarPromenade
             foreach (string available in modelId == AnyCatalogModel ? catalogModels : new[] { modelId })
                 models.Add(available, ReadModel(available, signature));
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
+            var expandedUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (Assignment assigned in assignments)
             {
@@ -157,7 +171,7 @@ namespace BarPromenade
             for (int index = 0; index < count; index++)
                 visitors[index] = SelectAppearance(new CharacterDefinition(
                     visit + ".guest." + index.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    modelId, constraints), models, catalogModels, usage, modelUsage);
+                    modelId, constraints), models, catalogModels, usage, expandedUsage, modelUsage);
             return Array.AsReadOnly(visitors);
         }
 
@@ -211,14 +225,14 @@ namespace BarPromenade
                     new SlotConstraint("scarf", null, "scarf.warm"),
                     new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")));
             for (int i = 0; i < CombatTestOpponentCount; i++)
-                roster.Add(new CharacterDefinition(CombatTestOpponentId(i), model,
+                roster.Add(new CharacterDefinition(CombatTestOpponentId(i), model, false,
                     new SlotConstraint("outerwear", "outerwear.work"),
                     new SlotConstraint("boots", "boots.work"),
                     new SlotConstraint("headwear", new string[] { null }),
                     new SlotConstraint("gloves", "gloves.work"),
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
-            roster.Add(new CharacterDefinition(CombatTestCraneEnemy, model,
+            roster.Add(new CharacterDefinition(CombatTestCraneEnemy, model, false,
                 new SlotConstraint("outerwear", "outerwear.work"),
                 new SlotConstraint("boots", "boots.work"),
                 new SlotConstraint("headwear", new string[] { null }),
@@ -227,7 +241,7 @@ namespace BarPromenade
                 new SlotConstraint("apron", new string[] { null })));
             foreach (string id in new[] { CombatTestRoomEnemy, CombatTestImprintEnemy, CombatTestLongExposureEnemy })
             foreach (int slot in new[] { 0, 3, 4 })
-                roster.Add(new CharacterDefinition(slot == 0 ? id : id + "." + slot, model,
+                roster.Add(new CharacterDefinition(slot == 0 ? id : id + "." + slot, model, false,
                     new SlotConstraint("outerwear", "outerwear.work"),
                     new SlotConstraint("boots", "boots.work"),
                     new SlotConstraint("headwear", new string[] { null }),
@@ -266,7 +280,8 @@ namespace BarPromenade
                 // read and every model's authored bindings enter the signature.
                 foreach (string modelId in character.UsesAnyCatalogModel ? DefaultNpcCatalog.ModelIds : new[] { character.ModelId })
                     if (!models.ContainsKey(modelId)) models.Add(modelId, ReadModel(modelId, signature));
-                signature.Append(character.Id).Append(':').Append(character.ModelId ?? "<any>").Append(';');
+                signature.Append(character.Id).Append(':').Append(character.ModelId ?? "<any>")
+                    .Append(character.UsesRandomBody ? ":body;" : ":authored;");
                 foreach (SlotConstraint slot in character.Slots)
                 {
                     signature.Append(slot.Slot).Append('=');
@@ -277,16 +292,17 @@ namespace BarPromenade
             if (catalog == cachedCatalog && assignments != null) return;
             var next = new List<Assignment>();
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
+            var expandedUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
             foreach (CharacterDefinition character in Characters)
-                next.Add(SelectAppearance(character, models, catalogModels, usage, modelUsage));
+                next.Add(SelectAppearance(character, models, catalogModels, usage, expandedUsage, modelUsage));
             assignments = next.AsReadOnly(); cachedCatalog = catalog;
         }
 
         private static Assignment SelectAppearance(CharacterDefinition character,
             IDictionary<string, ModelDefinition> models, string[] catalogModels,
-            IDictionary<string, int> usage, IDictionary<string, int> modelUsage)
+            IDictionary<string, int> usage, IDictionary<string, int> expandedUsage, IDictionary<string, int> modelUsage)
         {
             // The model is the first choice and follows the same rule as the
             // rest: an unused catalog model first, then the least used one, so
@@ -296,6 +312,8 @@ namespace BarPromenade
                 : character.ModelId;
             ModelDefinition model = models[modelId];
             var dimensions = new List<string[]> { model.Faces, model.HairColors };
+            int outerwearDimension = -1;
+            var addedOuterwear = new List<string>();
             var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
             foreach (SlotConstraint slot in character.Slots)
             {
@@ -305,32 +323,75 @@ namespace BarPromenade
             }
             foreach (var slot in model.Slots)
             {
-                if (!constraints.TryGetValue(slot.Key, out SlotConstraint constraint)) { dimensions.Add(slot.Value); continue; }
-                var allowed = new SortedSet<string>(StringComparer.Ordinal);
-                foreach (string id in constraint.AllowedItemIds)
+                string[] choices = slot.Value;
+                if (constraints.TryGetValue(slot.Key, out SlotConstraint constraint))
                 {
-                    if (id != null && Array.IndexOf(slot.Value, id) < 0)
-                        throw new InvalidOperationException("Character allows an unauthored item: " + character.Id + "/" + id);
-                    allowed.Add(id ?? string.Empty);
+                    var allowed = new SortedSet<string>(StringComparer.Ordinal);
+                    foreach (string id in constraint.AllowedItemIds)
+                    {
+                        if (id != null && Array.IndexOf(slot.Value, id) < 0)
+                            throw new InvalidOperationException("Character allows an unauthored item: " + character.Id + "/" + id);
+                        allowed.Add(id ?? string.Empty);
+                    }
+                    choices = new List<string>(allowed).ToArray();
                 }
-                dimensions.Add(new List<string>(allowed).ToArray());
+                if (modelId == DefaultNpcCatalog.OrdinaryWorker && slot.Key == "outerwear")
+                {
+                    outerwearDimension = dimensions.Count;
+                    var baseline = new List<string>();
+                    foreach (string id in choices)
+                        if (IsAddedOuterwear(id)) addedOuterwear.Add(id);
+                        else baseline.Add(id);
+                    // Preserve the original mixed-radix space. An explicitly
+                    // new-only role has no historical outfit to retain.
+                    if (baseline.Count > 0) choices = baseline.ToArray();
+                    else addedOuterwear.Clear();
+                }
+                dimensions.Add(choices);
             }
             string Visible(string[] candidate) => VisibleSignature(modelId, model, candidate);
             string[] chosen = DefaultNpcAppearanceSelection.Choose(character.Id, dimensions, Visible, usage);
+            if (addedOuterwear.Count > 0)
+            {
+                // A separate channel may replace only this top. Its usage map
+                // never changes the historical allocation of later identities.
+                var candidates = new List<string> { chosen[outerwearDimension] };
+                candidates.AddRange(addedOuterwear);
+                int start = DefaultNpcAppearanceSelection.Index(character.Id, "outerwear-expansion", candidates.Count);
+                string best = null;
+                int bestCount = int.MaxValue;
+                for (int offset = 0; offset < candidates.Count; offset++)
+                {
+                    chosen[outerwearDimension] = candidates[(start + offset) % candidates.Count];
+                    string signature = Visible(chosen);
+                    int used = expandedUsage.TryGetValue(signature, out int count) ? count : 0;
+                    if (used >= bestCount) continue;
+                    best = chosen[outerwearDimension]; bestCount = used;
+                    if (used == 0) break;
+                }
+                chosen[outerwearDimension] = best;
+            }
+            string finalSignature = Visible(chosen);
+            expandedUsage[finalSignature] = expandedUsage.TryGetValue(finalSignature, out int finalCount) ? finalCount + 1 : 1;
             var equipped = new List<string>();
             for (int i = 2; i < chosen.Length; i++) if (!string.IsNullOrEmpty(chosen[i])) equipped.Add(chosen[i]);
-            return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), Visible(chosen));
+            return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), finalSignature, model.ReferenceHeightCm);
         }
+
+        private static bool IsAddedOuterwear(string id) => id == "outerwear.cardigan" || id == "outerwear.coat" || id == "outerwear.overshirt";
 
         private static ModelDefinition ReadModel(string modelId, StringBuilder signature)
         {
             GameObject prefab = DefaultNpcCatalog.GetPrefab(modelId);
             var wardrobe = prefab.GetComponent<NpcWardrobe>();
             var appearance = prefab.GetComponent<DefaultNpcAppearance>();
-            if (wardrobe == null || !wardrobe.IsModular || appearance == null || appearance.Faces.Count == 0)
-                throw new InvalidOperationException("A population model requires modular clothing and face bindings: " + modelId);
+            var bodyShape = prefab.GetComponent<DefaultNpcBodyShape>();
+            if (wardrobe == null || !wardrobe.IsModular || appearance == null || appearance.Faces.Count == 0 || bodyShape == null)
+                throw new InvalidOperationException("A population model requires modular clothing, face and body-shape bindings: " + modelId);
             wardrobe.ValidateBindings();
-            var model = new ModelDefinition();
+            bodyShape.ValidateBindings();
+            var model = new ModelDefinition { ReferenceHeightCm = Mathf.RoundToInt(bodyShape.ReferenceHeightMetres * 100f) };
+            signature.Append(modelId).Append(':').Append(model.ReferenceHeightCm).Append(';');
             var faces = new SortedSet<string>(StringComparer.Ordinal);
             foreach (DefaultNpcAppearance.FaceBinding face in appearance.Faces)
             {
@@ -416,7 +477,11 @@ namespace BarPromenade
             if (assignment == null) throw new ArgumentNullException(nameof(assignment));
             var appearance = actor.GetComponent<DefaultNpcAppearance>();
             if (appearance == null) throw new InvalidOperationException("The default NPC has no appearance owner.");
+            var bodyShape = actor.GetComponent<DefaultNpcBodyShape>();
+            if (bodyShape == null) throw new InvalidOperationException("The default NPC has no body-shape owner.");
             appearance.ApplySelection(assignment.CharacterId, assignment.FaceId, assignment.HairColorId, assignment.ItemIds);
+            if (assignment.UsesRandomBody) bodyShape.Apply(assignment.HeightCm, assignment.Build);
+            else bodyShape.PreserveAuthoredAnatomy();
         }
     }
 }

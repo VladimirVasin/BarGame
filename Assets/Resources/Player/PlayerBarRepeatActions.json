@@ -1,0 +1,98 @@
+{
+  "generator": "player_bar_repeat_v2",
+  "rig": "HeroV2",
+  "bone_count": 43,
+  "fps": 24,
+  "root_motion": false,
+  "animation_events": 0,
+  "anatomical_hand": "R",
+  "index_renderer": "GEO_Finger0.R",
+  "tap_count": 2,
+  "attention_hand": "L",
+  "wave_before_taps": true,
+  "level_palm": true,
+  "index_only_tap": true,
+  "index_tap_keys": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.2,
+      0.0
+    ],
+    [
+      0.28,
+      1.0
+    ],
+    [
+      0.34,
+      1.0
+    ],
+    [
+      0.47,
+      0.0
+    ],
+    [
+      0.64,
+      0.0
+    ],
+    [
+      0.72,
+      1.0
+    ],
+    [
+      0.78,
+      1.0
+    ],
+    [
+      1.0,
+      0.0
+    ]
+  ],
+  "source_path": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
+  "source_sha256": "d33560673956f15ee7806c9c04584e354b114ae829fe22fe9b63de4975562742",
+  "parent_pose_authoring_sha256": "20e47bf713071648826f6a5dc79c774c20ba234affc563fa2d39c1059c11ba9d",
+  "entry_parent_clip": "CounterSeatLoop",
+  "entry_parent_progress": 0.0,
+  "exit_parent_progress": 0.0,
+  "entry_pelvis": [
+    0.0,
+    0.29081904888153076,
+    0.9363083243370056
+  ],
+  "action_pelvis": [
+    0.0,
+    0.29081904888153076,
+    0.9363083243370056
+  ],
+  "exit_pelvis": [
+    0.0,
+    0.29081904888153076,
+    0.9363083243370056
+  ],
+  "clips": [
+    {
+      "name": "BarRepeatEnter",
+      "duration_seconds": 1.8,
+      "loop": false
+    },
+    {
+      "name": "BarRepeatTapLoop",
+      "duration_seconds": 1.0,
+      "loop": true
+    },
+    {
+      "name": "BarRepeatExit",
+      "duration_seconds": 0.75,
+      "loop": false
+    }
+  ],
+  "signature": "5ee41cdce19b491b018281cb63e8358f656903f08a25744018ca64a72743447c",
+  "maximum_lower_body_error": 5.960464477539063e-08,
+  "maximum_endpoint_error": 3.5762786865234375e-07,
+  "hand_lift_m": 0.14999985694885254,
+  "maximum_tapping_wrist_motion_m": 0.0,
+  "left_wave_lift_m": 0.5649248361587524,
+  "left_wave_width_m": 0.07672464847564697
+}

@@ -861,6 +861,10 @@
       "value": "E — выпить напиток"
     },
     {
+      "key": "interaction.repeat_beverage",
+      "value": "E — повторить напиток"
+    },
+    {
       "key": "interaction.order_selected_drink",
       "value": "E — заказать выбранный напиток"
     },
@@ -1207,6 +1211,14 @@
     {
       "key": "drink_shop.balance",
       "value": "Баланс: {0} $"
+    },
+    {
+      "key": "payment_notice.paid",
+      "value": "Списано: {0} $"
+    },
+    {
+      "key": "payment_notice.balance",
+      "value": "Осталось: {0} $"
     },
     {
       "key": "drink_shop.price",

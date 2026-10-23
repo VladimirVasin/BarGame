@@ -2337,6 +2337,106 @@
         "shape_signature": "6efa0dda17fae64ec9d5bb400cd8fb54e1771ac6998550ea5e459bb1686ea5bf"
       }
     ],
+    "gestures": {
+      "contract": "hero_hand_gestures_v1",
+      "side": "R",
+      "renderers": [
+        "GEO_Hand.R",
+        "GEO_Thumb.R",
+        "GEO_Finger0.R",
+        "GEO_Finger1.R",
+        "GEO_Finger2.R",
+        "GEO_Finger3.R"
+      ],
+      "fist_shape": "PointingFist",
+      "index_renderer": "GEO_Finger0.R",
+      "index_samples": [
+        {
+          "angle_degrees": 5,
+          "shape_name": "IndexTap05"
+        },
+        {
+          "angle_degrees": 10,
+          "shape_name": "IndexTap10"
+        },
+        {
+          "angle_degrees": 15,
+          "shape_name": "IndexTap15"
+        },
+        {
+          "angle_degrees": 20,
+          "shape_name": "IndexTap20"
+        },
+        {
+          "angle_degrees": 25,
+          "shape_name": "IndexTap25"
+        },
+        {
+          "angle_degrees": 30,
+          "shape_name": "IndexTap30"
+        },
+        {
+          "angle_degrees": 35,
+          "shape_name": "IndexTap35"
+        },
+        {
+          "angle_degrees": 40,
+          "shape_name": "IndexTap40"
+        },
+        {
+          "angle_degrees": 45,
+          "shape_name": "IndexTap45"
+        },
+        {
+          "angle_degrees": 50,
+          "shape_name": "IndexTap50"
+        },
+        {
+          "angle_degrees": 55,
+          "shape_name": "IndexTap55"
+        },
+        {
+          "angle_degrees": 60,
+          "shape_name": "IndexTap60"
+        }
+      ],
+      "contact_angle_degrees": 60,
+      "interpolation": "adjacent_linear_samples; zero degrees uses Basis",
+      "other_finger_joint_angles_degrees": [
+        75.0,
+        95.0,
+        70.0
+      ],
+      "shape_signature": "f67cce62ed1c2a55bbd03eaffb713ea2db96b198b5c3056aa923437ee8a83b88",
+      "authoring_sha256": "d54e79df56210e919437cfb49d6ab67800ec622760129145c357372bee38375b",
+      "validation": {
+        "contact_other_surface_clearance_m": 0.00465339,
+        "limiting_renderer": "GEO_Finger1.R",
+        "index_only_travel_m": 0.02824064,
+        "maximum_arc_interpolation_error_m": 3.6896e-05,
+        "maximum_link_length_error_m": 5.1e-08,
+        "minimum_index_contact_plane_clearance_m": 0.0,
+        "closed_tip_root_chord_ratios": {
+          "GEO_Finger1.R": 0.47190261,
+          "GEO_Finger2.R": 0.47190193,
+          "GEO_Finger3.R": 0.47190109,
+          "GEO_Thumb.R": 0.815626
+        },
+        "finger_root_surface_gaps_m": {
+          "GEO_Thumb.R": 0.0,
+          "GEO_Finger0.R": 0.0,
+          "GEO_Finger1.R": 0.0,
+          "GEO_Finger2.R": 0.0,
+          "GEO_Finger3.R": 0.0
+        },
+        "palm_unchanged": true,
+        "fixed_wrist": true,
+        "index_zero_in_fist": true,
+        "other_surfaces_zero_in_index_samples": true,
+        "closed_positive_volumes": true,
+        "neutral_weights": true
+      }
+    },
     "validation": {
       "surface_clearances_m": {
         "GEO_Hand.L": 0.001,
@@ -2409,6 +2509,33 @@
         "SnifterBowlGrip:GEO_Finger3.R": 0.0
       },
       "bowl_maximum_segment_length_error_m": 1e-07,
+      "pointing_gesture": {
+        "contact_other_surface_clearance_m": 0.00465339,
+        "limiting_renderer": "GEO_Finger1.R",
+        "index_only_travel_m": 0.02824064,
+        "maximum_arc_interpolation_error_m": 3.6896e-05,
+        "maximum_link_length_error_m": 5.1e-08,
+        "minimum_index_contact_plane_clearance_m": 0.0,
+        "closed_tip_root_chord_ratios": {
+          "GEO_Finger1.R": 0.47190261,
+          "GEO_Finger2.R": 0.47190193,
+          "GEO_Finger3.R": 0.47190109,
+          "GEO_Thumb.R": 0.815626
+        },
+        "finger_root_surface_gaps_m": {
+          "GEO_Thumb.R": 0.0,
+          "GEO_Finger0.R": 0.0,
+          "GEO_Finger1.R": 0.0,
+          "GEO_Finger2.R": 0.0,
+          "GEO_Finger3.R": 0.0
+        },
+        "palm_unchanged": true,
+        "fixed_wrist": true,
+        "index_zero_in_fist": true,
+        "other_surfaces_zero_in_index_samples": true,
+        "closed_positive_volumes": true,
+        "neutral_weights": true
+      },
       "finger_root_surface_gaps_m": {
         "GEO_Finger0.L": 0.0,
         "GEO_Finger1.L": 0.0,
@@ -2423,7 +2550,7 @@
       "wrist_unchanged": true
     }
   },
-  "hand_grip_authoring_sha256": "12cf2af95da13b06122452fa8d47cdbf165b8fafe6e4377accabe844960160a3",
+  "hand_grip_authoring_sha256": "4bcb450dabfbd32ef93931854428d239335fe81f84844b2e46731d81d11ad6ae",
   "design_version": "HeroV2",
   "cold_authoring_sha256": "43e4d28adc2d45c8f1e679635306b733f134e011410f875a04649d19d57d3791",
   "detail_authoring_sha256": "159b3c9aaf89039694ead7692c46925a1dd7e3238222a01ad3637d4932d3df49",
@@ -2457,7 +2584,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "9ed6330dd54e686e3cb4823e6c67d4fad7c4462771faea59e911136466c74f97",
+  "content_signature_sha256": "510c8f9d093f031557752661e86e52bcf5bc1db172c90e16b6092d71ac0fb932",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

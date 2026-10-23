@@ -464,6 +464,7 @@ namespace BarPromenade
                     Bartender.gameObject.AddComponent<
                         BarBartenderServiceChoreography>();
                 choreography.Initialize(Bartender, DrinkShop);
+                DrinkShop.ConfigureCounterPatronService(Patrons);
             }
         }
 

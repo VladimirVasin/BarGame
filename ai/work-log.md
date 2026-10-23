@@ -3,40 +3,67 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-23
+
+Bar continuation: forward L wave fits initial gaze once.
+Menu/repeat requests use ordinary seated look (yaw±70/pitch−25…55), retaining
+the chosen gaze; pickup/sip/return keep±12/±10. Only input bounds change.
+PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit passed mouse/gaze/cleanup; frames reviewed.
+Menu/repeat share wave/index contacts before one accepted charge/receipt;
+interrupted gestures are free. Empty-beer repeat adds typed R grip/supported
+short offer, release/hand return before payment; whole-cup/menu/edge clearance
+and actual arm reach shorten travel. Other vessels/no-cup orders have no offer.
+Counter guests: independent sip drain/L wave/bent R support, same empty mug
+offered to server; full mug pulled to original dock before FIFO release.
+Deduped hero/guest FIFO; accepted requests get look/one nod without preemption.
+Shared rigs/assets/cues/effect providers kept; no measured performance claim.
+Shared phase endpoints prevent a false held-loop timeout after hand withdrawal.
+BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt passed; poses reviewed.
+check-workspace: existing old logs and other-worktree cache backlog remain.
+
 ## 2026-10-22
 
-Bar-only side Enter/Exit turn the continuous hero into the stool gap, lift
-before transfer and reverse to stand. CounterSeatLoop fixes pelvis support,
-retains upper-body breath and supplies bar-drink legs; Bus/cafe stay.
-player_counter_seat_actions.validate_result passed actual skinned furniture,
-floor/seam checks; refresh repeat and unrelated source/upper-body preservation passed.
-User decision: jacket rig-only throughout gameplay, as CombatTest; no live/baked
-cloth/contact/wind. Rig/folds/hand-opening/mirror-arms and Editor authoring stay;
-scarf/sling/hair policy unchanged.
-CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed/reviewed, including
-jacket-off persistence through component re-enable. Existing effects fit pose,
-materials/shadows/camera; no new providers. Performance unmeasured.
-Vodka return freeze: clavicle reach now uses the upper-arm origin, not the
-nested clip's retracting wrist. The latter prevented exact support/release and
-kept the first-person/look lease; contact tolerance and shoulder cap stay.
-VodkaService_ReturnsToSeatedViewAfterEmptyShot passed: empty counter support,
-release/retraction, nested exit, seated first-person view and unlocked look;
-purchase commitment intact.
-Empty cleanup now holds pickup facing, steps straight back, then lowers at
-fixed X/Z. The free open right palm braces a fixed counter point and blends
-out afterward. Full vessel bounds and guest occlusion gate hide/next service;
-same prop/grip, rig/materials/IK/camera/economy stay.
-Carry is low/forward to avoid a raised folded elbow; disable clears brace goal.
-EmptyVesselCleanup_StepsBackAndBracesBeforeHiding passed/reviewed: facing/backstep,
-open elbow, fixed palm, continuous grip/vertical path, furniture clearance,
-hidden old vessel before new service and unchanged payment ownership.
-Bar ceiling fan uniformly reduced; pivot/topology/rotation stay.
-Pale warm matte PaintedMetal blades contrast ceiling; aged-brass hub stays.
-No emission/lights/shaders/instances added.
-build-bar-3d-model validation/publish passed; unique UV0/maps regenerated.
-Non-fan geometry/UV1 and service/facade asset bytes preserved.
-Existing effects/providers retained; no new canon exception or cost claim.
-AreaCaptureFixture.BarCeilingFan size/finish passed/reviewed from entrance and eye-height.
+Bar Enter/Exit: stool-gap turn/lift before pelvis transfer/reverse;
+CounterSeatLoop support/upper breath/drink legs; Bus/cafe kept.
+player_counter_seat_actions.validate_result passed skin/furniture/floor/seams,
+repeat/source preservation.
+CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed/reviewed.
+Jacket rig-only gameplay/CombatTest;no live/baked cloth/contact/wind.
+Folds/opening/mirror/Editor/scarf/sling/hair/pose/material/shadow/camera kept;
+jacket-off survives enable;no new FX/measured gains.
+Vodka upper-arm clavicle/nested wrist/look lease; shoulder/tolerance/purchase kept.
+VodkaService_ReturnsToSeatedViewAfterEmptyShot passed support/retract/exit/view/look.
+Pour bottle left; overhand neck/palm down/wrapped fingers; arm/solver/carry kept.
+VodkaService_KeepsShotClearOfCounterAndMenu: unrelated hero clearance failed.
+Different menu order: empty facing held/back→vertical fixedXZ;
+low forward open elbow/R fixed counter brace/blend-out/disable clear.
+Full bounds/guest occlusion gate hide/replacement.
+EmptyVesselCleanup_StepsBackAndBracesBeforeHiding passed/reviewed
+grip/path/furniture/hide-before-replacement; prop/rig/materials/IK/camera/economy kept.
+Fan small/pale warm matte PaintedMetal/brass stem;Y2.55/20deg/s;
+rotor/geometry/UV1/service/facade kept. build-bar-3d-model passed UV0/maps/publish.
+AreaCaptureFixture.BarCeilingFan size/finish passed/reviewed.
+Bar freeR brace/reposition/Notice; occupied IK/Walk/towel win.
+Open/closed menu15mm stable whole mesh-bounds envelope/absolute IK target;
+blocked stow, stow/Walk/draw new patches; menu palm-forward.
+Drink look/gaze kept;tap can look higher.
+Menu/repeat:forward-visible L wave→flat R palm/fist→index MCP taps→one charge/receipt/cue.
+Counter sip drain/Lwave/R support→FIFO/samecup;others kept.
+Request:look/one nod;service kept.
+Fixed wrist/wood clearance;same mug tap/planted retract→Walk,
+others dock/sip effects;final poses guard refill continuity.
+player_hand_gestures.validate/validate_export passed; basis/rig/actions/grips kept.
+build-player-bar-repeat-actions.validate passed wave/wrist/seams.
+Bartender_WipeTouchesAndTravelsAcrossCounter passed/reviewed.
+RedWineService_FetchesPoursCarriesAndWaitsForExplicitDrink passed/reviewed both overhand pours.
+Default men:read-only hero anatomy/NPC rig;stable160–185cm/build/belly/clothes/ease/IDs.
+Cardigan/coat/overshirt/shared assets/shape-aware contacts;combat authored;
+anatomical station hands/planted feet/bench fit.
+build-default-npc-3d-model.py/refresh-default-npc-damage.py validators passed.
+OrdinaryWorker_ModularOutfitsCoverLayersAndSurviveVisibilityChanges and
+AreaCaptureFixture.DefaultNpcWardrobe passed; station arms reviewed.
+DefaultNpcDriverGrip passed/reviewed: sewn ankle/open collar/fresh manual skin matrices.
+Separate import: BodyNpc/CLO_Outer_cardiganBody affine-basis fails pre-skin; hashes/coords checked; unresolved.
 
 ## 2026-10-21
 

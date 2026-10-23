@@ -17,6 +17,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarBartenderAssetRegistry : MonoBehaviour
     {
+        public const float WipeMenuClearance = .015f;
         private VillageResidentPresentation actor;
         private MountainRoadCafeCastAssetRegistry serviceClips;
         private CityPedestrianHandPropRegistry serviceTowel;
@@ -28,6 +29,12 @@ namespace BarPromenade
         private Vector3 towelRearPlaneInPelvis, towelRearNormalInPelvis;
         private Plane wipeSurface;
         private bool hasWipeSurface;
+        private Bounds counterSurfaceBounds;
+        private Bounds wipeStrokeInActor;
+        private Vector3[] wipeShoulderFromClavicle = Array.Empty<Vector3>();
+        private Vector3[] wipeWristFromClavicle = Array.Empty<Vector3>();
+        private bool hasWipeStrokeBounds;
+        private BarDrinkServiceView serviceView;
 
         public VillageResidentPresentation Actor => actor;
         public Animator Animator => actor.Animator;
@@ -61,6 +68,7 @@ namespace BarPromenade
         public Transform RightGripSocket => actor.RightGrip;
         public Transform RightBottleSocket { get; private set; }
         public Transform VesselGripAnchor { get; private set; }
+        public Transform MenuGripAnchor { get; private set; }
         public Transform BottleGripAnchor { get; private set; }
         public string DesignId { get; private set; }
         public Vector3 TowelCentreInHand { get; private set; }
@@ -83,6 +91,33 @@ namespace BarPromenade
         }
         public float TowelWipeContactError => hasWipeSurface
             ? Mathf.Abs(ResolveLowestTowelWipeCorner()) : float.PositiveInfinity;
+        /// <summary>The mounted cloth's conservative renderer footprint used for wood and menu contact.</summary>
+        public Bounds TowelWipeWorldBounds
+        {
+            get
+            {
+                var bounds = new Bounds(LeftGripSocket.TransformPoint(towelBoundsInGrip[0]), Vector3.zero);
+                for (int index = 1; index < towelBoundsInGrip.Length; index++)
+                    bounds.Encapsulate(LeftGripSocket.TransformPoint(towelBoundsInGrip[index]));
+                return bounds;
+            }
+        }
+        public bool HasWipeStrokeBounds => hasWipeStrokeBounds;
+        public bool HasSafeWipePatch => !hasWipeStrokeBounds ||
+            TryResolveMenuClearanceOffset(ResolveWipeStrokeBounds(), true, out _);
+        public Vector3 WipeStrokeOffset => hasWipeStrokeBounds &&
+            TryResolveMenuClearanceOffset(ResolveWipeStrokeBounds(), true, out Vector3 offset) ? offset : Vector3.zero;
+        public Bounds WipeStrokeWorldBounds
+        {
+            get
+            {
+                Bounds bounds = ResolveWipeStrokeBounds();
+                if (TryResolveMenuClearanceOffset(bounds, true, out Vector3 offset)) bounds.center += offset;
+                return bounds;
+            }
+        }
+        internal bool RightHandCarriesBottle => serviceView != null && serviceView.IsCarriedBottleVisible;
+        internal bool HasCounterSurface => hasWipeSurface;
 
         public void Configure(VillageResidentPresentation character)
         {
@@ -120,6 +155,7 @@ namespace BarPromenade
                 throw new InvalidOperationException("The default bartender needs its shared authored hand grips.");
             VesselGripAnchor = CreateAnatomicalGrip(LeftHand, true,
                 "Bar Left Vessel Grasp Centre");
+            MenuGripAnchor = CreateMenuGrip();
             BottleGripAnchor = CreateAnatomicalGrip(RightHand, false,
                 "Bar Right Bottle Grasp Centre");
             renderers = actor.GetComponentsInChildren<Renderer>(true);
@@ -142,6 +178,18 @@ namespace BarPromenade
             return grip;
         }
 
+        private Transform CreateMenuGrip()
+        {
+            AnatomicalHandFrame frame = HandPose.GetAnatomicalFrame(true);
+            Quaternion supportHand = frame.ResolveHandRotation(transform.up, transform.forward);
+            Quaternion booklet = Quaternion.LookRotation(-transform.forward, transform.up);
+            var grip = new GameObject("Bar Left Menu Edge Grasp").transform;
+            grip.SetPositionAndRotation(VesselGripAnchor.position,
+                LeftHand.rotation * Quaternion.Inverse(supportHand) * booklet);
+            grip.SetParent(LeftHand, true);
+            return grip;
+        }
+
         public void ConfigureGripKind(bool isLeft, NpcHandGripKind kind)
         {
             Transform hand = isLeft ? LeftHand : RightHand;
@@ -156,9 +204,139 @@ namespace BarPromenade
             if (counterSurface == null)
                 throw new ArgumentNullException(nameof(counterSurface));
             Bounds bounds = counterSurface.bounds;
+            counterSurfaceBounds = bounds;
             wipeSurface = new Plane(Vector3.up,
                 new Vector3(bounds.center.x, bounds.max.y, bounds.center.z));
             hasWipeSurface = true;
+        }
+
+        // The service view already owns and caches the real closed menu's
+        // renderers. Share that measured obstacle with ordinary counter work.
+        public void ConfigureServiceView(BarDrinkServiceView view) => serviceView = view;
+
+        internal bool TryResolveWorkPatchTarget(int patchIndex, out Vector3 rootWorldPosition)
+        {
+            rootWorldPosition = transform.position;
+            if (!hasWipeSurface || !hasWipeStrokeBounds) return false;
+            Bounds stroke = ResolveWipeStrokeBounds();
+            bool alongX = counterSurfaceBounds.size.x >= counterSurfaceBounds.size.z;
+            float root = alongX ? transform.position.x : transform.position.z;
+            float minimum = (alongX ? counterSurfaceBounds.min.x - stroke.min.x
+                : counterSurfaceBounds.min.z - stroke.min.z) + root + WipeMenuClearance;
+            float maximum = (alongX ? counterSurfaceBounds.max.x - stroke.max.x
+                : counterSurfaceBounds.max.z - stroke.max.z) + root - WipeMenuClearance;
+            float bodyRadius = Vector3.Distance(LeftUpperArm.position, RightUpperArm.position) * .7f;
+            minimum = Mathf.Max(minimum, (alongX ? counterSurfaceBounds.min.x : counterSurfaceBounds.min.z) + bodyRadius);
+            maximum = Mathf.Min(maximum, (alongX ? counterSurfaceBounds.max.x : counterSurfaceBounds.max.z) - bodyRadius);
+            if (maximum - minimum < .5f) return false;
+            float fraction = patchIndex == 0 ? .25f : patchIndex == 1 ? .75f : .5f;
+            float target = Mathf.Lerp(minimum, maximum, fraction);
+            Vector3 offset = (alongX ? Vector3.right : Vector3.forward) * (target - root);
+            Bounds moved = stroke;
+            moved.center += offset;
+            if (!TryResolveMenuClearanceOffset(moved, true, out _)) return false;
+            rootWorldPosition += offset;
+            return true;
+        }
+
+        internal bool TryGetCounterSurfaceHeight(out float height)
+        { height = counterSurfaceBounds.max.y; return hasWipeSurface; }
+
+        internal void CacheWipeStrokeBounds(Bounds actorLocalBounds,
+            Vector3[] shoulderFromClavicle, Vector3[] wristFromClavicle)
+        {
+            wipeStrokeInActor = actorLocalBounds;
+            wipeShoulderFromClavicle = shoulderFromClavicle;
+            wipeWristFromClavicle = wristFromClavicle;
+            hasWipeStrokeBounds = true;
+        }
+
+        private Bounds ResolveWipeStrokeBounds()
+        {
+            if (!hasWipeStrokeBounds) return default;
+            Bounds world = new Bounds(transform.TransformPoint(wipeStrokeInActor.center), Vector3.zero);
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 signs = new Vector3((corner & 1) == 0 ? -1f : 1f,
+                    (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f);
+                world.Encapsulate(transform.TransformPoint(wipeStrokeInActor.center +
+                    Vector3.Scale(wipeStrokeInActor.extents, signs)));
+            }
+            return world;
+        }
+
+        private bool TryResolveMenuClearanceOffset(Bounds footprint, bool checkArmReach, out Vector3 offset)
+        {
+            offset = Vector3.zero;
+            if (!hasWipeSurface || serviceView == null ||
+                !serviceView.TryGetCounterMenuBounds(out Bounds menu)) return true;
+            if (footprint.max.x < menu.min.x - WipeMenuClearance ||
+                footprint.min.x > menu.max.x + WipeMenuClearance ||
+                footprint.max.z < menu.min.z - WipeMenuClearance ||
+                footprint.min.z > menu.max.z + WipeMenuClearance) return true;
+
+            // Move the entire cached stroke to one side of the book. Its
+            // offset depends on the fixed sweep envelope, never the current
+            // hand position, so alternate strokes cannot switch book sides.
+            float bestDistance = float.PositiveInfinity;
+            for (int axis = 0; axis < 2; axis++)
+            {
+                bool alongX = axis == 0;
+                float strokeMin = alongX ? footprint.min.x : footprint.min.z;
+                float strokeMax = alongX ? footprint.max.x : footprint.max.z;
+                float menuMin = alongX ? menu.min.x : menu.min.z;
+                float menuMax = alongX ? menu.max.x : menu.max.z;
+                for (int side = 0; side < 2; side++)
+                {
+                    float distance = side == 0 ? menuMin - WipeMenuClearance - strokeMax
+                        : menuMax + WipeMenuClearance - strokeMin;
+                    Vector3 candidate = (alongX ? Vector3.right : Vector3.forward) * distance;
+                    Bounds moved = footprint;
+                    moved.center += candidate;
+                    if (moved.min.x < counterSurfaceBounds.min.x - .0001f || moved.max.x > counterSurfaceBounds.max.x + .0001f ||
+                        moved.min.z < counterSurfaceBounds.min.z - .0001f || moved.max.z > counterSurfaceBounds.max.z + .0001f ||
+                        (checkArmReach && !CanReachWipeStroke(candidate)) || Mathf.Abs(distance) >= bestDistance) continue;
+                    offset = candidate;
+                    bestDistance = Mathf.Abs(distance);
+                }
+            }
+            return float.IsFinite(bestDistance);
+        }
+
+        private bool CanReachWipeStroke(Vector3 offset)
+        {
+            float reach = LimbTwoBoneIk.ChainLength(LeftUpperArm, LeftForearm, LeftHand) * .98f;
+            for (int index = 0; index < wipeWristFromClavicle.Length; index++)
+            {
+                Vector3 shoulder = transform.TransformVector(wipeShoulderFromClavicle[index]);
+                Vector3 target = transform.TransformVector(wipeWristFromClavicle[index]) + offset;
+                if ((target - shoulder).sqrMagnitude <= reach * reach) continue;
+                Vector3 axis = Vector3.Cross(shoulder, target);
+                if (axis.sqrMagnitude < .000001f) return false;
+                // Match the actual protraction direction and limit. A
+                // spherical allowance can admit an unreachable outward wipe
+                // and let the solver shorten it back onto the book.
+                float angle = Mathf.Min(BarBartenderPresentation.MaximumClavicleReachDegrees,
+                    Vector3.Angle(shoulder, target));
+                Vector3 guided = Quaternion.AngleAxis(angle, axis.normalized) * shoulder;
+                if ((target - guided).sqrMagnitude > reach * reach) return false;
+            }
+            return true;
+        }
+
+        internal bool TryResolveCounterSupportTarget(Vector3 desired, float palmRadius, out Vector3 target)
+        {
+            target = desired;
+            if (!hasWipeSurface) return false;
+            target.x = Mathf.Clamp(target.x, counterSurfaceBounds.min.x + palmRadius,
+                counterSurfaceBounds.max.x - palmRadius);
+            target.z = Mathf.Clamp(target.z, counterSurfaceBounds.min.z + palmRadius,
+                counterSurfaceBounds.max.z - palmRadius);
+            target.y = counterSurfaceBounds.max.y;
+            if (!TryResolveMenuClearanceOffset(new Bounds(target,
+                new Vector3(palmRadius * 2f, 0f, palmRadius * 2f)), false, out Vector3 offset)) return false;
+            target += offset;
+            return true;
         }
 
         private void CacheTowelBounds()
@@ -313,15 +491,16 @@ namespace BarPromenade
             return vertices;
         }
 
-        internal bool TryResolveWipeHandTarget(out Vector3 target)
+        internal bool TryResolveWipeHandTarget(out Vector3 target, bool translateStroke = false)
         {
             target = VesselGripAnchor.position;
             if (!hasWipeSurface || towelBoundsInGrip.Length == 0)
                 return false;
             float lowest = ResolveLowestTowelWipeCorner();
-            if (Mathf.Abs(lowest) < 0.0005f)
+            Vector3 offset = translateStroke ? WipeStrokeOffset : Vector3.zero;
+            if (Mathf.Abs(lowest) < 0.0005f && offset.sqrMagnitude < .00000001f)
                 return false;
-            target -= wipeSurface.normal * lowest;
+            target += offset - wipeSurface.normal * lowest;
             return true;
         }
 

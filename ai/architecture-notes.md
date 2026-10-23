@@ -1,6 +1,25 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-22, bar/refill — user:**
+  Fan(0,2.55,-.65),20°/s;brassØ18/beam65mm;rotor kept.
+  FreeR brace/move/Notice;IK/Walk/towel win.
+  Wipe:stable/reach≥15mm book;blocked→rear stow/wait;
+  Walk/draw;menu palm ahead torso.
+  Menu/emptyE→FPS L forward wave→flat R palm/fist/2 index MCP taps;
+  No wood;complete→pay/left receipt+cue/FIFO(hero+2).
+  Cups:distinct sip drain/Lwave/refill;7 kept.
+  Look/nod;service kept.
+  Beer repeat:R offer→tap/planted retract/guest;NPCoffer/pullback;others bottle→return.
+  Effects/menu disposal;drink±12/±10;request seated±70/−25…55.
+- **Accepted 2026-10-22, default male figures — user:**
+  Read-only hero anatomy→NPC rig;own identity/actions.
+  `NpcWardrobe`:21civilian items/8slots/3presets;coverage/folds/ease.
+  Population:independent stable160–185cm/build0–1 before contacts.
+  Roles may fix height if contacts fail;none fixed.
+  `DefaultNpcBodyShape`:proportional scale;Slim/Chubby belly/clothes;
+  pool restore/shared assets/bounds;contact invalidation.
+  Hero/bespoke/combat kept;stations:anatomical hands/planted feet;bench fits stature.
 - **Accepted 2026-10-21, bar music pocket — user:** No
   Cocktail/SplitTheG/TinctureMatch console/three vessels in any layout.
   Jukebox `(5,0,-.65)`, yaw180/front `-X` into hall; grille audio/collision/pulses follow.
@@ -10,38 +29,32 @@
   BeerPong Rect `(3.85,-1.75,.76,1.83)`, IDs/assignments stay.
   24 effects: existing providers/source bounds; no new fiction/effects/karaoke action.
 - **Accepted exception 2026-10-21, compact bar rebuild — explicit user decision:**
-  Hall `11.4 x 7.8 x 3 m` including shell/door fits the facade.
-  Blender owns joinery; pure plans own collision/service.
+  Hall11.4x7.8x3m incl.shell/door fits facade; Blender joinery/plans collision-service.
   Counter left cut .9m to X-2.1; right X3.85/return/taps/backbar stay.
-  Five stools (three free), left guest X-1.65; hero X-.75 stays.
-  Two booths/four facing bench sitters, three round tables,
-  three right-end taps; `pub-table-right-rear` at `(4.85,2.95)` removed.
-  Booth centres X-4.38/Z-2.15,.65, footprint2.05x2.8; table1.05x.85;
-  front/back benches Z-.95/+.95 face +Z/-Z, one visitor each.
-  Nine ID-free visitors all drink. Each entry rerolls body/face/hair/wardrobe and
-  a balanced Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared assets;
-  appearances are unique within visit; permanent roster stays.
-  Both bespoke bartender families/assets/tools deleted.
-  `DefaultNpcPopulation.BarBartender` sorts after prior roster; `DefaultNpcFactory`
-  selects OrdinaryWorker/work wardrobe. Direct loads use Residential.
-  One graph owns cafe clips/Walk/towel; default graph released. The same arm
-  hides/reveals the towel only with its hand behind the back, then resumes action
-  or wiping (explicit user simplification). Anatomy orients authored grip centres; fingers
-  close after animation. Wine/snifter use cupped grips, shot its body, beer its handle.
-  Shared IK caps torso. Hero leans/grips/carries to exact counter support.
-  Next order: pickup, .25m straight back/facing held, vertical lower.
-  Free right palm braces fixed top point; hide only below/guest-occluded,
-  then fetch next. Payment/consume/cleanup stay; hand-sized vessel bounds/
-  lift-transfer-lower; prep opposite menu.
-  Unique opaque UV0/albedo/slopes-roughness-cavity, metre UV1; special glass/
-  emission/menu/service and shared materials stay. Six practicals/one key shadow,
-  two finite bounces/one bounded 256 HDR reflection, shared invalidation/cleanup.
-  No SSR; SCGI fixture-only. Lower fill/Neutral/clear air/sparse dust.
-  All 24 effects reviewed: GI/SSAO/shadows/grade/probe/material fit; no water/
-  fan rays/indoor wind/rim/new flares/motion-blur provider. Atlas wear/bevels/
-  normals; vertex channels reserved. Gaze/SMAA/grain/intoxication stay;
-  restrained bloom/vignette/room-menu DOF; dither only for banding. Costs unmeasured.
-  No new fiction/text/clue; story §16/§21 and nine art §16 checks apply.
+  5stools/3free; guest X-1.65/hero X-.75 kept.
+  2opposed booths/4sitters,3round tables/3right-end taps;
+  `pub-table-right-rear` at `(4.85,2.95)` removed.
+  Booths X-4.38/Z-2.15,.65:2.05x2.8/table1.05x.85;
+  benches Z±.95 face∓Z, one visitor each.
+  Nine ID-free drinkers: per-entry unique body/face/hair/clothes;
+  balanced shared Bottle/Pint/WineGlass/ShotGlass/Snifter bag; permanent roster stays.
+  Old bespoke assets/tools gone. Bartender ID sorts after prior roster;
+  factory OrdinaryWorker/work; direct Residential.
+  Cafe clips/Walk/towel replace default graph. User: same rear hand hides/draws
+  towel before action/Wipe. Post-animation anatomical grasps/fingers:
+  wine/snifter cup, shot body, beer handle.
+  IK torso cap; hero lean/grip/carry to exact support.
+  Different menu order: pickup/facing held, .25m straight back, vertical lower.
+  R palm fixed top brace; hide below/guest-occluded before fetching next;
+  payment/consume/cleanup stay. Hand-sized bounds/lift-transfer-lower; prep opposite menu.
+  Opaque UV0:unique albedo/slopes/roughness/cavity; metre UV1.
+  Shared glass/emission/menu/service;6practicals/1key shadow,2finite bounces/
+  1bounded256 HDR probe/shared invalidation-cleanup.
+  No SSR; SCGI fixture-only; low fill/Neutral/clear air/sparse dust.
+  24-effect audit: wear/bevel normals/reserved vertex channels, gaze/SMAA/grain/
+  intoxication/bloom/vignette/room-menu DOF stay; dither only for banding.
+  No water/rays/indoor wind/rim/flare/blur, fiction/text/clues or measured gains.
+  Story §16/§21; all nine art §16 checks apply.
 - **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
   Every scene change follows `ai/visual-effects-standard.md`: all three groups,
   now including SSR/SSGI/SCGI. Coverage/fit/cost audit, not all-on/canon override.
@@ -824,23 +837,17 @@
   library never roams (`pool_eligible=false`,resolvable prefab).
 
 - **Accepted — 2026-09-15, default NPC catalog:**
-  `DefaultNpcCatalog`:allowlist;bespoke/pool extensions:user request.
-  `DefaultNpcPopulation`:permanent IDs/model/garments;sorted global pre-spawn
-  assignment;stable hash/no repeated model-face-hair-clothes until exhausted,
-  then balanced;load/order-independent/no local RNG.
-  `DefaultNpcFactory.CreateForCharacter`;raw Create:authoring/legacy;rig/footsteps set.
-  `ordinary-worker-v1` (`VillageLife/OrdinaryWorker`):4fair/5port/2factory/driver/
-  village workers;same prefab/GUID;resource address≠source FBX.
+  `DefaultNpcCatalog`:allowlist;extensions/bespoke:user request.
+  `DefaultNpcPopulation`:IDs/model/garments;global sorted stable hash;
+  unique model/face/hair/clothes until exhausted then balanced;load/order-independent.
+  `DefaultNpcFactory.CreateForCharacter`;raw Create:authoring/rig/steps.
+  `ordinary-worker-v1`:prefab/GUID kept;resource≠FBX.
 
 - **Accepted — 2026-09-15, modular default worker:**
-  Prefab/GUID/31bones/grips/actions kept;Hero/NPChands:+20% reach-width,
-  slimdepth-girth/wristsfixed. `NpcWardrobe`:8slots/18items/3presets/
-  coverage-restore/8000worntris. `DefaultNpcAppearance`:4faces/
-  gray-brunette-blond hair-brows-beards/12sharedatlases.
-  `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup`;art§15/cast-lore-speech-§6 kept.
-  Truck/bench trouser-seat cache;armIK elbows rig-down/out(lateral poles stretch sleeves).
-  `NpcHandPose`:bare-glovedcylindergrips/reset/prefabshapes-frames;
-  truckrim-column:driver-facingaxis/opposedpalms.
+  Same prefab/GUID/31bones/actions;Hero/NPChands:+20% reach-width/slimdepth,
+  wristsfixed.4faces/3haircolors/12atlases;8000worntris.
+  `NpcHandPose`:bare/gloved cylinder/reset;truck-facingaxis/opposedpalms;
+  armIK elbows rig-down/out.
 
 - **Accepted — 2026-09-15, Nightlife fair:**
   Art §9/story §18: four staffed displays, organ/bell, two seats/three garlands;

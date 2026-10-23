@@ -354,6 +354,12 @@ namespace BarPromenade
             return true;
         }
 
+        internal void SelectServiceVessel(BarDrinkVesselView vessel)
+        {
+            activeVessel = vessel;
+            if (vessel != null) vessel.gameObject.SetActive(true);
+        }
+
         public void SetSelectionPresentation(float amount)
         {
             selectedBottle?.SetShelfPresentation(amount);
@@ -560,30 +566,32 @@ namespace BarPromenade
                     bottleUp);
             }
 
-            Vector3 underside = Vector3.ProjectOnPlane(
-                Vector3.down,
+            // As the bottle tips, grasp the neck from above with the palm
+            // facing down, rather than carrying it on an upturned palm.
+            Vector3 overhand = Vector3.ProjectOnPlane(
+                Vector3.up,
                 bottleUp);
-            if (underside.sqrMagnitude < 0.000001f)
+            if (overhand.sqrMagnitude < 0.000001f)
             {
-                underside = towardHolder;
+                overhand = towardHolder;
             }
 
             towardHolder.Normalize();
-            underside.Normalize();
+            overhand.Normalize();
             float horizontal = 1f - Mathf.Abs(
                 Vector3.Dot(bottleUp.normalized, Vector3.up));
-            float undersideWeight = Mathf.SmoothStep(
+            float overhandWeight = Mathf.SmoothStep(
                 0f,
                 1f,
                 Mathf.InverseLerp(0.35f, 0.75f, horizontal));
             Vector3 radial = Vector3.Lerp(
                 towardHolder,
-                underside,
-                undersideWeight);
+                overhand,
+                overhandWeight);
             if (radial.sqrMagnitude < 0.000001f)
             {
-                radial = underside.sqrMagnitude > 0.000001f
-                    ? underside
+                radial = overhand.sqrMagnitude > 0.000001f
+                    ? overhand
                     : Vector3.forward;
             }
 
@@ -706,6 +714,28 @@ namespace BarPromenade
                 }
             }
 
+            return found;
+        }
+
+        public bool TryGetCounterMenuBounds(out Bounds bounds)
+        {
+            bounds = default;
+            if (menuPresentation == null || !menuPresentation.IsPlaced ||
+                !menuPresentation.IsVisible || menuPresentation.Page == null)
+                return false;
+
+            IReadOnlyList<Renderer> renderers = menuPresentation.IsRestingOnCounter
+                ? menuPresentation.Page.RestingPropRenderers
+                : menuPresentation.Page.PropRenderers;
+            bool found = false;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy) continue;
+                if (!found) { bounds = renderer.bounds; found = true; }
+                else bounds.Encapsulate(renderer.bounds);
+            }
             return found;
         }
 

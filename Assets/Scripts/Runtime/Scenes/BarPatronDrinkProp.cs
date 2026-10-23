@@ -25,6 +25,7 @@ namespace BarPromenade
             Transform mouth,
             BarDrinkVesselView vessel,
             BarPatronDrinkPropKind kind,
+            DrinkId drinkId,
             Vector3 gripLocalPosition,
             Vector3 rimLocalPosition,
             Bounds physicalLocalBounds)
@@ -33,6 +34,7 @@ namespace BarPromenade
             Mouth = mouth != null ? mouth : throw new ArgumentNullException(nameof(mouth));
             Vessel = vessel;
             Kind = kind;
+            DrinkId = drinkId;
             GripLocalPosition = gripLocalPosition;
             RimLocalPosition = rimLocalPosition;
             PhysicalLocalBounds = physicalLocalBounds;
@@ -77,6 +79,7 @@ namespace BarPromenade
         public Transform Mouth { get; }
         public BarDrinkVesselView Vessel { get; }
         public BarPatronDrinkPropKind Kind { get; }
+        public DrinkId DrinkId { get; }
         public NpcHandGripKind GripKind { get; }
         public Vector3 GripLocalPosition { get; }
         public Vector3 RimLocalPosition { get; }
@@ -130,7 +133,7 @@ namespace BarPromenade
                     grip = InRotationSpace(root, vessel.GripWorldPosition);
                 }
 
-                return new BarPatronDrinkProp(root, mouth, vessel, kind, grip,
+                return new BarPatronDrinkProp(root, mouth, vessel, kind, drink.DrinkId, grip,
                     InRotationSpace(root, mouth.position), MeasureBounds(root,
                         vessel != null ? vessel.InteractionHighlightRenderer : null));
             }

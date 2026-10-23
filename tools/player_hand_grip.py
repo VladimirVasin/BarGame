@@ -9,12 +9,14 @@ import hashlib
 import copy
 import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
 from mathutils import Matrix, Vector
 from mathutils.geometry import closest_point_on_tri
 import hand_bowl_grip
+import player_hand_gestures
 
 SHAPE = "CylindricalGrip"
 RADIUS = .022
@@ -142,6 +144,7 @@ def author(result, scale=1.):
                 result.grip_root_indices[name]=[i for i,value in enumerate(fractions) if value-minimum<1e-6]
             _shape(obj, matrix, _bend(points, start, end, centres))
     author_bowls(result, scale)
+    player_hand_gestures.author(result, scale, sys.modules[__name__])
     bpy.context.view_layer.update()
     return validate(result, scale)
 
@@ -238,7 +241,8 @@ def validate(result, scale=1.):
             keys = obj.data.shape_keys.key_blocks
             joint_keys={row["corrective_shape"] for row in getattr(result,"joint_surfaces",{}).get("seams",())
                         if name in row["renderers"] and row.get("corrective_shape")}
-            if set(keys.keys()) != {"Basis",SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS),*joint_keys} or any(key.value!=0 for key in keys if key.name!="Basis"):
+            if set(keys.keys()) != {"Basis",SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS),*joint_keys,
+                                    *player_hand_gestures.shape_names(name)} or any(key.value!=0 for key in keys if key.name!="Basis"):
                 raise RuntimeError("Missing neutral authored hand shape: " + name)
             if any((vertex.co-keys["Basis"].data[vertex.index].co).length>1e-8 for vertex in obj.data.vertices):
                 raise RuntimeError("Hand grip changed neutral geometry: " + name)
@@ -271,7 +275,9 @@ def validate(result, scale=1.):
                        if (point-wrist).dot(direction)<=.038*scale):
                     raise RuntimeError("Grip moved the wrist: " + name)
     bowls = validate_bowls(result,scale,parts)
+    gestures = player_hand_gestures.validate(result, scale, sys.modules[__name__])
     return {"surface_clearances_m":clearances,"far_side_reach_m":far_sides,**bowls,
+            "pointing_gesture":gestures,
             "finger_root_surface_gaps_m":root_gaps,
             "neutral_vertices_unchanged":True,"wrist_unchanged":True}
 
@@ -343,6 +349,8 @@ def manifest(result, scale=1.):
                          "hands":variant_hands,"shape_signature":hashlib.sha256(
                              json.dumps(geometry,sort_keys=True).encode()).hexdigest()})
     if variants:payload["variants"]=variants
+    gestures = player_hand_gestures.manifest(result, scale, sys.modules[__name__])
+    if gestures is not None: payload["gestures"] = gestures
     return payload
 
 
@@ -361,8 +369,12 @@ def refresh(module, config):
     ordered += [name for chain in original["hair"]["chains"] for name in chain["renderers"]]
     order = {name:index for index,name in enumerate(ordered)}
     parts.sort(key=lambda part:order.get(part.obj.name,len(order)))
+    missing_actions = {row["name"] for row in original["actions"] if row["name"] not in bpy.data.actions}
+    if missing_actions - set(module.player_counter_seat_actions.NAMES):
+        raise RuntimeError("Production hero source is missing unrelated actions: " + repr(sorted(missing_actions)))
     actions = {row["name"]:module.common.ActionRecord(bpy.data.actions[row["name"]],row["category"],row["duration_seconds"],
-                row["loop"],row["source_frame_count"],row["source_fps"]) for row in original["actions"]}
+                row["loop"],row["source_frame_count"],row["source_fps"]) for row in original["actions"]
+               if row["name"] not in missing_actions}
     result=module.common.BuildResult(rig.parent,rig,{}, {},parts=parts,actions=actions)
     # BuildResult is reconstructed from the saved source, so restore the
     # existing authored joint records too. They participate in the complete
@@ -374,12 +386,22 @@ def refresh(module, config):
         ("ANCHOR_HandGrip","ANCHOR_WineBowlGrip","ANCHOR_SnifterBowlGrip"))]
     builder=module.HeroV2Builder(config,module.DEFAULT_FACE_ATLAS,module.DEFAULT_CLOTHING_ATLAS)
     builder.result=result
+    if missing_actions:
+        # The published counter manifest can outlive orphaned Blender actions.
+        # Recover only that finite bank; the complete existing signature below
+        # must still match before any new hand shape is authored.
+        module.player_counter_seat_actions.build(builder, module.common)
+        print("Recovered orphaned counter takes for exact manifest verification: " + repr(sorted(missing_actions)), flush=True)
     builder._reset_pose()
     hashes=(original["face_atlas"]["sha256"],original["texture_bindings"][0]["sha256"],original["bare_skin_atlas"]["sha256"])
     signature=lambda:module.content_signature(config,result,*hashes)
     if signature()!=original["content_signature_sha256"]:
         raise RuntimeError("Production hero source differs from its manifest; refusing a stale source refresh: " + signature())
     preserved_morphs=_non_hand_morphs(result)
+    old_hand_shapes = {record.obj.name: {key.name: [tuple(vertex.co) for vertex in key.data]
+                       for key in record.obj.data.shape_keys.key_blocks
+                       if key.name not in player_hand_gestures.shape_names(record.obj.name)}
+                       for record in result.parts if record.obj.name in player_hand_gestures.NAMES}
     # The existing signature covers all basis meshes, topology, weights,
     # materials, bones and curves. Removing only the new contact record later
     # must reproduce it exactly.
@@ -400,6 +422,11 @@ def refresh(module, config):
         raise RuntimeError("Hand refresh altered the original hero basis, rig or animation bank")
     if _non_hand_morphs(result)!=preserved_morphs:
         raise RuntimeError("Hand refresh altered an existing non-hand morph")
+    for name, shapes in old_hand_shapes.items():
+        for shape, points in shapes.items():
+            current = bpy.data.objects[name].data.shape_keys.key_blocks[shape].data
+            if any((vertex.co-Vector(point)).length > 1e-8 for vertex, point in zip(current, points)):
+                raise RuntimeError("Gesture refresh altered an existing hand shape: " + name + ":" + shape)
     original["object_count"]=len(result.export_objects)
     original["hand_grip"]={**first,"validation":measured}
     original["hand_grip_authoring_sha256"]=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -412,12 +439,16 @@ def refresh(module, config):
     # Keep the production hero's joint-surface modifier/custom-normal policy.
     # A generic writer changes imported split vertices outside the hand meshes
     # and invalidates the prefab's authored cloth vertex bindings.
+    gesture_profile = player_hand_gestures.export_profile(result)
     module.export_model_fbx(config.fbx,result)
+    for record in result.actions.values(): record.action.use_fake_user = True
     bpy.context.preferences.filepaths.save_version=0
-    module.common.save_blend(config.output)
+    config.output.parent.mkdir(parents=True, exist_ok=True)
+    # Staged source publication retains the original canonical image links.
+    bpy.ops.wm.save_as_mainfile(filepath=str(config.output.resolve()), check_existing=False, relative_remap=False)
     config.manifest.parent.mkdir(parents=True,exist_ok=True)
     config.manifest.write_text(json.dumps(original,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    validate_export(config.fbx, first, preserved_morphs)
+    validate_export(config.fbx, first, preserved_morphs, gesture_profile)
     print("Hero cylinder/bowl grips: deterministic shapes/anchors; unchanged neutral mesh, rig and actions",flush=True)
     print(json.dumps(measured),flush=True)
 
@@ -436,10 +467,12 @@ def _non_hand_morphs(result):
     return result_profiles
 
 
-def validate_export(path, catalog, preserved_morphs=None):
+def validate_export(path, catalog, preserved_morphs=None, gesture_profile=None):
     """Published model must carry the shapes through the actual FBX writer."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(path), use_anim=False)
+    if gesture_profile is not None:
+        player_hand_gestures.validate_export(gesture_profile, bpy.data.objects)
     for profile in (catalog,*catalog.get("variants",())):
         for hand in profile["hands"]:
             for name in hand["renderers"]:

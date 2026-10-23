@@ -59,14 +59,12 @@ namespace BarPromenade
             }
 
             string[] names = { "Captain", "Deckhand", "West Crane Operator", "East Crane Operator", "Quay Worker" };
-            float[] scales = { 1f, .97f, 1.015f, .985f, 1f };
             for (int i = 0; i < crew.workers.Length; i++)
             {
                 // The default prefab contains only the passive rig/presentation.
                 // No village life controller, greeting or interaction is installed.
                 var actor = DefaultNpcFactory.CreateForCharacter(host.transform, DefaultNpcPopulation.PortWorkerId(i));
                 actor.name = names[i];
-                actor.transform.localScale *= scales[i];
                 AlignWorkerModelWithPlacement(actor);
                 if (i == 1 || i == 4) actor.ConfigureFreeRun(run.Clip, hero.Animator);
                 // As for the village's ordinary residents, the Default-layer

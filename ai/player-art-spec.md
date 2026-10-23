@@ -207,6 +207,9 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Animation contract
 
+- Accepted `2026-10-22`, bar repeat: left attention wave, then flat right palm/fist; only the straight
+  index MCP taps. `hand_grip.gestures`:PointingFist/IndexTap05–60 on the same
+  hand meshes/rig, fixed wrist and no counter penetration; manual look stays.
 - Accepted `2026-10-14`, CombatTest: clean orbit/neutral14°/stable gun intent;
   Spine/Chest40/60/down35-up20/yaw20/roll6°/combined cap;orbit35→90 fade.
   Legs/root kept;owned actions/fall/rise win;Lchest lamp follows.

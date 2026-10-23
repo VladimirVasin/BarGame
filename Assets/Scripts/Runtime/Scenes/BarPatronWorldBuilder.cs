@@ -32,6 +32,7 @@ namespace BarPromenade
         /// One visit-owned drink shared by standing and seated guests.
         /// </summary>
         public BarPatronDrinkingArmPose Drinking { get; }
+        public BarCounterPatronRefill Refill => Drinking != null ? Drinking.CounterRefill : null;
     }
 
     /// <summary>
@@ -250,7 +251,8 @@ namespace BarPromenade
                         layout,
                         patronIndex,
                         surfaces["counter"],
-                        drinkKinds[patronIndex - 1]);
+                        drinkKinds[patronIndex - 1] == BarPatronDrinkPropKind.Bottle
+                            ? BarPatronDrinkPropKind.ShotGlass : drinkKinds[patronIndex - 1]);
                 }
                 else if (anchor.Role == BarNpcRole.StandingPatron ||
                          anchor.Role == BarNpcRole.SeatedPatron)

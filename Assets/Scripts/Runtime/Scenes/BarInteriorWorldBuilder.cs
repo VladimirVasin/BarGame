@@ -99,7 +99,7 @@ namespace BarPromenade
             //  builder holds no state between calls.
             Vector3 fanPivot = AnchorPosition(
                 registry, room, "ceiling_fan_pivot",
-                new Vector3(0f, 2.72f, -0.65f));
+                new Vector3(0f, 2.55f, -0.65f));
             Vector3 jukeboxPivot = AnchorPosition(
                 registry, room, "jukebox_pivot",
                 BarInteriorLayoutPlanner.JukeboxPosition);
@@ -911,7 +911,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarCeilingFan : MonoBehaviour
     {
-        [SerializeField] private float degreesPerSecond = 14f;
+        [SerializeField] private float degreesPerSecond = 20f;
 
         private void Update()
         {

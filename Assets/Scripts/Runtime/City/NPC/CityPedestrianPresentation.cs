@@ -55,6 +55,7 @@ namespace BarPromenade
         private Vector3 seatLocalUp;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
+        private DefaultNpcBodyShape defaultBodyShape;
         private CityPedestrianClipSource clipSource =
             CityPedestrianClipSource.Roaming;
         private AnimationClip activeIdleClip;
@@ -144,6 +145,9 @@ namespace BarPromenade
             registry = assetRegistry != null
                 ? assetRegistry
                 : throw new ArgumentNullException(nameof(assetRegistry));
+            var defaultBody = registry.GetComponent<CityPedestrianDefaultNpcBody>();
+            defaultBodyShape = defaultBody != null && defaultBody.Character != null
+                ? defaultBody.Character.GetComponent<DefaultNpcBodyShape>() : null;
             if (registry.Animator == null ||
                 registry.IdleClip == null ||
                 registry.WalkClip == null)
@@ -595,9 +599,10 @@ namespace BarPromenade
                 transform.up, seatUp) * baseRotation;
             Vector3 forward = Vector3.ProjectOnPlane(
                 transform.forward, seatUp).normalized;
+            float statureRatio = defaultBodyShape != null ? defaultBodyShape.HeightRatio : 1f;
             Vector3 target = seatAnchor.position +
-                (seatUp * seatedRide.SeatLift) -
-                (forward * seatedRide.SeatBackOffset);
+                (seatUp * (seatedRide.SeatLift * statureRatio)) -
+                (forward * (seatedRide.SeatBackOffset * statureRatio));
             registry.ModelRoot.position +=
                 target - registry.PelvisAnchor.position;
         }

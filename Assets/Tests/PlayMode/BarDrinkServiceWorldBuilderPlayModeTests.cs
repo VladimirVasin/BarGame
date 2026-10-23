@@ -292,10 +292,10 @@ namespace BarPromenade.Tests.PlayMode
                 view.CarriedBottleRoot.position, horizontal,
                 carrierObject.transform.position + Vector3.back);
             Assert.That(
-                Vector3.Dot(horizontalRadial.normalized, Vector3.down),
+                Vector3.Dot(horizontalRadial.normalized, Vector3.up),
                 Is.GreaterThan(0.99f),
-                "A horizontal bottle's palm-facing direction belongs below " +
-                "the bottle; this orientation must not offset its grip centre.");
+                "An overhand pour keeps the hand above the horizontal bottle " +
+                "with the palm facing down; this must not offset its grip centre.");
 
             Assert.That(source.transform.parent, Is.SameAs(sourceParent));
             Assert.That(source.transform.localPosition,

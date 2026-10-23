@@ -191,7 +191,7 @@ namespace BarPromenade.Tests.PlayMode
                 controller.FirstPersonArms.PresentationRoot.gameObject.activeSelf,
                 Is.True,
                 "The hidden attachment rig must remain active for the vessel.");
-            Assert.That(controller.RestPhysicalMenuAtCounter(), Is.True);
+            yield return VerifyMenuOrderMouseLook(station);
             Assert.That(station.Seat.IsSeated, Is.True,
                 "Closing the menu must not also stand the hero up.");
             Assert.That(station.Seat.RequestExit(), Is.True);
@@ -204,10 +204,20 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(station.Seat.Controller.IsActive, Is.False);
+            // Check the authored exit before this floorless fixture gives
+            // ordinary motor gravity another frame during menu retrieval.
+            Assert.That(
+                player.GameObject.transform.position,
+                Is.EqualTo(seatPlan.ExitPose.RootPosition)
+                    .Using(new UnityEngine.TestTools.Utils
+                        .Vector3EqualityComparer(0.01f)));
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+            // No bartender choreography exists in this isolated fixture;
+            // report its arrival before advancing the physical retrieval clock.
+            controller.ReportCounterServerAtTarget(true);
             controller.AdvancePresentation(
                 BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
             yield return null;
@@ -221,13 +231,127 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(player.Motor.InputEnabled, Is.True);
             Assert.That(player.Interactor.InputEnabled, Is.True);
             AssertPlayerVisualRestored();
-            // Bit-equal only while the controller has not moved him; a
-            // physics frame settles the capsule by less than a centimetre.
-            Assert.That(
-                player.GameObject.transform.position,
-                Is.EqualTo(seatPlan.ExitPose.RootPosition)
-                    .Using(new UnityEngine.TestTools.Utils
-                        .Vector3EqualityComparer(0.01f)));
+        }
+
+        private IEnumerator VerifyMenuOrderMouseLook(BarCounterStation station)
+        {
+            // This isolated service fixture omits the room. Supply the real
+            // planner's countertop footprint/height for its physical hand contact.
+            BarInteriorLayoutPlan layout = BarInteriorLayoutPlanner.Generate(
+                20260731, "physical-drink-shop-test", BarActivityKind.Cocktail);
+            var countertop = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            countertop.name = "Test menu order counter surface";
+            countertop.transform.SetParent(worldObject.transform, false);
+            countertop.transform.localPosition = layout.CounterPosition +
+                Vector3.up * (layout.CounterSize.y * .5f + .08f);
+            countertop.transform.localScale = new Vector3(
+                layout.CounterSize.x + .45f, .16f, layout.CounterSize.z + .32f);
+            Object.Destroy(countertop.GetComponent<Collider>());
+            serviceView.ConfigureCounterSurface(countertop.GetComponent<Renderer>());
+            CounterSeatView view = station.SeatView;
+            float deadline = Time.realtimeSinceStartup + 3f;
+            while ((!controller.IsBrowsing || !view.IsMenuFocusComplete ||
+                    controller.MenuPresentation.Page.FoldAmount > .001f) &&
+                   Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(controller.IsBrowsing && view.IsMenuFocusComplete, Is.True,
+                "Confirm the real open menu before checking its order gesture.");
+
+            inputFixture = new InputTestFixture();
+            inputFixture.Setup();
+            var mouse = InputSystem.AddDevice<Mouse>("Test menu order mouse look");
+            bool previousFocus = GameCursor.ApplicationFocused;
+            bool previousBackground = Application.runInBackground;
+            InputSettings settings = InputSystem.settings;
+            InputSettings.BackgroundBehavior previousBackgroundBehavior = settings.backgroundBehavior;
+            InputSettings.EditorInputBehaviorInPlayMode previousEditorInput = settings.editorInputBehaviorInPlayMode;
+            float previousTimeScale = Time.timeScale;
+            void OwnMouse()
+            {
+                mouse.MakeCurrent();
+                GameCursor.SetApplicationFocused(true);
+            }
+            try
+            {
+                Application.runInBackground = true;
+                settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+                settings.editorInputBehaviorInPlayMode =
+                    InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                InputSystem.onAfterUpdate += OwnMouse;
+                OwnMouse();
+                Assert.That(controller.Select(FindOfferIndex(DrinkId.LightBeer)), Is.True);
+                int cashBefore = GameSessionState.CashBalance;
+                Assert.That(controller.ConfirmSelection(), Is.True);
+                deadline = Time.realtimeSinceStartup + 3f;
+                while (!controller.RepeatGesture.IsActive && Time.realtimeSinceStartup < deadline)
+                    yield return null;
+                Assert.That(controller.RepeatGesture.IsActive, Is.True,
+                    "Menu confirmation must start the shared attention/tapping gesture. " +
+                    controller.RepeatGesture.LastBeginDiagnostics);
+                Assert.That(view.IsActionLimitedLookEnabled && cameraFollow.OrbitInputEnabled, Is.True);
+                Assert.That(view.IsMenuFocusLocked, Is.False);
+                Assert.That(GameCursor.GameplayMouseInputAllowed, Is.True,
+                    "The order gesture must expose ordinary captured mouse look.");
+                Time.timeScale = .1f;
+                // Let the shared cursor handoff discard its stale mouse sample.
+                yield return null;
+                yield return null;
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.BarInterior,
+                    "Test menu order mouse look start");
+                float startYaw = view.ViewYaw, startPitch = view.ViewPitch;
+                Quaternion initialRotation = camera.transform.rotation;
+                inputFixture.Set(mouse.delta, new Vector2(160f, 0f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(view.ActionLookYaw, Is.GreaterThan(20f),
+                    "A normal mouse sweep must pass the former twelve-degree order limit.");
+                Assert.That(Quaternion.Angle(initialRotation, camera.transform.rotation), Is.GreaterThan(20f),
+                    "The rendered eye camera must follow the mouse, not just update look state.");
+                inputFixture.Set(mouse.delta, new Vector2(10000f, 0f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(startYaw + view.ActionLookYaw,
+                    Is.EqualTo(CounterSeatView.MaximumYawOffsetDegrees).Within(.01f));
+                inputFixture.Set(mouse.delta, new Vector2(-20000f, 0f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(startYaw + view.ActionLookYaw,
+                    Is.EqualTo(-CounterSeatView.MaximumYawOffsetDegrees).Within(.01f));
+                inputFixture.Set(mouse.delta, new Vector2(0f, 10000f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(startPitch + view.ActionLookPitch,
+                    Is.EqualTo(CounterSeatView.MinimumPitchDegrees).Within(.01f));
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.BarInterior,
+                    "Test menu order mouse look wide pan");
+                inputFixture.Set(mouse.delta, new Vector2(0f, -20000f), queueEventOnly: true);
+                yield return null;
+                yield return null;
+                Assert.That(startPitch + view.ActionLookPitch,
+                    Is.EqualTo(CounterSeatView.MaximumPitchDegrees).Within(.01f));
+                Assert.That(controller.RepeatGesture.IsActive, Is.True);
+                float finalYaw = startYaw + view.ActionLookYaw;
+                float finalPitch = startPitch + view.ActionLookPitch;
+                controller.RepeatGesture.Cancel();
+                yield return null;
+                Assert.That(view.IsActionLookLocked, Is.False);
+                Assert.That(view.ViewYaw, Is.EqualTo(finalYaw).Within(.01f));
+                Assert.That(view.ViewPitch, Is.EqualTo(finalPitch).Within(.01f));
+                Assert.That(controller.IsOrderRequestPending, Is.False);
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore),
+                    "Cancelling this unfinished camera check must not accept or charge an order.");
+                Assert.That(controller.MenuState,
+                    Is.EqualTo(BarPromenade.Runtime.World.CounterMenuState.Resting));
+            }
+            finally
+            {
+                Time.timeScale = previousTimeScale;
+                InputSystem.onAfterUpdate -= OwnMouse;
+                if (mouse.added) InputSystem.RemoveDevice(mouse);
+                settings.backgroundBehavior = previousBackgroundBehavior;
+                settings.editorInputBehaviorInPlayMode = previousEditorInput;
+                Application.runInBackground = previousBackground;
+                GameCursor.SetApplicationFocused(previousFocus);
+            }
         }
 
         [UnityTest]

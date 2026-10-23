@@ -8,7 +8,6 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityFairVendors : MonoBehaviour
     {
-        private static readonly float[] Heights = { 1.02f, .96f, .99f, 1.04f };
         private CityFairPlan plan;
         private Transform[] spines;
         private bool initialized;
@@ -40,7 +39,6 @@ namespace BarPromenade
                 actor.name = stall.Id + "-vendor";
                 actor.transform.SetPositionAndRotation(stall.VendorPosition,
                     Quaternion.LookRotation(stall.Facing, Vector3.up));
-                actor.transform.localScale *= Heights[i];
                 CityPortCrew.AlignWorkerModelWithPlacement(actor);
                 var body = actor.gameObject.AddComponent<CapsuleCollider>();
                 body.center = Vector3.up * .94f;

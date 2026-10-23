@@ -85,6 +85,7 @@ namespace BarPromenade
         ShotgunShellInsert,
         ShotgunClose,
         FootstepMetal,
+        Payment,
         Count
     }
 
@@ -897,7 +898,9 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.ShotgunClose, RetroSfxCategory.World,
                 .12f, .52f, 1f, 2, .02f, 1, 2048, 6800f, .015f, 80),
             new RetroSfxDefinition(RetroSfxId.FootstepMetal, RetroSfxCategory.World,
-                .28f, .25f, 1f, 2, .075f, 2, 1024, 6400f, .05f, 139, 3)
+                .28f, .25f, 1f, 2, .075f, 2, 1024, 6400f, .05f, 139, 3),
+            new RetroSfxDefinition(RetroSfxId.Payment, RetroSfxCategory.Ui,
+                .24f, .40f, 0f, 2, .05f, 1, 2048, 4600f, 0f, 44)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1167,6 +1170,8 @@ namespace BarPromenade
                     return GenerateUiMove(time, duration);
                 case RetroSfxId.UiConfirm:
                     return GenerateUiConfirm(time, duration);
+                case RetroSfxId.Payment:
+                    return GeneratePayment(time, ref noiseState);
                 case RetroSfxId.UiCancel:
                     return GenerateUiCancel(time, duration);
                 case RetroSfxId.MapOpen:
@@ -1454,6 +1459,24 @@ namespace BarPromenade
                        Triangle(frequency * 0.5f, localTime) * 0.18f) *
                    envelope *
                    0.48f;
+        }
+
+        private static float GeneratePayment(float time, ref uint noiseState)
+        {
+            // A small handful of coins settling, kept dry and below the bar's ambience.
+            float noise = NextNoise(ref noiseState);
+            float sample = 0f;
+            for (int coin = 0; coin < 3; coin++)
+            {
+                float local = time - coin * .055f;
+                if (local < 0f || local > .10f) continue;
+                float frequency = 1850f + coin * 270f;
+                float ring = Mathf.Sin(2f * Mathf.PI * frequency * local) +
+                    Mathf.Sin(2f * Mathf.PI * frequency * 1.61f * local) * .32f;
+                sample += ring * Mathf.Exp(-local * 70f) * .23f +
+                    noise * Mathf.Exp(-local * 180f) * .12f;
+            }
+            return sample;
         }
 
         private static float GeneratePistolMechanic(RetroSfxId id, float time, float duration, ref uint noiseState, float detune)

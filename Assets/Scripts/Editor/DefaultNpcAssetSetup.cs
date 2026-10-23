@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEditor;
 using UnityEngine;
 
@@ -121,6 +122,9 @@ namespace BarPromenade.Editor
                     // Only the wardrobe owns clothes, including restoration after OnEnable.
                     ValidateGeometry(root, manifest);
                     CharacterJointDeformation.Configure(root);
+                    root.AddComponent<DefaultNpcBodyShape>().Configure(
+                        manifest.body_shape.renderers.Select(name => byName[name] as SkinnedMeshRenderer).ToArray(),
+                        manifest.body_shape.base_height_m);
                     PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                     AssetDatabase.SaveAssets();
                 }
@@ -144,6 +148,10 @@ namespace BarPromenade.Editor
                 actor.Animator.runtimeAnimatorController != null)
                 throw new InvalidOperationException("Default NPC lost its modular wardrobe or shared animation bindings.");
             wardrobe.ValidateBindings();
+            DefaultNpcBodyShape bodyShape = prefab.GetComponent<DefaultNpcBodyShape>();
+            if (bodyShape == null || Mathf.Abs(bodyShape.ReferenceHeightMetres - manifest.body_shape.base_height_m) > .0001f)
+                throw new InvalidOperationException("Default NPC lost its shared hero-derived body proportions.");
+            bodyShape.ValidateBindings();
             NpcHandPose handPose = prefab.GetComponent<NpcHandPose>();
             if (handPose == null || handPose.ShapeName != manifest.hand_grip.shape_name ||
                 Mathf.Abs(handPose.CylinderRadius - manifest.hand_grip.cylinder_radius_m) > .00001f ||
@@ -201,6 +209,20 @@ namespace BarPromenade.Editor
                 value.wardrobe.items.Any(item => string.IsNullOrEmpty(item.id) || string.IsNullOrEmpty(item.slot) ||
                     item.renderers == null || item.renderers.Length == 0 || item.covered_renderers == null))
                 throw new InvalidOperationException("Default NPC manifest has incomplete parts or garment bindings.");
+            if (value.body_shape == null || value.body_shape.contract != "hero_derived_male_v1" ||
+                !float.IsFinite(value.body_shape.base_height_m) || value.body_shape.base_height_m < 1.6f ||
+                value.body_shape.base_height_m > 1.85f || value.body_shape.renderers == null ||
+                value.body_shape.renderers.Length == 0 ||
+                value.body_shape.renderers.Distinct().Count() != value.body_shape.renderers.Length ||
+                value.body_shape.renderers.Any(name => !value.parts.Any(part => part.name == name)))
+                throw new InvalidOperationException("Regenerate the hero-derived default NPC body and its fitted wardrobe.");
+            if (value.body_shape.source_path != "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend" ||
+                !File.Exists(value.body_shape.source_path) || string.IsNullOrEmpty(value.body_shape.source_sha256))
+                throw new InvalidOperationException("The default NPC must name its canonical generated hero body source.");
+            using (SHA256 hash = SHA256.Create())
+                if (!string.Equals(BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(value.body_shape.source_path)))
+                    .Replace("-", ""), value.body_shape.source_sha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The hero body source changed; regenerate the default NPC body and wardrobe.");
             if (value.faces.items.Any(face => string.IsNullOrWhiteSpace(face.id)) ||
                 value.faces.items.SelectMany(FaceTextures).Any(texture =>
                     string.IsNullOrWhiteSpace(texture) || Path.GetFileName(texture) != texture) ||
@@ -307,6 +329,13 @@ namespace BarPromenade.Editor
             public Faces faces;
             public HairColor[] hair_colors;
             public HandGrip hand_grip;
+            public BodyShape body_shape;
+        }
+        [Serializable] private sealed class BodyShape
+        {
+            public string contract, source_path, source_sha256;
+            public float base_height_m;
+            public string[] renderers;
         }
         [Serializable] private sealed class HandGrip { public string shape_name; public float cylinder_radius_m; public HandGripSide[] hands; }
         [Serializable] private sealed class HandGripSide { public string side, bone, centre_anchor, axis_anchor, palm_anchor; public string[] renderers; }

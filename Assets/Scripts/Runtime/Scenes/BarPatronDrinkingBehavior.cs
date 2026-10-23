@@ -323,7 +323,7 @@ namespace BarPromenade
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(310)]
-    public sealed class BarPatronDrinkingArmPose : MonoBehaviour
+    public sealed partial class BarPatronDrinkingArmPose : MonoBehaviour
     {
         public const float BottleLipContactTolerance = 0.015f;
         public const float BottleGripContactTolerance = 0.015f;
@@ -621,7 +621,11 @@ namespace BarPromenade
                 return;
             }
 
-            timeline.Advance(deltaTime);
+            if (CounterRefill != null)
+            {
+                if (CounterRefill.isActiveAndEnabled) CounterRefill.Advance(deltaTime);
+            }
+            else timeline.Advance(deltaTime);
             gulpCuePending |= timeline.ConsumeGulpCue();
         }
 
@@ -647,8 +651,9 @@ namespace BarPromenade
                 ApplyCounterPose();
             }
 
-            PlaceBottle();
+            if (CounterRefill == null || !CounterRefill.IsRefilling) PlaceBottle();
             ApplyFingerGrip();
+            ApplyCounterAttentionWave();
 
             if (gulpCuePending)
             {
@@ -676,7 +681,13 @@ namespace BarPromenade
                 CompensateHeadLean(CounterHeadCompensationDegrees);
                 ApplyRestHeadMotion();
                 SolveLeftArmTowardsSupport();
-                SolveRightHandBottleGrip();
+                if (CounterRefill != null && CounterRefill.IsRefilling)
+                    SolveCounterRightRestSupport();
+                else
+                {
+                    SolveRightHandBottleGrip();
+                    CacheCounterRightRestPose();
+                }
                 return;
             }
 
@@ -1178,7 +1189,7 @@ namespace BarPromenade
         {
             // The shared body sampler restores renderer defaults. Reapply
             // the actual authored curled-finger shape after the final solve.
-            handPose.SetGrip(false, 1f, gripKind);
+            handPose.SetGrip(false, CounterRightGripWeight(), gripKind);
             handPose.SetGrip(true, 0f);
         }
 

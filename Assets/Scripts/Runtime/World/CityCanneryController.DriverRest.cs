@@ -96,6 +96,7 @@ namespace BarPromenade
 
         private void WalkDriverBenchRoute(float progress, float duration, bool returning)
         {
+            PrepareDriverBenchStance();
             driverBenchRoute[0] = trolleyOperatorPosition;
             driverBenchRoute[1] = trolleyOperatorPosition + Plan.Forward * .75f;
             driverBenchRoute[2] = DriverBenchStandingPosition - Plan.Forward * 1.45f;
@@ -109,6 +110,7 @@ namespace BarPromenade
         private void ApplyDriverBenchPose(float seconds, bool standing)
         {
             VillageResidentPresentation actor = workers[4];
+            PrepareDriverBenchStance();
             actor.transform.SetPositionAndRotation(DriverBenchStandingPosition, Quaternion.LookRotation(Plan.Right));
             actor.Apply(VillageResidentAction.Idle, 0f);
             for (int i = 0; i < 2; i++)

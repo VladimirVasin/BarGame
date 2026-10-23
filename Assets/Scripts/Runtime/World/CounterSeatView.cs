@@ -10,6 +10,8 @@ namespace BarPromenade
     /// are hidden while the camera is inside the production hero rig. A
     /// locked close action starts from the player's current gaze and keeps the
     /// lens at its captured eye-space offset throughout the animated head pose.
+    /// Drinking can admit a small manual look offset without moving that rig;
+    /// an order gesture uses the ordinary seated look range in both axes.
     /// </summary>
     [DefaultExecutionOrder(90)]
     [DisallowMultipleComponent]
@@ -20,9 +22,12 @@ namespace BarPromenade
         public const float MaximumPitchDegrees = 55f;
         public const float ActionNearClipPlane = 0.03f;
         public const float ActionEyeClearanceMetres = 0.02f;
+        public const float MaximumActionYawOffsetDegrees = 12f;
+        public const float MaximumActionPitchOffsetDegrees = 10f;
 
         private CounterSeatInteraction seat;
         private PlayerCameraFollow cameraFollow;
+        private Camera viewCamera;
         private Player3DAssetRegistry playerRegistry;
         private Player3DHeadVisibility hiddenHead;
         private bool previousCinematicMotion;
@@ -39,6 +44,9 @@ namespace BarPromenade
         private bool menuFocusRequested;
         private bool actionLookLocked;
         private float actionEyeClearanceWeight;
+        private bool actionLimitedLookEnabled;
+        private bool actionFullSeatedLookEnabled;
+        private float actionLookYaw, actionLookPitch;
         private Vector3 actionHeadPositionInPelvis;
         private bool actionHeadPositionCaptured;
         private Vector3 actionCameraPositionInHead;
@@ -62,6 +70,9 @@ namespace BarPromenade
         public bool IsMenuFocusComplete => menuFocusRequested &&
             menuFocusWeight >= 0.9999f;
         public bool IsActionLookLocked => actionLookLocked;
+        public bool IsActionLimitedLookEnabled => actionLookLocked && actionLimitedLookEnabled;
+        public float ActionLookYaw => actionLookYaw;
+        public float ActionLookPitch => actionLookPitch;
         public float MenuFocusWeight => menuFocusWeight;
         public Pose MenuFocusPose => menuFocusPose;
         public float MenuFocusFieldOfView => menuFocusFieldOfView;
@@ -125,10 +136,18 @@ namespace BarPromenade
             menuFocusRequested = false;
         }
 
-        public void SetActionLookLocked(bool locked)
+        public void SetActionLookLocked(bool locked, bool allowLimitedLook = false,
+            bool allowFullSeatedLook = false)
         {
             if (!IsFirstPerson || !locked)
             {
+                if (IsFirstPerson && actionLookLocked && actionLimitedLookEnabled)
+                {
+                    // Carry the player's chosen gaze into the ordinary seated
+                    // view rather than snapping back when the drink finishes.
+                    viewYaw = Mathf.Clamp(viewYaw + actionLookYaw, -MaximumYawOffsetDegrees, MaximumYawOffsetDegrees);
+                    viewPitch = Mathf.Clamp(viewPitch + actionLookPitch, MinimumPitchDegrees, MaximumPitchDegrees);
+                }
                 actionLookLocked = false;
                 ReleaseActionCameraTracking();
                 return;
@@ -140,6 +159,9 @@ namespace BarPromenade
             }
 
             actionLookLocked = true;
+            actionLimitedLookEnabled = allowLimitedLook;
+            actionFullSeatedLookEnabled = allowLimitedLook && allowFullSeatedLook;
+            actionLookYaw = actionLookPitch = 0f;
             actionEyeClearanceWeight = 0f;
             CaptureActionCameraTracking();
         }
@@ -192,6 +214,7 @@ namespace BarPromenade
 
             seat = configuredSeat;
             cameraFollow = follow;
+            viewCamera = follow.GetComponent<Camera>();
             playerRegistry = presentation.Registry;
             seat.SeatedChanged += HandleSeatedChanged;
             IsInitialized = true;
@@ -224,19 +247,32 @@ namespace BarPromenade
                 : focusTarget;
 
             if (!PauseMenuController.IsAnyPaused &&
+                !GameTimeScaleRuntime.IsPaused &&
                 !IsMenuFocusLocked &&
-                !actionLookLocked)
+                (!actionLookLocked || actionLimitedLookEnabled))
             {
                 Vector2 look = cameraFollow.SampleOrbitInputDegrees(
                     Time.unscaledDeltaTime);
-                viewYaw = Mathf.Clamp(
-                    viewYaw + look.x,
-                    -MaximumYawOffsetDegrees,
-                    MaximumYawOffsetDegrees);
-                viewPitch = Mathf.Clamp(
-                    viewPitch + look.y,
-                    MinimumPitchDegrees,
-                    MaximumPitchDegrees);
+                if (actionLookLocked)
+                {
+                    actionLookYaw = Mathf.Clamp(actionLookYaw + look.x,
+                        actionFullSeatedLookEnabled ? -MaximumYawOffsetDegrees - viewYaw :
+                            Mathf.Max(-MaximumActionYawOffsetDegrees, -MaximumYawOffsetDegrees - viewYaw),
+                        actionFullSeatedLookEnabled ? MaximumYawOffsetDegrees - viewYaw :
+                            Mathf.Min(MaximumActionYawOffsetDegrees, MaximumYawOffsetDegrees - viewYaw));
+                    // Ordering keeps the same full view as sitting normally,
+                    // including when the menu or glass set a downward gaze.
+                    actionLookPitch = Mathf.Clamp(actionLookPitch + look.y,
+                        actionFullSeatedLookEnabled ? MinimumPitchDegrees - viewPitch :
+                            Mathf.Max(-MaximumActionPitchOffsetDegrees, MinimumPitchDegrees - viewPitch),
+                        actionFullSeatedLookEnabled ? MaximumPitchDegrees - viewPitch :
+                            Mathf.Min(MaximumActionPitchOffsetDegrees, MaximumPitchDegrees - viewPitch));
+                }
+                else
+                {
+                    viewYaw = Mathf.Clamp(viewYaw + look.x, -MaximumYawOffsetDegrees, MaximumYawOffsetDegrees);
+                    viewPitch = Mathf.Clamp(viewPitch + look.y, MinimumPitchDegrees, MaximumPitchDegrees);
+                }
             }
 
             ApplyView();
@@ -368,6 +404,15 @@ namespace BarPromenade
                 position -= rotation * Vector3.forward *
                     (ActionEyeClearanceMetres *
                      actionEyeClearanceWeight);
+                if (actionLimitedLookEnabled)
+                {
+                    // Use the same pitch/yaw convention as CounterSeatPlan.
+                    // The relative change follows the animated head, and its
+                    // terminal gaze is identical to the ordinary seated view.
+                    Quaternion initialLook = Quaternion.Euler(viewPitch, viewYaw, 0f);
+                    Quaternion manualLook = Quaternion.Euler(viewPitch + actionLookPitch, viewYaw + actionLookYaw, 0f);
+                    rotation *= Quaternion.Inverse(initialLook) * manualLook;
+                }
             }
 
             cameraFollow.SetFixedPose(position, rotation, fieldOfView);
@@ -423,9 +468,7 @@ namespace BarPromenade
                 actionHeadPositionCaptured = true;
             }
 
-            Camera targetCamera = cameraFollow != null
-                ? cameraFollow.GetComponent<Camera>()
-                : null;
+            Camera targetCamera = viewCamera;
             if (targetCamera == null)
             {
                 return;
@@ -469,6 +512,9 @@ namespace BarPromenade
             actionHeadPositionInPelvis = Vector3.zero;
             actionHeadPositionCaptured = false;
             actionEyeClearanceWeight = 0f;
+            actionLimitedLookEnabled = false;
+            actionFullSeatedLookEnabled = false;
+            actionLookYaw = actionLookPitch = 0f;
             actionCameraPositionInHead = Vector3.zero;
             actionCameraPositionCaptured = false;
         }

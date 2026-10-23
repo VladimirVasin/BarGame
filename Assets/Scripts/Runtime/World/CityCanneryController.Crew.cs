@@ -144,6 +144,9 @@ namespace BarPromenade
             Vector3 right = Anchor(station + "RightHand"), left = Anchor(station + "LeftHand");
             Vector3 load = index == 1 ? Anchor("PreparationLoad") : tray.position;
             StandWorker(actor, Anchor(station + "Worker"), Plan.Right, load);
+            // Equipment labels predate this rig's imported facing. The actual
+            // shoulder frame assigns the two physical rim contacts to hands.
+            if (index == 1) OrderFactoryHandTargets(index, ref right, ref left);
             if (!working)
             {
                 ApplyFactoryIdleLife(index, Anchor(station + "Worker"), Plan.Right, load);
@@ -185,6 +188,7 @@ namespace BarPromenade
                 look = Vector3.Lerp(seamer.position, right, rightWeight * .5f);
             }
             ApplyStationPose(index, posture, 24f);
+            if (index == 1) FitCrewContactStance(actor, index, right, left, posture);
             ApplyCrewLook(actor, look);
             ApplyCrewContacts(actor, right, left, rightWeight, leftWeight);
         }
@@ -253,6 +257,7 @@ namespace BarPromenade
             Vector3 right = Anchor("PackingCartonRightHand"), left = Anchor("PackingCartonLeftHand");
             Vector3 rim = (right + left) * .5f;
             StandWorker(actor, Anchor("PackingWorker"), Plan.Right, tray.position);
+            OrderFactoryHandTargets(3, ref right, ref left);
             // The tray takes the first eight seconds to reach cooling. Its
             // fifteen actual cans then share the owner's feed/lift/drop path;
             // these hands never invent another can or another packing clock.
@@ -273,9 +278,20 @@ namespace BarPromenade
             // First approach the stationary fed can, hold it throughout the
             // visible arc, then open/retract above the rim before it is lowered.
             Vector3 across = toCan.sqrMagnitude > .001f ?
-                Vector3.Cross(toCan.normalized, Vector3.up) * .055f : Plan.Forward * .055f;
-            ApplyCrewContacts(actor, Vector3.Lerp(right, packingCanContact + across, reach),
-                Vector3.Lerp(left, packingCanContact - across, reach), posture);
+                Vector3.Cross(Vector3.up, toCan.normalized) * .055f : -Plan.Forward * .055f;
+            if (Vector3.Dot(across, factoryPoseBones[3, 8].position - factoryPoseBones[3, 5].position) < 0f)
+                across = -across;
+            Vector3 rightTarget = Vector3.Lerp(right, packingCanContact + across, reach);
+            Vector3 leftTarget = Vector3.Lerp(left, packingCanContact - across, reach);
+            FitCrewContactStance(actor, 3, rightTarget, leftTarget, posture);
+            ApplyCrewContacts(actor, rightTarget, leftTarget, posture);
+        }
+
+        private void OrderFactoryHandTargets(int role, ref Vector3 right, ref Vector3 left)
+        {
+            Vector3 anatomicalRight = factoryPoseBones[role, 8].position - factoryPoseBones[role, 5].position;
+            if (Vector3.Dot(right - left, anatomicalRight) >= 0f) return;
+            Vector3 previousRight = right; right = left; left = previousRight;
         }
 
         private void ApplyTrolleyWorker(VillageResidentPresentation actor, float handWeight)

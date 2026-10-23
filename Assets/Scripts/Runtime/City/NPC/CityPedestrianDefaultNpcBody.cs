@@ -179,7 +179,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                Bounds local = mesh.bounds;
+                Bounds local = renderer is SkinnedMeshRenderer skinned ? skinned.localBounds : mesh.bounds;
                 for (int corner = 0; corner < 8; corner++)
                 {
                     Vector3 point = new Vector3(

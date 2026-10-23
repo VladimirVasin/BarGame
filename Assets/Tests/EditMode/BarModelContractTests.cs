@@ -1052,7 +1052,7 @@ namespace BarPromenade.Tests.EditMode
                     part.name.StartsWith("SplitTheG Console", StringComparison.Ordinal) ||
                     part.name.StartsWith("TinctureMatch Console", StringComparison.Ordinal)), Is.False);
                 AssertPlaced(room, "Slow Ceiling Fan",
-                    new Vector3(0f, 2.72f, -0.65f));
+                    new Vector3(0f, 2.55f, -0.65f));
                 AssertPlaced(room, "HeroSeat",
                     new Vector3(-0.75f, 0.8175f, 0.91f));
                 AssertPlaced(room, "HeroApproach",

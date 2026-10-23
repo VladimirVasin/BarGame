@@ -10,6 +10,7 @@ namespace BarPromenade
         public const string OrderPromptKey =
             "interaction.order_selected_drink";
         public const string DrinkPromptKey = "interaction.drink_beverage";
+        public const string RepeatPromptKey = "interaction.repeat_beverage";
 
         private BarDrinkShopController controller;
         private PlayerRuntime player;
@@ -42,6 +43,10 @@ namespace BarPromenade
                 {
                     return DrinkPromptKey;
                 }
+
+                if (controller != null &&
+                    controller.IsLookingAtRepeatVessel)
+                    return RepeatPromptKey;
 
                 if (controller != null &&
                     controller.CanStandAfterMenuRested)
@@ -182,6 +187,7 @@ namespace BarPromenade
 
                 return (controller.CanDrinkServedVessel &&
                         controller.IsLookingAtServedVessel) ||
+                       controller.IsLookingAtRepeatVessel ||
                        controller.CanRestPhysicalMenu ||
                        controller.CanStandAfterMenuRested;
             }
@@ -209,6 +215,10 @@ namespace BarPromenade
                     else if (controller.CanRestPhysicalMenu)
                     {
                         controller.ConfirmSelection();
+                    }
+                    else if (controller.IsLookingAtRepeatVessel)
+                    {
+                        controller.BeginRepeatDrink();
                     }
                     else if (controller.IsLookingAtRestingMenu)
                     {

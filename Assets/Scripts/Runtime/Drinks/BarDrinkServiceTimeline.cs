@@ -147,6 +147,7 @@ namespace BarPromenade
         public bool IsCommitted { get; private set; }
         public bool IsBeerService { get; private set; }
         public bool IsBottleService { get; private set; }
+        public bool IsRepeatService { get; private set; }
         public bool IsAwaitingDrink =>
             Phase == BarDrinkServicePhase.AwaitingDrink;
         public bool HasEmptyVessel =>
@@ -180,6 +181,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
@@ -200,6 +202,7 @@ namespace BarPromenade
             }
 
             bool clearsEmptyVessel = HasEmptyVessel;
+            IsRepeatService = false;
             IsCommitted = true;
             EmptyVesselGripConfirmed = false;
             IsBeerService = drinkId == DrinkId.LightBeer;
@@ -210,6 +213,31 @@ namespace BarPromenade
             else
                 BeginOrderedService();
             return true;
+        }
+
+        public bool ConfirmRepeat(DrinkId drinkId)
+        {
+            if (!CanConfirm || !HasEmptyVessel || drinkId == DrinkId.None)
+                return false;
+            IsCommitted = true;
+            IsRepeatService = true;
+            IsBeerService = drinkId == DrinkId.LightBeer;
+            IsBottleService = !IsBeerService;
+            EmptyVesselGripConfirmed = false;
+            SetPhase(IsBeerService
+                ? BarDrinkServicePhase.EmptyVesselWalkToGuest
+                : BarDrinkServicePhase.BottleWalkToShelf);
+            return true;
+        }
+
+        public void BeginPatronRefill(DrinkId drinkId)
+        {
+            if (IsActive || drinkId == DrinkId.None) throw new InvalidOperationException("A patron refill requires an idle service clock and an existing drink.");
+            IsCommitted = IsRepeatService = true;
+            IsBeerService = drinkId == DrinkId.LightBeer || drinkId == DrinkId.DarkBeer;
+            IsBottleService = !IsBeerService;
+            EmptyVesselGripConfirmed = false;
+            SetPhase(IsBeerService ? BarDrinkServicePhase.EmptyVesselWalkToGuest : BarDrinkServicePhase.BottleWalkToShelf);
         }
 
         private void BeginOrderedService()
@@ -248,7 +276,8 @@ namespace BarPromenade
         {
             if (!atCarryPoint || Phase != BarDrinkServicePhase.EmptyVesselPickup ||
                 !EmptyVesselGripConfirmed || PhaseProgress < 1f) return false;
-            SetPhase(BarDrinkServicePhase.EmptyVesselCarryToStorage);
+            SetPhase(IsRepeatService ? BarDrinkServicePhase.BeerWalkToTap
+                : BarDrinkServicePhase.EmptyVesselCarryToStorage);
             return true;
         }
 
@@ -363,6 +392,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
@@ -531,6 +561,7 @@ namespace BarPromenade
                     break;
                 case BarDrinkServicePhase.BeerWalkToTap:
                     cameraBlend = 1f;
+                    vesselVisibility = IsRepeatService ? 1f : 0f;
                     break;
                 case BarDrinkServicePhase.BeerGlassPickup:
                     cameraBlend = 1f;
@@ -670,7 +701,9 @@ namespace BarPromenade
                 case BarDrinkServicePhase.Pouring:
                     SetPhaseWithoutClearingElapsed(
                         IsBottleService
-                            ? BarDrinkServicePhase.BottleCarryToGuest
+                            ? IsRepeatService
+                                ? BarDrinkServicePhase.BottleWalkToShelfReturn
+                                : BarDrinkServicePhase.BottleCarryToGuest
                             : BarDrinkServicePhase.BottleReturn);
                     break;
                 case BarDrinkServicePhase.BottleVesselPlacement:

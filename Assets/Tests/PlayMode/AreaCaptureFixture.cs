@@ -220,9 +220,9 @@ namespace BarPromenade.Tests.PlayMode
             yield return Capture(SceneIds.BarInterior, Root<BarInteriorRoot>(), new[]
             {
                 Shot.At("Test compact ceiling fan from entrance",
-                    new Vector3(0f, 1.72f, -3.35f), new Vector3(0f, 2.72f, -.65f), 65f),
+                    new Vector3(0f, 1.72f, -3.35f), new Vector3(0f, 2.55f, -.65f), 65f),
                 Shot.At("Test compact ceiling fan at eye height",
-                    new Vector3(1.1f, 1.7f, -1.4f), new Vector3(0f, 2.72f, -.65f), 65f)
+                    new Vector3(1.1f, 1.7f, -1.4f), new Vector3(0f, 2.55f, -.65f), 65f)
             });
         }
 

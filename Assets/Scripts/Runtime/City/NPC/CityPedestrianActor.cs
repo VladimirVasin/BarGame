@@ -323,6 +323,13 @@ namespace BarPromenade
             visual.localPosition = Vector3.zero;
             visual.localRotation = Quaternion.identity;
             visual.localScale = Vector3.one;
+            // The pooled movement root stays unscaled; its character carries the assigned stature.
+            var defaultBody = presentation.GetComponent<CityPedestrianDefaultNpcBody>();
+            var proportions = defaultBody != null && defaultBody.Character != null
+                ? defaultBody.Character.GetComponent<DefaultNpcBodyShape>() : null;
+            float statureRatio = proportions != null ? proportions.HeightRatio : 1f;
+            characterController.height = CollisionHeight * statureRatio;
+            characterController.center = Vector3.up * (CollisionCenterHeight * statureRatio);
             presentation.Registry.ApplyPaletteVariant(paletteVariant);
             presentation.gameObject.SetActive(true);
             presentation.ConfigureCycle(animationSpeed, animationPhase01);

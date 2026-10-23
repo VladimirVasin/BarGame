@@ -109,7 +109,7 @@ namespace BarPromenade
                 registry.Neck,
                 heroRoot,
                 () => presentation.CurrentClipKind ==
-                      BarBartenderClipKind.Wipe);
+                      BarBartenderClipKind.Wipe && !presentation.IsAcknowledgingOrder);
             return look;
         }
     }

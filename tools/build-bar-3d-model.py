@@ -56,7 +56,7 @@ import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 import bar_compact_interior as compact  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "4.0.6"
+INTERIOR_GENERATOR_VERSION = "4.0.7"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -70,6 +70,10 @@ DOOR_HEIGHT = exterior.DOOR_HEIGHT
 
 FLOOR_THICKNESS = 0.24
 CEILING_THICKNESS = 0.20
+CEILING_FAN_PIVOT = (0.0, 2.55, -0.65)
+CEILING_FAN_BEAM_UNDERSIDE_Y = ROOM_HEIGHT - .18 - .34 * .5
+# bp.u_cylinder uses half-height, matching the original Unity primitive.
+CEILING_FAN_HUB_TOP_OFFSET_Y = .10 * .35
 
 #: `plan.CounterPosition` / `plan.CounterSize`.
 # Remove exactly the leftmost 0.90 m stool bay; keep the right end fixed.
@@ -461,6 +465,7 @@ def resolve_default_sheet(name: str, role: str) -> str:
         "poster": "Paper",
         "entrance_curtain_rail": "AgedBrass",
         "fan_hub": "AgedBrass",
+        "fan_support": "AgedBrass",
         "fan_blade": "PaintedMetal",
         "jukebox_grille": "PaintedMetal",
         "jukebox_key": "AgedBrass",
@@ -1026,6 +1031,13 @@ def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
     # Bake the compact 1.3825 m fan into its meshes; the shared pivot and
     # runtime rotation retain their original unit transforms.
     scale = (0.35, 0.35, 0.35)
+    support_bottom = CEILING_FAN_PIVOT[1] + CEILING_FAN_HUB_TOP_OFFSET_Y
+    support_height = CEILING_FAN_BEAM_UNDERSIDE_Y - support_bottom
+    add_part(
+        asset, materials, "Fan Suspension Stem",
+        bp.u_cylinder((CEILING_FAN_PIVOT[0], support_bottom + support_height * .5,
+                       CEILING_FAN_PIVOT[2]), (.018, support_height * .5, .018)),
+        "fan_support", bp.ident("MetalTint"), shadows=False)
     add_part(
         asset, materials, "Fan Hub",
         kit.scaled(bp.u_cylinder((0.0, 0.0, 0.0), (0.28, 0.10, 0.28)), scale),
@@ -2170,7 +2182,7 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "PourTarget", "service_pour_target",
                (COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.015,
                 SERVICE_VESSEL_DOCK_Z))
-    add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", (0.0, 2.72, -0.65))
+    add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", CEILING_FAN_PIVOT)
     add_anchor(asset, "Jukebox", "jukebox_pivot", (5.0, 0.0, -0.65))
     compact.add_frame_anchors(sys.modules[__name__], asset)
     asset.containment_contract = compact.containment_contract()
@@ -2397,9 +2409,63 @@ def validate(asset: AssetBuild) -> None:
             problems.append(
                 "the closed menu and pint have less than 0.08 m clearance")
 
+    asset.ceiling_fan_contract = validate_ceiling_fan(asset, problems)
     if problems:
         raise SystemExit(
             "Bar interior failed validation:\n  " + "\n  ".join(problems))
+
+
+def validate_ceiling_fan(asset: AssetBuild, problems: list[str]) -> dict:
+    """Measure the full rotor sweep against each actual detached ceiling beam."""
+    pivot = anchor_unity_position(asset.anchors["CeilingFan"])
+    rotor = [part for part in asset.parts if part.group == "pivot:Slow Ceiling Fan"]
+    points = [(x, y, z) for part in rotor for x, z, y in part.geometry[0]]
+    radius = max(math.hypot(x, z) for x, y, z in points)
+    top = pivot[1] + max(y for x, y, z in points)
+    bottom = pivot[1] + min(y for x, y, z in points)
+    clearances = []
+    for part in (part for part in asset.parts if part.role == "beam"):
+        vertices, faces = part.geometry
+        parents = list(range(len(vertices)))
+        def find(index):
+            while parents[index] != index:
+                parents[index] = parents[parents[index]]
+                index = parents[index]
+            return index
+        for face in faces:
+            for index in face[1:]:
+                parents[find(index)] = find(face[0])
+        components = {}
+        for index, (x, z, y) in enumerate(vertices):
+            components.setdefault(find(index), []).append((x, y, z))
+        for component in components.values():
+            low = [min(point[axis] for point in component) for axis in range(3)]
+            high = [max(point[axis] for point in component) for axis in range(3)]
+            nearest_x = max(low[0], min(pivot[0], high[0]))
+            nearest_z = max(low[2], min(pivot[2], high[2]))
+            if math.hypot(nearest_x - pivot[0], nearest_z - pivot[2]) > radius:
+                continue
+            gap = low[1] - top
+            clearances.append(gap)
+            if gap < .05 - 1e-6:
+                problems.append(f"the full ceiling-fan sweep has only {gap:.4f} m clearance below {part.name}")
+    if not clearances or bottom < 2.45:
+        problems.append("the ceiling fan lost its supported overhead clearance")
+    stem = next(part for part in asset.parts if part.name == "Fan Suspension Stem")
+    stem_points = [(x, y, z) for x, z, y in stem.geometry[0]]
+    stem_low = min(point[1] for point in stem_points)
+    stem_high = max(point[1] for point in stem_points)
+    beam_bottom = top + min(clearances) if clearances else float("inf")
+    if stem.group != "fixed" or stem.shadows or abs(stem_low - top) > 1e-6 or abs(stem_high - beam_bottom) > 1e-6:
+        problems.append("the stationary fan stem no longer meets both the hub and beam underside")
+    if any(part.shadows for part in rotor) or len(rotor) != 5:
+        problems.append("the compact five-part rotor changed its no-shadow contract")
+    return {"pivot_unity_m": [stable(value) for value in pivot], "full_sweep_radius_m": stable(radius),
+            "rotor_top_y_m": stable(top), "rotor_bottom_y_m": stable(bottom),
+            "minimum_beam_clearance_m": stable(min(clearances)) if clearances else 0.,
+            "support_part": stem.name, "support_bottom_y_m": stable(stem_low),
+            "support_top_y_m": stable(stem_high), "support_diameter_m": .018,
+            "support_stationary": True, "rotor_casts_shadows": False}
 
 
 def signature_for(
@@ -2534,6 +2600,8 @@ def write_manifest(
         manifest["interior_surface_contract"] = asset.interior_surface_contract
     if getattr(asset, "containment_contract", None) is not None:
         manifest["containment_contract"] = asset.containment_contract
+    if getattr(asset, "ceiling_fan_contract", None) is not None:
+        manifest["ceiling_fan_contract"] = asset.ceiling_fan_contract
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(manifest, indent=2, sort_keys=False) + "\n",

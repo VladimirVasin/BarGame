@@ -199,7 +199,7 @@ namespace BarPromenade.Tests.PlayMode
         [PrebuildSetup(typeof(DefaultNpcWardrobeAssetsSetup))]
         public IEnumerator OrdinaryWorker_ModularOutfitsCoverLayersAndSurviveVisibilityChanges()
         {
-            host = new GameObject("Default NPC Wardrobe Regression");
+            host = new GameObject("Test default NPC wardrobe");
             VillageResidentPresentation actor = DefaultNpcFactory.Create(host.transform);
             VillageResidentPresentation other = DefaultNpcFactory.Create(host.transform);
             NpcWardrobe wardrobe = actor.GetComponent<NpcWardrobe>();
@@ -207,7 +207,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(wardrobe.IsModular, Is.True);
             wardrobe.ValidateBindings();
             CollectionAssert.AreEquivalent(new[] { "everyday", "work", "warm" }, wardrobe.Presets.Select(p => p.Id));
-            Assert.That(wardrobe.Items.Count, Is.EqualTo(18));
+            Assert.That(wardrobe.Items.Count, Is.EqualTo(21));
             Assert.That(wardrobe.BodyRenderers, Is.Not.Empty);
             Assert.That(wardrobe.Items.Select(p => p.Id).Distinct().Count(), Is.EqualTo(wardrobe.Items.Count));
             DefaultNpcAppearance appearance = actor.GetComponent<DefaultNpcAppearance>();
@@ -217,6 +217,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertStableAppearanceSelection(actor, other);
 
             var meshes = actor.GetComponentsInChildren<Renderer>(true).ToDictionary(r => r, SharedMesh);
+            yield return AssertBodyShapeVariants(actor);
             NpcWardrobe otherWardrobe = other.GetComponent<NpcWardrobe>();
             foreach (NpcWardrobe.ItemBinding item in wardrobe.Items)
             {
@@ -393,15 +394,128 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(appearance.CurrentHairColorId, Is.EqualTo(hair), "Clothing randomization is independent of hair colour.");
         }
 
+        private static IEnumerator AssertBodyShapeVariants(VillageResidentPresentation actor)
+        {
+            var body = actor.GetComponent<DefaultNpcBodyShape>();
+            Assert.That(body, Is.Not.Null);
+            Assert.That(body.IsConfigured, Is.True);
+            Assert.That(body.UsesAuthoredAnatomy, Is.False, "Ordinary figures accept the shared body-shape selection.");
+            var skins = actor.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var shaped = skins.Where(skin => CharacterJointDeformation.FindShape(skin.sharedMesh, DefaultNpcBodyShape.SlimShapeName) >= 0).ToArray();
+            Assert.That(shaped, Is.Not.Empty);
+            foreach (Renderer garment in actor.GetComponent<NpcWardrobe>().Items.SelectMany(item => item.Parts).Select(part => part.Renderer))
+                Assert.That(garment, Is.TypeOf<SkinnedMeshRenderer>(), "Garments follow the same skinned world rig.");
+            var sharedMeshes = skins.Select(skin => skin.sharedMesh).ToArray();
+            var sharedMaterials = skins.Select(skin => skin.sharedMaterials).ToArray();
+            Vector3 modelScale = actor.ModelRoot.localScale;
+            int originalHeight = body.HeightCm;
+            float originalBuild = body.Build;
+
+            foreach (int height in new[] { DefaultNpcBodyShape.MinimumHeightCm, DefaultNpcBodyShape.MaximumHeightCm })
+            foreach (float build in new[] { 0f, 1f })
+            {
+                body.Apply(height, build);
+                Vector3 expectedScale = body.ReferenceScale * (height * .01f / body.ReferenceHeightMetres);
+                Assert.That(Vector3.Distance(actor.transform.localScale, expectedScale), Is.LessThan(.00001f));
+                body.Apply(height, build);
+                Assert.That(Vector3.Distance(actor.transform.localScale, expectedScale), Is.LessThan(.00001f),
+                    "Applying an identity again cannot compound its stature.");
+                foreach (VillageResidentAction action in new[] { VillageResidentAction.Idle, VillageResidentAction.Walk,
+                    VillageResidentAction.StationWork, VillageResidentAction.CarryWalk })
+                {
+                    actor.Apply(action, actor.ClipLength(action) * .37f);
+                    Assert.That(Vector3.Distance(actor.transform.localScale, expectedScale), Is.LessThan(.00001f),
+                        action + " sampling must preserve stature.");
+                    AssertBodyShapeWeights(shaped, build);
+                }
+                actor.gameObject.SetActive(false);
+                yield return null;
+                actor.gameObject.SetActive(true);
+                actor.Apply(VillageResidentAction.Idle, .3f);
+                Assert.That(body.HeightCm, Is.EqualTo(height));
+                Assert.That(body.Build, Is.EqualTo(build));
+                Assert.That(Vector3.Distance(actor.transform.localScale, expectedScale), Is.LessThan(.00001f));
+                Assert.That(actor.ModelRoot.localScale, Is.EqualTo(modelScale));
+                AssertBodyShapeWeights(shaped, build);
+                Assert.That(DefaultNpcBareStature(actor), Is.EqualTo(height * .01f).Within(.02f),
+                    "The actual bare crown/feet must match the selected stature after the idle pose settles.");
+                for (int i = 0; i < skins.Length; i++)
+                {
+                    Assert.That(skins[i].sharedMesh, Is.SameAs(sharedMeshes[i]), "Body variation must retain shared meshes.");
+                    CollectionAssert.AreEqual(sharedMaterials[i], skins[i].sharedMaterials);
+                }
+            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => body.Apply(DefaultNpcBodyShape.MinimumHeightCm - 1, .5f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => body.Apply(DefaultNpcBodyShape.MaximumHeightCm + 1, .5f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => body.Apply(175, float.NaN));
+            body.Apply(originalHeight, originalBuild);
+            actor.Apply(VillageResidentAction.Idle, .3f);
+        }
+
+        private static void AssertBodyShapeWeights(SkinnedMeshRenderer[] renderers, float build)
+        {
+            foreach (SkinnedMeshRenderer skin in renderers)
+            {
+                int slim = CharacterJointDeformation.FindShape(skin.sharedMesh, DefaultNpcBodyShape.SlimShapeName);
+                int chubby = CharacterJointDeformation.FindShape(skin.sharedMesh, DefaultNpcBodyShape.ChubbyShapeName);
+                Assert.That(chubby, Is.GreaterThanOrEqualTo(0), skin.name + " needs both authored body endpoints.");
+                Assert.That(skin.GetBlendShapeWeight(slim), Is.EqualTo(Mathf.Max(0f, 1f - 2f * build) * 100f).Within(.0001f), skin.name);
+                Assert.That(skin.GetBlendShapeWeight(chubby), Is.EqualTo(Mathf.Max(0f, 2f * build - 1f) * 100f).Within(.0001f), skin.name);
+            }
+        }
+
+        private static float DefaultNpcBareStature(VillageResidentPresentation actor)
+        {
+            float crown = float.NegativeInfinity, sole = float.PositiveInfinity;
+            foreach (SkinnedMeshRenderer skin in actor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                bool isHead = skin.name == "GEO_Head" || skin.name == "GEO_FaceSurface";
+                bool isFoot = skin.name.StartsWith("GEO_Foot", StringComparison.Ordinal);
+                if (!isHead && !isFoot) continue;
+                foreach (Vector3 world in SkinDefaultNpcWorldVertices(skin))
+                {
+                    float y = Vector3.Dot(world - actor.transform.position, actor.transform.up);
+                    if (isHead) crown = Mathf.Max(crown, y);
+                    if (isFoot) sole = Mathf.Min(sole, y);
+                }
+            }
+            Assert.That(float.IsFinite(crown) && float.IsFinite(sole), Is.True, "Measured stature requires the actual head and bare feet.");
+            return crown - sole;
+        }
+
+        internal static Vector3[] SkinDefaultNpcWorldVertices(SkinnedMeshRenderer skin)
+        {
+            Mesh mesh = skin.sharedMesh;
+            Vector3[] vertices = mesh.vertices;
+            DefaultNpcBodyShape.ApplyShapeDeltas(skin, vertices);
+            BoneWeight[] weights = mesh.boneWeights;
+            Matrix4x4[] poses = mesh.bindposes;
+            Transform[] bones = skin.bones;
+            var matrices = new Matrix4x4[bones.Length];
+            for (int i = 0; i < bones.Length; i++) matrices[i] = bones[i].localToWorldMatrix * poses[i];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Vector3 vertex = vertices[i];
+                BoneWeight weight = weights[i];
+                vertices[i] = matrices[weight.boneIndex0].MultiplyPoint3x4(vertex) * weight.weight0 +
+                    matrices[weight.boneIndex1].MultiplyPoint3x4(vertex) * weight.weight1 +
+                    matrices[weight.boneIndex2].MultiplyPoint3x4(vertex) * weight.weight2 +
+                    matrices[weight.boneIndex3].MultiplyPoint3x4(vertex) * weight.weight3;
+            }
+            return vertices;
+        }
+
         private static void AssertPopulationAllocation(Transform parent)
         {
             string[] ids = DefaultNpcPopulation.Characters.Select(character => character.Id).ToArray();
-            Assert.That(ids.Length, Is.EqualTo(13 + DefaultNpcPopulation.CombatTestOpponentCount +
+            Assert.That(ids.Length, Is.EqualTo(24 + DefaultNpcPopulation.CombatTestOpponentCount +
                 DefaultNpcPopulation.FairVisitorCount + DefaultNpcPopulation.PedestrianCount),
-                "Placed workers, the isolated combat opponents, fair visitors and permanent pooled City walkers.");
+                "Placed workers/bartender, ordinary/scripted combat opponents, fair visitors and permanent City walkers.");
             Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
             var remembered = new System.Collections.Generic.Dictionary<string, string>();
             var visibleLooks = new System.Collections.Generic.HashSet<string>();
+            var heights = new System.Collections.Generic.HashSet<int>();
+            var builds = new System.Collections.Generic.HashSet<float>();
             foreach (string id in ids.Concat(ids.Reverse()))
             {
                 VillageResidentPresentation actor = DefaultNpcFactory.CreateForCharacter(parent, id);
@@ -410,6 +524,7 @@ namespace BarPromenade.Tests.PlayMode
                     var assignment = DefaultNpcPopulation.GetAssignment(id);
                     var appearance = actor.GetComponent<DefaultNpcAppearance>();
                     var wardrobe = actor.GetComponent<NpcWardrobe>();
+                    var body = actor.GetComponent<DefaultNpcBodyShape>();
                     Assert.That(assignment.CharacterId, Is.EqualTo(id));
                     DefaultNpcPopulation.CharacterDefinition definition = DefaultNpcPopulation.Characters.Single(c => c.Id == id);
                     if (!definition.UsesAnyCatalogModel)
@@ -419,8 +534,23 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(appearance.CurrentFaceId, Is.EqualTo(assignment.FaceId));
                     Assert.That(appearance.CurrentHairColorId, Is.EqualTo(assignment.HairColorId));
                     CollectionAssert.AreEquivalent(assignment.ItemIds, wardrobe.EquippedItemIds);
+                    Assert.That(assignment.UsesRandomBody, Is.EqualTo(definition.UsesRandomBody));
+                    Assert.That(body, Is.Not.Null);
+                    if (assignment.UsesRandomBody)
+                    {
+                        Assert.That(assignment.HeightCm, Is.InRange(160, 185));
+                        Assert.That(assignment.Build, Is.InRange(0f, 1f));
+                        Assert.That(body.HeightCm, Is.EqualTo(assignment.HeightCm));
+                        Assert.That(body.Build, Is.EqualTo(assignment.Build));
+                        heights.Add(assignment.HeightCm); builds.Add(assignment.Build);
+                    }
+                    else
+                    {
+                        Assert.That(body.HasSelection, Is.False, "Scripted combat morphology keeps its authored stature.");
+                        Assert.That(body.Build, Is.EqualTo(.5f));
+                    }
                     string full = assignment.ModelId + "|" + appearance.CurrentFaceId + "|" + appearance.CurrentHairColorId + "|" +
-                        string.Join("|", wardrobe.EquippedItemIds.OrderBy(item => item));
+                        string.Join("|", wardrobe.EquippedItemIds.OrderBy(item => item)) + "|" + assignment.HeightCm + "|" + assignment.Build;
                     if (remembered.TryGetValue(id, out string previous))
                         Assert.That(full, Is.EqualTo(previous), "Recreation in reverse order keeps the assigned model, face and clothes: " + id);
                     else
@@ -439,6 +569,8 @@ namespace BarPromenade.Tests.PlayMode
                     Object.DestroyImmediate(actor.gameObject);
                 }
             }
+            Assert.That(heights.Count, Is.GreaterThan(1), "Permanent residents use different heights.");
+            Assert.That(builds.Count, Is.GreaterThan(1), "Permanent residents use different builds independently of clothes.");
 
             // Even identical starting hashes consume distinct choices first; after
             // exhaustion the allocator reuses a least-used visible combination.

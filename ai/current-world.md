@@ -1290,13 +1290,15 @@ cemetery:own interiors/returns.
   Hat/3D glasses/painted face/arm ink/5 clips; free-hand adjustment.
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
-  Receiver/seamer retain fixed `NpcWardrobe` outfits; body/ink/face/hair/glasses
-  stay independent. The shared `ordinary-worker-v1` supplies 13 placed people:
-  fair, port, factory, driver, village; plus 13 walkers.
-  Four faces, three hair colors, 18 items/8 slots/3 presets; hero/NPC hands +20%,
-  slim depth, fixed wrists. `NpcWardrobe` owns coverage; `NpcHandPose` bends
-  bare/gloved fingers around wheel tubes. `DefaultNpcPopulation` assigns stable
-  role-valid looks by ID without repeats; `CreateForCharacter` builds them.
+  Receiver/seamer: fixed `NpcWardrobe`; body/ink/face/hair/glasses independent.
+  `ordinary-worker-v1`:fair/port/factory/driver/station/bartender +13walkers.
+  Men:hero anatomy/NPC rig,160–185cm/slim–chubby+belly.
+  4faces/3haircolors/21skinned items/8slots/3presets,shared assets/coverage;
+  vest/jackets/cardigan/coat/overshirt/trousers/shoes;hero/bespoke/combat kept.
+  Known initial-import gap: `BodyNpc/CLO_Outer_cardiganBody` affine-basis
+  validation fails before skin remap; source hashes/coordinates checked, unresolved.
+  Hero/NPC hands:+20%,slim,fixed wrists;`NpcHandPose`:bare/gloved grip.
+  `DefaultNpcPopulation`/`CreateForCharacter`:stable IDs/looks by role,no repeats.
   Four wait at bench. Snapshot-owned `DriverRest`/`DriverLunch`:
   cart→bench/bread→stow/stand→load; shared seat/food/pause/seek/range/debug/custody.
   `LifeSeconds` pauses; work time owns walks.
@@ -2156,11 +2158,10 @@ cemetery:own interiors/returns.
   source wear; shared opaque/glass/emission/service paths stay. Residential
   identity, `SplitTheG`, menu and gameplay stay. Direct bar loads also select
   Residential; explicit legacy district layouts retain their own profiles;
-- six compact practicals (one bounded key shadow), two finite countertop
-  bounces, one bounded `256` HDR reflection, Neutral grade, refitted dust/DOF
-  and the slow Ø≈1.38m fan with pale warm matte blades keep the warm dry pub. The skippable `1.35 s` reveal settles
-  its lens/roll into the indoor chase camera. SSR and experimental SCGI remain
-  outside ordinary bar gameplay;
+- six practicals/one key shadow, two finite counter bounces, one bounded `256`
+  HDR reflection, Neutral/dust/DOF keep the warm dry pub. Pale warm matte
+  Ø≈1.38m fan: pivotY2.55,20°/s; fixed brass stem/beam clearance6.5cm.
+  Skippable `1.35 s` reveal settles lens/roll into chase. No ordinary bar SSR/SCGI;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
   profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
   fluorescent housings and articulated CCTV pivots are one deterministic
@@ -2695,13 +2696,16 @@ cemetery:own interiors/returns.
   All nine drink. Each entry independently shuffles a balanced
   Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared service assets.
   `BarPatronDrinkProp` caches physical grip/rim/base/bounds and typed sip/torso
-  profiles. Counter patrons retain the exact `CafeManDrink` in their single
-  graph; booth patrons keep their seated graph. The shared seeded
-  Rest/Raise/Sip/Lower cadence brings each rim to the mouth with its matching
+  profiles. Counter `CafeManDrink` and booth seated graphs stay. Seeded
+  Rest/Raise/Sip/Lower brings each rim to the mouth with its matching
   handle/cupped/cylinder grip. After `Lower`, each vessel returns upright to
   the actual counter/booth/pub tabletop with the free hand supported; its full
   footprint, including handles, stays inside rectangular/circular surfaces.
   Slight deterministic, non-referential head drift lasts until the next `Raise`.
+  Counter:Bottle→ShotGlass; distinct seeded sip drain. Empty:left wave/wait,
+  Same-cup FIFO with hero;R bent at support, offers empty mug/pulls full to
+  original dock before release. Seven loops stay.
+  Accepted request:look/one nod; service continues.
   Base pose is sampled before caching contacts. The nine drinkers lease
   `AlwaysAnimate` so offscreen body/hands/props stay aligned; disable/destroy
   restores prior culling, enable reacquires it;
@@ -2712,29 +2716,17 @@ cemetery:own interiors/returns.
   default locomotion and one towel, and leaves clothing/appearance
   to the global population. Both bespoke bartender model/source/provider/import
   families are removed;
-  `BarBartenderServiceChoreography` turns the root into its path, advances it
-  with that complete stride and then restores its working orientation while
-  binding socket-aware two-bone IK to the menu, bottle, tap or vessel. Total
-  torso tilt is capped at 38 degrees. Measured scaled shell bounds keep carry
-  and lift/transfer/lower placement above the real counter and outside the menu.
-  Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer remains 15.515 cm. For
-  beer he walks to the tap, pulls its handle over the slightly enlarged
-  handled mug, carries the full mug upright to the selected stool, aligns his
-  body opposite it and leans over the counter while the left palm follows the
-  handle through a smooth placement directly before the hero. For wine,
-  cognac and vodka he uses the same full Walk to reach the selected live shelf
-  bottle, takes it only at right-hand contact, carries it to the server-edge
-  preparation vessel on the opposite side from the guest booklet, pours into the matching `WineGlass`, `Snifter` or
-  `ShotGlass`, carries the full vessel to the selected stool and sets it down,
-  then walks the bottle back to its exact shelf pose. The active root and feet
-  remain on the authored floor: the legacy `0.42 m` duckboard and matching
-  actor lift are absent. During the quiet shared Wipe, that grounded placement
-  puts the towel against the real `Y = 1.02 m` counter top and the clip carries
-  it along the surface. The same arm hides/reveals it behind the back before
-  other actions/wiping; rear hand contact gates service.
-  Central-tap beer and all
-  three single-bottle routes are live; multi-ingredient mixing and simultaneous
-  multi-bottle choreography remain deferred;
+  `BarBartenderServiceChoreography` turns/walks the root, restores working
+  facing and binds anatomical IK; total torso tilt≤38°. Scaled shell bounds
+  keep lift/transfer/lower above wood/outside paper. Wine/snifter/shot:
+  18.5/12.8/5.8cm; beer15.515cm. First service routes appear below.
+  Root/feet stay on the floor; no duckboard/lift. Shared Wipe touches `Y1.02m`:
+  a reachable whole stroke keeps15mm from open/closed menu or physically stows.
+  Idle stow/Walk/turn/draw moves to another bounded patch; service preempts.
+  The flat menu travels on the left palm ahead of the torso, refreshed after IK.
+  The same arm hides/reveals it behind the back; rear contact gates service.
+  Free right palm braces/repositions/notices; occupied IK/Walk/towel win.
+  Central-tap beer/three bottle routes live; mixing/multi-bottle remain deferred;
 - the soundscape keeps one diffuse occupied-room bed, then places two
   independent `8 s` mono murmur pockets at the real booth and social-table
   groups. One fully spatial World voice moves between those groups and the
@@ -2806,15 +2798,12 @@ cemetery:own interiors/returns.
   carries a name, fixed price and two-line description; four matching shelf
   bottles are centred behind the counter. The cafe adapter remains three
   selection-only item names. A rejected bar purchase leaves the booklet open
-  with the existing failure feedback. A successful confirmation deducts the price, closes the
-  booklet on the counter and commits a pending order, but defers intoxication,
-  last-drink, consumed-count and stress effects until the physical drink is
-  finished. Beer uses the central tap: the bartender walks to it, takes the
-  `155 mm`-high mug, pulls the real handle, fills it with the world-space stream,
-  carries it upright to the selected place and sets it directly before the
-  hero with its handle on his right. The bartender approaches the reachable
-  guest-side line, bends from the spine and keeps his palm on the handle until
-  the mug is resting, so the last part of the path has no throw or roll. Wine,
+  with failure feedback. Confirmation closes the booklet for the request gesture;
+  completion revalidates, charges once and queues behind earlier guests.
+  Intoxication/last-drink/count/stress commit only after drinking.
+  Beer: full Walk to the central tap, `155 mm` mug, real handle/world stream;
+  upright carry to the selected place, handle right. Guest-side reach/spine
+  bend keep the palm on the handle until supported, without throw/roll. Wine,
   cognac and vodka use the selected shelf bottle. The bartender reaches its
   live position with the full Walk, takes it only when the right hand makes
   contact, then walks to a stable upright preparation vessel at the server edge
@@ -2830,15 +2819,26 @@ cemetery:own interiors/returns.
   captured eye-space offset through the animated head's complete pose. It eases
   `0.02 m` back along that gaze at the mouth and temporarily uses a `0.03 m`
   near plane. During the sip the drinking rim stays at the
-  mouth, the mug reaches horizontal and remains in frame, and the head and
+  mouth, the mug reaches horizontal, and the head and
   torso rise with it in the same restrained motion as the corrected bar
   patrons. All drinks use continuous right-hand Hero V2. Lean precedes contact;
   wrists lift for approach, carry until counter support, then retract.
   Clavicle reach uses upper arm, not nested wrist.
   Completion restores seated camera/look.
   Cached palm/thumb/finger anatomy orients grip; fingers close post-animation.
-  Wine/snifter use cupped bowl grips, shot its body, beer its handle. The order
-  consumes once after action. Next order: contact pickup, .25m straight back
+  Wine/snifter use cupped bowl grips, shot its body, beer its handle.
+  View is head-tracked. Pickup/sip/return: manual yaw±12°/pitch±10°.
+  Menu/repeat request: ordinary seated yaw±70°/pitch−25°…55°; gaze retained.
+  Menu confirm/empty gaze/E:forward L wave in FPS, then two R-index MCP taps.
+  Palm stays horizontal/wrist fixed; thumb/other fingers clenched above wood.
+  `hand_grip.gestures`:PointingFist/adjacent IndexTap05–60; no counter penetration;
+  Empty-beer repeat: typed R grip/short supported offer/release before charge;
+  reach-fitted up to12cm, whole mug1cm from book/edge. Other vessels/no cup: no offer.
+  Same mug→tap/planted server retract/return; other cups wait for bottle.
+  A second explicit sip applies effects once.
+  Accepted first/repeat payments briefly show actual debit/balance at left HUD
+  with the shared payment cue; gesture/failure/spam never charges or notifies.
+  Different menu order: contact pickup, .25m straight back
   with facing held, vertical lower at fixed X/Z. Open right palm braces a fixed
   top point. Hide only fully below/guest-occluded, then fetch next.
   Camera-local arms stay off; seated camera hides only head.

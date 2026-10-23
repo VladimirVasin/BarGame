@@ -41,11 +41,19 @@ namespace BarPromenade
         public bool IsTextVisible => page != null && page.IsTextVisible;
         public bool IsPlaced { get; private set; }
         public bool IsRestingOnCounter { get; private set; }
+        public bool IsFollowingCarrier => followsCarrier;
         public Transform PropRoot => authored != null
             ? authored.transform
             : null;
         public Transform GripAnchor => motion?.GripAnchor;
         public Transform Carrier => motion?.Carrier;
+        public Pose DockWorldPose => motion != null ? motion.DockPose : baseDockPose;
+
+        public void RefreshCarrierPose()
+        {
+            if (followsCarrier && motion?.Carrier != null)
+                motion.AttachToCarrier();
+        }
         public CounterMenuPageView Page => page;
         public Vector3 CameraFocusWorldPosition => page != null
             ? page.FocusWorldPosition

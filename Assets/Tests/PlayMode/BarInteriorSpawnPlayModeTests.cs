@@ -184,6 +184,20 @@ namespace BarPromenade.Tests.PlayMode
             bar.ArrivalPresentation.Skip();
             yield return null;
 
+            BarCeilingFan fan = bar.Room.GetComponentInChildren<BarCeilingFan>();
+            Assert.That(fan, Is.Not.Null);
+            Assert.That(Vector3.Distance(bar.Room.InverseTransformPoint(fan.transform.position),
+                new Vector3(0f, 2.55f, -.65f)), Is.LessThan(.001f), "The whole fan sits below the beams at its authored pivot.");
+            Quaternion fanBefore = fan.transform.localRotation;
+            float fanStarted = Time.time;
+            for (int frame = 0; frame < 6; frame++) yield return null;
+            float fanSpeed = Quaternion.Angle(fanBefore, fan.transform.localRotation) / (Time.time - fanStarted);
+            Assert.That(fanSpeed, Is.EqualTo(20f).Within(.2f), "The fan turns at the deliberately faster authored speed.");
+            CaptureBarWipeReview(bar, "Test lowered ceiling fan from entrance",
+                new Vector3(0f, 1.72f, -3.35f), new Vector3(0f, 2.55f, -.65f), 65f);
+            CaptureBarWipeReview(bar, "Test lowered ceiling fan at eye height",
+                new Vector3(1.1f, 1.7f, -1.4f), new Vector3(0f, 2.55f, -.65f), 65f);
+
             BarBartenderPresentation bartender = bar.Bartender;
             Assert.That(bartender, Is.Not.Null);
             Assert.That(bartender.UsesOrdinaryRig, Is.True);
@@ -213,12 +227,28 @@ namespace BarPromenade.Tests.PlayMode
                     out bool wipeLoops),
                 Is.True);
             Assert.That(wipeLoops, Is.True);
+            bartender.Advance(.35f);
             AdvanceWipeToPhase(bartender, wipeClip.length, 0.12f);
             Vector3 first = MeasureWipeTowel(towel, counterRenderer.bounds);
+            Vector3 rightFirst = bartender.transform.InverseTransformPoint(bartender.Registry.RightHand.position);
+            Quaternion upperFirst = bartender.Registry.RightUpperArm.localRotation;
+            Quaternion elbowFirst = bartender.Registry.RightForearm.localRotation;
+            Assert.That(bartender.FreeRightHandSupportWeight, Is.GreaterThan(.5f));
             AdvanceWipeToPhase(bartender, wipeClip.length, 0.28f);
             Vector3 second = MeasureWipeTowel(towel, counterRenderer.bounds);
+            Vector3 rightSecond = bartender.transform.InverseTransformPoint(bartender.Registry.RightHand.position);
+            float armTurn = Mathf.Max(Quaternion.Angle(upperFirst, bartender.Registry.RightUpperArm.localRotation),
+                Quaternion.Angle(elbowFirst, bartender.Registry.RightForearm.localRotation));
+            Assert.That(bartender.FreeRightHandSupportWeight, Is.GreaterThan(.5f));
+            Vector3 armsTarget = bar.Room.InverseTransformPoint((bartender.Registry.LeftHand.position + bartender.Registry.RightHand.position) * .5f);
+            CaptureBarWipeReview(bar, "Test bartender active right arm", armsTarget + new Vector3(1.2f, .8f, -1.3f), armsTarget, 58f);
             AdvanceWipeToPhase(bartender, wipeClip.length, 0.44f);
             Vector3 third = MeasureWipeTowel(towel, counterRenderer.bounds);
+            Vector3 rightThird = bartender.transform.InverseTransformPoint(bartender.Registry.RightHand.position);
+            armTurn = Mathf.Max(armTurn, Quaternion.Angle(upperFirst, bartender.Registry.RightUpperArm.localRotation),
+                Quaternion.Angle(elbowFirst, bartender.Registry.RightForearm.localRotation));
+            Assert.That(Mathf.Max(Vector3.Distance(rightFirst, rightSecond), Vector3.Distance(rightSecond, rightThird)) > .015f || armTurn > 1f,
+                Is.True, "The free right arm visibly supports and repositions while the left hand wipes.");
 
             first.y = 0f;
             second.y = 0f;
@@ -235,6 +265,130 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.Distance(first, third),
                 Is.LessThanOrEqualTo(MaximumWipeReturnError),
                 "CafeAttendantWipe does not return across the same patch.");
+
+            Assert.That(bartender.Registry.HasWipeStrokeBounds, Is.True);
+            Bounds originalStroke = bartender.Registry.WipeStrokeWorldBounds;
+            BarDrinkMenuPresentation menu = bar.DrinkShop.MenuPresentation;
+            menu.CompleteDelivery();
+            Assert.That(menu.RestOnCounter(), Is.True);
+            Assert.That(bar.DrinkServiceView.TryGetRestingMenuBounds(out Bounds menuBounds), Is.True);
+            menu.PropRoot.position += new Vector3(originalStroke.center.x - menuBounds.center.x, 0f,
+                originalStroke.center.z - menuBounds.center.z);
+            yield return null;
+            if (!bartender.Registry.HasSafeWipePatch)
+            {
+                bool sawStowing = bartender.TowelPresentation.State == BarBartenderTowelState.Stowing;
+                for (int step = 0; step < 300 && !bartender.IsTowelServiceReady; step++)
+                {
+                    sawStowing |= bartender.TowelPresentation.State == BarBartenderTowelState.Stowing;
+                    bartender.Advance(1f / 60f);
+                }
+                Assert.That(sawStowing, Is.True, "An unreachable wipe patch requires the established physical towel stow.");
+                Assert.That(bartender.IsTowelServiceReady, Is.True);
+                Assert.That(bartender.Registry.ServiceTowel, Is.SameAs(towel));
+                Assert.That(bartender.TowelPresentation.IsTowelVisible, Is.False);
+                Assert.That(bartender.TowelPresentation.HandBehindBack, Is.True);
+                Vector3 target = bar.Room.InverseTransformPoint(menu.PropRoot.position + Vector3.up * .25f);
+                CaptureBarWipeReview(bar, "Test towel stowed while menu blocks reachable wipe patch",
+                    target + new Vector3(1.05f, .95f, -1.35f), target, 58f);
+            }
+            else
+            {
+                Vector3? selectedOffset = null;
+                foreach (float phase in new[] { .12f, .28f, .44f, .70f, .94f })
+                {
+                    AdvanceWipeToPhase(bartender, wipeClip.length, phase);
+                    Assert.That(bar.DrinkServiceView.TryGetRestingMenuBounds(out Bounds book), Is.True);
+                    Bounds paddedBook = book;
+                    paddedBook.Expand(new Vector3(.03f, 0f, .03f));
+                    MeasureWipeTowel(towel, counterRenderer.bounds);
+                    foreach (Renderer part in towel.Renderers)
+                    {
+                        if (!part.enabled || !part.gameObject.activeInHierarchy) continue;
+                        Bounds cloth = part.bounds;
+                        bool crosses = cloth.max.x > paddedBook.min.x && cloth.min.x < paddedBook.max.x &&
+                            cloth.max.z > paddedBook.min.z && cloth.min.z < paddedBook.max.z;
+                        if (crosses)
+                        {
+                            BarBartenderAssetRegistry registry = bartender.Registry;
+                            Vector3 wrist = registry.LeftHand.position;
+                            string evidence = $"phase={phase:F3}; book={book.ToString("F5")}; " +
+                                $"paddedBook={paddedBook.ToString("F5")}; cloth={cloth.ToString("F5")}; " +
+                                $"stroke={registry.WipeStrokeWorldBounds.ToString("F5")}; " +
+                                $"offset={registry.WipeStrokeOffset.ToString("F5")}; safe={registry.HasSafeWipePatch}; " +
+                                $"leftWrist={wrist.ToString("F5")}; target={bartender.LastWipeHandTarget.ToString("F5")}; " +
+                                $"leftWristTargetError={bartender.WipeHandTargetError:F6}";
+                            TestContext.WriteLine(evidence);
+                            Vector3 target = bar.Room.InverseTransformPoint(book.center + Vector3.up * .22f);
+                            CaptureBarWipeReview(bar, "Test towel overlap with resting menu",
+                                target + new Vector3(1.05f, .95f, -1.35f), target, 58f);
+                            Assert.That(crosses, Is.False,
+                                "The physical towel must keep fifteen millimetres clear of the closed menu. " + evidence);
+                        }
+                    }
+                    Vector3 offset = bartender.Registry.WipeStrokeOffset;
+                    Assert.That(offset.magnitude, Is.GreaterThan(.01f), "A book occupying the former wipe patch must move the whole stroke.");
+                    if (selectedOffset.HasValue)
+                        Assert.That(Vector3.Distance(selectedOffset.Value, offset), Is.LessThan(.0001f), "One menu uses one stable wipe patch throughout the cycle.");
+                    else selectedOffset = offset;
+                    if (phase == .28f || phase == .70f)
+                    {
+                        Vector3 target = bar.Room.InverseTransformPoint(book.center + Vector3.up * .22f);
+                        CaptureBarWipeReview(bar, "Test wiping clear of menu " + (phase == .28f ? "outward" : "return"),
+                            target + new Vector3(1.05f, .95f, -1.35f), target, 58f);
+                    }
+                }
+            }
+
+            var notice = new BarDrinkServiceTimeline();
+            Assert.That(notice.BeginOpen(), Is.True);
+            bartender.ApplyServiceFrame(notice.CurrentFrame);
+            for (int sample = 0; sample < 240 && !bartender.IsTowelServiceReady; sample++) bartender.Advance(1f / 60f);
+            Assert.That(bartender.IsTowelServiceReady, Is.True, "The same towel must be stowed before the service notice.");
+            Vector3 noticeFirst = Vector3.zero;
+            float noticeTravel = 0f;
+            foreach (float step in new[] { .12f, .25f, .25f })
+            {
+                notice.Advance(step);
+                bartender.ApplyServiceFrame(notice.CurrentFrame);
+                bartender.Advance(.35f);
+                Assert.That(bartender.CurrentClipKind, Is.EqualTo(BarBartenderClipKind.Notice));
+                Vector3 hand = bartender.transform.InverseTransformPoint(bartender.Registry.RightHand.position);
+                if (noticeFirst == Vector3.zero) noticeFirst = hand;
+                else noticeTravel = Mathf.Max(noticeTravel, Vector3.Distance(noticeFirst, hand));
+            }
+            Assert.That(noticeTravel, Is.GreaterThan(.015f), "The unoccupied right arm responds during Notice as well as wiping.");
+            Vector3 noticeTarget = bar.Room.InverseTransformPoint((bartender.Registry.RightHand.position + bartender.Registry.LeftHand.position) * .5f);
+            CaptureBarWipeReview(bar, "Test bartender free right arm noticing guest",
+                noticeTarget + new Vector3(1.2f, .8f, -1.3f), noticeTarget, 58f);
+        }
+
+        private static void CaptureBarWipeReview(BarInteriorRoot bar, string name, Vector3 roomCamera, Vector3 roomTarget, float fov)
+        {
+            Camera camera = Camera.main;
+            Pose previous = new Pose(camera.transform.position, camera.transform.rotation);
+            float previousFov = camera.fieldOfView;
+            SkinnedMeshRenderer[] skins = bar.Bartender.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            bool[] recalculate = new bool[skins.Length];
+            try
+            {
+                for (int i = 0; i < skins.Length; i++)
+                {
+                    recalculate[i] = skins[i].forceMatrixRecalculationPerRender;
+                    skins[i].forceMatrixRecalculationPerRender = true;
+                }
+                Vector3 from = bar.Room.TransformPoint(roomCamera), target = bar.Room.TransformPoint(roomTarget);
+                camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                camera.fieldOfView = fov;
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.BarInterior, name);
+            }
+            finally
+            {
+                for (int i = 0; i < skins.Length; i++)
+                    if (skins[i] != null) skins[i].forceMatrixRecalculationPerRender = recalculate[i];
+                camera.transform.SetPositionAndRotation(previous.position, previous.rotation);
+                camera.fieldOfView = previousFov;
+            }
         }
 
         [UnityTest]
@@ -252,11 +406,16 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.ResetDrinkingState();
             BarInteriorRoot bar = null;
             yield return LoadBar(result => bar = result);
+            if (!verifyCompletionOnly) FocusBarCaptureGameView();
             var towelHandoff = bar.gameObject.AddComponent<BarTowelHandoffProbe>();
             towelHandoff.Initialize(bar);
             bar.ArrivalPresentation.Skip();
             yield return new WaitForFixedUpdate();
 
+            using var freshSkins = new BarServiceCaptureSkinScope(bar);
+            using var counterQueue = !verifyCompletionOnly ? new CounterPatronQueueProof(bar) : null;
+            if (!verifyCompletionOnly)
+                yield return VerifyBartenderChangesWipePatch(bar);
             BarBartenderPresentation bartender = bar.Bartender;
             BarDrinkShopController shop = bar.DrinkShop;
             BarDrinkServiceView service = bar.DrinkServiceView;
@@ -288,23 +447,22 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             station.Interact(bar.Player.Interactor);
 
-            float timeout = Time.realtimeSinceStartup + 5f;
+            int seatStartFrame = Time.frameCount;
+            float seatStartedAt = Time.realtimeSinceStartup;
             while (!station.Seat.IsSeated &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(seatStartFrame, 300, seatStartedAt, 30f))
             {
-                yield return new WaitForFixedUpdate();
+                yield return null;
             }
 
-            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(station.Seat.IsSeated, Is.True,
+                DescribeBarSimulationWait(bar, seatStartFrame, seatStartedAt));
             Assert.That(shop.ActiveServiceMirrored, Is.True,
                 "The production regression must exercise the mirrored " +
                 "rightmost service route.");
-            timeout = Time.realtimeSinceStartup + 6f;
-            while (!shop.IsBrowsing &&
-                   Time.realtimeSinceStartup < timeout)
-            {
-                yield return new WaitForFixedUpdate();
-            }
+            yield return VerifyMenuDeliveryOutsideBody(bar);
+            int phaseStartFrame;
+            float phaseStartedAt;
 
             var towelTerminal = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
             yield return AtFinalBarPose(towelTerminal, () =>
@@ -314,10 +472,19 @@ namespace BarPromenade.Tests.PlayMode
                     "The real bartender never completed menu delivery. " + DescribeTowelHandoff(bartender, shop));
             });
             Object.Destroy(towelTerminal);
+            if (!verifyCompletionOnly)
+                yield return VerifyOpenMenuClearance(bar);
             Assert.That(
                 shop.Select(FindOfferIndex(shop, DrinkId.LightBeer)),
                 Is.True);
-            station.Interact(bar.Player.Interactor);
+            int paymentNotices = shop.PaymentNotice.NotificationCount;
+            int cashBeforeOrder = GameSessionState.CashBalance;
+            if (counterQueue != null) yield return counterQueue.StageRequests();
+            yield return VerifyInitialOrderGesture(bar, DrinkId.LightBeer);
+            AssertPaymentNotice(shop, paymentNotices + 1, shop.SelectedOffer.Price, cashBeforeOrder - shop.SelectedOffer.Price);
+            if (!verifyCompletionOnly)
+                yield return CapturePaymentNotice(bar, "Test first beer payment receipt");
+            if (counterQueue != null) yield return counterQueue.WaitForHeroDispatch();
             Assert.That(
                 shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
@@ -326,10 +493,11 @@ namespace BarPromenade.Tests.PlayMode
                 bartender,
                 leftFoot,
                 rightFoot, bar);
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BeerWalkToTap &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("walk to beer tap");
@@ -339,10 +507,11 @@ namespace BarPromenade.Tests.PlayMode
                 shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BeerGlassPickup),
                 "The choreography never reported its real tap arrival.");
-            timeout = Time.realtimeSinceStartup + 5f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase !=
                        BarDrinkServicePhase.BeerCarryToGuest &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 300, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("beer pickup and pour");
@@ -357,10 +526,11 @@ namespace BarPromenade.Tests.PlayMode
             int carriedFrames = 0;
             int carryTranslationFrames = 0;
             Vector3 carryStartPosition = bartender.transform.position;
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BeerCarryToGuest &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 bool translated = travel.Observe("carry beer to guest");
@@ -410,10 +580,11 @@ namespace BarPromenade.Tests.PlayMode
 
             Vector3 previousVesselPosition = vessel.transform.position;
             int placementContactFrames = 0;
-            timeout = Time.realtimeSinceStartup + 3f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BeerGlassPlacement &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 180, phaseStartedAt, 30f))
             {
                 // Compare the vessel and hand from the same completed
                 // LateUpdate pose, before the next service Update moves it.
@@ -492,7 +663,10 @@ namespace BarPromenade.Tests.PlayMode
                 yield return VerifyHeroDrinkCompletion(bar, vessel);
             else
                 yield return VerifyHeroDrinkContacts(bar, vessel, DrinkId.LightBeer);
-            yield return VerifyEmptyVesselCleanup(bar, DrinkId.Vodka);
+            if (verifyCompletionOnly)
+                yield return VerifyEmptyVesselCleanup(bar, DrinkId.Vodka);
+            else
+                yield return VerifySameDrinkRefill(bar, DrinkId.LightBeer);
             towelHandoff.AssertComplete();
         }
 
@@ -517,9 +691,11 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.UpdateDrinkingProgress(80, DrinkId.None, 0);
             BarInteriorRoot bar = null;
             yield return LoadBar(result => bar = result);
+            if (drinkId == DrinkId.RedWine) FocusBarCaptureGameView();
             bar.ArrivalPresentation.Skip();
             yield return new WaitForFixedUpdate();
 
+            using var freshSkins = new BarServiceCaptureSkinScope(bar);
             BarBartenderPresentation bartender = bar.Bartender;
             BarDrinkShopController shop = bar.DrinkShop;
             BarDrinkServiceView service = bar.DrinkServiceView;
@@ -549,19 +725,19 @@ namespace BarPromenade.Tests.PlayMode
                 seatPlan.EntryPose.RootRotation;
             Physics.SyncTransforms();
             station.Interact(bar.Player.Interactor);
-            float timeout = Time.realtimeSinceStartup + 5f;
+            int seatStartFrame = Time.frameCount;
+            float seatStartedAt = Time.realtimeSinceStartup;
             while (!station.Seat.IsSeated &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(seatStartFrame, 300, seatStartedAt, 30f))
             {
-                yield return new WaitForFixedUpdate();
+                yield return null;
             }
 
-            timeout = Time.realtimeSinceStartup + 6f;
-            while (!shop.IsBrowsing &&
-                   Time.realtimeSinceStartup < timeout)
-            {
-                yield return new WaitForFixedUpdate();
-            }
+            Assert.That(station.Seat.IsSeated, Is.True,
+                DescribeBarSimulationWait(bar, seatStartFrame, seatStartedAt));
+            yield return VerifyMenuDeliveryOutsideBody(bar);
+            int phaseStartFrame;
+            float phaseStartedAt;
 
             Assert.That(shop.IsBrowsing, Is.True, DescribeTowelHandoff(bartender, shop));
             Assert.That(Time.timeScale, Is.InRange(0.94f, 0.96f),
@@ -583,7 +759,11 @@ namespace BarPromenade.Tests.PlayMode
             int cashBefore = GameSessionState.CashBalance;
             int intoxicationBefore = GameSessionState.IntoxicationLevel;
             int drinksBefore = GameSessionState.DrinksConsumed;
-            station.Interact(bar.Player.Interactor);
+            int paymentNotices = shop.PaymentNotice.NotificationCount;
+            yield return VerifyInitialOrderGesture(bar, drinkId);
+            AssertPaymentNotice(shop, paymentNotices + 1, shop.SelectedOffer.Price, cashBefore - shop.SelectedOffer.Price);
+            if (drinkId == DrinkId.RedWine)
+                yield return CapturePaymentNotice(bar, "Test first bottle drink payment receipt");
             Assert.That(shop.SelectedOffer.DrinkId, Is.EqualTo(drinkId));
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelf));
@@ -603,10 +783,11 @@ namespace BarPromenade.Tests.PlayMode
             var travel = new BartenderTravelProbe(
                 bartender, leftFoot, rightFoot, bar);
             int shelfTravelFrames = 0;
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BottleWalkToShelf &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 if (travel.Observe("walk to selected shelf"))
@@ -648,9 +829,10 @@ namespace BarPromenade.Tests.PlayMode
                 pourTravelStart, Vector3.up).magnitude;
             Vector3 previousBottlePosition =
                 service.CarriedBottleRoot.position;
-            timeout = Time.realtimeSinceStartup + 3f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase == BarDrinkServicePhase.BottlePickup &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 180, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("pick up selected bottle");
@@ -680,10 +862,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
             int pourTravelFrames = 0;
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BottleCarryToPour &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 if (travel.Observe("carry selected bottle to pour point"))
@@ -712,11 +895,12 @@ namespace BarPromenade.Tests.PlayMode
                 "the preparation point with the full Walk clip.");
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.VesselPlacement));
-            timeout = Time.realtimeSinceStartup + 4f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while ((shop.Phase == BarDrinkServicePhase.VesselPlacement ||
                     (shop.Phase == BarDrinkServicePhase.Pouring &&
                      shop.Timeline.PhaseProgress < 0.40f)) &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 240, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("place vessel and begin pour");
@@ -735,6 +919,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtFinalBarPose(handProof, () =>
             {
                 CaptureBarServiceDetail(vessel.transform.position, $"13-pouring-{drinkId}");
+                AssertBottlePoursFromPlayerLeft(bar, vessel, "Initial bottle pour");
                 AssertHandWrap(bartender.Registry.HandPose, false,
                     service.CarriedBottleGripCenterWorldPosition,
                     shop.ActiveBottleWorldRotation * Vector3.up, "Bartender bottle");
@@ -772,9 +957,10 @@ namespace BarPromenade.Tests.PlayMode
                     vessel.PourTargetWorldPosition),
                 Is.LessThan(0.003f));
 
-            timeout = Time.realtimeSinceStartup + 4f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase == BarDrinkServicePhase.Pouring &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 240, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("pour selected drink");
@@ -785,10 +971,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(vessel.FillProgress, Is.EqualTo(1f));
             Pose counterPose = shop.ResolveServedCounterWorldPose(vessel);
             int guestTravelFrames = 0;
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BottleCarryToGuest &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 if (travel.Observe("carry full vessel to guest"))
@@ -826,10 +1013,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarDrinkServicePhase.BottleVesselPlacement));
             Vector3 previousVesselPosition = vessel.transform.position;
             int placementContactFrames = 0;
-            timeout = Time.realtimeSinceStartup + 3f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BottleVesselPlacement &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 180, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("place vessel on counter");
@@ -868,10 +1056,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.005f));
             AssertVesselRestsOnPhysicalCounter(bar, service, vessel);
             int returnTravelFrames = 0;
-            timeout = Time.realtimeSinceStartup + 8f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase ==
                        BarDrinkServicePhase.BottleWalkToShelfReturn &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 480, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 if (travel.Observe("return selected bottle to shelf"))
@@ -895,9 +1084,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(returnTravelFrames, Is.GreaterThan(2));
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BottleReturn));
-            timeout = Time.realtimeSinceStartup + 3f;
+            phaseStartFrame = Time.frameCount;
+            phaseStartedAt = Time.realtimeSinceStartup;
             while (shop.Phase == BarDrinkServicePhase.BottleReturn &&
-                   Time.realtimeSinceStartup < timeout)
+                   HasBarSimulationBudget(phaseStartFrame, 180, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("set selected bottle back on shelf");
@@ -971,7 +1161,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBefore + 1));
             if (drinkId == DrinkId.RedWine)
-                yield return VerifyEmptyVesselCleanup(bar, DrinkId.Vodka);
+                yield return VerifySameDrinkRefill(bar, drinkId);
         }
 
         private static IEnumerator AtFinalBarPose(WarehouseRefrigeratorPresentationProbe probe,
@@ -998,6 +1188,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
             var clearance = new CounterSeatSkinClearance(bar);
+            using var drinkLook = new DrinkActionLookContract(bar, drinkId);
             BarPlayerDrinkReach reach = bar.Player.GameObject.GetComponent<BarPlayerDrinkReach>();
             Assert.That(reach, Is.Not.Null);
             NpcHandPose hand = bar.Player.GameObject.GetComponentInChildren<NpcHandPose>(true);
@@ -1018,6 +1209,7 @@ namespace BarPromenade.Tests.PlayMode
                             phase == BarDrinkServicePhase.PlayerDrinking ||
                             phase == BarDrinkServicePhase.PlayerVesselReturn)
                         {
+                            drinkLook.Observe(phase);
                             clearance.AssertClear("Hero drink " + phase + " " + progress.ToString("F3"));
                             Assert.That(reach.LastPelvisContactError, Is.LessThan(.001f),
                                 "The seated pelvis left its support during the reach.");
@@ -1035,6 +1227,8 @@ namespace BarPromenade.Tests.PlayMode
                             if (!sawApproach && progress > .20f)
                             {
                                 sawApproach = true;
+                                AreaCaptureFixture.CaptureCurrentCamera(Camera.main, SceneIds.BarInterior,
+                                    "Test seated reach view " + drinkId);
                                 CaptureBarServiceDetail(vessel.GripWorldPosition, $"14-hero-reaching-{drinkId}");
                             }
                         }
@@ -1085,6 +1279,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(reach.LastReturnContactError, Is.LessThanOrEqualTo(.003f));
                 Assert.That(Vector3.Distance(vessel.transform.position, counter.position), Is.LessThan(.003f));
                 AssertVesselRestsOnPhysicalCounter(bar, bar.DrinkServiceView, vessel);
+                yield return drinkLook.VerifyRestored();
             }
             finally { probe.CancelPending(); Object.Destroy(probe); clearance.Dispose(); }
         }
@@ -2183,6 +2378,9 @@ namespace BarPromenade.Tests.PlayMode
         private CityPedestrianHandPropRegistry original;
         private BarBartenderTowelState previousState;
         private Vector3 previousHand;
+        private int previousFrame;
+        private float previousProgress;
+        private Pose previousRoot;
         private bool hasSample, sawStow, sawPocket, sawDraw, sawReturn;
         private System.Exception failure;
 
@@ -2206,7 +2404,11 @@ namespace BarPromenade.Tests.PlayMode
                         $"Towel hand contact failed during {towel.State} p={towel.Progress:F3}.");
                     if (hasSample && previousState == towel.State)
                         Assert.That(Vector3.Distance(previousHand, towel.HandWorldPosition), Is.LessThan(.10f),
-                            "The pocket hand jumped between rendered frames.");
+                            $"The pocket hand jumped between rendered frames {previousFrame}->{Time.frameCount}; " +
+                            $"state={previousState}->{towel.State}, progress={previousProgress:F6}->{towel.Progress:F6}, " +
+                            $"hand={previousHand:F6}->{towel.HandWorldPosition:F6}, " +
+                            $"root={previousRoot.position:F6}/{previousRoot.rotation:F6}->" +
+                            $"{bar.Bartender.transform.position:F6}/{bar.Bartender.transform.rotation:F6}.");
                 }
                 if (towel.State == BarBartenderTowelState.Stowing && !sawStow && towel.Progress > .35f)
                 {
@@ -2234,6 +2436,9 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 previousState = towel.State;
                 previousHand = towel.HandWorldPosition;
+                previousFrame = Time.frameCount;
+                previousProgress = towel.Progress;
+                previousRoot = new Pose(bar.Bartender.transform.position, bar.Bartender.transform.rotation);
                 hasSample = true;
             }
             catch (System.Exception exception) { failure = exception; }

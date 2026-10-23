@@ -82,9 +82,9 @@ House: `build-mothers-house-interior-3d-model.py` via launcher;
 `python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: UV maps/regions/hash;
 `ArtSource/Player/player-{clothing,body-hair}-surfaces.json`.
 
-Close Unity for Blender. Worker: body/wardrobe, `DefaultNpcAssetSetup`.
-Residents: WoodWoman/shared actions; `--phase-two`: other four.
-`VillageLife` prebuild imports residents/props/doors.
+Close Unity. Rebuild order: hero source → `build-default-npc-3d-model.py` →
+`refresh-default-npc-damage.py` (launcher), then `DefaultNpcAssetSetup`.
+Residents: WoodWoman/actions; `--phase-two`:four; prebuild imports props/doors.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
@@ -100,10 +100,9 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
 python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
 ```
 
-Validate: launcher/generator `--validate-only`, keep `--phase-two`.
-Worker keeps five other bodies/actions;later banks keep earlier ones.
-`Bar Promenade/Default NPC/Rebuild Ordinary Worker`: worker/12 face-hair atlases;
-Inspector selects faces/hair/presets/slots.
+Validate:`--validate-only`;retain `--phase-two` and earlier bodies/actions.
+`Bar Promenade/Default NPC/Rebuild Ordinary Worker`:12 face-hair atlases;
+Inspector:faces/hair/presets/slots.
 Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
 global assignment avoids repeats and restores the same look across loads.
 Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
@@ -152,9 +151,10 @@ keep `.meta`/rollback;import is not atomic.
 `-Validate` stays;`-CompileOnly`:temporary, no publication.
 See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`:31 body/12 hair bones;`--surfaces-only`:UVs.
-`--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
-`Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
+`build-player-3d-model-v2.py`:31core+12hair;`--surfaces-only`:UV
+`--hand-grip-only --skip-animation-export --no-previews`:grips/`hand_grip.gestures`;
+`player_hand_gestures.validate`:shapes/FBX.
+`build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;

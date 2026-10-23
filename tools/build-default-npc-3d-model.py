@@ -16,7 +16,7 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,8 +29,9 @@ base = resident.base
 from player_3d_model_common import hex_to_linear_rgba
 from atlas_kit import PixelCanvas, read_generated_png
 import hand_bowl_grip
+import default_npc_body
 
-VERSION = "2.0.0"
+VERSION = "3.0.0"
 HAND_SIZE_SCALE = 1.20
 HAND_GIRTH_SCALE = .85
 HAND_GRIP_SHAPE = "CylindricalGrip"
@@ -39,11 +40,14 @@ HAND_GRIP_RADIUS = HAND_GRIP_WORLD_RADIUS / (1.78 / 1.75)
 MODEL = "StationWorker"
 ASSETS = ROOT / "Assets/Resources/VillageLife"
 SOURCE = ROOT / "ArtSource/VillageLife"
+HERO_BODY_SOURCE = ROOT / "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend"
+HEIGHT_SCALE = 1.78 / 1.75
 COLORS = {
     "skin": "AD8C74", "skin_shadow": "9C7B64", "white": "FFFFFF",
     "hair": "64625A", "hair_dark": "4A4841", "seam": "4C4D42",
     "shirt_everyday": "B5AD95", "shirt_work": "7A897E", "shirt_warm": "9A9682",
     "outer_everyday": "706657", "outer_work": "73796B", "outer_warm": "546966",
+    "outer_cardigan": "716A62", "outer_coat": "555A55", "outer_overshirt": "7C7968",
     "pants_everyday": "494B49", "pants_work": "67695C", "pants_warm": "595B54",
     "boots_everyday": "544639", "boots_work": "494739", "boots_warm": "4B443B",
     "sole": "34342D", "cap_everyday": "655F50", "cap_work": "686D62", "cap_warm": "767764",
@@ -51,6 +55,7 @@ COLORS = {
 }
 SLOTS = ("shirt", "outerwear", "trousers", "boots", "headwear", "scarf", "gloves", "apron")
 OUTFITS = ("everyday", "work", "warm")
+EXTRA_OUTERWEAR = ("cardigan", "coat", "overshirt")
 HAIR_COLORS = {"gray":"64625A", "brunette":"423023", "blond":"AE9668"}
 HAIR_MASKS = {}
 
@@ -514,6 +519,17 @@ class WorkerBuilder(base.PedestrianBuilder):
             self.add(prefix+"Lower."+side,geo,"shin."+side,color,"body" if skin else "clothing")
         if skin:return
         self.add(prefix+"Waistband",base.make_vertical_shell(((.981,.17*factor,.106*factor,.004),(1.009,.168*factor,.105*factor,.004)),20),"pelvis","seam")
+        # Different civilian cuts also carry different construction: pressed
+        # everyday fronts, reinforced work knees and side cargo pockets.
+        if outfit=="everyday":
+            for side,sign in (("L",1),("R",-1)):
+                vertices=[];cy=-.005 if side=="L" else .013
+                for z,cx,rx,ry in stations[3:]:
+                    for offset in (-.0015,.0015):
+                        vertices.append((sign*cx+offset,cy-ry-.001,z))
+                crease=self.add(prefix+"FrontCrease."+side,
+                    (vertices,[(r*2,r*2+1,r*2+3,r*2+2) for r in range(len(stations[3:])-1)]),
+                    "thigh."+side,"seam")
         if outfit=="work":
             for side,sign in (("L",1),("R",-1)):
                 vertices=[];cy=-.005 if side=="L" else .013
@@ -527,6 +543,9 @@ class WorkerBuilder(base.PedestrianBuilder):
                 faces=[(r*7+j,r*7+j+1,(r+1)*7+j+1,(r+1)*7+j) for r in range(3) for j in range(6)]
                 obj=self.add(prefix+"KneePatch."+side,(vertices,faces),"shin."+side,"trim")
                 self.weights(obj,[{"shin."+side:1-max(0,min(1,(v.co.z+obj.location.z-.43)/.12)),"thigh."+side:max(0,min(1,(v.co.z+obj.location.z-.43)/.12))} for v in obj.data.vertices])
+                self.add(prefix+"CargoPocket."+side,
+                    base.make_tapered_box((sign*.178,cy-.004,.652),(sign*.182,cy-.004,.755),
+                                         (.014,.108,0),(.016,.112,0)),"thigh."+side,color)
 
     def boots(self,outfit=None):
         skin=outfit is None;color="skin" if skin else "boots_"+outfit
@@ -538,23 +557,67 @@ class WorkerBuilder(base.PedestrianBuilder):
             rows=((.006,.052,toe-.027,.068),(.026,.059,toe-.031,.073),(.065,.058,toe-.028,.062),
                   (.10,.052,toe+.016,.054),(.138,.043,cy-.052,.048))
             if skin:rows=tuple((z*.60,w*.82,front+.01,rear*.85) for z,w,front,rear in rows)
+            elif outfit=="everyday":
+                rows=tuple((z*.92,w*.96,front+.012,rear*.96) for z,w,front,rear in rows)
+            elif outfit=="warm":
+                rows=tuple((z,w*1.035,front-.008,rear*1.02) for z,w,front,rear in rows)
             vertices=[]
             for z,width,front,rear in rows:
-                points=((-width*.65,front),(-width,front+.032),(-width,cy+rear*.55),(-width*.65,cy+rear),
-                        (width*.65,cy+rear),(width,cy+rear*.55),(width,front+.032),(width*.65,front))
+                toe_corner=.82 if outfit=="work" else .65
+                points=((-width*toe_corner,front),(-width,front+.032),(-width,cy+rear*.55),(-width*.65,cy+rear),
+                        (width*.65,cy+rear),(width,cy+rear*.55),(width,front+.032),(width*toe_corner,front))
                 vertices.extend((x+xx,yy,z) for xx,yy in points)
             faces=[tuple(reversed(range(8)))]+[(r*8+j,r*8+(j+1)%8,(r+1)*8+(j+1)%8,(r+1)*8+j) for r in range(4) for j in range(8)]
             faces.append(tuple(32+j for j in range(8)))
-            self.add(prefix+"Shoe."+side,(vertices,faces),"foot."+side,color,"body" if skin else "clothing")
+            shoe=self.add(prefix+"Shoe."+side,(vertices,faces),"foot."+side,color,"body" if skin else "clothing")
             if skin:continue
             height={"everyday":.155,"work":.19,"warm":.30}[outfit]
             upper_cy=-.005 if side=="L" else .013
             upper_width=.068 if outfit=="warm" else .061
             upper_depth=.074 if outfit=="warm" else .066
-            shaft=base.make_vertical_shell(((.096,.055,.057,cy),(.15,.058,.063,cy),(height,upper_width,upper_depth,upper_cy)),16)
-            shaft=([(xx+x,yy,z) for xx,yy,z in shaft[0]],shaft[1])
-            obj=self.add(prefix+"Shaft."+side,shaft,"shin."+side,color)
-            self.weights(obj,[{"foot."+side:1-max(0,min(1,(v.co.z+obj.location.z-.095)/.09)),"shin."+side:max(0,min(1,(v.co.z+obj.location.z-.095)/.09))} for v in obj.data.vertices])
+            # The former overlapping shaft was a different sixteen-point
+            # cylinder. A planted foot under a bent shin could expose its
+            # separate cap. Sew the upper directly to the shoe's actual last:
+            # both copies of the interface carry the identical foot binding.
+            bottom=[Vector(point) for point in vertices[-8:]]
+            angles=[math.atan2(point.y-cy,point.x-x) for point in bottom]
+            collar=[Vector((x+upper_width*math.cos(angle),upper_cy+upper_depth*math.sin(angle),height))
+                    for angle in angles]
+            shaft_vertices=[];shaft_weights=[]
+            for t in (0.,1/3,2/3,1.):
+                shaft_vertices.extend(a.lerp(b,t) for a,b in zip(bottom,collar))
+                shaft_weights.extend([{"foot."+side:1-t,"shin."+side:t}]*8)
+            outside_faces=[
+                (r*8+j,r*8+(j+1)%8,(r+1)*8+(j+1)%8,(r+1)*8+j)
+                for r in range(3) for j in range(8)]
+            # Trousers are tucked into this collar. A solid top cap would
+            # occlude their continuation and read as a corked, detached boot.
+            # Give the shaft a real thin lining and an open annular rim; every
+            # lining station shares its outer station's exact skin field.
+            lining=[]
+            for row,t in enumerate((0.,1/3,2/3,1.)):
+                centre=Vector((x,cy+(upper_cy-cy)*t,0))
+                for point in shaft_vertices[row*8:(row+1)*8]:
+                    radial=Vector((point.x-centre.x,point.y-centre.y,0)).normalized()
+                    lining.append(point-radial*.003)
+            shaft_vertices.extend(lining)
+            shaft_weights.extend([dict(weights) for weights in shaft_weights])
+            shaft_faces=outside_faces+[tuple(index+32 for index in reversed(face)) for face in outside_faces]
+            for j in range(8):
+                following=(j+1)%8
+                shaft_faces.append((24+j,24+following,56+following,56+j))
+                shaft_faces.append((j,32+j,32+following,following))
+            obj=self.add(prefix+"Shaft."+side,(shaft_vertices,shaft_faces),"shin."+side,color)
+            self.weights(obj,shaft_weights)
+            joints=base.npc_joint_surfaces.joints
+            joints._surface(self.result,shoe);joints._surface(self.result,obj)
+            joints._data(self.result)["seams"].append({
+                "id":"Footwear ankle "+outfit+"."+side,"bone":"foot."+side,
+                "renderers":[shoe.name,obj.name],"vertices_a":list(range(32,40)),"vertices_b":list(range(8)),
+                "bones":["shin."+side,"foot."+side],
+                "points_blender":[dict(zip(("x","y","z"),map(float,point))) for point in bottom],
+                "band_m":height-bottom[0].z,"loose":False,"corrective_shape":"",
+                "corrective_angle_degrees":0.,"weight_curve":"sewn_foot_to_shin"})
             sole=([(xx,yy,(z-.006)*.14) for xx,yy,z in vertices],faces)
             self.add(prefix+"Sole."+side,sole,"foot."+side,"sole")
             for i in range(3):
@@ -577,6 +640,8 @@ class WorkerBuilder(base.PedestrianBuilder):
 
     def outer(self,outfit):
         prefix="CLO_Outer_"+outfit;color="outer_"+outfit
+        if outfit in EXTRA_OUTERWEAR:
+            return self.civilian_outer(outfit)
         if outfit=="everyday":
             rows=((.966,.187,.127,.002),(1.03,.19,.129,.002),(1.16,.203,.139,-.003),(1.28,.215,.143,-.008),(1.390,.205,.123,-.009),(1.434,.102,.093,-.014))
             vertices=[];sides=25
@@ -613,6 +678,57 @@ class WorkerBuilder(base.PedestrianBuilder):
         for i in range(4):
             z=1.015+i*.088
             self.add(prefix+"Button"+str(i),base.make_ellipsoid((.010,-depth-.001,z),(.005,.003,.005),6,3),"spine" if z<1.2 else "chest","button")
+
+    def civilian_outer(self,style):
+        """Constructed civilian cuts on the same continuous garment rig."""
+        prefix="CLO_Outer_"+style;color="outer_"+style
+        hem={"cardigan":.925,"coat":.655,"overshirt":.92}[style]
+        width={"cardigan":.209,"coat":.222,"overshirt":.216}[style]
+        depth={"cardigan":.143,"coat":.155,"overshirt":.148}[style]
+        rows=((hem,width*.98,depth,.012),(.94,width*.95,depth,.008),
+              (1.04,width*.96,depth,.002),(1.17,width,depth,-.004),
+              (1.32,width,depth*.94,-.008),(1.39,.198,depth*.79,-.010),
+              (1.435,.095,.087,-.015))
+        # A coat's skirt remains one continuous sewn shell. Its lower half
+        # follows the pelvis, rather than being rigidly attached to the chest.
+        obj=self.trunk(prefix+"Body",rows,color,sides=24)
+        sleeve=(.058,.080,.077,.063,.058,.060,.051,.040,.034)
+        if style=="cardigan":sleeve=tuple(radius*.96 for radius in sleeve)
+        for side in ("L","R"):
+            self.arm(prefix+"Sleeve."+side,side,sleeve,color,sides=12)
+        # Bound front edges and placket are real narrow panels, not a line
+        # painted across an uninterrupted cylinder.
+        for side,sign in (("L",1),("R",-1)):
+            if style=="cardigan":
+                points=((sign*.012,-depth-.005,.94),(sign*.014,-depth-.006,1.17),
+                        (sign*.081,-.100,1.398),(sign*.068,-.075,1.445))
+                radii=(.009,.010,.011,.010)
+            else:
+                points=((sign*.010,-depth-.005,hem+.02),(sign*.010,-depth-.006,1.17),
+                        (sign*.011,-depth*.90-.012,1.36))
+                radii=(.008,.008,.008)
+            trim=self.add(prefix+"FrontBinding."+side,tube(points,radii,6,.30),"chest","seam")
+            self.weights(trim,[self.trunk_weight(v.co.z+trim.location.z) for v in trim.data.vertices])
+            # Thick, folded civilian collar/lapels; no M-65 pockets or patch.
+            if style!="cardigan":
+                self.add(prefix+"Collar."+side,
+                    base.make_tapered_box((sign*.044,-.111,1.365),(sign*.052,-.073,1.442),
+                                         (.071,.010,0),(.060,.012,0)),"chest",color)
+            pocket_z=1.18 if style=="overshirt" else .99 if style=="cardigan" else .86
+            pocket_w=.069 if style=="overshirt" else .082
+            x=sign*.103
+            vertices=[]
+            for z in (pocket_z,pocket_z+.09):
+                for j in range(5):
+                    xx=x+(j-2)*pocket_w/4
+                    yy=-depth*math.sqrt(max(.05,1-(xx/width)**2))-.007
+                    vertices.append((xx,yy,z))
+            panel=self.add(prefix+"Pocket."+side,cloth_panel((vertices,[(j,j+1,j+6,j+5) for j in range(4)])),"spine",color)
+            self.weights(panel,[self.trunk_weight(v.co.z+panel.location.z) for v in panel.data.vertices])
+        for index in range(4 if style=="cardigan" else 5):
+            z=hem+.10+index*(1.32-hem-.10)/(3 if style=="cardigan" else 4)
+            self.add(prefix+"Button"+str(index),base.make_ellipsoid((.011,-depth-.009,z),(.005,.003,.005),6,3),
+                     "pelvis" if z<1.0 else "spine" if z<1.2 else "chest","button")
 
     def headwear(self,outfit):
         prefix="CLO_Hat_"+outfit;color="cap_"+outfit
@@ -661,7 +777,7 @@ class WorkerBuilder(base.PedestrianBuilder):
         points=[v.co+obj.location for v in mesh.vertices]
         low=[min(p[i] for p in points) for i in range(3)];high=[max(p[i] for p in points) for i in range(3)]
         name=obj.name
-        region=1 if any(s in name for s in ("warm","Scarf","Hat_work")) else 0
+        region=1 if any(s in name for s in ("warm","Scarf","Hat_work","cardigan","coat")) else 0
         if name.startswith("CLO_Outer_warm"):region=2
         for loop in mesh.loops:
             p=points[loop.vertex_index];u=(p.x-low[0])/max(.001,high[0]-low[0]);v=(p.z-low[2])/max(.001,high[2]-low[2])
@@ -679,14 +795,12 @@ class WorkerBuilder(base.PedestrianBuilder):
         self.result=base.BuildResult(root,rig,collection,material)
         base.PALETTE.update({k:hex_to_linear_rgba(v) for k,v in COLORS.items()})
         self.head()
-        self.trunk("GEO_Torso",((.91,.153,.09,.004),(1.01,.15,.093,.001),(1.12,.161,.098,0),(1.22,.177,.105,-.003),(1.32,.18,.100,-.007),(1.393,.173,.085,-.009),(1.42,.072,.060,-.012)),"skin","body")
-        for side in ("L","R"):
-            self.arm("GEO_Arm."+side,side,(.042,.061,.057,.043,.039,.045,.035,.026,.023),"skin","body")
-        self.hands();self.trousers();self.boots()
+        self.hero_body_source=default_npc_body.copy_hero_anatomy(self,HERO_BODY_SOURCE,ROOT)
+        self.hands()
         body_names=[p.obj.name for p in self.result.parts]
         for outfit in OUTFITS:
             self.item("shirt."+outfit,["GEO_Torso","GEO_Arm.L","GEO_Arm.R"]);self.shirt(outfit)
-        for outfit in OUTFITS:
+        for outfit in OUTFITS+EXTRA_OUTERWEAR:
             covers=[]
             if outfit!="everyday":
                 covers=[p.obj.name for p in self.result.parts if p.obj.name.startswith("CLO_Shirt_") and "Collar" not in p.obj.name]
@@ -703,6 +817,7 @@ class WorkerBuilder(base.PedestrianBuilder):
         for part in self.result.parts:self.uv(part)
         bpy.context.view_layer.update()
         base.npc_joint_surfaces.correct_continuous(self.result)
+        self.body_shape=default_npc_body.author_shapes(self,self.hero_body_source,HEIGHT_SCALE)
         return self.result
 
 
@@ -725,6 +840,11 @@ def visible_names(result,wardrobe_data,item_ids):
 
 def validate(builder,data):
     result=builder.result;parts={p.obj.name:p.obj for p in result.parts}
+    for seam in base.npc_joint_surfaces.joints.manifest(result)["seams"]:
+        obj=parts[seam["renderers"][1]]
+        area=base.npc_joint_surfaces.joints._section_area([v.co+obj.location for i in seam["vertices_b"] for v in (obj.data.vertices[i],)])
+        if area<1e-10:
+            raise RuntimeError("Degenerate joint section: "+seam["id"]+" "+str(seam["renderers"])+" vertices="+str(seam["vertices_b"]))
     errors=[];base.npc_joint_surfaces.joints.validate(result,errors)
     if errors:raise RuntimeError("Default NPC joint surface check failed: "+"; ".join(errors))
     if len(parts)!=len(result.parts):raise RuntimeError("Duplicate part names")
@@ -773,7 +893,61 @@ def validate(builder,data):
     return {"outfit_triangle_counts":outfit_triangles,"maximum_visible_triangles":max_triangles,
             "maximum_visible_items":max_items,"unchanged_bind_bones":31,"unique_mesh_data":True,
             "normalized_skin_weights":True,"outward_solid_winding":True,"all_combinations_measured":True,
-            "cylindrical_grip":validate_grip(builder)}
+            "cylindrical_grip":validate_grip(builder),
+            "body_shape":default_npc_body.validate(builder,builder.body_shape),
+            "footwear_interfaces":validate_footwear_interfaces(builder)}
+
+
+def validate_footwear_interfaces(builder):
+    """Measure the sewn ankle while the shin bends over a planted shoe."""
+    parts={p.obj.name:p.obj for p in builder.result.parts}
+    joints=base.npc_joint_surfaces.joints
+    maximum_gap=0.;minimum_cuff_overlap=float("inf")
+    angles=(-60.,-30.,0.,30.,60.)
+    for style in OUTFITS:
+        for side in ("L","R"):
+            shoe=parts["CLO_Boot_"+style+"Shoe."+side]
+            shaft=parts["CLO_Boot_"+style+"Shaft."+side]
+            sole=parts["CLO_Boot_"+style+"Sole."+side]
+            if any(joints._weights(shoe,i)!={"foot."+side:1.} or
+                   joints._weights(shaft,j)!={"foot."+side:1.} for i,j in zip(range(32,40),range(8))):
+                raise RuntimeError("Sewn shoe/shaft interface must use identical foot-only weights")
+            if any(joints._weights(sole,v.index)!={"foot."+side:1.} for v in sole.data.vertices):
+                raise RuntimeError("The support sole must remain foot-only: "+sole.name)
+            ankle=Vector(base.BONE_BY_NAME["foot."+side].head)
+            for shape_name in (None,*default_npc_body.SHAPE_NAMES):
+                def point(obj,index):
+                    data=obj.data.shape_keys.key_blocks[shape_name].data if shape_name else obj.data.vertices
+                    return data[index].co+obj.location
+                for angle in angles:
+                    rotate=Quaternion((1,0,0),math.radians(angle))
+                    def posed(obj,index):
+                        p=point(obj,index);skin=joints._weights(obj,index)
+                        return p*skin.get("foot."+side,0.)+(rotate@(p-ankle)+ankle)*skin.get("shin."+side,0.)
+                    for shoe_id,shaft_id in zip(range(32,40),range(8)):
+                        gap=(posed(shoe,shoe_id)-posed(shaft,shaft_id)).length
+                        maximum_gap=max(maximum_gap,gap)
+                        if gap>2e-6:
+                            raise RuntimeError(f"Footwear ankle opens: {style}.{side} {shape_name} {angle:g}: {gap:g}m")
+                if any(joints._weights(shaft,i)!={"shin."+side:1.} for i in (*range(24,32),*range(56,64))):
+                    raise RuntimeError("Boot collar must remain attached to the shin: "+shaft.name)
+                top_ids=set(range(24,32))|set(range(56,64))
+                rim=[p for p in shaft.data.polygons if set(p.vertices).issubset(top_ids)]
+                if len(rim)!=8 or any(len(p.vertices)!=4 for p in rim):
+                    raise RuntimeError("Tucked trousers require an open, annular boot collar: "+shaft.name)
+                if any((point(shaft,i)-point(shaft,i+32)).length<.002 for i in range(24,32)):
+                    raise RuntimeError("Boot collar has lost its lining thickness: "+shaft.name)
+                collar=min(point(shaft,i).z for i in range(24,32))
+                for trousers in OUTFITS:
+                    cuff=parts["CLO_Trousers_"+trousers+"Lower."+side]
+                    overlap=collar-min(point(cuff,i).z for i in range(16))
+                    minimum_cuff_overlap=min(minimum_cuff_overlap,overlap)
+                    if overlap<.025:
+                        raise RuntimeError("Trouser cuff no longer overlaps the shin-bound boot collar")
+    return {"contract":"sewn_default_npc_ankle_v1","shoe_shaft_maximum_gap_m":round(maximum_gap,8),
+            "minimum_cuff_overlap_m":round(minimum_cuff_overlap,7),"angles_degrees":list(angles),
+            "builds":["neutral",*default_npc_body.SHAPE_NAMES],"planted_shoe":True,"collar_shin_bound":True,
+            "open_annular_collar":True,"lining_thickness_m":.003}
 
 
 def hand_grip_manifest(builder):
@@ -823,8 +997,12 @@ def validate_grip(builder):
         for name,obj in parts.items():
             if not name.startswith(("GEO_Hand","CLO_Glove")) or not name.endswith("."+frame["side"]):continue
             keys=obj.data.shape_keys.key_blocks
-            if set(keys.keys())!={"Basis",HAND_GRIP_SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS)}:
+            if set(keys.keys())-set(default_npc_body.SHAPE_NAMES)!={"Basis",HAND_GRIP_SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS)}:
                 raise RuntimeError("Missing authored grip: "+name)
+            for shape_name in default_npc_body.SHAPE_NAMES:
+                key=keys.get(shape_name)
+                if key and any((point.co-obj.data.vertices[i].co).length>1e-8 for i,point in enumerate(key.data)):
+                    raise RuntimeError("Body build moved the grip-owned hand: "+name)
             if any((v.co-keys["Basis"].data[v.index].co).length>1e-8 for v in obj.data.vertices):raise RuntimeError("Grip changed neutral mesh")
             vertices=[v.co+obj.location for v in keys[HAND_GRIP_SHAPE].data]
             volume=sum(vertices[p.vertices[0]].dot(vertices[p.vertices[i]].cross(vertices[p.vertices[i+1]]))/6 for p in obj.data.polygons for i in range(1,len(p.vertices)-1))
@@ -1039,7 +1217,8 @@ def main():
     metrics=resident.measured(result)
     payload={"generator":Path(__file__).name,"version":VERSION,"role":MODEL,"catalog_model_id":"ordinary-worker-v1","anatomy_standard":"NpcHumanV2",
              "joint_surfaces":base.npc_joint_surfaces.joints.manifest(result),
-             "height_scale":1.78/1.75,**metrics,"atlas_sha256":texture_hash,"atlas_size":[512,512],"palette_encoding":"linear",
+             "height_scale":HEIGHT_SCALE,**metrics,"atlas_sha256":texture_hash,"atlas_size":[512,512],"palette_encoding":"linear",
+             "body_shape":builder.body_shape,
              "parts":[{"name":p.obj.name,"color":list(p.color)} for p in result.parts],"wardrobe":data,"faces":face_data,"face_atlas_sha256":face_hashes,
              "geometry_signature":resident.geometry_signature(result),"validation":checks}
     payload["hair_colors"]=[{"id":name,"color":list(hex_to_linear_rgba(color))} for name,color in HAIR_COLORS.items()]

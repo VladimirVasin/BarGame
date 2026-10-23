@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "4.0.6",
+  "generator_version": "4.0.7",
   "blender_version": "5.0.1",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -43,8 +43,8 @@
     4.05,
     3.2
   ],
-  "mesh_count": 138,
-  "triangle_count": 11268,
+  "mesh_count": 139,
+  "triangle_count": 11296,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -220,7 +220,7 @@
       "local_position": [
         0.0,
         -0.65,
-        2.72
+        2.55
       ],
       "unity_right": [
         1.0,
@@ -4416,6 +4416,33 @@
       "triangles": 84
     },
     {
+      "name": "Fan Suspension Stem",
+      "role": "fan_support",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
       "name": "Fan Hub",
       "role": "fan_hub",
       "group": "pivot:Slow Ceiling Fan",
@@ -4902,15 +4929,15 @@
       "triangles": 28
     }
   ],
-  "build_signature": "e37fa17a3cd469ff1e42f1f620bf8d6ce69e2cc7ccef31d1aff87f4ee45750b0",
+  "build_signature": "eef7683d4162daa098ee3363c13b2d0a3376a3f2d7f4ca984dcc9c276f548dcd",
   "interior_surface_contract": {
     "design_id": "compact_bar_unique_surfaces_v1",
     "albedo": "Bar/Textures/BarInteriorAlbedo",
     "response": "Bar/Textures/BarInteriorResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "unique_part_count": 108,
-    "uv_signature": "e96025682ac6d9429dece9619e3370e0a3e6c68548eee132fc857160850544dc"
+    "unique_part_count": 109,
+    "uv_signature": "54786f0c9da34df3ec80f03b550ba5abc0446d3f9c69a8946189857c6206f8b0"
   },
   "containment_contract": {
     "exterior_door_m": [
@@ -4949,5 +4976,22 @@
     ],
     "first_floor_underside_m": 3.28,
     "shell_height_m": 3.2
+  },
+  "ceiling_fan_contract": {
+    "pivot_unity_m": [
+      0.0,
+      2.55,
+      -0.65
+    ],
+    "full_sweep_radius_m": 0.693515,
+    "rotor_top_y_m": 2.585,
+    "rotor_bottom_y_m": 2.515,
+    "minimum_beam_clearance_m": 0.065,
+    "support_part": "Fan Suspension Stem",
+    "support_bottom_y_m": 2.585,
+    "support_top_y_m": 2.65,
+    "support_diameter_m": 0.018,
+    "support_stationary": true,
+    "rotor_casts_shadows": false
   }
 }

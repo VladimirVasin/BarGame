@@ -417,18 +417,37 @@ def signed_volume(vertices, faces, stable=False):
                for face in faces for a,b,c in [(face[0],face[i],face[i+1]) for i in range(1,len(face)-1)])
 
 
-def flesh_shell(name, source, polys, basis, bone):
-    vertices, faces, lookup = [], [], {}
+def mesh_vertex_components(mesh):
+    """Keep distinct closed solids distinct even when their authored caps meet."""
+    parents=list(range(len(mesh.vertices)))
+    def root(index):
+        while parents[index]!=index:
+            parents[index]=parents[parents[index]];index=parents[index]
+        return index
+    for edge in mesh.edges:
+        a,b=(root(index) for index in edge.vertices)
+        if a!=b:parents[max(a,b)]=min(a,b)
+    return [root(index) for index in range(len(parents))]
+
+
+def flesh_shell(name, source, polys, basis, bone, minimum_triangle_height=0.):
+    vertices, faces, lookup, origins = [], [], {}, []
     for poly, island in polys:
         face = []
         for point in poly:
             key = (island, tuple(round(v, 7) for v in point[0]))
             if key not in lookup:
-                lookup[key] = len(vertices); vertices.append(point[0])
+                lookup[key] = len(vertices); vertices.append(point[0]);origins.append(island)
             face.append(lookup[key])
         for i in range(1, len(face)-1):
             tri = (face[0], face[i], face[i+1])
-            if len(set(tri)) == 3 and (vertices[tri[1]]-vertices[tri[0]]).cross(vertices[tri[2]]-vertices[tri[0]]).length > 1e-10:
+            if len(set(tri)) != 3:continue
+            normal=(vertices[tri[1]]-vertices[tri[0]]).cross(vertices[tri[2]]-vertices[tri[0]])
+            longest=max((vertices[tri[(j+1)%3]]-vertices[tri[j]]).length for j in range(3))
+            # As in flesh_cells, clipping through an existing edge can leave
+            # float32 collinear slivers. Keeping one gives that edge a third
+            # incident face; an area-only epsilon depends on the edge length.
+            if normal.length > 1e-10 and normal.length/max(1e-8,longest) >= minimum_triangle_height:
                 faces.append(tri)
     if not faces:
         return None
@@ -447,6 +466,7 @@ def flesh_shell(name, source, polys, basis, bone):
             components.append(group)
         for component in components[1:]:
             replacement=len(vertices);vertices.append(vertices[vertex].copy())
+            origins.append(origins[vertex])
             for index in component:faces[index]=tuple(replacement if i==vertex else i for i in faces[index])
     outer, inner = [], []
     for point in vertices:
@@ -460,11 +480,14 @@ def flesh_shell(name, source, polys, basis, bone):
     for face in faces:
         for a,b in zip(face, face[1:]+face[:1]):
             edges.setdefault(tuple(sorted((a,b))), []).append((a,b))
-    for edge in edges.values():
+    for indices,edge in edges.items():
         if len(edge) == 1:
             a,b = edge[0]; result.append((b,a,a+count,b+count))
         elif len(edge) > 2:
-            raise RuntimeError("Nonmanifold bare-source damage shell: "+name)
+            detail={"component":origins[indices[0]],"edge":[rnd(vertices[i]) for i in indices],
+                    "incidence":len(edge),"triangles":[[rnd(vertices[i]) for i in face]
+                    for face in faces if set(indices).issubset(face)]}
+            raise RuntimeError("Nonmanifold bare-source damage shell: "+name+" "+str(detail))
     all_vertices = outer+inner
     if signed_volume(all_vertices, result) < 0:
         result = [tuple(reversed(face)) for face in result]
@@ -762,10 +785,14 @@ def build(kind,out,publish=False,source_filter=None,torso_tissue_depth=None,tors
     arm=next(o for o in bpy.context.scene.objects if o.type=="ARMATURE")
     frames,low,high=region_frames(arm)
     fit_terminal_frames(originals,arm,frames,low,high)
-    outputs=[];flesh={};bare_sources={};coverage=[];tessellation=[]
+    outputs=[];flesh={};shell_polys={};bare_sources={};coverage=[];tessellation=[]
     for source_index,source in enumerate(originals):
         if head_family(source):continue
         source.data.calc_loop_triangles()
+        # Hero-derived default limbs group several independently closed source
+        # solids into one renderer. Their coincident seam caps are not welded
+        # topology; preserving that identity keeps every cut shell manifold.
+        components=mesh_vertex_components(source.data) if kind=="Npc" and is_body_source(source) else None
         collected={};original_area=0.;partitioned_area=0.;cut_tessellation=0.
         polygon_fans={};sampled=set()
         for tri in source.data.loop_triangles:
@@ -807,6 +834,8 @@ def build(kind,out,publish=False,source_filter=None,torso_tissue_depth=None,tors
                     collected.setdefault((region,patch),[]).append((piece,tri.material_index))
                     if is_body_source(source):
                         flesh.setdefault((region,patch),[]).append((piece,source_index))
+                        island=(source_index,components[tri.vertices[0]]) if components is not None else source_index
+                        shell_polys.setdefault((region,patch),[]).append((piece,island))
                         candidates=bare_sources.setdefault(region,{})
                         _,area=candidates.get(source.name,(source,0.))
                         candidates[source.name]=(source,area+piece_area)
@@ -845,7 +874,8 @@ def build(kind,out,publish=False,source_filter=None,torso_tissue_depth=None,tors
             obj=(region_flesh_factory(region,patch,name,source,polys,frames[region],REGION_BONES[region])
                  if region_flesh_factory is not None else
                  flesh_cells(name,source,polys,frames[region],torso_tissue_depth) if region in TORSO_REGIONS else
-                 flesh_shell(name,source,polys,frames[region],REGION_BONES[region]))
+                 flesh_shell(name,source,shell_polys[(region,patch)],frames[region],REGION_BONES[region],
+                             minimum_triangle_height=1e-5 if kind=="Npc" else 0.))
             if obj is None:raise RuntimeError("Missing flesh patch")
             outputs.append(obj)
         structure_uv=None

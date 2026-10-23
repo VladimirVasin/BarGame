@@ -286,8 +286,8 @@ namespace BarPromenade
                     Quaternion.Euler(3f, 0f, -9f)),
                 new BarDrinkServicePose(
                     bottlePreparationVesselPosition +
-                        new Vector3(0.72f, 0.66f, 0.02f),
-                    Quaternion.Euler(0f, 0f, 111f)),
+                        new Vector3(-0.72f, 0.66f, 0.02f),
+                    Quaternion.Euler(0f, 0f, -111f)),
                 slots);
             plan.preparationLanes = new Vector2(counter.Bounds.xMin + 1.4f,
                 counter.Bounds.xMax - 1.4f);

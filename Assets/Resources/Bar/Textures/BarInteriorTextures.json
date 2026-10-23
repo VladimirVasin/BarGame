@@ -68,6 +68,7 @@
     "Fan Blade 3",
     "Fan Blade 4",
     "Fan Hub",
+    "Fan Suspension Stem",
     "Floor",
     "Front Wall",
     "Household Wall Detail",
@@ -114,7 +115,7 @@
     {
       "resource": "Bar/Textures/BarInteriorAlbedo",
       "size": 4096,
-      "sha256": "e987843fa565989e0f96e29d5a45381dbef13bfeca585a4508dbbb339b9edd70",
+      "sha256": "38a4550355a976d8795c4d2b444e168e6d3b88fa81e97ace4f7ae46a49ef2b6d",
       "sRGB": true,
       "wrap": "Clamp",
       "readable": false
@@ -122,7 +123,7 @@
     {
       "resource": "Bar/Textures/BarInteriorResponse",
       "size": 2048,
-      "sha256": "80053e2338fd04bae2400ca93fb0a0c4c16028afc67cd8049575714131b75614",
+      "sha256": "de06e5717100dc5b291fc1dbee84f62f560b02ab4d530a1d6bbd04b1e5c698a4",
       "sRGB": false,
       "wrap": "Clamp",
       "readable": false
@@ -132,5 +133,5 @@
   "windows_compression": "BC7",
   "estimated_gpu_bytes": 27962080,
   "gpu_budget_bytes": 29360128,
-  "surface_contract_sha256": "d5a5832628fc1eb8b63cf86e7678cf708cebe345744dd087345f588762e5dbb2"
+  "surface_contract_sha256": "dff68a19b1d7b949a113475bbd8d5fd164116e7391430444c2e5586aa49179ed"
 }

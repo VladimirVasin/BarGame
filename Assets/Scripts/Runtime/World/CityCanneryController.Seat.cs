@@ -11,6 +11,14 @@ namespace BarPromenade
         private string driverBenchTrousers;
         private bool driverBenchFitReady;
         private Vector2 driverBenchFit;
+        private DefaultNpcBodyShape driverBodyShape;
+        private int driverSeatBodyVersion, driverBenchBodyVersion;
+        private Vector3 driverSeatScale, driverBenchScale;
+        private bool driverBenchStanceReady;
+        private string driverBenchStanceTrousers;
+        private int driverBenchStanceBodyVersion;
+        private Vector3 driverBenchStanceScale;
+        private DriverSeatSurface driverBenchSurface;
         public Vector2 DriverSeatFit => driverSeatFit;
         public Vector2 DriverReverseSeatFit => driverReverseSeatFit;
         public Vector2 DriverBenchFit => driverBenchFit;
@@ -22,7 +30,10 @@ namespace BarPromenade
         {
             VillageResidentPresentation actor = workers[4];
             string trousers = actor.GetComponent<NpcWardrobe>().GetEquippedItem("trousers") ?? "body";
-            if (driverSeatFitReady && driverSeatTrousers == trousers) return;
+            if (driverBodyShape == null) driverBodyShape = actor.GetComponent<DefaultNpcBodyShape>();
+            int bodyVersion = driverBodyShape != null ? driverBodyShape.SelectionVersion : 0;
+            Vector3 bodyScale = actor.transform.lossyScale;
+            if (driverSeatFitReady && driverSeatTrousers == trousers && driverSeatBodyVersion == bodyVersion && driverSeatScale == bodyScale) return;
             string part = trousers == "body" ? "GEO_LegsUpper" :
                 "CLO_Trousers_" + trousers.Substring("trousers.".Length) + "Upper";
             var skin = Require(actor.ModelRoot, part).GetComponent<SkinnedMeshRenderer>();
@@ -40,6 +51,7 @@ namespace BarPromenade
                 driverSeatFit = Fit(0f);
                 driverReverseSeatFit = Fit(1f);
                 driverSeatTrousers = trousers;
+                driverSeatBodyVersion = bodyVersion; driverSeatScale = bodyScale;
                 driverSeatFitReady = true;
             }
             finally
@@ -100,10 +112,13 @@ namespace BarPromenade
         {
             VillageResidentPresentation actor = workers[4];
             string trousers = actor.GetComponent<NpcWardrobe>().GetEquippedItem("trousers") ?? "body";
-            if (driverBenchFitReady && driverBenchTrousers == trousers) return;
+            if (driverBodyShape == null) driverBodyShape = actor.GetComponent<DefaultNpcBodyShape>();
+            int bodyVersion = driverBodyShape != null ? driverBodyShape.SelectionVersion : 0;
+            Vector3 bodyScale = actor.transform.lossyScale;
+            if (driverBenchFitReady && driverBenchTrousers == trousers && driverBenchBodyVersion == bodyVersion && driverBenchScale == bodyScale) return;
             string part = trousers == "body" ? "GEO_LegsUpper" :
                 "CLO_Trousers_" + trousers.Substring("trousers.".Length) + "Upper";
-            var surface = new DriverSeatSurface(Require(actor.ModelRoot, part).GetComponent<SkinnedMeshRenderer>());
+            var surface = driverBenchSurface ?? new DriverSeatSurface(Require(actor.ModelRoot, part).GetComponent<SkinnedMeshRenderer>());
             actor.Apply(VillageResidentAction.SewingEnter, DriverSitSeconds);
             var joints = new[] { driverPelvis, driverThighs[0], driverShins[0], driverFeet[0],
                 driverThighs[1], driverShins[1], driverFeet[1] };
@@ -137,9 +152,61 @@ namespace BarPromenade
             if (float.IsPositiveInfinity(bestScore))
                 throw new InvalidOperationException("The delivery driver's visible trousers cannot fit the bench and planted feet.");
             driverBenchTrousers = trousers;
+            driverBenchBodyVersion = bodyVersion; driverBenchScale = bodyScale;
             driverBenchFitReady = true;
             // The caller resamples the requested enter/exit frame after the
             // endpoint measurement, before applying the cached displacement.
+        }
+
+        private void PrepareDriverBenchStance()
+        {
+            VillageResidentPresentation actor = workers[4];
+            string trousers = actor.GetComponent<NpcWardrobe>().GetEquippedItem("trousers") ?? "body";
+            if (driverBodyShape == null) driverBodyShape = actor.GetComponent<DefaultNpcBodyShape>();
+            int bodyVersion = driverBodyShape != null ? driverBodyShape.SelectionVersion : 0;
+            Vector3 bodyScale = actor.transform.lossyScale;
+            if (driverBenchStanceReady && driverBenchStanceTrousers == trousers &&
+                driverBenchStanceBodyVersion == bodyVersion && driverBenchStanceScale == bodyScale) return;
+            string part = trousers == "body" ? "GEO_LegsUpper" :
+                "CLO_Trousers_" + trousers.Substring("trousers.".Length) + "Upper";
+            driverBenchSurface = new DriverSeatSurface(Require(actor.ModelRoot, part).GetComponent<SkinnedMeshRenderer>());
+            Vector3 rootPosition = actor.transform.position;
+            Quaternion rootRotation = actor.transform.rotation;
+            Vector3 benchGround = Plan.World(CityCanneryPlan.WaitingBenchLocalPosition);
+            try
+            {
+                actor.transform.SetPositionAndRotation(benchGround, Quaternion.LookRotation(Plan.Right));
+                actor.Apply(VillageResidentAction.SewingEnter, DriverSitSeconds);
+                driverSeatedPelvisLocal = Quaternion.Inverse(actor.transform.rotation) *
+                    (driverPelvis.position - actor.transform.position);
+                // Measure the chosen trousers in the actual sitting pose. Reserve
+                // a little knee-solve clearance before deriving a reachable stance.
+                float lowerSurface = driverBenchSurface.Measure(driverPelvis.position,
+                    actor.transform.right, actor.transform.up, actor.transform.forward, .20f);
+                if (!float.IsFinite(lowerSurface))
+                    throw new InvalidOperationException("The driver's sitting trousers have no measurable bench surface.");
+                float clearance = Mathf.Max(0f, -lowerSurface) + .02f;
+                actor.Apply(VillageResidentAction.Idle, 0f);
+                float rootAdvance = .55f;
+                for (int i = 0; i < 2; i++)
+                {
+                    float ankleHeight = Vector3.Dot(driverFeet[i].position - benchGround, actor.transform.up);
+                    float hipOffset = Vector3.Dot(driverThighs[i].position - driverPelvis.position, actor.transform.up);
+                    float vertical = Vector3.Dot(DriverBenchSeatContact - benchGround, actor.transform.up) + clearance + hipOffset - ankleHeight;
+                    float reach = LimbTwoBoneIk.ChainLength(driverThighs[i], driverShins[i], driverFeet[i]) * .96f;
+                    if (vertical >= reach)
+                        throw new InvalidOperationException("The driver's legs cannot reach the floor below this bench.");
+                    float horizontal = Mathf.Sqrt(Mathf.Max(0f, reach * reach - vertical * vertical));
+                    float footAhead = Vector3.Dot(driverFeet[i].position - benchGround, Plan.Right);
+                    float seatAhead = Vector3.Dot(DriverBenchSeatContact - benchGround, Plan.Right);
+                    rootAdvance = Mathf.Min(rootAdvance, seatAhead + horizontal - footAhead);
+                }
+                DriverBenchStandingPosition = benchGround + Plan.Right * rootAdvance;
+                driverBenchStanceTrousers = trousers; driverBenchStanceBodyVersion = bodyVersion;
+                driverBenchStanceScale = bodyScale; driverBenchStanceReady = true;
+                driverBenchFitReady = false;
+            }
+            finally { actor.transform.SetPositionAndRotation(rootPosition, rootRotation); }
         }
 
         // Same cached bind-pose skinning as the character contact surfaces:
@@ -157,6 +224,7 @@ namespace BarPromenade
             {
                 Mesh mesh = skin.sharedMesh;
                 vertices = mesh.vertices; weights = mesh.boneWeights; bindPoses = mesh.bindposes;
+                DefaultNpcBodyShape.ApplyShapeDeltas(skin, vertices);
                 bones = skin.bones; triangles = mesh.triangles;
                 posed = new Vector3[vertices.Length]; matrices = new Matrix4x4[bones.Length];
             }

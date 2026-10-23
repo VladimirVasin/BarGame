@@ -15,7 +15,7 @@ namespace BarPromenade
     /// </summary>
     [DefaultExecutionOrder(260)]
     [DisallowMultipleComponent]
-    public sealed class BarDrinkShopController : MonoBehaviour
+    public sealed partial class BarDrinkShopController : MonoBehaviour
     {
         private const int MaximumRayHits = 48;
         public const string PhysicalMenuOrderHintKey =
@@ -34,6 +34,8 @@ namespace BarPromenade
 
         private BarDrinkShopView view;
         private IntoxicationHudView hud;
+        private PaymentNoticeView paymentNotice;
+        public PaymentNoticeView PaymentNotice => paymentNotice;
         private PlayerCameraFollow cameraFollow;
         private PlayerRuntime player;
         private BarDrinkServiceView serviceView;
@@ -95,6 +97,7 @@ namespace BarPromenade
         private Pose emptyVesselStorageServerPose;
         private BarBartenderPresentation bartenderPresentation;
         private Vector3 bartenderCarryShoulderLocal;
+        private Vector3 bartenderServiceHomeLocalPosition;
         private float bartenderCarryArmLength;
         private bool pendingCounterMenuDelivery;
         private bool pendingCounterMenuRetrieval;
@@ -156,33 +159,37 @@ namespace BarPromenade
                 ? Offers[Mathf.Clamp(SelectedIndex, 0, Offers.Count - 1)]
                 : default;
         public BarDrinkServicePhase Phase =>
-            hasPhysicalPresentation && timeline != null
-                ? timeline.Phase
+            hasPhysicalPresentation && ActiveServiceTimeline != null
+                ? ActiveServiceTimeline.Phase
                 : IsOpen
                     ? BarDrinkServicePhase.Browsing
                     : BarDrinkServicePhase.Closed;
         public bool IsBrowsing =>
-            IsOpen &&
+            IsOpen && !repeatRequestPending && !menuOrderRequestPending &&
             (!hasPhysicalPresentation ||
              (timeline.IsBrowsing &&
               (!UsesPhysicalMenu ||
                counterMenuModel.State == CounterMenuState.Open)));
         public bool IsServing =>
             IsOpen && hasPhysicalPresentation &&
-            (timeline.IsCommitted || drinkActionPending);
+            (timeline.IsCommitted || drinkActionPending || repeatRequestPending || menuOrderRequestPending);
         public bool CanDrinkServedVessel =>
             IsOpen && UsesPhysicalMenu && timeline != null &&
-            timeline.CanBeginDrink && serviceView?.ActiveVessel != null;
+            timeline.CanBeginDrink && HeroServiceVessel != null;
         public bool IsLookingAtServedVessel =>
             CanDrinkServedVessel && targetCamera != null &&
             !CounterMenuInput.IsBlockedByOtherUi() &&
-            serviceView.ActiveVessel.IsLookingAt(targetCamera);
+            HeroServiceVessel.IsLookingAt(targetCamera);
         public bool PurchaseCommitted => purchaseCommitted;
-        public bool IsClearingEmptyVessel => IsOpen && timeline != null && timeline.IsClearingEmptyVessel;
+        public bool IsClearingEmptyVessel => ActiveServiceTimeline != null && ActiveServiceTimeline.IsClearingEmptyVessel;
         public int ClearedEmptyVesselCount { get; private set; }
-        public bool IsBartenderServiceReady => bartenderPresentation == null ||
-            bartenderPresentation.IsTowelServiceReady;
-        public bool WantsBartenderService
+        public bool IsBartenderServiceReady =>
+            (IsPatronServiceActive ? ReferenceEquals(timeline, patronServiceTimeline) :
+                !WantsHeroBartenderService || serviceQueue.IsOwner(this)) &&
+            (bartenderPresentation == null || bartenderPresentation.IsTowelServiceReady);
+        public bool WantsBartenderService => IsPatronServiceActive ||
+            WantsHeroBartenderService && serviceQueue.IsOwner(this);
+        private bool WantsHeroBartenderService
         {
             get
             {
@@ -215,7 +222,7 @@ namespace BarPromenade
             : float.PositiveInfinity;
         public float EmptyVesselStorageFacingError => IsClearingEmptyVessel && bottleHolderRoot != null
             ? Quaternion.Angle(bottleHolderRoot.rotation, emptyVesselStorageServerPose.rotation) : 0f;
-        public BarDrinkServiceTimeline Timeline => timeline;
+        public BarDrinkServiceTimeline Timeline => ActiveServiceTimeline;
         public BarDrinkServiceView ServiceView => serviceView;
         public BarDrinkFirstPersonArms FirstPersonArms => firstPersonArms;
         public BarPlayerDrinkReach PlayerDrinkReach => playerDrinkReach;
@@ -242,12 +249,12 @@ namespace BarPromenade
             counterMenuModel.State == CounterMenuState.Resting &&
             restingMenuGazeArmed &&
             menuPresentation.IsLookingAtRestingMenu(targetCamera);
-        public bool HasCounterServiceTarget => counterSeatView != null &&
+        public bool HasCounterServiceTarget => IsPatronServiceActive || counterSeatView != null &&
             IsOpen && !returningCounterMenuHome;
         public Vector3 ActiveServiceLocalOffset => activeServiceLocalOffset;
         public bool ActiveServiceMirrored => activeServiceMirrored;
         public bool IsReturningCounterMenuHome =>
-            returningCounterMenuHome;
+            !IsPatronServiceActive && returningCounterMenuHome;
         public Vector3 ActiveBottleHandTarget => activeBottleHandTarget;
         public Vector3 ActiveBottleReachCorrection =>
             activeBottleReachCorrection;
@@ -319,6 +326,7 @@ namespace BarPromenade
             Close();
             view = shopView;
             hud = intoxicationHud;
+            paymentNotice = intoxicationHud != null ? PaymentNoticeView.Attach(intoxicationHud) : null;
             cameraFollow = follow;
             targetCamera = follow != null
                 ? follow.GetComponent<Camera>()
@@ -393,8 +401,11 @@ namespace BarPromenade
             }
 
             counterSeatView = seatedView;
-            activeServiceLocalOffset = serviceLocalOffset;
-            activeServiceMirrored = mirrorServiceHorizontally;
+            if (!StoreHeroServiceOffsetIfPatronActive(serviceLocalOffset, mirrorServiceHorizontally))
+            {
+                activeServiceLocalOffset = serviceLocalOffset;
+                activeServiceMirrored = mirrorServiceHorizontally;
+            }
             menuPlacementStarted = false;
             counterServerAtTarget = false;
             returningCounterMenuHome = false;
@@ -406,8 +417,8 @@ namespace BarPromenade
                     "A seated bar requires the authored physical menu.");
             }
 
-            Vector3 menuDockOffset = activeServiceLocalOffset;
-            if (activeServiceMirrored)
+            Vector3 menuDockOffset = serviceLocalOffset;
+            if (mirrorServiceHorizontally)
             {
                 menuDockOffset.x += 2f *
                     (servicePlan.SeatPose.Position.x -
@@ -599,10 +610,10 @@ namespace BarPromenade
                 return new Pose(transform.position, transform.rotation);
             }
 
-            bool returningBottle = timeline != null &&
-                (timeline.Phase ==
+            bool returningBottle = ActiveServiceTimeline != null &&
+                (ActiveServiceTimeline.Phase ==
                      BarDrinkServicePhase.BottleWalkToShelfReturn ||
-                 timeline.Phase == BarDrinkServicePhase.BottleReturn);
+                 ActiveServiceTimeline.Phase == BarDrinkServicePhase.BottleReturn);
             Vector3 bottleWorld = returningBottle
                 ? bottleShelfReturnPosition
                 : serviceView.SelectedBottle.transform.position;
@@ -624,8 +635,15 @@ namespace BarPromenade
                 return new Pose(transform.position, transform.rotation);
             }
 
-            Vector3 vesselLocal =
-                ResolveBottlePreparationLocalPosition();
+            if (ActiveServiceTimeline.IsRepeatService && bottleHolderRoot != null)
+            {
+                Vector3 local = ResolveBeerGuestServerLocalPosition(bartenderServiceHomeLocalPosition);
+                Transform parent = bottleHolderRoot.parent;
+                return new Pose(parent != null ? parent.TransformPoint(local) : local,
+                    serviceView.transform.rotation * Quaternion.Euler(0f, 180f, 0f));
+            }
+
+            Vector3 vesselLocal = ResolveBottlePreparationLocalPosition();
             Vector3 serverLocal = new Vector3(
                 vesselLocal.x,
                 0f,
@@ -638,6 +656,7 @@ namespace BarPromenade
 
         internal Pose ResolveBottlePreparationVesselWorldPose()
         {
+            if (ActiveServiceTimeline.IsRepeatService) return emptyVesselCounterPose;
             BarDrinkServicePose prep =
                 servicePlan.BottlePreparationVesselPose;
             Pose proposed = new Pose(
@@ -701,13 +720,17 @@ namespace BarPromenade
 
         public bool ReportBeerServerAtTap(bool atTarget)
         {
-            return timeline != null &&
-                   timeline.ReportBeerServerAtTap(atTarget);
+            BarDrinkServiceTimeline serviceTimeline = ActiveServiceTimeline;
+            if (atTarget && serviceTimeline != null && serviceTimeline.IsRepeatService &&
+                serviceTimeline.Phase == BarDrinkServicePhase.BeerWalkToTap)
+                repeatTapStartPose = ResolveEmptyVesselCarryPose(serviceView.ActiveVessel);
+            return serviceTimeline != null && serviceTimeline.ReportBeerServerAtTap(atTarget);
         }
 
         public bool ReportEmptyVesselServerAtGuest(bool atTarget)
         {
-            if (GameTimeScaleRuntime.IsPaused || timeline == null || !timeline.ReportEmptyVesselServerAtGuest(atTarget)) return false;
+            if (IsPatronCupOfferActive) return false;
+            if (GameTimeScaleRuntime.IsPaused || ActiveServiceTimeline == null || !ActiveServiceTimeline.ReportEmptyVesselServerAtGuest(atTarget)) return false;
             Transform server = bottleHolderRoot;
             emptyVesselRotationInServer = server != null
                 ? Quaternion.Inverse(server.rotation) * emptyVesselCounterPose.rotation
@@ -720,14 +743,20 @@ namespace BarPromenade
         }
 
         public bool ReportEmptyVesselServerAtStorage(bool atTarget) =>
-            !GameTimeScaleRuntime.IsPaused && timeline != null && timeline.ReportEmptyVesselServerAtStorage(atTarget);
+            !GameTimeScaleRuntime.IsPaused && ActiveServiceTimeline != null && ActiveServiceTimeline.ReportEmptyVesselServerAtStorage(atTarget);
 
-        public bool ReportEmptyVesselGripContact(bool inContact) =>
-            !GameTimeScaleRuntime.IsPaused && timeline != null && timeline.ReportEmptyVesselGrip(inContact);
+        public bool ReportEmptyVesselGripContact(bool inContact)
+        {
+            bool accepted = !GameTimeScaleRuntime.IsPaused && ActiveServiceTimeline != null &&
+                ActiveServiceTimeline.ReportEmptyVesselGrip(inContact);
+            if (accepted && IsPatronServiceActive) activePatronRefill.Drinking.ReleaseCounterCupOffer();
+            return accepted;
+        }
 
         public void ConfigureBartenderPresentation(BarBartenderPresentation owner)
         {
             bartenderPresentation = owner != null ? owner : throw new ArgumentNullException(nameof(owner));
+            bartenderServiceHomeLocalPosition = owner.transform.localPosition;
             BarBartenderAssetRegistry registry = owner.Registry;
             bartenderCarryShoulderLocal = owner.transform.InverseTransformPoint(registry.LeftUpperArm.position);
             bartenderCarryArmLength = LimbTwoBoneIk.ChainLength(registry.LeftUpperArm,
@@ -737,17 +766,20 @@ namespace BarPromenade
         public void RefreshEmptyVesselForServerPose()
         {
             if (IsClearingEmptyVessel)
-                ApplyEmptyVesselCleanup(timeline.CurrentFrame);
+                ApplyEmptyVesselCleanup(ActiveServiceTimeline.CurrentFrame);
+            else if (ActiveServiceTimeline != null && ActiveServiceTimeline.IsRepeatService &&
+                     ActiveServiceTimeline.Phase == BarDrinkServicePhase.BeerWalkToTap)
+                ApplyRepeatBeerCarry();
         }
 
         public bool TryBeginEmptyVesselCarry()
         {
-            if (GameTimeScaleRuntime.IsPaused || timeline == null ||
-                timeline.Phase != BarDrinkServicePhase.EmptyVesselPickup ||
-                timeline.PhaseProgress < 1f || serviceView.ActiveVessel == null) return false;
+            if (GameTimeScaleRuntime.IsPaused || ActiveServiceTimeline == null ||
+                ActiveServiceTimeline.Phase != BarDrinkServicePhase.EmptyVesselPickup ||
+                ActiveServiceTimeline.PhaseProgress < 1f || serviceView.ActiveVessel == null) return false;
             BarDrinkVesselView vessel = serviceView.ActiveVessel;
             Pose carry = ResolveEmptyVesselCarryPose(vessel);
-            return timeline.ReportEmptyVesselRetracted(
+            return ActiveServiceTimeline.ReportEmptyVesselRetracted(
                 Vector3.Distance(vessel.transform.position, carry.position) <= .012f);
         }
 
@@ -773,16 +805,15 @@ namespace BarPromenade
 
         public bool ReportBeerServerAtGuest(bool atTarget)
         {
-            return timeline != null &&
-                   timeline.ReportBeerServerAtGuest(atTarget);
+            return ActiveServiceTimeline != null && ActiveServiceTimeline.ReportBeerServerAtGuest(atTarget);
         }
 
         public bool ReportBottleServerAtShelf(bool atTarget)
         {
-            if (timeline == null || !atTarget ||
-                timeline.Phase !=
+            if (ActiveServiceTimeline == null || !atTarget ||
+                ActiveServiceTimeline.Phase !=
                     BarDrinkServicePhase.BottleWalkToShelf ||
-                !timeline.ReportBottleServerAtShelf(true))
+                !ActiveServiceTimeline.ReportBottleServerAtShelf(true))
             {
                 return false;
             }
@@ -790,7 +821,7 @@ namespace BarPromenade
             BarDrinkBottleView bottle = serviceView?.SelectedBottle;
             if (bottle == null ||
                 !serviceView.ShowCarriedBottle(
-                    activePresentation,
+                    BarDrinkPresentationCatalog.Get(bottle.DrinkId),
                     null))
             {
                 throw new InvalidOperationException(
@@ -814,20 +845,18 @@ namespace BarPromenade
 
         public bool ReportBottleServerAtPour(bool atTarget)
         {
-            return timeline != null &&
-                   timeline.ReportBottleServerAtPour(atTarget);
+            return ActiveServiceTimeline != null && ActiveServiceTimeline.ReportBottleServerAtPour(atTarget);
         }
 
         public bool ReportBottleServerAtGuest(bool atTarget)
         {
-            return timeline != null &&
-                   timeline.ReportBottleServerAtGuest(atTarget);
+            return ActiveServiceTimeline != null && ActiveServiceTimeline.ReportBottleServerAtGuest(atTarget);
         }
 
         public bool ReportBottleServerAtShelfReturn(bool atTarget)
         {
-            if (timeline == null ||
-                !timeline.ReportBottleServerAtShelfReturn(atTarget))
+            if (ActiveServiceTimeline == null ||
+                !ActiveServiceTimeline.ReportBottleServerAtShelfReturn(atTarget))
             {
                 return false;
             }
@@ -839,14 +868,14 @@ namespace BarPromenade
 
         internal void RefreshBottlePourStreamAfterGrip()
         {
-            if (timeline == null || !timeline.IsBottleService ||
-                timeline.Phase != BarDrinkServicePhase.Pouring ||
+            if (ActiveServiceTimeline == null || !ActiveServiceTimeline.IsBottleService ||
+                ActiveServiceTimeline.Phase != BarDrinkServicePhase.Pouring ||
                 serviceView == null)
             {
                 return;
             }
 
-            float visibility = timeline.CurrentFrame.StreamVisibility;
+            float visibility = ActiveServiceTimeline.CurrentFrame.StreamVisibility;
             if (visibility <= 0.002f)
             {
                 serviceView.HidePourStream();
@@ -948,6 +977,7 @@ namespace BarPromenade
             }
             ConfigurePlayerDrinkRig(playerRuntime);
             playerDrinkReach = BarPlayerDrinkReach.Attach(playerRuntime, playerInteraction);
+            repeatGesture = BarRepeatGesture.Attach(playerRuntime, playerInteraction);
             serviceView.ResetPresentation();
             hasPhysicalPresentation = true;
         }
@@ -1084,7 +1114,7 @@ namespace BarPromenade
                 FeedbackKey = string.Empty;
                 inputUnlockFrame = Time.frameCount + 1;
                 purchaseCommitted = false;
-                ResetCueState();
+                if (!IsPatronServiceActive) ResetCueState();
                 if (hasPhysicalPresentation)
                 {
                     bartenderPresentation?.RequestTowelService(true);
@@ -1094,13 +1124,14 @@ namespace BarPromenade
                         CapturePlayerVisualState();
                     }
 
-                    serviceView.ResetPresentation();
-                    serviceView.SelectBottle(SelectedOffer.DrinkId);
+                    if (!IsPatronServiceActive)
+                    {
+                        serviceView.ResetPresentation();
+                        serviceView.SelectBottle(SelectedOffer.DrinkId);
+                    }
                     if (UsesPhysicalMenu)
                     {
-                        pendingCounterMenuDelivery = !IsBartenderServiceReady;
-                        if (!pendingCounterMenuDelivery)
-                            BeginPhysicalMenuDelivery(immediate: false);
+                        pendingCounterMenuDelivery = true;
                     }
 
                     timeline.Reset();
@@ -1145,7 +1176,7 @@ namespace BarPromenade
             SelectedIndex = index;
             FeedbackKey = string.Empty;
             counterMenuHint?.ClearStatus();
-            if (hasPhysicalPresentation)
+            if (hasPhysicalPresentation && !IsPatronServiceActive)
             {
                 serviceView.SelectBottle(SelectedOffer.DrinkId);
             }
@@ -1182,20 +1213,15 @@ namespace BarPromenade
                 return false;
             }
 
-            bool defersConsumption = UsesPhysicalMenu;
-            DrinkPurchaseResult result;
-            if (defersConsumption)
-            {
-                result = GameSessionState.TryOrderDrink(
-                    SelectedOffer.DrinkId,
-                    out pendingOrder);
-            }
-            else
-            {
-                pendingOrder = null;
-                result = GameSessionState.TryPurchaseDrink(
-                    SelectedOffer.DrinkId);
-            }
+            if (UsesPhysicalMenu) return BeginMenuOrderRequest();
+
+            return CommitSelection();
+        }
+
+        private bool CommitSelection()
+        {
+            pendingOrder = null;
+            DrinkPurchaseResult result = GameSessionState.TryPurchaseDrink(SelectedOffer.DrinkId);
             if (!result.Succeeded)
             {
                 FeedbackKey = GetFailureKey(result.Status);
@@ -1204,23 +1230,10 @@ namespace BarPromenade
                 return false;
             }
 
-            if (UsesPhysicalMenu)
-            {
-                if (!counterMenuModel.Confirm())
-                {
-                    throw new InvalidOperationException(
-                        "A purchased bar-menu selection could not commit.");
-                }
-
-                menuPresentation.SetSelection(SelectedIndex, true);
-                if (!RestPhysicalMenuAtCounter())
-                {
-                    throw new InvalidOperationException(
-                        "A purchased bar menu could not close on the counter.");
-                }
-            }
+            paymentNotice?.Show(result.CashBefore - result.CashAfter, result.CashAfter);
 
             purchaseCommitted = true;
+            currentOrderDrinkId = SelectedOffer.DrinkId;
             beerPlacementCaptured = false;
             bottleGripAttached = false;
             bottleReturnCaptured = false;
@@ -1229,15 +1242,11 @@ namespace BarPromenade
             if (!hasPhysicalPresentation)
             {
                 RetroAudio.Play(RetroSfxId.DrinkGulp);
-                RetroAudio.Play(RetroSfxId.UiConfirm);
                 Close();
                 return true;
             }
 
-            DrinkId physicalRoute = UsesPhysicalMenu
-                ? SelectedOffer.DrinkId
-                : DrinkId.None;
-            if (!timeline.Confirm(physicalRoute))
+            if (!timeline.Confirm())
             {
                 throw new InvalidOperationException(
                     "A committed drink purchase could not start service.");
@@ -1266,14 +1275,13 @@ namespace BarPromenade
                     PrepareOrderedDrinkPresentation();
             }
             inputUnlockFrame = int.MaxValue;
-            RetroAudio.Play(RetroSfxId.UiConfirm);
             ApplyCurrentPresentation();
             return true;
         }
 
         private void PrepareOrderedDrinkPresentation()
         {
-            if (!serviceView.ShowVesselForDrink(SelectedOffer.DrinkId))
+            if (!timeline.IsRepeatService && !serviceView.ShowVesselForDrink(CurrentOrderDrinkId))
             {
                 throw new InvalidOperationException(
                     "The selected drink has no physical vessel.");
@@ -1303,7 +1311,7 @@ namespace BarPromenade
                 bottleStartRotation = bottle.transform.rotation;
                 bottleStartPosition = bottle.transform.position;
                 if (servicePlan.TryGetBottleSlot(
-                        SelectedOffer.DrinkId,
+                        CurrentOrderDrinkId,
                         out BarDrinkBottleSlotPlan bottleSlot))
                 {
                     bottleShelfReturnPosition =
@@ -1321,7 +1329,8 @@ namespace BarPromenade
                 if (usesPhysicalBottle)
                 {
                     serviceView.HideCarriedBottle();
-                    serviceView.ActiveVessel.gameObject.SetActive(false);
+                    if (!timeline.IsRepeatService)
+                        serviceView.ActiveVessel.gameObject.SetActive(false);
                     activeBottleHandTarget = Vector3.zero;
                     activeBottleReachCorrection = Vector3.zero;
                     activeBottleHandRadial = Vector3.right;
@@ -1465,7 +1474,7 @@ namespace BarPromenade
                     "The bar menu could not reopen at its counter dock.");
             }
 
-            if (!serviceView.SelectBottle(SelectedOffer.DrinkId))
+            if (!IsPatronServiceActive && !serviceView.SelectBottle(SelectedOffer.DrinkId))
             {
                 throw new InvalidOperationException(
                     "The reopened bar-menu selection has no shelf bottle.");
@@ -1547,6 +1556,14 @@ namespace BarPromenade
                 return;
             }
 
+            if (!UpdateHeroServiceReservation()) return;
+            if (AdvanceMenuOrderRequest() || repeatRequestPending) return;
+            if (IsPatronServiceActive)
+            {
+                AdvanceHeroDrinkWhilePatronServed(deltaTime);
+                return;
+            }
+
             if (WantsBartenderService && !IsBartenderServiceReady) return;
             if (pendingCounterMenuDelivery)
             {
@@ -1565,6 +1582,8 @@ namespace BarPromenade
             }
 
             bool wasCommitted = timeline.IsCommitted;
+            if (UsesPhysicalMenu && counterMenuModel.State == CounterMenuState.Retrieving &&
+                !counterServerAtTarget) deltaTime = 0f;
             if (playerInteraction != null && playerInteraction.IsWaitingForMouthAccess)
                 deltaTime = 0f;
             if (playerDrinkReach != null &&
@@ -1621,8 +1640,11 @@ namespace BarPromenade
 
             PlayerAnimatedInteractionDefinition definition =
                 CreatePlayerDrinkDefinition();
-            playerDrinkReach?.PrepareForDrink(serviceView.ActiveVessel,
-                ResolveServedCounterWorldPose(serviceView.ActiveVessel), serviceView.CounterSurfaceWorldBounds);
+            BarDrinkVesselView heroVessel = HeroServiceVessel;
+            heroPlayerDrinkCounterPose = new Pose(heroVessel.transform.position, heroVessel.transform.rotation);
+            heroConcurrentGulpPlayed = false;
+            playerDrinkReach?.PrepareForDrink(heroVessel,
+                heroPlayerDrinkCounterPose, serviceView.CounterSurfaceWorldBounds);
             if (!playerInteraction.BeginNestedLoopAction(definition))
             {
                 playerDrinkReach?.ResetPresentation();
@@ -1638,8 +1660,8 @@ namespace BarPromenade
 
             drinkActionPending = true;
             playerDrinkStartedFrame = Time.frameCount;
-            serviceView.ActiveVessel.SetInteractionHighlight(false);
-            counterSeatView?.SetActionLookLocked(true);
+            heroVessel.SetInteractionHighlight(false);
+            counterSeatView?.SetActionLookLocked(true, allowLimitedLook: true);
             inputUnlockFrame = int.MaxValue;
             ApplyCurrentPresentation();
             return true;
@@ -1647,6 +1669,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            AdvancePatronService(Time.deltaTime);
             if (!IsOpen)
             {
                 return;
@@ -1654,6 +1677,8 @@ namespace BarPromenade
 
             if (hasPhysicalPresentation)
             {
+                if (repeatRequestPending && (repeatGesture == null || !repeatGesture.IsActive))
+                    repeatRequestPending = false;
                 if (UsesPhysicalMenu)
                 {
                     UpdateRestingMenuGazeArm();
@@ -1718,17 +1743,20 @@ namespace BarPromenade
         {
             if (IsOpen && hasPhysicalPresentation)
             {
-                ApplyCurrentPresentation();
+                if (IsPatronServiceActive) ApplyConcurrentHeroDrinkPose();
+                else ApplyCurrentPresentation();
             }
         }
 
         private void OnDisable()
         {
+            CancelPatronService();
             Close();
         }
 
         private void OnDestroy()
         {
+            CancelPatronService();
             Close();
             Closed = null;
         }
@@ -1804,7 +1832,8 @@ namespace BarPromenade
                 return;
             }
 
-            if (!IsBrowsing ||
+            bool showRepeatFailure = IsLookingAtRepeatVessel && !string.IsNullOrEmpty(FeedbackKey);
+            if ((!IsBrowsing && !showRepeatFailure) ||
                 CounterMenuInput.IsBlockedByOtherUi())
             {
                 counterMenuHint.Hide();
@@ -1851,14 +1880,14 @@ namespace BarPromenade
 
         public void RefreshServedDrinkAffordance()
         {
-            BarDrinkVesselView vessel = serviceView?.ActiveVessel;
+            BarDrinkVesselView vessel = HeroServiceVessel;
             if (vessel == null)
             {
                 return;
             }
 
             vessel.SetInteractionHighlight(
-                IsLookingAtServedVessel &&
+                (IsLookingAtServedVessel || IsLookingAtRepeatVessel) &&
                 !CounterMenuInput.IsBlockedByOtherUi());
         }
 
@@ -2029,8 +2058,8 @@ namespace BarPromenade
 
         private void ApplyCurrentPresentation()
         {
-            if (!IsOpen || !hasPhysicalPresentation || timeline == null ||
-                WantsBartenderService && !IsBartenderServiceReady)
+            if (IsPatronServiceActive || !IsOpen || !hasPhysicalPresentation || timeline == null ||
+                WantsHeroBartenderService && !IsBartenderServiceReady)
             {
                 return;
             }
@@ -2178,6 +2207,7 @@ namespace BarPromenade
 
         private void BeginPhysicalMenuRetrievalWhenReady()
         {
+            counterServerAtTarget = false;
             bartenderPresentation?.RequestTowelService(true);
             pendingCounterMenuRetrieval = !IsBartenderServiceReady;
             if (!pendingCounterMenuRetrieval)
@@ -2556,13 +2586,14 @@ namespace BarPromenade
 
         private void ApplyEmptyVesselCleanup(BarDrinkServiceFrame frame)
         {
+            if (IsPatronCupOfferActive) return;
             BarDrinkVesselView vessel = serviceView.ActiveVessel;
             if (vessel == null) return;
             vessel.gameObject.SetActive(true);
             vessel.SetInteractionHighlight(false);
             serviceView.SetFillProgress(0f);
             serviceView.HidePourStream();
-            bool attached = timeline.EmptyVesselGripConfirmed;
+            bool attached = ActiveServiceTimeline.EmptyVesselGripConfirmed;
             serviceView.SetBartenderVesselContact(attached, 1f);
             Pose pose = emptyVesselCounterPose;
             switch (frame.Phase)
@@ -2697,6 +2728,10 @@ namespace BarPromenade
 
         private void ApplyVesselPresentation(BarDrinkServiceFrame frame)
         {
+            // The nested order gesture owns the existing empty cup through
+            // its release and hand return, before the accepted-service handoff.
+            if (!IsPatronServiceActive && repeatGesture != null && repeatGesture.IsActive && timeline.HasEmptyVessel)
+                return;
             if (timeline.IsClearingEmptyVessel)
             {
                 ApplyEmptyVesselCleanup(frame);
@@ -2807,6 +2842,7 @@ namespace BarPromenade
             }
 
             bool visible =
+                timeline.IsRepeatService ||
                 frame.Phase == BarDrinkServicePhase.VesselPlacement ||
                 frame.Phase == BarDrinkServicePhase.Pouring ||
                 frame.Phase == BarDrinkServicePhase.BottleCarryToGuest ||
@@ -2840,9 +2876,9 @@ namespace BarPromenade
             switch (frame.Phase)
             {
                 case BarDrinkServicePhase.VesselPlacement:
-                    ApplyBottlePreparationPlacement(
-                        frame.VesselVisibility,
-                        vessel);
+                    if (timeline.IsRepeatService)
+                        vessel.SetWorldPose(emptyVesselCounterPose.position, emptyVesselCounterPose.rotation);
+                    else ApplyBottlePreparationPlacement(frame.VesselVisibility, vessel);
                     beerPlacementCaptured = false;
                     break;
                 case BarDrinkServicePhase.Pouring:
@@ -2864,7 +2900,10 @@ namespace BarPromenade
                     ApplyServedVesselForPlayerAction(vessel, frame);
                     break;
                 default:
-                    PlaceServedVesselOnCounter();
+                    if (timeline.IsRepeatService && frame.Phase != BarDrinkServicePhase.AwaitingDrink &&
+                        frame.Phase != BarDrinkServicePhase.EmptyOnCounter)
+                        vessel.SetWorldPose(emptyVesselCounterPose.position, emptyVesselCounterPose.rotation);
+                    else PlaceServedVesselOnCounter();
                     beerPlacementCaptured = false;
                     break;
             }
@@ -3027,12 +3066,20 @@ namespace BarPromenade
             switch (frame.Phase)
             {
                 case BarDrinkServicePhase.BeerWalkToTap:
-                    serviceView.SetActiveVesselAtBeerTap();
+                    if (timeline.IsRepeatService) ApplyRepeatBeerCarry();
+                    else serviceView.SetActiveVesselAtBeerTap();
                     beerPlacementCaptured = false;
                     break;
                 case BarDrinkServicePhase.BeerGlassPickup:
                     serviceView.SetActiveVesselAtBeerTap(
                         frame.PhaseProgress);
+                    if (timeline.IsRepeatService)
+                    {
+                        Pose tap = new Pose(vessel.transform.position, vessel.transform.rotation);
+                        float travel = Mathf.SmoothStep(0f, 1f, frame.PhaseProgress);
+                        vessel.SetWorldPose(Vector3.Lerp(repeatTapStartPose.position, tap.position, travel),
+                            Quaternion.Slerp(repeatTapStartPose.rotation, tap.rotation, travel));
+                    }
                     beerPlacementCaptured = false;
                     break;
                 case BarDrinkServicePhase.BeerPouring:
@@ -3263,6 +3310,8 @@ namespace BarPromenade
         internal Pose ResolveServedCounterWorldPose(
             BarDrinkVesselView vessel)
         {
+            if (IsPatronServiceActive)
+                return new Pose(patronVesselDock.position + patronCupOfferOffset, patronVesselDock.rotation);
             BarDrinkServicePose localCounter =
                 ResolveActiveServiceLocalPose(
                     servicePlan.VesselCounterPose);
@@ -3270,7 +3319,7 @@ namespace BarPromenade
                 serviceView.transform.TransformPoint(
                     localCounter.Position + Vector3.forward * ServedVesselServerwardOffset),
                 serviceView.transform.rotation * localCounter.Rotation);
-            Pose positioned = playerDrinkRigConfigured &&
+            Pose positioned = playerDrinkRigConfigured && vessel != null &&
                    vessel.TryResolveRightHandUprightPose(
                        counter.position,
                        playerDrinkOwnerRoot,
@@ -3435,6 +3484,13 @@ namespace BarPromenade
 
         private void RestoreOwnedState()
         {
+            bool preservePatronService = IsPatronServiceActive;
+            if (preservePatronService) ClearPreservedHeroService();
+            heroServiceQueued = menuOrderRequestPending = menuOrderGestureStarted = false;
+            pendingHeroPresentation = false;
+            CancelRepeatRequest();
+            lastServedDrinkId = DrinkId.None;
+            if (!preservePatronService) currentOrderDrinkId = DrinkId.None;
             playerDrinkReach?.ResetPresentation();
             hoveredBottle = null;
             counterSeatView?.EndMenuFocus();
@@ -3449,21 +3505,24 @@ namespace BarPromenade
             returningCounterMenuHome = false;
             restingMenuGazeArmed = false;
             menuPresentation?.ResetPresentation();
-            serviceView?.ResetPresentation();
-            activeBottleHandTarget = Vector3.zero;
-            activeBottleReachCorrection = Vector3.zero;
-            activeBottleHandRadial = Vector3.right;
-            activeBottleWorldRotation = Quaternion.identity;
-            beerPlacementCaptured = false;
-            bottleGripAttached = false;
-            bottleReturnCaptured = false;
-            emptyVesselStowCaptured = false;
-            emptyVesselCounterPose = emptyVesselStowStartPose = default;
-            emptyVesselStorageServerPose = default;
-            emptyVesselRotationInServer = Quaternion.identity;
-            bottleReturnHandStart = Vector3.zero;
-            bottleShelfReturnPosition = Vector3.zero;
-            bottleShelfReturnRotation = Quaternion.identity;
+            if (!preservePatronService) serviceView?.ResetPresentation();
+            if (!preservePatronService)
+            {
+                activeBottleHandTarget = Vector3.zero;
+                activeBottleReachCorrection = Vector3.zero;
+                activeBottleHandRadial = Vector3.right;
+                activeBottleWorldRotation = Quaternion.identity;
+                beerPlacementCaptured = false;
+                bottleGripAttached = false;
+                bottleReturnCaptured = false;
+                emptyVesselStowCaptured = false;
+                emptyVesselCounterPose = emptyVesselStowStartPose = default;
+                emptyVesselStorageServerPose = default;
+                emptyVesselRotationInServer = Quaternion.identity;
+                bottleReturnHandStart = Vector3.zero;
+                bottleShelfReturnPosition = Vector3.zero;
+                bottleShelfReturnRotation = Quaternion.identity;
+            }
             firstPersonArms?.Hide();
             playerInteraction?.CancelNestedLoopAction();
             counterSeatView?.SetActionLookLocked(false);
@@ -3475,7 +3534,7 @@ namespace BarPromenade
             pendingOrder = null;
             drinkActionPending = false;
             playerDrinkStartedFrame = -1;
-            ResetCueState();
+            if (!preservePatronService) ResetCueState();
             Physics.SyncTransforms();
 
             // Release the selected stool only after its camera/menu state has
@@ -3483,13 +3542,18 @@ namespace BarPromenade
             // its authored home point while the next station remains free to
             // configure a different service offset.
             counterSeatView = null;
-            activeServiceLocalOffset = Vector3.zero;
-            activeServiceMirrored = false;
+            if (!preservePatronService)
+            {
+                activeServiceLocalOffset = Vector3.zero;
+                activeServiceMirrored = false;
+            }
+            serviceQueue.Cancel(this);
         }
 
         private void CompleteOrderPresentation()
         {
             playerDrinkReach?.ResetPresentation();
+            lastServedDrinkId = CurrentOrderDrinkId;
             CommitPendingDrink();
             hoveredBottle = null;
             serviceView.HidePourStream();
@@ -3728,7 +3792,9 @@ namespace BarPromenade
                  phase == BarDrinkServicePhase.PlayerVesselReturn))
             {
                 gulpPlayed = true;
-                RetroAudio.Play(RetroSfxId.DrinkGulp);
+                bool alreadyPlayed = heroConcurrentGulpPlayed;
+                heroConcurrentGulpPlayed = true;
+                if (!alreadyPlayed || !UsesPhysicalMenu) RetroAudio.Play(RetroSfxId.DrinkGulp);
             }
         }
 

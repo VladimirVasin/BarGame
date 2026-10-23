@@ -93,7 +93,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Cannery woman | Seamer/painted face/actions; hair contacts 8→2 afar with continuous time; camera/near keeps full; speech/pause. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
 | Cannery receiver | Athletic 1.96 m actor/ski hat/3D glasses/painted face; own actions, shared contacts/speech/pause. | `CanneryReceiver{AssetProvider,Presentation}`, `CanneryReceiverAssetSetup` | Current |
 | Authored NPC outfits | Fixed outfits and modular items/slots/coverage/presets; editor selection. Gameplay clothing UI/save Deferred. | `NpcWardrobe`, `CanneryWomanWardrobe`, `NpcWardrobeEditor` | Current |
-| Global default NPCs | Unique resource paths; stable IDs, four faces/three hair colors/modular clothes; no repeats. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpcAppearance` | Current |
+| Global default NPCs | Stable IDs/looks, hero-body men160–185cm/slim–chubby; skinned modular clothes, no repeats. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpc{Appearance,BodyShape}` | Current |
 | Hand poses | Hero/NPC authored cylindrical grip; independent weights, neutral release and surface alignment. | `NpcHandPose`, `CityCanneryController.DriverHands` | Current |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
@@ -184,7 +184,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
 | Door transition presentation | A deterministic `1.6 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |
-| Bar drink service | Four drinks; grips/reach, empty-first service and rear towel handoff. | `BarDrink{ShopController,ServiceTimeline,VesselView}`, `BarPlayerDrinkReach`, `BarBartenderTowelPresentation` | Current |
+| Bar drink service | Menu/repeat wave+taps, deferred charge/receipt; guest FIFO/look/nod. | `BarDrink*`, `BarRepeatGesture`, `BarBartenderServiceQueue` | Current |
 | Intoxication stages and presentation | Session alcohol drives reversible visual/audio/body presentation and bounded passive recovery. | `IntoxicationStageRules`, `IntoxicationStatusController` | Current |
 | Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
@@ -212,7 +212,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Home bathroom scenes | The shower hero exits fully offscreen before redressing; cleanup restores rig and input. | `HomeBathroomSceneInteraction`, `HomeShower{Interaction,CameraPath}`, `HomeTeethBrushingInteraction` | Current |
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
-| Bar patrons and bartender | Nine visitors reroll bodies/vessels each entry; all drink. Stable default bartender. | `BarPatron{WorldBuilder,DrinkingBehavior,DrinkProp}` | Current |
+| Bar patrons and bartender | Nine drinkers; two counter cups deplete/wave/refill independently. Stable bartender: Wipe/menu/free arm. | `BarPatron*`, `BarCounterPatronRefill`, `BarBartender*` | Current |
 | Bar cinematic atmosphere | Six practicals/one key shadow/Neutral/two bounces/one cube; compact reveal/DOF. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
 | Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |
 | Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |

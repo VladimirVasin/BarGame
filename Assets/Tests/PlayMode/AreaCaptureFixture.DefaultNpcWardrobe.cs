@@ -40,6 +40,9 @@ namespace BarPromenade.Tests.PlayMode
             public Vector3 wheel_driver_facing_normal;
             public float wheel_chest_side_m, wheel_column_alignment, wheel_column_offset_m;
             public List<DefaultNpcGripSnapshot> grips = new List<DefaultNpcGripSnapshot>();
+            public List<DefaultNpcPreparationArmSnapshot> preparation_arms = new List<DefaultNpcPreparationArmSnapshot>();
+            public List<DefaultNpcAnkleSnapshot> ankles = new List<DefaultNpcAnkleSnapshot>();
+            public List<DefaultNpcSkinningSnapshot> skinning = new List<DefaultNpcSkinningSnapshot>();
             public List<string> grip_failures = new List<string>();
             public List<string> captures = new List<string>();
             public List<DefaultNpcWardrobeSnapshot> actors = new List<DefaultNpcWardrobeSnapshot>();
@@ -52,6 +55,8 @@ namespace BarPromenade.Tests.PlayMode
             public string frame, actor, outfit, action, face, hair_color, appearance_key, model_id, visible_combination;
             public string[] items;
             public int visible_triangles;
+            public int height_cm;
+            public float build;
             public Vector3 position;
         }
 
@@ -63,6 +68,37 @@ namespace BarPromenade.Tests.PlayMode
             public float rim_radius_m, tube_radius_m, palm_near_side_m, finger_far_side_m, thumb_far_side_m;
             public float finger_radial_side_m, thumb_radial_side_m, finger_surface_gap_m, thumb_surface_gap_m;
             public float minimum_analytic_clearance_m;
+        }
+
+        [Serializable]
+        private sealed class DefaultNpcPreparationArmSnapshot
+        {
+            public float unit_phase, right_wrist_side_m, left_wrist_side_m;
+            public float right_elbow_side_m, left_elbow_side_m, forearm_lateral_gap_m, grip_order_m;
+        }
+
+        [Serializable]
+        private sealed class DefaultNpcAnkleSnapshot
+        {
+            public string phase, side;
+            public int height_cm;
+            public float build, shoe_shaft_seam_gap_m, cuff_collar_overlap_m;
+            public int cuff_section_vertices;
+            public float collar_inside_cuff_m, cuff_inside_collar_m;
+            public bool same_shin_binding;
+            public Vector2 cuff_section_centre_m;
+            public float cuff_collar_centre_offset_m;
+            public bool collar_open_at_cuff_centre;
+            public Vector3 collar_world, cuff_section_world, collar_in_shin_local, cuff_section_in_shin_local;
+        }
+
+        [Serializable]
+        private sealed class DefaultNpcSkinningSnapshot
+        {
+            public string phase, renderer;
+            public bool force_matrix_recalculation_per_render;
+            public Vector3 cpu_centre_world, baked_centre_world, renderer_lossy_scale;
+            public float maximum_vertex_deviation_m;
         }
 
         [UnityTest]
@@ -88,7 +124,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [Explicit("Focused actual driver finger grip on the wheel, glove variation and neutral release.")]
+        [Explicit("Focused driver grips, seating and actual ankle seams at extreme proportions.")]
         [PrebuildSetup(typeof(DefaultNpcWardrobeAssetsSetup))]
         public IEnumerator DefaultNpcDriverGrip()
         {
@@ -129,8 +165,14 @@ namespace BarPromenade.Tests.PlayMode
                 NpcWardrobe[] cityWardrobes = Object.FindObjectsByType<NpcWardrobe>(FindObjectsInactive.Include)
                     .Where(w => w.IsModular && w.gameObject.scene == city.gameObject.scene).ToArray();
                 report.city_instances = cityWardrobes.Length;
-                Assert.That(report.city_instances, Is.EqualTo(12));
+                Assert.That(report.city_instances, Is.GreaterThanOrEqualTo(12));
                 foreach (NpcWardrobe wardrobe in cityWardrobes) RecordDefaultNpcRoster(report, wardrobe);
+                string[] requiredCityIds = Enumerable.Range(0, 4).Select(DefaultNpcPopulation.FairVendorId)
+                    .Concat(Enumerable.Range(0, 5).Select(DefaultNpcPopulation.PortWorkerId))
+                    .Concat(new[] { DefaultNpcPopulation.CanneryPreparation, DefaultNpcPopulation.CanneryRetort,
+                        DefaultNpcPopulation.DeliveryDriver }).ToArray();
+                foreach (string id in requiredCityIds)
+                    Assert.That(report.roster.Select(entry => entry.appearance_key), Does.Contain(id), "Every placed work role remains present.");
 
                 CityFairVendors fair = city.World.Fair.Vendors;
                 Assert.That(fair, Is.Not.Null);
@@ -162,6 +204,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(report.factory_contacts, Is.True, cannery.LastCrewContactFailure);
                 DefaultNpcActorFrame(camera, report, "13-cannery-preparation", cannery.GetFactoryWorker(1), 2.1f, .75f, 53f);
                 DefaultNpcActorFrame(camera, report, "14-cannery-packing", cannery.GetFactoryWorker(3), 2.1f, .7f, 53f);
+                yield return CaptureDefaultNpcPreparationArms(camera, cannery, report);
                 yield return null;
 
                 yield return CaptureDefaultNpcDriver(camera, city, report);
@@ -175,6 +218,52 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private static IEnumerator CaptureDefaultNpcPreparationArms(Camera camera, CityCanneryController cannery,
+            DefaultNpcWardrobeReport report)
+        {
+            VillageResidentPresentation actor = cannery.GetFactoryWorker(1);
+            Transform[] bones = actor.ModelRoot.GetComponentsInChildren<Transform>(true);
+            Transform rightShoulder = bones.Single(bone => bone.name == "upper_arm.R");
+            Transform leftShoulder = bones.Single(bone => bone.name == "upper_arm.L");
+            Transform rightElbow = bones.Single(bone => bone.name == "forearm.R");
+            Transform leftElbow = bones.Single(bone => bone.name == "forearm.L");
+            Transform rightWrist = bones.Single(bone => bone.name == "hand.R");
+            Transform leftWrist = bones.Single(bone => bone.name == "hand.L");
+            int units = cannery.Cycle.ProductionLotUnitCount(0);
+            foreach (float phase in new[] { .22f, .40f, .62f })
+            {
+                cannery.ApplyAt(CanneryTime(cannery, CityCanneryProductionStage.Prepare, phase / units));
+                cannery.ApplyLifeAt(100d);
+                yield return null;
+                Vector3 middle = (rightShoulder.position + leftShoulder.position) * .5f;
+                Vector3 right = Vector3.ProjectOnPlane(rightShoulder.position - leftShoulder.position, Vector3.up).normalized;
+                float Side(Transform point) => Vector3.Dot(point.position - middle, right);
+                var sample = new DefaultNpcPreparationArmSnapshot
+                {
+                    unit_phase = phase, right_wrist_side_m = Side(rightWrist), left_wrist_side_m = Side(leftWrist),
+                    right_elbow_side_m = Side(rightElbow), left_elbow_side_m = Side(leftElbow),
+                    grip_order_m = Vector3.Dot(actor.RightGrip.position - actor.LeftGrip.position, right)
+                };
+                // Every point of a straight forearm lies between its endpoint
+                // side coordinates. A positive interval gap proves no crossing.
+                sample.forearm_lateral_gap_m = Mathf.Min(sample.right_elbow_side_m, sample.right_wrist_side_m) -
+                    Mathf.Max(sample.left_elbow_side_m, sample.left_wrist_side_m);
+                report.preparation_arms.Add(sample);
+                Vector3 target = (middle + (rightWrist.position + leftWrist.position) * .5f) * .5f;
+                DefaultNpcFrame(camera, report, "13-preparation-uncrossed-arms-" + phase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                    target + Vector3.Cross(right, Vector3.up) * 1.55f + Vector3.up * .35f + right * .15f, target, 52f, actor);
+                Assert.That(cannery.Production.Stage, Is.EqualTo(CityCanneryProductionStage.Prepare));
+                Assert.That(actor.gameObject.activeInHierarchy, Is.True);
+                Assert.That(cannery.WorkerHandsMatch, Is.True, cannery.LastCrewContactFailure);
+                Assert.That(sample.grip_order_m, Is.GreaterThan(.05f), "Preparation grips preserve anatomical right/left order.");
+                Assert.That(sample.right_wrist_side_m, Is.GreaterThan(.015f), "Preparation right wrist stays on its anatomical side.");
+                Assert.That(sample.left_wrist_side_m, Is.LessThan(-.015f), "Preparation left wrist stays on its anatomical side.");
+                Assert.That(sample.right_elbow_side_m, Is.GreaterThan(.03f), "Preparation right elbow stays outside the torso centreline.");
+                Assert.That(sample.left_elbow_side_m, Is.LessThan(-.03f), "Preparation left elbow stays outside the torso centreline.");
+                Assert.That(sample.forearm_lateral_gap_m, Is.GreaterThan(.05f), "Preparation forearms retain a visible gap rather than crossing.");
+            }
+        }
+
         private static IEnumerator CaptureDefaultNpcDriver(Camera camera, CityGameRoot city,
             DefaultNpcWardrobeReport report)
         {
@@ -183,7 +272,12 @@ namespace BarPromenade.Tests.PlayMode
             bool following = follow != null && follow.enabled;
             IDisposable pause = null;
             NpcWardrobe wardrobe = null;
+            DefaultNpcBodyShape body = null;
+            int previousHeight = 0;
+            float previousBuild = .5f;
             string previousGloves = null;
+            SkinnedMeshRenderer[] captureSkins = Array.Empty<SkinnedMeshRenderer>();
+            bool[] previousMatrixRecalculation = Array.Empty<bool>();
             try
             {
                 if (follow != null) follow.enabled = false;
@@ -198,7 +292,16 @@ namespace BarPromenade.Tests.PlayMode
                 var driver = cannery.GetComponentsInChildren<VillageResidentPresentation>(true)
                     .Single(actor => actor.name == "Fish Delivery Driver");
                 Assert.That(driver.gameObject.activeInHierarchy, Is.True);
+                captureSkins = driver.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                previousMatrixRecalculation = captureSkins.Select(skin => skin.forceMatrixRecalculationPerRender).ToArray();
+                // Camera.Render samples several manual poses within one update.
+                // Match the existing seated-passenger and hero capture contract.
+                foreach (SkinnedMeshRenderer skin in captureSkins) skin.forceMatrixRecalculationPerRender = true;
                 wardrobe = driver.GetComponent<NpcWardrobe>();
+                body = driver.GetComponent<DefaultNpcBodyShape>();
+                Assert.That(body, Is.Not.Null);
+                previousHeight = body.HeightCm;
+                previousBuild = body.Build;
                 previousGloves = wardrobe.GetEquippedItem("gloves");
                 NpcHandPose handPose = driver.GetComponent<NpcHandPose>();
                 Assert.That(handPose, Is.Not.Null, "The catalog model owns its authored hand shapes.");
@@ -283,14 +386,292 @@ namespace BarPromenade.Tests.PlayMode
                 DefaultNpcFrame(camera, report, "15-driver-off-wheel-neutral-gloves",
                     neutralHands + DefaultNpcFacing(driver) * .64f + Vector3.up * .36f, neutralHands, 65f, driver);
                 Assert.That(report.grip_failures, Is.Empty, string.Join("\n", report.grip_failures));
+                foreach (int height in new[] { 160, 185 })
+                {
+                    body.Apply(height, height == 160 ? 0f : 1f);
+                    cannery.ApplyAt(driving);
+                    yield return null;
+                    Vector3 target = driver.Head.position - Vector3.up * .25f;
+                    DefaultNpcFrame(camera, report, "15-driver-extreme-" + height + "-truck",
+                        target + cannery.Truck.right * .75f + DefaultNpcFacing(driver) * .55f, target, 88f, driver);
+                    Assert.That(cannery.DriverSeatedContactsMatch, Is.True, "Extreme stature retains steering/pedal contacts.");
+                    float truckContact = DefaultNpcSeatSurfaceDistance(driver, truckSeat.position, cannery.Truck.up, DefaultNpcFacing(driver));
+                    Assert.That(truckContact, Is.InRange(-.015f, .025f), "Extreme hips remain on the truck cushion.");
+                    cannery.ApplyAt(waiting + 3.5d);
+                    yield return null;
+                    DefaultNpcFrame(camera, report, "15-driver-extreme-" + height + "-bench",
+                        cannery.DriverBenchSeatContact + DefaultNpcFacing(driver) * 1.25f + cannery.Truck.right * .45f + Vector3.up * .5f,
+                        cannery.DriverBenchSeatContact + Vector3.up * .35f, 72f, driver);
+                    float benchContact = DefaultNpcSeatSurfaceDistance(driver, cannery.DriverBenchSeatContact,
+                        Vector3.up, DefaultNpcFacing(driver), .20f);
+                    Assert.That(benchContact, Is.InRange(-.015f, .025f), "Extreme hips remain on the bench planks.");
+                    CaptureDefaultNpcAnkleSeams(camera, report, driver, "bench");
+                    // The established timeline stows lunch for 2.4s, then
+                    // stands for 3s. Inspect its planted endpoint before walking.
+                    cannery.ApplyAt(cannery.Cycle.StageStart(CityFishSupplyStage.LoadFinished, cannery.Snapshot.Batch) + 5.35d);
+                    yield return null;
+                    Assert.That(cannery.DriverRestPhase, Is.EqualTo(CityCanneryDriverRestPhase.Standing));
+                    Assert.That(cannery.DriverBenchSeatWeight, Is.LessThan(.01f));
+                    CaptureDefaultNpcAnkleSeams(camera, report, driver, "standing");
+                }
             }
             finally
             {
                 if (wardrobe != null) wardrobe.SetSlot("gloves", previousGloves);
+                if (body != null && previousHeight > 0) body.Apply(previousHeight, previousBuild);
+                for (int i = 0; i < captureSkins.Length; i++)
+                    if (captureSkins[i] != null) captureSkins[i].forceMatrixRecalculationPerRender = previousMatrixRecalculation[i];
                 pause?.Dispose();
                 state.Restore(camera);
                 if (follow != null) follow.enabled = following;
             }
+        }
+
+        private static void CaptureDefaultNpcAnkleSeams(Camera camera, DefaultNpcWardrobeReport report,
+            VillageResidentPresentation actor, string phase)
+        {
+            var wardrobe = actor.GetComponent<NpcWardrobe>();
+            var body = actor.GetComponent<DefaultNpcBodyShape>();
+            SkinnedMeshRenderer[] skins = actor.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            string bootStyle = wardrobe.GetEquippedItem("boots").Substring("boots.".Length);
+            string trouserStyle = wardrobe.GetEquippedItem("trousers").Substring("trousers.".Length);
+            Transform[] bones = actor.ModelRoot.GetComponentsInChildren<Transform>(true);
+            Vector3 right = Vector3.ProjectOnPlane(bones.Single(bone => bone.name == "upper_arm.R").position -
+                bones.Single(bone => bone.name == "upper_arm.L").position, actor.transform.up).normalized;
+            var failures = new List<string>();
+            foreach (string side in new[] { "R", "L" })
+            {
+                string suffix = "." + side;
+                SkinnedMeshRenderer shoe = skins.Single(skin => skin.name == "CLO_Boot_" + bootStyle + "Shoe" + suffix);
+                SkinnedMeshRenderer shaft = skins.Single(skin => skin.name == "CLO_Boot_" + bootStyle + "Shaft" + suffix);
+                SkinnedMeshRenderer trousers = skins.SingleOrDefault(skin => skin.enabled && skin.name ==
+                    "CLO_Trousers_" + trouserStyle + "Lower" + suffix) ?? skins.Single(skin => skin.name == "CLO_Trousers_" + trouserStyle + "Upper");
+                RecordDefaultNpcSkinning(report, shaft, body.HeightCm + "/" + phase + "/" + side);
+                RecordDefaultNpcSkinning(report, trousers, body.HeightCm + "/" + phase + "/" + side);
+                Vector3[] shoeRim = DefaultNpcBoundaryRing(shoe, actor.transform, true);
+                Vector3[] shaftBottom = DefaultNpcBoundaryRing(shaft, actor.transform, false, outerOnly: true);
+                Vector3[] shaftTop = DefaultNpcBoundaryRing(shaft, actor.transform, true, outerOnly: true);
+                Vector3[] trouserCuff = DefaultNpcBoundaryRing(trousers, actor.transform, false, "shin" + suffix);
+                int shinIndex = Array.FindIndex(shaft.bones, bone => bone.name == "shin" + suffix);
+                Assert.That(shinIndex, Is.GreaterThanOrEqualTo(0));
+                int cuffShinIndex = Array.FindIndex(trousers.bones, bone => bone.name == "shin" + suffix);
+                Assert.That(cuffShinIndex, Is.GreaterThanOrEqualTo(0));
+                Vector3 meshUp = shaft.transform.InverseTransformVector(actor.transform.up);
+                Vector3 shinUp = shaft.bones[shinIndex].TransformDirection(shaft.sharedMesh.bindposes[shinIndex].MultiplyVector(meshUp)).normalized;
+                float collarBottom = shaftTop.Min(point => Vector3.Dot(point, shinUp));
+                float cuffTop = trouserCuff.Max(point => Vector3.Dot(point, shinUp));
+                Vector3 collarCentre = shaftTop.Aggregate(Vector3.zero, (sum, point) => sum + point) / shaftTop.Length;
+                Vector3 sectionRight = Vector3.ProjectOnPlane(right, shinUp).normalized;
+                Vector3 sectionForward = Vector3.Cross(shinUp, sectionRight).normalized;
+                Vector2 Project(Vector3 point)
+                {
+                    Vector3 offset = point - collarCentre;
+                    return new Vector2(Vector3.Dot(offset, sectionRight), Vector3.Dot(offset, sectionForward));
+                }
+                List<Vector2> cuffSection = DefaultNpcCuffSection(trousers, collarCentre, shinUp, Project, "shin" + suffix);
+                Vector2[] collarSection = shaftTop.Select(Project).ToArray();
+                float collarInsideCuff = -1f, cuffInsideCollar = -1f;
+                Vector2 cuffCentre = Vector2.zero;
+                if (cuffSection.Count >= 3)
+                {
+                    cuffCentre = cuffSection.Aggregate(Vector2.zero, (sum, point) => sum + point) / cuffSection.Count;
+                    collarInsideCuff = DefaultNpcPolygonClearance(Vector2.zero, cuffSection);
+                    cuffInsideCollar = DefaultNpcPolygonClearance(cuffCentre, collarSection);
+                }
+                Vector3 cuffCentreWorld = collarCentre + sectionRight * cuffCentre.x + sectionForward * cuffCentre.y;
+                var sample = new DefaultNpcAnkleSnapshot
+                {
+                    phase = phase, side = side, height_cm = body.HeightCm, build = body.Build,
+                    shoe_shaft_seam_gap_m = Mathf.Max(DefaultNpcRingGap(shoeRim, shaftBottom), DefaultNpcRingGap(shaftBottom, shoeRim)),
+                    cuff_collar_overlap_m = collarBottom - cuffTop, cuff_section_vertices = cuffSection.Count,
+                    collar_inside_cuff_m = collarInsideCuff, cuff_inside_collar_m = cuffInsideCollar,
+                    same_shin_binding = shaft.bones[shinIndex] == trousers.bones[cuffShinIndex],
+                    cuff_section_centre_m = cuffCentre, cuff_collar_centre_offset_m = cuffCentre.magnitude,
+                    collar_open_at_cuff_centre = !DefaultNpcShaftCapsCuff(shaft,
+                        cuffCentreWorld, shinUp), collar_world = collarCentre, cuff_section_world = cuffCentreWorld,
+                    collar_in_shin_local = shaft.bones[shinIndex].InverseTransformPoint(collarCentre),
+                    cuff_section_in_shin_local = shaft.bones[shinIndex].InverseTransformPoint(cuffCentreWorld)
+                };
+                report.ankles.Add(sample);
+                Vector3 target = (shoeRim.Aggregate(Vector3.zero, (sum, point) => sum + point) / shoeRim.Length +
+                    shaftTop.Aggregate(Vector3.zero, (sum, point) => sum + point) / shaftTop.Length) * .5f;
+                string label = body.HeightCm + "-" + phase + "-ankle-" + side;
+                DefaultNpcFrame(camera, report, "15-driver-extreme-" + label,
+                    target + right * (side == "R" ? .65f : -.65f) + DefaultNpcFacing(actor) * .25f + actor.transform.up * .14f,
+                    target, 43f, actor);
+                if (sample.shoe_shaft_seam_gap_m > .0001f)
+                    failures.Add(label + ": shoe/shaft seam gap " + sample.shoe_shaft_seam_gap_m + "m");
+                if (sample.cuff_collar_overlap_m < .005f)
+                    failures.Add(label + ": trouser/boot overlap " + sample.cuff_collar_overlap_m + "m");
+                if (sample.collar_inside_cuff_m < .005f || sample.cuff_inside_collar_m < .005f)
+                    failures.Add(label + ": collar/cuff lateral coverage " + sample.collar_inside_cuff_m + "/" + sample.cuff_inside_collar_m + "m");
+                if (!sample.same_shin_binding) failures.Add(label + ": collar and cuff must follow the same shin transform.");
+                if (!sample.collar_open_at_cuff_centre) failures.Add(label + ": an opaque boot cap plugs the tucked trouser section.");
+            }
+            Assert.That(failures, Is.Empty, string.Join("\n", failures));
+        }
+
+        private static void RecordDefaultNpcSkinning(DefaultNpcWardrobeReport report, SkinnedMeshRenderer skin, string phase)
+        {
+            Vector3[] cpu = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(skin);
+            var baked = new Mesh();
+            try
+            {
+                skin.BakeMesh(baked, true);
+                Vector3[] native = baked.vertices;
+                Assert.That(native.Length, Is.EqualTo(cpu.Length), "Compare the same imported vertex indices.");
+                Vector3 cpuCentre = Vector3.zero, bakedCentre = Vector3.zero;
+                float maximum = 0f;
+                for (int i = 0; i < cpu.Length; i++)
+                {
+                    Vector3 point = skin.transform.TransformPoint(native[i]);
+                    maximum = Mathf.Max(maximum, Vector3.Distance(cpu[i], point));
+                    cpuCentre += cpu[i]; bakedCentre += point;
+                }
+                report.skinning.Add(new DefaultNpcSkinningSnapshot
+                {
+                    phase = phase, renderer = skin.name, force_matrix_recalculation_per_render = skin.forceMatrixRecalculationPerRender,
+                    cpu_centre_world = cpuCentre / cpu.Length, baked_centre_world = bakedCentre / cpu.Length,
+                    renderer_lossy_scale = skin.transform.lossyScale, maximum_vertex_deviation_m = maximum
+                });
+            }
+            finally { Object.DestroyImmediate(baked); }
+        }
+
+        private static Vector3[] DefaultNpcBoundaryRing(SkinnedMeshRenderer skin, Transform actor, bool upper,
+            string supportingBone = null, bool outerOnly = false)
+        {
+            Vector3[] rest = skin.sharedMesh.vertices;
+            Vector3[] world = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(skin);
+            BoneWeight[] weights = skin.sharedMesh.boneWeights;
+            int support = supportingBone != null ? Array.FindIndex(skin.bones, bone => bone.name == supportingBone) : -1;
+            bool Eligible(int vertex)
+            {
+                if (supportingBone == null) return true;
+                BoneWeight w = weights[vertex];
+                return (w.boneIndex0 == support ? w.weight0 : 0f) + (w.boneIndex1 == support ? w.weight1 : 0f) +
+                    (w.boneIndex2 == support ? w.weight2 : 0f) + (w.boneIndex3 == support ? w.weight3 : 0f) >= .5f;
+            }
+            float Height(int vertex) => Vector3.Dot(skin.transform.TransformPoint(rest[vertex]) - actor.position, actor.up);
+            int[] eligible = Enumerable.Range(0, rest.Length).Where(Eligible).ToArray();
+            Assert.That(eligible, Is.Not.Empty, skin.name + " has a measured seam section.");
+            float height = upper ? eligible.Max(Height) : eligible.Min(Height);
+            // Imported UV splits may reorder/duplicate vertices. Select the
+            // actual geometric ring rather than relying on Blender indices.
+            int[] ring = eligible.Where(vertex => Mathf.Abs(Height(vertex) - height) < .0002f).ToArray();
+            if (!outerOnly) return ring.Select(vertex => world[vertex]).ToArray();
+            // Thick open collars add an inset lining at the same heights.
+            // Keep the outer convex boundary without depending on FBX indices.
+            Vector2 Flat(int vertex)
+            {
+                Vector3 point = skin.transform.TransformPoint(rest[vertex]) - actor.position;
+                return new Vector2(Vector3.Dot(point, actor.right), Vector3.Dot(point, actor.forward));
+            }
+            var unique = new List<int>();
+            foreach (int vertex in ring)
+                if (!unique.Any(other => (Flat(vertex) - Flat(other)).sqrMagnitude < .00000001f)) unique.Add(vertex);
+            unique.Sort((a, b) => Flat(a).x != Flat(b).x ? Flat(a).x.CompareTo(Flat(b).x) : Flat(a).y.CompareTo(Flat(b).y));
+            float Cross(int a, int b, int c)
+            {
+                Vector2 first = Flat(b) - Flat(a), second = Flat(c) - Flat(a);
+                return first.x * second.y - first.y * second.x;
+            }
+            var hull = new List<int>();
+            foreach (int vertex in unique)
+            {
+                while (hull.Count >= 2 && Cross(hull[hull.Count - 2], hull[hull.Count - 1], vertex) <= .000000001f)
+                    hull.RemoveAt(hull.Count - 1);
+                hull.Add(vertex);
+            }
+            int lower = hull.Count;
+            for (int i = unique.Count - 2; i >= 0; i--)
+            {
+                while (hull.Count > lower && Cross(hull[hull.Count - 2], hull[hull.Count - 1], unique[i]) <= .000000001f)
+                    hull.RemoveAt(hull.Count - 1);
+                hull.Add(unique[i]);
+            }
+            if (hull.Count > 1) hull.RemoveAt(hull.Count - 1);
+            return hull.Select(vertex => world[vertex]).ToArray();
+        }
+
+        private static float DefaultNpcRingGap(Vector3[] from, Vector3[] to) =>
+            from.Max(point => Mathf.Sqrt(to.Min(other => (other - point).sqrMagnitude)));
+
+        private static List<Vector2> DefaultNpcCuffSection(SkinnedMeshRenderer skin, Vector3 origin, Vector3 up,
+            Func<Vector3, Vector2> project, string supportingBone)
+        {
+            Vector3[] world = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(skin);
+            int[] triangles = skin.sharedMesh.triangles;
+            BoneWeight[] weights = skin.sharedMesh.boneWeights;
+            int support = Array.FindIndex(skin.bones, bone => bone.name == supportingBone);
+            Assert.That(support, Is.GreaterThanOrEqualTo(0));
+            float Support(int vertex)
+            {
+                BoneWeight w = weights[vertex];
+                return (w.boneIndex0 == support ? w.weight0 : 0f) + (w.boneIndex1 == support ? w.weight1 : 0f) +
+                    (w.boneIndex2 == support ? w.weight2 : 0f) + (w.boneIndex3 == support ? w.weight3 : 0f);
+            }
+            var points = new List<Vector2>();
+            void Add(Vector3 point)
+            {
+                Vector2 flat = project(point);
+                if (!points.Any(existing => (existing - flat).sqrMagnitude < .00000001f)) points.Add(flat);
+            }
+            void Edge(int first, int second)
+            {
+                float a = Vector3.Dot(world[first] - origin, up), b = Vector3.Dot(world[second] - origin, up);
+                if (Mathf.Abs(a) < .00005f) Add(world[first]);
+                if ((a < 0f) != (b < 0f)) Add(Vector3.LerpUnclamped(world[first], world[second], a / (a - b)));
+            }
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                int a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+                if ((Support(a) + Support(b) + Support(c)) / 3f < .5f) continue;
+                Edge(a, b); Edge(b, c); Edge(c, a);
+            }
+            return points;
+        }
+
+        private static float DefaultNpcPolygonClearance(Vector2 point, IEnumerable<Vector2> vertices)
+        {
+            Vector2[] polygon = vertices.ToArray();
+            Vector2 centre = polygon.Aggregate(Vector2.zero, (sum, vertex) => sum + vertex) / polygon.Length;
+            Array.Sort(polygon, (a, b) => Mathf.Atan2(a.y - centre.y, a.x - centre.x)
+                .CompareTo(Mathf.Atan2(b.y - centre.y, b.x - centre.x)));
+            float minimum = float.PositiveInfinity;
+            bool inside = false;
+            for (int i = 0, previous = polygon.Length - 1; i < polygon.Length; previous = i++)
+            {
+                Vector2 a = polygon[previous], b = polygon[i], edge = b - a;
+                float t = edge.sqrMagnitude > .0000000001f ? Mathf.Clamp01(Vector2.Dot(point - a, edge) / edge.sqrMagnitude) : 0f;
+                minimum = Mathf.Min(minimum, Vector2.Distance(point, a + edge * t));
+                if ((a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)
+                    inside = !inside;
+            }
+            return inside ? minimum : -minimum;
+        }
+
+        private static bool DefaultNpcShaftCapsCuff(SkinnedMeshRenderer shaft, Vector3 centre, Vector3 up)
+        {
+            Vector3[] world = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(shaft);
+            int[] triangles = shaft.sharedMesh.triangles;
+            Vector3 start = centre + up * .005f, direction = -up * .010f;
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                Vector3 a = world[triangles[i]], edge1 = world[triangles[i + 1]] - a, edge2 = world[triangles[i + 2]] - a;
+                Vector3 cross = Vector3.Cross(direction, edge2);
+                float determinant = Vector3.Dot(edge1, cross);
+                if (Mathf.Abs(determinant) < .000000001f) continue;
+                Vector3 offset = start - a;
+                float u = Vector3.Dot(offset, cross) / determinant;
+                if (u < -.00001f || u > 1.00001f) continue;
+                Vector3 q = Vector3.Cross(offset, edge1);
+                float v = Vector3.Dot(direction, q) / determinant;
+                if (v < -.00001f || u + v > 1.00001f) continue;
+                float along = Vector3.Dot(edge2, q) / determinant;
+                if (along >= -.00001f && along <= 1.00001f) return true;
+            }
+            return false;
         }
 
         private static void CaptureDefaultNpcWheelHands(Camera camera, VillageResidentPresentation driver,
@@ -358,10 +739,10 @@ namespace BarPromenade.Tests.PlayMode
                 report.village_instances = village.Life.GetComponentsInChildren<NpcWardrobe>(true).Count(w => w.IsModular);
                 Assert.That(report.village_instances, Is.EqualTo(1));
                 RecordDefaultNpcRoster(report, worker.GetComponent<NpcWardrobe>());
-                Assert.That(report.roster.Count, Is.EqualTo(13));
-                Assert.That(report.roster.Select(entry => entry.appearance_key).Distinct().Count(), Is.EqualTo(13));
+                Assert.That(report.roster.Count, Is.EqualTo(report.city_instances + report.village_instances));
+                Assert.That(report.roster.Select(entry => entry.appearance_key).Distinct().Count(), Is.EqualTo(report.roster.Count));
                 Assert.That(report.roster.Select(entry => entry.visible_combination).Distinct().Count(),
-                    Is.EqualTo(13), "The current roster exhausts no eligible pool, so visible model/face/clothing combinations must be unique.");
+                    Is.EqualTo(report.roster.Count), "The current roster exhausts no eligible pool, so visible model/face/clothing combinations must be unique.");
                 NpcWardrobe stationClothes = worker.GetComponent<NpcWardrobe>();
                 foreach (string slot in new[] { "outerwear", "boots", "headwear" })
                     Assert.That(stationClothes.GetEquippedItem(slot), Is.EqualTo(slot + ".warm"), "The station role retains winter protection.");
@@ -371,7 +752,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 // Isolate only for equal-scale comparison. Real scene lights, the same
                 // camera and post-processing remain; all actual placements are above.
-                references = new GameObject("Default NPC wardrobe review models");
+                references = new GameObject("Test default NPC wardrobe review");
                 references.transform.position = new Vector3(0f, 1000f, 0f);
                 var actors = new VillageResidentPresentation[4];
                 for (int i = 0; i < actors.Length; i++)
@@ -475,6 +856,7 @@ namespace BarPromenade.Tests.PlayMode
                 mixed.SetSlot("scarf", null);
                 yield return AdvanceDefaultNpcSkinningFrame(actors[3]);
                 DefaultNpcActorFrame(camera, report, "06-mixed-inner-sweater", actors[3], 2.8f, .3f, 43f);
+                yield return CaptureDefaultNpcBodyVariants(camera, report, actors, center, heroTransform);
                 yield return null;
             }
             finally
@@ -494,6 +876,67 @@ namespace BarPromenade.Tests.PlayMode
                 village.Life.enabled = lifeEnabled;
                 pause?.Dispose();
                 NpcFootstepSources.Prune();
+            }
+        }
+
+        private static IEnumerator CaptureDefaultNpcBodyVariants(Camera camera, DefaultNpcWardrobeReport report,
+            VillageResidentPresentation[] actors, Vector3 center, Transform hero)
+        {
+            int[] heights = { 160, 160, 185, 185 };
+            float[] builds = { 0f, 1f, 0f, 1f };
+            string[] names = { "Test short slim resident", "Test short stout resident",
+                "Test tall slim resident", "Test tall stout resident" };
+            for (int i = 0; i < actors.Length; i++)
+            {
+                actors[i].name = names[i];
+                var wardrobe = actors[i].GetComponent<NpcWardrobe>();
+                wardrobe.ApplyOutfit(i == 1 ? "work" : i == 2 ? "warm" : "everyday");
+                wardrobe.SetSlot("headwear", null);
+                wardrobe.SetSlot("scarf", null);
+                var body = actors[i].GetComponent<DefaultNpcBodyShape>();
+                Assert.That(body != null && body.IsConfigured, Is.True);
+                body.Apply(heights[i], builds[i]);
+                actors[i].Apply(VillageResidentAction.Idle, .3f);
+            }
+            yield return AdvanceDefaultNpcSkinningFrame(actors);
+            DefaultNpcFrame(camera, report, "07-body-extremes-and-hero", center + new Vector3(0f, .05f, 7.8f), center, 34f, actors);
+            Vector3 heroPosition = hero.position;
+            hero.position += Vector3.forward * 10f;
+            for (int i = 0; i < actors.Length; i++)
+            {
+                for (int j = 0; j < actors.Length; j++) actors[j].gameObject.SetActive(j == i);
+                actors[i].Apply(VillageResidentAction.Idle, .3f);
+                yield return AdvanceDefaultNpcSkinningFrame(actors[i]);
+                Vector3 target = actors[i].transform.position + Vector3.up * .95f;
+                Vector3 forward = DefaultNpcFacing(actors[i]), right = Vector3.Cross(Vector3.up, forward);
+                DefaultNpcFrame(camera, report, "07-body-extreme-" + i + "-profile",
+                    target + right * 2.8f + forward * .12f + Vector3.up * .2f, target, 43f, actors[i]);
+            }
+            foreach (VillageResidentPresentation actor in actors)
+            {
+                actor.gameObject.SetActive(true);
+                actor.Apply(VillageResidentAction.Walk, actor.ClipLength(VillageResidentAction.Walk) * .37f);
+            }
+            hero.position = heroPosition;
+            yield return AdvanceDefaultNpcSkinningFrame(actors);
+            DefaultNpcFrame(camera, report, "07-body-extremes-walking", center + new Vector3(.4f, .05f, 7.8f), center, 34f, actors);
+
+            string[] tops = { "outerwear.cardigan", "outerwear.coat", "outerwear.overshirt" };
+            for (int i = 0; i < tops.Length; i++)
+            {
+                var wardrobe = actors[i].GetComponent<NpcWardrobe>();
+                wardrobe.ApplyOutfit("everyday");
+                wardrobe.SetSlot("outerwear", tops[i]);
+                wardrobe.SetSlot("headwear", null);
+                actors[i].GetComponent<DefaultNpcBodyShape>().Apply(175, i * .5f);
+                actors[i].Apply(VillageResidentAction.Idle, .3f);
+            }
+            yield return AdvanceDefaultNpcSkinningFrame(actors);
+            DefaultNpcFrame(camera, report, "08-cardigan-coat-overshirt", center + new Vector3(0f, .05f, 7.8f), center, 34f, actors);
+            for (int i = 0; i < tops.Length; i++)
+            {
+                DefaultNpcActorFrame(camera, report, "08-" + tops[i] + "-front", actors[i], 2.8f, .2f, 43f);
+                DefaultNpcActorFrame(camera, report, "08-" + tops[i] + "-back", actors[i], -2.8f, .4f, 43f);
             }
         }
 
@@ -573,6 +1016,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 NpcWardrobe wardrobe = actor.GetComponent<NpcWardrobe>();
                 DefaultNpcAppearance appearance = actor.GetComponent<DefaultNpcAppearance>();
+                DefaultNpcBodyShape body = actor.GetComponent<DefaultNpcBodyShape>();
                 Assert.That(wardrobe, Is.Not.Null);
                 Assert.That(wardrobe.IsModular, Is.True);
                 string modelId = string.IsNullOrEmpty(appearance.AppearanceKey) ? DefaultNpcCatalog.OrdinaryWorker :
@@ -586,7 +1030,8 @@ namespace BarPromenade.Tests.PlayMode
                     appearance_key = appearance.AppearanceKey, model_id = modelId,
                     visible_combination = DefaultNpcVisibleCombination(modelId, appearance, wardrobe),
                     action = actor.CurrentAction.ToString(), items = wardrobe.EquippedItemIds.ToArray(),
-                    visible_triangles = triangles, position = actor.transform.position
+                    visible_triangles = triangles, height_cm = body != null ? body.HeightCm : 0,
+                    build = body != null ? body.Build : .5f, position = actor.transform.position
                 });
             }
             Debug.Log("DEFAULT NPC: " + name);
@@ -608,6 +1053,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(appearance, Is.Not.Null);
             Assert.That(appearance.AppearanceKey, Is.Not.Null.And.Not.Empty);
             string modelId = DefaultNpcPopulation.GetAssignment(appearance.AppearanceKey).ModelId;
+            DefaultNpcBodyShape body = wardrobe.GetComponent<DefaultNpcBodyShape>();
             report.roster.Add(new DefaultNpcWardrobeSnapshot
             {
                 actor = wardrobe.name, outfit = wardrobe.CurrentOutfitId, face = appearance.CurrentFaceId,
@@ -615,6 +1061,7 @@ namespace BarPromenade.Tests.PlayMode
                 appearance_key = appearance.AppearanceKey, model_id = modelId,
                 visible_combination = DefaultNpcVisibleCombination(modelId, appearance, wardrobe),
                 items = wardrobe.EquippedItemIds.ToArray(),
+                height_cm = body != null ? body.HeightCm : 0, build = body != null ? body.Build : .5f,
                 position = wardrobe.transform.position
             });
         }

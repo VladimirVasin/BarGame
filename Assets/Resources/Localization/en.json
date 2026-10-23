@@ -861,6 +861,10 @@
       "value": "E — drink the beverage"
     },
     {
+      "key": "interaction.repeat_beverage",
+      "value": "E — order the same drink again"
+    },
+    {
       "key": "interaction.order_selected_drink",
       "value": "E — order the selected drink"
     },
@@ -1206,6 +1210,14 @@
     },
     {
       "key": "drink_shop.balance",
+      "value": "Balance: ${0}"
+    },
+    {
+      "key": "payment_notice.paid",
+      "value": "Paid: ${0}"
+    },
+    {
+      "key": "payment_notice.balance",
       "value": "Balance: ${0}"
     },
     {
