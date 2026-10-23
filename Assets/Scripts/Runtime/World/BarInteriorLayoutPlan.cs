@@ -54,7 +54,8 @@ namespace BarPromenade
         StageKey = 2,
         StageRim = 3,
         EntryFill = 4,
-        Washroom = 5
+        Washroom = 5,
+        WashroomSign = 6
     }
 
     public enum BarInteriorAudioKind

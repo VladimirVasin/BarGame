@@ -13,6 +13,7 @@ namespace BarPromenade
         public HomeToiletPlungeInteraction Plunge { get; private set; }
         public HomeToiletChoiceInteraction Choice { get; private set; }
         public InteriorHingedDoorInteraction Door { get; private set; }
+        public BarWashroomMirrorWorld Mirror { get; private set; }
         public Transform FixtureFrame => Host?.transform;
 
         public static BarWashroom Create(Transform parent, Transform room, PlayerRuntime player,
@@ -47,6 +48,9 @@ namespace BarPromenade
             Transform seat = CreateFixture(frame, "ToiletSeat", new Vector3(4.05f, .62f, 1.40f),
                 new Color(.33f, .31f, .24f));
             HomeToiletLid lid = HomeToiletLid.Create(frame);
+            foreach (Renderer renderer in lid.GetComponentsInChildren<Renderer>(true))
+                BarSurfaceAppearance.ApplyAuthored(renderer, BarSurfaceKind.PaintedMetal,
+                    new Color(.33f, .31f, .24f));
             Transform water = HomeToiletLid.CreateWater(frame).transform;
             Transform flush = Require(room, "Bar Washroom Toilet Flush");
             var anchors = new ToiletFixtureAnchors(frame, lid, bowl, water, seat, flush);
@@ -75,6 +79,8 @@ namespace BarPromenade
             Door.Initialize(player, controller, pivot, leaf, outsideHandle, insideHandle,
                 transform.TransformPoint(new Vector3(-4.20f, PlayerFactory.GroundedRootOffset, 3.25f)),
                 transform.TransformPoint(new Vector3(-3.35f, PlayerFactory.GroundedRootOffset, 4.55f)), -90f);
+            Mirror = BarWashroomMirrorWorld.Create(transform.parent, room, player,
+                follow.GetComponent<Camera>(), frame);
         }
 
         private GameObject Child(string label)
@@ -84,6 +90,23 @@ namespace BarPromenade
             return child;
         }
 
+        private void OnEnable()
+        {
+            if (Mirror != null) Mirror.enabled = true;
+        }
+
+        private void OnDisable()
+        {
+            if (Mirror != null) Mirror.enabled = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (Mirror == null) return;
+            if (Application.isPlaying) Destroy(Mirror.gameObject);
+            else DestroyImmediate(Mirror.gameObject);
+        }
+
         private static Transform CreateFixture(Transform frame, string resource, Vector3 local, Color tint)
         {
             var part = new GameObject("Bar Washroom " + resource);
@@ -91,8 +114,8 @@ namespace BarPromenade
             part.transform.localPosition = local;
             part.AddComponent<MeshFilter>().sharedMesh = HomeUrineResources.Mesh(resource);
             var renderer = part.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-            RuntimePrimitiveFactory.SetColor(renderer, tint);
+            BarSurfaceAppearance.ApplyAuthored(renderer,
+                resource == "ToiletSeat" ? BarSurfaceKind.PaintedMetal : BarSurfaceKind.Ceramic, tint);
             return part.transform;
         }
 

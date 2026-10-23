@@ -2,12 +2,15 @@
 
 ## Current facts
 - **Accepted exception 2026-10-23, bar washroom — explicit user decision:**
-  Table/guest→WC3x3x3:toilet/passive basin;8guests/2tables;door1.1x2.2/WC.
-  Lower wing;outer/City/Home anchors kept.
-  Toilet host/hero;DoorUse/hand/swept-capsule guard;
-  0↔-90/.65s,both sides;outside close at near edge.
-  7practicals:WCdown(-3.9,2.65,5.65)/3m/45deg;1shadow/2bounce/1cube.
-  Hall air/bounce/cube bounds kept;WC not receiver/leaf not captured.
+  WC3x3x3:toilet/passive basin;8guests/2tables;door1.1x2.2/WC.
+  Wing/City/Home anchors;WC host;DoorUse/hand/sweep;
+  0↔-90/.65s/both sides;outer close near edge.
+  Worn tile/plaster;bin/litter/brush/paper/soap;rude art/stickers(no text).
+  Broken geometric mirror:room/hero/pose/clothes;active/cleanup.
+  8lights:6hall+WCdown(-3.9,2.65,5.65)/3.3m/100°/I3.1/RGB(1,.86,.65)
+  +WCsign(-4.2,2.32,3.25)→(0,-1,.45)/I2.6/3.8m/140°soft;3shadows.
+  2counter/1WC/1doorbounce;2×256cubes(WC ceramic/metal);hall air/no leaf.
+  No new text/clue/SSR/SCGI;§16/21/art16.
 - **Accepted exception 2026-10-22, bar/refill — user:**
   Fan(0,2.55,-.65),20°/s;brassØ18/beam65mm;rotor kept.
   FreeR brace/move/Notice;IK/Walk/towel win.
@@ -33,26 +36,26 @@
   Karaoke faces exit `-X`; coat rack/hooks/collision gone. Walkable .12m podium:
   centre `(4.1,0,-2.7)`, Rect `(3.05,-3.525,2.1,1.65)`; mic `(3.75,1.6,-2.7)`.
   Hero stand `(4.2,.16,-2.7)`; speakers/curtains/valance/StageKey stay.
-  BeerPong Rect `(3.85,-1.75,.76,1.83)`, IDs/assignments stay.
-  24 effects: existing providers/source bounds; no new fiction/effects/karaoke action.
+  BeerPong Rect(3.85,-1.75,.76,1.83);IDs/assignments stay.
+  24effects:existing providers/bounds;no new fiction/effects/karaoke action.
 - **Accepted exception 2026-10-21, compact bar rebuild — explicit user decision:**
-  Hall11.4x7.8x3 incl.shell/door fits facade;Blender joinery/plans collision-service.
-  Counter left-.9→X-2.1;rightX3.85/return/backbar/3taps stay;5stools/3free;
-  guestX-1.65/heroX-.75. 2opposed booths/4sitters/2roundtables;
-  table(4.85,2.95)gone. BoothX-4.38/Z-2.15,.65:2.05x2.8/table1.05x.85;
-  benchesZ±.95 face∓Z/1guest.8ID-free unique body/face/hair/clothes rerolled perentry;
-  balanced Bottle/Pint/WineGlass/ShotGlass/Snifter;permanent roster kept.
-  Bespoke assets/tools gone;bartender OrdinaryWorker/work/ID after prior roster;
-  directResidential;Cafe clips/Walk/towel. Rearhand stow/draw before work/Wipe;
-  anatomical fingers:cup wine/snifter,shotbody,beerhandle;IKtorso cap/hero support.
-  Menu change:pickup/facing→back.25m→vertical lower;Rtopbrace;
-  hide below/guest-occluded before next. Hand-sized bounds/lift-transfer-lower;
+  Hall11.4x7.8x3(shell/door) in facade;Blender/Unity plans.
+  CounterX-2.1(left-.9)…3.85;return/backbar/3taps;5stools/3free;
+  guestX-1.65/heroX-.75.2opposed booths/4sitters/2roundtables;
+  BoothX-4.38/Z-2.15,.65:2.05x2.8/table1.05x.85;
+  benchesZ±.95 face∓Z/1guest.8ID-free bodies/faces/hair/clothes rerolled perentry;
+  Balanced Bottle/Pint/WineGlass/ShotGlass/Snifter;roster kept.
+  Bespoke gone;bartender OrdinaryWorker/work/ID after roster;
+  Residential;Cafe clips/Walk/towel;rearhand stow/draw before work/Wipe;
+  fingers:wine/sniftercup,shotbody,beerhandle;IKtorso cap/support.
+  Menu:pickup/facing→back.25m→vertical lower;Rtopbrace;
+  below/guest-occluded before next;hand-sized lift/transfer/lower;
   prep opposite menu;payment/consume/cleanup kept.
   UV0 unique albedo/slopes/roughness/cavity+metreUV1;shared glass/emission/menu/service.
-  7practicals/1keyshadow/2finitebounce/1bounded256HDRcube;shared cleanup.
+  Hall6practicals;lighting above.
   Lowfill/Neutral/clearair/dust;SCGI fixture-only/noSSR. Wear/bevels/vertex reserves/
   gaze/AA/grain/state/bloom/vignette/DOF;dither only banding.
-  No rays/wind/rim/flare/blur/newclues/measuredgains;§16/§21/nineartchecks.
+  No rays/wind/rim/flare/blur/clues/perfclaim;§16/21/nineartchecks.
 - **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
   Every scene change follows `ai/visual-effects-standard.md`: all three groups,
   now including SSR/SSGI/SCGI. Coverage/fit/cost audit, not all-on/canon override.

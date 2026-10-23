@@ -17,6 +17,9 @@ namespace BarPromenade
         public static readonly Vector3 DoorCenter = new Vector3(-4.2f, 0f, 3.9f);
         public static readonly Vector3 DoorPivot = new Vector3(-4.75f, 0f, 3.9f);
         public static readonly Vector3 LightPosition = new Vector3(-3.9f, 2.65f, 5.65f);
+        // Forward offset approximates the sign's broad diffuse spill without
+        // letting the projecting door lintel trap it in a tiny hard triangle.
+        public static readonly Vector3 SignLightPosition = new Vector3(-4.2f, 2.32f, 3.25f);
         public static readonly Rect ExteriorRange = Rect.MinMaxRect(-11.39f, -5.58f, -8.03f, -2.22f);
 
         public static bool Contains(Rect bounds, Vector3 point, float margin = 0f)

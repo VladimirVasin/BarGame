@@ -75,7 +75,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarInteriorAtmosphere : MonoBehaviour
     {
-        public const int MaximumPracticalLights = 7;
+        public const int MaximumPracticalLights = 8;
         public const int MaximumDustParticles = 24;
         public const float FilmGrainIntensity = 0.04f;
 
@@ -139,14 +139,19 @@ namespace BarPromenade
             light.color = spec.Color;
             light.intensity = spec.Intensity;
             light.range = spec.Range;
-            // One bounded spot map gives the counter and serving hands real
-            // contact depth; the remaining practicals retain their cheap pools.
-            bool key = spec.Name == "counter-pendant-left" && spec.Type == LightType.Spot;
-            light.shadows = key ? LightShadows.Hard : LightShadows.None;
+            // Separate bounded maps keep the serving hands and the WC's
+            // basin/bin/door grounded. The sign's soft fill respects the door
+            // instead of passing through its leaf or the front partition.
+            bool key = (spec.Name == "counter-pendant-left" || spec.Name == "washroom-ceiling" ||
+                spec.Name == "washroom-sign") &&
+                spec.Type == LightType.Spot;
+            light.shadows = key ? spec.Name == "washroom-sign" ? LightShadows.Soft : LightShadows.Hard :
+                LightShadows.None;
             if (key)
             {
-                light.shadowBias = .025f;
-                light.shadowNormalBias = .08f;
+                bool washroom = spec.Name.StartsWith("washroom-", StringComparison.Ordinal);
+                light.shadowBias = washroom ? .015f : .025f;
+                light.shadowNormalBias = washroom ? .035f : .08f;
                 light.shadowNearPlane = .05f;
                 var data = lightObject.AddComponent<UniversalAdditionalLightData>();
                 data.usePipelineSettings = false;

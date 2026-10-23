@@ -17,13 +17,15 @@ import subprocess
 import sys
 import uuid
 
+sys.dont_write_bytecode = True
+import bar_washroom_surfaces as washroom_surfaces
+
 import numpy as np
 try:
     from PIL import Image
 except ImportError:  # Blender keeps geometry in-process; the pinned Python publishes bitmap assets.
     Image = None
 
-sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "ArtSource/Bar/bar-interior-surfaces.json"
 OUTPUT = ROOT / "Assets/Resources/Bar/Textures"
@@ -161,6 +163,7 @@ def prepare(asset, *, write=False, apply=True):
         "uv1_contract": "exact original metre UV0; geometry/anchors/collision/special sheets preserved",
         "channels": ["signed_physical_slope_u", "signed_physical_slope_v", "roughness", "cavity"],
         "recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "washroom_recipe_sha256": hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest(),
         "source_sha256": {sheet: hashlib.sha256((OUTPUT / f"Bar{sheet}Albedo.png").read_bytes()).hexdigest()
             for sheet in sorted({part["sheet"] for part in parts if part["unique_surface"]})}}
     encoded = json.dumps(current, indent=2) + "\n"
@@ -221,7 +224,8 @@ def fields(sheet, u, v, chart):
     roughness = np.clip(base_roughness + amplitude * broad * .17 + handling * .09, .08, .995)
     cavity = np.clip(.98 - amplitude * (1 - broad) * .10 - handling * .025, .86, 1.)
     pigment = 1. + broad * .035 - handling * .06
-    return height, roughness, cavity, pigment
+    result = height, roughness, cavity, pigment
+    return washroom_surfaces.fields(u, v, chart, result) if washroom_surfaces.applies(chart) else result
 
 
 def paint_chart(chart, source, size, *, response):
@@ -264,6 +268,8 @@ def paint_chart(chart, source, size, *, response):
         c = source[(iy + 1) % source.shape[0], ix % source.shape[1]]
         d = source[(iy + 1) % source.shape[0], (ix + 1) % source.shape[1]]
         pixels = ((a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy) / 255. * pigment[..., None]
+        if washroom_surfaces.applies(chart):
+            pixels = washroom_surfaces.colour(pixels, u, v, chart)
     return lo, hi, np.uint8(np.clip(pixels, 0, 1) * 255 + .5)
 
 
@@ -302,6 +308,8 @@ def ensure_meta(path, *, size, linear):
 def publish(contract, *, validate_only):
     if contract["recipe_sha256"] != hashlib.sha256(Path(__file__).read_bytes()).hexdigest():
         raise RuntimeError("Bar surface recipe changed; regenerate its chart contract")
+    if contract["washroom_recipe_sha256"] != hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest():
+        raise RuntimeError("Bar washroom physical recipe changed; regenerate its chart contract")
     unique_meshes = sorted(part["mesh"] for part in contract["parts"] if part["unique_surface"])
     if len(unique_meshes) != contract["unique_part_count"] or len(set(unique_meshes)) != len(unique_meshes):
         raise RuntimeError("Bar unique mesh registry must contain every authored opaque node exactly once")
@@ -399,5 +407,16 @@ if __name__ == "__main__":
     toolchain.check_python(toolchain.load_config(), ("Pillow", "numpy"))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--repaint", action="store_true",
+                        help="Repaint current registered charts without changing geometry, packing or UVs")
     args = parser.parse_args()
-    publish(json.loads(MANIFEST.read_text(encoding="utf8")), validate_only=args.validate_only)
+    if args.repaint and args.validate_only:
+        parser.error("--repaint and --validate-only are mutually exclusive")
+    contract=json.loads(MANIFEST.read_text(encoding="utf8"))
+    if args.repaint:
+        contract["recipe_sha256"]=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        contract["washroom_recipe_sha256"]=hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest()
+        publish(contract,validate_only=False)
+        MANIFEST.write_text(json.dumps(contract,indent=2)+"\n",encoding="utf8")
+    else:
+        publish(contract, validate_only=args.validate_only)

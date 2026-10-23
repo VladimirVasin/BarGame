@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One finite reflection of the existing counter pendants, without another Light.</summary>
+    /// <summary>Finite counter, WC and entrance bounces from the room's actual practicals.</summary>
     [DisallowMultipleComponent]
     public sealed class BarLightingPresentation : SceneLightingPresentation
     {
-        public const int MaximumBounceRegions = 2;
+        public const int MaximumBounceRegions = 4;
         private const float RefreshSeconds = .1f, PatchHalfSize = .18f, ReceiverReach = 1.65f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int BounceCountId = Shader.PropertyToID("_WarehouseBounceCount");
@@ -43,7 +43,7 @@ namespace BarPromenade
             }
         }
 
-        // Four slots match the shared shader, while the pilot owns only two sources.
+        // Two counter patches, the WC floor and its soft entrance fill use four slots.
         private readonly Patch[] patches = new Patch[MaximumBounceRegions];
         private readonly Vector4[] centers = new Vector4[4], colors = new Vector4[4];
         private readonly Vector4[] minima = new Vector4[4], maxima = new Vector4[4], normals = new Vector4[4];
@@ -87,13 +87,17 @@ namespace BarPromenade
                 Physics.SyncTransforms();
                 // The first two authored pendants cover the left counter and the
                 // bartender's central work surface without overlapping emitter patches.
-                for (int i = 0; i < owner.Layout.LightAnchors.Count && BounceRegionCount < MaximumBounceRegions; i++)
+                for (int i = 0; i < owner.Layout.LightAnchors.Count && BounceRegionCount < 2; i++)
                 {
                     if (owner.Layout.LightAnchors[i].Kind != BarInteriorLightKind.CounterPendant ||
                         i >= owner.Atmosphere.PracticalLights.Count) continue;
                     TryAddPatch(owner.Atmosphere.PracticalLights[i], support, structure, albedo.linear);
                 }
             }
+            TryAddFloorPatch("washroom-ceiling", "Bar Washroom Floor", new Vector3(-3.8f, .025f, 5.5f),
+                new Vector3(-5.39f, 0f, 4.16f), new Vector3(-2.41f, 1.7f, 7.14f));
+            TryAddFloorPatch("washroom-sign", "Floor", new Vector3(-4.15f, .025f, 3f),
+                new Vector3(-5.5f, 0f, 2.1f), new Vector3(-2.6f, 2.65f, 3.89f));
             initialized = true;
             RefreshVisibility();
             Reflection = gameObject.AddComponent<BarReflectionController>();
@@ -108,6 +112,7 @@ namespace BarPromenade
         public override void PrepareForCamera(Camera camera)
         {
             bool eligible = IsForCamera(camera);
+            Reflection?.Washroom?.Prepare(eligible && GraphicsEffectsSettings.CleanReflectionsEnabled);
             Reflection?.Prepare(eligible && GraphicsEffectsSettings.CleanReflectionsEnabled);
             if (!eligible) { Shader.SetGlobalInt(BounceCountId, 0); return; }
 #if SURFACE_CACHE
@@ -155,6 +160,34 @@ namespace BarPromenade
         {
             source = default;
             return false;
+        }
+
+        private void TryAddFloorPatch(string sourceName, string floorName, Vector3 localCenter,
+            Vector3 localMinimum, Vector3 localMaximum)
+        {
+            Transform floor = owner.Room.Find(floorName);
+            Renderer renderer = floor != null ? floor.GetComponent<Renderer>() : null;
+            Light source = null;
+            foreach (Light candidate in owner.Atmosphere.PracticalLights)
+                if (candidate != null && candidate.name == sourceName) { source = candidate; break; }
+            if (renderer == null || source == null || BounceRegionCount >= MaximumBounceRegions) return;
+            Vector3 center = owner.Room.TransformPoint(localCenter);
+            if (!Physics.Raycast(center + Vector3.up * .2f, Vector3.down, out RaycastHit hit, .3f,
+                ~0, QueryTriggerInteraction.Ignore) || !SourceReaches(source, center)) return;
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Material material = renderer.sharedMaterial;
+            Color pigment = properties.HasColor(BaseColorId) ? properties.GetColor(BaseColorId) :
+                material != null && material.HasProperty(BaseColorId) ? material.GetColor(BaseColorId) : Color.black;
+            // The registered floor painting further darkens its pigment. Keep a
+            // conservative fraction, and stop the transfer at its authored zone.
+            Vector3 minimum = owner.Room.TransformPoint(localMinimum);
+            Vector3 maximum = owner.Room.TransformPoint(localMaximum);
+            Bounds bounds = new Bounds(); bounds.SetMinMax(Vector3.Min(minimum, maximum), Vector3.Max(minimum, maximum));
+            int slot = BounceRegionCount++;
+            patches[slot] = new Patch { Source = source, Center = center, Bounds = bounds, Albedo = pigment.linear * .55f };
+            centers[slot] = new Vector4(center.x, center.y, center.z, ReceiverReach);
+            minima[slot] = bounds.min; maxima[slot] = bounds.max; normals[slot] = Vector3.up;
         }
 
         private void TryAddPatch(Light source, Collider support, Collider[] structure, Color albedo)
@@ -240,11 +273,13 @@ namespace BarPromenade
             base.OnEnable();
             refreshAt = 0f;
             if (Reflection != null) Reflection.enabled = true;
+            if (Reflection?.Washroom != null) Reflection.Washroom.enabled = true;
         }
 
         protected override void OnDisable()
         {
             if (Reflection != null) Reflection.enabled = false;
+            if (Reflection?.Washroom != null) Reflection.Washroom.enabled = false;
             Array.Clear(colors, 0, colors.Length);
             base.OnDisable();
         }

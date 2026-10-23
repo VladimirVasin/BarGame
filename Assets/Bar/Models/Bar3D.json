@@ -43,8 +43,8 @@
     7.33,
     3.2
   ],
-  "mesh_count": 158,
-  "triangle_count": 13692,
+  "mesh_count": 182,
+  "triangle_count": 15732,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -4680,46 +4680,6 @@
       "triangles": 28
     },
     {
-      "name": "Bar Washroom Right Wall",
-      "role": "washroom_wall",
-      "group": "fixed",
-      "sheet": "CeilingPlaster",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.43,
-          0.42,
-          0.33
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [
-        {
-          "center": [
-            -2.31,
-            1.5,
-            5.65
-          ],
-          "size": [
-            0.18,
-            3.0,
-            3.36
-          ]
-        }
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
       "name": "Bar Washroom Rear Wall",
       "role": "washroom_wall",
       "group": "fixed",
@@ -4758,6 +4718,46 @@
       ],
       "vertices": 16,
       "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Right Wall",
+      "role": "washroom_wall",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -2.31,
+            1.5,
+            5.65
+          ],
+          "size": [
+            0.18,
+            3.0,
+            3.36
+          ]
+        }
+      ],
+      "vertices": 64,
+      "triangles": 112
     },
     {
       "name": "Bar Washroom Front Wall",
@@ -4820,6 +4820,33 @@
           ]
         }
       ],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Bar Washroom Lower Wall Tiles",
+      "role": "washroom_tiles",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.65,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
       "vertices": 48,
       "triangles": 84
     },
@@ -4908,15 +4935,15 @@
       "name": "Bar Washroom WC Letters",
       "role": "washroom_wc_letters",
       "group": "fixed",
-      "sheet": "PaintedMetal",
-      "emissive": false,
+      "sheet": "",
+      "emissive": true,
       "shadows": false,
       "tint": {
         "field": "",
         "rgb": [
-          0.8,
-          0.78,
-          0.67
+          2.4,
+          2.05,
+          1.5
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -5213,6 +5240,640 @@
       "colliders": [],
       "vertices": 332,
       "triangles": 640
+    },
+    {
+      "name": "Bar Washroom Wastebasket",
+      "role": "washroom_bin",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.35,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -5.08,
+            0.26,
+            6.6
+          ],
+          "size": [
+            0.43,
+            0.52,
+            0.43
+          ]
+        }
+      ],
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Bar Washroom Toilet Brush",
+      "role": "washroom_brush",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.27,
+          0.19
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 148
+    },
+    {
+      "name": "Bar Washroom Paper Holder",
+      "role": "washroom_holder",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.35,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Bar Washroom Paper Roll",
+      "role": "washroom_paper",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.68,
+          0.53
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 88
+    },
+    {
+      "name": "Bar Washroom Soap Dispenser",
+      "role": "washroom_dispenser",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.49,
+          0.47,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Soap Dispenser Window",
+      "role": "washroom_dispenser_window",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.11,
+          0.13,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Discarded Paper",
+      "role": "washroom_litter",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.68,
+          0.53
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 176,
+      "triangles": 308
+    },
+    {
+      "name": "Bar Washroom Plaster Scars",
+      "role": "washroom_damage",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.32,
+          0.25,
+          0.17
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 22,
+      "triangles": 36
+    },
+    {
+      "name": "Bar Washroom Sticker Cards",
+      "role": "washroom_stickers",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.71,
+          0.62,
+          0.39
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 26,
+      "triangles": 40
+    },
+    {
+      "name": "Bar Washroom Marker Drawings",
+      "role": "washroom_doodles",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.105,
+          0.11
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 184,
+      "triangles": 276
+    },
+    {
+      "name": "Bar Washroom Mirror Frame",
+      "role": "washroom_mirror_frame",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.36,
+          0.36,
+          0.28
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Bar Washroom Mirror Fallback",
+      "role": "washroom_mirror_fallback",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.15,
+          0.18,
+          0.15
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Missing Backing",
+      "role": "washroom_mirror_missing",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.26,
+          0.23,
+          0.17
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 10,
+      "triangles": 16
+    },
+    {
+      "name": "Bar Washroom Mirror Cracks",
+      "role": "washroom_mirror_cracks",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.08,
+          0.09,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 192
+    },
+    {
+      "name": "Bar Washroom Mirror Corrosion",
+      "role": "washroom_mirror_corrosion",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.18,
+          0.15,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Bar Washroom Mirror Source Floor",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.31,
+          0.3,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Ceiling",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Rear Wall",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Left Wall",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Hall Floor",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "WornPlank",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "FloorTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Hall Ceiling",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "CeilingTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Hall South Wall",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Mirror Source Front Wall",
+      "role": "washroom_mirror_source",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
     },
     {
       "name": "Bar Washroom Light Mount",
@@ -5809,15 +6470,15 @@
       "triangles": 28
     }
   ],
-  "build_signature": "778f2d56b099d7d47c7298fbb77ff7466068ecd54d8244963ede7696d2801473",
+  "build_signature": "a8b496d3ff308442dabbd48ef8f8ca6b7068adc782cd55b3be370c9e482262b4",
   "interior_surface_contract": {
     "design_id": "compact_bar_unique_surfaces_v1",
     "albedo": "Bar/Textures/BarInteriorAlbedo",
     "response": "Bar/Textures/BarInteriorResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "unique_part_count": 128,
-    "uv_signature": "49e8e5e466e28b755ecc12ee51909bbd41d83876b82d0eb21154ee20f572e633"
+    "unique_part_count": 151,
+    "uv_signature": "efa256d4ec2430b3327f64f6837f2e20966d8605113a7355de0f17475812abc7"
   },
   "containment_contract": {
     "exterior_door_m": [
@@ -5896,6 +6557,13 @@
         2.65,
         5.65
       ],
+      "mirror_plane_x_m": -2.416,
+      "mirror_opening_yz_m": [
+        1.26,
+        2.1,
+        4.7,
+        5.66
+      ],
       "toilet_water_unity_m": [
         -3.85,
         0.4373,
@@ -5968,6 +6636,13 @@
       -3.9,
       2.65,
       5.65
+    ],
+    "mirror_plane_x_m": -2.416,
+    "mirror_opening_yz_m": [
+      1.26,
+      2.1,
+      4.7,
+      5.66
     ],
     "toilet_water_unity_m": [
       -3.85,

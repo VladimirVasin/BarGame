@@ -414,7 +414,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo("BarInteriorAlbedo"));
             Assert.That(response.GetTexture("_SceneMaterialResponse").name,
                 Is.EqualTo("BarInteriorResponse"));
-            Assert.That(bar.Lighting.BounceRegionCount, Is.EqualTo(2));
+            Assert.That(bar.Lighting.BounceRegionCount, Is.EqualTo(4));
             Assert.That(bar.Lighting.Reflection.ReceiverCount, Is.GreaterThan(0));
             if (GraphicsEffectsSettings.CleanReflectionsEnabled)
             {

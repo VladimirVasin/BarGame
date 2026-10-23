@@ -5,13 +5,14 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One bounded static pub environment, using the common capture and cleanup lifecycle.</summary>
+    /// <summary>Separate bounded hall/WC environments sharing capture and receiver ownership.</summary>
     [DisallowMultipleComponent]
     public sealed class BarReflectionController : SceneReflectionCapture
     {
         private const int MaximumArchitectureRenderers = 4096;
         private static readonly int CountId = Shader.PropertyToID("_SceneSurfaceReflectionCount");
         private static readonly int CubeId = Shader.PropertyToID("_SceneSurfaceReflectionCube0");
+        private static readonly int WashroomCubeId = Shader.PropertyToID("_SceneSurfaceReflectionCube1");
         private static readonly int OriginsId = Shader.PropertyToID("_SceneSurfaceReflectionOrigins");
         private static readonly int MinimaId = Shader.PropertyToID("_SceneSurfaceReflectionMinima");
         private static readonly int MaximaId = Shader.PropertyToID("_SceneSurfaceReflectionMaxima");
@@ -30,6 +31,7 @@ namespace BarPromenade
         private bool initialized;
         public static BarReflectionController Current { get; private set; }
         public int ReceiverCount => receivers.Count;
+        public BarWashroomReflectionCapture Washroom { get; private set; }
         protected override SceneLightingPresentation Presentation => presentation;
         protected override bool CapturePermitted => initialized && root != null && root.IsInitialized &&
             root.isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled;
@@ -49,10 +51,6 @@ namespace BarPromenade
                 if (!(renderer is MeshRenderer) || renderer.GetComponentInParent<BarCeilingFan>() != null ||
                     HasWashroomAncestor(renderer.transform, "Bar Washroom Door")) continue;
                 layers.Add(new LayerLease { Object = renderer.gameObject, Previous = renderer.gameObject.layer });
-                // The one probe describes the hall, not the separate room behind
-                // its doorway. Keep the static WC shell in capture for occlusion,
-                // but never paint its ceramics/metal with the hall environment.
-                if (HasWashroomAncestor(renderer.transform, "Bar Washroom ")) continue;
                 if (!BarInteriorSurfaceAppearance.UsesSharedMaterial(renderer)) continue;
                 properties.Clear(); renderer.GetPropertyBlock(properties);
                 // Only lacquer, brass and ceramics receive a local environment.
@@ -66,6 +64,10 @@ namespace BarPromenade
             initialized = true;
             Current = this;
             ApplyOwnership(true);
+            var washroomObject = new GameObject("Bar Washroom Environment Capture");
+            washroomObject.transform.SetParent(transform, false);
+            Washroom = washroomObject.AddComponent<BarWashroomReflectionCapture>();
+            Washroom.Initialize(root, presentation);
         }
 
         private static bool HasWashroomAncestor(Transform part, string prefix)
@@ -116,12 +118,21 @@ namespace BarPromenade
         protected override void Bind(bool requested)
         {
             CurrentGain = requested && IsReady && CapturePermitted ? .32f : 0f;
-            bool bind = requested && CurrentGain > 0f;
-            Shader.SetGlobalInt(CountId, bind ? 1 : 0);
-            if (!bind) return;
+            bool wcReady = requested && Washroom != null && Washroom.IsReady && Washroom.CurrentGain > 0f;
+            Shader.SetGlobalInt(CountId, wcReady ? 2 : CurrentGain > 0f ? 1 : 0);
+            if (CurrentGain <= 0f && !wcReady) return;
             origins[0] = new Vector4(position.x, position.y, position.z, CurrentGain);
             decode[0] = CapturedDecode;
             Shader.SetGlobalTexture(CubeId, CapturedTexture);
+            if (wcReady)
+            {
+                Vector3 wcPosition = Washroom.Position;
+                origins[1] = new Vector4(wcPosition.x, wcPosition.y, wcPosition.z, Washroom.CurrentGain);
+                minima[1] = Washroom.Bounds.min; maxima[1] = Washroom.Bounds.max;
+                decode[1] = Washroom.Decode;
+                Shader.SetGlobalTexture(WashroomCubeId, Washroom.Environment);
+            }
+            else origins[1] = Vector4.zero;
             Shader.SetGlobalVectorArray(OriginsId, origins);
             Shader.SetGlobalVectorArray(MinimaId, minima);
             Shader.SetGlobalVectorArray(MaximaId, maxima);
@@ -133,6 +144,7 @@ namespace BarPromenade
             if (Current != null && Current != this) return;
             Shader.SetGlobalInt(CountId, 0);
             Shader.SetGlobalTexture(CubeId, null);
+            Shader.SetGlobalTexture(WashroomCubeId, null);
         }
 
         private void ApplyOwnership(bool active)
@@ -154,11 +166,13 @@ namespace BarPromenade
             if (!initialized) return;
             Current = this;
             ApplyOwnership(true);
+            if (Washroom != null) Washroom.enabled = true;
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
+            if (Washroom != null) Washroom.enabled = false;
             ApplyOwnership(false);
             if (Current == this) Current = null;
         }

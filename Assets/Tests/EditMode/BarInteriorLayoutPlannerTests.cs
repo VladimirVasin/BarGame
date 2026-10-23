@@ -52,10 +52,10 @@ namespace BarPromenade.Tests.EditMode
                 plan.NpcAnchors.Count,
                 Is.LessThanOrEqualTo(
                     BarInteriorLayoutValidator.MaximumNpcAnchors));
-            Assert.That(plan.LightAnchors, Has.Count.EqualTo(7));
+            Assert.That(plan.LightAnchors, Has.Count.EqualTo(8));
             Assert.That(
                 BarInteriorLayoutValidator.MaximumLightAnchors,
-                Is.EqualTo(7));
+                Is.EqualTo(8));
             Assert.That(
                 plan.LightAnchors.Count,
                 Is.LessThanOrEqualTo(

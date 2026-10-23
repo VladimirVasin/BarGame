@@ -230,6 +230,9 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                // Authored mirror templates are never part of the live room,
+                // including before mirror initialization or after its teardown.
+                if (binding.Role == "washroom_mirror_source") renderer.forceRenderingOff = true;
 
                 if (TryApplyCafeStoolSurface(binding))
                 {
@@ -760,7 +763,8 @@ namespace BarPromenade
             {
                 BarInteriorLightAnchor anchor = plan.LightAnchors[index];
                 // The washroom has its own authored ceiling fitting.
-                if (anchor.Kind == BarInteriorLightKind.Washroom) continue;
+                if (anchor.Kind == BarInteriorLightKind.Washroom ||
+                    anchor.Kind == BarInteriorLightKind.WashroomSign) continue;
                 bool counterPendant =
                     anchor.Kind == BarInteriorLightKind.CounterPendant;
                 Color bulbColor = counterPendant

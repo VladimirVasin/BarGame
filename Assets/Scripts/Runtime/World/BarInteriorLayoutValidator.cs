@@ -10,7 +10,7 @@ namespace BarPromenade
         public const float MinimumPrimaryClearance = 2.4f;
         public const float MinimumSecondaryClearance = 1.2f;
         public const int MaximumNpcAnchors = 14;
-        public const int MaximumLightAnchors = 7;
+        public const int MaximumLightAnchors = 8;
 
         private const float Tolerance = 0.001f;
         private const float PathConnectionTolerance = 0.01f;

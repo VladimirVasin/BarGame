@@ -5,19 +5,27 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-23
 
-Bar rear table/guest→real WC with toilet/passive basin only; rear wing matches.
+Bar rear table/guest→WC/toilet/passive basin; matching wing/roof/contours.
 Shared toilet host keeps both actions/hero; solid DoorUse leaf works both sides.
-Hall/door/WC union keeps collision/camera clearance; room spot and hall probe stay scoped.
+Hall/door/WC union keeps collision/camera clearance.
+WC polish: authored dirt/chipped tile/plaster,bin/litter/brush/paper/dispenser,
+text-free vulgar pictures/stickers; broken geometric room/hero mirror.
+Wide soft sign light fills door/corner from in front of lintel; its bounded
+shadow blocks spill through the moving leaf. Door-corner floor bounce reveals approach.
+WC adds scoped shadow/bounce/cube for ceramic/metal.
+Hall lighting/air stay bounded; shared presentation owns resources/cleanup.
 Blender anchor names guarded against global duplicate suffixes.
-build-bar-3d-model --validate-only passed geometry/UV/maps and matching contours.
-WC mesh sign; outward roof slope with aligned eaves/masonry/flashings and gutter.
+build-bar-3d-model and check-bar-interior-surfaces passed authored geometry/UV/maps.
+Outward roof slope keeps aligned eaves/masonry/flashings/gutter.
 One rig handoff owner spans both lid phases, preventing a deferred unlock from
 being recaptured as the next phase's original state.
 Bar toilet prompt now requires a nearby approach/facing; counter sit reach is
 local to its dock. Broad-phase overlaps no longer let WC hide the inside door.
 BarPrompts_KeepDoorReachableAndCounterLocal passed actual target selection/E.
-Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera and
-Toilet_FirstPersonStreamStainsAndRestores passed; entrance/fixtures/camera/roof reviewed.
+Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera passed door/toilet branches,
+input/camera restore, mirror pose/layers/visibility/fallback and template teardown.
+Broad door/floor/wall light, fixtures and mirror reviewed; repeated tile dots removed.
+Toilet_FirstPersonStreamStainsAndRestores passed; roof reviewed.
 check-docs passed; existing user-asset whitespace retained.
 
 Bar continuation: forward L wave fits initial gaze once.

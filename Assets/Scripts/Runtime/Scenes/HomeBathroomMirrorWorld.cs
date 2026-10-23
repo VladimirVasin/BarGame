@@ -505,14 +505,27 @@ namespace BarPromenade
                 return null;
             }
 
+            return TryCreate(presentation.Registry, home.transform, parent,
+                HomeBathroomMirrorWorld.TwinName, presentation.Registry.gameObject.layer);
+        }
+
+        /// <summary>One passive copy of the production hero, expressed in the owning room's frame.</summary>
+        public static HomeMirrorHeroTwin TryCreate(Player3DAssetRegistry source, Transform sourceFrame,
+            Transform parent, string twinName, int layer)
+        {
+            if (source == null || sourceFrame == null || parent == null)
+            {
+                return null;
+            }
+
             if (!Player3DResources.TryInstantiate(parent, out Player3DAssetRegistry twinRegistry))
             {
                 return null;
             }
 
-            twinRegistry.gameObject.name = HomeBathroomMirrorWorld.TwinName;
-            Neuter(twinRegistry, presentation.Registry.gameObject.layer);
-            var twin = new HomeMirrorHeroTwin(presentation.Registry, twinRegistry, home.transform);
+            twinRegistry.gameObject.name = twinName;
+            Neuter(twinRegistry, layer);
+            var twin = new HomeMirrorHeroTwin(source, twinRegistry, sourceFrame);
             twin.Sync();
             return twin;
         }

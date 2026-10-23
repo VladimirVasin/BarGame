@@ -8,8 +8,8 @@
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - PC:native/SMAA High/saved effects/grade/UI;City/balcony Soft;bar Neutral/bounce.
-  City/Home/bar UV0+1;house air. Bar:hall/WC fit,
-  default cast (visitors reroll)/maps/response/cube. Pilots:
+  City/Home/bar UV0+1;house air. Bar:WC wear/mirror/sign/local light.
+  Maps/response/cubes. Pilots:
   coastal stems(City crowns static);one road RGB chunk/
   pistol slide normals;fountain foam/mips. Caps/geometry retained.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:

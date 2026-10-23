@@ -501,10 +501,19 @@ namespace BarPromenade
                     BarInteriorLightKind.Washroom,
                     BarWashroomLayout.LightPosition,
                     Vector3.down,
-                    new Color(1f, .83f, .58f),
-                    2f,
-                    3f,
-                    45f)
+                    new Color(1f, .86f, .65f),
+                    3.1f,
+                    3.3f,
+                    100f),
+                CreateLight(
+                    "washroom-sign",
+                    BarInteriorLightKind.WashroomSign,
+                    BarWashroomLayout.SignLightPosition,
+                    new Vector3(0f, -1f, .45f),
+                    new Color(1f, .86f, .65f),
+                    2.6f,
+                    3.8f,
+                    140f)
             };
         }
 

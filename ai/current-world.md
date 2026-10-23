@@ -2138,9 +2138,10 @@ cemetery:own interiors/returns.
   Two opposed booths/two round tables furnish the hall. Booths at X-4.38,
   Z-2.15/.65 have `2.05 x 2.8 m` footprints and `1.05 x .85 m` tables;
   door-side/opposite benches at centreZ-.95/+.95 face +Z/-Z, one visitor each.
-  Rear table/guest→WC3x3x3: toilet/basin. Door1.1x2.2m/WC,
-  DoorUse0↔-90 both sides;matching wing/3%outward roof.
-  Toilet hint≤.65m/approach, facing bowl; counter≤1.2m/dock.
+  WC3x3x3 replaces table/guest:toilet/basin/cracked geometric mirror.
+  Worn tile/plaster;bin/litter/brush/paper/dispenser;text-free rude art.
+  Door1.1x2.2m/WC:0↔-90 both sides;wing/3%outward roof match.
+  Toilet hint≤.65m/facing approach;counter≤1.2m/dock.
   Jukebox replaces the right-side activity console/three vessels:
   pivot `(5,0,-.65)`, yaw180, grille toward `-X` into the hall. Its audio, collision
   and emissive pulses follow. Cocktail/SplitTheG/TinctureMatch build no console
@@ -2158,11 +2159,11 @@ cemetery:own interiors/returns.
   source wear; shared opaque/glass/emission/service paths stay. Residential
   identity, `SplitTheG`, menu and gameplay stay. Direct bar loads also select
   Residential; explicit legacy district layouts retain their own profiles;
-- seven practicals/one local key shadow, two finite counter bounces, one bounded `256`
-  HDR reflection, Neutral/dust/DOF keep the warm dry pub. Pale warm matte
-  Ø≈1.38m fan: pivotY2.55,20°/s; fixed brass stem/beam clearance6.5cm.
-  WC spot stays inside;hall cube excludes leaf/WC receivers;air/bounce bounds stay.
-  Skippable `1.35 s` reveal settles lens/roll into chase. No ordinary bar SSR/SCGI;
+- 8lights:6hall+WCspot+soft WCsign;3shadowspots.
+  Hall2counter+1doorbounce/256HDRcube;WC bounded bounce/256cube ceramic/metal.
+  Door excluded;hall air scoped;Neutral/dust/DOF keep warm dry pub.
+  Matte Ø≈1.38m fan:Y2.55,20°/s;brass stem/beam gap6.5cm.
+  Skippable `1.35 s` reveal→chase;no ordinary bar SSR/SCGI;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
   profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
   fluorescent housings and articulated CCTV pivots are one deterministic

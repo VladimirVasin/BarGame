@@ -6,6 +6,7 @@ the Home authored kit at runtime; only its passive cistern and sink live here.
 from __future__ import annotations
 
 import importlib.util
+import math
 from pathlib import Path
 
 import bar_parts as bp
@@ -22,6 +23,138 @@ TOILET_WATER = (-3.85, .4373, 6.35)
 CISTERN = (-3.85, .76, 6.79)
 FLUSH = (-4.05, 1.14, 6.79)
 DOOR_GROUP = "pivot:Bar Washroom Door"
+MIRROR_X = -2.416
+MIRROR_Y = (1.26, 2.10)
+MIRROR_Z = (4.70, 5.66)
+
+
+def _polygon_x(points, x, thickness=.004):
+    """A closed irregular plate in the YZ plane, with outward winding."""
+    area = sum(a[0] * b[1] - b[0] * a[1]
+               for a, b in zip(points, points[1:] + points[:1]))
+    points = points if area > 0 else list(reversed(points))
+    count = len(points)
+    vertices = [(depth, y, z) for depth in (x-thickness*.5, x+thickness*.5)
+                for y, z in points]
+    faces = [tuple(reversed(range(count))), tuple(range(count, count*2))]
+    faces += [(i, (i+1) % count, (i+1) % count + count, i+count) for i in range(count)]
+    return vertices, faces
+
+
+def _stroke_x(points, x, width=.006, thickness=.003):
+    segments = []
+    for a, b in zip(points, points[1:]):
+        dy, dz = b[0]-a[0], b[1]-a[1]
+        length = math.hypot(dy, dz)
+        ny, nz = -dz / length * width*.5, dy / length * width*.5
+        segments.append(_polygon_x([(a[0]+ny,a[1]+nz),(b[0]+ny,b[1]+nz),
+                                    (b[0]-ny,b[1]-nz),(a[0]-ny,a[1]-nz)], x, thickness))
+    return kit.merge_all(segments)
+
+
+def _open_bin(center):
+    """A dented open wastebasket: inner wall, rolled rim and a real bottom."""
+    cx, cy, cz = center
+    count = 16
+    vertices = []
+    for y, radius in ((.025,.165),(.50,.205),(.50,.191),(.045,.151)):
+        for i in range(count):
+            angle = math.tau*i/count
+            dent = 1 - (.09 if i in (3,4) else .035 if i == 11 else 0)
+            vertices.append((cx+math.cos(angle)*radius*dent, cy+y, cz+math.sin(angle)*radius))
+    faces=[]
+    for ring in range(3):
+        for i in range(count):
+            j=(i+1)%count
+            faces.append((ring*count+j,ring*count+i,(ring+1)*count+i,(ring+1)*count+j))
+    faces += [tuple(range(3*count,4*count)),tuple(reversed(range(count)))]
+    return vertices,faces
+
+
+def _dressing(part, box):
+    ceramic=bp.rgb(.67,.65,.55)
+    dull=bp.rgb(.34,.35,.29)
+    paper=bp.rgb(.72,.68,.53)
+    # Dented bin and brush occupy the rear-left service margin, outside all action docks.
+    part("Wastebasket", _open_bin((-5.08,0.,6.60)), "washroom_bin", "PaintedMetal", dull,
+         colliders=[((-5.08,.26,6.60),(.43,.52,.43))])
+    brush=kit.merge(bp.u_tapered_cylinder((-4.73,.105,6.83),(.16,.105,.16),.84,16),
+                    bp.u_cylinder((-4.73,.36,6.83),(.018,.18,.018),12),
+                    bp.u_cylinder((-4.73,.18,6.83),(.095,.055,.095),12))
+    part("Toilet Brush",brush,"washroom_brush","PaintedMetal",bp.rgb(.30,.27,.19))
+    holder=kit.merge_all([bp.u_box((-3.01,.96,7.105),(.19,.17,.065),.008),
+                         bp.u_box((-3.01,.89,7.01),(.20,.025,.17),.006)])
+    part("Paper Holder",holder,"washroom_holder","PaintedMetal",dull,shadows=False)
+    roll=bp.u_rotated_about(bp.u_cylinder((-3.01,.93,6.98),(.14,.10,.14),16),
+                           (0.,0.,90.),(-3.01,.93,6.98))
+    part("Paper Roll",kit.merge(roll,bp.u_plate((-3.01,.81,6.90),(.17,.19,.006))),
+         "washroom_paper","CeilingPlaster",paper,shadows=False)
+    box("Soap Dispenser",(-2.46,1.10,5.96),(.13,.26,.19),"washroom_dispenser",
+        "PaintedMetal",bp.rgb(.49,.47,.36),shadows=False)
+    box("Soap Dispenser Window",(-2.529,1.09,5.96),(.008,.11,.045),"washroom_dispenser_window",
+        "PaintedMetal",bp.rgb(.11,.13,.10),shadows=False)
+    # One merged litter mesh; no physics or repeated runtime objects.
+    litter=[]
+    for index,(x,z,yaw,size) in enumerate(((-5.02,6.57,14,.13),(-5.16,6.70,-23,.16),
+            (-4.96,6.73,39,.14),(-5.12,6.43,9,.12),(-4.89,6.34,62,.13),
+            (-5.04,6.13,-18,.18),(-4.70,6.56,28,.10),(-5.19,5.82,41,.13))):
+        y=.44+(index%3)*.024 if index<4 else .014
+        geometry=bp.u_box((0.,0.,0.),(size,.022,size*.7),.009)
+        geometry=bp.u_rotated(geometry,(8+index*3,yaw,(-1)**index*13))
+        litter.append(kit.translated(geometry,(x,y,z)))
+    litter += [bp.u_plate((-4.92,.009,6.02),(.11,.009,.28)),
+               bp.u_plate((-5.22,.011,5.49),(.16,.012,.13)),
+               bp.u_plate((-2.62,.008,6.43),(.09,.01,.22))]
+    part("Discarded Paper",kit.merge_all(litter),"washroom_litter","CeilingPlaster",paper,shadows=False)
+    # Broken plaster patches expose an irregular brown substrate, never random floating chips.
+    scars=kit.merge_all([_polygon_x([(1.28,5.92),(1.50,5.90),(1.59,6.04),(1.52,6.19),
+             (1.31,6.24),(1.23,6.10)],-5.386,.008),
+        _polygon_x([(2.22,6.58),(2.42,6.63),(2.51,6.80),(2.35,6.93),(2.19,6.84)],-5.386,.008)])
+    part("Plaster Scars",scars,"washroom_damage","CeilingPlaster",bp.rgb(.32,.25,.17),shadows=False)
+    # Torn unbranded stickers and a text-free crude marker drawing are everyday misuse.
+    stickers=kit.merge_all([_polygon_x([(1.54,4.91),(1.76,4.93),(1.75,5.14),
+          (1.70,5.17),(1.52,5.12)],-5.381),
+        _polygon_x([(1.12,5.53),(1.26,5.51),(1.29,5.73),(1.16,5.75)],-5.38),
+        _polygon_x([(1.88,5.35),(2.05,5.39),(2.01,5.57),(1.85,5.53)],-5.38)])
+    part("Sticker Cards",stickers,"washroom_stickers","CeilingPlaster",bp.rgb(.71,.62,.39),shadows=False)
+    lips=[(1.64,4.965),(1.685,5.015),(1.66,5.052),(1.686,5.083),(1.63,5.12),
+          (1.59,5.065),(1.61,5.025),(1.64,4.965)]
+    smile=[(1.21,5.55),(1.18,5.58),(1.17,5.64),(1.21,5.69)]
+    crude=[(1.53,5.57),(1.50,5.54),(1.46,5.54),(1.43,5.57),(1.44,5.62),
+           (1.54,5.64),(1.77,5.66),(1.80,5.69),(1.78,5.73),(1.53,5.72),
+           (1.46,5.76),(1.42,5.75),(1.40,5.71),(1.42,5.67)]
+    part("Marker Drawings",kit.merge(_stroke_x(lips,-5.375,.007),
+        _stroke_x(smile,-5.374,.006),_stroke_x(crude,-5.375,.007)),
+        "washroom_doodles","PaintedMetal",bp.rgb(.24,.105,.11),shadows=False)
+
+
+def _mirror(part, box):
+    ymin,ymax=MIRROR_Y;zmin,zmax=MIRROR_Z
+    frame=kit.merge_all([bp.u_box((MIRROR_X-.017,y,(zmin+zmax)*.5),(.032,.035,zmax-zmin+.07),.007)
+                       for y in (ymin-.018,ymax+.018)] +
+        [bp.u_box((MIRROR_X-.017,(ymin+ymax)*.5,z),(.032,ymax-ymin,.035),.007)
+         for z in (zmin-.018,zmax+.018)])
+    part("Mirror Frame",frame,"washroom_mirror_frame","PaintedMetal",bp.rgb(.36,.36,.28),shadows=False)
+    box("Mirror Fallback",(MIRROR_X+.002,(ymin+ymax)*.5,(zmin+zmax)*.5),
+        (.008,ymax-ymin,zmax-zmin),"washroom_mirror_fallback","PaintedMetal",bp.rgb(.15,.18,.15),shadows=False)
+    missing=_polygon_x([(ymax,zmax),(ymax-.22,zmax),(ymax-.13,zmax-.13),
+                        (ymax-.04,zmax-.19),(ymax,zmax-.15)],MIRROR_X-.004,.007)
+    part("Mirror Missing Backing",missing,"washroom_mirror_missing","CeilingPlaster",bp.rgb(.26,.23,.17),shadows=False)
+    paths=[[(1.49,5.07),(1.62,5.19),(1.73,5.27),(1.87,5.43),(2.10,5.52)],
+           [(1.73,5.27),(1.90,5.24),(2.10,5.16)],
+           [(1.73,5.27),(1.59,5.43),(1.47,5.66)],
+           [(1.62,5.19),(1.44,5.24),(1.26,5.23)],
+           [(1.49,5.07),(1.33,4.87),(1.26,4.83)],
+           [(1.73,5.27),(1.77,5.03),(1.83,4.70)],
+           [(1.73,5.27),(1.56,5.14),(1.26,5.48)]]
+    part("Mirror Cracks",kit.merge_all([_stroke_x(path,MIRROR_X-.009,.004,.003) for path in paths]),
+         "washroom_mirror_cracks","PaintedMetal",bp.rgb(.08,.09,.075),shadows=False)
+    # Corroded silver follows the perimeter, leaving the centre a real opening.
+    edge=kit.merge_all([bp.u_box((MIRROR_X-.008,y,(zmin+zmax)*.5),(.004,.014,zmax-zmin),.001)
+                       for y in (ymin+.007,ymax-.007)] +
+        [bp.u_box((MIRROR_X-.008,(ymin+ymax)*.5,z),(.004,ymax-ymin,.016),.001)
+         for z in (zmin+.008,zmax-.008)])
+    part("Mirror Corrosion",edge,"washroom_mirror_corrosion","PaintedMetal",bp.rgb(.18,.15,.10),shadows=False)
 
 
 def to_exterior(point):
@@ -38,6 +171,8 @@ def contract():
         "door_collider_local_center_m": [.55, 1.1, 0.],
         "door_collider_local_size_m": [1.1, 2.2, .06],
         "light_unity_m": list(LIGHT),
+        "mirror_plane_x_m": MIRROR_X,
+        "mirror_opening_yz_m": [*MIRROR_Y, *MIRROR_Z],
         "toilet_water_unity_m": list(TOILET_WATER),
         "toilet_yaw_degrees": -90.,
         "toilet_passive_kit": "HomeToiletAction/Models",
@@ -128,15 +263,27 @@ def build(g, asset, materials):
         (width, .2, zmax - zmin), "washroom_ceiling", "CeilingPlaster", plaster)
     for suffix, center, size in (
         ("Left Wall", (xmin + .09, 1.5, (zmin + zmax) * .5), (.18, 3., zmax-zmin)),
-        ("Right Wall", (xmax - .09, 1.5, (zmin + zmax) * .5), (.18, 3., zmax-zmin)),
         ("Rear Wall", ((xmin+xmax) * .5, 1.5, zmax-.09), (width, 3., .18)),
     ):
         box(suffix, center, size, "washroom_wall", "CeilingPlaster", plaster, solid=True)
+    # Four solids surround a genuine mirror opening. Its invisible wall collider
+    # stays whole so the hero cannot enter the reflected set behind the wall.
+    ymin,ymax=MIRROR_Y; mzmin,mzmax=MIRROR_Z
+    right=kit.merge_all([bp.u_box((xmax-.09,y,(zmin+zmax)*.5),(.18,h,zmax-zmin),.008)
+                        for y,h in ((ymin*.5,ymin),((ymax+3.)*.5,3.-ymax))] +
+        [bp.u_box((xmax-.09,(ymin+ymax)*.5,z),(.18,ymax-ymin,d),.008)
+         for z,d in (((zmin+mzmin)*.5,mzmin-zmin),((mzmax+zmax)*.5,zmax-mzmax))])
+    part("Right Wall",right,"washroom_wall","CeilingPlaster",plaster,
+         colliders=[((xmax-.09,1.5,(zmin+zmax)*.5),(.18,3.,zmax-zmin))])
     front, front_boxes = split_door_wall(xmin, xmax, zmin + .09, .18)
     part("Front Wall", front, "washroom_wall", "CeilingPlaster", plaster,
          colliders=front_boxes)
 
-    # Plain low ceramic splashback, with no text, stains or narrative clues.
+    # Low tile lining uses the same registered texture response as its dirty grout.
+    lining=kit.merge_all([bp.u_box((-5.387,.575,5.65),(.026,1.15,3.),.004),
+                          bp.u_box((-2.413,.575,5.65),(.026,1.15,3.),.004),
+                          bp.u_box((-3.9,.575,7.137),(3.,1.15,.026),.004)])
+    part("Lower Wall Tiles",lining,"washroom_tiles","Ceramic",ceramic,shadows=False)
     box("Sink Splashback", (-2.405, .97, 5.18), (.025, .5, 1.05),
         "washroom_splashback", "Ceramic", ceramic, shadows=False)
     frame = kit.merge_all([
@@ -146,8 +293,8 @@ def build(g, asset, materials):
     part("Door Frame", frame, "washroom_door_frame", "DarkWood", bp.ident("DarkWoodTint"))
     box("WC Sign", (-4.2, 2.40, 3.70), (.42, .18, .025),
         "washroom_wc_sign", "PaintedMetal", bp.rgb(.065, .062, .052), shadows=False)
-    letters = part("WC Letters", wc_letters(), "washroom_wc_letters", "PaintedMetal",
-                   bp.rgb(.80, .78, .67), shadows=False)
+    letters = part("WC Letters", wc_letters(), "washroom_wc_letters", "",
+                   bp.rgb(2.4, 2.05, 1.5), emissive=True, shadows=False)
     letters["bp_text"] = "WC"
     g.add_anchor(asset, "WashroomSign", "washroom_wc_sign", (-4.2, 2.40, 3.70))
     leaf = bp.to_source(kit.panelled_leaf(DOOR_WIDTH, DOOR_HEIGHT, .06,
@@ -196,6 +343,26 @@ def build(g, asset, materials):
     part("Sink Faucet", sink_geometry(kit.merge(faucet, faucet_handle)),
          "washroom_sink_metal", "PaintedMetal", metal, shadows=False)
 
+    _dressing(part,box)
+    _mirror(part,box)
+    # Render-only source patches are hidden by the mirror owner after cloning.
+    # They stop exactly at the reflection plane, so negative-scale copies cannot
+    # cross back into the real room or overlap its surfaces.
+    source_left=xmin; source_right=MIRROR_X
+    source_mid=(source_left+source_right)*.5; source_width=source_right-source_left
+    for suffix,center,size,sheet,tint in (
+        ("Floor",(source_mid,-.12,(3.9+zmax)*.5),(source_width,.24,zmax-3.9),"Ceramic",bp.rgb(.31,.30,.25)),
+        ("Ceiling",(source_mid,3.1,(zmin+zmax)*.5),(source_width,.2,zmax-zmin),"CeilingPlaster",plaster),
+        ("Rear Wall",(source_mid,1.5,zmax-.09),(source_width,3.,.18),"CeilingPlaster",plaster),
+        ("Left Wall",(xmin+.09,1.5,(zmin+zmax)*.5),(.18,3.,zmax-zmin),"CeilingPlaster",plaster),
+        ("Hall Floor",((-5.7+MIRROR_X)*.5,-.12,0.),(MIRROR_X+5.7,.24,7.8),"WornPlank",bp.ident("FloorTint")),
+        ("Hall Ceiling",((-5.7+MIRROR_X)*.5,3.10,0.),(MIRROR_X+5.7,.20,7.8),"CeilingPlaster",bp.ident("CeilingTint")),
+        ("Hall South Wall",((-5.7+MIRROR_X)*.5,1.5,-3.90),(MIRROR_X+5.7,3.,.25),"Wallpaper",bp.ident("WallTint")),
+    ):
+        box("Mirror Source "+suffix,center,size,"washroom_mirror_source",sheet,tint,shadows=False)
+    source_front,_=split_door_wall(source_left,source_right,zmin+.09,.18)
+    part("Mirror Source Front Wall",source_front,"washroom_mirror_source","CeilingPlaster",plaster,shadows=False)
+
     box("Light Mount", (-3.9, 2.94, 5.65), (.14, .12, .14),
         "washroom_light_fixture", "PaintedMetal", metal, shadows=False)
     part("Light Shade", bp.u_tapered_cylinder((-3.9, 2.75, 5.65), (.36, .10, .36), .55, sides=16),
@@ -225,8 +392,12 @@ def validate(asset, problems):
         problems.append("the removed rear social table returned")
     leaf = next(part for part in asset.parts if part.role == "washroom_door_leaf")
     letters = next(part for part in asset.parts if part.role == "washroom_wc_letters")
-    if letters.obj.get("bp_text") != "WC" or letters.emissive:
-        problems.append("the washroom sign must read exactly WC without emission")
+    if letters.obj.get("bp_text") != "WC" or not letters.emissive:
+        problems.append("the washroom sign must read exactly WC with milk-yellow emission")
+    for suffix in ("Wastebasket","Discarded Paper","Marker Drawings","Mirror Frame",
+                   "Mirror Fallback","Mirror Cracks","Mirror Missing Backing","Lower Wall Tiles"):
+        if "Bar Washroom "+suffix not in names:
+            problems.append("missing worn washroom detail "+suffix)
     if leaf.colliders or leaf.group != DOOR_GROUP:
         problems.append("the moving washroom leaf must use only its runtime pivot collider")
     for part in asset.parts:

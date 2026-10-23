@@ -189,7 +189,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
-| Bar interior and exterior | Hall/WC fit exterior; WC sign, physical door and shared toilet host. | `BarInteriorLayout{Plan,Planner,Validator}`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
+| Bar interior and exterior | Hall/worn WC fit exterior; sign/solid door/shared toilet/real broken mirror. | `BarInteriorLayout*`, `BarWashroom{MirrorWorld,ReflectionCapture}`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8m; sofa sleep/full kitchen/locked room; chair shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Exact days `1–7` accumulate domestic neglect; later days keep state seven. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | A shared ramp/step plan joins street and home with height-selected cameras and an authored atmosphere. | `StairwellLayout*` | Current |
@@ -213,7 +213,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
 | Bar patrons and bartender | Eight drinkers; two counter cups deplete/wave/refill. Bartender: Wipe/menu/free arm. | `BarPatron*`, `BarCounterPatronRefill`, `BarBartender*` | Current |
-| Bar cinematic atmosphere | Seven practicals/one key shadow/Neutral/two bounces/one hall cube; contained WC light. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
+| Bar cinematic atmosphere | 8 lights/3 shadows; 4 bounded bounces/2×256 cubes; Neutral. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
 | Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |
 | Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |
 | Automated tests | Focused EditMode/PlayMode contracts share infrastructure; complete suites need an explicit regression request. | `Assets/Tests/{EditMode,PlayMode,Infrastructure}` | Current |

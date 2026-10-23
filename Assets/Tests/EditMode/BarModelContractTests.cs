@@ -1226,6 +1226,11 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(room.Find("Bar Washroom Light Bulb"), Is.Not.Null);
                         continue;
                     }
+                    if (light.Kind == BarInteriorLightKind.WashroomSign)
+                    {
+                        Assert.That(room.Find("Bar Washroom WC Letters"), Is.Not.Null);
+                        continue;
+                    }
                     Transform shade =
                         room.Find($"Practical Shade {index + 1}");
                     Assert.That(
