@@ -37,9 +37,17 @@ namespace BarPromenade
             }
 
             loaded = true;
+            Values.Clear();
+            // New text is Russian. Existing English overlays it where present.
+            LoadCatalog("ru");
             string language = Application.systemLanguage == SystemLanguage.Russian
                 ? "ru"
                 : "en";
+            if (language != "ru") LoadCatalog(language);
+        }
+
+        private static void LoadCatalog(string language)
+        {
             TextAsset asset = Resources.Load<TextAsset>(
                 $"Localization/{language}");
             if (asset == null)
@@ -60,7 +68,7 @@ namespace BarPromenade
                 Entry entry = catalog.entries[i];
                 if (entry != null && !string.IsNullOrWhiteSpace(entry.key))
                 {
-                    Values[entry.key] = entry.value ?? entry.key;
+                    if (!string.IsNullOrEmpty(entry.value)) Values[entry.key] = entry.value;
                 }
             }
         }

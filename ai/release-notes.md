@@ -8,23 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-23
 
-- Бар: туалет за кабинками, унитаз/раковина; крыло/крыша совпадают.
-  Дверь/`E` с двух сторон; унитаз рядом/по взгляду, стойки вблизи.
-  Грязный кафель/сколы штукатурки, мусор/ёршик/бумага/дозатор,
-  картинки/стикеры без букв; настоящее разбитое зеркало с героем.
-  WC мягко освещает дверь/угол; отскок раскрывает подход, точки на кафеле убраны.
+- Бар: WC за кабинками, унитаз/раковина; крыло/крыша совпадают.
+  Дверь/`E`↔, унитаз по взгляду/стойки вблизи; грязь/сколы/мусор/ёршик/
+  бумага/дозатор, картинки/стикеры без букв; разбитое зеркало с героем.
+  Свет WC/отскок раскрывают дверь/подход; точки на кафеле убраны.
 - Заказ/повтор: видимый взмах левой/стук указательным; сидячий обзор.
   Правая подаёт пустую кружку/возвращается до оплаты; меню/край ограничивают ход.
   Гости машут/ждут долив в тот же сосуд; общая очередь, бармен смотрит/кивает.
 - Mac: Burst поддерживает ARM; universal Intoxication VHS сохраняет общий DSP.
   MainMenu→AlpineVillage без Burst/VHS ошибок; очередь Hub 64 МиБ устранила
   Graphics Ring Buffer warning.
+- Речь: бармен комментирует заказ; четыре пары отвечают друг другу.
+  Цельные случайные обмены без повторов; общие пузыри, герой молчит.
 - Проверено: BarPrompts_KeepDoorReachableAndCounterLocal;
   Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera (зеркало/очистка);
   Toilet_FirstPersonStreamStainsAndRestores;
   PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit;
   BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt; свет/отражение/позы проверены.
   PlayerBodyQueryBurstTests; Mac native ABI/DSP validator прошли.
+  BarConversationScheduleTests; EnglishEntries_HaveRussianSource;
+  BarsShareSpeechAndKeepService; Game view review; check-docs.
 
 ### 2026-10-22
 

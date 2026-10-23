@@ -182,6 +182,7 @@ namespace BarPromenade
             // The accepted order owns no shared bottle or vessel until the
             // currently served guest has finished and returned those props.
             UpdateHeroServiceReservation();
+            RecordAcceptedServiceOrder(this, drinkId, true, repeat, playerDrinkMouth);
             return true;
         }
 

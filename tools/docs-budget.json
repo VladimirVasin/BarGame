@@ -95,6 +95,10 @@
       "type": "note",
       "budget": 8000
     },
+    "ai/bar-dialogue-plan.md": {
+      "type": "note",
+      "budget": 64000
+    },
     "ai/architecture-notes.md": {
       "type": "canon",
       "block_max": 8000,
@@ -336,7 +340,7 @@
         "19/Проверка": "sha256:d54d46b9986d80b0c21b1b16746b3f70",
         "20/Проверка": "sha256:3f8061e2407e46e49acbec64da581c22",
         "21/Нельзя": "sha256:b0edb982da007d3f5a9f63c2850f5713",
-        "21/Проверка": "sha256:fc5b2356cd82cb439677d1f8d71273bd"
+        "21/Проверка": "sha256:16007d9b6c08126fe8f6d4dac779df26"
       }
     },
     "ai/city-zones-art-bible.md": {

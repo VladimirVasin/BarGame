@@ -4,9 +4,27 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    /// <summary>A successful service request, independent of menu/worker reservations.</summary>
+    public readonly struct BarServiceOrder
+    {
+        internal BarServiceOrder(long id, DrinkId drinkId, bool isHero, bool isRepeat, Transform recipient)
+        { Id = id; DrinkId = drinkId; IsHero = isHero; IsRepeat = isRepeat; Recipient = recipient; }
+
+        public long Id { get; }
+        public DrinkId DrinkId { get; }
+        public bool IsHero { get; }
+        public bool IsRepeat { get; }
+        public Transform Recipient { get; }
+    }
+
     public sealed partial class BarDrinkShopController
     {
+        public const int MaximumPendingServiceOrders = BarBartenderServiceQueue.Capacity;
         private readonly BarBartenderServiceQueue serviceQueue = new();
+        private readonly BarServiceOrder[] pendingServiceOrders = new BarServiceOrder[MaximumPendingServiceOrders];
+        private readonly UnityEngine.Object[] pendingServiceOrderOwners = new UnityEngine.Object[MaximumPendingServiceOrders];
+        private int pendingServiceOrderCount;
+        private long nextServiceOrderId;
         private readonly BarDrinkServiceTimeline patronServiceTimeline = new();
         private BarCounterPatronRefill activePatronRefill;
         private PatronPresentationBackup patronHeroState;
@@ -26,6 +44,13 @@ namespace BarPromenade
             ? Mathf.Clamp01(patronCupOfferElapsed / PatronCupOfferSeconds) : 0f;
         public Vector3 PatronCupOfferWorldOffset => IsPatronServiceActive ? patronCupOfferOffset : Vector3.zero;
         public bool IsPatronCupReturnActive => IsPatronServiceActive && patronCupReturnPending;
+        public event Action<BarServiceOrder> ServiceOrderAccepted;
+        public event Action<BarServiceOrder> ServiceOrderDelivered;
+        public event Action<BarServiceOrder> ServiceOrderCancelled;
+        /// <summary>Undelivered requests only. Subscribe before reading this bounded snapshot; completed history is not replayed.</summary>
+        public int PendingServiceOrderCount => pendingServiceOrderCount;
+        public BarServiceOrder GetPendingServiceOrder(int index) => index >= 0 && index < pendingServiceOrderCount
+            ? pendingServiceOrders[index] : throw new ArgumentOutOfRangeException(nameof(index));
         private BarDrinkServiceTimeline ActiveServiceTimeline => IsPatronServiceActive ? patronServiceTimeline : timeline;
         public BarDrinkVesselView HeroServiceVessel => patronHeroState != null ? patronHeroState.Vessel : serviceView?.ActiveVessel;
 
@@ -47,8 +72,58 @@ namespace BarPromenade
             if (patron == null || !patron.IsWaitingForRefill) return false;
             bool existing = serviceQueue.Contains(patron);
             bool accepted = serviceQueue.RequestPatron(patron, () => BeginCounterPatronService(patron));
-            if (accepted && !existing) bartenderPresentation?.AcknowledgeOrder(patron.transform);
+            if (accepted && !existing)
+            {
+                RecordAcceptedServiceOrder(patron, patron.DrinkId, false, true, patron.transform);
+                bartenderPresentation?.AcknowledgeOrder(patron.transform);
+            }
             return accepted;
+        }
+
+        private void RecordAcceptedServiceOrder(UnityEngine.Object owner, DrinkId drinkId, bool isHero, bool isRepeat, Transform recipient)
+        {
+            if (FindPendingServiceOrder(owner) >= 0)
+                throw new InvalidOperationException("A service owner cannot accept another drink before physical delivery.");
+            if (pendingServiceOrderCount >= pendingServiceOrders.Length)
+                throw new InvalidOperationException("Drink orders exceeded the existing bartender service slots.");
+            var order = new BarServiceOrder(++nextServiceOrderId, drinkId, isHero, isRepeat, recipient);
+            pendingServiceOrderOwners[pendingServiceOrderCount] = owner;
+            pendingServiceOrders[pendingServiceOrderCount++] = order;
+            ServiceOrderAccepted?.Invoke(order);
+        }
+
+        private int FindPendingServiceOrder(UnityEngine.Object owner)
+        {
+            for (int index = 0; index < pendingServiceOrderCount; index++)
+                if (ReferenceEquals(pendingServiceOrderOwners[index], owner)) return index;
+            return -1;
+        }
+
+        private void ResolveServiceOrder(UnityEngine.Object owner, bool delivered)
+        {
+            int index = FindPendingServiceOrder(owner);
+            if (index < 0) return;
+            BarServiceOrder order = pendingServiceOrders[index];
+            pendingServiceOrderCount--;
+            for (int next = index; next < pendingServiceOrderCount; next++)
+            {
+                pendingServiceOrderOwners[next] = pendingServiceOrderOwners[next + 1];
+                pendingServiceOrders[next] = pendingServiceOrders[next + 1];
+            }
+            pendingServiceOrderOwners[pendingServiceOrderCount] = null;
+            pendingServiceOrders[pendingServiceOrderCount] = default;
+            if (delivered) ServiceOrderDelivered?.Invoke(order);
+            else ServiceOrderCancelled?.Invoke(order);
+        }
+
+        private void NotifyHeroServiceDelivery()
+        {
+            // The bottle may still travel back to the shelf after the full
+            // glass has physically reached its guest (or been refilled in place).
+            if (timeline.IsAwaitingDrink || timeline.IsBottleService &&
+                (timeline.Phase == BarDrinkServicePhase.BottleWalkToShelfReturn ||
+                 timeline.Phase == BarDrinkServicePhase.BottleReturn))
+                ResolveServiceOrder(this, true);
         }
 
         private void BeginCounterPatronService(BarCounterPatronRefill patron)
@@ -204,14 +279,19 @@ namespace BarPromenade
         public void CancelCounterPatron(BarCounterPatronRefill patron)
         {
             if (ReferenceEquals(activePatronRefill, patron)) FinishCounterPatronService(false);
-            else serviceQueue.Cancel(patron);
+            else
+            {
+                ResolveServiceOrder(patron, false);
+                serviceQueue.Cancel(patron);
+            }
         }
 
         private void CancelPatronService()
         {
             // Teardown is not a service completion: never grant another owner on a disabled shop.
             for (int index = 0; index < serviceQueue.QueuedCount; index++)
-                if (serviceQueue.GetQueuedOwner(index) is BarCounterPatronRefill queued) queued.AbortRefill();
+                if (serviceQueue.GetQueuedOwner(index) is BarCounterPatronRefill queued)
+                { queued.AbortRefill(); ResolveServiceOrder(queued, false); }
             serviceQueue.Clear();
             if (IsPatronServiceActive) FinishCounterPatronService(false);
         }
@@ -240,6 +320,7 @@ namespace BarPromenade
             {
                 if (completed) patron.CompleteRefill(); else patron.AbortRefill();
             }
+            ResolveServiceOrder(patron, completed);
             // Grant callbacks run only after every hero field and view binding is restored.
             if (completed) serviceQueue.Release(patron); else serviceQueue.Cancel(patron);
         }

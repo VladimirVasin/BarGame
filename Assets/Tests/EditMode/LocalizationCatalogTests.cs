@@ -588,12 +588,13 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void LocalizedCatalogs_HaveMatchingKeySets()
+        public void EnglishEntries_HaveRussianSource()
         {
             Dictionary<string, string> russian = LoadValues("Localization/ru");
             Dictionary<string, string> english = LoadValues("Localization/en");
 
-            CollectionAssert.AreEquivalent(russian.Keys, english.Keys);
+            // Retain English without requiring translations of new Russian text.
+            Assert.That(english.Keys, Is.SubsetOf(russian.Keys));
         }
 
         private static Dictionary<string, string> LoadValues(string resourcePath)

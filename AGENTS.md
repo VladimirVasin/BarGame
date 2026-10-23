@@ -10,8 +10,7 @@ post-processing: [effects standard](ai/visual-effects-standard.md).
 
 ## World canon
 
-Two documents govern everything the player sees, hears, reads or does in the
-world. Read both before adding or altering any of it.
+Read both bibles before changing anything the player sees, hears, reads or does.
 
 - `ai/city-zones-art-bible.md` owns **form**: mass, silhouette, facade,
   material, palette, light, traces of life, sound.
@@ -38,9 +37,13 @@ Rules:
 
 ## Host power state
 
-- Never put the user's PC into sleep mode unless the user explicitly requests
-  sleep for that specific run. Do not infer permission and do not treat an
-  earlier request as a standing preference.
+- Sleep requires the user's explicit request for that run; never infer standing permission.
+
+## Supported scope
+
+New player text is Russian only; retain existing English. New input targets
+keyboard/mouse only; retain existing gamepad support. Do not add translations,
+gamepad bindings/hints or require their parity/coverage unless explicitly requested.
 
 ## Current baseline
 
@@ -97,8 +100,7 @@ Rules:
 
 ## Optimization from the start
 
-Every future feature/fix/refactor/asset must consider CPU/GPU, memory/GC and
-loading from design onward; performance is a standing constraint.
+Every feature/fix/refactor/asset considers CPU/GPU, memory/GC and loading from design.
 
 - Bound recurring work/populations/caches/build stages. Reuse assets, materials,
   buffers and references; avoid repeated searches/loads and needless hot-loop
@@ -131,8 +133,7 @@ Fix growing writers or shorten retention; never raise it.
 - Follow minimal verification below: a focused test compiles dependencies;
   do not stack compilation and both Unity test layers.
 - Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
-  There is no checked-in file tree: `git ls-files` and `rg` are the path
-  reference, and unlike a copy they are never stale.
+  Use `git ls-files`/`rg` as the path reference; do not keep a copied file tree.
 - Update `ai/city-zones-art-bible.md` or `ai/city-story-bible.md` when their
   facts change; see World canon above for how they bind a change.
 - Record meaningful implementation sessions in `ai/work-log.md`.

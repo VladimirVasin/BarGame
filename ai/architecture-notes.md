@@ -1,6 +1,16 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-23, bar speech — explicit user decision:**
+  Short service comments per accepted order; eight patrons/four everyday pairs.
+  `BarConversation{Catalog,Schedule,Controller}`: whole no-repeat exchanges,
+  service priority after a begun reply, bounded tokens; grips precede gestures.
+  Two shared speech views declare eight guests/one bartender; one active line.
+  Keys `bar.speech`; foam lines await observed state, handle direction is gated.
+  Hero silent; service address concerns the drink, never his person/past.
+  No E graph, biography, quest, illness/crime explanation, strange-world reaction
+  or closing announcement. First pools only; §16/21/art16 stay.
+  Implemented; contract/bank: `ai/bar-dialogue-plan.md`.
 - **Accepted exception 2026-10-23, bar washroom — explicit user decision:**
   WC3x3x3:toilet/passive basin;8guests/2tables;door1.1x2.2/WC.
   Wing/City/Home anchors;WC host;DoorUse/hand/sweep;
@@ -2069,26 +2079,20 @@
 - **Accepted by explicit user decision, 2026-09-03 — bar patrons are bound to
   concrete furniture, and the hero stool has no visual affordance:** regular
   and hero stools share cafe geometry (`0.8175 m` top, `0.48 m` diameter,
-  `0.055 m` thickness) and `CafeMetalDetail`/`CafeCounterDetail`. The hero sits
-  in the regular row at `z=.91`; trigger/approach stay authored, without floor
-  marker or special stool signal. The bar no longer samples a general roaming
-  order: its `9`-visitor default composition is four booth sitters on `0.48 m`
-  cushions, two counter sitters on `0.8175 m` stools and three standing table
-  patrons. All nine use the shared seeded Rest/Raise/Sip/Lower cadence.
-  Each entry shuffles Bottle/Pint/WineGlass/ShotGlass/Snifter independently of
-  character assignment. Counter patrons reuse authored `CafeManDrink` in their
-  single `PlayableGraph`; booth patrons retain their seated graph.
-  `BarPatronDrinkProp` caches physical grip/rim/base/bounds and type-specific
-  sip/torso profiles from existing service assets. The common overlay brings
-  the rim to the mouth and selects the matching handle/cupped/cylinder grip.
-  After `Lower`, each vessel rests upright on its real counter/table, its full
-  footprint including handles inside the surface and the free hand supported.
-  Slight seeded, non-referential head drift keeps the resting pose alive until
-  the next `Raise`; it targets neither the hero nor another patron.
-  Base pose is sampled before contact caching. These nine actors lease
-  `AlwaysAnimate`, keeping offscreen skin/limbs/props aligned; disable/destroy
-  restores prior culling, enable reacquires it. Capture stages the camera for
-  a full skinning frame. No new dialogue, interaction, character or story state.
+  `0.055 m` thick), `CafeMetalDetail`/`CafeCounterDetail` and authored approach,
+  at hero `z=.91`, without floor marker/special stool signal. Current cast is eight:
+  four booth sitters on `0.48 m` cushions, two counter sitters and two standing
+  table patrons. Shared seeded Rest/Raise/Sip/Lower cadence; entry shuffles
+  Bottle/Pint/WineGlass/ShotGlass/Snifter independently of cast. Counter patrons
+  sample `CafeManDrink` in their single `PlayableGraph`; booths keep seated
+  graphs. `BarPatronDrinkProp` caches existing service assets' grip/rim/base/
+  bounds and sip/torso profiles. Shared overlay brings rim to mouth with the
+  handle/cupped/cylinder grip; after Lower, the whole upright vessel including
+  handles fits the real surface, free hand supported. Seeded head drift targets
+  no person; pair attention uses `NpcAttentionHeadLayer` after contacts. Sample base pose
+  before contact caching. Actors lease `AlwaysAnimate` to retain offscreen
+  skin/limb/prop contacts; disable/destroy restores it, enable reacquires.
+  Capture stages the camera for a skinning frame. No new interaction or story state.
 - **Accepted — bar seats are reusable and cafe/bar share one physical menu
   substrate:** Free stools use authored `CounterSeat{Plan,Interaction,View}`
   approach/entry/exit, camera/staff offsets. Bar-only `AccessSide` selects
@@ -7244,7 +7248,7 @@
   rim stays at the mouth, the mug reaches a horizontal pose and the head and
   upper body rise with it, following the same restrained pose logic as the
   corrected patron drink. The central tap, `2/3/2 s` timeline, payment and
-  deferred-effect boundaries, empty return and silent level-`0` meaning remain
+  deferred-effect boundaries, empty return and everyday level-`0` meaning remain
   unchanged; no new lore or contextual-animation exception is introduced.
 - **Accepted — Session wallet and paid bar orders:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across

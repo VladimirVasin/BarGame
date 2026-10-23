@@ -402,6 +402,20 @@ namespace BarPromenade
         private Bounds surfaceBounds;
         private bool actionWasActive;
         private bool isInitialized;
+        private Transform conversationPartner;
+        private readonly NpcAttentionHeadLayer conversationLook = new NpcAttentionHeadLayer();
+        private bool conversationLookBound;
+        public bool CanConverse => isInitialized && isActiveAndEnabled && timeline != null &&
+            timeline.Phase == BarPatronDrinkPhase.Rest &&
+            (CounterRefill == null || !CounterRefill.IsWaitingForRefill && !CounterRefill.IsRefilling);
+
+        public void SetConversationPartner(Transform partner)
+        {
+            conversationPartner = partner;
+            if (partner != null || !conversationLookBound) return;
+            conversationLook.Restore();
+            conversationLook.Clear();
+        }
         private bool gulpCuePending;
 
         public BarPatronDrinkTimeline Timeline => timeline;
@@ -621,6 +635,10 @@ namespace BarPromenade
                 return;
             }
 
+            // A whole A→B exchange holds the existing rest pose, never an
+            // interrupted sip or service request. No second animation graph.
+            if (conversationPartner != null && CanConverse) return;
+
             if (CounterRefill != null)
             {
                 if (CounterRefill.isActiveAndEnabled) CounterRefill.Advance(deltaTime);
@@ -642,6 +660,7 @@ namespace BarPromenade
             measuredTorsoLeanBackDegrees = 0f;
             measuredHeadLeanBackDegrees = 0f;
             restHeadMotionDegrees = 0f;
+            if (conversationLookBound) conversationLook.Restore();
             if (tableLean)
             {
                 ApplyTablePose();
@@ -654,6 +673,17 @@ namespace BarPromenade
             if (CounterRefill == null || !CounterRefill.IsRefilling) PlaceBottle();
             ApplyFingerGrip();
             ApplyCounterAttentionWave();
+            if (conversationPartner != null && CanConverse)
+            {
+                if (!conversationLookBound)
+                {
+                    conversationLook.Bind(ownerRoot, head, presentation.Registry.Animator);
+                    conversationLookBound = true;
+                }
+                conversationLook.SetFocus(conversationPartner.position);
+                conversationLook.Apply(GameTimeScaleRuntime.IsPaused ? 0f : Time.deltaTime);
+            }
+            else if (conversationLookBound) conversationLook.Clear();
 
             if (gulpCuePending)
             {
@@ -1233,6 +1263,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            SetConversationPartner(null);
             handPose?.ResetGrip();
             gulpCuePending = false;
             UnsubscribePresentation();

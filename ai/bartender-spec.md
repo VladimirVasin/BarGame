@@ -6,13 +6,14 @@ Former bespoke models, providers, sources and regeneration/import paths are remo
 
 ## 1. Active character contract
 
-The bartender is an ordinary silent worker. The four-offer drink menu,
-prices, payment, deferred consumption effects and closing state remain owned
-by the shared drink controllers. No replacement strange trait or speech is added.
-His permanent identity is `zzz.bar.bartender`: registration sorts after the
-existing roster so the migration does not redistribute other characters.
-The global population owns face, hair and work clothes; the local bar owns
-placement, actions and contacts. No bespoke body or wardrobe.
+Ordinary actor; shared controllers own menu/payment/deferred effects/closing.
+`2026-10-23`, story §6: [speech contract](bar-dialogue-plan.md) implemented.
+One shuffled comment per accepted order; shared bubbles/voice/lifetime.
+Hero silent; comments concern the order, never his person/past.
+Service/grips precede speech gestures; no strange trait.
+`zzz.bar.bartender` sorts after the roster, preserving others' assignments.
+Population owns face/hair/work clothes; bar owns placement/actions/contacts.
+No bespoke body/wardrobe.
 
 ## 2. Model and asset pipeline
 
@@ -79,12 +80,11 @@ poses remain. Source anatomy, models, materials and effects are unchanged.
 ## 4. Reused service and locomotion animation
 
 One service graph samples the shared Wipe, Notice, Pour and handling clips;
-full Walk is sampled only while the root translates. The choreography reads
-`BarDrinkServiceTimeline` and physical arrival reports rather than committing
-purchases itself. Beer uses the central of three taps. Wine, cognac and vodka
-use the selected shelf bottle, server-side preparation dock and matching vessel;
-the bottle returns to its exact source pose. Preparation uses the opposite side
-from the resting menu. Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer stays
+full Walk is sampled only while the root translates. `BarDrinkServiceTimeline`
+and physical arrival drive choreography; it cannot commit purchases. Beer uses
+the central tap of three; wine/cognac/vodka use the selected shelf bottle,
+preparation dock and matching vessel, then restore its exact source pose. Preparation
+uses the opposite side from the resting menu. Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer stays
 15.515 cm. Measured shell bounds drive supported poses and raised carry paths:
 lift, transfer above the counter, lower. Shared two-bone IK closes the measured
 hand contacts; the bartender torso has an absolute 38-degree tilt cap. Menu
@@ -97,10 +97,10 @@ seeded rates. Empty guests wave left and wait without sipping/tapping.
 The right arm stays bent: slides the empty mug toward the server for pickup,
 then returns to support. After tap refill it grips and pulls the same full mug
 back to its original dock before FIFO release. Other cups wait for their bottle.
-Attention uses final left-arm IK; fingers ease open after handoff. Other seven
+Attention uses final left-arm IK; fingers ease open after handoff. Other six
 loops stay. Pause freezes service; teardown releases ownership.
-Each accepted requester gets a look/one nod, including queued requests, without
-interrupting service or adding speech.
+Requests keep one look/nod. Shared speech follows accepted/delivered events;
+physical service continues independently.
 
 Hero pickup, sip and return use the continuous production world rig and the
 existing nested interaction. `BarPlayerDrinkReach` applies the final torso and

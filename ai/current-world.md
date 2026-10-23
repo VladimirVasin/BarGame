@@ -2671,13 +2671,16 @@ cemetery:own interiors/returns.
   The same arm hides/reveals it behind the back; rear contact gates service.
   Free right palm braces/repositions/notices; occupied IK/Walk/towel win.
   Central-tap beer/three bottle routes live; mixing/multi-bottle remain deferred;
+- `BarConversationController`: four pairs/bartender, two shared views/one channel.
+  No-repeat exchanges; A→B before service. Bounded order tokens.
+  Rest/contact gates; pause freezes, WC/range/exit cancel. Foam awaits state;
 - the soundscape keeps one diffuse occupied-room bed, then places two
   independent `8 s` mono murmur pockets at the real booth and social-table
   groups. One fully spatial World voice moves between those groups and the
   counter for glass, chair, bottle and short wordless crowd events every
   `4.5–8 s`. Together with the grille-owned theme and its close cabinet
-  texture this is a six-source, layout-driven bar mix; no intelligible speech,
-  new mixer bus or global reverb is introduced. The same jukebox owns three
+  texture, these six bed sources remain wordless. Speech adds no mixer
+  bus or global reverb. The same jukebox owns three
   slow, gain-linked emissive channels for its panel and side tubes; the
   interaction flash is composed by that single presentation writer;
 - one exit and one ordinary-drink counter station remain authoritative; the

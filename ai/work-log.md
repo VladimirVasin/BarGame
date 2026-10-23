@@ -32,20 +32,23 @@ check-workspace: existing old logs/other-worktree cache backlog remains.
 Docs match Unity/Input System/Navigation; absent local evidence became named
 checks/references. Duplicate prose/bus/shower blocks tightened; budgets/canon kept.
 
-Mac Burst guards x86 intrinsics, retaining conservative ARM scalar candidates.
-PlayerBodyQueryBurstTests support/ray passed with Burst enabled. Universal VHS
-keeps DSP/API; Mac native ABI/DSP validator passed. Pinned Mac build signs and
-validates before rollback-safe publication; staging removed.
-MainMenu→AlpineVillage passed without Burst/VHS errors. Hub stores
--gfx-ring-buffer-size 67108864: +48 MiB; startup has no Graphics Ring Buffer warning.
-Local integration of 22dfdb4c retains WC polish, Mac fixes and document budgets;
-git integration/content-preservation review passed; check-docs passed.
-BarModel_CarriesTheAuthoredPubAndInteractionFixtures fails its unchanged
-table assertion: base/current already omit the former rear table.
+ARM Burst guards; PlayerBodyQueryBurstTests passed. Universal VHS keeps DSP/API;
+Mac native ABI/DSP validator passed. Pinned build signs/validates/rolls back/cleans.
+MainMenu→AlpineVillage passed.
+Hub -gfx-ring-buffer-size 67108864 removes the startup ring-buffer warning.
+22dfdb4c integration retains WC/Mac/budgets; content review and check-docs passed.
+BarModel_CarriesTheAuthoredPubAndInteractionFixtures: unchanged table assertion
+fails; base/current both omit the former rear table.
 
-Unity asset cleanup: removed inactive WebGL/default fields and serialization drift;
-restored shared Avatar and premultiplied glass. Cloth deltas were endpoint float
-ties, not authoring. Asset diff audit verified HEAD equality; check-docs passed.
+Unity assets: inactive WebGL/default drift removed; shared Avatar/premultiplied
+glass restored. Cloth endpoint float ties, not authoring. Asset audit verified
+HEAD equality; check-docs passed.
+
+Bar speech: paired no-repeat/service comments, shared heads; rest/contacts win.
+RU/keyboard-mouse future work keeps EN/gamepad; existing EN overlays RU fallback.
+Catalog/canon review passed.
+BarConversationScheduleTests; EnglishEntries_HaveRussianSource passed.
+BarsShareSpeechAndKeepService/Game view review; check-docs passed.
 
 ## 2026-10-22
 

@@ -63,6 +63,6 @@ Extend the shared owner. Any deviation requires an explicit user decision
 recorded in `architecture-notes.md`; new content grants no exception.
 
 Use one focused existing check for the changed contract: shared bubble routing,
-RU/EN full-line fit, speaker/voice/earshot, admission/order, pause and teardown
+full-line fit, speaker/voice/earshot, admission/order, pause and teardown
 as relevant. When appearance changes, inspect an affected rendered frame.
 Update this standard when its contract changes and run `python tools/check-docs.py`.

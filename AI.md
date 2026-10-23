@@ -37,6 +37,9 @@ repository evidence. This does not require running every test layer.
 
 ## Working agreement
 
+- New text is Russian only and new input targets keyboard/mouse. Preserve
+  existing English/gamepad support; do not add translations, gamepad bindings,
+  hints or parity checks unless explicitly requested. See AGENTS.md.
 - Use the canonical workflow matching the task in `ai/prompt-templates.md`.
 - Fast targeted verification is the default. Complete suites require an
   explicit release/full-regression request. Create a player build only when it

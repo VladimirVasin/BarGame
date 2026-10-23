@@ -1523,6 +1523,7 @@ namespace BarPromenade
         /// </summary>
         public void Close()
         {
+            ResolveServiceOrder(this, false);
             bool wasOpen = IsOpen;
             bool hadOwnership =
                 IsOpen ||
@@ -1617,6 +1618,7 @@ namespace BarPromenade
             AdvanceCounterMenuDelivery(deltaTime);
 
             ApplyCurrentPresentation();
+            NotifyHeroServiceDelivery();
             if (timeline.Phase == BarDrinkServicePhase.Closed)
             {
                 if (returningCounterMenuHome)
@@ -1759,6 +1761,9 @@ namespace BarPromenade
             CancelPatronService();
             Close();
             Closed = null;
+            ServiceOrderAccepted = null;
+            ServiceOrderDelivered = null;
+            ServiceOrderCancelled = null;
         }
 
         private void HandleBrowsingInput()

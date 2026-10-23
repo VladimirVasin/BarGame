@@ -20,6 +20,7 @@ namespace BarPromenade
         public BarInteriorAtmosphere Atmosphere { get; private set; }
         public BarLightingPresentation Lighting { get; private set; }
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
+        public BarConversationController Conversation { get; private set; }
 
         /// <summary>
         /// The population-owned bartender behind the counter, or <c>null</c>
@@ -435,6 +436,9 @@ namespace BarPromenade
                         BarBartenderServiceChoreography>();
                 choreography.Initialize(Bartender, DrinkShop);
                 DrinkShop.ConfigureCounterPatronService(Patrons);
+                Conversation = gameObject.AddComponent<BarConversationController>();
+                Conversation.Initialize(Patrons, Bartender, DrinkShop, Player.GameObject.transform,
+                    camera, transform, Layout, unchecked((int)Layout.StableSeed));
             }
         }
 
