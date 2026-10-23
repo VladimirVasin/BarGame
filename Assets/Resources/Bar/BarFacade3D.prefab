@@ -50,6 +50,15 @@ MonoBehaviour:
   - anchorName: Door
     role: exterior_door
     anchor: {fileID: 3981916670018021845}
+  - anchorName: ExteriorWashroomDoor
+    role: washroom_door
+    anchor: {fileID: 674350759308450580}
+  - anchorName: ExteriorWashroomInnerMax
+    role: washroom_innermax
+    anchor: {fileID: 797276992245182635}
+  - anchorName: ExteriorWashroomInnerMin
+    role: washroom_innermin
+    anchor: {fileID: 4554932278876471494}
   - anchorName: SignMarker
     role: sign_pivot
     anchor: {fileID: 5552327233585696118}
@@ -369,6 +378,66 @@ MonoBehaviour:
       lerpT: 0
     colliders: []
     renderer: {fileID: 5610763739467338823}
+  - sourceName: Bar Washroom Exterior Eaves
+    role: exterior_metal
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field:
+      rgb: {r: 0.07, g: 0.078, b: 0.075, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 5465530424974809945}
+  - sourceName: Bar Washroom Exterior Flashing
+    role: exterior_metal
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field:
+      rgb: {r: 0.07, g: 0.078, b: 0.075, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 2710841305263304085}
+  - sourceName: Bar Washroom Exterior Masonry
+    role: exterior_masonry
+    group: fixed
+    sheet: ExteriorBrick
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field:
+      rgb: {r: 0.3, g: 0.12, b: 0.075, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 4669866613314919321}
+  - sourceName: Bar Washroom Exterior Roof
+    role: exterior_roof
+    group: fixed
+    sheet: CityRoof
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field:
+      rgb: {r: 0.095, g: 0.105, b: 0.115, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 8129405309897272386}
   - sourceName: Pub Bottle Green Shopfront
     role: exterior_wood
     group: fixed
@@ -625,8 +694,8 @@ MonoBehaviour:
     colliders: []
     renderer: {fileID: 808526305488505997}
   localBounds:
-    m_Center: {x: -6.2, y: 4.4967494, z: -0.0149998665}
-    m_Extent: {x: 7.26, y: 4.8467493, z: 6.1824994}
+    m_Center: {x: -6.2074995, y: 4.4967494, z: -0.0149998665}
+    m_Extent: {x: 7.2675, y: 4.8467493, z: 6.1824994}
   dimensions:
     width: 12.2645
     depth: 13.5237
@@ -634,10 +703,10 @@ MonoBehaviour:
     wallThickness: 0.28
     doorWidth: 1.45
     doorHeight: 2.34
-  sourceTriangleCount: 4308
-  sourceGeneratorVersion: 2.1.0
+  sourceTriangleCount: 4492
+  sourceGeneratorVersion: 2.2.1
   designId: bar_exterior_v2
-  buildSignature: f6edb07bd456a1e5bf524b569540b456e16b66849c3dc537dd61b64db807eccf
+  buildSignature: e89eed4785480cb39ff260d90a7b60412563c5f984a50b68da4b2f61d7e8f5d0
 --- !u!1001 &4000439049409537452
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -726,6 +795,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -4858234812794301177, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: -4858234812794301177, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -4858234812794301177, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4858234812794301177, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: -4846967784961496799, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -738,6 +823,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
+    - target: {fileID: -4692842691485991240, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: -4692842691485991240, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -4692842691485991240, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4692842691485991240, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: -3811085749996591211, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -874,6 +975,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: -262021420490506507, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -176823198457672446, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -914,10 +1019,30 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 626621402888054122, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: 626621402888054122, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 626621402888054122, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 626621402888054122, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: m_Name
       value: Model
       objectReference: {fileID: 0}
+    - target: {fileID: 1304563756935989305, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 1401343908657608165, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -954,6 +1079,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 5140042106595822062, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 5203013404925058505, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -982,6 +1111,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8595921362462162485, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 9111735746638327327, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -994,6 +1127,16 @@ PrefabInstance:
 --- !u!23 &158029012453210067 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5353367555156045185, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &674350759308450580 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4692842691485991240, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &797276992245182635 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4858234812794301177, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
   m_PrefabInstance: {fileID: 4000439049409537452}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &808526305488505997 stripped
@@ -1029,6 +1172,11 @@ MeshRenderer:
 --- !u!23 &2663589746006659145 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1401343908657608165, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2710841305263304085 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1304563756935989305, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
   m_PrefabInstance: {fileID: 4000439049409537452}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &2898416770508871413 stripped
@@ -1086,6 +1234,16 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 56002540349246585, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
   m_PrefabInstance: {fileID: 4000439049409537452}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &4554932278876471494 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 626621402888054122, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4669866613314919321 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8595921362462162485, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &4741983288190310649 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -699603082853204651, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
@@ -1114,6 +1272,11 @@ MeshRenderer:
 --- !u!23 &5336666749058803886 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -176823198457672446, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5465530424974809945 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -262021420490506507, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
   m_PrefabInstance: {fileID: 4000439049409537452}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &5552327233585696118 stripped
@@ -1184,6 +1347,11 @@ MeshRenderer:
 --- !u!23 &7599523345911732584 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -2381695950642774844, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8129405309897272386 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5140042106595822062, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
   m_PrefabInstance: {fileID: 4000439049409537452}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &8674177100189668135 stripped

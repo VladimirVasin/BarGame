@@ -8,6 +8,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-23
 
+- Бар: вместо крайнего столика у диванов — туалет с унитазом и раковиной.
+  Наружное крыло совпадает с комнатой; крыша и примыкания выровнены.
+  Над входом WC; дверь открывается/закрывается с обеих сторон.
+  Унитаз доступен рядом при взгляде на него; подсказка не мешает закрыть дверь.
+  Радиус посадки у стоек уменьшен.
+- BarPrompts_KeepDoorReachableAndCounterLocal прошёл.
+- Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera и
+  Toilet_FirstPersonStreamStainsAndRestores прошли; кадры проверены.
 - PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit прошёл: обзор мышью и выход.
 - Заказ и повтор: взмах левой вперёд виден из глаз героя, затем стучит указательный.
   Обзор при жесте — как при обычном сидении. При повторе пива правая коротко

@@ -150,8 +150,7 @@ namespace BarPromenade
                 { "booth-1", RequireSurface(room, "Booth Table Top 1") },
                 { "booth-2", RequireSurface(room, "Booth Table Top 2") },
                 { "pub-table-left-front", RequireSurface(room, "Social Pub Table 1") },
-                { "pub-table-right-front", RequireSurface(room, "Social Pub Table 2") },
-                { "pub-table-left-rear", RequireSurface(room, "Social Pub Table 3") }
+                { "pub-table-right-front", RequireSurface(room, "Social Pub Table 2") }
             };
 
             var patrons = new List<BarPatron>(layout.NpcAnchors.Count);

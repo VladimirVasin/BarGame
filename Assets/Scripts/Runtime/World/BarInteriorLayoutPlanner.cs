@@ -260,8 +260,7 @@ namespace BarPromenade
                     CreateBooth("booth-1", FrontBoothCentreZ),
                     CreateBooth("booth-2", RearBoothCentreZ),
                     CreatePubTable("pub-table-left-front", -1.75f, -2.8f),
-                    CreatePubTable("pub-table-right-front", 1.75f, -2.8f),
-                    CreatePubTable("pub-table-left-rear", -4.2f, 2.7f)
+                    CreatePubTable("pub-table-right-front", 1.75f, -2.8f)
                 };
             if (activity == BarActivityKind.BeerPong)
                 furniture.Add(CreateBeerPongFixture());
@@ -360,15 +359,6 @@ namespace BarPromenade
                 new Vector3(1.75f, 0f, -3.45f),
                 0f,
                 "pub-table-right-front",
-                0f);
-            AddNpc(
-                anchors,
-                stableSeed,
-                "social-left-rear",
-                BarNpcRole.StandingPatron,
-                new Vector3(-4.85f, 0f, 2.7f),
-                90f,
-                "pub-table-left-rear",
                 0f);
             return anchors.AsReadOnly();
         }
@@ -505,7 +495,16 @@ namespace BarPromenade
                     new Color(0.42f, 0.65f, 1f),
                     1.8f,
                     3.5f,
-                    86f)
+                    86f),
+                CreateLight(
+                    "washroom-ceiling",
+                    BarInteriorLightKind.Washroom,
+                    BarWashroomLayout.LightPosition,
+                    Vector3.down,
+                    new Color(1f, .83f, .58f),
+                    2f,
+                    3f,
+                    45f)
             };
         }
 

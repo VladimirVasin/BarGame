@@ -53,7 +53,8 @@ namespace BarPromenade
         BoothPool = 1,
         StageKey = 2,
         StageRim = 3,
-        EntryFill = 4
+        EntryFill = 4,
+        Washroom = 5
     }
 
     public enum BarInteriorAudioKind
@@ -306,6 +307,8 @@ namespace BarPromenade
         public float WallThickness { get; }
         public Rect RoomBounds { get; }
         public Rect WalkableBounds { get; }
+        public Rect WashroomBounds => BarWashroomLayout.Bounds;
+        public Rect WashroomPassageBounds => BarWashroomLayout.PassageBounds;
         public Vector3 PlayerSpawn { get; }
         public Vector3 ExitPosition { get; }
         public Vector3 ExitApproachPosition { get; }

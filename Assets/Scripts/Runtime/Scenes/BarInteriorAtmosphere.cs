@@ -75,7 +75,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarInteriorAtmosphere : MonoBehaviour
     {
-        public const int MaximumPracticalLights = 6;
+        public const int MaximumPracticalLights = 7;
         public const int MaximumDustParticles = 24;
         public const float FilmGrainIntensity = 0.04f;
 

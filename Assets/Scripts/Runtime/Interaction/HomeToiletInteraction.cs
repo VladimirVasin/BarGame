@@ -170,25 +170,29 @@ namespace BarPromenade
         protected override bool StopPromptVisible => ActionPhase == HomeToiletActionPhase.Opening ||
             ActionPhase == HomeToiletActionPhase.Using && timeline.GaugeVisible;
 
-        public void Initialize(HomeInteriorRoot homeRoot)
+        public void Initialize(HomeInteriorRoot homeRoot) => Initialize(BathroomInteractionHost.FromHome(homeRoot));
+
+        public void Initialize(BathroomInteractionHost host)
         {
-            if (homeRoot == null) throw new ArgumentNullException(nameof(homeRoot));
-            Vector3 dock = new Vector3(3.32f, 0f, 1.40f);
-            InitializeScene(homeRoot, dock, Quaternion.LookRotation(Vector3.right),
-                new Vector3(3.10f, 0f, 1.40f), Quaternion.LookRotation(Vector3.left), dock);
-            lid = homeRoot.Room.GetComponentInChildren<HomeToiletLid>(true);
+            if (host == null || host.Toilet == null) throw new ArgumentNullException(nameof(host));
+            ToiletFixtureAnchors fixture = host.Toilet;
+            InitializeScene(host, fixture.EntryPosition, fixture.EntryRotation,
+                fixture.ExitPosition, fixture.ExitRotation, fixture.EntryPosition);
+            lid = fixture.Lid;
             firstPerson = gameObject.AddComponent<HomeToiletFirstPersonView>();
-            firstPerson.Initialize(homeRoot);
+            firstPerson.Initialize(host);
             actor = gameObject.AddComponent<HomeToiletActorPresentation>();
-            actor.Initialize(homeRoot);
+            actor.Initialize(host);
             // Flying liquid and residue outlive this modal action.
-            var effectObject = new GameObject("Home Urine");
-            effectObject.transform.SetParent(homeRoot.transform, false);
+            var effectObject = new GameObject(host.ResidueScope == null ? "Home Urine" : "Bar Washroom Urine");
+            effectObject.transform.SetParent(host.transform, false);
             urine = effectObject.AddComponent<HomeUrineEffect>();
-            urine.Initialize(homeRoot.transform);
+            urine.Initialize(host.Receivers, host.ResidueScope, host.ExcludedReceivers);
+            if (host.ResidueScope != null) host.AnatomyParent = urine.transform;
             gameObject.AddComponent<HomeToiletGaugeView>().Bind(this);
-            flushHandle = homeRoot.Room.Find("Home Bathroom Toilet Flush");
+            flushHandle = fixture.Flush;
             if (flushHandle != null) flushHandleRest = flushHandle.localPosition;
+            host.SmallAction = this;
         }
 
         protected override bool PrepareScene() => lid != null && actor.Prepare() && firstPerson.Prepare();
@@ -197,6 +201,12 @@ namespace BarPromenade
             timeline.Reset();
             pendingUrineSeconds = pendingShakeSeconds = 0f;
             stopBeforeUsing = terminalPresented = false;
+            // One owner spans the two hand clips and the first-person view.
+            // A false release is deferred until LateUpdate, so sampling the
+            // flag again between adjacent phases would capture our own lock.
+            previousHandoff = Host.Player.Visual.InteractionHandoffLocked;
+            Host.Player.Visual.SetInteractionHandoffLocked(true);
+            ownsHandoff = true;
             BeginLidPhase(HomeToiletActionPhase.Opening);
         }
 
@@ -207,9 +217,6 @@ namespace BarPromenade
             terminalPresented = false;
             timeline.Begin();
             pendingUrineSeconds = pendingShakeSeconds = 0f;
-            previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
-            Home.Player.Visual.SetInteractionHandoffLocked(true);
-            ownsHandoff = true;
             firstPerson.Begin();
             urine.BeginEmission();
         }
@@ -223,7 +230,11 @@ namespace BarPromenade
                 {
                     bool wasOpening = ActionPhase == HomeToiletActionPhase.Opening;
                     actor.End();
-                    if (!wasOpening) ActionPhase = HomeToiletActionPhase.Completed;
+                    if (!wasOpening)
+                    {
+                        ActionPhase = HomeToiletActionPhase.Completed;
+                        ReleaseHandoff();
+                    }
                     else if (stopBeforeUsing) BeginLidPhase(HomeToiletActionPhase.Closing);
                     else BeginUsing();
                 }
@@ -239,7 +250,6 @@ namespace BarPromenade
                 if (terminalPresented)
                 {
                     firstPerson.End();
-                    ReleaseHandoff();
                     BeginLidPhase(HomeToiletActionPhase.Closing);
                 }
                 else
@@ -251,8 +261,8 @@ namespace BarPromenade
                     pendingShakeSeconds += timeline.TotalShakingSeconds - previousShake;
                     if (timeline.ConsumeFlushCue())
                     {
-                        Home.Audio?.TryPlay(RetroSfxId.ToiletFlush,
-                            Home.transform.TransformPoint(new Vector3(4.49f, 0.9f, 1.40f)));
+                        Host.Audio?.TryPlay(RetroSfxId.ToiletFlush,
+                            Host.Toilet.FlushAudioPosition);
                         flushPress = 1f;
                     }
                 }
@@ -292,7 +302,6 @@ namespace BarPromenade
                 // Render the old zero-blend exit endpoint before transferring
                 // ownership to the closing hand clip on the following frame.
                 firstPerson.End();
-                ReleaseHandoff();
                 terminalPresented = true;
             }
         }
@@ -319,8 +328,8 @@ namespace BarPromenade
         {
             urine?.StopEmission();
             firstPerson?.End();
-            ReleaseHandoff();
             actor?.End();
+            ReleaseHandoff();
             lid?.Close();
             timeline.Reset();
             ActionPhase = HomeToiletActionPhase.Idle;
@@ -334,7 +343,7 @@ namespace BarPromenade
         {
             if (ownsHandoff)
             {
-                Home.Player.Visual.SetInteractionHandoffLocked(previousHandoff);
+                Host.Player.Visual.SetInteractionHandoffLocked(previousHandoff);
                 ownsHandoff = false;
             }
         }

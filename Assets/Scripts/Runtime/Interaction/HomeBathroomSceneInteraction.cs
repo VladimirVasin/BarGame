@@ -57,6 +57,13 @@ namespace BarPromenade
         private bool stopPromptShown;
 
         protected HomeInteriorRoot Home { get; private set; }
+        protected BathroomInteractionHost Host { get; private set; }
+        private bool previousFixedPose;
+        private FixedCameraFocus previousFixedFocus;
+        private bool releasingCamera, releasePresented;
+        private float cameraReleaseElapsed;
+        private Pose cameraReleaseStart;
+        private const float CameraReleaseSeconds = .35f;
         protected bool OwnsScene { get; private set; }
         protected bool SceneRunning =>
             OwnsScene && settled && !walkingOut;
@@ -165,9 +172,15 @@ namespace BarPromenade
             Quaternion exitRotation,
             Vector3 standPosition)
         {
-            Home = homeRoot != null
-                ? homeRoot
-                : throw new ArgumentNullException(nameof(homeRoot));
+            Home = homeRoot != null ? homeRoot : throw new ArgumentNullException(nameof(homeRoot));
+            InitializeScene(BathroomInteractionHost.FromHome(homeRoot), dockPosition, dockRotation,
+                exitPosition, exitRotation, standPosition);
+        }
+
+        protected void InitializeScene(BathroomInteractionHost host, Vector3 dockPosition,
+            Quaternion dockRotation, Vector3 exitPosition, Quaternion exitRotation, Vector3 standPosition)
+        {
+            Host = host ?? throw new ArgumentNullException(nameof(host));
             DockPosition = dockPosition;
             DockRotation = dockRotation;
             ExitPosition = exitPosition;
@@ -257,8 +270,8 @@ namespace BarPromenade
 
             if (!modalLock.TryCaptureAndDisable(
                     interactor,
-                    Home.CameraFollow,
-                    Home.IntoxicationHud,
+                    Host.CameraFollow,
+                    Host.IntoxicationHud,
                     BarMinigameModalLockOptions.Fullscreen))
             {
                 GameLog.Warning(
@@ -269,9 +282,9 @@ namespace BarPromenade
                 return;
             }
 
-            Home.FixedCamera?.ReapplyActiveShot();
-            if (Home.FixedCamera == null ||
-                Home.FixedCamera.ActiveShotKind !=
+            Host.FixedCamera?.ReapplyActiveShot();
+            if (Host.FixedCamera != null &&
+                Host.FixedCamera.ActiveShotKind !=
                 HomeCameraShotKind.Bathroom)
             {
                 GameLog.Warning(
@@ -281,8 +294,8 @@ namespace BarPromenade
                     GameLog.Field("reason", "camera_shot"),
                     GameLog.Field(
                         "active_shot",
-                        Home.FixedCamera != null
-                            ? Home.FixedCamera.ActiveShotKind
+                        Host.FixedCamera != null
+                            ? Host.FixedCamera.ActiveShotKind
                                 .ToString()
                             : "none"));
                 modalLock.Restore();
@@ -295,9 +308,11 @@ namespace BarPromenade
                 GameLog.Field("scene", gameObject.name));
 
             OwnsScene = true;
+            releasingCamera = releasePresented = false;
+            cameraReleaseElapsed = 0f;
             approaching = true;
             approachingWaypoint = TryGetApproachWaypoint(
-                Home.Player.Motor.transform.position,
+                Host.Player.Motor.transform.position,
                 out approachWaypoint,
                 out approachWaypointRadius);
             walkingOut = false;
@@ -314,14 +329,15 @@ namespace BarPromenade
 
         protected void CaptureCameraPath()
         {
-            PlayerCameraFollow cameraFollow = Home.CameraFollow;
-            cameraStartPosition = cameraFollow.FixedBasePosition;
-            cameraStartRotation = cameraFollow.FixedBaseRotation;
-            cameraStartFieldOfView =
-                cameraFollow.FixedBaseFieldOfView;
-            cameraTargetPosition = Home.transform.TransformPoint(
+            PlayerCameraFollow cameraFollow = Host.CameraFollow;
+            previousFixedPose = cameraFollow.FixedPoseActive;
+            previousFixedFocus = cameraFollow.FixedFocus;
+            cameraStartPosition = previousFixedPose ? cameraFollow.FixedBasePosition : cameraFollow.Camera.transform.position;
+            cameraStartRotation = previousFixedPose ? cameraFollow.FixedBaseRotation : cameraFollow.Camera.transform.rotation;
+            cameraStartFieldOfView = previousFixedPose ? cameraFollow.FixedBaseFieldOfView : cameraFollow.Camera.fieldOfView;
+            cameraTargetPosition = Host.transform.TransformPoint(
                 CameraLocalPosition);
-            Vector3 lookAt = Home.transform.TransformPoint(
+            Vector3 lookAt = Host.transform.TransformPoint(
                 CameraLocalLookAt);
             Vector3 forward = lookAt - cameraTargetPosition;
             if (forward.sqrMagnitude <= 0.000001f)
@@ -333,12 +349,12 @@ namespace BarPromenade
 
             cameraTargetRotation = Quaternion.LookRotation(
                 forward.normalized,
-                Home.transform.up);
+                Host.transform.up);
             cameraControlPosition = Vector3.Lerp(
                     cameraStartPosition,
                     cameraTargetPosition,
                     0.52f) +
-                Home.transform.up * CameraPathControlLift +
+                Host.transform.up * CameraPathControlLift +
                 cameraStartRotation * Vector3.right * 0.06f;
             cameraPathCaptured = true;
         }
@@ -354,6 +370,12 @@ namespace BarPromenade
             if (SceneTransitionService.IsTransitioning)
             {
                 CancelScene();
+                return;
+            }
+            if (releasingCamera)
+            {
+                if (releasePresented) CompleteScene();
+                else cameraReleaseElapsed = Mathf.Min(CameraReleaseSeconds, cameraReleaseElapsed + deltaTime);
                 return;
             }
             if (approaching)
@@ -425,7 +447,13 @@ namespace BarPromenade
                 }
                 else if (step == HomeGuidedWalkStep.Arrived)
                 {
-                    CompleteScene();
+                    if (Host.FixedCamera == null && !previousFixedPose)
+                    {
+                        releasingCamera = true;
+                        cameraReleaseStart = Host.CameraFollow.FixedBasePose;
+                        cameraReleaseElapsed = 0f;
+                    }
+                    else CompleteScene();
                 }
 
                 return;
@@ -476,7 +504,7 @@ namespace BarPromenade
             float deltaTime,
             bool walkBackward = false)
         {
-            PlayerMotor motor = Home.Player.Motor;
+            PlayerMotor motor = Host.Player.Motor;
             Vector3 grounded = new Vector3(
                 target.x,
                 motor.transform.position.y,
@@ -507,7 +535,7 @@ namespace BarPromenade
             float arrivalRadius,
             float deltaTime)
         {
-            PlayerMotor motor = Home.Player.Motor;
+            PlayerMotor motor = Host.Player.Motor;
             Vector3 grounded = new Vector3(
                 target.x,
                 motor.transform.position.y,
@@ -529,7 +557,7 @@ namespace BarPromenade
 
         private void LogStall(Vector3 target)
         {
-            Vector3 playerPosition = Home.Player.Motor.transform.position;
+            Vector3 playerPosition = Host.Player.Motor.transform.position;
             GameLog.Warning(
                 "home",
                 "bathroom_scene_stalled",
@@ -577,12 +605,21 @@ namespace BarPromenade
             try
             {
                 OnSceneRestore();
-                Home?.InteractionPrompt?.SetPrompt(
+                Host?.InteractionPrompt?.SetPrompt(
                     string.Empty,
                     null);
                 stopPromptShown = false;
                 modalLock?.Restore();
-                Home?.FixedCamera?.RestoreGameplayCamera();
+                if (Host?.FixedCamera != null) Host.FixedCamera.RestoreGameplayCamera();
+                else if (Host?.CameraFollow != null && cameraPathCaptured)
+                {
+                    if (previousFixedPose)
+                    {
+                        Host.CameraFollow.SetFixedPose(cameraStartPosition, cameraStartRotation, cameraStartFieldOfView);
+                        Host.CameraFollow.SetFixedFocus(previousFixedFocus);
+                    }
+                    else Host.CameraFollow.ClearFixedPose();
+                }
             }
             finally
             {
@@ -593,6 +630,7 @@ namespace BarPromenade
                 settled = false;
                 StopQueued = false;
                 cameraPathCaptured = false;
+                releasingCamera = releasePresented = false;
                 restoring = false;
             }
         }
@@ -602,6 +640,16 @@ namespace BarPromenade
             if (!OwnsScene || !cameraPathCaptured ||
                 (!settled && !CameraLeadsApproach))
             {
+                return;
+            }
+
+            if (releasingCamera)
+            {
+                Pose target = Host.CameraFollow.ResolveReleasePose();
+                float amount = Mathf.SmoothStep(0f, 1f, cameraReleaseElapsed / CameraReleaseSeconds);
+                Host.CameraFollow.SetFixedPose(Vector3.Lerp(cameraReleaseStart.position, target.position, amount),
+                    Quaternion.Slerp(cameraReleaseStart.rotation, target.rotation, amount), cameraStartFieldOfView);
+                releasePresented = cameraReleaseElapsed >= CameraReleaseSeconds;
                 return;
             }
 
@@ -646,7 +694,7 @@ namespace BarPromenade
             Quaternion rotation =
                 baseRotation *
                 Quaternion.Euler(drift.LocalEulerAngles);
-            Home.CameraFollow.SetFixedPose(
+            Host.CameraFollow.SetFixedPose(
                 position,
                 rotation,
                 Mathf.Lerp(
@@ -657,14 +705,14 @@ namespace BarPromenade
 
         private void ApplyStopPrompt()
         {
-            if (Home?.InteractionPrompt == null)
+            if (Host?.InteractionPrompt == null)
             {
                 return;
             }
 
             bool show = SceneRunning && !StopQueued &&
                 StopPromptVisible;
-            Home.InteractionPrompt.SetPrompt(
+            Host.InteractionPrompt.SetPrompt(
                 show ? StopPromptKey : string.Empty,
                 show ? stopPromptAction : null);
             stopPromptShown = show;

@@ -21,11 +21,12 @@ from typing import Sequence
 
 import bar_parts as bp
 import interior_kit as kit
+import bar_washroom as washroom
 
 
 DESIGN_ID = "bar_exterior_v2"
 DISPLAY_NAME = "Bar Promenade Old Neighbourhood Pub Exterior"
-GENERATOR_VERSION = "2.1.0"
+GENERATOR_VERSION = "2.2.1"
 
 # The canonical generated lot occupied by the production pub.  The hanging
 # sign and canopy project past the footprint, as real frontage furniture does.
@@ -42,6 +43,8 @@ MAIN_EAVE_Y = 6.12
 RIDGE_X = -4.29
 RIDGE_Y = 8.78
 SERVICE_REAR_X = -13.34
+SERVICE_ROOF_SLOPE = .46 / 4.86
+WASHROOM_ROOF_SLOPE = .03
 
 DOOR_ANCHOR = (0.0, 0.0, 0.0)
 # Mount the blade sign on the solid pier between the centre and right sash.
@@ -122,6 +125,21 @@ def _extruded_profile_z(
             count + index,
         ))
     return vertices, faces
+
+
+def _service_roof_underside(x):
+    return 4.76 + SERVICE_ROOF_SLOPE * (x + 10.93) - .10 * math.sqrt(1 + SERVICE_ROOF_SLOPE**2)
+
+
+def _sloped_mass_x(xmin, xmax, zmin, zmax, top):
+    return _extruded_profile_z(((xmin, 0.), (xmax, 0.), (xmax, top(xmax)),
+                                (xmin, top(xmin))), (zmin+zmax)*.5, zmax-zmin)
+
+
+def _sloped_mass_z(xmin, xmax, zmin, zmax, top):
+    vertices, faces = _sloped_mass_x(zmin, zmax, xmin, xmax, top)
+    # Swap X/Z and rewind the reflected profile.
+    return [(z, y, x) for x, y, z in vertices], [tuple(reversed(face)) for face in faces]
 
 
 def _front_upper_wall() -> list[kit.Geometry]:
@@ -282,8 +300,10 @@ def build_parts() -> list[ExteriorPart]:
         # Ground-floor masonry piers hold the timber frontage.
         bp.u_box((-0.12, 1.64, -5.78), (0.30, 3.28, 0.44), 0.012),
         bp.u_box((-0.12, 1.64, 5.78), (0.30, 3.28, 0.44), 0.012),
-        # The lower rear beer store is intentionally narrower and off-centre.
-        bp.u_box((-10.96, 2.20, -0.55), (4.76, 4.40, 9.48), 0.016),
+        # Cut the washroom corner OUT of the existing store. A second box on
+        # top of the intact store would leave the old high roof/mass above it.
+        _sloped_mass_x(-13.34, -11.39, -5.29, 4.19, _service_roof_underside),
+        _sloped_mass_x(-11.39, -8.58, -2.22, 4.19, _service_roof_underside),
     ]
     gable_profile = (
         (MAIN_REAR_X, MAIN_EAVE_Y),
@@ -318,19 +338,56 @@ def build_parts() -> list[ExteriorPart]:
     service_run = 4.86
     service_rise = 0.46
     service_angle = math.degrees(math.atan2(service_rise, service_run))
-    service_roof = _rotated_box(
-        (-10.93, 4.76, -0.55),
-        (math.hypot(service_run, service_rise) + 0.18,
-         0.20,
-         9.82),
-        (0.0, 0.0, service_angle),
-        0.012)
+    def service_roof_piece(xmin, xmax, zmin, zmax):
+        x = (xmin + xmax) * .5
+        return _rotated_box(
+            (x, 4.76 + math.tan(math.radians(service_angle))*(x + 10.93), (zmin+zmax)*.5),
+            ((xmax-xmin)/math.cos(math.radians(service_angle)), .20, zmax-zmin),
+            (0., 0., service_angle), .012)
+    service_roof = _merged((
+        service_roof_piece(-13.46, -11.30, -5.46, 4.36),
+        service_roof_piece(-11.30, -8.40, -2.31, 4.36),
+    ))
     parts.append(ExteriorPart(
         "Pub Slate Roof", "exterior_roof", ROOF,
         _merged((front_roof, rear_roof, service_roof,
                  bp.u_box((RIDGE_X, RIDGE_Y + 0.055, 0.0),
                           (0.28, 0.18, 12.22), 0.012))),
         "CityRoof"))
+
+    # This is the same measured footprint as the interior WC, expressed by
+    # the shared room->facade mapping. Its lower roof makes the addition read
+    # from the yard while retaining the canonical lot's overall envelope.
+    wxmin, wzmin, wxmax, wzmax = washroom.contract()["exterior_outer_bounds_xz_m"]
+    roof_cos = 1 / math.sqrt(1 + WASHROOM_ROOF_SLOPE**2)
+    roof_center_z = (wzmin+wzmax)*.5
+    roof_half_thickness = .06
+    def wc_roof_bottom(z):
+        return 3.20 + WASHROOM_ROOF_SLOPE * (z - (wzmin - .06))
+    def wc_roof_top(z):
+        return wc_roof_bottom(z) + 2 * roof_half_thickness / roof_cos
+    roof_center_y = wc_roof_bottom(roof_center_z) + roof_half_thickness / roof_cos
+    roof_angle = -math.degrees(math.atan(WASHROOM_ROOF_SLOPE))
+    parts.append(ExteriorPart(
+        "Bar Washroom Exterior Masonry", "exterior_masonry", BRICK,
+        _sloped_mass_z(wxmin, wxmax, wzmin, wzmax, wc_roof_bottom), "ExteriorBrick"))
+    parts.append(ExteriorPart(
+        "Bar Washroom Exterior Roof", "exterior_roof", ROOF,
+        _rotated_box(((wxmin+wxmax)*.5, roof_center_y, roof_center_z),
+                     (wxmax-wxmin+.12, .12, (wzmax-wzmin+.12)/roof_cos),
+                     (roof_angle, 0., 0.), .008), "CityRoof"))
+    parts.append(ExteriorPart(
+        "Bar Washroom Exterior Eaves", "exterior_metal", METAL,
+        _merged((bp.u_box(((wxmin+wxmax)*.5, 3.22, wzmin-.075),
+                         (wxmax-wxmin+.14, .10, .10), .006),
+                 bp.u_cylinder((wxmin+.18, 1.58, wzmin-.095), (.085, 1.58, .085), 10))),
+        "PaintedMetal"))
+    parts.append(ExteriorPart(
+        "Bar Washroom Exterior Flashing", "exterior_metal", METAL,
+        _merged((_rotated_box((wxmin+.012, wc_roof_top(roof_center_z)+.065, roof_center_z),
+                             (.035, .17, wzmax-wzmin), (roof_angle, 0., 0.), .004),
+                 bp.u_box(((wxmin+wxmax)*.5, wc_roof_top(wzmax)+.065, wzmax-.012),
+                          (wxmax-wxmin, .17, .035), .004))), "PaintedMetal"))
 
     chimney_bodies = [
         bp.u_box((-5.72, 8.40, -3.75), (1.02, 1.56, 1.08), 0.018),
@@ -503,7 +560,7 @@ def build_parts() -> list[ExteriorPart]:
     # Side-service clues are restrained so the left shared yard stays open.
     parts.append(ExteriorPart(
         "Pub Side Service Door", "exterior_wood", GREEN_WOOD_DARK,
-        bp.u_box((-11.18, 1.08, -5.315), (1.28, 2.16, 0.10), 0.014),
+        bp.u_box((-12.50, 1.08, -5.315), (1.28, 2.16, 0.10), 0.014),
         "DarkWood"))
     parts.append(ExteriorPart(
         "Pub Bricked Window Patch", "exterior_masonry", BRICK_DARK,
@@ -523,7 +580,7 @@ def build_parts() -> list[ExteriorPart]:
             bp.u_rotated(
                 bp.u_cylinder((0.0, 0.0, 0.0), (0.15, 4.84, 0.15), 10),
                 (90.0, 0.0, 0.0)),
-            (-10.93, 4.56, -0.55)),
+            (-13.40, 4.43, -0.55)),
         bp.u_cylinder((-0.02, 3.00, -5.86), (0.15, 3.0, 0.15), 10),
         bp.u_cylinder((-8.52, 2.86, 5.88), (0.14, 2.86, 0.14), 10),
         bp.u_cylinder((-13.39, 2.20, -5.18), (0.14, 2.20, 0.14), 10),

@@ -345,8 +345,11 @@ namespace BarPromenade.Tests.EditMode
                             box.center[0] + x * box.size[0] * .5f,
                             0f, box.center[2] + z * box.size[2] * .5f);
                         Vector3 exteriorCorner = BarInteriorLayoutPlanner.ToExteriorPosition(corner);
-                        Assert.That(exteriorCorner.x, Is.InRange(-8.58f, 0f), part.name);
-                        Assert.That(exteriorCorner.z, Is.InRange(-6f, 6f), part.name);
+                        Rect contour = part.name.StartsWith("Bar Washroom ", StringComparison.Ordinal)
+                            ? BarWashroomLayout.ExteriorRange : BarInteriorLayoutPlanner.ExteriorMainRange;
+                        if (BarWashroomLayout.Contains(BarInteriorLayoutPlanner.ExteriorMainRange, exteriorCorner)) continue;
+                        Assert.That(exteriorCorner.x, Is.InRange(contour.xMin - .001f, contour.xMax + .001f), part.name);
+                        Assert.That(exteriorCorner.z, Is.InRange(contour.yMin - .001f, contour.yMax + .001f), part.name);
                     }
                 }
             }
@@ -1218,6 +1221,11 @@ namespace BarPromenade.Tests.EditMode
                      index++)
                 {
                     BarInteriorLightAnchor light = plan.LightAnchors[index];
+                    if (light.Kind == BarInteriorLightKind.Washroom)
+                    {
+                        Assert.That(room.Find("Bar Washroom Light Bulb"), Is.Not.Null);
+                        continue;
+                    }
                     Transform shade =
                         room.Find($"Practical Shade {index + 1}");
                     Assert.That(
@@ -1332,6 +1340,10 @@ namespace BarPromenade.Tests.EditMode
                         plan.RoomSize.x + 2f,
                         plan.RoomHeight + 6f,
                         plan.RoomSize.y + 2f));
+                envelope.Encapsulate(new Vector3(plan.WashroomBounds.xMin - .3f, -.5f,
+                    plan.WashroomBounds.yMin - .3f));
+                envelope.Encapsulate(new Vector3(plan.WashroomBounds.xMax + .3f, plan.RoomHeight + .3f,
+                    plan.WashroomBounds.yMax + .3f));
 
                 Collider[] colliders =
                     room.GetComponentsInChildren<Collider>(true);

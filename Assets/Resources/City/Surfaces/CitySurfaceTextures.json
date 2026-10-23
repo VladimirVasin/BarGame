@@ -2893,6 +2893,10 @@
         "Pub Rendered Upper Storey",
         "Pub Masonry Repairs",
         "Pub Slate Roof",
+        "Bar Washroom Exterior Masonry",
+        "Bar Washroom Exterior Roof",
+        "Bar Washroom Exterior Eaves",
+        "Bar Washroom Exterior Flashing",
         "Pub Brick Chimneys",
         "Pub Chimney Pots",
         "Pub Bottle Green Shopfront",
@@ -2916,13 +2920,13 @@
         "Pub Gutters And Downpipes",
         "Bar Sign Bracket"
       ],
-      "chart_count": 770,
-      "chart_manifest_sha256": "dd1c458fb74a0063cd60dea8db532090372fff68e0cbb56637c5dcfa796f4606",
+      "chart_count": 818,
+      "chart_manifest_sha256": "74bbb2ea4ab47975c6a48ac7e5baea578f11f2fea8cf365fc9815ea35f3fbca9",
       "albedo": "City/Surfaces/CityBarFacadeAlbedo",
-      "albedo_sha256": "f8b7aa27188d2f3cf3f3a4d8a1f5797ef2bcfef5074520a0a85e9cc368b6b238",
-      "mean_linear_luminance": 0.03981985,
+      "albedo_sha256": "a9dbe96e40fffd5563936a8ebac9fce84579dd8e7e16b62a680143ebea68cadb",
+      "mean_linear_luminance": 0.03950955,
       "response": "City/Surfaces/CityBarFacadeResponse",
-      "response_sha256": "65129619cb057ba6c3b3e6d2f101c4cca4298207af7e6fd0aa2475c62353c4f4"
+      "response_sha256": "4b7742a753f311a7e6644b8bd5990207472704a84573bd14c6075cd440db76ad"
     }
   ],
   "additional_maps": [],

@@ -8,7 +8,7 @@
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - PC:native/SMAA High/saved effects/grade/UI;City/balcony Soft;bar Neutral/bounce.
-  City/Home/bar facade UV0+1;house air. Bar:facade-fit,
+  City/Home/bar UV0+1;house air. Bar:hall/WC fit,
   default cast (visitors reroll)/maps/response/cube. Pilots:
   coastal stems(City crowns static);one road RGB chunk/
   pistol slide normals;fountain foam/mips. Caps/geometry retained.

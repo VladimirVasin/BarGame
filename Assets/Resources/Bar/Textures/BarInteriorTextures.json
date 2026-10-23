@@ -16,6 +16,27 @@
     "Backbar Shelves",
     "Bar Counter",
     "Bar Counter Return",
+    "Bar Washroom Ceiling",
+    "Bar Washroom Door Frame",
+    "Bar Washroom Door Handle Hall",
+    "Bar Washroom Door Handle Room",
+    "Bar Washroom Door Leaf",
+    "Bar Washroom Floor",
+    "Bar Washroom Front Wall",
+    "Bar Washroom Left Wall",
+    "Bar Washroom Light Mount",
+    "Bar Washroom Light Shade",
+    "Bar Washroom Rear Wall",
+    "Bar Washroom Right Wall",
+    "Bar Washroom Sink Basin",
+    "Bar Washroom Sink Drain",
+    "Bar Washroom Sink Faucet",
+    "Bar Washroom Sink Pedestal",
+    "Bar Washroom Sink Splashback",
+    "Bar Washroom Toilet Cistern",
+    "Bar Washroom Toilet Flush",
+    "Bar Washroom WC Letters",
+    "Bar Washroom WC Sign",
     "Beer Pong Cups -1",
     "Beer Pong Cups 1",
     "Beer Pong Table",
@@ -98,8 +119,6 @@
     "Social Pub Table 1 Leg",
     "Social Pub Table 2",
     "Social Pub Table 2 Leg",
-    "Social Pub Table 3",
-    "Social Pub Table 3 Leg",
     "Stage Left Curtain",
     "Stage Left Speaker",
     "Stage Microphone",
@@ -115,7 +134,7 @@
     {
       "resource": "Bar/Textures/BarInteriorAlbedo",
       "size": 4096,
-      "sha256": "38a4550355a976d8795c4d2b444e168e6d3b88fa81e97ace4f7ae46a49ef2b6d",
+      "sha256": "0cb76e8b91ce6597889ddb491b706104a95284432140c0c59076b50143cd3417",
       "sRGB": true,
       "wrap": "Clamp",
       "readable": false
@@ -123,7 +142,7 @@
     {
       "resource": "Bar/Textures/BarInteriorResponse",
       "size": 2048,
-      "sha256": "de06e5717100dc5b291fc1dbee84f62f560b02ab4d530a1d6bbd04b1e5c698a4",
+      "sha256": "65f20bf297c62aa2d114acb1c662bd322bde4f1bcbd1c37dfecd3354834ccd12",
       "sRGB": false,
       "wrap": "Clamp",
       "readable": false
@@ -133,5 +152,5 @@
   "windows_compression": "BC7",
   "estimated_gpu_bytes": 27962080,
   "gpu_budget_bytes": 29360128,
-  "surface_contract_sha256": "dff68a19b1d7b949a113475bbd8d5fd164116e7391430444c2e5586aa49179ed"
+  "surface_contract_sha256": "68066bcd87b7744f8252f398bdaf5340f671954b2b23a1f19994d6ab32c5a87c"
 }

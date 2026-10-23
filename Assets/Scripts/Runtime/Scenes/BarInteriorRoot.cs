@@ -8,41 +8,10 @@ namespace BarPromenade
     {
         private string activeBarId = string.Empty;
 
-        private sealed class InteriorWalkableArea : IWalkableArea
-        {
-            private readonly Rect bounds;
-
-            public InteriorWalkableArea(Rect boundsToUse)
-            {
-                bounds = boundsToUse;
-            }
-
-            public bool Contains(Vector3 position, float radius = 0f)
-            {
-                return position.x >= bounds.xMin + radius &&
-                       position.x <= bounds.xMax - radius &&
-                       position.z >= bounds.yMin + radius &&
-                       position.z <= bounds.yMax - radius;
-            }
-
-            public Vector3 Constrain(
-                Vector3 currentPosition,
-                Vector3 desiredPosition,
-                float radius)
-            {
-                float minX = bounds.xMin + radius;
-                float maxX = bounds.xMax - radius;
-                float minZ = bounds.yMin + radius;
-                float maxZ = bounds.yMax - radius;
-                desiredPosition.x = Mathf.Clamp(desiredPosition.x, minX, maxX);
-                desiredPosition.z = Mathf.Clamp(desiredPosition.z, minZ, maxZ);
-                return desiredPosition;
-            }
-        }
-
         public bool IsInitialized { get; private set; }
         public BarInteriorLayoutPlan Layout { get; private set; }
         public Transform Room { get; private set; }
+        public BarWashroom Washroom { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public BarMusicPlayer Music { get; private set; }
@@ -179,8 +148,7 @@ namespace BarPromenade
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 
-            IWalkableArea walkableArea = new InteriorWalkableArea(
-                Layout.WalkableBounds);
+            IWalkableArea walkableArea = new BarInteriorWalkableArea(Layout);
             Player = PlayerFactory.Create(
                 transform,
                 Layout.PlayerSpawn,
@@ -196,6 +164,8 @@ namespace BarPromenade
 
             follow.Initialize(camera, Player.GameObject.transform, true);
             BuildDrinkShop(ui, intoxicationHud, follow);
+            Washroom = BarWashroom.Create(transform, Room, Player, follow, prompt, intoxicationHud,
+                Player.GameObject.GetComponent<PlayerAnimatedInteractionController>());
 
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();

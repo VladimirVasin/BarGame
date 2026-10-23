@@ -31,6 +31,7 @@ namespace BarPromenade
         private const string DistrictDressName = "District Identity";
         private const string CeilingFanName = "Slow Ceiling Fan";
         private const string JukeboxName = "Bar Jukebox";
+        public const string WashroomDoorName = "Bar Washroom Door";
         private const string PracticalGroup = "prefab:Practical";
         private const float LegacyRightmostStoolX = 4.25f;
         private const float SafeRightmostStoolX = 4.00f;
@@ -566,6 +567,7 @@ namespace BarPromenade
             Transform dress = null;
             Transform fan = null;
             Transform jukebox = null;
+            Transform washroomDoor = null;
 
             foreach (BarPartBinding binding in registry.Parts)
             {
@@ -638,6 +640,14 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (string.Equals(group, BarAssetRegistry.PivotGroupPrefix + WashroomDoorName,
+                        StringComparison.Ordinal))
+                {
+                    washroomDoor = washroomDoor ?? NewContainer(room, WashroomDoorName);
+                    part.SetParent(washroomDoor, KeepWorld);
+                    continue;
+                }
+
                 part.SetParent(room, KeepWorld);
             }
 
@@ -652,6 +662,15 @@ namespace BarPromenade
                 jukebox.localPosition = jukeboxPivot;
                 jukebox.localRotation = Quaternion.Euler(0f, BarInteriorLayoutPlanner.JukeboxYawDegrees, 0f);
                 WireJukebox(jukebox);
+            }
+            if (washroomDoor != null)
+            {
+                washroomDoor.localPosition = BarWashroomLayout.DoorPivot;
+                BoxCollider leaf = washroomDoor.gameObject.AddComponent<BoxCollider>();
+                leaf.center = new Vector3(BarWashroomLayout.DoorWidth * .5f,
+                    BarWashroomLayout.DoorHeight * .5f, 0f);
+                leaf.size = new Vector3(BarWashroomLayout.DoorWidth,
+                    BarWashroomLayout.DoorHeight, .06f);
             }
         }
 
@@ -740,6 +759,8 @@ namespace BarPromenade
             for (int index = 0; index < plan.LightAnchors.Count; index++)
             {
                 BarInteriorLightAnchor anchor = plan.LightAnchors[index];
+                // The washroom has its own authored ceiling fitting.
+                if (anchor.Kind == BarInteriorLightKind.Washroom) continue;
                 bool counterPendant =
                     anchor.Kind == BarInteriorLightKind.CounterPendant;
                 Color bulbColor = counterPendant

@@ -24,7 +24,7 @@ namespace BarPromenade
         public static readonly string[] ClipNames = { "ToiletOpenLid", "ToiletPrepare", "ToiletSit",
             "ToiletSeated", "ToiletRise", "ToiletDress", "ToiletCloseLid", "ToiletInspect", "ToiletFlush" };
 
-        private HomeInteriorRoot home;
+        private BathroomInteractionHost home;
         private Player3DCharacterPresentation visual;
         private Player3DAssetRegistry registry;
         private HomeToiletLid lid;
@@ -41,7 +41,7 @@ namespace BarPromenade
         public bool IsActive { get; private set; }
         public HomeToiletActorPhase Phase { get; private set; } = HomeToiletActorPhase.None;
         public float NormalizedTime { get; private set; }
-        public Vector3 SeatPelvis => home.transform.TransformPoint(SeatedPelvisLocal);
+        public Vector3 SeatPelvis => home.Toilet.SeatPelvis;
         public bool IsLidContact => IsActive && (Phase == HomeToiletActorPhase.OpenLid || Phase == HomeToiletActorPhase.CloseLid) &&
             NormalizedTime >= ReachEnd && NormalizedTime <= ReleaseStart;
         public float ContactError => IsLidContact && lid.Grip != null
@@ -52,7 +52,7 @@ namespace BarPromenade
             NormalizedTime * FlushDurationSeconds <= FlushContactEndSeconds;
         public float FlushContactError => IsFlushContact ? Vector3.Distance(registry.Anchors.RightGrip.position,
             flushHandle.TransformPoint(flushTopLocal)) : 0f;
-        public Vector3 BowlLookTarget => home.transform.TransformPoint(new Vector3(4.05f, .4373f, 1.40f));
+        public Vector3 BowlLookTarget => home.Toilet.BowlLookTarget;
         public float GazeAlignment => registry != null ? Vector3.Dot(
             registry.Anchors.Head.TransformDirection(headForwardLocal).normalized,
             (BowlLookTarget - (leftEye != null && rightEye != null ? (leftEye.position + rightEye.position) * .5f
@@ -71,7 +71,7 @@ namespace BarPromenade
                 SeatBlocker = string.Empty;
                 if (home == null) return false;
                 Bounds column = new Bounds(home.transform.TransformPoint(new Vector3(4.05f, 1.15f, 1.40f)),
-                    new Vector3(.34f, 1.15f, .30f));
+                    WorldSize(new Vector3(.34f, 1.15f, .30f)));
                 foreach (Renderer renderer in home.Player.GameObject.GetComponentsInChildren<Renderer>(true))
                 {
                     if (!renderer.enabled || !renderer.gameObject.activeInHierarchy ||
@@ -87,14 +87,16 @@ namespace BarPromenade
             }
         }
 
-        public bool Initialize(HomeInteriorRoot homeRoot)
+        public bool Initialize(HomeInteriorRoot homeRoot) => Initialize(BathroomInteractionHost.FromHome(homeRoot));
+
+        public bool Initialize(BathroomInteractionHost homeRoot)
         {
             End();
             home = homeRoot != null ? homeRoot : throw new ArgumentNullException(nameof(homeRoot));
             visual = home.Player.Visual as Player3DCharacterPresentation;
             registry = visual != null ? visual.Registry : null;
-            lid = home.Room.GetComponentInChildren<HomeToiletLid>(true);
-            flushHandle = home.Room.Find("Home Bathroom Toilet Flush");
+            lid = home.Toilet.Lid;
+            flushHandle = home.Toilet.Flush;
             if (flushHandle != null)
             {
                 Bounds bounds = flushHandle.GetComponent<MeshFilter>().sharedMesh.bounds;
@@ -213,6 +215,15 @@ namespace BarPromenade
             float[] a = clip.samples[first].source_pelvis;
             float[] b = clip.samples[second].source_pelvis;
             return Vector3.Lerp(new Vector3(a[0], a[1], a[2]), new Vector3(b[0], b[1], b[2]), cursor - first);
+        }
+
+        private Vector3 WorldSize(Vector3 size)
+        {
+            Vector3 x = home.transform.TransformVector(new Vector3(size.x, 0f, 0f));
+            Vector3 y = home.transform.TransformVector(new Vector3(0f, size.y, 0f));
+            Vector3 z = home.transform.TransformVector(new Vector3(0f, 0f, size.z));
+            return new Vector3(Mathf.Abs(x.x) + Mathf.Abs(y.x) + Mathf.Abs(z.x),
+                Mathf.Abs(x.y) + Mathf.Abs(y.y) + Mathf.Abs(z.y), Mathf.Abs(x.z) + Mathf.Abs(y.z) + Mathf.Abs(z.z));
         }
 
         private Bounds PresentedBounds(Renderer renderer)

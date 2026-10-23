@@ -43,8 +43,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.Paths, Has.Count.EqualTo(4));
             Assert.That(
                 plan.FurnitureFootprints,
-                Has.Count.EqualTo(10));
-            Assert.That(plan.NpcAnchors, Has.Count.EqualTo(10));
+                Has.Count.EqualTo(9));
+            Assert.That(plan.NpcAnchors, Has.Count.EqualTo(9));
             Assert.That(
                 BarInteriorLayoutValidator.MaximumNpcAnchors,
                 Is.EqualTo(14));
@@ -52,10 +52,10 @@ namespace BarPromenade.Tests.EditMode
                 plan.NpcAnchors.Count,
                 Is.LessThanOrEqualTo(
                     BarInteriorLayoutValidator.MaximumNpcAnchors));
-            Assert.That(plan.LightAnchors, Has.Count.EqualTo(6));
+            Assert.That(plan.LightAnchors, Has.Count.EqualTo(7));
             Assert.That(
                 BarInteriorLayoutValidator.MaximumLightAnchors,
-                Is.EqualTo(6));
+                Is.EqualTo(7));
             Assert.That(
                 plan.LightAnchors.Count,
                 Is.LessThanOrEqualTo(
@@ -109,7 +109,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.FurnitureFootprints.Count(
                     item => item.Kind == BarInteriorFurnitureKind.PubTable),
-                Is.EqualTo(3));
+                Is.EqualTo(2));
             Assert.That(
                 plan.FurnitureFootprints
                     .Where(item =>
@@ -405,7 +405,7 @@ namespace BarPromenade.Tests.EditMode
                 plan.NpcAnchors.Count(
                     anchor =>
                         anchor.Role == BarNpcRole.StandingPatron),
-                Is.EqualTo(3));
+                Is.EqualTo(2));
             Assert.That(
                 plan.NpcAnchors.Count(
                     anchor =>
@@ -471,13 +471,7 @@ namespace BarPromenade.Tests.EditMode
                     BarNpcRole.StandingPatron,
                     new Vector3(1.75f, 0f, -3.45f),
                     0f,
-                    "pub-table-right-front"),
-                (
-                    "social-left-rear",
-                    BarNpcRole.StandingPatron,
-                    new Vector3(-4.85f, 0f, 2.7f),
-                    90f,
-                    "pub-table-left-rear")
+                    "pub-table-right-front")
             };
             var actual = plan.NpcAnchors
                 .Where(anchor => anchor.Role != BarNpcRole.Bartender)

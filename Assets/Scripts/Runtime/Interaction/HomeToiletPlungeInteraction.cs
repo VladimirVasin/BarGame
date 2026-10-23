@@ -44,9 +44,9 @@ namespace BarPromenade
         public float WaterHeight => water.position.y;
         public override string PromptKey => OwnsScene ? string.Empty : HomeToiletInteraction.UsePromptKey;
         protected override string StopPromptKey => HomeToiletInteraction.StopPromptKeyName;
-        protected override Vector3 CameraLocalPosition => Home.transform.InverseTransformPoint(SubmergedPosition);
-        protected override Vector3 CameraLocalLookAt => Home.transform.InverseTransformPoint(
-            SubmergedPosition + Home.transform.up + Home.transform.right * .02f);
+        protected override Vector3 CameraLocalPosition => Host.transform.InverseTransformPoint(SubmergedPosition);
+        protected override Vector3 CameraLocalLookAt => Host.transform.InverseTransformPoint(
+            SubmergedPosition + Host.transform.up + Host.transform.right * .02f);
         protected override float CameraFieldOfView => 65f;
         protected override float CameraBlend => timeline.Travel;
         protected override float CameraDriftWeight => 0f;
@@ -54,29 +54,34 @@ namespace BarPromenade
         protected override bool StopPromptVisible => sequence.Phase > HomeToiletSeatedPhase.Idle &&
             sequence.Phase < HomeToiletSeatedPhase.Rising && !sequence.WasCancelled;
 
-        public void Initialize(HomeInteriorRoot home)
+        public void Initialize(HomeInteriorRoot home) => Initialize(BathroomInteractionHost.FromHome(home));
+
+        public void Initialize(BathroomInteractionHost home)
         {
-            Vector3 dock = new Vector3(3.32f, 0f, 1.40f);
-            InitializeScene(home, dock, Quaternion.LookRotation(Vector3.right),
-                new Vector3(3.10f, 0f, 1.40f), Quaternion.LookRotation(Vector3.left), dock);
-            lid = home.Room.GetComponentInChildren<HomeToiletLid>(true);
-            bowl = home.Room.Find("Home Bathroom Toilet Bowl");
-            water = home.Room.Find("Home Bathroom Toilet Water");
-            sceneCamera = home.CameraFollow.GetComponent<Camera>();
+            if (home == null || home.Toilet == null) throw new ArgumentNullException(nameof(home));
+            ToiletFixtureAnchors fixture = home.Toilet;
+            InitializeScene(home, fixture.EntryPosition, fixture.EntryRotation,
+                fixture.ExitPosition, fixture.ExitRotation, fixture.EntryPosition);
+            lid = fixture.Lid;
+            bowl = fixture.Bowl;
+            water = fixture.Water;
+            sceneCamera = home.CameraFollow.Camera;
             GameObject template = Resources.Load<GameObject>("HomeToiletAction/Models/ToiletBowl");
             if (template == null || bowl == null || water == null)
                 throw new InvalidOperationException("The toilet plunge requires the authored deep bowl and water.");
             aboveLocal = ReadAnchor(template, "CameraAboveBowl");
             submergedLocal = ReadAnchor(template, "CameraSubmerged");
-            underwater = sceneCamera.gameObject.AddComponent<HomeToiletUnderwaterEffect>();
+            underwater = sceneCamera.GetComponent<HomeToiletUnderwaterEffect>();
+            if (underwater == null) underwater = sceneCamera.gameObject.AddComponent<HomeToiletUnderwaterEffect>();
             actor = gameObject.AddComponent<HomeToiletActorPresentation>();
             actor.Initialize(home);
             appearance = gameObject.AddComponent<HomeToiletSeatedAppearance>();
             appearance.Initialize(home);
-            var effects = new GameObject("Home Toilet Bowl Effects");
+            var effects = new GameObject(home.ResidueScope == null ? "Home Toilet Bowl Effects" : "Bar Washroom Bowl Effects");
             effects.transform.SetParent(home.transform, false);
             bowelEffect = effects.AddComponent<HomeToiletBowelEffect>();
             lighting = effects.AddComponent<HomeToiletBowlLighting>();
+            home.LargeAction = this;
         }
 
         private static Vector3 ReadAnchor(GameObject template, string name)
@@ -91,17 +96,17 @@ namespace BarPromenade
 
         protected override bool PrepareScene() => lid != null && sceneCamera != null &&
             underwater != null && underwater.Prepare() && actor.Prepare() && appearance.Prepare() &&
-            bowelEffect.Prepare(Home, water, sceneCamera);
+            bowelEffect.Prepare(Host, water, sceneCamera);
 
         protected override void OnSceneCaptured()
         {
             previousNearClip = sceneCamera.nearClipPlane;
             captured = true;
             sceneCamera.nearClipPlane = Mathf.Min(previousNearClip, SubmergedNearClip);
-            underwater.Begin(Home.transform, water);
-            lighting.Begin(SubmergedPosition, Home.transform.right, Home.transform.forward,
-                bowl, water, Home.Room.Find("Home Bathroom Toilet Seat"),
-                Home.Player.GameObject.transform, bowelEffect.transform);
+            underwater.Begin(Host.transform, water);
+            lighting.Begin(SubmergedPosition, Host.transform.right, Host.transform.forward,
+                bowl, water, Host.Toilet.Seat,
+                Host.Player.GameObject.transform, bowelEffect.transform);
         }
 
         protected override void OnSceneBegin()
@@ -130,7 +135,7 @@ namespace BarPromenade
                 case HomeToiletSeatedPhase.TurningToInspect:
                     bool toSeat = sequence.Phase == HomeToiletSeatedPhase.TurningToSeat;
                     HomeGuidedWalkStep turn = AdvanceGuidedWalk(DockPosition,
-                        Quaternion.LookRotation(toSeat ? Vector3.left : Vector3.right), deltaTime);
+                        Host.transform.rotation * Quaternion.LookRotation(toSeat ? Vector3.left : Vector3.right), deltaTime);
                     if (turn == HomeGuidedWalkStep.Stalled) { CancelScene(); return; }
                     if (turn == HomeGuidedWalkStep.Arrived) sequence.CompleteExternal();
                     break;
@@ -293,8 +298,8 @@ namespace BarPromenade
             Vector3 target, Quaternion targetRotation, out Vector3 position, out Quaternion rotation)
         {
             EvaluatePath(amount, start, startRotation, AboveBowlPosition, SubmergedPosition,
-                Home.transform.up, Home.transform.right, out position, out rotation);
-            vortex.ApplyCamera(amount, Home.transform.right, Home.transform.forward, ref position, ref rotation);
+                Host.transform.up, Host.transform.right, out position, out rotation);
+            vortex.ApplyCamera(amount, Host.transform.right, Host.transform.forward, ref position, ref rotation);
             underwater.Present(position.y, SceneElapsed);
             return true;
         }

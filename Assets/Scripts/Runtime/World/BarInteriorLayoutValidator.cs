@@ -10,7 +10,7 @@ namespace BarPromenade
         public const float MinimumPrimaryClearance = 2.4f;
         public const float MinimumSecondaryClearance = 1.2f;
         public const int MaximumNpcAnchors = 14;
-        public const int MaximumLightAnchors = 6;
+        public const int MaximumLightAnchors = 7;
 
         private const float Tolerance = 0.001f;
         private const float PathConnectionTolerance = 0.01f;
@@ -33,6 +33,7 @@ namespace BarPromenade
 
             ValidateRoom(plan);
             ValidateExteriorContainment(plan);
+            ValidateWashroom(plan);
             ValidateZones(plan);
             ValidatePaths(plan);
             ValidateFurniture(plan);
@@ -148,6 +149,34 @@ namespace BarPromenade
                 plan,
                 plan.CounterPosition,
                 "Counter position");
+        }
+
+        private static void ValidateWashroom(BarInteriorLayoutPlan plan)
+        {
+            RequireValidRect(plan.WashroomBounds, "Washroom bounds");
+            RequireValidRect(plan.WashroomPassageBounds, "Washroom passage");
+            if (plan.TryGetFurniture("pub-table-left-rear", out _) ||
+                plan.WashroomBounds.width < 3f - Tolerance ||
+                plan.WashroomBounds.height < 3f - Tolerance ||
+                BarWashroomLayout.DoorWidth < PlayerRadius * 2f + .3f)
+                throw new InvalidOperationException("The washroom needs a clear entrance and room for the hero and camera.");
+            var area = new BarInteriorWalkableArea(plan);
+            foreach (Vector3 position in new[] {
+                new Vector3(-4.2f, 0f, 3.18f), BarWashroomLayout.DoorCenter,
+                new Vector3(-4.2f, 0f, 4.55f), new Vector3(-3.85f, 0f, 5.4f) })
+                if (!area.Contains(position, PlayerRadius))
+                    throw new InvalidOperationException("The washroom approach must retain capsule clearance.");
+            for (int x = 0; x < 2; x++)
+            for (int z = 0; z < 2; z++)
+            {
+                Vector3 corner = BarInteriorLayoutPlanner.ToExteriorPosition(new Vector3(
+                    x == 0 ? plan.WashroomBounds.xMin - BarWashroomLayout.WallThickness :
+                        plan.WashroomBounds.xMax + BarWashroomLayout.WallThickness, 0f,
+                    z == 0 ? plan.WashroomBounds.yMin - BarWashroomLayout.WallThickness :
+                        plan.WashroomBounds.yMax + BarWashroomLayout.WallThickness));
+                if (!Contains(BarWashroomLayout.ExteriorRange, corner))
+                    throw new InvalidOperationException("The washroom leaves its matching exterior extension.");
+            }
         }
 
         private static void ValidateZones(BarInteriorLayoutPlan plan)
@@ -712,7 +741,8 @@ namespace BarPromenade
             string label)
         {
             RequireFinite(position, label);
-            if (!Contains(plan.RoomBounds, position) ||
+            if ((!Contains(plan.RoomBounds, position) &&
+                 !Contains(plan.WashroomBounds, position)) ||
                 position.y < -Tolerance ||
                 position.y > plan.RoomHeight + Tolerance)
             {

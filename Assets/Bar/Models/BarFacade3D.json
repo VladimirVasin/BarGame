@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "2.1.0",
+  "generator_version": "2.2.1",
   "blender_version": "5.0.1",
   "design_id": "bar_exterior_v2",
   "display_name": "Bar Promenade Old Neighbourhood Pub Exterior",
@@ -24,7 +24,7 @@
   "activity_kinds": [],
   "district_moods": [],
   "bounds_min": [
-    -13.46,
+    -13.475,
     -6.1975,
     -0.35
   ],
@@ -33,8 +33,8 @@
     6.1675,
     9.3435
   ],
-  "mesh_count": 38,
-  "triangle_count": 4308,
+  "mesh_count": 42,
+  "triangle_count": 4492,
   "anchors": [
     {
       "name": "Door",
@@ -42,6 +42,78 @@
       "local_position": [
         0.0,
         0.0,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ExteriorWashroomDoor",
+      "role": "washroom_door",
+      "local_position": [
+        -7.96,
+        -4.2,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ExteriorWashroomInnerMax",
+      "role": "washroom_innermax",
+      "local_position": [
+        -11.21,
+        -2.4,
+        3.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ExteriorWashroomInnerMin",
+      "role": "washroom_innermin",
+      "local_position": [
+        -8.21,
+        -5.4,
         0.0
       ],
       "unity_right": [
@@ -111,7 +183,7 @@
       },
       "colliders": [],
       "vertices": 108,
-      "triangles": 184
+      "triangles": 180
     },
     {
       "name": "Pub Rendered Upper Storey",
@@ -191,8 +263,116 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 64,
-      "triangles": 112
+      "vertices": 80,
+      "triangles": 140
+    },
+    {
+      "name": "Bar Washroom Exterior Masonry",
+      "role": "exterior_masonry",
+      "group": "fixed",
+      "sheet": "ExteriorBrick",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.12,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "Bar Washroom Exterior Roof",
+      "role": "exterior_roof",
+      "group": "fixed",
+      "sheet": "CityRoof",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.095,
+          0.105,
+          0.115
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Exterior Eaves",
+      "role": "exterior_metal",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.07,
+          0.078,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 36,
+      "triangles": 64
+    },
+    {
+      "name": "Bar Washroom Exterior Flashing",
+      "role": "exterior_metal",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.07,
+          0.078,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
     },
     {
       "name": "Pub Brick Chimneys",
@@ -1113,16 +1293,71 @@
       "triangles": 28
     }
   ],
-  "build_signature": "f6edb07bd456a1e5bf524b569540b456e16b66849c3dc537dd61b64db807eccf",
+  "build_signature": "e89eed4785480cb39ff260d90a7b60412563c5f984a50b68da4b2f61d7e8f5d0",
   "city_surface_contract": {
     "design_id": "city_bar_facade_unique_surfaces_v1",
     "albedo": "City/Surfaces/CityBarFacadeAlbedo",
     "response": "City/Surfaces/CityBarFacadeResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "unique_part_count": 26,
-    "geometry_signature": "1ee7ea8619d4be8916f2cfe8c04797c3be0e9f3ddd2f6dccd463a69f25f73a66",
-    "anchors_signature": "15f0594c3db7ca51b9034d212244c9feafb7644326f3a68bc026fed2847350dd",
-    "uv_signature": "12615adc682bd4274cca036a03f53fee36e667e3a79cc728a28de5e482493609"
+    "unique_part_count": 30,
+    "geometry_signature": "1035a7ebc9e440508b0575c1b5c34dfcc8f1ad36e8ff1d15c05ed9d5557cb8de",
+    "anchors_signature": "f5bda7b41f439806a085641e7d7328697563f621c3daf58cf8175bd7f08ac3bb",
+    "uv_signature": "05fdba5756251e1d149d844ab2e1abed0b792a5ca4990f23148692505cd5ec3a"
+  },
+  "washroom_contract": {
+    "clear_bounds_xz_m": [
+      -5.4,
+      4.15,
+      -2.4,
+      7.15
+    ],
+    "outer_bounds_xz_m": [
+      -5.58,
+      3.97,
+      -2.22,
+      7.33
+    ],
+    "clear_height_m": 3.0,
+    "wall_thickness_m": 0.18,
+    "door_clear_m": [
+      1.1,
+      2.2
+    ],
+    "door_hinge_unity_m": [
+      -4.75,
+      0.0,
+      3.9
+    ],
+    "door_open_yaw_degrees": -90.0,
+    "door_collider_local_center_m": [
+      0.55,
+      1.1,
+      0.0
+    ],
+    "door_collider_local_size_m": [
+      1.1,
+      2.2,
+      0.06
+    ],
+    "light_unity_m": [
+      -3.9,
+      2.65,
+      5.65
+    ],
+    "toilet_water_unity_m": [
+      -3.85,
+      0.4373,
+      6.35
+    ],
+    "toilet_yaw_degrees": -90.0,
+    "toilet_passive_kit": "HomeToiletAction/Models",
+    "exterior_mapping": "(-room.z - 4.06, room.y, room.x)",
+    "exterior_outer_bounds_xz_m": [
+      -11.39,
+      -5.58,
+      -8.03,
+      -2.22
+    ]
   }
 }

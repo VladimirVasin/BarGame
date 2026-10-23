@@ -11,6 +11,7 @@ namespace BarPromenade
             "interaction.order_selected_drink";
         public const string DrinkPromptKey = "interaction.drink_beverage";
         public const string RepeatPromptKey = "interaction.repeat_beverage";
+        private const float StandingInteractionRadius = 1.2f;
 
         private BarDrinkShopController controller;
         private PlayerRuntime player;
@@ -194,7 +195,15 @@ namespace BarPromenade
 
             return !controller.IsOpen &&
                    !BarMinigameModalLock.IsAnyLocked &&
+                   IsWithinStandingReach(interactor) &&
                    seat.CanBegin();
+        }
+
+        private bool IsWithinStandingReach(PlayerInteractor interactor)
+        {
+            Vector3 offset = seat.Plan.EntryPose.RootPosition - interactor.transform.position;
+            offset.y = 0f;
+            return offset.sqrMagnitude <= StandingInteractionRadius * StandingInteractionRadius;
         }
 
         public void Interact(PlayerInteractor interactor)

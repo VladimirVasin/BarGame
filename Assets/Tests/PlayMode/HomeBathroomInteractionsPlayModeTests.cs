@@ -61,11 +61,14 @@ namespace BarPromenade.Tests.PlayMode
             CursorLockMode previousCursor = Cursor.lockState;
             bool previousCursorVisible = Cursor.visible;
             yield return WalkToAndActivate(home.ToiletScene, new Vector3(3.10f, 0.12f, 1.20f));
-            Assert.That(home.ToiletScene.Lid.IsOpen, Is.True, "The lid starts opening as soon as E is accepted.");
+            Assert.That(home.ToiletScene.Lid.IsOpen, Is.False,
+                "The lid stays closed until the hero reaches it with his real hand.");
 
             Time.timeScale = 2f;
             yield return WaitUntil(() => home.ToiletScene.Timeline.Phase == HomeToiletScenePhase.Urinating,
                 "The toilet never reached its first-person emission.");
+            Assert.That(home.ToiletScene.Lid.IsOpen, Is.True,
+                "The real hand must open the lid after the guided approach and before use.");
             Time.timeScale = 1f;
             yield return null; // presentation owns the next rendered endpoint
             Assert.That(home.Player.Motor.InputEnabled, Is.False);

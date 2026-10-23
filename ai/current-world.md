@@ -1604,15 +1604,13 @@ cemetery:own interiors/returns.
   alone use clipped legacy silhouettes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
-  window bands. Its authored `12.2645 x 13.5237 x 9.3435 m`
-  width/depth/height envelope is a two-storey late-Victorian neighbourhood pub:
-  old brick and faded render, a pitched slate roof, unequal chimneys, a lower
-  service wing, bottle-green and oxblood faceted shopfront, individual sash
-  windows, gutters/downpipes and the retained pictorial tankard. Solid timber
-  cheeks between the door and bay windows, one recessed flank panel at each
-  outer bay edge and full-depth jamb returns close every oblique sightline into
-  the empty shell. It is placed at unit scale from the unchanged door and sign
-  anchors. Unity still owns the `0.08 m` front/side-inset, box-projected
+  window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;
+  the rear corner of the existing service wing is rebuilt/lowered for the WC.
+  It is a two-storey late-Victorian neighbourhood pub:
+  brick/faded render, pitched slate/unequal chimneys/low wing, green/oxblood
+  faceted front, sash windows, gutters/downpipes and tankard. Timber cheeks,
+  recessed bay flank panels/full-depth jambs hide the empty shell at oblique angles.
+  Unit-scale placement keeps door/sign anchors. Unity owns the `0.08 m` front/side-inset, box-projected
   `ExteriorBrick` foundation skirt, renderer-free full-size logical collider,
   entrance apron, trigger,
   transition and existing bar light. A fully visible Home reconstruction reuses
@@ -2131,16 +2129,18 @@ cemetery:own interiors/returns.
 
 ### Interiors
 
-- the deterministic `11.4 x 7.8 x 3 m` bar fits the ground-floor facade including
+- the deterministic `11.4 x 7.8 x 3 m` bar hall fits the ground-floor facade including
   walls/ceiling and recessed `1.45 x 2.34 m` entrance; a measured frame keeps it inside.
   Blender/interior-kit owns passive geometry; Unity owns collision/layout/light/actions.
   Counter body spans
   X[-2.1,3.85], top X[-2.325,4.075]: left shortened .9m, backbar/right end stay.
   The right return, brass rail and three taps at its seat-free end remain;
-  two booths with opposed sofas and three round pub tables furnish the hall. The
-  unoccupied `pub-table-right-rear` at `(4.85,2.95)` is gone. Booths at X-4.38,
+  Two opposed booths/two round tables furnish the hall. Booths at X-4.38,
   Z-2.15/.65 have `2.05 x 2.8 m` footprints and `1.05 x .85 m` tables;
   door-side/opposite benches at centreZ-.95/+.95 face +Z/-Z, one visitor each.
+  Rear table/guest→WC3x3x3: toilet/basin. Door1.1x2.2m/WC,
+  DoorUse0↔-90 both sides;matching wing/3%outward roof.
+  Toilet hint≤.65m/approach, facing bowl; counter≤1.2m/dock.
   Jukebox replaces the right-side activity console/three vessels:
   pivot `(5,0,-.65)`, yaw180, grille toward `-X` into the hall. Its audio, collision
   and emissive pulses follow. Cocktail/SplitTheG/TinctureMatch build no console
@@ -2158,9 +2158,10 @@ cemetery:own interiors/returns.
   source wear; shared opaque/glass/emission/service paths stay. Residential
   identity, `SplitTheG`, menu and gameplay stay. Direct bar loads also select
   Residential; explicit legacy district layouts retain their own profiles;
-- six practicals/one key shadow, two finite counter bounces, one bounded `256`
+- seven practicals/one local key shadow, two finite counter bounces, one bounded `256`
   HDR reflection, Neutral/dust/DOF keep the warm dry pub. Pale warm matte
   Ø≈1.38m fan: pivotY2.55,20°/s; fixed brass stem/beam clearance6.5cm.
+  WC spot stays inside;hall cube excludes leaf/WC receivers;air/bounce bounds stay.
   Skippable `1.35 s` reveal settles lens/roll into chase. No ordinary bar SSR/SCGI;
 - one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
   profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
@@ -2687,13 +2688,13 @@ cemetery:own interiors/returns.
 
 ### People, diagnostics and money
 
-- nine transient default NPC visitors: each entry uses the shared catalog/
+- eight transient default NPC visitors: each entry uses the shared catalog/
   body/face/hair/wardrobe allocator anew, without permanent IDs or changes to
   permanent characters. Appearances do not repeat within the visit.
   Four sit on opposed booth `0.48 m` seats, two at counter X-1.65/1.05 on
-  cafe `0.8175 m` stools, and three stand at pub-table edges. Placement and
+  cafe `0.8175 m` stools, and two stand at pub-table edges. Placement and
   actions stay local; the default body adapter owns shared rig compatibility.
-  All nine drink. Each entry independently shuffles a balanced
+  All eight drink. Each entry independently shuffles a balanced
   Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared service assets.
   `BarPatronDrinkProp` caches physical grip/rim/base/bounds and typed sip/torso
   profiles. Counter `CafeManDrink` and booth seated graphs stay. Seeded
@@ -2704,9 +2705,9 @@ cemetery:own interiors/returns.
   Slight deterministic, non-referential head drift lasts until the next `Raise`.
   Counter:Bottle→ShotGlass; distinct seeded sip drain. Empty:left wave/wait,
   Same-cup FIFO with hero;R bent at support, offers empty mug/pulls full to
-  original dock before release. Seven loops stay.
+  original dock before release. Six loops stay.
   Accepted request:look/one nod; service continues.
-  Base pose is sampled before caching contacts. The nine drinkers lease
+  Base pose is sampled before caching contacts. The eight drinkers lease
   `AlwaysAnimate` so offscreen body/hands/props stay aligned; disable/destroy
   restores prior culling, enable reacquires it;
 - one global default-worker bartender occupies the authored floor-level anchor.

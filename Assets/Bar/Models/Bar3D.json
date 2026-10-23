@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "4.0.7",
+  "generator_version": "4.1.1",
   "blender_version": "5.0.1",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -40,11 +40,11 @@
   ],
   "bounds_max": [
     5.85,
-    4.05,
+    7.33,
     3.2
   ],
-  "mesh_count": 139,
-  "triangle_count": 11296,
+  "mesh_count": 158,
+  "triangle_count": 13692,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -693,6 +693,246 @@
         0.0,
         1.0
       ]
+    },
+    {
+      "name": "WashroomDoor",
+      "role": "washroom_door",
+      "local_position": [
+        -4.2,
+        3.9,
+        1.1
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomDoorHandleHall",
+      "role": "washroom_door_handle_hall",
+      "local_position": [
+        -3.84,
+        3.825,
+        1.01
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomDoorHandleRoom",
+      "role": "washroom_door_handle_room",
+      "local_position": [
+        -3.84,
+        3.975,
+        1.01
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomDoorPivot",
+      "role": "washroom_door_pivot",
+      "local_position": [
+        -4.75,
+        3.9,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomInnerMax",
+      "role": "washroom_innermax",
+      "local_position": [
+        -2.4,
+        7.15,
+        3.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomInnerMin",
+      "role": "washroom_innermin",
+      "local_position": [
+        -5.4,
+        4.15,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomLight",
+      "role": "washroom_light",
+      "local_position": [
+        -3.9,
+        5.65,
+        2.65
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomSign",
+      "role": "washroom_wc_sign",
+      "local_position": [
+        -4.2,
+        3.7,
+        2.4
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomToiletFlush",
+      "role": "washroom_toilet_flush",
+      "local_position": [
+        -4.05,
+        6.79,
+        1.14
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WashroomToiletWater",
+      "role": "washroom_toilet_water",
+      "local_position": [
+        -3.85,
+        6.35,
+        0.4373
+      ],
+      "unity_right": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        -1.0,
+        0.0,
+        0.0
+      ]
     }
   ],
   "parts": [
@@ -853,19 +1093,43 @@
       "colliders": [
         {
           "center": [
-            0.0,
+            -5.225,
             1.5,
             3.9
           ],
           "size": [
-            11.4,
+            0.95,
             3.0,
+            0.3
+          ]
+        },
+        {
+          "center": [
+            1.025,
+            1.5,
+            3.9
+          ],
+          "size": [
+            9.35,
+            3.0,
+            0.3
+          ]
+        },
+        {
+          "center": [
+            -4.2,
+            2.6,
+            3.9
+          ],
+          "size": [
+            1.1,
+            0.8,
             0.3
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 48,
+      "triangles": 84
     },
     {
       "name": "Left Wall",
@@ -971,8 +1235,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 60,
-      "triangles": 100
+      "vertices": 72,
+      "triangles": 120
     },
     {
       "name": "Entrance Door Frame",
@@ -1133,8 +1397,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84
+      "vertices": 64,
+      "triangles": 112
     },
     {
       "name": "Wall Brass Rails",
@@ -1160,8 +1424,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84
+      "vertices": 64,
+      "triangles": 112
     },
     {
       "name": "Ceiling Cross Beams",
@@ -3702,113 +3966,6 @@
       "triangles": 44
     },
     {
-      "name": "Social Pub Table 3 Leg",
-      "role": "table_leg",
-      "group": "fixed",
-      "sheet": "DarkWood",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "DarkWoodTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [
-        {
-          "center": [
-            -4.2,
-            0.35,
-            2.7
-          ],
-          "size": [
-            0.1,
-            0.7,
-            0.1
-          ]
-        }
-      ],
-      "vertices": 32,
-      "triangles": 56
-    },
-    {
-      "name": "Social Pub Table 3",
-      "role": "table_top",
-      "group": "fixed",
-      "sheet": "PolishedWood",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "WoodTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [
-        {
-          "center": [
-            -4.2,
-            0.78,
-            2.7
-          ],
-          "size": [
-            0.65,
-            0.08,
-            0.65
-          ]
-        }
-      ],
-      "vertices": 32,
-      "triangles": 60
-    },
-    {
-      "name": "Pub Table 3 Coaster",
-      "role": "table_coaster",
-      "group": "fixed",
-      "sheet": "Paper",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.42,
-          0.31,
-          0.18
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
       "name": "Service Door",
       "role": "service_door",
       "group": "fixed",
@@ -4416,6 +4573,729 @@
       "triangles": 84
     },
     {
+      "name": "Bar Washroom Floor",
+      "role": "washroom_floor",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.31,
+          0.3,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.9,
+            -0.12,
+            5.615
+          ],
+          "size": [
+            3.36,
+            0.24,
+            3.43
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Ceiling",
+      "role": "washroom_ceiling",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Left Wall",
+      "role": "washroom_wall",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -5.49,
+            1.5,
+            5.65
+          ],
+          "size": [
+            0.18,
+            3.0,
+            3.36
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Right Wall",
+      "role": "washroom_wall",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -2.31,
+            1.5,
+            5.65
+          ],
+          "size": [
+            0.18,
+            3.0,
+            3.36
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Rear Wall",
+      "role": "washroom_wall",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.9,
+            1.5,
+            7.24
+          ],
+          "size": [
+            3.36,
+            3.0,
+            0.18
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Front Wall",
+      "role": "washroom_wall",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.42,
+          0.33
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -5.165,
+            1.5,
+            4.06
+          ],
+          "size": [
+            0.83,
+            3.0,
+            0.18
+          ]
+        },
+        {
+          "center": [
+            -2.935,
+            1.5,
+            4.06
+          ],
+          "size": [
+            1.43,
+            3.0,
+            0.18
+          ]
+        },
+        {
+          "center": [
+            -4.2,
+            2.6,
+            4.06
+          ],
+          "size": [
+            1.1,
+            0.8,
+            0.18
+          ]
+        }
+      ],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Bar Washroom Sink Splashback",
+      "role": "washroom_splashback",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.65,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Door Frame",
+      "role": "washroom_door_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Bar Washroom WC Sign",
+      "role": "washroom_wc_sign",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.065,
+          0.062,
+          0.052
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom WC Letters",
+      "role": "washroom_wc_letters",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.8,
+          0.78,
+          0.67
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 156,
+      "triangles": 148,
+      "text": "WC"
+    },
+    {
+      "name": "Bar Washroom Door Leaf",
+      "role": "washroom_door_leaf",
+      "group": "pivot:Bar Washroom Door",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Bar Washroom Door Handle Hall",
+      "role": "washroom_door_handle",
+      "group": "pivot:Bar Washroom Door",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Bar Washroom Door Handle Room",
+      "role": "washroom_door_handle",
+      "group": "pivot:Bar Washroom Door",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Bar Washroom Toilet Cistern",
+      "role": "washroom_cistern",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.65,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.85,
+            0.76,
+            6.79
+          ],
+          "size": [
+            0.748,
+            0.72,
+            0.24
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Toilet Flush",
+      "role": "washroom_toilet_flush",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "Bar Washroom Sink Basin",
+      "role": "washroom_sink",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.65,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -2.62,
+            0.78,
+            5.18
+          ],
+          "size": [
+            0.35,
+            0.2,
+            0.85
+          ]
+        }
+      ],
+      "vertices": 288,
+      "triangles": 572
+    },
+    {
+      "name": "Bar Washroom Sink Pedestal",
+      "role": "washroom_sink",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.65,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -2.62,
+            0.36,
+            5.18
+          ],
+          "size": [
+            0.26,
+            0.72,
+            0.26
+          ]
+        }
+      ],
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "Bar Washroom Sink Drain",
+      "role": "washroom_sink_metal",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 104,
+      "triangles": 196
+    },
+    {
+      "name": "Bar Washroom Sink Faucet",
+      "role": "washroom_sink_metal",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 332,
+      "triangles": 640
+    },
+    {
+      "name": "Bar Washroom Light Mount",
+      "role": "washroom_light_fixture",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Washroom Light Shade",
+      "role": "washroom_light_fixture",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.42,
+          0.4,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "Bar Washroom Light Bulb",
+      "role": "washroom_light_bulb",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.76,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
       "name": "Fan Suspension Stem",
       "role": "fan_support",
       "group": "fixed",
@@ -4929,15 +5809,15 @@
       "triangles": 28
     }
   ],
-  "build_signature": "eef7683d4162daa098ee3363c13b2d0a3376a3f2d7f4ca984dcc9c276f548dcd",
+  "build_signature": "778f2d56b099d7d47c7298fbb77ff7466068ecd54d8244963ede7696d2801473",
   "interior_surface_contract": {
     "design_id": "compact_bar_unique_surfaces_v1",
     "albedo": "Bar/Textures/BarInteriorAlbedo",
     "response": "Bar/Textures/BarInteriorResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "unique_part_count": 109,
-    "uv_signature": "54786f0c9da34df3ec80f03b550ba5abc0446d3f9c69a8946189857c6206f8b0"
+    "unique_part_count": 128,
+    "uv_signature": "49e8e5e466e28b755ecc12ee51909bbd41d83876b82d0eb21154ee20f572e633"
   },
   "containment_contract": {
     "exterior_door_m": [
@@ -4975,7 +5855,62 @@
       ]
     ],
     "first_floor_underside_m": 3.28,
-    "shell_height_m": 3.2
+    "shell_height_m": 3.2,
+    "washroom": {
+      "clear_bounds_xz_m": [
+        -5.4,
+        4.15,
+        -2.4,
+        7.15
+      ],
+      "outer_bounds_xz_m": [
+        -5.58,
+        3.97,
+        -2.22,
+        7.33
+      ],
+      "clear_height_m": 3.0,
+      "wall_thickness_m": 0.18,
+      "door_clear_m": [
+        1.1,
+        2.2
+      ],
+      "door_hinge_unity_m": [
+        -4.75,
+        0.0,
+        3.9
+      ],
+      "door_open_yaw_degrees": -90.0,
+      "door_collider_local_center_m": [
+        0.55,
+        1.1,
+        0.0
+      ],
+      "door_collider_local_size_m": [
+        1.1,
+        2.2,
+        0.06
+      ],
+      "light_unity_m": [
+        -3.9,
+        2.65,
+        5.65
+      ],
+      "toilet_water_unity_m": [
+        -3.85,
+        0.4373,
+        6.35
+      ],
+      "toilet_yaw_degrees": -90.0,
+      "toilet_passive_kit": "HomeToiletAction/Models",
+      "exterior_mapping": "(-room.z - 4.06, room.y, room.x)",
+      "exterior_outer_bounds_xz_m": [
+        -11.39,
+        -5.58,
+        -8.03,
+        -2.22
+      ]
+    }
   },
   "ceiling_fan_contract": {
     "pivot_unity_m": [
@@ -4993,5 +5928,60 @@
     "support_diameter_m": 0.018,
     "support_stationary": true,
     "rotor_casts_shadows": false
+  },
+  "washroom_contract": {
+    "clear_bounds_xz_m": [
+      -5.4,
+      4.15,
+      -2.4,
+      7.15
+    ],
+    "outer_bounds_xz_m": [
+      -5.58,
+      3.97,
+      -2.22,
+      7.33
+    ],
+    "clear_height_m": 3.0,
+    "wall_thickness_m": 0.18,
+    "door_clear_m": [
+      1.1,
+      2.2
+    ],
+    "door_hinge_unity_m": [
+      -4.75,
+      0.0,
+      3.9
+    ],
+    "door_open_yaw_degrees": -90.0,
+    "door_collider_local_center_m": [
+      0.55,
+      1.1,
+      0.0
+    ],
+    "door_collider_local_size_m": [
+      1.1,
+      2.2,
+      0.06
+    ],
+    "light_unity_m": [
+      -3.9,
+      2.65,
+      5.65
+    ],
+    "toilet_water_unity_m": [
+      -3.85,
+      0.4373,
+      6.35
+    ],
+    "toilet_yaw_degrees": -90.0,
+    "toilet_passive_kit": "HomeToiletAction/Models",
+    "exterior_mapping": "(-room.z - 4.06, room.y, room.x)",
+    "exterior_outer_bounds_xz_m": [
+      -11.39,
+      -5.58,
+      -8.03,
+      -2.22
+    ]
   }
 }

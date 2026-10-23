@@ -36,6 +36,7 @@ import argparse
 import hashlib
 import json
 import math
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -55,8 +56,9 @@ import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 import bar_compact_interior as compact  # noqa: E402
+import bar_washroom as washroom  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "4.0.7"
+INTERIOR_GENERATOR_VERSION = "4.1.1"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -148,7 +150,7 @@ BOOTH_ZS = (-2.15, 0.65)
 BOOTH_RECT_WIDTH = 2.05
 BOOTH_RECT_HEIGHT = 2.8
 BOOTH_RECT_X = -5.4
-PUB_TABLES = ((-1.75, -2.8), (1.75, -2.8), (-4.2, 2.7))
+PUB_TABLES = ((-1.75, -2.8), (1.75, -2.8))
 
 ACTIVITY_RECTS = {
     "BeerPong": (3.85, -1.75, 0.76, 1.83),
@@ -620,7 +622,12 @@ def add_anchor(
     unity_up: Sequence[float] = (0.0, 1.0, 0.0),
     unity_forward: Sequence[float] = (0.0, 0.0, 1.0),
 ) -> None:
-    anchor = bpy.data.objects.new(f"ANCHOR_{name}", None)
+    expected_name = f"ANCHOR_{name}"
+    anchor = bpy.data.objects.new(expected_name, None)
+    if anchor.name != expected_name:
+        raise SystemExit(
+            f"Duplicate semantic anchor '{expected_name}' was renamed by Blender "
+            f"to '{anchor.name}'. Give each exported asset a distinct anchor name.")
     asset.collection.objects.link(anchor)
     anchor.parent = asset.root
     anchor.empty_display_type = "ARROWS"
@@ -675,6 +682,11 @@ def entrance_skirting() -> kit.Geometry:
         kit.sweep(
             ((half_width, -half_depth),
              (half_width, half_depth),
+             (washroom.DOOR_X + washroom.DOOR_WIDTH * .5 + .055, half_depth)),
+            profile,
+            overlap=overlap),
+        kit.sweep(
+            ((washroom.DOOR_X - washroom.DOOR_WIDTH * .5 - .055, half_depth),
              (-half_width, half_depth),
              (-half_width, -half_depth)),
             profile,
@@ -701,7 +713,10 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
     # so the generator's forward axis points out through the door.
     walls = kit.rectangular_room_walls(
         ROOM_WIDTH, ROOM_DEPTH, ROOM_HEIGHT, WALL_THICKNESS,
-        front_openings=[kit.Opening(0.0, DOOR_WIDTH, DOOR_HEIGHT)])
+        front_openings=[kit.Opening(0.0, DOOR_WIDTH, DOOR_HEIGHT)],
+        back_openings=[kit.Opening(washroom.DOOR_X, washroom.DOOR_WIDTH, washroom.DOOR_HEIGHT)])
+    _, washroom_opening_collision = washroom.split_door_wall(
+        -ROOM_WIDTH*.5, ROOM_WIDTH*.5, half_depth, WALL_THICKNESS)
     segment = (ROOM_WIDTH - DOOR_WIDTH) * 0.5
     offset = DOOR_WIDTH * 0.5 + segment * 0.5
     header_height = ROOM_HEIGHT - DOOR_HEIGHT
@@ -716,8 +731,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
             ((0.0, DOOR_HEIGHT + header_height * 0.5, -half_depth),
              (DOOR_WIDTH, header_height, WALL_THICKNESS)),
         ],
-        "Back Wall": [((0.0, ROOM_HEIGHT * 0.5, half_depth),
-                       (ROOM_WIDTH, ROOM_HEIGHT, WALL_THICKNESS))],
+        "Back Wall": washroom_opening_collision,
         "Left Wall": [((-ROOM_WIDTH * 0.5, ROOM_HEIGHT * 0.5, 0.0),
                        (WALL_THICKNESS, ROOM_HEIGHT, ROOM_DEPTH))],
         "Right Wall": [((ROOM_WIDTH * 0.5, ROOM_HEIGHT * 0.5, 0.0),
@@ -798,8 +812,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
         sheet="AgedBrass", shadows=False)
 
     wainscot = [
-        bp.u_box((0.0, 0.82, half_depth - 0.19),
-                 (ROOM_WIDTH - 0.55, 1.58, 0.10)),
+        washroom.rear_trim(.82, 1.58, .10, half_depth - .19),
         bp.u_box((-ROOM_WIDTH * 0.5 + 0.19, 0.82, 0.0),
                  (0.10, 1.58, ROOM_DEPTH - 0.55)),
         bp.u_box((ROOM_WIDTH * 0.5 - 0.19, 0.82, 0.0),
@@ -811,8 +824,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
         shadows=False)
 
     rails = [
-        bp.u_box((0.0, 1.64, half_depth - 0.26),
-                 (ROOM_WIDTH - 0.40, 0.10, 0.12), 0.006),
+        washroom.rear_trim(1.64, .10, .12, half_depth - .26),
         bp.u_box((-ROOM_WIDTH * 0.5 + 0.26, 1.64, 0.0),
                  (0.12, 0.10, ROOM_DEPTH - 0.40), 0.006),
         bp.u_box((ROOM_WIDTH * 0.5 - 0.26, 1.64, 0.0),
@@ -1975,6 +1987,12 @@ def build_facade(materials: dict) -> AssetBuild:
 
     add_anchor(asset, "Door", "exterior_door", exterior.DOOR_ANCHOR)
     add_anchor(asset, "SignMarker", "sign_pivot", exterior.SIGN_PIVOT)
+    for suffix, point in (("InnerMin", (washroom.INNER[0], 0., washroom.INNER[1])),
+                          ("InnerMax", (washroom.INNER[2], washroom.HEIGHT, washroom.INNER[3])),
+                          ("Door", (washroom.DOOR_X, 0., washroom.DOOR_Z))):
+        add_anchor(asset, "ExteriorWashroom" + suffix, "washroom_" + suffix.lower(),
+                   washroom.to_exterior(point))
+    asset.washroom_contract = washroom.contract()
     return asset
 
 
@@ -2133,6 +2151,7 @@ def build_interior(materials: dict) -> AssetBuild:
     build_shell(asset, materials)
     build_counter(asset, materials)
     compact.build(sys.modules[__name__], asset, materials)
+    washroom.build(sys.modules[__name__], asset, materials)
     build_ceiling_fan(asset, materials)
     build_jukebox(asset, materials)
     build_practical_prefab(asset, materials)
@@ -2186,6 +2205,7 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "Jukebox", "jukebox_pivot", (5.0, 0.0, -0.65))
     compact.add_frame_anchors(sys.modules[__name__], asset)
     asset.containment_contract = compact.containment_contract()
+    asset.containment_contract["washroom"] = washroom.contract()
     return asset
 
 
@@ -2234,8 +2254,9 @@ def validate(asset: AssetBuild) -> None:
     for part in fixed:
         for x, z, y in part.geometry[0]:
             exterior_x = -z - 4.06
-            if not (-8.58 - .001 <= exterior_x <= .001 and
-                    -6.001 <= x <= 6.001 and y <= 3.28 + .001):
+            if not ((-8.58 - .001 <= exterior_x <= .001 and
+                    -6.001 <= x <= 6.001 and y <= 3.28 + .001) or
+                    washroom.contains((x, y, z))):
                 problems.append(f"'{part.name}' leaves the facade's ground-floor contour")
                 break
     door_part = next(part for part in exterior.build_parts()
@@ -2410,6 +2431,7 @@ def validate(asset: AssetBuild) -> None:
                 "the closed menu and pint have less than 0.08 m clearance")
 
     asset.ceiling_fan_contract = validate_ceiling_fan(asset, problems)
+    washroom.validate(asset, problems)
     if problems:
         raise SystemExit(
             "Bar interior failed validation:\n  " + "\n  ".join(problems))
@@ -2526,6 +2548,8 @@ def manifest_part(part: Part) -> dict:
         "vertices": len(part.geometry[0]),
         "triangles": kit.triangle_count(part.geometry),
     }
+    if part.obj.get("bp_text") is not None:
+        entry["text"] = str(part.obj["bp_text"])
     return entry
 
 
@@ -2602,6 +2626,8 @@ def write_manifest(
         manifest["containment_contract"] = asset.containment_contract
     if getattr(asset, "ceiling_fan_contract", None) is not None:
         manifest["ceiling_fan_contract"] = asset.ceiling_fan_contract
+    if getattr(asset, "washroom_contract", None) is not None:
+        manifest["washroom_contract"] = asset.washroom_contract
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(manifest, indent=2, sort_keys=False) + "\n",
@@ -2696,7 +2722,24 @@ def main() -> None:
     interior_surfaces.review_materials(interior)
     import city_bar_unique_surfaces as city_surfaces
     if city_surfaces.MANIFEST.exists():
-        city_surfaces.prepare(facade)
+        city_surfaces.prepare(facade, write=not args.validate_only)
+        if not args.validate_only:
+            # A geometry change repacks the facade's unique UVs. Publish the
+            # matching pair in the same operation, preserving user import
+            # settings and all unrelated City surface sheets.
+            # Pillow is owned by the pinned project Python, not Blender's.
+            publisher_code = "\n".join((
+                "import importlib.util, pathlib, sys",
+                "sys.path.insert(0, sys.argv[1])",
+                "spec = importlib.util.spec_from_file_location('bar_city_surface_publish', pathlib.Path(sys.argv[1]) / 'build-city-surface-textures.py')",
+                "publisher = importlib.util.module_from_spec(spec)",
+                "spec.loader.exec_module(publisher)",
+                "original = publisher.meta",
+                "publisher.meta = lambda path, *a, **k: pathlib.Path(str(path) + '.meta').read_bytes().decode('utf8') if pathlib.Path(str(path) + '.meta').exists() else original(path, *a, **k)",
+                "publisher.build(['CityBarFacade'])",
+            ))
+            subprocess.run(["python", "-B", "-c", publisher_code, str(ROOT / "tools")], cwd=ROOT, check=True)
+            city_surfaces.review_materials(facade)
     total = kit.triangle_count(
         kit.merge_all([part.geometry for part in interior.parts]))
     facade_total = kit.triangle_count(

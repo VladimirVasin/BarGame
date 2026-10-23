@@ -18,38 +18,64 @@ namespace BarPromenade
         public const string LargeChoiceKey = "interaction.toilet.large";
 
         private readonly BarMinigameModalLock modalLock = new BarMinigameModalLock();
-        private HomeInteriorRoot home;
+        private BathroomInteractionHost home;
         private PlayerInteractor sourceInteractor;
         private bool confirmArmed;
         private int inputUnlockFrame;
         private GUIStyle optionStyle;
         private GUIStyle selectedOptionStyle;
+        private float promptRadiusSquared = float.PositiveInfinity;
+        private float minimumFacingDot = -1f;
 
         public bool IsInitialized { get; private set; }
         public bool IsOpen { get; private set; }
         public HomeToiletChoice SelectedChoice { get; private set; }
         public string PromptKey => IsOpen ? string.Empty : HomeToiletInteraction.UsePromptKey;
-        public Vector3 InteractionPosition => home != null && home.ToiletScene != null
-            ? home.ToiletScene.InteractionPosition : transform.position;
+        public Vector3 InteractionPosition => home != null && home.SmallAction != null
+            ? home.SmallAction.InteractionPosition : transform.position;
 
-        public void Initialize(HomeInteriorRoot homeRoot)
+        public void Initialize(HomeInteriorRoot homeRoot) => Initialize(BathroomInteractionHost.FromHome(homeRoot));
+
+        public void Initialize(BathroomInteractionHost homeRoot,
+            float promptRadius = float.PositiveInfinity, float minimumFacingDot = -1f)
         {
             if (homeRoot == null) throw new ArgumentNullException(nameof(homeRoot));
+            if (float.IsNaN(promptRadius) || promptRadius <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(promptRadius));
+            if (float.IsNaN(minimumFacingDot) || minimumFacingDot < -1f || minimumFacingDot > 1f)
+                throw new ArgumentOutOfRangeException(nameof(minimumFacingDot));
             if (IsInitialized) throw new InvalidOperationException("The toilet choice is already initialized.");
-            if (homeRoot.ToiletScene == null || homeRoot.ToiletPlunge == null)
+            if (homeRoot.SmallAction == null || homeRoot.LargeAction == null)
                 throw new InvalidOperationException("Both toilet actions must exist before the choice.");
             home = homeRoot;
+            promptRadiusSquared = promptRadius * promptRadius;
+            this.minimumFacingDot = minimumFacingDot;
             IsInitialized = true;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
         {
             return IsInitialized && !IsOpen && isActiveAndEnabled && home != null &&
-                   home.ToiletScene != null && home.ToiletPlunge != null &&
-                   home.ToiletScene.isActiveAndEnabled && home.ToiletPlunge.isActiveAndEnabled &&
+                   home.SmallAction != null && home.LargeAction != null &&
+                   home.SmallAction.isActiveAndEnabled && home.LargeAction.isActiveAndEnabled &&
                    interactor != null && interactor == home.Player.Interactor &&
                    interactor.isActiveAndEnabled && interactor.InputEnabled &&
-                   !BarMinigameModalLock.IsAnyLocked && !SceneTransitionService.IsTransitioning;
+                   !BarMinigameModalLock.IsAnyLocked && !SceneTransitionService.IsTransitioning &&
+                   IsWithinPromptReach(interactor);
+        }
+
+        private bool IsWithinPromptReach(PlayerInteractor interactor)
+        {
+            // OverlapSphere is only broad-phase discovery: shrinking a trigger
+            // still lets it compete from the full shared interaction radius.
+            Vector3 approach = InteractionPosition - interactor.transform.position;
+            approach.y = 0f;
+            if (approach.sqrMagnitude > promptRadiusSquared) return false;
+            if (minimumFacingDot <= -1f) return true;
+            Vector3 towardBowl = home.Toilet.BowlLookTarget - interactor.transform.position;
+            Vector3 view = home.CameraFollow.Camera.transform.forward;
+            towardBowl.y = view.y = 0f;
+            return Vector3.Dot(view.normalized, towardBowl.normalized) >= minimumFacingDot;
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -78,7 +104,7 @@ namespace BarPromenade
         {
             if (!IsOpen || home == null || !GameInput.CanRead(GameInputContext.Menu)) return false;
             HomeBathroomSceneInteraction action = SelectedChoice == HomeToiletChoice.Small
-                ? (HomeBathroomSceneInteraction)home.ToiletScene : home.ToiletPlunge;
+                ? (HomeBathroomSceneInteraction)home.SmallAction : home.LargeAction;
             PlayerInteractor interactor = sourceInteractor;
             // Release and acquire synchronously: bathroom actions reject an existing
             // modal owner, and must acquire their own cursor/input ownership.

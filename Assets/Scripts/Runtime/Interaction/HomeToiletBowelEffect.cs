@@ -48,7 +48,10 @@ namespace BarPromenade
         public Vector3 AngularVelocity => floatingBody.AngularVelocity;
         public Vector3 Position => floatingBody.Position;
 
-        public bool Prepare(HomeInteriorRoot home, Transform water, Camera camera)
+        public bool Prepare(HomeInteriorRoot home, Transform water, Camera camera) =>
+            Prepare(BathroomInteractionHost.FromHome(home), water, camera);
+
+        public bool Prepare(BathroomInteractionHost home, Transform water, Camera camera)
         {
             room = home.transform;
             transform.position = water.position;

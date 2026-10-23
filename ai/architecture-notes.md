@@ -1,6 +1,13 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-23, bar washroom — explicit user decision:**
+  Table/guest→WC3x3x3:toilet/passive basin;8guests/2tables;door1.1x2.2/WC.
+  Lower wing;outer/City/Home anchors kept.
+  Toilet host/hero;DoorUse/hand/swept-capsule guard;
+  0↔-90/.65s,both sides;outside close at near edge.
+  7practicals:WCdown(-3.9,2.65,5.65)/3m/45deg;1shadow/2bounce/1cube.
+  Hall air/bounce/cube bounds kept;WC not receiver/leaf not captured.
 - **Accepted exception 2026-10-22, bar/refill — user:**
   Fan(0,2.55,-.65),20°/s;brassØ18/beam65mm;rotor kept.
   FreeR brace/move/Notice;IK/Walk/towel win.
@@ -29,32 +36,23 @@
   BeerPong Rect `(3.85,-1.75,.76,1.83)`, IDs/assignments stay.
   24 effects: existing providers/source bounds; no new fiction/effects/karaoke action.
 - **Accepted exception 2026-10-21, compact bar rebuild — explicit user decision:**
-  Hall11.4x7.8x3m incl.shell/door fits facade; Blender joinery/plans collision-service.
-  Counter left cut .9m to X-2.1; right X3.85/return/taps/backbar stay.
-  5stools/3free; guest X-1.65/hero X-.75 kept.
-  2opposed booths/4sitters,3round tables/3right-end taps;
-  `pub-table-right-rear` at `(4.85,2.95)` removed.
-  Booths X-4.38/Z-2.15,.65:2.05x2.8/table1.05x.85;
-  benches Z±.95 face∓Z, one visitor each.
-  Nine ID-free drinkers: per-entry unique body/face/hair/clothes;
-  balanced shared Bottle/Pint/WineGlass/ShotGlass/Snifter bag; permanent roster stays.
-  Old bespoke assets/tools gone. Bartender ID sorts after prior roster;
-  factory OrdinaryWorker/work; direct Residential.
-  Cafe clips/Walk/towel replace default graph. User: same rear hand hides/draws
-  towel before action/Wipe. Post-animation anatomical grasps/fingers:
-  wine/snifter cup, shot body, beer handle.
-  IK torso cap; hero lean/grip/carry to exact support.
-  Different menu order: pickup/facing held, .25m straight back, vertical lower.
-  R palm fixed top brace; hide below/guest-occluded before fetching next;
-  payment/consume/cleanup stay. Hand-sized bounds/lift-transfer-lower; prep opposite menu.
-  Opaque UV0:unique albedo/slopes/roughness/cavity; metre UV1.
-  Shared glass/emission/menu/service;6practicals/1key shadow,2finite bounces/
-  1bounded256 HDR probe/shared invalidation-cleanup.
-  No SSR; SCGI fixture-only; low fill/Neutral/clear air/sparse dust.
-  24-effect audit: wear/bevel normals/reserved vertex channels, gaze/SMAA/grain/
-  intoxication/bloom/vignette/room-menu DOF stay; dither only for banding.
-  No water/rays/indoor wind/rim/flare/blur, fiction/text/clues or measured gains.
-  Story §16/§21; all nine art §16 checks apply.
+  Hall11.4x7.8x3 incl.shell/door fits facade;Blender joinery/plans collision-service.
+  Counter left-.9→X-2.1;rightX3.85/return/backbar/3taps stay;5stools/3free;
+  guestX-1.65/heroX-.75. 2opposed booths/4sitters/2roundtables;
+  table(4.85,2.95)gone. BoothX-4.38/Z-2.15,.65:2.05x2.8/table1.05x.85;
+  benchesZ±.95 face∓Z/1guest.8ID-free unique body/face/hair/clothes rerolled perentry;
+  balanced Bottle/Pint/WineGlass/ShotGlass/Snifter;permanent roster kept.
+  Bespoke assets/tools gone;bartender OrdinaryWorker/work/ID after prior roster;
+  directResidential;Cafe clips/Walk/towel. Rearhand stow/draw before work/Wipe;
+  anatomical fingers:cup wine/snifter,shotbody,beerhandle;IKtorso cap/hero support.
+  Menu change:pickup/facing→back.25m→vertical lower;Rtopbrace;
+  hide below/guest-occluded before next. Hand-sized bounds/lift-transfer-lower;
+  prep opposite menu;payment/consume/cleanup kept.
+  UV0 unique albedo/slopes/roughness/cavity+metreUV1;shared glass/emission/menu/service.
+  7practicals/1keyshadow/2finitebounce/1bounded256HDRcube;shared cleanup.
+  Lowfill/Neutral/clearair/dust;SCGI fixture-only/noSSR. Wear/bevels/vertex reserves/
+  gaze/AA/grain/state/bloom/vignette/DOF;dither only banding.
+  No rays/wind/rim/flare/blur/newclues/measuredgains;§16/§21/nineartchecks.
 - **Accepted 2026-10-21, mandatory visual-effects review — user decision:**
   Every scene change follows `ai/visual-effects-standard.md`: all three groups,
   now including SSR/SSGI/SCGI. Coverage/fit/cost audit, not all-on/canon override.
@@ -103,7 +101,7 @@
   Art §4/story §6/§20: City/clock/Home balcony Soft; indoor mode restored. Bias/normal bias/
   near plane/URP distance/cascades/atlases stay; yard/island hard/no-volume.
   Art §12: BarLightingPresentation/saved flag own two finite countertop bounces;
-  six practicals/hierarchy/warmth/dust stay. Neutral/ACES comparison retains Neutral
+  practical hierarchy/warmth/dust stay. Neutral/ACES comparison retains Neutral
   for skin/wood/shadows, without City grade/new light. Art §10g: exact house-air
   retrace only if all four low-res depths fail: same room/blocker/shadow/strength,
   two sources/320x180/ten steps; no new target/Light/fog. Mother stays half-shadowed;

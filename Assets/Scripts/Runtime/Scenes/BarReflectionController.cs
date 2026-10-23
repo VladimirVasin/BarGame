@@ -46,8 +46,13 @@ namespace BarPromenade
                 throw new InvalidOperationException("Bar reflection architecture exceeds its bounded receiver scan.");
             foreach (Renderer renderer in renderers)
             {
-                if (!(renderer is MeshRenderer) || renderer.GetComponentInParent<BarCeilingFan>() != null) continue;
+                if (!(renderer is MeshRenderer) || renderer.GetComponentInParent<BarCeilingFan>() != null ||
+                    HasWashroomAncestor(renderer.transform, "Bar Washroom Door")) continue;
                 layers.Add(new LayerLease { Object = renderer.gameObject, Previous = renderer.gameObject.layer });
+                // The one probe describes the hall, not the separate room behind
+                // its doorway. Keep the static WC shell in capture for occlusion,
+                // but never paint its ceramics/metal with the hall environment.
+                if (HasWashroomAncestor(renderer.transform, "Bar Washroom ")) continue;
                 if (!BarInteriorSurfaceAppearance.UsesSharedMaterial(renderer)) continue;
                 properties.Clear(); renderer.GetPropertyBlock(properties);
                 // Only lacquer, brass and ceramics receive a local environment.
@@ -61,6 +66,16 @@ namespace BarPromenade
             initialized = true;
             Current = this;
             ApplyOwnership(true);
+        }
+
+        private static bool HasWashroomAncestor(Transform part, string prefix)
+        {
+            while (part != null)
+            {
+                if (part.name.StartsWith(prefix, StringComparison.Ordinal)) return true;
+                part = part.parent;
+            }
+            return false;
         }
 
         protected override uint ReadState()

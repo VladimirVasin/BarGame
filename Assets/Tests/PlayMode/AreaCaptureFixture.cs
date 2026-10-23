@@ -774,7 +774,7 @@ namespace BarPromenade.Tests.PlayMode
             BarInteriorRoot bar =
                 Object.FindAnyObjectByType<BarInteriorRoot>();
             Assert.That(bar, Is.Not.Null);
-            Assert.That(bar.Patrons, Has.Count.EqualTo(9));
+            Assert.That(bar.Patrons, Has.Count.EqualTo(8));
 
             int boothCount = 0;
             int counterCount = 0;

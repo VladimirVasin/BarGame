@@ -27,7 +27,7 @@ namespace BarPromenade
         private readonly Dictionary<Renderer, Renderer> beltSourceByReplacement = new Dictionary<Renderer, Renderer>();
         private readonly List<JointShapeCopy> jointShapes = new List<JointShapeCopy>();
         private CharacterJointDeformation jointDeformation;
-        private HomeInteriorRoot home;
+        private BathroomInteractionHost home;
         private Player3DAssetRegistry registry;
         private PlayerWardrobe wardrobe;
         private PlayerWardrobe.AppearanceLease wardrobeLease;
@@ -44,7 +44,9 @@ namespace BarPromenade
         public float TrousersDown { get; private set; }
         public IReadOnlyList<Renderer> Renderers => renderers;
 
-        public void Initialize(HomeInteriorRoot value)
+        public void Initialize(HomeInteriorRoot value) => Initialize(BathroomInteractionHost.FromHome(value));
+
+        public void Initialize(BathroomInteractionHost value)
         {
             End();
             ReleaseModule();

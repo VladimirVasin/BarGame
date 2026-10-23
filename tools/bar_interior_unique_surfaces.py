@@ -284,6 +284,10 @@ def bc7_bytes(size):
 
 def ensure_meta(path, *, size, linear):
     meta = Path(str(path) + ".meta")
+    # Repainting is not an import-settings edit. Preserve an existing sidecar
+    # exactly, including the user's chosen compression/readability settings.
+    if meta.exists():
+        return
     template = meta.read_text(encoding="utf8") if meta.exists() else (
         ROOT / "Assets/Resources/City/Surfaces/CityBarFacadeResponse.png.meta").read_text(encoding="utf8")
     if not meta.exists():

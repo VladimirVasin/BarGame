@@ -5,6 +5,21 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-23
 
+Bar rear table/guest→real WC with toilet/passive basin only; rear wing matches.
+Shared toilet host keeps both actions/hero; solid DoorUse leaf works both sides.
+Hall/door/WC union keeps collision/camera clearance; room spot and hall probe stay scoped.
+Blender anchor names guarded against global duplicate suffixes.
+build-bar-3d-model --validate-only passed geometry/UV/maps and matching contours.
+WC mesh sign; outward roof slope with aligned eaves/masonry/flashings and gutter.
+One rig handoff owner spans both lid phases, preventing a deferred unlock from
+being recaptured as the next phase's original state.
+Bar toilet prompt now requires a nearby approach/facing; counter sit reach is
+local to its dock. Broad-phase overlaps no longer let WC hide the inside door.
+BarPrompts_KeepDoorReachableAndCounterLocal passed actual target selection/E.
+Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera and
+Toilet_FirstPersonStreamStainsAndRestores passed; entrance/fixtures/camera/roof reviewed.
+check-docs passed; existing user-asset whitespace retained.
+
 Bar continuation: forward L wave fits initial gaze once.
 Menu/repeat requests use ordinary seated look (yaw±70/pitch−25…55), retaining
 the chosen gaze; pickup/sip/return keep±12/±10. Only input bounds change.

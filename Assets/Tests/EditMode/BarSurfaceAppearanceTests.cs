@@ -403,6 +403,7 @@ namespace BarPromenade.Tests.EditMode
                      lightIndex < plan.LightAnchors.Count;
                      lightIndex++)
                 {
+                    if (plan.LightAnchors[lightIndex].Kind == BarInteriorLightKind.Washroom) continue;
                     AssertTransformTexture(
                         room.Find($"Practical Cable {lightIndex + 1}"),
                         BarSurfaceKind.PaintedMetal);
