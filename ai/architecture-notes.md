@@ -6,7 +6,7 @@
   `12–16`:3–4, `16–19`:4–6, `19–23`:6–8, `23–01`:4–6, `01–02`:3–4; closed:0.
   `BarBusinessHours` owns admission and a seed/day/hour target stable on quick
   returns. `BarCrowdController` moves toward it through the real door, one guest
-  at a time, retaining the visit-owned default appearance and actual vessel.
+  at a time, retaining the visit-owned default appearance.
   Only settled guests enter the actual cast, speech and ambience; vacant counter
   docks become available, and the hero's active dock stays reserved. Departure
   waits for the pair exchange, accepted service and the current attention wave.
@@ -24,6 +24,25 @@
   speech pool or supernatural signal. Bounded slots, one transit and cached
   references limit recurring work; runtime cost remains unmeasured. Story §6
   records the exception; §16/21/nine art checks remain binding.
+- **Accepted architecture exception 2026-10-25 — guests leave their vessels:**
+  The user's correction replaces carrying drinks out. The actual supported
+  vessel stays on its counter/table/booth while the guest releases the grip,
+  stands and leaves empty-handed. It survives the NPC without a prop clone,
+  fade, fill reset or spatial jump. A bounded ticket retains the real prop and
+  surface, not the departing rig. Dirty places remain reserved until collection.
+  The same bartender walks around the left counter end into the hall/booth aisle,
+  reaches the actual vessel, grips it at contact and carries it behind the bar.
+  Shared locomotion, typed grip/IK and existing counter storage are reused.
+  Low stationary contacts lower the pelvis at most 12 cm with both foot poses
+  fixed; the stance rises before walking or foreground service resumes.
+  No disappearance before the whole vessel is hidden below the counter.
+  Background collection is bounded to the authored guest places, continues
+  after closing and gives accepted service priority at safe handoffs. Service
+  waits for the worker's physical return; no second transform/hand writer.
+  Blocking people make him wait. Scene/disable/pause retain ownership and cleanup.
+  No player transaction, text, speech, model, material or new effect provider;
+  existing scene lighting, material/accent effects and post-processing stay.
+  This ordinary work changes no story state; story §16/21 and art §16 remain.
 - **Accepted 2026-10-25 — choose new-game time before location:** The user
   requested a time picker before the existing location page. `07:40` remains
   its initial selection; the chosen valid minute starts day one without elapsed

@@ -68,6 +68,18 @@ namespace BarPromenade
         private bool hasGraph;
         private bool hasActionPlayable;
         private bool isInitialized;
+        private Vector3 authoredPelvisLocalPosition;
+        private float lowReachLowering;
+        private float lowReachLoweringGoal;
+
+        public float LowReachLowering => lowReachLowering;
+
+        /// <summary>A small knee bend for stationary low contacts; both authored feet stay planted.</summary>
+        public void SetLowReachStance(float loweringMetres)
+        {
+            if (!float.IsFinite(loweringMetres)) return;
+            lowReachLoweringGoal = Mathf.Clamp(loweringMetres, 0f, .12f);
+        }
 
         public bool IsInitialized => isInitialized;
         public BarBartenderAssetRegistry Registry => registry;
@@ -582,6 +594,9 @@ namespace BarPromenade
             RestoreAuthoredPose();
             EvaluateOrdinaryAnimation();
             CaptureAuthoredPose();
+            lowReachLowering = Mathf.MoveTowards(lowReachLowering, lowReachLoweringGoal,
+                Mathf.Max(0f, deltaTime) * .4f);
+            ApplyLowReachStance();
             ordinaryTorsoLeanWeight = Mathf.MoveTowards(
                 ordinaryTorsoLeanWeight,
                 ordinaryTorsoLeanGoalWeight,
@@ -720,14 +735,30 @@ namespace BarPromenade
                 return;
             for (int index = 0; index < proceduralBones.Length; index++)
                 proceduralBones[index].localRotation = authoredRotations[index];
+            if (registry.Pelvis != null) registry.Pelvis.localPosition = authoredPelvisLocalPosition;
         }
 
         private void CaptureAuthoredPose()
         {
+            authoredPelvisLocalPosition = registry.Pelvis.localPosition;
             for (int index = 0; index < proceduralBones.Length; index++)
                 authoredRotations[index] = proceduralBones[index].localRotation;
             for (int index = 0; index < chainClavicles.Length; index++)
                 authoredClavicleRotations[index] = chainClavicles[index].localRotation;
+        }
+
+        private void ApplyLowReachStance()
+        {
+            if (lowReachLowering <= .0001f) return;
+            Pose left = new Pose(registry.LeftFoot.position, registry.LeftFoot.rotation);
+            Pose right = new Pose(registry.RightFoot.position, registry.RightFoot.rotation);
+            Vector3 leftKnee = registry.LeftShin.position;
+            Vector3 rightKnee = registry.RightShin.position;
+            registry.Pelvis.position -= transform.up * lowReachLowering;
+            LimbTwoBoneIk.Solve(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
+                left.position, left.rotation, leftKnee);
+            LimbTwoBoneIk.Solve(registry.RightThigh, registry.RightShin, registry.RightFoot,
+                right.position, right.rotation, rightKnee);
         }
 
         private void ApplyWipeSurfaceContact()

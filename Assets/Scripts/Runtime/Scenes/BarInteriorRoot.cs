@@ -446,6 +446,7 @@ namespace BarPromenade
                     Bartender.gameObject.AddComponent<
                         BarBartenderServiceChoreography>();
                 choreography.Initialize(Bartender, DrinkShop);
+                choreography.ConfigureCleanup(Crowd);
                 DrinkShop.ConfigureCounterPatronService(Patrons);
                 Conversation = gameObject.AddComponent<BarConversationController>();
                 Conversation.Initialize(Patrons, Bartender, DrinkShop, Player.GameObject.transform,

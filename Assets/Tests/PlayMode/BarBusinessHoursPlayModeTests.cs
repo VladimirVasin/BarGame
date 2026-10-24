@@ -219,8 +219,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(bar.Crowd.HasGuestInTransit, Is.True);
             Assert.That(bar.Patrons.Count, Is.EqualTo(eveningTarget - 1));
             yield return AdvanceCrowdFrames(25);
-            Assert.That(bar.Crowd.TransitVesselGripError,
-                Is.LessThanOrEqualTo(BarPatronDrinkingArmPose.BottleGripContactTolerance), CrowdDiagnostic());
+            Assert.That(bar.Crowd.TryGetAbandonedDrink(bar.Crowd.TransitPatronId, out BarAbandonedDrink leftDrink),
+                Is.True, "A departing guest leaves the actual drink at the reserved place.");
+            Assert.That(leftDrink.DrinkProp.Root, Is.Not.Null);
+            Assert.That(leftDrink.DrinkProp.Root.IsChildOf(bar.Room), Is.True);
+            Assert.That(leftDrink.DrinkProp.Root.gameObject.activeInHierarchy, Is.True);
             yield return Capture("bar-hours-departure.png");
             yield return DriveCrowdUntil(() => bar.Patrons.Count == lateTarget && !bar.Crowd.HasGuestInTransit,
                 "The late guests did not leave through the door.");
@@ -521,7 +524,10 @@ namespace BarPromenade.Tests.PlayMode
         private void AssertSettledCast()
         {
             Assert.That(bar.Crowd.HasGuestInTransit, Is.False);
-            int counterGuests = 0;
+            int occupiedCounterPlaces = 0;
+            foreach (BarNpcAnchor anchor in bar.Layout.NpcAnchors)
+                if (anchor.Role == BarNpcRole.CounterPatron && bar.Crowd.IsAnchorOccupied(anchor.Id))
+                    occupiedCounterPlaces++;
             for (int role = 0; role < BarConversationCatalog.RoleCount; role++)
             {
                 BarPatron present = null;
@@ -534,9 +540,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(present.Drinking, Is.Not.Null.And.Property("enabled").True);
                 Assert.That(bar.Conversation.GuestBubbles.IsDeclared(present.Presentation),
                     Is.EqualTo(BarConversationCatalog.CanSpeak(role)));
-                if (present.Anchor.Role == BarNpcRole.CounterPatron) counterGuests++;
             }
-            Assert.That(bar.CounterStations.Count, Is.EqualTo(5 - counterGuests));
+            Assert.That(bar.CounterStations.Count, Is.EqualTo(5 - occupiedCounterPlaces));
         }
 
         private static void AdvanceClockTo(int minute)

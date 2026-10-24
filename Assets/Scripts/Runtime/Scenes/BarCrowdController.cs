@@ -16,11 +16,12 @@ namespace BarPromenade
         public const float ChangeIntervalSeconds = 9f;
         public const float WalkingSpeed = .82f;
         public const float SeatTransitionSeconds = 1.8f;
+        public const float ReleaseHandSeconds = .3f;
         private const float TurnSpeed = 150f;
         private const float DoorSeconds = .8f;
         private const float BodyRadius = .17f;
 
-        private enum TransitPhase { OpeningForArrival, Arriving, Sitting, Standing, Leaving, OpeningForDeparture, CrossingOut, ClosingAfterDeparture }
+        private enum TransitPhase { OpeningForArrival, Arriving, Sitting, ReleasingDrink, Standing, Leaving, OpeningForDeparture, CrossingOut, ClosingAfterDeparture }
 
         private sealed class Transit
         {
@@ -41,6 +42,8 @@ namespace BarPromenade
             public Vector3 VesselHandPosition;
             public Quaternion VesselHandRotation;
             public AnimatorCullingMode PreviousCulling;
+            public bool CarryDrink;
+            public bool ReleaseEndpointShown;
             public readonly FootContact[] Feet = new FootContact[2];
         }
 
@@ -97,6 +100,7 @@ namespace BarPromenade
         private BarPatronWorldBuilder.Visit visit;
         private BarInteriorLayoutPlan layout;
         private BarPatron[] slots;
+        private BarAbandonedDrink[] abandoned;
         private Func<string, bool> isAnchorAvailable;
         private Func<BarPatron, bool> canDepart;
         private Transform room;
@@ -126,7 +130,9 @@ namespace BarPromenade
         public string TransitBlockedBy { get; private set; } = string.Empty;
         public float TransitFootContactError { get; private set; }
         public float TransitVesselGripError { get; private set; }
+        public int PendingAbandonedCount { get; private set; }
         public event Action PresenceChanged;
+        public event Action<BarAbandonedDrink> DrinkAbandoned;
 
         public void Initialize(Transform authoredRoom, BarInteriorLayoutPlan plan, int attendanceSeed,
             Func<string, bool> anchorAvailable = null, Func<BarPatron, bool> safeToDepart = null)
@@ -141,6 +147,7 @@ namespace BarPromenade
             canDepart = safeToDepart;
             visit = BarPatronWorldBuilder.CreateVisit(transform, layout, room);
             slots = new BarPatron[visit.Count];
+            abandoned = new BarAbandonedDrink[visit.Count];
             CreateEntranceHinge();
             RefreshTarget();
             int[] order = new int[visit.Count];
@@ -167,8 +174,44 @@ namespace BarPromenade
         {
             if (visit == null || string.IsNullOrEmpty(id)) return false;
             for (int slot = 0; slot < slots.Length; slot++)
-                if (slots[slot] != null && visit.GetAnchor(slot).Id == id) return true;
+                if ((slots[slot] != null || abandoned[slot] != null) && visit.GetAnchor(slot).Id == id) return true;
             return false;
+        }
+
+        public bool TryGetAbandonedDrink(string anchorId, out BarAbandonedDrink drink)
+        {
+            if (abandoned != null)
+                for (int slot = 0; slot < abandoned.Length; slot++)
+                    if (abandoned[slot] != null && abandoned[slot].AnchorId == anchorId)
+                    {
+                        drink = abandoned[slot];
+                        return true;
+                    }
+            drink = null;
+            return false;
+        }
+
+        /// <summary>Enumerates only live reservations, with no temporary list or scene search.</summary>
+        public BarAbandonedDrink GetPendingAbandonedDrink(int index)
+        {
+            if (index < 0 || index >= PendingAbandonedCount) throw new ArgumentOutOfRangeException(nameof(index));
+            for (int slot = 0; slot < abandoned.Length; slot++)
+                if (abandoned[slot] != null && index-- == 0) return abandoned[slot];
+            throw new InvalidOperationException("The abandoned-drink reservation count is inconsistent.");
+        }
+
+        /// <summary>The physical collector disposes the vessel before releasing this exact reservation.</summary>
+        public bool CompleteDrinkCleanup(BarAbandonedDrink drink)
+        {
+            if (!IsInitialized || drink == null || drink.IsCleanupComplete || !drink.IsReadyForCollection ||
+                drink.Slot < 0 || drink.Slot >= abandoned.Length || !ReferenceEquals(abandoned[drink.Slot], drink)) return false;
+            Transform vessel = drink.DrinkProp.Root;
+            if (vessel != null && vessel.gameObject.activeInHierarchy) return false;
+            abandoned[drink.Slot] = null;
+            PendingAbandonedCount--;
+            drink.IsCleanupComplete = true;
+            PresenceChanged?.Invoke();
+            return true;
         }
 
         private void Update() { if (AutoAdvance) Advance(Time.deltaTime); }
@@ -212,11 +255,12 @@ namespace BarPromenade
             {
                 int slot = (first + probe) % slots.Length;
                 BarNpcAnchor anchor = visit.GetAnchor(slot);
-                if (slots[slot] != null || isAnchorAvailable != null && !isAnchorAvailable(anchor.Id)) continue;
+                if (slots[slot] != null || abandoned[slot] != null ||
+                    isAnchorAvailable != null && !isAnchorAvailable(anchor.Id)) continue;
                 BarPatron patron = visit.Create(slot);
                 if (patron == null) continue;
                 slots[slot] = patron;
-                transit = PrepareTransit(patron, slot);
+                transit = PrepareTransit(patron, slot, true);
                 transit.Phase = TransitPhase.OpeningForArrival;
                 patron.Registry.transform.SetPositionAndRotation(visit.Root.TransformPoint(OutsideDoor),
                     visit.Root.rotation);
@@ -235,11 +279,11 @@ namespace BarPromenade
             {
                 int slot = (first + probe) % slots.Length;
                 BarPatron patron = slots[slot];
-                if (patron == null || patron.Registry == null ||
+                if (patron == null || patron.Registry == null || abandoned[slot] != null ||
                     patron.Drinking != null && patron.Drinking.Timeline.Phase != BarPatronDrinkPhase.Rest ||
                     canDepart != null && !canDepart(patron)) continue;
-                transit = PrepareTransit(patron, slot);
-                transit.Phase = TransitPhase.Standing;
+                transit = PrepareTransit(patron, slot, false);
+                transit.Phase = patron.Drinking != null ? TransitPhase.ReleasingDrink : TransitPhase.Standing;
                 patrons.Remove(patron);
                 BuildRoute(patron.Anchor, transit.Dock);
                 PresenceChanged?.Invoke();
@@ -247,13 +291,13 @@ namespace BarPromenade
             }
         }
 
-        private Transit PrepareTransit(BarPatron patron, int slot)
+        private Transit PrepareTransit(BarPatron patron, int slot, bool carryDrink)
         {
             // The settled animator may have overwritten the last visible
             // hand pose earlier in Update. Ask its existing contact owner
             // to restore the exact typed vessel grip before caching it.
             patron.Drinking?.SampleFinalPose();
-            var result = new Transit { Patron = patron, Slot = slot, Dock = StandingDock(patron.Anchor),
+            var result = new Transit { Patron = patron, Slot = slot, CarryDrink = carryDrink, Dock = StandingDock(patron.Anchor),
                 Seat = patron.Presentation.SeatAnchor };
             CityPedestrianResources.TryGetArchetype(patron.Registry.DesignId, out CityPedestrianArchetype archetype);
             result.Ride = archetype?.SeatedRide;
@@ -277,11 +321,23 @@ namespace BarPromenade
                 result.UpperArm = CityPedestrianHandProps.FindSocket(patron.Registry.ModelRoot, "upper_arm.R");
                 result.Forearm = CityPedestrianHandProps.FindSocket(patron.Registry.ModelRoot, "forearm.R");
                 result.Fingers = patron.Registry.GetComponentInChildren<NpcHandPose>();
-                // Carry the actual existing vessel. Its solved local grip is
-                // retained through the approach, seat transfer and exit.
-                result.Vessel.SetParent(result.Hand, true);
-                result.VesselHandPosition = result.Vessel.localPosition;
-                result.VesselHandRotation = result.Vessel.localRotation;
+                if (carryDrink)
+                {
+                    // An arriving guest retains the existing vessel/grip.
+                    result.Vessel.SetParent(result.Hand, true);
+                    result.VesselHandPosition = result.Vessel.localPosition;
+                    result.VesselHandRotation = result.Vessel.localRotation;
+                }
+                else
+                {
+                    // Rest already solved the upright vessel on the real
+                    // surface. Reparenting preserves every visible contact
+                    // and keeps it alive when the guest leaves the scene.
+                    result.Vessel.SetParent(room, true);
+                    abandoned[slot] = new BarAbandonedDrink(slot, patron.Anchor,
+                        patron.Drinking.DrinkProp, patron.Drinking.SurfaceRenderer);
+                    PendingAbandonedCount++;
+                }
             }
             result.Pose = new RigPose(patron.Registry.ModelRoot);
             if (patron.Drinking != null) patron.Drinking.enabled = false;
@@ -300,7 +356,8 @@ namespace BarPromenade
                 foot.StandingPosition = foot.Foot.position + dockOffset;
                 foot.StandingRotation = foot.Foot.rotation;
             }
-            if (result.Vessel != null) result.Vessel.SetLocalPositionAndRotation(result.VesselHandPosition, result.VesselHandRotation);
+            if (result.CarryDrink && result.Vessel != null)
+                result.Vessel.SetLocalPositionAndRotation(result.VesselHandPosition, result.VesselHandRotation);
             return result;
         }
 
@@ -313,6 +370,8 @@ namespace BarPromenade
                 patrons.Remove(current.Patron);
                 if (current.Seat != null) Destroy(current.Seat.gameObject);
                 transit = null;
+                NotifyAbandonedReady(current.Slot);
+                ClearTransitDiagnostics();
                 PresenceChanged?.Invoke();
                 return;
             }
@@ -345,6 +404,11 @@ namespace BarPromenade
                         SetPhase(TransitPhase.Leaving);
                     }
                     break;
+                case TransitPhase.ReleasingDrink:
+                    current.Patron.Presentation.Advance(0f, false, true);
+                    if (current.Seconds >= ReleaseHandSeconds && current.ReleaseEndpointShown)
+                        SetPhase(TransitPhase.Standing);
+                    break;
                 case TransitPhase.Leaving:
                     if (MoveToward(route[current.Corner], dt))
                     {
@@ -375,10 +439,11 @@ namespace BarPromenade
             Transit current = transit;
             bool seating = current.Phase == TransitPhase.Sitting;
             bool standing = current.Phase == TransitPhase.Standing;
-            if (seating || standing)
+            bool releasing = current.Phase == TransitPhase.ReleasingDrink;
+            if (seating || standing || releasing)
             {
                 float progress = Mathf.SmoothStep(0f, 1f, current.Seconds / SeatTransitionSeconds);
-                float seated = seating ? progress : 1f - progress;
+                float seated = releasing ? 1f : seating ? progress : 1f - progress;
                 Transform body = current.Patron.Registry.transform;
                 body.localPosition = Vector3.Lerp(current.Dock, current.Patron.Anchor.Position, seated);
                 body.localRotation = Quaternion.Euler(0f, current.Patron.Anchor.YawDegrees, 0f);
@@ -388,10 +453,16 @@ namespace BarPromenade
             else ApplyCarryPose(current);
             if (current.Fingers != null && current.Patron.Drinking != null)
             {
-                current.Fingers.SetGrip(false, 1f, current.Patron.Drinking.GripKind);
-                BarPatronDrinkProp prop = current.Patron.Drinking.DrinkProp;
-                TransitVesselGripError = Vector3.Distance(current.Vessel.position + current.Vessel.rotation * prop.GripLocalPosition,
-                    current.Fingers.AnatomicalCylinderCentre(false));
+                float grip = current.CarryDrink ? 1f : releasing
+                    ? 1f - Mathf.SmoothStep(0f, 1f, current.Seconds / ReleaseHandSeconds) : 0f;
+                current.Fingers.SetGrip(false, grip, current.Patron.Drinking.GripKind);
+                if (releasing && current.Seconds >= ReleaseHandSeconds) current.ReleaseEndpointShown = true;
+                if (current.CarryDrink)
+                {
+                    BarPatronDrinkProp prop = current.Patron.Drinking.DrinkProp;
+                    TransitVesselGripError = Vector3.Distance(current.Vessel.position + current.Vessel.rotation * prop.GripLocalPosition,
+                        current.Fingers.AnatomicalCylinderCentre(false));
+                }
             }
         }
 
@@ -417,7 +488,7 @@ namespace BarPromenade
 
         private static void ApplyCarryPose(Transit current)
         {
-            if (current.Hand == null || current.UpperArm == null || current.Forearm == null ||
+            if (!current.CarryDrink || current.Hand == null || current.UpperArm == null || current.Forearm == null ||
                 current.Vessel == null || current.Patron.Drinking == null) return;
             Transform actor = current.Patron.Registry.transform;
             BarPatronDrinkProp prop = current.Patron.Drinking.DrinkProp;
@@ -463,6 +534,14 @@ namespace BarPromenade
             PresenceChanged?.Invoke();
         }
 
+        private void NotifyAbandonedReady(int slot)
+        {
+            BarAbandonedDrink drink = abandoned[slot];
+            if (drink == null || drink.IsReadyForCollection || drink.IsCleanupComplete) return;
+            drink.IsReadyForCollection = true;
+            DrinkAbandoned?.Invoke(drink);
+        }
+
         private void CompleteDeparture()
         {
             Transit current = transit;
@@ -473,6 +552,7 @@ namespace BarPromenade
             ClearTransitDiagnostics();
             nextChange = ChangeIntervalSeconds;
             PresenceChanged?.Invoke();
+            NotifyAbandonedReady(current.Slot);
         }
 
         private void SetPhase(TransitPhase phase)
@@ -624,8 +704,20 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            IsInitialized = false;
             PresenceChanged = null;
+            DrinkAbandoned = null;
             patrons.Clear();
+            if (abandoned != null)
+                for (int slot = 0; slot < abandoned.Length; slot++)
+                {
+                    BarAbandonedDrink drink = abandoned[slot];
+                    if (drink == null) continue;
+                    drink.IsCleanupComplete = true;
+                    if (drink.DrinkProp.Root != null) Destroy(drink.DrinkProp.Root.gameObject);
+                    abandoned[slot] = null;
+                }
+            PendingAbandonedCount = 0;
             if (visit != null && visit.Root != null) Destroy(visit.Root.gameObject);
             if (door == null) return;
             door.localRotation = closedDoorRotation;

@@ -162,37 +162,38 @@ payment cue. Pending/failed/interrupted gestures and repeated input create no
 receipt or charge. The receipt remains visible during the bar modal, expires
 on its unscaled clock, freezes with pause and clears with scene teardown.
 
+Guests release the supported vessel and exit empty-handed.
+Dirty places stay reserved. One bounded collection queue covers counter/tables/
+booths, even after closing. The worker stows the towel, walks around the left
+counter end, grips at measured contact and carries the same vessel home.
+It disappears only fully hidden below the counter. Accepted service has priority
+at safe handoffs and waits for his return. Pause/disable/exit preserve ownership;
+no clone, teleport, fill reset or player transaction.
+
 ## 5. Verification contract
 
 `BarBartenderAssetTests`: catalog worker, shared clips, two-hand adapter.
-`BarInteriorSpawnPlayModeTests`: grounded arrival, readable menu,
-wipe contact/travel, both free arms, fan placement/speed, resting-menu clearance
-or physical towel stow, patch-to-patch Walk, and physical beer/bottle service.
-Initial-menu and same-drink coverage measure the forward-visible left wave before either tap, horizontal palm,
-clenched fingers, index-only motion, actual surfaces outside the wood,
-actual index-pad contacts, deferred payment,
-receipt/sound, object identity, tap refill versus stationary guest-dock refill
-and a second explicit sip. Real arrow input checks limited camera rotation in
-drink phases, the repeat gesture and restored seated control. Grasp checks must measure
-palm/finger geometry independently of sockets; hero pickup/return checks sample
-the rendered final world-rig pose and retain counter support until contact.
-Different-menu-order coverage retains the old empty vessel through collection and
-checks backward facing, vertical lowering, open-palm support and occlusion
-before replacement. `AreaCaptureFixture.Bar` and `BarMenu`
-show the placed room and actual default actor. Removed asset paths, GUIDs and
-regeneration hooks must have no remaining live references. The existing
-`Bartender_WipeTouchesAndTravelsAcrossCounter` covers towel work.
-`BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt` also checks counter
-depletion/waves, FIFO/dedupe/cancel, same-cup refill and queued hero confirmation/payment.
-`RedWineService_FetchesPoursCarriesAndWaitsForExplicitDrink` covers direct refill,
-the bottle base left of the contact during initial/repeat pours, visible palm
-above the neck, finger wrap, solid clearance and preserved elbow geometry.
-`VodkaService_KeepsShotClearOfCounterAndMenu`
-retains its shot/counter/menu clearance checks.
-Manual skin captures force fresh render matrices and restore that flag afterward.
-Receipt frames require a visible Game view without batch mode and capture it
-after IMGUI; Camera.Render cannot verify this overlay.
-`player_hand_gestures.validate` and its FBX round trip check finite hand
-geometry, original link lengths and contact clearance;
-`build-player-bar-repeat-actions.validate` checks the wave, fixed wrist and
+`BarInteriorSpawnPlayModeTests`: grounded arrival/menu, wipe contact/travel,
+free arms, fan, paper clearance/towel stow and beer/bottle service. Initial/repeat
+orders measure the forward left wave before two index contacts, horizontal palm,
+clenched other fingers, solid clearance, deferred payment/receipt, same vessel,
+tap versus bottle refill and explicit second sip. Arrow input verifies limited
+drink look and restored seated control. Measure actual palm/finger surfaces,
+not sockets alone; final rendered rig retains support until contact.
+Different-order collection checks backward facing, vertical lowering,
+open-palm support and complete occlusion before replacement.
+`AreaCaptureFixture.Bar`/`BarMenu`: placed room/worker. Removed asset paths,
+GUIDs and regeneration hooks must have no live references.
+`Bartender_WipeTouchesAndTravelsAcrossCounter`: towel work.
+`BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt`: depletion/waves,
+FIFO/dedupe/cancel, same-cup refill and queued hero payment.
+`RedWineService_FetchesPoursCarriesAndWaitsForExplicitDrink`: direct refill,
+bottle base left of contact, palm above neck, wrap/clearance/elbow anatomy.
+`VodkaService_KeepsShotClearOfCounterAndMenu`: shot/wood/paper clearance.
+`BarPatronCleanupPlayModeTests`: retained surface vessel, empty-hand exit,
+dirty reservation, room collection/contact/carry/stow and service ownership.
+Manual skin captures force fresh render matrices, then restore the flag.
+Receipt proof uses visible Game view after IMGUI; Camera.Render omits it.
+`player_hand_gestures.validate`/FBX round trip: finite geometry, link lengths,
+contacts. `build-player-bar-repeat-actions.validate`: wave, fixed wrist and
 shared parent/lower-body seams.

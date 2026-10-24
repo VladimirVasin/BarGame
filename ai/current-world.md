@@ -2652,8 +2652,13 @@ cemetery:own interiors/returns.
   23–01=4–6,01–02=3–4; closed0, excluding bartender/hero.
   `BarCrowdController` reserves eight visit appearances/slots, instantiates only present
   guests, moves one through the real hinged door/aisle at a time, blends shared rig
-  seat endpoints and carries the same vessel. Active speech/service finish before
-  departure; occupied/recovering hero docks stay reserved. No in-room spawn/fade.
+  seat endpoints. Active speech/service finish before departure; the guest
+  releases the same supported vessel and leaves empty-handed. Dirty docks stay
+  reserved until the bartender collects and stows their actual prop behind the
+  counter. One bounded background queue covers counter, tables and booths;
+  the worker goes around the left counter end, grips at contact and walks back.
+  Accepted service waits for his real return; cleanup also runs after closing.
+  Occupied/recovering hero docks stay reserved. No in-room spawn/fade.
 - up to eight transient default NPC visitors: each entry uses the shared catalog/
   body/face/hair/wardrobe allocator anew, without permanent IDs or changes to
   permanent characters. Appearances do not repeat within the visit.

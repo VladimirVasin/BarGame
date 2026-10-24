@@ -96,6 +96,8 @@ namespace BarPromenade
         private Quaternion emptyVesselRotationInServer;
         private Pose emptyVesselStorageServerPose;
         private BarBartenderPresentation bartenderPresentation;
+        private UnityEngine.Object bartenderAvailabilityOwner;
+        private Func<bool> bartenderAvailability;
         private Vector3 bartenderCarryShoulderLocal;
         private Vector3 bartenderServiceHomeLocalPosition;
         private float bartenderCarryArmLength;
@@ -185,7 +187,24 @@ namespace BarPromenade
         public bool PurchaseCommitted => purchaseCommitted;
         public bool IsClearingEmptyVessel => ActiveServiceTimeline != null && ActiveServiceTimeline.IsClearingEmptyVessel;
         public int ClearedEmptyVesselCount { get; private set; }
+        public bool IsBartenderAvailableForService => bartenderAvailability == null || bartenderAvailability();
+        public void ConfigureBartenderAvailability(UnityEngine.Object owner, Func<bool> available)
+        {
+            if (ReferenceEquals(owner, null)) throw new ArgumentNullException(nameof(owner));
+            if (available == null)
+            {
+                if (!ReferenceEquals(bartenderAvailabilityOwner, owner)) return;
+                bartenderAvailabilityOwner = null;
+                bartenderAvailability = null;
+                return;
+            }
+            if (bartenderAvailabilityOwner != null && !ReferenceEquals(bartenderAvailabilityOwner, owner))
+                throw new InvalidOperationException("Only the bartender's motion owner can gate service availability.");
+            bartenderAvailabilityOwner = owner;
+            bartenderAvailability = available;
+        }
         public bool IsBartenderServiceReady =>
+            IsBartenderAvailableForService &&
             (IsPatronServiceActive ? ReferenceEquals(timeline, patronServiceTimeline) :
                 !WantsHeroBartenderService || serviceQueue.IsOwner(this)) &&
             (bartenderPresentation == null || bartenderPresentation.IsTowelServiceReady);

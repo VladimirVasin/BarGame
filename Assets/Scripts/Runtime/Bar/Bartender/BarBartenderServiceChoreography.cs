@@ -40,6 +40,7 @@ namespace BarPromenade
         private Vector3 menuShoulderInActor;
 
         public bool IsInitialized => isInitialized;
+        public bool AutoAdvance { get; set; } = true;
 
         public void Initialize(
             BarBartenderPresentation bartenderPresentation,
@@ -104,7 +105,10 @@ namespace BarPromenade
             isInitialized = true;
         }
 
-        private void LateUpdate() => Advance(Time.deltaTime);
+        private void LateUpdate()
+        {
+            if (AutoAdvance) Advance(Time.deltaTime);
+        }
 
         public void Advance(float deltaTime)
         {
@@ -113,6 +117,13 @@ namespace BarPromenade
                 return;
             }
             deltaTime = Mathf.Max(0f, deltaTime);
+            if (AdvanceCleanup(deltaTime)) return;
+            if (presentation.LowReachLowering > .002f)
+            {
+                ReleaseAll();
+                presentation.ApplyCounterTurnPose(0f);
+                return;
+            }
             if (!IsRepeatFilledBeerCarry) repeatVesselCarryPrepared = false;
 
             presentation.SetCounterHandSupport(Vector3.zero, 0f);
@@ -814,6 +825,7 @@ namespace BarPromenade
 
         private void ReleaseAll()
         {
+            if (presentation != null) presentation.SetLowReachStance(0f);
             presentation?.SetCounterHandSupport(Vector3.zero, 0f);
             presentation?.SetCounterReachLean(Vector3.zero, 0f);
             shop?.ServiceView?.SetBartenderVesselContact(false, 0f);
@@ -829,6 +841,14 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            DisconnectCleanup();
+            if (IsCleaningPatronDrink)
+            {
+                if (gameObject.activeInHierarchy && presentation != null &&
+                    presentation.Registry != null && presentation.Registry.LeftHand != null)
+                    presentation.ApplyCounterTurnPose(0f, CleanupVesselAttached);
+                return;
+            }
             changingWipePatch = false;
             counterTravelElapsedSeconds = 0f;
             if (isInitialized && presentation != null) ReleaseAll();
@@ -857,6 +877,7 @@ namespace BarPromenade
         public void Initialize(BarDrinkShopController controller) => shop = controller;
         private void LateUpdate()
         {
+            if (shop != null && !shop.IsBartenderAvailableForService) return;
             BarDrinkMenuPresentation menu = shop != null ? shop.MenuPresentation : null;
             if (menu != null && menu.IsVisible && menu.IsFollowingCarrier) menu.RefreshCarrierPose();
         }
@@ -874,6 +895,7 @@ namespace BarPromenade
         private BarBartenderAssetRegistry registry;
         private BarDrinkShopController shop;
         private BarBartenderPresentation presentation;
+        private BarBartenderServiceChoreography choreography;
         private bool initialized;
 
         public void Initialize(
@@ -887,11 +909,17 @@ namespace BarPromenade
                 ? shopController
                 : throw new ArgumentNullException(nameof(shopController));
             presentation = GetComponent<BarBartenderPresentation>();
+            choreography = GetComponent<BarBartenderServiceChoreography>();
             initialized = true;
         }
 
         private void LateUpdate()
         {
+            if (choreography != null && choreography.IsCleaningPatronDrink)
+            {
+                choreography.RefreshCleanupContact();
+                return;
+            }
             BarDrinkServiceView service = shop != null
                 ? shop.ServiceView
                 : null;
@@ -980,6 +1008,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            if (shop != null && !shop.IsBartenderAvailableForService) return;
             BarDrinkServiceView service = shop != null
                 ? shop.ServiceView
                 : null;

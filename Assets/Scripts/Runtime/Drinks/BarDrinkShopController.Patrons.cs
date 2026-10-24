@@ -208,7 +208,8 @@ namespace BarPromenade
         private bool AdvancePatronService(float deltaTime)
         {
             if (!IsPatronServiceActive) return false;
-            if (GameTimeScaleRuntime.IsPaused || bartenderPresentation != null && !bartenderPresentation.IsTowelServiceReady) return true;
+            if (GameTimeScaleRuntime.IsPaused || !IsBartenderAvailableForService ||
+                bartenderPresentation != null && !bartenderPresentation.IsTowelServiceReady) return true;
             if (patronCupReturnPending)
             {
                 if (AdvancePatronCupReturn(deltaTime)) FinishCounterPatronService(true);

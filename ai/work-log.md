@@ -7,8 +7,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 BarBusinessHours owns daily admission and deterministic hourly attendance.
 Crowd creates only present visit-owned guests; real doorway/aisle transit,
-continuous seat/stand contacts and carried vessels replace a fixed full cast.
-The drinking owner restores final typed grip before the crowd transfers it;
+continuous seat/stand contacts replace a fixed full cast.
+The drinking owner restores final contacts before crowd ownership changes;
 hinge motion syncs collision before casts. Partial speech/service bindings
 preserve unaffected owners and hero docks. Closing finishes active exchanges
 without fresh ones, drains accepted orders,
@@ -20,6 +20,15 @@ BarBusinessHoursPlayModeTests passed schedule/start selection, actual occupancy
 transit, typed handoff, accepted service after closing, refusal/free exit and
 facade restoration/visible dimming. Time card/closed feedback, bar attendance
 and open/closed facade Game views reviewed after actual shader readiness.
+Departing guests release their actual supported vessel and leave empty-handed.
+Dirty docks stay reserved until the bartender collects counter/table/booth
+vessels through the left opening, carries the same prop and stows it out of sight.
+One bounded background FIFO yields before pickup or finishes a held return;
+accepted service waits for physical availability. Pause/disable/teardown retain
+ownership; cleanup continues after closing. Existing rigs/materials/effects reused.
+BarPatronCleanupPlayModeTests passed retained support/empty-hand exit, original
+typed pickup/carry, collision-clear routes, pause, hidden stow, dirty-slot release
+and accepted hero service. Counter/table/booth Game views reviewed.
 check-docs and scoped diff passed.
 
 ## 2026-10-24
