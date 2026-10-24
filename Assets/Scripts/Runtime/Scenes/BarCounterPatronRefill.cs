@@ -4,6 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>The existing counter glass empties through real sips and requests one queued refill.</summary>
+    [DisallowMultipleComponent]
     public sealed class BarCounterPatronRefill : MonoBehaviour
     {
         private BarPatronDrinkingArmPose drinking;
@@ -12,11 +13,13 @@ namespace BarPromenade
         private bool requestSubmitted;
         private float waitingElapsed;
         private float fill = 1f;
+        private int serviceSlot = -1;
         public float DepletionPerSipSecond { get; private set; }
         public float FillProgress => fill;
         public bool IsWaitingForRefill { get; private set; }
         public bool IsRefilling { get; private set; }
         public bool IsAttentionActive { get; private set; }
+        public bool HasAcceptedService => requestSubmitted || IsRefilling;
         public float AttentionElapsedSeconds { get; private set; }
         public int AttentionCount { get; private set; }
         public int CompletedRefills { get; private set; }
@@ -26,11 +29,19 @@ namespace BarPromenade
 
         public void Configure(BarPatronDrinkingArmPose owner, BarDrinkShopController service, int slot)
         {
+            if (serviceSlot >= 0)
+            {
+                if (drinking != owner || shop != service || serviceSlot != slot)
+                    throw new InvalidOperationException("A counter refill cannot be rebound to a different guest or place.");
+                return;
+            }
+            if (slot < 0 || slot > 1) throw new ArgumentOutOfRangeException(nameof(slot));
             drinking = owner != null ? owner : throw new ArgumentNullException(nameof(owner));
             shop = service != null ? service : throw new ArgumentNullException(nameof(service));
             if (drinking.DrinkProp?.Vessel == null) throw new InvalidOperationException("Counter refills require the existing glass.");
             DepletionPerSipSecond = slot == 0 ? .11f : .073f;
             attentionDuration = owner.ConfigureCounterAttention(this);
+            serviceSlot = slot;
         }
 
         /// <summary>Production calls this from the patron clock. Tests may disable this component and drive it explicitly.</summary>
@@ -40,7 +51,18 @@ namespace BarPromenade
             if (drinking == null || GameTimeScaleRuntime.IsPaused) return;
             if (IsWaitingForRefill)
             {
-                if (IsRefilling) return;
+                if (IsRefilling || requestSubmitted) return;
+                if (!shop.IsAcceptingOrders)
+                {
+                    // Finish the existing wave through its return pose; closing never begins another one.
+                    if (IsAttentionActive)
+                    {
+                        AttentionElapsedSeconds = Mathf.Min(attentionDuration, AttentionElapsedSeconds + deltaTime);
+                        if (AttentionElapsedSeconds >= attentionDuration) IsAttentionActive = false;
+                    }
+                    waitingElapsed = 0f;
+                    return;
+                }
                 waitingElapsed += deltaTime;
                 if (IsAttentionActive)
                 {
@@ -85,6 +107,7 @@ namespace BarPromenade
 
         private void StartAttention()
         {
+            if (shop == null || !shop.IsAcceptingOrders) return;
             IsAttentionActive = true;
             AttentionElapsedSeconds = 0f;
             AttentionCount++;

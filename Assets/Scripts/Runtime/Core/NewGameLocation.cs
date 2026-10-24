@@ -34,6 +34,15 @@ namespace BarPromenade
         public static bool IsSupported(NewGameLocation location) =>
             (int)location >= 0 && (int)location < Count;
 
+        /// <summary>Only locations with an authored working day restrict launch time.</summary>
+        public static bool IsAvailableAt(NewGameLocation location, int minuteOfDay) =>
+            IsSupported(location) && minuteOfDay >= 0 && minuteOfDay < 24 * 60 &&
+            (location != NewGameLocation.Bar || BarBusinessHours.IsOpen(minuteOfDay));
+
+        public static string UnavailableMessageKey(NewGameLocation location, int minuteOfDay) =>
+            location == NewGameLocation.Bar && !BarBusinessHours.IsOpen(minuteOfDay)
+                ? "opening.location.bar_closed" : string.Empty;
+
         public static string LabelKey(NewGameLocation location)
         {
             switch (location)

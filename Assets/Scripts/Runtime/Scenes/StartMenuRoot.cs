@@ -10,8 +10,7 @@ namespace BarPromenade
     public sealed class StartMenuRoot : MonoBehaviour
     {
         /// <summary>
-        /// 07:40 for every selectable start. The village remains the first
-        /// choice; the retained Home waking opening uses its own earlier hour.
+        /// Default time before the player changes the new-game clock.
         /// </summary>
         public const int VillageMorningMinuteOfDay = NewGameStartService.MorningMinuteOfDay;
 
@@ -31,7 +30,11 @@ namespace BarPromenade
         internal static Rect MenuQuitRect =>
             new Rect(218f, 221f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
-        internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
+        internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 20f, 284f, 18f);
+        internal static Rect StartTimePanelRect => new Rect(166f, 76f, 308f, 208f);
+        internal static Rect StartTimeOptionRect(StartTimeOption option) => new Rect(178f,
+            option < StartTimeOption.Continue ? 140f + (int)option * 28f :
+                212f + ((int)option - (int)StartTimeOption.Continue) * 24f, 284f, 22f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
         internal static Rect CombatOptionRect(int index) => new Rect(166f,
             index < 3 ? 106f + index * 22f : index < 5 ? 197f + (index - 3) * 21f :
@@ -54,6 +57,10 @@ namespace BarPromenade
         public bool QuitRequested { get; private set; }
         public StartMenuOption SelectedOption => model.SelectedOption;
         public bool IsChoosingLocation => model.IsChoosingLocation;
+        public bool IsChoosingStartTime => model.IsChoosingStartTime;
+        public int SelectedStartMinuteOfDay => model.SelectedStartMinuteOfDay;
+        public StartTimeOption SelectedStartTimeOption => model.SelectedStartTimeOption;
+        public string AvailabilityMessageKey => model.AvailabilityMessageKey;
         public bool IsChoosingCombatWeapon => model.IsChoosingCombatWeapon;
         public bool IsChoosingLaboratoryEnemy => model.IsChoosingLaboratoryEnemy;
         public bool IsVocalizerActive => model.IsVocalizerActive;
@@ -122,10 +129,14 @@ namespace BarPromenade
             switch (action)
             {
                 case StartMenuAction.ChooseLocation:
+                case StartMenuAction.ChooseStartTime:
                 case StartMenuAction.ChooseCombatWeapon:
                 case StartMenuAction.ChooseLaboratoryEnemy:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return true;
+                case StartMenuAction.LocationUnavailable:
+                    RetroAudio.Play(RetroSfxId.UiCancel);
+                    return false;
                 case StartMenuAction.OpenVocalizer:
                     VocalizerLab ??= gameObject.AddComponent<RussianVocalizerLab>();
                     VocalizerLab.Open();
@@ -154,6 +165,34 @@ namespace BarPromenade
         {
             if (IsBusy || !model.SelectLocation(location)) return false;
             RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool SelectStartTime(int minuteOfDay)
+        {
+            if (IsBusy || !model.SelectStartTime(minuteOfDay)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool SelectStartTimeOption(StartTimeOption option)
+        {
+            if (IsBusy || !model.SelectStartTimeOption(option)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool AdjustStartTime(int direction)
+        {
+            if (IsBusy || !model.AdjustStartTime(direction)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool ReturnToStartTime()
+        {
+            if (IsBusy || !model.ReturnToStartTime()) return false;
+            RetroAudio.Play(RetroSfxId.UiCancel);
             return true;
         }
 
@@ -204,7 +243,8 @@ namespace BarPromenade
         {
             IsStartingNewGame = true;
             NewGameLocation location = model.SelectedLocation;
-            if (NewGameStartService.TryStart(location))
+            int minuteOfDay = model.SelectedStartMinuteOfDay;
+            if (NewGameStartService.TryStart(location, minuteOfDay))
             {
                 return true;
             }
@@ -212,6 +252,8 @@ namespace BarPromenade
             // Keep the selected destination available when loading is refused.
             IsStartingNewGame = false;
             model.Open();
+            model.Confirm();
+            model.SelectStartTime(minuteOfDay);
             model.Confirm();
             model.SelectLocation(location);
             GameLog.Warning(
@@ -245,19 +287,23 @@ namespace BarPromenade
                 return;
             }
 
-            int delta = GameInput.ReadMenuSelectionDelta(
-                GameInputContext.Menu);
+            int delta = model.IsChoosingStartTime
+                ? GameInput.ReadMenuVerticalSelectionDelta(GameInputContext.Menu)
+                : GameInput.ReadMenuSelectionDelta(GameInputContext.Menu);
             if (delta != 0)
             {
                 MoveSelection(delta);
             }
+            if (model.IsChoosingStartTime)
+                AdjustStartTime(GameInput.ReadMenuHorizontalSelectionDelta(GameInputContext.Menu));
 
             if (GameInput.WasPressed(
                     GameInputAction.Cancel,
                     GameInputContext.Menu))
             {
                 if (model.IsChoosingLaboratoryEnemy) ReturnToCombatPreparation();
-                else if (model.IsChoosingLocation || model.IsChoosingCombatWeapon) ReturnToMainMenu();
+                else if (model.IsChoosingLocation) ReturnToStartTime();
+                else if (model.IsChoosingStartTime || model.IsChoosingCombatWeapon) ReturnToMainMenu();
                 else SelectOption(StartMenuOption.Quit);
                 return;
             }
@@ -300,6 +346,11 @@ namespace BarPromenade
                 if (model.IsChoosingLocation)
                 {
                     DrawLocations(canvas);
+                    return;
+                }
+                if (model.IsChoosingStartTime)
+                {
+                    DrawStartTime(canvas);
                     return;
                 }
                 if (model.IsChoosingLaboratoryEnemy)
@@ -357,7 +408,8 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(LocationPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
             GUI.Label(new Rect(178f, 26f, 284f, 22f),
-                LocalizationService.Get("opening.choose_location"), titleStyle);
+                string.Format(LocalizationService.Get("opening.choose_location_at"),
+                    model.SelectedStartMinuteOfDay / 60, model.SelectedStartMinuteOfDay % 60), titleStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             for (int index = 0; index <= NewGameLocationCatalog.Count; index++)
             {
@@ -378,6 +430,57 @@ namespace BarPromenade
                     break;
                 }
             }
+            if (!string.IsNullOrEmpty(model.AvailabilityMessageKey))
+                GUI.Label(new Rect(178f, 316f, 284f, 22f),
+                    LocalizationService.Get(model.AvailabilityMessageKey), descriptionStyle);
+        }
+
+        private void DrawStartTime(RetroUiCanvas canvas)
+        {
+            RetroUiTheme.DrawPanel(StartTimePanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
+                false, 0f, 1f);
+            GUI.Label(new Rect(178f, 86f, 284f, 22f),
+                LocalizationService.Get("opening.choose_start_time"), titleStyle);
+            GUI.Label(new Rect(178f, 112f, 284f, 18f),
+                string.Format("{0:00}:{1:00}", model.SelectedStartMinuteOfDay / 60,
+                    model.SelectedStartMinuteOfDay % 60), titleStyle);
+            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            for (int index = 0; index < (int)StartTimeOption.Count; index++)
+            {
+                var option = (StartTimeOption)index;
+                Rect rect = StartTimeOptionRect(option);
+                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) SelectStartTimeOption(option);
+                bool selected = model.SelectedStartTimeOption == option;
+                if (selected) RetroUiTheme.DrawSelection(rect, true);
+                if (option < StartTimeOption.Continue)
+                {
+                    int value = option == StartTimeOption.Hour ? model.SelectedStartMinuteOfDay / 60 :
+                        model.SelectedStartMinuteOfDay % 60;
+                    string key = option == StartTimeOption.Hour ? "opening.start_hour" : "opening.start_minute";
+                    if (GUI.Button(new Rect(rect.x, rect.y, 32f, rect.height), "−", optionStyle))
+                    {
+                        SelectStartTimeOption(option);
+                        AdjustStartTime(-1);
+                    }
+                    GUI.Label(new Rect(rect.x + 36f, rect.y, rect.width - 72f, rect.height),
+                        string.Format(LocalizationService.Get(key), value), titleStyle);
+                    if (GUI.Button(new Rect(rect.xMax - 32f, rect.y, 32f, rect.height), "+", optionStyle))
+                    {
+                        SelectStartTimeOption(option);
+                        AdjustStartTime(1);
+                    }
+                }
+                else if (GUI.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(
+                    option == StartTimeOption.Continue ? "opening.continue" : "opening.back"),
+                    selected ? selectedStyle : optionStyle))
+                {
+                    SelectStartTimeOption(option);
+                    ConfirmSelection();
+                    break;
+                }
+            }
+            GUI.Label(new Rect(178f, 266f, 284f, 12f),
+                LocalizationService.Get("opening.start_time_controls"), descriptionStyle);
         }
 
         private void DrawCombatPreparation(RetroUiCanvas canvas)

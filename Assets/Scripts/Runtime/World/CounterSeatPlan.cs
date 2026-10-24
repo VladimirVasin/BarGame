@@ -654,18 +654,19 @@ namespace BarPromenade
         };
 
         public static IReadOnlyList<BarCounterSeatDescriptor>
-            CreateAvailable(BarInteriorLayoutPlan layout)
+            CreateAvailable(BarInteriorLayoutPlan layout,
+                System.Func<BarNpcAnchor, bool> isPresent = null)
         {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
             }
 
-            var available = new List<BarCounterSeatDescriptor>(3);
+            var available = new List<BarCounterSeatDescriptor>(5);
             for (int index = 0; index < StoolXPositions.Length; index++)
             {
                 float stoolX = StoolXPositions[index];
-                if (IsOccupied(layout.NpcAnchors, stoolX))
+                if (IsOccupied(layout.NpcAnchors, stoolX, isPresent))
                 {
                     continue;
                 }
@@ -699,7 +700,8 @@ namespace BarPromenade
 
         private static bool IsOccupied(
             IReadOnlyList<BarNpcAnchor> npcAnchors,
-            float stoolX)
+            float stoolX,
+            System.Func<BarNpcAnchor, bool> isPresent)
         {
             if (npcAnchors == null)
             {
@@ -710,6 +712,7 @@ namespace BarPromenade
             {
                 BarNpcAnchor anchor = npcAnchors[index];
                 if (anchor.Role == BarNpcRole.CounterPatron &&
+                    (isPresent == null || isPresent(anchor)) &&
                     Mathf.Abs(anchor.Position.x - stoolX) <= 0.30f &&
                     Mathf.Abs(anchor.Position.z - StoolZ) <= 0.30f)
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -131,6 +132,7 @@ namespace BarPromenade
             Vector3 signOffset =
                 signAnchor.position - doorAnchor.position;
 
+            var groundWindows = new List<Renderer>();
             foreach (BarPartBinding binding in registry.Parts)
             {
                 Renderer renderer = binding?.Renderer;
@@ -169,6 +171,10 @@ namespace BarPromenade
                 part.SetParent(destination, true);
                 ApplyAppearance(binding, renderer);
                 CitySurfaceLibrary.ApplyBarFacade(renderer, binding.SourceName);
+                if (binding.Role == "exterior_window_ground")
+                {
+                    groundWindows.Add(renderer);
+                }
 
                 if (sign && markerComponent != null)
                 {
@@ -181,6 +187,9 @@ namespace BarPromenade
                 }
             }
 
+            var hours = new GameObject($"Bar {barId} Window Hours");
+            hours.transform.SetParent(parent, false);
+            hours.AddComponent<BarFacadeHoursPresentation>().Initialize(groundWindows);
             Object.DestroyImmediate(instance);
         }
 

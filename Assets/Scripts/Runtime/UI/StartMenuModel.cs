@@ -22,8 +22,12 @@ namespace BarPromenade
         CombatTest = 5,
         ChooseCombatWeapon = 6,
         ChooseLaboratoryEnemy = 7,
-        OpenVocalizer = 8
+        OpenVocalizer = 8,
+        ChooseStartTime = 9,
+        LocationUnavailable = 10
     }
+
+    public enum StartTimeOption { Hour, Minute, Continue, Back, Count }
 
     public enum CombatPreparationOption
     {
@@ -54,6 +58,10 @@ namespace BarPromenade
 
         public StartMenuOption SelectedOption { get; private set; }
         public bool IsCommitted { get; private set; }
+        public bool IsChoosingStartTime { get; private set; }
+        public int SelectedStartMinuteOfDay { get; private set; }
+        public StartTimeOption SelectedStartTimeOption { get; private set; }
+        public string AvailabilityMessageKey { get; private set; } = string.Empty;
         public bool IsChoosingLocation { get; private set; }
         public bool IsChoosingCombatWeapon { get; private set; }
         public bool IsChoosingLaboratoryEnemy { get; private set; }
@@ -67,7 +75,8 @@ namespace BarPromenade
             SelectedCombatLoadout, SelectedCombatMode, SelectedCombatEncounterSettings, SelectedLaboratoryEnemy);
         public CombatWeaponId SelectedCombatWeapon => SelectedCombatLoadout.InitialHeld;
         public CombatPreparationOption SelectedCombatOption { get; private set; }
-        public bool IsBackSelected => IsChoosingLaboratoryEnemy ? laboratoryEnemyBackSelected :
+        public bool IsBackSelected => IsChoosingStartTime ? SelectedStartTimeOption == StartTimeOption.Back :
+            IsChoosingLaboratoryEnemy ? laboratoryEnemyBackSelected :
             IsChoosingLocation && SelectedLocation == NewGameLocation.Count ||
             IsChoosingCombatWeapon && SelectedCombatOption == CombatPreparationOption.Back;
         public int CombatOptionCount => CombatOptions.Length;
@@ -91,6 +100,10 @@ namespace BarPromenade
         {
             SelectedOption = StartMenuOption.NewGame;
             IsCommitted = false;
+            IsChoosingStartTime = false;
+            SelectedStartMinuteOfDay = NewGameStartService.MorningMinuteOfDay;
+            SelectedStartTimeOption = StartTimeOption.Continue;
+            AvailabilityMessageKey = string.Empty;
             IsChoosingLocation = false;
             IsChoosingCombatWeapon = false;
             IsChoosingLaboratoryEnemy = false;
@@ -139,10 +152,11 @@ namespace BarPromenade
                 return false;
             }
 
-            int count = IsChoosingLaboratoryEnemy ? LaboratoryEnemyCount + 1 :
+            int count = IsChoosingStartTime ? (int)StartTimeOption.Count :
+                IsChoosingLaboratoryEnemy ? LaboratoryEnemyCount + 1 :
                 IsChoosingLocation ? (int)NewGameLocation.Count + 1 :
                 IsChoosingCombatWeapon ? CombatOptionCount : (int)StartMenuOption.Count;
-            int selected = IsChoosingLaboratoryEnemy ?
+            int selected = IsChoosingStartTime ? (int)SelectedStartTimeOption : IsChoosingLaboratoryEnemy ?
                 laboratoryEnemyBackSelected ? LaboratoryEnemyCount : (int)SelectedLaboratoryEnemy :
                 IsChoosingLocation ? (int)SelectedLocation :
                 IsChoosingCombatWeapon ? Array.IndexOf(CombatOptions, SelectedCombatOption) : (int)SelectedOption;
@@ -152,12 +166,17 @@ namespace BarPromenade
                 next += count;
             }
 
-            if (IsChoosingLaboratoryEnemy)
+            if (IsChoosingStartTime) SelectedStartTimeOption = (StartTimeOption)next;
+            else if (IsChoosingLaboratoryEnemy)
             {
                 laboratoryEnemyBackSelected = next == LaboratoryEnemyCount;
                 if (!laboratoryEnemyBackSelected) SelectedLaboratoryEnemy = (CombatEnemyKind)next;
             }
-            else if (IsChoosingLocation) SelectedLocation = (NewGameLocation)next;
+            else if (IsChoosingLocation)
+            {
+                SelectedLocation = (NewGameLocation)next;
+                AvailabilityMessageKey = string.Empty;
+            }
             else if (IsChoosingCombatWeapon) FocusCombatOption(CombatOptionAt(next));
             else SelectedOption = (StartMenuOption)next;
             return true;
@@ -165,7 +184,7 @@ namespace BarPromenade
 
         public bool SelectOption(StartMenuOption option)
         {
-            if (IsCommitted || IsVocalizerActive || IsChoosingLocation || IsChoosingCombatWeapon ||
+            if (IsCommitted || IsVocalizerActive || IsChoosingStartTime || IsChoosingLocation || IsChoosingCombatWeapon ||
                 option < StartMenuOption.NewGame ||
                 option >= StartMenuOption.Count ||
                 SelectedOption == option)
@@ -182,11 +201,51 @@ namespace BarPromenade
             if (IsCommitted || !IsChoosingLocation || location < NewGameLocation.AlpineVillage ||
                 location >= NewGameLocation.Count || location == SelectedLocation) return false;
             SelectedLocation = location;
+            AvailabilityMessageKey = string.Empty;
+            return true;
+        }
+
+        public bool SelectStartTime(int minuteOfDay)
+        {
+            if (IsCommitted || !IsChoosingStartTime || minuteOfDay < 0 || minuteOfDay >= 24 * 60 ||
+                SelectedStartMinuteOfDay == minuteOfDay) return false;
+            SelectedStartMinuteOfDay = minuteOfDay;
+            AvailabilityMessageKey = string.Empty;
+            return true;
+        }
+
+        public bool SelectStartTimeOption(StartTimeOption option)
+        {
+            if (IsCommitted || !IsChoosingStartTime || option < StartTimeOption.Hour ||
+                option >= StartTimeOption.Count || SelectedStartTimeOption == option) return false;
+            SelectedStartTimeOption = option;
+            return true;
+        }
+
+        public bool AdjustStartTime(int direction)
+        {
+            if (direction == 0 || IsCommitted || !IsChoosingStartTime) return false;
+            int hour = SelectedStartMinuteOfDay / 60;
+            int minute = SelectedStartMinuteOfDay % 60;
+            if (SelectedStartTimeOption == StartTimeOption.Hour) hour = (hour + Math.Sign(direction) + 24) % 24;
+            else if (SelectedStartTimeOption == StartTimeOption.Minute) minute = (minute + Math.Sign(direction) + 60) % 60;
+            else return false;
+            return SelectStartTime(hour * 60 + minute);
+        }
+
+        public bool ReturnToStartTime()
+        {
+            if (IsCommitted || !IsChoosingLocation) return false;
+            IsChoosingLocation = false;
+            IsChoosingStartTime = true;
+            SelectedStartTimeOption = StartTimeOption.Continue;
+            AvailabilityMessageKey = string.Empty;
             return true;
         }
 
         public bool SelectBack()
         {
+            if (IsChoosingStartTime) return SelectStartTimeOption(StartTimeOption.Back);
             if (IsChoosingLaboratoryEnemy)
             {
                 if (IsCommitted || laboratoryEnemyBackSelected) return false;
@@ -236,11 +295,13 @@ namespace BarPromenade
 
         public bool ReturnToMainMenu()
         {
-            if (IsCommitted || (!IsChoosingLocation && !IsChoosingCombatWeapon && !IsVocalizerActive)) return false;
+            if (IsCommitted || (!IsChoosingStartTime && !IsChoosingLocation && !IsChoosingCombatWeapon && !IsVocalizerActive)) return false;
             SelectedOption = IsVocalizerActive ? StartMenuOption.Vocalizer :
                 IsChoosingCombatWeapon ? SelectedCombatMode == CombatTestMode.Laboratory ?
                 StartMenuOption.Laboratory : StartMenuOption.CombatTest : StartMenuOption.NewGame;
             IsChoosingLocation = false;
+            IsChoosingStartTime = false;
+            AvailabilityMessageKey = string.Empty;
             IsChoosingCombatWeapon = false;
             IsChoosingLaboratoryEnemy = false;
             IsVocalizerActive = false;
@@ -281,12 +342,35 @@ namespace BarPromenade
                 return back ? StartMenuAction.Back : StartMenuAction.ChooseCombatWeapon;
             }
 
-            if (IsChoosingLocation)
+            if (IsChoosingStartTime)
             {
                 if (IsBackSelected)
                 {
                     ReturnToMainMenu();
                     return StartMenuAction.Back;
+                }
+                if (SelectedStartTimeOption != StartTimeOption.Continue)
+                {
+                    AdjustStartTime(1);
+                    return StartMenuAction.ChooseStartTime;
+                }
+                IsChoosingStartTime = false;
+                IsChoosingLocation = true;
+                return StartMenuAction.ChooseLocation;
+            }
+
+            if (IsChoosingLocation)
+            {
+                if (IsBackSelected)
+                {
+                    ReturnToStartTime();
+                    return StartMenuAction.Back;
+                }
+                if (!NewGameLocationCatalog.IsAvailableAt(SelectedLocation, SelectedStartMinuteOfDay))
+                {
+                    AvailabilityMessageKey = NewGameLocationCatalog.UnavailableMessageKey(
+                        SelectedLocation, SelectedStartMinuteOfDay);
+                    return StartMenuAction.LocationUnavailable;
                 }
                 IsCommitted = true;
                 return StartMenuAction.NewGame;
@@ -317,9 +401,10 @@ namespace BarPromenade
             switch (SelectedOption)
             {
                 case StartMenuOption.NewGame:
-                    IsChoosingLocation = true;
+                    IsChoosingStartTime = true;
+                    SelectedStartTimeOption = StartTimeOption.Continue;
                     SelectedLocation = NewGameLocation.AlpineVillage;
-                    return StartMenuAction.ChooseLocation;
+                    return StartMenuAction.ChooseStartTime;
                 case StartMenuOption.CombatTest:
                     OpenCombatPreparation(new CombatTestSelection(SelectedCombatLoadout, warehouseMode,
                         SelectedCombatEncounterSettings, SelectedLaboratoryEnemy));

@@ -393,6 +393,34 @@
       "value": "Выберите локацию"
     },
     {
+      "key": "opening.choose_location_at",
+      "value": "Место начала — {0:00}:{1:00}"
+    },
+    {
+      "key": "opening.choose_start_time",
+      "value": "Время начала дня"
+    },
+    {
+      "key": "opening.start_hour",
+      "value": "Часы: {0:00}"
+    },
+    {
+      "key": "opening.start_minute",
+      "value": "Минуты: {0:00}"
+    },
+    {
+      "key": "opening.continue",
+      "value": "Далее"
+    },
+    {
+      "key": "opening.start_time_controls",
+      "value": "W/S — выбор · A/D — изменить · Enter — подтвердить"
+    },
+    {
+      "key": "opening.location.bar_closed",
+      "value": "Бар закрыт. Часы работы: 12:00–02:00."
+    },
+    {
       "key": "opening.back",
       "value": "Назад"
     },
@@ -559,6 +587,10 @@
     {
       "key": "interaction.enter_bar",
       "value": "E — войти в бар"
+    },
+    {
+      "key": "interaction.bar_closed",
+      "value": "Закрыто. Открывается в 12:00."
     },
     {
       "key": "interaction.exit_bar",

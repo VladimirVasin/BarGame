@@ -54,7 +54,8 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Fish3:regularfoes/spawn0;gate;ammo/bays;L3broken;dust→settle;A*/capsule. | `Warehouse*`,`CombatTestRoot.Navigation` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
-| New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
+| New-game starting place | Time then twelve starts; day1, default07:40; closed Bar shows hours. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
+| Bar hours and crowd | Daily12-02, hourly3-8; real entry/exit, partial pairs, occupied docks; accepted service finishes. | `BarBusinessHours`, `BarCrowdController`, `BarInteriorRoot` | Current |
 | Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -229,7 +230,7 @@ Earlier rows: [superseded snapshot](archive/systems-map-2026-09-06.md).
 ```text
 MainMenu (index 0)
   -> Combat Test -> kit + Standard/Endless -> start/reset/kit/menu
-  -> New Game -> twelve locations/Back -> confirm -> day 1, 07:40
+  -> New Game -> time (default07:40) -> twelve locations/Back -> available confirm -> day1/selectedtime
      -> area/scene loading -> chosen root; village lane-foot is default
 Retained Home opening (unreached): 05:59 -> Wake/Quit -> 06:00 -> Home -> City
 

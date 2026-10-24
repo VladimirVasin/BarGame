@@ -3,6 +3,25 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-25
+
+BarBusinessHours owns daily admission and deterministic hourly attendance.
+Crowd creates only present visit-owned guests; real doorway/aisle transit,
+continuous seat/stand contacts and carried vessels replace a fixed full cast.
+The drinking owner restores final typed grip before the crowd transfers it;
+hinge motion syncs collision before casts. Partial speech/service bindings
+preserve unaffected owners and hero docks. Closing finishes active exchanges
+without fresh ones, drains accepted orders,
+preserves drinks/exit, fades music and dims only lower facade glazing.
+Time selection precedes locations; unavailable Bar reports hours before session
+or clock mutation. Selected time starts day one; legacy waking stays.
+All effects groups reviewed; existing providers retained, cost unmeasured.
+BarBusinessHoursPlayModeTests passed schedule/start selection, actual occupancy
+transit, typed handoff, accepted service after closing, refusal/free exit and
+facade restoration/visible dimming. Time card/closed feedback, bar attendance
+and open/closed facade Game views reviewed after actual shader readiness.
+check-docs and scoped diff passed.
+
 ## 2026-10-24
 
 Russian NPC/E/dialogue/approved hero lines share bounded source/filter vocalization;

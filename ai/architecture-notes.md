@@ -1,6 +1,37 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-25 — daily bar hours and attendance:** The user accepted
+  `12:00–02:00` service and time-dependent attendance, excluding hero/bartender:
+  `12–16`:3–4, `16–19`:4–6, `19–23`:6–8, `23–01`:4–6, `01–02`:3–4; closed:0.
+  `BarBusinessHours` owns admission and a seed/day/hour target stable on quick
+  returns. `BarCrowdController` moves toward it through the real door, one guest
+  at a time, retaining the visit-owned default appearance and actual vessel.
+  Only settled guests enter the actual cast, speech and ambience; vacant counter
+  docks become available, and the hero's active dock stays reserved. Departure
+  waits for the pair exchange, accepted service and the current attention wave.
+  Closing admits no new guest exchange; the active one and accepted-order comments finish.
+  `RefreshPatrons` withdraws only affected guest roles/pair ownership, preserving
+  other pairs and bartender state. Solitary guests remain silent; broken present
+  rigs still fail. Counter refill rebinding preserves stable left/right slots.
+  Entrance and menu/repeat/refill admission share the clock, including final
+  gesture/payment validation. Closing drains accepted orders; served drinks,
+  normal cleanup and exit remain available. Music fades; work light/ventilation
+  continue. The only exception to story §20's always-lit facade is the bar's
+  ground-floor glazing dimming outside hours; upstairs windows and the entrance
+  landmark stay lit. Daily closing neither advances nor represents story closing.
+  All 24 effects categories retain existing providers; no new model, material,
+  speech pool or supernatural signal. Bounded slots, one transit and cached
+  references limit recurring work; runtime cost remains unmeasured. Story §6
+  records the exception; §16/21/nine art checks remain binding.
+- **Accepted 2026-10-25 — choose new-game time before location:** The user
+  requested a time picker before the existing location page. `07:40` remains
+  its initial selection; the chosen valid minute starts day one without elapsed
+  needs. Back retains that choice. Closed Bar is labelled/refused with a silent
+  message before commitment, reset, clock mutation or scene loading; availability
+  uses `BarBusinessHours`. `StartMenuModel`, `NewGameLocationCatalog` and
+  `NewGameStartService` share the selection/admission contract. No forced evening
+  override, new journey, gamepad requirement, spoken line/pool or story event.
 - **Accepted 2026-10-24 — translucent dialogue panels:** The user requested
   translucent dialogue windows. `RetroUiTheme.DialoguePanelOpacity` shares `72%`
   across overhead speech panels/tails and the dialogue choice panel/selection.
@@ -1067,7 +1098,9 @@
 - **Accepted architecture exception — 2026-09-11, selectable new-game start:**
   Location page: twelve starts, nine roots + City docks/cannery + ski lodge;
   village first/default. Back returns to card; mouse/keyboard/gamepad select.
-  Confirm resets session, day `1`/`07:40` without elapsed needs, area/scene load.
+  Confirm resets session at the selected minute of day `1`, without elapsed
+  needs, then loads the area/scene; time selection and admission follow the
+  accepted `2026-10-25` contract.
   No prologue/ride/arrival/lore/new route. §6 revises `2026-09-09` fixed-village
   start only; §16/§21/nine art checks/legacy waking stay.
   `NewGameLocationCatalog`/`NewGameStartService`: selection/bootstrap; City/Bar/
@@ -4271,7 +4304,8 @@
   launch path:** One §6 registry row lifts four rules together: story bible
   §15 «Пролог», §20 «Время», §2 «Дорога наверх собрана целиком» and art bible
   §10g «Порог и ориентиры». `MainMenu` remains index `0`, black field/card.
-  Village is the default choice: `GameTimeState.TryStartAt` sets day `1`/`07:40`,
+  Village is the default place: `GameTimeState.TryStartAt` sets day `1` at the
+  menu's selected minute (time selection/admission: `2026-10-25`),
   never advances needs; `AreaLoading` Single-loads without a directed travel
   illustration. `AreaArrivalToken.Default` uses `lane_foot`, two metres up the
   lane facing the mother's house, without cabin/ride/arrival.

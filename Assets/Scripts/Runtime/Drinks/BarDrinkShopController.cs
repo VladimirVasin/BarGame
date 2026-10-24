@@ -148,6 +148,8 @@ namespace BarPromenade
         public event Action<BarDrinkShopController> Closed;
 
         public bool IsOpen { get; private set; }
+        /// <summary>Business hours gate new orders; IsOpen remains the seated/menu session lifetime.</summary>
+        public bool IsAcceptingOrders => BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay);
         public int SelectedIndex { get; private set; }
         public string FeedbackKey { get; private set; } = string.Empty;
         public IReadOnlyList<BarDrinkOffer> Offers =>
@@ -1086,7 +1088,7 @@ namespace BarPromenade
 
         public bool Open(PlayerInteractor interactor)
         {
-            if (IsOpen ||
+            if (!CheckBusinessHours() || IsOpen ||
                 interactor == null ||
                 Offers.Count == 0 ||
                 (counterSeatView != null &&
@@ -1213,6 +1215,8 @@ namespace BarPromenade
                 return false;
             }
 
+            if (!CheckBusinessHours()) return false;
+
             if (UsesPhysicalMenu) return BeginMenuOrderRequest();
 
             return CommitSelection();
@@ -1220,6 +1224,8 @@ namespace BarPromenade
 
         private bool CommitSelection()
         {
+            // Revalidate at the cash transaction as well as at menu input.
+            if (!CheckBusinessHours()) return false;
             pendingOrder = null;
             DrinkPurchaseResult result = GameSessionState.TryPurchaseDrink(SelectedOffer.DrinkId);
             if (!result.Succeeded)
@@ -1277,6 +1283,22 @@ namespace BarPromenade
             inputUnlockFrame = int.MaxValue;
             ApplyCurrentPresentation();
             return true;
+        }
+
+        private bool CheckBusinessHours()
+        {
+            if (IsAcceptingOrders)
+            {
+                if (FeedbackKey == "interaction.bar_closed")
+                {
+                    FeedbackKey = string.Empty;
+                    counterMenuHint?.ClearStatus();
+                }
+                return true;
+            }
+            FeedbackKey = "interaction.bar_closed";
+            counterMenuHint?.ShowStatus(FeedbackKey);
+            return false;
         }
 
         private void PrepareOrderedDrinkPresentation()
@@ -1842,6 +1864,12 @@ namespace BarPromenade
                 CounterMenuInput.IsBlockedByOtherUi())
             {
                 counterMenuHint.Hide();
+                return;
+            }
+
+            if (!IsAcceptingOrders)
+            {
+                counterMenuHint.ShowStatus("interaction.bar_closed");
                 return;
             }
 

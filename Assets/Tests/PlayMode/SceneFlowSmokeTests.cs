@@ -980,6 +980,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator BarInteriorScene_BootstrapsPlayerAndSingleExitOnly()
         {
+            BarTestTime.StartFullAttendance("bar-smoke-test");
             GameSessionState.EnterBar("bar-smoke-test");
 
             BarInteriorRoot interiorRoot = null;
@@ -1335,7 +1336,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CounterStation.SeatView, Is.Not.Null);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(3));
+                Has.Length.EqualTo(5));
             Assert.That(interiorRoot.CounterStations, Has.Count.EqualTo(3));
             Transform drinkOrderPoint =
                 interiorRoot.Room.Find("Drink Order Point");
@@ -1516,6 +1517,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator BarInterior_KeepsActivityFlavouredLayoutsWithoutMinigames()
         {
             const string barId = "bar-beer-pong-smoke-test";
+            BarTestTime.StartFullAttendance(barId);
             GameSessionState.EnterBar(
                 barId,
                 BarActivityKind.BeerPong);
@@ -1555,12 +1557,13 @@ namespace BarPromenade.Tests.PlayMode
                 part.name.StartsWith("TinctureMatch Console", StringComparison.Ordinal)), Is.False);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(3));
+                Has.Length.EqualTo(5));
         }
 
         [UnityTest]
         public IEnumerator EnterAndExitBar_ReturnsToSameBarInSameCity()
         {
+            BarTestTime.StartOpen();
             CityGameRoot firstCity = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
                 SceneIds.City,

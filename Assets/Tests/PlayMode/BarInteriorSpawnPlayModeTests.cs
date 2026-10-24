@@ -71,6 +71,8 @@ namespace BarPromenade.Tests.PlayMode
             // Short compact-room routes still need samples through the full
             // contact interval, independent of cold shader/render stalls.
             Time.captureDeltaTime = 1f / 60f;
+            GameSessionState.BeginNewGame("bar-spawn-test");
+            BarTestTime.StartFullAttendance("bar-spawn-test");
             GameSessionState.EnterBar("bar-spawn-test", BarActivityKind.SplitTheG,
                 CityDistrictKind.Residential);
             yield return null;

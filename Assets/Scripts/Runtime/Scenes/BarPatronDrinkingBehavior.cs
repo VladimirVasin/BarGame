@@ -657,22 +657,7 @@ namespace BarPromenade
             // A manually evaluated Animator still owns its native transform
             // write stage after Update. Keep time on Advanced, but publish
             // these final contacts after that stage, as the bartender does.
-            measuredTorsoLeanBackDegrees = 0f;
-            measuredHeadLeanBackDegrees = 0f;
-            restHeadMotionDegrees = 0f;
-            if (conversationLookBound) conversationLook.Restore();
-            if (tableLean)
-            {
-                ApplyTablePose();
-            }
-            else
-            {
-                ApplyCounterPose();
-            }
-
-            if (CounterRefill == null || !CounterRefill.IsRefilling) PlaceBottle();
-            ApplyFingerGrip();
-            ApplyCounterAttentionWave();
+            ApplyFinalContacts(true);
             if (conversationPartner != null && CanConverse)
             {
                 if (!conversationLookBound)
@@ -692,6 +677,34 @@ namespace BarPromenade
                     RetroSfxId.DrinkGulp,
                     mouthSocket.position);
             }
+        }
+
+        /// <summary>
+        /// Restores the same final contacts before a crowd owner transfers
+        /// the live rig and vessel. Does not advance drinking, finger blends,
+        /// speech attention or audio; Update may have just sampled the base
+        /// graph since the preceding rendered contact pose.
+        /// </summary>
+        internal void SampleFinalPose()
+        {
+            // A service still owning this cup must finish before a transfer;
+            // its support-return blend advances only in ordinary LateUpdate.
+            if (CounterRefill != null && CounterRefill.IsRefilling) return;
+            ApplyFinalContacts(false);
+        }
+
+        private void ApplyFinalContacts(bool advanceFingerBlend)
+        {
+            if (!isInitialized) return;
+            measuredTorsoLeanBackDegrees = 0f;
+            measuredHeadLeanBackDegrees = 0f;
+            restHeadMotionDegrees = 0f;
+            if (conversationLookBound) conversationLook.Restore();
+            if (tableLean) ApplyTablePose();
+            else ApplyCounterPose();
+            if (CounterRefill == null || !CounterRefill.IsRefilling) PlaceBottle();
+            ApplyFingerGrip(advanceFingerBlend);
+            ApplyCounterAttentionWave();
         }
 
         private void ApplyCounterPose()
@@ -1202,24 +1215,14 @@ namespace BarPromenade
             isInitialized = true;
             // The graph owns the clock; LateUpdate owns final hand contacts.
             presentation.Advanced += OnPresentationAdvanced;
-            if (tableLean)
-            {
-                ApplyTablePose();
-            }
-            else
-            {
-                ApplyCounterPose();
-            }
-
-            PlaceBottle();
-            ApplyFingerGrip();
+            SampleFinalPose();
         }
 
-        private void ApplyFingerGrip()
+        private void ApplyFingerGrip(bool advanceCounterBlend = true)
         {
             // The shared body sampler restores renderer defaults. Reapply
             // the actual authored curled-finger shape after the final solve.
-            handPose.SetGrip(false, CounterRightGripWeight(), gripKind);
+            handPose.SetGrip(false, CounterRightGripWeight(advanceCounterBlend), gripKind);
             handPose.SetGrip(true, 0f);
         }
 

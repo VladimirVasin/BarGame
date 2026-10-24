@@ -215,6 +215,8 @@ namespace BarPromenade.Tests.PlayMode
         [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator BarCeilingFan()
         {
+            GameSessionState.BeginNewGame("bar-capture");
+            BarTestTime.StartFullAttendance("bar-capture");
             GameSessionState.EnterBar("bar-capture", BarActivityKind.SplitTheG,
                 CityDistrictKind.Residential);
             yield return Capture(SceneIds.BarInterior, Root<BarInteriorRoot>(), new[]
@@ -235,6 +237,8 @@ namespace BarPromenade.Tests.PlayMode
                 BarActivityKind.Cocktail, BarActivityKind.SplitTheG, BarActivityKind.TinctureMatch })
                 BarInteriorLayoutValidator.ValidateOrThrow(
                     BarInteriorLayoutPlanner.Generate(47, "Test bar", activity));
+            GameSessionState.BeginNewGame("bar-capture");
+            BarTestTime.StartFullAttendance("bar-capture");
             GameSessionState.EnterBar("bar-capture", BarActivityKind.SplitTheG,
                 CityDistrictKind.Residential);
             yield return Capture(
@@ -514,6 +518,8 @@ namespace BarPromenade.Tests.PlayMode
         [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator BarMenu()
         {
+            GameSessionState.BeginNewGame("bar-menu-capture");
+            BarTestTime.StartFullAttendance("bar-menu-capture");
             GameSessionState.EnterBar("bar-menu-capture", BarActivityKind.SplitTheG,
                 CityDistrictKind.Residential);
             AsyncOperation operation = SceneManager.LoadSceneAsync(

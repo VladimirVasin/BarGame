@@ -21,7 +21,9 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator SetUp()
         {
             CloseExistingModalOwners();
+            GameSessionState.BeginNewGame();
             ResetSession();
+            BarTestTime.StartOpen();
 
             playerObject = new GameObject("Drink Shop Test Player");
             playerObject.AddComponent<CharacterController>();

@@ -19,9 +19,12 @@ namespace BarPromenade
             pendingOperationId = string.Empty;
         }
 
-        public static bool TryStart(NewGameLocation location)
+        public static bool TryStart(NewGameLocation location) => TryStart(location, MorningMinuteOfDay);
+
+        public static bool TryStart(NewGameLocation location, int minuteOfDay)
         {
-            if (!NewGameLocationCatalog.IsSupported(location) ||
+            // Availability is checked before any fresh-session or clock mutation.
+            if (!NewGameLocationCatalog.IsAvailableAt(location, minuteOfDay) ||
                 SceneTransitionService.IsTransitioning ||
                 SceneManager.GetActiveScene().name != SceneIds.MainMenu)
                 return false;
@@ -41,7 +44,7 @@ namespace BarPromenade
             ResetStatics();
             GameSessionState.BeginNewGame();
             PrepareInteriorContext(location, bar);
-            GameSessionState.TryStartGameTimeAt(MorningMinuteOfDay);
+            GameSessionState.TryStartGameTimeAt(minuteOfDay);
 
             bool accepted = isArea
                 ? AreaTravelService.Request(area)

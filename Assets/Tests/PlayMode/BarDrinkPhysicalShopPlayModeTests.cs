@@ -37,7 +37,9 @@ namespace BarPromenade.Tests.PlayMode
                 GraphicsEffectsSettings.DepthOfFieldEnabled;
             GraphicsEffectsSettings.DepthOfFieldEnabled = true;
             CloseExistingModalOwners();
+            GameSessionState.BeginNewGame();
             ResetSession();
+            BarTestTime.StartOpen();
 
             worldObject = new GameObject("Physical Drink Shop Test World");
             BarInteriorLayoutPlan layout =

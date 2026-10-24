@@ -36,8 +36,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Advances the guests' idle and seated loops. They go nowhere: a
-    /// bar crowd is a tableau, not a simulation.
+    /// Advances settled guests; the crowd owner separately advances a guest in transit.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarPatronAnimator : MonoBehaviour
@@ -54,6 +53,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (GameTimeScaleRuntime.IsPaused) return;
             float deltaTime = Time.deltaTime;
             for (int index = 0; index < patrons.Count; index++)
             {
@@ -129,62 +129,83 @@ namespace BarPromenade
         };
 
         public static IReadOnlyList<BarPatron> Build(
-            Transform parent,
-            BarInteriorLayoutPlan layout,
-            Transform room)
+            Transform parent, BarInteriorLayoutPlan layout, Transform room)
         {
-            if (parent == null)
+            Visit visit = CreateVisit(parent, layout, room);
+            var patrons = new List<BarPatron>(visit.Count);
+            for (int slot = 0; slot < visit.Count; slot++)
             {
-                throw new ArgumentNullException(nameof(parent));
+                BarPatron patron = visit.Create(slot);
+                if (patron != null) patrons.Add(patron);
             }
+            visit.Root.gameObject.AddComponent<BarPatronAnimator>().Initialize(patrons);
+            GameLog.Info("bar", "patrons_built", GameLog.Field("patron_count", patrons.Count),
+                GameLog.Field("seated_count", CountSeated(patrons)));
+            return patrons;
+        }
 
-            if (layout == null)
-            {
-                throw new ArgumentNullException(nameof(layout));
-            }
-
+        /// <summary>One bounded visit allocation; absent slots do not instantiate bodies or vessels.</summary>
+        public static Visit CreateVisit(Transform parent, BarInteriorLayoutPlan layout, Transform room)
+        {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (room == null) throw new ArgumentNullException(nameof(room));
-            var surfaces = new Dictionary<string, Renderer>(StringComparer.Ordinal)
-            {
-                { "counter", RequireSurface(room, "Counter Top") },
-                { "booth-1", RequireSurface(room, "Booth Table Top 1") },
-                { "booth-2", RequireSurface(room, "Booth Table Top 2") },
-                { "pub-table-left-front", RequireSurface(room, "Social Pub Table 1") },
-                { "pub-table-right-front", RequireSurface(room, "Social Pub Table 2") }
-            };
+            return new Visit(parent, layout, room);
+        }
 
-            var patrons = new List<BarPatron>(layout.NpcAnchors.Count);
-            Transform root = new GameObject(RootName).transform;
-            root.SetParent(parent, false);
+        public sealed class Visit
+        {
+            private readonly BarInteriorLayoutPlan layout;
+            private readonly BarNpcAnchor[] anchors;
+            private readonly Dictionary<string, Renderer> surfaces;
+            private readonly IReadOnlyList<DefaultNpcPopulation.Assignment> visitors;
+            private readonly BarPatronDrinkPropKind[] drinkKinds;
+            private readonly CityPedestrianAssetRegistry clipDonor;
+            private readonly AnimationClip counterDrinkClip;
+            private readonly Transform root;
 
-            int visitorCount = 0;
-            for (int index = 0; index < layout.NpcAnchors.Count; index++)
-                if (layout.NpcAnchors[index].Role != BarNpcRole.Bartender) visitorCount++;
-            BarPatronDrinkPropKind[] drinkKinds = AllocateDrinkKinds(visitorCount);
-            IReadOnlyList<DefaultNpcPopulation.Assignment> visitors =
-                DefaultNpcPopulation.AllocateVisitGroup("bar.visitors", visitorCount,
-                    DefaultNpcPopulation.AnyCatalogModel,
-                    new DefaultNpcPopulation.SlotConstraint("apron", new string[] { null }),
-                    new DefaultNpcPopulation.SlotConstraint("gloves", null, "gloves.work"),
-                    new DefaultNpcPopulation.SlotConstraint("scarf", null, "scarf.warm"),
-                    new DefaultNpcPopulation.SlotConstraint("headwear", null,
-                        "headwear.everyday", "headwear.work", "headwear.warm"));
-            CityPedestrianAssetRegistry clipDonor =
-                CityPedestrianResources.LoadStreetClipDonor();
-            if (clipDonor == null || clipDonor.SitClip == null)
-                throw new InvalidOperationException("Bar visitors require the shared seated clip donor.");
-            int patronIndex = 0;
-            AnimationClip counterDrinkClip = LoadCafeDrinkClip();
-            for (int index = 0; index < layout.NpcAnchors.Count; index++)
+            internal Visit(Transform parent, BarInteriorLayoutPlan plan, Transform room)
             {
-                BarNpcAnchor anchor = layout.NpcAnchors[index];
-                if (anchor.Role == BarNpcRole.Bartender)
+                layout = plan;
+                surfaces = new Dictionary<string, Renderer>(StringComparer.Ordinal)
                 {
-                    continue;
-                }
+                    { "counter", RequireSurface(room, "Counter Top") },
+                    { "booth-1", RequireSurface(room, "Booth Table Top 1") },
+                    { "booth-2", RequireSurface(room, "Booth Table Top 2") },
+                    { "pub-table-left-front", RequireSurface(room, "Social Pub Table 1") },
+                    { "pub-table-right-front", RequireSurface(room, "Social Pub Table 2") }
+                };
+                var slots = new List<BarNpcAnchor>(BarBusinessHours.MaximumGuests);
+                for (int index = 0; index < layout.NpcAnchors.Count; index++)
+                    if (layout.NpcAnchors[index].Role != BarNpcRole.Bartender)
+                        slots.Add(layout.NpcAnchors[index]);
+                anchors = slots.ToArray();
+                root = new GameObject(RootName).transform;
+                root.SetParent(parent, false);
+                drinkKinds = AllocateDrinkKinds(anchors.Length);
+                visitors = anchors.Length == 0 ? Array.Empty<DefaultNpcPopulation.Assignment>() :
+                    DefaultNpcPopulation.AllocateVisitGroup("bar.visitors", anchors.Length,
+                        DefaultNpcPopulation.AnyCatalogModel,
+                        new DefaultNpcPopulation.SlotConstraint("apron", new string[] { null }),
+                        new DefaultNpcPopulation.SlotConstraint("gloves", null, "gloves.work"),
+                        new DefaultNpcPopulation.SlotConstraint("scarf", null, "scarf.warm"),
+                        new DefaultNpcPopulation.SlotConstraint("headwear", null,
+                            "headwear.everyday", "headwear.work", "headwear.warm"));
+                clipDonor = CityPedestrianResources.LoadStreetClipDonor();
+                if (clipDonor == null || clipDonor.SitClip == null)
+                    throw new InvalidOperationException("Bar visitors require the shared seated clip donor.");
+                counterDrinkClip = LoadCafeDrinkClip();
+            }
 
+            public Transform Root => root;
+            public int Count => anchors.Length;
+            public BarNpcAnchor GetAnchor(int slot) => anchors[slot];
+
+            public BarPatron Create(int slot)
+            {
+                BarNpcAnchor anchor = anchors[slot];
                 CityPedestrianAssetRegistry registry = CityPedestrianDefaultNpcBody.Create(
-                    root, visitors[patronIndex++], clipDonor);
+                    root, visitors[slot], clipDonor);
                 if (!CityPedestrianResources.TryGetArchetype(
                         registry.DesignId,
                         out CityPedestrianArchetype archetype))
@@ -228,7 +249,7 @@ namespace BarPromenade
                         GameLog.Field("anchor", anchor.Id),
                         GameLog.Field("design", registry.DesignId));
                     UnityEngine.Object.Destroy(registry.gameObject);
-                    continue;
+                    return null;
                 }
 
                 if (seated)
@@ -248,10 +269,10 @@ namespace BarPromenade
                         presentation,
                         counterDrinkClip,
                         layout,
-                        patronIndex,
+                        slot + 1,
                         surfaces["counter"],
-                        drinkKinds[patronIndex - 1] == BarPatronDrinkPropKind.Bottle
-                            ? BarPatronDrinkPropKind.ShotGlass : drinkKinds[patronIndex - 1]);
+                        drinkKinds[slot] == BarPatronDrinkPropKind.Bottle
+                            ? BarPatronDrinkPropKind.ShotGlass : drinkKinds[slot]);
                 }
                 else if (anchor.Role == BarNpcRole.StandingPatron ||
                          anchor.Role == BarNpcRole.SeatedPatron)
@@ -265,29 +286,13 @@ namespace BarPromenade
                         registry,
                         presentation,
                         layout,
-                        patronIndex,
+                        slot + 1,
                         surfaces[surfaceId],
                         booth,
-                        drinkKinds[patronIndex - 1]);
+                        drinkKinds[slot]);
                 }
-                patrons.Add(new BarPatron(
-                    anchor,
-                    registry,
-                    presentation,
-                    seated,
-                    drinking));
+                return new BarPatron(anchor, registry, presentation, seated, drinking);
             }
-
-            var animator = root.gameObject.AddComponent<BarPatronAnimator>();
-            animator.Initialize(patrons);
-            GameLog.Info(
-                "bar",
-                "patrons_built",
-                GameLog.Field("patron_count", patrons.Count),
-                GameLog.Field(
-                    "seated_count",
-                    CountSeated(patrons)));
-            return patrons;
         }
 
         private static bool TrySeat(

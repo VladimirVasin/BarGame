@@ -101,6 +101,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator DebugWindow_ReplacesPrecommitServiceButNotCommittedPour()
         {
+            BarTestTime.StartOpen();
             Assert.That(shop.Open(player.Interactor), Is.True);
             Assert.That(shop.IsServing, Is.False);
 

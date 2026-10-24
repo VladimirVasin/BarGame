@@ -4,6 +4,8 @@ namespace BarPromenade
 {
     public sealed class BarEntrance : MonoBehaviour, IInteractable
     {
+        public const string ClosedFeedbackKey = "interaction.bar_closed";
+
         public string BarId { get; private set; } = string.Empty;
         public BarActivityKind BarActivity { get; private set; } =
             BarActivityKind.None;
@@ -13,7 +15,9 @@ namespace BarPromenade
             BarDistrictIdentityCatalog.FallbackDistrict;
 
         public Vector3 ReturnPosition { get; private set; }
-        public string PromptKey => "interaction.enter_bar";
+        public string PromptKey => BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay)
+            ? "interaction.enter_bar"
+            : ClosedFeedbackKey;
         public Vector3 InteractionPosition => transform.position;
 
         public void Configure(string barId, Vector3 returnPosition)
@@ -93,6 +97,8 @@ namespace BarPromenade
                 return;
             }
 
+            if (RefuseWhenClosed(interactor)) return;
+
             PlayerDoorActionTarget doorAction =
                 GetComponent<PlayerDoorActionTarget>();
             if (!doorAction.TryBegin(
@@ -105,6 +111,10 @@ namespace BarPromenade
 
         private void CompleteDoorAction(PlayerInteractor interactor)
         {
+            // Closing may arrive while the hero is reaching for the handle.
+            // Refuse before the transition or session context acquires anything.
+            if (RefuseWhenClosed(interactor)) return;
+
             PlayerMotor motor = interactor == null
                 ? null
                 : interactor.GetComponent<PlayerMotor>();
@@ -129,6 +139,14 @@ namespace BarPromenade
                 accepted,
                 operationId,
                 accepted ? "accepted" : "transition_rejected");
+        }
+
+        private bool RefuseWhenClosed(PlayerInteractor interactor)
+        {
+            if (BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay)) return false;
+            interactor?.ShowFeedback(ClosedFeedbackKey, LockedDoorInteraction.ResponseDurationSeconds);
+            LogResult(false, string.Empty, "bar_closed");
+            return true;
         }
 
         private void LogResult(

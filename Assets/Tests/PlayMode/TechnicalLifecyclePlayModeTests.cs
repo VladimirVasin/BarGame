@@ -54,6 +54,8 @@ namespace BarPromenade.Tests.PlayMode
 
             yield return CaptureStartMenuPages(menu);
             Assert.That(menu.ConfirmSelection(), Is.True);
+            Assert.That(menu.IsChoosingStartTime, Is.True);
+            Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.IsChoosingLocation, Is.True);
             Assert.That(menu.SelectedLocation, Is.EqualTo(NewGameLocation.AlpineVillage));
             Assert.That(menu.IsStartingNewGame, Is.False);
@@ -110,6 +112,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu, Is.Not.Null);
             if (location == NewGameLocation.SkiLodge)
                 yield return CaptureStartMenuPages(menu, location);
+            Assert.That(menu.ConfirmSelection(), Is.True);
+            Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.SelectLocation(location), Is.True);
             Assert.That(menu.SelectedLocation, Is.EqualTo(location));
@@ -234,6 +238,9 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Assert.That(menu.IsChoosingLocation, Is.False);
                     yield return CaptureStartMenuFrame("main-" + language);
+                    Assert.That(menu.ConfirmSelection(), Is.True);
+                    Assert.That(menu.IsChoosingStartTime, Is.True);
+                    yield return CaptureStartMenuFrame("time-" + language);
                     Assert.That(menu.ConfirmSelection(), Is.True);
                     Assert.That(menu.IsChoosingLocation, Is.True);
                     Assert.That(menu.IsStartingNewGame, Is.False);

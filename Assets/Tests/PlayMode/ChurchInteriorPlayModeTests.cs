@@ -140,6 +140,8 @@ namespace BarPromenade.Tests.PlayMode
             StartMenuRoot menu = UnityEngine.Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
             Assert.That(menu.ConfirmSelection(), Is.True);
+            Assert.That(menu.IsChoosingStartTime, Is.True);
+            Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.SelectLocation(NewGameLocation.Church), Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             yield return WaitUntil(

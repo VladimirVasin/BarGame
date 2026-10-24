@@ -2,7 +2,6 @@
 
 Status: **Current**. Accepted user decision `2026-10-21`: the bartender uses
 `DefaultNpcCatalog.OrdinaryWorker` through `DefaultNpcFactory.CreateForCharacter`.
-Former bespoke models, providers, sources and regeneration/import paths are removed.
 
 ## 1. Active character contract
 
@@ -18,9 +17,8 @@ No bespoke body/wardrobe.
 ## 2. Model and asset pipeline
 
 `BarBartenderWorldBuilder` creates the catalog worker at the layout anchor.
-`BarBartenderAssetRegistry` adapts its live bones, Animator, grip sockets and
-clips to the bar role. It releases the default presentation's animation graph
-before the service graph takes ownership. Shared cafe service clips come from
+`BarBartenderAssetRegistry` adapts live bones, Animator, sockets and clips,
+releasing the default graph before service takes ownership. Shared cafe clips come from
 `MountainRoadCafeCast`; locomotion comes from the default actor. Shared hand-prop
 geometry supplies the removable service towel.
 `build-player-bar-repeat-actions.py` exports the bone-only
@@ -91,16 +89,23 @@ hand contacts; the bartender torso has an absolute 38-degree tilt cap. Menu
 and drink docks align with the selected stool. Hands blend back out on
 completion or cleanup.
 
-`BarBartenderServiceQueue` gives hero/two counter guests deduplicated FIFO slots;
+`BarBartenderServiceQueue` gives hero/present counter guests deduplicated FIFO slots;
 one service runs. `BarCounterPatronRefill` drains cups during sips at distinct
 seeded rates. Empty guests wave left and wait without sipping/tapping.
 The right arm stays bent: slides the empty mug toward the server for pickup,
 then returns to support. After tap refill it grips and pulls the same full mug
 back to its original dock before FIFO release. Other cups wait for their bottle.
-Attention uses final left-arm IK; fingers ease open after handoff. Other six
-loops stay. Pause freezes service; teardown releases ownership.
-Requests keep one look/nod. Shared speech follows accepted/delivered events;
-physical service continues independently.
+Attention uses final left-arm IK; fingers ease open after handoff. Other present
+guests keep their loops. Pause freezes service; teardown releases ownership.
+Requests keep one look/nod. Shared speech follows accepted/delivered events
+independently of physical service.
+
+Daily service runs `12:00–02:00` (`2026-10-25`). `IsAcceptingOrders` gates new,
+repeat and NPC refill requests, rechecking after the gesture before payment.
+`IsOpen` retains the seated session: accepted orders finish, served drinks remain
+drinkable, cleanup and exit stay available. Departure waits for the pair exchange,
+accepted service and the current wave's return. Incremental refill binding uses
+stable counter-place IDs without resetting existing guests.
 
 Hero pickup, sip and return use the continuous production world rig and the
 existing nested interaction. `BarPlayerDrinkReach` applies the final torso and
@@ -159,8 +164,8 @@ on its unscaled clock, freezes with pause and clears with scene teardown.
 
 ## 5. Verification contract
 
-`BarBartenderAssetTests` covers the catalog worker, shared clips and two-hand
-adapter. `BarInteriorSpawnPlayModeTests` covers grounded arrival, readable menu,
+`BarBartenderAssetTests`: catalog worker, shared clips, two-hand adapter.
+`BarInteriorSpawnPlayModeTests`: grounded arrival, readable menu,
 wipe contact/travel, both free arms, fan placement/speed, resting-menu clearance
 or physical towel stow, patch-to-patch Walk, and physical beer/bottle service.
 Initial-menu and same-drink coverage measure the forward-visible left wave before either tap, horizontal palm,

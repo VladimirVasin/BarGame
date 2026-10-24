@@ -7,6 +7,11 @@ namespace BarPromenade
     public sealed class BarInteriorRoot : MonoBehaviour
     {
         private string activeBarId = string.Empty;
+        private readonly List<BarCounterStation> allCounterStations = new List<BarCounterStation>(5);
+        private readonly List<BarCounterStation> availableCounterStations = new List<BarCounterStation>(5);
+        private readonly Dictionary<string, BarCounterStation> patronCounterStations =
+            new Dictionary<string, BarCounterStation>(System.StringComparer.Ordinal);
+        private int lastBusinessMinute = -1;
 
         public bool IsInitialized { get; private set; }
         public BarInteriorLayoutPlan Layout { get; private set; }
@@ -20,6 +25,8 @@ namespace BarPromenade
         public BarInteriorAtmosphere Atmosphere { get; private set; }
         public BarLightingPresentation Lighting { get; private set; }
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
+        public BarCrowdController Crowd { get; private set; }
+        public bool IsBusinessOpen => BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay);
         public BarConversationController Conversation { get; private set; }
 
         /// <summary>
@@ -187,6 +194,7 @@ namespace BarPromenade
             BuildCounterStation(follow);
             BuildExit();
             BuildNpcCrowd(camera);
+            ApplyBusinessHours();
             IsInitialized = true;
             if (!NewGameStartService.TryConsumeArrival(NewGameLocation.Bar))
                 BuildArrivalPresentation(camera, follow);
@@ -415,7 +423,10 @@ namespace BarPromenade
             // The sprite crowd is retired: the production 3D
             // pedestrians take the same authored anchors, and the
             // dedicated pass finally fills the bartender's spot.
-            Patrons = BarPatronWorldBuilder.Build(transform, Layout, Room);
+            Crowd = gameObject.AddComponent<BarCrowdController>();
+            Crowd.Initialize(Room, Layout, unchecked((int)Layout.StableSeed),
+                IsPatronDockAvailable, CanPatronDepart);
+            Patrons = Crowd.Patrons;
             Bartender = BarBartenderWorldBuilder.TryBuild(
                 transform,
                 Layout,
@@ -440,6 +451,51 @@ namespace BarPromenade
                 Conversation.Initialize(Patrons, Bartender, DrinkShop, Player.GameObject.transform,
                     camera, transform, Layout, unchecked((int)Layout.StableSeed));
             }
+            Crowd.PresenceChanged += RefreshCrowdPresence;
+            RefreshCrowdPresence();
+        }
+
+        private bool IsPatronDockAvailable(string id) =>
+            !patronCounterStations.TryGetValue(id, out BarCounterStation station) ||
+            station.Seat == null || !station.Seat.OwnsActiveInteraction;
+
+        private bool CanPatronDepart(BarPatron patron) =>
+            (Conversation == null || Conversation.CanPatronLeave(patron)) &&
+            (patron.Refill == null || DrinkShop == null || DrinkShop.CanPatronLeave(patron.Refill));
+
+        private void RefreshCrowdPresence()
+        {
+            if (Crowd == null) return;
+            Patrons = Crowd.Patrons;
+            DrinkShop?.ConfigureCounterPatronService(Patrons);
+            Conversation?.RefreshPatrons(Patrons);
+            Soundscape?.ConfigureAttendance(Patrons);
+            availableCounterStations.Clear();
+            foreach (BarCounterStation station in allCounterStations)
+            {
+                bool occupied = false;
+                foreach (KeyValuePair<string, BarCounterStation> pair in patronCounterStations)
+                    if (pair.Value == station && Crowd.IsAnchorOccupied(pair.Key)) { occupied = true; break; }
+                if (!occupied) availableCounterStations.Add(station);
+            }
+            CounterStation = availableCounterStations.Count > 0 ? availableCounterStations[0] : null;
+        }
+
+        private void ApplyBusinessHours()
+        {
+            lastBusinessMinute = GameSessionState.GameMinuteOfDay;
+            Music?.SetPlaybackSuppressed(!IsBusinessOpen);
+        }
+
+        private void Update()
+        {
+            if (IsInitialized && lastBusinessMinute != GameSessionState.GameMinuteOfDay)
+                ApplyBusinessHours();
+        }
+
+        private void OnDestroy()
+        {
+            if (Crowd != null) Crowd.PresenceChanged -= RefreshCrowdPresence;
         }
 
         private void BuildArrivalPresentation(
@@ -488,8 +544,7 @@ namespace BarPromenade
         private void BuildCounterStation(PlayerCameraFollow follow)
         {
             IReadOnlyList<BarCounterSeatDescriptor> descriptors =
-                BarCounterSeatPlanner.CreateAvailable(Layout);
-            var stations = new List<BarCounterStation>(descriptors.Count);
+                BarCounterSeatPlanner.CreateAvailable(Layout, _ => false);
             Transform cameraAnchor = Room.Find("HeroCamera");
             Transform cameraLookAnchor = Room.Find("HeroCameraLook");
             for (int index = 0; index < descriptors.Count; index++)
@@ -547,11 +602,21 @@ namespace BarPromenade
                     follow,
                     descriptor.ServiceLocalOffset,
                     descriptor.MirrorServiceHorizontally);
-                stations.Add(counterStation);
+                string patronAnchor = null;
+                foreach (BarNpcAnchor anchor in Layout.NpcAnchors)
+                    if (anchor.Role == BarNpcRole.CounterPatron &&
+                        Mathf.Abs(anchor.Position.x - descriptor.SeatTopLocalPosition.x) <= .3f)
+                    { patronAnchor = anchor.Id; break; }
+                string occupiedAnchor = patronAnchor;
+                counterStation.SetAvailability(() => Crowd == null || occupiedAnchor == null ||
+                    !Crowd.IsAnchorOccupied(occupiedAnchor));
+                if (patronAnchor != null) patronCounterStations.Add(patronAnchor, counterStation);
+                allCounterStations.Add(counterStation);
+                availableCounterStations.Add(counterStation);
             }
 
-            CounterStations = stations.AsReadOnly();
-            CounterStation = stations.Count > 0 ? stations[0] : null;
+            CounterStations = availableCounterStations.AsReadOnly();
+            CounterStation = availableCounterStations.Count > 0 ? availableCounterStations[0] : null;
 
             // The authored sign belonged to the former single privileged
             // seat. Keep older generated prefabs loadable, but never render

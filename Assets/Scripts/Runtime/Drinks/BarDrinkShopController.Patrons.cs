@@ -57,19 +57,29 @@ namespace BarPromenade
         public void ConfigureCounterPatronService(IReadOnlyList<BarPatron> patrons)
         {
             if (patrons == null) throw new ArgumentNullException(nameof(patrons));
-            int slot = 0;
+            int occupiedSlots = 0;
             foreach (BarPatron patron in patrons)
             {
                 if (patron.Anchor.Role != BarNpcRole.CounterPatron || patron.Drinking == null) continue;
-                if (slot >= 2) throw new InvalidOperationException("The shared bar service supports its two authored counter patrons.");
-                BarCounterPatronRefill refill = patron.Drinking.gameObject.AddComponent<BarCounterPatronRefill>();
-                refill.Configure(patron.Drinking, this, slot++);
+                int slot = patron.Anchor.Id == BarConversationCatalog.RoleId(BarConversationCatalog.CounterLeft) ? 0 :
+                    patron.Anchor.Id == BarConversationCatalog.RoleId(BarConversationCatalog.CounterRight) ? 1 : -1;
+                if (slot < 0 || (occupiedSlots & (1 << slot)) != 0)
+                    throw new InvalidOperationException("The shared bar service supports one visitor at each authored counter place.");
+                occupiedSlots |= 1 << slot;
+                BarCounterPatronRefill refill = patron.Drinking.GetComponent<BarCounterPatronRefill>();
+                if (refill == null) refill = patron.Drinking.gameObject.AddComponent<BarCounterPatronRefill>();
+                refill.Configure(patron.Drinking, this, slot);
             }
         }
 
+        /// <summary>Accepted orders drain before a guest can stand and leave, also after closing.</summary>
+        public bool CanPatronLeave(BarCounterPatronRefill patron) => patron == null ||
+            !patron.HasAcceptedService && !patron.IsAttentionActive &&
+            !ReferenceEquals(activePatronRefill, patron) && !serviceQueue.Contains(patron);
+
         public bool QueuePatronRefill(BarCounterPatronRefill patron)
         {
-            if (patron == null || !patron.IsWaitingForRefill) return false;
+            if (!IsAcceptingOrders || patron == null || !patron.IsWaitingForRefill) return false;
             bool existing = serviceQueue.Contains(patron);
             bool accepted = serviceQueue.RequestPatron(patron, () => BeginCounterPatronService(patron));
             if (accepted && !existing)

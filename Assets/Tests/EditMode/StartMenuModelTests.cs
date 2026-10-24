@@ -19,6 +19,8 @@ namespace BarPromenade.Tests.EditMode
                 model.SelectedOption,
                 Is.EqualTo(StartMenuOption.NewGame));
             Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.IsChoosingStartTime, Is.False);
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(7 * 60 + 40));
             Assert.That(model.IsChoosingLocation, Is.False);
             Assert.That(model.IsChoosingCombatWeapon, Is.False);
             Assert.That(model.IsVocalizerActive, Is.False);
@@ -80,14 +82,20 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Confirm_ChoosesALocationBeforeStartingTheRunOnce()
+        public void Confirm_ChoosesTimeAndLocationBeforeStartingTheRunOnce()
         {
             var model = new StartMenuModel();
             model.Open();
 
             Assert.That(
                 model.Confirm(),
+                Is.EqualTo(StartMenuAction.ChooseStartTime));
+            Assert.That(model.IsChoosingStartTime, Is.True);
+            Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.SelectLocation(NewGameLocation.Cannery), Is.False);
+            Assert.That(model.Confirm(),
                 Is.EqualTo(StartMenuAction.ChooseLocation));
+            Assert.That(model.IsChoosingStartTime, Is.False);
             Assert.That(model.IsChoosingLocation, Is.True);
             Assert.That(model.IsCommitted, Is.False, "Opening the picker must not latch the new game.");
             Assert.That(model.SelectedLocation, Is.EqualTo(NewGameLocation.AlpineVillage));
@@ -122,6 +130,7 @@ namespace BarPromenade.Tests.EditMode
             var model = new StartMenuModel();
             model.Open();
             model.Confirm();
+            model.Confirm();
             Assert.That(model.MoveSelection(-1), Is.True);
             Assert.That(model.IsBackSelected, Is.True);
             Assert.That(model.MoveSelection(1), Is.True);
@@ -133,8 +142,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.IsBackSelected, Is.True);
             if (confirmBack) Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.Back));
-            else Assert.That(model.ReturnToMainMenu(), Is.True);
+            else Assert.That(model.ReturnToStartTime(), Is.True);
             Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.IsChoosingStartTime, Is.True);
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseLocation));
@@ -188,6 +198,47 @@ namespace BarPromenade.Tests.EditMode
                     "combat.weapon.switching", "combat.mode.title", "combat.mode.standard", "combat.mode.endless" })
                     Assert.That(values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value), Is.True, key);
             }
+        }
+
+        [Test]
+        public void LocationAvailability_OnlyBarUsesAnAuthoredWorkingDay()
+        {
+            for (int index = 0; index < NewGameLocationCatalog.Count; index++)
+            {
+                NewGameLocation location = NewGameLocationCatalog.Get(index);
+                foreach (int minute in new[] { 0, 120, 460, 720, 1080, 1439 })
+                    Assert.That(NewGameLocationCatalog.IsAvailableAt(location, minute),
+                        Is.EqualTo(location != NewGameLocation.Bar || BarBusinessHours.IsOpen(minute)),
+                        location.ToString());
+                Assert.That(NewGameLocationCatalog.IsAvailableAt(location, -1), Is.False);
+                Assert.That(NewGameLocationCatalog.IsAvailableAt(location, 1440), Is.False);
+            }
+        }
+
+        [Test]
+        public void TimeNavigation_WrapsBothFieldsAndBackReturnsToMainMenu()
+        {
+            var model = new StartMenuModel();
+            model.Open();
+            model.Confirm();
+            Assert.That(model.SelectedStartTimeOption, Is.EqualTo(StartTimeOption.Continue));
+            Assert.That(model.SelectStartTime(0), Is.True);
+            Assert.That(model.MoveSelection(-1), Is.True);
+            Assert.That(model.SelectedStartTimeOption, Is.EqualTo(StartTimeOption.Minute));
+            Assert.That(model.AdjustStartTime(-1), Is.True);
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(59));
+            Assert.That(model.MoveSelection(-1), Is.True);
+            Assert.That(model.AdjustStartTime(-1), Is.True);
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(1439));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseStartTime));
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(59));
+            Assert.That(model.SelectStartTime(-1), Is.False);
+            Assert.That(model.SelectStartTime(1440), Is.False);
+            Assert.That(model.SelectBack(), Is.True);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.Back));
+            Assert.That(model.IsChoosingStartTime, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
+            Assert.That(model.SelectStartTime(720), Is.False);
         }
 
         [TestCase(StartMenuOption.Quit, StartMenuAction.Quit)]
@@ -436,7 +487,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(StartMenuOption.NewGame));
             Assert.That(
                 model.Confirm(),
-                Is.EqualTo(StartMenuAction.ChooseLocation));
+                Is.EqualTo(StartMenuAction.ChooseStartTime));
         }
 
         [Serializable]

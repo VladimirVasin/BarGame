@@ -62,8 +62,9 @@ cemetery:own interiors/returns.
   retires request, reload keeps bag. Empty hands/silent hero/no choice;
   Cat/dinner/news remain outside this MVP.
 - `MainMenu`:index0/EditorPlay;NewGame/Combat/OldArena/Quit;
-  12starts:9story,City docks-cannery,lodge;village first/default;Back;mouse-keys-pad.
-  `NewGameStartService`:day1/07:40;areas AreaLoading/6interiors direct;
+  Time first (default07:40), then12starts:9story,City docks-cannery,lodge;village default.
+  Mouse/keyboard; existing pad kept. Back retains time; closed Bar shows hours/no commit.
+  `NewGameStartService`:day1/selected time;areas AreaLoading/6interiors direct;
   no door-prologue-ride-cabin-arrival-travelart.
 - Village:lane foot/2m above stationthreshold→mother;Lodge:3m beforeentry→door.
   Else rootspawn;City home-return/docks-cannery pedestrian-clear.
@@ -121,7 +122,7 @@ cemetery:own interiors/returns.
 - Home F9: reversible apartment day `1–7` and City-at-home/map.
   Opening/contextual/door/modal owners block it;
   map button retains the one-shot arrival request consumed after transition;
-- one session clock starts at `07:40`/day `1` when the starting place is confirmed
+- one session clock starts at the selected time (default `07:40`)/day `1` when an available starting place is confirmed
   and persists through Single-mode scene loads.
   The retained Home opening still holds it frozen at `05:59` until its Wake or
   the accepted Home debug city-map skip sets it to `06:00`. It advances on
@@ -2644,13 +2645,22 @@ cemetery:own interiors/returns.
 
 ### People, diagnostics and money
 
-- eight transient default NPC visitors: each entry uses the shared catalog/
+- `BarBusinessHours`: daily12:00 inclusive–02:00 exclusive; new entrance/order/repeat/refill
+  reject after closing. Accepted FIFO service/served drinks finish; exit stays free.
+  No plot closure/event advances. New-game location validation shares these hours.
+  Hourly deterministic day/bar target:12–16=3–4,16–19=4–6,19–23=6–8,
+  23–01=4–6,01–02=3–4; closed0, excluding bartender/hero.
+  `BarCrowdController` reserves eight visit appearances/slots, instantiates only present
+  guests, moves one through the real hinged door/aisle at a time, blends shared rig
+  seat endpoints and carries the same vessel. Active speech/service finish before
+  departure; occupied/recovering hero docks stay reserved. No in-room spawn/fade.
+- up to eight transient default NPC visitors: each entry uses the shared catalog/
   body/face/hair/wardrobe allocator anew, without permanent IDs or changes to
   permanent characters. Appearances do not repeat within the visit.
   Four sit on opposed booth `0.48 m` seats, two at counter X-1.65/1.05 on
   cafe `0.8175 m` stools, and two stand at pub-table edges. Placement and
   actions stay local; the default body adapter owns shared rig compatibility.
-  All eight drink. Each entry independently shuffles a balanced
+  Present guests drink. Each entry independently shuffles a balanced
   Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared service assets.
   `BarPatronDrinkProp` caches physical grip/rim/base/bounds and typed sip/torso
   profiles. Counter `CafeManDrink` and booth seated graphs stay. Seeded
@@ -2684,19 +2694,24 @@ cemetery:own interiors/returns.
   The same arm hides/reveals it behind the back; rear contact gates service.
   Free right palm braces/repositions/notices; occupied IK/Walk/towel win.
   Central-tap beer/three bottle routes live; mixing/multi-bottle remain deferred;
-- `BarConversationController`: counter/two booth pairs and bartender; two shared views.
+- `BarConversationController`: present counter/two booth pairs and bartender; two shared views.
+  Absent partner suspends that pair only; refresh releases its lines/declarations.
+  Closing finishes active exchanges without new ones; accepted-order comments remain.
   Separate-table patrons silent; ≤4 lines; A→B/no repeats. Short waits/bounded tokens.
   Rest/contact gates; pause freezes, WC/range/exit cancel. Foam awaits state;
 - the soundscape keeps one diffuse occupied-room bed, then places two
   independent `8 s` mono murmur pockets at the real booth and social-table
-  groups. One fully spatial World voice moves between those groups and the
+  groups, their gains easing with actual attendance; empty pockets receive no crowd cue.
+  Closing fades/pauses the jukebox through its existing mix; work lighting/ventilation stay.
+  City/Home bar ground glazing dims outside hours; upstairs/landmark stay readable.
+  One fully spatial World voice moves between occupied groups and the
   counter for glass, chair, bottle and short wordless crowd events every
   `4.5–8 s`. Together with the grille-owned theme and its close cabinet
   texture, these six bed sources remain wordless. Speech adds no mixer
   bus or global reverb. The same jukebox owns three
   slow, gain-linked emissive channels for its panel and side tubes; the
   interaction flash is composed by that single presentation writer;
-- one exit and one ordinary-drink counter station remain authoritative; the
+- one exit and five permanent counter adapters expose three to five actually free stools; the
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. There is no bar-visited mechanic and no planned bar route on
   the map: bars are numbered markers with names, nothing more;

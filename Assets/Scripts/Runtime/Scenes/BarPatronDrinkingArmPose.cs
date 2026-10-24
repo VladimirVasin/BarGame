@@ -100,11 +100,11 @@ namespace BarPromenade
                 1f, .995f, true);
         }
 
-        private float CounterRightGripWeight()
+        private float CounterRightGripWeight(bool advanceBlend)
         {
             if (CounterRefill == null) return 1f;
             float target = CounterRefill.IsRefilling && !counterCupOfferAttached ? 0f : 1f;
-            if (!GameTimeScaleRuntime.IsPaused)
+            if (advanceBlend && !GameTimeScaleRuntime.IsPaused)
                 counterRightGripWeight = Mathf.MoveTowards(counterRightGripWeight, target,
                     Mathf.Max(0f, Time.deltaTime) / .25f);
             return counterRightGripWeight;

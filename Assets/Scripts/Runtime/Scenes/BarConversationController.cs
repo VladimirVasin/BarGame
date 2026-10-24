@@ -36,6 +36,7 @@ namespace BarPromenade
         private readonly Transform[] heads = new Transform[BartenderRole + 1];
         private readonly BarPatronDrinkingArmPose[] drinkers = new BarPatronDrinkingArmPose[BartenderRole];
         private readonly string[] voices = new string[BartenderRole + 1];
+        private readonly BarPatron[] refreshedPatrons = new BarPatron[BartenderRole];
         private readonly Comment[] comments = new Comment[PendingCommentCapacity];
         private readonly BarSpeechVariantDeck[] commentDecks = new BarSpeechVariantDeck[BarBartenderCommentCatalog.KindCount];
         private Transform listener;
@@ -106,18 +107,6 @@ namespace BarPromenade
             random = unchecked((uint)seed) | 1u;
             for (int group = 0; group < schedules.Length; group++)
                 schedules[group] = new BarConversationSchedule(unchecked(seed + group * 15427), (BarConversationKind)group);
-            for (int role = 0; role < BartenderRole; role++)
-            {
-                BarPatron found = null;
-                for (int index = 0; index < patrons.Count; index++)
-                    if (patrons[index].Anchor.Id == BarConversationCatalog.RoleId(role)) { found = patrons[index]; break; }
-                if (found?.Registry == null || found.Registry.HeadAnchor == null || found.Drinking == null)
-                    throw new InvalidOperationException("Bar speech requires the actual visitor at " + BarConversationCatalog.RoleId(role));
-                owners[role] = found.Presentation;
-                heads[role] = found.Registry.HeadAnchor;
-                voices[role] = found.Registry.DesignId;
-                drinkers[role] = found.Drinking;
-            }
             owners[BartenderRole] = bartender;
             heads[BartenderRole] = bartender.Registry.Head;
             voices[BartenderRole] = bartender.Registry.DesignId;
@@ -128,7 +117,77 @@ namespace BarPromenade
             GuestBubbles = CreateView("Visitor Speech", camera);
             BartenderBubbles = CreateView("Bartender Speech", camera);
             IsInitialized = true;
+            RefreshPatrons(patrons);
             Connect();
+        }
+
+        /// <summary>Only settled guests speak; changing one place releases its pair without resetting other channels.</summary>
+        public void RefreshPatrons(IReadOnlyList<BarPatron> patrons)
+        {
+            if (!IsInitialized) throw new InvalidOperationException("Initialize the bar speech channel before refreshing its cast.");
+            if (patrons == null) throw new ArgumentNullException(nameof(patrons));
+            Array.Clear(refreshedPatrons, 0, refreshedPatrons.Length);
+            // Absence is valid. A present guest with a broken rig is still an authoring error.
+            for (int role = 0; role < BartenderRole; role++)
+            {
+                for (int index = 0; index < patrons.Count; index++)
+                {
+                    BarPatron found = patrons[index];
+                    if (found == null) throw new ArgumentException("The bar cast contains a null guest.", nameof(patrons));
+                    if (found.Anchor.Id != BarConversationCatalog.RoleId(role)) continue;
+                    if (refreshedPatrons[role] != null)
+                        throw new InvalidOperationException("Two visitors occupy " + BarConversationCatalog.RoleId(role));
+                    if (found.Registry == null || found.Presentation == null || found.Registry.HeadAnchor == null || found.Drinking == null)
+                        throw new InvalidOperationException("Bar speech requires the actual visitor at " + BarConversationCatalog.RoleId(role));
+                    refreshedPatrons[role] = found;
+                }
+            }
+
+            int changedRoles = 0;
+            for (int role = 0; role < BartenderRole; role++)
+            {
+                BarPatron found = refreshedPatrons[role];
+                if (!ReferenceEquals(owners[role], found?.Presentation) ||
+                    !ReferenceEquals(heads[role], found?.Registry.HeadAnchor)) changedRoles |= 1 << role;
+            }
+            for (int group = 0; group < schedules.Length; group++)
+            {
+                if ((changedRoles & (3 << (group * 2))) == 0) continue;
+                EndLine(group);
+                schedules[group].Cancel(LifeSeconds);
+                ReservePartners(group, false);
+                cachedGroups &= ~(1 << group);
+            }
+            for (int role = 0; role < BartenderRole; role++)
+            {
+                if ((changedRoles & (1 << role)) == 0) continue;
+                GuestBubbles.WithdrawSpeaker(owners[role]);
+                BarPatron found = refreshedPatrons[role];
+                owners[role] = found?.Presentation;
+                heads[role] = found?.Registry.HeadAnchor;
+                voices[role] = found?.Registry.DesignId;
+                drinkers[role] = found?.Drinking;
+                if (subscribed) DeclareRole(role);
+            }
+            Array.Clear(refreshedPatrons, 0, refreshedPatrons.Length);
+            if (changedRoles != 0) nextAdmission = LifeSeconds;
+        }
+
+        /// <summary>A departure waits for the whole owned exchange, including its reply gap.</summary>
+        public bool CanPatronLeave(BarPatron patron)
+        {
+            if (patron == null) return false;
+            for (int role = 0; role < BartenderRole; role++)
+                if (ReferenceEquals(owners[role], patron.Presentation))
+                    return !lines[role / 2].IsActive && !schedules[role / 2].Current.HasExchange;
+            return true;
+        }
+
+        private void DeclareRole(int role)
+        {
+            if (owners[role] == null || role != BartenderRole && !BarConversationCatalog.CanSpeak(role)) return;
+            if (!View(role).DeclareSpeaker(owners[role], heads[role], voices[role], NpcEarshotProfile.Conversation))
+                throw new InvalidOperationException("The shared bar speech view refused role " + role);
         }
 
         private NpcSpeechBubbleView CreateView(string name, Camera camera)
@@ -145,11 +204,7 @@ namespace BarPromenade
         {
             if (!IsInitialized || subscribed || shop == null) return;
             for (int role = 0; role < owners.Length; role++)
-            {
-                if (role != BartenderRole && !BarConversationCatalog.CanSpeak(role)) continue;
-                if (!View(role).DeclareSpeaker(owners[role], heads[role], voices[role], NpcEarshotProfile.Conversation))
-                    throw new InvalidOperationException("The shared bar speech view refused role " + role);
-            }
+                DeclareRole(role);
             shop.ServiceOrderAccepted += OrderAccepted;
             shop.ServiceOrderDelivered += OrderDelivered;
             shop.ServiceOrderCancelled += OrderCancelled;
@@ -213,6 +268,8 @@ namespace BarPromenade
                 BarConversationSchedule schedule = schedules[group];
                 int eligible = cachedGroups & (1 << group);
                 if (schedule.Current.HasExchange && !PairReady(group)) eligible = 0;
+                // Finish an owned exchange at closing, then leave its rest free for departure.
+                if (!schedule.Current.HasExchange && !BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay)) eligible = 0;
                 // Service has its own lane. A queue never silences visitors,
                 // and the other pairs cannot delay this pair's answer.
                 BarConversationTurn turn = schedule.Advance(LifeSeconds, eligible, true);

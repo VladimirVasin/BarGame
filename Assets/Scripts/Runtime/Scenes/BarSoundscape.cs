@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -44,6 +45,39 @@ namespace BarPromenade
         private float secondCrowdGain = 1f;
         private float cueRadius = 8f;
         private float cueGain = 1f;
+        private bool attendanceConfigured;
+        private int firstGuests, secondGuests;
+        private float firstAttendance = 1f, secondAttendance = 1f;
+        private float firstAttendanceTarget = 1f, secondAttendanceTarget = 1f;
+
+        public void ConfigureAttendance(IReadOnlyList<BarPatron> patrons)
+        {
+            firstGuests = secondGuests = 0;
+            for (int index = 0; index < patrons.Count; index++)
+            {
+                string id = patrons[index].Anchor.Id;
+                if (id.StartsWith("booth-1", System.StringComparison.Ordinal) ||
+                    patrons[index].Anchor.Role == BarNpcRole.CounterPatron) firstGuests++;
+                else secondGuests++;
+            }
+            firstAttendanceTarget = Mathf.Clamp01(firstGuests / 4f);
+            secondAttendanceTarget = Mathf.Clamp01(secondGuests / 4f);
+            if (!attendanceConfigured)
+            {
+                firstAttendance = firstAttendanceTarget;
+                secondAttendance = secondAttendanceTarget;
+            }
+            attendanceConfigured = true;
+            ApplyAttendanceGain();
+        }
+
+        private void ApplyAttendanceGain()
+        {
+            if (firstCrowdSource != null)
+                firstCrowdSource.volume = FirstCrowdVolume * firstCrowdGain * firstAttendance;
+            if (secondCrowdSource != null)
+                secondCrowdSource.volume = SecondCrowdVolume * secondCrowdGain * secondAttendance;
+        }
 
         public bool IsInitialized { get; private set; }
         public bool HasPlayedCue { get; private set; }
@@ -175,6 +209,9 @@ namespace BarPromenade
             }
 
             secondsUntilNextCue -= unscaledDeltaTime;
+            firstAttendance = Mathf.MoveTowards(firstAttendance, firstAttendanceTarget, unscaledDeltaTime);
+            secondAttendance = Mathf.MoveTowards(secondAttendance, secondAttendanceTarget, unscaledDeltaTime);
+            ApplyAttendanceGain();
             if (secondsUntilNextCue <= 0f)
             {
                 PlayNextCue();
@@ -183,6 +220,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (GameTimeScaleRuntime.IsPaused || AudioListener.pause) return;
             AdvanceSoundscape(Time.unscaledDeltaTime);
         }
 
@@ -243,6 +281,10 @@ namespace BarPromenade
                     deterministicSeed,
                     cueSequence);
             cueSequence++;
+            secondsUntilNextCue = BarSoundscapeSchedule.GetCue(deterministicSeed, cueSequence).DelaySeconds;
+            if (attendanceConfigured && (firstGuests + secondGuests == 0 ||
+                cue.Kind == BarSoundscapeCueKind.CrowdReaction && firstGuests + secondGuests < 2))
+                return;
             HasPlayedCue = true;
             LastPlayedCue = cue;
 
@@ -254,11 +296,6 @@ namespace BarPromenade
             cueSource.volume =
                 CueVolume * cueGain * cue.VolumeScale;
             cueSource.Play();
-
-            secondsUntilNextCue =
-                BarSoundscapeSchedule
-                    .GetCue(deterministicSeed, cueSequence)
-                    .DelaySeconds;
         }
 
         private Vector3 ResolveCuePosition(
@@ -267,9 +304,9 @@ namespace BarPromenade
             switch (kind)
             {
                 case BarSoundscapeCueKind.ChairScrape:
-                    return firstCrowdPosition;
+                    return attendanceConfigured && firstGuests == 0 ? secondCrowdPosition : firstCrowdPosition;
                 case BarSoundscapeCueKind.CrowdReaction:
-                    return secondCrowdPosition;
+                    return attendanceConfigured && secondGuests == 0 ? firstCrowdPosition : secondCrowdPosition;
                 default:
                     return servicePosition;
             }

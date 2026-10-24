@@ -23,6 +23,7 @@ namespace BarPromenade
         private bool preparingShopSession;
         private bool ownsShopSession;
         private bool waitingForSeatExit;
+        private Func<bool> isAvailable;
 
         public string PromptKey
         {
@@ -66,6 +67,8 @@ namespace BarPromenade
         public CounterSeatInteraction Seat => seat;
         public CounterSeatView SeatView => seatView;
         public bool UsesPhysicalSeat => seat != null;
+
+        public void SetAvailability(Func<bool> available) => isAvailable = available;
 
         public void Configure(BarDrinkShopController shopController)
         {
@@ -175,7 +178,8 @@ namespace BarPromenade
 
             if (seat == null)
             {
-                return !controller.IsOpen &&
+                return controller.IsAcceptingOrders &&
+                       (isAvailable == null || isAvailable()) && !controller.IsOpen &&
                        !BarMinigameModalLock.IsAnyLocked;
             }
 
@@ -193,7 +197,8 @@ namespace BarPromenade
                        controller.CanStandAfterMenuRested;
             }
 
-            return !controller.IsOpen &&
+            return controller.IsAcceptingOrders &&
+                   (isAvailable == null || isAvailable()) && !controller.IsOpen &&
                    !BarMinigameModalLock.IsAnyLocked &&
                    IsWithinStandingReach(interactor) &&
                    seat.CanBegin();

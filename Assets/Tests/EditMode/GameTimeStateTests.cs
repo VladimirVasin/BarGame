@@ -4,6 +4,53 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class GameTimeStateTests
     {
+        [TestCase(-1, 0, 0)]
+        [TestCase(0, 4, 6)]
+        [TestCase(59, 4, 6)]
+        [TestCase(60, 3, 4)]
+        [TestCase(119, 3, 4)]
+        [TestCase(120, 0, 0)]
+        [TestCase(719, 0, 0)]
+        [TestCase(720, 3, 4)]
+        [TestCase(959, 3, 4)]
+        [TestCase(960, 4, 6)]
+        [TestCase(1139, 4, 6)]
+        [TestCase(1140, 6, 8)]
+        [TestCase(1379, 6, 8)]
+        [TestCase(1380, 4, 6)]
+        [TestCase(1439, 4, 6)]
+        [TestCase(1440, 0, 0)]
+        public void BarHours_CrossMidnightWindowAndCrowdRanges(int minuteOfDay, int minimum, int maximum)
+        {
+            bool expectedOpen = maximum > 0;
+            Assert.That(BarBusinessHours.IsOpen(minuteOfDay), Is.EqualTo(expectedOpen));
+            Assert.That(BarBusinessHours.TryGetGuestCountRange(minuteOfDay, out int actualMinimum,
+                out int actualMaximum), Is.EqualTo(expectedOpen));
+            Assert.That(actualMinimum, Is.EqualTo(minimum));
+            Assert.That(actualMaximum, Is.EqualTo(maximum));
+            for (int seed = -8; seed < 8; seed++)
+                Assert.That(BarBusinessHours.TargetGuestCount(1, minuteOfDay, seed),
+                    Is.InRange(minimum, maximum));
+        }
+
+        [Test]
+        public void BarHours_TargetIsStableWithinHourAndVariesAcrossSeedAndDay()
+        {
+            var counts = new System.Collections.Generic.HashSet<int>();
+            for (int day = 0; day < 8; day++)
+            {
+                for (int seed = -8; seed < 8; seed++)
+                {
+                    int target = BarBusinessHours.TargetGuestCount(day, 19 * 60, seed);
+                    counts.Add(target);
+                    for (int minute = 19 * 60; minute < 20 * 60; minute++)
+                        Assert.That(BarBusinessHours.TargetGuestCount(day, minute, seed), Is.EqualTo(target),
+                            "Quick re-entry and frame updates must not reroll the crowd.");
+                }
+            }
+            Assert.That(counts, Is.EquivalentTo(new[] { 6, 7, 8 }));
+        }
+
         [TestCase(1)]
         [TestCase(3)]
         [TestCase(5)]

@@ -25,7 +25,7 @@ namespace BarPromenade
         public BarRepeatGesture RepeatGesture => repeatGesture;
         public bool IsOrderRequestPending => menuOrderRequestPending || repeatRequestPending;
         public bool IsHeroServiceQueued => heroServiceQueued;
-        public bool CanRepeatServedDrink => IsOpen && UsesPhysicalMenu &&
+        public bool CanRepeatServedDrink => IsAcceptingOrders && IsOpen && UsesPhysicalMenu &&
             !IsServing && timeline != null && timeline.HasEmptyVessel &&
             repeatGesture != null && repeatGesture.CanBegin &&
             lastServedDrinkId != DrinkId.None && counterMenuModel.State == CounterMenuState.Resting &&
@@ -35,6 +35,7 @@ namespace BarPromenade
 
         private bool BeginMenuOrderRequest()
         {
+            if (!CheckBusinessHours()) return false;
             if (repeatGesture == null || !repeatGesture.CanBegin || GameTimeScaleRuntime.IsPaused) return false;
             DrinkPurchaseResult preview = DrinkPurchaseRules.Evaluate(SelectedOffer.DrinkId,
                 GameSessionState.CashBalance, GameSessionState.IntoxicationLevel,
@@ -162,6 +163,8 @@ namespace BarPromenade
 
         private bool AcceptHeroOrder(DrinkId drinkId, bool repeat)
         {
+            // The gesture can straddle closing time. An unaccepted request never takes money.
+            if (!CheckBusinessHours()) return false;
             DrinkPurchaseResult result = GameSessionState.TryOrderDrink(drinkId, out pendingOrder);
             if (!result.Succeeded)
             {
@@ -216,6 +219,7 @@ namespace BarPromenade
 
         public bool BeginRepeatDrink()
         {
+            if (!CheckBusinessHours()) return false;
             if (!CanRepeatServedDrink || !IsLookingAtRepeatVessel || repeatGesture == null ||
                 GameTimeScaleRuntime.IsPaused) return false;
             DrinkPurchaseResult preview = DrinkPurchaseRules.Evaluate(lastServedDrinkId,
@@ -251,7 +255,7 @@ namespace BarPromenade
             repeatRequestPending = false;
             // Revalidate after the physical gesture: teardown and interrupted
             // nested actions never purchase, and input cannot submit twice.
-            if (!CanRepeatServedDrink) return;
+            if (!CheckBusinessHours() || !CanRepeatServedDrink) return;
             AcceptHeroOrder(lastServedDrinkId, true);
         }
 

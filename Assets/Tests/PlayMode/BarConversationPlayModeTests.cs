@@ -27,7 +27,7 @@ namespace BarPromenade.Tests.PlayMode
             FocusGameView();
             Time.captureDeltaTime = 1f / 60f;
             GameSessionState.BeginNewGame("bar-conversation-test");
-            GameSessionState.TryStartGameTimeFromWake();
+            BarTestTime.StartFullAttendance("bar-conversation-test");
             GameSessionState.EnterBar("bar-conversation-test", BarActivityKind.SplitTheG,
                 CityDistrictKind.Residential);
             yield return SceneManager.LoadSceneAsync(SceneIds.BarInterior, LoadSceneMode.Single);
