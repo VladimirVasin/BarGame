@@ -1,34 +1,18 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// The keystrokes of every line anybody says, on a small pool of
-    /// leased positional sources.
-    ///
-    /// WHY IT IS NOT <see cref="RetroAudioService"/>. That pool is
-    /// built for events: each effect carries a `CooldownSeconds` and a
-    /// voice cap of one to three, `RetroAudio.PlayAt` has no per-play
-    /// pitch, and blips follow the shared speech cadence at a pitch chosen by the
-    /// letter. Routed through there, most of a line would be swallowed
-    /// by its own cooldown and the rest would come out at whatever the
-    /// global play counter happened to be on. Nothing in this file
-    /// enters the `RetroSfx` definitions table or its pools, so the
-    /// budget those tests pin is untouched.
-    ///
-    /// WHY THE SOURCES ARE NOT ON THE SPEAKERS. All three staged casts
-    /// — <c>CemeteryWatchmanFactory</c>, <c>SeacoastFishermanFactory</c>
-    /// and <c>LastRouteFerrymanFactory</c> — throw if their imported
-    /// model contains an `AudioSource` anywhere, and that guard is
-    /// worth keeping exactly as it is. A service host owns the sources
-    /// and moves one to the speaker's position for the length of a
-    /// line, which is the same sound with none of the ownership.
-    ///
-    /// A lease is held for a whole line rather than per blip, so a
-    /// keystroke can never steal the voice out from under the line
-    /// still being typed — the thing the pooled service cannot promise.
+    /// Shared whole-line Russian synthesis and retained non-Russian writing
+    /// clicks, on bounded leased positional sources. Immutable phone plans and
+    /// PCM rendering use pure code; Unity clips stay on the main thread.
+    /// Sources belong to this service, never staged NPC prefabs. A line's lease
+    /// cannot be stolen, and a cancelled worker cannot publish into a new line.
     /// </summary>
-    [DisallowMultipleComponent]
+    [DisallowMultipleComponent, DefaultExecutionOrder(10000)]
     public sealed class NpcSpeechVoice : MonoBehaviour
     {
         public const string RuntimeObjectName =
@@ -64,15 +48,62 @@ namespace BarPromenade
         /// world wears, a little above the raven's `2800` so the
         /// partial that tells two speakers apart survives it.</summary>
         public const float LowPassFrequencyHz = 3400f;
+        public const float VocalizerLowPassFrequencyHz = IntoxicationPerceptionRules.SpeechSoberLowPassHz;
 
         private const int SourcePriority = 178;
+        public const int MaximumSynthesisWorkers = 2;
+        public const float SynthesisWindowReserveSeconds = 0.5f;
 
         private static NpcSpeechVoice instance;
 
         private AudioSource[] sources;
+        private AudioLowPassFilter[] filters;
         private bool[] leased;
         private NpcSpeechBlipClipCache.Lease clipLease;
         private bool initialized;
+        private IntoxicationPerceptionProfile perception;
+        private SpeechLine[] lines;
+        private readonly RenderJob[] jobs = new RenderJob[MaximumSynthesisWorkers];
+
+        private sealed class SpeechLine
+        {
+            public uint Version;
+            public string Text;
+            public RussianVocalizerVoice Voice;
+            public RussianVocalizerPlan Plan;
+            public int VoiceOrdinal;
+            public AudioClip Clip;
+            public bool Requested, Ready, HasJob, Started, Paused, Finished;
+            public float LastClock = -1f;
+            public float PlayedSeconds;
+            public float TargetSeconds;
+            public int LastFrame = -1;
+            public float BaseVolume;
+            public float BaseLowPassFrequencyHz = LowPassFrequencyHz;
+            public float BasePitch = 1f;
+        }
+
+        private sealed class RenderJob
+        {
+            public int Lease;
+            public uint Version;
+            public Task<float[]> Task;
+            public CancellationTokenSource Cancellation;
+        }
+
+        public int RunningSynthesisCount
+        {
+            get { int count = 0; foreach (RenderJob job in jobs) if (job != null) count++; return count; }
+        }
+        public int ActiveSynthesizedClipCount
+        {
+            get
+            {
+                int count = 0;
+                if (lines != null) foreach (SpeechLine line in lines) if (line.Clip != null) count++;
+                return count;
+            }
+        }
 
         public static NpcSpeechVoice Instance => instance;
         public bool IsInitialized => initialized;
@@ -149,7 +180,7 @@ namespace BarPromenade
         public static int Lease()
         {
             NpcSpeechVoice service = EnsureInstalled();
-            if (service == null || service.leased == null)
+            if (service == null || !service.isActiveAndEnabled || service.leased == null)
             {
                 return -1;
             }
@@ -179,11 +210,266 @@ namespace BarPromenade
                 return;
             }
 
+            service.ClearLine(lease);
             service.leased[lease] = false;
             AudioSource source = service.sources[lease];
             if (source != null && source.isPlaying)
             {
                 source.Stop();
+            }
+        }
+
+        /// <summary>
+        /// Plan one complete phrase at admission. Only two workers can render;
+        /// waiting work lives in the fixed voice slots, never an event backlog.
+        /// Timing is fitted to the authored window in the synthesizer, so pitch
+        /// and character identity do not change when a line needs to be quicker.
+        /// </summary>
+        public static void BeginLine(int lease, int voiceOrdinal, string text, float windowSeconds)
+        {
+            NpcSpeechVoice service = instance;
+            if (service == null || !service.ValidLease(lease)) return;
+            service.ClearLine(lease);
+            SpeechLine line = service.lines[lease];
+            line.Requested = true;
+            line.VoiceOrdinal = voiceOrdinal;
+            NpcVoiceProfile profile = NpcVoiceCatalog.ProfileAt(voiceOrdinal);
+            if (!profile.IsValid || !float.IsFinite(windowSeconds) || windowSeconds <= 0f ||
+                !RussianSpeechPhonetics.HasRussianSpeech(text))
+            {
+                line.Ready = true;
+                return;
+            }
+            RussianVocalizerVoice voice = profile.VocalizerVoice;
+            double budget = Math.Max(0.05, windowSeconds - SynthesisWindowReserveSeconds);
+            line.Plan = RussianVocalizerSynthesis.Prepare(text, voice, budget);
+            if (line.Plan.SampleCount == 0) { line.Ready = true; return; }
+            line.Voice = line.Plan.Voice;
+            line.Text = text;
+            service.StartAvailableJobs();
+        }
+
+        public static bool IsLineReady(int lease) => instance != null &&
+            instance.ValidLease(lease) && instance.lines[lease].Ready;
+
+        public static float LineDuration(int lease) => instance != null && instance.ValidLease(lease) &&
+            instance.lines[lease].Clip != null ? instance.lines[lease].Clip.length : 0f;
+
+        public static RussianVocalizerPlan LinePlan(int lease) => instance != null && instance.ValidLease(lease)
+            ? instance.lines[lease].Plan : null;
+
+        /// <summary>Use the bubble's clock, position and opacity, including manual
+        /// clocks. Repeated time pauses; a hitch seeks forward instead of replaying
+        /// missed syllables. A reading tail can never restart a finished clip.</summary>
+        public static float SyncLine(int lease, float elapsedSeconds, Vector3 worldPosition,
+            float distanceGain, in NpcEarshotProfile earshot, float extraJitterCents = 0f)
+        {
+            NpcSpeechVoice service = instance;
+            if (service == null || !service.ValidLease(lease) || !float.IsFinite(elapsedSeconds)) return 0f;
+            SpeechLine line = service.lines[lease];
+            AudioSource source = service.sources[lease];
+            line.LastFrame = Time.frameCount;
+            if (!line.Ready || line.Clip == null) return 0f;
+            service.ConfigureSource(lease, line.VoiceOrdinal, worldPosition, distanceGain, earshot,
+                VocalizerLowPassFrequencyHz);
+            if (line.Finished) return line.PlayedSeconds;
+            if (line.Started && elapsedSeconds + 0.001f < line.LastClock)
+            {
+                service.ClearLine(lease);
+                line.Ready = true;
+                return 0f;
+            }
+            float previousClock = line.LastClock;
+            line.LastClock = Mathf.Max(0f, elapsedSeconds);
+            if (GameTimeScaleRuntime.IsPaused || AudioListener.pause || distanceGain <= 0f ||
+                line.Started && Mathf.Abs(previousClock - elapsedSeconds) < 0.00001f)
+            {
+                PauseLine(source, line);
+                return line.PlayedSeconds;
+            }
+            // Integrate the owner's clock at the perceived tape rate. Comparing
+            // against raw wall time would repeatedly seek past the slow syllables.
+            float step = previousClock < 0f ? line.LastClock :
+                Mathf.Max(0f, line.LastClock - previousClock);
+            line.TargetSeconds += step * service.perception.PlaybackRate;
+            if (line.TargetSeconds >= line.Clip.length)
+            {
+                source.Stop();
+                line.Finished = true;
+                line.PlayedSeconds = line.Clip.length;
+                return line.PlayedSeconds;
+            }
+            int desired = Mathf.Clamp(Mathf.RoundToInt(line.TargetSeconds *
+                RussianVocalizerSynthesis.SampleRate), 0, line.Clip.samples - 1);
+            if (!line.Started)
+            {
+                source.clip = line.Clip;
+                source.timeSamples = desired;
+                source.Play();
+                line.Started = true;
+                line.Paused = false;
+                line.PlayedSeconds = desired / (float)RussianVocalizerSynthesis.SampleRate;
+            }
+            else
+            {
+                if (!source.isPlaying && !line.Paused)
+                {
+                    line.Finished = true;
+                    line.PlayedSeconds = line.Clip.length;
+                    return line.PlayedSeconds;
+                }
+                // Slower owner clocks must never rewind and repeat syllables.
+                // Reveal reads actual delivered PCM; real forward seeks may skip
+                // ahead, while pause still freezes both sound and presentation.
+                if (desired - source.timeSamples > RussianVocalizerSynthesis.SampleRate * 0.12f)
+                    source.timeSamples = desired;
+                if (line.Paused) { source.UnPause(); line.Paused = false; }
+                line.PlayedSeconds = Mathf.Max(line.PlayedSeconds,
+                    source.timeSamples / (float)RussianVocalizerSynthesis.SampleRate);
+            }
+            return line.PlayedSeconds;
+        }
+
+        private bool ValidLease(int lease) => initialized && leased != null &&
+            lease >= 0 && lease < leased.Length && leased[lease];
+
+        private void ConfigureSource(int lease, int ordinal, Vector3 position,
+            float distanceGain, in NpcEarshotProfile earshot, float lowPassFrequencyHz,
+            float basePitch = 1f)
+        {
+            AudioSource source = sources[lease];
+            source.transform.position = position;
+            source.minDistance = Mathf.Max(MinimumDistanceMeters, earshot.SolidRadiusMeters);
+            source.maxDistance = Mathf.Max(source.minDistance + 0.1f, earshot.CullRadiusMeters);
+            lines[lease].BaseVolume = NpcVoiceCatalog.ProfileAt(ordinal).Volume *
+                (float.IsFinite(distanceGain) ? Mathf.Clamp01(distanceGain) : 0f);
+            lines[lease].BaseLowPassFrequencyHz = lowPassFrequencyHz;
+            lines[lease].BasePitch = basePitch;
+            ApplyPerception(lease);
+        }
+
+        private void ApplyPerception(int lease)
+        {
+            perception = GameTimeScaleRuntime.AudioPerception;
+            SpeechLine line = lines[lease];
+            sources[lease].volume = line.BaseVolume * perception.SpeechGain;
+            sources[lease].pitch = line.BasePitch * perception.PlaybackRate;
+            filters[lease].cutoffFrequency = Mathf.Min(line.BaseLowPassFrequencyHz,
+                perception.SpeechLowPassFrequencyHz);
+        }
+
+        private static void PauseLine(AudioSource source, SpeechLine line)
+        {
+            if (!line.Started || line.Paused || line.Finished) return;
+            source.Pause();
+            line.Paused = true;
+        }
+
+        private void ClearLine(int lease)
+        {
+            SpeechLine line = lines[lease];
+            foreach (RenderJob job in jobs)
+                if (job != null && job.Lease == lease && job.Version == line.Version)
+                    job.Cancellation.Cancel();
+            unchecked { line.Version++; }
+            AudioSource source = sources[lease];
+            if (source != null) { source.Stop(); source.clip = null; }
+            if (line.Clip != null)
+            {
+                if (Application.isPlaying) Destroy(line.Clip);
+                else DestroyImmediate(line.Clip);
+            }
+            line.Clip = null;
+            line.Plan = null;
+            line.Text = null;
+            line.Requested = line.Ready = line.HasJob = line.Started = line.Paused = line.Finished = false;
+            line.LastClock = -1f;
+            line.PlayedSeconds = 0f;
+            line.TargetSeconds = 0f;
+            line.LastFrame = -1;
+            line.BaseVolume = 0f;
+            line.BaseLowPassFrequencyHz = LowPassFrequencyHz;
+            line.BasePitch = 1f;
+        }
+
+        private void StartAvailableJobs()
+        {
+            for (int worker = 0; worker < jobs.Length; worker++)
+            {
+                if (jobs[worker] != null) continue;
+                for (int lease = 0; lease < lines.Length; lease++)
+                {
+                    SpeechLine line = lines[lease];
+                    if (!leased[lease] || !line.Requested || line.Ready || line.HasJob || line.Text == null) continue;
+                    RussianVocalizerPlan plan = line.Plan;
+                    var cancellation = new CancellationTokenSource();
+                    CancellationToken token = cancellation.Token;
+                    jobs[worker] = new RenderJob
+                    {
+                        Lease = lease, Version = line.Version, Cancellation = cancellation,
+                        Task = Task.Run(() => RussianVocalizerSynthesis.Render(plan, token), token)
+                    };
+                    line.HasJob = true;
+                    break;
+                }
+            }
+        }
+
+        private void Update()
+        {
+            if (!initialized) return;
+            for (int worker = 0; worker < jobs.Length; worker++)
+            {
+                RenderJob job = jobs[worker];
+                if (job == null || !job.Task.IsCompleted) continue;
+                jobs[worker] = null;
+                SpeechLine line = lines[job.Lease];
+                bool accept = leased[job.Lease] && line.Version == job.Version && line.Requested;
+                try
+                {
+                    float[] samples = job.Task.GetAwaiter().GetResult();
+                    if (accept && samples.Length > 0)
+                    {
+                        AudioClip clip = AudioClip.Create("Speech_" + NpcVoiceCatalog.ProfileAt(line.VoiceOrdinal).Id,
+                            samples.Length, 1, RussianVocalizerSynthesis.SampleRate, false);
+                        clip.hideFlags = HideFlags.DontSave;
+                        if (clip.SetData(samples, 0)) line.Clip = clip;
+                        else Destroy(clip);
+                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception exception) { Debug.LogException(exception, this); }
+                finally
+                {
+                    job.Cancellation.Dispose();
+                    if (accept) { line.Ready = true; line.HasJob = false; line.Text = null; }
+                }
+            }
+            StartAvailableJobs();
+        }
+
+        private void LateUpdate()
+        {
+            if (!initialized) return;
+            for (int lease = 0; lease < lines.Length; lease++)
+            {
+                SpeechLine line = lines[lease];
+                // Covers already-playing fallback clicks too, whose owners only
+                // call Blip at character onsets. Never regenerate PCM or restart it.
+                if (leased[lease]) ApplyPerception(lease);
+                if (leased[lease] && (line.LastFrame != Time.frameCount ||
+                    GameTimeScaleRuntime.IsPaused || AudioListener.pause))
+                    PauseLine(sources[lease], line);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (!initialized || instance != this) return;
+            for (int lease = 0; lease < lines.Length; lease++)
+            {
+                ClearLine(lease);
+                leased[lease] = false;
             }
         }
 
@@ -218,7 +504,7 @@ namespace BarPromenade
                 service.sources == null ||
                 service.clipLease == null ||
                 lease < 0 ||
-                lease >= service.sources.Length)
+                lease >= service.sources.Length || !service.leased[lease] || service.lines[lease].Requested)
             {
                 return false;
             }
@@ -237,24 +523,10 @@ namespace BarPromenade
                 return false;
             }
 
-            source.transform.position = worldPosition;
-            // Full strength out to the solid radius, then falling in
-            // step with the fade rather than against it. See
-            // MinimumDistanceMeters for why a flat floor was wrong.
-            source.minDistance = Mathf.Max(
-                MinimumDistanceMeters,
-                earshot.SolidRadiusMeters);
-            source.maxDistance = Mathf.Max(
-                source.minDistance + 0.1f,
-                earshot.CullRadiusMeters);
+            service.ConfigureSource(lease, voiceOrdinal, worldPosition, distanceGain, earshot,
+                LowPassFrequencyHz, NpcVoiceCatalog.ResolveBlipPitch(
+                    voice, character, ordinal, extraJitterCents));
             source.clip = clip;
-            source.volume =
-                voice.Volume * Mathf.Clamp01(distanceGain);
-            source.pitch = NpcVoiceCatalog.ResolveBlipPitch(
-                voice,
-                character,
-                ordinal,
-                extraJitterCents);
             source.Play();
             return true;
         }
@@ -291,6 +563,23 @@ namespace BarPromenade
                 }
             }
 
+            for (int index = 0; lines != null && index < lines.Length; index++) ClearLine(index);
+            for (int worker = 0; worker < jobs.Length; worker++)
+            {
+                RenderJob job = jobs[worker];
+                if (job == null) continue;
+                job.Cancellation.Cancel();
+                // A detached pure continuation observes cancellation/faults and
+                // releases the CTS; it captures no Unity objects or PCM result.
+                CancellationTokenSource cancellation = job.Cancellation;
+                job.Task.ContinueWith(completed =>
+                {
+                    _ = completed.Exception;
+                    cancellation.Dispose();
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                jobs[worker] = null;
+            }
+
             // Voices before lease: every source is stopped above, so
             // nothing is still reading a clip when the bank goes.
             clipLease?.Dispose();
@@ -307,12 +596,16 @@ namespace BarPromenade
 
             clipLease = NpcSpeechBlipClipCache.Acquire();
             sources = new AudioSource[VoiceCount];
+            filters = new AudioLowPassFilter[VoiceCount];
             leased = new bool[VoiceCount];
+            lines = new SpeechLine[VoiceCount];
             for (int index = 0; index < VoiceCount; index++)
             {
                 sources[index] = BuildVoiceSource(
                     transform,
                     VoiceObjectNamePrefix + index);
+                filters[index] = sources[index].GetComponent<AudioLowPassFilter>();
+                lines[index] = new SpeechLine();
             }
 
             initialized = true;

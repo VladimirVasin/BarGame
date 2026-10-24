@@ -14,6 +14,16 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class BarInteriorSpawnPlayModeTests
     {
         [UnityTest]
+        public IEnumerator WashroomMirror_ConfinesReflectionToApertureFromHallAndWashroom()
+        {
+            BarInteriorRoot bar = null;
+            yield return LoadBar(value => bar = value);
+            bar.ArrivalPresentation?.Skip();
+            yield return null;
+            yield return ReviewWashroomMirror(bar);
+        }
+
+        [UnityTest]
         public IEnumerator BarPrompts_KeepDoorReachableAndCounterLocal()
         {
             var input = new InputTestFixture();
@@ -245,6 +255,33 @@ namespace BarPromenade.Tests.PlayMode
             follow.enabled = false;
             try
             {
+                // The mirror is in the frustum from this hall corner, but the
+                // reflected hero falls into the actual hall outside its aperture.
+                // A visibility-only gate therefore cannot prevent the duplicate.
+                bar.Player.Motor.Teleport(bar.Room.TransformPoint(
+                    new Vector3(-3.10f, PlayerFactory.GroundedRootOffset, 2.80f)));
+                bar.Player.GameObject.transform.rotation = bar.Room.rotation * Quaternion.LookRotation(Vector3.right);
+                Vector3 hallCamera = bar.Room.TransformPoint(new Vector3(-2.80f, 1.70f, 2.70f));
+                Vector3 hallTarget = bar.Room.TransformPoint(new Vector3(-1.30f, 1.20f, 4.20f));
+                camera.transform.SetPositionAndRotation(hallCamera, Quaternion.LookRotation(hallTarget - hallCamera));
+                camera.fieldOfView = 62f;
+                yield return null;
+                yield return null;
+                Assert.That(BarWashroomLayout.Contains(BarWashroomLayout.Bounds,
+                    bar.Room.InverseTransformPoint(camera.transform.position)), Is.False);
+                Assert.That(mirror.IsActive, Is.True,
+                    "The aperture must remain in view so this exercises clipping, not whole-mirror culling.");
+                Vector3 apertureCenter = bar.Room.TransformPoint(new Vector3(BarWashroomMirrorWorld.PlaneX,
+                    (BarWashroomMirrorWorld.OpeningMinY + BarWashroomMirrorWorld.OpeningMaxY) * .5f,
+                    (BarWashroomMirrorWorld.OpeningMinZ + BarWashroomMirrorWorld.OpeningMaxZ) * .5f));
+                Vector3 apertureViewport = camera.WorldToViewportPoint(apertureCenter);
+                Assert.That(apertureViewport.z, Is.GreaterThan(0f));
+                Assert.That(apertureViewport.x, Is.InRange(0f, 1f));
+                Assert.That(apertureViewport.y, Is.InRange(0f, 1f));
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.BarInterior,
+                    "Test washroom mirror excluded from main hall");
+                AssertWashroomMirrorPixelsStayInsideAperture(bar, camera, mirror, false);
+
                 bar.Player.Motor.Teleport(new Vector3(-3.20f, PlayerFactory.GroundedRootOffset, 5.18f));
                 bar.Player.GameObject.transform.rotation = Quaternion.LookRotation(Vector3.right);
                 camera.transform.SetPositionAndRotation(new Vector3(-3.70f, 1.70f, 5.95f),
@@ -262,6 +299,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(mirror.GetComponentsInChildren<Light>(true).All(value => !value.enabled), Is.True);
                 Assert.That(mirror.GetComponentsInChildren<Renderer>(true).All(value => value.gameObject.layer != 31), Is.True);
                 AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.BarInterior, "Test washroom broken mirror and sink");
+                AssertWashroomMirrorPixelsStayInsideAperture(bar, camera, mirror, true);
 
                 camera.transform.SetPositionAndRotation(new Vector3(-4.70f, 1.65f, 4.65f),
                     Quaternion.LookRotation(new Vector3(-2.416f, 1.62f, 5.18f) - new Vector3(-4.70f, 1.65f, 4.65f)));
@@ -288,6 +326,104 @@ namespace BarPromenade.Tests.PlayMode
                 camera.transform.SetPositionAndRotation(previousCamera.position, previousCamera.rotation);
                 camera.fieldOfView = previousFov;
                 follow.enabled = previousFollow;
+            }
+        }
+
+        private static void AssertWashroomMirrorPixelsStayInsideAperture(BarInteriorRoot bar,
+            Camera camera, BarWashroomMirrorWorld mirror, bool requireVisibleReflection)
+        {
+            const int width = 640, height = 360, apertureMargin = 12;
+            var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+            var frame = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            UniversalAdditionalCameraData cameraData = camera.GetUniversalAdditionalCameraData();
+            bool previousPostProcessing = cameraData.renderPostProcessing;
+            bool previousEnabled = mirror.enabled;
+            try
+            {
+                // Pair the renders without a simulation step. The ordinary
+                // captures retain all effects; this diagnostic excludes random
+                // grain and post blur that could change pixels beyond the mask.
+                cameraData.renderPostProcessing = false;
+                target.Create();
+                camera.targetTexture = target;
+                int minX = width, minY = height, maxX = -1, maxY = -1;
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    Vector3 point = camera.WorldToViewportPoint(bar.Room.TransformPoint(new Vector3(
+                        BarWashroomMirrorWorld.PlaneX,
+                        (corner & 1) == 0 ? BarWashroomMirrorWorld.OpeningMinY : BarWashroomMirrorWorld.OpeningMaxY,
+                        (corner & 2) == 0 ? BarWashroomMirrorWorld.OpeningMinZ : BarWashroomMirrorWorld.OpeningMaxZ)));
+                    Assert.That(point.z, Is.GreaterThan(0f));
+                    int x = Mathf.Clamp(Mathf.RoundToInt(point.x * width), 0, width - 1);
+                    int y = Mathf.Clamp(Mathf.RoundToInt(point.y * height), 0, height - 1);
+                    minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x);
+                    minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+                }
+                Assert.That(maxX - minX, Is.GreaterThan(8));
+                Assert.That(maxY - minY, Is.GreaterThan(8));
+                camera.Render();
+                RenderTexture.active = target;
+                frame.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                frame.Apply();
+                Color32[] reflected = frame.GetPixels32();
+
+                mirror.enabled = false;
+                camera.Render();
+                RenderTexture.active = target;
+                frame.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                frame.Apply();
+                Color32[] plugged = frame.GetPixels32();
+                long outsideCount = 0, outsideChanged = 0, insideCount = 0, insideChanged = 0;
+                double outsideSum = 0d, insideSum = 0d;
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        int index = y * width + x;
+                        int delta = Mathf.Abs(reflected[index].r - plugged[index].r) +
+                            Mathf.Abs(reflected[index].g - plugged[index].g) +
+                            Mathf.Abs(reflected[index].b - plugged[index].b);
+                        bool nearAperture = x >= minX - apertureMargin && x <= maxX + apertureMargin &&
+                            y >= minY - apertureMargin && y <= maxY + apertureMargin;
+                        if (!nearAperture)
+                        {
+                            outsideSum += delta;
+                            outsideCount++;
+                            if (delta > 6) outsideChanged++;
+                        }
+                        else if (x > minX + 2 && x < maxX - 2 && y > minY + 2 && y < maxY - 2)
+                        {
+                            insideSum += delta;
+                            insideCount++;
+                            if (delta > 6) insideChanged++;
+                        }
+                    }
+                }
+
+                Assert.That(outsideCount, Is.GreaterThan(1000));
+                Assert.That(outsideSum / outsideCount, Is.LessThan(.2d),
+                    "Enabling the mirror changed pixels outside its projected aperture.");
+                Assert.That(outsideChanged, Is.LessThanOrEqualTo(Math.Max(16L, outsideCount / 5000L)),
+                    "A small reflected hero must not disappear inside a whole-frame average.");
+                if (requireVisibleReflection)
+                {
+                    Assert.That(insideCount, Is.GreaterThan(0));
+                    Assert.That(insideSum / insideCount, Is.GreaterThan(3d),
+                        "The mirror must still render a reflection inside the WC aperture.");
+                    Assert.That(insideChanged, Is.GreaterThan(16));
+                }
+            }
+            finally
+            {
+                mirror.enabled = previousEnabled;
+                cameraData.renderPostProcessing = previousPostProcessing;
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                Object.DestroyImmediate(frame);
+                target.Release();
+                Object.DestroyImmediate(target);
             }
         }
 

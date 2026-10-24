@@ -27,6 +27,7 @@ namespace BarPromenade
         public float BaseTimeScale { get; private set; }
         public float BaseFixedDeltaTime { get; }
         public float PerceptionIntensity { get; private set; }
+        public float PerceptionPlaybackRate { get; private set; } = 1f;
         public float IntoxicationTimeScale { get; private set; } = 1f;
         public int DebugTimeMultiplier { get; private set; } = 1;
         public bool DebugSpeedSelectionEnabled { get; private set; } = true;
@@ -70,6 +71,7 @@ namespace BarPromenade
             IntoxicationPerceptionProfile profile =
                 IntoxicationPerceptionRules.Evaluate(level);
             PerceptionIntensity = profile.Intensity;
+            PerceptionPlaybackRate = profile.PlaybackRate;
             IntoxicationTimeScale = profile.WorldTimeScale;
         }
 

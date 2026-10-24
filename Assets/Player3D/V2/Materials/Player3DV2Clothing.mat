@@ -100,6 +100,10 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 0
+    - _GeometricMirrorStencilComp: 8
+    - _GeometricMirrorStencilMotionRef: 1
+    - _GeometricMirrorStencilReadMask: 0
+    - _GeometricMirrorStencilRef: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0

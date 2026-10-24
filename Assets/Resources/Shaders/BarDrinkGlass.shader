@@ -5,6 +5,10 @@ Shader "Bar Promenade/Bar Drink Glass"
         _BaseMap("Surface Albedo", 2D) = "white" {}
         _BaseColor("Glass Tint", Color) = (0.62, 0.82, 0.86, 0.24)
         _SurfaceAlbedoCompensation("Surface Albedo Compensation", Float) = 1.0
+        [HideInInspector] _GeometricMirrorStencilRef("Geometric Mirror Stencil Ref", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilComp("Geometric Mirror Stencil Comparison", Float) = 8
+        [HideInInspector] _GeometricMirrorStencilReadMask("Geometric Mirror Stencil Read Mask", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilMotionRef("Geometric Mirror Motion Stencil Ref", Float) = 1
     }
 
     SubShader
@@ -15,6 +19,15 @@ Shader "Bar Promenade/Bar Drink Glass"
             "RenderType" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"
             "IgnoreProjector" = "True"
+        }
+
+        Stencil
+        {
+            Ref [_GeometricMirrorStencilRef]
+            ReadMask [_GeometricMirrorStencilReadMask]
+            WriteMask 0
+            Comp [_GeometricMirrorStencilComp]
+            Pass Keep
         }
 
         Pass

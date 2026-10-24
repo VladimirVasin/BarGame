@@ -76,6 +76,10 @@ Shader "Bar Promenade/Layered Ground"
         [HideInInspector] _AlphaToMask("__alphaToMask", Float) = 0.0
         [HideInInspector] _AddPrecomputedVelocity("_AddPrecomputedVelocity", Float) = 0.0
         [HideInInspector] _XRMotionVectorsPass("_XRMotionVectorsPass", Float) = 1.0
+        [HideInInspector] _GeometricMirrorStencilRef("Geometric Mirror Stencil Ref", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilComp("Geometric Mirror Stencil Comparison", Float) = 8
+        [HideInInspector] _GeometricMirrorStencilReadMask("Geometric Mirror Stencil Read Mask", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilMotionRef("Geometric Mirror Motion Stencil Ref", Float) = 1
 
         [ToggleUI] _ReceiveShadows("Receive Shadows", Float) = 1.0
         // Editmode props
@@ -106,6 +110,15 @@ Shader "Bar Promenade/Layered Ground"
             "IgnoreProjector" = "True"
         }
         LOD 300
+
+        Stencil
+        {
+            Ref [_GeometricMirrorStencilRef]
+            ReadMask [_GeometricMirrorStencilReadMask]
+            WriteMask 0
+            Comp [_GeometricMirrorStencilComp]
+            Pass Keep
+        }
 
         // ------------------------------------------------------------------
         //  Forward pass. Shades all light in a single pass. GI + emission + Fog
@@ -556,8 +569,9 @@ Shader "Bar Promenade/Layered Ground"
             Stencil
             {
                 WriteMask 1
-                Ref 1
-                Comp Always
+                Ref [_GeometricMirrorStencilMotionRef]
+                ReadMask [_GeometricMirrorStencilReadMask]
+                Comp [_GeometricMirrorStencilComp]
                 Pass Replace
             }
 

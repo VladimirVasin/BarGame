@@ -18,12 +18,44 @@ namespace BarPromenade
             Transform anchor,
             string designId,
             in NpcEarshotProfile earshot)
+            : this(owner, anchor, designId, earshot, NpcVoiceCatalog.ResolveGender(designId))
+        {
+        }
+
+        public NpcSpeaker(
+            Object owner,
+            Transform anchor,
+            string designId,
+            in NpcEarshotProfile earshot,
+            RussianVocalizerGender gender)
+            : this(owner, anchor, designId, earshot, gender, ResolveVoiceIdentity(owner, designId))
+        {
+        }
+
+        private NpcSpeaker(Object owner, Transform anchor, string designId,
+            in NpcEarshotProfile earshot, RussianVocalizerGender gender, string voiceIdentity)
         {
             Owner = owner;
             Anchor = anchor;
             DesignId = designId ?? string.Empty;
-            VoiceOrdinal = NpcVoiceCatalog.ResolveOrdinal(DesignId);
+            VoiceOrdinal = NpcVoiceCatalog.ResolveOrdinal(voiceIdentity, gender);
             Earshot = earshot;
+        }
+
+        private static string ResolveVoiceIdentity(Object owner, string designId)
+        {
+            // A shared male model is appearance metadata, not the person's
+            // voice identity. Preserve explicit staged voice aliases unchanged.
+            if (designId == DefaultNpcCatalog.OrdinaryWorker)
+            {
+                CityPedestrianDefaultNpcBody person = owner is Component component
+                    ? component.GetComponent<CityPedestrianDefaultNpcBody>()
+                    : owner is GameObject gameObject
+                        ? gameObject.GetComponent<CityPedestrianDefaultNpcBody>() : null;
+                if (person != null && !string.IsNullOrEmpty(person.CharacterId))
+                    return person.CharacterId;
+            }
+            return designId;
         }
 
         /// <summary>The reference that owns a bubble slot. A reference
@@ -49,6 +81,8 @@ namespace BarPromenade
         public NpcVoiceProfile Voice =>
             NpcVoiceCatalog.ProfileAt(VoiceOrdinal);
 
+        public RussianVocalizerGender Gender => Voice.Gender;
+
         /// <summary>Nobody. Narration and the hero's own prompts.
         /// </summary>
         public static NpcSpeaker None => default;
@@ -64,13 +98,12 @@ namespace BarPromenade
             CityPedestrianAssetRegistry registry,
             in NpcEarshotProfile earshot)
         {
-            return registry == null
-                ? None
-                : new NpcSpeaker(
-                    owner,
-                    registry.HeadAnchor,
-                    registry.DesignId,
-                    earshot);
+            if (registry == null) return None;
+            CityPedestrianDefaultNpcBody person = registry.GetComponent<CityPedestrianDefaultNpcBody>();
+            string identity = person != null && !string.IsNullOrEmpty(person.CharacterId)
+                ? person.CharacterId : registry.DesignId;
+            return new NpcSpeaker(owner, registry.HeadAnchor, registry.DesignId, earshot,
+                NpcVoiceCatalog.ResolveGender(registry.DesignId), identity);
         }
 
         /// <summary>

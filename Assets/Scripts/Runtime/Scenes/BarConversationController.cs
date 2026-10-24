@@ -5,14 +5,25 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
-    /// <summary>One bar channel over the shared speech views; service never waits for speech.</summary>
+    /// <summary>Three guest pairs and one service voice share bounded speech views; solitary tables stay silent.</summary>
     [DefaultExecutionOrder(210)]
     [DisallowMultipleComponent]
     public sealed class BarConversationController : MonoBehaviour
     {
-        // Three service slots plus completed orders waiting behind one A→B exchange.
+        // Three service slots plus bounded completed-order headroom; guests never hold up this channel.
         public const int PendingCommentCapacity = BarDrinkShopController.MaximumPendingServiceOrders * 2 + 1;
         public const int BartenderRole = BarConversationCatalog.RoleCount;
+        public const int MaximumSimultaneousLines = BarConversationCatalog.ActiveGroupCount + 1;
+        private const int BartenderChannel = BarConversationCatalog.KindCount;
+        private struct ActiveLine
+        {
+            public bool IsActive;
+            public int Role;
+            public string Key;
+            public double Started;
+            public float Duration;
+            public bool Acknowledged;
+        }
         private struct Comment
         {
             public BarServiceOrder Order;
@@ -39,11 +50,10 @@ namespace BarPromenade
         private int cachedGroups;
         private double nextAdmission;
         private bool subscribed;
-        private int activeRole = -1;
-        private string activeKey;
-        private double lineStarted;
-        private float lineDuration;
-        private bool lineAcknowledged;
+        // Preserve catalog channel indices, including the dormant high-table
+        // bank, without admitting that channel to the live presentation.
+        private readonly ActiveLine[] lines = new ActiveLine[BarConversationCatalog.KindCount + 1];
+        private readonly BarConversationSchedule[] schedules = new BarConversationSchedule[BarConversationCatalog.KindCount];
         private long activeOrder;
         private int activeVariant;
         private BarBartenderCommentKind activeCommentKind;
@@ -51,14 +61,29 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public bool AutoAdvance { get; set; } = true;
         public double LifeSeconds { get; private set; }
-        public BarConversationSchedule Schedule { get; private set; }
         public NpcSpeechBubbleView GuestBubbles { get; private set; }
         public NpcSpeechBubbleView BartenderBubbles { get; private set; }
         public int PendingCommentCount => commentCount;
         public int StartedLineCount { get; private set; }
         public string LastLineKey { get; private set; } = string.Empty;
         public int LastSpeakerRole { get; private set; } = -1;
-        public int ActiveLineCount => activeRole >= 0 && View(activeRole).IsShowing(owners[activeRole]) ? 1 : 0;
+        public int ActiveLineCount
+        {
+            get
+            {
+                int count = 0;
+                for (int channel = 0; channel < lines.Length; channel++)
+                    if (lines[channel].IsActive && View(lines[channel].Role).IsShowing(owners[lines[channel].Role])) count++;
+                return count;
+            }
+        }
+        public event Action<int, string> LineStarted;
+        public BarConversationSchedule GetSchedule(BarConversationKind kind)
+        {
+            int group = (int)kind;
+            if (group < 0 || group >= schedules.Length) throw new ArgumentOutOfRangeException(nameof(kind));
+            return schedules[group];
+        }
         public Object Speaker(int role) => owners[role];
         public Transform Head(int role) => heads[role];
 
@@ -79,7 +104,8 @@ namespace BarPromenade
             shop = drinkShop;
             seed = unchecked(seed ^ ++visitOrdinal * 48611);
             random = unchecked((uint)seed) | 1u;
-            Schedule = new BarConversationSchedule(seed);
+            for (int group = 0; group < schedules.Length; group++)
+                schedules[group] = new BarConversationSchedule(unchecked(seed + group * 15427), (BarConversationKind)group);
             for (int role = 0; role < BartenderRole; role++)
             {
                 BarPatron found = null;
@@ -119,8 +145,11 @@ namespace BarPromenade
         {
             if (!IsInitialized || subscribed || shop == null) return;
             for (int role = 0; role < owners.Length; role++)
+            {
+                if (role != BartenderRole && !BarConversationCatalog.CanSpeak(role)) continue;
                 if (!View(role).DeclareSpeaker(owners[role], heads[role], voices[role], NpcEarshotProfile.Conversation))
                     throw new InvalidOperationException("The shared bar speech view refused role " + role);
+            }
             shop.ServiceOrderAccepted += OrderAccepted;
             shop.ServiceOrderDelivered += OrderDelivered;
             shop.ServiceOrderCancelled += OrderCancelled;
@@ -148,46 +177,53 @@ namespace BarPromenade
                 CancelSpeech();
                 return;
             }
-            if (activeRole >= 0 && (!SpeakerAudible(activeRole) || activeRole < BartenderRole &&
-                (!Schedule.Current.HasExchange || !PairReady((int)Schedule.Current.Exchange.Kind) ||
-                 !Schedule.HasCommittedExchange && commentCount > 0)))
-                EndLine();
+            // A missing partner is checked before reveal, so it cannot spend a
+            // line on the frame its head or hearing disappears.
+            for (int channel = 0; channel < lines.Length; channel++)
+            {
+                ActiveLine line = lines[channel];
+                if (line.IsActive && (!SpeakerAudible(line.Role) || channel < BartenderChannel &&
+                    (!schedules[channel].Current.HasExchange || !PairReady(channel)))) EndLine(channel);
+            }
             GuestBubbles.AdvanceTo((float)LifeSeconds);
             BartenderBubbles.AdvanceTo((float)LifeSeconds);
-            // Commit the first glyph before service can cancel anticipation.
-            if (activeRole >= 0 && !lineAcknowledged &&
-                View(activeRole).TryGetSpeechFaceSample(owners[activeRole], out SpeechFaceSample firstGlyph) &&
-                firstGlyph.RevealedCharacters > 0) AcknowledgeLine();
+            for (int channel = 0; channel < lines.Length; channel++)
+            {
+                ActiveLine line = lines[channel];
+                if (line.IsActive && !line.Acknowledged &&
+                    View(line.Role).TryGetSpeechFaceSample(owners[line.Role], out SpeechFaceSample firstGlyph) &&
+                    firstGlyph.RevealedCharacters > 0) AcknowledgeLine(channel);
+            }
             if (!SpeakerAudible(BartenderRole) && commentCount > 0)
             {
-                if (activeRole == BartenderRole) EndLine();
+                EndLine(BartenderChannel);
                 Array.Clear(comments, 0, commentCount);
                 commentCount = 0;
             }
             if (LifeSeconds >= nextAdmission)
             {
                 cachedGroups = 0;
-                for (int group = 0; group < BarConversationCatalog.KindCount; group++)
+                for (int group = 0; group < schedules.Length; group++)
                     if (PairReady(group)) cachedGroups |= 1 << group;
                 nextAdmission = LifeSeconds + .25d;
             }
-            BarConversationTurn previous = Schedule.Current;
-            int eligible = cachedGroups;
-            if (previous.HasExchange && !PairReady((int)previous.Exchange.Kind))
-                eligible &= ~(1 << (int)previous.Exchange.Kind);
-            BarConversationTurn turn = Schedule.Advance(LifeSeconds, eligible, true, commentCount > 0 || activeRole == BartenderRole);
-            if (activeRole >= 0)
+            for (int group = 0; group < schedules.Length; group++)
             {
-                if (!SpeakerAudible(activeRole) || activeRole < BartenderRole && !turn.HasExchange)
-                    EndLine();
-                else if (!View(activeRole).IsShowing(owners[activeRole])) EndLine();
+                if (!BarConversationCatalog.IsEnabled((BarConversationKind)group)) continue;
+                BarConversationSchedule schedule = schedules[group];
+                int eligible = cachedGroups & (1 << group);
+                if (schedule.Current.HasExchange && !PairReady(group)) eligible = 0;
+                // Service has its own lane. A queue never silences visitors,
+                // and the other pairs cannot delay this pair's answer.
+                BarConversationTurn turn = schedule.Advance(LifeSeconds, eligible, true);
+                ActiveLine line = lines[group];
+                if (line.IsActive && (!turn.HasExchange || !GuestBubbles.IsShowing(owners[line.Role]))) EndLine(group);
+                if (!lines[group].IsActive && turn.NeedsLineStart) BeginLine(turn.SpeakerRole, turn.LineKey);
+                ReservePartners(group, turn.HasExchange);
             }
-            // A queued purchase cannot cut between A and its answer.
-            if (activeRole < 0 && !Schedule.HasCommittedExchange && TryStartComment())
-                turn = Schedule.Current;
-            else if (activeRole < 0 && turn.NeedsLineStart)
-                BeginLine(turn.SpeakerRole, turn.LineKey);
-            ReservePartners(Schedule.Current);
+            ActiveLine bartender = lines[BartenderChannel];
+            if (bartender.IsActive && !BartenderBubbles.IsShowing(owners[BartenderRole])) EndLine(BartenderChannel);
+            if (!lines[BartenderChannel].IsActive) TryStartComment();
         }
 
         private bool ListenerInHall()
@@ -207,66 +243,65 @@ namespace BarPromenade
 
         private bool PairReady(int group)
         {
+            if (!BarConversationCatalog.IsEnabled((BarConversationKind)group)) return false;
             int first = group * 2, second = first + 1;
             return SpeakerAudible(first) && SpeakerAudible(second) &&
                    drinkers[first] != null && drinkers[second] != null &&
                    drinkers[first].CanConverse && drinkers[second].CanConverse;
         }
 
-        private void ReservePartners(BarConversationTurn turn)
+        private void ReservePartners(int group, bool participating)
         {
-            for (int role = 0; role < drinkers.Length; role++)
-            {
-                if (drinkers[role] == null) continue;
-                bool participating = turn.HasExchange && role / 2 == (int)turn.Exchange.Kind;
-                drinkers[role].SetConversationPartner(participating ? heads[role ^ 1] : null);
-            }
+            for (int role = group * 2; role < group * 2 + 2; role++)
+                if (drinkers[role] != null)
+                    drinkers[role].SetConversationPartner(participating ? heads[role ^ 1] : null);
         }
 
         private NpcSpeechBubbleView View(int role) => role == BartenderRole ? BartenderBubbles : GuestBubbles;
 
         private bool BeginLine(int role, string key)
         {
-            if (!SpeakerAudible(role) || NpcSpeechBubbleView.IsPresentingAt(heads[role])) return false;
+            if (role != BartenderRole && !BarConversationCatalog.CanSpeak(role)) return false;
+            int channel = role == BartenderRole ? BartenderChannel : role / 2;
+            if (lines[channel].IsActive || !SpeakerAudible(role) || NpcSpeechBubbleView.IsPresentingAt(heads[role])) return false;
             string text = LocalizationService.Get(key);
             float duration = Mathf.Max(NpcSpeechBubbleView.VisibleSeconds,
                 SpeechDelivery.ResolveSpokenDuration(text, SpeechDelivery.ReadingTailSeconds));
             if (!View(role).ShowAt(owners[role], text, (float)LifeSeconds, duration)) return false;
-            activeRole = role;
-            activeKey = key;
-            lineStarted = LifeSeconds;
-            lineDuration = duration;
-            lineAcknowledged = false;
+            lines[channel] = new ActiveLine
+            {
+                IsActive = true, Role = role, Key = key, Started = LifeSeconds, Duration = duration
+            };
             return true;
         }
 
-        private void AcknowledgeLine()
+        private void AcknowledgeLine(int channel)
         {
-            if (activeRole == BartenderRole)
+            ActiveLine line = lines[channel];
+            if (channel == BartenderChannel)
             {
                 commentDecks[(int)activeCommentKind].Commit(activeVariant);
                 RemoveComment(activeOrder);
             }
-            else if (!Schedule.StartLine(LifeSeconds, Math.Max(.001d, lineDuration - (LifeSeconds - lineStarted))))
+            else if (!schedules[channel].StartLine(LifeSeconds, Math.Max(.001d, line.Duration - (LifeSeconds - line.Started))))
             {
-                EndLine();
+                EndLine(channel);
                 return;
             }
-            lineAcknowledged = true;
+            lines[channel].Acknowledged = true;
             StartedLineCount++;
-            LastLineKey = activeKey;
-            LastSpeakerRole = activeRole;
+            LastLineKey = line.Key;
+            LastSpeakerRole = line.Role;
+            LineStarted?.Invoke(line.Role, line.Key);
         }
 
-        private void EndLine()
+        private void EndLine(int channel)
         {
-            if (activeRole < 0) return;
-            bool service = activeRole == BartenderRole;
-            View(activeRole).Dismiss(owners[activeRole]);
-            activeRole = -1;
-            activeKey = null;
-            activeOrder = 0;
-            if (service) Schedule.DeferAfterService(LifeSeconds);
+            ActiveLine line = lines[channel];
+            if (!line.IsActive) return;
+            View(line.Role).Dismiss(owners[line.Role]);
+            lines[channel] = default;
+            if (channel == BartenderChannel) activeOrder = 0;
         }
 
         private void OrderAccepted(BarServiceOrder order)
@@ -287,7 +322,7 @@ namespace BarPromenade
             for (int index = 0; index < commentCount; index++)
                 if (comments[index].Order.Id == order.Id)
                 {
-                    if (activeRole == BartenderRole && activeOrder == order.Id && !lineAcknowledged) EndLine();
+                    if (lines[BartenderChannel].IsActive && activeOrder == order.Id && !lines[BartenderChannel].Acknowledged) EndLine(BartenderChannel);
                     comments[index].Delivered = comments[index].AtDelivery = true;
                     comments[index].Vessel = order.IsHero ? shop.HeroServiceVessel :
                         order.Recipient != null ? order.Recipient.GetComponent<BarCounterPatronRefill>()?.Vessel : null;
@@ -297,7 +332,7 @@ namespace BarPromenade
 
         private void OrderCancelled(BarServiceOrder order)
         {
-            if (activeRole == BartenderRole && activeOrder == order.Id) EndLine();
+            if (lines[BartenderChannel].IsActive && activeOrder == order.Id) EndLine(BartenderChannel);
             RemoveComment(order.Id);
         }
 
@@ -354,14 +389,17 @@ namespace BarPromenade
 
         private void CancelSpeech()
         {
-            EndLine();
-            Schedule.Cancel(LifeSeconds);
+            for (int channel = 0; channel < lines.Length; channel++) EndLine(channel);
+            for (int group = 0; group < schedules.Length; group++)
+            {
+                schedules[group].Cancel(LifeSeconds);
+                ReservePartners(group, false);
+            }
             GuestBubbles.DismissAll();
             BartenderBubbles.DismissAll();
             Array.Clear(comments, 0, commentCount);
             commentCount = cachedGroups = 0;
             nextAdmission = LifeSeconds;
-            ReservePartners(default);
         }
 
         private void OnEnable() { Connect(); }

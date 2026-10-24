@@ -71,6 +71,44 @@ namespace BarPromenade
         /// <summary>Lift over the anchor bone, in metres. The anchor is
         /// a head bone, so this is roughly the crown plus a hand.</summary>
         public const float AnchorClearanceMeters = 0.30f;
+        private const int MaximumCachedScatterCharacters = 1024;
+
+        /// <summary>One bounded, reusable cache per live slot. Unity's own wrapped
+        /// cursor layout supplies the row positions, including authored newlines.</summary>
+        private sealed class ScatterTextCache
+        {
+            public bool PanelReady, GlyphsReady;
+            public Vector2 PanelSize;
+            public Vector2[] Cursors = System.Array.Empty<Vector2>();
+            public float[] Widths = System.Array.Empty<float>();
+            public float[] RevealTimes = System.Array.Empty<float>();
+            public string[] Glyphs = System.Array.Empty<string>();
+            public int CharacterCount, RowCount;
+            public int RevealedCount = -1;
+            public string RevealedText = string.Empty;
+            public RussianVocalizerPlan RevealPlan;
+            public float RevealDuration;
+
+            public void Clear()
+            {
+                if (CharacterCount > 0) System.Array.Clear(Glyphs, 0, CharacterCount);
+                PanelReady = GlyphsReady = false;
+                CharacterCount = RowCount = 0;
+                RevealedCount = -1;
+                RevealedText = string.Empty;
+                RevealPlan = null;
+            }
+
+            public void EnsureCapacity(int count)
+            {
+                if (Widths.Length >= count) return;
+                int capacity = Mathf.Min(MaximumCachedScatterCharacters, Mathf.NextPowerOfTwo(count));
+                Cursors = new Vector2[capacity + 1];
+                Widths = new float[capacity];
+                RevealTimes = new float[capacity];
+                Glyphs = new string[capacity];
+            }
+        }
 
         private struct Bubble
         {
@@ -80,8 +118,13 @@ namespace BarPromenade
 
             public SpeechDelivery Line;
             public float DurationSeconds;
+            public float OriginalStartedAt;
             public uint LineToken;
             public float SampledElapsedSeconds;
+
+            public bool UsesSynthesizedVoice;
+            public bool SynthesisReady;
+            public bool SynthesisSuppressed;
 
             /// <summary>This bubble's own fade, from its own anchor's
             /// own distance.</summary>
@@ -93,16 +136,15 @@ namespace BarPromenade
             /// `-1`.</summary>
             public int VoiceLease;
 
-            /// <summary>How far this line's letters fly apart, 0..1. Zero
-            /// for every line anybody but the drunk hero says, and that is
-            /// what keeps every NPC bubble on the single-label path.
-            /// </summary>
+            /// <summary>Explicit local slur, retained for the hero. Shared
+            /// intoxication perception may raise every speaker's scatter.</summary>
             public float Scatter;
 
             /// <summary>Extra per-blip detune for this line only.</summary>
             public float ExtraJitterCents;
 
             public uint ScatterSeed;
+            public ScatterTextCache ScatterCache;
         }
 
         private readonly NpcSpeaker[] speakers =
@@ -114,22 +156,19 @@ namespace BarPromenade
         private GUIStyle scatterStyle;
         private bool slotsPrepared;
         private uint nextLineToken;
+        private float lastAutomaticTime = -1f;
+        private int cachedScatterLevel = -1;
+        private float cachedSharedScatter;
 
         // Reused for measurement: a fresh GUIContent per bubble per
         // IMGUI event is steady garbage for lines that change rarely.
         private readonly GUIContent measureContent = new GUIContent();
 
-        // The scattered row is measured once per line, from the WHOLE
-        // line, exactly as the panel is: only one bubble in the game ever
-        // scatters, so one cache serves it.
-        private string scatterPrefixText = string.Empty;
-        private float[] scatterPrefixWidths = System.Array.Empty<float>();
-        private readonly System.Collections.Generic.Dictionary<char, string>
-            glyphTexts =
-                new System.Collections.Generic.Dictionary<char, string>(48);
-
         public bool HasRenderedLayout { get; private set; }
         public int LastRenderedBubbleCount { get; private set; }
+        public int LastRenderedScatteredBubbleCount { get; private set; }
+        public int LastRenderedMaximumScatterRows { get; private set; }
+        public int ScatterLayoutBuildCount { get; private set; }
         public Rect LastRenderedPanelRect { get; private set; }
         public string LastRenderedText { get; private set; } =
             string.Empty;
@@ -289,6 +328,8 @@ namespace BarPromenade
             // trusted the stepper for its first opacity would flash a
             // solid empty frame across the whole park.
             float opacity = ResolveOpacityOf(speaker);
+            ScatterTextCache scatterCache = bubbles[slot].ScatterCache ?? new ScatterTextCache();
+            scatterCache.Clear();
             // Drunkenness is zeroed here rather than carried: a line opens
             // sober and is told otherwise, so nothing an old line was doing
             // can leak into the next speaker to take this slot.
@@ -297,6 +338,7 @@ namespace BarPromenade
                 Speaker = speaker,
                 Line = SpeechDelivery.Spoken(text, unscaledTime),
                 DurationSeconds = durationSeconds,
+                OriginalStartedAt = unscaledTime,
                 LineToken = NextLineToken(),
                 SampledElapsedSeconds = 0f,
                 Opacity = opacity,
@@ -304,8 +346,11 @@ namespace BarPromenade
                 VoiceLease = -1,
                 Scatter = 0f,
                 ExtraJitterCents = 0f,
-                ScatterSeed = 0u
+                ScatterSeed = CitySoundStableHash.Combine(CitySoundStableHash.String(speakers[speaker].DesignId),
+                    CitySoundStableHash.String(text)),
+                ScatterCache = scatterCache
             };
+            BeginSynthesizedVoice(ref bubbles[slot]);
             speakingViews.Add(this);
             return true;
         }
@@ -357,7 +402,7 @@ namespace BarPromenade
         /// Tells one open line how far gone the man saying it is: how much
         /// its letters fly apart, and how wide its keystrokes detune. Called
         /// right after <see cref="ShowAt"/>, which zeroes all of it, so a
-        /// caller that never says this gets the ordinary sober line.
+        /// caller that never says this retains only shared perception effects.
         /// </summary>
         public bool SetDrunkenness(
             Object owner,
@@ -397,7 +442,20 @@ namespace BarPromenade
             }
 
             int slot = FindSlotOf(speaker);
-            return slot < 0 ? 0f : bubbles[slot].Scatter;
+            return slot < 0 ? 0f : Mathf.Max(bubbles[slot].Scatter, ResolveSharedScatter());
+        }
+
+        private float ResolveSharedScatter()
+        {
+            float smoothed = GameTimeScaleRuntime.SmoothedPresentationLevel;
+            int level = float.IsNaN(smoothed) ? 0 : Mathf.Clamp(Mathf.RoundToInt(smoothed), 0,
+                IntoxicationStageRules.MaximumLevel);
+            if (level != cachedScatterLevel)
+            {
+                cachedScatterLevel = level;
+                cachedSharedScatter = IntoxicationStageRules.Evaluate(level).MutterScatterAmount;
+            }
+            return cachedSharedScatter;
         }
 
         private float ResolveOpacityOf(int speaker)
@@ -493,8 +551,14 @@ namespace BarPromenade
             if (declared.Owner == null || declared.Anchor == null ||
                 !declared.Anchor.gameObject.activeInHierarchy || bubble.IsCulled || !bubble.Line.HasText)
                 return false;
+            bool speaking = bubble.UsesSynthesizedVoice
+                ? bubble.SynthesisReady && !bubble.SynthesisSuppressed &&
+                    bubble.Line.VocalizerPlan != null &&
+                    bubble.Line.VocalizerPlan.IsSpeakingAt(bubble.SampledElapsedSeconds)
+                : !bubble.Line.IsComplete;
             sample = new SpeechFaceSample(bubble.LineToken, bubble.Line.Text,
-                bubble.Line.RevealedCharacters, !bubble.Line.IsComplete, bubble.SampledElapsedSeconds);
+                bubble.Line.RevealedCharacters, speaking, bubble.SampledElapsedSeconds,
+                bubble.Line.VocalizerPlan != null);
             return true;
         }
 
@@ -519,7 +583,7 @@ namespace BarPromenade
         /// </summary>
         public void AdvanceTo(float unscaledTime)
         {
-            if (float.IsNaN(unscaledTime))
+            if (!RenderEnabled || float.IsNaN(unscaledTime))
             {
                 return;
             }
@@ -578,7 +642,7 @@ namespace BarPromenade
             NpcSpeaker speaker = speakers[bubble.Speaker];
             if (speaker.Owner == null || speaker.Anchor == null ||
                 !speaker.Anchor.gameObject.activeInHierarchy ||
-                unscaledTime - bubble.Line.StartedAt > bubble.DurationSeconds)
+                unscaledTime - bubble.OriginalStartedAt > bubble.DurationSeconds)
             {
                 CloseSlot(ref bubble);
                 return;
@@ -594,8 +658,64 @@ namespace BarPromenade
             if (bubble.IsCulled)
             {
                 ReleaseVoice(ref bubble);
+                if (bubble.UsesSynthesizedVoice) bubble.SynthesisSuppressed = true;
             }
 
+            if (bubble.UsesSynthesizedVoice && !bubble.SynthesisSuppressed)
+            {
+                if (!bubble.SynthesisReady)
+                {
+                    float originalElapsed = Mathf.Max(0f, unscaledTime - bubble.OriginalStartedAt);
+                    if (originalElapsed > 1f)
+                    {
+                        // Reconstruction and an overloaded worker may arrive far
+                        // into an authored line. Neither may replay its beginning.
+                        ReleaseVoice(ref bubble);
+                        bubble.SynthesisSuppressed = true;
+                    }
+                    else if (!NpcSpeechVoice.IsLineReady(bubble.VoiceLease))
+                    {
+                        bubble.SampledElapsedSeconds = 0f;
+                        return;
+                    }
+                    else
+                    {
+                        float duration = NpcSpeechVoice.LineDuration(bubble.VoiceLease);
+                        float remaining = bubble.DurationSeconds - originalElapsed;
+                        if (duration <= 0f || float.IsNaN(duration) || float.IsInfinity(duration) ||
+                            remaining < duration + 0.05f)
+                        {
+                            ReleaseVoice(ref bubble);
+                            bubble.SynthesisSuppressed = true;
+                        }
+                        else
+                        {
+                            bubble.SynthesisReady = true;
+                            bubble.Line.StartedAt = unscaledTime;
+                            bubble.Line.RevealDurationSeconds = duration;
+                            bubble.Line.VocalizerPlan = NpcSpeechVoice.LinePlan(bubble.VoiceLease);
+                        }
+                    }
+                }
+            }
+
+            if (bubble.UsesSynthesizedVoice)
+            {
+                if (!bubble.SynthesisSuppressed && bubble.SynthesisReady && !bubble.IsCulled)
+                {
+                    bubble.SampledElapsedSeconds = NpcSpeechVoice.SyncLine(bubble.VoiceLease,
+                        Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt),
+                        speaker.ResolvePosition(Vector3.zero), bubble.Opacity, speaker.Earshot,
+                        bubble.ExtraJitterCents);
+                    bubble.Line.Step(bubble.Line.StartedAt + bubble.SampledElapsedSeconds, out _);
+                }
+                else
+                {
+                    bubble.Line.Step(unscaledTime, out _);
+                    bubble.SampledElapsedSeconds = Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt);
+                }
+                return;
+            }
             bool hasBlip = bubble.Line.Step(unscaledTime, out char blip);
             bubble.SampledElapsedSeconds = Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt);
             if (!hasBlip ||
@@ -619,6 +739,30 @@ namespace BarPromenade
                 bubble.Opacity,
                 speaker.Earshot,
                 bubble.ExtraJitterCents);
+        }
+
+        private void BeginSynthesizedVoice(ref Bubble bubble)
+        {
+            NpcSpeaker speaker = speakers[bubble.Speaker];
+            bubble.UsesSynthesizedVoice = Application.isPlaying && speaker.IsValid &&
+                RussianSpeechPhonetics.HasRussianSpeech(bubble.Line.Text);
+            if (!bubble.UsesSynthesizedVoice) return;
+            if (!isActiveAndEnabled || bubble.IsCulled || speaker.Anchor == null ||
+                !speaker.Anchor.gameObject.activeInHierarchy)
+            {
+                bubble.SynthesisSuppressed = true;
+                return;
+            }
+
+            EnsureVoice(ref bubble);
+            if (bubble.VoiceLease < 0)
+            {
+                bubble.SynthesisSuppressed = true;
+                return;
+            }
+
+            NpcSpeechVoice.BeginLine(bubble.VoiceLease, speaker.VoiceOrdinal,
+                bubble.Line.Text, bubble.DurationSeconds);
         }
 
         private void EnsureVoice(ref Bubble bubble)
@@ -646,13 +790,18 @@ namespace BarPromenade
             bubble.Speaker = -1;
             bubble.Line = default;
             bubble.DurationSeconds = 0f;
+            bubble.OriginalStartedAt = 0f;
             bubble.LineToken = 0;
             bubble.SampledElapsedSeconds = 0f;
+            bubble.UsesSynthesizedVoice = false;
+            bubble.SynthesisReady = false;
+            bubble.SynthesisSuppressed = false;
             bubble.Opacity = 0f;
             bubble.IsCulled = false;
             bubble.Scatter = 0f;
             bubble.ExtraJitterCents = 0f;
             bubble.ScatterSeed = 0u;
+            bubble.ScatterCache?.Clear();
         }
 
         private void CloseBubblesOf(int speaker)
@@ -690,14 +839,34 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!UseManualClock)
-                AdvanceTo(Time.unscaledTime);
+            float now = Time.unscaledTime;
+            float previous = lastAutomaticTime;
+            lastAutomaticTime = now;
+            if (UseManualClock) return;
+            if (!RenderEnabled || GameTimeScaleRuntime.IsPaused || AudioListener.pause)
+            {
+                // Automatic callers admit in raw unscaled time. Move only the
+                // paused portion of each line's epochs, retaining immutable
+                // window lengths without a catch-up seek on resume.
+                for (int index = 0; index < bubbles.Length; index++)
+                {
+                    if (bubbles[index].Speaker < 0 || previous < 0f) continue;
+                    float held = Mathf.Max(0f, now - Mathf.Max(previous, bubbles[index].OriginalStartedAt));
+                    bubbles[index].OriginalStartedAt += held;
+                    bubbles[index].Line.StartedAt += held;
+                    bubbles[index].Line.LastBlipAt += held;
+                }
+                return;
+            }
+            AdvanceTo(now);
         }
 
         private void OnGUI()
         {
             HasRenderedLayout = false;
             LastRenderedBubbleCount = 0;
+            LastRenderedScatteredBubbleCount = 0;
+            LastRenderedMaximumScatterRows = 0;
             if (!RenderEnabled || worldCamera == null)
             {
                 return;
@@ -731,9 +900,11 @@ namespace BarPromenade
             DismissAll();
         }
 
+        private void OnDestroy() => DismissAll();
+
         private void DrawBubble(int index, RetroUiCanvas canvas)
         {
-            Bubble bubble = bubbles[index];
+            ref Bubble bubble = ref bubbles[index];
             if (bubble.Speaker < 0 ||
                 bubble.IsCulled ||
                 bubble.Opacity <= 0f ||
@@ -760,12 +931,25 @@ namespace BarPromenade
                 new Vector2(
                     screenPoint.x,
                     Screen.height - screenPoint.y));
-            Vector2 panelSize = CalculatePanelSize(bubble.Line.Text);
+            ScatterTextCache cache = bubble.ScatterCache;
+            if (!cache.PanelReady)
+            {
+                cache.PanelSize = CalculatePanelSize(bubble.Line.Text);
+                cache.PanelReady = true;
+            }
+            Vector2 panelSize = cache.PanelSize;
             Rect panel = ResolvePanelRect(logicalAnchor, panelSize);
             // Read, never recomputed: the reveal was stepped in Update
             // this frame, and stepping it again here would be a second
             // clock disagreeing with the one that made the sound.
-            string drawn = bubble.Line.RevealedText;
+            int revealed = Mathf.Clamp(bubble.Line.RevealedCharacters, 0, bubble.Line.Text.Length);
+            if (cache.RevealedCount != revealed)
+            {
+                cache.RevealedCount = revealed;
+                cache.RevealedText = revealed >= bubble.Line.Text.Length ? bubble.Line.Text :
+                    revealed == 0 ? string.Empty : bubble.Line.Text.Substring(0, revealed);
+            }
+            string drawn = cache.RevealedText;
 
             RetroUiTheme.DrawPanel(
                 panel,
@@ -774,17 +958,22 @@ namespace BarPromenade
                 false,
                 0f,
                 1f,
-                bubble.Opacity);
-            DrawTail(panel, logicalAnchor.x, bubble.Opacity);
+                bubble.Opacity * RetroUiTheme.DialoguePanelOpacity);
+            DrawTail(panel, logicalAnchor.x,
+                bubble.Opacity * RetroUiTheme.DialoguePanelOpacity);
 
             // The text is faded by the global tint rather than by a
             // second style, so the one cached style keeps serving every
             // speaker at whatever distance each of them is standing.
             Color previousGuiColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, bubble.Opacity);
-            if (SpeechScatterLayout.IsScattering(bubble.Scatter))
+            float scatter = Mathf.Max(bubble.Scatter, ResolveSharedScatter());
+            if (revealed > 0 && SpeechScatterLayout.IsScattering(scatter) &&
+                EnsureScatterLayout(ref bubble, panelSize))
             {
-                DrawScatteredText(panel, bubble, drawn);
+                DrawScatteredText(panel, bubble, revealed, scatter);
+                LastRenderedScatteredBubbleCount++;
+                LastRenderedMaximumScatterRows = Mathf.Max(LastRenderedMaximumScatterRows, cache.RowCount);
             }
             else
             {
@@ -823,19 +1012,19 @@ namespace BarPromenade
         private void DrawScatteredText(
             Rect panel,
             in Bubble bubble,
-            string drawn)
+            int revealedCharacters,
+            float scatterAmount)
         {
-            float[] widths = EnsurePrefixWidths(bubble.Line.Text);
+            ScatterTextCache cache = bubble.ScatterCache;
             var origin = new Vector2(
                 panel.x + HorizontalTextInset,
                 panel.y + VerticalTextInset);
             float lineHeight = scatterStyle.lineHeight;
-            float now = Time.unscaledTime;
+            float now = bubble.Line.StartedAt + bubble.SampledElapsedSeconds;
             Matrix4x4 previousMatrix = GUI.matrix;
-            for (int index = 0; index < drawn.Length; index++)
+            for (int index = 0; index < revealedCharacters; index++)
             {
-                char value = drawn[index];
-                if (value == ' ')
+                if (cache.Glyphs[index] == null)
                 {
                     continue;
                 }
@@ -845,75 +1034,78 @@ namespace BarPromenade
                 // legibly and comes apart behind the cursor.
                 float revealedAt =
                     bubble.Line.StartedAt +
-                    (index + 1) / SpeechDelivery.CharactersPerSecond;
+                    cache.RevealTimes[index];
                 SpeechScatterLayout.ResolveGlyph(
                     index,
                     bubble.ScatterSeed,
                     now - revealedAt,
-                    bubble.Scatter,
+                    scatterAmount,
                     out Vector2 offset,
                     out float degrees);
                 Rect glyph = SpeechScatterLayout.ResolveGlyphRect(
-                    origin,
-                    SpeechScatterLayout.ResolvePenX(widths, index),
-                    SpeechScatterLayout.ResolveGlyphWidth(widths, index),
+                    origin + new Vector2(0f, cache.Cursors[index].y),
+                    cache.Cursors[index].x,
+                    cache.Widths[index],
                     lineHeight,
                     offset);
 
-                GUI.matrix = previousMatrix;
-                if (degrees != 0f)
-                {
-                    GUIUtility.RotateAroundPivot(degrees, glyph.center);
-                }
-
-                GUI.Label(glyph, ResolveGlyphText(value), scatterStyle);
+                GUI.matrix = SpeechScatterLayout.ResolveGlyphMatrix(previousMatrix, glyph.center, degrees);
+                GUI.Label(glyph, cache.Glyphs[index], scatterStyle);
             }
 
             GUI.matrix = previousMatrix;
         }
 
         /// <summary>
-        /// Cumulative widths of every prefix of the line, measured once from
-        /// the WHOLE line — the same rule the panel is sized by. Kerning is
-        /// then the font's own, and the row the glyphs walk is the row the
-        /// single label would have drawn.
+        /// Keep the exact wrapped label positions, not a second word breaker.
+        /// Work and storage are bounded per slot and paid once per line. Oversize
+        /// non-production inputs retain the complete ordinary-label fallback.
         /// </summary>
-        private float[] EnsurePrefixWidths(string text)
+        private bool EnsureScatterLayout(ref Bubble bubble, Vector2 panelSize)
         {
-            string safeText = text ?? string.Empty;
-            if (string.Equals(
-                    scatterPrefixText,
-                    safeText,
-                    System.StringComparison.Ordinal) &&
-                scatterPrefixWidths.Length == safeText.Length + 1)
+            string text = bubble.Line.Text;
+            if (text.Length > MaximumCachedScatterCharacters) return false;
+            ScatterTextCache cache = bubble.ScatterCache;
+            if (!cache.GlyphsReady)
             {
-                return scatterPrefixWidths;
+                cache.EnsureCapacity(text.Length);
+                cache.CharacterCount = text.Length;
+                var contentRect = new Rect(0f, 0f, panelSize.x - HorizontalTextInset * 2f,
+                    panelSize.y - VerticalTextInset * 2f);
+                measureContent.text = text;
+                for (int index = 0; index <= text.Length; index++)
+                    cache.Cursors[index] = labelStyle.GetCursorPixelPosition(contentRect, measureContent, index);
+                float maximumY = cache.Cursors[0].y;
+                for (int index = 0; index < text.Length; index++)
+                {
+                    if (char.IsWhiteSpace(text[index])) continue;
+                    string glyph = text[index].ToString();
+                    cache.Glyphs[index] = glyph;
+                    Vector2 pen = cache.Cursors[index], next = cache.Cursors[index + 1];
+                    maximumY = Mathf.Max(maximumY, pen.y);
+                    if (Mathf.Abs(next.y - pen.y) < .5f && next.x > pen.x)
+                        cache.Widths[index] = next.x - pen.x;
+                    else
+                    {
+                        measureContent.text = glyph;
+                        cache.Widths[index] = scatterStyle.CalcSize(measureContent).x;
+                    }
+                }
+                cache.RowCount = 1 + Mathf.Max(0, Mathf.RoundToInt((maximumY - cache.Cursors[0].y) /
+                    Mathf.Max(1f, scatterStyle.lineHeight)));
+                cache.GlyphsReady = true;
+                cache.RevealDuration = float.NaN;
+                ScatterLayoutBuildCount++;
             }
-
-            EnsureStyles();
-            var widths = new float[safeText.Length + 1];
-            for (int index = 1; index <= safeText.Length; index++)
+            if (cache.RevealPlan != bubble.Line.VocalizerPlan || cache.RevealDuration != bubble.Line.RevealDurationSeconds)
             {
-                measureContent.text = safeText.Substring(0, index);
-                widths[index] = scatterStyle.CalcSize(measureContent).x;
+                cache.RevealPlan = bubble.Line.VocalizerPlan;
+                cache.RevealDuration = bubble.Line.RevealDurationSeconds;
+                for (int index = 0; index < text.Length; index++)
+                    cache.RevealTimes[index] = cache.RevealPlan != null && index >= cache.RevealPlan.TextLength
+                        ? cache.RevealPlan.DurationSeconds : bubble.Line.CharacterRevealTime(index);
             }
-
-            scatterPrefixText = safeText;
-            scatterPrefixWidths = widths;
-            return widths;
-        }
-
-        /// <summary>One-character strings, kept rather than allocated: a
-        /// scattered line asks for one per letter per repaint.</summary>
-        private string ResolveGlyphText(char value)
-        {
-            if (!glyphTexts.TryGetValue(value, out string text))
-            {
-                text = value.ToString();
-                glyphTexts[value] = text;
-            }
-
-            return text;
+            return true;
         }
 
         /// <summary>
@@ -1087,9 +1279,9 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (bubbles[index].Line.StartedAt < oldestStart)
+                if (bubbles[index].OriginalStartedAt < oldestStart)
                 {
-                    oldestStart = bubbles[index].Line.StartedAt;
+                    oldestStart = bubbles[index].OriginalStartedAt;
                     oldest = index;
                 }
             }
@@ -1121,6 +1313,7 @@ namespace BarPromenade
                 false,
                 false);
             scatterStyle.clipping = TextClipping.Overflow;
+            scatterStyle.padding = new RectOffset(0, 0, 0, 0);
         }
     }
 }

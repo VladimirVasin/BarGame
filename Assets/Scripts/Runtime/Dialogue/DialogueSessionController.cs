@@ -319,7 +319,8 @@ namespace BarPromenade
                 Rect panel = new Rect((RetroUiTheme.LogicalWidth - 280f) * .5f,
                     RetroUiTheme.LogicalHeight - height - 18f, 280f, height);
                 LastChoicePanelRect = panel;
-                RetroUiTheme.DrawPanel(panel, RetroUiTheme.Panel, RetroUiTheme.BorderMuted, false, 0f, 1f);
+                RetroUiTheme.DrawPanel(panel, RetroUiTheme.Panel, RetroUiTheme.BorderMuted,
+                    false, 0f, 1f, RetroUiTheme.DialoguePanelOpacity);
                 for (int row = 0; row < visible; row++)
                 {
                     int index = first + row;
@@ -327,7 +328,7 @@ namespace BarPromenade
                     if (GUI.enabled && Event.current.type == EventType.MouseMove && rect.Contains(Event.current.mousePosition))
                         SelectedChoice = index;
                     bool selected = index == SelectedChoice;
-                    RetroUiTheme.DrawSelection(rect, selected);
+                    RetroUiTheme.DrawSelection(rect, selected, RetroUiTheme.DialoguePanelOpacity);
                     GUI.Label(new Rect(rect.x + 7f, rect.y, rect.width - 14f, rect.height),
                         LocalizationService.Get(cursor.Current.Choices[index].TextKey), selected ? selectedStyle : optionStyle);
                     if (GUI.Button(rect, GUIContent.none, GUIStyle.none))

@@ -8,15 +8,27 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class GameTimeScaleRuntime : MonoBehaviour
     {
+        // A small drink must take time to reach the ear too. The visual ramp's
+        // fixed points/second reaches +8/+20 almost immediately.
+        private const float AudioResponseSeconds = 0.7f;
+
         private static GameTimeScaleRuntime instance;
         private GameTimeScaleState state;
         private float lastAppliedScale;
         private float presentationLevel;
+        private float audioLevel;
+        private IntoxicationPerceptionProfile audioPerception;
 
         public static bool IsPaused =>
             Time.timeScale <= 0f || (instance != null && instance.state.IsPaused);
         public static float PerceptionIntensity =>
             instance != null ? instance.state.PerceptionIntensity : 0f;
+        public static IntoxicationPerceptionProfile AudioPerception => instance != null
+            ? instance.audioPerception
+            : IntoxicationPerceptionRules.Evaluate(GameSessionState.IntoxicationLevel);
+        public static float PerceptionPlaybackRate => AudioPerception.PlaybackRate;
+        public static float SmoothedAudioLevel => instance != null
+            ? instance.audioLevel : GameSessionState.IntoxicationLevel;
         public static float SmoothedPresentationLevel =>
             instance != null ? instance.presentationLevel :
                 GameSessionState.IntoxicationLevel;
@@ -51,11 +63,12 @@ namespace BarPromenade
             return instance;
         }
 
-        public static void SetIntoxicationLevel(float level)
+        public static void SetIntoxicationLevel(float level, bool synchronizeAudio = true)
         {
             GameTimeScaleRuntime runtime = EnsureInstalled();
             runtime.AdoptExternalBaseline();
             runtime.presentationLevel = Mathf.Clamp(level, 0f, 100f);
+            if (synchronizeAudio) runtime.SetAudioLevel(runtime.presentationLevel);
             runtime.state.SetIntoxicationLevel(level);
             runtime.Apply();
         }
@@ -93,6 +106,7 @@ namespace BarPromenade
             if (instance != null)
             {
                 instance.presentationLevel = 0f;
+                instance.SetAudioLevel(0f);
                 instance.state.ResetSession();
                 instance.Apply();
             }
@@ -109,6 +123,7 @@ namespace BarPromenade
             instance = this;
             state = new GameTimeScaleState(Time.timeScale, Time.fixedDeltaTime);
             presentationLevel = GameSessionState.IntoxicationLevel;
+            SetAudioLevel(presentationLevel);
             state.SetIntoxicationLevel(presentationLevel);
             DontDestroyOnLoad(gameObject);
             Apply();
@@ -118,12 +133,26 @@ namespace BarPromenade
         private void Update()
         {
             AdoptExternalBaseline();
+            float deltaTime = state.RealGameplayDelta(Time.unscaledDeltaTime);
             presentationLevel = Mathf.MoveTowards(
                 presentationLevel,
                 GameSessionState.IntoxicationLevel,
-                state.RealGameplayDelta(Time.unscaledDeltaTime) * 100f / 0.7f);
+                deltaTime * 100f / 0.7f);
+            if (deltaTime > 0f && audioLevel != GameSessionState.IntoxicationLevel)
+            {
+                float target = GameSessionState.IntoxicationLevel;
+                float next = Mathf.Lerp(audioLevel, target,
+                    1f - Mathf.Exp(-deltaTime / AudioResponseSeconds));
+                SetAudioLevel(Mathf.Abs(next - target) <= 0.001f ? target : next);
+            }
             state.SetIntoxicationLevel(presentationLevel);
             Apply();
+        }
+
+        private void SetAudioLevel(float level)
+        {
+            audioLevel = level;
+            audioPerception = IntoxicationPerceptionRules.Evaluate(level);
         }
 
         private void AdoptExternalBaseline()

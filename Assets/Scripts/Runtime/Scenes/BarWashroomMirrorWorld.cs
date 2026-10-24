@@ -20,7 +20,14 @@ namespace BarPromenade
         public const float PlaneX = -2.416f;
         public const float OpeningMinY = 1.26f, OpeningMaxY = 2.10f;
         public const float OpeningMinZ = 4.70f, OpeningMaxZ = 5.66f;
+        // URP reserves bits 2/3 for LOD crossfade and bit 0 for XR motion.
+        public const int ApertureStencilBit = 2;
         private const int MaximumSourceRenderers = 4096, MaximumReflectedRenderers = 1024;
+        private const int MaximumMirrorMaterials = 128;
+        private static readonly int StencilRefId = Shader.PropertyToID("_GeometricMirrorStencilRef");
+        private static readonly int StencilReadMaskId = Shader.PropertyToID("_GeometricMirrorStencilReadMask");
+        private static readonly int StencilCompId = Shader.PropertyToID("_GeometricMirrorStencilComp");
+        private static readonly int StencilMotionRefId = Shader.PropertyToID("_GeometricMirrorStencilMotionRef");
         // Hall architecture already belongs to the environment-cube layer by
         // the time this is built. A mirror must never inherit that capture layer.
         private const int PresentationLayer = 0;
@@ -30,9 +37,18 @@ namespace BarPromenade
         private readonly List<bool> templateRenderingOff = new List<bool>();
         private readonly List<string> clonedSourceNames = new List<string>();
         private readonly Plane[] frustum = new Plane[6];
+        private readonly Dictionary<Material, Material> mirrorMaterials = new Dictionary<Material, Material>();
+        private readonly List<Material> materialSources = new List<Material>();
+        private readonly List<Material> materialCopies = new List<Material>();
+        private readonly List<Material> materialScratch = new List<Material>();
         private Transform room, content, space;
         private Camera camera;
         private HomeMirrorHeroTwin twin;
+        private HomeMirrorSubtreeClone aperture;
+        private Material apertureMaterial;
+        private Shader mirrorUnlitShader;
+        private Renderer[] twinRenderers;
+        private Func<Material, Material> resolveMaterial;
         private Bounds openingWorldBounds;
 
         public bool IsInitialized { get; private set; }
@@ -99,6 +115,8 @@ namespace BarPromenade
             space.SetParent(content, false);
             space.localPosition = new Vector3(2f * PlaneX, 0f, 0f);
             space.localScale = new Vector3(-1f, 1f, 1f);
+            resolveMaterial = ResolveMirrorMaterial;
+            CreateAperture();
 
             // Clipped, Blender-authored patches replace slabs that cross the
             // plane. Mirroring those slabs whole would overlap the real floor.
@@ -134,6 +152,10 @@ namespace BarPromenade
                 "Bar Washroom Mirror Hero Twin", PresentationLayer);
             if (twin == null)
                 throw new InvalidOperationException("The production hero's bar mirror twin could not be created.");
+            // Includes the scarf's generated renderers, installed after the
+            // prefab's registry was paired. They need the same aperture mask.
+            twinRenderers = twin.Root.GetComponentsInChildren<Renderer>(true);
+            Sync();
             IsInitialized = true;
             ApplyActive(false);
         }
@@ -164,6 +186,79 @@ namespace BarPromenade
         public static Vector3 Reflect(Vector3 roomPoint) =>
             new Vector3(2f * PlaneX - roomPoint.x, roomPoint.y, roomPoint.z);
 
+        private void CreateAperture()
+        {
+            Shader shader = Resources.Load<Shader>("Shaders/GeometricMirrorMask");
+            if (shader == null) throw new InvalidOperationException("Missing geometric mirror aperture shader.");
+            apertureMaterial = new Material(shader) { name = "Bar Mirror Aperture", hideFlags = HideFlags.DontSave };
+            // Reuse the authored pane, including its imported ancestor scales;
+            // the mask is in the real room, outside the reflected space.
+            aperture = HomeMirrorSubtreeClone.CreateInFrame(Fallback.transform, content, room,
+                "Bar Washroom Mirror Aperture");
+            for (int index = 0; index < aperture.RendererCount; index++)
+            {
+                Renderer renderer = aperture.CloneRenderer(index);
+                renderer.gameObject.layer = PresentationLayer;
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.sharedMaterial = apertureMaterial;
+                renderer.enabled = true;
+                renderer.forceRenderingOff = false;
+            }
+        }
+
+        private Material ResolveMirrorMaterial(Material source)
+        {
+            if (source == null) return null;
+            if (mirrorMaterials.TryGetValue(source, out Material material)) return material;
+            // Authored bulb meshes use stock URP Unlit. Preserve that shader's
+            // complete shading/pass contract in its masked counterpart.
+            bool stockUnlit = source.shader != null && source.shader.name == "Universal Render Pipeline/Unlit";
+            Shader shader = source.shader;
+            if (stockUnlit)
+            {
+                if (mirrorUnlitShader == null)
+                    mirrorUnlitShader = Resources.Load<Shader>("Shaders/GeometricMirrorUnlit");
+                shader = mirrorUnlitShader;
+            }
+            if (shader == null || shader.FindPropertyIndex("_GeometricMirrorStencilRef") < 0 ||
+                shader.FindPropertyIndex("_GeometricMirrorStencilReadMask") < 0 ||
+                shader.FindPropertyIndex("_GeometricMirrorStencilComp") < 0 ||
+                shader.FindPropertyIndex("_GeometricMirrorStencilMotionRef") < 0)
+                throw new InvalidOperationException("A bar mirror material lacks aperture support: " + source.name);
+            if (materialCopies.Count >= MaximumMirrorMaterials)
+                throw new InvalidOperationException("The bar mirror exceeds its fixed material budget.");
+            material = new Material(source) { name = source.name + " (Bar Mirror)", hideFlags = HideFlags.DontSave };
+            material.shader = shader;
+            SetApertureState(material);
+            mirrorMaterials.Add(source, material);
+            mirrorMaterials.Add(material, material);
+            materialSources.Add(source);
+            materialCopies.Add(material);
+            return material;
+        }
+
+        private static void SetApertureState(Material material)
+        {
+            material.SetInt(StencilRefId, ApertureStencilBit);
+            material.SetInt(StencilReadMaskId, ApertureStencilBit);
+            material.SetInt(StencilCompId, (int)CompareFunction.Equal);
+            material.SetInt(StencilMotionRefId, ApertureStencilBit | 1);
+        }
+
+        private void ConstrainMaterials(Renderer renderer)
+        {
+            if (renderer == null) return;
+            renderer.GetSharedMaterials(materialScratch);
+            bool changed = false;
+            for (int index = 0; index < materialScratch.Count; index++)
+            {
+                Material material = ResolveMirrorMaterial(materialScratch[index]);
+                changed |= !ReferenceEquals(material, materialScratch[index]);
+                materialScratch[index] = material;
+            }
+            if (changed) renderer.SetSharedMaterials(materialScratch);
+        }
+
         private void LateUpdate()
         {
             if (!IsInitialized) return;
@@ -190,13 +285,26 @@ namespace BarPromenade
 
         private void Sync()
         {
+            // Preserve live material edits as well as the source's property
+            // blocks, without allocating a material per reflected renderer.
+            for (int index = 0; index < materialCopies.Count; index++)
+            {
+                if (materialSources[index] == null) continue;
+                materialCopies[index].CopyPropertiesFromMaterial(materialSources[index]);
+                SetApertureState(materialCopies[index]);
+            }
             foreach (HomeMirrorSubtreeClone copy in copies)
             {
                 copy.SyncTransforms();
-                copy.SyncRenderers(true);
+                copy.SyncRenderers(true, materialOverride: resolveMaterial);
                 copy.SyncPropertyBlocks();
             }
-            twin?.Sync();
+            twin?.Sync(materialOverride: resolveMaterial);
+            if (twinRenderers != null)
+                foreach (Renderer renderer in twinRenderers) ConstrainMaterials(renderer);
+            // A source beyond the silver backing cannot be seen in this pane.
+            if (twin?.Root != null)
+                twin.Root.gameObject.SetActive(twin.Root.localPosition.x < PlaneX);
         }
 
         private void OnDisable()
@@ -209,13 +317,27 @@ namespace BarPromenade
             if (Fallback != null) Fallback.enabled = true;
             twin?.Destroy();
             twin = null;
+            aperture?.Destroy();
+            aperture = null;
             foreach (HomeMirrorSubtreeClone copy in copies) copy.Destroy();
             copies.Clear();
+            foreach (Material material in materialCopies) DestroyOwnedMaterial(material);
+            DestroyOwnedMaterial(apertureMaterial);
+            mirrorMaterials.Clear();
+            materialSources.Clear();
+            materialCopies.Clear();
             for (int index = 0; index < sourceTemplates.Count; index++)
                 if (sourceTemplates[index] != null)
                     sourceTemplates[index].forceRenderingOff = templateRenderingOff[index];
             sourceTemplates.Clear();
             templateRenderingOff.Clear();
+        }
+
+        private static void DestroyOwnedMaterial(Material material)
+        {
+            if (material == null) return;
+            if (Application.isPlaying) Destroy(material);
+            else DestroyImmediate(material);
         }
 
         private static Bounds TransformBounds(Bounds local, Transform frame)

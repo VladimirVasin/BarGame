@@ -95,6 +95,15 @@ namespace BarPromenade
         protected virtual float SuppressionFadeOutSeconds => MusicMix.FadeOutSeconds;
         protected virtual float OutputVolume =>
             MusicMix.DefaultOutputVolume;
+        protected virtual float AuthoredPlaybackPitch => 1f;
+
+        /// <summary>Keep each carrier's own transport beneath the shared
+        /// listener slowdown, without changing its fades or saved playhead.</summary>
+        protected void RefreshPlaybackRate()
+        {
+            if (audioSource != null)
+                audioSource.pitch = AuthoredPlaybackPitch * GameTimeScaleRuntime.PerceptionPlaybackRate;
+        }
 
         protected virtual void PrepareForPlayback()
         {
@@ -349,6 +358,7 @@ namespace BarPromenade
                     "non-negative.");
             }
 
+            RefreshPlaybackRate();
             if (!fadeActive || unscaledDeltaTime <= 0f)
             {
                 return;
@@ -384,6 +394,7 @@ namespace BarPromenade
             audioSource.dopplerLevel = 0f;
             audioSource.volume = 0f;
             audioSource.priority = 64;
+            RefreshPlaybackRate();
             GameAudioMixer.Route(
                 audioSource,
                 GameAudioGroup.Music);
@@ -391,8 +402,8 @@ namespace BarPromenade
 
         private void ConfigureTone()
         {
-            // The music keeps its dynamics and timing. This only rounds the
-            // brittle top octave, unlike the stronger baked treatment on SFX.
+            // This carrier tone rounds the brittle top octave independently
+            // of the shared perceptual transport.
             toneFilter.cutoffFrequency =
                 MusicMix.ToneCutoffFrequency;
             toneFilter.lowpassResonanceQ = 1f;
@@ -652,6 +663,7 @@ namespace BarPromenade
 
             if (sourcePaused)
             {
+                RefreshPlaybackRate();
                 audioSource.UnPause();
                 sourcePaused = false;
                 if (audioSource.isPlaying)
@@ -663,6 +675,7 @@ namespace BarPromenade
             if (!audioSource.isPlaying)
             {
                 PrepareForPlayback();
+                RefreshPlaybackRate();
                 audioSource.Play();
             }
         }

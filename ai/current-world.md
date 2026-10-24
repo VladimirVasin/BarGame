@@ -726,8 +726,12 @@ cemetery:own interiors/returns.
 
 ### Streets, transport and sound
 
-- All speech/`E` uses shared head bubbles; bottom UI is silent. `SpeechDelivery`:
-  `24` chars/s, `.13 s` clicks, `4.4 s` bubble, `2.5 s` tail; pairs/chess retain full lines;
+- All speech/`E` uses shared head bubbles; bottom descriptions/choices/pages stay
+  silent. Russian spoken lines use whole-line procedural vocalization in their
+  existing speaker profiles and captured windows: tempo fits without pitch shifts,
+  text/faces follow voiced duration, and the remaining tail adapts. Preparation
+  holds reveal; overdue/unready results cancel without replay. English retains
+  `24` chars/s, `.13 s` writing clicks and the default `2.5 s` tail;
 - eleven RU/EN role labels: Foreman, Watchman, Fisherman, Ferryman, Chess player,
   Checkers player, Bartender, Cashier, Cat, Cafe attendant, Guard (both east-post
   guards); village/Mother excluded.
@@ -1726,11 +1730,20 @@ cemetery:own interiors/returns.
   voice, noise bed or world source. Native audio smoothing eases strength
   changes, episode boundaries and repetition seams; sobering fades back to
   exact dry sound without changing world tempo or visuals.
+  Shared gameplay speech stays audible: smoothed alcohol level drives at most
+  `-6 dB` gain and a `7600→1800 Hz` low-pass. Speech/music playback reaches
+  `0.25×` at maximum over existing VHS breakup; native DSP stays unchanged.
+  Speech text/mouth follow slowed PCM within the original real window, leaving
+  unheard fragments unrevealed. All spoken captions reuse the hero's peak glyph
+  scatter with cached wrapped rows. Sobriety restores; menu auditions stay dry.
   `IntoxicationPerceptionRules` maps the
   alcohol percentage through `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`; world
   motion follows `1-0.12 A`, bounded at `0.88`. The persistent
-  `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused real-time level
-  smoothing used by status and audio, composes pause leases and a matching
+  `GameTimeScaleRuntime` owns the status/world ramp and a separate persistent
+  audio level: exponential easing with `0.7 s` unpaused real-time constant,
+  retained across player/scene rebinds. VHS, music and speech use its cached
+  profile; explicit synchronization/session reset restore exact values.
+  It composes pause leases and a matching
   positive physics step. Physical bar service and fall/rise/crawl share world time with the
   bodies; intoxication leaves calendar, needs and recovery at their intended
   real-time rates. Explicit debug speed multiplies world/calendar progression;
@@ -2671,8 +2684,8 @@ cemetery:own interiors/returns.
   The same arm hides/reveals it behind the back; rear contact gates service.
   Free right palm braces/repositions/notices; occupied IK/Walk/towel win.
   Central-tap beer/three bottle routes live; mixing/multi-bottle remain deferred;
-- `BarConversationController`: four pairs/bartender, two shared views/one channel.
-  No-repeat exchanges; A→B before service. Bounded order tokens.
+- `BarConversationController`: counter/two booth pairs and bartender; two shared views.
+  Separate-table patrons silent; ≤4 lines; A→B/no repeats. Short waits/bounded tokens.
   Rest/contact gates; pause freezes, WC/range/exit cancel. Foam awaits state;
 - the soundscape keeps one diffuse occupied-room bed, then places two
   independent `8 s` mono murmur pockets at the real booth and social-table

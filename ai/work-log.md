@@ -3,52 +3,92 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-24
+
+Russian NPC/E/dialogue/approved hero lines share bounded source/filter vocalization;
+silent UI/pages and English clicks remain. Gendered styles vary excitation,
+resonance/melody/articulation, vowel reduction, r and phone/word/pause rhythm.
+Permanent IDs diversify shared males; fallback excludes hero. Canonical phones
+keep unreduced vowels/offsets; styles cannot mutate cache. One immutable timeline
+drives PCM/text/scatter/mouths through pauses/held vowels. Windows reduce pauses/
+drawl before pitch-preserving fitting; preparation holds reveal. Stale/cancelled/
+cull-hidden jobs cannot revive lines/leases. Owned clips retain head/earshot/
+pause/cleanup; no sentence PCM bank. Menu:gender filters/A-B/free/window.
+Sound exception/bibles/shared speech standard match; runtime cost unmeasured.
+RussianVocalizerTests, SharedVocalizer_UsesSpeakerIdentityClockAndPooledCleanup,
+MenuLab_PlaysTwelvePresetsComparesGenderedSlotsAndCancelsWithoutLeavingMenu passed.
+NpcSpeechVoiceTests focused catalog/fallback/female-alias/permanent-person checks passed;
+menu/lab Game view and named PCM bounds/energy reviewed.
+RoadSpeech_PreservesSilenceAndBagAcrossLegsWithoutTakingThePrompt passed earlier.
+
+Bar mirror's renderer-only room escaped its aperture at hall camera angles.
+Authored-pane stencil bounds reflected color/depth/normals/motion; shared bounded
+material variants retain source shading/property blocks, scarf/water/unlit bulbs.
+Direct/oblique WC views retain the passive rig/fallback and owned cleanup.
+WashroomMirror_ConfinesReflectionToApertureFromHallAndWashroom passed pixel
+confinement/visible reflection; hall/direct/oblique Game view mirror review passed.
+All effects groups reviewed for mirror/menu/dialogue; scene lighting/material/post retained.
+Bar solitary-table patrons are no longer declared, admitted or reserved as
+conversation partners; counter/booth pairs and bartender remain independent.
+The dormant high-table keys stay addressable without granting speech.
+SingleTablePatrons_RemainSilentWhilePairsSpeak passed; shared speech/lifecycle
+and silent heads reviewed in the bar Game view. All effects groups remain unchanged.
+Shared smoothed intoxication slows audible speech/music over existing VHS.
+PCM clocks retain slowed fragments inside real windows; shared wrapped captions
+reuse hero scatter with bounded slot caches. Authored music transport/fades stay
+owned; sobriety restores, menu auditions stay dry. Runtime cost unmeasured.
+SharedVocalizer_UsesSpeakerIdentityClockAndPooledCleanup and
+IntoxicationPlaybackRate_PreservesMusicOwnersAndAuthoredTransport passed.
+Canvas-space glyph pivots prevent scaled UI drift. Translucent panels/tails/choices
+retain crisp text; sober/peak bar speech reviewed. Audio easing
+persists across player rebinds; music perception check covers drinks/pause/sobering.
+Arm subsets skip destroyed rigs/renderers before appearance copies;
+BarDrinkFirstPersonArmsPlayModeTests passed teardown/reuse.
+check-docs/scoped diff passed.
+
 ## 2026-10-23
 
-Bar table/guest→WC/toilet/passive basin; wing/roof/contours match.
-Solid DoorUse both sides/shared toilet host; hall/door/WC collision/camera union.
-WC: chipped tile/plaster, dirt/bin/litter/brush/paper/dispenser, text-free rude art;
-broken geometric room/hero mirror with pose/layers/visibility/fallback/cleanup.
-Soft sign illuminates door/corner; leaf blocks spill, floor bounce reveals approach.
-WC shadow/bounce/cube serve ceramic/metal; hall lighting/air stay bounded.
-Blender guards duplicate anchor suffixes; roof/eaves/masonry/flashings/gutter match.
-build-bar-3d-model and check-bar-interior-surfaces passed geometry/UV/maps/contours.
-One rig handoff spans lid phases, preventing deferred-unlock recapture.
-Nearby/facing WC prompt and dock-local counter reach keep inside door usable.
-BarPrompts_KeepDoorReachableAndCounterLocal passed target selection/E.
+Bar WC replaces table/guest; toilet/passive basin, wing/roof/contours match.
+Solid DoorUse/shared toilet host; hall/door/WC collision/camera union.
+Chipped tile/plaster, dirt/bin/litter/brush/paper/dispenser, text-free rude art;
+broken mirror retains hero pose/layers/visibility/fallback/cleanup.
+Door/sign spill, floor bounce/shadow/cube reveal ceramic/metal/approach;
+hall light/air kept. Blender guards anchors/roof/eaves/masonry/gutter.
+build-bar-3d-model/check-bar-interior-surfaces passed geometry/UV/maps/contours.
+One rig handoff spans lid phases; nearby/facing prompt and dock-local reach.
+BarPrompts_KeepDoorReachableAndCounterLocal passed target/E.
 Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera passed door/toilet,
-input/camera/mirror/teardown; broad light/fixtures/reflection reviewed, tile dots removed.
+input/camera/mirror/teardown; lights/reflections reviewed, tile dots removed.
 Toilet_FirstPersonStreamStainsAndRestores passed; roof reviewed.
 
-Bar: visible L wave/index contacts; menu/repeat retain seated yaw±70/pitch−25…55,
+Bar L-wave/index contacts; seated menu/repeat yaw±70/pitch−25…55,
 pickup/sip/return±12/±10. PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit passed.
-One charge/receipt; interrupted gestures free. Empty-beer typed R grip/short offer,
-release/return before payment; cup/menu/edge/arm reach bound travel, other orders unchanged.
-Guests drain/L-wave/bent-R support; same mug returns full before deduped FIFO release.
-Look/nod do not preempt; shared rigs/assets/cues/providers; phase endpoints avoid false timeout.
+One charge/receipt; interruptions free. Empty-beer typed R grip/short offer,
+release/return before payment; cup/menu/edge/arm bound travel; other orders kept.
+Guests drain/L-wave/bent-R support; same mug refills before deduped FIFO release.
+Look/nod do not preempt; shared rigs/assets/cues/providers; endpoints avoid false timeout.
 BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt passed; poses reviewed.
 check-workspace: existing old logs/other-worktree cache backlog remains.
 
-Docs match Unity/Input System/Navigation; absent local evidence became named
-checks/references. Duplicate prose/bus/shower blocks tightened; budgets/canon kept.
-
-ARM Burst guards; PlayerBodyQueryBurstTests passed. Universal VHS keeps DSP/API;
-Mac native ABI/DSP validator passed. Pinned build signs/validates/rolls back/cleans.
-MainMenu→AlpineVillage passed.
-Hub -gfx-ring-buffer-size 67108864 removes the startup ring-buffer warning.
-22dfdb4c integration retains WC/Mac/budgets; content review and check-docs passed.
+Docs match Unity/packages; unproved runs became named checks; budgets/canon kept.
+ARM Burst guards; PlayerBodyQueryBurstTests passed. Universal VHS retains DSP/API;
+Mac native ABI/DSP validator passed; pinned build signs/validates/rolls back/cleans.
+MainMenu→AlpineVillage passed; Hub -gfx-ring-buffer-size 67108864 fixes startup warning.
+22dfdb4c integration retains WC/Mac/budgets; content review/check-docs passed.
 BarModel_CarriesTheAuthoredPubAndInteractionFixtures: unchanged table assertion
-fails; base/current both omit the former rear table.
+fails; base/current both omit former rear table.
+Unity asset audit: inactive WebGL/default drift removed; shared Avatar/premultiplied
+glass restored; cloth float ties, not authoring; HEAD equality/check-docs passed.
+Bar speech: frequent pairs/service overlap; A→B/no-repeat/contacts kept.
+RU/keyboard-mouse future work keeps EN/gamepad; EN overlays RU fallback.
+Catalog/canon review, BarConversationScheduleTests, EnglishEntries_HaveRussianSource,
+BarsShareSpeechAndKeepService/Game view review and check-docs passed.
 
-Unity assets: inactive WebGL/default drift removed; shared Avatar/premultiplied
-glass restored. Cloth endpoint float ties, not authoring. Asset audit verified
-HEAD equality; check-docs passed.
-
-Bar speech: paired no-repeat/service comments, shared heads; rest/contacts win.
-RU/keyboard-mouse future work keeps EN/gamepad; existing EN overlays RU fallback.
-Catalog/canon review passed.
-BarConversationScheduleTests; EnglishEntries_HaveRussianSource passed.
-BarsShareSpeechAndKeepService/Game view review; check-docs passed.
+Menu vocalizer: typed RU/source-filter voices, bounded cancellable worker/PCM;
+synthetic timbre/heuristic stress explicit; NPC speech unchanged.
+RussianVocalizerTests and MenuLab_PlaysBothVoicesAndCancelsWithoutLeavingMenu passed;
+main menu/lab frames reviewed; check-docs passed.
+Global whitespace check flags existing bar-prefab edits; vocalizer scoped diff is clean.
 
 ## 2026-10-22
 

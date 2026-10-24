@@ -135,6 +135,54 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(releasedRoot == null, Is.True);
         }
 
+        [UnityTest]
+        public IEnumerator BarArms_DisableAfterRendererAndCameraDestruction()
+        {
+            cameraObject = new GameObject("Bar Arms Teardown Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            ownerObject = new GameObject("Bar Arms Teardown Owner");
+            Player3DAssetRegistry source =
+                Player3DResources.Instantiate(ownerObject.transform);
+            BarDrinkFirstPersonArms arms =
+                ownerObject.AddComponent<BarDrinkFirstPersonArms>();
+            arms.Initialize(camera, source);
+            arms.ApplyPresentation(1f, 1f, 1f);
+
+            Player3DAssetRegistry rightRegistry = arms.RightModelRegistry;
+            Assert.That(rightRegistry.TryGetPart(
+                Player3DAnatomicalPart.RightHand,
+                out Player3DAnatomicalPartBinding hand), Is.True);
+            Renderer destroyedRenderer = hand.Renderer;
+            Assert.That(destroyedRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            DestroyObject(destroyedRenderer);
+            yield return null;
+
+            Assert.That(destroyedRenderer == null, Is.True);
+            Assert.That(rightRegistry != null, Is.True,
+                "A single destroyed renderer must not invalidate the live rig.");
+            arms.enabled = false;
+            Assert.That(arms.IsVisible, Is.False);
+            AssertModelDerivedArm(arms.LeftModelRegistry, "Left");
+
+            arms.enabled = true;
+            arms.ApplyPresentation(1f, 0f, 0f);
+            Transform releasedRoot = arms.PresentationRoot;
+            DestroyObject(cameraObject);
+            cameraObject = null;
+            yield return null;
+
+            Assert.That(releasedRoot == null, Is.True);
+            Assert.That(source != null, Is.True,
+                "The source must remain alive when the camera-local rig is gone.");
+            arms.enabled = false;
+            Assert.That(arms.IsVisible, Is.False);
+            Assert.That(arms.VisibilityAmount, Is.Zero);
+            DestroyObject(ownerObject);
+            ownerObject = null;
+            yield return null;
+            LogAssert.NoUnexpectedReceived();
+        }
+
         private static void AssertModelDerivedArm(
             Player3DAssetRegistry registry,
             string expectedSide)

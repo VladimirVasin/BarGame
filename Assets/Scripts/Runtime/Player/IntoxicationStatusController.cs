@@ -196,7 +196,8 @@ namespace BarPromenade
 
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
-            GameTimeScaleRuntime.SetIntoxicationLevel(presentationLevel);
+            // A rebuilt player keeps the persistent ear's current transition.
+            GameTimeScaleRuntime.SetIntoxicationLevel(presentationLevel, synchronizeAudio: false);
             currentProfile = IntoxicationStageRules.Evaluate(
                 GameSessionState.IntoxicationLevel);
             previousRawLevel =

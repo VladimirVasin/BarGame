@@ -47,6 +47,9 @@ namespace BarPromenade
             !GameSessionState.CarDashboard.RadioOn;
         protected override float SuppressionFadeOutSeconds => 0f;
         protected override float OutputVolume => RadioVolume * exitGain;
+        protected override float AuthoredPlaybackPitch =>
+            1f + Mathf.Sin(Time.unscaledTime * 2f * Mathf.PI * 0.45f) * 0.0022f +
+                 Mathf.Sin(Time.unscaledTime * 2f * Mathf.PI * 6.1f) * 0.0007f;
 
         public static LastRouteRadioMusicPlayer Create(
             LastRouteCarAssetRegistry registry)
@@ -172,9 +175,6 @@ namespace BarPromenade
             CapturePlayhead();
             base.Update();
             texture.SetHissGain(Source.isPlaying ? Source.volume : 0f);
-            float time = Time.unscaledTime;
-            Source.pitch = 1f + Mathf.Sin(time * 2f * Mathf.PI * 0.45f) * 0.0022f +
-                           Mathf.Sin(time * 2f * Mathf.PI * 6.1f) * 0.0007f;
         }
 
         protected override void PrepareForPlayback()

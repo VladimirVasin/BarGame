@@ -13,6 +13,7 @@ namespace BarPromenade
 
         private CombatTestRoot warehouse;
         private float tapeGain = 1f;
+        private float mechanicalPitch = PlaybackSpeed;
         private bool pausedForGameplay;
         public float TapeStopProgress { get; private set; }
         public bool TapeStopped => TapeStopProgress >= 1f;
@@ -21,12 +22,7 @@ namespace BarPromenade
         protected override bool InitiallySuppressed => true;
         protected override float SuppressionFadeOutSeconds => 0f;
         protected override float OutputVolume => base.OutputVolume * tapeGain;
-
-        protected override void Awake()
-        {
-            base.Awake();
-            Source.pitch = PlaybackSpeed;
-        }
+        protected override float AuthoredPlaybackPitch => mechanicalPitch;
 
         protected override void PrepareForPlayback() => ApplyTapeProperties();
 
@@ -62,8 +58,9 @@ namespace BarPromenade
                 Mathf.Sin(time * Mathf.PI * 2f * 12.7f) * .010f;
             float dip = Mathf.Pow(.5f + .5f * Mathf.Sin(time * Mathf.PI * 2f * 3.1f), 8f);
             tapeGain = speed * (1f - .55f * chewing * dip);
-            Source.pitch = TapeStopped ? 0f : PlaybackSpeed * Mathf.Max(.025f,
+            mechanicalPitch = TapeStopped ? 0f : PlaybackSpeed * Mathf.Max(.025f,
                 speed * (1f + (wow + flutter) * chewing));
+            RefreshPlaybackRate();
             Source.volume = OutputVolume * NormalizedGain;
             ToneFilter.cutoffFrequency = Mathf.Lerp(420f, MusicMix.ToneCutoffFrequency,
                 speed * speed) * (1f - .32f * chewing * dip);

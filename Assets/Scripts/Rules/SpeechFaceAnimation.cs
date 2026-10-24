@@ -13,22 +13,35 @@ namespace BarPromenade
         public readonly string Text;
         public readonly int RevealedCharacters;
         public readonly bool IsTyping;
+        public readonly bool HasPhoneticTiming;
         public readonly double ElapsedSeconds;
 
         public SpeechFaceSample(uint lineToken, string text, int revealedCharacters, bool isTyping,
-            double elapsedSeconds)
+            double elapsedSeconds, bool hasPhoneticTiming = false)
         {
             LineToken = lineToken;
             Text = text ?? string.Empty;
             RevealedCharacters = Math.Max(0, Math.Min(Text.Length, revealedCharacters));
-            IsTyping = lineToken != 0 && isTyping && RevealedCharacters < Text.Length;
+            HasPhoneticTiming = hasPhoneticTiming;
+            IsTyping = lineToken != 0 && isTyping && (hasPhoneticTiming || RevealedCharacters < Text.Length);
             ElapsedSeconds = double.IsNaN(elapsedSeconds) || double.IsInfinity(elapsedSeconds)
                 ? 0d : Math.Max(0d, elapsedSeconds);
         }
 
         public bool HasLine => LineToken != 0 && !string.IsNullOrEmpty(Text);
-        public char CurrentCharacter => HasLine && RevealedCharacters > 0
-            ? Text[RevealedCharacters - 1] : '\0';
+        public int CurrentCharacterIndex
+        {
+            get
+            {
+                int index = RevealedCharacters - 1;
+                while (HasPhoneticTiming && index > 0 &&
+                    (Text[index] == '\u0301' || Text[index] == 'ь' || Text[index] == 'Ь' ||
+                     Text[index] == 'ъ' || Text[index] == 'Ъ')) index--;
+                return index;
+            }
+        }
+        public char CurrentCharacter => HasLine && CurrentCharacterIndex >= 0
+            ? Text[CurrentCharacterIndex] : '\0';
     }
 
     public readonly struct SpeechFacePose
@@ -86,8 +99,9 @@ namespace BarPromenade
             // its CPS or estimating the reveal from time. Word/punctuation closures are immediate.
             // Short replies need a second articulation before their final letter closes the
             // mouth. In particular, "Хочу" must not hold its initial х for the entire reply.
-            int stride = profile != SpeechFaceProfile.Foreman && sample.Text.Length > 12 ? 3 : 2;
-            int current = sample.RevealedCharacters - 1;
+            int stride = sample.HasPhoneticTiming ? 1 :
+                profile != SpeechFaceProfile.Foreman && sample.Text.Length > 12 ? 3 : 2;
+            int current = sample.CurrentCharacterIndex;
             int cue = current - current % stride;
             // A new word can start inside a held group. Do not let its preceding space hold
             // the mouth shut, particularly on the hero's very short existing replies.

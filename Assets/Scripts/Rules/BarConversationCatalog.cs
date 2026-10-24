@@ -39,6 +39,8 @@ namespace BarPromenade
         public const int HighTableRight = 7;
         public const int RoleCount = 8;
         public const int KindCount = 4;
+        public const int ActiveGroupCount = 3;
+        public const int EnabledGroups = (1 << ActiveGroupCount) - 1;
         public const int CounterCount = 56;
         public const int FrontBoothCount = 32;
         public const int RearBoothCount = 32;
@@ -59,6 +61,18 @@ namespace BarPromenade
 
         public static int Count(BarConversationKind kind) => Entries(kind).Length;
 
+        /// <summary>The separate high-table visitors have no conversation partner.</summary>
+        public static bool IsEnabled(BarConversationKind kind)
+        {
+            int group = (int)kind;
+            return group >= 0 && group < KindCount && (EnabledGroups & (1 << group)) != 0;
+        }
+
+        /// <summary>Guest speech permission; bartender comments have their own catalog.</summary>
+        public static bool CanSpeak(int role) =>
+            role >= 0 && role < RoleCount && IsEnabled((BarConversationKind)(role / 2));
+
+        /// <summary>Raw pools remain addressable, including the dormant high-table bank.</summary>
         public static BarConversationExchange Get(BarConversationKind kind, int variant)
         {
             BarConversationExchange[] group = Entries(kind);

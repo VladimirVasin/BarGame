@@ -59,6 +59,7 @@ namespace BarPromenade
         public const float LogicalHeight = 360f;
         public const float PanelCornerRadius = 0f;
         public const float FrameInset = 3f;
+        public const float DialoguePanelOpacity = 0.72f;
 
         public static readonly Color Backdrop =
             new Color32(7, 8, 8, 247);

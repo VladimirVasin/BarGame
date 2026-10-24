@@ -131,22 +131,26 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Four visitor pairs share one channel. A begun exchange keeps its reply;
-    /// otherwise service takes priority. The presentation owner acknowledges
-    /// the first visible glyph and supplies the shared stack's remaining time.
+    /// One ordered conversation channel; independent instances may speak together.
+    /// A begun exchange keeps its reply if a caller reserves this channel for service.
+    /// The presentation owner acknowledges the first visible glyph and supplies
+    /// the shared stack's remaining time.
     /// </summary>
     public sealed class BarConversationSchedule
     {
-        public const int GroupCount = 4;
+        public const int GroupCount = BarConversationCatalog.KindCount;
         public const int AllGroups = (1 << GroupCount) - 1;
+        public const int ActiveGroupCount = BarConversationCatalog.ActiveGroupCount;
+        public const int EnabledGroups = BarConversationCatalog.EnabledGroups;
         public const double MaximumContinuousStepSeconds = 2d;
-        public const double FirstAttemptMinimumSeconds = 2d;
-        public const double FirstAttemptMaximumSeconds = 5d;
-        public const double ExchangeMinimumIntervalSeconds = 12d;
-        public const double ExchangeMaximumIntervalSeconds = 22d;
-        public const double ReplyMinimumGapSeconds = .6d;
-        public const double ReplyMaximumGapSeconds = 1.3d;
+        public const double FirstAttemptMinimumSeconds = .4d;
+        public const double FirstAttemptMaximumSeconds = 2d;
+        public const double ExchangeMinimumIntervalSeconds = 1.5d;
+        public const double ExchangeMaximumIntervalSeconds = 4d;
+        public const double ReplyMinimumGapSeconds = .3d;
+        public const double ReplyMaximumGapSeconds = .75d;
         private readonly BarSpeechVariantDeck[] decks = new BarSpeechVariantDeck[GroupCount];
+        private readonly int supportedGroups;
         private uint random;
         private bool initialized;
         private bool active;
@@ -161,13 +165,20 @@ namespace BarPromenade
         private int nextGroup;
         private BarConversationExchange exchange;
 
-        public BarConversationSchedule(int seed)
+        public BarConversationSchedule(int seed) : this(seed, AllGroups) { }
+
+        /// <summary>A fixed enabled pair owns its pool; a disabled kind stays silent.</summary>
+        public BarConversationSchedule(int seed, BarConversationKind kind) : this(seed, GroupMask(kind)) { }
+
+        private BarConversationSchedule(int seed, int groupMask)
         {
+            supportedGroups = groupMask & EnabledGroups;
             random = unchecked((uint)seed) ^ 0x42415253u;
             if (random == 0u) random = 1u;
             for (int group = 0; group < GroupCount; group++)
-                decks[group] = new BarSpeechVariantDeck(BarConversationCatalog.Count((BarConversationKind)group),
-                    unchecked(seed + group * 7919));
+                if ((supportedGroups & (1 << group)) != 0)
+                    decks[group] = new BarSpeechVariantDeck(BarConversationCatalog.Count((BarConversationKind)group),
+                        unchecked(seed + group * 7919));
             nextGroup = Next(GroupCount);
         }
 
@@ -180,6 +191,7 @@ namespace BarPromenade
             bool reserveServiceChannel = false)
         {
             ValidateTime(now);
+            eligibleGroups &= supportedGroups;
             double step = now - previousTime;
             if (!initialized || step < 0d || step > MaximumContinuousStepSeconds)
             {
@@ -229,7 +241,7 @@ namespace BarPromenade
                 active = true;
                 committed = false;
                 phase = 0;
-                phaseEnd = now + Between(.35d, .8d);
+                phaseEnd = now + Between(.15d, .4d);
                 return Current;
             }
             return default;
@@ -284,6 +296,13 @@ namespace BarPromenade
             random ^= random >> 17;
             random ^= random << 5;
             return (int)(random % (uint)limit);
+        }
+
+        private static int GroupMask(BarConversationKind kind)
+        {
+            int group = (int)kind;
+            if (group < 0 || group >= GroupCount) throw new ArgumentOutOfRangeException(nameof(kind));
+            return 1 << group;
         }
 
         private static void ValidateTime(double now)

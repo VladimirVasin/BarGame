@@ -7,8 +7,9 @@ namespace BarPromenade
         NewGame = 0,
         CombatTest = 1,
         Laboratory = 2,
-        Quit = 3,
-        Count = 4
+        Vocalizer = 3,
+        Quit = 4,
+        Count = 5
     }
 
     public enum StartMenuAction
@@ -20,7 +21,8 @@ namespace BarPromenade
         Back = 4,
         CombatTest = 5,
         ChooseCombatWeapon = 6,
-        ChooseLaboratoryEnemy = 7
+        ChooseLaboratoryEnemy = 7,
+        OpenVocalizer = 8
     }
 
     public enum CombatPreparationOption
@@ -55,6 +57,7 @@ namespace BarPromenade
         public bool IsChoosingLocation { get; private set; }
         public bool IsChoosingCombatWeapon { get; private set; }
         public bool IsChoosingLaboratoryEnemy { get; private set; }
+        public bool IsVocalizerActive { get; private set; }
         public NewGameLocation SelectedLocation { get; private set; }
         public CombatLoadoutSelection SelectedCombatLoadout { get; private set; }
         public CombatTestMode SelectedCombatMode { get; private set; }
@@ -91,6 +94,7 @@ namespace BarPromenade
             IsChoosingLocation = false;
             IsChoosingCombatWeapon = false;
             IsChoosingLaboratoryEnemy = false;
+            IsVocalizerActive = false;
             laboratoryEnemyBackSelected = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
             SelectedCombatLoadout = CombatLoadoutSelection.Default;
@@ -130,7 +134,7 @@ namespace BarPromenade
 
         public bool MoveSelection(int delta)
         {
-            if (delta == 0 || IsCommitted)
+            if (delta == 0 || IsCommitted || IsVocalizerActive)
             {
                 return false;
             }
@@ -161,7 +165,7 @@ namespace BarPromenade
 
         public bool SelectOption(StartMenuOption option)
         {
-            if (IsCommitted || IsChoosingLocation || IsChoosingCombatWeapon ||
+            if (IsCommitted || IsVocalizerActive || IsChoosingLocation || IsChoosingCombatWeapon ||
                 option < StartMenuOption.NewGame ||
                 option >= StartMenuOption.Count ||
                 SelectedOption == option)
@@ -232,12 +236,14 @@ namespace BarPromenade
 
         public bool ReturnToMainMenu()
         {
-            if (IsCommitted || (!IsChoosingLocation && !IsChoosingCombatWeapon)) return false;
-            SelectedOption = IsChoosingCombatWeapon ? SelectedCombatMode == CombatTestMode.Laboratory ?
+            if (IsCommitted || (!IsChoosingLocation && !IsChoosingCombatWeapon && !IsVocalizerActive)) return false;
+            SelectedOption = IsVocalizerActive ? StartMenuOption.Vocalizer :
+                IsChoosingCombatWeapon ? SelectedCombatMode == CombatTestMode.Laboratory ?
                 StartMenuOption.Laboratory : StartMenuOption.CombatTest : StartMenuOption.NewGame;
             IsChoosingLocation = false;
             IsChoosingCombatWeapon = false;
             IsChoosingLaboratoryEnemy = false;
+            IsVocalizerActive = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
             return true;
         }
@@ -263,7 +269,7 @@ namespace BarPromenade
 
         public StartMenuAction Confirm()
         {
-            if (IsCommitted)
+            if (IsCommitted || IsVocalizerActive)
             {
                 return StartMenuAction.None;
             }
@@ -322,6 +328,9 @@ namespace BarPromenade
                     OpenCombatPreparation(new CombatTestSelection(SelectedCombatLoadout, CombatTestMode.Laboratory,
                         SelectedCombatEncounterSettings, SelectedLaboratoryEnemy));
                     return StartMenuAction.ChooseCombatWeapon;
+                case StartMenuOption.Vocalizer:
+                    IsVocalizerActive = true;
+                    return StartMenuAction.OpenVocalizer;
                 case StartMenuOption.Quit:
                     IsCommitted = true;
                     return StartMenuAction.Quit;

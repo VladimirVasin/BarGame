@@ -3,22 +3,25 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// One speaker's tonality: the note his blip is generated at and
-    /// how rough it is. Not a voice — there are no phonemes, no words
-    /// and no intonation anywhere in this family. It is the sound of a
-    /// letter being written, and the only thing it carries about the
-    /// man is how high and how dry he is.
+    /// One stable authored speaker identity. Russian phrases use an explicit
+    /// source/filter preset independent of the legacy writing-blip parameters.
+    /// Neither route may assign a different speaker or borrow the hero.
     /// </summary>
     public readonly struct NpcVoiceProfile
     {
+        private readonly int vocalizerPreset;
+
         public NpcVoiceProfile(
             string id,
             float fundamentalHz,
             float timbreRatio,
             float noiseShare,
             float jitterCents,
-            float volume)
+            float volume,
+            int vocalizerPreset = -1)
         {
+            if (vocalizerPreset < -1 || vocalizerPreset >= RussianVocalizerSynthesis.VoiceCount)
+                throw new System.ArgumentOutOfRangeException(nameof(vocalizerPreset));
             Id = id ?? string.Empty;
             FundamentalHz = fundamentalHz;
             TimbreRatio = timbreRatio;
@@ -26,12 +29,16 @@ namespace BarPromenade
             JitterCents = jitterCents;
             Volume = volume;
             Hash = CitySoundStableHash.String(Id);
+            // The legacy constructor uses an ordinary NPC preset; the catalog
+            // assigns every production speaker explicitly, including the hero.
+            this.vocalizerPreset = vocalizerPreset < 0 ? 0 : vocalizerPreset;
         }
 
         /// <summary>Short stable name, also the generated clip's
         /// name.</summary>
         public string Id { get; }
 
+        /// <summary>Fundamental of the legacy writing blip.</summary>
         public float FundamentalHz { get; }
 
         /// <summary>Where the second partial sits. Deliberately
@@ -54,29 +61,39 @@ namespace BarPromenade
         public uint Hash { get; }
 
         public bool IsValid => !string.IsNullOrEmpty(Id);
+
+        public RussianVocalizerGender Gender =>
+            RussianVocalizerSynthesis.LabVoiceGenderAt(vocalizerPreset);
+
+        /// <summary>
+        /// Authored Russian style with this speaker's stable synthesis identity.
+        /// Invalid/silent profiles remain invalid instead of receiving a preset.
+        /// </summary>
+        public RussianVocalizerVoice VocalizerVoice => IsValid
+            ? RussianVocalizerSynthesis.LabVoiceAt(vocalizerPreset).WithIdentity(Hash)
+            : default;
     }
 
     /// <summary>
-    /// Every speaking design in the game and the tone it writes in.
+    /// Every speaking design in the game and its stable authored tone.
     ///
     /// The table is AUTHORED rather than derived, because the point is
     /// that two men are told apart by ear. A hash is used only to place
-    /// an UNLISTED design on one of the eight known-good NPC voices —
+    /// an UNLISTED design on one of the authored NPC voices of its gender —
     /// never to invent a new one, and never onto the hero's, which is
-    /// his alone. That keeps the clip bank at a fixed size for the whole
-    /// game, and gives any future speaking design a real voice on the
+    /// his alone. This also keeps the fallback blip bank at a fixed size
+    /// and gives any future speaking design a voice on the
     /// day it first opens its mouth.
     ///
     /// Reading of the table worth keeping: the two park players are the
     /// one pair heard alternating inside ten seconds, so they have to
     /// differ by voice and not only by which head the panel sits over —
     /// the chess man higher and glassier, the draughts man lower and
-    /// woodier. The husband is the lowest and grittiest in the game,
-    /// because he is very drunk and face-down on his own forearms. The
-    /// cafe woman is the only voice above `240 Hz`, and that is the
-    /// whole of this system's gender coding, deliberately no more.
+    /// woodier. Russian presets give the husband the lowest, rumbling voice
+    /// and the cafe woman the highest, sharpest one. Dryness, resonance,
+    /// articulation and breath are authored independently of blip pitch.
     ///
-    /// The hero is the ninth entry and the only one here who is not an
+    /// The hero is the last entry and the only one here who is not an
     /// NPC. He is silent everywhere else in the game — narration and his
     /// own prompts carry <see cref="NpcVoiceCatalog.SilentOrdinal"/> —
     /// and this voice exists for one channel only: the drunk muttering
@@ -104,6 +121,9 @@ namespace BarPromenade
         public const string CafeManDesignId = "cafe_couple_man_v2";
         public const string CafeWomanDesignId = "cafe_couple_woman_v2";
         public const string CafeHusbandDesignId = "cafe_lone_patron_v2";
+        public const string MotherDesignId = "mother_v1";
+        public const string YardBabushkaDesignId = "yard_babushka_v1";
+        public const string MournerDesignId = "cemetery_mourner_v1";
 
         /// <summary>The hero's muttering voice. Not a design in the
         /// appearance catalog: he is the one speaker who is not an NPC.
@@ -112,29 +132,36 @@ namespace BarPromenade
 
         private static readonly NpcVoiceProfile[] profiles =
         {
-            //              id                Hz  timbre  noise  ¢    vol
+            // Legacy blip parameters stay fixed; Russian presets are explicit.
+            //              id                Hz  timbre  noise  ¢    vol  RU
             new NpcVoiceProfile(
-                "watchman", 168f, 2.02f, 0.16f, 22f, 0.26f),
+                "watchman", 168f, 2.02f, 0.16f, 22f, 0.26f, 2),
             new NpcVoiceProfile(
-                "fisherman", 152f, 1.94f, 0.20f, 28f, 0.24f),
+                "fisherman", 152f, 1.94f, 0.20f, 28f, 0.24f, 8),
             new NpcVoiceProfile(
-                "ferryman", 196f, 2.38f, 0.10f, 16f, 0.26f),
+                "ferryman", 196f, 2.38f, 0.10f, 16f, 0.26f, 7),
             new NpcVoiceProfile(
-                "chess_player", 208f, 2.61f, 0.08f, 18f, 0.28f),
+                "chess_player", 208f, 2.61f, 0.08f, 18f, 0.28f, 4),
             new NpcVoiceProfile(
-                "checkers_player", 178f, 2.14f, 0.12f, 18f, 0.28f),
+                "checkers_player", 178f, 2.14f, 0.12f, 18f, 0.28f, 5),
             new NpcVoiceProfile(
-                "cafe_man", 186f, 2.24f, 0.09f, 14f, 0.22f),
+                "cafe_man", 186f, 2.24f, 0.09f, 14f, 0.22f, 11),
             new NpcVoiceProfile(
-                "cafe_woman", 262f, 2.72f, 0.05f, 12f, 0.22f),
+                "cafe_woman", 262f, 2.72f, 0.05f, 12f, 0.22f, 1),
             new NpcVoiceProfile(
-                "cafe_husband", 138f, 1.86f, 0.22f, 26f, 0.24f),
-            // The hero, last and quietest. Above the husband's 138 so he
-            // keeps being the lowest voice in the game; the driest throat
-            // and the widest detune in the table, because this voice is
-            // only ever heard while he is too drunk to walk straight.
+                "cafe_husband", 138f, 1.86f, 0.22f, 26f, 0.24f, 0),
+            // Real existing female designs also supply the female-only fallback
+            // bank. A new voice identity does not grant a silent actor speech.
             new NpcVoiceProfile(
-                "hero_mutter", 146f, 1.90f, 0.24f, 34f, 0.20f)
+                "mother", 202f, 2.16f, 0.14f, 20f, 0.23f, 10),
+            new NpcVoiceProfile(
+                "yard_babushka", 232f, 2.44f, 0.12f, 16f, 0.22f, 3),
+            new NpcVoiceProfile(
+                "mourner", 244f, 2.63f, 0.06f, 12f, 0.22f, 9),
+            // Hero last and quietest, with his own creaky Russian preset.
+            // The English blip retains its dry throat and widest detune.
+            new NpcVoiceProfile(
+                "hero_mutter", 146f, 1.90f, 0.24f, 34f, 0.20f, 6)
         };
 
         private static readonly string[] designIds =
@@ -147,8 +174,16 @@ namespace BarPromenade
             CafeManDesignId,
             CafeWomanDesignId,
             CafeHusbandDesignId,
+            MotherDesignId,
+            YardBabushkaDesignId,
+            MournerDesignId,
             HeroMutterDesignId
         };
+
+        // These are voice ordinals, not lab preset indices. Neither pool
+        // contains the hero; expanding one gender never changes the other pool.
+        private static readonly int[] MaleFallbackOrdinals = { 0, 1, 2, 3, 4, 5, 7 };
+        private static readonly int[] FemaleFallbackOrdinals = { 6, 8, 9, 10 };
 
         /// <summary>The ordinal a silent speaker carries: narration,
         /// the hero's own prompts, and anybody who has not been given a
@@ -160,7 +195,7 @@ namespace BarPromenade
         /// <summary>
         /// Voices an unlisted design may fall onto. The hero is last and is
         /// NOT one of them: without this a future speaking NPC would have a
-        /// one-in-nine chance of being handed the hero's own mutter, and the
+        /// chance of being handed the hero's own mutter, and the
         /// only symptom would be a stranger who sounds like him.
         /// </summary>
         public static int FallbackVoiceCount => profiles.Length - 1;
@@ -204,18 +239,29 @@ namespace BarPromenade
 
         /// <summary>
         /// Authored first; an unlisted design is placed on one of the
-        /// eight NPC voices by FNV-1a, which is deterministic and
+        /// gender-qualified NPC voices by FNV-1a, which is deterministic and
         /// platform-stable where <c>string.GetHashCode</c> is neither.
         /// Never on the hero's — see <see cref="FallbackVoiceCount"/>.
         /// </summary>
         public static int ResolveOrdinal(string designId)
         {
+            return ResolveOrdinal(designId, ResolveGender(designId));
+        }
+
+        /// <summary>
+        /// Callers with model/population gender metadata supply it explicitly.
+        /// A mismatched authored voice falls into that gender's bounded pool.
+        /// </summary>
+        public static int ResolveOrdinal(string designId, RussianVocalizerGender gender)
+        {
+            if (gender != RussianVocalizerGender.Male && gender != RussianVocalizerGender.Female)
+                throw new System.ArgumentOutOfRangeException(nameof(gender));
             if (string.IsNullOrEmpty(designId))
             {
                 return SilentOrdinal;
             }
 
-            if (TryGetOrdinal(designId, out int authored))
+            if (TryGetOrdinal(designId, out int authored) && profiles[authored].Gender == gender)
             {
                 return authored;
             }
@@ -223,13 +269,38 @@ namespace BarPromenade
             uint hash = CitySoundStableHash.Combine(
                 CitySoundStableHash.String(designId),
                 FallbackSalt);
-            return (int)(hash % (uint)FallbackVoiceCount);
+            int[] pool = gender == RussianVocalizerGender.Female
+                ? FemaleFallbackOrdinals : MaleFallbackOrdinals;
+            return pool[(int)(hash % (uint)pool.Length)];
+        }
+
+        /// <summary>
+        /// Exact authored design/voice aliases only; never infer gender from a
+        /// name substring. Unknown legacy identities use the ordinary male pool;
+        /// new female identities supply their declared gender to ResolveOrdinal.
+        /// </summary>
+        public static RussianVocalizerGender ResolveGender(string designId)
+        {
+            if (TryGetOrdinal(designId, out int authored)) return profiles[authored].Gender;
+            switch (designId)
+            {
+                case "weigh_attendant_v1":
+                case "village-wood-woman":
+                case "village-sewing-woman":
+                case "village-basket-visitor":
+                    return RussianVocalizerGender.Female;
+                default:
+                    return RussianVocalizerGender.Male;
+            }
         }
 
         public static NpcVoiceProfile Resolve(string designId)
         {
             return ProfileAt(ResolveOrdinal(designId));
         }
+
+        public static NpcVoiceProfile Resolve(string designId, RussianVocalizerGender gender) =>
+            ProfileAt(ResolveOrdinal(designId, gender));
 
         /// <summary>
         /// Which of the twelve steps a letter writes on. Stable for a

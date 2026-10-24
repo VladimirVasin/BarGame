@@ -16,8 +16,8 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Catalog_HoldsEveryAuthoredSpeakerOnce()
         {
-            // Eight NPCs and the hero, who is the ninth and last.
-            Assert.That(NpcVoiceCatalog.Count, Is.EqualTo(9));
+            // Eleven existing NPC voice identities and the exclusive hero last.
+            Assert.That(NpcVoiceCatalog.Count, Is.EqualTo(12));
             Assert.That(
                 NpcVoiceCatalog.DesignIdAt(
                     NpcVoiceCatalog.HeroMutterOrdinal),
@@ -73,7 +73,7 @@ namespace BarPromenade.Tests.EditMode
         public void Catalog_PlacesAnUnlistedDesignOnAnAuthoredVoice()
         {
             // A design nobody has written a voice for still gets a real
-            // one, deterministically, rather than a ninth invented clip.
+            // one, deterministically, rather than an invented clip.
             const string unlisted = "some_future_speaker_v9";
             int first = NpcVoiceCatalog.ResolveOrdinal(unlisted);
             int second = NpcVoiceCatalog.ResolveOrdinal(unlisted);
@@ -97,6 +97,86 @@ namespace BarPromenade.Tests.EditMode
                 NpcVoiceCatalog.ResolveOrdinal(string.Empty),
                 Is.EqualTo(NpcVoiceCatalog.SilentOrdinal),
                 "Nobody in particular is nobody, not a random man.");
+        }
+
+        [Test]
+        public void Catalog_FallbacksStayWithinDeclaredGenderAndNeverBorrowHero()
+        {
+            foreach (RussianVocalizerGender gender in new[]
+                     { RussianVocalizerGender.Male, RussianVocalizerGender.Female })
+            {
+                var selected = new HashSet<int>();
+                for (int index = 0; index < 256; index++)
+                {
+                    string identity = "unlisted_character_" + index;
+                    int ordinal = NpcVoiceCatalog.ResolveOrdinal(identity, gender);
+                    Assert.That(ordinal, Is.EqualTo(NpcVoiceCatalog.ResolveOrdinal(identity, gender)));
+                    Assert.That(ordinal, Is.Not.EqualTo(NpcVoiceCatalog.HeroMutterOrdinal));
+                    NpcVoiceProfile profile = NpcVoiceCatalog.ProfileAt(ordinal);
+                    Assert.That(profile.Gender, Is.EqualTo(gender));
+                    Assert.That(profile.VocalizerVoice.Gender, Is.EqualTo(gender));
+                    Assert.That(profile.VocalizerVoice.Seed, Is.EqualTo(profile.Hash));
+                    selected.Add(ordinal);
+                }
+                Assert.That(selected.Count, Is.GreaterThanOrEqualTo(4),
+                    "Both genders need several distinct authored styles.");
+            }
+            Assert.That(NpcVoiceCatalog.ResolveOrdinal(string.Empty, RussianVocalizerGender.Female),
+                Is.EqualTo(NpcVoiceCatalog.SilentOrdinal));
+            Assert.That(default(NpcVoiceProfile).VocalizerVoice.IsValid, Is.False);
+        }
+
+        [TestCase("mother_v1")]
+        [TestCase("yard_babushka_v1")]
+        [TestCase("cemetery_mourner_v1")]
+        [TestCase("weigh_attendant_v1")]
+        [TestCase("village-wood-woman")]
+        [TestCase("village-sewing-woman")]
+        [TestCase("village-basket-visitor")]
+        [TestCase(NpcVoiceCatalog.CafeWomanDesignId)]
+        public void Speaker_ExistingFemaleDesignsAndAliasesResolveFemaleVoices(string designId)
+        {
+            var actor = new GameObject("Female speech identity");
+            try
+            {
+                var speaker = new NpcSpeaker(actor, actor.transform, designId, NpcEarshotProfile.Conversation);
+                Assert.That(speaker.IsValid, Is.True);
+                Assert.That(speaker.Gender, Is.EqualTo(RussianVocalizerGender.Female));
+                Assert.That(speaker.Voice.VocalizerVoice.Gender, Is.EqualTo(RussianVocalizerGender.Female));
+            }
+            finally { Object.DestroyImmediate(actor); }
+        }
+
+        [Test]
+        public void Speaker_DefaultPopulationUsesPermanentPersonInsteadOfSharedMaleModel()
+        {
+            var actor = new GameObject("Population speech identity");
+            try
+            {
+                var person = actor.AddComponent<CityPedestrianDefaultNpcBody>();
+                var selected = new HashSet<int>();
+                for (int index = 0; index < 32; index++)
+                {
+                    string identity = "voice_test_person_" + index;
+                    JsonUtility.FromJsonOverwrite("{\"characterId\":\"" + identity + "\"}", person);
+                    Object owner = index % 2 == 0 ? (Object)actor : person;
+                    var speaker = new NpcSpeaker(owner, actor.transform,
+                        DefaultNpcCatalog.OrdinaryWorker, NpcEarshotProfile.Conversation);
+                    Assert.That(speaker.DesignId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+                    Assert.That(speaker.VoiceOrdinal,
+                        Is.EqualTo(NpcVoiceCatalog.ResolveOrdinal(identity, RussianVocalizerGender.Male)));
+                    Assert.That(speaker.Gender, Is.EqualTo(RussianVocalizerGender.Male));
+                    selected.Add(speaker.VoiceOrdinal);
+                }
+                Assert.That(selected.Count, Is.GreaterThanOrEqualTo(4),
+                    "Sharing one visual model must not collapse the whole population to one voice.");
+
+                var explicitAlias = new NpcSpeaker(person, actor.transform,
+                    NpcVoiceCatalog.CafeWomanDesignId, NpcEarshotProfile.Conversation);
+                Assert.That(explicitAlias.Gender, Is.EqualTo(RussianVocalizerGender.Female),
+                    "A staged voice alias must not be overwritten by a visual model adapter.");
+            }
+            finally { Object.DestroyImmediate(actor); }
         }
 
         [Test]

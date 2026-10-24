@@ -16,7 +16,7 @@
 
 | Index | Scene | Role |
 | --- | --- | --- |
-| 0 | `MainMenu` | New Game / Combat Test / Quit |
+| 0 | `MainMenu` | Start menu / combat / vocalizer |
 | 1 | `City` | Gameplay |
 | 2 | `DoorTransition` | Door presentation |
 | 3 | `BarInterior` | Gameplay |

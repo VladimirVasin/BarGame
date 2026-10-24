@@ -21,6 +21,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.IsChoosingLocation, Is.False);
             Assert.That(model.IsChoosingCombatWeapon, Is.False);
+            Assert.That(model.IsVocalizerActive, Is.False);
             Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Crowbar));
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(CombatLoadoutSelection.Default));
             Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Standard));
@@ -30,7 +31,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Navigation_WrapsBetweenTheFourOptions()
+        public void Navigation_WrapsBetweenTheFiveOptions()
         {
             var model = new StartMenuModel();
             model.Open();
@@ -48,8 +49,34 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Laboratory));
             Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Vocalizer));
+            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Quit));
             Assert.That(model.MoveSelection(0), Is.False);
+        }
+
+        [Test]
+        public void Vocalizer_IsAnIsolatedNonCommittingModeAndReturnsToItsRow()
+        {
+            var model = new StartMenuModel();
+            model.Open();
+            model.SelectOption(StartMenuOption.Vocalizer);
+
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.OpenVocalizer));
+            Assert.That(model.IsVocalizerActive, Is.True);
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.IsChoosingCombatWeapon, Is.False);
+            Assert.That(model.MoveSelection(1), Is.False, "Typing must not navigate the launch card.");
+            Assert.That(model.SelectOption(StartMenuOption.Quit), Is.False);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.None));
+            Assert.That(model.ReturnToMainMenu(), Is.True);
+            Assert.That(model.IsVocalizerActive, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Vocalizer));
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.OpenVocalizer));
+            model.Open();
+            Assert.That(model.IsVocalizerActive, Is.False);
         }
 
         [Test]

@@ -16,13 +16,13 @@ namespace BarPromenade
     /// frame rather than recomputed where it is drawn. That is not
     /// tidiness: `OnGUI` fires several times a frame for layout and
     /// repaint, so a blip emitted from there would fire two or three
-    /// times per letter. The count itself still comes from the pure
-    /// <see cref="ResolveRevealedCharacters"/>, which is what makes the
-    /// stepping observable without making it the source of truth.
+    /// times per letter. Generated speech can supply its PCM duration;
+    /// the pure <see cref="ResolveRevealedCharacters"/> retains the
+    /// default authored reveal rate for every other delivery.
     /// </summary>
     public struct SpeechDelivery
     {
-        /// <summary>Shared reveal rate for every spoken line.</summary>
+        /// <summary>Default reveal rate when a line has no PCM duration.</summary>
         public const float CharactersPerSecond = 24f;
 
         /// <summary>Space the short writing sounds so slower speech stays distinct.</summary>
@@ -36,6 +36,14 @@ namespace BarPromenade
         public string Text;
 
         public float StartedAt;
+
+        /// <summary>Optional per-line PCM duration. Zero retains the authored
+        /// default reveal rate and all existing duration calculations.</summary>
+        public float RevealDurationSeconds;
+
+        /// <summary>The same immutable phonetic timeline rendered into this
+        /// line's PCM. Pauses hold text; long vowels retain their own duration.</summary>
+        public RussianVocalizerPlan VocalizerPlan;
 
         /// <summary>How much of <see cref="Text"/> has been typed.
         /// Stepped once per frame and never runs backwards.</summary>
@@ -54,12 +62,13 @@ namespace BarPromenade
         public uint BlipOrdinal;
 
         /// <summary>A line somebody says: types out, and ticks.</summary>
-        public static SpeechDelivery Spoken(string text, float startedAt)
+        public static SpeechDelivery Spoken(string text, float startedAt, float revealDurationSeconds = 0f)
         {
             return new SpeechDelivery
             {
                 Text = text ?? string.Empty,
                 StartedAt = startedAt,
+                RevealDurationSeconds = revealDurationSeconds,
                 RevealedCharacters = 0,
                 // Back-dated so the very first letter is allowed its
                 // blip on its own frame instead of waiting out an
@@ -196,9 +205,15 @@ namespace BarPromenade
                 return false;
             }
 
-            int revealed = ResolveRevealedCharacters(
-                Text,
-                unscaledTime - StartedAt);
+            float elapsed = unscaledTime - StartedAt;
+            int revealed = VocalizerPlan != null
+                ? elapsed >= VocalizerPlan.DurationSeconds ? Text.Length :
+                    Mathf.Clamp(VocalizerPlan.RevealedCharactersAt(elapsed), 0, Text.Length)
+                : RevealDurationSeconds > 0f && !float.IsInfinity(RevealDurationSeconds)
+                ? elapsed <= 0f || float.IsNaN(elapsed) ? 0 :
+                    elapsed >= RevealDurationSeconds ? Text.Length :
+                    Mathf.Clamp(Mathf.FloorToInt(elapsed / RevealDurationSeconds * Text.Length), 0, Text.Length)
+                : ResolveRevealedCharacters(Text, elapsed);
             if (revealed <= RevealedCharacters)
             {
                 return false;
@@ -226,6 +241,12 @@ namespace BarPromenade
             BlipOrdinal++;
             return true;
         }
+
+        public float CharacterRevealTime(int characterIndex) => VocalizerPlan != null
+            ? VocalizerPlan.CharacterTimeSeconds(characterIndex)
+            : RevealDurationSeconds > 0f && !string.IsNullOrEmpty(Text)
+                ? (characterIndex + 1) * RevealDurationSeconds / Text.Length
+                : (characterIndex + 1) / CharactersPerSecond;
 
         /// <summary>
         /// Time to reveal the complete line, followed by the caller's reading tail.

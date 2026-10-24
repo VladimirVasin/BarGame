@@ -14,23 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CombatWeaponCarryBindings
   Slots:
   - Weapon: 0
-    BoneLocalPosition: {x: -0.0022499945, y: 0.0017890986, z: 0.0005098766}
-    BoneLocalRotation: {x: -0.9970924, y: 0.00083643204, z: -0.07538656, w: 0.011076454}
+    BoneLocalPosition: {x: -0.0022499938, y: 0.0017891005, z: 0.0005098757}
+    BoneLocalRotation: {x: -0.9970925, y: 0.00083646557, z: -0.07538656, w: 0.011076366}
     PushHandLocalPosition: {x: 0, y: 0, z: 0}
     CatchHandLocalPosition: {x: 0, y: 0, z: 0}
     PushHandLocalRotation: {x: 0, y: 0, z: 0, w: 1}
     CatchHandLocalRotation: {x: 0, y: 0, z: 0, w: 1}
   - Weapon: 1
-    BoneLocalPosition: {x: 0.0017851293, y: 0.0013993314, z: -0.0007069507}
+    BoneLocalPosition: {x: 0.0017851291, y: 0.0013993313, z: -0.0007069507}
     BoneLocalRotation: {x: 0.39166826, y: -0.6126313, z: 0.5796865, w: 0.3677533}
     PushHandLocalPosition: {x: 0, y: 0, z: 0}
     CatchHandLocalPosition: {x: 0, y: 0, z: 0}
     PushHandLocalRotation: {x: 0, y: 0, z: 0, w: 1}
     CatchHandLocalRotation: {x: 0, y: 0, z: 0, w: 1}
   - Weapon: 2
-    BoneLocalPosition: {x: -0.0009615737, y: 0.0002696397, z: 0.0013512771}
-    BoneLocalRotation: {x: -0.6217227, y: -0.372033, z: 0.60128224, w: -0.33691603}
-    PushHandLocalPosition: {x: -0.0035359208, y: 0.00007203781, z: -0.00014544594}
-    CatchHandLocalPosition: {x: 0.0014722776, y: -0.00242602, z: 0.002447493}
-    PushHandLocalRotation: {x: 0.36047018, y: -0.33507237, z: 0.6083269, w: -0.62267685}
-    CatchHandLocalRotation: {x: -0.40209007, y: -0.234247, z: 0.13115911, w: -0.8753572}
+    BoneLocalPosition: {x: -0.00096157345, y: 0.00026963968, z: 0.0013512771}
+    BoneLocalRotation: {x: -0.62172264, y: -0.372033, z: 0.60128224, w: -0.33691615}
+    PushHandLocalPosition: {x: -0.0035359198, y: 0.00007203757, z: -0.00014544606}
+    CatchHandLocalPosition: {x: 0.0014722783, y: -0.002426022, z: 0.002447495}
+    PushHandLocalRotation: {x: 0.36047032, y: -0.33507237, z: 0.60832673, w: -0.62267685}
+    CatchHandLocalRotation: {x: -0.40208974, y: -0.2342468, z: 0.131159, w: -0.8753573}

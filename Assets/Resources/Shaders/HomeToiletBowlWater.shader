@@ -5,10 +5,22 @@ Shader "Bar Promenade/Home Toilet Bowl Water"
         _BowlWaterClock("Water Clock", Float) = 0
         _BowlImpact("Water Contact", Vector) = (0,0,0,0)
         _BowlVortex("Flush Flow", Vector) = (0,0,0,0)
+        [HideInInspector] _GeometricMirrorStencilRef("Geometric Mirror Stencil Ref", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilComp("Geometric Mirror Stencil Comparison", Float) = 8
+        [HideInInspector] _GeometricMirrorStencilReadMask("Geometric Mirror Stencil Read Mask", Float) = 0
+        [HideInInspector] _GeometricMirrorStencilMotionRef("Geometric Mirror Motion Stencil Ref", Float) = 1
     }
     SubShader
     {
         Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Transparent" "Queue"="Transparent-10" }
+        Stencil
+        {
+            Ref [_GeometricMirrorStencilRef]
+            ReadMask [_GeometricMirrorStencilReadMask]
+            WriteMask 0
+            Comp [_GeometricMirrorStencilComp]
+            Pass Keep
+        }
         Pass
         {
             Name "BowlWaterBothSides"

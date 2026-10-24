@@ -177,7 +177,8 @@ namespace BarPromenade
         /// the shared materials — a renderer whose material was swapped at
         /// runtime (the hero's bare skin) swaps its copy too.
         /// </summary>
-        public void SyncRenderers(bool copyMaterials, Func<int, bool, bool> enabledOverride = null)
+        public void SyncRenderers(bool copyMaterials, Func<int, bool, bool> enabledOverride = null,
+            Func<Material, Material> materialOverride = null)
         {
             for (int index = 0; index < sourceRenderers.Count; index++)
             {
@@ -199,6 +200,9 @@ namespace BarPromenade
                 if (copyMaterials)
                 {
                     source.GetSharedMaterials(sourceMaterials);
+                    if (materialOverride != null)
+                        for (int material = 0; material < sourceMaterials.Count; material++)
+                            sourceMaterials[material] = materialOverride(sourceMaterials[material]);
                     clone.GetSharedMaterials(cloneMaterials);
                     bool changed = sourceMaterials.Count != cloneMaterials.Count;
                     for (int material = 0; !changed && material < sourceMaterials.Count; material++)

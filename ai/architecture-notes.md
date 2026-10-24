@@ -1,11 +1,93 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-24 — translucent dialogue panels:** The user requested
+  translucent dialogue windows. `RetroUiTheme.DialoguePanelOpacity` shares `72%`
+  across overhead speech panels/tails and the dialogue choice panel/selection.
+  Text retains its existing contrast; earshot fade still scales the whole line.
+  Existing geometry, anchors, hit targets and ownership remain. Scene shaping,
+  material/accent effects and post-processing need no additional provider.
+- **Accepted 2026-10-24 — gradual intoxication audio:** The user requested
+  gradual changes to sound, including music. `GameTimeScaleRuntime.AudioPerception`
+  uses a persistent audio level with an unpaused real-time exponential `0.7 s`
+  time constant, independent of the faster status/world ramp. Small drinking
+  steps and sobering ease alike; player/scene rebinds retain the audible state.
+  VHS intensity, music rate and speech pitch/gain/cutoff share that profile.
+  Session reset and explicit synchronization restore exact values; native DSP,
+  transport/fades, spatial audio, dry UI and calendar/world timing retain owners.
+- **Accepted 2026-10-24 — Russian vocalizer for existing spoken lines:**
+  The user's explicit decision replaces writing clicks on every existing Russian
+  spoken line: ambient exchanges, E replies, dialogue choices already spoken by
+  the hero and his approved mutters. Story §6 records the level-0 sound exception;
+  pools, text/register, speakers, silent descriptions/pages/choices, lore and
+  permissions to speak do not expand. English retains the legacy writing clicks.
+  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` remain the shared owners;
+  `NpcVoiceCatalog` identities, including the hero's exclusive profile, map to
+  twelve authored procedural styles. The user's refinement separates source
+  excitation, resonance, pitch/melody, pronunciation and phone/word/pause rhythm.
+  Male/female assignment is explicit, with separate fallback pools; known female
+  aliases are registered. Shared default male models hash permanent character IDs,
+  retaining model metadata and explicit staged aliases. No new speaker permission.
+  No per-feature service or AudioSource on character assets.
+  Phonetic planning/source-filter synthesis use bounded cancellable background
+  work; clip creation/playback/disposal stay on the main thread. Work and retained
+  audio have fixed bounds; no sentence PCM cache or unbounded queue. A result belongs
+  to its active line token: cancellation, cull, dead heads, disable or scene exit
+  release it and cannot allow a late completion to restart speech. Pause freezes
+  sound together with the owning clock; silent restoration/seek replay nothing.
+  Existing captured line windows and controller schedules stay fixed. Phone
+  durations first reduce optional pauses/drawl, then fit uniformly without shifting
+  pitch. One immutable phone/sample/text plan drives PCM, reveal, scatter and mouths;
+  pause phones close mouths and held final vowels retain articulation. Preparation
+  holds reveal; overdue/unready
+  results cancel rather than replay or extend the window. Speaker position,
+  volume and earshot remain shared. The user's further `2026-10-24` decision
+  retains audible speech while intoxication strongly slows/breaks speech and
+  music; all spoken captions reuse the street hero's glyph scatter. Existing
+  native VHS stays unchanged. The shared audio level gives exponential `A`
+  and playback rate `1-0.75A`; speech-only `s=x²(3-2x)`, `x=L/100`, gives at most
+  `-6 dB` and logarithmic low-pass `7600→1800 Hz`. Pooled sources apply this
+  after synthesis, preserving PCM/earshot/identity. This deliberate perceptual
+  pitch lowering is separate from pitch-preserving synthesis window fitting.
+  The owner clock integrates at that rate; text/mouth use delivered PCM and
+  cannot seek ahead to cancel the slowdown. Real captured windows remain finite:
+  peak speech is a slowed fragment, without dumping its unheard ending into text.
+  Shared bubbles combine local hero scatter with global VeryDrunk scatter and
+  cache Unity-wrapped glyph layout per bounded slot. Glyph rotation composes in
+  logical canvas space so scale/letterbox offsets cannot move its own pivot.
+  Music carriers multiply
+  their own radio wow/mechanical tape speed, including physical zero; smoking
+  shares the rate. Playheads/fades/pause/tails retain their owners. Sobriety/reset
+  restores; the menu's UI audition path stays dry. Runtime cost unmeasured.
+  This is synthetic phonetic speech, without recordings, external models/network,
+  extra ambience or new cast. The menu auditions all styles with gender filters,
+  fixed-volume A/B and free versus existing-window delivery.
+- **Accepted 2026-10-23 — isolated Russian vocalizer laboratory:** The user
+  requested a main-menu mode with typed Russian phrases, expanded on `2026-10-24`
+  to twelve male/female styles, A/B comparison and free/window modes.
+  The non-fiction audition tool owns only its menu input and playback; gameplay
+  speech belongs to the shared owners and the accepted 2026-10-24 decision above.
+  `RussianSpeechPhonetics` plans bounded pronunciation: small stress lexicon,
+  explicit combining acute override, approximate fallback, softness and reduction.
+  The bounded canonical cache retains unreduced vowels and original text offsets;
+  per-style pronunciation never mutates it. `RussianVocalizerSynthesis` renders
+  deterministic mono source/filter PCM with independent excitation/resonance,
+  melodic range, stress, articulation, reduction, r variants and rhythm. Active
+  speech energy is normalized with a peak cap; synthetic timbre is intentional. Limit:
+  240 input characters, 40 seconds; no model, recording, network or sentence cache.
+  `RussianVocalizerLab` runs one cancellable worker and retains only the latest
+  replacement; Unity clips/source stay on the main thread and route to dry UI.
+  Stop, voice change, back, disable and destruction cancel/release owned work.
+  The black menu retains its existing culled camera and crisp IMGUI; scene,
+  material/accent and post-processing effects need no additional provider.
 - **Accepted exception 2026-10-23, bar speech — explicit user decision:**
-  Short service comments per accepted order; eight patrons/four everyday pairs.
+  Short service comments per accepted order; counter and two booth pairs.
+  User clarification `2026-10-24`: the two solitary high-table patrons stay silent;
+  their dormant bank remains addressable, without declarations, turns or partner looks.
   `BarConversation{Catalog,Schedule,Controller}`: whole no-repeat exchanges,
-  service priority after a begun reply, bounded tokens; grips precede gestures.
-  Two shared speech views declare eight guests/one bartender; one active line.
+  three independent A→B clocks/own bartender channel; bounded tokens/grips first.
+  Two shared views/six speaking guests plus bartender: up to four simultaneous lines.
+  Pair waits: first .4–2s, exchange 1.5–4s, reply .3–.75s; no service muting.
   Keys `bar.speech`; foam lines await observed state, handle direction is gated.
   Hero silent; service address concerns the drink, never his person/past.
   No E graph, biography, quest, illness/crime explanation, strange-world reaction
@@ -17,6 +99,8 @@
   0↔-90/.65s/both sides;outer close near edge.
   Worn tile/plaster;bin/litter/brush/paper/soap;rude art/stickers(no text).
   Broken geometric mirror:room/hero/pose/clothes;active/cleanup.
+  Authored pane masks reflected color/depth/normals/motion with stencil bit1;
+  bounded shared material copies retain source appearance, then clean up.
   8lights:6hall+WCdown(-3.9,2.65,5.65)/3.3m/100°/I3.1/RGB(1,.86,.65)
   +WCsign(-4.2,2.32,3.25)→(0,-1,.45)/I2.6/3.8m/140°soft;3shadows.
   2counter/1WC/1doorbounce;2×256cubes(WC ceramic/metal);hall air/no leaf.
@@ -1046,7 +1130,7 @@
   `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` own all speech, including E;
   bottom descriptions/hints/choices are silent. The mandatory speech standard
   preserves text/voices/order, shared anchors/earshot/line duration/admission/
-  pause/cleanup and cross-view head ownership; no feature copies/new pool/voice acting.
+  pause/cleanup and cross-view head ownership; no feature copies/new pool/recorded acting.
 
 - **Accepted — 2026-09-11, warehouse doorway priority:**
   Arrival/accepted stock decide access; crane load reserves nothing. Docker
@@ -1056,7 +1140,8 @@
   `DriverWaitingForDockWorker` gates remark; missing stock is silent.
 
 - **Accepted — 2026-09-11, slower shared speech:**
-  `SpeechDelivery`: `24 chars/s`, clicks ≥`.13 s`, bubble `4.4 s`, tail `2.5 s`.
+  `SpeechDelivery`: bubble `4.4 s`, tail `2.5 s`; English fallback `24 chars/s`,
+  clicks ≥`.13 s`. Russian reveal follows voiced duration within the same window.
   Port/foreman `4.8 s`, farewells/driver `3.5 s`, access `3 s`; chess reply/cooldown
   `4.6 s`; cafe fits idle windows. Prompt floors: watchman `3.5 s`, fisherman/
   Ferryman/mother `3.9 s`; full-line tail retained. Text/voices/queues/input stay;
@@ -1187,7 +1272,7 @@
   when playback begins, after any departing tail has finished.
   The ten approved localized road lines use `LastRouteRideSpeechSession` for
   the shuffle bag and `LastRouteRideSpeechView` for the shared overhead bubble,
-  typewriter and writing clicks without modal ownership. The driver's head
+  shared reveal and positional speech without modal ownership. The driver's head
   turns towards the passenger during both ordinary and reactive lines.
   First delivery waits `12–18 s` of
   visible driving; later lines wait `30–45 s` after printing and a `2.5 s`
@@ -3613,17 +3698,13 @@
   still not repeatable, so it does not recur daily the way §9's «Каждый день»
   describes. That was already true before this work and is left alone.
 - **Accepted 2026-09-02 by direct user decision — every spoken line types out,
-  and writing has sound:** `SpeechDelivery` owns typing and letter-triggered
-  clicks; shared bubbles present spoken lines.
-  Story §6's two cafe rows/§17 permit writing sound, not voice acting:
-  `NpcSpeechBlipSynthesis` has no phonemes, words, intonation or recording.
-  Its triangle, inharmonic partial and grit last `45 ms`, quantized to 127 steps;
-  eight `NpcVoiceCatalog` profiles distinguish speakers by fundamental/timbre.
+  and writing has sound:** `SpeechDelivery` owns shared reveal; Russian uses the
+  procedural vocalizer under the 2026-10-24 decision. English writing clicks use
+  `NpcSpeechBlipSynthesis`: triangle/inharmonic partial/grit, `45 ms`, 127 steps.
+  `NpcVoiceCatalog` profiles retain each speaker's sound identity.
   Staged prefabs gain no `AudioSource`; the watchman/fisherman/Ferryman factory
   guards remain. Sources belong to `NpcSpeechVoice`, follow the speaker and are
-  leased for the whole line. This separate service preserves per-letter pitch
-  and prevents the ordinary effect pool's cooldown/cap from dropping or stealing
-  speech. Reveal and audible-click pacing are governed by the later timing decision.
+  leased for the whole line, outside the ordinary effect pool's cooldown/cap.
 - **Accepted — the reveal is stepped once a frame, in `Update`, and the fade is
   a property of the bubble rather than of the view:** `SpeechDelivery.Step`
   runs in Update; repeated IMGUI layout/repaint events only read it, preventing
@@ -3681,7 +3762,7 @@
   one or two sentences, banned words, abstractions, the crime's subjects
   and a profanity list); staged, seated, riding and balcony bodies; the
   mourner's street copy (`CityPedestrianInsultRules.SilentDesignIds`); no
-  crowd, no pursuit, no new `AudioSource` (the shared writing blip). Design
+  crowd, no pursuit, no new `AudioSource` on the actor (shared speech). Design
   decisions worth keeping. (1) THE CHANNEL: an insult hangs above its speaker,
   through the shared bubble. (2) ONE SHARED POOL of twenty lines in the voice
   of the anonymous role, the user's choice over per-design pools; the
@@ -3772,15 +3853,13 @@
   it and a drifting letter would otherwise draw in the letterbox. **The panel
   does not follow them:** it stays the size it was measured at and the letters
   leave it. A box that grew to chase them would put the eye on the box. (7)
-  THE VOICE DOES NOT DEGRADE, THE JITTER DOES. He is the ninth entry in
+  THE VOICE KEEPS ITS IDENTITY. He is the ninth entry in
   `NpcVoiceCatalog` and the only one who is not an NPC — quietest in the table,
   because his own bubble is measured against himself as the listener and so
-  never fades. Fundamental, timbre and noise are baked into the refcounted
-  clip bank, so a voice that degraded in those would need a clip per degree;
-  `JitterCents` is applied at play time, so that is the one knob the mutter
-  spends (`+26 ¢` at full slur). The rest of his drunkenness is heard through
-  the slurred letters themselves, since a repeated vowel plays one note over
-  and over. `ResolveOrdinal`'s fallback hash now spans
+  never fades. His already slurred text feeds Russian phonetic synthesis;
+  English fallback retains the shared blip bank and play-time jitter
+  (`+26 ¢` at full slur). No per-degree clip bank is introduced.
+  `ResolveOrdinal`'s fallback hash spans
   `FallbackVoiceCount = Count - 1` with him last: without that, a future
   speaking NPC would have a one-in-nine chance of being handed the hero's own
   voice, and the only symptom would be a stranger who sounds like him.
@@ -4393,9 +4472,9 @@
   the hero's stool gives a bounded eye-level first-person view of the counter;
   the owner hides head geometry for the seated interval and restores the exact
   prior camera mode, pose, FOV and cinematic-motion state on exit or teardown.
-  The pair's conversation types out and ticks with the game-wide writing blip
-  (see the accepted decision below); voice acting, phonemes and free ambience
-  are deliberately absent, and the hero is never a cup/refill target or spoken
+  The pair's conversation uses the shared overhead reveal and Russian vocalizer
+  (English retains writing clicks); recordings and free ambience are absent,
+  and the hero is never a cup/refill target or spoken
   addressee; the single physical menu exception is recorded below.
   The
   right landmark is a `230 m` cableway: eight colliderless cabins traverse one

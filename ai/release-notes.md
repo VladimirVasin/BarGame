@@ -6,28 +6,53 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-10-24
+
+- Все существующие русские реплики звучат вокализатором: NPC, E, диалоги и
+  разрешённое бормотание героя. Немой текст и английские реплики сохранены.
+- 12 стилей: тембр, интонация, произношение, темп и манера. Мужские/женские
+  голоса привязаны явно; у общей модели выбор стабилен по ID человека.
+- Звук/текст/рот следуют фонемам; паузы закрывают рот, протяжки сохраняют артикуляцию.
+- Опьянение/отрезвление плавно меняет звук/музыку; переход сохраняется между сценами.
+  Речь тянется, буквы расходятся.
+- Реплики/выбор полупрозрачны; текст контрастен.
+- «Вокализатор»: фильтры М/Ж, А/Б, свободный темп и игровое окно.
+- Зеркало WC бара ограничено стеклом: копия героя/комнаты не видна из зала.
+- Двое за отдельными столиками молчат; разговаривают стойка и две кабинки.
+- Проверено: RussianVocalizerTests;
+  SharedVocalizer_UsesSpeakerIdentityClockAndPooledCleanup;
+  MenuLab_PlaysTwelvePresetsComparesGenderedSlotsAndCancelsWithoutLeavingMenu;
+  NpcSpeechVoiceTests: каталог/пол/постоянный ID;
+  RoadSpeech_PreservesSilenceAndBagAcrossLegsWithoutTakingThePrompt;
+  WashroomMirror_ConfinesReflectionToApertureFromHallAndWashroom;
+  SingleTablePatrons_RemainSilentWhilePairsSpeak;
+  IntoxicationPlaybackRate_PreservesMusicOwnersAndAuthoredTransport;
+  просмотр меню/зеркала/распада речи, PCM, check-docs.
+
 ### 2026-10-23
 
 - Бар: WC за кабинками, унитаз/раковина; крыло/крыша совпадают.
-  Дверь/`E`↔, унитаз по взгляду/стойки вблизи; грязь/сколы/мусор/ёршик/
-  бумага/дозатор, картинки/стикеры без букв; разбитое зеркало с героем.
-  Свет WC/отскок раскрывают дверь/подход; точки на кафеле убраны.
-- Заказ/повтор: видимый взмах левой/стук указательным; сидячий обзор.
+  Дверь/`E`↔; унитаз по взгляду/вблизи. Износ плитки/штукатурки, мусор/
+  ёршик/бумага/дозатор, рисунки без букв, разбитое зеркало с героем; свет раскрывает подход.
+  Точки на кафеле убраны.
+- Заказ/повтор: взмах левой/стук указательным, сидячий обзор.
   Правая подаёт пустую кружку/возвращается до оплаты; меню/край ограничивают ход.
-  Гости машут/ждут долив в тот же сосуд; общая очередь, бармен смотрит/кивает.
-- Mac: Burst поддерживает ARM; universal Intoxication VHS сохраняет общий DSP.
-  MainMenu→AlpineVillage без Burst/VHS ошибок; очередь Hub 64 МиБ устранила
-  Graphics Ring Buffer warning.
-- Речь: бармен комментирует заказ; четыре пары отвечают друг другу.
-  Цельные случайные обмены без повторов; общие пузыри, герой молчит.
+  Гости ждут долив в тот же сосуд; общая очередь, бармен смотрит/кивает.
+- Mac: ARM Burst; universal VHS сохраняет DSP.
+  MainMenu→AlpineVillage без Burst/VHS ошибок; Hub 64 МиБ устраняет ring-buffer warning.
+- Речь: четыре пары с барменом; случайный круг без повторов,
+  общие пузыри, герой молчит.
+- «Вокализатор»: русский ввод/примеры, низкий/высокий голос,
+  «Слушать»/«Стоп»/назад; процедурный тембр, ударения приблизительные.
 - Проверено: BarPrompts_KeepDoorReachableAndCounterLocal;
-  Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera (зеркало/очистка);
+  Washroom_WalksThroughSolidDoorUsesToiletAndRestoresCamera;
   Toilet_FirstPersonStreamStainsAndRestores;
   PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit;
-  BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt; свет/отражение/позы проверены.
-  PlayerBodyQueryBurstTests; Mac native ABI/DSP validator прошли.
+  BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt;
+  PlayerBodyQueryBurstTests; Mac native ABI/DSP validator;
   BarConversationScheduleTests; EnglishEntries_HaveRussianSource;
-  BarsShareSpeechAndKeepService; Game view review; check-docs.
+  BarsShareSpeechAndKeepService; Game view review;
+  RussianVocalizerTests; MenuLab_PlaysBothVoicesAndCancelsWithoutLeavingMenu; check-docs.
 
 ### 2026-10-22
 

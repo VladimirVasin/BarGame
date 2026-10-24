@@ -213,15 +213,23 @@ namespace BarPromenade
         /// <summary>Copy the live outfit, then restrict it to this authored arm.</summary>
         public void RefreshAppearance(bool shown = true)
         {
-            jointDeformation?.ApplyPose();
+            // The camera hierarchy can be destroyed before its managed owner
+            // receives OnDisable. Cached bindings then retain Unity-null objects.
+            visibleRenderers.Clear();
+            if (registry == null)
+            {
+                return;
+            }
+
+            if (jointDeformation != null) jointDeformation.ApplyPose();
             if (sourceRegistry != null && registry != null)
                 sourceRegistry.GetComponent<PlayerJacketCloth>()?.CopyPoseTo(registry.GetComponent<PlayerJacketCloth>());
             PlayerWardrobe sourceWardrobe = sourceRegistry != null ? sourceRegistry.GetComponent<PlayerWardrobe>() : null;
             PlayerWardrobe localWardrobe = registry != null ? registry.GetComponent<PlayerWardrobe>() : null;
-            visibleRenderers.Clear();
             foreach (Player3DMeshBinding binding in armBindings)
             {
                 Renderer target = binding.Renderer;
+                if (target == null) continue;
                 bool worn = localWardrobe == null || !localWardrobe.IsConfigured || localWardrobe.IsRendererWorn(target);
                 if (sourceBindings.TryGetValue(binding.MeshName, out Player3DMeshBinding source) && source.Renderer != null)
                 {

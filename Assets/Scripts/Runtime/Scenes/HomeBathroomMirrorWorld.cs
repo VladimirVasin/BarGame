@@ -457,6 +457,8 @@ namespace BarPromenade
         private readonly List<Transform> twinBones = new List<Transform>();
         private readonly List<Renderer> sourceRenderers = new List<Renderer>();
         private readonly List<Renderer> twinRenderers = new List<Renderer>();
+        private readonly List<Material> sourceMaterials = new List<Material>();
+        private readonly List<Material> twinMaterials = new List<Material>();
         private readonly List<bool> headFlags = new List<bool>();
         private readonly Transform heroRoot;
         private readonly Transform homeFrame;
@@ -683,7 +685,7 @@ namespace BarPromenade
         }
 
         /// <summary>Root pose in the home frame, bones verbatim, renderer state with the head rule.</summary>
-        public void Sync(float headExposure = 1f)
+        public void Sync(float headExposure = 1f, Func<Material, Material> materialOverride = null)
         {
             Transform root = Root;
             if (root == null || heroRoot == null)
@@ -762,9 +764,17 @@ namespace BarPromenade
                     mirror.enabled = enabled;
                 }
 
-                if (!ReferenceEquals(mirror.sharedMaterial, source.sharedMaterial))
+                source.GetSharedMaterials(sourceMaterials);
+                if (materialOverride != null)
+                    for (int material = 0; material < sourceMaterials.Count; material++)
+                        sourceMaterials[material] = materialOverride(sourceMaterials[material]);
+                mirror.GetSharedMaterials(twinMaterials);
+                bool changed = sourceMaterials.Count != twinMaterials.Count;
+                for (int material = 0; !changed && material < sourceMaterials.Count; material++)
+                    changed = !ReferenceEquals(sourceMaterials[material], twinMaterials[material]);
+                if (changed)
                 {
-                    mirror.sharedMaterials = source.sharedMaterials;
+                    mirror.SetSharedMaterials(sourceMaterials);
                 }
 
                 // Cleared first: a reused block keeps whatever the previous

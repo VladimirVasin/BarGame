@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 namespace BarPromenade
 {
     /// <summary>
-    /// Drives the one world tape bus after the player's presentation level is smoothed.
+    /// Drives the one world tape bus from the persistent smoothed audio perception.
     /// Sources retain their own pitch, scheduling, spatialization and room sends.
     /// </summary>
     [DefaultExecutionOrder(1000)]
@@ -97,7 +97,7 @@ namespace BarPromenade
             {
                 return;
             }
-            AppliedIntensity = GameTimeScaleRuntime.PerceptionIntensity;
+            AppliedIntensity = GameTimeScaleRuntime.AudioPerception.Intensity;
             // Inventory/journal freeze gameplay but intentionally keep ambient audio.
             bool paused = AudioListener.pause;
             bool intensitySet = mixer.SetFloat(IntensityParameter, AppliedIntensity);

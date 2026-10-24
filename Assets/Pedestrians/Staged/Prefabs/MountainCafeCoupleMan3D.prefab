@@ -196,8 +196,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 859438652474272410}
     Bone: {fileID: 5208567751239973168}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 6146924753149964731}
     Bone: {fileID: 7097955309624818429}
@@ -226,8 +226,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 4686397126991570553}
     Bone: {fileID: 5208567751239973168}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
 --- !u!1001 &4978230630639495454
 PrefabInstance:

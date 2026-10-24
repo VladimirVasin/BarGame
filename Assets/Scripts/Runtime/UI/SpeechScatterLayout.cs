@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Where each letter of a line has drifted to. The whole geometry of the
-    /// hero's words coming apart at the top of the intoxication scale, kept
+    /// spoken words coming apart at the top of the intoxication scale, kept
     /// pure so it can be proved without a game view — the same reason
     /// <see cref="NpcSpeechBubbleView.ResolvePanelRect"/> is a static.
     ///
@@ -20,10 +20,8 @@ namespace BarPromenade
     /// apart. Glyphs align to whole pixels on the shared logical canvas,
     /// keeping their edges sharp while the scattered line moves.
     ///
-    /// It does not wrap. Only the Very Drunk pool scatters and that pool is
-    /// authored to one row, because reproducing Unity's own line breaking by
-    /// hand would put the panel's height and the glyph rows into two different
-    /// opinions.
+    /// The view borrows wrapped glyph origins from Unity's ordinary label
+    /// layout; this geometry moves each glyph relative to its own row.
     /// </summary>
     public static class SpeechScatterLayout
     {
@@ -46,7 +44,7 @@ namespace BarPromenade
         public const float RampSeconds = 0.35f;
 
         /// <summary>Below this the ordinary single-label path draws the line,
-        /// and it must, because that path is what every NPC bubble uses.
+        /// preserving the ordinary layout whenever no perception/local slur applies.
         /// </summary>
         public const float ScatterEpsilon = 0.0005f;
 
@@ -66,6 +64,19 @@ namespace BarPromenade
         public static bool IsScattering(float amount)
         {
             return !float.IsNaN(amount) && amount > ScatterEpsilon;
+        }
+
+        /// <summary>
+        /// Rotate in logical canvas space before its scale and letterbox offset.
+        /// GUIUtility.RotateAroundPivot rotates after the canvas transform and
+        /// treats this logical pivot as a screen point, making glyphs orbit it.
+        /// </summary>
+        public static Matrix4x4 ResolveGlyphMatrix(in Matrix4x4 canvasMatrix, Vector2 pivot, float degrees)
+        {
+            if (degrees == 0f) return canvasMatrix;
+            var center = new Vector3(pivot.x, pivot.y, 0f);
+            return canvasMatrix * Matrix4x4.TRS(center, Quaternion.Euler(0f, 0f, degrees), Vector3.one) *
+                   Matrix4x4.Translate(-center);
         }
 
         /// <summary>

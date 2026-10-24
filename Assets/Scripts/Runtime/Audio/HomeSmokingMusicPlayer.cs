@@ -79,6 +79,7 @@ namespace BarPromenade
             CancelRuleFadeOut();
             MusicMix.ReleaseFadeOut(Source);
             Source.Stop();
+            RefreshPlaybackRate();
             if (Source.clip != null)
             {
                 Source.timeSamples = 0;
@@ -210,6 +211,7 @@ namespace BarPromenade
                 return;
             }
 
+            RefreshPlaybackRate();
             AdvanceRuleFadeOut(unscaledDeltaTime);
             ResolveDeferredStart();
             AdvanceEntryRamp(unscaledDeltaTime);
@@ -320,7 +322,13 @@ namespace BarPromenade
             Source.spatialBlend = 0f;
             Source.dopplerLevel = 0f;
             Source.priority = 64;
+            RefreshPlaybackRate();
             GameAudioMixer.Route(Source, GameAudioGroup.Music);
+        }
+
+        private void RefreshPlaybackRate()
+        {
+            if (Source != null) Source.pitch = GameTimeScaleRuntime.PerceptionPlaybackRate;
         }
 
         private void ConfigureTone()

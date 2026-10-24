@@ -55,6 +55,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Warehouse | Fish3:regularfoes/spawn0;gate;ammo/bays;L3broken;dust→settle;A*/capsule. | `Warehouse*`,`CombatTestRoot.Navigation` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
+| Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
@@ -107,7 +108,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Port cold store | Three warm lamps, refrigeration and passive furniture retain cargo lanes; local fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | Carrot custody retained; voluntary two-speaker E dialogue, no work/pay. | `CityPortForeman*`, `CityPortConversation*` | Current |
-| NPC dialogue | Graph, visible approach, two shots/cancel; foreman. Shared inspection camera. | `DialogueGraph`, `DialogueSessionController`, `ContextualCameraDirector` | Current |
+| NPC dialogue | Graph, approach/two shots/cancel; foreman. Translucent choices; shared inspection camera. | `DialogueGraph`, `DialogueSessionController`, `ContextualCameraDirector` | Current |
 | Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |
@@ -142,7 +143,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
-| Intoxication sound perception | Windows/macOS VHS uses bounded history and smoothed strength; sober returns to exact bypass. | `IntoxicationAudioDriver`, `tools/audio-vhs` | Current |
+| Intoxication sound perception | Separate eased audio persists across scenes; speech/music→0.25× over VHS, caption scatter. Sober restores. | `IntoxicationPerceptionRules`, `NpcSpeechVoice`, `SceneMusicPlayer`, `IntoxicationAudioDriver` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
 | Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
@@ -172,7 +173,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Shared refrigerator | Hand-free Home/warehouse;entry/chest aim;atomic Take/Back. Gap: `Use` hidden/unimplemented. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
-| Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
+| Spoken text | Translucent shared bubbles/RU vocalizer incl. E/hero; EN clicks, silent bottom; bounded jobs/pause/cleanup. | `SpeechDelivery`, `NpcSpeechBubbleView`, `NpcSpeechVoice` | Current |
 | NPC role labels | Eleven roles (east guards share one), excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
 | Debug controls | F4: busy/defeat flight, live timelines. F9: day/intoxication/truck; F1–F3: speed. | `DebugFreeCamera`, `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
@@ -189,7 +190,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
-| Bar interior and exterior | Hall/worn WC fit exterior; sign/solid door/shared toilet/real broken mirror. | `BarInteriorLayout*`, `BarWashroom{MirrorWorld,ReflectionCapture}`, `InteriorHingedDoorInteraction` | Current |
+| Bar interior and exterior | Hall/worn WC fit exterior; sign/solid door/shared toilet/masked broken mirror. | `BarInteriorLayout*`, `BarWashroom{MirrorWorld,ReflectionCapture}`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8m; sofa sleep/full kitchen/locked room; chair shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Exact days `1–7` accumulate domestic neglect; later days keep state seven. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | A shared ramp/step plan joins street and home with height-selected cameras and an authored atmosphere. | `StairwellLayout*` | Current |
@@ -213,7 +214,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
 | Bar patrons and bartender | Eight drinkers; two counter cups deplete/wave/refill. Bartender: Wipe/menu/free arm. | `BarPatron*`, `BarCounterPatronRefill`, `BarBartender*` | Current |
-| Bar speech | Four pairs/one service comment; whole shuffled exchanges, no repeats. | `BarConversation{Catalog,Schedule,Controller}`, `BarSpeechVariantDeck` | Current |
+| Bar speech | Counter/two booth pairs + bartender; ≤4 lines; solitary tables silent. A→B/no repeats. | `BarConversation{Catalog,Schedule,Controller}`, `BarSpeechVariantDeck` | Current |
 | Bar cinematic atmosphere | 8 lights/3 shadows; 4 bounded bounces/2×256 cubes; Neutral. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
 | Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |
 | Material/water pilots | Counter/brass roughness; fountain foam-free basin/mips; A/B reviewed. | `BarCounterMaterialResponse`, `CityFountainWaterResources` | Current |

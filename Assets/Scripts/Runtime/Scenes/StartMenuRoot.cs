@@ -19,15 +19,17 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(206f, 121f, 228f, 118f);
+            new Rect(206f, 108f, 228f, 144f);
         internal static Rect MenuNewGameRect =>
-            new Rect(218f, 130f, 204f, 22f);
+            new Rect(218f, 117f, 204f, 22f);
         internal static Rect MenuCombatTestRect =>
-            new Rect(218f, 156f, 204f, 22f);
+            new Rect(218f, 143f, 204f, 22f);
         internal static Rect MenuLaboratoryRect =>
-            new Rect(218f, 182f, 204f, 22f);
+            new Rect(218f, 169f, 204f, 22f);
+        internal static Rect MenuVocalizerRect =>
+            new Rect(218f, 195f, 204f, 22f);
         internal static Rect MenuQuitRect =>
-            new Rect(218f, 208f, 204f, 22f);
+            new Rect(218f, 221f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
@@ -54,6 +56,8 @@ namespace BarPromenade
         public bool IsChoosingLocation => model.IsChoosingLocation;
         public bool IsChoosingCombatWeapon => model.IsChoosingCombatWeapon;
         public bool IsChoosingLaboratoryEnemy => model.IsChoosingLaboratoryEnemy;
+        public bool IsVocalizerActive => model.IsVocalizerActive;
+        public RussianVocalizerLab VocalizerLab { get; private set; }
         public NewGameLocation SelectedLocation => model.SelectedLocation;
         public CombatWeaponId SelectedCombatWeapon => model.SelectedCombatWeapon;
         public CombatLoadoutSelection SelectedCombatLoadout => model.SelectedCombatLoadout;
@@ -122,6 +126,11 @@ namespace BarPromenade
                 case StartMenuAction.ChooseLaboratoryEnemy:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return true;
+                case StartMenuAction.OpenVocalizer:
+                    VocalizerLab ??= gameObject.AddComponent<RussianVocalizerLab>();
+                    VocalizerLab.Open();
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                    return true;
                 case StartMenuAction.Back:
                     RetroAudio.Play(RetroSfxId.UiCancel);
                     return true;
@@ -172,6 +181,7 @@ namespace BarPromenade
         public bool ReturnToMainMenu()
         {
             if (IsBusy || !model.ReturnToMainMenu()) return false;
+            if (VocalizerLab != null) VocalizerLab.Close();
             RetroAudio.Play(RetroSfxId.UiCancel);
             return true;
         }
@@ -228,7 +238,9 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (IsBusy)
+            // The text field owns spaces, arrows and Enter while the lab is open.
+            // Its IMGUI handler accepts only Escape and Ctrl+Enter as commands.
+            if (IsBusy || model.IsVocalizerActive)
             {
                 return;
             }
@@ -258,6 +270,12 @@ namespace BarPromenade
             }
         }
 
+        private void OnDisable()
+        {
+            if (VocalizerLab != null) VocalizerLab.Close();
+            if (model.IsVocalizerActive) model.ReturnToMainMenu();
+        }
+
         private void OnGUI()
         {
             if (IsBusy)
@@ -274,6 +292,11 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
+                if (model.IsVocalizerActive)
+                {
+                    if (VocalizerLab.Draw()) ReturnToMainMenu();
+                    return;
+                }
                 if (model.IsChoosingLocation)
                 {
                     DrawLocations(canvas);
@@ -311,6 +334,12 @@ namespace BarPromenade
                     MenuLaboratoryRect,
                     StartMenuOption.Laboratory,
                     "combat.laboratory.menu");
+                DrawOption(
+                    canvas,
+                    MenuVocalizerRect,
+                    StartMenuOption.Vocalizer,
+                    "Вокализатор",
+                    true);
                 DrawOption(
                     canvas,
                     MenuQuitRect,
@@ -450,7 +479,8 @@ namespace BarPromenade
             RetroUiCanvas canvas,
             Rect rect,
             StartMenuOption option,
-            string localizationKey)
+            string localizationKey,
+            bool literal = false)
         {
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
@@ -470,7 +500,7 @@ namespace BarPromenade
             if (GUI.Button(
                     rect,
                     prefix +
-                    LocalizationService.Get(localizationKey),
+                    (literal ? localizationKey : LocalizationService.Get(localizationKey)),
                     selected
                         ? selectedStyle
                         : optionStyle))

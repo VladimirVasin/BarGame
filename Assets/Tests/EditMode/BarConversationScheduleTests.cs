@@ -12,9 +12,43 @@ namespace BarPromenade.Tests.EditMode
         public void Schedule_KeepsSeededWholeExchangesFairAndCommitsOnlyActualSpeech(int seed)
         {
             VerifyDeckRoundsAndConditions(seed);
+            VerifySeparateHighTablesStaySilent(seed);
             VerifyAuthoredPairsAndFairAdmission(seed);
+            VerifyIndependentPairChannels(seed);
             VerifyFirstGlyphServiceAndCancellation(seed);
             VerifyCommentCapacityEnvelope();
+        }
+
+        private static void VerifySeparateHighTablesStaySilent(int seed)
+        {
+            Assert.That(BarConversationCatalog.KindCount, Is.EqualTo(4),
+                "Dormant high-table keys retain their catalog topology.");
+            Assert.That(BarConversationCatalog.ActiveGroupCount, Is.EqualTo(3));
+            for (int group = 0; group < BarConversationCatalog.KindCount; group++)
+                Assert.That(BarConversationCatalog.IsEnabled((BarConversationKind)group), Is.EqualTo(group < 3));
+            for (int role = 0; role < BarConversationCatalog.RoleCount; role++)
+                Assert.That(BarConversationCatalog.CanSpeak(role), Is.EqualTo(role < 6));
+            Assert.That(BarConversationCatalog.CanSpeak(-1), Is.False);
+            Assert.That(BarConversationCatalog.CanSpeak(BarConversationCatalog.RoleCount), Is.False);
+            Assert.That(BarConversationCatalog.Count(BarConversationKind.HighTables), Is.EqualTo(24));
+            BarConversationExchange dormant = BarConversationCatalog.Get(BarConversationKind.HighTables, 0);
+            Assert.That(dormant.FirstKey, Is.EqualTo("bar.speech.ht01.a"));
+            Assert.That(BarConversationCatalog.CanSpeak(dormant.FirstRole), Is.False);
+            Assert.That(BarConversationCatalog.CanSpeak(dormant.SecondRole), Is.False);
+
+            var fixedHighTables = new BarConversationSchedule(seed, BarConversationKind.HighTables);
+            var highTablesOnly = new BarConversationSchedule(seed);
+            for (int step = 0; step < 200; step++)
+            {
+                double now = step * .25d;
+                Assert.That(fixedHighTables.Advance(now, BarConversationSchedule.AllGroups, true).HasExchange,
+                    Is.False, "Caller eligibility cannot enable a prohibited fixed conversation.");
+                Assert.That(highTablesOnly.Advance(now, 1 << (int)BarConversationKind.HighTables, true).HasExchange,
+                    Is.False, "The general schedule cannot select the two lone visitors either.");
+                Assert.That(fixedHighTables.StartLine(now, .75d), Is.False);
+            }
+            Assert.That(fixedHighTables.StartedLineCount, Is.Zero);
+            Assert.That(highTablesOnly.StartedLineCount, Is.Zero);
         }
 
         private static void VerifyCommentCapacityEnvelope()
@@ -22,6 +56,8 @@ namespace BarPromenade.Tests.EditMode
             // Integer microseconds make every arrival/departure discontinuity
             // exact, including the instant immediately before a departure.
             const long scale = 1000000;
+            // Retain the former serialized pair's blackout as conservative slack.
+            // The independent bartender no longer waits for ambient speech.
             const long pairBlock = 11200000;
             const long commentLine = 4958334;
             long[] ownerPeriods = { 9410000, 35590000, 50800000 };
@@ -43,7 +79,7 @@ namespace BarPromenade.Tests.EditMode
                 if (edge > 0) maximum = Math.Max(maximum, PendingBound(edge - 1));
             }
             Assert.That(maximum, Is.LessThanOrEqualTo(BarConversationController.PendingCommentCapacity),
-                "One begun pair plus the fastest hero and both NPC refills must fit the fixed comment queue.");
+                "Even the former pair blackout plus the fastest hero and both NPC refills fits the fixed comment queue.");
             Assert.That(4d + (double)pairBlock / commentLine - horizon * netDrainPerTick, Is.LessThan(0d));
 
             long PendingBound(long time)
@@ -113,7 +149,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var schedule = new BarConversationSchedule(seed);
             var same = new BarConversationSchedule(seed);
-            var variants = new List<int>[BarConversationSchedule.GroupCount];
+            var variants = new List<int>[BarConversationSchedule.ActiveGroupCount];
             for (int i = 0; i < variants.Length; i++) variants[i] = new List<int>();
             double now = 0d;
             string pendingReply = null;
@@ -127,6 +163,8 @@ namespace BarPromenade.Tests.EditMode
                 BarConversationTurn other = same.Advance(now, BarConversationSchedule.AllGroups, true);
                 Assert.That(turn.NeedsLineStart, Is.EqualTo(other.NeedsLineStart));
                 if (!turn.NeedsLineStart) continue;
+                Assert.That(BarConversationCatalog.CanSpeak(turn.SpeakerRole), Is.True);
+                Assert.That(BarConversationCatalog.CanSpeak(turn.PartnerRole), Is.True);
                 Assert.That(turn.LineKey, Is.EqualTo(other.LineKey));
                 if (pendingReply == null)
                 {
@@ -170,6 +208,96 @@ namespace BarPromenade.Tests.EditMode
             for (int i = 0; i < variants.Count; i++)
                 if (variants[i].Count < BarConversationCatalog.Count((BarConversationKind)i) * 2 + 1) return false;
             return true;
+        }
+
+        private static void VerifyIndependentPairChannels(int seed)
+        {
+            Assert.That(BarConversationSchedule.FirstAttemptMinimumSeconds, Is.EqualTo(.4d));
+            Assert.That(BarConversationSchedule.FirstAttemptMaximumSeconds, Is.EqualTo(2d));
+            Assert.That(BarConversationSchedule.ExchangeMinimumIntervalSeconds, Is.EqualTo(1.5d));
+            Assert.That(BarConversationSchedule.ExchangeMaximumIntervalSeconds, Is.EqualTo(4d));
+            Assert.That(BarConversationSchedule.ReplyMinimumGapSeconds, Is.EqualTo(.3d));
+            Assert.That(BarConversationSchedule.ReplyMaximumGapSeconds, Is.EqualTo(.75d));
+            var channels = new BarConversationSchedule[BarConversationSchedule.ActiveGroupCount];
+            var variants = new List<int>[channels.Length];
+            var pendingReplies = new string[channels.Length];
+            var lineEnds = new double[channels.Length];
+            var lastFirstLines = new double[channels.Length];
+            var firstLines = new int[channels.Length];
+            var heardThisRound = new HashSet<int>[channels.Length];
+            var previousVariants = new int[channels.Length];
+            for (int group = 0; group < channels.Length; group++)
+            {
+                channels[group] = new BarConversationSchedule(unchecked(seed + group * 3571),
+                    (BarConversationKind)group);
+                variants[group] = new List<int>();
+                heardThisRound[group] = new HashSet<int>();
+                previousVariants[group] = -1;
+            }
+
+            double now = 0d;
+            int peakSpeakers = 0;
+            int overlapSteps = 0;
+            int steps = 0;
+            while (!AllPoolsHaveTwoRounds(variants) && now < 2400d)
+            {
+                now += .1d;
+                int speaking = 0;
+                for (int group = 0; group < channels.Length; group++)
+                {
+                    BarConversationSchedule channel = channels[group];
+                    BarConversationTurn turn = channel.Advance(now, BarConversationSchedule.AllGroups, true);
+                    if (turn.NeedsLineStart)
+                    {
+                        Assert.That((int)turn.Exchange.Kind, Is.EqualTo(group),
+                            "Each channel only admits its own pair, even while neighbours speak.");
+                        if (pendingReplies[group] == null)
+                        {
+                            Assert.That(turn.LineKey, Is.EqualTo(turn.Exchange.FirstKey));
+                            Assert.That(turn.SpeakerRole, Is.EqualTo(turn.Exchange.FirstRole));
+                            pendingReplies[group] = turn.Exchange.SecondKey;
+                            if (firstLines[group] == 0)
+                                Assert.That(now, Is.LessThan(2.8d), "Every pair begins promptly after entry.");
+                            else
+                                Assert.That(now - lastFirstLines[group], Is.LessThan(18d),
+                                    "A neighbour's speech never adds a room-wide quiet wait.");
+                            lastFirstLines[group] = now;
+                            firstLines[group]++;
+                            int count = BarConversationCatalog.Count((BarConversationKind)group);
+                            if (heardThisRound[group].Count == count) heardThisRound[group].Clear();
+                            Assert.That(heardThisRound[group].Add(turn.Exchange.Variant), Is.True,
+                                "Simultaneous pairs still exhaust their own pool before a repeat.");
+                            Assert.That(turn.Exchange.Variant, Is.Not.EqualTo(previousVariants[group]),
+                                "A shuffle boundary cannot repeat the last exchange.");
+                            previousVariants[group] = turn.Exchange.Variant;
+                            variants[group].Add(turn.Exchange.Variant);
+                        }
+                        else
+                        {
+                            Assert.That(turn.LineKey, Is.EqualTo(pendingReplies[group]),
+                                "Overlapping conversations cannot borrow another pair's answer.");
+                            Assert.That(turn.SpeakerRole, Is.EqualTo(turn.Exchange.SecondRole));
+                            pendingReplies[group] = null;
+                        }
+
+                        // Actual bubble lifetimes, not the abbreviated fair-admission probe.
+                        double duration = 4.4d + (channel.StartedLineCount + group) % 12 * .1d;
+                        Assert.That(channel.StartLine(now, duration), Is.True);
+                        lineEnds[group] = now + duration;
+                    }
+                    if (now < lineEnds[group]) speaking++;
+                }
+                peakSpeakers = Math.Max(peakSpeakers, speaking);
+                if (speaking >= 2) overlapSteps++;
+                steps++;
+            }
+
+            Assert.That(AllPoolsHaveTwoRounds(variants), Is.True,
+                "Every independent pair keeps conversing through complete shuffled pools.");
+            Assert.That(peakSpeakers, Is.EqualTo(BarConversationSchedule.ActiveGroupCount),
+                "Counter and both booths can speak together, without a global service or guest lock.");
+            Assert.That(overlapSteps, Is.GreaterThan(steps * .75d),
+                "Multiple live conversations form the normal bar atmosphere.");
         }
 
         private static void VerifyFirstGlyphServiceAndCancellation(int seed)

@@ -1,68 +1,69 @@
 # Mandatory speech presentation standard
 
-Accepted by the user on `2026-09-11`. Applies to all existing and future
-spoken lines, including NPC replies to `E`, ambient exchanges and hero mutters.
-Read before changing any speech or dialogue. Story-bible §§6/16/21 and the
-art bible still govern permission to speak, text and appearance. This standard
-grants no new pool, voice acting, lore, gesture or interaction.
+Accepted `2026-09-11`; Russian vocalizer rollout explicitly accepted
+`2026-10-24`. Applies to spoken E replies, ambient exchanges, dialogue and hero
+mutters. Story §§6/16/21 and the art bible govern permission, text and appearance.
+No new pool, speaker, lore, gesture or interaction is granted.
 
 ## One presentation
 
-Every spoken line uses `NpcSpeechBubbleView`, projected above its actual
-speaker. An interaction reply uses the same presentation as dock dialogue.
-The bottom `InteractionPromptView` contains silent descriptions, action hints
-and choice labels. Only an explicitly approved graph node turns a silent choice
-into the hero's next spoken line.
-`ShowSpokenFeedback` is a compatibility entry into shared bubble delivery;
-it must never render a second spoken copy in the bottom panel.
+Every spoken line uses `NpcSpeechBubbleView` above its actual speaker, including
+`ShowSpokenFeedback`. Bottom `InteractionPromptView` descriptions, hints, choice
+labels and pages are silent. Only an approved graph node speaks a chosen reply;
+never duplicate speech below.
 
-Keep the shared retro canvas, full-line measurement, font, bubble geometry,
-head anchor and earshot fade/cull. Missing or destroyed speakers cancel or
-reject delivery; never invent an anchor or fall back to bottom speech.
+Keep retro canvas/measurement/font/geometry/head/earshot fade/cull. Dialogue
+panels/tails/choices use 72% opacity; text stays crisp (`2026-10-24`).
+Missing speakers cancel delivery; no invented anchor or bottom fallback.
 
 ## Shared owners
 
-- `NpcSpeechBubbleView` owns presentation, active-line lifetime and cleanup.
-  Captured per-line duration is immutable; scenes/channels may own shared views.
-- `SpeechDelivery` owns reveal, audible-letter pacing and duration calculation.
-  Current defaults: `24` chars/s, clicks at least `.13 s` apart, adaptive
-  reading tail `2.5 s`; the shared ambient bubble default is `4.4 s`.
-- `NpcSpeaker` supplies the real head/voice anchor, declared voice and earshot
-  profile. The line belongs to that speaker, not the camera or interaction target.
-- `NpcSpeechVoice` owns pooled writing-click leases and spatial sound. Existing
-  voice profiles stay with their speakers; staged NPC prefabs gain no audio source.
-- The dialogue/channel controller owns selection, ordering and admission, not
-  another renderer or reveal clock. Register speakers once and release owned
-  lines/declarations/leases on cancellation, disable, destruction and scene exit.
-- Faces read bubble reveal through `SpeechFaceAnimation`; no second clock.
-  Punctuation/reading tail close mouths; brows/blink remain independent.
-  Pause freezes all face
-  motion; termination restores. Hero/foreman/cannery woman/receiver use `SpeechFaceAtlasPresenter`.
+- `NpcSpeechBubbleView` owns active lines, immutable captured windows and cleanup;
+  scenes/channels may own shared views.
+- `SpeechDelivery` owns reveal/duration. Russian PCM, text and mouths share one
+  immutable phone/sample timeline. Pauses hold text/close mouths; held final vowels
+  retain articulation. Window fitting reduces pauses/drawl before uniform timing,
+  without pitch shifts.
+  English fallback retains `24` chars/s and clicks at least `.13 s` apart.
+  English reading tail defaults to `2.5 s`; Russian uses the remaining window.
+  Ambient window defaults to `4.4 s`; authored windows stay. Preparation holds
+  reveal; overdue/unready results cancel rather than replay or overrun the window.
+- `NpcSpeaker` supplies the actual head, declared voice and earshot profile.
+  Explicit male/female `NpcVoiceCatalog` pools retain speaker identity; shared
+  models use permanent character IDs. The hero remains exclusive.
+- `NpcSpeechVoice` owns pooled spatial playback and bounded cancellable background
+  synthesis. Unity clips stay on the main thread. Bound workers, pending requests
+  and retained audio; no sentence PCM cache. Staged prefabs gain no source.
+  Results belong to live line tokens; late completion never revives a closed line.
+  Smoothed intoxication slows RU/EN speech, lowers gain/cutoff and scatters
+  wrapped captions. Text/mouth follow slowed PCM inside the same finite window.
+  Music shares the rate/VHS; sobriety restores. Menu auditions stay dry.
+- Controllers own selection/order/admission, not another renderer or clock.
+  Register once; release lines, declarations, jobs and leases on cancellation,
+  cull, disable, destruction and scene exit.
+- `SpeechFaceAnimation` reads shared reveal; punctuation/tail close mouths,
+  brows/blink stay independent. Pause freezes faces/sound; termination restores.
+  `SpeechFaceAtlasPresenter` remains the shared presenter.
 
 ## Ordering and lifetime
 
-One speaker/channel owner arbitrates ambient lines, paired replies and E.
-One live head, one view. Silent restoration rebuilds without replay.
-Typing/reading lines cannot be replaced: bounded admission defers or rejects
-without consuming a shuffle entry. Preserve pair order/no-repeat; never
-accumulate missed events after pause, distance exit or seek.
+One owner arbitrates ambient lines, pairs and E: one live head, one view.
+Typing/reading lines cannot be replaced; bounded admission defers/rejects without
+consuming a shuffle entry. Preserve pair order/no-repeat. Silent restoration,
+pause, distance exit and seek never replay missed sound/events.
 
-Use the shared resolved duration/active-line state for busy gates, reply delay,
-gestures and completion. Existing authored windows may supply parameters to the
-shared API; measure that the whole localized line fits. Pause must freeze the
-owning speech clock and its coupled gestures/sound without a catch-up burst.
-Loss of the speaker, range, scene or interaction ownership must leave no orphan
-bubble, voice lease, delayed reply or blocked input. Silent feedback keeps its
-own non-speaking UI semantics.
+Use shared duration/active state for busy gates, replies, gestures and completion.
+Measure whole-line fit within authored windows. Pause freezes the owning clock,
+sound and gestures without catch-up, including manual clocks that stop advancing.
+Loss of speaker/range/scene/ownership leaves no bubble, voice, late result,
+delayed reply or blocked input. Silent feedback keeps its own semantics.
 
 ## Prohibited copies and verification
 
-Do not add feature-specific speech panels, typewriters, letter audio, voice
-pools, earshot logic or independent copies of lifetime/CPS/click constants.
-Extend the shared owner. Any deviation requires an explicit user decision
-recorded in `architecture-notes.md`; new content grants no exception.
+No feature-specific panels, typewriters, synthesizers, voice pools, earshot logic
+or copies of timing constants. Extend shared owners. Deviations need an explicit
+user decision in `architecture-notes.md`; new content grants no exception.
 
-Use one focused existing check for the changed contract: shared bubble routing,
-full-line fit, speaker/voice/earshot, admission/order, pause and teardown
-as relevant. When appearance changes, inspect an affected rendered frame.
-Update this standard when its contract changes and run `python tools/check-docs.py`.
+Use one focused existing check for routing, fit, identity/earshot, order, pause
+and teardown as relevant. Inspect a frame if appearance changes. Update this
+standard when its contract changes; run `python tools/check-docs.py`.

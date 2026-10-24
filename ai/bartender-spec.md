@@ -8,7 +8,7 @@ Former bespoke models, providers, sources and regeneration/import paths are remo
 
 Ordinary actor; shared controllers own menu/payment/deferred effects/closing.
 `2026-10-23`, story §6: [speech contract](bar-dialogue-plan.md) implemented.
-One shuffled comment per accepted order; shared bubbles/voice/lifetime.
+One shuffled order comment; own channel over guest talk, shared speech stack.
 Hero silent; comments concern the order, never his person/past.
 Service/grips precede speech gestures; no strange trait.
 `zzz.bar.bartender` sorts after the roster, preserving others' assignments.
