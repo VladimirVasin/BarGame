@@ -56,6 +56,7 @@ namespace BarPromenade
         public bool CanInteract(PlayerInteractor interactor)
         {
             return IsInitialized && !IsOpen && isActiveAndEnabled && home != null &&
+                   home.IsAvailableForHero &&
                    home.SmallAction != null && home.LargeAction != null &&
                    home.SmallAction.isActiveAndEnabled && home.LargeAction.isActiveAndEnabled &&
                    interactor != null && interactor == home.Player.Interactor &&

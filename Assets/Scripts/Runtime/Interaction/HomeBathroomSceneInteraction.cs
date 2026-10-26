@@ -65,6 +65,7 @@ namespace BarPromenade
         private Pose cameraReleaseStart;
         private const float CameraReleaseSeconds = .35f;
         protected bool OwnsScene { get; private set; }
+        public bool OwnsBathroomInteraction => OwnsScene;
         protected bool SceneRunning =>
             OwnsScene && settled && !walkingOut;
         protected bool StopQueued { get; private set; }
@@ -198,6 +199,7 @@ namespace BarPromenade
         public bool CanInteract(PlayerInteractor interactor)
         {
             return IsInitialized &&
+                   Host.IsAvailableForHero &&
                    !OwnsScene &&
                    isActiveAndEnabled &&
                    interactor != null &&

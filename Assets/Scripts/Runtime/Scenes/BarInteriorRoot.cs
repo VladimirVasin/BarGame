@@ -9,6 +9,7 @@ namespace BarPromenade
         private string activeBarId = string.Empty;
         private readonly List<BarCounterStation> allCounterStations = new List<BarCounterStation>(5);
         private readonly List<BarCounterStation> availableCounterStations = new List<BarCounterStation>(5);
+        private readonly List<BarPatron> settledPatrons = new List<BarPatron>(BarBusinessHours.MaximumGuests);
         private readonly Dictionary<string, BarCounterStation> patronCounterStations =
             new Dictionary<string, BarCounterStation>(System.StringComparer.Ordinal);
         private int lastBusinessMinute = -1;
@@ -17,6 +18,7 @@ namespace BarPromenade
         public BarInteriorLayoutPlan Layout { get; private set; }
         public Transform Room { get; private set; }
         public BarWashroom Washroom { get; private set; }
+        public BarAisleTraffic AisleTraffic { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public BarMusicPlayer Music { get; private set; }
@@ -174,6 +176,7 @@ namespace BarPromenade
             BuildDrinkShop(ui, intoxicationHud, follow);
             Washroom = BarWashroom.Create(transform, Room, Player, follow, prompt, intoxicationHud,
                 Player.GameObject.GetComponent<PlayerAnimatedInteractionController>());
+            AisleTraffic = BarAisleTraffic.Create(transform, Room);
 
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
@@ -426,6 +429,7 @@ namespace BarPromenade
             Crowd = gameObject.AddComponent<BarCrowdController>();
             Crowd.Initialize(Room, Layout, unchecked((int)Layout.StableSeed),
                 IsPatronDockAvailable, CanPatronDepart);
+            Crowd.ConfigureWashroom(Washroom, AisleTraffic);
             Patrons = Crowd.Patrons;
             Bartender = BarBartenderWorldBuilder.TryBuild(
                 transform,
@@ -447,6 +451,7 @@ namespace BarPromenade
                         BarBartenderServiceChoreography>();
                 choreography.Initialize(Bartender, DrinkShop);
                 choreography.ConfigureCleanup(Crowd);
+                choreography.ConfigureTraffic(AisleTraffic);
                 DrinkShop.ConfigureCounterPatronService(Patrons);
                 Conversation = gameObject.AddComponent<BarConversationController>();
                 Conversation.Initialize(Patrons, Bartender, DrinkShop, Player.GameObject.transform,
@@ -468,9 +473,12 @@ namespace BarPromenade
         {
             if (Crowd == null) return;
             Patrons = Crowd.Patrons;
-            DrinkShop?.ConfigureCounterPatronService(Patrons);
-            Conversation?.RefreshPatrons(Patrons);
-            Soundscape?.ConfigureAttendance(Patrons);
+            settledPatrons.Clear();
+            foreach (BarPatron patron in Patrons)
+                if (!patron.IsTemporarilyAway) settledPatrons.Add(patron);
+            DrinkShop?.ConfigureCounterPatronService(settledPatrons);
+            Conversation?.RefreshPatrons(settledPatrons);
+            Soundscape?.ConfigureAttendance(settledPatrons);
             availableCounterStations.Clear();
             foreach (BarCounterStation station in allCounterStations)
             {

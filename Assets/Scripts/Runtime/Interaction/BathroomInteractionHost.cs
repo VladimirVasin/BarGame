@@ -24,6 +24,8 @@ namespace BarPromenade
         public HomeToiletInteraction SmallAction { get; set; }
         public HomeToiletPlungeInteraction LargeAction { get; set; }
         public Transform AnatomyParent { get; set; }
+        public Func<bool> Availability { get; set; }
+        public bool IsAvailableForHero => Availability == null || Availability();
 
         public BathroomInteractionHost(Transform frame, Transform room, PlayerRuntime player,
             PlayerCameraFollow camera, InteractionPromptView prompt, IntoxicationHudView hud,

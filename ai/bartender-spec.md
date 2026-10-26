@@ -166,9 +166,9 @@ Guests release the supported vessel and exit empty-handed.
 Dirty places stay reserved. One bounded collection queue covers counter/tables/
 booths, even after closing. The worker stows the towel, walks around the left
 counter end, grips at measured contact and carries the same vessel home.
-It disappears only fully hidden below the counter. Accepted service has priority
-at safe handoffs and waits for his return. Pause/disable/exit preserve ownership;
-no clone, teleport, fill reset or player transaction.
+Occlusion ends collection. Safe handoffs prioritize accepted service;
+its clock waits for return. Shared aisle leases yield to returning WC guests.
+Pause/disable/exit preserve prop/fill ownership; no player transaction.
 
 ## 5. Verification contract
 

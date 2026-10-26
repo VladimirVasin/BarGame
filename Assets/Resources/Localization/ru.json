@@ -745,6 +745,10 @@
       "value": "E — воспользоваться туалетом"
     },
     {
+      "key": "interaction.bar_wc_occupied",
+      "value": "Занято"
+    },
+    {
       "key": "interaction.stop_toilet",
       "value": "E — закончить"
     },

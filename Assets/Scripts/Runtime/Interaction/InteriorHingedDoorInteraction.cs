@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One solid interior leaf, operated by the shared visible hero action.</summary>
+    /// <summary>One solid leaf shared by visible hero actions and reserved NPC visits.</summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
     public sealed class InteriorHingedDoorInteraction : MonoBehaviour, IInteractable
@@ -22,6 +22,11 @@ namespace BarPromenade
         private Vector3 outsideDock, insideDock, closedNormal, contactLocal;
         private float angle, initialFraction, targetFraction, elapsed;
         private bool owns, exitRequested;
+        private BarWashroomAccess washroomAccess;
+        private Collider[] nearbyBodies = new Collider[16];
+        private UnityEngine.Object npcBodyOwner;
+        private Transform npcBody;
+        private float npcRadius, npcHeight;
 
         public event Action<bool> InteractionFinished;
         public float OpenFraction { get; private set; }
@@ -33,7 +38,11 @@ namespace BarPromenade
         public float RightWristDistance => hands?.RightWristDistance ?? 0f;
         public float RightReachLimit => hands?.RightReachLimit ?? 0f;
         public float ContactWeight { get; private set; }
-        public string PromptKey => OpenFraction >= .5f ? "interaction.close_village_door" : "interaction.open_village_door";
+        public string PromptKey => washroomAccess != null && washroomAccess.IsLocked && !IsInside
+            ? BarWashroomAccess.OccupiedKey
+            : OpenFraction >= .5f ? "interaction.close_village_door" : "interaction.open_village_door";
+        public Vector3 GroundedOutsideDock => outsideDock;
+        public Vector3 GroundedInsideDock => insideDock;
         public Vector3 InteractionPosition => hinge != null ?
             (IsInside ? insideHandle.position : outsideHandle.position) : transform.position;
 
@@ -76,6 +85,7 @@ namespace BarPromenade
         public bool Begin()
         {
             if (!CanInteract(player.Interactor)) return false;
+            if (washroomAccess != null && !washroomAccess.CanHeroOperateDoor(IsInside)) return false;
             bool inside = IsInside;
             initialFraction = OpenFraction;
             targetFraction = OpenFraction < .5f ? 1f : 0f;
@@ -117,6 +127,48 @@ namespace BarPromenade
 
         private Vector3 ClosedPoint(Vector3 local) =>
             hinge.parent != null ? hinge.parent.TransformPoint(hinge.localPosition + closedRotation * local) : hinge.position + closedRotation * local;
+
+        public void ConfigureWashroomAccess(BarWashroomAccess access) => washroomAccess = access;
+
+        public Transform GetNpcHandle(bool inside) => inside ? insideHandle : outsideHandle;
+
+        public Vector3 GetNpcDock(bool inside, bool targetOpen)
+        {
+            // The NPC's ordinary arm graph reaches from outside the complete
+            // swept leaf. Hero docking remains owned by its authored action.
+            if (targetOpen)
+                return ClosedPoint(inside ? new Vector3(1.25f, 0f, .50f) : new Vector3(.55f, 0f, -.40f)) +
+                    Vector3.up * PlayerFactory.GroundedRootOffset;
+            float width = Mathf.Max(leaf.size.x, leaf.size.z) * Mathf.Abs(leaf.transform.lossyScale.x);
+            return ClosedPoint(inside ? new Vector3(.20f, 0f, width + .22f) : new Vector3(.30f, 0f, -.30f)) +
+                Vector3.up * PlayerFactory.GroundedRootOffset;
+        }
+
+        public Vector3 GetNpcContact(bool inside, bool targetOpen)
+        {
+            Transform handle = GetNpcHandle(inside);
+            Vector3 local = hinge.InverseTransformPoint(handle.position);
+            if (!targetOpen && !inside) local.x = .18f;
+            return hinge.TransformPoint(local);
+        }
+
+        internal void RegisterNpcBody(UnityEngine.Object owner, Transform actor, float radius, float height)
+        {
+            npcBodyOwner = owner; npcBody = actor; npcRadius = radius; npcHeight = height;
+        }
+
+        internal void UnregisterNpcBody(UnityEngine.Object owner)
+        {
+            if (!ReferenceEquals(owner, npcBodyOwner)) return;
+            npcBodyOwner = null; npcBody = null;
+        }
+
+        /// <summary>Uses the same solid leaf and sweep as the foreground hero action.</summary>
+        public bool TrySetNpcOpenFraction(UnityEngine.Object owner, float fraction)
+        {
+            if (owns || washroomAccess == null || !washroomAccess.CanNpcOperateDoor(owner)) return false;
+            return ApplyFraction(fraction, false);
+        }
 
         /// <summary>Moves only through a capsule-free sweep; never disables the solid leaf.</summary>
         public bool TrySetOpenFraction(float fraction) => ApplyFraction(fraction, false);
@@ -190,6 +242,71 @@ namespace BarPromenade
             float halfSegment = Mathf.Max(0f, body.height * Mathf.Abs(scale.y) * .5f - radius);
             Vector3 centre = body.transform.TransformPoint(body.center) + bodyOffset;
             Vector3 a = centre - body.transform.up * halfSegment, b = centre + body.transform.up * halfSegment;
+            if (CapsuleIntersectsSweep(from, to, a, b, radius)) return true;
+            if (npcBodyOwner != null && npcBody != null)
+            {
+                Vector3 up = npcBody.up;
+                Vector3 actorCentre = npcBody.position + up * (npcHeight * .5f);
+                float segment = Mathf.Max(0f, npcHeight * .5f - npcRadius);
+                if (CapsuleIntersectsSweep(from, to, actorCentre - up * segment,
+                    actorCentre + up * segment, npcRadius)) return true;
+            }
+            // A bounded broad phase includes other real actor capsules near the
+            // hinge. It does not scan the scene or alter collision ownership.
+            Physics.SyncTransforms();
+            Vector3 queryCentre = hinge.position + Vector3.up * 1.1f;
+            int count;
+            while (true)
+            {
+                count = Physics.OverlapSphereNonAlloc(queryCentre, 3.5f, nearbyBodies,
+                    Physics.AllLayers, QueryTriggerInteraction.Ignore);
+                if (count < nearbyBodies.Length) break;
+                if (nearbyBodies.Length >= 64)
+                {
+                    Collider[] all = Physics.OverlapSphere(queryCentre, 3.5f,
+                        Physics.AllLayers, QueryTriggerInteraction.Ignore);
+                    for (int i = 0; i < all.Length; i++)
+                        if (OtherBodyIntersectsSweep(all[i], from, to)) return true;
+                    return false;
+                }
+                Array.Resize(ref nearbyBodies, nearbyBodies.Length * 2);
+            }
+            for (int i = 0; i < count; i++)
+                if (OtherBodyIntersectsSweep(nearbyBodies[i], from, to)) return true;
+            return false;
+        }
+
+        private bool OtherBodyIntersectsSweep(Collider candidate, float from, float to)
+        {
+            if (candidate == null || candidate == body || !candidate.enabled || candidate.isTrigger) return false;
+            Vector3 scale = candidate.transform.lossyScale;
+            Vector3 centre, up;
+            float radius, height;
+            if (candidate is CharacterController character)
+            {
+                centre = character.transform.TransformPoint(character.center);
+                up = character.transform.up;
+                radius = character.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                height = character.height * Mathf.Abs(scale.y);
+            }
+            else if (candidate is CapsuleCollider capsule)
+            {
+                centre = capsule.transform.TransformPoint(capsule.center);
+                Vector3 axis = capsule.direction == 0 ? Vector3.right : capsule.direction == 1 ? Vector3.up : Vector3.forward;
+                up = capsule.transform.TransformDirection(axis).normalized;
+                float axisScale = capsule.direction == 0 ? Mathf.Abs(scale.x) : capsule.direction == 1 ? Mathf.Abs(scale.y) : Mathf.Abs(scale.z);
+                float radialScale = capsule.direction == 0 ? Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z)) :
+                    capsule.direction == 1 ? Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)) : Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+                radius = capsule.radius * radialScale;
+                height = capsule.height * axisScale;
+            }
+            else return false;
+            float segment = Mathf.Max(0f, height * .5f - radius);
+            return CapsuleIntersectsSweep(from, to, centre - up * segment, centre + up * segment, radius);
+        }
+
+        private bool CapsuleIntersectsSweep(float from, float to, Vector3 a, Vector3 b, float radius)
+        {
             Bounds bounds = new Bounds(leaf.center, leaf.size);
             Vector3 leafScale = leaf.transform.lossyScale;
             float minimumScale = Mathf.Max(.0001f, Mathf.Min(Mathf.Abs(leafScale.x), Mathf.Abs(leafScale.y), Mathf.Abs(leafScale.z)));

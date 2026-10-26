@@ -19,6 +19,7 @@ namespace BarPromenade
         private readonly Vector3[] cleanupRoute = new Vector3[8];
         private RaycastHit[] cleanupHits = new RaycastHit[16];
         private BarCrowdController cleanupCrowd;
+        private BarAisleTraffic cleanupTraffic;
         private BarAbandonedDrink cleanupDrink;
         private CleanupPhase cleanupPhase;
         private int cleanupCount;
@@ -56,6 +57,14 @@ namespace BarPromenade
         public string CleanupBlockedBy => cleanupBlockedBy;
         public bool IsReadyForForegroundService => !IsCleaningPatronDrink &&
             (presentation == null || presentation.LowReachLowering <= .002f);
+
+        public void ConfigureTraffic(BarAisleTraffic traffic)
+        {
+            if (traffic == null) throw new ArgumentNullException(nameof(traffic));
+            if (cleanupTraffic != null && cleanupTraffic != traffic)
+                throw new InvalidOperationException("A bartender cannot change its live aisle owner.");
+            cleanupTraffic = traffic;
+        }
 
         /// <summary>The crowd retains dirty docks; this single bounded FIFO owns collection.</summary>
         public void ConfigureCleanup(BarCrowdController crowd)
@@ -116,12 +125,14 @@ namespace BarPromenade
                     RemoveCleanupHead();
                 }
                 if (cleanupCount == 0 || foreground) return false;
+                if (cleanupTraffic != null && !cleanupTraffic.TryAcquire(this)) return false;
                 BeginCleanup(cleanupQueue[0]);
             }
 
             // The same actor root has one movement owner. An accepted order may
             // interrupt the outward trip, but a held glass first returns safely.
-            if (foreground && !cleanupAttached && cleanupPhase != CleanupPhase.ReturnForService)
+            bool yieldAisle = cleanupTraffic != null && cleanupTraffic.HasPriorityWaiter(this);
+            if ((foreground || yieldAisle) && !cleanupAttached && cleanupPhase != CleanupPhase.ReturnForService)
             {
                 cleanupRouteIndex = cleanupLastReached;
                 SetCleanupPhase(CleanupPhase.ReturnForService);
@@ -173,6 +184,10 @@ namespace BarPromenade
                 case CleanupPhase.ReturnBehindCounter:
                     if (MoveCleanupHome(deltaTime, true))
                     {
+                        // The narrow route is clear once this body is home.
+                        // Waiting for visual occlusion under the counter must
+                        // never keep an otherwise free washroom exit reserved.
+                        if (cleanupTraffic != null) cleanupTraffic.Release(this);
                         cleanupLowerStart = cleanupDrink.DrinkProp.Root.position;
                         cleanupLowerRotation = cleanupDrink.DrinkProp.Root.rotation;
                         SetCleanupPhase(CleanupPhase.Lower);
@@ -581,6 +596,7 @@ namespace BarPromenade
 
         private void EndCleanup(bool completed)
         {
+            if (cleanupTraffic != null) cleanupTraffic.Release(this);
             cleanupAttached = false;
             cleanupDrink = null;
             cleanupPhase = CleanupPhase.None;
@@ -594,6 +610,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            if (cleanupTraffic != null) cleanupTraffic.Release(this);
             DisconnectCleanup();
             if (shop != null) shop.ConfigureBartenderAvailability(this, null);
             if (presentation != null) presentation.SetLowReachStance(0f);

@@ -27,6 +27,8 @@ namespace BarPromenade
         public CityPedestrianAssetRegistry Registry { get; }
         public CityPedestrianPresentation Presentation { get; }
         public bool IsSeated { get; }
+        /// <summary>The resident and reserved place survive a temporary physical trip to WC.</summary>
+        public bool IsTemporarilyAway { get; internal set; }
 
         /// <summary>
         /// One visit-owned drink shared by standing and seated guests.
@@ -58,6 +60,7 @@ namespace BarPromenade
             for (int index = 0; index < patrons.Count; index++)
             {
                 BarPatron patron = patrons[index];
+                if (patron.IsTemporarilyAway) continue;
                 if (patron.Presentation != null)
                 {
                     patron.Presentation.Advance(deltaTime, false);

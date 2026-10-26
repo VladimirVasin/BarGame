@@ -1,6 +1,22 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-26 — rare guest WC visits:** Active-open seconds govern
+  first visit 120–240, global gap 240–420, personal gap 480–720, residence
+  60–120 and closed-room wait 25–45; seeded bounded weights use residence/sips.
+  One visitor retains the same resident slot, appearance, supported drink/fill;
+  settled animation, speech and refill wait, with no abandonment or replacement.
+  The actual rig releases/stands/walks, operates the solid door and returns/sits.
+  At the user’s request, the closed room uses only an occupied timer: no unseen
+  toilet/flush/washing choreography. Hero input/camera remain with the hero.
+  WC access respects actual hero presence/actions; lock follows physical entry
+  and full closure. Inside egress stays available; outside shows silent Russian
+  «Занято». One aisle lease covers visits, normal transit and bartender cleanup;
+  returning guests have priority without revoking a moving owner's lease.
+  Closing forbids fresh visits but completes the current return before departure.
+  Blocked approaches return/defer; pause/disable retain occupancy, unload cleans
+  leases. Existing rigs, door and scene/post providers reused;
+  no new speech, geometry, story state or signal. §16/21/art acceptance hold.
 - **Accepted 2026-10-25 — daily bar hours and attendance:** The user accepted
   `12:00–02:00` service and time-dependent attendance, excluding hero/bartender:
   `12–16`:3–4, `16–19`:4–6, `19–23`:6–8, `23–01`:4–6, `01–02`:3–4; closed:0.

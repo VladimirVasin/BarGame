@@ -14,6 +14,7 @@ namespace BarPromenade
         public HomeToiletChoiceInteraction Choice { get; private set; }
         public InteriorHingedDoorInteraction Door { get; private set; }
         public BarWashroomMirrorWorld Mirror { get; private set; }
+        public BarWashroomAccess Access { get; private set; }
         public Transform FixtureFrame => Host?.transform;
 
         public static BarWashroom Create(Transform parent, Transform room, PlayerRuntime player,
@@ -79,6 +80,8 @@ namespace BarPromenade
             Door.Initialize(player, controller, pivot, leaf, outsideHandle, insideHandle,
                 transform.TransformPoint(new Vector3(-4.20f, PlayerFactory.GroundedRootOffset, 3.25f)),
                 transform.TransformPoint(new Vector3(-3.35f, PlayerFactory.GroundedRootOffset, 4.55f)), -90f);
+            Access = gameObject.AddComponent<BarWashroomAccess>();
+            Access.Initialize(this, room, player.GameObject.transform);
             Mirror = BarWashroomMirrorWorld.Create(transform.parent, room, player,
                 follow.GetComponent<Camera>(), frame);
         }

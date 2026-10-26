@@ -2658,6 +2658,10 @@ cemetery:own interiors/returns.
   counter. One bounded background queue covers counter, tables and booths;
   the worker goes around the left counter end, grips at contact and walks back.
   Accepted service waits for his real return; cleanup also runs after closing.
+  Rare WC visits preserve the same resident/place/drink while speech/refill wait.
+  Physical door/access admits one visitor, respects the hero and shows silent
+  occupied status outside; inside egress stays free. Behind the closed door only
+  a timed wait runs; guests return with aisle priority over the next collection.
   Occupied/recovering hero docks stay reserved. No in-room spawn/fade.
 - up to eight transient default NPC visitors: each entry uses the shared catalog/
   body/face/hair/wardrobe allocator anew, without permanent IDs or changes to

@@ -3,6 +3,22 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-26
+
+Rare seeded WC cadence keeps resident slots, supported drinks and appearances;
+settled speech/refill/drinking wait. The same rig enters/closes/exits the solid
+door and returns. Per user scope, unseen interior actions become an occupied
+wait only. Physical occupancy locks only after closure;
+hero presence/actions win, silent occupied status uses the shared prompt.
+One bounded aisle owner coordinates ordinary transit, visits and collection;
+return priority never revokes a moving lease. Closing finishes current visits;
+blocked approaches defer, pause/disable retain occupancy and unload cleans leases.
+Existing rigs/door, lights, material effects and post reused.
+BarPatronWashroomPlayModeTests passed rare cadence, occupied hero/other guest
+refusal, supported drink/place retention, physical return, hero precedence,
+closing, aisle priority, pause/disable and occupied unload. Occupied-door Game
+view reviewed; check-docs and scoped diff passed.
+
 ## 2026-10-25
 
 BarBusinessHours owns daily admission and deterministic hourly attendance.
