@@ -8,24 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-26
 
+- Караоке: E вход/выход, ЛКМ — голос, мышь ↑↓ — нота. Узкая шкала/след,
+  рот по звуку; тёплый угол. Пауза/фокус требуют нового нажатия.
+  Зал молчит/смотрит; наезды/лица гостей каждые 5–8с, редко WC: лицо/чаша
+  при малой/большой нужде. В обоих кадрах чаши пение идёт через подводный
+  фильтр, шкала остаётся. Струя плавно гуляет внутри видимой чаши.
+  Опьянение уводит ноту, мышь отзывчиво поправляет.
 - Бармен уточняет подход к посуде; недоступный захват откладывает после
-  возврата. Колени при наклоне сгибаются вперёд.
-- Проверено: BarPatronCleanupPlayModeTests — захват/возврат у стойки,
-  столов/кабинок и неточный подход; просмотр кадров.
-- Шкала опьянения и журнал закреплены у верхних краёв экрана, включая
-  широкие и нестандартные окна. Размер элементов сохранён.
-- Проверено: CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas,
-  CalculateCanvas_OnUltrawide_CentersIntegerCanvas.
-- Герой садится на барный табурет через опору одной ягодицей на край,
-  затем переносит вес и подтягивает ногу. При вставании сначала ставит ногу на пол.
-- Проверено: player_counter_seat_actions.validate_result,
-  CounterSeats_SideEntryExitKeepBodyOutsideFurniture; просмотр посадки/вставания
-  сбоку и сзади.
-- Гости редко ходят в WC и возвращаются к своему напитку. Дверь показывает
-  «Занято»; герой внутри имеет приоритет, выход остаётся свободным.
-- Проверено: BarPatronWashroomPlayModeTests — занятость игроком/другим гостем,
-  возврат к своему сосуду, пауза, закрытие, проход и выгрузка; просмотр «Занято»,
-  check-docs.
+  возврата. Колени сгибаются вперёд.
+- Опьянение/журнал у верхних краёв широких/нестандартных окон, размер прежний.
+- Посадка на табурет: край→перенос веса→нога; при вставании сначала стопа на пол.
+- Гости в WC сохраняют себя/напиток: полный туалетный цикл/тело как у героя,
+  пола поднимается, руки ниже/живые. В зале одеты; «Занято», выход свободен.
+- Проверено: Singing_UsesContinuousHeroAndRestoresEveryOwner/кадры,
+  RussianVocalizerTests,
+  PlayerKaraokeActionAssetSetup, generator art/determinism.
+  Также BarPatronCleanupPlayModeTests, BarPatronWashroomPlayModeTests,
+  CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas,
+  CalculateCanvas_OnUltrawide_CentersIntegerCanvas,
+  player_counter_seat_actions.validate_result,
+  CounterSeats_SideEntryExitKeepBodyOutsideFurniture; кадры/check-docs.
 
 ### 2026-10-25
 

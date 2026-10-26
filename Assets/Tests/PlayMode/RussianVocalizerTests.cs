@@ -310,6 +310,98 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(SpeechMouthPose.Open));
         }
 
+        [TestCase(22050)]
+        [TestCase(48000)]
+        public void ContinuousVowel_KeepsPhaseAcrossBuffersAndSmoothsPitchGate(int sampleRate)
+        {
+            RussianVocalizerVoice hero = NpcVoiceCatalog.ProfileAt(NpcVoiceCatalog.HeroMutterOrdinal).VocalizerVoice;
+            var whole = new RussianVocalizerSustain(hero, sampleRate);
+            var split = new RussianVocalizerSustain(hero, sampleRate);
+            var reference = new float[sampleRate / 2];
+            var buffered = new float[reference.Length];
+            whole.Render(reference, 0, reference.Length, 110f, true);
+            int cursor = 0;
+            while (cursor < buffered.Length)
+            {
+                int count = Math.Min(257, buffered.Length - cursor);
+                split.Render(buffered, cursor, count, 110f, true);
+                cursor += count;
+            }
+            CollectionAssert.AreEqual(reference, buffered, "A PCM callback boundary must not reset phase, filters or envelopes");
+            Assert.That(split.SampleRate, Is.EqualTo(sampleRate));
+            Assert.That(split.Envelope, Is.GreaterThan(.99f));
+            Assert.That(split.SmoothedFrequencyHz, Is.EqualTo(110f).Within(.001f));
+            double energy = 0, mean = 0;
+            foreach (float value in buffered)
+            {
+                Assert.That(float.IsNaN(value) || float.IsInfinity(value), Is.False);
+                Assert.That(Math.Abs(value), Is.LessThanOrEqualTo(RussianVocalizerSynthesis.MaximumAmplitude));
+                energy += value * value;
+                mean += value;
+            }
+            Assert.That(Math.Sqrt(energy / buffered.Length), Is.GreaterThan(.005), "Holding the gate must produce an audible vowel");
+            Assert.That(Math.Abs(mean / buffered.Length), Is.LessThan(.015), "The held vowel must not accumulate DC");
+
+            var glide = new float[sampleRate / 50];
+            split.Render(glide, 0, 1, 440f, true);
+            Assert.That(split.SmoothedFrequencyHz, Is.InRange(110.001f, 113f), "The first glide sample cannot jump an octave");
+            split.Render(glide, 1, glide.Length - 1, 440f, true);
+            Assert.That(split.SmoothedFrequencyHz, Is.InRange(423.5f, 439.999f),
+                "The voice must cover at least 95% of a pitch change within 20 ms of source time.");
+            var release = new float[sampleRate / 2];
+            split.Render(release, 0, release.Length, 440f, false);
+            Assert.That(split.Envelope, Is.Zero);
+            for (int i = release.Length - 256; i < release.Length; i++)
+                Assert.That(release[i], Is.Zero, "Mouse release settles at exact silence without a repeating tail");
+
+            split.Reset();
+            split.Render(buffered, 0, buffered.Length, 110f, true);
+            CollectionAssert.AreEqual(reference, buffered, "A stopped voice can be reused without retaining the previous note");
+        }
+
+        [TestCase(22050)]
+        [TestCase(48000)]
+        public void OutputVowel_UsesLatestPitchAndPreservesWholeVoiceRate(int outputRate)
+        {
+            RussianVocalizerVoice hero = NpcVoiceCatalog.ProfileAt(NpcVoiceCatalog.HeroMutterOrdinal).VocalizerVoice;
+            var voice = new RussianVocalizerSustainOutput(hero);
+            var block = new float[512]; // One stereo output block; no future clip data.
+            for (int i = 0; i < 20; i++) voice.Render(block, 2, outputRate, 110f, true, 1f);
+            float before = voice.SmoothedFrequencyHz;
+            voice.Render(block, 2, outputRate, 440f, true, 1f);
+            Assert.That(voice.SmoothedFrequencyHz, Is.GreaterThan(before + 100f),
+                "The very next DSP block uses the latest control, without a prefilled PCM queue.");
+            int settleBlocks = (int)Math.Ceiling(outputRate * .020 / 256);
+            for (int i = 1; i < settleBlocks; i++) voice.Render(block, 2, outputRate, 440f, true, 1f);
+            Assert.That(voice.SmoothedFrequencyHz, Is.GreaterThanOrEqualTo(423.5f));
+            for (int i = 0; i < block.Length; i += 2)
+            {
+                Assert.That(block[i], Is.EqualTo(block[i + 1]), "Channel layout must not speed up the mono voice.");
+                Assert.That(float.IsFinite(block[i]), Is.True);
+                Assert.That(Math.Abs(block[i]), Is.LessThanOrEqualTo(RussianVocalizerSynthesis.MaximumAmplitude));
+            }
+
+            var slowed = new RussianVocalizerSustainOutput(hero);
+            var equivalent = new RussianVocalizerSustainOutput(hero);
+            var actual = new float[4096];
+            var expected = new float[4096];
+            slowed.Render(actual, 2, outputRate, 220f, true, .25f);
+            equivalent.Render(expected, 2, outputRate * 4, 220f, true, 1f);
+            CollectionAssert.AreEqual(expected, actual, "Perception slows the whole vowel, including its formants.");
+
+            var partitioned = new RussianVocalizerSustainOutput(hero);
+            var collected = new float[4096];
+            for (int offset = 0; offset < collected.Length; offset += block.Length)
+            {
+                partitioned.Render(block, 2, outputRate, 220f, true, .25f);
+                Array.Copy(block, 0, collected, offset, block.Length);
+            }
+            CollectionAssert.AreEqual(actual, collected, "DSP block boundaries preserve resampler and vocal phase.");
+            slowed.Reset();
+            slowed.Render(actual, 2, outputRate, 220f, false, 1f);
+            Assert.That(actual, Is.All.Zero, "Stop/reset cannot retain an audible interpolation tail.");
+        }
+
         private static List<RussianSpeechSound> StressedSounds(string text)
         {
             var sounds = new List<RussianSpeechSound>();

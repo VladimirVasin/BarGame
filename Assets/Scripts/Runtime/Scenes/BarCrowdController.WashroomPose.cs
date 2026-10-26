@@ -9,6 +9,12 @@ namespace BarPromenade
         {
             WashroomVisit current = washroomVisit;
             if (current == null || current.Patron.Registry == null) return;
+            if (current.Phase == WashroomPhase.ReturningHands) return;
+            if (current.Phase == WashroomPhase.Occupied)
+            {
+                PresentWashroomToilet();
+                return;
+            }
             current.Contacts.RestoreBasePose();
             WashroomHandContactError = 0f;
             bool releasing = current.Phase == WashroomPhase.ReleasingDrink;

@@ -154,6 +154,9 @@ See [audio-vhs/README.md](audio-vhs/README.md).
 `--hand-grip-only --skip-animation-export --no-previews`:grips/`hand_grip.gestures`;
 `player_hand_gestures.validate`:shapes/FBX.
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
+`build-player-karaoke-actions-3d-model.py`:43-bone Enter/Loop/Exit, planted feet,
+neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.
+`run-blender.py` uses the declared macOS Python pin on Mac, the common pin elsewhere.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;

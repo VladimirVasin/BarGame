@@ -44,6 +44,7 @@ namespace BarPromenade
         private Rect hallBounds;
         private float hallHeight;
         private BarDrinkShopController shop;
+        private BarKaraokeInteraction karaoke;
         private int commentCount;
         private long lastAcceptedId;
         private uint random;
@@ -87,6 +88,7 @@ namespace BarPromenade
         }
         public Object Speaker(int role) => owners[role];
         public Transform Head(int role) => heads[role];
+        public void ConfigureKaraoke(BarKaraokeInteraction interaction) => karaoke = interaction;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetVisits() => visitOrdinal = 0;
@@ -285,8 +287,11 @@ namespace BarPromenade
 
         private bool ListenerInHall()
         {
+            bool karaokeOwns = karaoke != null && karaoke.OwnsInteraction;
             if (listener == null || !listener.gameObject.activeInHierarchy || roomSpace == null ||
-                SceneTransitionService.IsTransitioning || BarMinigameModalLock.IsAnyLocked) return false;
+                SceneTransitionService.IsTransitioning ||
+                BarMinigameModalLock.IsAnyLocked && !karaokeOwns ||
+                karaokeOwns && karaoke.IsPerforming) return false;
             Vector3 local = roomSpace.InverseTransformPoint(listener.position);
             // Even the open doorway does not start conversations from inside the WC.
             return local.y >= -.5f && local.y <= hallHeight && BarWashroomLayout.Contains(hallBounds, local) &&

@@ -2106,7 +2106,22 @@ cemetery:own interiors/returns.
   Rect `(3.05,-3.525,2.1,1.65)`. Solid `.12 m` floor is below the hero's `.28 m`
   step, without a logical movement block. Mic `(3.75,1.6,-2.7)`, stand `(4.2,.16,-2.7)`;
   approach `(2.6,.04,-2.15)` via side entry `(4.2,.16,-2.15)`.
-  Speakers/curtains/valance/lights stay; no singing action. BeerPong table at
+  Speakers/curtains/valance stay. The existing stage practical moves in front of
+  the singer and uses the WC's warm colour/120-degree pool; light/shadow/bounce
+  counts stay. The microphone admits free wordless karaoke:
+  Side entry/Enter/Loop/Exit: same rig/mic.
+  LMB sings, mouse Y controls 110–440Hz; direct DSP/6ms glide avoids prefetch.
+  Smooth drunk drift: sober 0, maximum ±1.5 semitones.
+  DSP/96px marker/trace share source pitch before perception/VHS.
+  First note claims hall silence/gaze, .9s grace; contacts/grips/WC stay.
+  Speech/bubbles/jobs/crowd voices stop, no replay. Six hero angles/guest/bartender
+  close-ups every 5–8s. WC pee/poop×face/STATIC bowl: same guest/hero rear,
+  low live hands only seated WC; dressed in hall; scoped bowl fill/underwater
+  optics/audio420Hz/−5dB, restored on cut. Attendance/service/WC keep owners.
+  Shared FOV/roll/DOF; HUD every frame incl.WC, music waits. E exits/Esc pauses.
+  Pause/focus freeze drift, end performance/hold view; resume base/fresh click.
+  Closing/exit/cancel/disable/unload restore owners. No score/lyrics/judgement.
+  BeerPong table at
   `(3.85,-1.75,.76,1.83)`. Effect providers/bounds follow.
   Five stools remain: two occupied and
   three independent hero stations, with safe approach/exit and selected-stool

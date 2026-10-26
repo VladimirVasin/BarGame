@@ -33,7 +33,7 @@ def command(executable: Path, generator: Path, arguments: list[str]) -> list[str
 
 def run(args: argparse.Namespace, generator_arguments: list[str]) -> None:
     config = toolchain.load_config()
-    toolchain.check_python(config)
+    toolchain.check_python(config["native"]["macos"] if sys.platform == "darwin" else config)
     executable = toolchain.blender_path(config, args.blender)
     toolchain.check_blender(config, executable)
     generator = repository_path(args.generator, ("tools",))

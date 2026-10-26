@@ -12,6 +12,7 @@ namespace BarPromenade
         private const float WetDrag = 15f;
         private const float WetSpeed = .21f;
         private static readonly int ImpactId = Shader.PropertyToID("_BowlImpact");
+        private static readonly int VortexId = Shader.PropertyToID("_BowlVortex");
         private static Material waterMaterial;
         private GameObject solid;
         private Renderer surface;
@@ -20,6 +21,7 @@ namespace BarPromenade
         private MaterialPropertyBlock surfaceProperties;
         private Transform outlet;
         private Camera sceneCamera;
+        private Pose? fixedLensPose;
         private Transform room;
         private readonly Transform[] bubbles = new Transform[6];
         private Renderer splash;
@@ -140,9 +142,10 @@ namespace BarPromenade
             }
         }
 
-        public void Begin(Transform bodyOutlet)
+        public void Begin(Transform bodyOutlet, Pose? bowlLensPose = null)
         {
             End();
+            fixedLensPose = bowlLensPose;
             outlet = bodyOutlet;
             IsActive = outlet != null && solid != null;
             EmissionCount = WaterContactCount = 0;
@@ -172,7 +175,7 @@ namespace BarPromenade
                     releaseClock = clock;
                     releaseTip = solid.transform.position;
                     airSeconds = Mathf.Sqrt(2f * Mathf.Max(0f, releaseTip.y - waterHeight) / Gravity);
-                    lensPoint = sceneCamera.transform.position + sceneCamera.transform.forward * .026f;
+                    lensPoint = LensPosition + LensForward * .026f;
                     waterPoint = new Vector3(lensPoint.x, waterHeight, lensPoint.z);
                     // Solve the wet travel time once. Its speed is continuous across the
                     // surface, then relaxes toward the much slower underwater fall.
@@ -206,9 +209,16 @@ namespace BarPromenade
         public void PresentFlush(float seconds, float strength)
         {
             if (!IsActive || FlushPlayCount == 0) return;
+            if (surface != null)
+            {
+                surface.GetPropertyBlock(surfaceProperties);
+                surfaceProperties.SetVector(VortexId, new Vector4(Mathf.Clamp01(strength),
+                    HomeToiletFlushVortex.EvaluateRoll(seconds) * Mathf.Deg2Rad, 0f, 0f));
+                surface.SetPropertyBlock(surfaceProperties);
+            }
             if (solid != null && released)
             {
-                floatingBody.SetCamera(sceneCamera.transform.position);
+                floatingBody.SetCamera(LensPosition);
                 floatingBody.Advance(Mathf.Max(0f, seconds - flushClock), strength);
                 flushClock = Mathf.Max(flushClock, seconds);
                 PresentFloatingBody();
@@ -279,10 +289,10 @@ namespace BarPromenade
                         {
                             floatingBody.Begin(new Vector3(transform.position.x, waterHeight, transform.position.z),
                                 room.rotation, side, room.rotation, room.forward * .025f,
-                                room.rotation * new Vector3(2.1f, .7f, -1.5f), sceneCamera.transform.position);
+                                room.rotation * new Vector3(2.1f, .7f, -1.5f), LensPosition);
                             floatingClock = hitClock + .28f;
                         }
-                        floatingBody.SetCamera(sceneCamera.transform.position);
+                        floatingBody.SetCamera(LensPosition);
                         floatingBody.Advance(Mathf.Max(0f, clock - floatingClock));
                         floatingClock = Mathf.Max(floatingClock, clock);
                         PresentFloatingBody();
@@ -290,7 +300,7 @@ namespace BarPromenade
                 }
             }
             ClosestLensDistance = Mathf.Min(ClosestLensDistance,
-                Vector3.Distance(sceneCamera.transform.position, solid.transform.position));
+                Vector3.Distance(LensPosition, solid.transform.position));
         }
 
         private void PresentFloatingBody()
@@ -301,6 +311,9 @@ namespace BarPromenade
             solid.transform.SetPositionAndRotation(floatingBody.TipPosition,
                 floatingBody.Rotation * initialRotation);
         }
+
+        private Vector3 LensPosition => fixedLensPose.HasValue ? fixedLensPose.Value.position : sceneCamera.transform.position;
+        private Vector3 LensForward => fixedLensPose.HasValue ? fixedLensPose.Value.rotation * Vector3.forward : sceneCamera.transform.forward;
 
         private void PresentWaterContact(float clock)
         {
@@ -335,6 +348,7 @@ namespace BarPromenade
             floatingBody.Reset();
             floatingClock = flushClock = 0f;
             outlet = null;
+            fixedLensPose = null;
             if (solid != null) solid.SetActive(false);
             if (contactVoice != null) contactVoice.Stop();
             if (flushVoice != null) flushVoice.Stop();
@@ -344,6 +358,7 @@ namespace BarPromenade
             {
                 surface.GetPropertyBlock(surfaceProperties);
                 surfaceProperties.SetVector(ImpactId, Vector4.zero);
+                surfaceProperties.SetVector(VortexId, Vector4.zero);
                 surface.SetPropertyBlock(surfaceProperties);
             }
         }

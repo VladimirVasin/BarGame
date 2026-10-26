@@ -9,7 +9,7 @@ namespace BarPromenade
         private const float HandReachSeconds = .45f;
         private enum WashroomPhase
         {
-            ReleasingDrink, Standing, Approaching, OpeningForEntry, Entering, ClosingForVisit,
+            ReturningHands, ReleasingDrink, Standing, Approaching, OpeningForEntry, Entering, ClosingForVisit,
             Occupied, ReturningToDoor, WaitingToExit,
             OpeningForExit, LeavingWashroom, ClosingAfterVisit, Returning, Sitting
         }
@@ -22,8 +22,11 @@ namespace BarPromenade
             public int Corner;
             public bool Aborted, DrinkingWasEnabled, DoorContactReady;
             public NpcWashroomContactPose Contacts;
-            public GameObject Owner => Transition.Patron.Registry != null ? Transition.Patron.Registry.gameObject : null;
-            public BarPatron Patron => Transition.Patron;
+            public BarPatron PendingPatron;
+            public int Slot;
+            public NpcToiletUse ToiletUse;
+            public GameObject Owner => Patron.Registry != null ? Patron.Registry.gameObject : null;
+            public BarPatron Patron => Transition != null ? Transition.Patron : PendingPatron;
             public readonly Vector3[] Route = new Vector3[9];
             public int RouteCount;
         }
@@ -113,14 +116,13 @@ namespace BarPromenade
         {
             if (!IsInitialized || !isActiveAndEnabled || washroom == null || washroomTraffic == null ||
                 washroomVisit != null || transit != null || GameTimeScaleRuntime.IsPaused ||
-                !GameSessionState.IsGameTimeRunning || !BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay)) return false;
+                !GameSessionState.IsGameTimeRunning || !BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay) ||
+                !BarNpcToiletPresentation.BankAvailable()) return false;
             for (int slot = 0; slot < slots.Length; slot++)
             {
                 BarPatron patron = slots[slot];
                 if (patron == null || patron.Anchor.Id != anchorId || abandoned[slot] != null ||
                     !washroomSchedule.CanVisit(slot) || !IsSafeForWashroom(patron)) continue;
-                Vector3? dockOverride = patron.Anchor.Role == BarNpcRole.StandingPatron
-                    ? StandingWashroomDock(patron) : null;
                 GameObject owner = patron.Registry.gameObject;
                 if (!washroom.Access.TryReserveNpc(owner, patron.Registry.transform)) return false;
                 if (!washroomTraffic.TryAcquire(owner)) { washroom.Access.ReleaseNpc(owner); return false; }
@@ -129,16 +131,17 @@ namespace BarPromenade
                     washroomTraffic.Release(owner); washroom.Access.ReleaseNpc(owner); return false;
                 }
                 bool drinkingEnabled = patron.Drinking != null && patron.Drinking.enabled;
-                Transit transition = PrepareTransit(patron, slot, false, false, dockOverride);
                 washroomVisit = new WashroomVisit
                 {
-                    Transition = transition, Phase = WashroomPhase.ReleasingDrink,
+                    PendingPatron = patron, Slot = slot, Phase = WashroomPhase.ReturningHands,
                     DrinkingWasEnabled = drinkingEnabled,
-                    Contacts = new NpcWashroomContactPose(patron.Registry)
+                    ToiletUse = new NpcToiletUse { Kind = CompletedWashroomVisits % 2 == 0
+                        ? BarNpcToiletActionKind.Pee : BarNpcToiletActionKind.Poop }
                 };
                 patron.IsTemporarilyAway = true;
                 LastWashroomAbortReason = string.Empty;
-                BuildWashroomRoute(washroomVisit);
+                // Publishing absence first releases audience focus while the
+                // live drinking owner still blends hands back to the vessel.
                 PresenceChanged?.Invoke();
                 return true;
             }
@@ -195,11 +198,21 @@ namespace BarPromenade
         {
             WashroomVisit current = washroomVisit;
             if (current.Owner == null) { RemoveDestroyedWashroomGuest(); return; }
-            current.Contacts.RestoreBasePose();
+            current.Contacts?.RestoreBasePose();
             current.Seconds += dt;
-            current.Transition.Seconds = current.Seconds;
+            if (current.Transition != null) current.Transition.Seconds = current.Seconds;
             switch (current.Phase)
             {
+                case WashroomPhase.ReturningHands:
+                    current.Patron.Presentation.Advance(0f, false);
+                    if (current.Patron.Drinking != null && current.Patron.Drinking.KaraokePoseWeight > .0001f) break;
+                    Vector3? dockOverride = current.Patron.Anchor.Role == BarNpcRole.StandingPatron
+                        ? StandingWashroomDock(current.Patron) : null;
+                    current.Transition = PrepareTransit(current.Patron, current.Slot, false, false, dockOverride);
+                    current.Contacts = new NpcWashroomContactPose(current.Patron.Registry);
+                    BuildWashroomRoute(current);
+                    SetWashroomPhase(WashroomPhase.ReleasingDrink);
+                    break;
                 case WashroomPhase.ReleasingDrink:
                     AdvanceWashroomPresentation(0f, false, true);
                     if (current.Seconds >= ReleaseHandSeconds && current.Transition.ReleaseEndpointShown)
@@ -246,10 +259,7 @@ namespace BarPromenade
                     }
                     break;
                 case WashroomPhase.Occupied:
-                    // The closed room needs only occupancy time. The same
-                    // actor remains safely inside without a hidden action scene.
-                    IdleWashroom(dt);
-                    if (current.Seconds >= washroomSchedule.VisitDurationSeconds)
+                    if (AdvanceWashroomToilet(dt))
                         SetWashroomPhase(WashroomPhase.ReturningToDoor);
                     break;
                 case WashroomPhase.ReturningToDoor:
@@ -347,7 +357,7 @@ namespace BarPromenade
             WashroomVisit current = washroomVisit;
             current.Phase = phase;
             current.Seconds = current.BlockedSeconds = 0f;
-            current.Transition.Seconds = 0f;
+            if (current.Transition != null) current.Transition.Seconds = 0f;
             current.DoorStartFraction = washroom.Door.OpenFraction;
             current.DoorContactReady = false;
             WashroomBlockedBy = string.Empty;
@@ -419,6 +429,7 @@ namespace BarPromenade
         {
             WashroomVisit current = washroomVisit;
             BarPatron patron = current.Patron;
+            EndWashroomToilet(true);
             Transform body = patron.Registry.transform;
             body.localPosition = patron.Anchor.Position;
             body.localRotation = Quaternion.Euler(0f, patron.Anchor.YawDegrees, 0f);
@@ -448,6 +459,7 @@ namespace BarPromenade
         {
             WashroomVisit current = washroomVisit;
             if (current == null) return;
+            EndWashroomToilet(true);
             if (current.Owner != null)
             {
                 washroomTraffic?.Release(current.Owner);
@@ -455,17 +467,17 @@ namespace BarPromenade
                 current.Patron.IsTemporarilyAway = false;
                 Destroy(current.Owner);
             }
-            if (current.Transition.Vessel != null) Destroy(current.Transition.Vessel.gameObject);
+            if (current.Transition != null && current.Transition.Vessel != null) Destroy(current.Transition.Vessel.gameObject);
             washroomVisit = null;
         }
 
         private void RemoveDestroyedWashroomGuest()
         {
             WashroomVisit current = washroomVisit;
-            washroomSchedule.Defer(current.Transition.Slot);
-            slots[current.Transition.Slot] = null;
+            washroomSchedule.Defer(current.Slot);
+            slots[current.Slot] = null;
             patrons.Remove(current.Patron);
-            if (current.Transition.Seat != null) Destroy(current.Transition.Seat.gameObject);
+            if (current.Transition != null && current.Transition.Seat != null) Destroy(current.Transition.Seat.gameObject);
             DisposeWashroomVisit();
             PresenceChanged?.Invoke();
         }

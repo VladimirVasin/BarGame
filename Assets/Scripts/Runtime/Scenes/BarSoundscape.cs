@@ -49,6 +49,16 @@ namespace BarPromenade
         private int firstGuests, secondGuests;
         private float firstAttendance = 1f, secondAttendance = 1f;
         private float firstAttendanceTarget = 1f, secondAttendanceTarget = 1f;
+        private float karaokeCrowdGain = 1f;
+        public bool IsKaraokeSilenced { get; private set; }
+        public float KaraokeCrowdGain => karaokeCrowdGain;
+
+        public void SetKaraokeSilenced(bool silenced)
+        {
+            IsKaraokeSilenced = silenced;
+            // A synthetic laugh is still speech; incidental glasses/chairs remain physical room sounds.
+            if (silenced && cueSource != null && cueSource.clip == crowdReactionClip) cueSource.Stop();
+        }
 
         public void ConfigureAttendance(IReadOnlyList<BarPatron> patrons)
         {
@@ -74,9 +84,9 @@ namespace BarPromenade
         private void ApplyAttendanceGain()
         {
             if (firstCrowdSource != null)
-                firstCrowdSource.volume = FirstCrowdVolume * firstCrowdGain * firstAttendance;
+                firstCrowdSource.volume = FirstCrowdVolume * firstCrowdGain * firstAttendance * karaokeCrowdGain;
             if (secondCrowdSource != null)
-                secondCrowdSource.volume = SecondCrowdVolume * secondCrowdGain * secondAttendance;
+                secondCrowdSource.volume = SecondCrowdVolume * secondCrowdGain * secondAttendance * karaokeCrowdGain;
         }
 
         public bool IsInitialized { get; private set; }
@@ -209,6 +219,8 @@ namespace BarPromenade
             }
 
             secondsUntilNextCue -= unscaledDeltaTime;
+            karaokeCrowdGain = Mathf.MoveTowards(karaokeCrowdGain, IsKaraokeSilenced ? 0f : 1f,
+                unscaledDeltaTime / (IsKaraokeSilenced ? .12f : .35f));
             firstAttendance = Mathf.MoveTowards(firstAttendance, firstAttendanceTarget, unscaledDeltaTime);
             secondAttendance = Mathf.MoveTowards(secondAttendance, secondAttendanceTarget, unscaledDeltaTime);
             ApplyAttendanceGain();
@@ -247,6 +259,8 @@ namespace BarPromenade
         private void OnDisable()
         {
             StopAllSources();
+            IsKaraokeSilenced = false;
+            karaokeCrowdGain = 1f;
         }
 
         private void OnDestroy()
@@ -282,6 +296,7 @@ namespace BarPromenade
                     cueSequence);
             cueSequence++;
             secondsUntilNextCue = BarSoundscapeSchedule.GetCue(deterministicSeed, cueSequence).DelaySeconds;
+            if (IsKaraokeSilenced && cue.Kind == BarSoundscapeCueKind.CrowdReaction) return;
             if (attendanceConfigured && (firstGuests + secondGuests == 0 ||
                 cue.Kind == BarSoundscapeCueKind.CrowdReaction && firstGuests + secondGuests < 2))
                 return;

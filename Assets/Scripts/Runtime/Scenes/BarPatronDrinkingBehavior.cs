@@ -342,6 +342,7 @@ namespace BarPromenade
         public const float SipSpineLeanBackDegrees = 18f;
         public const float SipChestLeanBackDegrees = 14f;
         public const float SipHeadLeanBackDegrees = 12f;
+        public const float MaximumKaraokeTorsoYawDegrees = 75f;
         private const int SolveIterations = 6;
 
         private BarPatronDrinkTimeline timeline;
@@ -405,6 +406,12 @@ namespace BarPromenade
         private Transform conversationPartner;
         private readonly NpcAttentionHeadLayer conversationLook = new NpcAttentionHeadLayer();
         private bool conversationLookBound;
+        private UnityEngine.Object karaokeFocusOwner;
+        private Transform karaokeFocus;
+        private float karaokeTorsoYaw, karaokePoseWeight;
+        public float KaraokeTorsoYawDegrees => karaokeTorsoYaw;
+        public float KaraokePoseWeight => karaokePoseWeight;
+        public bool KaraokeHandsReleased => karaokePoseWeight > .95f;
         public bool CanConverse => isInitialized && isActiveAndEnabled && timeline != null &&
             timeline.Phase == BarPatronDrinkPhase.Rest &&
             (CounterRefill == null || !CounterRefill.IsWaitingForRefill && !CounterRefill.IsRefilling);
@@ -412,9 +419,31 @@ namespace BarPromenade
         public void SetConversationPartner(Transform partner)
         {
             conversationPartner = partner;
-            if (partner != null || !conversationLookBound) return;
+            if (partner != null || karaokeFocus != null || !conversationLookBound) return;
             conversationLook.Restore();
             conversationLook.Clear();
+        }
+
+        /// <summary>The audience borrows attention without joining a conversation or moving a seat.</summary>
+        public bool TrySetKaraokeFocus(UnityEngine.Object owner, Transform focus)
+        {
+            if (owner == null || focus == null || !isInitialized || !isActiveAndEnabled ||
+                karaokeFocusOwner != null && karaokeFocusOwner != owner) return false;
+            karaokeFocusOwner = owner;
+            karaokeFocus = focus;
+            return true;
+        }
+
+        public bool IsKaraokeAttending(UnityEngine.Object owner) =>
+            ReferenceEquals(karaokeFocusOwner, owner) && karaokeFocus != null && CanConverse &&
+            conversationLookBound && conversationLook.Weight > .01f;
+
+        public void ClearKaraokeFocus(UnityEngine.Object owner)
+        {
+            if (ReferenceEquals(karaokeFocusOwner, null) || !ReferenceEquals(karaokeFocusOwner, owner)) return;
+            karaokeFocusOwner = null;
+            karaokeFocus = null;
+            if (conversationLookBound) { conversationLook.Restore(); conversationLook.Clear(); }
         }
         private bool gulpCuePending;
 
@@ -637,7 +666,8 @@ namespace BarPromenade
 
             // A whole A→B exchange holds the existing rest pose, never an
             // interrupted sip or service request. No second animation graph.
-            if (conversationPartner != null && CanConverse) return;
+            if ((conversationPartner != null || karaokeFocusOwner != null && karaokeFocus != null ||
+                karaokePoseWeight > .0001f) && CanConverse) return;
 
             if (CounterRefill != null)
             {
@@ -657,15 +687,38 @@ namespace BarPromenade
             // A manually evaluated Animator still owns its native transform
             // write stage after Update. Keep time on Advanced, but publish
             // these final contacts after that stage, as the bartender does.
+            bool karaokeReady = karaokeFocusOwner != null && karaokeFocus != null && CanConverse;
+            float deltaTime = GameTimeScaleRuntime.IsPaused ? 0f : Time.deltaTime;
+            if (CanConverse)
+            {
+                karaokePoseWeight = Mathf.MoveTowards(karaokePoseWeight, karaokeReady ? 1f : 0f, deltaTime / .55f);
+                float desired = 0f;
+                if (karaokeReady)
+                {
+                    Vector3 delta = karaokeFocus.position - ownerRoot.position;
+                    float yaw = Mathf.DeltaAngle(ownerRoot.eulerAngles.y, Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg);
+                    desired = Mathf.Clamp(yaw - Mathf.Clamp(yaw, -45f, 45f),
+                        -MaximumKaraokeTorsoYawDegrees, MaximumKaraokeTorsoYawDegrees) * karaokePoseWeight;
+                }
+                karaokeTorsoYaw = Mathf.MoveTowards(karaokeTorsoYaw, desired,
+                    deltaTime * 145f);
+            }
+            else { karaokeTorsoYaw = 0f; karaokePoseWeight = 0f; }
             ApplyFinalContacts(true);
-            if (conversationPartner != null && CanConverse)
+            Transform attentionTarget = karaokeReady ? karaokeFocus : conversationPartner;
+            if (attentionTarget != null && CanConverse)
             {
                 if (!conversationLookBound)
                 {
                     conversationLook.Bind(ownerRoot, head, presentation.Registry.Animator);
                     conversationLookBound = true;
                 }
-                conversationLook.SetFocus(conversationPartner.position);
+                Vector3 focus = attentionTarget.position;
+                // The head layer still measures yaw from the immutable seat.
+                // Subtract the already-applied torso turn to avoid double aim.
+                if (karaokeReady) focus = head.position + Quaternion.AngleAxis(-karaokeTorsoYaw,
+                    ownerRoot.up) * (focus - head.position);
+                conversationLook.SetFocus(focus);
                 conversationLook.Apply(GameTimeScaleRuntime.IsPaused ? 0f : Time.deltaTime);
             }
             else if (conversationLookBound) conversationLook.Clear();
@@ -702,9 +755,31 @@ namespace BarPromenade
             if (conversationLookBound) conversationLook.Restore();
             if (tableLean) ApplyTablePose();
             else ApplyCounterPose();
+            ApplyKaraokeRestPose();
             if (CounterRefill == null || !CounterRefill.IsRefilling) PlaceBottle();
             ApplyFingerGrip(advanceFingerBlend);
             ApplyCounterAttentionWave();
+        }
+
+        private void ApplyKaraokeRestPose()
+        {
+            if (!CanConverse || karaokePoseWeight <= .0001f) return;
+            Pose leftContact = new Pose(leftHand.position, leftHand.rotation);
+            Pose rightContact = new Pose(rightHand.position, rightHand.rotation);
+            spine.rotation = Quaternion.AngleAxis(karaokeTorsoYaw * .4f, ownerRoot.up) * spine.rotation;
+            chest.rotation = Quaternion.AngleAxis(karaokeTorsoYaw * .6f, ownerRoot.up) * chest.rotation;
+            // The cup is already upright on its authored table point. Release
+            // both hands toward the lap/thighs rather than stretching a planted
+            // arm across a turned torso. Pelvis, seat and feet remain untouched.
+            bool seated = !tableLean || seatedTable;
+            Vector3 lap = spine.parent.position + ownerRoot.up * (seated ? .03f : -.13f) +
+                ownerRoot.forward * (seated ? .17f : .025f);
+            Vector3 leftTarget = Vector3.Lerp(leftContact.position, lap - ownerRoot.right * .16f, karaokePoseWeight);
+            Vector3 rightTarget = Vector3.Lerp(rightContact.position, lap + ownerRoot.right * .16f, karaokePoseWeight);
+            SeatedArmIk.SolveTwoBone(leftUpperArm, leftForearm, leftHand, leftTarget,
+                leftContact.rotation, ResolveElbowHint(leftUpperArm, false));
+            SeatedArmIk.SolveTwoBone(rightUpperArm, rightForearm, rightHand, rightTarget,
+                rightContact.rotation, ResolveElbowHint(rightUpperArm, true));
         }
 
         private void ApplyCounterPose()
@@ -719,9 +794,9 @@ namespace BarPromenade
 
                 ResetUpperBodyToBase();
                 ApplySurfaceLean(
-                    CounterSpineLeanDegrees,
-                    CounterChestLeanDegrees);
-                CompensateHeadLean(CounterHeadCompensationDegrees);
+                    CounterSpineLeanDegrees * (1f - karaokePoseWeight),
+                    CounterChestLeanDegrees * (1f - karaokePoseWeight));
+                CompensateHeadLean(CounterHeadCompensationDegrees * (1f - karaokePoseWeight));
                 ApplyRestHeadMotion();
                 SolveLeftArmTowardsSupport();
                 if (CounterRefill != null && CounterRefill.IsRefilling)
@@ -774,8 +849,8 @@ namespace BarPromenade
             // supporting hand eventually spirals away from the tabletop.
             ResetUpperBodyToBase();
             ApplySurfaceLean(
-                TableSpineLeanDegrees,
-                TableChestLeanDegrees);
+                TableSpineLeanDegrees * (1f - karaokePoseWeight),
+                TableChestLeanDegrees * (1f - karaokePoseWeight));
             ApplyRestHeadMotion();
 
             ApplyBottleSipLean();
@@ -1222,7 +1297,7 @@ namespace BarPromenade
         {
             // The shared body sampler restores renderer defaults. Reapply
             // the actual authored curled-finger shape after the final solve.
-            handPose.SetGrip(false, CounterRightGripWeight(advanceCounterBlend), gripKind);
+            handPose.SetGrip(false, CounterRightGripWeight(advanceCounterBlend) * (1f - karaokePoseWeight), gripKind);
             handPose.SetGrip(true, 0f);
         }
 
@@ -1266,6 +1341,11 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            bool returnAudiencePose = karaokePoseWeight > .0001f || karaokeFocusOwner != null;
+            ClearKaraokeFocus(karaokeFocusOwner);
+            karaokePoseWeight = karaokeTorsoYaw = 0f;
+            if (returnAudiencePose && isInitialized && presentation != null && ownerRoot != null && spine != null && chest != null)
+                ApplyFinalContacts(false);
             SetConversationPartner(null);
             handPose?.ResetGrip();
             gulpCuePending = false;
@@ -1276,6 +1356,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ClearKaraokeFocus(karaokeFocusOwner);
             UnsubscribePresentation();
             ReleaseAuthoredAction();
             RestoreAnimatorCulling();

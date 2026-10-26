@@ -1,5 +1,9 @@
 {
   "entries": [
+    {"key":"interaction.karaoke","value":"E — петь"},
+    {"key":"karaoke.title","value":"Караоке"},
+    {"key":"karaoke.controls","value":"ЛКМ — петь    Мышь ↑↓ — высота    E — закончить    Esc — пауза"},
+    {"key":"karaoke.source_pitch","value":"Высота ноты"},
     {"key":"interaction.inspect_painting","value":"E — осмотреть картину"},
     {"key":"interaction.sit_at_table","value":"E — сесть за стол"},
     {"key":"cutscene.warehouse_door_ambush","value":"Нападение у двери"},

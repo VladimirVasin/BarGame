@@ -18,6 +18,7 @@ namespace BarPromenade
         public BarInteriorLayoutPlan Layout { get; private set; }
         public Transform Room { get; private set; }
         public BarWashroom Washroom { get; private set; }
+        public BarKaraokeInteraction Karaoke { get; private set; }
         public BarAisleTraffic AisleTraffic { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
@@ -177,6 +178,10 @@ namespace BarPromenade
             Washroom = BarWashroom.Create(transform, Room, Player, follow, prompt, intoxicationHud,
                 Player.GameObject.GetComponent<PlayerAnimatedInteractionController>());
             AisleTraffic = BarAisleTraffic.Create(transform, Room);
+            GameObject karaokeObject = new GameObject("Bar Karaoke");
+            karaokeObject.transform.SetParent(transform, false);
+            Karaoke = karaokeObject.AddComponent<BarKaraokeInteraction>();
+            Karaoke.Initialize(this, follow, intoxicationHud);
 
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
@@ -197,6 +202,7 @@ namespace BarPromenade
             BuildCounterStation(follow);
             BuildExit();
             BuildNpcCrowd(camera);
+            Karaoke.InitializeAudience();
             ApplyBusinessHours();
             IsInitialized = true;
             if (!NewGameStartService.TryConsumeArrival(NewGameLocation.Bar))
@@ -456,6 +462,7 @@ namespace BarPromenade
                 Conversation = gameObject.AddComponent<BarConversationController>();
                 Conversation.Initialize(Patrons, Bartender, DrinkShop, Player.GameObject.transform,
                     camera, transform, Layout, unchecked((int)Layout.StableSeed));
+                Conversation.ConfigureKaraoke(Karaoke);
             }
             Crowd.PresenceChanged += RefreshCrowdPresence;
             RefreshCrowdPresence();
@@ -493,7 +500,13 @@ namespace BarPromenade
         private void ApplyBusinessHours()
         {
             lastBusinessMinute = GameSessionState.GameMinuteOfDay;
-            Music?.SetPlaybackSuppressed(!IsBusinessOpen);
+            RefreshMusicPlayback();
+        }
+
+        internal void RefreshMusicPlayback()
+        {
+            if (Music != null) Music.SetPlaybackSuppressed(
+                !IsBusinessOpen || Karaoke != null && Karaoke.OwnsInteraction);
         }
 
         private void Update()

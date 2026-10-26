@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Shape = BarPromenade.RussianVocalizerDsp.Shape;
 
 namespace BarPromenade
 {
@@ -215,15 +216,9 @@ namespace BarPromenade
             RussianVocalizerVoice voice = plan.Voice;
             RussianVocalizerStyle style = voice.Style;
             var output = new float[plan.SampleCount];
-            var first = new Resonator(); var second = new Resonator(); var third = new Resonator();
-            var nasal = new Resonator();
-            nasal.Tune(300 * voice.TractScale, 80);
-            uint random = voice.Seed == 0 ? 0x6D2B79F5u : voice.Seed;
-            uint cycleRandom = random ^ 0xA511E9B3u;
-            double phase = 0, noiseLow = 0, noiseHigh = 0, dark = 0;
-            double voicedGain = 0, stressGain = 1, dcInput = 0, dcOutput = 0;
-            double cycleJitter = 0, cycleGain = 1, peak = 0, energy = 0;
-            int activeSamples = 0, pulse = 0, cursor = 0;
+            var dsp = new RussianVocalizerDsp(voice, SampleRate);
+            double peak = 0, energy = 0;
+            int activeSamples = 0, cursor = 0;
             for (int phoneIndex = 0; phoneIndex < plan.PhoneCount; phoneIndex++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -232,10 +227,7 @@ namespace BarPromenade
                 Shape previousShape = phoneIndex > 0 ? PhoneShape(plan.PhoneAt(phoneIndex - 1), style) : shape;
                 Shape nextShape = phoneIndex + 1 < plan.PhoneCount ? PhoneShape(plan.PhoneAt(phoneIndex + 1), style) : shape;
                 int length = plan.LengthAt(phoneIndex);
-                double highAlpha = 1 - Math.Exp(-Tau * Math.Min(SampleRate * .46, shape.NoiseHigh * voice.TractScale) / SampleRate);
-                double lowAlpha = 1 - Math.Exp(-Tau * shape.NoiseLow * voice.TractScale / SampleRate);
-                bool stop = IsStop(phone.Sound);
-                bool affricate = phone.Sound == RussianSpeechSound.Ch || phone.Sound == RussianSpeechSound.Ts;
+                dsp.SetPhone(shape, phone.Sound, phone.Stressed);
                 bool pause = phone.Sound == RussianSpeechSound.Pause;
                 for (int sample = 0; sample < length; sample++, cursor++)
                 {
@@ -259,76 +251,20 @@ namespace BarPromenade
                         }
                         if (shape.Vowel && phone.Soft)
                             f2 = Lerp(f2, 2250, .35 * style.Softness * Math.Max(0, 1 - progress * 2.5));
-                        first.Tune(f1 * voice.TractScale, shape.Nasal ? 80 : 95 + style.Brightness * 12);
-                        second.Tune(f2 * voice.TractScale, 130 + style.Brightness * 25);
-                        third.Tune(f3 * voice.TractScale, 190 + style.Brightness * 30);
+                        dsp.Tune(f1, f2, f3);
                     }
-                    double noise = Noise(ref random);
-                    noiseHigh += highAlpha * (noise - noiseHigh);
-                    noiseLow += lowAlpha * (noiseHigh - noiseLow);
-                    double hiss = noiseHigh - noiseLow;
                     double phrase = cursor / (double)Math.Max(1, plan.SampleCount - 1);
                     double contour = 1 + style.Melody * (.12 * Math.Sin(Math.PI * 1.35 * phrase) - .14 * phrase);
                     double stressPitch = phone.Stressed ? 1 + .025 + .13 * style.Stress : 1;
                     double flutter = 1 + (.001 + .022 * style.Flutter) * Math.Sin(Tau * 4.7 * time)
                         + .008 * style.Flutter * Math.Sin(Tau * 11.3 * time);
-                    phase += voice.FundamentalHz * stressPitch * contour * flutter *
-                        (1 + cycleJitter * .055 * style.Roughness) / SampleRate;
-                    if (phase >= 1)
-                    {
-                        phase -= Math.Floor(phase); pulse++;
-                        cycleJitter = Noise(ref cycleRandom);
-                        cycleGain = 1 + .35 * style.Roughness * Noise(ref cycleRandom);
-                    }
-                    double duty = .77 - .30 * style.Pressed;
-                    double periodic = phase < duty ? Math.Sin(Tau * phase / duty) : 0;
-                    periodic += .14 * style.Pressed * Math.Sin(Tau * phase * 2);
-                    periodic *= cycleGain * ((pulse & 1) != 0 ? 1 - .78 * style.Creak : 1);
-                    double source = periodic * (1 - .84 * style.Airiness) + noise *
-                        (voice.Breath + .34 * style.Airiness + .035 * style.Roughness);
-                    double voiceAmount = shape.Voice;
-                    double noiseGain = shape.Noise * (1 + .22 * style.Brightness);
-                    double gain = 1;
-                    if (stop)
-                    {
-                        voiceAmount *= progress < .70 ? .09 : .40;
-                        noiseGain *= progress < .70 ? 0 : Math.Exp(-(progress - .70) * 11);
-                    }
-                    else if (affricate) noiseGain *= progress < .30 ? 0 : Math.Min(1, (progress - .30) * 18);
-                    else if (phone.Sound == RussianSpeechSound.R)
-                    {
-                        if (style.RVariant == RussianSpeechRVariant.Tap)
-                            gain *= Math.Abs(progress - .45) < .09 ? .18 : .9;
-                        else if (style.RVariant == RussianSpeechRVariant.Guttural)
-                        {
-                            gain *= .5 + .5 * Math.Max(0, Math.Sin(Tau * 43 * time));
-                            noiseGain += .16; hiss += noise * .18;
-                        }
-                        else gain *= .34 + .66 * Math.Max(0, Math.Sin(Tau * 26 * time));
-                    }
-                    double oral = first.Step(source) * (shape.Nasal ? 1.15 : .9)
-                        + second.Step(source) * (shape.Nasal ? .16 : .55) * (1 + .35 * style.Brightness)
-                        + third.Step(source) * .24 * (1 + .8 * style.Brightness);
-                    double nasalSignal = nasal.Step(source);
-                    double vowel = Lerp(oral, nasalSignal * 1.6 + oral * .35, style.Nasality * .8);
                     double attack = phoneIndex == 0 || plan.PhoneAt(phoneIndex - 1).Sound == RussianSpeechSound.Pause
                         ? Math.Min(1, sample / (SampleRate * .008)) : 1;
                     double release = phoneIndex == plan.PhoneCount - 1 || plan.PhoneAt(phoneIndex + 1).Sound == RussianSpeechSound.Pause
                         ? Math.Min(1, (length - 1 - sample) / (SampleRate * .012)) : 1;
                     double noiseEdge = Math.Min(1, sample / (SampleRate * .003)) * Math.Min(1, (length - 1 - sample) / (SampleRate * .004));
-                    voicedGain += .045 * (voiceAmount * gain - voicedGain);
-                    stressGain += .045 * ((phone.Stressed ? 1.04 + .18 * style.Stress : .94) - stressGain);
-                    double value = (vowel * voicedGain + hiss * noiseGain * noiseEdge) * attack * release * stressGain;
-                    double darkness = Math.Max(0, -style.Brightness);
-                    dark += (.82 - .64 * darkness) * (value - dark);
-                    value = Lerp(value, dark, darkness);
-                    if (pause) value = 0;
-                    double dcRemoved = value - dcInput + .987 * dcOutput;
-                    dcInput = value; dcOutput = dcRemoved;
-                    if (pause) dcRemoved = 0;
-                    // A mild bounded soft knee prevents one release burst from
-                    // deciding the loudness of the entire otherwise quiet line.
-                    dcRemoved /= 1 + Math.Abs(dcRemoved) * 1.5;
+                    double dcRemoved = dsp.Process(voice.FundamentalHz * stressPitch * contour * flutter,
+                        progress, time, attack, release, noiseEdge);
                     output[cursor] = (float)dcRemoved;
                     peak = Math.Max(peak, Math.Abs(dcRemoved));
                     if (!pause) { energy += dcRemoved * dcRemoved; activeSamples++; }
@@ -375,97 +311,6 @@ namespace BarPromenade
             }
         }
 
-        private static bool IsStop(RussianSpeechSound sound) =>
-            sound == RussianSpeechSound.P || sound == RussianSpeechSound.B ||
-            sound == RussianSpeechSound.T || sound == RussianSpeechSound.D ||
-            sound == RussianSpeechSound.K || sound == RussianSpeechSound.G;
-
         private static double Lerp(double a, double b, double t) => a + (b - a) * t;
-
-        private static double Noise(ref uint state)
-        {
-            state ^= state << 13;
-            state ^= state >> 17;
-            state ^= state << 5;
-            return (state & 0xFFFFFF) / 8388607.5 - 1.0;
-        }
-
-        private struct Resonator
-        {
-            private double one, two, gain, y1, y2;
-
-            public void Tune(double frequency, double bandwidth)
-            {
-                double radius = Math.Exp(-Math.PI * bandwidth / SampleRate);
-                one = 2.0 * radius * Math.Cos(Tau * frequency / SampleRate);
-                two = radius * radius;
-                gain = 1.0 - radius;
-            }
-
-            public double Step(double input)
-            {
-                double value = gain * input + one * y1 - two * y2;
-                y2 = y1;
-                y1 = value;
-                return value;
-            }
-        }
-
-        private struct Shape
-        {
-            public double F1, F2, F3, Voice, Noise, NoiseLow, NoiseHigh;
-            public bool Vowel, Nasal;
-
-            private Shape(double f1, double f2, double f3, double voice = 1.0,
-                double noise = 0.0, double low = 1000.0, double high = 6500.0,
-                bool vowel = false, bool nasal = false)
-            {
-                F1 = f1; F2 = f2; F3 = f3; Voice = voice; Noise = noise;
-                NoiseLow = low; NoiseHigh = high; Vowel = vowel; Nasal = nasal;
-            }
-
-            public static Shape For(RussianSpeechSound sound, bool soft)
-            {
-                Shape value;
-                switch (sound)
-                {
-                    case RussianSpeechSound.A: value = new Shape(730, 1250, 2650, vowel: true); break;
-                    case RussianSpeechSound.O: value = new Shape(500, 900, 2550, vowel: true); break;
-                    case RussianSpeechSound.U: value = new Shape(330, 720, 2300, vowel: true); break;
-                    case RussianSpeechSound.I: value = new Shape(280, 2250, 3100, vowel: true); break;
-                    case RussianSpeechSound.Y: value = new Shape(390, 1500, 2600, vowel: true); break;
-                    case RussianSpeechSound.E: value = new Shape(540, 1850, 2600, vowel: true); break;
-                    case RussianSpeechSound.M: value = new Shape(260, 1050, 2200, 0.8, nasal: true); break;
-                    case RussianSpeechSound.N: value = new Shape(290, 1600, 2600, 0.7, nasal: true); break;
-                    case RussianSpeechSound.L: value = new Shape(400, 1100, 2800, 0.85); break;
-                    case RussianSpeechSound.R: value = new Shape(460, 1350, 2500, 0.8); break;
-                    case RussianSpeechSound.J: value = new Shape(280, 2250, 3100, 0.75); break;
-                    case RussianSpeechSound.P: value = new Shape(320, 800, 2300, 0, 0.5, 500, 6000); break;
-                    case RussianSpeechSound.B: value = new Shape(320, 800, 2300, 0.7, 0.4, 500, 6000); break;
-                    case RussianSpeechSound.T: value = new Shape(400, 1700, 3000, 0, 0.65, 3800, 8500); break;
-                    case RussianSpeechSound.D: value = new Shape(400, 1700, 3000, 0.65, 0.5, 3800, 8500); break;
-                    case RussianSpeechSound.K: value = new Shape(400, 1800, 2600, 0, 0.6, 1600, 6200); break;
-                    case RussianSpeechSound.G: value = new Shape(400, 1800, 2600, 0.65, 0.45, 1600, 6200); break;
-                    case RussianSpeechSound.S: value = new Shape(350, 1800, 3000, 0, 0.40, 4200, 9000); break;
-                    case RussianSpeechSound.Z: value = new Shape(350, 1800, 3000, 0.55, 0.27, 4200, 9000); break;
-                    case RussianSpeechSound.Sh: value = new Shape(400, 1400, 2500, 0, 0.42, 1700, 5400); break;
-                    case RussianSpeechSound.Zh: value = new Shape(400, 1400, 2500, 0.55, 0.28, 1700, 5400); break;
-                    case RussianSpeechSound.Sch: value = new Shape(350, 2100, 3100, 0, 0.40, 2600, 6800); break;
-                    case RussianSpeechSound.Ch: value = new Shape(350, 2100, 3100, 0, 0.48, 2400, 6800); break;
-                    case RussianSpeechSound.Ts: value = new Shape(350, 1800, 3000, 0, 0.48, 4000, 9000); break;
-                    case RussianSpeechSound.F: value = new Shape(350, 1250, 2600, 0, 0.20, 700, 7000); break;
-                    case RussianSpeechSound.V: value = new Shape(350, 1250, 2600, 0.55, 0.14, 700, 7000); break;
-                    case RussianSpeechSound.H: value = new Shape(500, 1500, 2600, 0, 0.25, 800, 4300); break;
-                    default: value = new Shape(400, 1400, 2600, 0); break;
-                }
-                if (soft && !value.Vowel)
-                {
-                    value.F2 = Math.Max(value.F2, 2050.0);
-                    value.F3 = Math.Max(value.F3, 2950.0);
-                    value.NoiseLow *= 1.12;
-                }
-                return value;
-            }
-        }
     }
 }

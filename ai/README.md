@@ -19,6 +19,7 @@ compares them, so this index cannot quietly drift out of date again.
 | `city-lighting-plan.md` | note | 8000 | Nine City lighting stages and acceptance |
 | `city-texture-plan.md` | note | 8000 | Nine City material stages and acceptance |
 | `bar-dialogue-plan.md` | note | 64000 | Bar speech contract, paired conversations and Russian phrase bank |
+| `karaoke-plan.md` | note | 6000 | Free live voice, hall attention, camera shots, drunken pitch drift and focused acceptance |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
 | `architecture-notes.md` | canon | 570000 | Accepted technical decisions and the exceptions the bibles allow |
 | `debug-log.md` | state | 8000 | Structured diagnostics format, events and support workflow |

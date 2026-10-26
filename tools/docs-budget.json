@@ -29,6 +29,7 @@
     "note": {}
   },
   "documents": {
+    "ai/karaoke-plan.md": {"type": "note", "budget": 6000},
     "AI.md": {
       "type": "entry",
       "budget": 11000

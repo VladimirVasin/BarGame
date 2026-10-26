@@ -1,0 +1,67 @@
+{
+  "generator": "player_karaoke_v1",
+  "rig": "HeroV2",
+  "bone_count": 43,
+  "fps": 24,
+  "root_motion": false,
+  "animation_events": 0,
+  "lip_sync": false,
+  "entry_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "exit_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "entry_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "exit_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "entry_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "action_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "exit_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "clips": [
+    {
+      "name": "KaraokeEnter",
+      "duration_seconds": 0.5,
+      "loop": false
+    },
+    {
+      "name": "KaraokeLoop",
+      "duration_seconds": 2.0,
+      "loop": true
+    },
+    {
+      "name": "KaraokeExit",
+      "duration_seconds": 0.5,
+      "loop": false
+    }
+  ],
+  "signature": "eb78f63d3ab806d267cde642a8299c478be224c9d022a311c980d88f8b8b5aac",
+  "maximum_lower_body_error": 0.0,
+  "maximum_endpoint_error": 1.7881393432617188e-07,
+  "maximum_neutral_error": 0.0,
+  "maximum_mouth_motion": 0.0,
+  "breathing_chest_travel_degrees": 0.898739129435315
+}

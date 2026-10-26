@@ -47,10 +47,10 @@ Missing speakers cancel delivery; no invented anchor or bottom fallback.
 
 ## Ordering and lifetime
 
-One owner arbitrates ambient lines, pairs and E: one live head, one view.
-Typing/reading lines cannot be replaced; bounded admission defers/rejects without
-consuming a shuffle entry. Preserve pair order/no-repeat. Silent restoration,
-pause, distance exit and seek never replay missed sound/events.
+One owner arbitrates ambient/pairs/E: one live head/view. Typing/reading cannot
+be replaced; defer/reject before consuming a shuffle entry. Keep pair order/no-repeat.
+Owned silence cancels bubbles/voice/jobs and blocks admission until release.
+No replay after restoration/pause/distance exit/seek.
 
 Use shared duration/active state for busy gates, replies, gestures and completion.
 Measure whole-line fit within authored windows. Pause freezes the owning clock,

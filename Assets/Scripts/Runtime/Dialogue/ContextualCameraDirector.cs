@@ -635,12 +635,13 @@ namespace BarPromenade
             return target;
         }
 
-        private bool CameraPositionClear(Vector3 position)
+        private bool CameraPositionClear(Vector3 position, float clearanceRadius = CameraClearanceMeters,
+            Collider ignoredCoarseProxy = null)
         {
-            int count = Physics.OverlapSphereNonAlloc(position, CameraClearanceMeters, overlaps,
+            int count = Physics.OverlapSphereNonAlloc(position, clearanceRadius, overlaps,
                 follow.CollisionLayerMask, QueryTriggerInteraction.Ignore);
             if (count == overlaps.Length) { if (objectShot) LastRejectedShotReason = "Lens overlap query overflow"; return false; }
-            for (int i = 0; i < count; i++) if (IsSceneCollider(overlaps[i]))
+            for (int i = 0; i < count; i++) if (overlaps[i] != ignoredCoarseProxy && IsSceneCollider(overlaps[i]))
             {
                 if (objectShot) LastRejectedShotReason = "Lens intersects " + ColliderPath(overlaps[i].transform);
                 return false;
@@ -648,7 +649,8 @@ namespace BarPromenade
             return true;
         }
 
-        private bool SightClear(Vector3 origin, Vector3 destination)
+        private bool SightClear(Vector3 origin, Vector3 destination, Transform sightSubject = null,
+            Collider ignoredCoarseProxy = null)
         {
             Vector3 delta = destination - origin;
             float distance = delta.magnitude;
@@ -656,7 +658,8 @@ namespace BarPromenade
             int count = Physics.SphereCastNonAlloc(origin, SightClearanceMeters, delta / distance, hits,
                 distance, follow.CollisionLayerMask, QueryTriggerInteraction.Ignore);
             if (count == hits.Length) { if (objectShot) LastRejectedShotReason = "Subject sight query overflow"; return false; }
-            for (int i = 0; i < count; i++) if (IsSceneCollider(hits[i].collider))
+            for (int i = 0; i < count; i++) if (hits[i].collider != ignoredCoarseProxy && IsSceneCollider(hits[i].collider) &&
+                (sightSubject == null || hits[i].transform != sightSubject && !hits[i].transform.IsChildOf(sightSubject)))
             {
                 if (objectShot) LastRejectedShotReason = "Subject blocked by " + ColliderPath(hits[i].transform);
                 return false;

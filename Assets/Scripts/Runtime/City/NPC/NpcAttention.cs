@@ -380,8 +380,35 @@ namespace BarPromenade
             new NpcAttentionNotice();
         private HeroAttentionFocus hero;
         private Func<bool> headFree;
+        private UnityEngine.Object focusOverrideOwner;
+        private Transform focusOverrideTarget;
+        private bool overrideAttending;
 
         public bool IsInitialized { get; private set; }
+
+        /// <summary>An explicit ordinary activity may borrow this same head layer.</summary>
+        public bool TrySetFocusOverride(UnityEngine.Object owner, Transform target)
+        {
+            if (owner == null || target == null || !IsInitialized ||
+                focusOverrideOwner != null && focusOverrideOwner != owner) return false;
+            focusOverrideOwner = owner;
+            focusOverrideTarget = target;
+            return true;
+        }
+
+        public void ClearFocusOverride(UnityEngine.Object owner)
+        {
+            if (!ReferenceEquals(focusOverrideOwner, owner)) return;
+            focusOverrideOwner = null;
+            focusOverrideTarget = null;
+            overrideAttending = false;
+            attention.Restore();
+            attention.Clear();
+            notice.Reset();
+        }
+
+        public bool IsFocusOverrideAttending(UnityEngine.Object owner) =>
+            ReferenceEquals(focusOverrideOwner, owner) && overrideAttending && attention.Weight > .01f;
 
         /// <summary>Whether the hero holds this head this frame.</summary>
         public bool IsAttending => notice.IsHeld;
@@ -449,16 +476,25 @@ namespace BarPromenade
                 ? 0f
                 : Mathf.Max(0f, deltaTime);
             bool free = headFree == null || headFree();
-            attention.SetFocus(
-                notice.Resolve(
-                    transform.position,
-                    transform.eulerAngles.y,
-                    free && hero != null ? hero.Resolve() : (Vector3?)null));
+            overrideAttending = focusOverrideOwner != null && focusOverrideTarget != null &&
+                focusOverrideTarget.gameObject.activeInHierarchy && free;
+            if (focusOverrideOwner != null)
+            {
+                // The authored activity chooses its subject; anatomical limits
+                // and the presentation's service gate remain unchanged.
+                notice.Reset();
+                attention.SetFocus(overrideAttending ? focusOverrideTarget.position : (Vector3?)null);
+            }
+            else attention.SetFocus(notice.Resolve(transform.position, transform.eulerAngles.y,
+                free && hero != null ? hero.Resolve() : (Vector3?)null));
             attention.Apply(step);
         }
 
         private void OnDisable()
         {
+            focusOverrideOwner = null;
+            focusOverrideTarget = null;
+            overrideAttending = false;
             attention.Restore();
             attention.Clear();
             notice.Reset();

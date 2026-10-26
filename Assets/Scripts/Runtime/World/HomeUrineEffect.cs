@@ -159,12 +159,14 @@ namespace BarPromenade
         }
 
         /// <summary>The caller supplies the exact action-time portion of this frame. Old packets retain their own velocity.</summary>
-        public void EmitStep(Vector3 outlet, Vector3 direction, float deltaTime, float flow, bool shaking)
+        public void EmitStep(Vector3 outlet, Vector3 direction, float deltaTime, float flow, bool shaking, float speedScale = 1f)
         {
             if (!initialized || !emissionEnabled || deltaTime <= 0f) return;
             flow = Mathf.Clamp01(flow);
             float pressure = Mathf.Sqrt(flow);
-            float speed = shaking ? 0.75f : StreamSpeed * pressure;
+            // A scene may use a slower ballistic arc without breaking a
+            // continuous stream into a handful of thin low-flow droplets.
+            float speed = shaking ? 0.75f : StreamSpeed * pressure * Mathf.Clamp(speedScale, .05f, 1f);
             float diameter = shaking ? 0.004f : 0.003f * pressure;
             float rate = (shaking ? 10f : PacketsPerSecond) * flow;
             LastEmissionFlow = flow;

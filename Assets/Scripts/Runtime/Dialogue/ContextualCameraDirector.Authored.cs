@@ -57,6 +57,23 @@ namespace BarPromenade
             UpdateFocusDistance();
         }
 
+        /// <summary>A later shot must satisfy the same clearance contract as the first one.</summary>
+        public bool TrySetAuthoredShot(Pose pose, float fieldOfView, Vector3 focus, bool cut = false,
+            Transform sightSubject = null, float nearClipPlane = float.NaN, float opticalScale = 1f,
+            float clearanceRadius = CameraClearanceMeters, Collider ignoredCoarseProxy = null)
+        {
+            if (!IsAuthoredShotClear(pose, focus, sightSubject, clearanceRadius, ignoredCoarseProxy)) return false;
+            SetAuthoredShot(pose, fieldOfView, focus, cut, nearClipPlane, opticalScale);
+            return true;
+        }
+
+        /// <summary>A subject may be ignored by its own sight ray, never by lens clearance.</summary>
+        public bool IsAuthoredShotClear(Pose pose, Vector3 focus, Transform sightSubject = null,
+            float clearanceRadius = CameraClearanceMeters, Collider ignoredCoarseProxy = null) =>
+            active && authoredShot && !returning &&
+            CameraPositionClear(pose.position, Mathf.Clamp(clearanceRadius, .015f, CameraClearanceMeters), ignoredCoarseProxy) &&
+            SightClear(focus, pose.position, sightSubject, ignoredCoarseProxy);
+
         private float ResolveAuthoredNearClip(float value) => float.IsFinite(value)
             ? Mathf.Clamp(value, .001f, Mathf.Max(.001f, camera.farClipPlane - .001f))
             : camera.nearClipPlane;

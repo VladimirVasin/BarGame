@@ -194,6 +194,13 @@ namespace BarPromenade
         public static bool ModalPointerPressed => CanRead(GameInputContext.Menu) && Pressed(Mouse.current?.leftButton);
         public static bool ModalPointerHeld => CanRead(GameInputContext.Menu) && Read(Mouse.current?.leftButton, true);
 
+        /// <summary>Live mouse instruments use contextual pause/focus gates, independently of camera sensitivity.</summary>
+        public static Vector2 ReadContextualMouseDelta() => GameCursor.ApplicationFocused &&
+            CanRead(GameInputContext.Contextual) && Mouse.current != null
+                ? Mouse.current.delta.ReadValue() : Vector2.zero;
+        public static bool ContextualMouseHeld => GameCursor.ApplicationFocused &&
+            CanRead(GameInputContext.Contextual) && Read(Mouse.current?.leftButton, true);
+
         private static bool ReadAction(GameInputAction action, bool held)
         {
             Keyboard keyboard = Keyboard.current;

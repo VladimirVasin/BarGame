@@ -239,8 +239,8 @@ namespace BarPromenade.Tests.EditMode
                 .All(item => !item.Bounds.Overlaps(platform.Bounds)), Is.True,
                 "The expanded floor must retain the BeerPong and jukebox separation.");
             BarInteriorLightAnchor stageLight = plan.LightAnchors.Single(light => light.Kind == BarInteriorLightKind.StageKey);
-            Assert.That(stageLight.Position, Is.EqualTo(new Vector3(4.5f, 2.5f, -2.825f)));
-            Assert.That(Vector3.Dot(stageLight.Direction, new Vector3(-.1f, -1f, 0f).normalized), Is.GreaterThan(.999f));
+            Assert.That(stageLight.Position, Is.EqualTo(new Vector3(3.25f, 2.5f, -2.7f)));
+            Assert.That(Vector3.Dot(stageLight.Direction, new Vector3(.55f, -1f, 0f).normalized), Is.GreaterThan(.999f));
             Assert.That(
                 plan.Paths.Any(
                     path =>

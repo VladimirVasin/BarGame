@@ -1,22 +1,26 @@
 # Architecture notes
 
 ## Current facts
-- **Accepted 2026-10-26 — rare guest WC visits:** Active-open seconds govern
-  first visit 120–240, global gap 240–420, personal gap 480–720, residence
-  60–120 and closed-room wait 25–45; seeded bounded weights use residence/sips.
-  One visitor retains the same resident slot, appearance, supported drink/fill;
-  settled animation, speech and refill wait, with no abandonment or replacement.
-  The actual rig releases/stands/walks, operates the solid door and returns/sits.
-  At the user’s request, the closed room uses only an occupied timer: no unseen
-  toilet/flush/washing choreography. Hero input/camera remain with the hero.
-  WC access respects actual hero presence/actions; lock follows physical entry
-  and full closure. Inside egress stays available; outside shows silent Russian
-  «Занято». One aisle lease covers visits, normal transit and bartender cleanup;
-  returning guests have priority without revoking a moving owner's lease.
-  Closing forbids fresh visits but completes the current return before departure.
-  Blocked approaches return/defer; pause/disable retain occupancy, unload cleans
-  leases. Existing rigs, door and scene/post providers reused;
-  no new speech, geometry, story state or signal. §16/21/art acceptance hold.
+- **Accepted 2026-10-26 — karaoke:** Wordless singing, hall silence/gaze,
+  breath grace, real intoxication pitch drift; fixed narrow source-pitch UI.
+  User: dynamic shots every 5–8s, six hero angles plus guest/bartender close-ups;
+  rare WC inserts: peeFace/poopFace/peeBowl/poopBowl of the real visitor.
+  STATIC bowls borrow Home420Hz/−5dB/bed/optics/fill; cut restores, HUD always.
+  §6/7/16.6/22 local exceptions: no judgement/applause/text/voice/story.
+  Same rigs/contacts, shared speech/camera/FOV/roll/DOF, bounded paths/targets.
+  [Contract](karaoke-plan.md).
+- **Accepted 2026-10-26 — guest WC visits:** Cadence: `BarWashroomSchedule`.
+  Visitor keeps slot/identity/place/drink/fill; settled speech/refill/drinking
+  wait. Same rig moves/acts.
+  User: exact full Home toilet timeline/appearance/bowel on NPC bones;
+  no camera-triggered emission/replay/extra hold. Coat hem lifts with clothes,
+  clearing rear/outlet; hands low/live. Dress before hall;
+  no hidden actor/teleport/new identity.
+  Hero stays at mic with note input, access wins;
+  lock after entry/closure, inside exit free, outside RU «Занято».
+  One aisle lease: visits/transit/cleanup; return priority keeps moving owners.
+  Closing completes return; blocks defer; pause/disable retain occupancy,
+  unload cleans; no speech/story/signal; §16/21/art checks.
 - **Accepted 2026-10-25 — daily bar hours and attendance:** The user accepted
   `12:00–02:00` service and time-dependent attendance, excluding hero/bartender:
   `12–16`:3–4, `16–19`:4–6, `19–23`:6–8, `23–01`:4–6, `01–02`:3–4; closed:0.
@@ -190,14 +194,13 @@
   `DefaultNpcBodyShape`:proportional scale;Slim/Chubby belly/clothes;
   pool restore/shared assets/bounds;contact invalidation.
   Hero/bespoke/combat kept;stations:anatomical hands/planted feet;bench fits stature.
-- **Accepted 2026-10-21, bar music pocket — user:** No
-  Cocktail/SplitTheG/TinctureMatch console/three vessels in any layout.
-  Jukebox `(5,0,-.65)`, yaw180/front `-X` into hall; grille audio/collision/pulses follow.
-  Karaoke faces exit `-X`; coat rack/hooks/collision gone. Walkable .12m podium:
-  centre `(4.1,0,-2.7)`, Rect `(3.05,-3.525,2.1,1.65)`; mic `(3.75,1.6,-2.7)`.
-  Hero stand `(4.2,.16,-2.7)`; speakers/curtains/valance/StageKey stay.
-  BeerPong Rect(3.85,-1.75,.76,1.83);IDs/assignments stay.
-  24effects:existing providers/bounds;no new fiction/effects/karaoke action.
+- **Accepted 2026-10-21, bar music pocket — user:**
+  No Cocktail/SplitTheG/TinctureMatch console/vessels in any layout.
+  Jukebox `(5,0,-.65)`, yaw180/front `-X`; grille audio/collision/pulses follow.
+  Karaoke faces exit `-X`; no coat rack/hooks/collision. Walkable podium .12m:
+  centre `(4.1,0,-2.7)`, Rect `(3.05,-3.525,2.1,1.65)`, mic `(3.75,1.6,-2.7)`.
+  Hero `(4.2,.16,-2.7)`; speakers/curtains/valance/StageKey retained.
+  BeerPong Rect(3.85,-1.75,.76,1.83); IDs/assignments/effects kept.
 - **Accepted exception 2026-10-21, compact bar rebuild — explicit user decision:**
   Hall11.4x7.8x3(shell/door) in facade;Blender/Unity plans.
   CounterX-2.1(left-.9)…3.85;return/backbar/3taps;5stools/3free;

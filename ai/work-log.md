@@ -5,46 +5,51 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-26
 
-Bartender planted-leg IK uses forward poles after pelvis changes. Collection
-refines stale idle-derived docks through collision-checked walking; failed
-contact returns/defer-retries retaining dirty vessels/slots. Bounded phase,
-retry and defer diagnostics add no frame stream. BarPatronCleanupPlayModeTests
-passed normal collection, stale-dock recovery, forward knees and queued service.
-Pickup/stow Game views reviewed; check-docs and scoped diff passed.
+Free karaoke: same rig's positioned Enter/Loop/Exit, held LMB/mouse Y, shared
+vowel/face, narrow trace and scoped camera/DOF; fresh-click pause/focus/teardown.
+WC-warm stage key keeps light/shadow/bounce bounds.
+First note claims hall speech/bubble/voice silence and contact-safe gaze; breath
+grace avoids toggling. Dynamic 5–8s hero/guest/bartender shots keep fixed UI, with
+rare WC pee/poop×face/STATIC bowl inserts. Bowl fill/underwater render/audio
+are camera-scoped; HUD stays every frame. Both bowls keep held singing live,
+underwater-filtered on the same SfxWorld→Perception route. User expanded local attention/face
+permission without judgement/story. NPC WC now reuses the complete Home toilet
+cycle/appearance/bowel on guest bones; physical coat lift clears rear/outlet,
+low live hands, dress before hall; no camera emission replay/hold. Drift retains
+DSP/6ms glide/whole-voice perception. Proof:
+Singing_UsesContinuousHeroAndRestoresEveryOwner and
+SeatedAppearance_PreservesMixedJointSkinAtFabricEndpoints passed full bodily
+parity/contacts/coat restoration/live hands/bounded urine/bowl singing.
+Visitor/HUD/rear/outlet/stool-water-lens views reviewed.
+Voice/assets: RussianVocalizerTests, PlayerKaraokeActionAssetSetup,
+generator art/determinism.
+OutputVowel_UsesLatestPitchAndPreservesWholeVoiceRate and
+ContinuousVowel_KeepsPhaseAcrossBuffersAndSmoothsPitchGate covered the direct DSP.
+Blender launcher uses declared Mac Python. Cold import reported unrelated existing
+CombatBodyAssetSetup cardigan affine FBX basis; unchanged.
 
-Corner HUDs use full-screen bounds in the shared logical scale: intoxication
-top-left, journal top-right. Centered canvas padding no longer moves them inward
-in Free Aspect, tall or ultrawide windows; modal layouts retain their canvas.
-Existing lighting/material/post effects reviewed and retained; no new resources
-or recurring allocations. CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas
-and CalculateCanvas_OnUltrawide_CentersIntegerCanvas passed.
+Bartender planted-leg IK uses forward poles. Collision-checked dock refinement
+returns/defer-retries failed contacts, retaining dirty vessels/slots; bounded
+diagnostics. BarPatronCleanupPlayModeTests covered collection/recovery/knees/
+service; pickup/stow views reviewed.
 
-Rare seeded WC cadence keeps resident slots, supported drinks and appearances;
-settled speech/refill/drinking wait. The same rig enters/closes/exits the solid
-door and returns. Per user scope, unseen interior actions become an occupied
-wait only. Physical occupancy locks only after closure;
-hero presence/actions win, silent occupied status uses the shared prompt.
-One bounded aisle owner coordinates ordinary transit, visits and collection;
-return priority never revokes a moving lease. Closing finishes current visits;
-blocked approaches defer, pause/disable retain occupancy and unload cleans leases.
-Existing rigs/door, lights, material effects and post reused.
-BarPatronWashroomPlayModeTests passed rare cadence, occupied hero/other guest
-refusal, supported drink/place retention, physical return, hero precedence,
-closing, aisle priority, pause/disable and occupied unload. Occupied-door Game
-view reviewed; check-docs and scoped diff passed.
+Corner HUDs use full-screen shared-scale anchors (intoxication left/journal right)
+on Free Aspect/tall/ultrawide; modal canvas stays.
+CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas and
+CalculateCanvas_OnUltrawide_CentersIntegerCanvas passed.
 
-Hero counter entry retains floor/palm support until one clothed hip meets the
-real stool rim, then transfers weight inward before the free leg settles.
-Matching keyed pelvis paths and side-specific cloth fit replace folded-air
-transfer; exit restores floor support before releasing the seat. Existing loop,
-drink upper tracks, rig/menu/camera lifecycle and cafe/bus contracts remain.
-All effects groups reviewed; existing lighting/material/post providers retained.
-player_counter_seat_actions.validate_result and
-CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed skin/furniture,
-first-hip/floor/palm support, planted sole, completed seating and exit handoff.
-Side/rear Game-view stages reviewed. Action-only publication passed deterministic
-content/preserved-source checks and saved-bank reload; unchanged finite hand
-shapes retain their canonical proof under exact geometry fingerprints.
+Seeded rare WC visits keep guest identity/place/drink; settled speech/refill/drinking
+wait. Same rig uses door/returns; actual occupied toilet cycle reuses shared assets.
+Lock follows entry/closure; hero wins, inside exit free, shared occupied hint. One aisle
+lease covers visits/transit/cleanup; return priority preserves moving owners.
+Closing completes visits; blocks defer, pause/disable retain occupancy, unload cleans.
+BarPatronWashroomPlayModeTests covered visit ownership; occupied view reviewed.
+
+Counter entry holds sole/palm until clothed hip meets stool rim, transfers weight,
+then settles free leg; exit plants foot first. Keyed pelvis/cloth keep contacts;
+loop/drink/cafe/bus stay. player_counter_seat_actions.validate_result and
+CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed; side/rear views reviewed.
+Deterministic publication/source/bank checks passed; hand fingerprints preserved.
 
 ## 2026-10-25
 

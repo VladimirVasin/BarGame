@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>A reversible lower-body costume on the production hero's own bones.</summary>
+    /// <summary>A reversible shared lower-body costume bound to the current actor's own bones.</summary>
     [DisallowMultipleComponent]
     public sealed class HomeToiletSeatedAppearance : MonoBehaviour
     {
@@ -13,6 +13,7 @@ namespace BarPromenade
         private static readonly string[] SourceNames =
             { "GEO_Pelvis", "GEO_Thigh.L", "GEO_Thigh.R", "GEO_Shin.L", "GEO_Shin.R" };
         private static HomeToiletSeatedAppearance active;
+        private static readonly Dictionary<Mesh, HashSet<int>> WeightedBonePalettes = new Dictionary<Mesh, HashSet<int>>();
         private static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
         private static readonly int MainTex = Shader.PropertyToID("_MainTex");
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
@@ -20,15 +21,23 @@ namespace BarPromenade
         private static readonly int BaseMapSt = Shader.PropertyToID("_BaseMap_ST");
         private static readonly int MainTexSt = Shader.PropertyToID("_MainTex_ST");
         private readonly List<Snapshot> snapshots = new List<Snapshot>(5);
+        private readonly HashSet<Renderer> capturedRenderers = new HashSet<Renderer>();
         private readonly List<ClothPart> cloth = new List<ClothPart>(5);
         private readonly List<ClothPart> beltCloth = new List<ClothPart>(2);
         private readonly List<Renderer> renderers = new List<Renderer>(10);
         private readonly Dictionary<Renderer, Renderer> sourceByReplacement = new Dictionary<Renderer, Renderer>();
         private readonly Dictionary<Renderer, Renderer> beltSourceByReplacement = new Dictionary<Renderer, Renderer>();
         private readonly List<JointShapeCopy> jointShapes = new List<JointShapeCopy>();
+        private readonly List<GarmentLiftPart> outerwearLift = new List<GarmentLiftPart>();
+        private Transform outerwearPelvisProxy;
         private CharacterJointDeformation jointDeformation;
         private BathroomInteractionHost home;
         private Player3DAssetRegistry registry;
+        private CityPedestrianAssetRegistry npcRegistry;
+        private NpcWardrobe npcWardrobe;
+        private Transform appearanceFrame, modelRoot;
+        private IReadOnlyList<Player3DMeshBinding> meshBindings;
+        private readonly Dictionary<Renderer, Vector2> npcPigmentUv = new Dictionary<Renderer, Vector2>();
         private PlayerWardrobe wardrobe;
         private PlayerWardrobe.AppearanceLease wardrobeLease;
         private GameObject module;
@@ -42,6 +51,7 @@ namespace BarPromenade
         public bool IsActive { get; private set; }
         public bool IsPrepared => module != null && cloth.Count == SourceNames.Length;
         public float TrousersDown { get; private set; }
+        public float OuterwearLiftWeight => IsActive && outerwearPelvisProxy != null ? TrousersDown : 0f;
         public IReadOnlyList<Renderer> Renderers => renderers;
 
         public void Initialize(HomeInteriorRoot value) => Initialize(BathroomInteractionHost.FromHome(value));
@@ -51,17 +61,43 @@ namespace BarPromenade
             End();
             ReleaseModule();
             home = value;
+            npcRegistry = null; npcWardrobe = null;
+        }
+
+        /// <summary>Uses the same seated mesh, lowered fabric and outlet on an existing default NPC.</summary>
+        public void Initialize(CityPedestrianAssetRegistry actor, Transform frame)
+        {
+            if (actor == null || frame == null) throw new ArgumentNullException(actor == null ? nameof(actor) : nameof(frame));
+            if (npcRegistry == actor && appearanceFrame == frame) return;
+            End();
+            ReleaseModule();
+            home = null; registry = null; wardrobe = null;
+            npcRegistry = actor; appearanceFrame = frame;
+            npcWardrobe = actor.GetComponentInChildren<NpcWardrobe>(true);
         }
 
         /// <summary>All fallible preparation occurs before clothing or control is captured.</summary>
         public bool Prepare()
         {
             if (IsPrepared) return true;
-            if (home == null || !(home.Player.Visual is Player3DCharacterPresentation visual) ||
-                visual.Registry == null || visual.Registry.ModelRoot == null) return false;
-            registry = visual.Registry;
-            jointDeformation = registry.GetComponent<CharacterJointDeformation>();
-            wardrobe = registry.GetComponent<PlayerWardrobe>();
+            if (npcRegistry != null)
+            {
+                modelRoot = npcRegistry.ModelRoot;
+                if (modelRoot == null || npcWardrobe == null) return false;
+                meshBindings = BuildNpcBindings();
+                if (meshBindings == null) return false;
+                jointDeformation = npcRegistry.GetComponentInChildren<CharacterJointDeformation>(true);
+            }
+            else
+            {
+                if (home == null || !(home.Player.Visual is Player3DCharacterPresentation visual) ||
+                    visual.Registry == null || visual.Registry.ModelRoot == null) return false;
+                registry = visual.Registry;
+                modelRoot = registry.ModelRoot; appearanceFrame = home.transform;
+                meshBindings = registry.MeshBindings;
+                jointDeformation = registry.GetComponent<CharacterJointDeformation>();
+                wardrobe = registry.GetComponent<PlayerWardrobe>();
+            }
             GameObject template = Resources.Load<GameObject>(ModelResourcePath);
             Texture2D skinAtlas = Player3DBathingAppearance.BareSkinAtlas;
             if (template == null || skinAtlas == null) return false;
@@ -69,10 +105,10 @@ namespace BarPromenade
             var actualBones = new Dictionary<string, Transform>(StringComparer.Ordinal);
             // Imported skin palettes include non-deforming ancestors such as
             // root. The mesh bindings alone only describe gameplay anchors.
-            foreach (Transform bone in registry.ModelRoot.GetComponentsInChildren<Transform>(true))
+            foreach (Transform bone in modelRoot.GetComponentsInChildren<Transform>(true))
                 if (!actualBones.ContainsKey(bone.name)) actualBones.Add(bone.name, bone);
             Material skin = null;
-            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            foreach (Player3DMeshBinding binding in meshBindings)
             {
                 if (binding?.Renderer == null || binding.Bone == null) continue;
                 sources[binding.MeshName] = binding;
@@ -97,7 +133,7 @@ namespace BarPromenade
 
             try
             {
-                module = Instantiate(template, registry.ModelRoot, false);
+                module = Instantiate(template, modelRoot, false);
                 module.name = "Home Toilet Seated Lower Body";
                 // Match the same production FBX import root normalization.
                 module.transform.localPosition = Vector3.zero;
@@ -117,6 +153,10 @@ namespace BarPromenade
                 var pendingBelts = new Dictionary<SkinnedMeshRenderer, Player3DMeshBinding>();
                 foreach (SkinnedMeshRenderer replacement in module.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
+                    // The default population has no independent hero belt. Its
+                    // existing trousers keep their own identity and pigment.
+                    if (npcRegistry != null && (replacement.name == "Trousers_Belt" || replacement.name == "Trousers_BeltBuckle"))
+                    { replacement.enabled = false; continue; }
                     bool isCloth = replacement.name.StartsWith("Trousers_", StringComparison.Ordinal);
                     string prefix = isCloth ? "Trousers_" : "Bare_";
                     if (isCloth && sources.TryGetValue("CLO_" + replacement.name.Substring(prefix.Length),
@@ -152,8 +192,7 @@ namespace BarPromenade
                         var transportedBones = new Transform[bones.Length];
                         for (int i = 0; i < bones.Length; i++)
                         {
-                            if (!actualBones.TryGetValue(bones[i].name, out Transform actual))
-                                throw new InvalidOperationException("Unknown production costume bone: " + bones[i].name);
+                            Transform actual = ResolveCostumeBone(replacement.sharedMesh, i, bones[i], actualBones);
                             liveBones[i] = actual;
                             if (actual == source.Bone) transportedBones[i] = proxyObject.transform;
                             else
@@ -172,18 +211,20 @@ namespace BarPromenade
                     {
                         for (int i = 0; i < bones.Length; i++)
                         {
-                            if (!actualBones.TryGetValue(bones[i].name, out Transform actual))
-                                throw new InvalidOperationException("Unknown production costume bone: " + bones[i].name);
-                            bones[i] = actual;
+                            bones[i] = ResolveCostumeBone(replacement.sharedMesh, i, bones[i], actualBones);
                         }
                         replacement.sharedMaterial = source.Renderer.sharedMaterial;
-                        block.SetTexture(BaseMap, skinAtlas);
-                        block.SetTexture(MainTex, skinAtlas);
-                        block.SetVector(BaseMapSt, new Vector4(1, 1, 0, 0));
-                        block.SetVector(MainTexSt, new Vector4(1, 1, 0, 0));
-                        block.SetColor(BaseColor, Color.white);
-                        block.SetColor(ColorId, Color.white);
+                        if (npcRegistry == null)
+                        {
+                            block.SetTexture(BaseMap, skinAtlas);
+                            block.SetTexture(MainTex, skinAtlas);
+                            block.SetVector(BaseMapSt, new Vector4(1, 1, 0, 0));
+                            block.SetVector(MainTexSt, new Vector4(1, 1, 0, 0));
+                            block.SetColor(BaseColor, Color.white);
+                            block.SetColor(ColorId, Color.white);
+                        }
                     }
+                    if (npcRegistry != null) ApplyNpcPigment(source.Renderer, block);
                     replacement.bones = bones;
                     replacement.rootBone = ((SkinnedMeshRenderer)source.Renderer).rootBone;
                     replacement.SetPropertyBlock(block);
@@ -206,6 +247,10 @@ namespace BarPromenade
                         if (marker < 0 || marker > 0 && shapeName[marker - 1] != '.') continue;
                         shapeName = shapeName.Substring(marker);
                         int sourceShape = CharacterJointDeformation.FindShape(sourceSkin.sharedMesh, shapeName);
+                        // Default bodies combine pelvis/thigh surfaces and have
+                        // their own authored joint coverage, rather than the
+                        // hero's exact separate-renderer shape catalogue.
+                        if (sourceShape < 0 && npcRegistry != null) continue;
                         if (sourceShape < 0)
                             throw new InvalidOperationException("Missing source joint correction: " + shapeName);
                         jointShapes.Add(new JointShapeCopy(sourceSkin, replacement, sourceShape, shape, isCloth));
@@ -221,6 +266,7 @@ namespace BarPromenade
                     beltCloth.Add(BindBeltReplacement(pair.Key, pair.Value, actualBones, pelvisCloth));
                     beltSourceByReplacement.Add(pair.Key, pair.Value.Renderer);
                 }
+                PrepareOuterwearLift();
                 module.SetActive(false);
                 return true;
             }
@@ -254,6 +300,7 @@ namespace BarPromenade
                 if (!isCloth) continue;
                 var currentBlock = new MaterialPropertyBlock();
                 currentSource.GetPropertyBlock(currentBlock);
+                if (npcRegistry != null) ApplyNpcPigment(currentSource, currentBlock);
                 pair.Key.sharedMaterials = currentSource.sharedMaterials;
                 pair.Key.SetPropertyBlock(currentBlock);
             }
@@ -272,12 +319,15 @@ namespace BarPromenade
                 foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
                     if (garment.Slot == "trousers" || garment.Slot == "belt")
                         foreach (Renderer renderer in garment.Renderers) renderer.enabled = false;
-            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            if (npcWardrobe != null)
+                foreach (NpcWardrobe.GarmentBinding garment in npcWardrobe.Garments)
+                    if (garment.Slot == "trousers") CaptureAndHide(garment.Renderer);
+            foreach (Player3DMeshBinding binding in meshBindings)
             {
                 if (binding?.Renderer == null || Array.IndexOf(SourceNames, binding.MeshName) < 0) continue;
-                snapshots.Add(new Snapshot(binding.Renderer));
-                binding.Renderer.enabled = false;
+                CaptureAndHide(binding.Renderer);
             }
+            foreach (GarmentLiftPart part in outerwearLift) part.Renderer.bones = part.LiftedBones;
             active = this;
             IsActive = true;
             module.SetActive(true);
@@ -290,12 +340,21 @@ namespace BarPromenade
         {
             if (!IsActive) return;
             TrousersDown = Mathf.Clamp01(trousersDown);
+            if (outerwearPelvisProxy != null)
+            {
+                // The long coat's closed hem is below the bare seat surface.
+                // Gather only its pelvis-weighted cloth upwards; the spine,
+                // sleeves and the visitor's actual skeleton retain their pose.
+                outerwearPelvisProxy.SetPositionAndRotation(pelvis.position + appearanceFrame.up * (.28f * TrousersDown), pelvis.rotation);
+                Vector3 scale = pelvis.lossyScale, parentScale = outerwearPelvisProxy.parent.lossyScale;
+                outerwearPelvisProxy.localScale = new Vector3(scale.x / parentScale.x, scale.y / parentScale.y, scale.z / parentScale.z);
+            }
             jointDeformation?.ApplyPose();
             foreach (JointShapeCopy shape in jointShapes) shape.Copy(TrousersDown);
             foreach (ClothPart part in cloth)
             {
                 Vector3 targetPosition = part.IsPelvis ?
-                    (leftKnee.position + rightKnee.position) * .5f - home.transform.up * .02f : part.Target.position;
+                    (leftKnee.position + rightKnee.position) * .5f - appearanceFrame.up * .02f : part.Target.position;
                 Quaternion targetRotation = part.IsPelvis ? part.Source.rotation :
                     part.Target.rotation * part.KneeToSource;
                 part.Proxy.SetPositionAndRotation(Vector3.Lerp(part.Source.position, targetPosition, TrousersDown),
@@ -324,8 +383,11 @@ namespace BarPromenade
         public void End()
         {
             if (module != null) module.SetActive(false);
+            foreach (GarmentLiftPart part in outerwearLift)
+                if (part.Renderer != null) part.Renderer.bones = part.OriginalBones;
             foreach (Snapshot snapshot in snapshots) snapshot.Restore();
             snapshots.Clear();
+            capturedRenderers.Clear();
             wardrobeLease?.Dispose();
             wardrobeLease = null;
             IsActive = false;
@@ -335,6 +397,8 @@ namespace BarPromenade
 
         private void OnDisable() => End();
         private void OnDestroy() { End(); ReleaseModule(); }
+        /// <summary>Ends the loan and drops its prepared renderers when a visit leaves the fixture.</summary>
+        public void ReleasePrepared() { End(); ReleaseModule(); }
         private void ReleaseModule()
         {
             if (module != null)
@@ -344,6 +408,8 @@ namespace BarPromenade
             module = null; Outlet = null; cloth.Clear(); renderers.Clear(); sourceByReplacement.Clear();
             beltCloth.Clear(); beltSourceByReplacement.Clear();
             jointShapes.Clear(); jointDeformation = null;
+            meshBindings = null; npcPigmentUv.Clear();
+            outerwearLift.Clear(); outerwearPelvisProxy = null;
         }
 
         private static ClothPart BindBeltReplacement(SkinnedMeshRenderer replacement, Player3DMeshBinding source,
@@ -406,15 +472,125 @@ namespace BarPromenade
             return -1;
         }
 
+        private Transform ResolveCostumeBone(Mesh mesh, int index, Transform authored,
+            IReadOnlyDictionary<string, Transform> actualBones)
+        {
+            if (authored != null && actualBones.TryGetValue(authored.name, out Transform actual)) return actual;
+            if (npcRegistry != null)
+            {
+                // FBX keeps the hero's complete palette, including unused hair
+                // bones. Admit an absent NPC slot only after proving that no
+                // vertex references it; a missing deforming bone still fails.
+                HashSet<int> weighted = WeightedBones(mesh);
+                if (!weighted.Contains(index)) return pelvis;
+            }
+            throw new InvalidOperationException("Unknown production costume bone: " +
+                (authored != null ? authored.name : "<null>"));
+        }
+
+        private static HashSet<int> WeightedBones(Mesh mesh)
+        {
+            if (WeightedBonePalettes.TryGetValue(mesh, out HashSet<int> weighted)) return weighted;
+            weighted = new HashSet<int>();
+            using (var weights = mesh.GetAllBoneWeights())
+                for (int influence = 0; influence < weights.Length; influence++)
+                    if (weights[influence].weight != 0f) weighted.Add(weights[influence].boneIndex);
+            WeightedBonePalettes.Add(mesh, weighted);
+            return weighted;
+        }
+
+        private void PrepareOuterwearLift()
+        {
+            if (npcWardrobe == null || npcWardrobe.GetEquippedItem("outerwear") != "outerwear.coat") return;
+            foreach (NpcWardrobe.ItemBinding item in npcWardrobe.Items)
+            {
+                if (item.Id != "outerwear.coat") continue;
+                foreach (NpcWardrobe.GarmentBinding garment in item.Parts)
+                {
+                    if (!(garment.Renderer is SkinnedMeshRenderer renderer)) continue;
+                    Transform[] original = renderer.bones;
+                    int bone = Array.IndexOf(original, pelvis);
+                    if (bone < 0 || !WeightedBones(renderer.sharedMesh).Contains(bone)) continue;
+                    if (outerwearPelvisProxy == null)
+                    {
+                        var proxy = new GameObject("Toilet Lifted Coat Pelvis");
+                        proxy.transform.SetParent(module.transform, false);
+                        outerwearPelvisProxy = proxy.transform;
+                    }
+                    var lifted = (Transform[])original.Clone();
+                    lifted[bone] = outerwearPelvisProxy;
+                    outerwearLift.Add(new GarmentLiftPart(renderer, original, lifted));
+                }
+            }
+        }
+
         private Player3DMeshBinding FindBodySource(string name)
         {
-            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            foreach (Player3DMeshBinding binding in meshBindings)
                 if (binding != null && binding.MeshName == name) return binding;
             return null;
         }
 
+        private IReadOnlyList<Player3DMeshBinding> BuildNpcBindings()
+        {
+            var result = new Player3DMeshBinding[SourceNames.Length];
+            for (int index = 0; index < result.Length; index++)
+            {
+                string boneName = index == 0 ? "pelvis" : index < 3 ? "thigh." + (index == 1 ? "L" : "R")
+                    : "shin." + (index == 3 ? "L" : "R");
+                string rendererName = index < 3 ? "GEO_LegsUpper" : "GEO_LegsLower." + (index == 3 ? "L" : "R");
+                foreach (Renderer candidate in npcWardrobe.BodyRenderers)
+                    if (candidate != null && candidate.name == rendererName)
+                    { result[index] = NpcBinding(SourceNames[index], boneName, candidate); break; }
+                if (result[index]?.Bone == null || !(result[index].Renderer is SkinnedMeshRenderer)) return null;
+            }
+            return result;
+        }
+
+        private Player3DMeshBinding NpcBinding(string name, string boneName, Renderer renderer) =>
+            new Player3DMeshBinding(name, "body", boneName, "lower", string.Empty,
+                Player3DBathingAppearance.SkinMaterialName, renderer,
+                CityPedestrianHandProps.FindSocket(modelRoot, boneName), Color.white);
+
+        private void ApplyNpcPigment(Renderer source, MaterialPropertyBlock block)
+        {
+            // The NPC's atlas charts differ from the hero module's UV layout.
+            // Reuse its own authored pigment chart without inventing a material
+            // or changing the persistent skin/outfit selection.
+            if (!npcPigmentUv.TryGetValue(source, out Vector2 uv))
+            {
+                Vector2[] coordinates = ((SkinnedMeshRenderer)source).sharedMesh.uv;
+                uv = coordinates.Length > 0 ? coordinates[0] : Vector2.zero;
+                npcPigmentUv.Add(source, uv);
+            }
+            Texture texture = block.GetTexture(BaseMap);
+            if (texture == null && source.sharedMaterial != null) texture = source.sharedMaterial.mainTexture;
+            block.SetTexture(BaseMap, texture); block.SetTexture(MainTex, texture);
+            Vector4 chart = new Vector4(0f, 0f, uv.x, uv.y);
+            block.SetVector(BaseMapSt, chart); block.SetVector(MainTexSt, chart);
+        }
+
+        private void CaptureAndHide(Renderer source)
+        {
+            if (source == null || !capturedRenderers.Add(source)) return;
+            snapshots.Add(new Snapshot(source));
+            source.enabled = false;
+        }
+
         private Player3DMeshBinding FindTrousersSource(string boneName)
         {
+            if (npcRegistry != null)
+            {
+                string npcSelected = npcWardrobe.GetEquippedItem("trousers");
+                if (npcSelected == null) return null;
+                string part = boneName.StartsWith("shin.", StringComparison.Ordinal) ? "Lower." + boneName[boneName.Length - 1] : "Upper";
+                foreach (NpcWardrobe.ItemBinding item in npcWardrobe.Items)
+                    if (item.Id == npcSelected)
+                        foreach (NpcWardrobe.GarmentBinding garment in item.Parts)
+                            if (garment.Renderer != null && garment.Renderer.name.EndsWith(part, StringComparison.Ordinal))
+                                return NpcBinding("CLO_" + boneName, boneName, garment.Renderer);
+                return null;
+            }
             if (wardrobe == null || !wardrobe.IsConfigured) return null;
             string selected = wardrobe.GetEquippedItem("trousers");
             foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
@@ -440,6 +616,14 @@ namespace BarPromenade
                 this.loweredCloth = loweredCloth; }
             public void Copy(float trousersDown) => target.SetBlendShapeWeight(targetShape,
                 source.GetBlendShapeWeight(sourceShape) * (loweredCloth ? 1f - trousersDown : 1f));
+        }
+
+        private readonly struct GarmentLiftPart
+        {
+            public readonly SkinnedMeshRenderer Renderer;
+            public readonly Transform[] OriginalBones, LiftedBones;
+            public GarmentLiftPart(SkinnedMeshRenderer renderer, Transform[] original, Transform[] lifted)
+            { Renderer = renderer; OriginalBones = original; LiftedBones = lifted; }
         }
 
         private readonly struct ClothPart

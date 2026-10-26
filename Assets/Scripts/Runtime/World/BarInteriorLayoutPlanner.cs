@@ -481,12 +481,16 @@ namespace BarPromenade
                 CreateLight(
                     "stage-key",
                     BarInteriorLightKind.StageKey,
-                    new Vector3(4.5f, 2.5f, -2.825f),
-                    new Vector3(-0.1f, -1f, 0f),
-                    new Color(0.28f, 0.72f, 1f),
-                    2.4f,
-                    3.4f,
-                    64f),
+                    // Reuse the pendant at the front edge of the platform:
+                    // the hero faces -X, so a lamp behind him only lights hair.
+                    // This warm, broad room light also reaches the microphone
+                    // and worn stage without a separate performance spotlight.
+                    new Vector3(3.25f, 2.5f, -2.7f),
+                    new Vector3(0.55f, -1f, 0f),
+                    new Color(1f, .86f, .65f),
+                    3.1f,
+                    3.8f,
+                    120f),
                 CreateLight(
                     "entry-fill",
                     BarInteriorLightKind.EntryFill,
