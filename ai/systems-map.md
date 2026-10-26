@@ -33,7 +33,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Mountain Road Blender misc | 8 kinds/102 placements/19 meshes; plan-owned placement/collision/audio. | `MountainRoadMiscAssetProvider`, `MountainRoadWorldBuilder` | Current |
 | Road rhythm | Openings/five debris chapters/clear rails-kerbs retain the climb. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
 | Road surfaces/cafe | Local 15 families/4K+2K cafe; BC7≤80MiB, unchanged geometry/wind/light. | `MountainRoadSurfaceLibrary`, `MountainRoadCafeSurfaceAppearance` | Current |
-| Bar counter seat / shared physical menu | Three free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
+| Bar counter seat / shared physical menu | One-hip supported seating; three free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
 | Mountain terminal cafe cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
 | Mountain terminal cafe menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
 | City Blender misc catalog | CityMisc `4.10.0`: `82` kinds / `122` assemblies / `259` passive meshes; plans retain placement and collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |

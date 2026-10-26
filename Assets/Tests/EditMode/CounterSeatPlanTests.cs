@@ -155,17 +155,19 @@ namespace BarPromenade.Tests.EditMode
                     3.35f));
 
             if (accessSide == CounterSeatAccessSide.None) return;
-            Vector3 side = Vector3.right * ((int)accessSide * .45f);
-            Vector3 raisedCentre = seat.position + Vector3.up * .15f;
+            Vector3 side = Vector3.right * ((int)accessSide * CounterSeatPlan.SideOffset);
             AssertVector(plan.PelvisTransition.EvaluateEntering(
-                plan.EntryPose.HipPosition, plan.ActionHipPosition, .40f),
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, CounterSeatPlan.SideArrivalProgress),
                 new Vector3(seat.position.x, plan.EntryPose.HipPosition.y, seat.position.z) + side);
-            AssertVector(plan.PelvisTransition.EvaluateEntering(
-                plan.EntryPose.HipPosition, plan.ActionHipPosition, .58f), raisedCentre + side);
-            AssertVector(plan.PelvisTransition.EvaluateEntering(
-                plan.EntryPose.HipPosition, plan.ActionHipPosition, .68f), raisedCentre + side);
-            AssertVector(plan.PelvisTransition.EvaluateEntering(
-                plan.EntryPose.HipPosition, plan.ActionHipPosition, .82f), raisedCentre);
+            Vector3 firstContact = plan.PelvisTransition.EvaluateEntering(
+                plan.EntryPose.HipPosition, plan.ActionHipPosition, CounterSeatPlan.HipContactProgress);
+            float contactOffset = (firstContact.x - seat.position.x) * (int)accessSide;
+            Assert.That(contactOffset, Is.InRange(.10f, CounterSeatPlan.SideOffset - .05f),
+                "The first hip contact must still be at the side of the seat, before the pelvis centres.");
+            Assert.That(firstContact.y, Is.LessThan(plan.ActionHipPosition.y - .025f),
+                "The asymmetric edge perch precedes the higher completed seated pose.");
+            Vector3 previous = plan.EntryPose.HipPosition;
+            float previousOffset = CounterSeatPlan.SideOffset;
             for (int sample = 0; sample <= 100; sample++)
             {
                 float progress = sample / 100f;
@@ -174,9 +176,18 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 leaving = plan.PelvisTransition.EvaluateExiting(
                     plan.ActionHipPosition, plan.ExitPose.HipPosition, 1f - progress);
                 AssertVector(entering, leaving);
-                if (progress >= .68f && progress <= .82f)
-                    Assert.That(entering.y, Is.EqualTo(raisedCentre.y).Within(.0001f),
-                        "The body must stay lifted throughout the sideways transfer over the seat.");
+                Assert.That(Vector3.Distance(entering, previous), Is.LessThan(.08f),
+                    "Entry must remain continuous when moving from the side passage onto the stool.");
+                // A supported hip roll may raise the pelvis bone slightly.
+                // Actual skin/seat and floor support are checked in PlayMode.
+                if (progress >= CounterSeatPlan.SideArrivalProgress)
+                {
+                    float offset = (entering.x - seat.position.x) * (int)accessSide;
+                    Assert.That(offset, Is.InRange(-.0001f, previousOffset + .0001f),
+                        "The body must keep moving inward after approaching from its authored side.");
+                    previousOffset = offset;
+                }
+                previous = entering;
             }
         }
 

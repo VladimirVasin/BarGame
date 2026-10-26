@@ -19,6 +19,19 @@ refusal, supported drink/place retention, physical return, hero precedence,
 closing, aisle priority, pause/disable and occupied unload. Occupied-door Game
 view reviewed; check-docs and scoped diff passed.
 
+Hero counter entry retains floor/palm support until one clothed hip meets the
+real stool rim, then transfers weight inward before the free leg settles.
+Matching keyed pelvis paths and side-specific cloth fit replace folded-air
+transfer; exit restores floor support before releasing the seat. Existing loop,
+drink upper tracks, rig/menu/camera lifecycle and cafe/bus contracts remain.
+All effects groups reviewed; existing lighting/material/post providers retained.
+player_counter_seat_actions.validate_result and
+CounterSeats_SideEntryExitKeepBodyOutsideFurniture passed skin/furniture,
+first-hip/floor/palm support, planted sole, completed seating and exit handoff.
+Side/rear Game-view stages reviewed. Action-only publication passed deterministic
+content/preserved-source checks and saved-bank reload; unchanged finite hand
+shapes retain their canonical proof under exact geometry fingerprints.
+
 ## 2026-10-25
 
 BarBusinessHours owns daily admission and deterministic hourly attendance.

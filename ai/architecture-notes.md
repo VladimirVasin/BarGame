@@ -2250,9 +2250,10 @@
   substrate:** Free stools use authored `CounterSeat{Plan,Interaction,View}`
   approach/entry/exit, camera/staff offsets. Bar-only `AccessSide` selects
   bone-only `CounterSeat{Enter,Exit}{Left,Right}` and `CounterSeatLoop`; cafe
-  keeps `None`/bus clips. The visible body turns through the side gap, lifts
-  before crossing the disk and reverses to stand. The capsule stays at its
-  grounded front dock; skinned body/clothes must clear furniture without hides
+  keeps `None`/bus clips. Accepted `2026-10-26`: grounded foot/counter palm
+  support side entry; one buttock meets the rim before the free leg climbs and
+  pelvis rolls to centre. Exit restores floor support before hip release.
+  The capsule stays at its grounded front dock; skin/clothes clear furniture without hides
   or root jumps. Bar drink clips keep those legs; the shared controller/nested
   action stays. Seat x1.95 clears the return; failed approach releases
   shop binding. Both use `CounterMenu*` for rest/reopen/exit, wrap selection,

@@ -20,18 +20,27 @@ namespace BarPromenade
     public sealed class CounterSeatPlan
     {
         public const float SeatClearance = 0.03f;
-        // Measured against the bar-specific CounterSeatLoop trousers over
-        // the 0.48 m stool disk and below the counter lip. Lift before any
-        // lateral transfer across the disk.
+        // Measured against the bar-specific trousers on the 0.48 m disk.
+        // The edge supports one hip before the floor foot is released.
         public const float BarSeatClearance = 0.105f;
-        public const float BarRaisedSeatClearance = 0.15f;
         public const float SideOffset = 0.45f;
         public const float SideFrontStep = 0.09f;
         public const float SideStepProgress = 0.18f;
         public const float SideArrivalProgress = 0.40f;
-        public const float LiftArrivalProgress = 0.58f;
-        public const float SeatTransferStartProgress = 0.68f;
-        public const float SeatTransferEndProgress = 0.82f;
+        public const float HipContactProgress = 0.58f;
+        public const float HipContactSideOffset = 0.285f;
+        public const float HipContactClearance = 0.0585f;
+        private const float HipTransferProgress = 0.68f;
+        private const float HipTransferSideOffset = 0.245f;
+        private const float HipTransferClearance = 0.0895f;
+        // The preserved seated take is asymmetric; measured cloth support
+        // needs small left-entry allowances through the supported transfer.
+        private const float LeftHipContactAllowance = 0.010f;
+        private const float LeftHipTransferAllowance = 0.008f;
+        private const float LeftSeatSettleAllowance = 0.010f;
+        public const float SeatTransferEndProgress = 0.84f;
+        private const float SeatSettleSideOffset = 0.070f;
+        private const float SeatSettleClearance = 0.1025f;
         public const float FallbackSeatTopHeight =
             MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float FallbackSeatDepth = 0.48f;
@@ -416,21 +425,27 @@ namespace BarPromenade
                 seat.position.z) + side;
             Vector3 exitSide = new Vector3(seat.position.x, exit.HipPosition.y,
                 seat.position.z) + side;
-            Vector3 raisedCentre = seat.position + Vector3.up * BarRaisedSeatClearance;
-            Vector3 raisedSide = raisedCentre + side;
+            Vector3 lateral = seatFacing * Vector3.right * (int)accessSide;
+            bool left = accessSide == CounterSeatAccessSide.Left;
+            Vector3 firstHip = seat.position + lateral * HipContactSideOffset + Vector3.up *
+                (HipContactClearance + (left ? LeftHipContactAllowance : 0f));
+            Vector3 supportedHip = seat.position + lateral * HipTransferSideOffset + Vector3.up *
+                (HipTransferClearance + (left ? LeftHipTransferAllowance : 0f));
+            Vector3 settlingHip = seat.position + lateral * SeatSettleSideOffset + Vector3.up *
+                (SeatSettleClearance + (left ? LeftSeatSettleAllowance : 0f));
             var enterPath = new PlayerAnimatedInteractionPelvisPath(
                 new PlayerAnimatedInteractionPelvisPath.Key(0f, entry.HipPosition),
                 new PlayerAnimatedInteractionPelvisPath.Key(SideStepProgress, entrySideFront),
                 new PlayerAnimatedInteractionPelvisPath.Key(SideArrivalProgress, entrySide),
-                new PlayerAnimatedInteractionPelvisPath.Key(LiftArrivalProgress, raisedSide),
-                new PlayerAnimatedInteractionPelvisPath.Key(SeatTransferStartProgress, raisedSide),
-                new PlayerAnimatedInteractionPelvisPath.Key(SeatTransferEndProgress, raisedCentre),
+                new PlayerAnimatedInteractionPelvisPath.Key(HipContactProgress, firstHip),
+                new PlayerAnimatedInteractionPelvisPath.Key(HipTransferProgress, supportedHip),
+                new PlayerAnimatedInteractionPelvisPath.Key(SeatTransferEndProgress, settlingHip),
                 new PlayerAnimatedInteractionPelvisPath.Key(1f, actionHip));
             var exitPath = new PlayerAnimatedInteractionPelvisPath(
                 new PlayerAnimatedInteractionPelvisPath.Key(0f, actionHip),
-                new PlayerAnimatedInteractionPelvisPath.Key(1f - SeatTransferEndProgress, raisedCentre),
-                new PlayerAnimatedInteractionPelvisPath.Key(1f - SeatTransferStartProgress, raisedSide),
-                new PlayerAnimatedInteractionPelvisPath.Key(1f - LiftArrivalProgress, raisedSide),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - SeatTransferEndProgress, settlingHip),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - HipTransferProgress, supportedHip),
+                new PlayerAnimatedInteractionPelvisPath.Key(1f - HipContactProgress, firstHip),
                 new PlayerAnimatedInteractionPelvisPath.Key(1f - SideArrivalProgress, exitSide),
                 new PlayerAnimatedInteractionPelvisPath.Key(1f - SideStepProgress, exitSideFront),
                 new PlayerAnimatedInteractionPelvisPath.Key(1f, exit.HipPosition));

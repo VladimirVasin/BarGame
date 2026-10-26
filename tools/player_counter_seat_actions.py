@@ -7,6 +7,7 @@ import importlib.util
 import json
 import math
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import bpy
@@ -19,15 +20,21 @@ TRANSFER_NAMES = tuple(f"CounterSeat{phase}{side}" for side in ("Right", "Left")
 NAMES = (*TRANSFER_NAMES, "CounterSeatLoop")
 DRINK_NAMES = ("BarDrinkPickupEnter", "BarDrinkSipLoop", "BarDrinkReturnExit")
 LEG_BONES = tuple(f"{bone}.{side}" for side in ("L", "R") for bone in ("thigh", "shin", "foot"))
-TIMES = (0., .18, .40, .58, .68, .82, 1.)
+HIP_CLOTH_PARTS = ("CLO_TrousersPelvis", "CLO_TrousersThigh.L", "CLO_TrousersThigh.R")
+TIMES = (0., .18, .40, .58, .68, .84, 1.)
 SEAT_TOP = .8175
 SEAT_CLEARANCE = .105
-RAISED_CLEARANCE = .150
 SIDE_OFFSET = .45
+EDGE_OFFSET = .285
+EDGE_PELVIS_HEIGHT = .876
+EDGE_ROLL_DEGREES = 30.
+FIRST_HIP_SUPPORT = .58
+LEFT_HIP_HEIGHT_CORRECTION = .010
+LEFT_TRANSFER_HEIGHT_CORRECTION = .008
+LEFT_SETTLE_HEIGHT_CORRECTION = .010
 BAR_THIGH_LOWER_DEGREES = 6.
 BAR_THIGH_SPLAY_DEGREES = 20.
 BAR_SHIN_TUCK_DEGREES = 5.
-RAISED_EXTRA_KNEE_DOWN_DEGREES = 8.
 
 
 def smooth(value):
@@ -40,9 +47,12 @@ def interval(progress, start, end):
 
 
 def pelvis_path(progress, sign):
+    edge_correction = LEFT_HIP_HEIGHT_CORRECTION if sign < 0 else 0.
+    transfer_correction = LEFT_TRANSFER_HEIGHT_CORRECTION if sign < 0 else 0.
+    settle_correction = LEFT_SETTLE_HEIGHT_CORRECTION if sign < 0 else 0.
     points = ((0., .875, .27), (sign*SIDE_OFFSET, .875, .36),
-        (sign*SIDE_OFFSET, .875, .91), (sign*SIDE_OFFSET, SEAT_TOP+RAISED_CLEARANCE, .91),
-        (sign*SIDE_OFFSET, SEAT_TOP+RAISED_CLEARANCE, .91), (0., SEAT_TOP+RAISED_CLEARANCE, .91),
+        (sign*SIDE_OFFSET, .875, .91), (sign*EDGE_OFFSET, EDGE_PELVIS_HEIGHT+edge_correction, .91),
+        (sign*.245, .907+transfer_correction, .91), (sign*.070, .92+settle_correction, .91),
         (0., SEAT_TOP+SEAT_CLEARANCE, .91))
     if progress >= 1.: return Vector(points[-1])
     for index in range(1, len(TIMES)):
@@ -133,27 +143,39 @@ def replace_leg_tracks(action, pose, common, bones=LEG_BONES):
 
 def _pose(builder, common, neutral, seated, progress, sign, feet, hand_frames):
     result, rig = builder.result, builder.result.rig
-    fold = interval(progress, .48, .58)
+    fold = interval(progress, .58, 1.)
     restore_mix(result, neutral, seated, fold)
+    near_side = "L" if sign > 0 else "R"
+    for side in ("L", "R"):
+        # Only the leg nearest the stool folds before the first hip contact.
+        # The other boot still carries weight on the floor beside the stool.
+        leg_fold = interval(progress, .40, .52) if side == near_side else interval(progress, .66, .76)
+        for name in ("thigh.", "shin.", "foot."):
+            bone = rig.pose.bones[name+side]
+            a, b = neutral[bone.name], seated[bone.name]
+            bone.location = a[0].lerp(b[0], leg_fold)
+            bone.rotation_quaternion = a[1].slerp(b[1], leg_fold)
+            bone.scale = a[2].lerp(b[2], leg_fold)
+    bpy.context.view_layer.update()
     leg_rotations = {side: rig.pose.bones["thigh."+side].matrix.to_quaternion().copy() for side in ("L", "R")}
     pelvis = rig.pose.bones["pelvis"]
     yaw = turn(progress, sign)
     source_yaw = Quaternion(Vector((0., 0., 1.)), -yaw)
-    pelvis.matrix = Matrix.Translation(pelvis.head.copy()) @ (source_yaw @ pelvis.matrix.to_quaternion()).to_matrix().to_4x4()
+    roll = math.radians(EDGE_ROLL_DEGREES)*interval(progress, .40, .58)*(1.-interval(progress, .58, .92))
+    if sign < 0:
+        roll += math.radians(2.)*math.sin(math.pi*interval(progress, .68, .84))
+    source_roll = Quaternion(Vector((0., 1., 0.)), -sign*roll)
+    pelvis.matrix = Matrix.Translation(pelvis.head.copy()) @ (source_yaw @ source_roll @ pelvis.matrix.to_quaternion()).to_matrix().to_4x4()
     bpy.context.view_layer.update()
-    leg_turn = 1.-interval(progress, .40, .48)
+    leg_turn = 1.-interval(progress, .36, .42)
     for side in ("L", "R"):
         thigh = rig.pose.bones["thigh."+side]
         rotated = Quaternion(Vector((0., 0., 1.)), -yaw*leg_turn) @ leg_rotations[side]
-        # While the pelvis is above its resting height, keep the knees lower
-        # than the counter's underside; unfold only while lowering onto wood.
-        tuck = math.radians(RAISED_EXTRA_KNEE_DOWN_DEGREES)*fold*(1.-interval(progress, .82, 1.))
-        rotated = Quaternion(Vector((1., 0., 0.)), tuck) @ rotated
         thigh.matrix = Matrix.Translation(thigh.head.copy()) @ rotated.to_matrix().to_4x4()
         bpy.context.view_layer.update()
     hip_world = pelvis_path(progress, sign)
     alignment = to_source(hip_world)-pelvis.head
-    if 0. < progress < .48:
+    if 0. < progress < .76:
         # Small alternating side steps keep a supporting boot rather than
         # sliding both soles with the pelvis. Narrow-space turns use the toes.
         for side in ("L", "R"):
@@ -191,7 +213,7 @@ def _pose(builder, common, neutral, seated, progress, sign, feet, hand_frames):
             rotation = Quaternion(Vector((0., 0., 1.)), -foot_yaw) @ Quaternion(Vector((1., 0., 0.)), toe) @ feet[side]["rotation"]
             sole_offset = min((rotation @ point).z for point in feet[side]["points"])
             ankle.y = feet[side]["floor"]-sole_offset+lift
-            release = interval(progress, .40, .48)
+            release = interval(progress, .40, .52) if side == near_side else interval(progress, .66, .76)
             ankle = ankle.lerp(folded_ankle, release)
             rotation = rotation.slerp(folded_rotation, release)
             target = to_source(ankle)-alignment
@@ -200,7 +222,7 @@ def _pose(builder, common, neutral, seated, progress, sign, feet, hand_frames):
             solve_chain(rig.pose.bones["thigh."+side], rig.pose.bones["shin."+side], foot,
                         target, rotation, hint)
 
-    if .42 <= progress < 1.:
+    if .40 <= progress < 1.:
         # The seated shin folds beneath the real counter lip. Interpolating
         # only its rotations swings a long boot toe through the cabinet first;
         # author the same ankle arc with its complete boot shell behind it.
@@ -209,8 +231,9 @@ def _pose(builder, common, neutral, seated, progress, sign, feet, hand_frames):
             rotation = foot.matrix.to_quaternion()
             ankle = to_unity(foot.head+alignment)
             front = max(to_unity(rotation @ point).z for point in feet[side]["points"])
-            correction = max(0., ankle.z+front-1.385)*(1.-interval(progress, .82, 1.))
-            lift = math.sin(math.pi*interval(progress, .42, .56))*.12 if progress < .56 else 0.
+            release = interval(progress, .40, .52) if side == near_side else interval(progress, .66, .76)
+            correction = max(0., ankle.z+front-1.385)*release*(1.-interval(progress, .90, 1.))
+            lift = math.sin(math.pi*release)*.17
             if correction > 0. or lift > 0.:
                 ankle.z -= correction
                 ankle.y += lift
@@ -218,8 +241,8 @@ def _pose(builder, common, neutral, seated, progress, sign, feet, hand_frames):
                 hint = lower.head.copy()
                 solve_chain(upper, lower, foot, to_source(ankle)-alignment, rotation, hint)
 
-    # The near arm braces the actual counter lip during the lift and sideways
-    # transfer. Both feet can then fold clear before the butt crosses the seat.
+    # The near palm braces the counter while the first buttock perches on the
+    # edge. The far foot only climbs after that hip support is established.
     brace = interval(progress, .30, .40)*(1.-interval(progress, .88, 1.))
     if brace > 0.:
         far_side = "R" if sign > 0 else "L"
@@ -296,8 +319,9 @@ def build(builder, common):
     loop_source = result.actions["BusRideLoop"]
     loop = loop_source.action.copy()
     loop.name = "CounterSeatLoop"
+    loop.use_fake_user = True
     loop["bp_category"] = "counter_seat"
-    loop["bp_generator_version"] = "hero_v2_counter_seat_v1"
+    loop["bp_generator_version"] = "hero_v2_counter_seat_v2"
     # A bar stool supports the hips. Preserve the bus's spine/head/arm breath,
     # while its vehicle sway must not roll the pelvis through the seat rim.
     replace_leg_tracks(loop, seated, common, (*LEG_BONES, "pelvis"))
@@ -324,7 +348,7 @@ def build(builder, common):
             for phase, posed_keys in (("Enter", keys), ("Exit", [(1.-t, pose) for t, pose in reversed(keys)])):
                 name = "CounterSeat"+phase+side
                 builder._create_action(name, "counter_seat", 3., False, 36, 12., posed_keys)
-                result.actions[name].action["bp_generator_version"] = "hero_v2_counter_seat_v1"
+                result.actions[name].action["bp_generator_version"] = "hero_v2_counter_seat_v2"
                 result.actions[name].action["bp_event_count"] = 0
             print("Counter seat authored " + side, flush=True)
     finally:
@@ -473,6 +497,54 @@ def _clips_triangle(triangle, planes):
         for index in range(1, len(points)-1))
 
 
+@lru_cache(maxsize=3)
+def seat_top_planes(seat_x):
+    import bar_parts as bp
+    seat = _convex("seat", bp.u_cylinder((seat_x, .79, .91), (.48, .0275, .48), sides=14))
+    return [(normal, distance+.0003) for normal, distance in seat[3] if abs(normal[1]) < .5]
+
+
+def surface_support(world, triangles, planes, top):
+    """Lowest actual skin triangle clipped over a support's top polygon."""
+    lowest = math.inf
+    point = None
+    for triangle in world[triangles]:
+        clipped = list(triangle)
+        for normal, distance in planes:
+            if not clipped: break
+            output = []
+            previous = clipped[-1]
+            previous_distance = float(previous @ normal-distance)
+            for current in clipped:
+                current_distance = float(current @ normal-distance)
+                if (current_distance <= 0.) != (previous_distance <= 0.):
+                    output.append(previous+(current-previous)*(previous_distance/(previous_distance-current_distance)))
+                if current_distance <= 0.: output.append(current)
+                previous, previous_distance = current, current_distance
+            clipped = output
+        for value in clipped:
+            if value[1] < lowest:
+                lowest, point = float(value[1]), value
+    return lowest-top, point
+
+
+def hip_support(world, triangles, seat_x):
+    return surface_support(world, triangles, seat_top_planes(seat_x), SEAT_TOP)
+
+
+@lru_cache(maxsize=1)
+def counter_top_planes():
+    # The same authored chamfered top used by solids(), excluding its bevel.
+    import bar_parts as bp
+    geometry = bp.u_box((.875, .94, 1.95), (6.4, .16, 1.32), .02)
+    points = np.array(geometry[0])
+    top = points[points[:, 1] >= points[:, 1].max()-1e-7]
+    return [(np.array((1., 0., 0.)), top[:, 0].max()),
+        (np.array((-1., 0., 0.)), -top[:, 0].min()),
+        (np.array((0., 0., 1.)), top[:, 2].max()),
+        (np.array((0., 0., -1.)), -top[:, 2].min())]
+
+
 def validate_seams(result):
     for side in ("Right", "Left"):
         for first, first_t, last, last_t in (
@@ -514,18 +586,39 @@ def validate_result(result, density=144, progresses=None):
     for name, sign, seat_x, reverse in trials:
         obstacles = solids(seat_x)
         lows, highs = np.array([solid[1] for solid in obstacles]), np.array([solid[2] for solid in obstacles])
+        first_hip_contact = False
+        planted_at = None
         for index, progress in enumerate(progresses if progresses is not None else (i/density for i in range(density+1))):
             sample(result, name, progress)
             pelvis = result.rig.matrix_world @ result.rig.pose.bones["pelvis"].head
             path_progress = 1.-progress if reverse else progress
             target = (pelvis_path(path_progress, sign) if sign else Vector((0., SEAT_TOP+SEAT_CLEARANCE, .91)))+Vector((seat_x, 0., 0.))
             soles = []
+            hip_gap = math.inf
+            hand_gap = math.inf
+            hip_sides = set()
+            boot_soles = {}
             for part, points in vertex_arrays(result):
                 relative = points-np.array(pelvis)
                 world = np.column_stack((-relative[:, 0], relative[:, 2], -relative[:, 1]))+np.array(target)
                 minimum, maximum = world.min(axis=0), world.max(axis=0)
                 if part.bone in ("foot.L", "foot.R"):
                     soles.append(minimum[1])
+                if part.obj.name.startswith("CLO_BootSole."):
+                    boot_soles[part.obj.name[-1]] = (minimum[1], world.mean(axis=0))
+                if part.obj.name in HIP_CLOTH_PARTS:
+                    if part.obj.name not in triangle_cache:
+                        part.obj.data.calc_loop_triangles()
+                        triangle_cache[part.obj.name] = np.array([tuple(t.vertices) for t in part.obj.data.loop_triangles])
+                    part_gap, contact = hip_support(world, triangle_cache[part.obj.name], seat_x)
+                    hip_gap = min(hip_gap, part_gap)
+                    if part_gap <= .025 and contact is not None and abs(contact[0]-target.x) > .035:
+                        hip_sides.add("L" if contact[0] < target.x else "R")
+                if sign and part.obj.name == ("GEO_Hand.L" if sign > 0 else "GEO_Hand.R"):
+                    if part.obj.name not in triangle_cache:
+                        part.obj.data.calc_loop_triangles()
+                        triangle_cache[part.obj.name] = np.array([tuple(t.vertices) for t in part.obj.data.loop_triangles])
+                    hand_gap, _ = surface_support(world, triangle_cache[part.obj.name], counter_top_planes(), 1.02)
                 pairs = np.all(maximum >= lows, axis=1)&np.all(minimum <= highs, axis=1)
                 for pair in np.flatnonzero(pairs):
                     solid_name, low, high, planes = obstacles[pair]
@@ -550,21 +643,45 @@ def validate_result(result, density=144, progresses=None):
                             raise RuntimeError(f"{name} p={progress:.5f} {part.obj.name} triangle {triangle.tolist()} intersects {solid_name}")
             if min(soles) < -.002:
                 raise RuntimeError(f"{name} p={progress:.5f} boot below the authored floor: {min(soles)}")
-            if sign and path_progress < .40 and min(soles) > neutral_sole+.025:
+            if sign and path_progress < .40 and min(soles) > neutral_sole+.015:
                 raise RuntimeError(f"{name} p={progress:.5f} both stepping boots lost ground support")
+            if sign and min(soles) > neutral_sole+.015 and hip_gap > .012:
+                raise RuntimeError(f"{name} p={progress:.5f} no supporting boot or hip: floor={min(soles):.6f}, hip gap={hip_gap:.6f}")
+            if sign and path_progress >= FIRST_HIP_SUPPORT and hip_gap > .012:
+                raise RuntimeError(f"{name} p={progress:.5f} hip left the stool during its supported climb: {hip_gap:.6f}")
+            if sign and .45 <= path_progress <= .85 and hand_gap > .025:
+                raise RuntimeError(f"{name} p={progress:.5f} near palm missed the counter support: {hand_gap:.6f}")
+            if sign and not reverse and path_progress >= .40 and not first_hip_contact:
+                sole, boot = boot_soles["R" if sign > 0 else "L"]
+                if sole > neutral_sole+.015:
+                    raise RuntimeError(f"{name} p={progress:.5f} far boot lifted before first hip support")
+                if planted_at is None: planted_at = boot
+                if np.linalg.norm((boot-planted_at)[[0, 2]]) > .045:
+                    raise RuntimeError(f"{name} p={progress:.5f} loaded boot slid before first hip support")
+                if hip_gap <= .025:
+                    first_hip_contact = True
+                    if len(hip_sides) != 1 or abs(target.x-seat_x) <= .10:
+                        raise RuntimeError(f"{name} p={progress:.5f} first hip support was not an asymmetric edge perch")
             if index % 24 == 0: print(f"Counter seat skins {name} x={seat_x} {index}/{density}", flush=True)
     result.rig.animation_data.action = previous_action
     return contract()
 
 
 def contract():
-    return {"contract": "counter_seat_side_v1", "source": "all evaluated body/clothing triangles",
+    return {"contract": "counter_seat_supported_edge_v2", "source": "all evaluated body/clothing triangles",
         "stool_seat_top_m": SEAT_TOP, "stool_diameter_m": .48, "stool_pitch_m": .9,
-        "action_hip_clearance_m": SEAT_CLEARANCE, "raised_hip_clearance_m": RAISED_CLEARANCE,
+        "action_hip_clearance_m": SEAT_CLEARANCE,
         "side_offset_m": SIDE_OFFSET, "enter_key_times": list(TIMES),
+        "first_hip_support_progress": FIRST_HIP_SUPPORT, "edge_offset_m": EDGE_OFFSET,
+        "edge_pelvis_height_m": EDGE_PELVIS_HEIGHT, "edge_roll_degrees": EDGE_ROLL_DEGREES,
+        "left_hip_height_correction_m": LEFT_HIP_HEIGHT_CORRECTION,
+        "left_transfer_height_correction_m": LEFT_TRANSFER_HEIGHT_CORRECTION,
+        "left_settle_height_correction_m": LEFT_SETTLE_HEIGHT_CORRECTION,
+        "far_boot_floor_release": [.66, .76], "hip_support_tolerance_m": .012,
+        "near_leg_fold": [.40, .52], "palm_support_progress": [.45, .85],
+        "floor_support_tolerance_m": .015, "palm_support_tolerance_m": .025,
         "bar_thigh_down_degrees": BAR_THIGH_LOWER_DEGREES, "bar_thigh_splay_degrees": BAR_THIGH_SPLAY_DEGREES,
         "bar_shin_tuck_degrees": BAR_SHIN_TUCK_DEGREES,
-        "raised_extra_knee_down_degrees": RAISED_EXTRA_KNEE_DOWN_DEGREES,
         "loop": "CounterSeatLoop", "unchanged_bus_cafe": True}
 
 
@@ -573,6 +690,35 @@ def refresh(module, config):
     original, builder = load(module, config)
     result = builder.result
     hashes = (original["face_atlas"]["sha256"], original["texture_bindings"][0]["sha256"], original["bare_skin_atlas"]["sha256"])
+    import player_hand_gestures
+    canonical_gestures = original["hand_grip"]["gestures"]
+    def hand_shape_fingerprint():
+        rows = []
+        for part in sorted(result.parts, key=lambda item: item.obj.name):
+            if part.bone not in ("hand.L", "hand.R"): continue
+            mesh = part.obj.data
+            rows.append((part.obj.name, [tuple(float(c) for c in vertex.co) for vertex in mesh.vertices],
+                [] if mesh.shape_keys is None else [(key.name, key.value, key.mute,
+                    key.slider_min, key.slider_max, key.interpolation,
+                    None if key.relative_key is None else key.relative_key.name,
+                    [tuple(float(c) for c in point.co) for point in key.data])
+                    for key in mesh.shape_keys.key_blocks]))
+        return hashlib.sha256(repr(rows).encode("utf-8")).hexdigest()
+    frozen_hand_shapes = hand_shape_fingerprint()
+    def preserved_gesture_validation(source, scale, grip):
+        # This action-only publication does not re-author any hand surface.
+        # Recomputing its Windows-authored 1e-7 geometric proof on ARM can
+        # differ by one float ULP. Reuse that proof only while the complete
+        # finite shape profile still matches its canonical geometry hash.
+        parts = {part.obj.name: part.obj for part in source.parts}
+        content = {name: {shape: [[round(float(c), 7) for c in point.co]
+            for point in parts[name].data.shape_keys.key_blocks[shape].data]
+            for shape in sorted(player_hand_gestures.shape_names(name))}
+            for name in player_hand_gestures.NAMES}
+        actual = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
+        if actual != canonical_gestures["shape_signature"]:
+            raise RuntimeError("Counter-seat refresh changed the canonical finite hand profile")
+        return copy.deepcopy(canonical_gestures["validation"])
     def bind_pose():
         result.rig.animation_data.action = None
         builder._reset_pose()
@@ -580,7 +726,14 @@ def refresh(module, config):
         # Bone-parented grip anchors expose their armature-relative transform;
         # hash the same bind state rather than whichever take was sampled last.
         bind_pose()
-        return module.content_signature(config, result, *hashes)
+        if hand_shape_fingerprint() != frozen_hand_shapes:
+            raise RuntimeError("Counter-seat refresh changed a hand shape, value or default")
+        original_validate = player_hand_gestures.validate
+        try:
+            player_hand_gestures.validate = preserved_gesture_validation
+            return module.content_signature(config, result, *hashes)
+        finally:
+            player_hand_gestures.validate = original_validate
     if signature() != original["content_signature_sha256"]:
         raise RuntimeError("Production hero source differs from its manifest; refusing a stale counter-seat refresh")
     def upper_signature():
@@ -644,6 +797,12 @@ def refresh(module, config):
     bpy.context.preferences.filepaths.save_version = 0
     module.common.save_blend(config.output)
     config.manifest.write_text(json.dumps(original, indent=2, ensure_ascii=False)+"\n", encoding="utf-8")
+    # An action can export correctly but disappear from the next source load
+    # when it has no persistent user. Verify the actual saved source bank.
+    _, builder = load(module, config)
+    result = builder.result
+    if signature() != first:
+        raise RuntimeError("Saved counter-seat source differs from the published content signature")
     print("Counter seat publication: five deterministic bone-only takes; original model, bus and other actions preserved; bar-drink leg tracks shared", flush=True)
 
 
@@ -713,51 +872,25 @@ def fit_endpoint(builder):
             print("COUNTER_SEAT_FIT " + json.dumps({"pitch": pitch, "splay": splay, "failed": failed}), flush=True)
 
 
-def fit_raised(builder):
+def probe_support(builder, sign=1.):
     result = builder.result
-    sample(result, "BusRideLoop", 0.)
-    result.rig.animation_data.action = None
-    lower_bar_thighs(result)
-    base = snapshot(result)
-    obstacles = solids(.15)
-    lows, highs = np.array([s[1] for s in obstacles]), np.array([s[2] for s in obstacles])
-    triangles = {}
-    for part in result.parts:
-        part.obj.data.calc_loop_triangles()
-        triangles[part.obj.name] = np.array([tuple(t.vertices) for t in part.obj.data.loop_triangles])
-    for extra in (6., 7., 8., 9., 10.):
-        restore_mix(result, base, base, 0.)
-        for side in ("L", "R"):
-            thigh = result.rig.pose.bones["thigh."+side]
-            thigh.matrix = Matrix.Translation(thigh.head.copy()) @ (Quaternion(Vector((1., 0., 0.)), math.radians(extra)) @
-                thigh.matrix.to_quaternion()).to_matrix().to_4x4()
-            bpy.context.view_layer.update()
-        pelvis = result.rig.pose.bones["pelvis"].head.copy()
-        meshes = []
+    for progress in (.39, .40, .43, .46, .49, .52, .55, .58, .61, .64, .68, .70, .72, .74, .75, .76, .78, .80, .82, .84, .88, .92, .96, 1.):
+        sample(result, "CounterSeatEnterRight" if sign > 0 else "CounterSeatEnterLeft", progress)
+        pelvis = np.array(result.rig.pose.bones["pelvis"].head)
+        target = np.array(pelvis_path(progress, sign))
+        row = {"p": progress, "target": target.tolist(), "feet": {}, "hip_gaps": {}}
         for part, points in vertex_arrays(result):
-            if part.bone not in (*LEG_BONES, "pelvis"): continue
-            rel = points-np.array(pelvis)
-            meshes.append((part.obj.name, np.column_stack((-rel[:, 0], rel[:, 2], -rel[:, 1]))))
-        for clearance in (.15, .155, .16, .165, .17, .175, .18, .185, .19, .195, .20):
-            failed = None
-            for shift in np.linspace(-.45, .45, 57):
-                for name, points in meshes:
-                    world = points+np.array((.15+shift, SEAT_TOP+clearance, .91))
-                    minimum, maximum = world.min(axis=0), world.max(axis=0)
-                    pairs = np.all(maximum >= lows, axis=1)&np.all(minimum <= highs, axis=1)
-                    for pair in np.flatnonzero(pairs):
-                        solid_name, low, high, planes = obstacles[pair]
-                        values = world[triangles[name]]
-                        candidates = np.all(values.max(axis=1) >= low, axis=1)&np.all(values.min(axis=1) <= high, axis=1)
-                        if any(_clips_triangle(t, planes) for t in values[candidates]):
-                            failed = (name, solid_name, float(shift)); break
-                    if failed: break
-                if failed: break
-            if not failed:
-                print("COUNTER_SEAT_RAISED_FIT " + json.dumps({"extra_knee_down": extra, "clearance": clearance}), flush=True)
-                break
-        else:
-            print("COUNTER_SEAT_RAISED_FIT " + json.dumps({"extra_knee_down": extra, "failed": failed}), flush=True)
+            relative = points-pelvis
+            world = np.column_stack((-relative[:, 0], relative[:, 2], -relative[:, 1]))+target
+            if part.bone in ("foot.L", "foot.R"):
+                row["feet"][part.obj.name] = float(world[:, 1].min())
+            if part.obj.name in HIP_CLOTH_PARTS:
+                part.obj.data.calc_loop_triangles()
+                triangles = np.array([tuple(t.vertices) for t in part.obj.data.loop_triangles])
+                # Pose target is local to a stool centred at zero.
+                gap, point = hip_support(world+np.array((.15, 0., 0.)), triangles, .15)
+                row["hip_gaps"][part.obj.name] = {"gap": gap, "point": None if point is None else point.tolist()}
+        print("COUNTER_SEAT_SUPPORT " + json.dumps(row), flush=True)
 
 
 def main():
@@ -770,12 +903,13 @@ def main():
         manifest=module.DEFAULT_MANIFEST, glb=None, fbx=module.DEFAULT_FBX,
         animation_fbx=module.DEFAULT_ANIMATION_FBX, height=1.75, seed=17301, pose="apose")
     _, builder = load(module, config)
-    if "--fit-raised" in sys.argv:
-        fit_raised(builder)
-    elif "--fit-endpoint" in sys.argv:
+    if "--fit-endpoint" in sys.argv:
         fit_endpoint(builder)
     elif "--author" in sys.argv:
         build(builder, module.common)
+        if "--support-probe" in sys.argv:
+            probe_support(builder, -1. if "--left" in sys.argv else 1.)
+            return
         if "--feet-probe" in sys.argv:
             for progress in (6/72, 6.5/72, 7/72):
                 sample(builder.result, "CounterSeatEnterRight", progress)

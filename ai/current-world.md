@@ -2749,8 +2749,9 @@ cemetery:own interiors/returns.
   `BarCounterSeatPlanner` exposes all three stools not occupied by patrons; each
   owns a collision-safe entry/exit, and the rightmost sits at local `x = 1.95`
   clear of the counter return. Three closely spaced taps occupy the seat-free
-  counter end beyond it. Bar-only side enter/exit clips turn the visible hero
-  through the gap and lift before crossing the stool; the reverse returns him.
+  counter end beyond it. Bar-only side clips retain a grounded foot/counter
+  palm until one buttock meets the rim, then roll weight inward and lift the
+  free leg. Exit restores floor support before releasing the seat.
   `CounterSeatLoop` holds pelvis; upper body breathes. Bar drinks keep its legs;
   cafe/bus stay.
   Body/garments must clear actual furniture. The bartender then carries a

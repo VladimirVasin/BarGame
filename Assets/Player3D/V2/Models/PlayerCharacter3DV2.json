@@ -2584,7 +2584,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "510c8f9d093f031557752661e86e52bcf5bc1db172c90e16b6092d71ac0fb932",
+  "content_signature_sha256": "26098ac7f22648c3bb8a6e2081450c4cd6774575aac56dba8f9f1381eee7cac7",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -7092,13 +7092,12 @@
   "joint_surface_authoring_sha256": "2d43005ce21ccc7308459166c42cfb005a758bb0f2fc385c33164b49e317c59a",
   "footwear_authoring_sha256": "625bec75bc3be2412502806cd51c3048d50e18480ab6830c5b4abf9b5fc084a1",
   "counter_seat": {
-    "contract": "counter_seat_side_v1",
+    "contract": "counter_seat_supported_edge_v2",
     "source": "all evaluated body/clothing triangles",
     "stool_seat_top_m": 0.8175,
     "stool_diameter_m": 0.48,
     "stool_pitch_m": 0.9,
     "action_hip_clearance_m": 0.105,
-    "raised_hip_clearance_m": 0.15,
     "side_offset_m": 0.45,
     "enter_key_times": [
       0.0,
@@ -7106,15 +7105,36 @@
       0.4,
       0.58,
       0.68,
-      0.82,
+      0.84,
       1.0
     ],
+    "first_hip_support_progress": 0.58,
+    "edge_offset_m": 0.285,
+    "edge_pelvis_height_m": 0.876,
+    "edge_roll_degrees": 30.0,
+    "left_hip_height_correction_m": 0.01,
+    "left_transfer_height_correction_m": 0.008,
+    "left_settle_height_correction_m": 0.01,
+    "far_boot_floor_release": [
+      0.66,
+      0.76
+    ],
+    "hip_support_tolerance_m": 0.012,
+    "near_leg_fold": [
+      0.4,
+      0.52
+    ],
+    "palm_support_progress": [
+      0.45,
+      0.85
+    ],
+    "floor_support_tolerance_m": 0.015,
+    "palm_support_tolerance_m": 0.025,
     "bar_thigh_down_degrees": 6.0,
     "bar_thigh_splay_degrees": 20.0,
     "bar_shin_tuck_degrees": 5.0,
-    "raised_extra_knee_down_degrees": 8.0,
     "loop": "CounterSeatLoop",
     "unchanged_bus_cafe": true
   },
-  "counter_seat_authoring_sha256": "20e47bf713071648826f6a5dc79c774c20ba234affc563fa2d39c1059c11ba9d"
+  "counter_seat_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5"
 }
