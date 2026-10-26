@@ -5,6 +5,20 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-26
 
+Bartender planted-leg IK uses forward poles after pelvis changes. Collection
+refines stale idle-derived docks through collision-checked walking; failed
+contact returns/defer-retries retaining dirty vessels/slots. Bounded phase,
+retry and defer diagnostics add no frame stream. BarPatronCleanupPlayModeTests
+passed normal collection, stale-dock recovery, forward knees and queued service.
+Pickup/stow Game views reviewed; check-docs and scoped diff passed.
+
+Corner HUDs use full-screen bounds in the shared logical scale: intoxication
+top-left, journal top-right. Centered canvas padding no longer moves them inward
+in Free Aspect, tall or ultrawide windows; modal layouts retain their canvas.
+Existing lighting/material/post effects reviewed and retained; no new resources
+or recurring allocations. CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas
+and CalculateCanvas_OnUltrawide_CentersIntegerCanvas passed.
+
 Rare seeded WC cadence keeps resident slots, supported drinks and appearances;
 settled speech/refill/drinking wait. The same rig enters/closes/exits the solid
 door and returns. Per user scope, unseen interior actions become an occupied

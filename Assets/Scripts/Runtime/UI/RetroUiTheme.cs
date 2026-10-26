@@ -32,6 +32,12 @@ namespace BarPromenade
             ScreenOffset.y,
             RetroUiTheme.LogicalWidth * Scale,
             RetroUiTheme.LogicalHeight * Scale);
+        // Full screen in logical coordinates, including the space outside
+        // the centered canvas. Corner HUDs anchor here; modal layouts keep
+        // using LogicalRect.
+        public Rect ViewportRect => new Rect(
+            ScreenToLogical(Vector2.zero),
+            new Vector2(ScreenWidth, ScreenHeight) / Scale);
 
         public Vector2 LogicalToScreen(Vector2 logicalPosition)
         {

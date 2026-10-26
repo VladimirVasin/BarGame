@@ -47,19 +47,20 @@ namespace BarPromenade
             intoxicationHud = hud;
         }
 
-        public static Rect ResolveIconRect()
+        public static Rect ResolveIconRect(RetroUiCanvas canvas)
         {
+            Rect viewport = canvas.ViewportRect;
             return RetroUiTheme.SnapRect(
                 new Rect(
-                    RetroUiTheme.LogicalWidth - RightMargin - IconSize,
-                    TopMargin,
+                    viewport.xMax - RightMargin - IconSize,
+                    viewport.yMin + TopMargin,
                     IconSize,
                     IconSize));
         }
 
-        public static Rect ResolveHintRect()
+        public static Rect ResolveHintRect(RetroUiCanvas canvas)
         {
-            Rect icon = ResolveIconRect();
+            Rect icon = ResolveIconRect(canvas);
             return RetroUiTheme.SnapRect(
                 new Rect(
                     icon.x - HintGap - HintWidth,
@@ -163,7 +164,7 @@ namespace BarPromenade
                 float opacity =
                     ResolveBlinkOpacity(Time.unscaledTime);
                 GUI.color = new Color(1f, 1f, 1f, opacity);
-                Rect icon = ResolveIconRect();
+                Rect icon = ResolveIconRect(canvas);
                 RetroUiTheme.DrawPanel(
                     icon,
                     RetroUiTheme.Panel,
@@ -188,7 +189,7 @@ namespace BarPromenade
 
                 if (IsHintVisible)
                 {
-                    DrawHint();
+                    DrawHint(canvas);
                 }
             }
             finally
@@ -203,9 +204,9 @@ namespace BarPromenade
         /// copy one pixel down, the way every other hint over open
         /// ground is drawn.
         /// </summary>
-        private void DrawHint()
+        private void DrawHint(RetroUiCanvas canvas)
         {
-            Rect hint = ResolveHintRect();
+            Rect hint = ResolveHintRect(canvas);
             string text = LocalizationService.Get("journal.notice");
             GUI.Label(
                 new Rect(hint.x + 1f, hint.y + 1f, hint.width, hint.height),

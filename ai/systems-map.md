@@ -67,7 +67,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
 | Quest log and journal | Day one opens the mother's house; the full-screen journal lists ticked boxes over one description panel. | `Quest{Types,LogState}`, `GameDaySchedule`, `Journal{MenuModel,View}` | Current |
-| New-quest notice | Blinking corner notebook on a child of the journal, in all nine scenes; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
+| New-quest notice | Blinking notebook at the screen's top-right edge; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
 | Stairwell quest descent gate | The active day-two cat quest gates descent and guides the hero back to the landing before restoring input. | `StairwellQuestDescentBlocker`, `PlayerMotor.MoveTowardsInteractionPose` | Current |
 | City blueprint and road geometry | Stable IDs; curved old/service streets, district courts/wings and passage loops share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
@@ -214,7 +214,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Home bathroom scenes | The shower hero exits fully offscreen before redressing; cleanup restores rig and input. | `HomeBathroomSceneInteraction`, `HomeShower{Interaction,CameraPath}`, `HomeTeethBrushingInteraction` | Current |
 | Interactive shower washing | E picks up soap; Q returns it and exits. Held LMB washes a selected point; any reachable region fills the gauge. | `HomeShower{WashingInteraction,SoapPose,WashingProgress}` | Current |
 | Shower water presentation | Visible jets follow the tilted nozzle; residual drops and ripples share a tray landing point, with local sound. | `HomeShower{Interaction,TrayWater}`, `HomeSoundscape` | Current |
-| Bar patrons and bartender | WC trips retain guest/place/drink; abandoned vessels are collected through a shared aisle. | `BarCrowd*`, `BarWashroomSchedule`, `BarPatron*`, `BarAisleTraffic`, `BarBartender*` | Current |
+| Bar patrons and bartender | WC retains guest/place/drink; shared-aisle collection has bounded contact retries and forward knees. | `BarCrowd*`, `BarWashroomSchedule`, `BarPatron*`, `BarAisleTraffic`, `BarBartender*` | Current |
 | Bar speech | Counter/two booth pairs + bartender; ≤4 lines; solitary tables silent. A→B/no repeats. | `BarConversation{Catalog,Schedule,Controller}`, `BarSpeechVariantDeck` | Current |
 | Bar cinematic atmosphere | 8 lights/3 shadows; 4 bounded bounces/2×256 cubes; Neutral. | `Bar{InteriorAtmosphere,LightingPresentation,MusicPlayer}` | Current |
 | Bar realtime GI pilot | Native gate passed; fixture-only. Gap: gameplay activation/player budget. | `BarSurfaceCacheGi{Pilot,RendererFeature}`, `SurfaceCacheGiPreflight` | Partial |

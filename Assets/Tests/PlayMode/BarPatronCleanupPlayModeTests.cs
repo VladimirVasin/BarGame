@@ -15,10 +15,21 @@ namespace BarPromenade.Tests.PlayMode
     [PrebuildSetup(typeof(CompactBarAssetsSetup))]
     public sealed class BarPatronCleanupPlayModeTests
     {
-        private static readonly BarNpcRole[] Places =
-            { BarNpcRole.CounterPatron, BarNpcRole.SeatedPatron, BarNpcRole.StandingPatron };
+        private static readonly (BarNpcRole Role, float Gap)[] Places =
+        {
+            (BarNpcRole.CounterPatron, 0f),
+            (BarNpcRole.SeatedPatron, 0f),
+            (BarNpcRole.StandingPatron, 0f),
+            (BarNpcRole.StandingPatron, .35f)
+        };
         private static readonly FieldInfo CleanupHandTargetField = typeof(BarBartenderServiceChoreography)
             .GetField("cleanupHandTarget", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo CleanupRouteField = typeof(BarBartenderServiceChoreography)
+            .GetField("cleanupRoute", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo CleanupRouteCountField = typeof(BarBartenderServiceChoreography)
+            .GetField("cleanupRouteCount", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo CleanupFacingField = typeof(BarBartenderServiceChoreography)
+            .GetField("cleanupPickupFacing", BindingFlags.Instance | BindingFlags.NonPublic);
         private BarInteriorRoot bar;
         private BarBartenderServiceChoreography choreography;
         private PlayerAnimatedInteractionController playerAction;
@@ -65,8 +76,10 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator ActualPlace_RetainsDrinkUntilPhysicalCollectionAndQueuesPaidOrder(
-            [ValueSource(nameof(Places))] BarNpcRole place)
+            [ValueSource(nameof(Places))] (BarNpcRole Role, float Gap) scenario)
         {
+            BarNpcRole place = scenario.Role;
+            float approachGap = scenario.Gap;
             Assert.That(Application.isBatchMode, Is.False,
                 "This contract reviews the actual Game view, without -batchmode or -nographics.");
             yield return SceneManager.LoadSceneAsync(SceneIds.BarInterior, LoadSceneMode.Single);
@@ -86,6 +99,9 @@ namespace BarPromenade.Tests.PlayMode
             choreography = bar.Bartender.GetComponent<BarBartenderServiceChoreography>();
             Assert.That(choreography, Is.Not.Null);
             choreography.AutoAdvance = false;
+            // This fixture samples the rig explicitly once per simulated
+            // frame; a second automatic LateUpdate hid cadence regressions.
+            bar.Bartender.enabled = false;
             camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
 
@@ -174,15 +190,28 @@ namespace BarPromenade.Tests.PlayMode
             StageRoomCamera();
             Vector3 bartenderHome = bar.Bartender.transform.position;
             bool reachedRoomSide = false;
+            bool adjustedTestDock = false;
+            bool sawReachCorrection = false;
             Bounds counterBounds = bar.DrinkServiceView.CounterSurfaceWorldBounds;
             float counterFrontZ = bar.Room.InverseTransformPoint(new Vector3(counterBounds.center.x,
                 counterBounds.center.y, counterBounds.min.z)).z;
-            deadline = Time.realtimeSinceStartup + 20f;
+            deadline = Time.realtimeSinceStartup + 35f;
             for (int step = 0; step < 1600 && !choreography.CleanupVesselAttached; step++)
             {
                 Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), CleanupDiagnostic());
+                if (approachGap > 0f && !adjustedTestDock && choreography.CleanupPhaseName == "WalkToDrink")
+                {
+                    // Reproduce a stale idle-shoulder dock without moving the
+                    // supported vessel: the collector must walk the residual.
+                    var route = (Vector3[])CleanupRouteField.GetValue(choreography);
+                    int count = (int)CleanupRouteCountField.GetValue(choreography);
+                    Quaternion facing = (Quaternion)CleanupFacingField.GetValue(choreography);
+                    route[count - 1] -= facing * Vector3.forward * approachGap;
+                    adjustedTestDock = true;
+                }
                 Vector3 before = bar.Bartender.transform.position;
-                AdvanceService(.1f);
+                AdvanceService(1f / 60f);
+                sawReachCorrection |= choreography.CleanupReachAdjustmentCount > 0;
                 Vector3 after = bar.Bartender.transform.position;
                 Assert.That(Vector3.Distance(before, after), Is.LessThan(.35f),
                     "Collection walks the real body; it cannot jump between work docks.");
@@ -195,6 +224,8 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
             }
             Assert.That(choreography.CleanupVesselAttached, Is.True, CleanupDiagnostic());
+            if (approachGap > 0f) Assert.That(adjustedTestDock && sawReachCorrection, Is.True,
+                "A stale dock must be corrected by a visible collision-checked approach.");
             if (place != BarNpcRole.CounterPatron)
                 Assert.That(reachedRoomSide, Is.True, "Tables and booths require a visible walk through the counter's left opening.");
             Assert.That(choreography.ActiveCleanupDrink, Is.SameAs(ticket));
@@ -305,7 +336,25 @@ namespace BarPromenade.Tests.PlayMode
             choreography.Advance(seconds);
             bar.Bartender.Advance(seconds);
             choreography.RefreshCleanupContact();
+            AssertPlantedLegs();
             bar.DrinkShop.AdvancePresentation(seconds);
+        }
+
+        private void AssertPlantedLegs()
+        {
+            if (bar.Bartender.LowReachLowering <= .02f) return;
+            BarBartenderAssetRegistry rig = bar.Bartender.Registry;
+            AssertKneeForward(rig.LeftThigh, rig.LeftShin, rig.LeftFoot);
+            AssertKneeForward(rig.RightThigh, rig.RightShin, rig.RightFoot);
+        }
+
+        private void AssertKneeForward(Transform thigh, Transform shin, Transform foot)
+        {
+            Vector3 axis = foot.position - thigh.position;
+            Vector3 knee = Vector3.ProjectOnPlane(shin.position - thigh.position, axis);
+            Vector3 forward = Vector3.ProjectOnPlane(bar.Bartender.transform.forward, axis).normalized;
+            Assert.That(Vector3.Dot(knee, forward), Is.GreaterThanOrEqualTo(-.001f),
+                "A planted knee bends anatomically forward after pelvis lowering/hinging." + CleanupDiagnostic());
         }
 
         private IEnumerator DriveServiceUntil(Func<bool> done, string failure)

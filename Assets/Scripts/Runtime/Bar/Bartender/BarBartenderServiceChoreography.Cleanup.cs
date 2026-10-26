@@ -7,7 +7,7 @@ namespace BarPromenade
     {
         private enum CleanupPhase
         {
-            None, StowTowel, WalkToDrink, Reach, Lift,
+            None, StowTowel, WalkToDrink, Reach, AdjustApproach, Lift,
             ReturnBehindCounter, Lower, ReturnForService
         }
 
@@ -15,6 +15,9 @@ namespace BarPromenade
         private const float CleanupBodyRadius = .16f;
         private const float CleanupReachSeconds = .75f;
         private const float CleanupLiftSeconds = .9f;
+        private const float CleanupReachSettleSeconds = 1.4f;
+        private const int CleanupMaximumReachAdjustments = 3;
+        private const float CleanupRetryDelaySeconds = 5f;
         private readonly BarAbandonedDrink[] cleanupQueue = new BarAbandonedDrink[CleanupCapacity];
         private readonly Vector3[] cleanupRoute = new Vector3[8];
         private RaycastHit[] cleanupHits = new RaycastHit[16];
@@ -31,6 +34,10 @@ namespace BarPromenade
         private bool cleanupLastHidden;
         private float cleanupElapsed;
         private float cleanupWalkElapsed;
+        private float cleanupRetryWait;
+        private int cleanupReachAdjustments;
+        private bool cleanupDeferred;
+        private Vector3 cleanupApproachTarget;
         private Vector3 cleanupHandStart;
         private Vector3 cleanupHandTarget;
         private Vector3 cleanupLiftStart;
@@ -55,6 +62,7 @@ namespace BarPromenade
         public bool IsCleanupVesselHidden => cleanupLastHidden;
         public float CleanupGripError => cleanupGripError;
         public string CleanupBlockedBy => cleanupBlockedBy;
+        public int CleanupReachAdjustmentCount => cleanupReachAdjustments;
         public bool IsReadyForForegroundService => !IsCleaningPatronDrink &&
             (presentation == null || presentation.LowReachLowering <= .002f);
 
@@ -117,6 +125,7 @@ namespace BarPromenade
             bool foreground = shop.WantsBartenderService || shop.IsReturningCounterMenuHome;
             if (!IsCleaningPatronDrink)
             {
+                cleanupRetryWait = Mathf.Max(0f, cleanupRetryWait - deltaTime);
                 while (cleanupCount > 0 && (cleanupQueue[0].IsCleanupComplete ||
                     cleanupQueue[0].DrinkProp.Root == null))
                 {
@@ -124,7 +133,7 @@ namespace BarPromenade
                         cleanupCrowd.CompleteDrinkCleanup(cleanupQueue[0]);
                     RemoveCleanupHead();
                 }
-                if (cleanupCount == 0 || foreground) return false;
+                if (cleanupCount == 0 || foreground || cleanupRetryWait > 0f) return false;
                 if (cleanupTraffic != null && !cleanupTraffic.TryAcquire(this)) return false;
                 BeginCleanup(cleanupQueue[0]);
             }
@@ -165,6 +174,18 @@ namespace BarPromenade
                     SetCleanupReach(Vector3.Lerp(cleanupHandStart, CleanupRestGrip,
                         Mathf.SmoothStep(0f, 1f, cleanupElapsed / CleanupReachSeconds)), true);
                     break;
+                case CleanupPhase.AdjustApproach:
+                    ReleaseAll();
+                    if (MoveCleanupBody(cleanupApproachTarget, deltaTime, false))
+                    {
+                        if (TurnCleanupBody(cleanupPickupFacing, deltaTime, false))
+                        {
+                            cleanupHandStart = presentation.Registry.VesselGripAnchor.position;
+                            SetCleanupPhase(CleanupPhase.Reach);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(cleanupBlockedBy)) DeferCleanup("approach_blocked");
+                    break;
                 case CleanupPhase.Lift:
                     presentation.ApplyCounterTurnPose(0f, true);
                     // Lift above the support before retracting horizontally.
@@ -177,7 +198,9 @@ namespace BarPromenade
                         : Vector3.Lerp(clear, carry, Mathf.SmoothStep(0f, 1f, progress * 2f - 1f)), false);
                     if (progress >= 1f && cleanupGripError < .015f)
                     {
-                        cleanupRouteIndex = cleanupRouteCount - 2;
+                        // Retrace the original pickup dock after any small
+                        // contact correction before joining the return route.
+                        cleanupRouteIndex = cleanupRouteCount - 1;
                         SetCleanupPhase(CleanupPhase.ReturnBehindCounter);
                     }
                     break;
@@ -216,6 +239,8 @@ namespace BarPromenade
         {
             cleanupDrink = drink;
             cleanupAttached = false;
+            cleanupDeferred = false;
+            cleanupReachAdjustments = 0;
             cleanupLastHidden = false;
             cleanupGripError = float.PositiveInfinity;
             Transform root = drink.DrinkProp.Root;
@@ -236,6 +261,61 @@ namespace BarPromenade
         {
             cleanupPhase = value;
             cleanupElapsed = 0f;
+            if (GameLog.Profile != GameLogProfile.Off)
+                GameLog.Info("bar", "patron_cleanup_phase",
+                    GameLog.Field("phase", value.ToString()),
+                    GameLog.Field("anchor", cleanupDrink?.AnchorId ?? string.Empty),
+                    GameLog.Field("attached", cleanupAttached));
+        }
+
+        private void RetryCleanupReach(Vector3 hand)
+        {
+            if (cleanupReachAdjustments >= CleanupMaximumReachAdjustments)
+            {
+                DeferCleanup("reach_unavailable");
+                return;
+            }
+            // The route's cached shoulder came from idle wiping. Use the
+            // actual solved hand to refine the pickup dock, without moving
+            // the supported vessel or sliding planted feet under a crouch.
+            Vector3 correction = Vector3.ProjectOnPlane(CleanupRestGrip - hand, Vector3.up);
+            if (correction.sqrMagnitude < .000025f)
+                correction = Vector3.ProjectOnPlane(CleanupRestGrip - transform.position, Vector3.up).normalized * .04f;
+            correction = Vector3.ClampMagnitude(correction, .08f);
+            for (int attempt = 0; attempt < 4 && correction.sqrMagnitude >= .000025f; attempt++)
+            {
+                if (CleanupPathClear(correction.normalized, correction.magnitude))
+                {
+                    cleanupBlockedBy = string.Empty;
+                    cleanupReachAdjustments++;
+                    cleanupApproachTarget = transform.position + correction;
+                    if (GameLog.Profile != GameLogProfile.Off)
+                        GameLog.Info("bar", "patron_cleanup_reach_retry",
+                            GameLog.Field("anchor", cleanupDrink.AnchorId),
+                            GameLog.Field("attempt", cleanupReachAdjustments),
+                            GameLog.Field("grip_error", cleanupGripError),
+                            GameLog.Field("step_x", correction.x), GameLog.Field("step_z", correction.z));
+                    ReleaseAll();
+                    SetCleanupPhase(CleanupPhase.AdjustApproach);
+                    return;
+                }
+                correction *= .5f;
+            }
+            DeferCleanup("reach_blocked");
+        }
+
+        private void DeferCleanup(string reason)
+        {
+            cleanupDeferred = true;
+            if (GameLog.Profile != GameLogProfile.Off)
+                GameLog.Warning("bar", "patron_cleanup_deferred",
+                    GameLog.Field("anchor", cleanupDrink.AnchorId),
+                    GameLog.Field("reason", reason), GameLog.Field("phase", cleanupPhase.ToString()),
+                    GameLog.Field("grip_error", cleanupGripError),
+                    GameLog.Field("blocked_by", cleanupBlockedBy));
+            cleanupRouteIndex = cleanupLastReached;
+            ReleaseAll();
+            SetCleanupPhase(CleanupPhase.ReturnForService);
         }
 
         private Vector3 CleanupRestGrip => cleanupRestPose.position +
@@ -299,6 +379,11 @@ namespace BarPromenade
             if (!cleanupAttached)
             {
                 cleanupGripError = Vector3.Distance(hand, CleanupRestGrip);
+                if (cleanupElapsed >= CleanupReachSettleSeconds && cleanupGripError > .012f)
+                {
+                    RetryCleanupReach(hand);
+                    return;
+                }
                 if (cleanupElapsed < CleanupReachSeconds || presentation.GetChainWeight(VesselChainIndex) < .95f ||
                     cleanupGripError > .012f) return;
                 cleanupAttached = true;
@@ -597,10 +682,16 @@ namespace BarPromenade
         private void EndCleanup(bool completed)
         {
             if (cleanupTraffic != null) cleanupTraffic.Release(this);
+            if (cleanupDeferred && !completed && cleanupCount > 0)
+            {
+                BarAbandonedDrink deferred = cleanupQueue[0];
+                for (int index = 1; index < cleanupCount; index++) cleanupQueue[index - 1] = cleanupQueue[index];
+                cleanupQueue[cleanupCount - 1] = deferred;
+                cleanupRetryWait = CleanupRetryDelaySeconds;
+            }
             cleanupAttached = false;
+            SetCleanupPhase(CleanupPhase.None);
             cleanupDrink = null;
-            cleanupPhase = CleanupPhase.None;
-            cleanupElapsed = 0f;
             cleanupBlockedBy = string.Empty;
             wipePatchTargetLocalPosition = homeLocalPosition;
             ReleaseAll();

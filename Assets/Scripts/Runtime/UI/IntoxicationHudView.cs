@@ -21,6 +21,16 @@ namespace BarPromenade
             IntoxicationStageRules.GetStage(
                 GameSessionState.IntoxicationLevel);
 
+        public static Rect ResolvePanelRect(RetroUiCanvas canvas)
+        {
+            Rect viewport = canvas.ViewportRect;
+            return RetroUiTheme.SnapRect(new Rect(
+                viewport.xMin + 10f,
+                viewport.yMin + 9f,
+                164f,
+                42f));
+        }
+
         private void OnGUI()
         {
             if (!ShouldRender)
@@ -37,11 +47,10 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                const float x = 10f;
-                const float y = 9f;
-                const float width = 164f;
-                const float height = 42f;
-                Rect panel = new Rect(x, y, width, height);
+                Rect panel = ResolvePanelRect(canvas);
+                float x = panel.x;
+                float y = panel.y;
+                float width = panel.width;
                 RetroUiTheme.DrawPanel(
                     panel,
                     RetroUiTheme.Panel,

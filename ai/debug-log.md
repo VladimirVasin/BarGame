@@ -30,6 +30,7 @@ Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 | `combat` | Cached movement_summary before close/disable/exit:keys/request/focus/gates/motor/capsule/phase/scale/speed/turn;min-scale requires has_request_sample |
 | `diagnostics` | snapshots/directory |
 | `unity` | warnings/assertions/errors/exceptions + stacks |
+| `bar` | `patron_cleanup_phase/reach_retry/deferred`: anchor, phase, contact error, correction or blocker |
 
 session/new_game_started:menu_reset=menu;combat_test_start=range;
 new_game_start=normal/legacy;new_game_start_rejected=transition rollback.

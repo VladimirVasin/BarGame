@@ -84,10 +84,9 @@ the central tap of three; wine/cognac/vodka use the selected shelf bottle,
 preparation dock and matching vessel, then restore its exact source pose. Preparation
 uses the opposite side from the resting menu. Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer stays
 15.515 cm. Measured shell bounds drive supported poses and raised carry paths:
-lift, transfer above the counter, lower. Shared two-bone IK closes the measured
-hand contacts; the bartender torso has an absolute 38-degree tilt cap. Menu
-and drink docks align with the selected stool. Hands blend back out on
-completion or cleanup.
+lift/transfer/lower above the counter. Shared IK closes hand contacts; torso tilt
+is capped at 38°. Knees bend forward with planted feet. Menu/drink docks follow
+chosen stool; hands blend out on completion/cleanup.
 
 `BarBartenderServiceQueue` gives hero/present counter guests deduplicated FIFO slots;
 one service runs. `BarCounterPatronRefill` drains cups during sips at distinct
@@ -162,13 +161,13 @@ payment cue. Pending/failed/interrupted gestures and repeated input create no
 receipt or charge. The receipt remains visible during the bar modal, expires
 on its unscaled clock, freezes with pause and clears with scene teardown.
 
-Guests release the supported vessel and exit empty-handed.
-Dirty places stay reserved. One bounded collection queue covers counter/tables/
-booths, even after closing. The worker stows the towel, walks around the left
-counter end, grips at measured contact and carries the same vessel home.
-Occlusion ends collection. Safe handoffs prioritize accepted service;
-its clock waits for return. Shared aisle leases yield to returning WC guests.
-Pause/disable/exit preserve prop/fill ownership; no player transaction.
+Guests leave vessels supported and exit empty-handed; dirty places stay reserved.
+A bounded FIFO serves counter/tables/booths after closing: stow towel, walk via
+left opening, grip at contact, carry the same vessel home; occlusion ends cleanup.
+A missed grip permits collision-checked walking corrections; failure
+returns/defer-retries without moving the unheld prop or releasing its dirty slot.
+Accepted service waits for return; aisle leases yield to returning WC guests.
+Pause/disable/exit retain prop/fill ownership; no player transaction.
 
 ## 5. Verification contract
 
@@ -190,8 +189,8 @@ FIFO/dedupe/cancel, same-cup refill and queued hero payment.
 `RedWineService_FetchesPoursCarriesAndWaitsForExplicitDrink`: direct refill,
 bottle base left of contact, palm above neck, wrap/clearance/elbow anatomy.
 `VodkaService_KeepsShotClearOfCounterAndMenu`: shot/wood/paper clearance.
-`BarPatronCleanupPlayModeTests`: retained surface vessel, empty-hand exit,
-dirty reservation, room collection/contact/carry/stow and service ownership.
+`BarPatronCleanupPlayModeTests`: retained vessels/dirty slots, empty-hand exit,
+contact/carry/stow, reach recovery, forward knees, service ownership.
 Manual skin captures force fresh render matrices, then restore the flag.
 Receipt proof uses visible Game view after IMGUI; Camera.Render omits it.
 `player_hand_gestures.validate`/FBX round trip: finite geometry, link lengths,

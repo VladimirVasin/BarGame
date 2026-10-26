@@ -55,6 +55,49 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(new Rect(320f, 0f, 1920f, 1080f)));
         }
 
+        [TestCase(1280, 720)]
+        [TestCase(1920, 1080)]
+        [TestCase(2560, 1080)]
+        [TestCase(1440, 1080)]
+        [TestCase(1976, 984)]
+        [TestCase(480, 270)]
+        public void CornerHud_AnchorsToScreenEdgesOutsideCenteredCanvas(
+            int screenWidth,
+            int screenHeight)
+        {
+            RetroUiCanvas canvas =
+                RetroUiTheme.CalculateCanvas(screenWidth, screenHeight);
+            Rect panel = canvas.LogicalToScreen(
+                IntoxicationHudView.ResolvePanelRect(canvas));
+            Rect icon = canvas.LogicalToScreen(
+                JournalNoticeView.ResolveIconRect(canvas));
+            Rect hint = canvas.LogicalToScreen(
+                JournalNoticeView.ResolveHintRect(canvas));
+            Rect viewport = canvas.LogicalToScreen(canvas.ViewportRect);
+            float pixelTolerance = canvas.Scale * 0.5f + 0.001f;
+
+            Assert.That(viewport.x, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(viewport.y, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(viewport.width,
+                Is.EqualTo(screenWidth).Within(0.001f));
+            Assert.That(viewport.height,
+                Is.EqualTo(screenHeight).Within(0.001f));
+            Assert.That(panel.xMin,
+                Is.EqualTo(10f * canvas.Scale).Within(pixelTolerance));
+            Assert.That(panel.yMin,
+                Is.EqualTo(9f * canvas.Scale).Within(pixelTolerance));
+            Assert.That(screenWidth - icon.xMax,
+                Is.EqualTo(10f * canvas.Scale).Within(pixelTolerance));
+            Assert.That(icon.yMin,
+                Is.EqualTo(9f * canvas.Scale).Within(pixelTolerance));
+            Assert.That(panel.size,
+                Is.EqualTo(new Vector2(164f, 42f) * canvas.Scale));
+            Assert.That(icon.size,
+                Is.EqualTo(Vector2.one * (20f * canvas.Scale)));
+            Assert.That(icon.xMin - hint.xMax,
+                Is.EqualTo(6f * canvas.Scale).Within(0.001f));
+        }
+
         [Test]
         public void CalculateCanvas_BelowBaseline_UsesFractionalFallback()
         {

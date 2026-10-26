@@ -5865,12 +5865,13 @@
   drawn after the world composite instead of being degraded with the 3D image.
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
   and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
-  Its interface-only language is soot/charcoal/dirty-bone: flat rectangular
-  panels, thin nested frames, stable deterministic texture, restrained printed
-  typography and value-plus-frame focus that survives grayscale. Packaged
-  `Fonts/Roboto-Regular` is the deterministic RU/EN primary face; installed OS
-  fonts are never requested because Unity 6.5 legacy IMGUI cannot reliably
-  repaint their dynamic faces. Unity's legacy face is emergency fallback only. The
+  Corner intoxication/journal HUDs use its full-screen logical bounds at the
+  shared scale; centering does not inset them on other aspect ratios.
+  Soot/charcoal/dirty-bone uses flat panels, thin nested frames, deterministic
+  texture, printed typography and grayscale-safe value-plus-frame focus.
+  Packaged `Fonts/Roboto-Regular` is the RU/EN face; OS fonts are never requested
+  because Unity 6.5 legacy IMGUI cannot reliably repaint them. Unity's legacy
+  face is emergency fallback only. The
   former plum/orange cards, cut corners, bevel highlights and glow are not part
   of the language. The reference does not alter world rendering, camera,
   aspect, composite, audio, gameplay or localized copy. Menus, modal

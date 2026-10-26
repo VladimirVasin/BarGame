@@ -752,13 +752,9 @@ namespace BarPromenade
             if (lowReachLowering <= .0001f) return;
             Pose left = new Pose(registry.LeftFoot.position, registry.LeftFoot.rotation);
             Pose right = new Pose(registry.RightFoot.position, registry.RightFoot.rotation);
-            Vector3 leftKnee = registry.LeftShin.position;
-            Vector3 rightKnee = registry.RightShin.position;
             registry.Pelvis.position -= transform.up * lowReachLowering;
-            LimbTwoBoneIk.Solve(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
-                left.position, left.rotation, leftKnee);
-            LimbTwoBoneIk.Solve(registry.RightThigh, registry.RightShin, registry.RightFoot,
-                right.position, right.rotation, rightKnee);
+            SolvePlantedLeg(registry.LeftThigh, registry.LeftShin, registry.LeftFoot, left);
+            SolvePlantedLeg(registry.RightThigh, registry.RightShin, registry.RightFoot, right);
         }
 
         private void ApplyWipeSurfaceContact()
@@ -853,18 +849,28 @@ namespace BarPromenade
             // original contacts; neither the actor nor the served dock moves.
             Pose leftContact = new Pose(registry.LeftFoot.position, registry.LeftFoot.rotation);
             Pose rightContact = new Pose(registry.RightFoot.position, registry.RightFoot.rotation);
-            Vector3 leftKnee = registry.LeftShin.position;
-            Vector3 rightKnee = registry.RightShin.position;
             Quaternion pelvisBase = registry.Pelvis.rotation;
             Quaternion spineBase = registry.Spine.rotation;
             Quaternion hipBend = Quaternion.AngleAxis(
                 Mathf.Min(angle, MaximumCounterHipLeanDegrees), axis.normalized);
             registry.Pelvis.rotation = hipBend * pelvisBase;
             registry.Spine.rotation = Quaternion.AngleAxis(angle, axis.normalized) * spineBase;
-            LimbTwoBoneIk.Solve(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
-                leftContact.position, leftContact.rotation, leftKnee);
-            LimbTwoBoneIk.Solve(registry.RightThigh, registry.RightShin, registry.RightFoot,
-                rightContact.position, rightContact.rotation, rightKnee);
+            SolvePlantedLeg(registry.LeftThigh, registry.LeftShin, registry.LeftFoot, leftContact);
+            SolvePlantedLeg(registry.RightThigh, registry.RightShin, registry.RightFoot, rightContact);
+        }
+
+        private void SolvePlantedLeg(Transform thigh, Transform shin, Transform foot, Pose contact)
+        {
+            // A knee's previous world point can fall behind its hip-to-foot
+            // line when the pelvis lowers or hinges. Build the pole from the
+            // moved hip and the actor's anatomical forward instead; a nearly
+            // straight or asymmetric sampled leg must not choose its side.
+            Vector3 legAxis = contact.position - thigh.position;
+            Vector3 kneeDirection = Vector3.ProjectOnPlane(transform.forward, legAxis);
+            if (kneeDirection.sqrMagnitude < .000001f)
+                kneeDirection = Vector3.ProjectOnPlane(transform.up, legAxis);
+            Vector3 hint = thigh.position + kneeDirection.normalized;
+            LimbTwoBoneIk.Solve(thigh, shin, foot, contact.position, contact.rotation, hint);
         }
 
         private static Vector3 PredictCounterLeanShoulder(float angle, Vector3 axis,
