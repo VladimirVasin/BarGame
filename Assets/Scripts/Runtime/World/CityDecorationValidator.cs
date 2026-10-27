@@ -86,7 +86,7 @@ namespace BarPromenade
                 }
 
                 previousId = descriptor.StableId;
-                ValidateKindContract(descriptor);
+                ValidateKindContract(descriptor, layout.SpatialPlan.IsCompactCoastal);
                 ValidateAnchor(
                     descriptor,
                     layout,
@@ -433,7 +433,7 @@ namespace BarPromenade
         }
 
         private static void ValidateKindContract(
-            CityDecorationDescriptor descriptor)
+            CityDecorationDescriptor descriptor, bool compactCoastal)
         {
             CityDistrictKind expectedDistrict;
             CityDecorationAnchorKind expectedAnchor;
@@ -545,6 +545,8 @@ namespace BarPromenade
                         $"Unsupported decoration kind '{descriptor.Kind}'.");
             }
 
+            if (compactCoastal && expectedAnchor == CityDecorationAnchorKind.UrbanLandmark)
+                expectedDistrict = CityLayout.CompactLandmarkDistrict(expectedDistrict);
             if (descriptor.District != expectedDistrict ||
                 descriptor.AnchorKind != expectedAnchor)
             {
@@ -604,11 +606,11 @@ namespace BarPromenade
                     out int actual)
                     ? actual
                     : 0;
-                if (count != 1)
+                if (count != (layout.SpatialPlan.IsCompactCoastal ? 2 : 1))
                 {
                     throw new InvalidOperationException(
                         $"Urban district '{district}' requires exactly " +
-                        "one landmark.");
+                        (layout.SpatialPlan.IsCompactCoastal ? "two retained landmarks." : "one landmark."));
                 }
             }
 

@@ -259,6 +259,10 @@ namespace BarPromenade.Tests.EditMode
             CitySoundPhysicalOwnerKind.ParkPlayground,
             CitySourceSoundId.ParkSwingCreak,
             CitySourceSoundPlayback.OneShot)]
+        [TestCase(CityDistrictKind.Industrial, CitySoundPhysicalOwnerKind.OldTownWaterworksCourt,
+            CitySourceSoundId.WaterworksPipeLoop, CitySourceSoundPlayback.Loop)]
+        [TestCase(CityDistrictKind.Residential, CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
+            CitySourceSoundId.LastRouteRelayLoop, CitySourceSoundPlayback.Loop)]
         public void CatalogPairs_ArePhysicallyExplained(
             CityDistrictKind district,
             CitySoundPhysicalOwnerKind owner,

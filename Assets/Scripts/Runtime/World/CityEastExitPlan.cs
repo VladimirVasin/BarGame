@@ -26,8 +26,10 @@ namespace BarPromenade
                 new Vector2(gateX, axisZ)) + RoadSurfaceLift;
             ApproachStart = new Vector3(streetX, entryTop, axisZ);
             CheckpointPosition = new Vector3(gateX, gateTop, axisZ);
-            RoadEnd = new Vector3(yard.xMax, gateTop, axisZ);
             RoadProfile = CityEastRoadProfile.Load();
+            // The panorama is a fixed-metre asset. Anchor its measured gate to
+            // the checkpoint, independently of the compact utility-yard width.
+            RoadEnd = CheckpointPosition - RoadProfile.Sample(RoadProfile.GateX);
             Vector3 authoredGate = RoadProfile.Sample(RoadProfile.GateX) + RoadEnd;
             if (Vector3.Distance(authoredGate, CheckpointPosition) > .01f)
                 throw new InvalidOperationException("The authored eastern road must join the unchanged checkpoint datum.");
@@ -173,11 +175,12 @@ namespace BarPromenade
         {
             var cuts = new List<Rect> { Rect.MinMaxRect(ApproachStart.x, CheckpointPosition.z - 4f,
                 CheckpointPosition.x, CheckpointPosition.z + 4f) };
-            int count = Mathf.CeilToInt((RoadEnd.x - CheckpointPosition.x) / 4f);
+            float cutEnd = Mathf.Min(YardBounds.xMax, RoadEnd.x);
+            int count = Mathf.CeilToInt((cutEnd - CheckpointPosition.x) / 4f);
             for (int i = 0; i < count; i++)
             {
-                float ax = Mathf.Lerp(CheckpointPosition.x, RoadEnd.x, i / (float)count);
-                float bx = Mathf.Lerp(CheckpointPosition.x, RoadEnd.x, (i + 1f) / count);
+                float ax = Mathf.Lerp(CheckpointPosition.x, cutEnd, i / (float)count);
+                float bx = Mathf.Lerp(CheckpointPosition.x, cutEnd, (i + 1f) / count);
                 Vector3 a = SampleRoadCenter(ax), b = SampleRoadCenter(bx);
                 float halfWidth = Mathf.Max(SampleRoadGroundHalfWidth(ax), SampleRoadGroundHalfWidth(bx));
                 // The decorative road may turn beyond this yard, but its
@@ -230,11 +233,16 @@ namespace BarPromenade
             Rect yard = BoundsFor(layout, "yard-east");
             Rect north = BoundsFor(layout, "yard-north-east");
             var plan = new CityEastExitPlan(layout, yard, north);
-            if (yard.width < 70f || yard.height < 30f || Mathf.Abs(yard.yMax - north.yMin) > .01f ||
+            // Validate the metres the authored road actually occupies. The
+            // compact yard loses its roadside inset from the declared area;
+            // its usable width need not retain the old 70-metre cell budget.
+            if (plan.RealRoadEnd.x > yard.xMax - 1f || yard.height < 30f ||
+                Mathf.Abs(yard.yMax - north.yMin) > .01f ||
                 plan.RoadBounds.yMin <= yard.yMin || plan.BoothPad.yMin <= yard.yMin ||
                 plan.CheckpointPosition.x <= plan.ApproachStart.x +
                     CityEastExitPlan.CheckpointApronLength + CityEastExitPlan.StreetGradeBlendLength)
-                throw new InvalidOperationException("The eastern road needs its contiguous north-of-church yards.");
+                throw new InvalidOperationException($"The eastern road needs its contiguous north-of-church yards: " +
+                    $"yard={yard}, north={north}, real road end={plan.RealRoadEnd}, booth pad={plan.BoothPad}.");
             return plan;
         }
 

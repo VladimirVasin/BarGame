@@ -177,6 +177,7 @@ namespace BarPromenade
 
         private static int CountUrbanDistricts(CityLayout layout)
         {
+            if (layout.SpatialPlan.IsCompactCoastal) return layout.PrimaryLandmarkCells.Count;
             var archetypes = new HashSet<CityDistrictKind>();
             for (int index = 0; index < layout.Districts.Count; index++)
             {
@@ -210,13 +211,17 @@ namespace BarPromenade
                     ResolveCoreAnchorKind(kind) == CityDecorationAnchorKind.BuildingFacade &&
                     CityDecorationCollisionCatalog.ResolveTier(kind) != CityDecorationCollisionTier.None)
                     kind = ResolveRoofCoreKind(lot.District);
-                if (layout.TryGetPrimaryLandmarkCell(
-                        lot.District,
-                        out Vector2Int landmarkCell) &&
-                    landmarkCell == lot.Cell)
+                CityDistrictKind landmarkDistrict = lot.District;
+                bool hasLandmark = layout.TryGetPrimaryLandmarkCell(lot.District,
+                    out Vector2Int landmarkCell) && landmarkCell == lot.Cell;
+                if (layout.SpatialPlan.IsCompactCoastal)
+                    foreach (KeyValuePair<CityDistrictKind, Vector2Int> reservation in layout.PrimaryLandmarkCells)
+                        if (reservation.Value == lot.Cell)
+                        { hasLandmark = true; landmarkDistrict = reservation.Key; break; }
+                if (hasLandmark)
                 {
                     CityDecorationAnchorKind landmarkSurface =
-                        ResolveLandmarkSurfaceKind(lot.District);
+                        ResolveLandmarkSurfaceKind(landmarkDistrict);
                     if (ResolveCoreAnchorKind(kind) == landmarkSurface)
                     {
                         // Keep the required core dressing on the surface the
@@ -274,9 +279,12 @@ namespace BarPromenade
             ICollection<CityDecorationDescriptor> target)
         {
             var plannedArchetypes = new HashSet<CityDistrictKind>();
-            for (int index = 0; index < layout.Districts.Count; index++)
+            int districtCount = layout.SpatialPlan.IsCompactCoastal
+                ? CityLayoutGenerator.UrbanDistricts.Count : layout.Districts.Count;
+            for (int index = 0; index < districtCount; index++)
             {
-                CityDistrictKind district = layout.Districts[index].Kind;
+                CityDistrictKind district = layout.SpatialPlan.IsCompactCoastal
+                    ? CityLayoutGenerator.UrbanDistricts[index] : layout.Districts[index].Kind;
                 if (district == CityDistrictKind.CentralPark ||
                     !plannedArchetypes.Add(district))
                 {
@@ -314,7 +322,7 @@ namespace BarPromenade
                     CreateDistrictId(layout.Seed, district, "landmark"),
                     kind,
                     CityDecorationAnchorKind.UrbanLandmark,
-                    district,
+                    lot.District,
                     lot.Cell,
                     position,
                     forward,
@@ -340,7 +348,8 @@ namespace BarPromenade
                     BuildingLot reservedLot = layout.BuildingLots[index];
                     if (reservedLot.Cell == reservedCell &&
                         reservedLot.HasBuilding &&
-                        reservedLot.District == district)
+                        reservedLot.District == (layout.SpatialPlan.IsCompactCoastal
+                            ? CityLayout.CompactLandmarkDistrict(district) : district))
                     {
                         return reservedLot;
                     }

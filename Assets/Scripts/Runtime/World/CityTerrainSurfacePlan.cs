@@ -140,6 +140,7 @@ namespace BarPromenade
                 surface,
                 worldXZ,
                 baseDatum);
+            datum = ApplyCompactSouthWestCornerGrade(layout, surface, worldXZ, datum);
             datum = ApplyCurvedRoadGrade(layout, surface, worldXZ, datum);
             if (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east")
                 datum = CityEastExitPlanner.Create(layout).ApplyGroundTop(worldXZ,
@@ -389,6 +390,34 @@ namespace BarPromenade
             return Vector3.Cross(tangentZ, tangentX).normalized;
         }
 
+        private static float ApplyCompactSouthWestCornerGrade(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, float datum)
+        {
+            if (!layout.SpatialPlan.IsCompactCoastal) return datum;
+            bool west = surface.Cell == new Vector2Int(-1, 0);
+            bool south = surface.Cell == new Vector2Int(0, -1);
+            if (!west && !south) return datum;
+
+            // The narrowed service fringe cannot carry the old distant access
+            // terrace into the omitted corner. Grade its two physical toes to
+            // their common road node, fading to the next terrain cell and to
+            // zero at the street edge so every existing access keeps its level.
+            Vector3 node = layout.GetNodeWorldPosition(Vector2Int.zero);
+            Vector3 next = layout.GetNodeWorldPosition(west ? Vector2Int.up : Vector2Int.right);
+            float halfRoad = layout.RoadWidth * .5f;
+            Rect cell = layout.SpatialPlan.GetCellBounds(surface.Cell);
+            float outward = west
+                ? 1f - Mathf.InverseLerp(layout.WorldOrigin.x + cell.xMin,
+                    node.x - halfRoad, point.x)
+                : 1f - Mathf.InverseLerp(layout.WorldOrigin.z + cell.yMin,
+                    node.z - halfRoad, point.y);
+            float along = west
+                ? Mathf.InverseLerp(node.z, next.z, point.y)
+                : Mathf.InverseLerp(node.x, next.x, point.x);
+            float weight = outward * (1f - Mathf.SmoothStep(0f, 1f, along));
+            return Mathf.Lerp(datum, node.y, weight);
+        }
+
         private static float ApplyDistrictPointPad(
             CityLayout layout,
             CitySurfaceDescriptor surface,
@@ -426,7 +455,7 @@ namespace BarPromenade
 
                 strongestWeight = weight;
                 targetDatum = descriptor.Kind == CityDistrictPointOfInterestKind.IndustrialCannery
-                    ? CityCanneryPlan.Create(layout)?.Origin.y ?? descriptor.Center.y
+                    ? CityCanneryPlan.ResolveGroundDatum(layout, descriptor)
                     : descriptor.Center.y;
             }
 

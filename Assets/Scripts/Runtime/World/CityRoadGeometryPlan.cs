@@ -438,6 +438,7 @@ namespace BarPromenade
         {
             if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId ||
                 settings.SpatialPlan == null || settings.SpatialPlan.IsUniform ||
+                settings.SpatialPlan.IsCompactCoastal ||
                 settings.Blueprint.River?.CorridorCellX != 6) return false;
             foreach (Vector2Int cell in new[] { new Vector2Int(0, 7), new Vector2Int(1, 7),
                 new Vector2Int(0, 8), new Vector2Int(1, 8) })

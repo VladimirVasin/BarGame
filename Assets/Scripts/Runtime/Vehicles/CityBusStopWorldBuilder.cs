@@ -190,10 +190,16 @@ namespace BarPromenade
         public static Rect DescribeFurnitureFootprint(CityBusStopDescriptor stop)
         {
             if (stop == null) throw new ArgumentNullException(nameof(stop));
-            Quaternion rotation = ResolveRotation(stop.Forward, stop.RoadsideForward);
+            return DescribeFurnitureFootprint(stop.ShelterPosition, stop.Forward, stop.RoadsideForward);
+        }
+
+        internal static Rect DescribeFurnitureFootprint(Vector3 shelterPosition,
+            Vector3 routeForward, Vector3 roadsideForward)
+        {
+            Quaternion rotation = ResolveRotation(routeForward, roadsideForward);
             const float minX = ShelterOffsetAlongLane - 4.65f * .5f;
             const float maxX = .38f;
-            Vector3 center = stop.ShelterPosition + rotation * new Vector3((minX+maxX)*.5f,0,0);
+            Vector3 center = shelterPosition + rotation * new Vector3((minX+maxX)*.5f,0,0);
             Vector3 side = rotation * Vector3.right * ((maxX-minX)*.5f);
             Vector3 depth = rotation * Vector3.forward * (1.18f*.5f);
             float x = Mathf.Abs(side.x)+Mathf.Abs(depth.x);

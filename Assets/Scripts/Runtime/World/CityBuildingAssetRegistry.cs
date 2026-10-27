@@ -620,7 +620,7 @@ namespace BarPromenade
 
             if (district == CityDistrictKind.Residential)
             {
-                int balconyFloorCount = height < 12f ? 3 : 4;
+                int balconyFloorCount = CityBuildingAssetProvider.GetExpectedBalconyFloorCount(height);
                 if (balconySlots.Length != balconyFloorCount * 2)
                 {
                     throw new InvalidOperationException(

@@ -521,8 +521,7 @@ namespace BarPromenade
             float maximumDistance,
             ref float distanceAlongLink)
         {
-            if (entrancePoints.Count == 0 ||
-                IsEntranceClearPlacement(
+            if (IsEntranceClearPlacement(
                     layout,
                     entrancePoints,
                     samples,
@@ -601,7 +600,65 @@ namespace BarPromenade
                 }
             }
 
-            return true;
+            return !layout.SpatialPlan.IsCompactCoastal || ShelterRouteClearances.GetValue(
+                layout, value => new ShelterRouteClearance(value)).IsClear(
+                    CityBusStopWorldBuilder.DescribeFurnitureFootprint(pole, forward, -right));
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<CityLayout, ShelterRouteClearance>
+            ShelterRouteClearances = new System.Runtime.CompilerServices.ConditionalWeakTable<CityLayout, ShelterRouteClearance>();
+
+        /// <summary>The complete shelter stays outside existing pedestrian
+        /// capsules and service/public approaches, even after its pole slides.</summary>
+        private sealed class ShelterRouteClearance
+        {
+            private readonly List<CityRoadPath> paths = new List<CityRoadPath>();
+            private readonly List<Rect> approaches = new List<Rect>();
+            private const float CapsuleClearance = .45f;
+
+            internal ShelterRouteClearance(CityLayout layout)
+            {
+                paths.AddRange(layout.CourtyardPaths);
+                foreach (CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
+                    approaches.Add(access.ApproachBounds);
+                foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
+                    foreach (CityDistrictPointOfInterestAccessDescriptor access in point.Accesses)
+                        approaches.Add(access.ApproachBounds);
+            }
+
+            internal bool IsClear(Rect footprint)
+            {
+                Rect padded = Rect.MinMaxRect(footprint.xMin - CapsuleClearance, footprint.yMin - CapsuleClearance,
+                    footprint.xMax + CapsuleClearance, footprint.yMax + CapsuleClearance);
+                foreach (Rect approach in approaches)
+                    if (padded.Overlaps(approach)) return false;
+                foreach (CityRoadPath path in paths)
+                {
+                    Rect bounds = path.Bounds;
+                    if (bounds.xMax < padded.xMin || bounds.xMin > padded.xMax ||
+                        bounds.yMax < padded.yMin || bounds.yMin > padded.yMax) continue;
+                    for (int index = 1; index < path.Vertices.Count; index++)
+                        if (SegmentTouches(padded, path.Vertices[index - 1], path.Vertices[index])) return false;
+                }
+                return true;
+            }
+
+            private static bool SegmentTouches(Rect bounds, Vector2 first, Vector2 second)
+            {
+                float low = 0f, high = 1f;
+                return ClipAxis(first.x, second.x - first.x, bounds.xMin, bounds.xMax, ref low, ref high) &&
+                    ClipAxis(first.y, second.y - first.y, bounds.yMin, bounds.yMax, ref low, ref high);
+            }
+
+            private static bool ClipAxis(float first, float delta, float minimum, float maximum,
+                ref float low, ref float high)
+            {
+                if (Mathf.Abs(delta) < .00001f) return first >= minimum && first <= maximum;
+                float a = (minimum - first) / delta, b = (maximum - first) / delta;
+                if (a > b) (a, b) = (b, a);
+                low = Mathf.Max(low, a); high = Mathf.Min(high, b);
+                return low <= high;
+            }
         }
 
         private static List<RoadEdge> FindFrontageEdgesNear(
@@ -713,18 +770,39 @@ namespace BarPromenade
                 out Vector2 maximum);
             var stations = new float[targets.Count];
             var order = new List<int>(targets.Count);
+            bool compactRiver = layout.SpatialPlan.IsCompactCoastal && layout.River.IsEnabled;
+            int[] bankRanks = compactRiver ? new int[targets.Count] : null;
+            float firstEastStation = float.PositiveInfinity;
             for (int index = 0; index < targets.Count; index++)
             {
                 stations[index] = GetPerimeterStation(
                     minimum,
                     maximum,
                     GetTourPosition(targets[index]));
+                if (compactRiver)
+                {
+                    RiverBank bank = GetTargetBank(targets[index], layout.River.Definition.CorridorCellX);
+                    bankRanks[index] = bank == RiverBank.East ? 0 : bank == RiverBank.West ? 1 : 2;
+                    if (bank == RiverBank.East)
+                        firstEastStation = Mathf.Min(firstEastStation, stations[index]);
+                }
                 order.Add(index);
             }
 
+            float perimeter = (maximum.x - minimum.x + maximum.y - minimum.y) * 2f;
+            compactRiver = compactRiver && !float.IsPositiveInfinity(firstEastStation) && perimeter > 0f;
             order.Sort((left, right) =>
             {
-                int comparison = stations[left].CompareTo(stations[right]);
+                // The service order must cross the river exactly twice.
+                // Dense inner targets can project to a different perimeter
+                // side, so actual bank ownership precedes that projection.
+                int comparison = compactRiver ? bankRanks[left].CompareTo(bankRanks[right]) : 0;
+                if (comparison != 0) return comparison;
+                float leftStation = compactRiver
+                    ? Mathf.Repeat(stations[left] - firstEastStation, perimeter) : stations[left];
+                float rightStation = compactRiver
+                    ? Mathf.Repeat(stations[right] - firstEastStation, perimeter) : stations[right];
+                comparison = leftStation.CompareTo(rightStation);
                 return comparison != 0
                     ? comparison
                     : string.CompareOrdinal(

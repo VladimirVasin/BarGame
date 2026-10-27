@@ -975,6 +975,8 @@ namespace BarPromenade
                 origin,
                 nodes,
                 roads,
+                pathKinds,
+                roadSet,
                 frontages,
                 barLots,
                 homeLotIndex,
@@ -986,8 +988,19 @@ namespace BarPromenade
             reservedLots.UnionWith(districtPointLotIndices);
             if (homeLotIndex >= 0) reservedLots.Add(homeLotIndex);
             if (supermarketLotIndex >= 0) reservedLots.Add(supermarketLotIndex);
+            if (supermarketLotIndex >= 0 && settings.SpatialPlan?.IsCompactCoastal == true)
+            {
+                var shopCell = new Vector2Int(supermarketLotIndex % settings.BlocksX,
+                    supermarketLotIndex / settings.BlocksX);
+                RoadEdge rear = RoadEdge.ForCellFrontage(shopCell, -frontages[supermarketLotIndex]);
+                Vector2Int along = rear.B - rear.A;
+                preservedStreets.Add(new RoadEdge(rear.A - along, rear.A));
+                preservedStreets.Add(new RoadEdge(rear.B, rear.B + along));
+            }
             foreach (Vector2Int cell in primaryLandmarkCells.Values)
                 reservedLots.Add(ToLotIndex(cell.x, cell.y, settings.BlocksX));
+            HashSet<Vector2Int> domesticPockets = SelectCompactDomesticPocketLots(
+                settings, frontages, reservedLots);
             foreach (int index in reservedLots)
             {
                 var cell = new Vector2Int(index % settings.BlocksX, index / settings.BlocksX);
@@ -1045,19 +1058,63 @@ namespace BarPromenade
                         isSupermarket,
                         isDistrictPointOfInterest,
                         barActivity,
-                        primaryLandmarkCells.TryGetValue(
-                            ResolveDistrict(settings, cell),
-                            out Vector2Int landmarkCell) && landmarkCell == cell,
+                        IsReservedLandmarkCell(primaryLandmarkCells, cell),
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.right),
                             out CityPathKind eastKind) && eastKind == CityPathKind.Street,
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.left),
                             out CityPathKind westKind) && westKind == CityPathKind.Street,
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.up),
-                            out CityPathKind northKind) && northKind == CityPathKind.Street));
+                            out CityPathKind northKind) && northKind == CityPathKind.Street,
+                        domesticPockets.Contains(cell)));
                 }
             }
 
             return lots;
+        }
+
+        private static bool IsReservedLandmarkCell(
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int> reservations, Vector2Int cell)
+        {
+            foreach (Vector2Int candidate in reservations.Values)
+                if (candidate == cell) return true;
+            return false;
+        }
+
+        private static HashSet<Vector2Int> SelectCompactDomesticPocketLots(
+            CityGenerationSettings settings, IReadOnlyList<Vector2Int> frontages, ISet<int> reserved)
+        {
+            var selected = new HashSet<Vector2Int>();
+            if (settings.SpatialPlan?.IsCompactCoastal != true) return selected;
+            // Four small domestic recesses retain the existing frontage scenes,
+            // including the basket's balcony relationship. All other houses
+            // keep the dense street wall. Choose after protected places settle.
+            foreach (Vector2Int target in new[] { new Vector2Int(8, 2), new Vector2Int(11, 9),
+                new Vector2Int(8, 10), new Vector2Int(12, 11) })
+            {
+                Vector2Int best = default;
+                int bestCost = int.MaxValue;
+                for (int z = 0; z < settings.BlocksZ; z++)
+                    for (int x = 0; x < settings.BlocksX; x++)
+                    {
+                        var cell = new Vector2Int(x, z);
+                        int index = ToLotIndex(x, z, settings.BlocksX);
+                        if (!settings.CreatesLot(cell) || settings.IsParkCell(cell) ||
+                            ResolveDistrict(settings, cell) != CityDistrictKind.Residential ||
+                            reserved.Contains(index) || frontages[index] == Vector2Int.zero ||
+                            (x == 10 && z == 5) || (x == 11 && z >= 3 && z <= 5)) continue;
+                        bool near = false;
+                        foreach (Vector2Int previous in selected)
+                            if ((previous - cell).sqrMagnitude < 5) { near = true; break; }
+                        if (near) continue;
+                        int cost = (cell - target).sqrMagnitude;
+                        if (cost >= bestCost) continue;
+                        best = cell; bestCost = cost;
+                    }
+                if (bestCost == int.MaxValue)
+                    throw new InvalidOperationException("The compact residential bank needs four clear domestic recesses.");
+                selected.Add(best);
+            }
+            return selected;
         }
 
         private static int SelectSupermarketLot(
@@ -1066,6 +1123,8 @@ namespace BarPromenade
             Vector3 origin,
             IReadOnlyList<Vector2Int> nodes,
             IReadOnlyList<RoadEdge> roads,
+            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
+            ISet<RoadEdge> roadSet,
             IReadOnlyList<Vector2Int> frontages,
             ISet<int> barLots,
             int homeLotIndex,
@@ -1136,6 +1195,25 @@ namespace BarPromenade
                     continue;
                 }
 
+                // Deliveries still use the authored rear service door. Choose
+                // the compact shop together with its actual rear street,
+                // rather than assuming the old street grammar surrounds it.
+                if (settings.SpatialPlan?.IsCompactCoastal == true)
+                {
+                    RoadEdge rear = RoadEdge.ForCellFrontage(cell, -frontage);
+                    if (!roadSet.Contains(rear) || !pathKinds.TryGetValue(rear, out CityPathKind rearKind) ||
+                        rearKind != CityPathKind.Street || settings.RoadGeometry?.IsCurved(rear) == true)
+                        continue;
+                    Vector2Int along = rear.B - rear.A;
+                    bool throughStreet = true;
+                    foreach (RoadEdge approach in new[] { new RoadEdge(rear.A - along, rear.A),
+                        new RoadEdge(rear.B, rear.B + along) })
+                        if (!roadSet.Contains(approach) || !pathKinds.TryGetValue(approach, out CityPathKind kind) ||
+                            kind != CityPathKind.Street || settings.RoadGeometry?.IsCurved(approach) == true)
+                            throughStreet = false;
+                    if (!throughStreet) continue;
+                }
+
                 float facadeWidth = frontage.x != 0
                     ? settings.GetBlockSize(cell).y -
                       settings.BuildingInset * 2f
@@ -1195,6 +1273,8 @@ namespace BarPromenade
                 }
             }
 
+            if (!found && settings.SpatialPlan?.IsCompactCoastal == true)
+                throw new InvalidOperationException("The compact town needs a supermarket with a rear delivery street.");
             return bestLotIndex;
         }
 
@@ -1786,7 +1866,8 @@ namespace BarPromenade
             bool isPrimaryLandmark,
             bool hasEastStreet,
             bool hasWestStreet,
-            bool hasNorthStreet)
+            bool hasNorthStreet,
+            bool domesticPocket)
         {
             var random = new DeterministicRandom(
                 StableHash(seed, cell.x, cell.y, 0x4C4F5453u));
@@ -1819,7 +1900,9 @@ namespace BarPromenade
                 (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
             bool curvedBlock = settings.RoadGeometry?.IsAffectedCell(cell) == true;
             bool replannedBlock = settings.RoadGeometry?.IsReplannedCell(cell) == true;
-            int buildingVariant = authoredOrdinary && curvedBlock
+            int buildingVariant = authoredOrdinary && domesticPocket
+                ? 1
+                : authoredOrdinary && curvedBlock
                 ? 2
                 : offsetPair
                     ? 1
@@ -1886,9 +1969,27 @@ namespace BarPromenade
             {
                 float halfSpan = frontage.x != 0 ? cellSpan.x * 0.5f : cellSpan.y * 0.5f;
                 float halfBuilding = frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
-                float setback = district == CityDistrictKind.Residential ? 2.8f : 1.5f;
+                float setback = domesticPocket ? 2.4f
+                    : settings.SpatialPlan.IsCompactCoastal
+                    ? 1.25f + ((cell.x + cell.y) % 3) * .15f
+                    : district == CityDistrictKind.Residential ? 2.8f : 1.5f;
                 float shift = Mathf.Max(0f, halfSpan - settings.RoadWidth * 0.5f - halfBuilding - setback);
+                // The fair keeps two aligned facades around its shared court;
+                // the smaller houses must not slide sideways out of that gap.
+                if (settings.SpatialPlan.IsCompactCoastal && cell.x == 11 &&
+                    (cell.y == 3 || cell.y == 4) && frontage.x != 0) shift = 0f;
                 center += direction * shift;
+            }
+            if (authoredOrdinary && settings.SpatialPlan.IsCompactCoastal &&
+                cell.y == 5 && (cell.x == 10 || cell.x == 11))
+            {
+                // Fit the two new low-rise houses to the existing metre-authored
+                // arch, including its stair seam, rather than stretching its kit.
+                float boundaryX = GetNodeWorldPosition(settings, origin, new Vector2Int(11, 5)).x;
+                float shellX = boundaryX - CityArchShelterPlacementResolver.AuthoredSharedBoundaryLocalX;
+                float offset = CityArchShelterPlacementResolver.AuthoredFaceGap * .5f + size.x * .5f;
+                center.x = shellX + (cell.x == 10 ? -offset : offset);
+                center.z = GetLotCenter(settings, origin, cell).z;
             }
             float buildingHalfDistance =
                 frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;

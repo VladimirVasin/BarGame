@@ -99,6 +99,7 @@ namespace BarPromenade
             CityChurchCourtyardPlan churchCourtyardPlan =
                 plans.ChurchCourtyard;
             CityFringeYardPlan fringeYardPlan = plans.FringeYard;
+            CityCoastalInfrastructurePlan infrastructurePlan = plans.Infrastructure;
             CityEastExitPlan eastExitPlan = plans.EastExit;
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan);
@@ -346,6 +347,8 @@ namespace BarPromenade
                     archShelterPlan);
             CityFairWorldBuilder.Build(world, fairPlan);
             if (fairPlan.IsEnabled) walkableArea.Add(fairPlan.Bounds);
+
+            CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -1386,7 +1389,7 @@ namespace BarPromenade
                         building,
                         lot,
                         foundationDepth);
-                BuildBarFront(building, lot, walkableArea, bars);
+                BuildBarFront(building, layout, lot, walkableArea, bars);
                 return;
             }
 
@@ -1399,6 +1402,7 @@ namespace BarPromenade
                         foundationDepth);
                 BuildSupermarketFront(
                     building,
+                    layout,
                     lot,
                     walkableArea,
                     ref supermarket);
@@ -1417,6 +1421,7 @@ namespace BarPromenade
                     lot);
                 BuildHomeFront(
                     building,
+                    layout,
                     lot,
                     emissiveMaterial,
                     walkableArea,
@@ -1687,6 +1692,7 @@ namespace BarPromenade
 
         private static void BuildBarFront(
             Transform parent,
+            CityLayout layout,
             BuildingLot lot,
             RoadWalkableArea walkableArea,
             IList<BarEntrance> bars)
@@ -1697,32 +1703,10 @@ namespace BarPromenade
                 lot.FrontageDirection.y);
             CityBarFacadeWorldBuilder.BuildCity(parent, lot);
 
-            Vector3 apronCenter =
-                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
-            float apronLength = Vector3.Distance(
-                lot.DoorPosition,
-                lot.SidewalkArrivalPosition);
-            Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(
-                    apronLength,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    BarEntranceGeometry.WalkwayWidth)
-                : new Vector3(
-                    BarEntranceGeometry.WalkwayWidth,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    apronLength);
-            BuildSidewalkBox(
-                "Bar Entrance Walkway",
-                parent,
-                new Bounds(
-                    apronCenter +
-                    (Vector3.up *
-                     ((CityStreetSurfacePlanner.RoadTop +
-                       CityStreetSurfacePlanner.SidewalkTop) * 0.5f)),
-                    apronSize));
-            walkableArea.Add(RectFromCenter(apronCenter, apronSize.x, apronSize.z));
+            CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(
+                layout, lot, BarEntranceGeometry.WalkwayWidth);
+            BuildEntranceForecourt("Bar Entrance Walkway",parent,apron);
+            walkableArea.Add(apron.Footprint);
 
             GameObject entranceObject = new GameObject("Interactive Bar Entrance");
             entranceObject.transform.SetParent(parent, false);
@@ -1746,8 +1730,7 @@ namespace BarPromenade
                 lot.DoorPosition +
                 direction * 0.72f;
             doorDock.y =
-                apronCenter.y +
-                CityStreetSurfacePlanner.SidewalkTop +
+                apron.SampleTop(doorDock) +
                 PlayerFactory.GroundedRootOffset;
             doorAction.Configure(
                 PlayerDoorActionPlan.CreateStationary(
@@ -1759,6 +1742,7 @@ namespace BarPromenade
 
         private static void BuildSupermarketFront(
             Transform parent,
+            CityLayout layout,
             BuildingLot lot,
             RoadWalkableArea walkableArea,
             ref SupermarketEntrance supermarket)
@@ -1769,36 +1753,10 @@ namespace BarPromenade
                 lot.FrontageDirection.y);
             CitySupermarketFacadeWorldBuilder.BuildCity(parent, lot);
 
-            Vector3 apronCenter =
-                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
-            float apronLength = Vector3.Distance(
-                lot.DoorPosition,
-                lot.SidewalkArrivalPosition);
-            Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(
-                    apronLength,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    SupermarketEntranceGeometry.WalkwayWidth)
-                : new Vector3(
-                    SupermarketEntranceGeometry.WalkwayWidth,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    apronLength);
-            BuildSidewalkBox(
-                "Supermarket Entrance Walkway",
-                parent,
-                new Bounds(
-                    apronCenter +
-                    Vector3.up *
-                    ((CityStreetSurfacePlanner.RoadTop +
-                      CityStreetSurfacePlanner.SidewalkTop) * 0.5f),
-                    apronSize));
-            walkableArea.Add(
-                RectFromCenter(
-                    apronCenter,
-                    apronSize.x,
-                    apronSize.z));
+            CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(
+                layout, lot, SupermarketEntranceGeometry.WalkwayWidth);
+            BuildEntranceForecourt("Supermarket Entrance Walkway",parent,apron);
+            walkableArea.Add(apron.Footprint);
 
             GameObject entranceObject = new GameObject(
                 "Interactive Supermarket Entrance");
@@ -1825,8 +1783,7 @@ namespace BarPromenade
                 lot.DoorPosition +
                 direction * 0.82f;
             doorDock.y =
-                apronCenter.y +
-                CityStreetSurfacePlanner.SidewalkTop +
+                apron.SampleTop(doorDock) +
                 PlayerFactory.GroundedRootOffset;
             doorAction.Configure(
                 PlayerDoorActionPlan.CreateStationary(
@@ -1839,6 +1796,7 @@ namespace BarPromenade
 
         private static void BuildHomeFront(
             Transform parent,
+            CityLayout layout,
             BuildingLot lot,
             Material emissiveMaterial,
             RoadWalkableArea walkableArea,
@@ -1852,41 +1810,16 @@ namespace BarPromenade
                 new Vector3(-direction.z, 0f, direction.x);
             bool frontageIsX =
                 Mathf.Abs(direction.x) > 0.5f;
-            Vector3 apronCenter =
-                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
-            float apronLength = Vector3.Distance(
-                lot.DoorPosition,
-                lot.SidewalkArrivalPosition);
-            Vector3 apronSize = frontageIsX
-                ? new Vector3(
-                    apronLength,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    PlayerHomeEntranceGeometry.WalkwayWidth)
-                : new Vector3(
-                    PlayerHomeEntranceGeometry.WalkwayWidth,
-                    CityStreetSurfacePlanner.SidewalkTop -
-                    CityStreetSurfacePlanner.RoadTop,
-                    apronLength);
-            BuildSidewalkBox(
-                "Home Entrance Walkway",
-                parent,
-                new Bounds(
-                    apronCenter +
-                    (Vector3.up *
-                     ((CityStreetSurfacePlanner.RoadTop +
-                       CityStreetSurfacePlanner.SidewalkTop) * 0.5f)),
-                    apronSize));
-            walkableArea.Add(
-                RectFromCenter(
-                    apronCenter,
-                    apronSize.x,
-                    apronSize.z));
+            CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(
+                layout, lot, PlayerHomeEntranceGeometry.WalkwayWidth);
+            BuildEntranceForecourt("Home Entrance Walkway",parent,apron);
+            walkableArea.Add(apron.Footprint);
 
             Vector3 mailboxBase =
                 lot.DoorPosition +
                 (direction * 1.05f) +
                 (tangent * 1.35f);
+            if(apron.IsGraded)mailboxBase.y=apron.SampleTop(mailboxBase);
             RuntimePrimitiveFactory.CreateCylinder(
                 "Home Mailbox Post",
                 parent,
@@ -1939,8 +1872,7 @@ namespace BarPromenade
                 lot.DoorPosition +
                 direction * 0.72f;
             doorDock.y =
-                apronCenter.y +
-                CityStreetSurfacePlanner.SidewalkTop +
+                apron.SampleTop(doorDock) +
                 PlayerFactory.GroundedRootOffset;
             doorAction.Configure(
                 PlayerDoorActionPlan.CreateStationary(
@@ -2671,6 +2603,12 @@ namespace BarPromenade
             CityGroundSurfaceSystem.Register(markings, 100, paint: true);
         }
 
+        private static void BuildEntranceForecourt(string name,Transform parent,CityEntranceForecourtPlan plan)
+        {
+            if(plan.IsGraded)CityEntranceForecourtWorldBuilder.Build(name,parent,plan);
+            else BuildSidewalkBox(name,parent,plan.Bounds);
+        }
+
         private static void BuildSidewalkBox(
             string name,
             Transform parent,
@@ -2880,6 +2818,7 @@ namespace BarPromenade
                 CityFringeYardPlanner.Create(
                     layout,
                     MountainBoundary);
+            Infrastructure = CityCoastalInfrastructurePlan.Create(layout, FringeYard);
             Seacoast = CitySeacoastPlanner.Create(layout);
             EastExit = CityEastExitPlanner.Create(layout);
         }
@@ -2893,6 +2832,7 @@ namespace BarPromenade
         internal CityChurchCemeteryPassagePlan ChurchCemeteryPassage { get; }
         internal CityChurchCourtyardPlan ChurchCourtyard { get; }
         internal CityFringeYardPlan FringeYard { get; }
+        internal CityCoastalInfrastructurePlan Infrastructure { get; }
         internal CitySeacoastPlan Seacoast { get; }
         internal CityEastExitPlan EastExit { get; }
 

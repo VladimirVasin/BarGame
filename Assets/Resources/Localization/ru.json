@@ -1466,19 +1466,19 @@
     },
     {
       "key": "bus.stop.default_coastal.industrial",
-      "value": "Остановка «Промзона»"
+      "value": "Остановка «Фабрика»"
     },
     {
       "key": "bus.stop.default_coastal.nightlife",
-      "value": "Остановка «Ночной район»"
+      "value": "Остановка «Последний маршрут»"
     },
     {
       "key": "bus.stop.default_coastal.residential",
-      "value": "Остановка «Жилой район»"
+      "value": "Остановка «Жилые дворы»"
     },
     {
       "key": "bus.stop.default_coastal.old_town",
-      "value": "Остановка «Старый город»"
+      "value": "Остановка «Водоразбор»"
     },
     {
       "key": "bus.stop.default_coastal.home",

@@ -1364,7 +1364,7 @@ namespace BarPromenade
                     new CityMapPointOfInterest(
                         "fair",
                         CityMapPointOfInterestKind.Fair,
-                        CityDistrictKind.Nightlife,
+                        Layout.SpatialPlan.IsCompactCoastal ? CityDistrictKind.Residential : CityDistrictKind.Nightlife,
                         fair.CenterPathSouth + Vector3.up * rootOffset,
                         fair.Bounds,
                         true));
@@ -1417,7 +1417,7 @@ namespace BarPromenade
                     new CityMapPointOfInterest(
                         "arch",
                         CityMapPointOfInterestKind.ArchShelter,
-                        CityDistrictKind.Nightlife,
+                        Layout.SpatialPlan.IsCompactCoastal ? CityDistrictKind.Residential : CityDistrictKind.Nightlife,
                         new Vector3(
                             lane.Footprint.xMax -
                             CityGroundTraversalPlanner.MaximumAgentRadius,

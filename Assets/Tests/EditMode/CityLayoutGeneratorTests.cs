@@ -746,9 +746,13 @@ namespace BarPromenade.Tests.EditMode
                     lot.IsBar &&
                     lot.Cell == new Vector2Int(12, 6)),
                 Is.True);
-            Assert.That(
-                layout.DistrictPointsOfInterest,
-                Has.Count.EqualTo(4));
+            Assert.That(layout.DistrictPointsOfInterest, Has.Count.EqualTo(4));
+            Assert.That(layout.Districts.Select(district => district.Kind), Is.EquivalentTo(new[] {
+                CityDistrictKind.Residential, CityDistrictKind.Industrial, CityDistrictKind.CentralPark }));
+            Assert.That(layout.DistrictPointsOfInterest.Select(point => point.Kind), Is.Unique);
+            Assert.That(layout.DistrictPointsOfInterest.GroupBy(point => point.District)
+                .Select(group => group.Count()), Is.EquivalentTo(new[] { 2, 2 }));
+            Assert.That(layout.PrimaryLandmarkCells.Count, Is.EqualTo(4));
         }
 
         [Test]
@@ -759,8 +763,9 @@ namespace BarPromenade.Tests.EditMode
                 CityBlueprintCatalog.Default, CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed);
             Assert.That(layout.SpatialPlan.IsUniform, Is.False);
-            Assert.That(layout.RoadEdges.Select(layout.GetRoadLength).Distinct().Count(),
-                Is.GreaterThan(1), "The built roads must use the variable physical spans.");
+            Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
+            Assert.That(layout.RoadEdges.All(edge => Mathf.Abs(layout.GetRoadLength(edge) - 26f) < .001f),
+                Is.True, "Urban routes retain their real 26 metre pitch.");
             for (int z = 3; z <= 8; z++)
                 for (int x = 4; x <= 13; x++)
                 {
@@ -833,7 +838,7 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                foreach (CityDistrictKind district in CityLayoutGenerator.UrbanDistricts)
+                foreach (CityDistrictKind district in new[] { CityDistrictKind.Residential, CityDistrictKind.Industrial })
                     Assert.That(layout.BuildingLots.Where(lot => lot.IsOrdinaryBuilding && lot.District == district)
                         .Select(lot => lot.BuildingVariant).Distinct(), Is.SupersetOf(new[] { 0, 1, 2 }),
                         district + " must retain the original three authored typologies alongside new variants");
@@ -857,7 +862,7 @@ namespace BarPromenade.Tests.EditMode
         public void SwappingUrbanAreas_PreservesTopologyNodesAndRoads()
         {
             CityBlueprint originalBlueprint =
-                CityBlueprintCatalog.Default;
+                CityBlueprintCatalog.CreateLegacy(CityGenerationSettings.Default);
             Assert.That(
                 originalBlueprint.TryGetArea(
                     "old-town",

@@ -70,7 +70,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         Vector3.Dot(fromPole, toRoad),
                         Is.EqualTo(
-                            CityBusStopWaitPlanner.PoleToSidewalkCenter)
+                            CityBusStopWaitPlanner.GetPoleToSidewalkCenter(busPlan, stop))
                             .Within(0.0001f),
                         "The pole stands off the walkable strip and carries " +
                         "a collider, so the slot sits road-ward of it on the " +

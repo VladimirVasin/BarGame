@@ -216,40 +216,40 @@ MonoBehaviour:
     metersPerTile: 0
     renderer: {fileID: 7343086713722993939}
   localBounds:
-    m_Center: {x: -0.015000105, y: 4.6499996, z: 0.020000696}
-    m_Extent: {x: 7.5150003, y: 4.6500006, z: 7.05}
+    m_Center: {x: -0.015000105, y: 4.1999993, z: 0.020000696}
+    m_Extent: {x: 7.5150003, y: 4.2000003, z: 7.05}
   roofAttachmentBounds:
-    m_Center: {x: 0, y: 8.925, z: 3.5}
-    m_Extent: {x: 7.1, y: 0.375, z: 3.1}
+    m_Center: {x: 0, y: 7.7999997, z: 3.5}
+    m_Extent: {x: 7.1, y: 0.5999999, z: 3.1}
   colliderBounds:
-  - m_Center: {x: 0, y: 4.275, z: 3.5}
-    m_Extent: {x: 7.5, y: 4.275, z: 3.5}
-  - m_Center: {x: -5, y: 4.275, z: -3.5}
-    m_Extent: {x: 2.5, y: 4.275, z: 3.5}
+  - m_Center: {x: 0, y: 3.6, z: 3.5}
+    m_Extent: {x: 7.5, y: 3.6, z: 3.5}
+  - m_Center: {x: -5, y: 3.6, z: -3.5}
+    m_Extent: {x: 2.5, y: 3.6, z: 3.5}
   facadeAttachments:
   - side: Front
     localBounds:
-      m_Center: {x: 0, y: 4.275, z: 6.9}
-      m_Extent: {x: 7.25, y: 3.775, z: 0.099999905}
+      m_Center: {x: 0, y: 3.6, z: 6.9}
+      m_Extent: {x: 7.25, y: 3.1, z: 0.099999905}
   - side: Rear
     localBounds:
-      m_Center: {x: -5, y: 4.275, z: -6.9}
-      m_Extent: {x: 2.25, y: 3.775, z: 0.099999905}
+      m_Center: {x: -5, y: 3.6, z: -6.9}
+      m_Extent: {x: 2.25, y: 3.1, z: 0.099999905}
   - side: Left
     localBounds:
-      m_Center: {x: -7.4, y: 4.65, z: 0}
-      m_Extent: {x: 0.099999905, y: 4.15, z: 6.75}
+      m_Center: {x: -7.4, y: 4.2, z: 0}
+      m_Extent: {x: 0.099999905, y: 3.7, z: 6.75}
   - side: Right
     localBounds:
-      m_Center: {x: 7.4, y: 4.275, z: 3.5}
-      m_Extent: {x: 0.099999905, y: 3.775, z: 3.25}
+      m_Center: {x: 7.4, y: 3.6, z: 3.5}
+      m_Extent: {x: 0.099999905, y: 3.1, z: 3.25}
   windowSlots:
   - slotId: 1
     side: Front
     floor: 0
     bay: 0
     openingKind: 0
-    localCenter: {x: -5.4, y: 5.6, z: 7}
+    localCenter: {x: 2.7, y: 5.6, z: 7}
     sizeMeters: {x: 1.5, y: 1.35}
     uv2SlotId: 1
   - slotId: 2
@@ -257,74 +257,50 @@ MonoBehaviour:
     floor: 0
     bay: 1
     openingKind: 0
-    localCenter: {x: -2.7, y: 5.6, z: 7}
+    localCenter: {x: 5.4, y: 5.6, z: 7}
     sizeMeters: {x: 1.5, y: 1.35}
     uv2SlotId: 2
   - slotId: 3
-    side: Front
-    floor: 0
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 5.6, z: 7}
-    sizeMeters: {x: 1.5, y: 1.35}
-    uv2SlotId: 3
-  - slotId: 4
-    side: Front
-    floor: 0
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2.7, y: 5.6, z: 7}
-    sizeMeters: {x: 1.5, y: 1.35}
-    uv2SlotId: 4
-  - slotId: 5
-    side: Front
-    floor: 0
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 5.4, y: 5.6, z: 7}
-    sizeMeters: {x: 1.5, y: 1.35}
-    uv2SlotId: 5
-  - slotId: 6
     side: Rear
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -6.25, y: 5.6, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 6
-  - slotId: 7
+    uv2SlotId: 3
+  - slotId: 4
     side: Rear
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -3.75, y: 5.6, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 7
-  - slotId: 8
+    uv2SlotId: 4
+  - slotId: 5
     side: Left
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -7.5, y: 5.6, z: -3.85}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 8
-  - slotId: 9
+    uv2SlotId: 5
+  - slotId: 6
     side: Left
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -7.5, y: 5.6, z: 3.85}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 9
+    uv2SlotId: 6
   balconySlots: []
   frontageWidth: 15
   depth: 14
-  height: 9.3
+  height: 8.4
   unitFactor: 1
-  sourceTriangleCount: 218
-  sourceGeneratorVersion: 3.0.0
-  designId: city_buildings_prototypes_v3
-  buildSignature: b456238ff573c9505aef2ea27f764fb34e5b498789b3908126a273816bc1040c
+  sourceTriangleCount: 212
+  sourceGeneratorVersion: 4.0.0
+  designId: city_buildings_coastal_v4
+  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258
 --- !u!1 &3634623991758804403
 GameObject:
   m_ObjectHideFlags: 0

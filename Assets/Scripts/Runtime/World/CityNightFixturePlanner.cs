@@ -116,7 +116,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (!TouchesCourtyardEdge(layout, edge)) return;
+            if (!layout.SpatialPlan.IsCompactCoastal && !TouchesCourtyardEdge(layout, edge)) return;
             // Keep the two ordinary lights when their original stations are
             // occupied by the court's entry or flank. Both sides are tried at
             // each bounded shift before moving farther along the same street.
@@ -142,7 +142,9 @@ namespace BarPromenade
             Vector3 left = new Vector3(-tangent.z, 0f, tangent.x);
             float sideMultiplier = side == StreetLampSide.Left ? 1f : -1f;
             Vector3 outward = left * sideMultiplier;
-            float offset = (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
+            float offset = layout.SpatialPlan.IsCompactCoastal
+                ? CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout) + .25f
+                : (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
             Vector3 centerlinePosition = Vector3.Lerp(start, end, edgeT);
             bool courtyardEdge = TouchesCourtyardEdge(layout, edge);
             if (layout.RoadGeometry.IsCurved(edge) || courtyardEdge)
@@ -155,9 +157,11 @@ namespace BarPromenade
             }
 
             Vector3 position = centerlinePosition + (outward * offset);
-            if (courtyardEdge && CityTerrainSurfacePlan.TrySampleGroundTop(layout,
+            if ((courtyardEdge || layout.SpatialPlan.IsCompactCoastal) && CityTerrainSurfacePlan.TrySampleGroundTop(layout,
                     new Vector2(position.x, position.z), out float top, out _))
                 position.y = top;
+            if(CityStreetSurfacePlanner.TrySampleEntranceForecourtTop(layout,new Vector2(position.x,position.z),out float forecourtTop))
+                position.y=forecourtTop;
 
             return new StreetLampDescriptor(
                 edge,
@@ -196,6 +200,11 @@ namespace BarPromenade
                     node);
             Vector3 firstPosition = nodePosition + pairedOffset;
             Vector3 secondPosition = nodePosition - pairedOffset;
+            if (layout.SpatialPlan.IsCompactCoastal)
+            {
+                GroundFixture(ref firstPosition);
+                GroundFixture(ref secondPosition);
+            }
             float phase = HashToUnitFloat(StableHash(
                 layout.Seed,
                 node.x,
@@ -206,16 +215,25 @@ namespace BarPromenade
                 node,
                 0,
                 firstPosition,
-                (nodePosition - firstPosition).normalized,
+                -pairedOffset.normalized,
                 phase);
             var second = new TrafficSignalDescriptor(
                 node,
                 1,
                 secondPosition,
-                (nodePosition - secondPosition).normalized,
+                pairedOffset.normalized,
                 phase);
             target.Add(first);
             target.Add(second);
+
+            void GroundFixture(ref Vector3 position)
+            {
+                if (CityTerrainSurfacePlan.TrySampleGroundTop(layout,
+                        new Vector2(position.x, position.z), out float ground, out _))
+                    position.y = ground;
+                if(CityStreetSurfacePlanner.TrySampleEntranceForecourtTop(layout,new Vector2(position.x,position.z),out float forecourtTop))
+                    position.y=forecourtTop;
+            }
         }
 
         private static bool IsFixtureBlocked(
@@ -223,11 +241,25 @@ namespace BarPromenade
             Vector3 position)
         {
             return layout.IsWater(position) ||
+                   (layout.SpatialPlan.IsCompactCoastal && IntersectsCompactStreetOrBuilding(layout, position)) ||
                    IntersectsCourtyardReservation(layout, position) ||
                    IntersectsRiverReservation(layout, position) ||
                    IntersectsDistrictPointOfInterestReservation(
                        layout,
                        position);
+        }
+
+        internal static bool IntersectsCompactStreetOrBuilding(CityLayout layout, Vector3 position)
+        {
+            var point = new Vector2(position.x, position.z);
+            float trafficClearance = layout.RoadWidth * .5f + .25f;
+            foreach (RoadEdge edge in layout.RoadEdges)
+                if (layout.GetPathKind(edge) == CityPathKind.Street &&
+                    layout.RoadGeometry.Get(edge).Project(point).DistanceSquared < trafficClearance * trafficClearance)
+                    return true;
+            foreach (BuildingLot lot in layout.BuildingLots)
+                if (lot.HasBuilding && IntersectsBuilding(point, lot)) return true;
+            return false;
         }
 
         private static bool TouchesCourtyardEdge(CityLayout layout, RoadEdge edge)

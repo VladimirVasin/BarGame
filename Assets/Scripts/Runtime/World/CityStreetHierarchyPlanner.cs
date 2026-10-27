@@ -79,9 +79,12 @@ namespace BarPromenade
 
         private static bool IsProtected(RoadEdge edge)
         {
-            return edge.A.x >= 9 && edge.B.x >= 9 &&
-                   edge.A.y >= 2 && edge.A.y <= 8 &&
-                   edge.B.y >= 2 && edge.B.y <= 8;
+            // Retain only the measured fair/home approach. The rest of the
+            // former entertainment quarter participates in the new fabric.
+            return edge.A.x >= 10 && edge.B.x >= 10 &&
+                   edge.A.x <= 13 && edge.B.x <= 13 &&
+                   edge.A.y >= 3 && edge.A.y <= 7 &&
+                   edge.B.y >= 3 && edge.B.y <= 7;
         }
 
         private static void Add(RoadEdge edge, List<RoadEdge> roads,
@@ -144,15 +147,20 @@ namespace BarPromenade
                             : edge.IsHorizontal ? 12 + Mod(z, 3) : 16 + Mod(x, 3);
                         break;
                     case CityDistrictKind.Residential:
-                        primary = edge.IsVertical ? Mod(x, 3) == 1
-                            : Mod(z, 4) == 1 + Mod(x / 3, 2);
-                        priority = primary ? edge.IsVertical ? 0 : 4
-                            : edge.IsHorizontal ? 16 : 24;
+                        // Paired short fronts open into shared back courts.
+                        // Transverse links alternate rather than continuing
+                        // every street through a repetitive square grid.
+                        primary = edge.IsVertical ? Mod(x, 2) == 0
+                            : Mod(z + x / 2, 3) == 1;
+                        priority = primary ? edge.IsVertical ? 1 : 0
+                            : edge.IsHorizontal ? 15 + Mod(x, 2) : 23;
                         break;
                     case CityDistrictKind.Industrial:
-                        primary = edge.IsHorizontal ? Mod(z, 3) == 1 : Mod(x, 4) == 1;
-                        priority = primary ? edge.IsHorizontal ? 0 : 3
-                            : edge.IsVertical ? 17 : 25;
+                        // Parallel loading streets have short cross passages;
+                        // the missing arms become workshop service courts.
+                        primary = edge.IsHorizontal ? Mod(z, 2) == 1 : Mod(x + z / 2, 3) == 1;
+                        priority = primary ? edge.IsHorizontal ? 0 : 4
+                            : edge.IsVertical ? 18 : 26;
                         break;
                     case CityDistrictKind.Nightlife:
                         primary = edge.IsVertical ? x == shape.Width / 2 : Mod(z, 3) == 1;
@@ -178,8 +186,8 @@ namespace BarPromenade
             var budgets = new Dictionary<CityDistrictKind, int>();
             foreach (KeyValuePair<CityDistrictKind, DistrictShape> pair in shapes)
             {
-                float density = pair.Key == CityDistrictKind.Industrial ? 0.12f :
-                    pair.Key == CityDistrictKind.OldTown ? 0.35f : 0.24f;
+                float density = pair.Key == CityDistrictKind.Industrial ? 0.3f :
+                    pair.Key == CityDistrictKind.Residential ? 0.5f : 0.24f;
                 budgets.Add(pair.Key, Mathf.CeilToInt(pair.Value.CellCount *
                     Mathf.Clamp01(settings.LoopChance) * density));
             }
@@ -236,13 +244,8 @@ namespace BarPromenade
         private static CityDistrictKind ResolvePhysicalDistrict(
             CityBlueprint blueprint, Vector2Int cell)
         {
-            // Street grammar belongs to the physical coastal footprint. Moving
-            // an editable urban archetype must leave traffic topology intact.
-            bool east = cell.x > blueprint.River.CorridorCellX;
-            bool north = cell.y >= blueprint.CenterNode.y;
-            return north
-                ? east ? CityDistrictKind.Residential : CityDistrictKind.OldTown
-                : east ? CityDistrictKind.Nightlife : CityDistrictKind.Industrial;
+            return blueprint.TryGetCell(cell, out CityBlueprintCell descriptor)
+                ? descriptor.Area.Archetype : CityDistrictKind.Yard;
         }
 
         private static int CompareCandidates(ScoredEdge left, ScoredEdge right)

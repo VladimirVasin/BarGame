@@ -177,8 +177,7 @@ namespace BarPromenade
 
         private static bool Supports(CityLayout layout) =>
             layout.BlueprintId==CityBlueprintCatalog.DefaultBlueprintId &&
-            layout.BlockCount==new Vector2Int(17,14) &&
-            Vector2.Distance(layout.NodeSpacing,new Vector2(26f,26f))<.01f && Mathf.Abs(layout.RoadWidth-8f)<.01f;
+            layout.River != null && Mathf.Abs(layout.RoadWidth-8f)<.01f;
 
         internal static CityPortAccessPlan ForLayout(CityLayout layout)
         {

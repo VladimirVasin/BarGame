@@ -57,7 +57,7 @@ namespace BarPromenade
                         "Profiles may contain only playable city cues.");
                 }
 
-                if (CitySoundSourceRules.GetExpectedDistrict(cue) != district)
+                if (!CitySoundSourceRules.SupportsDistrict(cue, district))
                 {
                     throw new ArgumentException(
                         $"Cue '{cue}' does not belong to {district}.",
@@ -112,14 +112,18 @@ namespace BarPromenade
                 CityDistrictKind.Residential,
                 CitySourceSoundId.DryingYardClothLoop,
                 CitySourceSoundId.DryingYardRopeCreak,
-                CitySourceSoundId.DryingYardCarpetStrike);
+                CitySourceSoundId.DryingYardCarpetStrike,
+                CitySourceSoundId.LastRouteRelayLoop,
+                CitySourceSoundId.LastRouteIncompleteChime);
 
         private static readonly CitySoundDistrictProfile Industrial =
             Create(
                 "city.sound.industrial",
                 CityDistrictKind.Industrial,
                 CitySourceSoundId.IndustrialWeighbridgeMechanismLoop,
-                CitySourceSoundId.IndustrialMetalStress);
+                CitySourceSoundId.IndustrialMetalStress,
+                CitySourceSoundId.WaterworksPipeLoop,
+                CitySourceSoundId.WaterworksDrip);
 
         private static readonly CitySoundDistrictProfile Nightlife =
             Create(

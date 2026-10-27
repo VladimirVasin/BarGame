@@ -213,6 +213,8 @@ namespace BarPromenade
                 reserved.Add(port.LandBounds);
                 if (port.Access != null) reserved.Add(port.Access.ReservedBounds);
             }
+            if (layout.SpatialPlan.IsCompactCoastal && (port == null || port.Access == null))
+                throw new InvalidOperationException("The compact coastal city must retain its working port and truck access.");
 
             // Fixtures and buildings claim their spots first, so the
             // hulls and the scatter are planned around them and never

@@ -190,10 +190,9 @@ namespace BarPromenade
             for (int index = 0; index < requiredDistricts.Length; index++)
             {
                 CityDistrictKind district = requiredDistricts[index];
-                if (!plan.Profiles.TryGetValue(
-                        district,
-                        out DistrictElevationProfile profile) ||
-                    profile.PreferredStairConnections <= 0 ||
+                if (!plan.Profiles.TryGetValue(district, out DistrictElevationProfile profile))
+                    continue;
+                if (profile.PreferredStairConnections <= 0 ||
                     !stairDistricts.Contains(district))
                 {
                     throw new InvalidOperationException(

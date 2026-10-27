@@ -1,7 +1,5 @@
 # Art/native tools
 
-[City](../ai/city-texture-plan.md).
-
 Home:`build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
 `--validate-only`; maps `build-home-textures.py --room-only`.
 Bar: `build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`.
@@ -13,9 +11,13 @@ Bar: `build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only
 source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-buildings-3d-model.py` v3.0.0:20 types/140 meshes/13,480tris/719 slots;
-`Assets/City/Models/CityBuildings3D.{fbx,json}`. Launcher/`--validate-only`;
+`build-city-buildings-3d-model.py` v4.0.0;
+`Assets/City/Models/CityBuildings3D.{fbx,json}`;
 import `CityBuildingAssetSetup.BuildOrThrow`.
+`build-city-coastal-infrastructure-3d-model.py` v1.0.0;
+`Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
+`CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
+Both:launcher/`--validate-only`.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 
@@ -23,10 +25,9 @@ import `CityBuildingAssetSetup.BuildOrThrow`.
 `build-city-fair-child-3d-model.py`: child base/3 outfits/toys.
 FBXs/JSON: `Assets/Resources/City/{Fair,FairChild}`;
 source: `ArtSource/City/{Fair,FairChild}`.
-`build-city-fair-{player,child}-actions-3d-model.py`: 6 hero/15 child clips;
-`Assets/Resources/Player/CityFairPlayerActions`,
-`Assets/Resources/City/FairChild/ChildActions` (`.fbx/.json`).
-Use `run-blender.py`/`--validate-only`.
+`build-city-fair-{player,child}-actions-3d-model.py`:6 hero/15 child clips;
+`Assets/Resources/{Player/CityFairPlayerActions,City/FairChild/ChildActions}.{fbx,json}`;
+launcher/`--validate-only`.
 
 `build-city-cannery-3d-model.py`:10 FBXs/JSON→`Assets/Resources/City/Cannery`;
 source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/
@@ -36,12 +37,12 @@ source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes/layered clothes/hair-glasses contacts;launcher/`--validate-only`.
 
-`build-city-port-3d-model.py`: launcher/`--validate-only`;nine FBXs/`CityPort3D.json` in
-`Assets/Resources/City/Port`, source `ArtSource/City/Port`, grips/store/beam/
-`PortAccessLayout.json`/metre UVs. Twelve `512 px` ImageGen maps (sRGB/mipmap/repeat):
+`build-city-port-3d-model.py`:launcher/`--validate-only`;9 FBXs/`CityPort3D.json`→
+`Assets/Resources/City/Port`, source `ArtSource/City/Port`;grips/store/beam/
+`PortAccessLayout.json`/metre UVs. 12×512px ImageGen maps (sRGB/mipmap/repeat):
 originals/prompts/hashes:`ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
-asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman`
-model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
+city asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
+model/manifest/actions/atlas/lower face/chin-jowl/mouth/export validation.
 `dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
 `build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.

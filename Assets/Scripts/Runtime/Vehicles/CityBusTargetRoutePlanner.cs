@@ -23,6 +23,7 @@ namespace BarPromenade
             List<StopTarget> targets = CreateStopTargets(layout);
             if (targets.Count == 0 || acceptedLinks.Count == 0)
             {
+                Debug.Log($"CITY BUS ROUTE EMPTY: initial targets={targets.Count}, acceptedLinks={acceptedLinks.Count}.");
                 return new List<RouteOccurrence>();
             }
 
@@ -75,6 +76,7 @@ namespace BarPromenade
             {
                 return new List<RouteOccurrence>();
             }
+            var bankConnectors = new BankConnectorReachability(layout, outgoing, acceptedLinks, keptTargets.Count);
 
             // Cap AFTER the cycle-capability prune: near river flanks the
             // best-sorted candidates are often dead stubs, and capping
@@ -82,6 +84,20 @@ namespace BarPromenade
             for (int index = 0; index < candidatesByTarget.Count; index++)
             {
                 List<StopCandidate> candidates = candidatesByTarget[index];
+                if (IsCoverageStopTargetKind(keptTargets[index].Kind))
+                {
+                    // A river-flank pole can be globally cycle-capable only
+                    // by crossing both bridges. Prefer the target's available
+                    // bank-local alternatives before the small coverage cap
+                    // discards those less directly facing its gate.
+                    bool hasLocalCycle = false;
+                    foreach (StopCandidate candidate in candidates)
+                        if (bankConnectors.IsBankCycleCapable(candidate)) { hasLocalCycle = true; break; }
+                    if (hasLocalCycle)
+                        for (int candidateIndex = candidates.Count - 1; candidateIndex >= 0; candidateIndex--)
+                            if (!bankConnectors.IsBankCycleCapable(candidates[candidateIndex]))
+                                candidates.RemoveAt(candidateIndex);
+                }
                 if (IsCoverageStopTargetKind(keptTargets[index].Kind) &&
                     candidates.Count > MaximumCoverageStopCandidates)
                 {
@@ -133,6 +149,7 @@ namespace BarPromenade
                         true,
                         outgoing,
                         acceptedLinks,
+                        bankConnectors,
                         ref assignmentAttempts,
                         ref fallback,
                         out List<RouteOccurrence> winding))
@@ -154,6 +171,7 @@ namespace BarPromenade
             }
 
             assignmentAttempts = 0;
+            bankConnectors.ResetSearchBudget();
             for (int anchorIndex = 0;
                  anchorIndex < candidatesByTarget[0].Count;
                  anchorIndex++)
@@ -191,6 +209,7 @@ namespace BarPromenade
                         false,
                         outgoing,
                         acceptedLinks,
+                        bankConnectors,
                         ref assignmentAttempts,
                         ref fallback,
                         out List<RouteOccurrence> winding))
@@ -203,6 +222,14 @@ namespace BarPromenade
             assignmentAttemptTotal += assignmentAttempts;
             if (fallback == null)
             {
+                var order = new System.Text.StringBuilder();
+                for (int index = 0; index < keptTargets.Count; index++)
+                    order.Append(keptTargets[index].Suffix).Append(':')
+                        .Append(layout.River.IsEnabled
+                            ? GetTargetBank(keptTargets[index], layout.River.Definition.CorridorCellX) : RiverBank.Unknown)
+                        .Append('(').Append(candidatesByTarget[index].Count).Append(") ");
+                Debug.Log($"CITY BUS ROUTE EMPTY: assignment targets={keptTargets.Count}, attempts={assignmentAttemptTotal}, choices={bankConnectors.ChoiceCount}; " +
+                    $"first blocked={bankConnectors.FirstBlockedPair}; order={order}.");
                 return new List<RouteOccurrence>();
             }
 
@@ -248,7 +275,7 @@ namespace BarPromenade
                     frontages,
                     references,
                     excluded,
-                    GetStopSuffix(point.District),
+                    GetPointStopSuffix(point.Kind),
                     true));
             }
 
@@ -286,6 +313,20 @@ namespace BarPromenade
             return coverage.Count > 0
                 ? OrderAsPerimeterLoop(layout, result)
                 : OrderAsServiceLoop(result);
+        }
+
+        // Place identity outlives its district. Two places now share each
+        // district, but their stop IDs and saved localization keys stay unique.
+        private static string GetPointStopSuffix(CityDistrictPointOfInterestKind kind)
+        {
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt: return "old-town";
+                case CityDistrictPointOfInterestKind.ResidentialDryingYard: return "residential";
+                case CityDistrictPointOfInterestKind.IndustrialCannery: return "industrial";
+                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland: return "nightlife";
+                default: throw new System.ArgumentOutOfRangeException(nameof(kind));
+            }
         }
 
         /// <summary>
@@ -553,6 +594,8 @@ namespace BarPromenade
             IReadOnlyList<Vector3> entrancePoints)
         {
             var result = new List<StopCandidate>();
+            int roadCandidates = 0, nearCandidates = 0, kerbCandidates = 0,
+                districtCandidates = 0, placedCandidates = 0, rangedCandidates = 0;
             float safeEndDistance = vehicle.InflatedLength * 0.5f +
                                     StopJunctionClearance;
             for (int linkIndex = 0;
@@ -567,6 +610,7 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                roadCandidates++;
 
                 int roadEdgeHop = GetRoadEdgeHop(
                     link.RoadEdge,
@@ -589,6 +633,7 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                nearCandidates++;
 
                 TemporaryNode node = nodes[link.FromNodeIndex];
                 Vector2Int roadsideCell = GetRightSideCell(
@@ -605,6 +650,7 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                kerbCandidates++;
 
                 int districtPenalty = GetDistrictPenalty(
                     layout,
@@ -616,6 +662,7 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                districtCandidates++;
 
                 if (!TryCreateStopCandidate(
                         layout,
@@ -631,6 +678,7 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                placedCandidates++;
 
                 if (usesRiverPointFallback &&
                     candidate.ReferenceDistance >
@@ -646,6 +694,7 @@ namespace BarPromenade
                     continue;
                 }
 
+                rangedCandidates++;
                 result.Add(candidate);
             }
 
@@ -671,6 +720,11 @@ namespace BarPromenade
                     }
                 }
             }
+
+            if (target.IsMandatory && result.Count == 0)
+                Debug.Log($"CITY BUS ROUTE EMPTY: target candidates {target.Suffix} {target.Cell}/{target.District}; " +
+                    $"road={roadCandidates}, near={nearCandidates}, kerb={kerbCandidates}, district={districtCandidates}, " +
+                    $"placed={placedCandidates}, ranged={rangedCandidates}, ownBank={result.Count}.");
 
             // A coverage stop's kerb side outranks its adjacency: the
             // gate's own edge is too short to host a shelter outside the
@@ -861,7 +915,7 @@ namespace BarPromenade
             Vector3 result = roadPosition +
                 (right * (
                     (layout.RoadWidth * 0.5f) +
-                    RoadsidePoleOutsideRoadEdge -
+                    GetRoadsidePoleOutsideRoadEdge(layout) -
                     laneCenterOffset));
             // Provisional analytic height only, good enough for the
             // planner's own distance and exclusion checks. On graded
@@ -1027,6 +1081,7 @@ namespace BarPromenade
                 {
                     if (targets[targetIndex].IsMandatory)
                     {
+                        Debug.Log($"CITY BUS ROUTE EMPTY: cycle candidates {targets[targetIndex].Suffix} {targets[targetIndex].Cell}/{targets[targetIndex].District}.");
                         return false;
                     }
 
@@ -1048,11 +1103,12 @@ namespace BarPromenade
             bool requireUniqueEdges,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
+            BankConnectorReachability bankConnectors,
             ref int assignmentAttempts,
             ref List<RouteOccurrence> fallback,
             out List<RouteOccurrence> winding)
         {
-            if (assignmentAttempts >= MaximumRouteAssignmentAttempts)
+            if (assignmentAttempts >= MaximumRouteAssignmentAttempts || bankConnectors.IsExhausted)
             {
                 winding = null;
                 return false;
@@ -1092,12 +1148,16 @@ namespace BarPromenade
             List<StopCandidate> options = candidates[targetIndex];
             for (int index = 0; index < options.Count; index++)
             {
+                if (!bankConnectors.TryChoose()) break;
                 StopCandidate option = options[index];
                 if (requireUniqueEdges &&
                     usedEdges.Contains(option.Source.RoadEdge))
                 {
                     continue;
                 }
+                if (!bankConnectors.CanConnect(selected[targetIndex - 1], option) ||
+                    (targetIndex == selected.Length - 1 &&
+                     !bankConnectors.CanConnect(option, selected[0]))) continue;
 
                 selected[targetIndex] = option;
                 bool added = requireUniqueEdges &&
@@ -1112,6 +1172,7 @@ namespace BarPromenade
                         requireUniqueEdges,
                         outgoing,
                         acceptedLinks,
+                        bankConnectors,
                         ref assignmentAttempts,
                         ref fallback,
                         out winding))
@@ -1821,6 +1882,93 @@ namespace BarPromenade
             float x = first.x - second.x;
             float z = first.z - second.z;
             return Mathf.Sqrt((x * x) + (z * z));
+        }
+
+        /// <summary>
+        /// Necessary connector support on the accepted full-body graph. The
+        /// route's exact bridge assignment and stop-passing bans still run at
+        /// completion; impossible early same-bank pairs no longer spend the
+        /// entire bounded assignment budget varying unrelated later stops.
+        /// </summary>
+        private sealed class BankConnectorReachability
+        {
+            private readonly CityLayout layout;
+            private readonly IReadOnlyList<List<int>> outgoing;
+            private readonly IList<TemporaryLink> links;
+            private readonly HashSet<RoadEdge> bridges = new HashSet<RoadEdge>();
+            private readonly List<TemporaryLink> bridgeLinks = new List<TemporaryLink>(4);
+            private readonly Dictionary<int, bool[]> reachable = new Dictionary<int, bool[]>();
+            private readonly int maximumChoices;
+            private int choices;
+            internal string FirstBlockedPair { get; private set; } = string.Empty;
+
+            internal BankConnectorReachability(CityLayout layout,
+                IReadOnlyList<List<int>> outgoing, IList<TemporaryLink> links, int targetCount)
+            {
+                this.layout = layout; this.outgoing = outgoing; this.links = links;
+                maximumChoices = layout.SpatialPlan.IsCompactCoastal
+                    ? MaximumRouteAssignmentAttempts * Mathf.Max(1, targetCount) : int.MaxValue;
+                if (!layout.SpatialPlan.IsCompactCoastal || !layout.River.IsEnabled) return;
+                foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges)
+                    if (bridge.Definition.Role == CityBridgeRole.Road)
+                        bridges.Add(bridge.Definition.CrossingEdge);
+                foreach (TemporaryLink link in links)
+                    if (link.IsRoadSegment && bridges.Contains(link.RoadEdge)) bridgeLinks.Add(link);
+            }
+
+            internal bool IsExhausted => choices >= maximumChoices;
+            internal int ChoiceCount => choices;
+            internal bool TryChoose() => maximumChoices == int.MaxValue || ++choices <= maximumChoices;
+            internal void ResetSearchBudget() => choices = 0;
+
+            internal bool IsBankCycleCapable(StopCandidate candidate) => bridges.Count == 0 ||
+                GetReachable(candidate.Source.ToNodeIndex)[candidate.Source.FromNodeIndex];
+
+            internal bool CanConnect(StopCandidate from, StopCandidate to)
+            {
+                if (bridges.Count == 0) return true;
+                int corridor = layout.River.Definition.CorridorCellX;
+                RiverBank bank = GetRiverBank(from.Source.RoadEdge, corridor);
+                RiverBank nextBank = GetRiverBank(to.Source.RoadEdge, corridor);
+                if (bank == RiverBank.Unknown || nextBank == RiverBank.Unknown) return true;
+                int start = from.Source.ToNodeIndex;
+                int destination = to.Source.FromNodeIndex;
+                bool[] seen = GetReachable(start);
+                if (bank == nextBank && seen[destination]) return true;
+                if (bank == nextBank) return RecordBlocked(from, to, bank);
+                foreach (TemporaryLink bridge in bridgeLinks)
+                    if (seen[bridge.FromNodeIndex] && GetReachable(bridge.ToNodeIndex)[destination]) return true;
+                return RecordBlocked(from, to, bank);
+            }
+
+            private bool RecordBlocked(StopCandidate from, StopCandidate to, RiverBank bank)
+            {
+                if (FirstBlockedPair.Length == 0)
+                    FirstBlockedPair = $"{from.Target.Suffix}[{from.Source.Id}]→{to.Target.Suffix}[{to.Source.Id}] on {bank}";
+                return false;
+            }
+
+            private bool[] GetReachable(int start)
+            {
+                if (!reachable.TryGetValue(start, out bool[] seen))
+                {
+                    seen = new bool[outgoing.Count];
+                    var pending = new List<int>(outgoing.Count) { start };
+                    seen[start] = true;
+                    for (int cursor = 0; cursor < pending.Count; cursor++)
+                        foreach (int index in outgoing[pending[cursor]])
+                        {
+                            TemporaryLink link = links[index];
+                            if ((link.OccupiesPrimaryRoadEdge && bridges.Contains(link.RoadEdge)) ||
+                                (link.HasSecondaryRoadEdge && bridges.Contains(link.SecondaryRoadEdge)) ||
+                                seen[link.ToNodeIndex]) continue;
+                            seen[link.ToNodeIndex] = true;
+                            pending.Add(link.ToNodeIndex);
+                        }
+                    reachable.Add(start, seen);
+                }
+                return seen;
+            }
         }
 
         private sealed class StopTarget

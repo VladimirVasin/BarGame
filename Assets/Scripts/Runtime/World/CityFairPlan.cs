@@ -274,8 +274,8 @@ namespace BarPromenade
             BuildingLot south = FindLot(layout, SouthCell);
             BuildingLot north = FindLot(layout, NorthCell);
             if (south == null || north == null || !south.IsOrdinaryBuilding ||
-                !north.IsOrdinaryBuilding || south.District != CityDistrictKind.Nightlife ||
-                north.District != CityDistrictKind.Nightlife ||
+                !north.IsOrdinaryBuilding || !IsFairDistrict(south.District) ||
+                !IsFairDistrict(north.District) ||
                 south.FrontageDirection != Vector2Int.down ||
                 north.FrontageDirection != Vector2Int.left ||
                 layout.HasRoad(RoadEdge.ForCellFrontage(SouthCell, Vector2Int.up)))
@@ -290,6 +290,9 @@ namespace BarPromenade
             ValidateOrThrow(layout, plan);
             return plan;
         }
+
+        private static bool IsFairDistrict(CityDistrictKind district) =>
+            district == CityDistrictKind.Residential || district == CityDistrictKind.Nightlife;
 
         public static void ValidateOrThrow(CityLayout layout, CityFairPlan plan)
         {

@@ -1,0 +1,166 @@
+{
+  "generator_version": "1.0.0",
+  "design_id": "city_coastal_infrastructure_v1",
+  "unit_factor": 1.0,
+  "scale_mode": "fixed_meters",
+  "imported_basis_correction_unity_euler": [
+    0,
+    180,
+    0
+  ],
+  "signature": "01a2299152c15b04d21336c6ac3375fee0e9d33599af9865cd22f720d55a24dc",
+  "cable_span": {
+    "rings": 17,
+    "sides": 6,
+    "longitudinal_axis": "Unity Z",
+    "nominal_sag_m": 0.7,
+    "radius_m": 0.015,
+    "maximum_runtime_spans": 192
+  },
+  "facility_ids": [
+    "coastal-substation",
+    "coastal-municipal-workshop",
+    "coastal-port-workshop"
+  ],
+  "assemblies": [
+    {
+      "name": "Substation",
+      "logical_wall_size_unity": [
+        5.0,
+        3.7,
+        4.0
+      ],
+      "bounds_min_unity": [
+        -2.56,
+        0.0,
+        -2.06
+      ],
+      "bounds_max_unity": [
+        2.64,
+        3.7,
+        2.12
+      ],
+      "triangle_count": 624,
+      "roles": [
+        "Concrete",
+        "Plaster",
+        "Roof",
+        "SteelDark",
+        "SteelLight"
+      ]
+    },
+    {
+      "name": "MunicipalWorkshop",
+      "logical_wall_size_unity": [
+        7.4,
+        4.4,
+        4.2
+      ],
+      "bounds_min_unity": [
+        -3.76,
+        0.0,
+        -2.16
+      ],
+      "bounds_max_unity": [
+        3.76,
+        4.4,
+        2.21
+      ],
+      "triangle_count": 512,
+      "roles": [
+        "Concrete",
+        "Plaster",
+        "Roof",
+        "SteelDark",
+        "SteelLight",
+        "Glass",
+        "Timber"
+      ]
+    },
+    {
+      "name": "PortWorkshop",
+      "logical_wall_size_unity": [
+        6.0,
+        4.2,
+        4.4
+      ],
+      "bounds_min_unity": [
+        -3.06,
+        0.0,
+        -2.26
+      ],
+      "bounds_max_unity": [
+        3.06,
+        4.2,
+        2.31
+      ],
+      "triangle_count": 512,
+      "roles": [
+        "Concrete",
+        "Plaster",
+        "Roof",
+        "SteelDark",
+        "SteelLight",
+        "Glass",
+        "Timber"
+      ]
+    },
+    {
+      "name": "PowerPole",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.825,
+        0.0,
+        -0.19
+      ],
+      "bounds_max_unity": [
+        0.825,
+        8.3,
+        0.19
+      ],
+      "triangle_count": 280,
+      "roles": [
+        "Concrete",
+        "SteelDark",
+        "SteelLight"
+      ]
+    },
+    {
+      "name": "FacadeInlet",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.17,
+        -0.21,
+        -0.07
+      ],
+      "bounds_max_unity": [
+        0.17,
+        0.38,
+        0.07
+      ],
+      "triangle_count": 56,
+      "roles": [
+        "SteelDark"
+      ]
+    },
+    {
+      "name": "CableSpan",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.015,
+        -0.71299,
+        0.0
+      ],
+      "bounds_max_unity": [
+        0.015,
+        0.01299,
+        1.0
+      ],
+      "triangle_count": 200,
+      "roles": [
+        "Rubber"
+      ]
+    }
+  ],
+  "triangle_count": 2184
+}

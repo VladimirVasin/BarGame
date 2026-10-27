@@ -26,6 +26,27 @@ namespace BarPromenade
         internal const int MinimumForefieldAnchorCount = 3;
         internal const int MaximumForefieldAnchorCount = 4;
 
+        // The original mountain service sheet had 22 usable metres after the
+        // road band. Compact coast keeps the same road/middle/toe grammar in
+        // the actual available depth; longitudinal spacing and human/vehicle
+        // clearances remain measured metres.
+        internal static float DepthBudgetScale(Rect bounds, Vector3 outward) =>
+            Mathf.Min(1f, (Mathf.Abs(outward.x) > .5f ? bounds.width : bounds.height) /
+                ForefieldToeBandMaximumDepth);
+
+        internal static float DepthBudgetScale(CityFringeYardDescriptor yard) =>
+            DepthBudgetScale(yard.AreaBounds, yard.Access.OutwardNormal);
+
+        internal static Vector3 FitCivilDepth(Rect bounds, Vector3 outward, Quaternion rotation, Vector3 size)
+        {
+            float scale = DepthBudgetScale(bounds, outward);
+            Vector3 right = rotation * Vector3.right;
+            Vector3 forward = rotation * Vector3.forward;
+            size.x *= Mathf.Lerp(1f, scale, Mathf.Abs(Vector3.Dot(right, outward)));
+            size.z *= Mathf.Lerp(1f, scale, Mathf.Abs(Vector3.Dot(forward, outward)));
+            return size;
+        }
+
         private const float ShoulderCenterDepth = 2.05f;
         private const float ShoulderWidth = 0.76f;
         private const float SpurRoadDepth = 3.65f;
@@ -728,6 +749,7 @@ namespace BarPromenade
             Vector3 outward,
             float depth)
         {
+            depth *= DepthBudgetScale(bounds, outward);
             Vector3 result = anchor;
             if (outward.x < -0.5f)
             {

@@ -87,15 +87,19 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
-- City: 20 metre types; district heights, curved old/service streets,
-  courts/passages/wings, unified ground; river/shore, church and Route 01.
+- City: compact working west/residential east districts plus park; 144 stable
+  lots on 29.2% less declared land. Residential3–5 storeys, short fronts and
+  courts/passages/wings; shared street/pavement contours and Home views. Four
+  POIs/landmarks, shore/church and Route01 remain.
+  Utilities.
   First unpaused dock entry starts finite port→factory→shop supply once;
   catch-up survives scenes/reentry, excluding pre-entry time. Three units,
   two cranes, crews and a
   `6.481 x 2.4 x 3.2 m` closed truck/full cab share the cycle.
   After its existing central factory-exit turn, it keeps/parks right and yields
   locally to the bus. Six-second traffic access protects actual bodies; graph
-  turns avoid street furniture. Streets stay `8 m`/`6 m` asphalt; stops stay put.
+  turns avoid street furniture. Street reservations stay `8 m`/asphalt `6 m`;
+  `2 m` pavements/stops follow the layout.
   Truck spawns on unseen road, parks with first crate; later trips leave factory.
   Two soft arrival horns, reverse beeper/ajar door/look-back steering. Cranes
   continue while the driver yields at the store entrance. Local carts go to

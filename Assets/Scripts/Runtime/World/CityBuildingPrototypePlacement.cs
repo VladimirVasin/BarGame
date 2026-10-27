@@ -132,9 +132,7 @@ namespace BarPromenade
             CityBuildingPrototypePose pose = ResolveCityPose(
                 lot,
                 ResolveExpectedFrontAnchor(lot));
-            Vector3 localAnchor = lot.BuildingVariant == 0
-                ? ResolveRoofMount(lot.District, kind)
-                : ResolveVariantRoofMount(lot, kind);
+            Vector3 localAnchor = ResolveVariantRoofMount(lot, kind);
             return pose.TransformPoint(localAnchor) +
                    Vector3.up * verticalClearance;
         }
@@ -153,42 +151,13 @@ namespace BarPromenade
             CityBuildingPrototypePose pose = ResolveCityPose(
                 lot,
                 ResolveExpectedFrontAnchor(lot));
-            if (lot.BuildingVariant > 0)
-            {
-                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
-                    lot.District, lot.BuildingVariant);
-                float facadeDepth = envelope.z * 0.5f -
-                    (lot.District == CityDistrictKind.Residential ? 1.2f : 0f);
-                return pose.TransformPoint(new Vector3(
-                    (lateralSelector & 1u) == 0u ? -envelope.x * 0.22f : envelope.x * 0.22f,
-                    4.2f, facadeDepth + 0.04f));
-            }
-            Vector3 localMount;
-            switch (lot.District)
-            {
-                case CityDistrictKind.OldTown:
-                    localMount = new Vector3(-3.8f, 4.2f, 6.79f);
-                    break;
-                case CityDistrictKind.Residential:
-                    localMount = new Vector3(
-                        (lateralSelector & 1u) == 0u ? -4.35f : 4.35f,
-                        4.2f,
-                        3.69f);
-                    break;
-                case CityDistrictKind.Industrial:
-                    localMount = new Vector3(0f, 4.2f, 6.79f);
-                    break;
-                case CityDistrictKind.Nightlife:
-                    localMount = new Vector3(0f, 4.2f, 6.04f);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(lot),
-                        lot.District,
-                        "Only ordinary urban districts own prototypes.");
-            }
-
-            return pose.TransformPoint(localMount);
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
+                lot.District, lot.BuildingVariant);
+            float facadeDepth = envelope.z * .5f -
+                (lot.District == CityDistrictKind.Residential ? 1.2f : 0f);
+            return pose.TransformPoint(new Vector3(
+                (lateralSelector & 1u) == 0u ? -envelope.x * .22f : envelope.x * .22f,
+                4.2f, facadeDepth + .04f));
         }
 
         public static Vector3 ResolveForward(BuildingLot lot)
@@ -199,41 +168,16 @@ namespace BarPromenade
         public static Bounds GetExpectedRoofAttachmentBounds(
             CityDistrictKind district)
         {
-            switch (district)
-            {
-                case CityDistrictKind.OldTown:
-                    return CreateBounds(
-                        new Vector3(-6.6f, 11.8f, -6.35f),
-                        new Vector3(6.6f, 18f, 6.35f));
-                case CityDistrictKind.Residential:
-                    return CreateBounds(
-                        new Vector3(-5.35f, 13.7f, -5.35f),
-                        new Vector3(5.35f, 15f, 3.4f));
-                case CityDistrictKind.Industrial:
-                    return CreateBounds(
-                        new Vector3(-6.7f, 6.6f, -6.45f),
-                        new Vector3(6.7f, 8.4f, 6.45f));
-                case CityDistrictKind.Nightlife:
-                    return CreateBounds(
-                        new Vector3(-5f, 22f, -5.1f),
-                        new Vector3(5f, 27f, 4.1f));
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(district),
-                        district,
-                        "Only ordinary urban districts own prototypes.");
-            }
+            return GetExpectedRoofAttachmentBounds(district, 0);
         }
 
         public static Bounds GetExpectedRoofAttachmentBounds(CityDistrictKind district, int variantIndex)
         {
-            if (variantIndex == 0) return GetExpectedRoofAttachmentBounds(district);
             Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variantIndex);
             float halfWidth = envelope.x * .5f;
             float halfDepth = envelope.z * .5f;
             float front = halfDepth - (district == CityDistrictKind.Residential ? 1.2f : 0f);
-            float bodyTop = envelope.y - (district == CityDistrictKind.OldTown ? 2.4f :
-                district == CityDistrictKind.Industrial ? .75f : .35f);
+            float bodyTop = CityBuildingAssetProvider.GetExpectedBodyTop(district, variantIndex);
             return CreateBounds(new Vector3(-halfWidth + .4f, bodyTop,
                     variantIndex == 2 ? .4f : -halfDepth + .4f),
                 new Vector3(halfWidth - .4f, envelope.y, front - .4f));
@@ -311,90 +255,17 @@ namespace BarPromenade
         {
             Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
                 lot.District, lot.BuildingVariant);
-            // The L's front wing and the passage lintel are solid roof mounts.
-            if (lot.District == CityDistrictKind.OldTown)
-            {
-                float halfWidth = envelope.x * .5f;
-                float footSpan = kind == CityDecorationKind.OldTownClockTower ? 2f : 2.4f;
-                float roofHeight = envelope.y - 2.4f + 2.4f * (1f - footSpan / halfWidth);
-                return new Vector3(0f, roofHeight,
-                    lot.BuildingVariant == 2 ? envelope.z * .25f : 0f);
-            }
-            return new Vector3(-envelope.x * .15f,
-                envelope.y - (lot.District == CityDistrictKind.Industrial ? .5f : .15f),
-                envelope.z * .18f);
-        }
-
-        private static Vector3 ResolveRoofMount(
-            CityDistrictKind district,
-            CityDecorationKind kind)
-        {
-            switch (district)
-            {
-                case CityDistrictKind.OldTown:
-                    if (kind == CityDecorationKind
-                            .OldTownChimneysAndDormers)
-                    {
-                        // The two chimney feet touch the left gable here;
-                        // the dormer is intentionally bedded into its slope.
-                        return new Vector3(-3.8f, 13.6f, 0f);
-                    }
-
-                    if (kind == CityDecorationKind.OldTownClockTower)
-                    {
-                        // The four-metre tower base intersects the gable at
-                        // its edge height and reads as an integrated cupola.
-                        return new Vector3(-3.8f, 13.9f, 0f);
-                    }
-
-                    break;
-                case CityDistrictKind.Residential:
-                    if (kind == CityDecorationKind
-                            .ResidentialLaundryAndAntenna)
-                    {
-                        return new Vector3(-3.6f, 14f, -4.0f);
-                    }
-
-                    if (kind == CityDecorationKind
-                            .ResidentialRooftopGreenhouse)
-                    {
-                        // The greenhouse is set into the rear deck and the
-                        // central stair tower instead of floating above it.
-                        return new Vector3(-3.0f, 14f, -3.75f);
-                    }
-
-                    break;
-                case CityDistrictKind.Industrial:
-                    if (kind == CityDecorationKind
-                            .IndustrialStacksAndTanks)
-                    {
-                        // Minimum sawtooth height under every stack foot.
-                        return new Vector3(0f, 7.2f, 0f);
-                    }
-
-                    if (kind == CityDecorationKind.IndustrialGantry)
-                    {
-                        // The gantry legs are deliberately bedded into the
-                        // alternating shed planes at their shared minimum.
-                        return new Vector3(0f, 7.08f, 0f);
-                    }
-
-                    break;
-                case CityDistrictKind.Nightlife:
-                    if (kind == CityDecorationKind.NightlifeBillboard)
-                    {
-                        // Exposed front strip of the lower flat roof, clear
-                        // of the upper tower and its pyramid roof.
-                        return new Vector3(-0.6f, 22.30f, 4.45f);
-                    }
-
-                    break;
-            }
-
-            throw new ArgumentException(
-                $"Decoration '{kind}' has no authored {district} roof " +
-                "mount.",
-                nameof(kind));
+            float bodyTop = CityBuildingAssetProvider.GetExpectedBodyTop(
+                lot.District, lot.BuildingVariant);
+            // Residential roofs retain an unobstructed front deck. The small
+            // stairhead occupies only the back-left corner; objects never float
+            // at a height inherited from a retired high-rise prototype.
+            if (lot.District == CityDistrictKind.Residential)
+                return new Vector3(0f, bodyTop + .18f, envelope.z * .15f);
+            float roofRise = envelope.y - bodyTop;
+            float mountHeight = bodyTop + roofRise * .55f;
+            return new Vector3(0f, mountHeight,
+                lot.BuildingVariant == 2 ? envelope.z * .25f : 0f);
         }
 
         private static Bounds CreateBounds(

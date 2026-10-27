@@ -73,5 +73,5 @@ MonoBehaviour:
   - stableId: nightlife-prototype-05
     district: 3
     prefab: {fileID: 2857908437403183857, guid: 97a19d4cd8d818141a23f9e27b3dc2d8, type: 3}
-  designId: city_buildings_prototypes_v3
-  buildSignature: b456238ff573c9505aef2ea27f764fb34e5b498789b3908126a273816bc1040c
+  designId: city_buildings_coastal_v4
+  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258

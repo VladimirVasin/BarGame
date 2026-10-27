@@ -91,7 +91,8 @@ namespace BarPromenade
                     0.78f),
                 new CityDistrictTransitionProfile(
                     CityDistrictNeighbourSet.OldTown |
-                    CityDistrictNeighbourSet.Nightlife,
+                    CityDistrictNeighbourSet.Nightlife |
+                    CityDistrictNeighbourSet.Industrial,
                     0.18f,
                     0.34f,
                     0.14f));
@@ -128,7 +129,8 @@ namespace BarPromenade
                     0.40f),
                 new CityDistrictTransitionProfile(
                     CityDistrictNeighbourSet.OldTown |
-                    CityDistrictNeighbourSet.Nightlife,
+                    CityDistrictNeighbourSet.Nightlife |
+                    CityDistrictNeighbourSet.Residential,
                     0.16f,
                     0.30f,
                     0.16f));

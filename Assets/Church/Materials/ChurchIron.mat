@@ -97,6 +97,10 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _GeometricMirrorStencilComp: 8
+    - _GeometricMirrorStencilMotionRef: 1
+    - _GeometricMirrorStencilReadMask: 0
+    - _GeometricMirrorStencilRef: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -118,7 +122,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.08235294, g: 0.09411765, b: 0.08627451, a: 1}
-    - _Color: {r: 0.08235294, g: 0.09411765, b: 0.08627451, a: 1}
+    - _Color: {r: 0.082352914, g: 0.094117604, b: 0.08627448, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []

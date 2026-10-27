@@ -10,6 +10,8 @@ namespace BarPromenade
 
         public const float PortalInset = 0.35f;
         public const float AuthoredGalleryDepth = 3f;
+        public const float AuthoredFaceGap = 14.472f;
+        public const float AuthoredSharedBoundaryLocalX = -.48614f;
         public const float GalleryLocalZ = -1.55f;
         public const float StepBandLocalZ = 2.25f;
         public const float StepBandDepth = 1.60f;
@@ -174,7 +176,7 @@ namespace BarPromenade
             {
                 throw new ArgumentException(
                     "An arch-shelter building must be an ordinary " +
-                    "Nightlife lot.",
+                    "residential street lot.",
                     nameof(lot));
             }
 
@@ -239,7 +241,8 @@ namespace BarPromenade
         {
             return lot != null &&
                    lot.IsOrdinaryBuilding &&
-                   lot.District == CityDistrictKind.Nightlife;
+                   (lot.District == CityDistrictKind.Residential ||
+                    lot.District == CityDistrictKind.Nightlife);
         }
 
         private static Vector3 Abs(Vector3 value)

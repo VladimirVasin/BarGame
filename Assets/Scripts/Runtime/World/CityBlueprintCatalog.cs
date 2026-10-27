@@ -344,7 +344,15 @@ namespace BarPromenade
 
                     bool east = x >= settings.BlocksX / 2;
                     bool north = z >= settings.BlocksZ / 2;
-                    if (north && east)
+                    if (hasRiver)
+                    {
+                        // A working western bank and a residential eastern
+                        // bank are the town's two coherent land-use districts.
+                        // The park, river and civic grounds remain independent.
+                        if (east) residentialCells.Add(cell);
+                        else industrialCells.Add(cell);
+                    }
+                    else if (north && east)
                     {
                         residentialCells.Add(cell);
                     }

@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "3.0.0";
+        private const string ExpectedGeneratorVersion = "4.0.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -980,7 +980,7 @@ namespace BarPromenade.Editor
                     "Residential",
                     StringComparison.Ordinal))
             {
-                int balconyFloorCount = prototype.height_m < 12f ? 3 : 4;
+                int balconyFloorCount = CityBuildingAssetProvider.GetExpectedBalconyFloorCount(prototype.height_m);
                 if (prototype.balcony_slots.Length != balconyFloorCount * 2)
                 {
                     throw new InvalidOperationException(

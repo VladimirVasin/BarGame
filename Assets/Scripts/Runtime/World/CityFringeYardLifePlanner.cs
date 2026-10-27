@@ -104,7 +104,7 @@ namespace BarPromenade
                 Vector2 offset = offsets[index];
                 Vector3 candidate = anchor +
                     tangent * offset.x +
-                    outward * offset.y;
+                    outward * (offset.y * CityFringeYardPlanner.DepthBudgetScale(yard));
                 if (TryCreateGroundedPart(
                         layout,
                         yard,
@@ -134,7 +134,7 @@ namespace BarPromenade
                      lateralIndex++)
                 {
                     Vector3 candidate = yard.Access.Center +
-                        outward * depths[depthIndex] +
+                        outward * (depths[depthIndex] * CityFringeYardPlanner.DepthBudgetScale(yard)) +
                         tangent * lateral[lateralIndex];
                     if (TryCreateGroundedPart(
                             layout,
@@ -171,7 +171,8 @@ namespace BarPromenade
                 }
             }
 
-            return yard.Access.Center + yard.Access.OutwardNormal * 10f;
+            return yard.Access.Center + yard.Access.OutwardNormal *
+                (10f * CityFringeYardPlanner.DepthBudgetScale(yard));
         }
 
         private static List<Vector2> CreateCandidateOffsets()

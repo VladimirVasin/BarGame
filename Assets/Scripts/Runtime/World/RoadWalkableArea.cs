@@ -420,6 +420,16 @@ namespace BarPromenade
             }
             if (layout.RoadGeometry.ObliqueJunction != null)
                 area.AddPolygons(layout.RoadGeometry.ObliqueJunction.RoadPolygons);
+            if (layout.SpatialPlan.IsCompactCoastal)
+            {
+                // Compact City widens walking ground beyond the retained
+                // traffic corridor. Use its actual polygons rather than a
+                // second road-width estimate; the courtyard selection avoids
+                // the crosswalk/driveway route-planning cycle.
+                CityStreetSurfacePlan pavement = CityStreetSurfacePlanner.CreateCourtyardPaving(layout);
+                foreach (Rect rectangle in pavement.SidewalkWalkableRectangles) area.Add(rectangle);
+                area.AddPolygons(pavement.CurvedSidewalkPolygons);
+            }
             CityGroundTraversalPlan groundTraversal =
                 CityGroundTraversalPlanner.CreatePlan(layout);
             area.AddPolygons(groundTraversal.GroundPolygons);
@@ -656,6 +666,9 @@ namespace BarPromenade
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     area.ExcludePolygons(lot.CreateCollisionPolygons());
+            if (layout.SpatialPlan.IsCompactCoastal)
+                foreach (Rect footprint in CityCoastalInfrastructurePlan.ForLayout(layout).SolidFootprints)
+                    area.Exclude(footprint);
             return area;
         }
 

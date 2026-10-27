@@ -23,34 +23,27 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CoastalAxes_KeepProtectedPrecinctsAndNeverNarrowTheOldCells()
+        public void CoastalAxes_KeepUrbanMetresAndCompactOnlyTheServiceEnvelope()
         {
             CitySpatialPlan plan = CreateCoastal();
+            Assert.That(plan.IsCompactCoastal, Is.True);
             Assert.That(plan.IsUniform, Is.False);
-            for (int z = 3; z <= 8; z++)
-                for (int x = 4; x <= 13; x++)
+            for (int z = 0; z <= 12; z++)
+                for (int x = 0; x <= 13; x++)
                     Assert.That(plan.GetCoordinateWorldOffset(new Vector2Int(x, z)),
                         Is.EqualTo(new Vector2(x * 26f, z * 26f)));
             for (int x = 13; x <= 17; x++)
                 Assert.That(plan.GetCoordinateWorldOffset(new Vector2Int(x, 6)).x,
-                    Is.EqualTo(x * 26f), "The fixed-metre mainland approach keeps its authored span.");
-
-            for (int z = -1; z <= 14; z++)
-                for (int x = -1; x <= 17; x++)
-                {
-                    Vector2 size = plan.GetCellSize(new Vector2Int(x, z));
-                    Assert.That(size.x, Is.GreaterThanOrEqualTo(26f));
-                    Assert.That(size.y, Is.GreaterThanOrEqualTo(26f));
-                }
-
-            Assert.That(plan.GetCellSize(new Vector2Int(0, 0)),
-                Is.EqualTo(new Vector2(40f, 38f)));
-            Assert.That(plan.GetCellSize(new Vector2Int(-1, -1)),
-                Is.EqualTo(new Vector2(26f, 26f)));
-            Assert.That(plan.GetNodeSpan(new RoadEdge(Vector2Int.zero, Vector2Int.right)),
-                Is.EqualTo(40f));
+                    Is.EqualTo(338f + (x - 13) * 17.5f));
+            Assert.That(plan.GetCellSize(new Vector2Int(0, 0)), Is.EqualTo(new Vector2(26f, 26f)));
+            Assert.That(plan.GetCellSize(new Vector2Int(-1, -1)), Is.EqualTo(new Vector2(12f, 12f)));
+            Assert.That(plan.GetCellSize(new Vector2Int(13, 12)), Is.EqualTo(new Vector2(17.5f, 28f)));
+            Assert.That(plan.GetNodeSpan(new RoadEdge(Vector2Int.zero, Vector2Int.right)), Is.EqualTo(26f));
             Assert.That(plan.GetCellBounds(Vector2Int.zero).xMax,
                 Is.EqualTo(plan.GetCellBounds(Vector2Int.right).xMin));
+            Vector2 minimum = plan.GetCoordinateWorldOffset(new Vector2Int(-1, -1));
+            Vector2 maximum = plan.GetCoordinateWorldOffset(new Vector2Int(17, 13));
+            Assert.That(maximum - minimum, Is.EqualTo(new Vector2(420f, 352f)));
         }
 
         [Test]

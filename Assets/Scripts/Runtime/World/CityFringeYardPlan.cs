@@ -109,7 +109,8 @@ namespace BarPromenade
             Vector3 center,
             Quaternion rotation,
             Vector3 size,
-            bool blocksMovement)
+            bool blocksMovement,
+            string surfaceRunId = null)
         {
             StableId = stableId ?? string.Empty;
             AreaId = areaId ?? string.Empty;
@@ -119,6 +120,7 @@ namespace BarPromenade
             Rotation = rotation;
             Size = size;
             BlocksMovement = blocksMovement;
+            SurfaceRunId = surfaceRunId ?? string.Empty;
         }
 
         public string StableId { get; }
@@ -129,6 +131,8 @@ namespace BarPromenade
         public Quaternion Rotation { get; }
         public Vector3 Size { get; }
         public bool BlocksMovement { get; }
+        /// <summary>One authored ground stroke, including its fitted physical pieces.</summary>
+        public string SurfaceRunId { get; }
 
         /// <summary>The conservative XZ envelope used by clearance tests.</summary>
         public Rect Footprint
@@ -168,7 +172,8 @@ namespace BarPromenade
                    Center.Equals(other.Center) &&
                    Rotation.Equals(other.Rotation) &&
                    Size.Equals(other.Size) &&
-                   BlocksMovement == other.BlocksMovement;
+                   BlocksMovement == other.BlocksMovement &&
+                   string.Equals(SurfaceRunId, other.SurfaceRunId, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -189,7 +194,8 @@ namespace BarPromenade
                 hash = (hash * 397) ^ Center.GetHashCode();
                 hash = (hash * 397) ^ Rotation.GetHashCode();
                 hash = (hash * 397) ^ Size.GetHashCode();
-                return (hash * 397) ^ BlocksMovement.GetHashCode();
+                hash = (hash * 397) ^ BlocksMovement.GetHashCode();
+                return (hash * 397) ^ StringComparer.Ordinal.GetHashCode(SurfaceRunId ?? string.Empty);
             }
         }
     }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -612,11 +613,14 @@ namespace BarPromenade.Tests.PlayMode
                     CityStreetSurfacePlanner.Create(layout);
                 var walkableArea = RoadWalkableArea.FromLayout(layout);
                 CityBusPlan route = CityBusPlanner.Create(layout);
-                Assert.That(
-                    route.Stops,
-                    Has.Count.GreaterThan(10),
-                    "The grand loop serves every district, gate and " +
-                    "spread stop, not just the five semantic targets.");
+                Assert.That(route.Stops, Is.Not.Empty);
+                Assert.That(route.Stops.Select(stop => stop.Id).Distinct().Count(), Is.EqualTo(route.Stops.Count));
+                foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
+                    Assert.That(route.Stops.Min(stop => Vector2.Distance(
+                        new Vector2(stop.ShelterPosition.x, stop.ShelterPosition.z),
+                        new Vector2(point.Center.x, point.Center.z))),
+                        Is.LessThanOrEqualTo(CityBusPlanner.MaximumStopWalkDistance),
+                        "The compact route must still serve " + point.Id);
 
                 root = new GameObject(
                     "Production City Bus Prompt Diagnostic Root");

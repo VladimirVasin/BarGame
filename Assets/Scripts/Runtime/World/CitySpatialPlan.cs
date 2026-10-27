@@ -10,34 +10,39 @@ namespace BarPromenade
     /// </summary>
     public sealed class CitySpatialPlan
     {
+        // Entries include coordinate -1, the service fringe. Urban blocks keep
+        // their real 26 m street pitch; compactness comes from removing the
+        // stretched approaches and narrowing the outlying service ground.
         private static readonly float[] CoastalXOffsets =
         {
-            -32f, -18f, -12f, -8f, 0f, 0f, 0f, 0f, 0f,
-            0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f
+            14f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
+            0f, 0f, 0f, 0f, 0f, 0f, -8.5f, -17f, -25.5f, -34f
         };
 
         private static readonly float[] CoastalZOffsets =
         {
-            -26f, -14f, -6f, 0f, 0f, 0f, 0f, 0f,
-            0f, 6f, 14f, 18f, 24f, 30f, 36f
+            14f, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
+            0f, 0f, 0f, 0f, 0f, 0f, 2f, 2f
         };
 
         private readonly Axis xAxis;
         private readonly Axis zAxis;
 
         private CitySpatialPlan(Vector2 nominalNodeSpacing,
-            float[] xOffsets, float[] zOffsets)
+            float[] xOffsets, float[] zOffsets, bool compactCoastal = false)
         {
             ValidateSpacing(nominalNodeSpacing.x, nameof(nominalNodeSpacing));
             ValidateSpacing(nominalNodeSpacing.y, nameof(nominalNodeSpacing));
             NominalNodeSpacing = nominalNodeSpacing;
-            xAxis = new Axis(nominalNodeSpacing.x, xOffsets);
-            zAxis = new Axis(nominalNodeSpacing.y, zOffsets);
+            xAxis = new Axis(nominalNodeSpacing.x, xOffsets, compactCoastal ? -1 : 0);
+            zAxis = new Axis(nominalNodeSpacing.y, zOffsets, compactCoastal ? -1 : 0);
             IsUniform = xOffsets == null && zOffsets == null;
+            IsCompactCoastal = compactCoastal;
         }
 
         public Vector2 NominalNodeSpacing { get; }
         public bool IsUniform { get; }
+        public bool IsCompactCoastal { get; }
 
         public static CitySpatialPlan Uniform(Vector2 nodeSpacing)
         {
@@ -62,7 +67,7 @@ namespace BarPromenade
                 settings.RoadWidth == CityGenerationSettings.DefaultRoadWidth;
             return coastal
                 ? new CitySpatialPlan(settings.NodeSpacing,
-                    CoastalXOffsets, CoastalZOffsets)
+                    CoastalXOffsets, CoastalZOffsets, compactCoastal: true)
                 : Uniform(settings.NodeSpacing);
         }
 
@@ -118,15 +123,17 @@ namespace BarPromenade
         {
             private readonly float nominalStep;
             private readonly float[] coordinates;
+            private readonly int firstCoordinate;
 
-            internal Axis(float nominalStep, float[] offsets)
+            internal Axis(float nominalStep, float[] offsets, int firstCoordinate = 0)
             {
                 this.nominalStep = nominalStep;
+                this.firstCoordinate = firstCoordinate;
                 if (offsets == null) return;
                 coordinates = new float[offsets.Length];
                 for (int index = 0; index < offsets.Length; index++)
                 {
-                    coordinates[index] = index * nominalStep + offsets[index];
+                    coordinates[index] = (index + firstCoordinate) * nominalStep + offsets[index];
                     if (index > 0 && coordinates[index] <= coordinates[index - 1])
                         throw new ArgumentException(
                             "Spatial axis coordinates must increase.", nameof(offsets));
@@ -138,6 +145,7 @@ namespace BarPromenade
                 if (coordinates == null) return coordinate * nominalStep;
                 if (float.IsNaN(coordinate) || float.IsInfinity(coordinate))
                     return coordinate;
+                coordinate -= firstCoordinate;
                 int last = coordinates.Length - 1;
                 if (coordinate <= 0f) return coordinates[0] + coordinate * nominalStep;
                 if (coordinate >= last)
@@ -152,9 +160,9 @@ namespace BarPromenade
                 if (coordinates == null) return offset / nominalStep;
                 if (float.IsNaN(offset) || float.IsInfinity(offset)) return offset;
                 int last = coordinates.Length - 1;
-                if (offset <= coordinates[0]) return (offset - coordinates[0]) / nominalStep;
+                if (offset <= coordinates[0]) return firstCoordinate + (offset - coordinates[0]) / nominalStep;
                 if (offset >= coordinates[last])
-                    return last + (offset - coordinates[last]) / nominalStep;
+                    return firstCoordinate + last + (offset - coordinates[last]) / nominalStep;
                 int lower = 0;
                 int upper = last;
                 while (upper - lower > 1)
@@ -163,7 +171,7 @@ namespace BarPromenade
                     if (coordinates[middle] <= offset) lower = middle;
                     else upper = middle;
                 }
-                return lower + (offset - coordinates[lower]) /
+                return firstCoordinate + lower + (offset - coordinates[lower]) /
                     (coordinates[upper] - coordinates[lower]);
             }
         }

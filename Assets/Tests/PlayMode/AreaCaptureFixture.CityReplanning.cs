@@ -330,9 +330,25 @@ namespace BarPromenade.Tests.PlayMode
                 if (!TryReplanningSurfaceTop(city.Layout, streetPlan, point, out float top))
                 { issues.Add($"{label} has no walking surface at {point:F4}."); continue; }
                 Vector3 floor = new Vector3(point.x, top, point.y);
-                if (!Physics.Raycast(floor + Vector3.up * 1.5f, Vector3.down,
-                    out RaycastHit hit, 3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
-                    Mathf.Abs(hit.point.y - top) > .025f || hit.normal.y < .7f)
+                bool supported = Physics.Raycast(floor + Vector3.up * 1.5f, Vector3.down,
+                    out RaycastHit hit, 3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                // At an exact shared edge PhysX can return the vertical side
+                // at the same height as the top. Require an adjacent top only
+                // within 2mm and the unchanged height tolerance.
+                if (supported && hit.normal.y < .7f && Mathf.Abs(hit.point.y - top) <= .025f)
+                {
+                    for (int side = 0; side < 4; side++)
+                    {
+                        Vector3 nudge = side == 0 ? Vector3.right : side == 1 ? Vector3.left :
+                            side == 2 ? Vector3.forward : Vector3.back;
+                        if (!Physics.Raycast(floor + nudge * .002f + Vector3.up * 1.5f, Vector3.down,
+                            out RaycastHit adjacent, 3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
+                            adjacent.normal.y < .7f || Mathf.Abs(adjacent.point.y - top) > .025f) continue;
+                        hit = adjacent;
+                        break;
+                    }
+                }
+                if (!supported || Mathf.Abs(hit.point.y - top) > .025f || hit.normal.y < .7f)
                 {
                     issues.Add($"{label} physical floor at {point:F4}, expected={top:F4}, actual={hit.point.y:F4}, collider={hit.collider?.name}.");
                     Debug.Log($"COURT FLOOR {label} {point:F4}: " + string.Join("; ",

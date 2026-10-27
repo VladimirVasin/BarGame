@@ -444,6 +444,15 @@ namespace BarPromenade
                 CityDecorationCollisionTier.Blocking);
             footprint = CityCourtyardPocketGeometry.CreateFootprint(
                 provisional);
+            if (layout.SpatialPlan.IsCompactCoastal)
+            {
+                float extraPavement = CityStreetSurfacePlanner.PublicSidewalkWidth -
+                    CityStreetSurfacePlanner.SidewalkWidth;
+                foreach (RoadEdge edge in layout.RoadEdges)
+                    if (layout.GetPathKind(edge) == CityPathKind.Street &&
+                        OverlapsStrict(footprint, Expand(layout.GetRoadRect(edge),
+                            extraPavement + RoadEdgeClearance))) return false;
+            }
             Vector2[] samples =
             {
                 footprint.center,

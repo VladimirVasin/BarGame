@@ -167,6 +167,7 @@ namespace BarPromenade
                     yard.AreaId);
             var forefieldAnchors = new List<float>(
                 CityFringeYardPlanner.MaximumForefieldAnchorCount);
+            var anchorRuns = new Dictionary<string, float>(StringComparer.Ordinal);
             var poleCoordinates = new List<float>();
             for (int index = 0; index < yard.Parts.Count; index++)
             {
@@ -198,7 +199,7 @@ namespace BarPromenade
                 hasGabion |= part.Kind == CityFringeYardPartKind.Gabion;
                 hasShed |= part.Kind == CityFringeYardPartKind.UtilityShed;
                 hasBerm |= part.Kind == CityFringeYardPartKind.EarthBerm;
-                float depth = DepthFromRoad(yard, part.Center);
+                float depth = ReferenceDepthFromRoad(yard, part.Center);
                 if (part.Kind == CityFringeYardPartKind.ServiceTrack)
                 {
                     if (isMountainYard)
@@ -269,7 +270,7 @@ namespace BarPromenade
                                 ? 0.14f
                                 : 0.06f);
                     }
-                    GetDepthRange(
+                    GetReferenceDepthRange(
                         yard,
                         part.Footprint,
                         out float minimumDepth,
@@ -321,7 +322,20 @@ namespace BarPromenade
                             "middle forefield band.");
                     }
 
-                    forefieldAnchors.Add(LongCoordinate(yard, part.Center));
+                    float coordinate = LongCoordinate(yard, part.Center);
+                    string runId = string.IsNullOrEmpty(part.SurfaceRunId)
+                        ? part.StableId : part.SurfaceRunId;
+                    if (anchorRuns.TryGetValue(runId, out float previousCoordinate))
+                    {
+                        if (Mathf.Abs(coordinate - previousCoordinate) > GeometryTolerance)
+                            throw new InvalidOperationException(
+                                $"Forefield anchor run '{runId}' spreads across separate compositions.");
+                    }
+                    else
+                    {
+                        anchorRuns.Add(runId, coordinate);
+                        forefieldAnchors.Add(coordinate);
+                    }
                 }
 
                 if (part.Kind == CityFringeYardPartKind.UtilityPole)
@@ -561,7 +575,7 @@ namespace BarPromenade
                 "road shoulder",
                 0.015f,
                 0.06f);
-            GetDepthRange(
+            GetReferenceDepthRange(
                 yard,
                 part.Footprint,
                 out float minimumDepth,
@@ -935,30 +949,33 @@ namespace BarPromenade
             }
         }
 
-        private static float DepthFromRoad(
+        private static float ReferenceDepthFromRoad(
             CityFringeYardDescriptor yard,
             Vector3 point)
         {
             Vector3 outward = yard.Access.OutwardNormal;
+            float scale = CityFringeYardPlanner.DepthBudgetScale(yard);
+            // Compare in the common 22-metre authoring frame. Actual world
+            // containment/contact checks above remain in physical metres.
             if (outward.x < -0.5f)
             {
-                return yard.AreaBounds.xMax - point.x;
+                return (yard.AreaBounds.xMax - point.x) / scale;
             }
 
             if (outward.x > 0.5f)
             {
-                return point.x - yard.AreaBounds.xMin;
+                return (point.x - yard.AreaBounds.xMin) / scale;
             }
 
             if (outward.z < -0.5f)
             {
-                return yard.AreaBounds.yMax - point.z;
+                return (yard.AreaBounds.yMax - point.z) / scale;
             }
 
-            return point.z - yard.AreaBounds.yMin;
+            return (point.z - yard.AreaBounds.yMin) / scale;
         }
 
-        private static void GetDepthRange(
+        private static void GetReferenceDepthRange(
             CityFringeYardDescriptor yard,
             Rect footprint,
             out float minimum,
@@ -985,6 +1002,9 @@ namespace BarPromenade
                 minimum = footprint.yMin - yard.AreaBounds.yMin;
                 maximum = footprint.yMax - yard.AreaBounds.yMin;
             }
+            float scale = CityFringeYardPlanner.DepthBudgetScale(yard);
+            minimum /= scale;
+            maximum /= scale;
         }
 
         private static float LongCoordinate(

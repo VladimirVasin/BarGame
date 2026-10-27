@@ -23,6 +23,8 @@ namespace BarPromenade
         public const float MaximumShelterLaneDistance = 6f;
         public const float StopJunctionClearance = 0.5f;
         public const float RoadsidePoleOutsideRoadEdge = 0.2f;
+        public static float GetRoadsidePoleOutsideRoadEdge(CityLayout layout) =>
+            layout.SpatialPlan.IsCompactCoastal ? 1.25f : RoadsidePoleOutsideRoadEdge;
 
         private const uint StableSeedSalt = 0x42555331u;
         private const float DirectionTolerance = 0.5f;

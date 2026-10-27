@@ -79,9 +79,9 @@ namespace BarPromenade
                         if (!settings.CreatesLot(cell) ||
                             settings.IsParkCell(cell) ||
                             settings.RoadGeometry?.IsAffectedCell(cell) == true ||
-                            CityLayoutGenerator.ResolveDistrict(
-                                settings,
-                                cell) != district)
+                            (settings.SpatialPlan?.IsCompactCoastal == true
+                                ? SemanticRegion(settings, cell)
+                                : CityLayoutGenerator.ResolveDistrict(settings, cell)) != district)
                         {
                             continue;
                         }
@@ -150,12 +150,15 @@ namespace BarPromenade
             {
                 CityDistrictKind district =
                     CityLayoutGenerator.UrbanDistricts[districtIndex];
-                if (!primaryLandmarkCells.TryGetValue(
-                        district,
-                        out Vector2Int primaryCell))
+                bool compact = settings.SpatialPlan?.IsCompactCoastal == true;
+                if (!primaryLandmarkCells.TryGetValue(district, out Vector2Int primaryCell) && !compact)
                 {
                     continue;
                 }
+                if (compact)
+                    primaryCell = new Vector2Int(
+                        district == CityDistrictKind.OldTown || district == CityDistrictKind.Industrial ? 2 : 10,
+                        district == CityDistrictKind.OldTown || district == CityDistrictKind.Residential ? 9 : 2);
 
                 bool found = false;
                 int bestLotIndex = -1;
@@ -174,12 +177,11 @@ namespace BarPromenade
                         if (!settings.CreatesLot(cell) ||
                             settings.IsParkCell(cell) ||
                             settings.RoadGeometry?.IsAffectedCell(cell) == true ||
-                            CityLayoutGenerator.ResolveDistrict(
-                                settings,
-                                cell) != district ||
+                            (compact ? SemanticRegion(settings, cell) :
+                                CityLayoutGenerator.ResolveDistrict(settings, cell)) != district ||
                             barLots.Contains(lotIndex) ||
                             lotIndex == homeLotIndex ||
-                            cell == primaryCell)
+                            cell == primaryCell || IsPrimaryCell(primaryLandmarkCells, cell))
                         {
                             continue;
                         }
@@ -343,7 +345,7 @@ namespace BarPromenade
                         CityLayoutGenerator.ResolveAreaId(
                             settings,
                             cell),
-                        district,
+                        CityLayoutGenerator.ResolveDistrict(settings, cell),
                         ResolveKind(district),
                         cell,
                         center,
@@ -352,6 +354,24 @@ namespace BarPromenade
             }
 
             return result;
+        }
+
+        // POI identity outlives a district boundary: the water court and the
+        // last-route island are places, not extra map neighbourhoods.
+        private static CityDistrictKind SemanticRegion(CityGenerationSettings settings, Vector2Int cell)
+        {
+            bool east = cell.x > settings.Blueprint.River.CorridorCellX;
+            bool north = cell.y >= settings.Blueprint.CenterNode.y;
+            return north ? east ? CityDistrictKind.Residential : CityDistrictKind.OldTown
+                : east ? CityDistrictKind.Nightlife : CityDistrictKind.Industrial;
+        }
+
+        private static bool IsPrimaryCell(
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int> cells, Vector2Int cell)
+        {
+            foreach (Vector2Int candidate in cells.Values)
+                if (candidate == cell) return true;
+            return false;
         }
 
         private static int CountStreetSides(

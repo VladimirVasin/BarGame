@@ -74,6 +74,7 @@ namespace BarPromenade
                 root,
                 context,
                 context.NearbyDecorations);
+            CityCoastalInfrastructureWorldBuilder.BuildHomeExterior(root, context);
             BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             ground.FinalizeSurface();
@@ -194,9 +195,11 @@ namespace BarPromenade
                  index < context.NearbyRoads.Count;
                  index++)
             {
-                nearbyRoadRectangles.Add(
-                    context.Layout.GetRoadRect(
-                        context.NearbyRoads[index]));
+                Rect road = context.Layout.GetRoadRect(context.NearbyRoads[index]);
+                float reach = context.Layout.SpatialPlan.IsCompactCoastal ?
+                    CityStreetSurfacePlanner.PublicSidewalkWidth - CityStreetSurfacePlanner.SidewalkWidth : 0f;
+                nearbyRoadRectangles.Add(Rect.MinMaxRect(road.xMin - reach, road.yMin - reach,
+                    road.xMax + reach, road.yMax + reach));
             }
 
             var streets = new List<Bounds>();
@@ -204,21 +207,23 @@ namespace BarPromenade
             var sidewalks = new List<Bounds>();
             var centerMarkings = new List<Bounds>();
             var crosswalkMarkings = new List<Bounds>();
-            AddHomeLocalStreetGeometry(
-                plan.StreetSurfaces,
-                nearbyRoadRectangles,
-                context,
-                streets);
+            if(context.Layout.SpatialPlan.IsCompactCoastal)
+                CityEntranceForecourtWorldBuilder.BuildHomeRoads(parent,context,plan,nearbyRoadRectangles);
+            else AddHomeLocalStreetGeometry(plan.StreetSurfaces,nearbyRoadRectangles,context,streets);
             AddHomeLocalStreetGeometry(
                 plan.ParkPaths,
                 nearbyRoadRectangles,
                 context,
                 parkPaths);
-            AddHomeLocalStreetGeometry(
-                plan.Sidewalks,
-                nearbyRoadRectangles,
-                context,
-                sidewalks);
+            if (context.Layout.SpatialPlan.IsCompactCoastal)
+            {
+                CityEntranceForecourtWorldBuilder.BuildHomeSidewalks(parent,context,plan,nearbyRoadRectangles);
+                foreach (BuildingLot lot in context.NearbyLots)
+                    if (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket)
+                        CityEntranceForecourtWorldBuilder.Build("Home Exterior Entrance "+lot.Cell,parent,
+                            CityStreetSurfacePlanner.CreateEntranceForecourt(context.Layout,lot,3f),context);
+            }
+            else AddHomeLocalStreetGeometry(plan.Sidewalks,nearbyRoadRectangles,context,sidewalks);
             AddHomeLocalStreetGeometry(
                 plan.CenterMarkings,
                 nearbyRoadRectangles,

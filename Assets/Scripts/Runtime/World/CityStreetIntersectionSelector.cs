@@ -79,7 +79,11 @@ namespace BarPromenade
                 CornerSalt);
             float zSign = (cornerHash & 1u) == 0u ? 1f : -1f;
             float offset =
-                (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
+                layout.SpatialPlan.IsCompactCoastal
+                    // Bus corners may widen outward by a further metre. The
+                    // pole base stays outside that complete walking square.
+                    ? CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout) + 1.25f
+                    : (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
             return new Vector3(offset, 0f, zSign * offset);
         }
 
@@ -98,6 +102,8 @@ namespace BarPromenade
             Vector3 position)
         {
             if (layout.IsWater(position) ||
+                (layout.SpatialPlan.IsCompactCoastal &&
+                 CityNightFixturePlanner.IntersectsCompactStreetOrBuilding(layout, position)) ||
                 CityNightFixturePlanner.IntersectsCourtyardReservation(layout, position))
             {
                 return true;

@@ -614,7 +614,8 @@ namespace BarPromenade
                 if (index % 3 == 1)
                 {
                     Vector3 buttressCenter = center -
-                        (ResolveShortAxis(axis) * 0.55f);
+                        (ResolveShortAxis(axis) * (0.55f * DepthBudgetScale(bounds,
+                            ResolveMountainOutward(areaId))));
                     AddGroundedPart(
                         layout,
                         surfaces,
@@ -894,7 +895,7 @@ namespace BarPromenade
                     $"{areaId}-culvert-pier-{side}",
                     CityFringeYardPartKind.Buttress,
                     CityFringeYardStyle.OldMasonry,
-                    center + shortAxis * (0.78f * side),
+                    center + shortAxis * (0.78f * side * DepthBudgetScale(bounds, outward)),
                     rotation,
                     new Vector3(0.55f, 1.05f, 1.15f),
                     true,
@@ -911,7 +912,7 @@ namespace BarPromenade
                 CityFringeYardStyle.OldMasonry,
                 new Vector3(center.x, ground + 1.02f, center.z),
                 rotation,
-                new Vector3(2.1f, 0.42f, 1.2f),
+                FitCivilDepth(bounds, outward, rotation, new Vector3(2.1f, 0.42f, 1.2f)),
                 true));
         }
 
@@ -1317,10 +1318,20 @@ namespace BarPromenade
             int segmentCount = Mathf.Max(
                 1,
                 Mathf.CeilToInt(runLength / maximumSegmentLength));
+            bool fitSurface = layout.SpatialPlan.IsCompactCoastal &&
+                kind != CityFringeYardPartKind.AccessApron;
+            bool crossesDepthBands = CityMountainBoundaryDefinition.IsMountainFacingAreaId(areaId) &&
+                Mathf.Abs(Vector3.Dot(flatDelta, ResolveMountainOutward(areaId))) > .001f;
+            List<float> terrainBreaks = fitSurface && crossesDepthBands
+                ? CreateCompactSurfaceBreaks(layout, surfaces, start, flatDelta, segmentCount)
+                : null;
+            if (terrainBreaks != null) segmentCount = terrainBreaks.Count - 1;
             for (int index = 0; index < segmentCount; index++)
             {
-                float startAmount = index / (float)segmentCount;
-                float endAmount = (index + 1f) / segmentCount;
+                float startAmount = terrainBreaks == null
+                    ? index / (float)segmentCount : terrainBreaks[index];
+                float endAmount = terrainBreaks == null
+                    ? (index + 1f) / segmentCount : terrainBreaks[index + 1];
                 Vector3 topStart = Vector3.Lerp(start, end, startAmount);
                 Vector3 topEnd = Vector3.Lerp(start, end, endAmount);
                 topStart.y = SampleAreaTop(
@@ -1331,6 +1342,14 @@ namespace BarPromenade
                     layout,
                     surfaces,
                     ToXZ(topEnd)) + surfaceLift;
+                if (fitSurface)
+                {
+                    AddFittedSurfaceSegment(layout, surfaces, areaId,
+                        $"{areaId}-{stableStem}-{index:00}", kind, style,
+                        topStart, topEnd, width, thickness, gap, parts,
+                        surfaceLift, segmentOverlap, 0, $"{areaId}-{stableStem}");
+                    continue;
+                }
                 Vector3 slope = topEnd - topStart;
                 Quaternion rotation = Quaternion.LookRotation(
                     slope.normalized,
@@ -1360,6 +1379,96 @@ namespace BarPromenade
             }
         }
 
+        private static void AddFittedSurfaceSegment(
+            CityLayout layout, IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            string areaId, string stableId, CityFringeYardPartKind kind, CityFringeYardStyle style,
+            Vector3 topStart, Vector3 topEnd, float width, float thickness, Rect? gap,
+            ICollection<CityFringeYardPartDescriptor> parts, float surfaceLift, float overlap, int depth,
+            string surfaceRunId)
+        {
+            Vector3 slope = topEnd - topStart;
+            Vector3 middle = (topStart + topEnd) * .5f;
+            Vector3 flatRight = Vector3.Cross(Vector3.up,
+                new Vector3(slope.x, 0f, slope.z)).normalized;
+            float acrossRise = SampleAreaTop(layout, surfaces, ToXZ(middle + flatRight * (width * .5f))) -
+                SampleAreaTop(layout, surfaces, ToXZ(middle - flatRight * (width * .5f)));
+            Vector3 across = flatRight * width + Vector3.up * acrossRise;
+            Vector3 normal = Vector3.Cross(slope, across).normalized;
+            Quaternion rotation = Quaternion.LookRotation(slope.normalized, normal);
+            Vector3 center = middle - (rotation * Vector3.up) * (thickness * .5f);
+            Vector3 size = new Vector3(width, thickness, slope.magnitude + overlap);
+            Vector3 right = rotation * Vector3.right * (width * .5f);
+            Vector3 forward = rotation * Vector3.forward * (size.z * .5f);
+            Vector3 bottom = center - rotation * Vector3.up * (thickness * .5f);
+            float minimum = float.PositiveInfinity;
+            float maximum = float.NegativeInfinity;
+            for (int x = -1; x <= 1; x++)
+                for (int z = -1; z <= 1; z++)
+                {
+                    Vector3 point = bottom + right * x + forward * z;
+                    float offset = point.y - SampleAreaTop(layout, surfaces, ToXZ(point));
+                    minimum = Mathf.Min(minimum, offset);
+                    maximum = Mathf.Max(maximum, offset);
+                }
+
+            // Pitch alone bridges the new corner's crossfall. Fit the full
+            // footprint, and divide only genuinely curved patches rather than
+            // raising a rigid strip above its low corners or burying its centre.
+            if (maximum - minimum > .035f && depth < 4 &&
+                new Vector2(slope.x, slope.z).magnitude > .5f)
+            {
+                Vector3 topMiddle = middle;
+                topMiddle.y = SampleAreaTop(layout, surfaces, ToXZ(topMiddle)) + surfaceLift;
+                AddFittedSurfaceSegment(layout, surfaces, areaId, stableId + "-a", kind, style,
+                    topStart, topMiddle, width, thickness, gap, parts, surfaceLift, overlap, depth + 1, surfaceRunId);
+                AddFittedSurfaceSegment(layout, surfaces, areaId, stableId + "-b", kind, style,
+                    topMiddle, topEnd, width, thickness, gap, parts, surfaceLift, overlap, depth + 1, surfaceRunId);
+                return;
+            }
+
+            center.y += Mathf.Min(-.012f, surfaceLift - thickness) - (minimum + maximum) * .5f;
+            if (gap.HasValue && CalculateFootprint(center, rotation, size).Overlaps(gap.Value)) return;
+            parts.Add(new CityFringeYardPartDescriptor(stableId, areaId, kind, style,
+                center, rotation, size, false, surfaceRunId));
+        }
+
+        private static List<float> CreateCompactSurfaceBreaks(
+            CityLayout layout, IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            Vector3 start, Vector3 delta, int segmentCount)
+        {
+            var result = new List<float>(segmentCount + surfaces.Count * 4 + 1);
+            for (int index = 0; index <= segmentCount; index++)
+                result.Add(index / (float)segmentCount);
+            float halfRoad = layout.RoadWidth * .5f;
+            foreach (CitySurfaceDescriptor surface in surfaces)
+            {
+                Rect cell = layout.SpatialPlan.GetCellBounds(surface.Cell);
+                // Continuous terrain changes its slope at the cell's two
+                // clamped road bands. Compact strips bend at those physical
+                // breaks before their remaining surface curvature is fitted.
+                AddSpurBreak(result, start.x, delta.x, layout.WorldOrigin.x + cell.xMin);
+                AddSpurBreak(result, start.x, delta.x, layout.WorldOrigin.x + cell.xMin + halfRoad);
+                AddSpurBreak(result, start.x, delta.x, layout.WorldOrigin.x + cell.xMax - halfRoad);
+                AddSpurBreak(result, start.x, delta.x, layout.WorldOrigin.x + cell.xMax);
+                AddSpurBreak(result, start.z, delta.z, layout.WorldOrigin.z + cell.yMin);
+                AddSpurBreak(result, start.z, delta.z, layout.WorldOrigin.z + cell.yMin + halfRoad);
+                AddSpurBreak(result, start.z, delta.z, layout.WorldOrigin.z + cell.yMax - halfRoad);
+                AddSpurBreak(result, start.z, delta.z, layout.WorldOrigin.z + cell.yMax);
+            }
+            result.Sort();
+            return result;
+        }
+
+        private static void AddSpurBreak(List<float> values, float start, float delta, float coordinate)
+        {
+            if (Mathf.Abs(delta) < .0001f) return;
+            float amount = (coordinate - start) / delta;
+            if (amount <= .0001f || amount >= .9999f) return;
+            foreach (float value in values)
+                if (Mathf.Abs(value - amount) < .0001f) return;
+            values.Add(amount);
+        }
+
         private static bool AddGroundedPart(
             CityLayout layout,
             IReadOnlyList<CitySurfaceDescriptor> surfaces,
@@ -1376,6 +1485,12 @@ namespace BarPromenade
             ICollection<CityFringeYardPartDescriptor> parts,
             bool seatOnLowestCorner = false)
         {
+            if (CityMountainBoundaryDefinition.IsMountainFacingAreaId(areaId))
+            {
+                Rect bounds = CalculateBounds(surfaces);
+                Vector3 outward = ResolveMountainOutward(areaId);
+                size = FitCivilDepth(bounds, outward, rotation, size);
+            }
             // A sixteen-metre rigid wall seated on the single sample under
             // its centre rides up off terraced ground at one end and buries
             // itself at the other, which reads as a leaning slab. Long parts
@@ -1572,6 +1687,10 @@ namespace BarPromenade
             Vector3 outward,
             float inset)
         {
+            // Capsule clearance at the toe is physical; civil-work placement
+            // insets use the same proportional depth budget as the forefield.
+            if (inset > CityGroundTraversalPlanner.MaximumAgentRadius + .001f)
+                inset *= DepthBudgetScale(bounds, outward);
             Vector3 result = anchor;
             if (outward.x > 0.5f)
             {
@@ -1592,6 +1711,10 @@ namespace BarPromenade
 
             return result;
         }
+
+        private static Vector3 ResolveMountainOutward(string areaId) =>
+            areaId == CityMountainBoundaryDefinition.WestNorthAreaId ||
+            areaId == CityMountainBoundaryDefinition.WestSouthAreaId ? Vector3.left : Vector3.back;
 
         private static Vector3 ResolveLongAxis(Vector3 outward)
         {

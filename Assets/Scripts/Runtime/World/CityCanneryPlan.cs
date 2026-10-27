@@ -36,6 +36,7 @@ namespace BarPromenade
             if (descriptor.PublicBounds.width < 17.99f || descriptor.PublicBounds.height < 17.99f)
                 throw new InvalidOperationException("The cannery needs its full 18 metre site.");
             CityDistrictPointOfInterestAccessDescriptor best = descriptor.Accesses[0];
+            float groundDatum = ResolveGroundDatum(layout, descriptor);
             HashSet<RoadEdge> busRoads = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
                 ? CityBusPlanner.ServiceRoadEdges(CityBusPlanner.CreateRoadRouting(layout))
                 : new HashSet<RoadEdge>();
@@ -57,7 +58,7 @@ namespace BarPromenade
                 // The level yard must meet a level road. Bus separation only
                 // breaks ties between equally flat entrances; shared streets
                 // already have the delivery-trip traffic reservation.
-                if (slope > minimumRise + .01f) continue;
+                if (slope > minimumRise + .01f || Mathf.Abs(level - groundDatum) > .001f) continue;
                 float candidate = slope * 10f + Mathf.Abs(level - descriptor.Center.y) +
                     (busRoads.Contains(edge) ? 10000f : 0f);
                 if (candidate >= cost) continue;
@@ -72,7 +73,7 @@ namespace BarPromenade
             // driveway apron must still start at the public/street boundary.
             Vector3 frontageOrigin = best.Center - Forward * 9f;
             Origin = new Vector3(frontageOrigin.x,
-                layout.ElevationPlan.SampleRoadDatum(FrontageEdge, .5f), frontageOrigin.z);
+                groundDatum, frontageOrigin.z);
             PublicRectangles = new[] {
                 World(Rect.MinMaxRect(-9,-9,9,-7)), World(Rect.MinMaxRect(-9,7,9,9)),
                 World(Rect.MinMaxRect(-9,-9,-8,9)), World(Rect.MinMaxRect(0,-9,9,9)),
@@ -104,6 +105,33 @@ namespace BarPromenade
                 return plan;
             }
             return null;
+        }
+
+        internal static float ResolveGroundDatum(CityLayout layout,
+            CityDistrictPointOfInterestDescriptor descriptor)
+        {
+            if (descriptor.PublicBounds.width < 17.99f || descriptor.PublicBounds.height < 17.99f)
+                return descriptor.Center.y;
+            float minimumRise = float.PositiveInfinity;
+            foreach (CityDistrictPointOfInterestAccessDescriptor access in descriptor.Accesses)
+                minimumRise = Mathf.Min(minimumRise, Mathf.Abs(
+                    layout.ElevationPlan.GetNodeElevation(access.FrontageEdge.A) -
+                    layout.ElevationPlan.GetNodeElevation(access.FrontageEdge.B)));
+            float bestDistance = float.PositiveInfinity;
+            float datum = descriptor.Center.y;
+            foreach (CityDistrictPointOfInterestAccessDescriptor access in descriptor.Accesses)
+            {
+                RoadEdge edge = access.FrontageEdge;
+                float rise = Mathf.Abs(layout.ElevationPlan.GetNodeElevation(edge.A) -
+                    layout.ElevationPlan.GetNodeElevation(edge.B));
+                if (rise > minimumRise + .01f) continue;
+                float level = layout.ElevationPlan.SampleRoadDatum(edge, .5f);
+                float distance = Mathf.Abs(level - descriptor.Center.y);
+                if (distance >= bestDistance) continue;
+                bestDistance = distance;
+                datum = level;
+            }
+            return datum;
         }
 
         public Vector3 World(Vector3 local) => Origin + Rotation * local;

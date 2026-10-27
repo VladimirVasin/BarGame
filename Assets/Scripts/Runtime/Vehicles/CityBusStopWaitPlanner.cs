@@ -20,6 +20,13 @@ namespace BarPromenade
             CityBusPlanner.RoadsidePoleOutsideRoadEdge +
             (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);
 
+        public static float GetPoleToSidewalkCenter(CityBusPlan plan, CityBusStopDescriptor stop)
+        {
+            Vector3 toRoad = Vector3.ProjectOnPlane(stop.RoadsideForward, Vector3.up).normalized;
+            float poleOffset = Vector3.Dot(stop.ShelterPosition - stop.Position, -toRoad);
+            return poleOffset - plan.LaneCenterOffset - CityStreetSurfacePlanner.SidewalkWidth * .5f;
+        }
+
         /// <summary>
         /// A `1 m` pavement minus a `0.35 m` agent cannot fit two walkers
         /// abreast, so wait slots queue along the lane instead. Both offsets
@@ -82,7 +89,7 @@ namespace BarPromenade
                 toRoad.Normalize();
                 along.Normalize();
                 Vector3 laneCenter = stop.ShelterPosition +
-                                     (toRoad * PoleToSidewalkCenter);
+                                     (toRoad * GetPoleToSidewalkCenter(busPlan, stop));
                 slots.Clear();
                 for (int offset = 0;
                      offset < SlotLongitudinalOffsets.Length;

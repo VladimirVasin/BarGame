@@ -576,7 +576,7 @@ namespace BarPromenade.Tests.EditMode
                 roadsideOffset.y = 0f;
                 float expectedOffset =
                     (layout.RoadWidth * 0.5f) +
-                    CityBusPlanner.RoadsidePoleOutsideRoadEdge -
+                    CityBusPlanner.GetRoadsidePoleOutsideRoadEdge(layout) -
                     plan.LaneCenterOffset;
                 Assert.That(
                     Vector3.Dot(roadsideOffset, right),

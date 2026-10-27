@@ -3,6 +3,36 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-27
+
+User-approved compact coastal rebuild: Residential/Industrial retain distinct
+mass, lived fronts and service courts; park, semantic POIs, fair/arch and stable
+hero/bar/shop owners survive. Declared dry land is about 29.2% smaller without
+scaling vehicles. Authored low-rise building bank fits the new streetwall,
+shared rear courts, real passages and reserved domestic scenes. Passive
+substation/municipal/port workshops feed a bounded pole/cable network.
+
+Road/ground complements share datums. Terrain uses pure factory datum and
+court paving avoids bus-dependent plans, removing a construction cycle.
+Split fringe strips retain composition IDs, so physical support and composition
+spacing are both checked. Fixed arch geometry keeps its authored opening.
+Home/bar/shop forecourts now grade to pitched pavement, with soil-embedded
+skirts and shared door/fixture tops; clipped Home copies retain City triangle
+planes. This fixes the user's floating bar slab reproduction.
+
+Bus candidates prefer bank-local cycles before the coverage cap; bounded
+prefix reachability avoids wasting complete-loop attempts. Final body/turn/
+bridge checks remain. Shared stop placement excludes actual courtyard/service
+routes using the authored shelter footprint, preserving physical colliders.
+Truck retains a centered factory exit and a serviced market frontage.
+
+Proof: CityFabric passed physical/nav courts, shared paths, entrance floors,
+retained landmark fit, utility support and City/Home views; the bar-side
+reproduction was reviewed. ProductionCityRoute_AllStopsExposeBothDoorPrompts
+passed real stop doors. CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup
+passed imported geometry; generator art/determinism, check-docs and scoped
+diff checks passed. Existing church/karaoke user edits were preserved.
+
 ## 2026-10-26
 
 Free karaoke: same rig's positioned Enter/Loop/Exit, held LMB/mouse Y, shared

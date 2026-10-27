@@ -92,7 +92,8 @@ namespace BarPromenade
             IList<CityCrosswalkDescriptor> crosswalks,
             IList<CityStreetRibbonDescriptor> curvedStreetRibbons = null,
             IList<CityStreetRibbonDescriptor> curvedSidewalkRibbons = null,
-            IList<CityStreetRibbonDescriptor> curvedCenterMarkingRibbons = null)
+            IList<CityStreetRibbonDescriptor> curvedCenterMarkingRibbons = null,
+            float publicSidewalkWidth = CityStreetSurfacePlanner.SidewalkWidth)
         {
             if (float.IsNaN(carriagewayWidth) ||
                 float.IsInfinity(carriagewayWidth) ||
@@ -103,6 +104,7 @@ namespace BarPromenade
             }
 
             CarriagewayWidth = carriagewayWidth;
+            PublicSidewalkWidth = publicSidewalkWidth;
             StreetSurfaces = Copy(streetSurfaces);
             ParkPaths = Copy(parkPaths);
             Sidewalks = Copy(sidewalks);
@@ -129,6 +131,9 @@ namespace BarPromenade
         }
 
         public float CarriagewayWidth { get; }
+        // The old one-metre road-band inset remains the traffic contract.
+        // Compact City adds walking width outward into the frontage reserve.
+        public float PublicSidewalkWidth { get; }
         public IReadOnlyList<Bounds> StreetSurfaces { get; }
         public IReadOnlyList<Bounds> ParkPaths { get; }
         public IReadOnlyList<Bounds> Sidewalks { get; }

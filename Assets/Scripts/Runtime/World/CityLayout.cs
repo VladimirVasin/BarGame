@@ -1278,6 +1278,8 @@ namespace BarPromenade
         private void ValidatePrimaryLandmarkCells(
             IReadOnlyDictionary<Vector2Int, BuildingLot> lotsByCell)
         {
+            if (SpatialPlan.IsCompactCoastal && readOnlyPrimaryLandmarkCells.Count != 4)
+                throw new InvalidOperationException("The compact town must retain all four semantic landmarks.");
             for (int index = 0; index < Districts.Count; index++)
             {
                 CityDistrictKind district = Districts[index].Kind;
@@ -1309,7 +1311,8 @@ namespace BarPromenade
                     !lotsByCell.TryGetValue(
                         pair.Value,
                         out BuildingLot lot) ||
-                    lot.District != pair.Key ||
+                    lot.District != (SpatialPlan.IsCompactCoastal
+                        ? CompactLandmarkDistrict(pair.Key) : pair.Key) ||
                     !lot.HasBuilding ||
                     lot.IsSupermarket)
                 {
@@ -1325,7 +1328,7 @@ namespace BarPromenade
         {
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var cells = new HashSet<Vector2Int>();
-            var districts = new HashSet<CityDistrictKind>();
+            var kinds = new HashSet<CityDistrictPointOfInterestKind>();
             var accessIds = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0;
                  index < DistrictPointsOfInterest.Count;
@@ -1337,11 +1340,11 @@ namespace BarPromenade
                     string.IsNullOrEmpty(point.Id) ||
                     !ids.Add(point.Id) ||
                     !cells.Add(point.Cell) ||
-                    !districts.Add(point.District))
+                    !kinds.Add(point.Kind))
                 {
                     throw new InvalidOperationException(
                         "District points of interest must be non-null and " +
-                        "have unique IDs, cells and districts.");
+                        "have unique IDs, cells and semantic kinds.");
                 }
 
                 if (!lotsByCell.TryGetValue(
@@ -1358,7 +1361,8 @@ namespace BarPromenade
                         lot.AreaId,
                         point.AreaId,
                         StringComparison.Ordinal) ||
-                    ResolvePointOfInterestKind(point.District) != point.Kind)
+                    (!SpatialPlan.IsCompactCoastal &&
+                     ResolvePointOfInterestKind(point.District) != point.Kind))
                 {
                     throw new InvalidOperationException(
                         $"District point '{point.Id}' does not match its " +
@@ -1472,12 +1476,20 @@ namespace BarPromenade
 
             if (publicLotCount != DistrictPointsOfInterest.Count ||
                 districtPointsByCell.Count !=
-                DistrictPointsOfInterest.Count)
+                DistrictPointsOfInterest.Count ||
+                (SpatialPlan.IsCompactCoastal && DistrictPointsOfInterest.Count != 4))
             {
                 throw new InvalidOperationException(
                     "District-point lots and descriptors must match " +
                     "one-to-one.");
             }
+        }
+
+        internal static CityDistrictKind CompactLandmarkDistrict(CityDistrictKind semanticDistrict)
+        {
+            return semanticDistrict == CityDistrictKind.OldTown ? CityDistrictKind.Industrial
+                : semanticDistrict == CityDistrictKind.Nightlife ? CityDistrictKind.Residential
+                : semanticDistrict;
         }
 
         private static CityDistrictPointOfInterestKind

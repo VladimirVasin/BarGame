@@ -118,7 +118,8 @@ namespace BarPromenade
                     part.Center,
                     part.Rotation,
                     part.Size,
-                    part.BlocksMovement));
+                    part.BlocksMovement,
+                    part.SurfaceRunId));
             }
 
             return result;
@@ -707,6 +708,9 @@ namespace BarPromenade
             bool blocksMovement,
             float baseOffset = 0f)
         {
+            if (yard.Kind != CityFringeYardKind.SouthTunnelForecourt)
+                size = CityFringeYardPlanner.FitCivilDepth(yard.AreaBounds,
+                    yard.Access.OutwardNormal, rotation, size);
             Vector3 center = WithGroundY(
                 layout,
                 yard,
@@ -809,6 +813,7 @@ namespace BarPromenade
             float longCoordinate)
         {
             Vector3 outward = yard.Access.OutwardNormal;
+            depth *= CityFringeYardPlanner.DepthBudgetScale(yard);
             Vector3 point = yard.Access.Center;
             if (Mathf.Abs(outward.x) > 0.5f)
             {

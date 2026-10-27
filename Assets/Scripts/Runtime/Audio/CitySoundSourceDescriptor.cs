@@ -178,7 +178,11 @@ namespace BarPromenade
 
             CityDistrictKind expectedDistrict =
                 GetExpectedDistrict(source.PhysicalOwner);
-            if (source.District != expectedDistrict)
+            if (source.District != expectedDistrict &&
+                !(source.PhysicalOwner == CitySoundPhysicalOwnerKind.OldTownWaterworksCourt &&
+                  source.District == CityDistrictKind.Industrial) &&
+                !(source.PhysicalOwner == CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland &&
+                  source.District == CityDistrictKind.Residential))
             {
                 throw new ArgumentException(
                     $"Physical owner '{source.PhysicalOwner}' belongs to " +
@@ -322,6 +326,13 @@ namespace BarPromenade
                     throw new ArgumentOutOfRangeException(nameof(cue));
             }
         }
+
+        internal static bool SupportsDistrict(CitySourceSoundId cue, CityDistrictKind district) =>
+            GetExpectedDistrict(cue) == district ||
+            (district == CityDistrictKind.Industrial &&
+             (cue == CitySourceSoundId.WaterworksPipeLoop || cue == CitySourceSoundId.WaterworksDrip)) ||
+            (district == CityDistrictKind.Residential &&
+             (cue == CitySourceSoundId.LastRouteRelayLoop || cue == CitySourceSoundId.LastRouteIncompleteChime));
 
         private static void RequireDefinedDistrict(CityDistrictKind district)
         {

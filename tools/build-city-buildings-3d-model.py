@@ -55,8 +55,8 @@ from city_building_coplanarity import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "3.0.0"
-DESIGN_ID = "city_buildings_prototypes_v3"
+GENERATOR_VERSION = "4.0.0"
+DESIGN_ID = "city_buildings_coastal_v4"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
 
@@ -90,30 +90,26 @@ FBX_AXIS_UP = "+Y"
 BAKE_SPACE_TRANSFORM = False
 
 EXPECTED_PROTOTYPES = (
-    ("old-town-prototype-01", "OldTown", "FragmentedPerimeter",
-     14.0, 13.5, 18.0),
-    ("residential-prototype-01", "Residential", "SetbackCourtyard",
-     11.5, 11.5, 15.0),
-    ("industrial-prototype-01", "Industrial", "LowWideProcess",
-     14.0, 13.5, 10.0),
-    ("nightlife-prototype-01", "Nightlife", "TallDense",
-     12.5, 12.0, 27.0),
-    ("old-town-prototype-02", "OldTown", "LongStreetBar", 22.0, 11.5, 16.2),
-    ("residential-prototype-02", "Residential", "LongStreetBar", 22.0, 11.5, 14.4),
-    ("industrial-prototype-02", "Industrial", "LongStreetBar", 22.0, 11.5, 8.4),
-    ("nightlife-prototype-02", "Nightlife", "LongStreetBar", 17.0, 9.5, 24.6),
-    ("old-town-prototype-03", "OldTown", "CornerStreetWing", 15.0, 14.0, 17.4),
-    ("residential-prototype-03", "Residential", "CornerStreetWing", 15.0, 14.0, 15.6),
-    ("industrial-prototype-03", "Industrial", "CornerStreetWing", 15.0, 14.0, 9.3),
-    ("nightlife-prototype-03", "Nightlife", "CornerStreetWing", 15.0, 14.0, 26.4),
-    ("old-town-prototype-04", "OldTown", "ThroughPassage", 22.0, 11.5, 16.2),
-    ("residential-prototype-04", "Residential", "ThroughPassage", 22.0, 11.5, 14.4),
-    ("industrial-prototype-04", "Industrial", "ThroughPassage", 22.0, 11.5, 8.4),
-    ("nightlife-prototype-04", "Nightlife", "ThroughPassage", 17.0, 9.5, 24.6),
-    ("old-town-prototype-05", "OldTown", "CourtyardWing", 10.0, 6.0, 12.6),
-    ("residential-prototype-05", "Residential", "CourtyardWing", 10.0, 6.0, 11.8),
-    ("industrial-prototype-05", "Industrial", "CourtyardWing", 10.0, 6.0, 6.9),
-    ("nightlife-prototype-05", "Nightlife", "CourtyardWing", 10.0, 6.0, 18.6),
+    ('old-town-prototype-01', 'OldTown', 'FragmentedPerimeter', 14.0, 13.5, 13.4),
+    ('residential-prototype-01', 'Residential', 'SetbackCourtyard', 11.602, 11.602, 13.4),
+    ('industrial-prototype-01', 'Industrial', 'LowWideProcess', 14.0, 13.5, 8.6),
+    ('nightlife-prototype-01', 'Nightlife', 'TallDense', 12.5, 12.0, 15.8),
+    ('old-town-prototype-02', 'OldTown', 'LongStreetBar', 15.5, 11.5, 15.8),
+    ('residential-prototype-02', 'Residential', 'LongStreetBar', 15.5, 11.5, 15.8),
+    ('industrial-prototype-02', 'Industrial', 'LongStreetBar', 15.5, 11.5, 7.8),
+    ('nightlife-prototype-02', 'Nightlife', 'LongStreetBar', 15.5, 11.5, 12.8),
+    ('old-town-prototype-03', 'OldTown', 'CornerStreetWing', 15.0, 14.0, 12.8),
+    ('residential-prototype-03', 'Residential', 'CornerStreetWing', 15.0, 14.0, 12.8),
+    ('industrial-prototype-03', 'Industrial', 'CornerStreetWing', 15.0, 14.0, 8.4),
+    ('nightlife-prototype-03', 'Nightlife', 'CornerStreetWing', 15.0, 14.0, 15.8),
+    ('old-town-prototype-04', 'OldTown', 'ThroughPassage', 15.5, 11.5, 15.8),
+    ('residential-prototype-04', 'Residential', 'ThroughPassage', 15.5, 11.5, 15.8),
+    ('industrial-prototype-04', 'Industrial', 'ThroughPassage', 15.5, 11.5, 7.8),
+    ('nightlife-prototype-04', 'Nightlife', 'ThroughPassage', 15.5, 11.5, 12.8),
+    ('old-town-prototype-05', 'OldTown', 'CourtyardWing', 10.0, 6.0, 10.0),
+    ('residential-prototype-05', 'Residential', 'CourtyardWing', 10.0, 6.0, 10.0),
+    ('industrial-prototype-05', 'Industrial', 'CourtyardWing', 10.0, 6.0, 6.0),
+    ('nightlife-prototype-05', 'Nightlife', 'CourtyardWing', 10.0, 6.0, 10.0),
 )
 
 PREVIEW_PALETTE = {
@@ -145,8 +141,8 @@ PREVIEW_PALETTE = {
         "WindowGlass": (0.18, 0.31, 0.31, 1.0),
     },
     "Nightlife": {
-        "FacadePrimary": (0.19, 0.13, 0.25, 1.0),
-        "FacadeSecondary": (0.55, 0.12, 0.38, 1.0),
+        "FacadePrimary": (0.34, 0.37, 0.34, 1.0),
+        "FacadeSecondary": (0.52, 0.49, 0.40, 1.0),
         "Plinth": (0.12, 0.10, 0.15, 1.0),
         "Roof": (0.08, 0.09, 0.13, 1.0),
         "Metal": (0.11, 0.11, 0.16, 1.0),
@@ -655,7 +651,7 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
         if prototype.district == "Residential":
             expected_balcony_levels = {floor: level for floor, level in
                 enumerate((2.8, 5.6, 8.4, 11.2), start=1)
-                if level + 2.2 < prototype.height_m - 0.35}
+                if level + 2.2 < prototype.height_m - 1.2}
             if len(prototype.balcony_slots) != len(expected_balcony_levels) * 2:
                 problems.append(
                     f"{prototype.stable_id} balcony count differs from its storeys")
@@ -1401,6 +1397,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--preview", type=Path, default=DEFAULT_PREVIEW)
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--preview-only", action="store_true",
+                        help="Refresh tracked authoring preview/blend without exporting Unity assets")
     parser.add_argument("--validate-only", action="store_true")
     return parser.parse_args(argv)
 
@@ -1441,6 +1439,11 @@ def main() -> int:
 
     result = build_scene(prototypes)
     validate_source_scene(result, prototypes)
+    if config.preview_only:
+        render_preview(config.preview, result, prototypes)
+        save_blend(config.blend)
+        print("CITY BUILDINGS COASTAL AUTHORING PREVIEW OK")
+        return 0
     if not config.no_preview:
         render_preview(config.preview, result, prototypes)
     export_fbx(config.fbx, result)

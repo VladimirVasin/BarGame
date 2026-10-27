@@ -185,33 +185,33 @@ MonoBehaviour:
     metersPerTile: 0
     renderer: {fileID: 954020750183590377}
   localBounds:
-    m_Center: {x: -0.015000105, y: 13.199999, z: 0.017500162}
-    m_Extent: {x: 7.5150003, y: 13.199999, z: 7.0474997}
+    m_Center: {x: -0.015000105, y: 7.8999996, z: 0.020000935}
+    m_Extent: {x: 7.5150003, y: 7.9000006, z: 7.05}
   roofAttachmentBounds:
-    m_Center: {x: 0, y: 26.224998, z: 3.5}
-    m_Extent: {x: 7.1, y: 0.17500019, z: 3.1}
+    m_Center: {x: 0, y: 15.200001, z: 3.5}
+    m_Extent: {x: 7.1, y: 0.5999999, z: 3.1}
   colliderBounds:
-  - m_Center: {x: 0, y: 13.025, z: 3.5}
-    m_Extent: {x: 7.5, y: 13.025, z: 3.5}
-  - m_Center: {x: -5, y: 13.025, z: -3.5}
-    m_Extent: {x: 2.5, y: 13.025, z: 3.5}
+  - m_Center: {x: 0, y: 7.3, z: 3.5}
+    m_Extent: {x: 7.5, y: 7.3, z: 3.5}
+  - m_Center: {x: -5, y: 7.3, z: -3.5}
+    m_Extent: {x: 2.5, y: 7.3, z: 3.5}
   facadeAttachments:
   - side: Front
     localBounds:
-      m_Center: {x: 0, y: 13.025, z: 6.9}
-      m_Extent: {x: 7.25, y: 12.525, z: 0.099999905}
+      m_Center: {x: 0, y: 7.3, z: 6.9}
+      m_Extent: {x: 7.25, y: 6.8, z: 0.099999905}
   - side: Rear
     localBounds:
-      m_Center: {x: -5, y: 13.025, z: -6.9}
-      m_Extent: {x: 2.25, y: 12.525, z: 0.099999905}
+      m_Center: {x: -5, y: 7.3, z: -6.9}
+      m_Extent: {x: 2.25, y: 6.8, z: 0.099999905}
   - side: Left
     localBounds:
-      m_Center: {x: -7.4, y: 13.2, z: 0}
-      m_Extent: {x: 0.099999905, y: 12.7, z: 6.75}
+      m_Center: {x: -7.4, y: 7.9, z: 0}
+      m_Extent: {x: 0.099999905, y: 7.4, z: 6.75}
   - side: Right
     localBounds:
-      m_Center: {x: 7.4, y: 13.025, z: 3.5}
-      m_Extent: {x: 0.099999905, y: 12.525, z: 3.25}
+      m_Center: {x: 7.4, y: 7.3, z: 3.5}
+      m_Extent: {x: 0.099999905, y: 6.8, z: 3.25}
   windowSlots:
   - slotId: 1
     side: Front
@@ -374,270 +374,62 @@ MonoBehaviour:
     sizeMeters: {x: 1, y: 1.9}
     uv2SlotId: 20
   - slotId: 21
-    side: Front
-    floor: 4
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -5.4, y: 13.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 21
-  - slotId: 22
-    side: Front
-    floor: 4
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2.7, y: 13.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 22
-  - slotId: 23
-    side: Front
-    floor: 4
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 13.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 23
-  - slotId: 24
-    side: Front
-    floor: 4
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2.7, y: 13.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 24
-  - slotId: 25
-    side: Front
-    floor: 4
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 5.4, y: 13.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 25
-  - slotId: 26
-    side: Front
-    floor: 5
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -5.4, y: 16.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 26
-  - slotId: 27
-    side: Front
-    floor: 5
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2.7, y: 16.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 27
-  - slotId: 28
-    side: Front
-    floor: 5
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 16.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 28
-  - slotId: 29
-    side: Front
-    floor: 5
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2.7, y: 16.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 29
-  - slotId: 30
-    side: Front
-    floor: 5
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 5.4, y: 16.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 30
-  - slotId: 31
-    side: Front
-    floor: 6
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -5.4, y: 19.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 31
-  - slotId: 32
-    side: Front
-    floor: 6
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2.7, y: 19.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 32
-  - slotId: 33
-    side: Front
-    floor: 6
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 19.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 33
-  - slotId: 34
-    side: Front
-    floor: 6
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2.7, y: 19.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 34
-  - slotId: 35
-    side: Front
-    floor: 6
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 5.4, y: 19.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 35
-  - slotId: 36
-    side: Front
-    floor: 7
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -5.4, y: 22.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 36
-  - slotId: 37
-    side: Front
-    floor: 7
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2.7, y: 22.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 37
-  - slotId: 38
-    side: Front
-    floor: 7
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 22.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 38
-  - slotId: 39
-    side: Front
-    floor: 7
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2.7, y: 22.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 39
-  - slotId: 40
-    side: Front
-    floor: 7
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 5.4, y: 22.9, z: 7}
-    sizeMeters: {x: 1, y: 1.9}
-    uv2SlotId: 40
-  - slotId: 41
     side: Rear
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -6.25, y: 4.9, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 41
-  - slotId: 42
+    uv2SlotId: 21
+  - slotId: 22
     side: Rear
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -3.75, y: 4.9, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 42
-  - slotId: 43
+    uv2SlotId: 22
+  - slotId: 23
     side: Rear
     floor: 1
     bay: 0
     openingKind: 0
     localCenter: {x: -6.25, y: 10.9, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 43
-  - slotId: 44
+    uv2SlotId: 23
+  - slotId: 24
     side: Rear
     floor: 1
     bay: 1
     openingKind: 0
     localCenter: {x: -3.75, y: 10.9, z: -7}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 44
-  - slotId: 45
-    side: Rear
-    floor: 2
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -6.25, y: 16.9, z: -7}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 45
-  - slotId: 46
-    side: Rear
-    floor: 2
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -3.75, y: 16.9, z: -7}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 46
-  - slotId: 47
-    side: Rear
-    floor: 3
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -6.25, y: 22.9, z: -7}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 47
-  - slotId: 48
-    side: Rear
-    floor: 3
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -3.75, y: 22.9, z: -7}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 48
-  - slotId: 49
+    uv2SlotId: 24
+  - slotId: 25
     side: Left
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -7.5, y: 7.9, z: -3.85}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 49
-  - slotId: 50
+    uv2SlotId: 25
+  - slotId: 26
     side: Left
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -7.5, y: 7.9, z: 3.85}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 50
-  - slotId: 51
-    side: Left
-    floor: 1
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -7.5, y: 16.9, z: -3.85}
-    sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 51
-  - slotId: 52
-    side: Left
-    floor: 1
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -7.5, y: 16.9, z: 3.85}
-    sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 52
+    uv2SlotId: 26
   balconySlots: []
   frontageWidth: 15
   depth: 14
-  height: 26.4
+  height: 15.8
   unitFactor: 1
-  sourceTriangleCount: 660
-  sourceGeneratorVersion: 3.0.0
-  designId: city_buildings_prototypes_v3
-  buildSignature: b456238ff573c9505aef2ea27f764fb34e5b498789b3908126a273816bc1040c
+  sourceTriangleCount: 448
+  sourceGeneratorVersion: 4.0.0
+  designId: city_buildings_coastal_v4
+  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258
 --- !u!1 &3215305148410055017
 GameObject:
   m_ObjectHideFlags: 0

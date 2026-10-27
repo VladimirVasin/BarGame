@@ -250,10 +250,11 @@ namespace BarPromenade
                         $"{polyline[i-1]} -> {corner} -> {polyline[i+1]}; " +
                         $"from={from.RearAxle} on {fromEdge}, to={to.RearAxle} on {toEdge}.");
                 bool rightTurn = Vector3.Dot(Right(incomingDirection), outgoingDirection) > .5f;
-                // The factory's boundary corner has no exterior fourth pad.
-                // Keep its existing clear centerline arc as the final part of
-                // the yard departure, then merge into the right street lane.
-                bool departureCorner = factoryDeparture && !turnNodes.Contains(start) &&
+                // The authored factory exit starts on the street centreline.
+                // Its clear central arc finishes the yard manoeuvre before
+                // joining the right lane, even when the compact fringe also
+                // supplies a complete public corner apron here.
+                bool departureCorner = factoryDeparture &&
                     Horizontal(corner-layout.GetNodeWorldPosition(start)).sqrMagnitude < .001f;
                 float lane = departureCorner ? 0f : LaneCenterOffset;
                 float radius = rightTurn && !departureCorner ? RightTurnRadius : Radius;
@@ -308,7 +309,7 @@ namespace BarPromenade
                 {
                     Vector2Int direction=next-state.node;
                     if(direction==-state.direction)continue;
-                    bool departureCorner = state==initial && factoryDeparture && !turnNodes.Contains(state.node);
+                    bool departureCorner = state==initial && factoryDeparture;
                     if(direction!=state.direction && !turnNodes.Contains(state.node) && !departureCorner)continue;
                     if(state==initial && direction!=state.direction && startRoom <
                         (departureCorner ? Radius+MinimumLaneJoinRun(-startOffset) :

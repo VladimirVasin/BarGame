@@ -184,10 +184,75 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 plan.SidewalkWalkableRectangles.Any(sidewalk =>
-                    Approximately(sidewalk, expected)),
+                    Contains(sidewalk, expected)),
                 Is.True,
                 "A wide three-way bus apron must close its missing side " +
                 "with one axis-aligned sidewalk spanning both corner pads.");
+        }
+
+        [Test]
+        public void CompactCoastal_WidensPublicPavingAndJoinsWholeEntranceFrontsWithoutNarrowingTraffic()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            CityStreetSurfacePlan plan = CityStreetSurfacePlanner.Create(layout);
+            Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
+            Assert.That(plan.CarriagewayWidth, Is.EqualTo(6f));
+            Assert.That(plan.PublicSidewalkWidth, Is.EqualTo(2f));
+            Assert.That(CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout), Is.EqualTo(5f));
+            RuntimeOrientedBox[] widened = plan.SidewalkGeometry.Where(box =>
+                Mathf.Abs(box.Size.x - 2f) < Tolerance).ToArray();
+            Assert.That(widened, Is.Not.Empty, "Urban frontage must receive real outward walking width.");
+            Assert.That(widened.All(box => box.Size.y >= .29f), Is.True,
+                "The outward metre needs an embedded slab, not a thin sheet hanging over soil.");
+
+            foreach (BuildingLot lot in layout.BuildingLots.Where(lot =>
+                         lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket))
+            {
+                CityEntranceForecourtPlan forecourt = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, lot, 2f);
+                float frontageWidth = lot.FrontageDirection.x != 0 ? forecourt.Bounds.size.z : forecourt.Bounds.size.x;
+                Assert.That(frontageWidth, Is.EqualTo(lot.FrontageDirection.x != 0 ? lot.Size.y : lot.Size.x)
+                    .Within(Tolerance), "Paving joins the facade front instead of an isolated door tongue.");
+                Assert.That(forecourt.Bounds.min.y, Is.LessThan(lot.DoorPosition.y),
+                    "The visible edge must end in ground, without a daylight slit below it.");
+                Assert.That(forecourt.IsGraded,Is.True);
+                Assert.That(forecourt.Top.Count,Is.LessThanOrEqualTo(33*13));
+                for(int row=0;row<forecourt.Rows;row++)
+                {
+                    Vector3 edge=forecourt.Top[row*forecourt.Columns+forecourt.Columns-1];
+                    Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,new Vector2(edge.x,edge.z),out float top),Is.True);
+                    Assert.That(edge.y,Is.EqualTo(top).Within(.002f),"The entire apron edge must meet the real pitched pavement.");
+                }
+                for(int i=0;i<forecourt.Top.Count;i++)
+                {
+                    Vector3 top=forecourt.Top[i],bottom=forecourt.Bottom[i];
+                    if(CityTerrainSurfacePlan.TrySampleGroundTop(layout,new Vector2(top.x,top.z),out float soil,out _))
+                        Assert.That(bottom.y,Is.LessThanOrEqualTo(soil-.1f),"Every perimeter foundation is embedded in sampled soil.");
+                }
+                Rect footprint = forecourt.Footprint;
+                Assert.That(plan.SidewalkWalkableRectangles.Any(sidewalk =>
+                    HasPositiveOverlap(sidewalk, footprint)), Is.True,
+                    "Every entrance front must overlap its continuous public pavement.");
+            }
+
+            foreach (Vector2Int node in CityBusIntersectionSelector.Select(layout))
+            {
+                Vector3 center = layout.GetNodeWorldPosition(node);
+                Rect clearCore = new Rect(center.x - 4f, center.z - 4f, 8f, 8f);
+                foreach (RuntimeOrientedBox box in plan.SidewalkGeometry)
+                {
+                    Vector3 top = box.Center + (box.Rotation * Vector3.up) * box.Size.y * .5f;
+                    if (top.y <= center.y + CityStreetSurfacePlanner.RoadTop + .01f) continue;
+                    Vector3 right = box.Rotation * Vector3.right * box.Size.x * .5f;
+                    Vector3 forward = box.Rotation * Vector3.forward * box.Size.z * .5f;
+                    var footprintBounds = new Bounds(top, Vector3.zero);
+                    foreach (int x in new[] { -1, 1 })
+                        foreach (int z in new[] { -1, 1 })
+                            footprintBounds.Encapsulate(top + right * x + forward * z);
+                    Assert.That(HasPositiveOverlap(CreateRect(footprintBounds), clearCore), Is.False,
+                        "Outward public paving must retain the original clear eight-metre bus core.");
+                }
+            }
         }
 
         [Test]

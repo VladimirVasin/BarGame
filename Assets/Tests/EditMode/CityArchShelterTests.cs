@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.EditMode
         private const float Tolerance = 0.001f;
 
         [Test]
-        public void DefaultCity_TargetsCurrentNightlifeCellsDeterministically()
+        public void DefaultCity_TargetsRetainedResidentialCellsDeterministically()
         {
             CityLayout layout = CreateDefaultLayout();
             BuildingLot west = FindLot(
@@ -30,8 +30,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(new Vector2Int(11, 5)));
             Assert.That(west.IsOrdinaryBuilding, Is.True);
             Assert.That(east.IsOrdinaryBuilding, Is.True);
-            Assert.That(west.District, Is.EqualTo(CityDistrictKind.Nightlife));
-            Assert.That(east.District, Is.EqualTo(CityDistrictKind.Nightlife));
+            Assert.That(west.District, Is.EqualTo(CityDistrictKind.Residential));
+            Assert.That(east.District, Is.EqualTo(CityDistrictKind.Residential));
             Assert.That(
                 layout.HasRoad(
                     RoadEdge.ForCellFrontage(

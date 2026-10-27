@@ -15,10 +15,8 @@ namespace BarPromenade.Tests.EditMode
 
         private static readonly CityDistrictKind[] UrbanDistricts =
         {
-            CityDistrictKind.OldTown,
             CityDistrictKind.Residential,
-            CityDistrictKind.Industrial,
-            CityDistrictKind.Nightlife
+            CityDistrictKind.Industrial
         };
 
         private CityLayout defaultLayout;

@@ -216,31 +216,31 @@ MonoBehaviour:
     metersPerTile: 0
     renderer: {fileID: 3460082951138751098}
   localBounds:
-    m_Center: {x: -0.0149998665, y: 5.8999996, z: -0.01499939}
-    m_Extent: {x: 5.015, y: 5.8999996, z: 3.015}
+    m_Center: {x: -0.0149998665, y: 4.999999, z: -0.014999509}
+    m_Extent: {x: 5.015, y: 5, z: 3.0150003}
   roofAttachmentBounds:
-    m_Center: {x: 0, y: 11.625, z: -0.59999996}
-    m_Extent: {x: 4.6, y: 0.17500019, z: 2}
+    m_Center: {x: 0, y: 9.4, z: -0.59999996}
+    m_Extent: {x: 4.6, y: 0.5999999, z: 2}
   colliderBounds:
-  - m_Center: {x: 0, y: 5.725, z: -0.6}
-    m_Extent: {x: 5, y: 5.725, z: 2.4}
+  - m_Center: {x: 0, y: 4.4, z: -0.6}
+    m_Extent: {x: 5, y: 4.4, z: 2.4}
   facadeAttachments:
   - side: Front
     localBounds:
-      m_Center: {x: 0, y: 5.725, z: 1.7}
-      m_Extent: {x: 4.75, y: 5.225, z: 0.099999964}
+      m_Center: {x: 0, y: 4.4, z: 1.7}
+      m_Extent: {x: 4.75, y: 3.9, z: 0.099999964}
   - side: Rear
     localBounds:
-      m_Center: {x: 0, y: 5.9, z: -2.9}
-      m_Extent: {x: 4.75, y: 5.4, z: 0.100000024}
+      m_Center: {x: 0, y: 5, z: -2.9}
+      m_Extent: {x: 4.75, y: 4.5, z: 0.100000024}
   - side: Left
     localBounds:
-      m_Center: {x: -4.9, y: 5.9, z: 0}
-      m_Extent: {x: 0.099999905, y: 5.4, z: 2.75}
+      m_Center: {x: -4.9, y: 5, z: 0}
+      m_Extent: {x: 0.099999905, y: 4.5, z: 2.75}
   - side: Right
     localBounds:
-      m_Center: {x: 4.9, y: 5.9, z: 0}
-      m_Extent: {x: 0.099999905, y: 5.4, z: 2.75}
+      m_Center: {x: 4.9, y: 5, z: 0}
+      m_Extent: {x: 0.099999905, y: 4.5, z: 2.75}
   windowSlots:
   - slotId: 1
     side: Front
@@ -308,260 +308,172 @@ MonoBehaviour:
     uv2SlotId: 8
   - slotId: 9
     side: Front
-    floor: 3
-    bay: 0
-    openingKind: 1
-    localCenter: {x: -3.28, y: 9.5, z: 1.8}
-    sizeMeters: {x: 0.82, y: 2.2}
-    uv2SlotId: 9
-  - slotId: 10
-    side: Front
-    floor: 3
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2.32, y: 9.825, z: 1.8}
-    sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 10
-  - slotId: 11
-    side: Front
-    floor: 3
-    bay: 2
-    openingKind: 1
-    localCenter: {x: 2.32, y: 9.5, z: 1.8}
-    sizeMeters: {x: 0.82, y: 2.2}
-    uv2SlotId: 11
-  - slotId: 12
-    side: Front
-    floor: 3
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 3.28, y: 9.825, z: 1.8}
-    sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 12
-  - slotId: 13
-    side: Front
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -3.28, y: 1.6, z: 1.8}
     sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 13
-  - slotId: 14
+    uv2SlotId: 9
+  - slotId: 10
     side: Front
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -2.32, y: 1.6, z: 1.8}
     sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 14
-  - slotId: 15
+    uv2SlotId: 10
+  - slotId: 11
     side: Front
     floor: 0
     bay: 2
     openingKind: 0
     localCenter: {x: 2.32, y: 1.6, z: 1.8}
     sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 15
-  - slotId: 16
+    uv2SlotId: 11
+  - slotId: 12
     side: Front
     floor: 0
     bay: 3
     openingKind: 0
     localCenter: {x: 3.28, y: 1.6, z: 1.8}
     sizeMeters: {x: 0.72, y: 1.55}
-    uv2SlotId: 16
-  - slotId: 17
+    uv2SlotId: 12
+  - slotId: 13
     side: Rear
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -4, y: 1.6, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 17
-  - slotId: 18
+    uv2SlotId: 13
+  - slotId: 14
     side: Rear
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -2, y: 1.6, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 18
-  - slotId: 19
+    uv2SlotId: 14
+  - slotId: 15
     side: Rear
     floor: 0
     bay: 2
     openingKind: 0
     localCenter: {x: 0, y: 1.6, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 19
-  - slotId: 20
+    uv2SlotId: 15
+  - slotId: 16
     side: Rear
     floor: 0
     bay: 3
     openingKind: 0
     localCenter: {x: 2, y: 1.6, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 20
-  - slotId: 21
+    uv2SlotId: 16
+  - slotId: 17
     side: Rear
     floor: 0
     bay: 4
     openingKind: 0
     localCenter: {x: 4, y: 1.6, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 21
-  - slotId: 22
+    uv2SlotId: 17
+  - slotId: 18
     side: Rear
     floor: 1
     bay: 0
     openingKind: 0
     localCenter: {x: -4, y: 4.4, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 22
-  - slotId: 23
+    uv2SlotId: 18
+  - slotId: 19
     side: Rear
     floor: 1
     bay: 1
     openingKind: 0
     localCenter: {x: -2, y: 4.4, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 23
-  - slotId: 24
+    uv2SlotId: 19
+  - slotId: 20
     side: Rear
     floor: 1
     bay: 2
     openingKind: 0
     localCenter: {x: 0, y: 4.4, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 24
-  - slotId: 25
+    uv2SlotId: 20
+  - slotId: 21
     side: Rear
     floor: 1
     bay: 3
     openingKind: 0
     localCenter: {x: 2, y: 4.4, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 25
-  - slotId: 26
+    uv2SlotId: 21
+  - slotId: 22
     side: Rear
     floor: 1
     bay: 4
     openingKind: 0
     localCenter: {x: 4, y: 4.4, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 26
-  - slotId: 27
+    uv2SlotId: 22
+  - slotId: 23
     side: Rear
     floor: 2
     bay: 0
     openingKind: 0
     localCenter: {x: -4, y: 7.2, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 27
-  - slotId: 28
+    uv2SlotId: 23
+  - slotId: 24
     side: Rear
     floor: 2
     bay: 1
     openingKind: 0
     localCenter: {x: -2, y: 7.2, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 28
-  - slotId: 29
+    uv2SlotId: 24
+  - slotId: 25
     side: Rear
     floor: 2
     bay: 2
     openingKind: 0
     localCenter: {x: 0, y: 7.2, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 29
-  - slotId: 30
+    uv2SlotId: 25
+  - slotId: 26
     side: Rear
     floor: 2
     bay: 3
     openingKind: 0
     localCenter: {x: 2, y: 7.2, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 30
-  - slotId: 31
+    uv2SlotId: 26
+  - slotId: 27
     side: Rear
     floor: 2
     bay: 4
     openingKind: 0
     localCenter: {x: 4, y: 7.2, z: -3}
     sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 31
-  - slotId: 32
-    side: Rear
-    floor: 3
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -4, y: 10, z: -3}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 32
-  - slotId: 33
-    side: Rear
-    floor: 3
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -2, y: 10, z: -3}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 33
-  - slotId: 34
-    side: Rear
-    floor: 3
-    bay: 2
-    openingKind: 0
-    localCenter: {x: 0, y: 10, z: -3}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 34
-  - slotId: 35
-    side: Rear
-    floor: 3
-    bay: 3
-    openingKind: 0
-    localCenter: {x: 2, y: 10, z: -3}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 35
-  - slotId: 36
-    side: Rear
-    floor: 3
-    bay: 4
-    openingKind: 0
-    localCenter: {x: 4, y: 10, z: -3}
-    sizeMeters: {x: 0.85, y: 1.6}
-    uv2SlotId: 36
-  - slotId: 37
+    uv2SlotId: 27
+  - slotId: 28
     side: Left
     floor: 0
     bay: 0
     openingKind: 0
     localCenter: {x: -5, y: 4.4, z: -1.65}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 37
-  - slotId: 38
+    uv2SlotId: 28
+  - slotId: 29
     side: Left
     floor: 0
     bay: 1
     openingKind: 0
     localCenter: {x: -5, y: 4.4, z: 0.99}
     sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 38
-  - slotId: 39
-    side: Left
-    floor: 1
-    bay: 0
-    openingKind: 0
-    localCenter: {x: -5, y: 10, z: -1.65}
-    sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 39
-  - slotId: 40
-    side: Left
-    floor: 1
-    bay: 1
-    openingKind: 0
-    localCenter: {x: -5, y: 10, z: 0.99}
-    sizeMeters: {x: 0.8, y: 1.55}
-    uv2SlotId: 40
+    uv2SlotId: 29
   balconySlots:
   - stableId: residential-prototype-05-front-0-floor-01
     floor: 1
@@ -599,32 +511,14 @@ MonoBehaviour:
       m_Extent: {x: 1.2500001, y: 0.089999914, z: 0.6}
     localNpcDock: {x: 2.8, y: 5.6, z: 2.48}
     localOutward: {x: 0, y: 0, z: 1}
-  - stableId: residential-prototype-05-front-0-floor-03
-    floor: 3
-    side: Front
-    doorSlotId: 9
-    localDeckBounds:
-      m_Center: {x: -2.8000002, y: 8.309999, z: 2.4}
-      m_Extent: {x: 1.2500001, y: 0.089999676, z: 0.6}
-    localNpcDock: {x: -2.8, y: 8.4, z: 2.48}
-    localOutward: {x: 0, y: 0, z: 1}
-  - stableId: residential-prototype-05-front-1-floor-03
-    floor: 3
-    side: Front
-    doorSlotId: 11
-    localDeckBounds:
-      m_Center: {x: 2.8000002, y: 8.309999, z: 2.4}
-      m_Extent: {x: 1.2500001, y: 0.089999676, z: 0.6}
-    localNpcDock: {x: 2.8, y: 8.4, z: 2.48}
-    localOutward: {x: 0, y: 0, z: 1}
   frontageWidth: 10
   depth: 6
-  height: 11.8
+  height: 10
   unitFactor: 1
-  sourceTriangleCount: 908
-  sourceGeneratorVersion: 3.0.0
-  designId: city_buildings_prototypes_v3
-  buildSignature: b456238ff573c9505aef2ea27f764fb34e5b498789b3908126a273816bc1040c
+  sourceTriangleCount: 734
+  sourceGeneratorVersion: 4.0.0
+  designId: city_buildings_coastal_v4
+  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258
 --- !u!1 &3726770373809790218
 GameObject:
   m_ObjectHideFlags: 0

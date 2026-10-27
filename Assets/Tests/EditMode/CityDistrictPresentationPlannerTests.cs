@@ -143,7 +143,7 @@ namespace BarPromenade.Tests.EditMode
                 CityDistrictPresentationPlanner.CanTransition(
                     CityDistrictKind.Residential,
                     CityDistrictKind.Industrial),
-                Is.False);
+                Is.True);
 
             Assert.Throws<ArgumentException>(() =>
                 CityDistrictPresentationPlanner.Create(

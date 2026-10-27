@@ -1,6 +1,50 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-27 — compact coastal town:**
+  User approved the full rebuild: Residential eastern bank, Industrial working
+  western bank and separate park; no OldTown/Nightlife map districts. Their
+  enum/catalog identities remain compatible semantic layers. Four POIs and four
+  landmark reservations survive independently of district count: water court/clock,
+  drying yard/greenhouse, cannery/gantry, last-route island/cinema. Descriptor
+  districts are actual; semantic kinds/IDs do not change. Fair/arch stay residential.
+  Story §6 records the scope; story §16/21 and all nine art §16 checks remain binding.
+  `CitySpatialPlan.IsCompactCoastal`: 144 logical lots, internal pitch26m,
+  west/south service belts12m, four eastern strips17.5m, coastal land28m.
+  Declared land excludes sea/river:193828→137186m²,−29.2%; models/vehicles stay metre scale.
+  Residential3–5 storeys/10–15.8m; work bodies6–8.6m. Five compact/long/L/passage/wing
+  forms fit real lots; long fronts≤15.5m; wings10×6m only with full padded clearance.
+  Streetwall setback1.25–1.55m, short residential fronts/shared rear courts;
+  four protected domestic recesses2.4m preserve the basket/frontage scenes outside
+  public pavement; parallel loading streets/service courts west. The OldTown oblique pilot
+  is removed from production. Court gap2.4m; true3.6m passages retain separate overhead
+  collision. Adjacent courts connect only over continuous safe-grade ground without
+  crossing an undeclared road; exact ground/road complements and shared Home views remain.
+  Stable home/bar cells12,5/12,6, BarId/SplitTheG and door-return ownership survive.
+  Route01 is a grand loop with coverage-derived stops, not a fixed five-stop tour;
+  real bus/truck turn/body envelopes, street-side boarding and factory/shop service
+  access stay clear. Port civil geometry and eastern road profile join actual datums.
+  Streets retain8m reservation/6m asphalt; public pavements2m extend outward with
+  reserved frontage, shared contours/heights, driveways/crossings and walk masks.
+  Home/bar/shop forecourts grade to actual pitched sidewalks; soil-embedded skirts,
+  door docks and overlapping fixtures share that top. City/Home keep the same
+  triangle planes through clipping; passive Home copies have no colliders.
+  Three passive Blender facilities: substation5x4x3.7m, municipal workshop7.4x4.2x4.4m,
+  port workshop6x4.4x4.2m; support spread<=.24m, clear roads/footways/traversal/old works.
+  Electrical network<=64poles/192spans, poles5.35m off axis, main wires>=7m above roads;
+  physical facade drops. Authored cable topology fits once into one owned mesh,
+  shared materials/no wire physics; RU stop labels follow places, existing EN stays. No new NPC,
+  interaction/quest/Light, gameplay rule or clue; Home shares bounded48m wire views.
+  Effects review inspected active PC_Renderer SSAO/SSR/SceneComposite,
+  CityNoirVolume and CityLightingPresentation. Six scene effects retain finite
+  source-derived bounce (≤4), SSAO/fog/volumes(≤4)/shadows/grade; SSGI/SCGI stay absent.
+  Ten material/accent effects retain probes+road SSR, water/wetness, bevel normals,
+  vertex gradients, shared wind, causal decals/particles, source-based rim and
+  interaction outlines with updated receivers/bounds. Eight post categories keep
+  current bloom/DoF/SMAA/vignette/grain-dither/flares/motion-blur/CA-distortion
+  profiles/options. Street lights stay pooled12; tighter fronts/wires/courts need
+  reviewed frames. No unbounded post effect or claimed FPS improvement.
+
 - **Accepted 2026-10-26 — karaoke:** Wordless singing, hall silence/gaze,
   breath grace, real intoxication pitch drift; fixed narrow source-pitch UI.
   User: dynamic shots every 5–8s, six hero angles plus guest/bartender close-ups;
@@ -707,36 +751,6 @@
   0live bake/newsolver;combat-seated/seam-volume-copy-render `0/45/90/135°`;
   identity-palette/§16/9checks/0§6 deviation.
 
-- **Accepted — 2026-10-04, district heights:**
-  Lower OldTown/Residential;wide low Industrial;taller Nightlife.
-  Compact heights `18/15/10/27 m`; long/passage `16.2/14.4/8.4/24.6 m`;
-  L `17.4/15.6/9.3/26.4 m`; wing `12.6/11.8/6.9/18.6 m` (district order above).
-  Fallback `8–28 m`;roofs in silhouette;fog `0.070`/far `48 m`.
-  Home/shop/bar heights,meaning/9checks kept.
-
-- **Accepted — 2026-10-04, district street structure:**
-  Stable address/node IDs;`8 m` roads/`6 m` carriageways. Coast/river/park,
-  central/bus spines/seeded stairs/special approaches retain datums.
-  Stair edges before curves;highest buildable row+coast links→straight service band.
-  Cargo search/paving:straight streets/supply-parking anchors/turn aprons;0fixed route.
-  Inner OldTown bends `1.4–2.15 m` terrace/shore; upper Industrial `0.75–0.9 m`;
-  Residential regular/Nightlife straight;pilot geometry before ordinary replan;
-  legacy/custom straight.
-  Ribbons:ground subtraction/body poses/distances;exits/story §16 kept.
-
-- **Accepted — 2026-10-04, district block ensembles:**
-  User:whole-city structural replanning/new Blender objects. District front/rear
-  court loops admit `10×6 m` wings only with full-body clearance. Dense old/night
-  fronts, deeper residential and low service courts retain district mass.
-  True passages: `3.6 m` wide/`3.2 m` high (Industrial `4.2 m`);
-  separate ground/overhead physics/navigation. Loops join shared paths;
-  adjacent courts require continuous safe-grade ground without a declared road.
-  Scoped cached paving indexes boundaries; omit the POI-side cannery cut to
-  break route/driveway recursion without changing production paving;
-  bounded edge-clearance retries.
-  West connections/offset court stay. No semantic lot/entrance/NPC/text/water;
-  protected sites/open park/one-block transitions/story §16/nine checks remain.
-
 - **Accepted — 2026-10-04, unified City ground:**
   User:all City ground/streets/paths share one composition.
   `CityGroundSurfaceSystem` snapshots sources; priority XZ partitions retain
@@ -750,38 +764,6 @@
   partition `2 m`, supports `1 m`, edges `.5 m`. Geometry remains exact.
   Routes/anchors/palettes/story §16/nine checks stay.
 
-- **Accepted — 2026-10-04, OldTown north street frontage:**
-  Straight, nonreplanned x0..3,z11: N compact/long, fixed14×13.5/22×11.5 m;
-  setback2.4/1.15/1.7/1.2 m; ordinary fits only, else old pose.
-  Bodies+0.1 m clearance leave 1 m ground corner pads.
-  IDs/sites/courts fixed; only eligible streets keep baseline geometry.
-
-- **Accepted — 2026-10-04, second OldTown courtyard variant:**
-  Default (0,9): long22×11.5/compact14×13.5 m, setback1.4/gap3 m,
-  Z-staggered court/same-gate loop. 144 IDs; pilot adds three rears; courts/link stay.
-  Ordinary OldTown ≥40×34/east or west street; else skip.
-
-- **Accepted — 2026-10-04, OldTown pedestrian shortcuts:**
-  Road-free (0,7)/(0,8) link; loops stay, lamps/props/solid litter excluded.
-  .35 m links share street graph/Path.Length; worker IDs/anchors stay.
-
-- **Accepted — 2026-10-04, OldTown courtyard massing:**
-  x0/1,z7/8: L15×14 m+two west compact14×13.5 m rears.
-  Exact ground−masses; .4 m loops via flanks/neck to same street.
-  Gap≥2.2 m/X support; L void10×7 m open.
-
-- **Accepted — 2026-10-04, OldTown oblique junction and frontage poses:**
-  Fixed road IDs/nodes/datums; cardinal frontages name edges. T(1,8):
-  east−12°(78°/102°), straight ends≥6 m; first6 m ribbon union,
-  8 m minus6 m carriageway/miter sidewalks, flat grade6 m/4 m elsewhere.
-  Unscaled poses unify model/foundation/docks/physics/routes.
-
-- **Accepted — 2026-10-03, city replanning:**
-  Blueprint/area/entrance IDs fixed; W/N/S26–40 m,
-  x4..13/z3..8/east widths fixed; fringe nominal, legacy/custom uniform.
-  Roads connected; fixed-metre catalog shared with Home; protected precincts compact.
-  Runtime road/terrain only; Blender props. Landmark/unsafe bus exclusion.
-  Fog/meaning/acts/story§16/nine art checks stay.
 
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
   User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid
@@ -1045,8 +1027,6 @@
   solids block/map-cut, same variant never within `18/45/90 m`; §16/nine
   art checks hold.
 
-- **Accepted — 2026-09-14, checkpoint placement:**
-  Post `(198,-39)`, street gap `12 m`, origin `286`; front/mask/paths/§6 hold.
 
 - **Accepted — 2026-09-14, full eastern fence dressing:**
   Art §10e: seeded Blender perimeter cover/works/stock/exclusions;
@@ -4976,9 +4956,9 @@
   retains the pitched roof slab; collision, shelter and the exterior
   silhouette contract are unchanged.
 - **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
-  `city_buildings_prototypes_v3`, generator `3.0.0`, supplies twenty passive roots:
+  `city_buildings_coastal_v4`, generator `4.0.0`, supplies twenty passive roots:
   compact/long/L/through-passage/secondary wing per district; 140 semantic meshes,
-  13,480 triangles and 719 window slots. Fixed dimensions belong to the provider/
+  10,576 triangles; window slots follow the manifest. Fixed dimensions belong to the provider/
   manifest; no lot scales or shears an imported model. Origin is footprint centre
   on ground; source `+Y` imports Unity `+Z`, front aligns to `DoorPosition + 0.08 m`.
   Seven roles and a `3,500`-triangle ceiling per root; no imported materials,

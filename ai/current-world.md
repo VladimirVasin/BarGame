@@ -406,27 +406,34 @@ cemetery:own interiors/returns.
 
 ### City generation and layout
 
-- CitySpatialPlan: 144 lot IDs in `13 x 12`; west/north/south 26–40 m.
-  Address/node IDs, river/park/home/bar/fair/arch/east approaches stay fixed;
-  legacy/custom uniform. OldTown inner streets bend 1.4–2.15 m towards
-  shore/terraces, upper Industrial streets 0.75–0.9 m; coast/river/park/central
-  axes, retained bus/stop paths and seeded signature stair roads stay exact.
-  The northern service row/coast connectors stay straight; cargo searches only
-  straight streets between unchanged supply/parking anchors with real turn aprons.
-  Residential stays regular, Nightlife precinct streets straight.
-  Baseline elevation selects stair edges before curves. Special sites resolve before ordinary
-  replanning; actual ribbons own ground subtraction, poses and path distances.
-  Oblique T stays 78°/102°, ends ≥6 m straight. Four L15×14 m/two west compact
-  rears and `(0,9)` offset pair remain; north setbacks apply only to straight streets.
-  Ordinary urban districts form capsule-clear court loops with a fixed 10×6 m
-  wing only where full bodies/clearance fit. Residential courts are deeper,
-  Industrial service courts horizontal, OldTown/Nightlife fronts denser.
-  Real 3.6 m through-passages keep ground walkable under separate overhead
-  collision; height 3.2 m, Industrial 4.2 m. Court ground is exact ribbon/mass
-  complement; loops join the graph, road-free adjacent courts connect only
-  through continuous ground at acceptable grade. CourtyardPaths exclude props/
-  lamps/solid litter. Unscaled poses align models/foundations/docks/collision;
-  protected special sites retain their owners;
+- Compact coastal City has two urban districts: working Industrial west bank
+  and Residential east bank; the park remains open between them. OldTown/Nightlife
+  enum values and catalog entries are compatibility identities, not extra map areas.
+  `CitySpatialPlan.IsCompactCoastal` preserves 144 logical lots in `13 x 12`;
+  internal pitch `26 m`, west/south service belts `12 m`, eastern four strips
+  `17.5 m` and coastal land `28 m`. Declared land excluding sea/river changes
+  `193828→137186 m²` (about `−29.2%`), without scaling models or vehicles.
+  Short residential fronts/shared rear courts contrast with parallel work streets
+  and loading courts. Ordinary fronts stand `1.25–1.55 m` behind the reserved edge.
+  Four reserved domestic frontage lots instead keep `2.4 m` for the existing
+  courtyard scenes; their footprints stay outside public pavement.
+  The expanded oblique/L pilot is absent. Metre bodies retain real fit; `10×6 m` rear wings require full padded clearance and a `2.4 m`
+  court gap. `3.6 m` through passages remain walkable under separate overhead
+  collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;
+  neighbours connect only across continuous safe-grade ground without roads.
+  Road/ground complements retain metre poses. Graded home/bar/shop fronts share
+  sidewalks, embedded skirts and fixture tops in City/Home.
+  Home/bar/fair/arch and service approaches retain owners;
+- `CityCoastalInfrastructurePlan` places three passive functional buildings:
+  substation `5x4x3.7 m`, municipal workshop `7.4x4.2x4.4 m` and port workshop
+  `6x4.4x4.2 m`. Their fixed footprints clear existing fringe works, roads,
+  public pavements and traversal; maximum support-height spread `0.24 m`.
+  At most `64` poles and `192` cable spans form a causal electrical network:
+  poles sit outside the public footway, `5.35 m` from street axes, main wires
+  clear roads by at least `7 m`, facade drops have physical ends. The imported
+  topology is fitted once at build into one owned cable mesh with shared
+  materials; no wire physics, extra Light, NPC or interaction. Home shows only
+  a passive `48 m` slice from the same plan;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed
@@ -485,9 +492,10 @@ cemetery:own interiors/returns.
   flood route on a narrow embedded trace — and the fourth runs through the open
   tunnel forecourt. Fringe dressing adds no destination, Light or world bounds;
   the eastern valley is a separate passive panorama;
-- Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`; origin `286`,
-  real road ends `230` (`32 m` past post), flat first `10 m`; `5/4 m`
-  apron/blend; booth/barrier/gate/fences close map/physics.
+- Default `CityEastExitPlanner`: actual compact eastern street→post `12 m`
+  setback; the imported profile joins that same datum, with the real road
+  ending `32 m` past the post. Flat first `10 m`; `5/4 m` apron/blend;
+  booth/barrier/gate/fences close map/physics.
   `CityEastGroundTransition*`: grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps.
   `CityEast{Swale,Relief,Tree}Plan`: graded hollow/level crossings, seeded
   metre relief/fixed edges/pads; shared render/physics/map; sparse `3–5 m`
@@ -495,7 +503,7 @@ cemetery:own interiors/returns.
   shrubs/grass/gravel, front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/
   repairs, shed stock.
   `CityEastLitterPlan`: the 36-variant `CityLitterCatalog` dense in five bands/
-  `.45 m` gaps; solids block/map-cut, clear `X=188–191.5`/patrol/church/
+  `.45 m` gaps; solids block/map-cut, clear the street/patrol/church/
   crossings/fence. `CityLitterPlan` (`CityWorldPlans.GetLitter`, primed): same
   catalog sparse city-wide: sidewalk edges, lot bands at walls, tide line, ≤6
   by park benches/paths; off roads/crossings/scenes/yards/cemetery/church/bar
@@ -940,13 +948,13 @@ cemetery:own interiors/returns.
   ordinary tight `3 m` right turns remain rejected. A physical street link
   may recur in a connector, but every ordered occurrence receives a unique
   route link/node ID. Route selection has no random branch or player
-  pursuit. On the production layout the loop runs about `6.7 km` and serves
-  `33` named stops — semantic, gate and numbered street stops —
-  each with a physical blue `01` pole, served once per lap by that
+  pursuit. The compact production loop recalculates semantic, gate and
+  numbered street stops from coverage and spacing, with no fixed stop count.
+  Each has a physical blue `01` pole, served once per lap by that
   deterministic door/driver timeline with a fixed `10 s` total dwell,
   including `0.70 s` opening and `0.70 s` closing transitions for both
   doors. Random roadside decoration does not emit bus shelters.
-  Nightlife's last-route island now has a working pole
+  The residential last-route island has a working pole
   nearby but outside its public ground and approaches, leaving the abandoned
   island structures distinct from the live stop. A pooled actor prefers
   obstacle-safe fog-hidden route poses `76-86 m` from the player and falls back
@@ -1431,14 +1439,14 @@ cemetery:own interiors/returns.
   three-loop idle bank. Fifteen shell, terrace, barrel, bedding and clutter
   renderers reuse measured City surface albedos through property blocks.
   Tilted cemetery monuments intentionally retain their legacy visual builder;
-- four first-class open district points of interest on their own full-block
-  land-use lots: Old Town's waterworks court, Residential's drying yard,
-  Industrial's cannery and Nightlife's last-route island. Their canonical
+- four first-class semantic places on their own full-block land-use lots:
+  the working bank owns the old waterworks court and cannery; the residential
+  bank owns the drying yard and last-route island. Their canonical
   descriptors reserve public ground and street access, excluding ordinary
   buildings, bars, home and primary landmarks. The cannery's own hall excludes
   production from its public passage/bypass. Each place has a distinct
   silhouette and movement grammar; the Home exterior reconstructs the
-  same nearby descriptors in local space. Nightlife's island keeps its broken
+  same nearby descriptors in local space. The last-route island keeps its broken
   canopy ring but uses no emissive strips: the old departure board is visibly
   grounded on two supports and weathered route plates, layered posters, a
   waste bin, bottles, a discarded timetable and a lost scarf replace the
@@ -1526,29 +1534,21 @@ cemetery:own interiors/returns.
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- ordinary height comes from the selected fixed-metre model: lower old/
-  residential fabric, low wide Industrial bodies and taller Nightlife.
-  Custom fallback range is `8–28 m`; fog/far plane stay fixed. Twenty Blender
-  typologies, five per district: compact, long, L, through-passage, secondary wing.
-  OldTown/Residential/Industrial/Nightlife compact heights `18/15/10/27 m`;
-  long/passage `16.2/14.4/8.4/24.6 m`, L `17.4/15.6/9.3/26.4 m`,
-  wing `12.6/11.8/6.9/18.6 m`. Compact footprints `14×13.5`, `11.5×11.5`,
-  `14×13.5`, `12.5×12 m`; long/passage `22×11.5 m`, Nightlife `17×9.5 m`;
-  L `15×14 m`, wing `10×6 m`. BuildingLot selects actual-fit body/pose.
-  Passage openings exclude ground collision/navigation, lintels retain overhead
-  collision; L recesses remain clear. Protected precincts keep compact bodies.
-  Generator `3.0.0` publishes 140 semantic meshes/13,480 triangles/719 UV2 slots;
-  seven roles, Residential balcony docks and shared Resources remain.
-  Human floor pitches: OldTown/Nightlife 3 m, Residential 2.8 m. Roofs no longer
-  must disappear. Bar 5–13 m envelope, home 8.8 m/shop 6.4 m/open public land stay.
-  Fixed-scale `+Z` front aligns to `DoorPosition + 0.08 m`. Four-side height
-  atlases/full plinth UVs never repeat; roof/metal/frame use metre repeat,
-  glass pane-local 0..1. Six opaque roles share 24 sheets, one material and MPBs.
-  Warm panes retain emission/two-thirds day floor without readable FBX meshes.
-  Audit rejects coplanar overlap/opaque relief below 0.03 m; trim 0.035–0.065 m,
-  terrain skirt inset 0.08 m. Landmarks/ordinary decor use complementary roof/
-  facade surfaces. Whole Home wrappers use City pose; hidden omitted, crossings
-  alone use clipped legacy silhouettes;
+- ordinary height comes from the selected fixed-metre model: Residential
+  `3–5` storeys, heights by variant `13.4/15.8/12.8/15.8/10 m`; Industrial
+  `8.6/7.8/8.4/7.8/6 m`. Five forms per family remain compact/long/L/passage/wing;
+  twenty stable catalog IDs retain compatibility OldTown/Nightlife prototypes.
+  Long/passage fronts fit `15.5 m` in the `18 m` lot; L `15×14 m`, wing `10×6 m`.
+  BuildingLot selects a real-fit body/pose. Passage openings exclude ground
+  collision/navigation, lintels retain overhead collision; L recesses stay clear.
+  Seven semantic mesh roles, balcony docks and shared Resources remain; each
+  imported body is measured against its manifest. Custom fallback is `8–28 m`.
+  Fixed-scale `+Z` front aligns to `DoorPosition + 0.08 m`; Home/shop/bar keep
+  their own heights. Four-side facade/plinth UVs do not repeat; roof/metal/frame
+  use metre repeat, glass pane-local `0..1`. Warm panes keep the daytime floor.
+  Trim/terrain skirt avoid coplanar skins; landmarks and ordinary dressing use
+  complementary roof/facade surfaces. Home wrappers use the same City pose;
+  only clipped crossings retain legacy silhouettes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;
@@ -1607,13 +1607,13 @@ cemetery:own interiors/returns.
   prop, vegetation, pole, fence and pedestrian colliders decide local
   obstruction;
 - 144 land-use lots in the default urban core, including 16 park cells and
-  4 open district points of interest, plus 34 northern beach/water surface
+  4 open semantic places, plus 34 northern beach/water surface
   cells, 16 north-east yard cells and 6 cemetery cells. The core contains
   exactly one reachable Residential bar at `(12,6)`, one non-bar player home
   across its shared street frontage at `(12,5)`, and exactly one ordinary
   street-front supermarket. The retained bar keeps stable ID
-  `bar-01352777-12-06` and `SplitTheG` activity assignment; the former Industrial,
-  Nightlife and Old Town bar lots are ordinary buildings again. Custom
+  `bar-01352777-12-06` and `SplitTheG` activity assignment. Four semantic
+  rooftop/facade landmarks survive independently of the two districts. Custom
   generated layouts may still request multiple graph-separated bars;
 - a default `8.8 m` player-home body with a recognizable supported upper
   gallery, open balcony door and one lit window to its street-left; City and

@@ -21,8 +21,15 @@ namespace BarPromenade
             CourtyardPavingPlans = new ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>();
         private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
             .CreateValueCallback CreateCourtyardPavingCallback = CreateCourtyardPavingUncached;
+        private static readonly ConditionalWeakTable<CityLayout, PublicPavementContext> PublicPavements =
+            new ConditionalWeakTable<CityLayout, PublicPavementContext>();
+        private static readonly ConditionalWeakTable<CityLayout,List<CityEntranceForecourtPlan>> EntranceHeightPlans=
+            new ConditionalWeakTable<CityLayout,List<CityEntranceForecourtPlan>>();
 
+        // Kept as the inset inside the eight-metre traffic corridor. Vehicle
+        // lanes, stop docks and existing pedestrian lane IDs depend on it.
         public const float SidewalkWidth = 1f;
+        public const float PublicSidewalkWidth = 2f;
         public const float RoadTop = 0.08f;
         public const float SidewalkTop = 0.14f;
         public const float CrosswalkDepth = 2.4f;
@@ -33,6 +40,7 @@ namespace BarPromenade
 
         private const float RoadSurfaceHeight = RoadTop * 2f;
         private const float SidewalkHeight = SidewalkTop - RoadTop;
+        private const float PublicPavementThickness = .30f;
         private const float CenterDashWidth = 0.13f;
         private const float MaximumCenterDashLength = 2.1f;
         private const float MarkingHeight = 0.025f;
@@ -44,6 +52,120 @@ namespace BarPromenade
         // is ever seen, through the kerb line it closes.
         private const float PortOpeningSkirtDepth = 0.6f;
         private const float GeometryTolerance = 0.0001f;
+
+        public static float GetPublicSidewalkOuterDistance(CityLayout layout) =>
+            layout.RoadWidth * .5f +
+            (layout.SpatialPlan.IsCompactCoastal ? PublicSidewalkWidth - SidewalkWidth : 0f);
+
+        private static float PavementThickness(float width) =>
+            width > SidewalkWidth ? PublicPavementThickness : SidewalkHeight;
+
+        public static CityEntranceForecourtPlan CreateEntranceForecourt(CityLayout layout, BuildingLot lot, float legacyWidth)
+            =>CreateEntranceForecourtCore(layout,lot,legacyWidth,true);
+
+        private static CityEntranceForecourtPlan CreateEntranceForecourtCore(CityLayout layout,BuildingLot lot,float legacyWidth,bool sampleSoil)
+        {
+            Vector3 direction = new Vector3(lot.FrontageDirection.x, 0f, lot.FrontageDirection.y);
+            bool alongX = lot.FrontageDirection.x != 0;
+            bool compact = layout.SpatialPlan.IsCompactCoastal;
+            float width = compact ? (alongX ? lot.Size.y : lot.Size.x) : legacyWidth;
+            Vector3 tangent=new Vector3(-direction.z,0f,direction.x);
+            if(!compact)
+            {
+                Vector3 center=(lot.DoorPosition+lot.SidewalkArrivalPosition)*.5f+Vector3.up*(SidewalkTop-SidewalkHeight*.5f);
+                float length=Vector3.Distance(lot.DoorPosition,lot.SidewalkArrivalPosition);
+                var bounds=new Bounds(center,alongX?new Vector3(length,SidewalkHeight,width):new Vector3(width,SidewalkHeight,length));
+                Vector3 near=center-direction*length*.5f,far=center+direction*length*.5f;
+                var top=new[]{near-tangent*width*.5f,far-tangent*width*.5f,
+                    near+tangent*width*.5f,far+tangent*width*.5f};
+                var bottom=new Vector3[4];
+                for(int i=0;i<4;i++){top[i].y=bounds.max.y;bottom[i]=top[i]-Vector3.up*SidewalkHeight;}
+                return new CityEntranceForecourtPlan(top,bottom,2,2,false);
+            }
+            RoadEdge edge=RoadEdge.ForCellFrontage(lot.Cell,lot.FrontageDirection);
+            CityRoadPath path=layout.RoadGeometry.Get(edge);
+            int rightSign=edge.IsHorizontal?lot.FrontageDirection.y:-lot.FrontageDirection.x;
+            float outerDistance=layout.RoadWidth*.5f-SidewalkWidth+GetPublicPavement(layout).Width(edge,rightSign);
+            CityStreetSurfacePlan paving=CreateCourtyardPaving(layout);
+            float doorRoad=layout.ElevationPlan.SampleRoadDatum(edge,
+                path.Project(new Vector2(lot.DoorPosition.x,lot.DoorPosition.z)).DistanceAlong/path.Length);
+            float thresholdCorrection=lot.DoorPosition.y-doorRoad;
+            int rows=Mathf.Clamp(Mathf.CeilToInt(width/.65f)+1,2,33);
+            float run=Vector2.Distance(new Vector2(lot.DoorPosition.x,lot.DoorPosition.z),
+                path.Project(new Vector2(lot.DoorPosition.x,lot.DoorPosition.z)).Position)-outerDistance;
+            int columns=Mathf.Clamp(Mathf.CeilToInt(Mathf.Abs(run)/.6f)+1,2,13);
+            var tops=new Vector3[rows*columns];var bottoms=new Vector3[tops.Length];
+            for(int row=0;row<rows;row++)
+            {
+                Vector3 inner=lot.DoorPosition-direction*.08f+tangent*Mathf.Lerp(-width*.5f,width*.5f,row/(float)(rows-1));
+                CityRoadProjection projection=path.Project(new Vector2(inner.x,inner.z));
+                Vector3 outer=new Vector3(projection.Position.x,0f,projection.Position.y)-direction*(outerDistance-.04f);
+                float road=layout.ElevationPlan.SampleRoadDatum(edge,projection.DistanceAlong/path.Length);
+                float innerTop=road+SidewalkTop+thresholdCorrection;
+                float outerTop=TrySamplePublicSidewalkTop(layout,paving,new Vector2(outer.x,outer.z),out float pavementTop)
+                    ?pavementTop:road+SidewalkTop;
+                for(int column=0;column<columns;column++)
+                {
+                    float amount=column/(float)(columns-1);
+                    Vector3 point=Vector3.Lerp(inner,outer,amount);
+                    float top=Mathf.Lerp(innerTop,outerTop,amount);
+                    float soil=0f;
+                    bool supported=sampleSoil && CityTerrainSurfacePlan.TrySampleGroundTop(layout,new Vector2(point.x,point.z),out soil,out _);
+                    point.y=top;int index=row*columns+column;tops[index]=point;
+                    bottoms[index]=new Vector3(point.x,supported?Mathf.Min(top-PublicPavementThickness,soil-.12f):
+                        Mathf.Min(top-PublicPavementThickness,lot.Center.y-.4f),point.z);
+                }
+            }
+            return new CityEntranceForecourtPlan(tops,bottoms,rows,columns,true);
+        }
+
+        public static bool TrySampleEntranceForecourtTop(CityLayout layout,Vector2 point,out float top)
+        {
+            top=float.NegativeInfinity;
+            if(!layout.SpatialPlan.IsCompactCoastal)return false;
+            // Height-only plans never sample terrain/cannery/bus routing.
+            // Fixtures can ask during early routing without a dependency cycle.
+            List<CityEntranceForecourtPlan> plans=EntranceHeightPlans.GetValue(layout,value=>
+            {
+                var result=new List<CityEntranceForecourtPlan>(4);
+                foreach(BuildingLot lot in value.BuildingLots)
+                    if(lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket)
+                        result.Add(CreateEntranceForecourtCore(value,lot,3f,false));
+                return result;
+            });
+            bool found=false;
+            foreach(CityEntranceForecourtPlan plan in plans)
+                if(plan.Footprint.Contains(point))
+                {top=Mathf.Max(top,plan.SampleTop(new Vector3(point.x,0f,point.y)));found=true;}
+            return found;
+        }
+
+        public static bool TrySamplePublicSidewalkTop(CityLayout layout,Vector2 point,out float top) =>
+            TrySamplePublicSidewalkTop(layout,CreateCourtyardPaving(layout),point,out top);
+
+        private static bool TrySamplePublicSidewalkTop(CityLayout layout,CityStreetSurfacePlan paving,Vector2 point,out float top)
+        {
+            top=float.NegativeInfinity;bool found=false;
+            foreach(RuntimeOrientedBox box in paving.SidewalkGeometry)
+            {
+                Vector3 normal=box.Rotation*Vector3.up,plane=box.Center+normal*box.Size.y*.5f;
+                if(normal.y<.1f)continue;
+                float height=plane.y-(normal.x*(point.x-plane.x)+normal.z*(point.y-plane.z))/normal.y;
+                Vector3 local=Quaternion.Inverse(box.Rotation)*(new Vector3(point.x,height,point.y)-box.Center);
+                if(Mathf.Abs(local.x)>box.Size.x*.5f+.001f || Mathf.Abs(local.z)>box.Size.z*.5f+.001f)continue;
+                top=Mathf.Max(top,height);found=true;
+            }
+            foreach(CityStreetRibbonDescriptor ribbon in paving.CurvedSidewalkRibbons)
+            foreach(Vector2[] polygon in ribbon.Polygons)
+            {
+                if(!CityRoadPolygon.Contains(polygon,point))continue;
+                CityRoadPath path=layout.RoadGeometry.Get(ribbon.Edge);
+                float height=(ribbon.FlatNode.HasValue?layout.ElevationPlan.GetNodeElevation(ribbon.FlatNode.Value):
+                    layout.ElevationPlan.SampleRoadDatum(ribbon.Edge,path.Project(point).DistanceAlong/path.Length))+ribbon.TopOffset;
+                top=Mathf.Max(top,height);found=true;
+            }
+            return found;
+        }
 
         public static CityStreetSurfacePlan Create(CityLayout layout)
         {
@@ -104,6 +226,7 @@ namespace BarPromenade
 
             Dictionary<Vector2Int, NodeConnections> connections =
                 CreateNodeConnections(layout);
+            PublicPavementContext publicPavement = GetPublicPavement(layout);
             var busIntersections = new HashSet<Vector2Int>(
                 CityBusIntersectionSelector.Select(layout));
             List<RoadEdge> sortedEdges = CreateSortedEdges(layout);
@@ -123,7 +246,8 @@ namespace BarPromenade
                 sidewalkGeometry,
                 sidewalkWalkableRectangles,
                 edgesWithSidewalks,
-                includeCrosswalks);
+                includeCrosswalks,
+                publicPavement);
             CreateIntersectionSidewalks(
                 layout,
                 connections,
@@ -131,7 +255,8 @@ namespace BarPromenade
                 sidewalks,
                 sidewalkGeometry,
                 sidewalkWalkableRectangles,
-                markingExclusions);
+                markingExclusions,
+                publicPavement);
 
             IReadOnlyList<Vector2Int> selectedNodes = Array.Empty<Vector2Int>();
             if (includeCrosswalks)
@@ -160,7 +285,8 @@ namespace BarPromenade
             var curvedSidewalks = new List<CityStreetRibbonDescriptor>();
             var curvedMarkings = new List<CityStreetRibbonDescriptor>();
             CreateCurvedRibbons(layout, connections, busIntersections, markingExclusions,
-                curvedStreets, curvedSidewalks, curvedMarkings, includeCrosswalks);
+                curvedStreets, curvedSidewalks, curvedMarkings, includeCrosswalks,
+                publicPavement);
 
             return new CityStreetSurfacePlan(
                 carriagewayWidth,
@@ -178,7 +304,8 @@ namespace BarPromenade
                 crosswalkWalkableRectangles,
                 new List<Vector2Int>(selectedNodes),
                 crosswalks,
-                curvedStreets, curvedSidewalks, curvedMarkings);
+                curvedStreets, curvedSidewalks, curvedMarkings,
+                layout.SpatialPlan.IsCompactCoastal ? PublicSidewalkWidth : SidewalkWidth);
         }
 
         private static void CreateBaseSurfaces(
@@ -454,10 +581,10 @@ namespace BarPromenade
             ICollection<Bounds> sidewalks,
             ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles,
-            ISet<RoadEdge> edgesWithSidewalks, bool includeCanneryOpening)
+            ISet<RoadEdge> edgesWithSidewalks, bool includeCanneryOpening,
+            PublicPavementContext publicPavement)
         {
             float halfRoad = layout.RoadWidth * 0.5f;
-            float sideOffset = halfRoad - (SidewalkWidth * 0.5f);
             // Both precinct plans are pure functions of the layout (and
             // memoised on it); resolved once here instead of under every
             // pavement strip.
@@ -557,22 +684,32 @@ namespace BarPromenade
 
                 if (!hasStair || !stairOnLeft)
                 {
+                    float width = publicPavement.Width(edge, -1);
+                    float sideOffset = halfRoad - SidewalkWidth + width * .5f;
                     AddSidewalkWithPortOpening(cannery, port, eastExit,
                             start + left * sideOffset + Vector3.up * SidewalkTop,
                             end + left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
                         sidewalkGeometry,
-                        walkableRectangles);
+                        walkableRectangles, width);
+                    AddPublicJunctionAprons(layout, edge, left * sideOffset,
+                        width, startInset, endInset, busIntersections,
+                        sidewalks, sidewalkGeometry, walkableRectangles);
                 }
 
                 if (!hasStair || stairOnLeft)
                 {
+                    float width = publicPavement.Width(edge, 1);
+                    float sideOffset = halfRoad - SidewalkWidth + width * .5f;
                     AddSidewalkWithPortOpening(cannery, port, eastExit,
                             start - left * sideOffset + Vector3.up * SidewalkTop,
                             end - left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
                         sidewalkGeometry,
-                        walkableRectangles);
+                        walkableRectangles, width);
+                    AddPublicJunctionAprons(layout, edge, -left * sideOffset,
+                        width, startInset, endInset, busIntersections,
+                        sidewalks, sidewalkGeometry, walkableRectangles);
                 }
 
                 if (hasStair)
@@ -591,13 +728,14 @@ namespace BarPromenade
         private static void AddSidewalkWithPortOpening(CityCanneryPlan cannery, CityPortAccessPlan port,
             CityEastExitPlan eastExit,
             Vector3 start, Vector3 end,
-            ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable)
+            ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable,
+            float width)
         {
             // The eastern road joins the outside asphalt edge. Only its
             // near-side pavement is opened; the opposite pavement continues.
             if (eastExit.IsEnabled && Mathf.Abs(end.x - start.x) < .01f &&
-                start.x > eastExit.ApproachStart.x - SidewalkWidth &&
-                start.x < eastExit.ApproachStart.x + GeometryTolerance)
+                start.x + width * .5f > eastExit.ApproachStart.x - SidewalkWidth &&
+                start.x - width * .5f < eastExit.ApproachStart.x + GeometryTolerance)
             {
                 Rect opening = eastExit.StreetOpening;
                 if (Mathf.Max(start.z, end.z) > opening.yMin &&
@@ -608,11 +746,11 @@ namespace BarPromenade
                     float low = Mathf.Clamp01(Mathf.Min(a, b));
                     float high = Mathf.Clamp01(Mathf.Max(a, b));
                     if (low > .001f) AddSidewalk(CreateSurfaceBox(start,
-                        Vector3.Lerp(start, end, low), SidewalkWidth, SidewalkHeight), sidewalks, geometry, walkable);
+                        Vector3.Lerp(start, end, low), width, PavementThickness(width)), sidewalks, geometry, walkable);
                     if (high < .999f) AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start, end, high),
-                        end, SidewalkWidth, SidewalkHeight), sidewalks, geometry, walkable);
-                    walkable.Add(Rect.MinMaxRect(eastExit.ApproachStart.x - SidewalkWidth,
-                        opening.yMin, eastExit.ApproachStart.x, opening.yMax));
+                        end, width, PavementThickness(width)), sidewalks, geometry, walkable);
+                    walkable.Add(Rect.MinMaxRect(start.x - width * .5f,
+                        opening.yMin, start.x + width * .5f, opening.yMax));
                     return;
                 }
             }
@@ -626,13 +764,13 @@ namespace BarPromenade
                 float fixedMax=horizontal?opening.yMax:opening.xMax;
                 float from=horizontal?start.x:start.z, to=horizontal?end.x:end.z;
                 float minimum=horizontal?opening.xMin:opening.yMin, maximum=horizontal?opening.xMax:opening.yMax;
-                if((horizontal||vertical)&&fixedValue>=fixedMin&&fixedValue<=fixedMax&&
+                if((horizontal||vertical)&&fixedValue+width*.5f>fixedMin&&fixedValue-width*.5f<fixedMax&&
                     Mathf.Max(from,to)>minimum&&Mathf.Min(from,to)<maximum)
                 {
                     float a=(minimum-from)/(to-from),b=(maximum-from)/(to-from);
                     float low=Mathf.Clamp01(Mathf.Min(a,b)),high=Mathf.Clamp01(Mathf.Max(a,b));
-                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
-                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),width,PavementThickness(width)),sidewalks,geometry,walkable);
+                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,width,PavementThickness(width)),sidewalks,geometry,walkable);
                     // The imported apron supplies the dropped physical surface;
                     // pedestrian lanes continue over this one vehicle crossing.
                     walkable.Add(opening);
@@ -642,21 +780,21 @@ namespace BarPromenade
             if(port!=null && Mathf.Abs(end.z-start.z)<.01f && Mathf.Abs(end.x-start.x)>.01f)
             {
                 Rect opening=port.StreetOpening;
-                if(start.z>=opening.yMin && start.z<=opening.yMax &&
+                if(start.z+width*.5f>opening.yMin && start.z-width*.5f<opening.yMax &&
                     Mathf.Max(start.x,end.x)>opening.xMin && Mathf.Min(start.x,end.x)<opening.xMax)
                 {
                     float a=(opening.xMin-start.x)/(end.x-start.x),b=(opening.xMax-start.x)/(end.x-start.x);
                     float low=Mathf.Clamp01(Mathf.Min(a,b)),high=Mathf.Clamp01(Mathf.Max(a,b));
-                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
-                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),width,PavementThickness(width)),sidewalks,geometry,walkable);
+                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,width,PavementThickness(width)),sidewalks,geometry,walkable);
                     AddPortOpeningSkirt(
                         Vector3.Lerp(start, end, low),
                         Vector3.Lerp(start, end, high),
-                        geometry);
+                        geometry, width);
                     return;
                 }
             }
-            AddSidewalk(CreateSurfaceBox(start,end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+            AddSidewalk(CreateSurfaceBox(start,end,width,PavementThickness(width)),sidewalks,geometry,walkable);
         }
 
         // The port crossing drops the kerb so a truck can cross, and the
@@ -669,7 +807,7 @@ namespace BarPromenade
         private static void AddPortOpeningSkirt(
             Vector3 start,
             Vector3 end,
-            ICollection<RuntimeOrientedBox> geometry)
+            ICollection<RuntimeOrientedBox> geometry, float width)
         {
             if ((end - start).sqrMagnitude <= GeometryTolerance)
             {
@@ -680,7 +818,7 @@ namespace BarPromenade
             geometry.Add(CreateSurfaceBox(
                 start - drop,
                 end - drop,
-                SidewalkWidth,
+                width,
                 PortOpeningSkirtDepth));
         }
 
@@ -706,6 +844,33 @@ namespace BarPromenade
                 sidewalkGeometry,
                 walkableRectangles);
             walkableRectangles.Add(placement.Footprint);
+        }
+
+        private static void AddPublicJunctionAprons(CityLayout layout, RoadEdge edge,
+            Vector3 sideOffset, float width,
+            float startInset, float endInset, ISet<Vector2Int> busIntersections,
+            ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry,
+            ICollection<Rect> walkable)
+        {
+            if (width <= SidewalkWidth) return;
+            Vector3 first = layout.GetNodeWorldPosition(edge.A);
+            Vector3 last = layout.GetNodeWorldPosition(edge.B);
+            float length = Vector2.Distance(new Vector2(first.x, first.z), new Vector2(last.x, last.z));
+            float halfRoad = layout.RoadWidth * .5f;
+            const float connectionOverlap = .8f;
+            if (busIntersections.Contains(edge.A) && startInset > halfRoad)
+                AddApron(halfRoad, startInset + connectionOverlap);
+            if (busIntersections.Contains(edge.B) && endInset > halfRoad)
+                AddApron(length - endInset - connectionOverlap, length - halfRoad);
+
+            void AddApron(float from, float to)
+            {
+                Vector3 a = Vector3.Lerp(first, last, from / length) + sideOffset;
+                Vector3 b = Vector3.Lerp(first, last, to / length) + sideOffset;
+                a.y = layout.ElevationPlan.SampleRoadDatum(edge, from / length) + RoadTop;
+                b.y = layout.ElevationPlan.SampleRoadDatum(edge, to / length) + RoadTop;
+                AddSidewalk(CreateSurfaceBox(a, b, width, PublicPavementThickness), sidewalks, geometry, walkable);
+            }
         }
 
         private static void AddApproachIfLongEnough(
@@ -739,7 +904,8 @@ namespace BarPromenade
             ICollection<Bounds> sidewalks,
             ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles,
-            ICollection<Rect> markingExclusions)
+            ICollection<Rect> markingExclusions,
+            PublicPavementContext publicPavement)
         {
             float halfRoad = layout.RoadWidth * 0.5f;
             float carriagewayWidth =
@@ -783,17 +949,20 @@ namespace BarPromenade
                 {
                     for (int zSign = -1; zSign <= 1; zSign += 2)
                     {
+                        float cornerWidth = publicPavement.CornerWidth(node, xSign, zSign, cornerOffset);
+                        float expandedOffset = cornerOffset + (cornerWidth - SidewalkWidth) * .5f;
+                        float thickness = PavementThickness(cornerWidth);
                         Vector3 center = nodePosition + new Vector3(
-                            xSign * cornerOffset,
-                            (RoadTop + SidewalkTop) * 0.5f,
-                            zSign * cornerOffset);
+                            xSign * expandedOffset,
+                            SidewalkTop - thickness * .5f,
+                            zSign * expandedOffset);
                         AddSidewalk(
                             new Bounds(
                                 center,
                                 new Vector3(
-                                    SidewalkWidth,
-                                    SidewalkHeight,
-                                    SidewalkWidth)),
+                                    cornerWidth,
+                                    thickness,
+                                    cornerWidth)),
                             sidewalks,
                             sidewalkGeometry,
                             walkableRectangles);
@@ -806,7 +975,7 @@ namespace BarPromenade
                     cornerOffset,
                     sidewalks,
                     sidewalkGeometry,
-                    walkableRectangles);
+                    walkableRectangles, node, publicPavement);
             }
         }
 
@@ -816,7 +985,8 @@ namespace BarPromenade
             float cornerOffset,
             ICollection<Bounds> sidewalks,
             ICollection<RuntimeOrientedBox> sidewalkGeometry,
-            ICollection<Rect> walkableRectangles)
+            ICollection<Rect> walkableRectangles,
+            Vector2Int node, PublicPavementContext publicPavement)
         {
             float mouthSpan = (cornerOffset * 2f) - SidewalkWidth;
             Vector2Int[] directions =
@@ -834,19 +1004,26 @@ namespace BarPromenade
                     continue;
                 }
 
+                float width = direction.x != 0
+                    ? Mathf.Min(publicPavement.CornerWidth(node, direction.x, -1, cornerOffset),
+                        publicPavement.CornerWidth(node, direction.x, 1, cornerOffset))
+                    : Mathf.Min(publicPavement.CornerWidth(node, -1, direction.y, cornerOffset),
+                        publicPavement.CornerWidth(node, 1, direction.y, cornerOffset));
+                float offset = cornerOffset + (width - SidewalkWidth) * .5f;
+                float thickness = PavementThickness(width);
                 Vector3 center = nodePosition + new Vector3(
-                    direction.x * cornerOffset,
-                    (RoadTop + SidewalkTop) * 0.5f,
-                    direction.y * cornerOffset);
+                    direction.x * offset,
+                    SidewalkTop - thickness * .5f,
+                    direction.y * offset);
                 Vector3 size = direction.x != 0
                     ? new Vector3(
-                        SidewalkWidth,
-                        SidewalkHeight,
+                        width,
+                        thickness,
                         mouthSpan)
                     : new Vector3(
                         mouthSpan,
-                        SidewalkHeight,
-                        SidewalkWidth);
+                        thickness,
+                        width);
                 AddSidewalk(
                     new Bounds(center, size),
                     sidewalks,
@@ -1073,7 +1250,8 @@ namespace BarPromenade
             ISet<Vector2Int> busIntersections, IReadOnlyList<Rect> exclusions,
             ICollection<CityStreetRibbonDescriptor> streets,
             ICollection<CityStreetRibbonDescriptor> sidewalks,
-            ICollection<CityStreetRibbonDescriptor> markings, bool includeMarkings)
+            ICollection<CityStreetRibbonDescriptor> markings, bool includeMarkings,
+            PublicPavementContext publicPavement)
         {
             float halfRoad = layout.RoadWidth * .5f;
             foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
@@ -1091,9 +1269,26 @@ namespace BarPromenade
                     (busIntersections.Contains(edge.B) ? BusApproachApronLength : 0f);
                 CityRoadPath pavementPath = SlicePath(path, startInset, path.Length - endInset);
                 for (int side = -1; side <= 1; side += 2)
+                {
+                    float width = publicPavement.Width(edge, side);
                     sidewalks.Add(new CityStreetRibbonDescriptor(edge,
-                        pavementPath.Ribbon(SidewalkWidth, side * (halfRoad - SidewalkWidth * .5f)),
-                        SidewalkTop, SidewalkHeight));
+                        pavementPath.Ribbon(width, side * (halfRoad - SidewalkWidth + width * .5f)),
+                        SidewalkTop, PavementThickness(width)));
+                    if (width > SidewalkWidth)
+                    {
+                        // Turning space stays flush: the wider walking route
+                        // continues in paving without rebuilding a raised kerb
+                        // across the bus's swept envelope.
+                        if (busIntersections.Contains(edge.A))
+                            sidewalks.Add(new CityStreetRibbonDescriptor(edge,
+                                SlicePath(path, halfRoad, startInset + .15f).Ribbon(width,
+                                    side * (halfRoad - SidewalkWidth + width * .5f)), RoadTop, PublicPavementThickness));
+                        if (busIntersections.Contains(edge.B))
+                            sidewalks.Add(new CityStreetRibbonDescriptor(edge,
+                                SlicePath(path, path.Length - endInset - .15f, path.Length - halfRoad).Ribbon(width,
+                                    side * (halfRoad - SidewalkWidth + width * .5f)), RoadTop, PublicPavementThickness));
+                    }
+                }
                 if (!includeMarkings) continue;
                 int dashCount = Mathf.Max(2, Mathf.FloorToInt(path.Length / 5f));
                 for (int dash = 0; dash < dashCount; dash++)
@@ -1330,6 +1525,90 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static PublicPavementContext GetPublicPavement(CityLayout layout) =>
+            PublicPavements.GetValue(layout, value => new PublicPavementContext(value));
+
+        private sealed class PublicPavementContext
+        {
+            private readonly CityLayout layout;
+            private readonly HashSet<(RoadEdge edge, int rightSign)> expanded =
+                new HashSet<(RoadEdge, int)>();
+            private readonly HashSet<(Vector2Int node, Vector2Int cell)> protectedCorners =
+                new HashSet<(Vector2Int, Vector2Int)>();
+
+            internal PublicPavementContext(CityLayout source)
+            {
+                layout = source;
+                if (!source.SpatialPlan.IsCompactCoastal) return;
+                foreach (RoadEdge edge in source.RoadEdges)
+                {
+                    if (source.GetPathKind(edge) != CityPathKind.Street) continue;
+                    bool reserved = source.TryGetBridge(edge, out _) ||
+                        source.ElevationPlan.TryGetSignatureStair(edge, out _);
+                    for (int sign = -1; sign <= 1; sign += 2)
+                    {
+                        Vector2Int cell = edge.IsHorizontal
+                            ? edge.A + (sign > 0 ? Vector2Int.down : Vector2Int.zero)
+                            : edge.A + (sign < 0 ? Vector2Int.left : Vector2Int.zero);
+                        // Existing retaining rails and park hedges keep their
+                        // physical line. Widen only the reserved urban frontage;
+                        // stairs, bridges and protected drops own their landings.
+                        if (!IsUrban(cell)) continue;
+                        if (!reserved && HasLevelFrontage(edge, cell)) expanded.Add((edge, sign));
+                        else
+                        {
+                            protectedCorners.Add((edge.A, cell));
+                            protectedCorners.Add((edge.B, cell));
+                        }
+                    }
+                }
+            }
+
+            internal float Width(RoadEdge edge, int rightSign) =>
+                expanded.Contains((edge, rightSign)) ? PublicSidewalkWidth : SidewalkWidth;
+
+            private bool HasLevelFrontage(RoadEdge edge, Vector2Int cell)
+            {
+                // This early paving decision must not instantiate terrain,
+                // cannery routing or courtyard plans. Their final compositor
+                // consumes paving later. Retain narrow protected boundaries
+                // unless the whole urban frontage has a safe datum step.
+                float ground = layout.ElevationPlan.GetCellElevation(cell) + CityElevationPlan.GroundTopOffset;
+                for (int sample = 0; sample <= 8; sample++)
+                    if (Mathf.Abs(ground - layout.ElevationPlan.SampleRoadDatum(edge, sample / 8f) - SidewalkTop) >
+                        CityRoadGroundBoundaryPlanner.MaximumSafeStep) return false;
+                return true;
+            }
+
+            internal float CornerWidth(Vector2Int node, int xSign, int zSign, float oldOffset)
+            {
+                if (!layout.SpatialPlan.IsCompactCoastal) return SidewalkWidth;
+                var cell = new Vector2Int(node.x + (xSign < 0 ? -1 : 0),
+                    node.y + (zSign < 0 ? -1 : 0));
+                if (!IsUrban(cell) || protectedCorners.Contains((node, cell))) return SidewalkWidth;
+                Vector3 center = layout.GetNodeWorldPosition(node);
+                float offset = oldOffset + (PublicSidewalkWidth - SidewalkWidth) * .5f;
+                var corner = new Rect(center.x + xSign * offset - PublicSidewalkWidth * .5f,
+                    center.z + zSign * offset - PublicSidewalkWidth * .5f,
+                    PublicSidewalkWidth, PublicSidewalkWidth);
+                // Rear wings are allocated after street paving. Primary lots
+                // own the frontage reserve; reading BuildingMasses here would
+                // recurse through courtyard allocation and paving again.
+                foreach (BuildingLot lot in layout.BuildingLots)
+                {
+                    if (!lot.HasBuilding) continue;
+                    Bounds bounds = lot.WorldBounds;
+                    Rect solid = Rect.MinMaxRect(bounds.min.x - .1f, bounds.min.z - .1f,
+                        bounds.max.x + .1f, bounds.max.z + .1f);
+                    if (corner.Overlaps(solid)) return SidewalkWidth;
+                }
+                return PublicSidewalkWidth;
+            }
+
+            private bool IsUrban(Vector2Int cell) =>
+                layout.Blueprint.TryGetArea(cell, out CityAreaDefinition area) && area.SupportsOrdinaryBuildings;
         }
 
         private sealed class NodeConnections

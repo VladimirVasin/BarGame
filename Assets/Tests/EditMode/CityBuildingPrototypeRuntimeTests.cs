@@ -483,45 +483,18 @@ namespace BarPromenade.Tests.EditMode
         private static Vector3 GetExpectedRoofMount(
             CityDistrictKind district)
         {
-            switch (district)
-            {
-                case CityDistrictKind.OldTown:
-                    return new Vector3(-3.8f, 13.6f, 0f);
-                case CityDistrictKind.Residential:
-                    return new Vector3(-3.6f, 14f, -4.0f);
-                case CityDistrictKind.Industrial:
-                    return new Vector3(0f, 7.2f, 0f);
-                case CityDistrictKind.Nightlife:
-                    return new Vector3(-0.6f, 22.30f, 4.45f);
-                default:
-                    Assert.Fail(
-                        $"District '{district}' has no roof mount.");
-                    return default;
-            }
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district,0);
+            float bodyTop = CityBuildingAssetProvider.GetExpectedBodyTop(district,0);
+            return district == CityDistrictKind.Residential
+                ? new Vector3(0f,bodyTop+.18f,envelope.z*.15f)
+                : new Vector3(0f,bodyTop+(envelope.y-bodyTop)*.55f,0f);
         }
 
-        private static Vector3 GetExpectedFacadeMount(
-            CityDistrictKind district,
-            uint selector)
+        private static Vector3 GetExpectedFacadeMount(CityDistrictKind district,uint selector)
         {
-            switch (district)
-            {
-                case CityDistrictKind.OldTown:
-                    return new Vector3(-3.8f, 4.2f, 6.79f);
-                case CityDistrictKind.Residential:
-                    return new Vector3(
-                        (selector & 1u) == 0u ? -4.35f : 4.35f,
-                        4.2f,
-                        3.69f);
-                case CityDistrictKind.Industrial:
-                    return new Vector3(0f, 4.2f, 6.79f);
-                case CityDistrictKind.Nightlife:
-                    return new Vector3(0f, 4.2f, 6.04f);
-                default:
-                    Assert.Fail(
-                        $"District '{district}' has no building prototype.");
-                    return default;
-            }
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district,0);
+            return new Vector3((selector&1u)==0u?-envelope.x*.22f:envelope.x*.22f,
+                4.2f,envelope.z*.5f-(district==CityDistrictKind.Residential?1.2f:0f)+.04f);
         }
 
         private static void AssertNoFrontagePlacement(

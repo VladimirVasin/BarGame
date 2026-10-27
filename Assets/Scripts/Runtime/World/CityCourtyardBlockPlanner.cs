@@ -159,12 +159,19 @@ namespace BarPromenade
                 !layout.TryGetFrontageEdge(lot, out RoadEdge frontage) ||
                 layout.GetPathKind(frontage) != CityPathKind.Street ||
                 layout.ElevationPlan.TryGetSignatureStair(frontage, out _) ||
-                layout.PrimaryLandmarkCells.TryGetValue(lot.District, out Vector2Int landmark) && landmark == lot.Cell)
+                IsLandmark(layout, lot.Cell))
                 return false;
             // These small lots contain the existing authored east-exit precinct
             // and its work docks; their ground remains with that owner.
             return !(lot.Cell.x == 10 && lot.Cell.y == 5) &&
                 !(lot.Cell.x == 11 && lot.Cell.y >= 3 && lot.Cell.y <= 5);
+        }
+
+        private static bool IsLandmark(CityLayout layout, Vector2Int cell)
+        {
+            foreach (Vector2Int reserved in layout.PrimaryLandmarkCells.Values)
+                if (reserved == cell) return true;
+            return false;
         }
 
         private static bool TryCreateDistrictCourt(CityLayout layout, BuildingLot primary,
@@ -175,7 +182,8 @@ namespace BarPromenade
             Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(primary.District, primary.BuildingVariant);
             var primaryBodies = new List<Vector2[]>(primary.CreateCollisionPolygons());
             List<Vector2[]> primaryGround = CreateGround(layout, primary.Cell, primaryBodies);
-            float courtDepth = primary.District == CityDistrictKind.Residential ? 5.5f
+            float courtDepth = layout.SpatialPlan.IsCompactCoastal ? 2.4f
+                : primary.District == CityDistrictKind.Residential ? 5.5f
                 : primary.District == CityDistrictKind.Industrial ? 6f
                 : primary.District == CityDistrictKind.Nightlife ? 3.8f : 3.3f;
 
@@ -199,7 +207,7 @@ namespace BarPromenade
                 var bodies = new List<Vector2[]>(primaryBodies);
                 if (wing != null) bodies.AddRange(wing.CreateCollisionPolygons());
                 List<Vector2[]> ground = CreateGround(layout, primary.Cell, bodies);
-                if (!TryResolveCourt(pose, envelope, primary.District, ground, bodies,
+                if (!TryResolveCourt(pose, envelope, primary.District, layout.SpatialPlan.IsCompactCoastal, ground, bodies,
                     out Vector2 court)) continue;
                 Vector2 passage;
                 if (primary.BuildingVariant == 3)
@@ -295,10 +303,11 @@ namespace BarPromenade
         }
 
         private static bool TryResolveCourt(CityBuildingPrototypePose pose, Vector3 envelope,
-            CityDistrictKind district, IReadOnlyList<Vector2[]> ground,
+            CityDistrictKind district, bool compactCoastal, IReadOnlyList<Vector2[]> ground,
             IReadOnlyList<Vector2[]> bodies, out Vector2 court)
         {
-            float depth = district == CityDistrictKind.Residential ? 2.8f
+            float depth = compactCoastal ? 1.2f
+                : district == CityDistrictKind.Residential ? 2.8f
                 : district == CityDistrictKind.Industrial ? 3f : 1.8f;
             // Rear land belongs to this frontage, rather than remaining an
             // anonymous moat. Search metre positions, preserving a broad open
