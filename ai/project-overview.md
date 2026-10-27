@@ -87,11 +87,10 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
-- City: compact working west/residential east districts plus park; 144 stable
-  lots on 29.2% less declared land. Residential3–5 storeys, short fronts and
-  courts/passages/wings; shared street/pavement contours and Home views. Four
-  POIs/landmarks, shore/church and Route01 remain.
-  Utilities.
+- City: west work/east housing+park;144 lots,29.2% less land. Homes3–5 storeys,
+  courts/passages/wings; shared ground/Home views,4 POIs/landmarks,Route01.
+  Eight industrial functions own roofs/equipment/surfaces and pooled task light;
+  substation/municipal/port workshops remain passive.
   First unpaused dock entry starts finite port→factory→shop supply once;
   catch-up survives scenes/reentry, excluding pre-entry time. Three units,
   two cranes, crews and a

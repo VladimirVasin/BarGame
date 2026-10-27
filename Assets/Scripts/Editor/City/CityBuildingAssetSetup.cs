@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "4.0.0";
+        private const string ExpectedGeneratorVersion = "4.1.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -112,6 +112,9 @@ namespace BarPromenade.Editor
                 case "residential-prototype-05": return PrefabFolder + "/ResidentialPrototype05.prefab";
                 case "industrial-prototype-05": return PrefabFolder + "/IndustrialPrototype05.prefab";
                 case "nightlife-prototype-05": return PrefabFolder + "/NightlifePrototype05.prefab";
+                case "industrial-prototype-06": return PrefabFolder + "/IndustrialPrototype06.prefab";
+                case "industrial-prototype-07": return PrefabFolder + "/IndustrialPrototype07.prefab";
+                case "industrial-prototype-08": return PrefabFolder + "/IndustrialPrototype08.prefab";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(stableId),
@@ -222,7 +225,7 @@ namespace BarPromenade.Editor
                     AssetDatabase.LoadAssetAtPath<GameObject>(
                         GetPrefabPath(prototype.stable_id));
                 GameObject actualPrefab = provider.GetPrefabOrThrow(
-                    ParseDistrict(prototype.district), index / 4);
+                    ParseDistrict(prototype.district), CityBuildingAssetProvider.GetExpectedVariantIndex(index));
                 if (actualPrefab != expectedPrefab)
                 {
                     throw new InvalidOperationException(
@@ -287,6 +290,19 @@ namespace BarPromenade.Editor
                     prototype.stable_id + " preserved imported transform");
                 Object.DestroyImmediate(sourceInstance);
                 sourceInstance = null;
+
+                if (ParseDistrict(prototype.district) == CityDistrictKind.Industrial)
+                {
+                    Transform taskLight = FindDirectChild(prototypeRoot,
+                        prototype.task_light_anchor.object_name);
+                    // bakeAxisConversion corrects mesh coordinates, while an
+                    // FBX Empty retains its imported local optical basis.
+                    // Its measured position is preserved; its authored Unity
+                    // aim is applied in the same metre frame as ANCHOR_Front.
+                    taskLight.rotation = wrapper.transform.rotation * Quaternion.LookRotation(
+                        Vector3FromArray(prototype.task_light_anchor.forward_unity,
+                            "task light aim").normalized, Vector3.up);
+                }
 
                 CityBuildingPartBinding[] bindings =
                     BindParts(prototypeRoot, prototype);
@@ -375,13 +391,12 @@ namespace BarPromenade.Editor
             var sourceParts = prototype.parts.ToDictionary(
                 part => ParseRole(part.role),
                 part => part);
-            var bindings = new CityBuildingPartBinding[
-                CityBuildingAssetRegistry.ExpectedRoleCount];
+            CityBuildingMeshRole[] roles = sourceParts.Keys.OrderBy(role => (int)role).ToArray();
+            var bindings = new CityBuildingPartBinding[roles.Length];
 
             for (int index = 0; index < bindings.Length; index++)
             {
-                CityBuildingMeshRole role =
-                    CityBuildingAssetRegistry.GetExpectedRole(index);
+                CityBuildingMeshRole role = roles[index];
                 BuildingPart sourcePart = sourceParts[role];
                 Transform child = FindDirectChild(
                     prototypeRoot,
@@ -588,7 +603,7 @@ namespace BarPromenade.Editor
                     StringComparison.Ordinal) ||
                 manifest.prototype_count !=
                     CityBuildingAssetProvider.ExpectedPrototypeCount ||
-                manifest.mesh_count !=
+                manifest.mesh_count <
                     CityBuildingAssetProvider.ExpectedPrototypeCount *
                     CityBuildingAssetRegistry.ExpectedRoleCount ||
                 manifest.triangle_count <= 0 ||
@@ -662,15 +677,17 @@ namespace BarPromenade.Editor
             }
 
             int triangleTotal = 0;
+            int meshTotal = 0;
             for (int index = 0; index < manifest.prototypes.Length;
                  index++)
             {
                 BuildingPrototype prototype = manifest.prototypes[index];
                 ValidatePrototype(prototype, index);
                 triangleTotal += prototype.triangle_count;
+                meshTotal += prototype.parts.Length;
             }
 
-            if (triangleTotal != manifest.triangle_count)
+            if (triangleTotal != manifest.triangle_count || meshTotal != manifest.mesh_count)
             {
                 throw new InvalidOperationException(
                     "City building manifest triangle total is stale.");
@@ -718,10 +735,11 @@ namespace BarPromenade.Editor
 
             ValidatePrototypeBounds(prototype, envelope);
             ValidateFrontAnchor(prototype);
+            ValidateTaskLightAnchor(prototype, expectedIndex);
             ValidateAttachments(prototype);
             ValidateParts(prototype);
             IReadOnlyList<Bounds> collision = CityBuildingAssetProvider.GetExpectedCollisionBounds(
-                ParseDistrict(prototype.district), expectedIndex / 4);
+                ParseDistrict(prototype.district), CityBuildingAssetProvider.GetExpectedVariantIndex(expectedIndex));
             if (prototype.collision_bounds == null || prototype.collision_bounds.Length != collision.Count)
             {
                 throw new InvalidOperationException($"City building '{prototype.stable_id}' collision metadata is incomplete.");
@@ -735,6 +753,34 @@ namespace BarPromenade.Editor
                 AssertBoundsNear(actual, BoundsFromArrays(solid.bounds_min_unity, solid.bounds_max_unity),
                     prototype.stable_id + " collision axes");
             }
+        }
+
+        private static void ValidateTaskLightAnchor(BuildingPrototype prototype, int expectedIndex)
+        {
+            if (ParseDistrict(prototype.district) != CityDistrictKind.Industrial)
+            {
+                // JsonUtility materialises a JSON null class as an empty
+                // object on some Editor versions. Validate its payload rather
+                // than treating that default container as an authored light.
+                if (!string.IsNullOrEmpty(prototype.industrial_purpose) ||
+                    (prototype.task_light_anchor != null && prototype.task_light_anchor.HasPayload))
+                    throw new InvalidOperationException("Only functional industrial templates own process task lights.");
+                return;
+            }
+            string purpose = CityBuildingAssetProvider.GetExpectedIndustrialPurpose(
+                CityBuildingAssetProvider.GetExpectedVariantIndex(expectedIndex)).ToString();
+            BuildingTaskLightAnchor anchor = prototype.task_light_anchor;
+            if (!string.Equals(prototype.industrial_purpose, purpose, StringComparison.Ordinal) ||
+                anchor == null || !string.Equals(anchor.object_name, "IndustrialTaskLight_" + purpose,
+                    StringComparison.Ordinal))
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' lost its functional light contract.");
+            Vector3 position = Vector3FromArray(anchor.position_unity, "task light position");
+            Vector3 forward = Vector3FromArray(anchor.forward_unity, "task light forward");
+            if (Vector3.Distance(position, ConvertSourceVectorToUnity(anchor.position_source)) > ContractTolerance ||
+                Vector3.Distance(forward, ConvertSourceVectorToUnity(anchor.forward_source)) > ContractTolerance ||
+                Mathf.Abs(forward.magnitude - 1f) > ContractTolerance || forward.y >= -.1f || forward.z <= .1f ||
+                !ContainsWithTolerance(BoundsFromArrays(prototype.bounds_min_unity, prototype.bounds_max_unity), position))
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' task light axes or mounting bounds drifted.");
         }
 
         private static void ValidatePrototypeBounds(
@@ -1040,9 +1086,11 @@ namespace BarPromenade.Editor
 
         private static void ValidateParts(BuildingPrototype prototype)
         {
+            bool industrial = ParseDistrict(prototype.district) == CityDistrictKind.Industrial;
             if (prototype.parts == null ||
-                prototype.parts.Length !=
-                    CityBuildingAssetRegistry.ExpectedRoleCount)
+                prototype.parts.Length < CityBuildingAssetRegistry.ExpectedRoleCount ||
+                prototype.parts.Length > (industrial ? CityBuildingAssetRegistry.MaximumRoleCount :
+                    CityBuildingAssetRegistry.ExpectedRoleCount))
             {
                 throw new InvalidOperationException(
                     $"City building '{prototype.stable_id}' needs seven " +
@@ -1059,6 +1107,7 @@ namespace BarPromenade.Editor
                 CityBuildingMeshRole role = ParseRole(part?.role);
                 string expectedName = prototype.stable_id + "__" + role;
                 if (part == null ||
+                    (CityBuildingAssetRegistry.IsOptionalIndustrialRole(role) && !industrial) ||
                     !string.Equals(
                         part.object_name,
                         expectedName,
@@ -1112,9 +1161,10 @@ namespace BarPromenade.Editor
                 .Select(slot => slot.uv2_slot_id)
                 .ToHashSet();
             uv2Ids.Remove(0);
+            bool requiredRolesPresent = Enumerable.Range(0, CityBuildingAssetRegistry.ExpectedRoleCount)
+                .All(index => roles.Contains(CityBuildingAssetRegistry.GetExpectedRole(index)));
             if (triangles != prototype.triangle_count ||
-                roles.Count !=
-                    CityBuildingAssetRegistry.ExpectedRoleCount ||
+                !requiredRolesPresent ||
                 !uv2Ids.SetEquals(expectedUv2Ids))
             {
                 throw new InvalidOperationException(
@@ -1151,12 +1201,26 @@ namespace BarPromenade.Editor
                 Transform root = FindDirectChild(
                     catalogRoot,
                     prototype.root_name);
-                if (root.childCount !=
-                    CityBuildingAssetRegistry.ExpectedRoleCount)
+                bool industrial = ParseDistrict(prototype.district) == CityDistrictKind.Industrial;
+                int expectedChildren = prototype.parts.Length + (industrial ? 1 : 0);
+                if (root.childCount != expectedChildren)
                 {
                     throw new InvalidOperationException(
-                        $"Imported '{prototype.root_name}' must have seven " +
-                        "direct semantic mesh children.");
+                        $"Imported '{prototype.root_name}' has unexpected semantic mesh or anchor children.");
+                }
+
+                if (industrial)
+                {
+                    string purpose = CityBuildingAssetProvider.GetExpectedIndustrialPurpose(
+                        CityBuildingAssetProvider.GetExpectedVariantIndex(index)).ToString();
+                    Transform taskLight = FindDirectChild(root, "IndustrialTaskLight_" + purpose);
+                    Vector3 mountedPosition = model.transform.InverseTransformPoint(taskLight.position);
+                    Vector3 expectedPosition = Vector3FromArray(prototype.task_light_anchor.position_unity,
+                        "imported task light position");
+                    if (taskLight.GetComponent<MeshRenderer>() != null || taskLight.childCount != 0 ||
+                        Vector3.Distance(mountedPosition, expectedPosition) > BoundsTolerance)
+                        throw new InvalidOperationException($"Industrial task light '{taskLight.name}' must be a passive authored anchor: " +
+                            $"mounted={mountedPosition:F4}, expected={expectedPosition:F4}.");
                 }
 
                 var renderers = new List<Renderer>();
@@ -1632,6 +1696,10 @@ namespace BarPromenade.Editor
                 case CityBuildingMeshRole.Roof:
                 case CityBuildingMeshRole.Metal:
                 case CityBuildingMeshRole.WindowFrame:
+                case CityBuildingMeshRole.CargoTimber:
+                case CityBuildingMeshRole.EquipmentConcrete:
+                case CityBuildingMeshRole.EquipmentSteel:
+                case CityBuildingMeshRole.TaskLightLens:
                     expectedScheme = "world_metre_projected";
                     metric = true;
                     break;
@@ -1650,6 +1718,10 @@ namespace BarPromenade.Editor
             {
                 return false;
             }
+
+            if (CityBuildingAssetRegistry.IsOptionalIndustrialRole(role))
+                return Mathf.Abs(part.meters_per_tile -
+                    CityBuildingAssetRegistry.GetOptionalRoleMetersPerTile(role)) < ContractTolerance;
 
             return metric
                 ? part.meters_per_tile > 0f &&
@@ -1798,6 +1870,8 @@ namespace BarPromenade.Editor
             public string district;
             public string grammar;
             public string root_name;
+            public string industrial_purpose;
+            public BuildingTaskLightAnchor task_light_anchor;
             public float frontage_width_m;
             public float depth_m;
             public float height_m;
@@ -1814,6 +1888,19 @@ namespace BarPromenade.Editor
             public BuildingBalconySlot[] balcony_slots;
             public BuildingPart[] parts;
             public BuildingCollisionBounds[] collision_bounds;
+        }
+
+        [Serializable]
+        private sealed class BuildingTaskLightAnchor
+        {
+            public bool HasPayload => !string.IsNullOrEmpty(object_name) ||
+                (position_source?.Length ?? 0) != 0 || (forward_source?.Length ?? 0) != 0 ||
+                (position_unity?.Length ?? 0) != 0 || (forward_unity?.Length ?? 0) != 0;
+            public string object_name;
+            public float[] position_source;
+            public float[] forward_source;
+            public float[] position_unity;
+            public float[] forward_unity;
         }
 
         [Serializable]

@@ -102,6 +102,8 @@ class PrototypeSpec:
     parts: tuple[PartSpec, ...]
     balcony_slots: tuple[BalconySlot, ...] = ()
     collision_bounds: tuple[tuple[Vec3, Vec3], ...] = ()
+    task_light_anchor_source: Vec3 | None = None
+    industrial_purpose: str = ""
 
 
 def empty() -> Geometry:
@@ -721,5 +723,9 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
 
 
 def build_prototypes() -> tuple[PrototypeSpec, ...]:
-    return tuple(coastal_prototype(district, variant) for variant in (1, 2, 3, 4, 5)
-                 for district in ("OldTown", "Residential", "Industrial", "Nightlife"))
+    from city_industrial_parts import industrial_prototype
+    existing = tuple(industrial_prototype(variant) if district == "Industrial"
+                     else coastal_prototype(district, variant)
+                     for variant in (1, 2, 3, 4, 5)
+                     for district in ("OldTown", "Residential", "Industrial", "Nightlife"))
+    return existing + tuple(industrial_prototype(variant) for variant in (6, 7, 8))

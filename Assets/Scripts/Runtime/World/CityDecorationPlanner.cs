@@ -199,6 +199,10 @@ namespace BarPromenade
             for (int index = 0; index < lots.Count; index++)
             {
                 BuildingLot lot = lots[index];
+                // Functional industrial templates already own their connected
+                // equipment and stored work. Generic roof tanks/pipes would
+                // describe a second, unrelated process on the same building.
+                if (lot.HasFunctionalIndustrialPurpose) continue;
                 uint kindHash = StableHash(
                     layout.Seed,
                     lot.Cell.x,
@@ -411,6 +415,7 @@ namespace BarPromenade
                  index++)
             {
                 BuildingLot lot = lots[index];
+                if (lot.HasFunctionalIndustrialPurpose) continue;
                 if (IsCourtyardCell(layout, lot.Cell)) continue;
                 uint selectionHash = StableHash(
                     layout.Seed,

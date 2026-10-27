@@ -215,6 +215,23 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                if (binding.Role == CityBuildingMeshRole.TaskLightLens)
+                {
+                    // A lamp's visible lens belongs to the shared electric
+                    // glow owner, while its housing keeps the physical steel
+                    // response. One material and property block retain the
+                    // always-burning daylight floor without per-lot materials.
+                    Renderer lens = binding.Renderer;
+                    lens.sharedMaterial = CityNightResources.EmissiveMaterial;
+                    lens.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    lens.receiveShadows = false;
+                    lens.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                    lens.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                    Color litColor = CityNightAtmosphere.GetIndustrialTaskLightColor(lot.IndustrialPurpose) * 3f;
+                    litColor.a = 1f;
+                    CityNightGlowRegistry.Register(lens, litColor);
+                    continue;
+                }
 
                 if (!CityBuildingSurfaceAppearance.TryResolveSurface(
                         lot.District,
@@ -230,7 +247,8 @@ namespace BarPromenade
                     binding.Renderer,
                     lot.District,
                     surface,
-                    ResolveSurfaceTint(surface, facade));
+                    ResolveSurfaceTint(surface, facade),
+                    lot.IndustrialPurpose);
             }
 
             CityBuildingWindowSlotAppearance.Apply(
@@ -257,6 +275,10 @@ namespace BarPromenade
                     return CityExteriorAppearance.Darken(facade, 0.20f);
                 case CityBuildingSurfaceKind.WindowFrame:
                     return new Color(0.055f, 0.065f, 0.067f);
+                case CityBuildingSurfaceKind.CargoTimber:
+                case CityBuildingSurfaceKind.EquipmentConcrete:
+                case CityBuildingSurfaceKind.EquipmentSteel:
+                    return Color.white;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(surface),
@@ -333,7 +355,8 @@ namespace BarPromenade
                 foundation.GetComponent<Renderer>(),
                 lot.District,
                 CityBuildingSurfaceKind.Plinth,
-                facade);
+                facade,
+                lot.IndustrialPurpose);
         }
 
         internal static void BuildLogicalCollision(

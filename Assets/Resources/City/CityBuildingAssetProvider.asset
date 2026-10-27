@@ -73,5 +73,14 @@ MonoBehaviour:
   - stableId: nightlife-prototype-05
     district: 3
     prefab: {fileID: 2857908437403183857, guid: 97a19d4cd8d818141a23f9e27b3dc2d8, type: 3}
+  - stableId: industrial-prototype-06
+    district: 2
+    prefab: {fileID: 2884689273094469065, guid: 8d70ed2c256e040aebc3fd51124f9968, type: 3}
+  - stableId: industrial-prototype-07
+    district: 2
+    prefab: {fileID: 3087942481140438840, guid: 1bcfef2c52f18468e97989a9ba2eb049, type: 3}
+  - stableId: industrial-prototype-08
+    district: 2
+    prefab: {fileID: 8047748976794001992, guid: 208bee43cfd5645258596b328d3851f5, type: 3}
   designId: city_buildings_coastal_v4
-  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258
+  buildSignature: 2762f52408f0b450cdff4bd9929ff7c6d99deab826854f3b963980f1a92a5c89

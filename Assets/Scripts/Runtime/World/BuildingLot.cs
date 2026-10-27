@@ -3,6 +3,19 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum CityIndustrialPurpose
+    {
+        None = 0,
+        DryWarehouse = 1,
+        ColdStorage = 2,
+        RepairWorkshop = 3,
+        MetalWorkshop = 4,
+        PackagingWorkshop = 5,
+        BoilerHouse = 6,
+        CompressorHouse = 7,
+        RepairGarage = 8
+    }
+
     public sealed class BuildingLot
     {
         internal BuildingLot(
@@ -64,6 +77,12 @@ namespace BarPromenade
         public float Height { get; }
         public Color Color { get; }
         public int BuildingVariant { get; }
+        public CityIndustrialPurpose IndustrialPurpose =>
+            IsOrdinaryBuilding && District == CityDistrictKind.Industrial
+                ? CityBuildingAssetProvider.GetExpectedIndustrialPurpose(BuildingVariant)
+                : CityIndustrialPurpose.None;
+        public bool HasFunctionalIndustrialPurpose =>
+            IndustrialPurpose != CityIndustrialPurpose.None;
         public string AreaId { get; }
         public CityDistrictKind District { get; }
         public CityLandUseKind LandUse { get; }

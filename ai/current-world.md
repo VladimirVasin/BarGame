@@ -1534,21 +1534,23 @@ cemetery:own interiors/returns.
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- ordinary height comes from the selected fixed-metre model: Residential
-  `3–5` storeys, heights by variant `13.4/15.8/12.8/15.8/10 m`; Industrial
-  `8.6/7.8/8.4/7.8/6 m`. Five forms per family remain compact/long/L/passage/wing;
-  twenty stable catalog IDs retain compatibility OldTown/Nightlife prototypes.
-  Long/passage fronts fit `15.5 m` in the `18 m` lot; L `15×14 m`, wing `10×6 m`.
-  BuildingLot selects a real-fit body/pose. Passage openings exclude ground
-  collision/navigation, lintels retain overhead collision; L recesses stay clear.
-  Seven semantic mesh roles, balcony docks and shared Resources remain; each
-  imported body is measured against its manifest. Custom fallback is `8–28 m`.
-  Fixed-scale `+Z` front aligns to `DoorPosition + 0.08 m`; Home/shop/bar keep
-  their own heights. Four-side facade/plinth UVs do not repeat; roof/metal/frame
-  use metre repeat, glass pane-local `0..1`. Warm panes keep the daytime floor.
-  Trim/terrain skirt avoid coplanar skins; landmarks and ordinary dressing use
-  complementary roof/facade surfaces. Home wrappers use the same City pose;
-  only clipped crossings retain legacy silhouettes;
+- ordinary fixed-metre models: Residential five forms, `3–5` storeys,
+  heights `13.4/15.8/12.8/15.8/10 m`; Industrial eight functions,
+  heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`: dry warehouse, cold storage,
+  repair/metal/packaging workshops, boiler/compressor houses and repair garage.
+  Roofs/gates/service recesses carry equipment; timber/concrete/steel reuse
+  existing pigment/response.
+  `IndustrialTaskLight_*` anchors join the same twelve-Light pool; fixed halos
+  and day floor remain. Generic pipe/cargo clusters yield to authored equipment.
+  Twenty original IDs plus three Industrial IDs retain other catalogs.
+  Fronts fit `15.5 m`, L `15×14 m`, wing `10×6 m`; fit-tested
+  selection retains passage clearance `3.6×4.2 m` in the working district.
+  Measured base/equipment/emissive-lens roles;
+  Blender metres/`+Z` front align to `DoorPosition + 0.08 m`. Home/shop/bar
+  retain their heights. Facades/plinth use unique sides, roof/metal/frame and
+  equipment metre UVs, glass pane-local `0..1`; warm panes keep the day floor.
+  Trim/skirts avoid coplanarity. Home shares the pose; clipped crossings alone
+  retain legacy silhouettes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;

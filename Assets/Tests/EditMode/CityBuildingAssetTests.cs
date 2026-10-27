@@ -76,7 +76,13 @@ namespace BarPromenade.Tests.EditMode
             new ExpectedPrototype("industrial-prototype-05", CityDistrictKind.Industrial,
                 new Vector3(10.0f, 6.0f, 6.0f), "Assets/Resources/City/Buildings/IndustrialPrototype05.prefab"),
             new ExpectedPrototype("nightlife-prototype-05", CityDistrictKind.Nightlife,
-                new Vector3(10.0f, 10.0f, 6.0f), "Assets/Resources/City/Buildings/NightlifePrototype05.prefab")
+                new Vector3(10.0f, 10.0f, 6.0f), "Assets/Resources/City/Buildings/NightlifePrototype05.prefab"),
+            new ExpectedPrototype("industrial-prototype-06", CityDistrictKind.Industrial,
+                new Vector3(14.0f, 8.4f, 13.5f), "Assets/Resources/City/Buildings/IndustrialPrototype06.prefab"),
+            new ExpectedPrototype("industrial-prototype-07", CityDistrictKind.Industrial,
+                new Vector3(14.0f, 6.6f, 13.5f), "Assets/Resources/City/Buildings/IndustrialPrototype07.prefab"),
+            new ExpectedPrototype("industrial-prototype-08", CityDistrictKind.Industrial,
+                new Vector3(15.5f, 7.8f, 11.5f), "Assets/Resources/City/Buildings/IndustrialPrototype08.prefab")
         };
 
         [OneTimeSetUp]
@@ -101,7 +107,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("4.0.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("4.1.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -122,9 +128,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.mesh_count,
                 Is.EqualTo(
-                    CityBuildingAssetProvider.ExpectedPrototypeCount *
-                    CityBuildingAssetRegistry.ExpectedRoleCount));
-            Assert.That(manifest.prototypes, Has.Length.EqualTo(20));
+                    manifest.prototypes.Sum(prototype => prototype.parts.Length)));
+            Assert.That(manifest.prototypes, Has.Length.EqualTo(CityBuildingAssetProvider.ExpectedPrototypeCount));
             Assert.That(IsSha256(manifest.build_signature), Is.True);
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
@@ -194,8 +199,9 @@ namespace BarPromenade.Tests.EditMode
                         CityBuildingAssetRegistry.MaximumTriangleCount));
                 Assert.That(
                     prototype.parts,
-                    Has.Length.EqualTo(
-                        CityBuildingAssetRegistry.ExpectedRoleCount));
+                    Has.Length.InRange(CityBuildingAssetRegistry.ExpectedRoleCount,
+                        expected.District == CityDistrictKind.Industrial
+                            ? CityBuildingAssetRegistry.MaximumRoleCount : CityBuildingAssetRegistry.ExpectedRoleCount));
                 Assert.That(
                     prototype.frontage_width_m,
                     Is.EqualTo(expected.UnityEnvelope.x).Within(.003f));
@@ -236,7 +242,7 @@ namespace BarPromenade.Tests.EditMode
                 AssertAttachmentMetadata(prototype);
                 AssertStableParts(prototype);
                 IReadOnlyList<Bounds> solids = CityBuildingAssetProvider.GetExpectedCollisionBounds(
-                    expected.District, index / 4);
+                    expected.District, CityBuildingAssetProvider.GetExpectedVariantIndex(index));
                 Assert.That(prototype.collision_bounds, Has.Length.EqualTo(solids.Count));
                 for (int solid = 0; solid < solids.Count; solid++)
                 {
@@ -247,7 +253,7 @@ namespace BarPromenade.Tests.EditMode
                         bounds.bounds_max_unity), solids[solid]);
                 }
 
-                if (index / 4 == 2)
+                if (CityBuildingAssetProvider.GetExpectedVariantIndex(index) == 2)
                 {
                     Assert.That(solids.Count, Is.EqualTo(2));
                     Assert.That(solids.Any(solid => solid.Contains(new Vector3(3f, 1f, -3.5f))), Is.False,
@@ -294,8 +300,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 meshes,
                 Has.Length.EqualTo(
-                    CityBuildingAssetProvider.ExpectedPrototypeCount *
-                    CityBuildingAssetRegistry.ExpectedRoleCount));
+                    manifest.prototypes.Sum(prototype => prototype.parts.Length)));
             Assert.That(meshes.All(mesh => !mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
             Assert.That(assets.OfType<Material>(), Is.Empty);
@@ -308,7 +313,7 @@ namespace BarPromenade.Tests.EditMode
             Transform catalog = FindUnique(
                 model.transform,
                 "ROOT_CityBuildings3D");
-            Assert.That(catalog.childCount, Is.EqualTo(12));
+            Assert.That(catalog.childCount, Is.EqualTo(CityBuildingAssetProvider.ExpectedPrototypeCount));
 
             for (int index = 0; index < Expected.Length; index++)
             {
@@ -316,8 +321,7 @@ namespace BarPromenade.Tests.EditMode
                 Transform root = FindDirect(catalog, prototype.root_name);
                 Assert.That(
                     root.childCount,
-                    Is.EqualTo(
-                        CityBuildingAssetRegistry.ExpectedRoleCount));
+                    Is.EqualTo(prototype.parts.Length + (prototype.district == "Industrial" ? 1 : 0)));
                 foreach (ContractPart part in prototype.parts)
                 {
                     Transform child = FindDirect(root, part.object_name);
@@ -345,7 +349,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 provider.BuildSignature,
                 Is.EqualTo(manifest.build_signature));
-            Assert.That(provider.Entries.Count, Is.EqualTo(12));
+            Assert.That(provider.Entries.Count, Is.EqualTo(CityBuildingAssetProvider.ExpectedPrototypeCount));
+            Assert.That(CityBuildingAssetProvider.GetVariantCount(CityDistrictKind.Industrial), Is.EqualTo(8));
+            foreach (CityDistrictKind district in new[] { CityDistrictKind.OldTown,
+                CityDistrictKind.Residential, CityDistrictKind.Nightlife })
+                Assert.That(CityBuildingAssetProvider.GetVariantCount(district), Is.EqualTo(5));
             Assert.DoesNotThrow(provider.ValidateOrThrow);
 
             GameObject sourceModel =
@@ -358,6 +366,9 @@ namespace BarPromenade.Tests.EditMode
             {
                 ExpectedPrototype expected = Expected[index];
                 ContractPrototype prototype = manifest.prototypes[index];
+                Assert.That(CityBuildingAssetProvider.GetExpectedStableId(index), Is.EqualTo(expected.StableId));
+                Assert.That(CityBuildingAssetProvider.GetExpectedVariantIndex(index),
+                    Is.EqualTo(index < 20 ? index / 4 : index - 15), "The original twenty serialized indices stay fixed.");
                 CityBuildingPrefabEntry entry = provider.Entries[index];
                 Assert.That(entry.StableId, Is.EqualTo(expected.StableId));
                 Assert.That(entry.District, Is.EqualTo(expected.District));
@@ -366,7 +377,7 @@ namespace BarPromenade.Tests.EditMode
                     AssetDatabase.GetAssetPath(entry.Prefab),
                     Is.EqualTo(expected.PrefabPath));
                 Assert.That(
-                    provider.GetPrefabOrThrow(expected.District, index / 4),
+                    provider.GetPrefabOrThrow(expected.District, CityBuildingAssetProvider.GetExpectedVariantIndex(index)),
                     Is.SameAs(entry.Prefab));
                 if (index < 4)
                 {
@@ -385,6 +396,9 @@ namespace BarPromenade.Tests.EditMode
                 }
                 Assert.That(registry.StableId, Is.EqualTo(expected.StableId));
                 Assert.That(registry.District, Is.EqualTo(expected.District));
+                Assert.That(registry.IndustrialPurpose, Is.EqualTo(expected.District == CityDistrictKind.Industrial
+                    ? (CityIndustrialPurpose)(CityBuildingAssetProvider.GetExpectedVariantIndex(index) + 1)
+                    : CityIndustrialPurpose.None));
                 Assert.That(registry.Grammar, Is.EqualTo(prototype.grammar));
                 Assert.That(registry.UnitFactor, Is.EqualTo(1f));
                 Assert.That(
@@ -395,8 +409,7 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(manifest.build_signature));
                 Assert.That(
                     registry.Parts.Count,
-                    Is.EqualTo(
-                        CityBuildingAssetRegistry.ExpectedRoleCount));
+                    Is.EqualTo(prototype.parts.Length));
                 Assert.That(
                     registry.FacadeAttachments.Count,
                     Is.EqualTo(prototype.facade_attachment_bounds.Length));
@@ -478,11 +491,11 @@ namespace BarPromenade.Tests.EditMode
                 Assert.DoesNotThrow(registry.ValidateOrThrow);
 
                 for (int roleIndex = 0;
-                     roleIndex < CityBuildingAssetRegistry.ExpectedRoleCount;
+                     roleIndex < registry.Parts.Count;
                      roleIndex++)
                 {
-                    CityBuildingMeshRole role =
-                        CityBuildingAssetRegistry.GetExpectedRole(roleIndex);
+                    CityBuildingMeshRole role = (CityBuildingMeshRole)Enum.Parse(
+                        typeof(CityBuildingMeshRole), prototype.parts[roleIndex].role);
                     CityBuildingPartBinding binding =
                         registry.Parts[roleIndex];
                     Assert.That(binding.Role, Is.EqualTo(role));
@@ -515,14 +528,21 @@ namespace BarPromenade.Tests.EditMode
                 StringComparer.Ordinal);
             Assert.That(
                 prototype.parts.Select(part => part.role),
-                Is.EquivalentTo(expectedRoles));
+                Is.SupersetOf(expectedRoles));
             Assert.That(
                 prototype.parts.Select(part => part.object_name),
-                Is.EquivalentTo(expectedRoles.Select(role =>
-                    prototype.stable_id + "__" + role)));
+                Is.EquivalentTo(prototype.parts.Select(part => prototype.stable_id + "__" + part.role)));
             foreach (ContractPart part in prototype.parts)
             {
                 Assert.That(part.surface_kind, Is.EqualTo(part.role));
+                CityBuildingMeshRole role = (CityBuildingMeshRole)Enum.Parse(typeof(CityBuildingMeshRole), part.role);
+                Assert.That(Enum.IsDefined(typeof(CityBuildingMeshRole), role), Is.True);
+                if (CityBuildingAssetRegistry.IsOptionalIndustrialRole(role))
+                {
+                    Assert.That(prototype.district, Is.EqualTo("Industrial"));
+                    Assert.That(part.meters_per_tile, Is.EqualTo(
+                        CityBuildingAssetRegistry.GetOptionalRoleMetersPerTile(role)).Within(.0001f));
+                }
                 bool sideAtlas =
                     part.role == CityBuildingMeshRole.FacadePrimary.ToString() ||
                     part.role == CityBuildingMeshRole.FacadeSecondary.ToString();

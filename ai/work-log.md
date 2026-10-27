@@ -12,6 +12,16 @@ scaling vehicles. Authored low-rise building bank fits the new streetwall,
 shared rear courts, real passages and reserved domestic scenes. Passive
 substation/municipal/port workshops feed a bounded pole/cable network.
 
+Industrial functions now select authored roofs/gates/equipment and purpose
+surfaces instead of generic pipe/cargo clusters. Occupied service recesses
+retain lot/court/passage contracts. Timber/concrete/steel reuse physical maps;
+working fixtures share the existing Light pool and day floor. Coastal facilities
+have actual repair/electrical stock. Blender version/hash pin removed by user;
+installed-app discovery retains identity/output/geometry checks. Source proof:
+City Buildings direct validation/FBX roundtrip and Coastal Infrastructure validation.
+FBX Empty aim is restored in the wrapper metre frame; separate emissive lenses
+and unit-scale airborne halos keep working fixtures visibly lit.
+
 Road/ground complements share datums. Terrain uses pure factory datum and
 court paving avoids bus-dependent plans, removing a construction cycle.
 Split fringe strips retain composition IDs, so physical support and composition
@@ -26,7 +36,9 @@ bridge checks remain. Shared stop placement excludes actual courtyard/service
 routes using the authored shelter footprint, preserving physical colliders.
 Truck retains a centered factory exit and a serviced market frontage.
 
-Proof: CityFabric passed physical/nav courts, shared paths, entrance floors,
+Proof: CityIndustrialFunctions passed placed functions/material response, task-light
+bounds and reviewed day/night, equipment, grayscale and intoxication views.
+CityFabric passed physical/nav courts, shared paths, entrance floors,
 retained landmark fit, utility support and City/Home views; the bar-side
 reproduction was reviewed. ProductionCityRoute_AllStopsExposeBothDoorPrompts
 passed real stop doors. CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup

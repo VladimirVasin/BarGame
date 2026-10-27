@@ -8,7 +8,7 @@
     180,
     0
   ],
-  "signature": "01a2299152c15b04d21336c6ac3375fee0e9d33599af9865cd22f720d55a24dc",
+  "signature": "961e029e2fd149207452b3018334d439d99c25a6e583b1c318ad7eb74c5cdc18",
   "cable_span": {
     "rings": 17,
     "sides": 6,
@@ -40,14 +40,32 @@
         3.7,
         2.12
       ],
-      "triangle_count": 624,
+      "triangle_count": 1128,
       "roles": [
         "Concrete",
-        "Plaster",
         "Roof",
         "SteelDark",
-        "SteelLight"
-      ]
+        "SteelLight",
+        "TaskLightLens"
+      ],
+      "functional_equipment": [
+        "transformer cooling fins",
+        "ceramic cable terminations",
+        "cable cabinet"
+      ],
+      "task_light_anchor": {
+        "object_name": "IndustrialTaskLight_Substation",
+        "position_unity": [
+          0,
+          2.95,
+          2.055
+        ],
+        "forward_unity": [
+          0,
+          -0.819152,
+          0.573576
+        ]
+      }
     },
     {
       "name": "MunicipalWorkshop",
@@ -66,7 +84,7 @@
         4.4,
         2.21
       ],
-      "triangle_count": 512,
+      "triangle_count": 1184,
       "roles": [
         "Concrete",
         "Plaster",
@@ -74,8 +92,28 @@
         "SteelDark",
         "SteelLight",
         "Glass",
-        "Timber"
-      ]
+        "Timber",
+        "Rubber",
+        "TaskLightLens"
+      ],
+      "functional_equipment": [
+        "sorted kerb stock",
+        "drainage sections",
+        "repair trolley"
+      ],
+      "task_light_anchor": {
+        "object_name": "IndustrialTaskLight_MunicipalWorkshop",
+        "position_unity": [
+          0,
+          3.06,
+          2.1550000000000002
+        ],
+        "forward_unity": [
+          0,
+          -0.819152,
+          0.573576
+        ]
+      }
     },
     {
       "name": "PortWorkshop",
@@ -94,7 +132,7 @@
         4.2,
         2.31
       ],
-      "triangle_count": 512,
+      "triangle_count": 1016,
       "roles": [
         "Concrete",
         "Plaster",
@@ -102,8 +140,28 @@
         "SteelDark",
         "SteelLight",
         "Glass",
-        "Timber"
-      ]
+        "Timber",
+        "Rubber",
+        "TaskLightLens"
+      ],
+      "functional_equipment": [
+        "rope drum",
+        "pulley rack",
+        "service canopy"
+      ],
+      "task_light_anchor": {
+        "object_name": "IndustrialTaskLight_PortWorkshop",
+        "position_unity": [
+          0,
+          3.06,
+          2.2550000000000003
+        ],
+        "forward_unity": [
+          0,
+          -0.819152,
+          0.573576
+        ]
+      }
     },
     {
       "name": "PowerPole",
@@ -123,7 +181,9 @@
         "Concrete",
         "SteelDark",
         "SteelLight"
-      ]
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
     },
     {
       "name": "FacadeInlet",
@@ -141,7 +201,9 @@
       "triangle_count": 56,
       "roles": [
         "SteelDark"
-      ]
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
     },
     {
       "name": "CableSpan",
@@ -159,8 +221,10 @@
       "triangle_count": 200,
       "roles": [
         "Rubber"
-      ]
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
     }
   ],
-  "triangle_count": 2184
+  "triangle_count": 3864
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -10,7 +11,10 @@ namespace BarPromenade
         Plinth,
         Roof,
         Metal,
-        WindowFrame
+        WindowFrame,
+        CargoTimber,
+        EquipmentConcrete,
+        EquipmentSteel
     }
 
     internal enum CityBuildingSurfaceUvLayout
@@ -47,8 +51,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Resolves the opaque semantic roles of the four authored ordinary
-    /// buildings to their district surface sheets. Imported meshes already
+    /// Resolves opaque district roles and functional industrial equipment to
+    /// existing shared city/port surface sheets. Imported meshes already
     /// carry full-building side-atlas, full-face or metre-projected UVs, so
     /// runtime only binds the texture and recipe through one shared material.
     /// </summary>
@@ -61,7 +65,7 @@ namespace BarPromenade
 
         private const int DistrictCount = 4;
         private const int SurfaceCount =
-            (int)CityBuildingSurfaceKind.WindowFrame + 1;
+            (int)CityBuildingSurfaceKind.EquipmentSteel + 1;
 
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -79,8 +83,8 @@ namespace BarPromenade
         private static readonly Vector4 IdentityBaseMapTransform =
             new Vector4(1f, 1f, 0f, 0f);
 
-        private static Texture2D[,] cachedTextures =
-            new Texture2D[DistrictCount, SurfaceCount];
+        private static readonly Dictionary<string, Texture2D> cachedTextures =
+            new Dictionary<string, Texture2D>(StringComparer.Ordinal);
 
         /// <summary>
         /// Accepts the v2 semantic surface names directly. The two legacy
@@ -121,6 +125,15 @@ namespace BarPromenade
                 case "WindowFrame":
                     surface = CityBuildingSurfaceKind.WindowFrame;
                     return true;
+                case "CargoTimber" when district == CityDistrictKind.Industrial:
+                    surface = CityBuildingSurfaceKind.CargoTimber;
+                    return true;
+                case "EquipmentConcrete" when district == CityDistrictKind.Industrial:
+                    surface = CityBuildingSurfaceKind.EquipmentConcrete;
+                    return true;
+                case "EquipmentSteel" when district == CityDistrictKind.Industrial:
+                    surface = CityBuildingSurfaceKind.EquipmentSteel;
+                    return true;
                 default:
                     surface = default;
                     return false;
@@ -129,13 +142,25 @@ namespace BarPromenade
 
         public static CityBuildingSurfaceRecipe GetRecipe(
             CityDistrictKind district,
-            CityBuildingSurfaceKind surface)
+            CityBuildingSurfaceKind surface,
+            CityIndustrialPurpose purpose = CityIndustrialPurpose.None)
         {
             ValidateDistrict(district);
             ValidateSurface(surface);
+            if ((int)surface >= (int)CityBuildingSurfaceKind.CargoTimber && district != CityDistrictKind.Industrial)
+                throw new ArgumentException("Industrial equipment surfaces require an industrial owner.", nameof(surface));
 
-            string resourcePath = TextureResourceRoot + "/" +
-                district + "/" + surface;
+            CityBuildingSurfaceKind sourceSurface = ResolveSourceSurface(district, surface, purpose);
+            string resourcePath = TextureResourceRoot + "/" + district + "/" + sourceSurface;
+            if (surface == CityBuildingSurfaceKind.CargoTimber)
+                return new CityBuildingSurfaceRecipe("City/Port/Textures/PortTimberAlbedo",
+                    CityBuildingSurfaceUvLayout.WorldMetreProjected, 1.6f, .08f, 0f, AlbedoCompensation);
+            if (surface == CityBuildingSurfaceKind.EquipmentConcrete)
+                return new CityBuildingSurfaceRecipe("City/Port/Textures/PortConcreteAlbedo",
+                    CityBuildingSurfaceUvLayout.WorldMetreProjected, 2f, .06f, 0f, AlbedoCompensation);
+            if (surface == CityBuildingSurfaceKind.EquipmentSteel)
+                return new CityBuildingSurfaceRecipe(TextureResourceRoot + "/Industrial/Metal",
+                    CityBuildingSurfaceUvLayout.WorldMetreProjected, 1.8f, .20f, .68f, AlbedoCompensation);
             switch (surface)
             {
                 case CityBuildingSurfaceKind.FacadePrimary:
@@ -143,8 +168,8 @@ namespace BarPromenade
                         resourcePath,
                         CityBuildingSurfaceUvLayout.BuildingSideAtlas,
                         0f,
-                        ResolveFacadePrimarySmoothness(district),
-                        district == CityDistrictKind.Industrial
+                        sourceSurface == CityBuildingSurfaceKind.FacadeSecondary ? .10f : ResolveFacadePrimarySmoothness(district),
+                        district == CityDistrictKind.Industrial && sourceSurface == CityBuildingSurfaceKind.FacadePrimary
                             ? 0.20f
                             : 0f,
                         AlbedoCompensation);
@@ -314,30 +339,35 @@ namespace BarPromenade
             }
         }
 
+        private static CityBuildingSurfaceKind ResolveSourceSurface(
+            CityDistrictKind district, CityBuildingSurfaceKind surface, CityIndustrialPurpose purpose)
+        {
+            if (district != CityDistrictKind.Industrial ||
+                surface != CityBuildingSurfaceKind.FacadePrimary) return surface;
+            switch (purpose)
+            {
+                case CityIndustrialPurpose.RepairWorkshop:
+                case CityIndustrialPurpose.PackagingWorkshop:
+                case CityIndustrialPurpose.BoilerHouse:
+                    return CityBuildingSurfaceKind.FacadeSecondary;
+                default:
+                    return surface;
+            }
+        }
+
         public static Texture2D GetTexture(
             CityDistrictKind district,
-            CityBuildingSurfaceKind surface)
+            CityBuildingSurfaceKind surface,
+            CityIndustrialPurpose purpose = CityIndustrialPurpose.None)
         {
-            int districtIndex = ValidateDistrict(district);
-            int surfaceIndex = ValidateSurface(surface);
-            if (cachedTextures[districtIndex, surfaceIndex] == null)
-            {
-                CityBuildingSurfaceRecipe recipe = GetRecipe(
-                    district,
-                    surface);
-                cachedTextures[districtIndex, surfaceIndex] =
-                    Resources.Load<Texture2D>(recipe.ResourcePath);
-            }
-
-            Texture2D texture =
-                cachedTextures[districtIndex, surfaceIndex];
-            if (texture == null)
-            {
-                throw new InvalidOperationException(
-                    $"Missing {district} building {surface} texture " +
-                    $"'{GetRecipe(district, surface).ResourcePath}'.");
-            }
-
+            string resourcePath = GetRecipe(district, surface, purpose).ResourcePath;
+            if (cachedTextures.TryGetValue(resourcePath, out Texture2D texture) && texture != null) return texture;
+            texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture == null) throw new InvalidOperationException("Missing City building surface '" + resourcePath + "'.");
+            // All recipes resolve existing city/port sheets; purposes add no texture allocation.
+            if (cachedTextures.Count >= DistrictCount * SurfaceCount)
+                throw new InvalidOperationException("City building surface cache exceeds its fixed catalog.");
+            cachedTextures[resourcePath] = texture;
             return texture;
         }
 
@@ -345,7 +375,8 @@ namespace BarPromenade
             Renderer renderer,
             CityDistrictKind district,
             string roleOrSurface,
-            Color sourceTint)
+            Color sourceTint,
+            CityIndustrialPurpose purpose = CityIndustrialPurpose.None)
         {
             if (renderer == null)
             {
@@ -363,14 +394,15 @@ namespace BarPromenade
                     nameof(roleOrSurface));
             }
 
-            Apply(renderer, district, surface, sourceTint);
+            Apply(renderer, district, surface, sourceTint, purpose);
         }
 
         public static void Apply(
             Renderer renderer,
             CityDistrictKind district,
             CityBuildingSurfaceKind surface,
-            Color sourceTint)
+            Color sourceTint,
+            CityIndustrialPurpose purpose = CityIndustrialPurpose.None)
         {
             if (renderer == null)
             {
@@ -379,18 +411,19 @@ namespace BarPromenade
 
             CityBuildingSurfaceRecipe recipe = GetRecipe(
                 district,
-                surface);
+                surface,
+                purpose);
             renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetTexture(
                 BaseMapId,
-                GetTexture(district, surface));
+                GetTexture(district, surface, purpose));
             properties.SetVector(
                 BaseMapTransformId,
                 IdentityBaseMapTransform);
             Color displayTint = CreateDisplayTint(
-                sourceTint,
+                ResolveFunctionalTint(sourceTint, surface, purpose),
                 district,
                 surface);
             properties.SetColor(BaseColorId, displayTint);
@@ -398,6 +431,28 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+        }
+
+        private static Color ResolveFunctionalTint(Color source, CityBuildingSurfaceKind surface,
+            CityIndustrialPurpose purpose)
+        {
+            if (surface == CityBuildingSurfaceKind.CargoTimber) return new Color(.39f, .34f, .28f);
+            if (surface == CityBuildingSurfaceKind.EquipmentConcrete) return new Color(.40f, .43f, .42f);
+            if (surface == CityBuildingSurfaceKind.EquipmentSteel) return new Color(.24f, .31f, .29f);
+            if (surface != CityBuildingSurfaceKind.FacadePrimary || purpose == CityIndustrialPurpose.None) return source;
+            Color target;
+            switch (purpose)
+            {
+                case CityIndustrialPurpose.ColdStorage: target = new Color(.53f, .57f, .55f); break;
+                case CityIndustrialPurpose.RepairWorkshop: target = new Color(.40f, .35f, .29f); break;
+                case CityIndustrialPurpose.PackagingWorkshop: target = new Color(.40f, .37f, .31f); break;
+                case CityIndustrialPurpose.BoilerHouse: target = new Color(.29f, .28f, .25f); break;
+                case CityIndustrialPurpose.CompressorHouse: target = new Color(.34f, .41f, .39f); break;
+                case CityIndustrialPurpose.RepairGarage: target = new Color(.32f, .36f, .35f); break;
+                default: target = new Color(.35f, .38f, .35f); break;
+            }
+            // Retain the lot's deterministic pigment variation around the functional family.
+            return Color.Lerp(target, source, .24f);
         }
 
         internal static Color CreateDisplayTint(
@@ -482,8 +537,7 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCachedResources()
         {
-            cachedTextures =
-                new Texture2D[DistrictCount, SurfaceCount];
+            cachedTextures.Clear();
         }
     }
 }

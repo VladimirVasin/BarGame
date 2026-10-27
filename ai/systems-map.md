@@ -40,7 +40,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Priority coatings retain heights/UVs; cemetery/sand change locally. | `CityGroundSurfaceSystem`, `GroundSurfacePartitioner` | Current |
-| City Blender ordinary buildings | Twenty metre types; district heights, true passages and secondary wings share models/solid footprints. | `CityBuilding*`, building generators | Current |
+| City Blender ordinary buildings | Eight work functions own forms/equipment/surfaces/task light; passages and wings share solid footprints. | `CityBuilding*`, `CityNightAtmosphere`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.7f1`, `17.6.0` | Current |

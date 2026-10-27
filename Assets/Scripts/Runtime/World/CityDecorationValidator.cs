@@ -575,11 +575,11 @@ namespace BarPromenade
                     out int actual)
                     ? actual
                     : 0;
-                if (count != 1)
+                int expected = lot.HasFunctionalIndustrialPurpose ? 0 : 1;
+                if (count != expected)
                 {
                     throw new InvalidOperationException(
-                        $"Ordinary lot {lot.Cell} requires exactly one " +
-                        "district visual descriptor.");
+                        $"Ordinary lot {lot.Cell} requires {expected} generic district visual descriptors.");
                 }
             }
         }

@@ -153,10 +153,27 @@ namespace BarPromenade
             {
                 int separator=renderer.name.LastIndexOf("__",StringComparison.Ordinal);
                 string role=renderer.name.Substring(separator+2);
-                renderer.sharedMaterial=CityPortAssetProvider.GetSurfaceMaterial(role == "Glass" ? "SteelDark" : role);
-                renderer.shadowCastingMode=ShadowCastingMode.On;renderer.receiveShadows=true;
+                renderer.sharedMaterial = role == "Glass"
+                    ? CityWindowAppearance.ResolveLitMaterial(CityWindowFamily.Warm)
+                    : role == "TaskLightLens" ? CityNightResources.EmissiveMaterial
+                    : CityPortAssetProvider.GetSurfaceMaterial(role);
+                if (role == "Glass") CityWindowAppearance.ApplyLitPane(renderer, (uint)assembly.Length);
+                if (role == "TaskLightLens")
+                {
+                    CityIndustrialPurpose purpose = assembly == "Substation" ? CityIndustrialPurpose.CompressorHouse :
+                        assembly == "MunicipalWorkshop" ? CityIndustrialPurpose.RepairWorkshop : CityIndustrialPurpose.MetalWorkshop;
+                    Color color = CityNightAtmosphere.GetIndustrialTaskLightColor(purpose);
+                    CityNightGlowRegistry.Register(renderer, new Color(color.r * 3f, color.g * 3f, color.b * 3f, 1f));
+                }
+                renderer.shadowCastingMode=role == "TaskLightLens" ? ShadowCastingMode.Off : ShadowCastingMode.On;
+                renderer.receiveShadows=role != "TaskLightLens";
                 renderer.lightProbeUsage=LightProbeUsage.BlendProbes;renderer.reflectionProbeUsage=ReflectionProbeUsage.Off;
             }
+            // The empty shares the model's measured metre basis. Aim is a
+            // logical contract in Unity space, independent of the FBX empty basis.
+            foreach (Transform anchor in model.GetComponentsInChildren<Transform>(true))
+                if (anchor.name.StartsWith(CityNightAtmosphere.IndustrialTaskLightPrefix, StringComparison.Ordinal))
+                    anchor.rotation = placement.rotation * Quaternion.LookRotation(new Vector3(0f,-.819152f,.573576f), Vector3.up);
             return placement;
         }
 

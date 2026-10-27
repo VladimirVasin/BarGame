@@ -13,6 +13,8 @@ namespace BarPromenade
         private const float ReassignmentInterval = 0.35f;
         private const float ReassignmentDistance = 1.25f;
         internal const float PracticalLeaseDistance = 20f;
+        internal const string IndustrialTaskLightPrefix = "IndustrialTaskLight_";
+        private const int MaximumIndustrialTaskLights = 512;
 
         // The mast grew from 2.92 m to 4.70 m of source height; the
         // inverse-square law wants (4.70/2.92)^2 = 2.6x the luminous
@@ -71,6 +73,10 @@ namespace BarPromenade
         private bool[] pooledHaloVisible = Array.Empty<bool>();
         private int activePracticalIndex = -1;
         private int quayAnchorStartIndex = int.MaxValue;
+        private int industrialAnchorStartIndex = int.MaxValue;
+        private CityIndustrialPurpose[] industrialPurposes = Array.Empty<CityIndustrialPurpose>();
+        private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
+        public int IndustrialTaskLightCount => industrialPurposes.Length;
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
         private float nightFactor = 1f;
@@ -120,12 +126,39 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(barLightPositions));
             }
 
-            // The quay lanterns ride in the same nearest-first pool as
-            // the street masts, distinguished by index alone: anything
-            // at or past the boundary takes the low waterside profile
-            // and its anchor's own authored aim.
-            lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors);
+            // Quay and industrial task fixtures join the same nearest-first
+            // pool. Their cached index ranges select the working profile and
+            // preserve the fixture's authored aim without extra Lights.
+            Transform[] taskAnchors = FindIndustrialTaskLights(transform.parent);
+            industrialAnchorStartIndex = streetLampAnchors.Count + (quayLampAnchors?.Count ?? 0);
+            lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors, taskAnchors);
             quayAnchorStartIndex = streetLampAnchors.Count;
+            industrialPurposes = new CityIndustrialPurpose[taskAnchors.Length];
+            industrialFixtureHalos = new CityLightHalo[taskAnchors.Length];
+            for (int index = 0; index < taskAnchors.Length; index++)
+            {
+                string purposeName = taskAnchors[index].name.Substring(IndustrialTaskLightPrefix.Length);
+                switch (purposeName)
+                {
+                    case "Substation": industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse; break;
+                    case "MunicipalWorkshop": industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop; break;
+                    case "PortWorkshop": industrialPurposes[index] = CityIndustrialPurpose.MetalWorkshop; break;
+                    default:
+                        if (!Enum.TryParse(purposeName, out industrialPurposes[index]) || industrialPurposes[index] == CityIndustrialPurpose.None)
+                            throw new InvalidOperationException("Unknown functional industrial task light: " + taskAnchors[index].name);
+                        break;
+                }
+                PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
+                // Imported anchors inherit the FBX unit factor. Keep particle
+                // sizes in world metres and move their soft depth fade clear
+                // of the fixture housing and the adjacent opaque facade.
+                Transform haloOwner = new GameObject("Industrial Fixed Halo " + index).transform;
+                haloOwner.SetParent(transform, true);
+                haloOwner.SetPositionAndRotation(taskAnchors[index].position + taskAnchors[index].forward * .30f,
+                    taskAnchors[index].rotation);
+                industrialFixtureHalos[index] = CityLightHalo.CreateAlwaysBurning(haloOwner, Vector3.zero,
+                    profile.HaloInnerSize, profile.HaloOuterSize, profile.HaloInnerColor, profile.HaloOuterColor);
+            }
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
             int barLightCount = Mathf.Min(
@@ -215,6 +248,8 @@ namespace BarPromenade
             // belongs to the hour - the refresh cadence, the pool scan.
             float fixtureFactor =
                 GameTimeDayNightRules.FixtureFactor(nightFactor);
+            foreach (CityLightHalo halo in industrialFixtureHalos)
+                if (halo != null) halo.SetIntensityFactor(fixtureFactor);
             for (int index = 0; index < barLights.Length; index++)
             {
                 barLights[index].intensity =
@@ -352,8 +387,13 @@ namespace BarPromenade
                 }
 
                 int anchorIndex = selectedAnchorIndices[index];
-                bool isQuay = anchorIndex >= quayAnchorStartIndex;
-                if (isQuay)
+                bool isIndustrial = anchorIndex >= industrialAnchorStartIndex;
+                bool isQuay = !isIndustrial && anchorIndex >= quayAnchorStartIndex;
+                if (isIndustrial)
+                {
+                    ApplyIndustrialProfile(index, industrialPurposes[anchorIndex - industrialAnchorStartIndex]);
+                }
+                else if (isQuay)
                 {
                     ApplyQuayLampProfile(index);
                 }
@@ -384,7 +424,7 @@ namespace BarPromenade
                     // knows its road and the tilt is derived.
                     light.transform.SetPositionAndRotation(
                         anchor.position,
-                        isQuay
+                        isQuay || isIndustrial
                             ? anchor.rotation
                             : CreateStreetLightRotation(anchor));
                 }
@@ -491,6 +531,55 @@ namespace BarPromenade
             bool visible = intensityFactor > VisibleFactorThreshold;
             light.enabled = visible;
             halo.SetVisible(visible);
+        }
+
+        private void ApplyIndustrialProfile(int poolIndex, CityIndustrialPurpose purpose)
+        {
+            PracticalLightProfile profile = GetIndustrialProfile(purpose);
+            ApplyPooledLightProfile(poolIndex, profile.Color, profile.Intensity, profile.Range,
+                profile.SpotAngle, profile.InnerSpotAngle, profile.HaloInnerSize, profile.HaloOuterSize,
+                profile.HaloInnerColor, profile.HaloOuterColor);
+        }
+
+        internal static Color GetIndustrialTaskLightColor(CityIndustrialPurpose purpose) =>
+            GetIndustrialProfile(purpose).Color;
+
+        private static PracticalLightProfile GetIndustrialProfile(CityIndustrialPurpose purpose)
+        {
+            bool neutral = purpose == CityIndustrialPurpose.ColdStorage ||
+                purpose == CityIndustrialPurpose.MetalWorkshop || purpose == CityIndustrialPurpose.CompressorHouse;
+            Color color = neutral ? new Color(.85f, .93f, .88f) : new Color(1f, .77f, .48f);
+            float intensity, range, angle, inner;
+            switch (purpose)
+            {
+                case CityIndustrialPurpose.DryWarehouse: intensity = 24f; range = 12f; angle = 105f; inner = 60f; break;
+                case CityIndustrialPurpose.ColdStorage: intensity = 16f; range = 8f; angle = 58f; inner = 32f; break;
+                case CityIndustrialPurpose.RepairWorkshop: intensity = 12f; range = 7f; angle = 78f; inner = 44f; break;
+                case CityIndustrialPurpose.MetalWorkshop: intensity = 20f; range = 10f; angle = 88f; inner = 45f; break;
+                case CityIndustrialPurpose.PackagingWorkshop: intensity = 14f; range = 8f; angle = 92f; inner = 48f; break;
+                case CityIndustrialPurpose.BoilerHouse: intensity = 23f; range = 11f; angle = 72f; inner = 38f; break;
+                case CityIndustrialPurpose.CompressorHouse: intensity = 15f; range = 8f; angle = 64f; inner = 36f; break;
+                case CityIndustrialPurpose.RepairGarage: intensity = 22f; range = 11f; angle = 110f; inner = 62f; break;
+                default: throw new ArgumentOutOfRangeException(nameof(purpose));
+            }
+            return new PracticalLightProfile(color, intensity, range, angle, inner, .42f, 1.15f,
+                new Color(color.r * 3.2f, color.g * 2.8f, color.b * 2.4f, .12f),
+                new Color(color.r * 1.8f, color.g * 1.5f, color.b * 1.3f, .028f));
+        }
+
+        private static Transform[] FindIndustrialTaskLights(Transform sourceRoot)
+        {
+            if (sourceRoot == null) return Array.Empty<Transform>();
+            var result = new List<Transform>();
+            // One construction-time scan. Pool reassignment only reads the cached anchors.
+            foreach (Transform candidate in sourceRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (!candidate.name.StartsWith(IndustrialTaskLightPrefix, StringComparison.Ordinal)) continue;
+                if (result.Count == MaximumIndustrialTaskLights)
+                    throw new InvalidOperationException("Industrial task-light anchor catalog exceeds its fixed budget.");
+                result.Add(candidate);
+            }
+            return result.ToArray();
         }
 
         private void ApplyStreetProfile(int poolIndex)
@@ -738,10 +827,11 @@ namespace BarPromenade
 
         private static Transform[] CopyAnchors(
             IReadOnlyList<Transform> anchors,
-            IReadOnlyList<Transform> quayAnchors)
+            IReadOnlyList<Transform> quayAnchors,
+            IReadOnlyList<Transform> industrialAnchors)
         {
             int quayCount = quayAnchors?.Count ?? 0;
-            var result = new Transform[anchors.Count + quayCount];
+            var result = new Transform[anchors.Count + quayCount + industrialAnchors.Count];
             for (int index = 0; index < anchors.Count; index++)
             {
                 result[index] = anchors[index] != null
@@ -760,6 +850,8 @@ namespace BarPromenade
                         nameof(quayAnchors));
             }
 
+            for (int index = 0; index < industrialAnchors.Count; index++)
+                result[anchors.Count + quayCount + index] = industrialAnchors[index];
             return result;
         }
 

@@ -6,13 +6,17 @@ children, with no materials, colliders, lights, cameras, armatures or Actions.
 Source space is Blender metres (X right, +Y frontage, Z up); FBX export bakes
 that frame into Unity X right, +Z forward and Y up.
 
-Run through Blender 5 from the repository root:
+Run through Blender from the repository root:
 
     blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-city-buildings-3d-model.py -- --validate-only
 
     blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-city-buildings-3d-model.py
+
+Pure geometry/UV/determinism validation without Blender:
+
+    python tools/build-city-buildings-3d-model.py --recipe-validate-only
 """
 
 from __future__ import annotations
@@ -31,7 +35,10 @@ try:
     import bpy
     from mathutils import Vector
 except ImportError as error:  # pragma: no cover - Blender entry point.
-    raise SystemExit("Run this generator through Blender's Python.") from error
+    if "--recipe-validate-only" not in sys.argv:
+        raise SystemExit("Run this generator through Blender, or use --recipe-validate-only for pure geometry checks.") from error
+    bpy = None
+    Vector = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,9 +60,10 @@ from city_building_coplanarity import (  # noqa: E402
     find_near_coplanar_visible_overlaps,
     validate_coplanarity_audit_contract,
 )
+from city_industrial_parts import OPTIONAL_ROLES  # noqa: E402
 
 
-GENERATOR_VERSION = "4.0.0"
+GENERATOR_VERSION = "4.1.0"
 DESIGN_ID = "city_buildings_coastal_v4"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -110,6 +118,9 @@ EXPECTED_PROTOTYPES = (
     ('residential-prototype-05', 'Residential', 'CourtyardWing', 10.0, 6.0, 10.0),
     ('industrial-prototype-05', 'Industrial', 'CourtyardWing', 10.0, 6.0, 6.0),
     ('nightlife-prototype-05', 'Nightlife', 'CourtyardWing', 10.0, 6.0, 10.0),
+    ('industrial-prototype-06', 'Industrial', 'LowWideProcess', 14.0, 13.5, 8.4),
+    ('industrial-prototype-07', 'Industrial', 'LowWideProcess', 14.0, 13.5, 6.6),
+    ('industrial-prototype-08', 'Industrial', 'LongStreetBar', 15.5, 11.5, 7.8),
 )
 
 PREVIEW_PALETTE = {
@@ -390,6 +401,15 @@ def validate_geometry(
     if any(not math.isfinite(value) for vertex in geometry.vertices
            for value in vertex):
         problems.append(f"{part.object_name} contains a non-finite vertex")
+    if prototype.district == "Industrial" and part.role not in {"WindowFrame", "WindowGlass"}:
+        signed_volume = 0.0
+        for face in geometry.faces:
+            origin = geometry.vertices[face[0]]
+            for index in range(1, len(face) - 1):
+                normal = cross(geometry.vertices[face[index]], geometry.vertices[face[index + 1]])
+                signed_volume += sum(origin[axis] * normal[axis] for axis in range(3)) / 6.0
+        if signed_volume <= 1e-8:
+            problems.append(f"{part.object_name} has inward or zero-volume solid winding")
     for face_index, face in enumerate(geometry.faces):
         if len(face) < 3 or any(index < 0 or index >= len(geometry.vertices)
                                 for index in face):
@@ -472,9 +492,17 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
                 f"{prototype.stable_id} contract is {actual_contract}, expected "
                 f"{(district, grammar, width, depth, height)}")
         actual_roles = tuple(part.role for part in prototype.parts)
-        if actual_roles != PART_ROLES:
+        optional_roles = tuple(role for role in OPTIONAL_ROLES if role in actual_roles)
+        allowed_roles = PART_ROLES + (optional_roles if district == "Industrial" else ())
+        if actual_roles != allowed_roles:
             problems.append(
-                f"{prototype.stable_id} roles are {actual_roles}, expected {PART_ROLES}")
+                f"{prototype.stable_id} roles are {actual_roles}, expected {allowed_roles}")
+        for part in prototype.parts:
+            if part.role in OPTIONAL_ROLES and part.meters_per_tile != OPTIONAL_ROLES[part.role]:
+                problems.append(f"{part.object_name} changed its metric surface scale")
+        if district == "Industrial" and (not prototype.industrial_purpose or
+                                         prototype.task_light_anchor_source is None):
+            problems.append(f"{prototype.stable_id} lost its functional light anchor")
         for part in prototype.parts:
             expected_name = f"{prototype.stable_id}__{part.role}"
             if part.object_name != expected_name:
@@ -728,10 +756,11 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
 
     if set(ids) != set(expected):
         problems.append("prototype stable-ID set differs from the contract")
-    if len(object_names) != len(EXPECTED_PROTOTYPES) * len(PART_ROLES):
+    expected_meshes = sum(len(prototype.parts) for prototype in prototypes)
+    if len(object_names) != expected_meshes:
         problems.append(
             f"mesh count is {len(object_names)}, expected "
-            f"{len(EXPECTED_PROTOTYPES) * len(PART_ROLES)}")
+            f"{expected_meshes}")
     if problems:
         raise RuntimeError(
             "City building art contract violated:\n  - " +
@@ -746,6 +775,8 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
         "frontage_width_m": stable(prototype.frontage_width_m),
         "depth_m": stable(prototype.depth_m),
         "height_m": stable(prototype.height_m),
+        "industrial_purpose": prototype.industrial_purpose,
+        "task_light_anchor_source": prototype.task_light_anchor_source,
         "collision_bounds": [{"bounds_min_source": list(minimum),
                               "bounds_max_source": list(maximum)}
                              for minimum, maximum in collision_bounds_for(prototype)],
@@ -876,6 +907,14 @@ def manifest_for(
             "frontage_width_m": stable(prototype.frontage_width_m),
             "depth_m": stable(prototype.depth_m),
             "height_m": stable(prototype.height_m),
+            "industrial_purpose": prototype.industrial_purpose,
+            "task_light_anchor": ({
+                "object_name": f"IndustrialTaskLight_{prototype.industrial_purpose}",
+                "position_source": list(prototype.task_light_anchor_source),
+                "position_unity": source_to_unity(prototype.task_light_anchor_source),
+                "forward_source": [0.0, .573576, -.819152],
+                "forward_unity": [0.0, -.819152, .573576],
+            } if prototype.task_light_anchor_source else None),
             "collision_bounds": [{
                 "bounds_min_source": [stable(value) for value in minimum],
                 "bounds_max_source": [stable(value) for value in maximum],
@@ -1098,6 +1137,14 @@ def build_scene(prototypes: Sequence[PrototypeSpec]) -> BuildResult:
         for part in prototype.parts:
             objects[part.object_name] = create_part_object(
                 prototype, part, root, source)
+        if prototype.task_light_anchor_source is not None:
+            anchor = bpy.data.objects.new(f"IndustrialTaskLight_{prototype.industrial_purpose}", None)
+            source.objects.link(anchor)
+            anchor.parent = root
+            anchor.location = prototype.task_light_anchor_source
+            anchor.rotation_euler = (math.radians(-55), 0., 0.)
+            anchor.empty_display_type = "SINGLE_ARROW"
+            anchor.empty_display_size = .35
     return BuildResult(
         source, presentation, catalog_root, prototype_roots, objects)
 
@@ -1107,7 +1154,7 @@ def validate_source_scene(
     prototypes: Sequence[PrototypeSpec],
 ) -> None:
     problems: list[str] = []
-    expected_meshes = len(prototypes) * len(PART_ROLES)
+    expected_meshes = sum(len(prototype.parts) for prototype in prototypes)
     if len(result.objects) != expected_meshes:
         problems.append(
             f"source scene has {len(result.objects)} meshes, expected {expected_meshes}")
@@ -1141,7 +1188,10 @@ def validate_source_scene(
 
 def preview_material(district: str, role: str) -> bpy.types.Material:
     material = bpy.data.materials.new(f"PREVIEW_CityBuildings_{district}_{role}")
-    color = PREVIEW_PALETTE[district][role]
+    color = {"CargoTimber": (.32, .23, .14, 1.),
+             "EquipmentConcrete": (.33, .35, .34, 1.),
+             "EquipmentSteel": (.20, .25, .24, 1.),
+             "TaskLightLens": (.96, .94, .87, 1.)}.get(role, PREVIEW_PALETTE[district].get(role))
     material.diffuse_color = color
     material.use_nodes = True
     shader = material.node_tree.nodes.get("Principled BSDF")
@@ -1151,7 +1201,7 @@ def preview_material(district: str, role: str) -> bpy.types.Material:
             0.38 if role in {"Metal", "WindowFrame"} else 0.72)
         shader.inputs["Metallic"].default_value = (
             0.32 if role == "Metal" else 0.0)
-        if role == "WindowGlass":
+        if role in {"WindowGlass", "TaskLightLens"}:
             shader.inputs["Roughness"].default_value = 0.22
             emission = shader.inputs.get("Emission Color") or \
                 shader.inputs.get("Emission")
@@ -1160,7 +1210,7 @@ def preview_material(district: str, role: str) -> bpy.types.Material:
                     min(1.0, channel * 1.5) for channel in color[:3]) + (1.0,)
             strength = shader.inputs.get("Emission Strength")
             if strength is not None:
-                strength.default_value = 0.45
+                strength.default_value = 4.0 if role == "TaskLightLens" else 0.45
     return material
 
 
@@ -1178,11 +1228,12 @@ def add_preview_stage(
             ground_material.diffuse_color
         ground_shader.inputs["Roughness"].default_value = 0.88
     ground_mesh = bpy.data.meshes.new("CityBuildingsPreviewGround_Mesh")
+    ground_back = ((len(prototypes) + 3) // 4) * 24.0 - 6.0
     ground_vertices = (
         (-50.0, -12.0, -0.24), (50.0, -12.0, -0.24),
-        (50.0, 114.0, -0.24), (-50.0, 114.0, -0.24),
+        (50.0, ground_back, -0.24), (-50.0, ground_back, -0.24),
         (-50.0, -12.0, 0.0), (50.0, -12.0, 0.0),
-        (50.0, 114.0, 0.0), (-50.0, 114.0, 0.0),
+        (50.0, ground_back, 0.0), (-50.0, ground_back, 0.0),
     )
     ground_faces = (
         (0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
@@ -1198,7 +1249,7 @@ def add_preview_stage(
     scale = 0.65
     materials = {
         (prototype.district, role): preview_material(prototype.district, role)
-        for prototype in prototypes for role in PART_ROLES
+        for prototype in prototypes for role in (part.role for part in prototype.parts)
     }
     figure_geometry = combine(
         box((-0.09, 0.0, 0.42), (0.12, 0.16, 0.84)),
@@ -1323,12 +1374,14 @@ def render_preview(
     camera_data = bpy.data.cameras.new("CAM_CityBuildings3D_Preview")
     camera = bpy.data.objects.new("CAM_CityBuildings3D_Preview", camera_data)
     result.presentation.objects.link(camera)
-    camera.location = (25.0, 180.0, 140.0)
-    target = Vector((0.0, 48.0, 8.5))
+    rows = (len(prototypes) + 3) // 4
+    center_y = (rows - 1) * 12.0
+    camera.location = (25.0, center_y + 132.0, 140.0)
+    target = Vector((0.0, center_y, 8.5))
     camera.rotation_euler = (
         target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.type = "ORTHO"
-    camera_data.ortho_scale = 125.0
+    camera_data.ortho_scale = max(80.0, 125.0 + (rows - 5) * 15.0)
     bpy.context.scene.render.resolution_y = 1800
     bpy.context.scene.camera = camera
     for obj in result.presentation.objects:
@@ -1347,7 +1400,7 @@ def select_source(result: BuildResult) -> None:
     result.catalog_root.select_set(True)
     for root in result.prototype_roots.values():
         root.select_set(True)
-    for obj in result.objects.values():
+    for obj in result.source.objects:
         obj.select_set(True)
     bpy.context.view_layer.objects.active = result.catalog_root
 
@@ -1390,7 +1443,8 @@ def save_blend(path: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    argv = (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else
+            sys.argv[1:] if bpy is None else [])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--blend", type=Path, default=DEFAULT_BLEND)
     parser.add_argument("--fbx", type=Path, default=DEFAULT_FBX)
@@ -1400,6 +1454,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--preview-only", action="store_true",
                         help="Refresh tracked authoring preview/blend without exporting Unity assets")
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--recipe-validate-only", action="store_true",
+                        help="Validate pure metre geometry, UVs and determinism without Blender or asset writes")
     return parser.parse_args(argv)
 
 
@@ -1433,7 +1489,7 @@ def main() -> int:
     if signature_for(rerun) != signature:
         raise RuntimeError("Non-deterministic City building signature.")
 
-    if config.validate_only:
+    if config.validate_only or config.recipe_validate_only:
         print_report("CITY BUILDINGS 3D DIRECT VALIDATION OK", prototypes, signature)
         return 0
 

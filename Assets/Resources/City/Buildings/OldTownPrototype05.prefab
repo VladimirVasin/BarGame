@@ -626,9 +626,9 @@ MonoBehaviour:
   height: 10
   unitFactor: 1
   sourceTriangleCount: 356
-  sourceGeneratorVersion: 4.0.0
+  sourceGeneratorVersion: 4.1.0
   designId: city_buildings_coastal_v4
-  buildSignature: 2c228f267c9b60cd359076d729646af863c299eb78b5729c5a648fc9c1902258
+  buildSignature: 2762f52408f0b450cdff4bd9929ff7c6d99deab826854f3b963980f1a92a5c89
 --- !u!1 &8229560931906521870
 GameObject:
   m_ObjectHideFlags: 0

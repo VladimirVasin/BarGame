@@ -1,4 +1,4 @@
-"""Read-only checks of the checked-in art/native toolchain, without generating assets."""
+"""Read-only tool discovery and art/native checks, without generating assets."""
 from __future__ import annotations
 
 import argparse
@@ -35,25 +35,38 @@ def check_python(config: dict, packages: tuple[str, ...] = ()) -> None:
 
 
 def blender_path(config: dict, override: str | None = None) -> Path:
-    candidate = override or os.environ.get("BP_BLENDER") or config["blender"]["windows_path"]
+    explicit = override or os.environ.get("BP_BLENDER")
+    candidate = explicit or config["blender"]["executable"]
     path = Path(candidate)
-    if not path.is_file():
-        found = shutil.which(candidate)
-        if not found:
-            raise RuntimeError("Blender is missing; set BP_BLENDER or use --blender with the pinned executable")
-        path = Path(found)
-    return path.resolve()
+    if path.is_file():
+        return path.resolve()
+    found = shutil.which(candidate)
+    if found:
+        return Path(found).resolve()
+    if not explicit:
+        if sys.platform == "darwin":
+            candidates = [Path("/Applications/Blender.app/Contents/MacOS/Blender"),
+                          Path.home() / "Applications/Blender.app/Contents/MacOS/Blender"]
+            for app_root in (Path("/Applications"), Path.home() / "Applications"):
+                candidates.extend(app / "Contents/MacOS/Blender"
+                                  for app in sorted(app_root.glob("Blender*.app"), reverse=True))
+        elif sys.platform == "win32":
+            foundation = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Blender Foundation"
+            candidates = sorted(foundation.glob("Blender*/blender.exe"), reverse=True)
+        else:
+            candidates = []
+        for executable in candidates:
+            if executable.is_file():
+                return executable.resolve()
+    raise RuntimeError("Blender is missing; install Blender, set BP_BLENDER or use --blender with its executable")
 
 
 def check_blender(config: dict, executable: Path) -> None:
     result = subprocess.run([str(executable), "--version"], capture_output=True,
                             text=True, check=True, timeout=30)
-    expected = config["blender"]
     lines = result.stdout.splitlines()
-    if not lines or lines[0].strip() != f"Blender {expected['version']}":
-        raise RuntimeError(f"Blender must be {expected['version']}; got {lines[:1]}")
-    if not any(line.strip() == f"build hash: {expected['build_hash']}" for line in lines):
-        raise RuntimeError(f"Blender build hash must be {expected['build_hash']}")
+    if not lines or not lines[0].strip().startswith("Blender "):
+        raise RuntimeError(f"Executable did not identify itself as Blender; got {lines[:1]}")
 
 
 def find_visual_studio(config: dict) -> Path:

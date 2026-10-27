@@ -26,6 +26,14 @@ namespace BarPromenade
             CityDistrictKind.Nightlife
         };
 
+        // Repeated entries express land-use tendencies, rather than a second
+        // population or random dressing layer. Every choice remains one of the
+        // eight fixed-metre functional templates.
+        private static readonly int[] WaterfrontIndustrialVariants =
+            { 0, 1, 4, 0, 1, 4, 7, 2, 3, 5, 6 };
+        private static readonly int[] InlandIndustrialVariants =
+            { 2, 3, 5, 6, 7, 2, 3, 5, 6, 7, 0, 1, 4 };
+
         internal static IReadOnlyList<CityDistrictKind> UrbanDistricts =>
             UrbanDistrictOrder;
 
@@ -1065,7 +1073,7 @@ namespace BarPromenade
                             out CityPathKind westKind) && westKind == CityPathKind.Street,
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.up),
                             out CityPathKind northKind) && northKind == CityPathKind.Street,
-                        domesticPockets.Contains(cell)));
+                        domesticPockets.Contains(cell), lots, primaryLandmarkCells));
                 }
             }
 
@@ -1867,7 +1875,9 @@ namespace BarPromenade
             bool hasEastStreet,
             bool hasWestStreet,
             bool hasNorthStreet,
-            bool domesticPocket)
+            bool domesticPocket,
+            IReadOnlyList<BuildingLot> placedLots,
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int> landmarkCells)
         {
             var random = new DeterministicRandom(
                 StableHash(seed, cell.x, cell.y, 0x4C4F5453u));
@@ -1910,7 +1920,7 @@ namespace BarPromenade
                     ? streetfrontVariant
                 : authoredOrdinary && !isPrimaryLandmark && !isAuthoredPrecinct
                     ? ResolveBuildingVariant(seed, cell, frontage, district,
-                        new Vector2(maximumWidth, maximumDepth))
+                        new Vector2(maximumWidth, maximumDepth), settings, placedLots, landmarkCells)
                     : 0;
             Vector3 envelope = authoredOrdinary
                 ? CityBuildingAssetProvider.GetExpectedEnvelope(district, buildingVariant)
@@ -2261,26 +2271,79 @@ namespace BarPromenade
         }
 
         private static int ResolveBuildingVariant(int seed, Vector2Int cell,
-            Vector2Int frontage, CityDistrictKind district, Vector2 available)
+            Vector2Int frontage, CityDistrictKind district, Vector2 available,
+            CityGenerationSettings settings, IReadOnlyList<BuildingLot> placedLots,
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int> landmarkCells)
         {
             uint rank = StableHash(seed, cell.x, cell.y, 0x4D415353u);
+            if (district == CityDistrictKind.Industrial)
+            {
+                int[] candidates = IsIndustrialWaterfrontApproach(settings, cell)
+                    ? WaterfrontIndustrialVariants : InlandIndustrialVariants;
+                int start = (int)(rank % (uint)candidates.Length);
+                // Row-major generation gives each lot its already fixed west
+                // and south neighbours. Reserve the immutable landmark's zero
+                // variant in advance, including when it is built later.
+                for (int pass = 0; pass < 2; pass++)
+                    for (int offset = 0; offset < candidates.Length; offset++)
+                    {
+                        int variant = candidates[(start + offset) % candidates.Length];
+                        if (!FitsBuildingVariant(district, variant, frontage, available)) continue;
+                        if (pass == 0 && HasAdjacentIndustrialVariant(cell, variant, placedLots,
+                                landmarkCells)) continue;
+                        return variant;
+                    }
+                return 0;
+            }
             // Longer frontage is preferred on the expanded outer blocks;
             // corner bodies introduce real rear pockets on the smaller ones.
-            int preferred = district == CityDistrictKind.Industrial ? (rank % 4u == 0u ? 3 : 1)
-                : (rank % 4u) == 0u ? 3 : (rank % 3u) == 0u ? 2 : 1;
+            int preferred = (rank % 4u) == 0u ? 3 : (rank % 3u) == 0u ? 2 : 1;
             int[] variants = { preferred, 2, 1, 0 };
             for (int pass = 0; pass < variants.Length; pass++)
             {
                 int variant = variants[pass];
-                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variant);
-                Vector2 footprint = frontage.x != 0
-                    ? new Vector2(envelope.z, envelope.x)
-                    : new Vector2(envelope.x, envelope.z);
-                if (footprint.x <= available.x + 0.001f &&
-                    footprint.y <= available.y + 0.001f)
+                if (FitsBuildingVariant(district, variant, frontage, available))
                     return variant;
             }
             return 0;
+        }
+
+        private static bool FitsBuildingVariant(CityDistrictKind district, int variant,
+            Vector2Int frontage, Vector2 available)
+        {
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variant);
+            Vector2 footprint = frontage.x != 0
+                ? new Vector2(envelope.z, envelope.x) : new Vector2(envelope.x, envelope.z);
+            return footprint.x <= available.x + .001f && footprint.y <= available.y + .001f;
+        }
+
+        private static bool HasAdjacentIndustrialVariant(Vector2Int cell, int variant,
+            IReadOnlyList<BuildingLot> placedLots,
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int> landmarkCells)
+        {
+            for (int index = 0; index < placedLots.Count; index++)
+            {
+                BuildingLot previous = placedLots[index];
+                if (previous.HasFunctionalIndustrialPurpose && previous.BuildingVariant == variant &&
+                    (previous.Cell - cell).sqrMagnitude == 1) return true;
+            }
+            if (variant == 0)
+                foreach (Vector2Int landmark in landmarkCells.Values)
+                    if ((landmark - cell).sqrMagnitude == 1) return true;
+            return false;
+        }
+
+        private static bool IsIndustrialWaterfrontApproach(CityGenerationSettings settings, Vector2Int cell)
+        {
+            if (settings.Blueprint == null) return false;
+            foreach (CityAreaPlacement area in settings.Blueprint.Areas)
+            {
+                if (area.Definition.Feature != CityAreaFeatureKind.NorthWaterfront) continue;
+                foreach (Vector2Int waterfront in area.Cells)
+                    if (waterfront.y >= cell.y && waterfront.y - cell.y <= 3 &&
+                        Mathf.Abs(waterfront.x - cell.x) <= 2) return true;
+            }
+            return false;
         }
 
         /// <summary>

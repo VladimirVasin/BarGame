@@ -97,6 +97,15 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
+                if (lot.HasFunctionalIndustrialPurpose)
+                {
+                    Assert.That(coreCounts.ContainsKey(lot.Cell), Is.False, lot.Cell.ToString());
+                    Assert.That(plan.Descriptors.Any(descriptor => descriptor.LotCell == lot.Cell &&
+                        (descriptor.Kind == CityDecorationKind.IndustrialCargo ||
+                         descriptor.Kind == CityDecorationKind.IndustrialPipeRack ||
+                         descriptor.Kind == CityDecorationKind.IndustrialStacksAndTanks)), Is.False);
+                    continue;
+                }
                 ordinaryLotCount++;
                 Assert.That(
                     coreCounts.TryGetValue(lot.Cell, out int count)
@@ -122,12 +131,15 @@ namespace BarPromenade.Tests.EditMode
             foreach (CityDecorationKind kind in
                      Enum.GetValues(typeof(CityDecorationKind)))
             {
-                if (kind == CityDecorationKind.RoadsideBusShelter)
+                if (kind == CityDecorationKind.RoadsideBusShelter ||
+                    kind == CityDecorationKind.IndustrialStacksAndTanks ||
+                    kind == CityDecorationKind.IndustrialPipeRack ||
+                    kind == CityDecorationKind.IndustrialCargo)
                 {
                     Assert.That(
                         plan.GetCount(kind),
                         Is.Zero,
-                        "Bus shelters are route-owned infrastructure, not random decoration.");
+                        "Route infrastructure and authored industrial work stay with their shared owners.");
                     continue;
                 }
 
@@ -195,13 +207,15 @@ namespace BarPromenade.Tests.EditMode
 
                 bool facadeLandmark =
                     district == CityDistrictKind.Nightlife;
+                BuildingLot landmarkLot = layout.BuildingLots.Single(lot => lot.Cell == landmarkCell);
+                bool authoredIndustrial = landmarkLot.HasFunctionalIndustrialPurpose;
                 Assert.That(
                     facadeCore,
-                    Is.EqualTo(facadeLandmark ? 0 : 1),
+                    Is.EqualTo(facadeLandmark || authoredIndustrial ? 0 : 1),
                     district.ToString());
                 Assert.That(
                     roofCore,
-                    Is.EqualTo(facadeLandmark ? 1 : 0),
+                    Is.EqualTo(facadeLandmark && !authoredIndustrial ? 1 : 0),
                     district.ToString());
                 Assert.That(landmark, Is.EqualTo(1), district.ToString());
             }

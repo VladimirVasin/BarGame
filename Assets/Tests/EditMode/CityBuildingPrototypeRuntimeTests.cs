@@ -256,7 +256,8 @@ namespace BarPromenade.Tests.EditMode
                 AssertSurfaceBinding(
                     foundationRenderer,
                     lot.District,
-                    CityBuildingSurfaceKind.Plinth);
+                    CityBuildingSurfaceKind.Plinth,
+                    lot.IndustrialPurpose);
             }
 
             int opaqueSurfaceCount = 0;
@@ -270,6 +271,21 @@ namespace BarPromenade.Tests.EditMode
                 {
                     continue;
                 }
+                if (binding.Role == CityBuildingMeshRole.TaskLightLens)
+                {
+                    Renderer lens = binding.Renderer;
+                    Assert.That(lens.sharedMaterial, Is.SameAs(CityNightResources.EmissiveMaterial));
+                    Assert.That(lens.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
+                    Assert.That(lens.receiveShadows, Is.False);
+                    var glow = new MaterialPropertyBlock();
+                    lens.GetPropertyBlock(glow);
+                    Color lightColor = glow.GetColor(Shader.PropertyToID("_BaseColor"));
+                    Color source = CityNightAtmosphere.GetIndustrialTaskLightColor(lot.IndustrialPurpose) * 3f;
+                    Assert.That(lightColor.r, Is.GreaterThanOrEqualTo(source.r * GameTimeDayNightRules.DayFixtureFloor - .0001f));
+                    Assert.That(lightColor.g, Is.GreaterThanOrEqualTo(source.g * GameTimeDayNightRules.DayFixtureFloor - .0001f));
+                    Assert.That(lightColor.b, Is.GreaterThanOrEqualTo(source.b * GameTimeDayNightRules.DayFixtureFloor - .0001f));
+                    continue;
+                }
 
                 Assert.That(
                     CityBuildingSurfaceAppearance.TryResolveSurface(
@@ -281,11 +297,13 @@ namespace BarPromenade.Tests.EditMode
                 AssertSurfaceBinding(
                     binding.Renderer,
                     lot.District,
-                    surface);
+                    surface,
+                    lot.IndustrialPurpose);
                 opaqueSurfaceCount++;
             }
 
-            Assert.That(opaqueSurfaceCount, Is.EqualTo(6));
+            Assert.That(opaqueSurfaceCount, Is.EqualTo(registry.Parts.Count - 1 -
+                (registry.TryGetRenderer(CityBuildingMeshRole.TaskLightLens, out _) ? 1 : 0)));
 
             Assert.That(
                 registry.TryGetRenderer(
@@ -390,7 +408,8 @@ namespace BarPromenade.Tests.EditMode
         private static void AssertSurfaceBinding(
             Renderer renderer,
             CityDistrictKind district,
-            CityBuildingSurfaceKind surface)
+            CityBuildingSurfaceKind surface,
+            CityIndustrialPurpose purpose = CityIndustrialPurpose.None)
         {
             Assert.That(renderer, Is.Not.Null);
             Assert.That(
@@ -403,7 +422,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.SameAs(
                     CityBuildingSurfaceAppearance.GetTexture(
                         district,
-                        surface)));
+                        surface,
+                        purpose)));
             Assert.That(
                 properties.GetTexture(BaseMapId),
                 Is.Not.SameAs(Texture2D.whiteTexture));

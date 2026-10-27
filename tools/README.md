@@ -137,7 +137,7 @@ python tools/toolchain.py --scope all
 Mac:`native.macos` pins Python/NumPy/clang/SDK;
 `python3 tools/toolchain.py --scope native`.
 
-Repo root;`--`:args. Launcher:pins/startup/errors/fresh `--expect`/JSON;
+Repo root;`--`:args. Launcher:Python pin/startup/errors/fresh `--expect`/JSON;
 both launcher/generator:`--validate-only`.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver). `npc_detail_geometry.py` shares shapes;
@@ -157,7 +157,7 @@ See [audio-vhs/README.md](audio-vhs/README.md).
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
 `build-player-karaoke-actions-3d-model.py`:43-bone Enter/Loop/Exit, planted feet,
 neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.
-`run-blender.py` uses the declared macOS Python pin on Mac, the common pin elsewhere.
+`run-blender.py`: Python pin by host; installed Blender, no version/hash pin.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;

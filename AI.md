@@ -85,7 +85,7 @@ repository evidence. This does not require running every test layer.
   cashier, supermarket interior and product pack, cat, chess set, Last Route
   car, church, Mountain Road misc and City misc — each pairing its script with
   a measured JSON manifest and a
-  determinism check. The pinned Blender build and executable discovery are
+  determinism check. Blender executable discovery is
   owned by `tools/toolchain.json` and `tools/toolchain.py`; use the common
   `tools/run-blender.py` launcher documented in `tools/README.md`.
   This is a rule for what is built from now on. The structural runtime-primitive

@@ -39,7 +39,7 @@ namespace BarPromenade
             "City/CityBuildingAssetProvider";
         public const string ExpectedDesignId =
             "city_buildings_coastal_v4";
-        public const int ExpectedPrototypeCount = 20;
+        public const int ExpectedPrototypeCount = 23;
 
         private static readonly PrototypeSpec[] ExpectedPrototypes =
         {
@@ -63,6 +63,9 @@ namespace BarPromenade
             new PrototypeSpec("residential-prototype-05", CityDistrictKind.Residential, 10.0f, 6.0f, 10.0f),
             new PrototypeSpec("industrial-prototype-05", CityDistrictKind.Industrial, 10.0f, 6.0f, 6.0f),
             new PrototypeSpec("nightlife-prototype-05", CityDistrictKind.Nightlife, 10.0f, 6.0f, 10.0f),
+            new PrototypeSpec("industrial-prototype-06", CityDistrictKind.Industrial, 14.0f, 13.5f, 8.4f),
+            new PrototypeSpec("industrial-prototype-07", CityDistrictKind.Industrial, 14.0f, 13.5f, 6.6f),
+            new PrototypeSpec("industrial-prototype-08", CityDistrictKind.Industrial, 15.5f, 11.5f, 7.8f),
         };
 
         [SerializeField] private CityBuildingPrefabEntry[] entries =
@@ -151,8 +154,29 @@ namespace BarPromenade
 
         public static int GetVariantCount(CityDistrictKind district)
         {
-            GetExpectedEnvelope(district);
-            return 5;
+            int count = 0;
+            for (int index = 0; index < ExpectedPrototypes.Length; index++)
+                if (ExpectedPrototypes[index].District == district) count++;
+            if (count == 0) throw new ArgumentOutOfRangeException(nameof(district));
+            return count;
+        }
+
+        // Catalog order is a serialized asset contract: the original twenty
+        // indices stay fixed while district-specific additions append at the end.
+        public static int GetExpectedVariantIndex(int prototypeIndex)
+        {
+            CityDistrictKind district = GetExpectedDistrict(prototypeIndex);
+            int variant = 0;
+            for (int index = 0; index < prototypeIndex; index++)
+                if (ExpectedPrototypes[index].District == district) variant++;
+            return variant;
+        }
+
+        public static CityIndustrialPurpose GetExpectedIndustrialPurpose(int variantIndex)
+        {
+            if (variantIndex < 0 || variantIndex >= GetVariantCount(CityDistrictKind.Industrial))
+                throw new ArgumentOutOfRangeException(nameof(variantIndex));
+            return (CityIndustrialPurpose)(variantIndex + 1);
         }
 
         public static Vector3 GetExpectedEnvelope(CityDistrictKind district, int variantIndex)
@@ -233,11 +257,13 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(variantIndex));
             }
 
-            for (int index = 0; index < 4; index++)
+            int variant = 0;
+            for (int index = 0; index < ExpectedPrototypes.Length; index++)
             {
                 if (ExpectedPrototypes[index].District == district)
                 {
-                    return index + variantIndex * 4;
+                    if (variant == variantIndex) return index;
+                    variant++;
                 }
             }
 
@@ -369,8 +395,9 @@ namespace BarPromenade
 
                 CityBuildingAssetRegistry registry =
                     entry.Prefab.GetComponent<CityBuildingAssetRegistry>();
+                int variantIndex = GetExpectedVariantIndex(index);
                 Bounds expectedRoof = CityBuildingPrototypePlacement
-                    .GetExpectedRoofAttachmentBounds(expected.District, index / 4);
+                    .GetExpectedRoofAttachmentBounds(expected.District, variantIndex);
                 if (registry == null ||
                     !string.Equals(
                         registry.StableId,
@@ -397,7 +424,7 @@ namespace BarPromenade
                 }
 
                 registry.ValidateOrThrow();
-                IReadOnlyList<Bounds> collision = GetExpectedCollisionBounds(expected.District, index / 4);
+                IReadOnlyList<Bounds> collision = GetExpectedCollisionBounds(expected.District, variantIndex);
                 if (registry.ColliderBounds.Count != collision.Count)
                 {
                     throw new InvalidOperationException($"City building '{entry.StableId}' collision count drifted.");

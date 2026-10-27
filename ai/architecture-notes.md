@@ -1,49 +1,55 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-27 — installed Blender toolchain:**
+  User removed the exact Blender version/build-hash requirement. CLI override,
+  BP_BLENDER and installed-app/PATH discovery select Blender; identity/startup,
+  fresh-output, geometry/import/scale/determinism checks remain. Python/package
+  pins stay separate. Installation on this host belongs to the user.
+
+- **Accepted 2026-10-27 — functional industrial buildings:**
+  User approved eight ordinary uses: dry warehouse/cold storage, repair/metal/
+  packaging workshops, boiler/compressor houses and repair garage, plus stronger
+  equipment on the three existing coastal facilities. Passive deterministic
+  Blender models own distinct roofs/gates/equipment, occupied service niches
+  and warm window rows. Existing IDs01–05 survive;06–08 append to the catalog.
+  Purpose derives from the selected fit-tested variant; adjacency/port tendency
+  choose functions, not unrelated pipe/cargo clusters. Three optional metre-UV
+  equipment roles reuse timber/concrete/steel sheets; purpose changes brick/
+  painted-sheet recipes without new maps or per-instance materials.
+  Authored task anchors reuse the total12-Light pool, always-lit halos/day≥2/3;
+  selection/lifetime are bounded. Source bounce≤4, air≤4, halo≤24 and probes≤2
+  remain. All24 effects reviewed: SSAO/shared fog/soft shadows/grade retained;
+  no SSGI/SCGI, facade SSR, vertex-colour or DBuffer rollout. Existing wet ground,
+  response/bevels/cloth/causal marks/particles/BRDF/affordances remain; post
+  bloom/DOF/SMAA/vignette/grain/flares/blur/CA-distortion keep shared owners.
+  Story meaning/text unchanged; §16/21 and all nine art checks bind. No canon
+  exception, new interaction or performance gain is implied.
+
 - **Accepted architecture exception 2026-10-27 — compact coastal town:**
-  User approved the full rebuild: Residential eastern bank, Industrial working
-  western bank and separate park; no OldTown/Nightlife map districts. Their
-  enum/catalog identities remain compatible semantic layers. Four POIs and four
-  landmark reservations survive independently of district count: water court/clock,
-  drying yard/greenhouse, cannery/gantry, last-route island/cinema. Descriptor
-  districts are actual; semantic kinds/IDs do not change. Fair/arch stay residential.
-  Story §6 records the scope; story §16/21 and all nine art §16 checks remain binding.
-  `CitySpatialPlan.IsCompactCoastal`: 144 logical lots, internal pitch26m,
-  west/south service belts12m, four eastern strips17.5m, coastal land28m.
-  Declared land excludes sea/river:193828→137186m²,−29.2%; models/vehicles stay metre scale.
-  Residential3–5 storeys/10–15.8m; work bodies6–8.6m. Five compact/long/L/passage/wing
-  forms fit real lots; long fronts≤15.5m; wings10×6m only with full padded clearance.
-  Streetwall setback1.25–1.55m, short residential fronts/shared rear courts;
-  four protected domestic recesses2.4m preserve the basket/frontage scenes outside
-  public pavement; parallel loading streets/service courts west. The OldTown oblique pilot
-  is removed from production. Court gap2.4m; true3.6m passages retain separate overhead
-  collision. Adjacent courts connect only over continuous safe-grade ground without
-  crossing an undeclared road; exact ground/road complements and shared Home views remain.
-  Stable home/bar cells12,5/12,6, BarId/SplitTheG and door-return ownership survive.
-  Route01 is a grand loop with coverage-derived stops, not a fixed five-stop tour;
-  real bus/truck turn/body envelopes, street-side boarding and factory/shop service
-  access stay clear. Port civil geometry and eastern road profile join actual datums.
-  Streets retain8m reservation/6m asphalt; public pavements2m extend outward with
-  reserved frontage, shared contours/heights, driveways/crossings and walk masks.
-  Home/bar/shop forecourts grade to actual pitched sidewalks; soil-embedded skirts,
-  door docks and overlapping fixtures share that top. City/Home keep the same
-  triangle planes through clipping; passive Home copies have no colliders.
-  Three passive Blender facilities: substation5x4x3.7m, municipal workshop7.4x4.2x4.4m,
-  port workshop6x4.4x4.2m; support spread<=.24m, clear roads/footways/traversal/old works.
-  Electrical network<=64poles/192spans, poles5.35m off axis, main wires>=7m above roads;
-  physical facade drops. Authored cable topology fits once into one owned mesh,
-  shared materials/no wire physics; RU stop labels follow places, existing EN stays. No new NPC,
-  interaction/quest/Light, gameplay rule or clue; Home shares bounded48m wire views.
-  Effects review inspected active PC_Renderer SSAO/SSR/SceneComposite,
-  CityNoirVolume and CityLightingPresentation. Six scene effects retain finite
-  source-derived bounce (≤4), SSAO/fog/volumes(≤4)/shadows/grade; SSGI/SCGI stay absent.
-  Ten material/accent effects retain probes+road SSR, water/wetness, bevel normals,
-  vertex gradients, shared wind, causal decals/particles, source-based rim and
-  interaction outlines with updated receivers/bounds. Eight post categories keep
-  current bloom/DoF/SMAA/vignette/grain-dither/flares/motion-blur/CA-distortion
-  profiles/options. Street lights stay pooled12; tighter fronts/wires/courts need
-  reviewed frames. No unbounded post effect or claimed FPS improvement.
+  Residential east/Industrial west+park replace map OldTown/Nightlife; old enums
+  remain semantic catalog IDs. Water court/clock, drying yard/greenhouse,
+  cannery/gantry, last-route island/cinema and fair/arch retain owners/IDs.
+  Story §6 records the scope; §16/21 and nine art checks bind.
+  `IsCompactCoastal`:144 lots,pitch26m,west/south12m,east four17.5m strips,
+  coast28m. Dry land193828→137186m²(−29.2%); models/vehicles retain metres.
+  Homes3–5 floors/10–15.8m,work6–8.6m; compact/long/L/passage/wing footprints,
+  fronts≤15.5m,wings10×6m with full padded fit. Setback1.25–1.55m; four domestic
+  recesses2.4m preserve balcony/basket scenes outside pavement. Court gap2.4m,
+  passage3.6m with overhead collision; continuous safe-grade courts join nav.
+  Expanded OldTown oblique pilot removed. Stable home/bar12,5/12,6,BarId,
+  SplitTheG/door return retained. Route01 coverage loop preserves real turns,
+  both-door stops and factory/shop truck access. Streets8m/asphalt6m,pavements2m;
+  shared road/ground contours and Home triangle planes. Graded home/bar/shop
+  forecourts, embedded skirts and fixture tops retain door datums; Home copies
+  are collision-free. Port civil/eastern road geometry follows terrain.
+  Substation5×4×3.7m,municipal workshop7.4×4.2×4.4m,port workshop6×4.4×4.2m
+  clear old works/routes; support spread≤.24m. Network≤64poles/192spans,poles
+  5.35m off axis,wires≥7m over roads,real facade drops. One owned fitted cable
+  mesh/shared materials/no wire physics; Home bounded48m slice. RU stop labels
+  follow places, existing EN remains. No new NPC/interaction/quest/Light/clue.
+  PC_Renderer/CityNoirVolume/CityLightingPresentation retain shared effects,
+  pool12, finite bounce/air/probes and post profiles; no claimed FPS gain.
 
 - **Accepted 2026-10-26 — karaoke:** Wordless singing, hall silence/gaze,
   breath grace, real intoxication pitch drift; fixed narrow source-pitch UI.

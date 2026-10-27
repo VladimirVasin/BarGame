@@ -12,7 +12,11 @@ namespace BarPromenade
         Roof = 3,
         Metal = 4,
         WindowFrame = 5,
-        WindowGlass = 6
+        WindowGlass = 6,
+        CargoTimber = 7,
+        EquipmentConcrete = 8,
+        EquipmentSteel = 9,
+        TaskLightLens = 10
     }
 
     public enum CityBuildingOpeningKind
@@ -162,6 +166,7 @@ namespace BarPromenade
     public sealed class CityBuildingAssetRegistry : MonoBehaviour
     {
         public const int ExpectedRoleCount = 7;
+        public const int MaximumRoleCount = 11;
         public const int MaximumTriangleCount = 3500;
         public const int MaximumWindowSlotId = 63;
         public const int WindowSlotUv2Divisor = 256;
@@ -226,6 +231,37 @@ namespace BarPromenade
         public string SourceGeneratorVersion => sourceGeneratorVersion;
         public string DesignId => designId;
         public string BuildSignature => buildSignature;
+        public CityIndustrialPurpose IndustrialPurpose
+        {
+            get
+            {
+                if (district != CityDistrictKind.Industrial) return CityIndustrialPurpose.None;
+                for (int index = 0; index < CityBuildingAssetProvider.ExpectedPrototypeCount; index++)
+                    if (string.Equals(stableId, CityBuildingAssetProvider.GetExpectedStableId(index),
+                            StringComparison.Ordinal))
+                        return CityBuildingAssetProvider.GetExpectedIndustrialPurpose(
+                            CityBuildingAssetProvider.GetExpectedVariantIndex(index));
+                return CityIndustrialPurpose.None;
+            }
+        }
+
+        public static bool IsOptionalIndustrialRole(CityBuildingMeshRole role) =>
+            role == CityBuildingMeshRole.CargoTimber ||
+            role == CityBuildingMeshRole.EquipmentConcrete ||
+            role == CityBuildingMeshRole.EquipmentSteel ||
+            role == CityBuildingMeshRole.TaskLightLens;
+
+        public static float GetOptionalRoleMetersPerTile(CityBuildingMeshRole role)
+        {
+            switch (role)
+            {
+                case CityBuildingMeshRole.CargoTimber: return 1.6f;
+                case CityBuildingMeshRole.EquipmentConcrete: return 2f;
+                case CityBuildingMeshRole.EquipmentSteel: return 1.8f;
+                case CityBuildingMeshRole.TaskLightLens: return 1f;
+                default: throw new ArgumentOutOfRangeException(nameof(role));
+            }
+        }
 
         public static CityBuildingMeshRole GetExpectedRole(int index)
         {
@@ -386,11 +422,11 @@ namespace BarPromenade
 
         private void ValidateParts()
         {
-            if (parts == null || parts.Length != ExpectedRoleCount)
+            int maximum = district == CityDistrictKind.Industrial ? MaximumRoleCount : ExpectedRoleCount;
+            if (parts == null || parts.Length < ExpectedRoleCount || parts.Length > maximum)
             {
                 throw new InvalidOperationException(
-                    $"City building '{stableId}' needs seven semantic " +
-                    "surface meshes.");
+                    $"City building '{stableId}' has incomplete semantic surface meshes.");
             }
 
             var seenRoles = new HashSet<CityBuildingMeshRole>();
@@ -398,10 +434,11 @@ namespace BarPromenade
             for (int index = 0; index < parts.Length; index++)
             {
                 CityBuildingPartBinding binding = parts[index];
-                string expectedName = stableId + "__" +
-                    GetExpectedRole(index);
+                string expectedName = stableId + "__" + binding?.Role;
                 if (binding == null || binding.Renderer == null ||
-                    binding.Role != GetExpectedRole(index) ||
+                    (index < ExpectedRoleCount
+                        ? binding.Role != GetExpectedRole(index)
+                        : district != CityDistrictKind.Industrial || !IsOptionalIndustrialRole(binding.Role)) ||
                     !string.Equals(
                         binding.SourceName,
                         expectedName,
@@ -438,6 +475,10 @@ namespace BarPromenade
                 case CityBuildingMeshRole.Roof:
                 case CityBuildingMeshRole.Metal:
                 case CityBuildingMeshRole.WindowFrame:
+                case CityBuildingMeshRole.CargoTimber:
+                case CityBuildingMeshRole.EquipmentConcrete:
+                case CityBuildingMeshRole.EquipmentSteel:
+                case CityBuildingMeshRole.TaskLightLens:
                     return "world_metre_projected";
                 case CityBuildingMeshRole.WindowGlass:
                     return "per_window_face_projected_0_1";
@@ -452,6 +493,8 @@ namespace BarPromenade
         private static bool HasExpectedUvScale(
             CityBuildingPartBinding binding)
         {
+            if (IsOptionalIndustrialRole(binding.Role))
+                return Mathf.Abs(binding.MetersPerTile - GetOptionalRoleMetersPerTile(binding.Role)) < .0001f;
             bool metric = string.Equals(
                 binding.UvScheme,
                 "world_metre_projected",

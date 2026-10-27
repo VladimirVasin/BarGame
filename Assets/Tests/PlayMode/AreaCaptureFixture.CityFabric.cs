@@ -69,7 +69,7 @@ namespace BarPromenade.Tests.PlayMode
             CityLayout layout = city.Layout;
             layout.ValidateOrThrow();
             CityBuildingAssetProvider provider = CityBuildingAssetProvider.LoadOrThrow();
-            Assert.That(provider.Entries.Count, Is.EqualTo(20));
+            Assert.That(provider.Entries.Count, Is.EqualTo(CityBuildingAssetProvider.ExpectedPrototypeCount));
             Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
             Assert.That(layout.BuildingLots.Where(lot => lot.HasBuilding).Select(lot => lot.District).Distinct(),
                 Is.EquivalentTo(new[] { CityDistrictKind.Residential, CityDistrictKind.Industrial }));

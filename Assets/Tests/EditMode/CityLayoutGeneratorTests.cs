@@ -842,6 +842,16 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(layout.BuildingLots.Where(lot => lot.IsOrdinaryBuilding && lot.District == district)
                         .Select(lot => lot.BuildingVariant).Distinct(), Is.SupersetOf(new[] { 0, 1, 2 }),
                         district + " must retain the original three authored typologies alongside new variants");
+                BuildingLot[] industrial = layout.BuildingLots.Where(lot => lot.HasFunctionalIndustrialPurpose).ToArray();
+                Assert.That(industrial.Select(lot => lot.BuildingVariant).Distinct(),
+                    Is.EquivalentTo(Enumerable.Range(0, 8)), "The working bank must expose all eight industrial functions.");
+                foreach (BuildingLot lot in industrial)
+                {
+                    Assert.That(lot.IndustrialPurpose, Is.EqualTo((CityIndustrialPurpose)(lot.BuildingVariant + 1)));
+                    foreach (BuildingLot neighbour in industrial.Where(other => (other.Cell - lot.Cell).sqrMagnitude == 1))
+                        Assert.That(neighbour.IndustrialPurpose, Is.Not.EqualTo(lot.IndustrialPurpose),
+                            $"Adjacent working lots {lot.Cell}/{neighbour.Cell} must describe different processes.");
+                }
                 Assert.DoesNotThrow(layout.ValidateOrThrow);
             }
             finally
