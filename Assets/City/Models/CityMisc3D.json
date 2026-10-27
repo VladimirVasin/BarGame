@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.11.0",
-  "blender_version": "5.0.1",
+  "generator_version": "4.12.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Unoccupied Fringe Mason Cart",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -72,16 +72,17 @@
     }
   },
   "wave1_compatibility_signature": "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6",
-  "v2_compatibility_signature": "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c",
+  "v2_compatibility_signature": "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a",
+  "v2_unchanged_compatibility_signature": "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739",
   "colliders": false,
   "lights": false,
   "cameras": false,
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 263,
-  "assembly_count": 123,
-  "triangle_count": 48190,
+  "mesh_count": 275,
+  "assembly_count": 127,
+  "triangle_count": 50870,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -1613,7 +1614,16 @@
       "variant": 0,
       "scale_mode": "fixed_meters",
       "placement_contract": "ground_forward_frame",
-      "canonical_reference": {},
+      "canonical_reference": {
+        "deck_top_m": 0.54,
+        "deck_radius_tangent_m": 4.3,
+        "deck_radius_forward_m": 3.7,
+        "column_inset_m": 0.4,
+        "roof_underside_m": 4.0,
+        "step_rise_m": 0.18,
+        "entry_width_m": 2.4,
+        "entry_outer_forward_m": 4.9
+      },
       "scale_parameters": [],
       "unity_owned_parts": [
         "WindCloth",
@@ -1627,27 +1637,28 @@
         "GEO_CMM_ParkBandstand_Variant01_Masonry_Stone",
         "GEO_CMM_ParkBandstand_Variant01_Residential_Timber",
         "GEO_CMM_ParkBandstand_Variant01_Masonry_Timber",
-        "GEO_CMM_ParkBandstand_Variant01_Street_PaintedMetal"
+        "GEO_CMM_ParkBandstand_Variant01_Street_PaintedMetal",
+        "GEO_CMM_ParkBandstand_Variant01_RainShelter_Fixture"
       ],
       "bounds_min_source": [
-        -3.72,
-        -3.12,
+        -4.7,
+        -4.1,
         0.0
       ],
       "bounds_max_source": [
-        3.72,
-        3.12,
+        4.7,
+        4.9,
         5.6
       ],
       "bounds_min_unity": [
-        -3.72,
+        -4.7,
         0.0,
-        -3.12
+        -4.1
       ],
       "bounds_max_unity": [
-        3.72,
+        4.7,
         5.6,
-        3.12
+        4.9
       ]
     },
     {
@@ -5612,6 +5623,164 @@
         0.3,
         1.396148
       ]
+    },
+    {
+      "kind": "ParkBin",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "opening_diameter_m": 0.41
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "",
+      "coordinate_profile": "legacy_recipe_reflected_x",
+      "expected_source_min_z": null,
+      "part_meshes": [
+        "GEO_CMM_ParkBin_Variant01_Basket_Residential_PaintedMetal",
+        "GEO_CMM_ParkBin_Variant01_Cradle_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.39,
+        -0.267,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.39,
+        0.267,
+        0.9425
+      ],
+      "bounds_min_unity": [
+        -0.39,
+        0.0,
+        -0.267
+      ],
+      "bounds_max_unity": [
+        0.39,
+        0.9425,
+        0.267
+      ]
+    },
+    {
+      "kind": "ParkNoticeBoard",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "",
+      "coordinate_profile": "legacy_recipe_reflected_x",
+      "expected_source_min_z": null,
+      "part_meshes": [
+        "GEO_CMM_ParkNoticeBoard_Variant01_Frame_Residential_Timber",
+        "GEO_CMM_ParkNoticeBoard_Variant01_EmptyBacking_Street_Timber",
+        "GEO_CMM_ParkNoticeBoard_Variant01_HoodAndFixings_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.96,
+        -0.18,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.96,
+        0.18,
+        2.3325
+      ],
+      "bounds_min_unity": [
+        -0.96,
+        0.0,
+        -0.18
+      ],
+      "bounds_max_unity": [
+        0.96,
+        2.3325,
+        0.18
+      ]
+    },
+    {
+      "kind": "ParkBenchRepaired",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "seat_top_m": 0.71
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "",
+      "coordinate_profile": "legacy_recipe_reflected_x",
+      "expected_source_min_z": null,
+      "part_meshes": [
+        "GEO_CMM_ParkBenchRepaired_Variant01_Original_Timber",
+        "GEO_CMM_ParkBenchRepaired_Variant01_Replacement_Masonry_Timber",
+        "GEO_CMM_ParkBenchRepaired_Variant01_Repair_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.068,
+        -0.3625,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.068,
+        0.2875,
+        1.39
+      ],
+      "bounds_min_unity": [
+        -1.068,
+        0.0,
+        -0.3625
+      ],
+      "bounds_max_unity": [
+        1.068,
+        1.39,
+        0.2875
+      ]
+    },
+    {
+      "kind": "ParkChessLampPendant",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "shade_rim_diameter_m": 0.34,
+        "beam_contact_height_m": 0.7
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "BulbVisibility",
+        "Light",
+        "Halo"
+      ],
+      "root_derivation": "",
+      "coordinate_profile": "legacy_recipe_reflected_x",
+      "expected_source_min_z": null,
+      "part_meshes": [
+        "GEO_CMM_ParkChessLampPendant_Variant01_ShadeAndSocket_Street_PaintedMetal",
+        "GEO_CMM_ParkChessLampPendant_Variant01_Cable_Street",
+        "GEO_CMM_ParkChessLampPendant_Variant01_Bulb_Neon"
+      ],
+      "bounds_min_source": [
+        -0.17,
+        -0.17,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.17,
+        0.17,
+        0.7
+      ],
+      "bounds_min_unity": [
+        -0.17,
+        0.0,
+        -0.17
+      ],
+      "bounds_max_unity": [
+        0.17,
+        0.7,
+        0.17
+      ]
     }
   ],
   "parts": [
@@ -8864,27 +9033,27 @@
       "tint_role": "Street_Stone",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 92,
-      "triangles": 160,
+      "vertices": 284,
+      "triangles": 512,
       "bounds_min_source": [
-        -0.74129,
-        -0.265898,
-        1.744169
+        -0.542735,
+        -0.179937,
+        2.05
       ],
       "bounds_max_source": [
-        0.74129,
-        0.265898,
+        0.65,
+        0.245,
         4.13
       ],
       "bounds_min_unity": [
-        -0.74129,
-        1.744169,
-        -0.265898
+        -0.542735,
+        2.05,
+        -0.179937
       ],
       "bounds_max_unity": [
-        0.74129,
+        0.65,
         4.13,
-        0.265898
+        0.245
       ],
       "uv_min": [
         0.0,
@@ -8904,27 +9073,27 @@
       "tint_role": "Masonry_Stone",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 24,
-      "triangles": 44,
+      "vertices": 72,
+      "triangles": 128,
       "bounds_min_source": [
-        -3.72,
-        -3.12,
+        -4.5,
+        -3.9,
         0.0
       ],
       "bounds_max_source": [
-        3.72,
-        3.12,
-        0.36
+        4.5,
+        4.9,
+        0.54
       ],
       "bounds_min_unity": [
-        -3.72,
+        -4.5,
         0.0,
-        -3.12
+        -3.9
       ],
       "bounds_max_unity": [
-        3.72,
-        0.36,
-        3.12
+        4.5,
+        0.54,
+        4.9
       ],
       "uv_min": [
         0.0,
@@ -8944,27 +9113,27 @@
       "tint_role": "Residential_Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 48,
-      "triangles": 88,
+      "vertices": 64,
+      "triangles": 116,
       "bounds_min_source": [
-        -3.68,
-        -3.08,
+        -4.7,
+        -4.1,
         0.36
       ],
       "bounds_max_source": [
-        3.68,
-        3.08,
+        4.7,
+        4.1,
         4.3
       ],
       "bounds_min_unity": [
-        -3.68,
+        -4.7,
         0.36,
-        -3.08
+        -4.1
       ],
       "bounds_max_unity": [
-        3.68,
+        4.7,
         4.3,
-        3.08
+        4.1
       ],
       "uv_min": [
         0.0,
@@ -8984,27 +9153,27 @@
       "tint_role": "Masonry_Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 72,
-      "triangles": 128,
+      "vertices": 200,
+      "triangles": 352,
       "bounds_min_source": [
-        -2.10363,
-        -1.644765,
-        0.42
+        -2.937716,
+        -2.513452,
+        0.54
       ],
       "bounds_max_source": [
-        2.10363,
-        1.653209,
+        2.937716,
+        2.513452,
         4.08
       ],
       "bounds_min_unity": [
-        -2.10363,
-        0.42,
-        -1.644765
+        -2.937716,
+        0.54,
+        -2.513452
       ],
       "bounds_max_unity": [
-        2.10363,
+        2.937716,
         4.08,
-        1.653209
+        2.513452
       ],
       "uv_min": [
         0.0,
@@ -9024,27 +9193,67 @@
       "tint_role": "Street_PaintedMetal",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 142,
-      "triangles": 252,
+      "vertices": 206,
+      "triangles": 364,
       "bounds_min_source": [
-        -2.66,
-        -2.45,
-        0.46
+        -4.6,
+        -4.0,
+        0.54
       ],
       "bounds_max_source": [
-        2.66,
-        2.45,
+        4.6,
+        4.0,
         5.6
       ],
       "bounds_min_unity": [
-        -2.66,
-        0.46,
-        -2.45
+        -4.6,
+        0.54,
+        -4.0
       ],
       "bounds_max_unity": [
-        2.66,
+        4.6,
         5.6,
-        2.45
+        4.0
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBandstand_Variant01_RainShelter_Fixture",
+      "kind": "ParkBandstand",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 24,
+      "triangles": 44,
+      "bounds_min_source": [
+        -4.7,
+        -4.1,
+        3.98
+      ],
+      "bounds_max_source": [
+        4.7,
+        4.1,
+        4.3
+      ],
+      "bounds_min_unity": [
+        -4.7,
+        3.98,
+        -4.1
+      ],
+      "bounds_max_unity": [
+        4.7,
+        4.3,
+        4.1
       ],
       "uv_min": [
         0.0,
@@ -16134,7 +16343,447 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBin_Variant01_Basket_Residential_PaintedMetal",
+      "kind": "ParkBin",
+      "variant": 0,
+      "part_role": "Residential_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Residential_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 224,
+      "triangles": 444,
+      "bounds_min_source": [
+        -0.267,
+        -0.267,
+        0.28
+      ],
+      "bounds_max_source": [
+        0.267,
+        0.267,
+        0.9425
+      ],
+      "bounds_min_unity": [
+        -0.267,
+        0.28,
+        -0.267
+      ],
+      "bounds_max_unity": [
+        0.267,
+        0.9425,
+        0.267
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBin_Variant01_Cradle_Street_PaintedMetal",
+      "kind": "ParkBin",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -0.39,
+        -0.1,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.39,
+        0.1,
+        0.84
+      ],
+      "bounds_min_unity": [
+        -0.39,
+        0.0,
+        -0.1
+      ],
+      "bounds_max_unity": [
+        0.39,
+        0.84,
+        0.1
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkNoticeBoard_Variant01_Frame_Residential_Timber",
+      "kind": "ParkNoticeBoard",
+      "variant": 0,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -0.865,
+        -0.065,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.865,
+        0.095,
+        2.275
+      ],
+      "bounds_min_unity": [
+        -0.865,
+        0.0,
+        -0.065
+      ],
+      "bounds_max_unity": [
+        0.865,
+        2.275,
+        0.095
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkNoticeBoard_Variant01_EmptyBacking_Street_Timber",
+      "kind": "ParkNoticeBoard",
+      "variant": 0,
+      "part_role": "Street_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Street_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.76,
+        0.0075,
+        1.145
+      ],
+      "bounds_max_source": [
+        0.76,
+        0.0625,
+        2.175
+      ],
+      "bounds_min_unity": [
+        -0.76,
+        1.145,
+        0.0075
+      ],
+      "bounds_max_unity": [
+        0.76,
+        2.175,
+        0.0625
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkNoticeBoard_Variant01_HoodAndFixings_Street_PaintedMetal",
+      "kind": "ParkNoticeBoard",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 164,
+      "bounds_min_source": [
+        -0.96,
+        -0.18,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.96,
+        0.18,
+        2.3325
+      ],
+      "bounds_min_unity": [
+        -0.96,
+        0.0,
+        -0.18
+      ],
+      "bounds_max_unity": [
+        0.96,
+        2.3325,
+        0.18
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBenchRepaired_Variant01_Original_Timber",
+      "kind": "ParkBenchRepaired",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 236,
+      "triangles": 412,
+      "bounds_min_source": [
+        -1.068,
+        -0.3625,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.068,
+        0.2875,
+        1.39
+      ],
+      "bounds_min_unity": [
+        -1.068,
+        0.0,
+        -0.3625
+      ],
+      "bounds_max_unity": [
+        1.068,
+        1.39,
+        0.2875
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBenchRepaired_Variant01_Replacement_Masonry_Timber",
+      "kind": "ParkBenchRepaired",
+      "variant": 0,
+      "part_role": "Masonry_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Masonry_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -1.06,
+        -0.0525,
+        0.6
+      ],
+      "bounds_max_source": [
+        1.06,
+        0.0525,
+        0.71
+      ],
+      "bounds_min_unity": [
+        -1.06,
+        0.6,
+        -0.0525
+      ],
+      "bounds_max_unity": [
+        1.06,
+        0.71,
+        0.0525
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkBenchRepaired_Variant01_Repair_Street_PaintedMetal",
+      "kind": "ParkBenchRepaired",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 40,
+      "triangles": 68,
+      "bounds_min_source": [
+        0.53,
+        -0.2825,
+        0.71
+      ],
+      "bounds_max_source": [
+        0.85,
+        -0.2075,
+        0.738
+      ],
+      "bounds_min_unity": [
+        0.53,
+        0.71,
+        -0.2825
+      ],
+      "bounds_max_unity": [
+        0.85,
+        0.738,
+        -0.2075
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkChessLampPendant_Variant01_ShadeAndSocket_Street_PaintedMetal",
+      "kind": "ParkChessLampPendant",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 132,
+      "triangles": 256,
+      "bounds_min_source": [
+        -0.17,
+        -0.17,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.17,
+        0.17,
+        0.22
+      ],
+      "bounds_min_unity": [
+        -0.17,
+        0.0,
+        -0.17
+      ],
+      "bounds_max_unity": [
+        0.17,
+        0.22,
+        0.17
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkChessLampPendant_Variant01_Cable_Street",
+      "kind": "ParkChessLampPendant",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 14,
+      "triangles": 24,
+      "bounds_min_source": [
+        -0.010724,
+        -0.009911,
+        0.22
+      ],
+      "bounds_max_source": [
+        0.010724,
+        0.011,
+        0.7
+      ],
+      "bounds_min_unity": [
+        -0.010724,
+        0.22,
+        -0.009911
+      ],
+      "bounds_max_unity": [
+        0.010724,
+        0.7,
+        0.011
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ParkChessLampPendant_Variant01_Bulb_Neon",
+      "kind": "ParkChessLampPendant",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min_source": [
+        -0.025,
+        -0.023776,
+        0.03
+      ],
+      "bounds_max_source": [
+        0.025,
+        0.023776,
+        0.08
+      ],
+      "bounds_min_unity": [
+        -0.025,
+        0.03,
+        -0.023776
+      ],
+      "bounds_max_unity": [
+        0.025,
+        0.08,
+        0.023776
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "a36f9621349e1914516efbb3e6a1897fed824b274a01d71b66a438be72dfee7a"
+  "build_signature": "f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86"
 }

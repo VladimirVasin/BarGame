@@ -29,11 +29,12 @@ namespace BarPromenade.Editor
         private const float ContractTolerance = 0.0001f;
         private const string Wave1CompatibilitySignature =
             "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6";
-        // Moved once, on 2026-09-08, with the generator's own pin, to accept
-        // the park bandstand repair: its columns and balustrade had stood
-        // beside the deck since the platform became elliptical.
+        // The accepted 2026-10-27 gazebo/statue remodel deliberately advances
+        // this pin. The generator separately protects every unaffected v2 part.
         private const string V2CompatibilitySignature =
-            "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c";
+            "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a";
+        private const string V2UnchangedCompatibilitySignature =
+            "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739";
 
         private static readonly ExpectedPart[] ExpectedParts =
             CreateExpectedParts();
@@ -368,7 +369,9 @@ namespace BarPromenade.Editor
                 !string.Equals(manifest.wave1_compatibility_signature,
                     Wave1CompatibilitySignature, StringComparison.Ordinal) ||
                 !string.Equals(manifest.v2_compatibility_signature,
-                    V2CompatibilitySignature, StringComparison.Ordinal))
+                    V2CompatibilitySignature, StringComparison.Ordinal) ||
+                !string.Equals(manifest.v2_unchanged_compatibility_signature,
+                    V2UnchangedCompatibilitySignature, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "City misc generator metadata or build signature is " +
@@ -602,7 +605,11 @@ namespace BarPromenade.Editor
 
                 bool legacyRecipe =
                     (int)parsedKind <=
-                    (int)CityMiscKind.ParkPlayground;
+                    (int)CityMiscKind.ParkPlayground ||
+                    parsedKind == CityMiscKind.ParkBin ||
+                    parsedKind == CityMiscKind.ParkNoticeBoard ||
+                    parsedKind == CityMiscKind.ParkBenchRepaired ||
+                    parsedKind == CityMiscKind.ParkChessLampPendant;
                 string expectedPlacement =
                     parsedKind == CityMiscKind.YardSpotlightWallMount ||
                     parsedKind == CityMiscKind.YardSpotlightHeadShell
@@ -1497,6 +1504,7 @@ namespace BarPromenade.Editor
             public int triangle_count;
             public string wave1_compatibility_signature;
             public string v2_compatibility_signature;
+            public string v2_unchanged_compatibility_signature;
             public MiscManifestAssembly[] assemblies;
             public MiscManifestPart[] parts;
             public string build_signature;

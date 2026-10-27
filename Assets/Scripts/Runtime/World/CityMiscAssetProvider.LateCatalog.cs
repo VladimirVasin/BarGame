@@ -7,6 +7,41 @@ namespace BarPromenade
     /// </summary>
     public sealed partial class CityMiscAssetProvider
     {
+        private static readonly ExpectedPartSpec[] ParkBinParts =
+        {
+            P("Basket_Residential_PaintedMetal", CityMiscMeshRole.Residential,
+                CityMiscSurfaceKind.PaintedMetal),
+            P("Cradle_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] ParkNoticeBoardParts =
+        {
+            P("Frame_Residential_Timber", CityMiscMeshRole.Residential,
+                CityMiscSurfaceKind.Timber),
+            P("EmptyBacking_Street_Timber", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.Timber),
+            P("HoodAndFixings_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] ParkBenchRepairedParts =
+        {
+            P("Original_Timber", CityMiscMeshRole.Timber),
+            P("Replacement_Masonry_Timber", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Timber),
+            P("Repair_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] ParkChessLampPendantParts =
+        {
+            P("ShadeAndSocket_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal),
+            P("Cable_Street", CityMiscMeshRole.Street),
+            P("Bulb_Neon", CityMiscMeshRole.Neon)
+        };
+
         private static readonly ExpectedPartSpec[]
             NightlifeArchBridgeShellParts =
         {

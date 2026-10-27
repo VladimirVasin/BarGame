@@ -48,20 +48,21 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.11.0"
+GENERATOR_VERSION = "4.12.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
-    "Residential Courtyard Life + Unoccupied Fringe Mason Cart"
+    "Residential Courtyard Life + Park Gazebo and Furniture"
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
-# Moved once, on 2026-09-08, to accept the park bandstand repair: its four
-# columns and its balustrade were standing beside the deck in mid air because
-# the 2026-08-26 migration made the platform elliptical and left them at the
-# old rectangle's corners. Geometry inside this slice is otherwise pinned.
+# Deliberately advances for the accepted 2026-10-27 park remodel. The separate
+# unaffected-v2 pin proves that only the gazebo and fountain statue changed.
 V2_COMPATIBILITY_SIGNATURE = (
-    "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c"
+    "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a"
+)
+V2_UNCHANGED_COMPATIBILITY_SIGNATURE = (
+    "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739"
 )
 WAVE1_COMPATIBILITY_SIGNATURE = (
     "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6"
@@ -1252,16 +1253,18 @@ def build_park_tree(variant: int) -> AssemblySpec:
     ))
 
 
-def build_park_bench(variant: int) -> AssemblySpec:
-    kind = "ParkBench"
+def build_park_bench(variant: int, repaired: bool = False) -> AssemblySpec:
+    kind = "ParkBenchRepaired" if repaired else "ParkBench"
     timber: list[Geometry] = []
+    replacement: list[Geometry] = []
     seat_width = 2.20
     seat_top = 0.71
     slat_depth = 0.105
     for slat in range(5):
         y = -0.235 + slat * 0.1175
         skew = (slat - 2) * (0.004 if variant == 0 else -0.006)
-        timber.append(source_box(
+        target = replacement if repaired and slat == 2 else timber
+        target.append(source_box(
             (skew, y, seat_top - 0.055),
             (seat_width - 0.08, slat_depth, 0.11),
             0.018,
@@ -1293,6 +1296,21 @@ def build_park_bench(variant: int) -> AssemblySpec:
         source_box((0.0, -0.29, 1.31 + variant * 0.035),
                    (2.12, 0.12, 0.12), 0.018),
     ))
+    if repaired:
+        hardware: list[Geometry] = [source_box(
+            (0.69, -0.245, 0.718), (0.32, 0.075, 0.016), 0.004)]
+        for x in (0.58, 0.80):
+            hardware.append(tube_between(
+                (x, -0.245, 0.722), (x, -0.245, 0.738),
+                0.013, 0.013, 6))
+        return AssemblySpec(kind, variant, (
+            make_named_part(kind, variant, "Original_Timber", "Timber",
+                            *timber),
+            make_named_part(kind, variant, "Replacement_Masonry_Timber",
+                            "Masonry_Timber", *replacement),
+            make_named_part(kind, variant, "Repair_Street_PaintedMetal",
+                            "Street_PaintedMetal", *hardware),
+        ), canonical_reference=(("seat_top_m", seat_top),))
     return AssemblySpec(kind, variant, (
         make_part(kind, variant, "Timber", *timber),
     ))
@@ -2214,20 +2232,40 @@ def build_park_fountain_and_statue() -> AssemblySpec:
         ring_solid_z(((1.44, 0.0, 0.0, 0.39, 0.39, 0.0),
                       (2.05, 0.0, 0.0, 0.31, 0.31, 0.08)), 10),
     ]
+    # Anonymous civic figure: distinct feet, draped legs, shoulder line, neck
+    # and an angular human head. No insignia, inscription or narrative prop.
     statue: list[Geometry] = [
-        tube_between((0.0, 0.0, 2.02), (0.0, 0.0, 3.55),
-                     0.25, 0.18, 9),
-        ring_solid_z(((3.53, 0.0, 0.0, 0.30, 0.27, 0.0),
-                      (4.13, 0.0, 0.0, 0.24, 0.22, 0.08)), 9),
-        tube_between((-0.05, 0.0, 3.08), (-0.72, 0.0, 3.30),
-                     0.11, 0.07, 7),
-        tube_between((0.05, 0.0, 3.08), (0.72, 0.0, 3.30),
-                     0.11, 0.07, 7),
-        tube_between((-0.11, 0.0, 2.16), (-0.28, 0.0, 1.78),
-                     0.13, 0.09, 7),
-        tube_between((0.11, 0.0, 2.16), (0.28, 0.0, 1.78),
-                     0.13, 0.09, 7),
+        source_box((-0.13, 0.065, 2.095), (0.20, 0.36, 0.09), 0.025),
+        source_box((0.13, 0.025, 2.095), (0.20, 0.34, 0.09), 0.025),
+        ring_solid_z(((2.13, -0.12, 0.0, 0.115, 0.13, 0.0),
+                      (2.54, -0.13, 0.0, 0.13, 0.14, 0.03),
+                      (2.98, -0.11, 0.0, 0.15, 0.15, 0.0)), 8),
+        ring_solid_z(((2.13, 0.12, -0.03, 0.11, 0.13, 0.0),
+                      (2.57, 0.14, -0.04, 0.13, 0.14, 0.03),
+                      (2.98, 0.11, 0.0, 0.15, 0.15, 0.0)), 8),
+        ring_solid_z(((2.89, 0.0, 0.0, 0.29, 0.18, 0.0),
+                      (3.22, 0.0, 0.0, 0.25, 0.16, 0.0),
+                      (3.52, 0.0, 0.0, 0.33, 0.17, 0.0),
+                      (3.60, 0.0, 0.0, 0.19, 0.13, 0.0)), 10),
+        tube_between((0.0, 0.0, 3.55), (0.0, 0.0, 3.82),
+                     0.09, 0.085, 8),
+        ring_solid_z(((3.76, 0.0, 0.0, 0.10, 0.11, 0.0),
+                      (3.88, 0.0, 0.012, 0.145, 0.135, 0.0),
+                      (4.04, 0.0, 0.0, 0.14, 0.13, 0.0),
+                      (4.13, 0.0, -0.01, 0.075, 0.075, 0.0)), 9),
+        source_box((0.0, 0.141, 3.93), (0.055, 0.075, 0.075), 0.016),
     ]
+    for shoulder, elbow, wrist in (
+        ((-0.29, 0.0, 3.48), (-0.48, 0.0, 3.19),
+         (-0.38, 0.10, 3.08)),
+        ((0.29, 0.0, 3.48), (0.49, 0.0, 3.22),
+         (0.59, 0.07, 3.43)),
+    ):
+        statue.extend((
+            tube_between(shoulder, elbow, 0.10, 0.075, 8),
+            tube_between(elbow, wrist, 0.075, 0.055, 8),
+            source_box(wrist, (0.12, 0.11, 0.15), 0.025),
+        ))
     return AssemblySpec(
         kind, variant,
         (
@@ -2240,86 +2278,185 @@ def build_park_fountain_and_statue() -> AssemblySpec:
 
 
 def build_park_bandstand() -> AssemblySpec:
-    """A twelve-sided bandstand whose columns and balustrade stand on it.
+    """Accessible twelve-sided gazebo, with the same runtime semantic parts.
 
-    Every ring here is an ellipse, so nothing may be placed from the plan's
-    bounding box: an inscribed ellipse cuts off exactly the corners a
-    rectangle has. The 2026-08-26 Blender migration converted the old
-    rectangular platform into these rings but left the four columns and the
-    three rails at the rectangle's corner coordinates, which put them beside
-    the deck with nothing underneath - the shape the park has been wearing
-    since. Positions are taken from the deck plan itself through
-    ``on_deck``, and the piece count is the one the migration shipped.
+    Deck and base have zero-phase facets. Front steps overlap the deck at
+    +Forward, and every column has a foot on its .54 m timber floor.
     """
-
     kind = "ParkBandstand"
     variant = 0
     sides = 12
-    deck_rx, deck_ry = 3.18, 2.54
-    # The columns carry the eave, so the balustrade is hung from the same
-    # ring and meets them instead of running past the deck edge.
+    deck_rx, deck_ry = 4.30, 3.70
     stand_inset = 0.40
     column_degrees = (45.0, 135.0, 225.0, 315.0)
-    # The assembly's own forward faces the middle of the park, which is the
-    # side people walk up from, so the balustrade closes the quarter behind
-    # the bandstand and the whole park-facing half stays open.
     balustrade_degrees = (225.0, 240.0, 270.0, 300.0, 315.0)
 
     def on_deck(degrees: float, inset: float) -> tuple[float, float]:
-        """A point on the deck plan, on an ellipse `inset` smaller than it.
-
-        Not `inset` from the edge: the deck's boundary is the twelve-gon
-        inscribed in that ellipse, so the true clearance runs 0.29 to 0.39 m
-        at `inset` 0.40 and is smallest on the facet midpoints. Say what the
-        number does, because a helper whose contract did not match the shape
-        is how the columns came to stand beside the deck in the first place.
-        """
         angle = math.radians(degrees)
         return ((deck_rx - inset) * math.cos(angle),
                 (deck_ry - inset) * math.sin(angle))
 
-    stone = [
-        ring_solid_z(((0.0, 0.0, 0.0, 3.72, 3.12, 0.0),
-                      (0.36, 0.0, 0.0, 3.55, 2.95, 0.08)), sides),
-    ]
+    stone = [ring_solid_z((
+        (0.0, 0.0, 0.0, 4.50, 3.90, 0.0),
+        (0.36, 0.0, 0.0, 4.40, 3.80, 0.0)), sides)]
+    # Three .18 m risers, positive forward. A wide top landing intersects
+    # the deck polygon, avoiding a seam or a final hidden vertical lip.
+    for forward0, forward1, top in (
+        (4.35, 4.90, 0.18), (3.80, 4.35, 0.36),
+        (2.90, 3.80, 0.54),
+    ):
+        stone.append(recipe_box(
+            0.0, top * 0.5, (forward0 + forward1) * 0.5,
+            2.40, top, forward1 - forward0, chamfer=0.006))
     residential_timber = [
-        ring_solid_z(((0.36, 0.0, 0.0, 3.22, 2.58, 0.0),
-                      (0.54, 0.0, 0.0, 3.18, 2.54, 0.04)), sides),
-        ring_solid_z(((4.00, 0.0, 0.0, 3.68, 3.08, 0.0),
-                      (4.30, 0.0, 0.0, 3.50, 2.88, 0.05)), sides),
+        ring_solid_z(((0.36, 0.0, 0.0, deck_rx, deck_ry, 0.0),
+                      (0.54, 0.0, 0.0, deck_rx, deck_ry, 0.0)), sides),
+        ring_solid_z(((4.00, 0.0, 0.0, 4.70, 4.10, 0.0),
+                      (4.30, 0.0, 0.0, 4.55, 3.95, 0.0)), sides),
+        # Pendant wire terminals meet a real beam underside at y4.00.
+        recipe_box(0.0, 4.08, 0.0, 8.20, 0.16, 0.20, chamfer=0.018),
     ]
     masonry_timber: list[Geometry] = []
     for degrees in column_degrees:
         x, forward = on_deck(degrees, stand_inset)
-        masonry_timber.append(recipe_tube(
-            (-x, 0.42, forward), (-x, 4.08, forward),
-            0.14, sides=9, end_radius=0.11))
-    painted: list[Geometry] = [
-        ring_solid_z(((4.28, 0.0, 0.0, 2.66, 2.45, 0.0),
-                      (4.82, 0.0, 0.0, 2.22, 2.00, 0.06),
-                      (5.60, 0.0, 0.0, 0.16, 0.14, 0.0)), sides),
-    ]
+        masonry_timber.extend((
+            recipe_tube((-x, 0.54, forward), (-x, 4.08, forward),
+                        0.14, sides=9, end_radius=0.11),
+            recipe_box(-x, 0.60, forward, 0.35, 0.12, 0.35,
+                       chamfer=0.015),
+            recipe_box(-x, 3.94, forward, 0.36, 0.12, 0.36,
+                       chamfer=0.015),
+        ))
+    painted: list[Geometry] = [ring_solid_z((
+        (4.28, 0.0, 0.0, 4.60, 4.00, 0.0),
+        (4.82, 0.0, 0.0, 3.40, 2.96, 0.0),
+        (5.60, 0.0, 0.0, 0.16, 0.14, 0.0)), sides)]
     balustrade = [on_deck(degrees, stand_inset)
                   for degrees in balustrade_degrees]
     for (x0, forward0), (x1, forward1) in zip(balustrade, balustrade[1:]):
-        painted.append(recipe_tube(
-            (-x0, 1.14, forward0), (-x1, 1.14, forward1), 0.06, sides=8))
-    # Thicker than the 0.06 rail it carries, so the outside of every bend
-    # is closed: a thinner upright leaves an open notch at eye height.
+        for height in (0.86, 1.36):
+            painted.append(recipe_tube(
+                (-x0, height, forward0), (-x1, height, forward1),
+                0.045, sides=8))
     for x, forward in balustrade[1:-1]:
         painted.append(recipe_tube(
-            (-x, 0.46, forward), (-x, 1.20, forward), 0.07, sides=7))
-    return AssemblySpec(
-        kind, variant,
-        (
-            make_part(kind, variant, "Masonry_Stone", *stone),
-            make_part(kind, variant, "Residential_Timber",
-                      *residential_timber),
-            make_part(kind, variant, "Masonry_Timber", *masonry_timber),
-            make_part(kind, variant, "Street_PaintedMetal", *painted),
-        ),
-        unity_owned_parts=("WindCloth", "WindRopes", "WindAnchors"),
-    )
+            (-x, 0.54, forward), (-x, 1.41, forward), 0.065, sides=7))
+    return AssemblySpec(kind, variant, (
+        make_part(kind, variant, "Masonry_Stone", *stone),
+        make_part(kind, variant, "Residential_Timber", *residential_timber),
+        make_part(kind, variant, "Masonry_Timber", *masonry_timber),
+        make_part(kind, variant, "Street_PaintedMetal", *painted),
+        # Passive convex trigger hull, deliberately excluded from rendering
+        # by the park builder. Rain tests the roof instead of its rear rails.
+        make_named_part(kind, variant, "RainShelter_Fixture", "Fixture",
+                        ring_solid_z((
+                            (3.98, 0.0, 0.0, 4.70, 4.10, 0.0),
+                            (4.30, 0.0, 0.0, 4.70, 4.10, 0.0)), sides)),
+    ), canonical_reference=(
+        ("deck_top_m", 0.54), ("deck_radius_tangent_m", deck_rx),
+        ("deck_radius_forward_m", deck_ry), ("column_inset_m", stand_inset),
+        ("roof_underside_m", 4.00), ("step_rise_m", 0.18),
+        ("entry_width_m", 2.40), ("entry_outer_forward_m", 4.90),
+    ), unity_owned_parts=("WindCloth", "WindRopes", "WindAnchors"))
+
+
+def build_park_bin() -> AssemblySpec:
+    kind = "ParkBin"
+    # Open mouth, dark interior and a separate iron cradle distinguish a bin
+    # from a solid barrel. The bottom is visible through its .40 m opening.
+    shell = [outward_annulus_z((0.0, 0.0, 0.60), 0.245, 0.218, 0.64, 16),
+             ring_solid_z(((0.28, 0.0, 0.0, 0.218, 0.218, 0.0),
+                           (0.31, 0.0, 0.0, 0.218, 0.218, 0.0)), 16),
+             outward_annulus_z((0.0, 0.0, 0.92), 0.267, 0.205, 0.045, 16)]
+    cradle: list[Geometry] = []
+    for side in (-1, 1):
+        x = side * 0.30
+        cradle.extend((
+            source_box((x, 0.0, 0.42), (0.055, 0.055, 0.84), 0.006),
+            source_box((x, 0.0, 0.025), (0.18, 0.20, 0.05), 0.006),
+            tube_between((x, 0.0, 0.72), (side * 0.23, 0.0, 0.72),
+                         0.034, 0.034, 8),
+        ))
+    # Rolled lower strengthening ring and two visible weathered straps.
+    shell.append(outward_annulus_z(
+        (0.0, 0.0, 0.32), 0.253, 0.216, 0.055, 16))
+    return AssemblySpec(kind, 0, (
+        make_named_part(kind, 0, "Basket_Residential_PaintedMetal",
+                        "Residential_PaintedMetal", *shell),
+        make_named_part(kind, 0, "Cradle_Street_PaintedMetal",
+                        "Street_PaintedMetal", *cradle),
+    ), canonical_reference=(("opening_diameter_m", 0.410),))
+
+
+def build_park_notice_board() -> AssemblySpec:
+    kind = "ParkNoticeBoard"
+    frame: list[Geometry] = []
+    for x in (-0.81, 0.81):
+        frame.extend((
+            source_box((x, 0.0, 1.66), (0.11, 0.13, 1.22), 0.014),
+            source_box((x, 0.04, 0.60), (0.095, 0.11, 1.20), 0.012),
+        ))
+    for z in (1.10, 2.22):
+        frame.append(source_box((0.0, 0.0, z), (1.72, 0.13, 0.11), 0.014))
+    backing = [source_box((0.0, 0.035, 1.66), (1.52, 0.055, 1.03), 0.008)]
+    metal = [source_box((0.0, 0.0, 2.31), (1.92, 0.36, 0.045), 0.010)]
+    for x in (-0.81, 0.81):
+        metal.append(source_box((x, 0.04, 0.035), (0.21, 0.24, 0.07), 0.006))
+    # Empty fasteners read as a used notice frame without introducing writing,
+    # a lost-person clue or fresh damage.
+    for x in (-0.64, 0.64):
+        for z in (1.23, 2.08):
+            metal.append(tube_between(
+                (x, 0.069, z), (x, 0.085, z), 0.013, 0.013, 6))
+    return AssemblySpec(kind, 0, (
+        make_named_part(kind, 0, "Frame_Residential_Timber",
+                        "Residential_Timber", *frame),
+        make_named_part(kind, 0, "EmptyBacking_Street_Timber",
+                        "Street_Timber", *backing),
+        make_named_part(kind, 0, "HoodAndFixings_Street_PaintedMetal",
+                        "Street_PaintedMetal", *metal),
+    ))
+
+
+def build_park_chess_lamp_pendant() -> AssemblySpec:
+    kind = "ParkChessLampPendant"
+    # A closed thin shell swept around the full rim, open below the socket.
+    # Profile goes up the outside and back down the inside, so there is no
+    # filled cap occluding the bulb or the underside of the enamel cone.
+    profile = ((0.0, 0.170), (0.014, 0.170), (0.130, 0.045),
+               (0.130, 0.033), (0.014, 0.154), (0.0, 0.154))
+    sides = 16
+    vertices = [(math.cos(i / sides * math.tau) * radius,
+                 math.sin(i / sides * math.tau) * radius, height)
+                for height, radius in profile for i in range(sides)]
+    faces: list[Face] = []
+    for ring in range(len(profile)):
+        following_ring = (ring + 1) % len(profile)
+        for side in range(sides):
+            following = (side + 1) % sides
+            faces.append((ring * sides + side, ring * sides + following,
+                          following_ring * sides + following,
+                          following_ring * sides + side))
+    shade: list[Geometry] = [(vertices, faces),
+        tube_between((0.0, 0.0, 0.082), (0.0, 0.0, 0.185),
+                     0.032, 0.029, 10),
+        tube_between((0.0, 0.0, 0.18), (0.0, 0.0, 0.22),
+                     0.020, 0.015, 8)]
+    cable = tube_between((0.0, 0.0, 0.22), (0.0, 0.0, 0.70),
+                         0.011, 0.011, 7)
+    bulb = ring_solid_z((
+        (0.030, 0.0, 0.0, 0.004, 0.004, 0.0),
+        (0.043, 0.0, 0.0, 0.024, 0.024, 0.0),
+        (0.061, 0.0, 0.0, 0.025, 0.025, 0.0),
+        (0.080, 0.0, 0.0, 0.014, 0.014, 0.0)), 10)
+    return AssemblySpec(kind, 0, (
+        make_named_part(kind, 0, "ShadeAndSocket_Street_PaintedMetal",
+                        "Street_PaintedMetal", *shade),
+        make_named_part(kind, 0, "Cable_Street", "Street", cable),
+        make_named_part(kind, 0, "Bulb_Neon", "Neon", bulb),
+    ), canonical_reference=(("shade_rim_diameter_m", 0.34),
+                            ("beam_contact_height_m", 0.70)),
+       unity_owned_parts=("BulbVisibility", "Light", "Halo"))
 
 
 def build_park_chess_tables() -> AssemblySpec:
@@ -5582,6 +5719,11 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         # Citywide v4.11: empties on the shelter terrace (2026-09-16),
         # appended after the mason cart for the same reason.
         build_nightlife_shelter_platform_litter(),
+        # Citywide v4.12: park-only additions keep shared benches unchanged.
+        build_park_bin(),
+        build_park_notice_board(),
+        build_park_bench(0, repaired=True),
+        build_park_chess_lamp_pendant(),
     )
 
 
@@ -5752,9 +5894,19 @@ EXPECTED_VARIANTS = {
     "ResidentialCourtyardPocket": 6,
     "FringeMasonCart": 1,
     "NightlifeShelterPlatformLitter": 1,
+    "ParkBin": 1,
+    "ParkNoticeBoard": 1,
+    "ParkBenchRepaired": 1,
+    "ParkChessLampPendant": 1,
 }
 
 EXPECTED_ROLES = {
+    ("ParkBin", 0): ("Residential_PaintedMetal", "Street_PaintedMetal"),
+    ("ParkNoticeBoard", 0): (
+        "Residential_Timber", "Street_Timber", "Street_PaintedMetal"),
+    ("ParkBenchRepaired", 0): (
+        "Timber", "Masonry_Timber", "Street_PaintedMetal"),
+    ("ParkChessLampPendant", 0): ("Street_PaintedMetal", "Street", "Neon"),
     ("IndustrialStacksAndTanks", 0): ("Industrial", "Street"),
     **{("IndustrialCargo", index):
        ("Industrial", "Street", "Masonry") for index in range(2)},
@@ -5795,7 +5947,7 @@ EXPECTED_ROLES = {
         ("Masonry_Stone", "Street_Stone"),
     ("ParkBandstand", 0): (
         "Masonry_Stone", "Residential_Timber",
-        "Masonry_Timber", "Street_PaintedMetal"),
+        "Masonry_Timber", "Street_PaintedMetal", "Fixture"),
     ("ParkChessTables", 0): (
         "Masonry_Stone", "Masonry_Timber", "Street_Timber",
         "Masonry_Stone", "Masonry_Stone", "Street_Timber",
@@ -5911,6 +6063,19 @@ EXPECTED_MESH_SUFFIXES = {
         for variant in range(count)
         if (roles := EXPECTED_ROLES.get((kind, variant))) is not None
     },
+    ("ParkBin", 0): (
+        "Basket_Residential_PaintedMetal", "Cradle_Street_PaintedMetal"),
+    ("ParkNoticeBoard", 0): (
+        "Frame_Residential_Timber", "EmptyBacking_Street_Timber",
+        "HoodAndFixings_Street_PaintedMetal"),
+    ("ParkBenchRepaired", 0): (
+        "Original_Timber", "Replacement_Masonry_Timber",
+        "Repair_Street_PaintedMetal"),
+    ("ParkChessLampPendant", 0): (
+        "ShadeAndSocket_Street_PaintedMetal", "Cable_Street", "Bulb_Neon"),
+    ("ParkBandstand", 0): (
+        "Masonry_Stone", "Residential_Timber", "Masonry_Timber",
+        "Street_PaintedMetal", "RainShelter_Fixture"),
     **{("OldTownChimneysAndDormers", index): (
         "Chimneys_Masonry", "Dormer_Masonry", "Window_Street")
        for index in range(2)},
@@ -6048,6 +6213,60 @@ def validate_handedness(problems: list[str]) -> None:
     if unity != expected:
         problems.append(
             f"legacy recipe basis maps to {unity}, expected {expected}")
+
+
+def validate_park_access(assemblies: Sequence[AssemblySpec],
+                         problems: list[str]) -> None:
+    """Measure the entry/furniture support from faces, not manifest numbers."""
+    gazebo = next(a for a in assemblies if a.kind == "ParkBandstand")
+    rain_hull = gazebo.parts[-1]
+    low, high = geometry_bounds(rain_hull.geometry)
+    if rain_hull.mesh != mesh_id("ParkBandstand", 0, "RainShelter_Fixture") or \
+            len(rain_hull.geometry[0]) != 24 or \
+            triangle_count(rain_hull.geometry) != 44 or \
+            any(abs(a - b) > BOUNDS_EPSILON
+                for a, b in zip((*low, *high),
+                                (-4.70, -4.10, 3.98, 4.70, 4.10, 4.30))):
+        problems.append("Gazebo rain hull lost its exact convex eave prism")
+
+    def horizontal_height(x: float, forward: float,
+                          maximum: float) -> float | None:
+        hits: list[float] = []
+        for part in gazebo.parts:
+            vertices, faces = part.geometry
+            for face in faces:
+                height = vertices[face[0]][2]
+                if height > maximum or face_normal(vertices, face)[2] < 0.99:
+                    continue
+                if any(abs(vertices[i][2] - height) > BOUNDS_EPSILON
+                       for i in face):
+                    continue
+                cross_values = []
+                for i, j in zip(face, (*face[1:], face[0])):
+                    a, b = vertices[i], vertices[j]
+                    cross_values.append((b[0] - a[0]) * (forward - a[1]) -
+                                        (b[1] - a[1]) * (x - a[0]))
+                if all(c >= -BOUNDS_EPSILON for c in cross_values) or \
+                        all(c <= BOUNDS_EPSILON for c in cross_values):
+                    hits.append(height)
+        return max(hits) if hits else None
+
+    for x in (-0.80, 0.0, 0.80):
+        for forward, expected in ((4.65, 0.18), (4.10, 0.36),
+                                  (3.65, 0.54), (3.10, 0.54)):
+            actual = horizontal_height(x, forward, 1.0)
+            if actual is None or abs(actual - expected) > BOUNDS_EPSILON:
+                problems.append(
+                    f"Gazebo entry at {x}/{forward} has height {actual}, "
+                    f"expected {expected}")
+    for x in (-1.85, 1.85):
+        for forward in (-1.10, 0.0, 1.10):
+            actual = horizontal_height(x, forward, 1.0)
+            if actual is None or abs(actual - 0.54) > BOUNDS_EPSILON:
+                problems.append("Gazebo furniture has no continuous .54m floor")
+        actual = horizontal_height(x, 0.0, 4.16)
+        if actual is None or abs(actual - 4.16) > BOUNDS_EPSILON:
+            problems.append("Gazebo pendants have no central support beam")
 
 
 def validate_mirror_bounds(
@@ -6462,6 +6681,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     names: set[str] = set()
     keys: set[tuple[str, int]] = set()
     validate_handedness(problems)
+    validate_park_access(assemblies, problems)
     for assembly in assemblies:
         key = assembly.kind, assembly.variant
         if key in keys:
@@ -6608,11 +6828,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 123:
+    if len(assemblies) != 127:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 123")
-    if len(names) != 263:
-        problems.append(f"mesh count is {len(names)}, expected 263")
+            f"assembly count is {len(assemblies)}, expected 127")
+    if len(names) != 275:
+        problems.append(f"mesh count is {len(names)}, expected 275")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)
@@ -6636,6 +6856,9 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         problems.append(
             "v2 catalog compatibility changed: "
             f"{v2_signature} != {V2_COMPATIBILITY_SIGNATURE}")
+    if v2_unchanged_compatibility_signature(assemblies) != \
+            V2_UNCHANGED_COMPATIBILITY_SIGNATURE:
+        problems.append("v2 catalog changed outside the approved park remodel")
     total_triangles = sum(
         triangle_count(part.geometry)
         for assembly in assemblies for part in assembly.parts)
@@ -6757,6 +6980,19 @@ def v2_compatibility_signature(
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def v2_unchanged_compatibility_signature(
+    assemblies: Sequence[AssemblySpec],
+) -> str:
+    unchanged = tuple(assembly for assembly in assemblies[:37]
+                      if assembly.kind not in {
+                          "ParkBandstand", "ParkFountainAndStatue"})
+    encoded = json.dumps(signature_payload(
+        unchanged, generator_version=V2_GENERATOR_VERSION,
+        design_id=V2_DESIGN_ID), sort_keys=True,
+        separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 
@@ -7006,6 +7242,8 @@ def manifest_for(
         },
         "wave1_compatibility_signature": WAVE1_COMPATIBILITY_SIGNATURE,
         "v2_compatibility_signature": V2_COMPATIBILITY_SIGNATURE,
+        "v2_unchanged_compatibility_signature":
+            V2_UNCHANGED_COMPATIBILITY_SIGNATURE,
         "colliders": False,
         "lights": False,
         "cameras": False,

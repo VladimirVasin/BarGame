@@ -117,7 +117,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
 | Seacoast fisherman | Close two-hand grip, raised PNG face/beard volume; clip-driven ember/shared exhale. | `SeacoastFisherman*`, `HomeBalconySmokingExhaleEffect` | Current |
-| Park chess set inhabitants and wire lamp | The Central Park chess set gets its two permanent inhabitants and its one light. | `ParkChessPlayer{Provider,Plan,Presentation,Factory}` | Current |
+| Park chess gazebo | Shared deck, entrance, two seated men, both hero docks, beam pendants and roof rain shelter. | `CityParkGazebo*`, `CityParkFurniture*`, `ParkChessPlayer*` | Current |
 | Park chess-set men | Imported chess and draught pieces retain the measured table and opening-layout contracts. | `CityChessBoardGeometry`, `CityChessSetPlan` | Current |
 | Park board games | Both boards are playable. | `ChessRules`, `ChessEngine` | Current |
 | Park chess-set quarrel | The two men hate each other on the only grounds available: one plays chess and despises draughts, the other the reverse. | `CityParkQuarrelController`, `ParkQuarrelTimeline` | Current |

@@ -5,45 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-27
 
-User-approved compact coastal rebuild: Residential/Industrial retain distinct
-mass, lived fronts and service courts; park, semantic POIs, fair/arch and stable
-hero/bar/shop owners survive. Declared dry land is about 29.2% smaller without
-scaling vehicles. Authored low-rise building bank fits the new streetwall,
-shared rear courts, real passages and reserved domestic scenes. Passive
-substation/municipal/port workshops feed a bounded pole/cable network.
+Compact coastal rebuild: Residential/Industrial retain mass, lived fronts and
+service courts; park, semantic POIs, fair/arch and hero/bar/shop owners survive.
+Dry land is about 29.2% smaller without scaling vehicles. Authored low-rise
+buildings fit streetwalls, shared rear courts, real passages and domestic scenes.
+Substation/municipal/port workshops feed a bounded pole/cable network.
 
-Industrial functions now select authored roofs/gates/equipment and purpose
-surfaces instead of generic pipe/cargo clusters. Occupied service recesses
-retain lot/court/passage contracts. Timber/concrete/steel reuse physical maps;
-working fixtures share the existing Light pool and day floor. Coastal facilities
-have actual repair/electrical stock. Blender version/hash pin removed by user;
-installed-app discovery retains identity/output/geometry checks. Source proof:
-City Buildings direct validation/FBX roundtrip and Coastal Infrastructure validation.
-FBX Empty aim is restored in the wrapper metre frame; separate emissive lenses
-and unit-scale airborne halos keep working fixtures visibly lit.
+Industrial functions select authored roofs/gates/equipment and purpose surfaces.
+Service recesses retain lot/court/passage contracts. Timber/concrete/steel reuse
+maps; working fixtures share the Light pool/day floor. Coastal facilities carry
+repair/electrical stock. User removed Blender version/hash pin; installed-app
+discovery retains identity/output/geometry checks. City Buildings direct
+validation/FBX roundtrip and Coastal Infrastructure validation passed.
+FBX Empty aim uses the wrapper metre frame; separate emissive lenses and
+unit-scale halos keep fixtures visibly lit.
 
-Road/ground complements share datums. Terrain uses pure factory datum and
-court paving avoids bus-dependent plans, removing a construction cycle.
-Split fringe strips retain composition IDs, so physical support and composition
-spacing are both checked. Fixed arch geometry keeps its authored opening.
-Home/bar/shop forecourts now grade to pitched pavement, with soil-embedded
-skirts and shared door/fixture tops; clipped Home copies retain City triangle
-planes. This fixes the user's floating bar slab reproduction.
+Road/ground share datums. Pure factory datum and bus-independent court paving
+remove a construction cycle. Split fringe strips retain composition IDs for
+support/spacing checks; fixed arch keeps its opening. Home/bar/shop forecourts
+grade to pavement with embedded skirts/shared door and fixture tops; Home
+copies retain City triangle planes, fixing the floating bar slab reproduction.
+Bank-local bus cycles and bounded prefix reachability preserve body/turn/bridge
+checks; stops exclude courtyard/service routes using the shelter footprint.
+Truck retains centered factory exit and serviced market frontage.
 
-Bus candidates prefer bank-local cycles before the coverage cap; bounded
-prefix reachability avoids wasting complete-loop attempts. Final body/turn/
-bridge checks remain. Shared stop placement excludes actual courtyard/service
-routes using the authored shelter footprint, preserving physical colliders.
-Truck retains a centered factory exit and a serviced market frontage.
+Park gazebo now occupies the old chess anchor: common deck/steps, games/men,
+free hero docks, beam pendants and exact physical structure/rain trigger.
+Municipal ParkPath lamps removed to restore the sole-practical canon.
+Shared cardinal framing fixes diagonal stairs versus snapped tables. Readable
+statue, sparse bins/blank notice and repaired benches retain the open park.
+Effects review retained shared owners/profiles. CityParkBandstand passed actual
+steps, both complete seat transfers, support/light/rain/furniture contracts;
+day/night/rain, statue and prop views reviewed. City misc generator/import/
+determinism passed.
 
-Proof: CityIndustrialFunctions passed placed functions/material response, task-light
-bounds and reviewed day/night, equipment, grayscale and intoxication views.
-CityFabric passed physical/nav courts, shared paths, entrance floors,
-retained landmark fit, utility support and City/Home views; the bar-side
-reproduction was reviewed. ProductionCityRoute_AllStopsExposeBothDoorPrompts
-passed real stop doors. CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup
-passed imported geometry; generator art/determinism, check-docs and scoped
-diff checks passed. Existing church/karaoke user edits were preserved.
+CityIndustrialFunctions passed function/material/task-light bounds; day/night,
+equipment, grayscale/intoxication views reviewed. CityFabric passed physical/nav
+courts, paths, entrance floors, landmark fit, utility support and City/Home views.
+ProductionCityRoute_AllStopsExposeBothDoorPrompts passed real doors.
+CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup passed imports;
+generator art/determinism, check-docs and scoped diff checks passed.
+Existing church/karaoke user edits preserved.
 
 ## 2026-10-26
 

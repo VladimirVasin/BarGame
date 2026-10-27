@@ -1052,6 +1052,7 @@ namespace BarPromenade
                     GameWeatherRules.EvaluateCurrent().RainIntensity));
             var rainShelters = new List<Collider>(World.ArchShelter.RainShelterColliders);
             if (World.Fair != null) rainShelters.AddRange(World.Fair.RainShelters);
+            if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
             Rain.SetLocalShelters(rainShelters);
             if (World.MountainBoundaryPlan.HasTunnel)
             {

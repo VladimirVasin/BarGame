@@ -355,6 +355,7 @@ namespace BarPromenade
                     world,
                     layout,
                     decorationPlan);
+            CityParkFurnitureWorldBuilder.Build(world, layout, decorationPlan);
             ReportBlock("street_dressing", blockTimer);
             yield return new CompositionStep("street_dressing", 0.94f);
             blockTimer.Restart();
@@ -1163,22 +1164,25 @@ namespace BarPromenade
 
             var benchParts = new List<RuntimeMeshPlacement>(
                 plan.Benches.Count);
+            var replacementParts = new List<RuntimeMeshPlacement>(2);
+            var repairMetalParts = new List<RuntimeMeshPlacement>(2);
             for (int index = 0;
                  index < plan.Benches.Count;
                  index++)
             {
                 CityParkBenchDescriptor bench = plan.Benches[index];
-                int variant = index %
-                    CityMiscAssetProvider.GetVariantCount(
-                        CityMiscKind.ParkBench);
-                CityMiscMeshPart part = miscProvider.GetPartOrThrow(
-                    CityMiscKind.ParkBench,
-                    variant,
-                    0);
-                benchParts.Add(new RuntimeMeshPlacement(
-                    part.Mesh,
-                    bench.Position,
-                    bench.Rotation));
+                CityMiscKind kind = index % CityParkBenchPlanner.BenchCountPerRegion == 1
+                    ? CityMiscKind.ParkBenchRepaired : CityMiscKind.ParkBench;
+                int variant = kind == CityMiscKind.ParkBench ? index % 2 : 0;
+                int partCount = CityMiscAssetProvider.GetPartCount(kind);
+                for (int partIndex = 0; partIndex < partCount; partIndex++)
+                {
+                    CityMiscMeshPart part = miscProvider.GetPartOrThrow(kind, variant, partIndex);
+                    List<RuntimeMeshPlacement> target = part.Surface == CityMiscSurfaceKind.PaintedMetal
+                        ? repairMetalParts : part.Role == CityMiscMeshRole.Masonry
+                            ? replacementParts : benchParts;
+                    target.Add(new RuntimeMeshPlacement(part.Mesh, bench.Position, bench.Rotation));
+                }
             }
 
             BuildParkSurfaceMeshesIfAny(
@@ -1187,6 +1191,10 @@ namespace BarPromenade
                 benchParts,
                 CityParkSurfaceKind.Timber,
                 ParkBench);
+            BuildParkSurfaceMeshesIfAny("Park Bench Replacement Boards", park,
+                replacementParts, CityParkSurfaceKind.Timber, new Color(0.43f, 0.40f, 0.31f));
+            BuildParkSurfaceMeshesIfAny("Park Bench Repair Plates", park,
+                repairMetalParts, CityParkSurfaceKind.PaintedMetal, new Color(0.26f, 0.29f, 0.27f));
             CityStaticCollisionBuilder.AddParkBenchColliders(
                 park,
                 plan.Benches);

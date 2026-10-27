@@ -177,6 +177,12 @@ namespace BarPromenade
 
                 if (homeContext == null)
                 {
+                    if (descriptor.Kind == CityDecorationKind.ParkBandstand)
+                    {
+                        CityParkGazeboWorld.Build(root, descriptor,
+                            importedProvider ?? CityMiscAssetProvider.LoadOrThrow());
+                        continue;
+                    }
                     if (descriptor.TryResolveLot(layout, out BuildingLot collisionLot) &&
                         collisionLot.HasFacadeRotation)
                     {
@@ -223,6 +229,9 @@ namespace BarPromenade
 
             descriptor.TryResolveLot(layout, out BuildingLot lot);
             var context = new RecipeContext(layout, descriptor, lot);
+            // The occupied gazebo owns its roof shadows and exact walkable
+            // mesh collision, outside the shadowless decoration batches.
+            if (kind == CityMiscKind.ParkBandstand) return true;
             if (kind == CityMiscKind.ParkChessTables)
             {
                 if (provider == null)
@@ -2622,6 +2631,7 @@ namespace BarPromenade
             /// </summary>
             public float GroundDrop(float x, float z)
             {
+                if (Descriptor.HasFixedSupportPlane) return 0f;
                 if (Layout == null)
                 {
                     return 0f;

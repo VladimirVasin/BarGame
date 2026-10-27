@@ -28,7 +28,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CreatePlan_PlacesAtMostTwoLampsPerEdgeOutsidePublicSpaces()
+        public void CreatePlan_StreetLampsAvoidParkPathsAndKeepNeighboringStreets()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
@@ -36,17 +36,41 @@ namespace BarPromenade.Tests.EditMode
 
             CityNightFixturePlan plan =
                 CityNightFixturePlanner.CreatePlan(layout);
+            CityNightFixturePlan placementProtection =
+                CityNightFixturePlanner.CreateParkPlacementProtection(layout);
+            var parkNodes = new HashSet<Vector2Int>();
+            foreach (RoadEdge edge in layout.RoadEdges)
+                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                {
+                    parkNodes.Add(edge.A);
+                    parkNodes.Add(edge.B);
+                }
+            Assert.That(parkNodes, Is.Not.Empty,
+                "The regression must exercise real park paths.");
+            Assert.That(placementProtection.StreetLamps.Any(lamp =>
+                layout.GetPathKind(lamp.Edge) == CityPathKind.ParkPath), Is.True,
+                "Placement compatibility preserves old reservations without spawning their lights.");
 
             Assert.That(
                 plan.StreetLamps.Count,
-                Is.LessThanOrEqualTo(layout.RoadEdges.Count * 2));
+                Is.LessThanOrEqualTo(layout.RoadEdges.Count(edge =>
+                    layout.GetPathKind(edge) == CityPathKind.Street &&
+                    !layout.IsRiverBridgeEdge(edge)) * 2));
 
+            bool hasNeighboringStreetLamp = false;
             foreach (RoadEdge edge in layout.RoadEdges)
             {
                 StreetLampDescriptor[] lamps = plan.StreetLamps
                     .Where(lamp => lamp.Edge == edge)
                     .OrderBy(lamp => lamp.EdgeT)
                     .ToArray();
+                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                {
+                    Assert.That(lamps, Is.Empty, "The park has only its beam-mounted chess light.");
+                    continue;
+                }
+                if (parkNodes.Contains(edge.A) || parkNodes.Contains(edge.B))
+                    hasNeighboringStreetLamp |= lamps.Length > 0;
                 Assert.That(lamps.Length, Is.InRange(0, 2), edge.ToString());
                 for (int index = 0; index < lamps.Length; index++)
                 {
@@ -64,6 +88,8 @@ namespace BarPromenade.Tests.EditMode
                         1f);
                 }
             }
+            Assert.That(hasNeighboringStreetLamp, Is.True,
+                "Street lighting remains on the streets adjoining the park.");
         }
 
         [Test]

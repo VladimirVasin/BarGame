@@ -97,13 +97,19 @@ namespace BarPromenade
                     CityDecorationPlan.MaximumDescriptorCount,
                     mandatoryCount + ordinaryLots.Count));
             var occupiedGroundPositions = new List<Vector3>();
+            // Removing the old path poles must not choose a new site for the
+            // elderly men. Preserve their original bounded placement search;
+            // this compatibility data never creates a runtime lamp.
+            CityNightFixturePlan parkPlacementProtection = layout.Park.IsEnabled
+                ? CityNightFixturePlanner.CreateParkPlacementProtection(layout)
+                : nightPlan;
 
             AddOrdinaryLotVisuals(layout, ordinaryLots, descriptors);
             AddUrbanLandmarks(layout, descriptors);
             AddParkLandmarks(
                 layout,
                 fencePlan,
-                nightPlan,
+                parkPlacementProtection,
                 descriptors,
                 occupiedGroundPositions);
             AddFrontageClusters(
@@ -122,7 +128,7 @@ namespace BarPromenade
             AddParkFeatures(
                 layout,
                 fencePlan,
-                nightPlan,
+                parkPlacementProtection,
                 descriptors,
                 occupiedGroundPositions);
             AddHomeYardUtility(
@@ -1046,6 +1052,7 @@ namespace BarPromenade
                     CityDecorationCollisionCatalog.ResolveTier(
                         CityDecorationKind.ParkChessTables),
                     ParkFeatureVariantSalt);
+                MoveGazeboOverChessTables(target, occupiedGroundPositions);
             }
 
             if (target.Count < CityDecorationPlan.MaximumDescriptorCount)
@@ -1068,6 +1075,38 @@ namespace BarPromenade
                         CityDecorationKind.ParkPlayground),
                     ParkFeatureVariantSalt ^ 0x85EBCA6Bu);
             }
+        }
+
+        private static void MoveGazeboOverChessTables(
+            ICollection<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            CityDecorationDescriptor gazebo = default;
+            CityDecorationDescriptor chess = default;
+            bool hasGazebo = false, hasChess = false;
+            foreach (CityDecorationDescriptor descriptor in target)
+            {
+                if (descriptor.Kind == CityDecorationKind.ParkBandstand)
+                { gazebo = descriptor; hasGazebo = true; }
+                if (descriptor.Kind == CityDecorationKind.ParkChessTables)
+                { chess = descriptor; hasChess = true; }
+            }
+            if (!hasGazebo || !hasChess) return;
+
+            // Resolve the old table site first, with the old placement order.
+            // Their location remains the anchor; the former gazebo site opens.
+            target.Remove(gazebo);
+            target.Remove(chess);
+            occupiedGroundPositions.Remove(gazebo.Position);
+            target.Add(new CityDecorationDescriptor(gazebo.StableId, gazebo.Kind,
+                gazebo.AnchorKind, gazebo.District, gazebo.LotCell, chess.Position,
+                chess.Forward, gazebo.Variant, gazebo.Palette, gazebo.VisibilityTier,
+                gazebo.CollisionTier));
+            target.Add(new CityDecorationDescriptor(chess.StableId, chess.Kind,
+                chess.AnchorKind, chess.District, chess.LotCell,
+                chess.Position + Vector3.up * CityParkGazeboGeometry.DeckHeightMeters,
+                chess.Forward, chess.Variant, chess.Palette, chess.VisibilityTier,
+                chess.CollisionTier, fixedSupportPlane: true));
         }
 
         private static void AddParkDecoration(

@@ -57,7 +57,7 @@ namespace BarPromenade
 
     internal static class CityStaticCollisionBuilder
     {
-        internal const int MaximumDecorationProxyCount = 4;
+        internal const int MaximumDecorationProxyCount = 8;
 
         internal static void AddDecorationProxyBounds(
             CityLayout layout,
@@ -77,6 +77,11 @@ namespace BarPromenade
             CityDecorationDescriptor descriptor, ICollection<RuntimeOrientedBox> target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
+            if (descriptor.Kind == CityDecorationKind.ParkBandstand)
+            {
+                CityParkGazeboGeometry.AppendRouteBlockers(descriptor, target);
+                return;
+            }
             var bounds = new List<Bounds>();
             AddDecorationProxyCardinalBounds(layout, descriptor, bounds);
             Quaternion rotation = Quaternion.identity;
@@ -161,19 +166,6 @@ namespace BarPromenade
                 case CityDecorationKind.ParkFountainAndStatue:
                     context.Add(target, 0f, 0.48f, 0f, 6.40f, 0.96f, 6.40f);
                     break;
-                case CityDecorationKind.ParkBandstand:
-                    // The plinth is a twelve-sided ring `3.72` across the
-                    // tangent and `3.12` along forward, not the `6.80 x 5.60`
-                    // rectangle it was before the 2026-08-26 migration. That
-                    // single box stopped the hero at four corners where there
-                    // is nothing, and let him into the stone where it is
-                    // widest. Three boxes inscribed in the twelve-gon carry
-                    // its shape instead; each corner sits on an edge, so none
-                    // of them reaches past the stone.
-                    context.Add(target, 0f, 0.50f, 0f, 6.44f, 1.00f, 3.12f);
-                    context.Add(target, 0f, 0.50f, 0f, 3.72f, 1.00f, 5.40f);
-                    context.Add(target, 0f, 0.50f, 0f, 1.06f, 1.00f, 6.00f);
-                    break;
                 case CityDecorationKind.ParkChessTables:
                     // Table, board and both benches per side. The box
                     // starts below the anchor plane because the set
@@ -212,7 +204,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     $"Decoration '{descriptor.StableId}' created {added} " +
-                    "collision proxies; expected between one and four.");
+                    "collision proxies; expected a bounded structural recipe.");
             }
         }
 

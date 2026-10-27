@@ -83,6 +83,7 @@ namespace BarPromenade
             DecorationRoot = decorationRoot != null
                 ? decorationRoot
                 : throw new ArgumentNullException(nameof(decorationRoot));
+            Gazebo = DecorationRoot.GetComponentInChildren<CityParkGazeboWorld>(true);
             RiverRoot = riverRoot;
             RiverQuayLampAnchors = riverQuayLampAnchors ??
                 Array.Empty<Transform>();
@@ -156,6 +157,7 @@ namespace BarPromenade
         public CityPortPlan PortPlan => SeacoastPlan?.Port;
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
+        public CityParkGazeboWorld Gazebo { get; }
         public GameObject RiverRoot { get; }
 
         /// <summary>

@@ -23,6 +23,21 @@ namespace BarPromenade
 
         public static CityNightFixturePlan CreatePlan(CityLayout layout)
         {
+            return CreatePlan(layout, false);
+        }
+
+        /// <summary>
+        /// Placement-only compatibility for existing park landmarks: their
+        /// historical search reserved the old path fixtures. These descriptors
+        /// never enter the world plan or create municipal lamps in the park.
+        /// </summary>
+        internal static CityNightFixturePlan CreateParkPlacementProtection(CityLayout layout)
+        {
+            return CreatePlan(layout, true);
+        }
+
+        private static CityNightFixturePlan CreatePlan(CityLayout layout, bool includeParkPaths)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
@@ -30,7 +45,7 @@ namespace BarPromenade
 
             var streetLamps = new List<StreetLampDescriptor>(
                 checked(layout.RoadEdges.Count * 2));
-            CreateStreetLamps(layout, streetLamps);
+            CreateStreetLamps(layout, streetLamps, includeParkPaths);
 
             var trafficSignals = new List<TrafficSignalDescriptor>(
                 MaximumSignalIntersections * 2);
@@ -41,7 +56,8 @@ namespace BarPromenade
 
         private static void CreateStreetLamps(
             CityLayout layout,
-            ICollection<StreetLampDescriptor> target)
+            ICollection<StreetLampDescriptor> target,
+            bool includeParkPaths)
         {
             var sortedEdges = new List<RoadEdge>(layout.RoadEdges);
             sortedEdges.Sort(RoadEdge.Compare);
@@ -49,7 +65,8 @@ namespace BarPromenade
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
-                if (layout.IsRiverBridgeEdge(edge))
+                if (layout.IsRiverBridgeEdge(edge) ||
+                    (!includeParkPaths && layout.GetPathKind(edge) == CityPathKind.ParkPath))
                 {
                     continue;
                 }

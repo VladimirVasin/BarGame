@@ -185,6 +185,7 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.ParkBandstand, 0, "Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
             Part(CityMiscKind.ParkBandstand, 0, "Masonry_Timber", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Timber),
             Part(CityMiscKind.ParkBandstand, 0, "Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkBandstand, 0, "RainShelter_Fixture", CityMiscMeshRole.Fixture),
             Part(CityMiscKind.ParkChessTables, 0, "TableSlab_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
             Part(CityMiscKind.ParkChessTables, 0, "BoardLight_Masonry_Timber", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Timber),
             Part(CityMiscKind.ParkChessTables, 0, "BoardDarkAndRim_Street_Timber", CityMiscMeshRole.Street, CityMiscSurfaceKind.Timber),
@@ -361,7 +362,18 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.NightlifeShelterPlatformLitter, 0, "StandingBottles_Residential", CityMiscMeshRole.Residential),
             Part(CityMiscKind.NightlifeShelterPlatformLitter, 0, "LyingBottles_Residential", CityMiscMeshRole.Residential),
             Part(CityMiscKind.NightlifeShelterPlatformLitter, 0, "DarkBottles_Street", CityMiscMeshRole.Street),
-            Part(CityMiscKind.NightlifeShelterPlatformLitter, 0, "Cans_Industrial", CityMiscMeshRole.Industrial)
+            Part(CityMiscKind.NightlifeShelterPlatformLitter, 0, "Cans_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.ParkBin, 0, "Basket_Residential_PaintedMetal", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkBin, 0, "Cradle_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkNoticeBoard, 0, "Frame_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ParkNoticeBoard, 0, "EmptyBacking_Street_Timber", CityMiscMeshRole.Street, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ParkNoticeBoard, 0, "HoodAndFixings_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkBenchRepaired, 0, "Original_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.ParkBenchRepaired, 0, "Replacement_Masonry_Timber", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ParkBenchRepaired, 0, "Repair_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkChessLampPendant, 0, "ShadeAndSocket_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ParkChessLampPendant, 0, "Cable_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.ParkChessLampPendant, 0, "Bulb_Neon", CityMiscMeshRole.Neon)
         };
 
         [Test]
@@ -372,17 +384,17 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.11.0"));
+                Is.EqualTo("4.12.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
-                Is.EqualTo(83));
+                Is.EqualTo(87));
             Assert.That(
                 CityMiscAssetProvider.ExpectedAssemblyCount,
-                Is.EqualTo(123));
+                Is.EqualTo(127));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(263));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(263));
+                Is.EqualTo(275));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(275));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -412,20 +424,20 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(assemblies, Is.EqualTo(123));
+            Assert.That(assemblies, Is.EqualTo(127));
             Assert.That(
                 actualNames,
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(263));
+                Is.EqualTo(275));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
                 "The frozen v1 catalog prefix changed.");
             Assert.That(
-                actualNames.Take(97),
-                Is.EqualTo(ExpectedParts.Take(97).Select(part => part.MeshName)),
+                actualNames.Take(98),
+                Is.EqualTo(ExpectedParts.Take(98).Select(part => part.MeshName)),
                 "The frozen v2 catalog prefix changed.");
             Assert.That(
                 actualNames.All(name =>
@@ -457,13 +469,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(263));
-            Assert.That(manifest.assembly_count, Is.EqualTo(123));
-            Assert.That(manifest.triangle_count, Is.EqualTo(48190));
+            Assert.That(manifest.mesh_count, Is.EqualTo(275));
+            Assert.That(manifest.assembly_count, Is.EqualTo(127));
+            Assert.That(manifest.triangle_count, Is.EqualTo(50870));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "a36f9621349e1914516efbb3e6a1897fed824b274a01d71b66a438be72dfee7a"));
+                    "f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -471,11 +483,34 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c"));
+                    "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a"));
+            Assert.That(
+                manifest.v2_unchanged_compatibility_signature,
+                Is.EqualTo(
+                    "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739"));
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
                 manifest.root_contract.origin,
                 Is.EqualTo("per_assembly_root_derivation"));
+            foreach (CityMiscKind kind in new[]
+            {
+                CityMiscKind.ParkBin,
+                CityMiscKind.ParkNoticeBoard,
+                CityMiscKind.ParkBenchRepaired,
+                CityMiscKind.ParkChessLampPendant
+            })
+            {
+                ManifestAssembly assembly = manifest.assemblies.Single(
+                    item => item.kind == kind.ToString());
+                Assert.That(assembly.coordinate_profile,
+                    Is.EqualTo("legacy_recipe_reflected_x"), kind.ToString());
+                Assert.That(assembly.root_derivation, Is.Null.Or.Empty,
+                    kind.ToString());
+                Assert.That(assembly.placement_contract,
+                    Is.EqualTo("ground_forward_frame"), kind.ToString());
+                Assert.That(assembly.bounds_min_unity[1],
+                    Is.EqualTo(0f).Within(0.0001f), kind.ToString());
+            }
             Assert.That(
                 manifest.root_contract.scale_mode,
                 Is.EqualTo("fixed_meters"));
@@ -566,7 +601,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(263));
+            Assert.That(meshes, Has.Length.EqualTo(275));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -634,7 +669,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(263));
+            Assert.That(actualNames, Has.Count.EqualTo(275));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);
@@ -1077,6 +1112,18 @@ namespace BarPromenade.Tests.EditMode
             public int triangle_count;
             public string wave1_compatibility_signature;
             public string v2_compatibility_signature;
+            public string v2_unchanged_compatibility_signature;
+            public ManifestAssembly[] assemblies;
+        }
+
+        [Serializable]
+        private sealed class ManifestAssembly
+        {
+            public string kind;
+            public string coordinate_profile;
+            public string root_derivation;
+            public string placement_contract;
+            public float[] bounds_min_unity;
         }
 
         [Serializable]

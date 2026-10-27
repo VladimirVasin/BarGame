@@ -628,10 +628,10 @@ namespace BarPromenade
                      seatIndex < decorationSeats.Count;
                      seatIndex++)
                 {
-                    Add(plans, ResolveSeatDockGround(
-                        layout,
-                        streetSurfacePlan,
-                        decorationSeats[seatIndex]));
+                    Add(plans, streetDecorations.Descriptors[index].HasFixedSupportPlane
+                        ? decorationSeats[seatIndex]
+                        : ResolveSeatDockGround(layout, streetSurfacePlan,
+                            decorationSeats[seatIndex]));
                 }
             }
 

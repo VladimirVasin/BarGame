@@ -1,6 +1,20 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-27 — park chess gazebo:**
+  User approved the existing gazebo at the old chess anchor, both complete
+  games and same two inhabitants on its deck. `CityParkGazeboGeometry` shares
+  deck/steps/structure dimensions with walkable collision and seat/NPC datums;
+  entrance and both hero docks stay free. Roof joins bounded local rain shelters.
+  Art §10's tree wire becomes beam-mounted pendants, with the same weak warm
+  one-live/one-dead pair. Sparse imported bins, blank notice board and repaired
+  benches reuse park surfaces. No NPC/clip/text/story signal or Нельзя change;
+  no story §6 row, §16/21 and nine art checks bind. All24 effects reviewed:
+  contacts/shadows, timber/steel, pendants/pennant and rain use existing owners;
+  GI/bounce, SSAO/fog/volumes/grade, probes/SSR/water, bevels/vertex response,
+  wind/marks/particles/BRDF/outlines and eight post categories retain profiles.
+  No global provider or measured gain.
+
 - **Accepted 2026-10-27 — installed Blender toolchain:**
   User removed the exact Blender version/build-hash requirement. CLI override,
   BP_BLENDER and installed-app/PATH discovery select Blender; identity/startup,
@@ -3582,7 +3596,7 @@
   grounding rule describes him. The walker rule pins the lowest sole to the
   ground plane, which would drag him down until he stood on the lawn; the bus
   rule (`seated_clearance_m`) measures headroom from the seated pelvis to a
-  roof a park bench does not have. He therefore declares
+  roof, which alone cannot prove contact with a park bench. He therefore declares
   `perch_seat_height_m`, and the quantity it measures is deliberately not a
   bone position but the distance from the underside of the hip geometry — the
   seat of the coat, which is what physically rests on timber — down to the
@@ -3992,20 +4006,6 @@
   (art §15a). Canon: no «Нельзя» is lifted (§16.15 — a Fail is not a loss;
   §16.16 — no control taken; §16.2 — no citizen reacts), so no §6 row; the
   behaviour is recorded as story decision §24.45.
-- **Accepted — the chess lamp's wire crosses the set rather than running along
-  it:** the obvious span is along the line of the two tables, one lamp over
-  each board. The park's own geometry refuses it. Trees are planted on an 8x8
-  grid and the decoration planner then rejects any chess-set position within
-  `4.8 m` of a trunk, which seats the set in a gap between tree rows: on the
-  table line the nearest trunks stand about five metres off-axis, so a wire
-  between them passes beside the set and hangs its lamp over grass. Across the
-  set the same field offers a pair almost on the line. So the span runs on the
-  set's forward axis and its one working lamp hangs over the middle, covering
-  both boards — which is also the wider circle the fixture was chosen for. The
-  knot takes the trunk face nearest the set (`TrunkTieInsetMeters`), which is
-  both physically how a wire is tied and worth `0.26 m` of centring. A hook
-  pole is the fallback for a seed whose tree field offers nothing on one side;
-  it is a fallback, and the authored city is pinned to using real trees.
 - **Accepted — a head-in-hands loop breathes on the chest, never on the neck:**
   the exact inversion of the fisherman's rule and for the same underlying
   reason. His hands held a rod carried by his own fist, so his breath was free

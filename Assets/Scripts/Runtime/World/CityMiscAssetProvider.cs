@@ -92,7 +92,11 @@ namespace BarPromenade
         NightlifeShelterSleepingPerson = 79,
         ResidentialCourtyardPocket = 80,
         FringeMasonCart = 81,
-        NightlifeShelterPlatformLitter = 82
+        NightlifeShelterPlatformLitter = 82,
+        ParkBin = 83,
+        ParkNoticeBoard = 84,
+        ParkBenchRepaired = 85,
+        ParkChessLampPendant = 86
     }
 
     /// <summary>
@@ -183,11 +187,11 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.11.0";
+        public const string GeneratorVersion = "4.12.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 123;
-        public const int ExpectedMeshCount = 263;
-        public const int SupportedKindCount = 83;
+        public const int ExpectedAssemblyCount = 127;
+        public const int ExpectedMeshCount = 275;
+        public const int SupportedKindCount = 87;
 
         private const float GroundTolerance = 0.003f;
 
@@ -275,7 +279,11 @@ namespace BarPromenade
             CityMiscKind.NightlifeShelterSleepingPerson,
             CityMiscKind.ResidentialCourtyardPocket,
             CityMiscKind.FringeMasonCart,
-            CityMiscKind.NightlifeShelterPlatformLitter
+            CityMiscKind.NightlifeShelterPlatformLitter,
+            CityMiscKind.ParkBin,
+            CityMiscKind.ParkNoticeBoard,
+            CityMiscKind.ParkBenchRepaired,
+            CityMiscKind.ParkChessLampPendant
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -428,7 +436,8 @@ namespace BarPromenade
             P("Masonry_Timber", CityMiscMeshRole.Masonry,
                 CityMiscSurfaceKind.Timber),
             P("Street_PaintedMetal", CityMiscMeshRole.Street,
-                CityMiscSurfaceKind.PaintedMetal)
+                CityMiscSurfaceKind.PaintedMetal),
+            P("RainShelter_Fixture", CityMiscMeshRole.Fixture)
         };
 
         private static readonly ExpectedPartSpec[] ChessParts =
@@ -1310,6 +1319,14 @@ namespace BarPromenade
                     return FringeMasonCartParts;
                 case CityMiscKind.NightlifeShelterPlatformLitter:
                     return NightlifeShelterPlatformLitterParts;
+                case CityMiscKind.ParkBin:
+                    return ParkBinParts;
+                case CityMiscKind.ParkNoticeBoard:
+                    return ParkNoticeBoardParts;
+                case CityMiscKind.ParkBenchRepaired:
+                    return ParkBenchRepairedParts;
+                case CityMiscKind.ParkChessLampPendant:
+                    return ParkChessLampPendantParts;
                 default:
                     throw UnsupportedKind(kind);
             }

@@ -529,6 +529,12 @@ MonoBehaviour:
     role: 1
     surface: 3
     mesh: {fileID: 184566816298642026, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 23
+    variant: 0
+    component: RainShelter_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 6402368541524246605, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 24
     variant: 0
     component: TableSlab_Masonry_Stone
@@ -1591,4 +1597,70 @@ MonoBehaviour:
     role: 0
     surface: 0
     mesh: {fileID: -5855636505254906777, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: a36f9621349e1914516efbb3e6a1897fed824b274a01d71b66a438be72dfee7a
+  - kind: 83
+    variant: 0
+    component: Basket_Residential_PaintedMetal
+    role: 7
+    surface: 3
+    mesh: {fileID: 2091629604262869529, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 83
+    variant: 0
+    component: Cradle_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -5324542003007528317, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: Frame_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -2287005871570864831, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: EmptyBacking_Street_Timber
+    role: 1
+    surface: 2
+    mesh: {fileID: -8975924174435396581, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: HoodAndFixings_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 8901258706723150128, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: Original_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -1907280775052603255, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: Replacement_Masonry_Timber
+    role: 2
+    surface: 2
+    mesh: {fileID: -5569136964952403740, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: Repair_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 2933762444622368904, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 86
+    variant: 0
+    component: ShadeAndSocket_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 6868218327470990008, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 86
+    variant: 0
+    component: Cable_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 2566490942174936702, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 86
+    variant: 0
+    component: Bulb_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: -5981496851082095158, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86
