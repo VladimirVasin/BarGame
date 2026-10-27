@@ -43,16 +43,18 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
+import city_river_parts as river_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.12.0"
+GENERATOR_VERSION = "4.13.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
-    "Residential Courtyard Life + Park Gazebo and Furniture"
+    "Residential Courtyard Life + Park Gazebo and Furniture + River Fittings"
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
@@ -5724,6 +5726,8 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_park_notice_board(),
         build_park_bench(0, repaired=True),
         build_park_chess_lamp_pendant(),
+        # Citywide v4.13: additive passive river fittings; old meshes retain IDs.
+        *river_parts.make_assemblies(sys.modules[__name__]),
     )
 
 
@@ -5898,9 +5902,11 @@ EXPECTED_VARIANTS = {
     "ParkNoticeBoard": 1,
     "ParkBenchRepaired": 1,
     "ParkChessLampPendant": 1,
+    **{kind: 1 for kind in river_parts.KINDS},
 }
 
 EXPECTED_ROLES = {
+    **{(kind, 0): roles for kind, roles in river_parts.PART_ROLES.items()},
     ("ParkBin", 0): ("Residential_PaintedMetal", "Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
         "Residential_Timber", "Street_Timber", "Street_PaintedMetal"),
@@ -6063,6 +6069,7 @@ EXPECTED_MESH_SUFFIXES = {
         for variant in range(count)
         if (roles := EXPECTED_ROLES.get((kind, variant))) is not None
     },
+    **{(kind, 0): suffixes for kind, suffixes in river_parts.PART_SUFFIXES.items()},
     ("ParkBin", 0): (
         "Basket_Residential_PaintedMetal", "Cradle_Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
@@ -6682,6 +6689,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     keys: set[tuple[str, int]] = set()
     validate_handedness(problems)
     validate_park_access(assemblies, problems)
+    river_parts.validate(sys.modules[__name__], assemblies, problems)
     for assembly in assemblies:
         key = assembly.kind, assembly.variant
         if key in keys:
@@ -6828,11 +6836,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 127:
+    if len(assemblies) != 134:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 127")
-    if len(names) != 275:
-        problems.append(f"mesh count is {len(names)}, expected 275")
+            f"assembly count is {len(assemblies)}, expected 134")
+    if len(names) != 283:
+        problems.append(f"mesh count is {len(names)}, expected 283")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

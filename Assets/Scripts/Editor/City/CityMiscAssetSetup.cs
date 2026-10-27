@@ -612,7 +612,8 @@ namespace BarPromenade.Editor
                     parsedKind == CityMiscKind.ParkChessLampPendant;
                 string expectedPlacement =
                     parsedKind == CityMiscKind.YardSpotlightWallMount ||
-                    parsedKind == CityMiscKind.YardSpotlightHeadShell
+                    parsedKind == CityMiscKind.YardSpotlightHeadShell ||
+                    parsedKind == CityMiscKind.RiverLanternShell
                         ? "anchor_forward_frame"
                         : "ground_forward_frame";
                 string expectedCoordinateProfile = legacyRecipe

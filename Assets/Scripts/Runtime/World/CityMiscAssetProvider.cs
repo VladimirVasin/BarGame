@@ -96,7 +96,14 @@ namespace BarPromenade
         ParkBin = 83,
         ParkNoticeBoard = 84,
         ParkBenchRepaired = 85,
-        ParkChessLampPendant = 86
+        ParkChessLampPendant = 86,
+        RiverQuayRepair = 87,
+        RiverWorksFitting = 88,
+        RiverMouthCap = 89,
+        RiverTimberJoint = 90,
+        RiverMooringBollard = 91,
+        RiverLanternShell = 92,
+        RiverStairNosing = 93
     }
 
     /// <summary>
@@ -187,11 +194,11 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.12.0";
+        public const string GeneratorVersion = "4.13.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 127;
-        public const int ExpectedMeshCount = 275;
-        public const int SupportedKindCount = 87;
+        public const int ExpectedAssemblyCount = 134;
+        public const int ExpectedMeshCount = 283;
+        public const int SupportedKindCount = 94;
 
         private const float GroundTolerance = 0.003f;
 
@@ -283,7 +290,14 @@ namespace BarPromenade
             CityMiscKind.ParkBin,
             CityMiscKind.ParkNoticeBoard,
             CityMiscKind.ParkBenchRepaired,
-            CityMiscKind.ParkChessLampPendant
+            CityMiscKind.ParkChessLampPendant,
+            CityMiscKind.RiverQuayRepair,
+            CityMiscKind.RiverWorksFitting,
+            CityMiscKind.RiverMouthCap,
+            CityMiscKind.RiverTimberJoint,
+            CityMiscKind.RiverMooringBollard,
+            CityMiscKind.RiverLanternShell,
+            CityMiscKind.RiverStairNosing
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -723,7 +737,13 @@ namespace BarPromenade
                 case CityMiscKind.YardSpotlightWallMount:
                     return -0.21f;
                 case CityMiscKind.YardSpotlightHeadShell:
+                case CityMiscKind.RiverLanternShell:
                     return -0.16f;
+                case CityMiscKind.RiverQuayRepair:
+                case CityMiscKind.RiverMouthCap:
+                    return -0.10f;
+                case CityMiscKind.RiverStairNosing:
+                    return -0.05f;
                 case CityMiscKind.CemeteryGraveMonument:
                     switch (variant)
                     {
@@ -1327,6 +1347,20 @@ namespace BarPromenade
                     return ParkBenchRepairedParts;
                 case CityMiscKind.ParkChessLampPendant:
                     return ParkChessLampPendantParts;
+                case CityMiscKind.RiverQuayRepair:
+                    return RiverQuayRepairParts;
+                case CityMiscKind.RiverWorksFitting:
+                    return RiverWorksFittingParts;
+                case CityMiscKind.RiverMouthCap:
+                    return RiverMouthCapParts;
+                case CityMiscKind.RiverTimberJoint:
+                    return RiverTimberJointParts;
+                case CityMiscKind.RiverMooringBollard:
+                    return RiverMooringBollardParts;
+                case CityMiscKind.RiverLanternShell:
+                    return RiverLanternShellParts;
+                case CityMiscKind.RiverStairNosing:
+                    return RiverStairNosingParts;
                 default:
                     throw UnsupportedKind(kind);
             }

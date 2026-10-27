@@ -522,30 +522,24 @@ cemetery:own interiors/returns.
   A whole pair precedes one pending E; no input lock, cancel/distance clears it.
   Personal pairs/glances wait beyond `4 m`, hearing `13 m`; E restores
   reserve. Pause freezes, range never replays;
-- one immutable river contract splits that default urban envelope with a
-  `10 m` channel. Two continuous `3 m` promenades flank it; `8 m` Works and
-  Mouth road bridges carry ordinary Street traffic across its south and
-  north edges, while a separate `2.8 m` timber
-  ParkPath bridge reconnects the two `2 x 4` halves of the 16-cell central
-  park. Each road bridge owns one staircase and lower waterside platform per
-  bank, producing four navigable lower landings. Each promenade cut has a
-  collidered, box-projected Quay lining along the landward stair profile,
-  platform side and terminal face; its railed waterside stays open to the
-  river. Across the main spans, lowered landing frontages and cave approach,
-  the visible Quay face projects `0.03 m` waterward of the Paving and Bed
-  side faces that used to be coplanar, while its landward face stays fixed
-  beneath the rail seat. River-owned parapets stop at the bank-road pads and
-  preserve those four stair openings; generic road-edge fences treat bridge
-  decks as support-only and do not duplicate them. Route
-  01 may use the road bridges but never the timber crossing. In
-  `default-coastal`, water and its silt bed continue more than `48 m` behind
-  the southern mountain so their end remains beyond visibility. Both
-  promenades extend walkably from world `Z=-182` to physical rock stops at
-  `Z=-208`; the cave water and space behind those stops never enter the
-  navigation mask. Low waterside lanterns at `13 m` pitch keep their emissive
-  lenses and fog halos lit around the clock; their pooled realtime spill and
-  the sparse upper promenade lamps ride the §20 fixture floor — always
-  burning, two thirds by day;
+- one immutable river contract owns a `10 m` channel, two continuous `3 m`
+  promenades, `8 m` Works/Mouth road bridges and a `2.8 m` timber ParkPath
+  bridge between the park's two `2 x 4` halves. Each road bridge has a stair
+  and lower platform on both banks: four reachable landings. Their collidered,
+  box-projected Quay lining closes the landward stair, platform and terminal
+  faces; the railed waterside stays open. Quay fronts project `0.03 m` beyond
+  Paving/Bed faces on main spans, lower frontages and the cave approach,
+  retaining the landward rail seat. River parapets preserve stair openings and
+  bank-road pads; road-edge fences treat decks as support-only. Route01 uses
+  road bridges, never timber. In `default-coastal`, water/bed continue over
+  `48 m` behind the southern mountain. Both walks extend from `Z=-182` to
+  rock stops at `Z=-208`; cave water/space behind them remain outside nav.
+  Low lanterns at `13 m` pitch keep emissive lenses/halos; pooled spill and
+  sparse upper lamps always burn, at least two thirds by day (§20).
+  `CityRiverDressingPlan` adds graded coping supporting whole rail feet, repair stones, distinct
+  bridge joints, open lamp housings and flush tread noses in shared surface
+  batches. Cast bollards replace cylinders with matching physical bounds;
+  the existing routes, openings, lamp anchors and water owners remain;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives

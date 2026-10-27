@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.12.0",
+  "generator_version": "4.13.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -80,9 +80,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 275,
-  "assembly_count": 127,
-  "triangle_count": 50870,
+  "mesh_count": 283,
+  "assembly_count": 134,
+  "triangle_count": 52126,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -5780,6 +5780,315 @@
         0.17,
         0.7,
         0.17
+      ]
+    },
+    {
+      "kind": "RiverQuayRepair",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 0.56,
+        "height_m": 0.1,
+        "depth_m": 1.2
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverQuayRepair.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": -0.1,
+      "part_meshes": [
+        "GEO_CMM_RiverQuayRepair_Variant01_Coping_Masonry_Stone",
+        "GEO_CMM_RiverQuayRepair_Variant01_Stitches_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.28,
+        -0.6,
+        -0.1
+      ],
+      "bounds_max_source": [
+        0.28,
+        0.6,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.28,
+        -0.1,
+        -0.6
+      ],
+      "bounds_max_unity": [
+        0.28,
+        0.0,
+        0.6
+      ]
+    },
+    {
+      "kind": "RiverWorksFitting",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 0.38,
+        "height_m": 0.18,
+        "depth_m": 0.38
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverWorksFitting.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_RiverWorksFitting_Variant01_PlateAndBolts_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.19,
+        -0.19,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.19,
+        0.19,
+        0.18
+      ],
+      "bounds_min_unity": [
+        -0.19,
+        0.0,
+        -0.19
+      ],
+      "bounds_max_unity": [
+        0.19,
+        0.18,
+        0.19
+      ]
+    },
+    {
+      "kind": "RiverMouthCap",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 1.2,
+        "height_m": 0.1,
+        "depth_m": 0.46
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverMouthCap.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": -0.1,
+      "part_meshes": [
+        "GEO_CMM_RiverMouthCap_Variant01_Coping_Masonry_Stone"
+      ],
+      "bounds_min_source": [
+        -0.6,
+        -0.23,
+        -0.1
+      ],
+      "bounds_max_source": [
+        0.6,
+        0.23,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.6,
+        -0.1,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.6,
+        0.0,
+        0.23
+      ]
+    },
+    {
+      "kind": "RiverTimberJoint",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 0.22,
+        "height_m": 0.18,
+        "depth_m": 0.22
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverTimberJoint.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_RiverTimberJoint_Variant01_CollarAndBolts_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.11,
+        -0.11,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.11,
+        0.11,
+        0.18
+      ],
+      "bounds_min_unity": [
+        -0.11,
+        0.0,
+        -0.11
+      ],
+      "bounds_max_unity": [
+        0.11,
+        0.18,
+        0.11
+      ]
+    },
+    {
+      "kind": "RiverMooringBollard",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 0.44,
+        "height_m": 0.52,
+        "depth_m": 0.44
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverMooringBollard.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_RiverMooringBollard_Variant01_Casting_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.22,
+        -0.22,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.22,
+        0.22,
+        0.52
+      ],
+      "bounds_min_unity": [
+        -0.22,
+        0.0,
+        -0.22
+      ],
+      "bounds_max_unity": [
+        0.22,
+        0.52,
+        0.22
+      ]
+    },
+    {
+      "kind": "RiverLanternShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "anchor_forward_frame",
+      "canonical_reference": {
+        "width_m": 0.36,
+        "height_m": 0.4,
+        "depth_m": 0.36
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverLanternShell.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": -0.16,
+      "part_meshes": [
+        "GEO_CMM_RiverLanternShell_Variant01_OpenHousing_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.18,
+        -0.18,
+        -0.16
+      ],
+      "bounds_max_source": [
+        0.18,
+        0.18,
+        0.24
+      ],
+      "bounds_min_unity": [
+        -0.18,
+        -0.16,
+        -0.18
+      ],
+      "bounds_max_unity": [
+        0.18,
+        0.24,
+        0.18
+      ]
+    },
+    {
+      "kind": "RiverStairNosing",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "width_m": 1.0,
+        "height_m": 0.05,
+        "depth_m": 0.08
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Placement",
+        "Collision",
+        "SharedSurface",
+        "LightState"
+      ],
+      "root_derivation": "CityRiverPlan.RiverStairNosing.AuthoredTopOrFixtureFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": -0.05,
+      "part_meshes": [
+        "GEO_CMM_RiverStairNosing_Variant01_WornNosing_Masonry_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.04,
+        -0.05
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.04,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.05,
+        -0.04
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.0,
+        0.04
       ]
     }
   ],
@@ -16783,7 +17092,327 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverQuayRepair_Variant01_Coping_Masonry_Stone",
+      "kind": "RiverQuayRepair",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.28,
+        -0.6,
+        -0.1
+      ],
+      "bounds_max_source": [
+        0.28,
+        0.6,
+        -0.002
+      ],
+      "bounds_min_unity": [
+        -0.28,
+        -0.1,
+        -0.6
+      ],
+      "bounds_max_unity": [
+        0.28,
+        -0.002,
+        0.6
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverQuayRepair_Variant01_Stitches_Street_PaintedMetal",
+      "kind": "RiverQuayRepair",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.189,
+        0.113,
+        -0.008
+      ],
+      "bounds_max_source": [
+        0.189,
+        0.293,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.189,
+        -0.008,
+        0.113
+      ],
+      "bounds_max_unity": [
+        0.189,
+        0.0,
+        0.293
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverWorksFitting_Variant01_PlateAndBolts_Street_PaintedMetal",
+      "kind": "RiverWorksFitting",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 160,
+      "bounds_min_source": [
+        -0.19,
+        -0.19,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.19,
+        0.19,
+        0.18
+      ],
+      "bounds_min_unity": [
+        -0.19,
+        0.0,
+        -0.19
+      ],
+      "bounds_max_unity": [
+        0.19,
+        0.18,
+        0.19
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverMouthCap_Variant01_Coping_Masonry_Stone",
+      "kind": "RiverMouthCap",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.6,
+        -0.23,
+        -0.1
+      ],
+      "bounds_max_source": [
+        0.6,
+        0.23,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.6,
+        -0.1,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.6,
+        0.0,
+        0.23
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverTimberJoint_Variant01_CollarAndBolts_Street_PaintedMetal",
+      "kind": "RiverTimberJoint",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 176,
+      "triangles": 304,
+      "bounds_min_source": [
+        -0.11,
+        -0.11,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.11,
+        0.11,
+        0.18
+      ],
+      "bounds_min_unity": [
+        -0.11,
+        0.0,
+        -0.11
+      ],
+      "bounds_max_unity": [
+        0.11,
+        0.18,
+        0.11
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverMooringBollard_Variant01_Casting_Street_PaintedMetal",
+      "kind": "RiverMooringBollard",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 176,
+      "triangles": 324,
+      "bounds_min_source": [
+        -0.22,
+        -0.22,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.22,
+        0.22,
+        0.52
+      ],
+      "bounds_min_unity": [
+        -0.22,
+        0.0,
+        -0.22
+      ],
+      "bounds_max_unity": [
+        0.22,
+        0.52,
+        0.22
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverLanternShell_Variant01_OpenHousing_Street_PaintedMetal",
+      "kind": "RiverLanternShell",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 108,
+      "triangles": 188,
+      "bounds_min_source": [
+        -0.18,
+        -0.18,
+        -0.16
+      ],
+      "bounds_max_source": [
+        0.18,
+        0.18,
+        0.24
+      ],
+      "bounds_min_unity": [
+        -0.18,
+        -0.16,
+        -0.18
+      ],
+      "bounds_max_unity": [
+        0.18,
+        0.24,
+        0.18
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RiverStairNosing_Variant01_WornNosing_Masonry_Stone",
+      "kind": "RiverStairNosing",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.5,
+        -0.04,
+        -0.05
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.04,
+        0.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.05,
+        -0.04
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.0,
+        0.04
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86"
+  "build_signature": "3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5"
 }

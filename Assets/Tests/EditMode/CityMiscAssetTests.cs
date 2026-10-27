@@ -373,7 +373,15 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.ParkBenchRepaired, 0, "Repair_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
             Part(CityMiscKind.ParkChessLampPendant, 0, "ShadeAndSocket_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
             Part(CityMiscKind.ParkChessLampPendant, 0, "Cable_Street", CityMiscMeshRole.Street),
-            Part(CityMiscKind.ParkChessLampPendant, 0, "Bulb_Neon", CityMiscMeshRole.Neon)
+            Part(CityMiscKind.ParkChessLampPendant, 0, "Bulb_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.RiverQuayRepair, 0, "Coping_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.RiverQuayRepair, 0, "Stitches_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.RiverWorksFitting, 0, "PlateAndBolts_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.RiverMouthCap, 0, "Coping_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.RiverTimberJoint, 0, "CollarAndBolts_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.RiverMooringBollard, 0, "Casting_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.RiverLanternShell, 0, "OpenHousing_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.RiverStairNosing, 0, "WornNosing_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone)
         };
 
         [Test]
@@ -384,17 +392,17 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.12.0"));
+                Is.EqualTo("4.13.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
-                Is.EqualTo(87));
+                Is.EqualTo(94));
             Assert.That(
                 CityMiscAssetProvider.ExpectedAssemblyCount,
-                Is.EqualTo(127));
+                Is.EqualTo(134));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(275));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(275));
+                Is.EqualTo(283));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(283));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -424,13 +432,13 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(assemblies, Is.EqualTo(127));
+            Assert.That(assemblies, Is.EqualTo(134));
             Assert.That(
                 actualNames,
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(275));
+                Is.EqualTo(283));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -469,13 +477,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(275));
-            Assert.That(manifest.assembly_count, Is.EqualTo(127));
-            Assert.That(manifest.triangle_count, Is.EqualTo(50870));
+            Assert.That(manifest.mesh_count, Is.EqualTo(283));
+            Assert.That(manifest.assembly_count, Is.EqualTo(134));
+            Assert.That(manifest.triangle_count, Is.EqualTo(52126));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86"));
+                    "3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -601,7 +609,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(275));
+            Assert.That(meshes, Has.Length.EqualTo(283));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -669,7 +677,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(275));
+            Assert.That(actualNames, Has.Count.EqualTo(283));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);

@@ -36,7 +36,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar counter seat / shared physical menu | One-hip supported seating; three free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
 | Mountain terminal cafe cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
 | Mountain terminal cafe menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
-| City Blender misc catalog | CityMisc `4.10.0`: `82` kinds / `122` assemblies / `259` passive meshes; plans retain placement and collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
+| City Blender misc catalog | Passive metre-authored street, park and river meshes; plans retain placement and collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Priority coatings retain heights/UVs; cemetery/sand change locally. | `CityGroundSurfaceSystem`, `GroundSurfacePartitioner` | Current |
@@ -83,7 +83,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Village above the cableway | Snow bowl, abandoned settlement, ski base; mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |
 | Mother's house interior | Wing/bath, two bedrooms/stairs/five shots; unique4K+2K/aux1K; room effects/depth repair/two cubes; passive mirror. | `MothersHouse{Interior,Lighting,Reflection,Surface}*` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
-| City river and embankments | A `10 m` north-south channel preserves all 144 lots. | `CityRiver{Definition,Plan,Planner,Resources,SurfaceAppearance,WorldBuilder}`, `CityWaterSurfaceFactory` | Current |
+| City river and embankments | Two clear banks, three bridges/four landings; bounded authored fittings retain physical routes and shared light. | `CityRiver{Plan,DressingPlan,DressingWorldBuilder,WorldBuilder}` | Current |
 | Yard wheelchair rider | One staged yard rider follows its reserved circuit, with authored wheelchair motion and existing local lighting. | `YardWheelchair{Motion,Plan,Presentation,Actor,Factory,Provider}` | Current |
 | Bar-side yard composition | The yard keeps its bare-ground wheelchair circuit and reserved utility anchors under the fixed cold spotlight. | `CityOpenAreaDecoration{Plan,Planner}`, `CityOpenAreaWorldBuilder` | Current |
 | Cemetery precinct | Deterministic graves, paths, fences and practical lamps dress the separate eastern cemetery. | `CityCemetery{Plan,Planner,WorldBuilder,SurfaceAppearance}`, `CityBenchSitPlan.CreateAll` | Current |

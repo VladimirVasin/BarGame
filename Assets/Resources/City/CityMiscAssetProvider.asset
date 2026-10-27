@@ -1663,4 +1663,52 @@ MonoBehaviour:
     role: 3
     surface: 0
     mesh: {fileID: -5981496851082095158, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: f7d138f03b9d5f69ed8cca3453be9c7e4d5ddf37c15d664e879aa851b926df86
+  - kind: 87
+    variant: 0
+    component: Coping_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -282049872530513772, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 87
+    variant: 0
+    component: Stitches_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -7357068717997735907, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 88
+    variant: 0
+    component: PlateAndBolts_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -8371405323808782247, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 89
+    variant: 0
+    component: Coping_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 970570758569603601, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 90
+    variant: 0
+    component: CollarAndBolts_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -5403146529692111369, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 91
+    variant: 0
+    component: Casting_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 4037522449719102730, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 92
+    variant: 0
+    component: OpenHousing_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -1602058530212965715, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 93
+    variant: 0
+    component: WornNosing_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -6162425157852074956, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5

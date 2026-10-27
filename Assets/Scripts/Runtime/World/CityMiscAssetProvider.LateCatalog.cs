@@ -7,6 +7,50 @@ namespace BarPromenade
     /// </summary>
     public sealed partial class CityMiscAssetProvider
     {
+        private static readonly ExpectedPartSpec[] RiverQuayRepairParts =
+        {
+            P("Coping_Masonry_Stone", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Stone),
+            P("Stitches_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverWorksFittingParts =
+        {
+            P("PlateAndBolts_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverMouthCapParts =
+        {
+            P("Coping_Masonry_Stone", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Stone)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverTimberJointParts =
+        {
+            P("CollarAndBolts_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverMooringBollardParts =
+        {
+            P("Casting_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverLanternShellParts =
+        {
+            P("OpenHousing_Street_PaintedMetal", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] RiverStairNosingParts =
+        {
+            P("WornNosing_Masonry_Stone", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Stone)
+        };
+
         private static readonly ExpectedPartSpec[] ParkBinParts =
         {
             P("Basket_Residential_PaintedMetal", CityMiscMeshRole.Residential,

@@ -173,6 +173,7 @@ namespace BarPromenade
             BuildBridges(root, layout);
             BuildLandings(root, layout);
             BuildPromenadeLights(root, layout, anchors);
+            CityRiverDressingWorldBuilder.Build(root, layout);
             return root.gameObject;
         }
 
@@ -1404,25 +1405,8 @@ namespace BarPromenade
                 landwardEdgeX,
                 terminalZ);
 
-            for (int bollard = -1; bollard <= 1; bollard += 2)
-            {
-                GameObject post = RuntimePrimitiveFactory.CreateCylinder(
-                    $"Mooring Bollard {bollard}",
-                    root,
-                    new Vector3(
-                        landing.PlatformBounds.center.x,
-                        landing.LowerY + 0.26f,
-                        landing.PlatformBounds.center.y +
-                        bollard * landing.PlatformBounds.height * 0.30f),
-                    new Vector3(0.22f, 0.26f, 0.22f),
-                    Iron,
-                    true);
-                CityRiverSurfaceAppearance.Apply(
-                    post.GetComponent<Renderer>(),
-                    CityRiverSurfaceKind.Iron,
-                    SurfaceProjection.CylinderSide,
-                    Iron);
-            }
+            // Authored cast bollards and their measured collision belong to
+            // the shared river-detail plan; no primitive duplicate remains.
         }
 
         private static void BuildLandingCutRetainingWalls(
@@ -1557,10 +1541,8 @@ namespace BarPromenade
                     new Vector3(
                         p.x + sign * 0.17f, p.y + 0.15f, p.z),
                     new Vector3(0.34f, 0.08f, 0.08f)));
-                brackets.Add(new Bounds(
-                    new Vector3(
-                        p.x + sign * 0.30f, p.y + 0.15f, p.z),
-                    new Vector3(0.34f, 0.10f, 0.34f)));
+                // The imported open housing replaces the former block hood;
+                // this batch retains its wall plate and supporting arm only.
                 quayWallBulbs.Add(new Bounds(
                     new Vector3(p.x + sign * 0.30f, p.y, p.z),
                     new Vector3(0.24f, 0.20f, 0.24f)));

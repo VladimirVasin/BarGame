@@ -1,6 +1,22 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-27 — river construction details:**
+  User approved the park/industrial pass on both riverbanks.
+  Seven additive fixed-metre CityMisc families supply coping/repair stones,
+  Works fastenings, Mouth caps, timber collars, cast bollards, open lantern
+  housings and stair nosings. `CityRiverDressingPlan` owns bounded placements;
+  graded coping supports whole feet; batches reuse river maps. Geometry/nav,
+  three crossings, four lower landings and cave stops retain their datums.
+  Authored bollards replace the crude cylinders with matching physical bounds;
+  fittings clear routes, and lamp lenses/halos/aimed anchors keep their owners.
+  All24 effects: finite source bounce (no baked GI/SSGI/SCGI rollout),
+  SSAO/fog/air/shadows/grade, probes/road-only SSR, water depth/Fresnel/foam/
+  normals/reflections (no shallow caustics for this dark channel), wet response,
+  bevels/vertex colour/wind/causal marks/particles/BRDF/affordances and all eight
+  post categories retain shared profiles. No new provider/Light/text/NPC or
+  story signal; no §6 waiver. §16/21 and nine art checks bind; no gain claimed.
+
 - **Accepted architecture exception 2026-10-27 — park chess gazebo:**
   User approved the existing gazebo at the old chess anchor, both complete
   games and same two inhabitants on its deck. `CityParkGazeboGeometry` shares
@@ -4813,32 +4829,17 @@
   outside this wave: the first already owns bespoke batched geometry and the
   other three have terrain, span or dynamic-renderer coupling.
 - **Accepted — City misc is one citywide role-mesh library, not world
-  prefabs:** current design `city_misc_citywide_v4` at generator `4.9.0`
-  contains `82` semantic kinds, `122` assemblies and `259` role meshes
-  (`46,546` triangles) under build
-  signature
-  `8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2`.
-  The provider resolves kind, stable variant and semantic role; the affected
-  builders then place or combine those meshes from their existing plans. The
-  catalog spans the 24-family decoration layer and parks, street lamps and
-  traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
-  seacoast, fringe service belt and the static shells of all four district
-  points of interest, plus the compatibility bar, supermarket and player-home
-  shells, six shallow Residential courtyard-pocket variants, one unoccupied
-  typed-fringe mason-cart scene and the
-  church-yard surface/planting kit and the modified cemetery north-fence
-  posts/rails. `BarBuildingShell`, `SupermarketBuildingShell` and
-  `PlayerHomeBuildingShell` remain addressable but unused, preserving their v4
-  compatibility while separate complete exteriors supersede them.
-  Per-assembly roots and fixed metre-scale bounds are part of the manifest
-  contract. The earlier wave-one and v2 subsets remain frozen
-  by compatibility signatures
-  `dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6`
-  and `4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c`.
-  Unity still owns world plans, placement, terrain, collision proxies,
-  dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
-  cemetery monuments deliberately stay on the legacy builder because their
-  non-rigid tilt is outside the rigid assembly-placement contract.
+  prefabs:** `city_misc_citywide_v4` resolves kind, stable variant and semantic
+  role; builders place/combine passive meshes from existing plans. The measured
+  manifest owns the current inventory, per-assembly roots, fixed-metre bounds
+  and signatures; generator/provider/tests pin the compatible earlier subsets.
+  Coverage includes decorations, park/river/street fixtures, Route01, yards,
+  cemetery/church, coast/fringe and POI shells. `BarBuildingShell`,
+  `SupermarketBuildingShell` and `PlayerHomeBuildingShell` remain addressable
+  but unused after complete exteriors superseded them. Unity owns placement,
+  terrain, collision, dynamics, interactions, lights/halos, cloth and NPCs.
+  Tilted cemetery monuments retain the legacy builder: their non-rigid tilt
+  is outside rigid assembly placement.
 
 - **Accepted architecture exception, 2026-08-31 — only the empty mason cart
   remains from the fringe work-vignette pass:** by explicit user decision, the

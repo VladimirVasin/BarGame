@@ -406,7 +406,13 @@ namespace BarPromenade.Tests.EditMode
                             CityRiverSurfaceAppearance
                                 .GetRecipe(expected.Value)
                                 .ResourcePath));
-                    Color tint = BuilderTints[expected.Value];
+                    Color tint = HasAncestor(renderer, CityRiverDressingWorldBuilder.RootName)
+                        ? expected.Value == CityRiverSurfaceKind.Iron
+                            ? new Color(0.10f, 0.125f, 0.12f)
+                            : expected.Value == CityRiverSurfaceKind.Paving
+                                ? new Color(0.38f, 0.395f, 0.37f)
+                                : new Color(0.39f, 0.405f, 0.375f)
+                        : BuilderTints[expected.Value];
                     Color display = properties.GetColor(BaseColorId);
                     Assert.That(
                         display.g,
@@ -628,6 +634,8 @@ namespace BarPromenade.Tests.EditMode
             }
 
             string name = renderer.name;
+            if (name == "River Details Quay") return CityRiverSurfaceKind.Quay;
+            if (name == "River Details Paving") return CityRiverSurfaceKind.Paving;
             if (name == "Promenade Lamp Glow" ||
                 name == "Quay Wall Lamp Glow" ||
                 name == "Quay Wall Lamp Halo" ||
