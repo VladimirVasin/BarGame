@@ -5,44 +5,44 @@ namespace BarPromenade
 {
     public static class ChurchInteriorLayoutPlanner
     {
-        public const float RoomWidth = 23f;
-        public const float RoomDepth = 44f;
-        // The vault used to be a surface, not a solid, and stopped at
-        // the ridge line. Now that it has a thickness and a cap over
-        // the joint, the model's own peak stands 28 cm higher. The
-        // ceiling a player sees has not moved: the undersides are at
-        // the heights they always were.
-        public const float ModelMaximumHeight = 14.28f;
-        public const float RoomHeight = 14.5f;
-        public const float WallThickness = 0.35f;
-        public const float SanctuaryBoundaryZ = 12.2f;
-        public const string ModelResourcePath =
-            "Church/ChurchInterior3D";
+        public const float RoomWidth = 12.1f;
+        public const float RoomDepth = 24.2f;
+        public const float ModelMaximumHeight = 7.528624f;
+        public const float RoomHeight = 7.6f;
+        public const float WallThickness = 0.3f;
+        public const float NarthexHalfWidth = 4.6f;
+        public const float AisleHalfWidth = 5.75f;
+        public const float NarthexEndZ = -8.55f;
+        public const float SanctuaryBoundaryZ = 7.8f;
+        public const float DoorPlaneZ = -12.1275f;
+        public const float DoorOpeningWidth = 1.8f;
+        public const float DoorOpeningHeight = 2.6f;
+        public const float WindowApertureX = 6.06f;
+        public const float WindowCenterY = 2.6675f;
+        public const float WindowOpeningWidth = .6875f;
+        public const float WindowOpeningHeight = 1.7875f;
+        public const float RoseOpeningDiameter = 3.025f;
+        public static readonly Vector3 RoseCenter = new Vector3(0f, 4.95f, -12.078f);
+        public static readonly float[] WindowDepths = { -5.5f, -2.2f, 1.1f, 4.4f, 7.7f };
+        public const string ModelResourcePath = "Church/ChurchInterior3D";
         public static readonly Bounds ModelLocalBounds = new Bounds(
-            new Vector3(0f, 7.02f, 0f),
-            new Vector3(22.82f, 14.52f, 44.02f));
+            new Vector3(0f, 3.674312f, -.1338525f), new Vector3(12.105f, 7.708624f, 24.087295f));
+
+        // The exterior wrapper faces +Z out of the west door; the interior
+        // faces +Z toward the altar. Both are measured in placed world metres.
+        public static Vector3 ToExteriorMetricPosition(Vector3 point) =>
+            new Vector3(-point.x, point.y, -point.z);
 
         public static ChurchInteriorLayoutPlan Generate(int citySeed)
         {
             var plan = new ChurchInteriorLayoutPlan(
-                citySeed,
-                ComputeStableSeed(citySeed),
-                new Vector2(RoomWidth, RoomDepth),
-                RoomHeight,
-                WallThickness,
-                new Rect(-11.5f, -22f, RoomWidth, RoomDepth),
-                ModelLocalBounds,
-                new Rect(-10.8f, -20.6f, 21.6f, 32.8f),
-                new Vector3(
-                    0f,
-                    PlayerFactory.GroundedRootOffset,
-                    -18.8f),
-                new Vector3(0f, 0.95f, -21.0f),
-                new Vector3(2.8f, 1.9f, 1.4f),
-                ModelResourcePath,
-                CreateZones(),
-                CreatePaths(),
-                CreateFixtures());
+                citySeed, ComputeStableSeed(citySeed), new Vector2(RoomWidth, RoomDepth),
+                RoomHeight, WallThickness, new Rect(-6.05f, -12.1f, RoomWidth, RoomDepth),
+                ModelLocalBounds, new Rect(-AisleHalfWidth, -11.9f, AisleHalfWidth * 2f,
+                    SanctuaryBoundaryZ + 11.9f),
+                new Vector3(0f, PlayerFactory.GroundedRootOffset, -10.1f),
+                new Vector3(0f, 0.95f, -11.2f), new Vector3(1.8f, 1.9f, 1.4f),
+                ModelResourcePath, CreateZones(), CreatePaths(), CreateFixtures());
             ChurchInteriorLayoutValidator.ValidateOrThrow(plan);
             return plan;
         }
@@ -57,238 +57,78 @@ namespace BarPromenade
             return hash ^ (hash >> 16);
         }
 
-        private static List<ChurchInteriorZonePlan> CreateZones()
+        private static List<ChurchInteriorZonePlan> CreateZones() => new List<ChurchInteriorZonePlan>
         {
-            return new List<ChurchInteriorZonePlan>
-            {
-                new ChurchInteriorZonePlan(
-                    "narthex",
-                    ChurchInteriorZoneKind.Narthex,
-                    new Rect(-10.8f, -20.6f, 21.6f, 7.0f),
-                    6.8f,
-                    true),
-                new ChurchInteriorZonePlan(
-                    "nave",
-                    ChurchInteriorZoneKind.Nave,
-                    new Rect(-10.8f, -13.6f, 21.6f, 9.4f),
-                    9f,
-                    true),
-                new ChurchInteriorZonePlan(
-                    "crossing-and-choir",
-                    ChurchInteriorZoneKind.CrossingAndChoir,
-                    new Rect(-10.8f, -4.2f, 21.6f, 16.4f),
-                    RoomHeight,
-                    true),
-                new ChurchInteriorZonePlan(
-                    "sanctuary",
-                    ChurchInteriorZoneKind.Sanctuary,
-                    new Rect(-10.8f, 12.6f, 21.6f, 8.0f),
-                    10f,
-                    false)
-            };
-        }
+            new ChurchInteriorZonePlan("narthex", ChurchInteriorZoneKind.Narthex,
+                new Rect(-4.6f, -11.9f, 9.2f, 3.35f), 5.95f, true),
+            new ChurchInteriorZonePlan("nave", ChurchInteriorZoneKind.Nave,
+                new Rect(-5.75f, -8.55f, 11.5f, 11.55f), 7.4f, true),
+            new ChurchInteriorZonePlan("crossing-and-choir", ChurchInteriorZoneKind.CrossingAndChoir,
+                new Rect(-5.75f, 3f, 11.5f, 4.8f), 7.4f, true),
+            new ChurchInteriorZonePlan("sanctuary", ChurchInteriorZoneKind.Sanctuary,
+                new Rect(-5.75f, 8.14f, 11.5f, 3.66f), 7.4f, false)
+        };
 
-        private static List<ChurchInteriorPathPlan> CreatePaths()
+        private static List<ChurchInteriorPathPlan> CreatePaths() => new List<ChurchInteriorPathPlan>
         {
-            return new List<ChurchInteriorPathPlan>
-            {
-                new ChurchInteriorPathPlan(
-                    "main-nave",
-                    ChurchInteriorPathKind.MainNave,
-                    new Rect(-1.0f, -20.2f, 2.0f, 32.0f),
-                    2.0f),
-                new ChurchInteriorPathPlan(
-                    "north-side-aisle",
-                    ChurchInteriorPathKind.NorthSideAisle,
-                    new Rect(-8.3f, -13.2f, 2.0f, 24.7f),
-                    2.0f),
-                new ChurchInteriorPathPlan(
-                    "south-side-aisle",
-                    ChurchInteriorPathKind.SouthSideAisle,
-                    new Rect(6.3f, -13.2f, 2.0f, 24.7f),
-                    2.0f),
-                new ChurchInteriorPathPlan(
-                    "narthex-crossing",
-                    ChurchInteriorPathKind.NarthexCrossing,
-                    new Rect(-8.2f, -16.2f, 16.4f, 3.0f),
-                    3.0f),
-                new ChurchInteriorPathPlan(
-                    "transept-choir-crossing",
-                    ChurchInteriorPathKind.TranseptChoirCrossing,
-                    new Rect(-8.4f, 6.3f, 16.8f, 2.4f),
-                    2.4f)
-            };
-        }
+            new ChurchInteriorPathPlan("main-nave", ChurchInteriorPathKind.MainNave,
+                new Rect(-.8f, -11.6f, 1.6f, 19.3f), 1.6f),
+            new ChurchInteriorPathPlan("north-side-aisle", ChurchInteriorPathKind.NorthSideAisle,
+                new Rect(-5.2f, -8.2f, 1.2f, 13.95f), 1.2f),
+            new ChurchInteriorPathPlan("south-side-aisle", ChurchInteriorPathKind.SouthSideAisle,
+                new Rect(4f, -8.2f, 1.2f, 13.95f), 1.2f),
+            new ChurchInteriorPathPlan("narthex-crossing", ChurchInteriorPathKind.NarthexCrossing,
+                new Rect(-5.2f, -8.2f, 10.4f, 1.2f), 1.2f),
+            new ChurchInteriorPathPlan("transept-choir-crossing", ChurchInteriorPathKind.TranseptChoirCrossing,
+                new Rect(-5.2f, 4.6f, 10.4f, 1.2f), 1.2f)
+        };
 
         private static List<ChurchInteriorFixturePlan> CreateFixtures()
         {
             var fixtures = new List<ChurchInteriorFixturePlan>();
-            Vector2[] piers =
-            {
-                new Vector2(-5.5f, -3.5f),
-                new Vector2(5.5f, -3.5f),
-                new Vector2(-5.5f, 5.5f),
-                new Vector2(5.5f, 5.5f)
-            };
-            for (int index = 0; index < piers.Length; index++)
-            {
-                Vector2 center = piers[index];
-                fixtures.Add(new ChurchInteriorFixturePlan(
-                    $"pier-{index + 1}",
-                    ChurchInteriorFixtureKind.Pier,
-                    // Base and capital flare past the .70 shaft; the
-                    // envelope is the widest part, as the generator's
-                    // PIER_FOOTPRINT declares.
-                    CenteredRect(center.x, center.y, 1.56f, 1.56f),
-                    0f,
-                    9.6f,
-                    true));
-            }
-
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "communion-rail",
-                ChurchInteriorFixtureKind.AltarRail,
-                new Rect(-10.8f, 12.2f, 21.6f, 0.4f),
-                0f,
-                0.92f,
-                true));
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "altar-table",
-                ChurchInteriorFixtureKind.AltarTable,
-                CenteredRect(0f, 15.7f, 2.75f, 1.55f),
-                0f,
-                1.14f,
-                true));
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "high-altar-tabernacle",
-                ChurchInteriorFixtureKind.HighAltar,
-                CenteredRect(0f, 18.0f, 4.2f, 2.5f),
-                0f,
-                6.2f,
-                true));
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "sanctuary-crucifix",
-                ChurchInteriorFixtureKind.Crucifix,
-                CenteredRect(0f, 20.65f, 2.5f, 0.35f),
-                3.5f,
-                4.7f,
-                false));
-
-            // Ten rows carried up to the crossing. Six rows ending at
-            // z -4.25 left sixteen metres of bare floor between the
-            // last pew and the communion rail; PEW_ROW_YS in
-            // tools/build-church-3d-model.py is the same list and the
-            // layout contract check fails the moment they disagree.
-            float[] pewRows =
-            {
-                -8.5f,
-                -6.95f,
-                -5.4f,
-                -3.85f,
-                -2.3f,
-                -0.75f,
-                0.8f,
-                2.35f,
-                3.9f,
-                5.45f
-            };
-            for (int row = 0; row < pewRows.Length; row++)
-            {
+            float[] pierDepths = { -3.5f, 4f };
+            int pier = 0;
+            foreach (float z in pierDepths)
                 for (int side = -1; side <= 1; side += 2)
-                {
-                    string suffix = side < 0 ? "north" : "south";
-                    fixtures.Add(new ChurchInteriorFixturePlan(
-                        $"pew-{row + 1}-{suffix}",
-                        ChurchInteriorFixtureKind.Pew,
-                        CenteredRect(
-                            side * 2.9f,
-                            pewRows[row],
-                            3.8f,
-                            0.72f),
-                        0f,
-                        1.5f,
-                        true));
-                }
-            }
-
+                    fixtures.Add(Fixture($"pier-{++pier}", ChurchInteriorFixtureKind.Pier,
+                        side * 3.5f, z, .84f, .84f, 0f, 4.9f));
+            fixtures.Add(Fixture("communion-rail", ChurchInteriorFixtureKind.AltarRail,
+                0f, 8f, 11.5f, .28f, 0f, .85f));
+            fixtures.Add(Fixture("altar-table", ChurchInteriorFixtureKind.AltarTable,
+                0f, 9.2f, 2.3f, 1.3f, 0f, 1f));
+            fixtures.Add(Fixture("high-altar-tabernacle", ChurchInteriorFixtureKind.HighAltar,
+                0f, 10.45f, 3.3f, 1.15f, 0f, 3.8f));
+            fixtures.Add(Fixture("sanctuary-crucifix", ChurchInteriorFixtureKind.Crucifix,
+                0f, 10.53f, 1.75f, .18f, 2.4f, 2.3f, false));
+            float[] rows = { -6.1f, -4.7f, -2.3f, -.9f, .5f, 1.9f };
+            for (int row = 0; row < rows.Length; row++)
+                for (int side = -1; side <= 1; side += 2)
+                    fixtures.Add(Fixture($"pew-{row + 1}-{(side < 0 ? "north" : "south")}",
+                        ChurchInteriorFixtureKind.Pew, side * 2.05f, rows[row], 2.2f, .72f, 0f, 1.05f));
             for (int side = -1; side <= 1; side += 2)
             {
                 string suffix = side < 0 ? "north" : "south";
-                fixtures.Add(new ChurchInteriorFixturePlan(
-                    $"confessional-{suffix}",
-                    ChurchInteriorFixtureKind.Confessional,
-                    CenteredRect(side * 9.7f, 7.3f, 1.8f, 3.3f),
-                    0f,
-                    3.15f,
-                    true));
-                fixtures.Add(new ChurchInteriorFixturePlan(
-                    $"votive-candle-stand-{suffix}",
-                    ChurchInteriorFixtureKind.VotiveCandleStand,
-                    CenteredRect(side * 8.8f, 10.5f, 0.8f, 0.8f),
-                    0f,
-                    1.35f,
-                    true));
+                fixtures.Add(Fixture($"confessional-{suffix}", ChurchInteriorFixtureKind.Confessional,
+                    side * 4.95f, 6.55f, 1.4f, 1.5f, 0f, 2.45f));
+                fixtures.Add(Fixture($"votive-candle-stand-{suffix}", ChurchInteriorFixtureKind.VotiveCandleStand,
+                    side * 3.2f, 6.3f, .7f, .7f, 0f, 1.35f));
             }
-
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "baptismal-font",
-                ChurchInteriorFixtureKind.BaptismalFont,
-                CenteredRect(-8.8f, -16.8f, 1.1f, 1.1f),
-                0f,
-                1.11f,
-                true));
-            float[] choirLoftSupportX =
-            {
-                -8f,
-                -5.3f,
-                5.3f,
-                8f
-            };
-            for (int index = 0;
-                 index < choirLoftSupportX.Length;
-                 index++)
-            {
-                fixtures.Add(new ChurchInteriorFixturePlan(
-                    $"choir-loft-support-{index + 1}",
-                    ChurchInteriorFixtureKind.ChoirLoftSupport,
-                    CenteredRect(
-                        choirLoftSupportX[index],
-                        -18.2f,
-                        0.32f,
-                        0.32f),
-                    0f,
-                    4.4f,
-                    true));
-            }
-
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "choir-loft",
-                ChurchInteriorFixtureKind.ChoirLoft,
-                CenteredRect(0f, -18.4f, 17f, 4.2f),
-                4.4f,
-                0.4f,
-                true));
-            fixtures.Add(new ChurchInteriorFixturePlan(
-                "pipe-organ",
-                ChurchInteriorFixtureKind.Organ,
-                CenteredRect(0f, -20.3f, 12f, 1.6f),
-                4.8f,
-                6.9f,
-                true));
+            fixtures.Add(Fixture("baptismal-font", ChurchInteriorFixtureKind.BaptismalFont,
+                -3.5f, -8.8f, 1.1f, 1.1f, 0f, 1.1f));
+            float[] supports = { -4.1f, -3.25f, 3.25f, 4.1f };
+            for (int index = 0; index < supports.Length; index++)
+                fixtures.Add(Fixture($"choir-loft-support-{index + 1}", ChurchInteriorFixtureKind.ChoirLoftSupport,
+                    supports[index], -10.3f, .22f, .22f, 0f, 3f));
+            fixtures.Add(Fixture("choir-loft", ChurchInteriorFixtureKind.ChoirLoft,
+                0f, -10.75f, 8.7f, 2.4f, 3f, .22f));
+            fixtures.Add(Fixture("pipe-organ", ChurchInteriorFixtureKind.Organ,
+                0f, -10.3f, 4.8f, .9f, 3.22f, 2.7f));
             return fixtures;
         }
 
-        private static Rect CenteredRect(
-            float x,
-            float z,
-            float width,
-            float depth)
-        {
-            return new Rect(
-                x - width * 0.5f,
-                z - depth * 0.5f,
-                width,
-                depth);
-        }
+        private static ChurchInteriorFixturePlan Fixture(string id, ChurchInteriorFixtureKind kind,
+            float x, float z, float width, float depth, float bottom, float height, bool blocks = true) =>
+            new ChurchInteriorFixturePlan(id, kind,
+                new Rect(x - width * .5f, z - depth * .5f, width, depth), bottom, height, blocks);
     }
 }

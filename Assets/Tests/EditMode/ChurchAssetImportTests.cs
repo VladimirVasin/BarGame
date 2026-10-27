@@ -36,6 +36,12 @@ namespace BarPromenade.Tests.EditMode
                 asset => asset.kind == "Exterior");
             ChurchManifestAsset interior = manifest.assets.Single(
                 asset => asset.kind == "Interior");
+            Assert.That(interior.dimensions_m.width, Is.EqualTo(ChurchInteriorLayoutPlanner.RoomWidth));
+            Assert.That(interior.dimensions_m.length, Is.EqualTo(ChurchInteriorLayoutPlanner.RoomDepth));
+            Assert.That(exterior.door_opening_m.width * CityChurchPlanner.ExteriorModelScale,
+                Is.EqualTo(interior.door_opening_m.width).Within(.001f));
+            Assert.That(exterior.door_opening_m.height * CityChurchPlanner.ExteriorModelScale,
+                Is.EqualTo(interior.door_opening_m.height).Within(.001f));
             Assert.That(exterior.renderer_count, Is.LessThanOrEqualTo(18));
             Assert.That(exterior.triangle_count, Is.LessThanOrEqualTo(12000));
             Assert.That(interior.renderer_count, Is.LessThanOrEqualTo(24));
@@ -80,6 +86,11 @@ namespace BarPromenade.Tests.EditMode
                     name,
                     TextureWrapMode.Repeat,
                     true);
+                string response = name.Replace("Albedo.png", "Response.png");
+                AssertTextureImporter(response, TextureWrapMode.Repeat, true);
+                var importer = (TextureImporter)AssetImporter.GetAtPath("Assets/Church/Textures/" + response);
+                Assert.That(importer.sRGBTexture, Is.False, response);
+                Assert.That(importer.alphaSource, Is.EqualTo(TextureImporterAlphaSource.FromInput), response);
             }
 
             foreach (string name in atlases)
@@ -192,7 +203,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         registry.RendererBindings.Any(
                             binding => binding.Role ==
-                                "twelve_nave_pew_halves"),
+                                "twelve_human_size_pew_halves"),
                         Is.True);
                     Assert.That(
                         registry.RendererBindings.Any(
@@ -228,8 +239,17 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Serializable]
+        private sealed class ChurchDoorManifest
+        {
+            public float width;
+            public float height;
+        }
+
+        [Serializable]
         private sealed class ChurchManifestAsset
         {
+            public ChurchDimensionsManifest dimensions_m;
+            public ChurchDoorManifest door_opening_m;
             public string kind;
             public float runtime_wrapper_yaw_degrees;
             public int renderer_count;

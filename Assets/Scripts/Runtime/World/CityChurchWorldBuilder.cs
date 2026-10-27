@@ -6,8 +6,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// Materialises the church exterior plan. The prefab is visual-only:
-    /// every imported collider is disabled and one plan-derived collider
-    /// plus the interactive entrance own gameplay geometry. The separate
+    /// every imported collider is disabled and plan-derived collision
+    /// plus the interactive entrance own gameplay geometry. The model owns
+    /// the foundation, threshold and working door presentation. The separate
     /// courtyard builder owns the Blender-authored approach surface.
     /// </summary>
     public static class CityChurchWorldBuilder
@@ -20,18 +21,11 @@ namespace BarPromenade
         public const float EntranceTriggerRadius = 1.05f;
         public const float EntranceAnchorTolerance = 0.001f;
 
-        /// <summary>
-        /// The authored west portal the placer hides. It is a four-metre
-        /// slab of wood standing behind the facade's own stone plinth,
-        /// which is neither a door the player recognises nor one he can
-        /// see the bottom of; the City draws its ordinary door instead.
-        /// </summary>
-        public const string AuthoredWestDoorPartName = "EXT_WestDoors";
-
         public const float DoorLeafWidth = 1.8f;
         public const float DoorLeafHeight = 2.6f;
         public const float DoorThresholdDepth = 0.92f;
         public const float DoorThresholdWidth = DoorLeafWidth + 0.9f;
+        public const string ThresholdCollisionName = "Church Threshold Support";
 
         internal static Rect GetDoorThresholdBounds(Vector3 door)
         {
@@ -39,19 +33,6 @@ namespace BarPromenade
                 door.z - DoorThresholdWidth * 0.5f,
                 DoorThresholdDepth, DoorThresholdWidth);
         }
-
-        private static readonly Color FoundationStone =
-            new Color(0.28f, 0.29f, 0.27f);
-        // The model's own Wood, Stone and Iron slots, so the door the
-        // City draws belongs to the facade it is set into.
-        private static readonly Color DoorTimber =
-            new Color(0.35f, 0.19f, 0.10f);
-        private static readonly Color DoorTrimStone =
-            new Color(0.50f, 0.52f, 0.50f);
-        private static readonly Color DoorIron =
-            new Color(0.13f, 0.14f, 0.13f);
-        private static readonly Color DoorLampGlow =
-            new Color(1.05f, 0.72f, 0.34f);
 
         public static ChurchEntrance Build(
             Transform parent,
@@ -76,22 +57,6 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            GameObject foundation = RuntimePrimitiveFactory.CreateBox(
-                "Church Foundation",
-                root,
-                plan.FoundationBounds.center,
-                plan.FoundationBounds.size,
-                FoundationStone,
-                false);
-            Renderer foundationRenderer = foundation.GetComponent<Renderer>();
-            if (foundationRenderer != null)
-            {
-                CityCemeterySurfaceAppearance.ApplyCombined(
-                    foundationRenderer,
-                    CityCemeterySurfaceKind.Stone,
-                    FoundationStone);
-            }
-
             ChurchAssetRegistry registry;
             try
             {
@@ -113,20 +78,21 @@ namespace BarPromenade
             model.transform.localScale =
                 Vector3.one * CityChurchPlanner.ExteriorModelScale;
             ValidateExteriorEntranceAnchor(registry, plan);
-            HideAuthoredWestDoor(registry);
             foreach (ChurchRendererBinding binding in registry.RendererBindings)
+            {
                 if (binding.SourceName == "EXT_Foundation" &&
                     binding.MaterialSlot == ChurchMaterialSlot.Stone)
                     GroundAuthoredSurfaceAppearance.Apply(binding.Renderer,
                         GroundSurfaceKind.Paving, cityClimate: true);
+                if (binding.SourceName == "EXT_DoorLampWarm" && binding.MaterialSlot == ChurchMaterialSlot.GlassWarm)
+                    CityNightGlowRegistry.Register(binding.Renderer, new Color(1.05f, .72f, .34f));
+            }
             Collider[] importedColliders =
                 model.GetComponentsInChildren<Collider>(true);
             for (int index = 0; index < importedColliders.Length; index++)
             {
                 importedColliders[index].enabled = false;
             }
-
-            BuildEntranceDoor(root, plan);
 
             GameObject collision = new GameObject("Church Collision");
             collision.transform.SetParent(root, false);
@@ -135,6 +101,7 @@ namespace BarPromenade
             BoxCollider buildingCollider =
                 collision.AddComponent<BoxCollider>();
             buildingCollider.size = plan.BuildingColliderBounds.size;
+            BuildThresholdSupport(root, plan);
 
             GameObject entranceObject = new GameObject(
                 "Interactive Church Entrance");
@@ -155,178 +122,44 @@ namespace BarPromenade
             return entrance;
         }
 
-        private static void HideAuthoredWestDoor(
-            ChurchAssetRegistry registry)
+        private static void BuildThresholdSupport(Transform root, CityChurchPlan plan)
         {
-            for (int index = 0;
-                 index < registry.RendererBindings.Count;
-                 index++)
-            {
-                ChurchRendererBinding binding =
-                    registry.RendererBindings[index];
-                if (binding == null ||
-                    binding.Renderer == null ||
-                    !string.Equals(
-                        binding.SourceName,
-                        AuthoredWestDoorPartName,
-                        StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                binding.Renderer.enabled = false;
-                return;
-            }
-
-            throw new InvalidOperationException(
-                "The church exterior prefab no longer publishes its " +
-                $"'{AuthoredWestDoorPartName}' part, so the City cannot " +
-                "hide it before drawing the door the player uses.");
-        }
-
-        /// <summary>
-        /// The City's ordinary door, at the same metres as the bar, the
-        /// supermarket and the player's own front door: a leaf a person
-        /// could pull, a stone surround, a lintel and a handle. It is
-        /// drawn proud of the facade's stone plinth, which is what
-        /// swallowed the bottom of the authored portal.
-        /// </summary>
-        private static void BuildEntranceDoor(
-            Transform root,
-            CityChurchPlan plan)
-        {
+            // Grass and paving leave this exact footprint to the imported sill.
+            // Its FBX stays passive/non-readable; this tiny owned collision mesh
+            // follows the same metre datums without retaining its visual meshes.
             Vector3 outward = plan.EntranceOutwardDirection;
             Vector3 tangent = Vector3.Cross(Vector3.up, outward);
-            bool frontageIsX = Mathf.Abs(outward.x) > 0.5f;
-            Vector3 door = plan.DoorGroundPosition;
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Church Door",
-                root,
-                door +
-                (outward * 0.16f) +
-                (Vector3.up * (DoorLeafHeight * 0.5f)),
-                FacadeSize(frontageIsX, 0.14f, DoorLeafHeight, DoorLeafWidth),
-                DoorTimber,
-                false);
-
-            // The mullion between the two leaves, so it reads as the
-            // pair of doors a church has rather than one flat panel.
-            RuntimePrimitiveFactory.CreateBox(
-                "Church Door Mullion",
-                root,
-                door +
-                (outward * 0.24f) +
-                (Vector3.up * (DoorLeafHeight * 0.5f)),
-                FacadeSize(frontageIsX, 0.06f, DoorLeafHeight - 0.10f, 0.09f),
-                DoorIron,
-                false);
-
-            for (int side = -1; side <= 1; side += 2)
+            Vector3 outer = plan.DoorGroundPosition + outward * DoorThresholdDepth;
+            Vector3 inner = plan.DoorGroundPosition;
+            float half = DoorThresholdWidth * .5f;
+            float bottom = plan.GroundTopY + CityChurchPlanner.FoundationTopAboveGround -
+                CityChurchPlanner.FoundationHeight;
+            var vertices = new Vector3[8];
+            vertices[0] = outer - tangent * half;
+            vertices[1] = outer + tangent * half;
+            vertices[2] = inner + tangent * half;
+            vertices[3] = inner - tangent * half;
+            for (int index = 0; index < 4; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Church Door Jamb",
-                    root,
-                    door +
-                    (outward * 0.20f) +
-                    (tangent * (side * (DoorLeafWidth * 0.5f + 0.14f))) +
-                    (Vector3.up * ((DoorLeafHeight + 0.22f) * 0.5f)),
-                    FacadeSize(
-                        frontageIsX,
-                        0.24f,
-                        DoorLeafHeight + 0.22f,
-                        0.28f),
-                    DoorTrimStone,
-                    false);
-                RuntimePrimitiveFactory.CreateBox(
-                    "Church Door Handle",
-                    root,
-                    door +
-                    (outward * 0.27f) +
-                    (tangent * (side * 0.26f)) +
-                    (Vector3.up * 1.06f),
-                    FacadeSize(frontageIsX, 0.08f, 0.07f, 0.22f),
-                    DoorIron,
-                    false);
+                vertices[index].y = bottom;
+                vertices[index + 4] = vertices[index];
+                vertices[index + 4].y = plan.GroundTopY + (index < 2
+                    ? CityChurchCourtyardWorldBuilder.SurfaceTopAboveGround
+                    : CityChurchPlanner.FoundationTopAboveGround);
             }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Church Door Lintel",
-                root,
-                door +
-                (outward * 0.20f) +
-                (Vector3.up * (DoorLeafHeight + 0.11f)),
-                FacadeSize(
-                    frontageIsX,
-                    0.24f,
-                    0.22f,
-                    DoorLeafWidth + 0.56f),
-                DoorTrimStone,
-                false);
-
-            // Every other City door is marked after dark - the bar's
-            // sign, the grocery's blade, the porch bulb at home. This
-            // west front has nothing on it at all, which is most of why
-            // the entrance read as a blank panel.
-            RuntimePrimitiveFactory.CreateBox(
-                "Church Door Lamp Bracket",
-                root,
-                door +
-                (outward * 0.30f) +
-                (Vector3.up * (DoorLeafHeight + 0.52f)),
-                FacadeSize(frontageIsX, 0.36f, 0.07f, 0.07f),
-                DoorIron,
-                false);
-            GameObject lamp = RuntimePrimitiveFactory.CreateBox(
-                "Church Door Lamp",
-                root,
-                door +
-                (outward * 0.44f) +
-                (Vector3.up * (DoorLeafHeight + 0.38f)),
-                FacadeSize(frontageIsX, 0.20f, 0.24f, 0.20f),
-                DoorLampGlow,
-                CityNightResources.EmissiveMaterial,
-                false);
-            CityNightGlowRegistry.Register(
-                lamp.GetComponent<Renderer>(),
-                DoorLampGlow);
-
-            // A threshold sill, not a step: it is laid flush with the
-            // forecourt for the same reason the forecourt is laid flush
-            // with the ground - anything the hero cannot stand on must
-            // never be between him and the height his dock is measured
-            // at.
-            GameObject threshold = RuntimePrimitiveFactory.CreateBox(
-                "Church Door Threshold",
-                root,
-                door +
-                (outward * (DoorThresholdDepth * 0.5f)) +
-                (Vector3.up *
-                 (CityChurchPlanner.ApproachSurfaceTopAboveGround -
-                  CityChurchPlanner.ApproachSurfaceHeight * 0.5f)),
-                FacadeSize(
-                    frontageIsX,
-                    DoorThresholdDepth,
-                    CityChurchPlanner.ApproachSurfaceHeight,
-                    DoorThresholdWidth),
-                DoorTrimStone,
-                false);
-            CityPointOfInterestSurfaceAppearance.Apply(
-                threshold.GetComponent<Renderer>(),
-                CityPointOfInterestSurfaceKind.Paving,
-                SurfaceProjection.BoxXZ,
-                DoorTrimStone);
-        }
-
-        private static Vector3 FacadeSize(
-            bool frontageIsX,
-            float depth,
-            float height,
-            float width)
-        {
-            return frontageIsX
-                ? new Vector3(depth, height, width)
-                : new Vector3(width, height, depth);
+            for (int index = 0; index < vertices.Length; index++)
+                vertices[index] = root.InverseTransformPoint(vertices[index]);
+            var mesh = new Mesh { name = "Church Threshold Support Mesh", hideFlags = HideFlags.HideAndDontSave };
+            mesh.vertices = vertices;
+            mesh.triangles = new[] { 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+                0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7 };
+            mesh.RecalculateBounds();
+            var support = new GameObject(ThresholdCollisionName);
+            support.transform.SetParent(root, false);
+            support.AddComponent<MeshCollider>().sharedMesh = mesh;
+            support.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            FootstepGround.Stamp(support, FootstepGroundKind.Stone);
+            mesh.UploadMeshData(false);
         }
 
         internal static void ValidateExteriorEntranceAnchor(

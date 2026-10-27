@@ -115,7 +115,7 @@ namespace BarPromenade
             Bounds.height);
     }
 
-    public sealed class ChurchInteriorLayoutPlan
+    public sealed class ChurchInteriorLayoutPlan : IWalkableArea
     {
         internal ChurchInteriorLayoutPlan(
             int citySeed,
@@ -166,6 +166,36 @@ namespace BarPromenade
         public IReadOnlyList<ChurchInteriorZonePlan> Zones { get; }
         public IReadOnlyList<ChurchInteriorPathPlan> Paths { get; }
         public IReadOnlyList<ChurchInteriorFixturePlan> Fixtures { get; }
+
+        // The west narthex is narrower than the side-aisle body. Keeping
+        // this contour in navigation prevents the bounding rectangle from
+        // creating invisible walkable wings outside the authored building.
+        public bool Contains(Vector3 position, float radius = 0f)
+        {
+            float halfWidth = position.z - radius < ChurchInteriorLayoutPlanner.NarthexEndZ
+                ? ChurchInteriorLayoutPlanner.NarthexHalfWidth
+                : ChurchInteriorLayoutPlanner.AisleHalfWidth;
+            return position.x >= -halfWidth + radius && position.x <= halfWidth - radius &&
+                position.z >= WalkableBounds.yMin + radius &&
+                position.z <= WalkableBounds.yMax - radius;
+        }
+
+        public bool ContainsWalkable(Rect bounds) =>
+            Contains(new Vector3(bounds.xMin, 0f, bounds.yMin)) &&
+            Contains(new Vector3(bounds.xMax, 0f, bounds.yMin)) &&
+            Contains(new Vector3(bounds.xMin, 0f, bounds.yMax)) &&
+            Contains(new Vector3(bounds.xMax, 0f, bounds.yMax));
+
+        public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius)
+        {
+            desiredPosition.z = Mathf.Clamp(desiredPosition.z,
+                WalkableBounds.yMin + radius, WalkableBounds.yMax - radius);
+            float halfWidth = desiredPosition.z - radius < ChurchInteriorLayoutPlanner.NarthexEndZ
+                ? ChurchInteriorLayoutPlanner.NarthexHalfWidth
+                : ChurchInteriorLayoutPlanner.AisleHalfWidth;
+            desiredPosition.x = Mathf.Clamp(desiredPosition.x, -halfWidth + radius, halfWidth - radius);
+            return desiredPosition;
+        }
 
         public bool TryGetZone(
             ChurchInteriorZoneKind kind,

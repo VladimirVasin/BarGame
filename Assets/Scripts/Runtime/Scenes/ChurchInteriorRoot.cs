@@ -5,40 +5,6 @@ namespace BarPromenade
 {
     public sealed class ChurchInteriorRoot : MonoBehaviour
     {
-        private sealed class ChurchWalkableArea : IWalkableArea
-        {
-            private readonly Rect bounds;
-
-            public ChurchWalkableArea(Rect walkableBounds)
-            {
-                bounds = walkableBounds;
-            }
-
-            public bool Contains(Vector3 position, float radius = 0f)
-            {
-                return position.x >= bounds.xMin + radius &&
-                       position.x <= bounds.xMax - radius &&
-                       position.z >= bounds.yMin + radius &&
-                       position.z <= bounds.yMax - radius;
-            }
-
-            public Vector3 Constrain(
-                Vector3 currentPosition,
-                Vector3 desiredPosition,
-                float radius)
-            {
-                desiredPosition.x = Mathf.Clamp(
-                    desiredPosition.x,
-                    bounds.xMin + radius,
-                    bounds.xMax - radius);
-                desiredPosition.z = Mathf.Clamp(
-                    desiredPosition.z,
-                    bounds.yMin + radius,
-                    bounds.yMax - radius);
-                return desiredPosition;
-            }
-        }
-
         public bool IsInitialized { get; private set; }
         public ChurchInteriorLayoutPlan Layout { get; private set; }
         public ChurchInteriorWorldResult World { get; private set; }
@@ -132,7 +98,7 @@ namespace BarPromenade
                 transform,
                 Layout.PlayerSpawn,
                 camera,
-                new ChurchWalkableArea(Layout.WalkableBounds),
+                Layout,
                 InteractionPrompt);
             CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();

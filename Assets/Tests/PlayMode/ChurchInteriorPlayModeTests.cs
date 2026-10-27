@@ -16,7 +16,7 @@ namespace BarPromenade.Tests.PlayMode
             "[Bar Promenade] Door Transition Runtime";
         private const string CityRootName =
             "[Bar Promenade] City Runtime";
-        private const int RoomColliderCount = 6;
+        private const int RoomColliderCount = 10;
         private const float TimeoutSeconds = 45f;
 
         [UnityTest]

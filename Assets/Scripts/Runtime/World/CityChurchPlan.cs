@@ -91,10 +91,9 @@ namespace BarPromenade
         public const string DefaultAreaId = "church";
 
         /// <summary>
-        /// The authored Blender dimensions of the exterior model. One
-        /// source asset serves both this landmark and the ChurchInterior
-        /// scene, so the City shrinks it at the placer instead of
-        /// re-authoring the model and its interior layout contract.
+        /// The authored Blender dimensions of the exterior model. The interior
+        /// uses the same placed metre envelope, with human-sized furnishings
+        /// recomposed inside its wall and roof contours.
         /// </summary>
         public const float SourceModelWidth = 23f;
         public const float SourceModelHeight = 32f;
@@ -106,8 +105,8 @@ namespace BarPromenade
         /// pavement it filled the whole frame edge to edge, and the town
         /// around it is 18 m blocks. Placed at this fraction it reads as
         /// the provincial parish church it is meant to be and still
-        /// towers over the cemetery beside it. The interior is a
-        /// separate area and keeps its authored size.
+        /// towers over the cemetery beside it. The separate interior is authored
+        /// in those same world metres, rather than retaining the larger source scale.
         /// </summary>
         public const float ExteriorModelScale = 0.55f;
 
@@ -359,7 +358,10 @@ namespace BarPromenade
 
             Vector3 dock = doorGround +
                            entranceOutward * DoorDockOutwardDistance;
-            dock.y = groundTopY + PlayerFactory.GroundedRootOffset;
+            float dockFloor = Mathf.Lerp(FoundationTopAboveGround,
+                ApproachSurfaceTopAboveGround,
+                DoorDockOutwardDistance / CityChurchWorldBuilder.DoorThresholdDepth);
+            dock.y = groundTopY + dockFloor + PlayerFactory.GroundedRootOffset;
             Vector3 interaction = doorGround +
                                   entranceOutward *
                                   InteractionOutwardDistance;
@@ -489,20 +491,20 @@ namespace BarPromenade
                     "central entrance.");
             }
 
-            // The door action refuses any dock the hero cannot already
-            // be standing on, and the church ground is one flat slab, so
-            // both docks are the grounded root height over it or the
-            // prompt appears and pressing it does nothing.
+            // The door dock sits on the shallow sill ramp; the City return
+            // remains on the forecourt. Each pose uses its real support datum.
             float grounded = plan.GroundTopY +
                              PlayerFactory.GroundedRootOffset;
-            if (Mathf.Abs(plan.DoorDockPosition.y - grounded) >
-                    PlayerMotor.InteractionVerticalTolerance ||
+            float sillStanding = grounded + Mathf.Lerp(FoundationTopAboveGround,
+                ApproachSurfaceTopAboveGround,
+                DoorDockOutwardDistance / CityChurchWorldBuilder.DoorThresholdDepth);
+            if (Mathf.Abs(plan.DoorDockPosition.y - sillStanding) > .001f ||
                 Mathf.Abs(plan.ReturnPosition.y - grounded) >
                     PlayerMotor.InteractionVerticalTolerance)
             {
                 throw new InvalidOperationException(
                     "The church door dock and City return must stand on " +
-                    "the church ground the hero can actually reach.");
+                    "their threshold and forecourt support surfaces.");
             }
         }
 

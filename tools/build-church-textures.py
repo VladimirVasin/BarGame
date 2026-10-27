@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import math
 import random
 import sys
 from pathlib import Path
@@ -353,14 +354,74 @@ def seam_error(image: Image.Image) -> int:
     return max(horizontal, vertical)
 
 
+def material_response(name: str) -> Image.Image:
+    """Physical slopes/roughness/cavity, sharing the albedo's authored joints.
+
+    Geometry, not brightness, defines relief: dark paint/figures never become
+    holes. Physical tile pitches match the generator's metre charts.
+    """
+    import numpy as np
+
+    y, x = np.mgrid[0:SIZE, 0:SIZE].astype(float)
+    rng = np.random.default_rng(int.from_bytes(hashlib.sha256(name.encode()).digest()[:8], "little"))
+    grain = np.zeros((SIZE, SIZE), dtype=float)
+    for _ in range(8):
+        a, b = rng.integers(1, 18, size=2)
+        grain += np.sin((x * a + y * b) * math.tau / SIZE + rng.uniform(0, math.tau)) / 8
+    height = grain * .00012
+    cavity = np.ones_like(height)
+    roughness = np.full_like(height, .78)
+    distance_x = np.minimum(x % 64, 64 - x % 64)
+    distance_y = np.minimum(y % 64, 64 - y % 64)
+    if name == "Stone":
+        stagger = (np.floor(y / 64) % 2) * 64
+        joint_x = np.minimum((x - stagger) % 128, 128 - (x - stagger) % 128)
+        joint = np.maximum(np.exp(-(distance_y / 2.3) ** 2), np.exp(-(joint_x / 1.8) ** 2))
+        height -= joint * .0025
+        cavity -= joint * .15
+        roughness = .81 + grain * .055
+    elif name == "Floor":
+        joint = np.maximum(np.exp(-(distance_x / 1.7) ** 2), np.exp(-(distance_y / 1.7) ** 2))
+        height -= joint * .0018
+        cavity -= joint * .16
+        # Worn faces keep a broad quiet sheen; recessed mortar stays matte.
+        roughness = .55 + joint * .24 + grain * .035
+    elif name == "Wood":
+        joint = np.exp(-(distance_x / 1.8) ** 2)
+        height += np.sin((x * 27 + np.sin(y * math.tau / SIZE) * 3) * math.tau / SIZE) * .00014
+        height -= joint * .001
+        cavity -= joint * .11
+        roughness = .62 + joint * .17 + grain * .065
+    elif name == "Metal":
+        pitch = x % 86
+        joint = np.exp(-(np.minimum(pitch, 86 - pitch) / 1.6) ** 2)
+        height -= joint * .0006
+        cavity -= joint * .06
+        roughness = .48 + grain * .075 + joint * .13
+    elif name == "Textile":
+        height += np.sin(x * math.tau / 4) * np.sin(y * math.tau / 4) * .00007
+        roughness = .91 + grain * .025
+    elif name != "Plaster":
+        raise ValueError(name)
+    metres_per_texel = {"Plaster": 1.7, "Stone": .75, "Wood": .75,
+                        "Metal": .4, "Floor": 1.25, "Textile": .55}[name] / SIZE
+    du = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) / (2 * metres_per_texel)
+    # Image rows run opposite the model's V axis.
+    dv = (np.roll(height, 1, axis=0) - np.roll(height, -1, axis=0)) / (2 * metres_per_texel)
+    channels = np.stack((du * .5 + .5, dv * .5 + .5, roughness, cavity), axis=-1)
+    return seal_edges(Image.fromarray(np.round(np.clip(channels, 0, 1) * 255).astype("uint8")).copy())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--responses-only", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
     print("CHURCH TEXTURES BUILD OK")
-    for name, builder in BUILDERS.items():
+    for name, builder in (() if args.responses_only else BUILDERS.items()):
         rng = random.Random(f"{SEED}:{name}")
         image = builder(rng).convert("RGB")
         if name in TILEABLE:
@@ -368,11 +429,26 @@ def main() -> int:
         if image.size != (SIZE, SIZE):
             raise RuntimeError(f"{name} lost its {SIZE} px contract")
         target = args.output / name
-        image.save(target, "PNG", optimize=False)
+        if args.validate_only:
+            if not target.exists() or Image.open(target).convert("RGB").tobytes() != image.tobytes():
+                raise RuntimeError(f"Stale church albedo: {name}")
+        else:
+            image.save(target, "PNG", optimize=False)
         digest = hashlib.sha256(target.read_bytes()).hexdigest()
         if name in TILEABLE and seam_error(image) > 2:
             raise RuntimeError(f"{name} has an excessive wrapped-edge delta")
         print(f"  {name}: sha256 {digest[:16]}")
+    for family in ("Plaster", "Stone", "Wood", "Metal", "Floor", "Textile"):
+        response = material_response(family)
+        target = args.output / f"Church{family}Response.png"
+        if args.validate_only:
+            if not target.exists() or Image.open(target).convert("RGBA").tobytes() != response.tobytes():
+                raise RuntimeError(f"Stale church response: {family}")
+        else:
+            response.save(target, "PNG", optimize=False)
+        if seam_error(response) != 0:
+            raise RuntimeError(f"Non-periodic church response: {family}")
+        print(f"  {target.name}: physical RG/B/A, wrapped")
     print(f"  Output: {args.output}")
     return 0
 

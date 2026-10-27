@@ -69,7 +69,8 @@ namespace BarPromenade
 
             for (int index = 0; index < plan.Fixtures.Count; index++)
             {
-                if ((int)plan.Fixtures[index].Kind <= (int)CityChurchCourtyardFixtureKind.Tree)
+                if ((int)plan.Fixtures[index].Kind <= (int)CityChurchCourtyardFixtureKind.Tree &&
+                    plan.Fixtures[index].Kind != CityChurchCourtyardFixtureKind.Bench)
                     AppendFixture(provider, plan.Fixtures[index], batches);
             }
 
@@ -208,10 +209,13 @@ namespace BarPromenade
             for (int i = 0; i < plan.Fixtures.Count; i++)
             {
                 CityChurchCourtyardFixtureDescriptor fixture = plan.Fixtures[i];
-                if ((int)fixture.Kind <= (int)CityChurchCourtyardFixtureKind.Tree) continue;
+                if ((int)fixture.Kind <= (int)CityChurchCourtyardFixtureKind.Tree &&
+                    fixture.Kind != CityChurchCourtyardFixtureKind.Bench) continue;
                 ChurchGardenAssetKind kind;
                 switch (fixture.Kind)
                 {
+                    case CityChurchCourtyardFixtureKind.Bench:
+                        kind = ChurchGardenAssetKind.Bench; break;
                     case CityChurchCourtyardFixtureKind.Fountain:
                         kind = ChurchGardenAssetKind.FountainStone; break;
                     case CityChurchCourtyardFixtureKind.Statue:
@@ -268,9 +272,9 @@ namespace BarPromenade
 
                 target.Add(new CityBenchSeat(
                     fixture.Id,
-                    fixture.GroundPosition + Vector3.up * 0.49f,
-                    1.60f,
-                    0.42f,
+                    fixture.GroundPosition + Vector3.up * ChurchGardenModelProvider.BenchSeatHeight,
+                    ChurchGardenModelProvider.BenchSeatWidth,
+                    ChurchGardenModelProvider.BenchSeatDepth,
                     plan.GroundTopY,
                     fixture.Rotation * Vector3.forward));
             }

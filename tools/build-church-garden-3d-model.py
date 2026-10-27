@@ -23,7 +23,10 @@ import bpy
 import bmesh
 from mathutils import Vector
 
-VERSION = "1.1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import interior_kit as kit
+
+VERSION = "1.2.0"
 DESIGN_ID = "church_garden_v1"
 ROOT = Path(__file__).resolve().parents[1]
 ASSET = ROOT / "Assets/ChurchGarden/Models"
@@ -31,7 +34,7 @@ SOURCE = ROOT / "ArtSource/ChurchGarden/Blender"
 TEXTURES = ROOT / "Assets/ChurchGarden/Textures"
 KINDS = ("FountainStone", "FountainWater", "FountainStream", "MaryStatue",
          "PotSmall", "PotMedium", "PotLarge", "StonePottingLedge",
-         "HedgeSegment", "GardenUplight")
+         "HedgeSegment", "GardenUplight", "Bench")
 COLORS = {"Stone": (0.49, 0.515, 0.49, 1),
           "Statue": (0.66, 0.665, 0.605, 1),
           "Water": (0.145, 0.19, 0.18, 1),
@@ -39,19 +42,16 @@ COLORS = {"Stone": (0.49, 0.515, 0.49, 1),
           "Terracotta": (0.43, 0.255, 0.17, 1),
           "Foliage": (0.115, 0.185, 0.11, 1),
           "Metal": (0.095, 0.11, 0.105, 1),
-          "Lens": (0.79, 0.73, 0.59, 1)}
+          "Lens": (0.79, 0.73, 0.59, 1),
+          "Timber": (0.35, 0.22, 0.12, 1)}
 
-# The extension must leave the already accepted fountain/statue/pot geometry
-# and UVs byte-identical at the stable rounded mesh-signature boundary.
-LEGACY_MESH_SIGNATURES = {
-    "GEO_FountainStone": "f9e0262a925e8df9198598e0e9b431915903d9e472d21a17b400e77f3a0e2991",
+# Contact-bearing assets retain their measured geometry and UVs. The passive
+# fixed stonework can be dressed without moving the pot grip or water/source.
+CONTACT_MESH_SIGNATURES = {
     "GEO_FountainStream": "d5f013abe04281ff537418900237b7aa68e04b78e50d8f322738795d17b202d8",
     "GEO_FountainWater": "2f003064450d982196d9204f4c02526b6f8db50198f0acbdb9dec3a1487a5083",
-    "GEO_MaryStatue": "cd44064be44f3629f7d56bebbd3331348f564d0cbca78d1bab8b8ba16e58a541",
-    "GEO_PotLarge": "4d3cc3655b72300decc0643adb9f628c665676d59f8202ab73c7d386a5bbb631",
     "GEO_PotMedium": "0b7b07ba7e245512c16e73384da0f4479eed7b74bbd0f37513ac60eba0ab754b",
-    "GEO_PotSmall": "2f9eafacdfda66c1bdeae80eae17b929500953d978a30eb4388be54b9f403346",
-    "GEO_StonePottingLedge": "0d3f2e1a182680751419d046e84567ef2c1859ccee34b878fcfc84929a979dde",
+    "GEO_MaryStatue": "cd44064be44f3629f7d56bebbd3331348f564d0cbca78d1bab8b8ba16e58a541",
 }
 UPLIGHT_DIRECTION = Vector((0, math.cos(math.radians(35)), math.sin(math.radians(35))))
 UPLIGHT_CENTRE = Vector((0, .02, .106))
@@ -156,12 +156,24 @@ class Mesh:
                               ((i+1)%n)*rows+(j+1)%rows,i*rows+(j+1)%rows))
         self.part(vertices,faces)
 
+    def chamfered_box(self, center, size, chamfer=.008):
+        self.part(*kit.chamfered_box(center, size, chamfer))
+
+    def link(self, start, end, width, depth, chamfer=.005):
+        """A fitted rectangular rail, including its real end faces."""
+        start, end = Vector(start), Vector(end)
+        rotation = Vector((0, 0, 1)).rotation_difference(end - start).to_matrix()
+        vertices, faces = kit.chamfered_box((0, 0, 0),
+                                           (width, depth, (end-start).length), chamfer)
+        self.part([tuple((start+end)*.5 + rotation@Vector(v)) for v in vertices], faces)
+
 
 def fountain():
     mesh = Mesh()
     # A squat stepped footing and hollow monolithic bowl. Its inside is
     # physically modelled to the floor below the independent water mesh.
     mesh.lathe([(.73,0),(.77,.025),(.77,.065),(.735,.095),(.72,.15),
+                (.713,.158),(.713,.174),(.72,.182),
                 (.72,.24),(.745,.34),(.775,.42),(.8,.47),(.8,.53),
                 (.785,.56),(.735,.56),(.715,.535),(.707,.485),
                 (.66,.415),(.585,.29),(.18,.26),(.006,.26)],32)
@@ -169,7 +181,11 @@ def fountain():
     mesh.lathe([(.006,.255),(.14,.255),(.155,.29),(.13,.325),(.09,.35),
                 (.075,.56),(.095,.605),(.10,.655),(.082,.685),(.065,.71),
                 (.006,.73)],20)
+    # A short dark bronze nozzle belongs to the existing falling stream.
+    # Its outlet remains at exactly the accepted water/source contact.
+    mesh.active_material = 1
     mesh.tube([(0,.055,.672),(0,.09,.69),(0,.14,.686)], [.032,.028,.021],12)
+    mesh.tube([(0,.065,.676),(0,.077,.684)], [.040,.040],12)
     return mesh
 
 
@@ -190,7 +206,7 @@ def stream():
     return mesh
 
 
-def pot(height, radius):
+def pot(height, radius, dressed=False):
     mesh = Mesh()
     # Stable sole, tapered body, rounded rolled rim and an actual hollow
     # interior with a thick base; no soil in the portable medium pot.
@@ -200,6 +216,12 @@ def pot(height, radius):
                (.85*radius,height),(.82*radius,.96*height),
                (.82*radius,.87*height),(.78*radius,.82*height),
                (.57*radius,.13*height),(.005,.13*height)]
+    if dressed:
+        # Two shallow thrown grooves sit below the grip-safe rolled lip.
+        # Every point stays within the old silhouette and sole/rim datums.
+        profile[3:3] = [(.77*radius,.34*height),(.765*radius,.36*height),
+                        (.78*radius,.38*height),(.85*radius,.60*height),
+                        (.842*radius,.62*height),(.863*radius,.64*height)]
     mesh.lathe(profile,24)
     # Incised throwing rings arise from the outer profile, not decals or
     # randomized damage; the clean lip must remain safe for a visible grip.
@@ -299,11 +321,50 @@ def mary():
 
 def ledge():
     mesh=Mesh()
-    mesh.dressed_slab(1.15,.52,.545,.65,.022)
+    # Three dressed coping stones meet at hairline joints. Every pot dock
+    # still bears on the same 0.65 m top; no floating cosmetic shelf skin.
+    for x in (-.385, 0, .385):
+        mesh.dressed_slab(.38,.52,.545,.65,.012,x=x)
     for x in (-.39,.39):
         mesh.dressed_slab(.245,.43,0,.07,.012,x=x)
         mesh.dressed_slab(.19,.365,.07,.525,.016,x=x)
         mesh.dressed_slab(.23,.41,.525,.55,.006,x=x)
+    mesh.chamfered_box((0,0,.22),(.63,.19,.105),.012)
+    return mesh
+
+
+def bench():
+    """A church-only slatted timber bench on two bolted iron trestles.
+
+    The old cemetery donor's seat rectangle, top and back extent are kept.
+    Gaps, rails, end grain and fixings carry the craft instead of more props.
+    """
+    mesh = Mesh()
+    # Four seat slats span the original .42 m deep sitting surface.
+    for index in range(4):
+        mesh.chamfered_box((0, -.21 + .0525 + index*.105, .455),
+                           (1.60, .098, .07), .008)
+    # Separate back boards leave narrow rain-draining joints.
+    for index in range(3):
+        mesh.chamfered_box((0, -.225, .585 + index*.165),
+                           (1.60, .06, .16), .007)
+    mesh.chamfered_box((0, -.260, .79), (1.72, .10, .06), .012)
+    # Iron feet/legs, seat rail and back upright are a connected assembly.
+    mesh.active_material = 1
+    for side in (-1, 1):
+        x = side*.64
+        mesh.chamfered_box((x, -.02, .0225),(.11,.36,.045),.006)
+        mesh.link((x,.10,.045),(x,.09,.42),.06,.06)
+        mesh.link((x,-.14,.045),(x,-.17,.42),.06,.06)
+        mesh.chamfered_box((x,-.015,.405),(.08,.40,.035),.004)
+        mesh.link((x,-.225,.405),(x,-.225,.975),.045,.055)
+        # Small countersunk-looking heads stay flush with the existing seat.
+        for y in (-.1575,-.0525,.0525,.1575):
+            mesh.lathe([(.001,.487),(.007,.487),(.008,.489),(.001,.490)],
+                       8,center=(x,y,0))
+        for z in (.585,.750,.915):
+            mesh.tube([(x,-.194,z),(x,-.191,z)],[.007,.007],8)
+    mesh.chamfered_box((0,-.08,.245),(1.28,.035,.055),.005)
     return mesh
 
 
@@ -368,14 +429,15 @@ def uplight():
     return mesh
 
 
-BUILDERS={"FountainStone":(fountain,"Stone"),"FountainWater":(water,"Water"),
+BUILDERS={"FountainStone":(fountain,("Stone","Metal")),"FountainWater":(water,"Water"),
           "FountainStream":(stream,"Stream"),"MaryStatue":(mary,"Statue"),
-          "PotSmall":(lambda:pot(.23,.12),"Terracotta"),
+          "PotSmall":(lambda:pot(.23,.12,True),"Terracotta"),
           "PotMedium":(lambda:pot(.32,.17),"Terracotta"),
-          "PotLarge":(lambda:pot(.44,.24),"Terracotta"),
+          "PotLarge":(lambda:pot(.44,.24,True),"Terracotta"),
           "StonePottingLedge":(ledge,"Stone"),
           "HedgeSegment":(hedge,"Foliage"),
-          "GardenUplight":(uplight,("Metal","Lens"))}
+          "GardenUplight":(uplight,("Metal","Lens")),
+          "Bench":(bench,("Timber","Metal"))}
 
 
 def build_textures():
@@ -401,7 +463,7 @@ def build_textures():
                     value-=.10
                 pixels.extend((value,value,value,1))
         image.pixels.foreach_set(pixels)
-        image.filepath_raw=str(TEXTURES/(name+".png")); image.file_format="PNG"; image.save()
+        save_image(image,name)
     image=bpy.data.images.new("GardenFoliageAlbedo",width=256,height=256,alpha=False)
     values=[]
     for y in range(256):
@@ -432,7 +494,75 @@ def build_textures():
     pixels=[]
     for value in values: pixels.extend((value,value,value,1))
     image.pixels.foreach_set(pixels)
-    image.filepath_raw=str(TEXTURES/"GardenFoliageAlbedo.png"); image.file_format="PNG"; image.save()
+    save_image(image,"GardenFoliageAlbedo")
+
+    # A quiet continuous timber grain follows each board's long UV axis.
+    # No painted highlights or damage masquerading as material response.
+    timber=[]
+    for y in range(256):
+        for x in range(256):
+            grain=math.sin(math.tau*y/8 + .35*math.sin(math.tau*x/256))
+            long_grain=math.sin(math.tau*y/32 + .4*math.sin(math.tau*x/128))
+            value=.82+.035*grain+.025*long_grain
+            timber.extend((value,value,value,1))
+    save_texture("GardenTimberAlbedo",timber)
+
+    # Native Layered Ground packing: R response, G shallow height, B worn
+    # cavities. Each exterior shared material reads the City's existing rain
+    # clock on the GPU; no per-object wetness driver, resource scan or clones.
+    for role in ("Stone","Terracotta","Timber"):
+        response=[]
+        for y in range(256):
+            for x in range(256):
+                h=((x*374761393+y*668265263+9719)^((x+y*31)*1274126177))&0xffffffff
+                h=((h^(h>>13))*1274126177)&0xffffffff
+                noise=((h^(h>>16))&65535)/65535
+                broad=.5+.5*math.sin(math.tau*x/128)*math.sin(math.tau*y/256)
+                if role=="Timber":
+                    fibre=.5+.5*math.sin(math.tau*y/8+.35*math.sin(math.tau*x/256))
+                    rough=.70+.13*fibre+.08*broad
+                    height=.45+.08*fibre+.035*broad
+                    cavity=.10+.17*(1-fibre)
+                elif role=="Terracotta":
+                    thrown=.5+.5*math.sin(y*math.tau/8)
+                    rough=.54+.13*noise+.07*thrown
+                    height=.46+.055*thrown+.045*noise
+                    cavity=.10+.13*(1-noise)
+                else:
+                    pore=1.0 if noise<.04 else 0.0
+                    rough=.62+.14*noise+.07*broad-.14*pore
+                    height=.47+.045*noise+.035*broad-.035*pore
+                    cavity=.12+.35*pore
+                response.extend((rough,height,cavity,1))
+        save_texture("Garden"+role+"Response",response,linear=True)
+
+
+def save_texture(name,pixels,linear=False):
+    image=bpy.data.images.new(name,width=256,height=256,alpha=False)
+    if linear: image.colorspace_settings.name="Non-Color"
+    image.pixels.foreach_set(pixels)
+    save_image(image,name)
+
+
+def save_image(image,name):
+    """Keep identical PNG pixels byte stable across Blender encoder versions.
+
+    Compare decoded output rather than the floating authoring values: saving
+    an sRGB image quantizes them. Staging retains the repository's current
+    bytes too, so an art-only rebuild cannot invalidate unrelated source hashes.
+    """
+    existing=ROOT/"Assets/ChurchGarden/Textures"/(name+".png")
+    previous=bpy.data.images.load(str(existing),check_existing=False) if existing.exists() else None
+    previous_bytes=existing.read_bytes() if previous is not None else None
+    image.filepath_raw=str(TEXTURES/(name+".png"))
+    image.file_format="PNG"
+    image.save()
+    if previous is not None:
+        saved=bpy.data.images.load(image.filepath_raw,check_existing=False)
+        if tuple(previous.size)==tuple(saved.size) and list(previous.pixels)==list(saved.pixels):
+            Path(image.filepath_raw).write_bytes(previous_bytes)
+        bpy.data.images.remove(previous)
+        bpy.data.images.remove(saved)
 
 
 def material(role):
@@ -447,8 +577,9 @@ def material(role):
     if role=="Lens":
         shader.inputs["Emission Color"].default_value=COLORS[role]
         shader.inputs["Emission Strength"].default_value=.22
-    if role in ("Stone","Statue","Terracotta","Foliage"):
+    if role in ("Stone","Statue","Terracotta","Foliage","Timber"):
         filename=("GardenFoliageAlbedo.png" if role=="Foliage" else
+                  "GardenTimberAlbedo.png" if role=="Timber" else
                   "GardenTerracottaAlbedo.png" if role=="Terracotta" else "GardenStoneAlbedo.png")
         path=TEXTURES/filename
         tex=mat.node_tree.nodes.new("ShaderNodeTexImage")
@@ -493,6 +624,8 @@ def build():
             axes=[i for i in range(3) if i!=axis]
             for index in face.loop_indices:
                 point=mesh.vertices[mesh.loops[index].vertex_index].co
+                # The wood's grain runs along X on the seat/back boards;
+                # metre pitch is independent of the donor or instance scale.
                 uv.data[index].uv=(point[axes[0]]*1.9,point[axes[1]]*1.9)
             face.use_smooth=False
         obj=bpy.data.objects.new("GEO_"+kind,mesh)
@@ -531,20 +664,26 @@ def geometry_signature(obj):
 def validate(objects):
     expected={"FountainStone":(1.6,.73),"MaryStatue":(.58,1.65),
               "PotSmall":(.24,.23),"PotMedium":(.34,.32),"PotLarge":(.48,.44),
-              "StonePottingLedge":(1.15,.65),"HedgeSegment":(2.0,.8)}
+              "StonePottingLedge":(1.15,.65),"HedgeSegment":(2.0,.8),
+              "Bench":(1.72,.995)}
     total=0
     for kind,obj in zip(KINDS,objects):
         lo,hi=bounds(obj)
         triangles=sum(len(f.vertices)-2 for f in obj.data.polygons)
         total+=triangles
-        if obj.name in LEGACY_MESH_SIGNATURES:
-            assert geometry_signature(obj)==LEGACY_MESH_SIGNATURES[obj.name],(kind,"legacy geometry changed")
+        if obj.name in CONTACT_MESH_SIGNATURES:
+            assert geometry_signature(obj)==CONTACT_MESH_SIGNATURES[obj.name],(kind,"contact geometry changed")
         if kind=="HedgeSegment":
             assert abs(hi[2]-lo[2]-.85)<.00001,(kind,"depth")
         if kind=="GardenUplight":
             assert hi[1]<=.22 and abs(lo[1])<.00001,(kind,"fixture height")
             assert .18-.00001<=hi[0]-lo[0]<=.24,(kind,"fixture width")
             assert {f.material_index for f in obj.data.polygons}=={0,1},(kind,"housing/lens slots")
+        if kind=="Bench":
+            assert abs(lo[2]+.31)<.00001 and hi[2]<=.21,(kind,"seat support frame")
+            assert {f.material_index for f in obj.data.polygons}=={0,1},(kind,"timber/iron slots")
+            assert sum(1 for vertex in obj.data.vertices
+                       if abs(vertex.co.z-.49)<.00001)>=16,(kind,"sitting datum")
         if kind in expected:
             width,height=expected[kind]
             assert abs((hi[0]-lo[0])-width)<.001,(kind,"width",lo,hi)
@@ -569,6 +708,13 @@ def validate(objects):
             assert volume>1e-10,(kind,"inward solid",volume)
         bm.free()
     assert total<16000,total
+    # Linear response must contain material variation, not a flat placeholder.
+    for role in ("Stone","Terracotta","Timber"):
+        response=bpy.data.images.get("Garden"+role+"Response")
+        assert response is not None and response.size[:]==(256,256),(role,"response sheet")
+        pixels=list(response.pixels)
+        assert max(pixels[::4])-min(pixels[::4])>.05,(role,"missing response variation")
+        assert all(0<=value<=1 for value in pixels),(role,"out-of-range response")
     print(f"CHURCH GARDEN VALIDATOR OK: {len(objects)} assets, {total} triangles",flush=True)
     return total
 
@@ -582,7 +728,8 @@ def preview(objects,path,extension=False):
                 "FountainStream":(-1.0,.20,0),"MaryStatue":(.72,.20,0),
                 "PotSmall":(1.58,.28,.65),"PotMedium":(1.96,.28,.65),
                 "PotLarge":(2.67,.12,0),"StonePottingLedge":(1.82,.28,0),
-                "HedgeSegment":(-3.35,.2,0),"GardenUplight":(-3.35,.88,0)}
+                "HedgeSegment":(-3.35,.2,0),"GardenUplight":(-3.35,.88,0),
+                "Bench":(-1.8,-1.15,0)}
     if extension:
         for prior in bpy.data.collections:
             if prior.name=="PRESENTATION_ChurchGarden3D": prior.hide_render=True
@@ -624,9 +771,14 @@ def preview(objects,path,extension=False):
 
 
 def main():
+    global ASSET,SOURCE,TEXTURES
     parser=argparse.ArgumentParser()
     parser.add_argument("--no-preview",action="store_true")
+    parser.add_argument("--model-dir",type=Path,default=ASSET)
+    parser.add_argument("--source-dir",type=Path,default=SOURCE)
+    parser.add_argument("--texture-dir",type=Path,default=TEXTURES)
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
+    ASSET,SOURCE,TEXTURES=args.model_dir,args.source_dir,args.texture_dir
     ASSET.mkdir(parents=True,exist_ok=True); SOURCE.mkdir(parents=True,exist_ok=True)
     root,objects=build(); triangles=validate(objects); sig=signature(objects)
     bpy.ops.object.select_all(action="DESELECT")
@@ -641,7 +793,7 @@ def main():
     manifest={"generator":"tools/build-church-garden-3d-model.py","generator_version":VERSION,
               "design_id":DESIGN_ID,"build_signature":sig,"triangle_count":triangles,
               "coordinate_contract":"Unity x,y,z = Blender x,z,y; fixed metre bare meshes",
-              "textures":[{"path":str(p.relative_to(ROOT)).replace("\\","/"),
+              "textures":[{"path":"Assets/ChurchGarden/Textures/"+p.name,
                            "sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
                           for p in sorted(TEXTURES.glob("*.png"))],
               "pieces":[{"kind":kind,"mesh":obj.data.name,
@@ -660,6 +812,11 @@ def main():
               "statue":{"figure_height_m":1.23,"pedestal_height_m":.42,"faces":"+Z",
                          "identity":"veiled Virgin Mary with folded prayer hands; passive stone"},
               "hedge":{"length_m":2.0,"depth_m":.85,"height_m":.8,"suggested_continuous_pitch_m":1.8},
+              "bench":{"seat_height_m":.49,"seat_width_m":1.60,"seat_depth_m":.42,
+                       "front":"+Z","construction":"chamfered timber slats, bolted iron trestles"},
+              "surface_response":{"packing":"R smoothness factor; G shallow height; B cavities",
+                                  "rain_owner":"City shared weather; dry/wet scalar remains bounded",
+                                  "texture_size":256},
               "uplight":{"lens_position":[round(UPLIGHT_LENS[i],8) for i in (0,2,1)],
                            "lens_direction":[round(UPLIGHT_DIRECTION[i],8) for i in (0,2,1)],
                            "lens_material_index":1,"elevation_degrees":35,"imports_light":False}}

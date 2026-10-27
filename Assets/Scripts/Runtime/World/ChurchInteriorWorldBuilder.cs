@@ -92,6 +92,25 @@ namespace BarPromenade
                     "plan.");
             }
 
+            Bounds measured = default;
+            bool firstRenderer = true;
+            foreach (Renderer renderer in registry.Renderers)
+            {
+                if (renderer == null) continue;
+                Bounds world = renderer.bounds;
+                for (int x = -1; x <= 1; x += 2)
+                for (int y = -1; y <= 1; y += 2)
+                for (int z = -1; z <= 1; z += 2)
+                {
+                    Vector3 corner = registry.transform.InverseTransformPoint(world.center +
+                        Vector3.Scale(world.extents, new Vector3(x, y, z)));
+                    if (firstRenderer) { measured = new Bounds(corner, Vector3.zero); firstRenderer = false; }
+                    else measured.Encapsulate(corner);
+                }
+            }
+            if (firstRenderer || !BoundsMatch(measured, plan.ModelLocalBounds, .03f))
+                throw new InvalidOperationException("The placed church renderers differ from the measured metre envelope.");
+
             Vector3 spawn = registry.transform.InverseTransformPoint(
                 registry.SpawnAnchor.position);
             Vector3 exit = registry.transform.InverseTransformPoint(
@@ -130,73 +149,34 @@ namespace BarPromenade
             ICollection<Collider> colliders)
         {
             Rect room = plan.RoomBounds;
-            float thickness = plan.WallThickness;
-            float wallHeight = plan.RoomHeight;
-            AddCollider(
-                parent,
-                "Floor",
-                new Vector3(room.center.x, -0.125f, room.center.y),
-                new Vector3(room.width, 0.25f, room.height),
-                colliders);
-
-            AddCollider(
-                parent,
-                "North Side Wall",
-                new Vector3(
-                    room.xMin + thickness * 0.5f,
-                    wallHeight * 0.5f,
-                    room.center.y),
-                new Vector3(
-                    thickness,
-                    wallHeight,
-                    room.height),
-                colliders);
-            AddCollider(
-                parent,
-                "South Side Wall",
-                new Vector3(
-                    room.xMax - thickness * 0.5f,
-                    wallHeight * 0.5f,
-                    room.center.y),
-                new Vector3(
-                    thickness,
-                    wallHeight,
-                    room.height),
-                colliders);
-            AddCollider(
-                parent,
-                "Altar Rear Wall",
-                new Vector3(
-                    room.center.x,
-                    wallHeight * 0.5f,
-                    room.yMax - thickness * 0.5f),
-                new Vector3(
-                    room.width,
-                    wallHeight,
-                    thickness),
-                colliders);
-
-            float sideWidth =
-                (room.width - plan.ExitTriggerSize.x) * 0.5f;
-            float leftCenter = room.xMin + sideWidth * 0.5f;
-            float rightCenter = room.xMax - sideWidth * 0.5f;
-            for (int side = 0; side < 2; side++)
+            float t = plan.WallThickness;
+            float h = plan.RoomHeight;
+            AddCollider(parent, "Floor", new Vector3(0f, -.125f, 0f),
+                new Vector3(room.width, .25f, room.height), colliders);
+            // The narthex shoulders and aisle walls follow the real shell.
+            float join = ChurchInteriorLayoutPlanner.NarthexEndZ;
+            float narrow = ChurchInteriorLayoutPlanner.NarthexHalfWidth;
+            float wide = ChurchInteriorLayoutPlanner.AisleHalfWidth;
+            for (int side = -1; side <= 1; side += 2)
             {
-                AddCollider(
-                    parent,
-                    side == 0
-                        ? "Entrance Wall North"
-                        : "Entrance Wall South",
-                    new Vector3(
-                        side == 0 ? leftCenter : rightCenter,
-                        wallHeight * 0.5f,
-                        room.yMin + thickness * 0.5f),
-                    new Vector3(
-                        sideWidth,
-                        wallHeight,
-                        thickness),
-                    colliders);
+                AddCollider(parent, $"Narthex Wall {side}",
+                    new Vector3(side * (narrow + t * .5f), h * .5f, (room.yMin + join) * .5f),
+                    new Vector3(t, h, join - room.yMin), colliders);
+                AddCollider(parent, $"Aisle Wall {side}",
+                    new Vector3(side * (wide + t * .5f), h * .5f, (join + room.yMax) * .5f),
+                    new Vector3(t, h, room.yMax - join), colliders);
+                AddCollider(parent, $"Narthex Shoulder {side}",
+                    new Vector3(side * (narrow + wide) * .5f, h * .5f, join - t * .5f),
+                    new Vector3(wide - narrow, h, t), colliders);
             }
+            AddCollider(parent, "Altar Rear Wall", new Vector3(0f, h * .5f, room.yMax - t * .5f),
+                new Vector3(wide * 2f, h, t), colliders);
+            float opening = ChurchInteriorLayoutPlanner.DoorOpeningWidth;
+            float sideWidth = narrow - opening * .5f;
+            for (int side = -1; side <= 1; side += 2)
+                AddCollider(parent, $"Entrance Wall {side}",
+                    new Vector3(side * (opening * .5f + sideWidth * .5f), h * .5f, room.yMin + t * .5f),
+                    new Vector3(sideWidth, h, t), colliders);
         }
 
         private static void BuildFixtureCollision(

@@ -1322,55 +1322,51 @@ cemetery:own interiors/returns.
   ravens also hold open bird-logic spots across all three outdoor areas
   from the first day — always already perched, never arriving in frame and
   never anywhere the story touches;
-- one deterministic Church precinct on the `4 x 2` open area immediately
-  north of that cemetery. Its sole street frontage and exterior entrance face
-  west; the altar end faces east. City loads the `44 x 23 x 32 m`
-  Blender-authored Catholic exterior at `0.55` scale and a `10 m` setback from
-  its west street — neo-Gothic tower and spire, buttresses, lancet windows,
-  rose window, pitched roofs and Latin crosses — with emissive windows but no
-  new realtime exterior Light.
-  `CityChurchCourtyardPlan` gives the site a full-width stone entrance and a
-  continuous `2.4 m` gravel loop around the church with two bench pockets,
-  two small trees, six grouped shrubs and two modest beds. A separate
-  deterministic Blender garden kit adds a `1.6 m` fountain, a restrained
-  Mary statue and three hollow terracotta pots with a low stone potting ledge.
-  One pot uses five separate Hero V2 actions to lift, inspect and place at
-  either of two docks; the selected dock survives scene changes within the
-  current session. The fountain uses shared City water shaders and one
-  ordinary local water voice bounded to `4.5 m`. `ChurchGardenBorderPlan`
-  frames the garden's back and wings with `28` low hedge segments at `0.8 m`
-  high, rounded turns and one `3.9 m` clear northern corridor. The existing
-  east tree joins that edge; the two trees and six grouped shrubs retain
-  their own counts. Nine ground uplights face the planted edge and one
-  faces the statue. `ChurchGardenUplight` owns their short `3.2 m`, shadowless
-  warm Spots, tilted upward `35°`, through `CityNightSiteLightRegistry`.
-  The lenses and small halos stay lit at every hour, with the shared
-  two-thirds daytime floor; these ten fixed site lights leave the
-  twelve-light street/bar pool unchanged. The passive garden kit has ten
-  pieces, including the hedge segment and shielded ground fixture. The edge
-  receives the stronger wash; the statue has a gentler separate accent.
-  `CityChurchGroundPlan`
-  keeps the inhabited garden flat and grades its northern reserve into the
-  adjoining yard. Collision and navigation retain its continuous sampled
-  terrain; paving paints that substrate in the common ground composition,
-  with overlapping pads/paths partitioned and the flush door threshold retained.
-  Open iron closes
-  only the existing west frontage outside its
-  `8.8 m` aperture and the actual unsupported outer edges.
-  `CityChurchCemeteryPassagePlan` continues the
-  cemetery's middle cross alley through one maintained `3 m` north-fence
-  opening into the south church path while preserving the west cemetery gate
-  as its only street gate and the route used by the mourner, watchman and grave
-  work. The safe shared threshold is an internal connection, not another
-  `CityOpenAreaAccessDescriptor`, and adds no sound, lore or realtime Light.
-  A completed door action routes through the
-  shared `DoorTransition` into `ChurchInterior`, whose validated plan owns a
-  narthex, nave, crossing/choir, four piers, two side aisles, pew rows,
-  confessionals, font, votive stands and an inaccessible sanctuary with high
-  altar, tabernacle and crucifix. Exiting returns to the exact church frontage.
-  One deterministic
-  Blender source exports independent exterior/interior FBX and Resources
-  prefabs so the City never loads the furnishings;
+- one deterministic Church precinct on the `4 x 2` area north of the cemetery.
+  West street entrance/east altar, `10 m` setback and nominal exterior main body
+  `23 x 44 x 32 m` at `.55` retain the neo-Gothic tower, spire, buttresses,
+  lancets/rose, pitched roofs and Latin crosses. No facade realtime Light.
+  `CityChurchCourtyardPlan` retains the full-width stone forecourt, `2.4 m`
+  gravel loop, two bench pockets, two small trees, six shrubs and two beds.
+  `ChurchGarden3D` supplies eleven passive donors: slatted/bolted benches,
+  dressed fountain/ledge, Mary statue, hollow pots, hedge and shielded uplight.
+  The fixed kit uses `14,632` triangles; seat datum `.49 m`, ledge `.65 m`.
+  Stone/clay/timber shared response maps read City's rain clock without local
+  drivers; identical albedo pixels retain their original PNG bytes.
+  The `1.6 m` fountain retains shared basin/stream water and its quiet `4.5 m`
+  voice, no light. The portable empty pot keeps its geometry/hand contacts and
+  five Hero V2 actions; two shelf docks persist only within the session.
+  `ChurchGardenBorderPlan` retains `28` `.8 m` hedge segments, rounded wings,
+  `3.9 m` north opening and the existing east tree gap. Nine ground lights wash
+  planting and one the statue: warm shadowless `35°` Spots, range `3.2 m`,
+  real lenses/halos and day floor `2/3`. `CityNightSiteLightRegistry` owns them
+  outside the twelve-Light pool; their finite bounce/volume exclusion remains.
+  `CityChurchGroundPlan` keeps continuous sampled terrain, a flat inhabited
+  garden and graded northern reserve. Paving replaces grass skin, with no
+  coplanar overlaps; open iron closes genuine outer edges and west frontage
+  outside the `8.8 m` entrance. `CityChurchCemeteryPassagePlan` retains one
+  maintained `3 m` link from the cemetery middle cross alley to the south
+  church path, with shared safe heights. West cemetery gates remain its sole
+  street entrance; the internal link is no new access descriptor.
+  `ChurchInterior` uses a separately loaded kit-authored metric shell:
+  nominal `12.1 x 24.2 x 7.55 m` (measured top `7.529 m`, room collision
+  `7.6 m`), shaped narthex/aisles/nave/apse/vault, four piers, six paired pew
+  rows, two confessionals, font/votives,
+  organ loft, high altar/tabernacle/crucifix behind an impassable rail.
+  `church_metric_geometry.py` and the validated layout share actual openings,
+  `.3 m` walls, `1.8 x 2.6 m` west door and exterior-metre correspondence.
+  The west rose shares a real circular opening; its raised central ceiling
+  pocket stays inside the exterior roof.
+  hero/furniture are authored at ordinary size. `ChurchInteriorAtmosphere`
+  reads model anchors for `16` warm practicals/`10` window glows and shafts.
+  Shared effects bound bounce to four regions, air to two sources, halation to
+  sixteen emitters and the floor/iron/brass environment to one filtered 256 cube.
+  Physical response maps, Neutral/soft shadows, clear air and Gaussian DOF
+  `5–13 m` retain quiet warm/cold layers. No church SSR/SSGI/SCGI; City's SSR
+  stays road-only. No service/priest/bell/ritual/text/story reaction was added.
+  Shared door actions use the physical opening/exact outside return. Model-owned
+  threshold/lamp include hidden sloped support; projected sill/buried foundation
+  extend the nominal main body. City/ChurchInterior load only their own payload;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24

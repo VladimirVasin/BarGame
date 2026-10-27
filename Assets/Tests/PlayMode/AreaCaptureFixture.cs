@@ -1479,7 +1479,21 @@ namespace BarPromenade.Tests.PlayMode
 
             GameObject ground = GameObject.Find(CityChurchGroundWorldBuilder.ObjectName);
             Mesh skin = ground.GetComponent<MeshFilter>().sharedMesh;
-            MeshCollider collision = ground.GetComponent<MeshCollider>();
+            CityGroundSurfaceSystem common = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+            Assert.That(common, Is.Not.Null);
+            Assert.That(ground.GetComponent<MeshCollider>().enabled, Is.False,
+                "The common ground sectors own physical collision after composition.");
+            Transform sectors = common.transform.Find("City Ground");
+            Assert.That(sectors, Is.Not.Null);
+            MeshCollider[] collision = sectors.GetComponentsInChildren<MeshCollider>();
+            Assert.That(collision, Is.Not.Empty);
+            Transform churchRoot = city.World.Church.transform.parent;
+            MeshCollider thresholdSupport = churchRoot.Find(CityChurchWorldBuilder.ThresholdCollisionName)
+                .GetComponent<MeshCollider>();
+            Assert.That(thresholdSupport.enabled, Is.True);
+            Assert.That(thresholdSupport.GetComponent<Renderer>(), Is.Null,
+                "Only the imported model presents the sill.");
+            CityStreetSurfacePlan streets = CityStreetSurfacePlanner.Create(city.Layout);
             Vector3[] vertices = skin.vertices;
             int[] triangles = skin.triangles;
             foreach (CityChurchCourtyardSurfaceDescriptor surface in plan.Surfaces)
@@ -1487,16 +1501,25 @@ namespace BarPromenade.Tests.PlayMode
                 if (surface.Kind == CityChurchCourtyardSurfaceKind.Lawn) continue;
                 for (int t = 0; t < triangles.Length; t += 3)
                 {
-                    Vector3 a = vertices[triangles[t]];
-                    Vector3 b = vertices[triangles[t + 1]];
-                    Vector3 c = vertices[triangles[t + 2]];
+                    Vector3 a = ground.transform.TransformPoint(vertices[triangles[t]]);
+                    Vector3 b = ground.transform.TransformPoint(vertices[triangles[t + 1]]);
+                    Vector3 c = ground.transform.TransformPoint(vertices[triangles[t + 2]]);
                     if (Vector3.Cross(b - a, c - a).y <= 0f) continue;
                     Rect face = Rect.MinMaxRect(
                         Mathf.Min(a.x, Mathf.Min(b.x, c.x)),
                         Mathf.Min(a.z, Mathf.Min(b.z, c.z)),
                         Mathf.Max(a.x, Mathf.Max(b.x, c.x)),
                         Mathf.Max(a.z, Mathf.Max(b.z, c.z)));
-                    Assert.That(ChurchSurfaceOverlap(face, surface.Bounds), Is.False,
+                    if (!ChurchSurfaceOverlap(face, surface.Bounds)) continue;
+                    // Curved streets clip terrain into real polygons. Their
+                    // triangle AABB can cross a paving edge without any face
+                    // crossing it, so measure the clipped footprint itself.
+                    IReadOnlyList<Vector2> clipped = new[] {
+                        new Vector2(a.x, a.z), new Vector2(b.x, b.z), new Vector2(c.x, c.z) };
+                    Vector2[] rectangle = CityRoadPolygon.Rectangle(surface.Bounds);
+                    for (int edge = 0; edge < rectangle.Length && clipped.Count >= 3; edge++)
+                        clipped = CityRoadPolygon.Clip(clipped, rectangle[edge], rectangle[(edge + 1) % rectangle.Length]);
+                    Assert.That(Mathf.Abs(CityRoadPolygon.Area(clipped)), Is.LessThanOrEqualTo(.00001f),
                         "Grass is still rendered beneath " + surface.Id);
                 }
 
@@ -1512,12 +1535,70 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (CityChurchCourtyardSurfaceDescriptor patch in visible)
                         if (patch.Bounds.Contains(point)) owners++;
                     Assert.That(owners, Is.EqualTo(1), surface.Id + " at " + point);
-                    Assert.That(collision.Raycast(new Ray(
-                        new Vector3(x, plan.GroundTopY + 1f, z), Vector3.down),
-                        out RaycastHit hit, 2f), Is.True, surface.Id);
-                    Assert.That(hit.point.y,
-                        Is.EqualTo(plan.GroundTopY).Within(0.001f), surface.Id);
+                    float top;
+                    if (threshold.Contains(point)) top = ChurchThresholdExpectedTop(city.World.ChurchPlan, point);
+                    else Assert.That(TryReplanningSurfaceTop(city.Layout, streets, point, out top), Is.True,
+                        surface.Id + " has no planned substrate at " + point);
+                    Assert.That(TryChurchPavingHit(collision, thresholdSupport,
+                        new Vector3(x, top, z), out RaycastHit hit), Is.True,
+                        surface.Id + " has no active physical floor at " + point + "; expected=" + top);
+                    Assert.That(hit.normal.y, Is.GreaterThan(.7f), surface.Id + " floor normal at " + point);
+                    Assert.That(hit.point.y, Is.EqualTo(top).Within(.003f),
+                        surface.Id + " floor datum at " + point + "; collider=" + hit.collider.name);
+                    FootstepGround marker = hit.collider.GetComponent<FootstepGround>();
+                    Assert.That(marker, Is.Not.Null);
+                    Assert.That(marker.ResolveKind(hit.triangleIndex), Is.EqualTo(FootstepGroundKind.Stone),
+                        surface.Id + " footstep ownership at " + point);
                 }
+            }
+            CityChurchPlan church = city.World.ChurchPlan;
+            Vector3 door = church.DoorGroundPosition;
+            Vector3 outward = church.EntranceOutwardDirection;
+            // Probe two near-endpoints and the real action dock separately;
+            // the latter must match the actual action root's support datum.
+            foreach (float distance in new[] { .002f, CityChurchWorldBuilder.DoorThresholdDepth - .002f,
+                         CityChurchPlanner.DoorDockOutwardDistance })
+            {
+                Vector3 point = door + outward * distance;
+                point.y = ChurchThresholdExpectedTop(church, new Vector2(point.x, point.z));
+                Assert.That(TryChurchPavingHit(collision, thresholdSupport, point, out RaycastHit hit), Is.True);
+                Assert.That(hit.collider, Is.SameAs(thresholdSupport));
+                Assert.That(hit.point.y, Is.EqualTo(point.y).Within(.001f), "Sloped sill endpoint/dock at " + point);
+                if (Mathf.Abs(distance - CityChurchPlanner.DoorDockOutwardDistance) < .001f)
+                    Assert.That(Mathf.Abs(hit.point.y + PlayerFactory.GroundedRootOffset - church.DoorDockPosition.y),
+                        Is.LessThanOrEqualTo(.001f));
+            }
+        }
+
+        private static float ChurchThresholdExpectedTop(CityChurchPlan church, Vector2 point)
+        {
+            Vector3 outer = church.DoorGroundPosition + church.EntranceOutwardDirection * CityChurchWorldBuilder.DoorThresholdDepth;
+            Vector2 inward = new Vector2(-church.EntranceOutwardDirection.x, -church.EntranceOutwardDirection.z);
+            float amount = Vector2.Dot(point - new Vector2(outer.x, outer.z), inward) / CityChurchWorldBuilder.DoorThresholdDepth;
+            return church.GroundTopY + Mathf.Lerp(CityChurchCourtyardWorldBuilder.SurfaceTopAboveGround,
+                CityChurchPlanner.FoundationTopAboveGround, amount);
+        }
+
+        private static bool TryChurchPavingHit(IReadOnlyList<MeshCollider> sectors, MeshCollider threshold,
+            Vector3 expected, out RaycastHit nearest)
+        {
+            RaycastHit best = default;
+            bool found = false;
+            var ray = new Ray(expected + Vector3.up * .3f, Vector3.down);
+            foreach (MeshCollider collider in sectors)
+                Sample(collider);
+            Sample(threshold);
+            nearest = best;
+            return found;
+
+            void Sample(MeshCollider collider)
+            {
+                if (collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy) return;
+                Bounds bounds = collider.bounds;
+                if (expected.x < bounds.min.x - .001f || expected.x > bounds.max.x + .001f ||
+                    expected.z < bounds.min.z - .001f || expected.z > bounds.max.z + .001f) return;
+                if (collider.Raycast(ray, out RaycastHit hit, .6f) && (!found || hit.distance < best.distance))
+                { best = hit; found = true; }
             }
         }
 
@@ -2897,13 +2978,11 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [Explicit("Capture, not a test. Run one area at a time.")]
-        public IEnumerator Church()
+        [Explicit("Focused church courtyard/interior metre contract, real routes and door roundtrip with lighting/state frames.")]
+        [PrebuildSetup(typeof(ChurchRemodelAssetsSetup))]
+        public IEnumerator ChurchRemodelAcceptance()
         {
-            yield return Capture(
-                SceneIds.ChurchInterior,
-                Root<ChurchInteriorRoot>(),
-                HeroShots());
+            yield return CaptureChurchRemodelAcceptance();
         }
 
         // ------------------------------------------------------------

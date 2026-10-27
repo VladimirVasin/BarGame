@@ -2,9 +2,13 @@
 
 Home:`build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
 `--validate-only`; maps `build-home-textures.py --room-only`.
-Bar: `build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`.
-`check-bar-interior-surfaces.py --validate-only`: FBX UV0/1 registry.
-`build-mountain-road-surface-shader.py --check`: includes one crown RGB pilot.
+Bar:`build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`;
+`check-bar-interior-surfaces.py --validate-only`:FBX UV0/1.
+Church:`build-church-3d-model.py`+`church_metric_geometry.py`/kit:
+`--validate-only`;`build-church-textures.py`:albedo/physical response.
+Garden:`build-church-garden-3d-model.py`:geometry/contacts/response/determinism;
+staged `--model-dir`/`--source-dir`/`--texture-dir`, `--no-preview`.
+`Church{,Garden}AssetSetup.BuildOrThrow`:import/bounds/materials.
 
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
 (`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
@@ -110,18 +114,11 @@ Source:`ArtSource/VillageLife`;review:`Captures/VillageLife`.
 `VillageLife`:bodies/props/doors/clearance/yielding/gusts/pause/returns.
 Judge at hero scale, not by counts.
 
-Workroom generators (close Unity):
-
-```powershell
-python tools/run-blender.py tools/build-village-workroom-3d-model.py --expect Assets/Resources/VillageLife/VillageWorkroom3D.fbx --expect Assets/Resources/VillageLife/VillageWorkroom3D.json -- --no-preview
-python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentWorkroomActions.fbx --expect Assets/Resources/VillageLife/VillageResidentWorkroomActions.json -- --workroom --no-preview
-python tools/run-blender.py tools/build-village-workroom-player-actions.py --expect Assets/Resources/Player/VillageWorkroomPlayerActions.fbx --expect Assets/Resources/Player/VillageWorkroomPlayerActions.json -- --preview
-```
-
-Room:`interior_kit`/house `08`/two windows/finite props-furniture.
-Residents:six bodies/prior banks;nine clips/metre poses/hand contacts/cloth-lid hinges.
-Hero:bone-only bank;prefab kept.
-`AreaCaptureFixture.VillageWorkroom`:imports/room journey→`Captures/VillageWorkroom`.
+Workroom(close Unity):launcher + `build-village-workroom-3d-model.py`,
+`build-village-residents-3d-model.py --workroom`,
+`build-village-workroom-player-actions.py --preview`.
+Room:kit/house08/two windows; six residents/prior banks/nine clips;
+hero bone bank retained. `AreaCaptureFixture.VillageWorkroom`:imports/journey.
 
 Frost:ImageGen/prompt/hash/linear import;runtime reveal/tint:
 [alpine-cold-frost-mask.md](alpine-cold-frost-mask.md).

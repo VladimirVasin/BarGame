@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-church-3d-model.py",
-  "generator_version": "1.2.0",
-  "blender_version": "5.0.1",
+  "generator_version": "2.0.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "provincial_catholic_gothic_basilica_v1",
   "display_name": "Catholic Church of the Northern Cemetery",
   "dimensions_m": {
@@ -9,9 +9,104 @@
     "length": 44.0,
     "height": 32.0
   },
+  "shell_contract": {
+    "exterior_source_scale": 0.55,
+    "interior_to_exterior_metric": {
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "yaw_degrees": 180,
+      "translation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "room_size_xz_m": [
+      12.1,
+      24.2
+    ],
+    "door_threshold_xz_m": [
+      0,
+      -12.1275
+    ],
+    "door_opening_m": {
+      "width": 1.8,
+      "height": 2.6
+    },
+    "narthex_clear_bounds_xz_m": [
+      -4.6,
+      -11.9,
+      4.6,
+      -8.55
+    ],
+    "aisle_clear_bounds_xz_m": [
+      -5.75,
+      -8.55,
+      5.75,
+      9.55
+    ],
+    "nave_vault_section_xh_m": [
+      [
+        -4,
+        4.9
+      ],
+      [
+        -2,
+        6.2
+      ],
+      [
+        0,
+        7.4
+      ],
+      [
+        2,
+        6.2
+      ],
+      [
+        4,
+        4.9
+      ]
+    ],
+    "aisle_roof_section_xh_m": [
+      [
+        4,
+        4.35
+      ],
+      [
+        5.95,
+        3.65
+      ]
+    ],
+    "window_depths_m": [
+      -5.5,
+      -2.2,
+      1.1,
+      4.4,
+      7.7
+    ],
+    "window_plane_x_m": 6.06,
+    "window_center_height_m": 2.6675,
+    "window_clear_size_m": [
+      0.6875,
+      1.7875
+    ],
+    "sanctuary_rail_z_m": 8.0,
+    "rose_center_xyz_m": [
+      0.0,
+      -12.078,
+      4.95
+    ],
+    "rose_coordinate_space": "Blender XYZ metres (Unity XZY)",
+    "rose_clear_diameter_m": 3.025,
+    "narthex_central_ceiling_height_m": 6.68,
+    "narthex_central_ceiling_width_m": 3.6
+  },
   "door_opening_m": {
-    "width": 2.8,
-    "height": 4.2
+    "width": 3.2727272727272725,
+    "height": 4.727272727272727
   },
   "blender_forward_axis": "-Y",
   "unity_exterior_entrance_outward_axis": "+Z",
@@ -105,13 +200,13 @@
       "kind": "Exterior",
       "root_name": "ROOT_ChurchExterior3D",
       "runtime_wrapper_yaw_degrees": 180.0,
-      "mesh_count": 12,
-      "renderer_count": 12,
-      "triangle_count": 6412,
+      "mesh_count": 13,
+      "renderer_count": 13,
+      "triangle_count": 8732,
       "bounds_min": [
         -11.5,
-        -22.191191,
-        0.0
+        -23.722727,
+        -0.581818
       ],
       "bounds_max": [
         11.5,
@@ -160,36 +255,218 @@
             0.0,
             180.000005
           ]
+        },
+        {
+          "name": "ANCHOR_Exterior.DoorLamp",
+          "role": "door_lamp_glow",
+          "local_position": [
+            0.0,
+            -22.85,
+            5.272727
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Rose",
+          "role": "rose_aperture",
+          "local_position": [
+            0.0,
+            -21.959999,
+            9.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Rose.Radius",
+          "role": "rose_aperture_radius",
+          "local_position": [
+            2.75,
+            -21.959999,
+            9.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.North.0",
+          "role": "window_aperture",
+          "local_position": [
+            -11.018182,
+            -10.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.North.1",
+          "role": "window_aperture",
+          "local_position": [
+            -11.018182,
+            -4.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.North.2",
+          "role": "window_aperture",
+          "local_position": [
+            -11.018182,
+            2.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.North.3",
+          "role": "window_aperture",
+          "local_position": [
+            -11.018182,
+            8.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.North.4",
+          "role": "window_aperture",
+          "local_position": [
+            -11.018182,
+            14.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.South.0",
+          "role": "window_aperture",
+          "local_position": [
+            11.018182,
+            -10.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.South.1",
+          "role": "window_aperture",
+          "local_position": [
+            11.018182,
+            -4.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.South.2",
+          "role": "window_aperture",
+          "local_position": [
+            11.018182,
+            2.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.South.3",
+          "role": "window_aperture",
+          "local_position": [
+            11.018182,
+            8.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Window.South.4",
+          "role": "window_aperture",
+          "local_position": [
+            11.018182,
+            14.0,
+            4.85
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
       "parts": [
         {
           "name": "EXT_Foundation",
-          "role": "foundation_and_west_steps",
+          "role": "grounded_foundation_and_flush_threshold_ramp",
           "material_slot": "Stone",
-          "vertices": 24,
-          "triangles": 36
+          "vertices": 20,
+          "triangles": 32
         },
         {
           "name": "EXT_BasilicaMasses",
           "role": "whitewashed_gothic_basilica_mass",
           "material_slot": "Plaster",
-          "vertices": 96,
-          "triangles": 172
+          "vertices": 1168,
+          "triangles": 1976
         },
         {
           "name": "EXT_StoneButtresses",
           "role": "stone_plinth_and_flying_buttresses",
           "material_slot": "Stone",
-          "vertices": 496,
-          "triangles": 828
+          "vertices": 564,
+          "triangles": 948
         },
         {
           "name": "EXT_GabledRoofs",
           "role": "steep_oxidized_gabled_roofs",
           "material_slot": "Roof",
-          "vertices": 260,
-          "triangles": 500
+          "vertices": 278,
+          "triangles": 524
         },
         {
           "name": "EXT_BellSpire",
@@ -207,31 +484,31 @@
         },
         {
           "name": "EXT_WestDoors",
-          "role": "central_west_double_door",
+          "role": "metric_panelled_west_double_door",
           "material_slot": "Wood",
           "vertices": 64,
-          "triangles": 108
+          "triangles": 112
         },
         {
           "name": "EXT_StainedGlass",
           "role": "stained_lancet_windows",
           "material_slot": "GlassWarm",
-          "vertices": 96,
-          "triangles": 144
+          "vertices": 100,
+          "triangles": 152
         },
         {
           "name": "EXT_LancetTracery",
           "role": "pointed_window_stone_tracery",
           "material_slot": "Stone",
-          "vertices": 1120,
-          "triangles": 2008
+          "vertices": 1184,
+          "triangles": 2120
         },
         {
           "name": "EXT_RoseGlass",
           "role": "west_rose_stained_glass",
           "material_slot": "GlassWarm",
-          "vertices": 8,
-          "triangles": 12
+          "vertices": 64,
+          "triangles": 124
         },
         {
           "name": "EXT_RoseTracery",
@@ -241,11 +518,95 @@
           "triangles": 1472
         },
         {
+          "name": "EXT_DoorLampWarm",
+          "role": "always_lit_west_entrance_lamp",
+          "material_slot": "GlassWarm",
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
           "name": "EXT_CornicesAndRoofSeams",
           "role": "gothic_cornices_pilasters_and_roof_seams",
           "material_slot": "Iron",
-          "vertices": 592,
-          "triangles": 968
+          "vertices": 656,
+          "triangles": 1080
+        }
+      ],
+      "dimensions_m": {
+        "width": 23.0,
+        "length": 44.0,
+        "height": 32.0
+      },
+      "door_opening_m": {
+        "width": 3.2727272727272725,
+        "height": 4.727272727272727
+      },
+      "upper_lancet_contract": {
+        "coordinate_space": "Blender XYZ metres before exterior wrapper",
+        "centres_x_m": [
+          -1.1,
+          1.1
+        ],
+        "wall_centre_y_m": -11.895,
+        "wall_thickness_m": 0.3,
+        "glass_plane_y_m": -12.035,
+        "clear_width_m": 0.62,
+        "sill_height_m": 9.1,
+        "shoulder_height_m": 9.96,
+        "tip_height_m": 10.28,
+        "frame_plane_y_m": -12.085,
+        "frame_half_width_m": 0.4,
+        "frame_sill_height_m": 9.055,
+        "frame_shoulder_height_m": 10.0,
+        "frame_tip_height_m": 10.43,
+        "frame_radius_m": 0.045,
+        "tower_top_height_m": 10.82125
+      },
+      "rose_outer_rim_contract": {
+        "mean_radius_m": 1.5375,
+        "tube_radius_m": 0.035,
+        "spoke_outer_radius_m": 1.514,
+        "plane_y_m": -12.111
+      },
+      "roof_clearance_checks": [
+        {
+          "detail": "TowerLancet.-1.10.Glass",
+          "roof_surface_clearance_m": 0.543515,
+          "vertical_gap_above_all_roof_triangles_m": 0.245,
+          "height_min_m": 9.1,
+          "height_max_m": 10.28,
+          "roof_edge_intersections": 0
+        },
+        {
+          "detail": "TowerLancet.-1.10.Frame",
+          "roof_surface_clearance_m": 0.402849,
+          "vertical_gap_above_all_roof_triangles_m": 0.149999,
+          "height_min_m": 9.005,
+          "height_max_m": 10.459151,
+          "roof_edge_intersections": 0
+        },
+        {
+          "detail": "TowerLancet.+1.10.Glass",
+          "roof_surface_clearance_m": 0.543515,
+          "vertical_gap_above_all_roof_triangles_m": 0.245,
+          "height_min_m": 9.1,
+          "height_max_m": 10.28,
+          "roof_edge_intersections": 0
+        },
+        {
+          "detail": "TowerLancet.+1.10.Frame",
+          "roof_surface_clearance_m": 0.402849,
+          "vertical_gap_above_all_roof_triangles_m": 0.149999,
+          "height_min_m": 9.005,
+          "height_max_m": 10.459151,
+          "roof_edge_intersections": 0
+        },
+        {
+          "detail": "Rose.OuterRing",
+          "roof_surface_clearance_m": 0.0225,
+          "height_max_m": 6.5225,
+          "roof_edge_intersections": 0,
+          "attached_spoke_count": 16
         }
       ]
     },
@@ -253,18 +614,18 @@
       "kind": "Interior",
       "root_name": "ROOT_ChurchInterior3D",
       "runtime_wrapper_yaw_degrees": 0.0,
-      "mesh_count": 23,
-      "renderer_count": 23,
-      "triangle_count": 9520,
+      "mesh_count": 24,
+      "renderer_count": 24,
+      "triangle_count": 17628,
       "bounds_min": [
-        -11.41,
-        -22.01,
-        -0.24
+        -6.0525,
+        -12.1775,
+        -0.18
       ],
       "bounds_max": [
-        11.41,
-        22.01,
-        14.28
+        6.0525,
+        11.909795,
+        7.528624
       ],
       "anchors": [
         {
@@ -272,7 +633,7 @@
           "role": "player_spawn",
           "local_position": [
             0.0,
-            -18.799999,
+            -10.1,
             0.0
           ],
           "local_rotation_degrees": [
@@ -286,7 +647,7 @@
           "role": "exit_interaction",
           "local_position": [
             0.0,
-            -21.0,
+            -11.2,
             0.0
           ],
           "local_rotation_degrees": [
@@ -300,8 +661,8 @@
           "role": "light_narthex",
           "local_position": [
             0.0,
-            -15.8,
-            4.2
+            -9.1,
+            3.2
           ],
           "local_rotation_degrees": [
             0.0,
@@ -315,7 +676,7 @@
           "local_position": [
             0.0,
             -1.5,
-            8.8
+            4.5
           ],
           "local_rotation_degrees": [
             0.0,
@@ -328,354 +689,784 @@
           "role": "light_sanctuary",
           "local_position": [
             0.0,
-            15.7,
-            5.0
+            9.2,
+            3.5
           ],
           "local_rotation_degrees": [
             0.0,
             0.0,
             180.000005
           ]
+        },
+        {
+          "name": "ANCHOR_Interior.Door",
+          "role": "entrance_threshold",
+          "local_position": [
+            0.0,
+            -12.1275,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Rose",
+          "role": "rose_aperture",
+          "local_position": [
+            0.0,
+            -12.078,
+            4.95
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Rose.Radius",
+          "role": "rose_aperture_radius",
+          "local_position": [
+            1.5125,
+            -12.078,
+            4.95
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Votive.North",
+          "role": "votive_flames",
+          "local_position": [
+            -3.2,
+            6.3,
+            1.28
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Votive.South",
+          "role": "votive_flames",
+          "local_position": [
+            3.2,
+            6.3,
+            1.28
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Warm.HighAltar.North",
+          "role": "warm_practical",
+          "local_position": [
+            -1.2,
+            10.0,
+            2.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Warm.HighAltar.South",
+          "role": "warm_practical",
+          "local_position": [
+            1.2,
+            10.0,
+            2.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Warm.Altar",
+          "role": "warm_practical",
+          "local_position": [
+            0.0,
+            8.95,
+            1.34
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Warm.Font",
+          "role": "warm_practical",
+          "local_position": [
+            -3.5,
+            -8.8,
+            1.32
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.NorthNave",
+          "role": "sconce_flame",
+          "local_position": [
+            -5.58,
+            -4.0,
+            2.5
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.SouthNave",
+          "role": "sconce_flame",
+          "local_position": [
+            5.58,
+            -4.0,
+            2.5
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.NorthCrossing",
+          "role": "sconce_flame",
+          "local_position": [
+            -5.58,
+            2.8,
+            2.5
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.SouthCrossing",
+          "role": "sconce_flame",
+          "local_position": [
+            5.58,
+            2.8,
+            2.5
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.NorthNarthex",
+          "role": "sconce_flame",
+          "local_position": [
+            -4.42,
+            -9.1,
+            2.45
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Sconce.SouthNarthex",
+          "role": "sconce_flame",
+          "local_position": [
+            4.42,
+            -9.1,
+            2.45
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Corona.Narthex",
+          "role": "corona_light",
+          "local_position": [
+            0.0,
+            -10.65,
+            2.5
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.CoronaChain.Narthex",
+          "role": "corona_chain_contact",
+          "local_position": [
+            0.0,
+            -10.65,
+            3.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Corona.NaveWest",
+          "role": "corona_light",
+          "local_position": [
+            0.0,
+            -6.8,
+            3.8
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.CoronaChain.NaveWest",
+          "role": "corona_chain_contact",
+          "local_position": [
+            0.0,
+            -6.8,
+            7.3
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Corona.NaveEast",
+          "role": "corona_light",
+          "local_position": [
+            0.0,
+            -1.8,
+            3.8
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.CoronaChain.NaveEast",
+          "role": "corona_chain_contact",
+          "local_position": [
+            0.0,
+            -1.8,
+            7.3
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Corona.Crossing",
+          "role": "corona_light",
+          "local_position": [
+            0.0,
+            4.5,
+            3.8
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.CoronaChain.Crossing",
+          "role": "corona_chain_contact",
+          "local_position": [
+            0.0,
+            4.5,
+            7.3
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.North.0",
+          "role": "window_aperture",
+          "local_position": [
+            -6.06,
+            -5.5,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.North.1",
+          "role": "window_aperture",
+          "local_position": [
+            -6.06,
+            -2.2,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.North.2",
+          "role": "window_aperture",
+          "local_position": [
+            -6.06,
+            1.1,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.North.3",
+          "role": "window_aperture",
+          "local_position": [
+            -6.06,
+            4.4,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.North.4",
+          "role": "window_aperture",
+          "local_position": [
+            -6.06,
+            7.7,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.South.0",
+          "role": "window_aperture",
+          "local_position": [
+            6.06,
+            -5.5,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.South.1",
+          "role": "window_aperture",
+          "local_position": [
+            6.06,
+            -2.2,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.South.2",
+          "role": "window_aperture",
+          "local_position": [
+            6.06,
+            1.1,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.South.3",
+          "role": "window_aperture",
+          "local_position": [
+            6.06,
+            4.4,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Window.South.4",
+          "role": "window_aperture",
+          "local_position": [
+            6.06,
+            7.7,
+            2.6675
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
       "parts": [
         {
           "name": "INT_Floor",
-          "role": "stone_floor_and_raised_sanctuary",
+          "role": "metric_stone_floor_and_sanctuary",
           "material_slot": "Floor",
-          "vertices": 16,
-          "triangles": 24
+          "vertices": 46,
+          "triangles": 80
         },
         {
           "name": "INT_PlasteredShell",
-          "role": "narthex_nave_aisles_and_apse_shell",
+          "role": "stepped_narthex_aisle_and_polygonal_apse_shell",
           "material_slot": "Plaster",
-          "vertices": 304,
-          "triangles": 456
+          "vertices": 1246,
+          "triangles": 2104
         },
         {
           "name": "INT_WestDoor",
-          "role": "west_exit_door",
+          "role": "panelled_west_exit_door",
           "material_slot": "Wood",
-          "vertices": 8,
-          "triangles": 12
-        },
-        {
-          "name": "INT_NavePiers",
-          "role": "four_nave_piers",
-          "material_slot": "Plaster",
-          "vertices": 192,
-          "triangles": 368
-        },
-        {
-          "name": "INT_PierCapitals",
-          "role": "pier_bases_and_carved_capitals",
-          "material_slot": "Stone",
-          "vertices": 384,
-          "triangles": 736
+          "vertices": 64,
+          "triangles": 112
         },
         {
           "name": "INT_RibbedVault",
-          "role": "pointed_nave_vault",
+          "role": "solid_pointed_metric_vault",
           "material_slot": "Mural",
-          "vertices": 24,
-          "triangles": 36
+          "vertices": 32,
+          "triangles": 48
         },
         {
           "name": "INT_VaultRibs",
-          "role": "gothic_vault_ribs_and_transverse_arches",
+          "role": "gothic_vault_ribs_and_relieved_courses",
           "material_slot": "Stone",
-          "vertices": 532,
-          "triangles": 948
+          "vertices": 592,
+          "triangles": 1036
+        },
+        {
+          "name": "INT_NavePiers",
+          "role": "four_metric_nave_piers",
+          "material_slot": "Plaster",
+          "vertices": 384,
+          "triangles": 720
+        },
+        {
+          "name": "INT_PierCapitals",
+          "role": "pier_capitals_and_overhead_vault_bearings",
+          "material_slot": "Stone",
+          "vertices": 128,
+          "triangles": 224
         },
         {
           "name": "INT_Pews",
-          "role": "twelve_nave_pew_halves",
+          "role": "twelve_human_size_pew_halves",
           "material_slot": "Wood",
-          "vertices": 1120,
-          "triangles": 1680
+          "vertices": 1152,
+          "triangles": 2016
         },
         {
           "name": "INT_Confessionals",
-          "role": "paired_wall_confessionals",
+          "role": "paired_closed_panelled_confessionals",
           "material_slot": "Wood",
-          "vertices": 96,
-          "triangles": 160
+          "vertices": 192,
+          "triangles": 336
         },
         {
           "name": "INT_StoneFurnishings",
           "role": "baptismal_font_and_altar_table",
           "material_slot": "Stone",
-          "vertices": 96,
-          "triangles": 176
+          "vertices": 152,
+          "triangles": 284
         },
         {
           "name": "INT_AltarCloth",
           "role": "altar_frontal",
           "material_slot": "Textile",
-          "vertices": 8,
-          "triangles": 12
+          "vertices": 16,
+          "triangles": 28
         },
         {
           "name": "INT_VotiveStands",
           "role": "paired_votive_candle_stands",
           "material_slot": "Gold",
-          "vertices": 392,
-          "triangles": 768
-        },
-        {
-          "name": "INT_VotiveCandles",
-          "role": "votive_wax_candles",
-          "material_slot": "Plaster",
-          "vertices": 512,
-          "triangles": 896
+          "vertices": 192,
+          "triangles": 360
         },
         {
           "name": "INT_CommunionRail",
           "role": "closed_communion_rail_and_center_gate",
           "material_slot": "Gold",
-          "vertices": 256,
-          "triangles": 444
+          "vertices": 400,
+          "triangles": 700
         },
         {
           "name": "INT_HighAltar",
           "role": "high_altar_reredos",
           "material_slot": "Wood",
-          "vertices": 72,
-          "triangles": 120
+          "vertices": 160,
+          "triangles": 280
         },
         {
           "name": "INT_Tabernacle",
           "role": "gilded_tabernacle",
           "material_slot": "Gold",
-          "vertices": 24,
-          "triangles": 40
+          "vertices": 32,
+          "triangles": 56
         },
         {
           "name": "INT_Crucifix",
           "role": "sanctuary_latin_crucifix",
           "material_slot": "Wood",
-          "vertices": 24,
-          "triangles": 36
+          "vertices": 32,
+          "triangles": 56
         },
         {
           "name": "INT_StationsOfCross",
           "role": "fourteen_stations_of_cross",
           "material_slot": "SacredArt",
-          "vertices": 112,
-          "triangles": 168
+          "vertices": 224,
+          "triangles": 392
         },
         {
           "name": "INT_ChoirAndOrganCase",
           "role": "choir_loft_and_pipe_organ_case",
           "material_slot": "Wood",
-          "vertices": 56,
-          "triangles": 84
+          "vertices": 112,
+          "triangles": 196
         },
         {
           "name": "INT_OrganPipes",
           "role": "pipe_organ_rank",
           "material_slot": "Iron",
-          "vertices": 456,
-          "triangles": 836
+          "vertices": 380,
+          "triangles": 684
         },
         {
           "name": "INT_StainedGlassNorth",
           "role": "north_aisle_stained_glass",
           "material_slot": "GlassCold",
-          "vertices": 40,
-          "triangles": 60
+          "vertices": 144,
+          "triangles": 264
         },
         {
           "name": "INT_StainedGlassSouth",
           "role": "south_aisle_stained_glass",
           "material_slot": "GlassCold",
-          "vertices": 40,
-          "triangles": 60
+          "vertices": 80,
+          "triangles": 140
         },
         {
           "name": "INT_WindowTracery",
           "role": "interior_lancet_tracery",
           "material_slot": "Stone",
-          "vertices": 800,
-          "triangles": 1400
+          "vertices": 1504,
+          "triangles": 2744
+        },
+        {
+          "name": "INT_LightingHardware",
+          "role": "authored_sconces_and_hung_coronas",
+          "material_slot": "Iron",
+          "vertices": 1504,
+          "triangles": 2648
+        },
+        {
+          "name": "INT_VotiveCandles",
+          "role": "wax_at_all_practical_contacts",
+          "material_slot": "Plaster",
+          "vertices": 1208,
+          "triangles": 2120
         }
       ],
+      "dimensions_m": {
+        "width": 12.1,
+        "length": 24.2,
+        "height": 7.55
+      },
+      "door_opening_m": {
+        "width": 1.8,
+        "height": 2.6
+      },
       "layout_contract": [
         {
           "name": "nave_piers",
           "count": 4,
           "centers_xz": [
             [
-              -5.5,
+              -3.5,
               -3.5
             ],
             [
-              5.5,
+              3.5,
               -3.5
             ],
             [
-              -5.5,
-              5.5
+              -3.5,
+              4.0
             ],
             [
-              5.5,
-              5.5
+              3.5,
+              4.0
             ]
           ],
           "footprint_xz_m": [
-            1.56,
-            1.56
+            0.84,
+            0.84
           ],
           "vertical_envelope_m": [
-            0.0,
-            9.6
+            0,
+            4.9
           ],
           "centers_xz_flat": [
-            -5.5,
             -3.5,
-            5.5,
             -3.5,
-            -5.5,
-            5.5,
-            5.5,
-            5.5
+            3.5,
+            -3.5,
+            -3.5,
+            4.0,
+            3.5,
+            4.0
           ]
         },
         {
           "name": "pew_halves",
-          "count": 20,
+          "count": 12,
           "centers_xz": [
             [
-              -2.9,
-              -8.5
+              -2.05,
+              -6.1
             ],
             [
-              2.9,
-              -8.5
+              2.05,
+              -6.1
             ],
             [
-              -2.9,
-              -6.95
+              -2.05,
+              -4.7
             ],
             [
-              2.9,
-              -6.95
+              2.05,
+              -4.7
             ],
             [
-              -2.9,
-              -5.4
-            ],
-            [
-              2.9,
-              -5.4
-            ],
-            [
-              -2.9,
-              -3.85
-            ],
-            [
-              2.9,
-              -3.85
-            ],
-            [
-              -2.9,
+              -2.05,
               -2.3
             ],
             [
-              2.9,
+              2.05,
               -2.3
             ],
             [
-              -2.9,
-              -0.75
+              -2.05,
+              -0.9
             ],
             [
-              2.9,
-              -0.75
+              2.05,
+              -0.9
             ],
             [
-              -2.9,
-              0.8
+              -2.05,
+              0.5
             ],
             [
-              2.9,
-              0.8
+              2.05,
+              0.5
             ],
             [
-              -2.9,
-              2.35
+              -2.05,
+              1.9
             ],
             [
-              2.9,
-              2.35
-            ],
-            [
-              -2.9,
-              3.9
-            ],
-            [
-              2.9,
-              3.9
-            ],
-            [
-              -2.9,
-              5.45
-            ],
-            [
-              2.9,
-              5.45
+              2.05,
+              1.9
             ]
           ],
           "footprint_xz_m": [
-            3.8,
+            2.2,
             0.72
           ],
           "vertical_envelope_m": [
-            0.0,
-            1.5
+            0,
+            1.05
           ],
           "centers_xz_flat": [
-            -2.9,
-            -8.5,
-            2.9,
-            -8.5,
-            -2.9,
-            -6.95,
-            2.9,
-            -6.95,
-            -2.9,
-            -5.4,
-            2.9,
-            -5.4,
-            -2.9,
-            -3.85,
-            2.9,
-            -3.85,
-            -2.9,
+            -2.05,
+            -6.1,
+            2.05,
+            -6.1,
+            -2.05,
+            -4.7,
+            2.05,
+            -4.7,
+            -2.05,
             -2.3,
-            2.9,
+            2.05,
             -2.3,
-            -2.9,
-            -0.75,
-            2.9,
-            -0.75,
-            -2.9,
-            0.8,
-            2.9,
-            0.8,
-            -2.9,
-            2.35,
-            2.9,
-            2.35,
-            -2.9,
-            3.9,
-            2.9,
-            3.9,
-            -2.9,
-            5.45,
-            2.9,
-            5.45
+            -2.05,
+            -0.9,
+            2.05,
+            -0.9,
+            -2.05,
+            0.5,
+            2.05,
+            0.5,
+            -2.05,
+            1.9,
+            2.05,
+            1.9
           ]
         },
         {
@@ -683,21 +1474,21 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              12.4
+              0,
+              8.0
             ]
           ],
           "footprint_xz_m": [
-            21.6,
-            0.4
+            11.5,
+            0.28
           ],
           "vertical_envelope_m": [
-            0.0,
-            0.92
+            0,
+            0.85
           ],
           "centers_xz_flat": [
-            0.0,
-            12.4
+            0,
+            8.0
           ]
         },
         {
@@ -705,21 +1496,21 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              15.7
+              0,
+              9.2
             ]
           ],
           "footprint_xz_m": [
-            2.75,
-            1.55
+            2.3,
+            1.3
           ],
           "vertical_envelope_m": [
-            0.0,
-            1.14
+            0,
+            1.0
           ],
           "centers_xz_flat": [
-            0.0,
-            15.7
+            0,
+            9.2
           ]
         },
         {
@@ -727,21 +1518,21 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              18.0
+              0,
+              10.45
             ]
           ],
           "footprint_xz_m": [
-            4.2,
-            2.5
+            3.3,
+            1.15
           ],
           "vertical_envelope_m": [
-            0.0,
-            6.2
+            0,
+            3.8
           ],
           "centers_xz_flat": [
-            0.0,
-            18.0
+            0,
+            10.45
           ]
         },
         {
@@ -749,21 +1540,21 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              20.65
+              0,
+              10.53
             ]
           ],
           "footprint_xz_m": [
-            2.5,
-            0.35
+            1.75,
+            0.18
           ],
           "vertical_envelope_m": [
-            3.5,
-            8.2
+            2.4,
+            4.7
           ],
           "centers_xz_flat": [
-            0.0,
-            20.65
+            0,
+            10.53
           ]
         },
         {
@@ -771,27 +1562,27 @@
           "count": 2,
           "centers_xz": [
             [
-              -9.7,
-              7.3
+              -4.95,
+              6.55
             ],
             [
-              9.7,
-              7.3
+              4.95,
+              6.55
             ]
           ],
           "footprint_xz_m": [
-            1.8,
-            3.3
+            1.4,
+            1.5
           ],
           "vertical_envelope_m": [
-            0.0,
-            3.15
+            0,
+            2.45
           ],
           "centers_xz_flat": [
-            -9.7,
-            7.3,
-            9.7,
-            7.3
+            -4.95,
+            6.55,
+            4.95,
+            6.55
           ]
         },
         {
@@ -799,27 +1590,27 @@
           "count": 2,
           "centers_xz": [
             [
-              -8.8,
-              10.5
+              -3.2,
+              6.3
             ],
             [
-              8.8,
-              10.5
+              3.2,
+              6.3
             ]
           ],
           "footprint_xz_m": [
-            0.8,
-            0.8
+            0.7,
+            0.7
           ],
           "vertical_envelope_m": [
-            0.0,
+            0,
             1.35
           ],
           "centers_xz_flat": [
-            -8.8,
-            10.5,
-            8.8,
-            10.5
+            -3.2,
+            6.3,
+            3.2,
+            6.3
           ]
         },
         {
@@ -827,8 +1618,8 @@
           "count": 1,
           "centers_xz": [
             [
-              -8.8,
-              -16.8
+              -3.5,
+              -8.8
             ]
           ],
           "footprint_xz_m": [
@@ -836,12 +1627,12 @@
             1.1
           ],
           "vertical_envelope_m": [
-            0.0,
-            1.11
+            0,
+            1.1
           ],
           "centers_xz_flat": [
-            -8.8,
-            -16.8
+            -3.5,
+            -8.8
           ]
         },
         {
@@ -849,21 +1640,21 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              -18.4
+              0,
+              -10.75
             ]
           ],
           "footprint_xz_m": [
-            17.0,
-            4.2
+            8.7,
+            2.4
           ],
           "vertical_envelope_m": [
-            4.4,
-            4.8
+            3.0,
+            3.22
           ],
           "centers_xz_flat": [
-            0.0,
-            -18.4
+            0,
+            -10.75
           ]
         },
         {
@@ -871,39 +1662,39 @@
           "count": 4,
           "centers_xz": [
             [
-              -8.0,
-              -18.2
+              -4.1,
+              -10.3
             ],
             [
-              -5.3,
-              -18.2
+              -3.25,
+              -10.3
             ],
             [
-              5.3,
-              -18.2
+              3.25,
+              -10.3
             ],
             [
-              8.0,
-              -18.2
+              4.1,
+              -10.3
             ]
           ],
           "footprint_xz_m": [
-            0.32,
-            0.32
+            0.22,
+            0.22
           ],
           "vertical_envelope_m": [
-            0.0,
-            4.4
+            0,
+            3.0
           ],
           "centers_xz_flat": [
-            -8.0,
-            -18.2,
-            -5.3,
-            -18.2,
-            5.3,
-            -18.2,
-            8.0,
-            -18.2
+            -4.1,
+            -10.3,
+            -3.25,
+            -10.3,
+            3.25,
+            -10.3,
+            4.1,
+            -10.3
           ]
         },
         {
@@ -911,25 +1702,139 @@
           "count": 1,
           "centers_xz": [
             [
-              0.0,
-              -20.3
+              0,
+              -10.3
             ]
           ],
           "footprint_xz_m": [
-            12.0,
-            1.6
+            4.8,
+            0.9
           ],
           "vertical_envelope_m": [
-            4.8,
-            11.7
+            3.22,
+            5.92
           ],
           "centers_xz_flat": [
-            0.0,
-            -20.3
+            0,
+            -10.3
+          ]
+        }
+      ],
+      "overhead_trim_contract": [
+        {
+          "id": "overhead-bearing-1",
+          "centre_xyz": [
+            -3.72,
+            -3.5,
+            4.88
+          ],
+          "size_xyz": [
+            0.68,
+            0.2,
+            0.18
+          ],
+          "cap_contact_xyz": [
+            -3.75,
+            -3.5,
+            4.895
+          ],
+          "rib_contact_xyz": [
+            -3.99,
+            -3.49,
+            4.9
+          ],
+          "vault_contact_xyz": [
+            -3.99,
+            -3.49,
+            4.913
+          ]
+        },
+        {
+          "id": "overhead-bearing-2",
+          "centre_xyz": [
+            3.72,
+            -3.5,
+            4.88
+          ],
+          "size_xyz": [
+            0.68,
+            0.2,
+            0.18
+          ],
+          "cap_contact_xyz": [
+            3.75,
+            -3.5,
+            4.895
+          ],
+          "rib_contact_xyz": [
+            3.99,
+            -3.49,
+            4.9
+          ],
+          "vault_contact_xyz": [
+            3.99,
+            -3.49,
+            4.913
+          ]
+        },
+        {
+          "id": "overhead-bearing-3",
+          "centre_xyz": [
+            -3.72,
+            4.0,
+            4.88
+          ],
+          "size_xyz": [
+            0.68,
+            0.2,
+            0.18
+          ],
+          "cap_contact_xyz": [
+            -3.75,
+            4.0,
+            4.895
+          ],
+          "rib_contact_xyz": [
+            -3.99,
+            4.01,
+            4.9
+          ],
+          "vault_contact_xyz": [
+            -3.99,
+            4.01,
+            4.913
+          ]
+        },
+        {
+          "id": "overhead-bearing-4",
+          "centre_xyz": [
+            3.72,
+            4.0,
+            4.88
+          ],
+          "size_xyz": [
+            0.68,
+            0.2,
+            0.18
+          ],
+          "cap_contact_xyz": [
+            3.75,
+            4.0,
+            4.895
+          ],
+          "rib_contact_xyz": [
+            3.99,
+            4.01,
+            4.9
+          ],
+          "vault_contact_xyz": [
+            3.99,
+            4.01,
+            4.913
           ]
         }
       ]
     }
   ],
-  "build_signature": "f38fcdb7b495752146f05741a8e9785e3cc6bebd8789c0312e0855fff560358d"
+  "build_signature": "8652bc83d24c05c6dd93d73ed1f11ecf0b69db3c57aeea31890c3fbd9a81f9fc"
 }

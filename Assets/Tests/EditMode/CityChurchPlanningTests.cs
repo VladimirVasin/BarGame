@@ -196,7 +196,7 @@ namespace BarPromenade.Tests.EditMode
         /// </summary>
         [Test]
         [Category("CityChurch")]
-        public void DoorDock_StandsOnTheCollideredChurchGround()
+        public void DoorDock_StandsOnTheAuthoredThresholdRamp()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -214,10 +214,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(ground.PhysicalTopY).Within(Tolerance));
             Assert.That(
                 plan.DoorDockPosition.y,
-                Is.EqualTo(standing).Within(
-                    PlayerMotor.InteractionVerticalTolerance),
-                "The hero can only start the door action from a dock " +
-                "within the interaction tolerance of where he stands.");
+                Is.EqualTo(standing + Mathf.Lerp(
+                    CityChurchPlanner.FoundationTopAboveGround,
+                    CityChurchPlanner.ApproachSurfaceTopAboveGround,
+                    CityChurchPlanner.DoorDockOutwardDistance / CityChurchWorldBuilder.DoorThresholdDepth))
+                    .Within(Tolerance),
+                "The door action docks on the actual sloped sill, while the return stays on the forecourt.");
             Assert.That(
                 plan.ReturnPosition.y,
                 Is.EqualTo(standing).Within(

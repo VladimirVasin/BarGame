@@ -2224,8 +2224,7 @@
   concurrent heavy scene-loading fixtures trip `ExitPlayModeTask`.
 - **Accepted:** Interior generators share `tools/interior_kit.py` — wall runs
   with real openings, swept mouldings, chamfers, panelled leaves, turned legs.
-  It holds no value belonging to any one room, which is the only test of
-  whether it is general; the next interior must import it unedited.
+  Room-specific constants stay in each generator; others import the kit unedited.
 - **Accepted:** A Blender-authored interior gets NO material assets. Every
   renderer shares `RuntimePrimitiveLit` with sheet/tint/smoothness/metallic MPBs,
   as `BarSurfaceAppearance.Apply` does. Bar district `_BaseColor` varies through
@@ -2576,20 +2575,30 @@
   street access;church:explicit west frontage/no pre-MST access repair.
   Cemetery landmarks:deterministic runtime composition. Roads/ground/navigation/
   map consume active cells only;holes/non-rectangular outlines stay real voids.
-- **Accepted — Church is a special precinct with split Blender payloads:**
-  `default-coastal` carves `RectInt(13,2,4,2)` from the former eastern Yard
-  and keeps the residual Yard rectangular at `RectInt(13,4,4,4)`. Church is
-  an appended area/district/surface kind, not a building lot, and selects one
-  west frontage after the ordinary graph is established; it never enters the
-  pre-MST open-area repair, so adding it cannot reseed the city road network.
-  The exterior's runtime `+Z` anchor is `EntranceOutward` and is placed toward
-  world west, leaving the altar end east. One deterministic Blender source
-  exports separate exterior/interior FBX and Resources prefabs: City loads no
-  furnishings, while `ChurchInterior` loads no exterior. Imported models own
-  render hierarchy and semantic anchors only; data-first Unity plans retain
-  all walkability, barriers, colliders, entry/return points and lights. The
-  transition uses appended `EnterChurch`/`ExitChurch` directions and the same
-  accepted-request session semantics as the existing doors.
+- **Accepted 2026-10-27 — metric church/garden remodel, user decision:**
+  Inside/outside correspondence replaces the full-size interior.
+  Church remains `RectInt(13,2,4,2)`, residual Yard `RectInt(13,4,4,4)`, outside
+  pre-MST road repair; one west frontage/east altar and existing cemetery link.
+  Exterior nominal source `23/44/32 m` at `.55` keeps the main-body silhouette.
+  Interior nominal `12.1 x 24.2 x 7.55 m`, measured top7.529/collision7.6:
+  narthex, four piers, two aisles, six paired pew rows and closed sanctuary.
+  `church_metric_geometry.py`/`interior_kit` share metres, wall/opening/anchor
+  contracts with the validated plan; `.3 m` walls and `1.8 x 2.6 m` west door.
+  Both exports share the through-rose; its ceiling pocket fits below the roof.
+  Hero/furniture retain metres; collision/shelter/door use physical bounds.
+  Split FBXs isolate exterior/interior; anchors use world space.
+  Garden:slatted/bolted bench, dressed stone, throwing grooves/shared rain maps.
+  PotMedium/statue/water contacts, composition/populations/loop/passages stay.
+  `ChurchInteriorAtmosphere` owns model-anchored16warm/10glow, shared finite
+  bounce≤4/air≤2/halation≤16 and one filtered256 environment for floor/iron/brass.
+  Physical response/Neutral, soft shadows, clear air and DOF5–13 replace old wash.
+  Daylight comes from existing openings; no new sun/source/weather/sky/story.
+  All24 reviewed; GI/air/material/water/post keep shared scoped owners/settings.
+  SSR stays road-only; no baked GI/APV/SSGI/SCGI/rim/flares/blur rollout.
+  Dither requires banding; wear/particles/BRDF/affordances stay causal.
+  Garden uplights retain shadowless/no-volume/no-bounce limits; fountain no Light.
+  Empty church/no priest/service/bell/ritual/text/reaction; no §6 waiver.
+  Story§16/21/nine art checks bind; local cost unmeasured.
 - **Accepted architecture exception — 2026-08-28, explicit user request — the
   cableway carries the player, and the village above it is a real area:** Four
   canon rules banned this outright and are lifted together by one row in the
@@ -2872,30 +2881,18 @@
   the north terrace inside ChurchGround and makes physical boundary and
   navigation agree. The single west entrance and `3 m` cemetery passage remain.
 - **Accepted architecture exception — 2026-09-05, subsequent explicit user
-  request for a low church-garden hedge and ground lighting:** The earlier
-  courtyard ban on new Light sources is lifted only for ten fixed garden
-  uplights: nine wash the planted edge and one washes the Mary statue.
-  `ChurchGardenUplight` points shadowless warm Spots upward by `35°` with a
-  `3.2 m` range and registers them through `CityNightSiteLightRegistry`.
-  The current border wash is more pronounced (night intensity `7.2`), while
-  the statue receives a gentler `2.8` accent from its diagonal approach.
-  Each real lens has a small persistent halo and retains the shared
-  two-thirds daytime floor under story-bible §20; the twelve-light street/bar
-  pool is unchanged. The fountain itself still receives no Light and keeps
-  its separate accepted water-voice exception above.
-  `ChurchGardenBorderPlan` adds exactly `28` low hedge segments, `0.8 m`
-  high and `0.85 m` deep, along the garden's back and wings with rounded
-  turns and a `3.9 m` northern opening. The existing east tree joins this
-  edge; the two trees and six grouped shrubs keep their own counts. This
-  narrowly extends the earlier `6–8`-shrub furnishing description through a
-  separate perimeter planting, without a formal parterre or a new wall.
-  The main loop, west entrance, bench pockets and sole cemetery passage
-  remain clear. The passive Blender kit gains `HedgeSegment` and
-  `GardenUplight`, for ten pieces and `12,492` triangles. The ground fixture
-  stays below `0.22 m`; the eight original mesh signatures remain unchanged.
-  The story-bible §6 records this permanent
-  level-`0` furnishing; it creates no new text, action, lore, water or story
-  reaction.
+  request for a low church-garden hedge and ground lighting:** The courtyard
+  light ban is lifted only for ten fixed warm uplights: nine planted-edge washes,
+  one Mary accent. `ChurchGardenUplight`/`CityNightSiteLightRegistry`: shadowless
+  Spots35°/3.2m, night7.2/2.8, shielded bodies≤.22m, real recessed lenses/small
+  persistent halos/day≥2/3. Street/bar pool12 and fountain's no-Light rule stay.
+  `ChurchGardenBorderPlan` retains28 hedge segments .8m high/.85m deep,
+  rounded back/wings, north opening3.9m/east-tree gap, separate from two trees/
+  six shrubs. Entrance/loop/bench pockets/sole cemetery passage remain clear.
+  `ChurchGarden3D` now has eleven passive donors/14,632triangles, including
+  fixed-metre slatted bench; portable pot/water/statue mesh contacts stay.
+  Story§6 records permanent level0 furnishing, no new text/action/lore/water/
+  story reaction; the fountain keeps its separate quiet-water exception.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -7579,7 +7576,7 @@
 - **Accepted — shared depth of field has two tiers:** the
   scene tier is Gaussian: City `8/28/1.5`, inside its `48 m` far clip/exp² fog
   `0.070`; six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
-  `5/16`, Supermarket `7/20`, Church `7/26`, Mother's House `4.5/13`.
+  `5/16`, Supermarket `7/20`, Church `5/13`, Mother's House `4.5/13`.
   Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`
   shares one priority-10 Bokeh volume above grades `4-5`, blending `0.35/0.45 s`.
   Existing modal Begin/focus/End follows fixed poses. The fully open bar menu

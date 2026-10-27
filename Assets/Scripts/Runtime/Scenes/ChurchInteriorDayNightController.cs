@@ -19,32 +19,19 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class ChurchInteriorDayNightController : MonoBehaviour
     {
-        // The daylight carries the hall at noon and is all but gone at
-        // midnight, save for the trace of moon the glass still passes.
-        // Falloff is inverse-square, so a light meant to reach a floor
-        // four metres below it needs an order of magnitude more than a
-        // candle that only has to reach a wall.
-        public const float DayGlowIntensity = 9f;
-        public const float NightGlowIntensity = 0.35f;
+        // Shadowless window fill follows the clock; the sealed model
+        // and shadowed directional retain the openings' shape.
+        public const float DayGlowIntensity = 3.4f;
+        public const float NightGlowIntensity = 0.22f;
 
         /// <summary>
-        /// The glazing's own brightness, as a multiplier on its authored
-        /// colour. A sunlit pane is the brightest object in a church and
-        /// wants to be well over the grade's 0.62 bloom threshold; a
-        /// shaded one is merely present; and at three in the morning a
-        /// window is a dark hole, not a lamp - which is what it looked
-        /// like before, at exactly the same cyan around the clock.
+        /// Multiplier on authored glass colour. Night panes stay dark
+        /// while shaded daylight remains below the sunlit side.
         /// </summary>
         public const float NightGlassGain = 0.10f;
 
         /// <summary>
-        /// The shaded wall's glass still passes SKY, and sky is light.
-        /// At 0.55 the north panes came out darker than the plaster
-        /// around them and read as holes rather than windows; they have
-        /// to sit above the grade's 0.62 bloom threshold to look lit at
-        /// all. Well under the sunlit side, which stays twice as bright
-        /// again - the point is that one wall blazes and the other
-        /// glows, not that one exists and the other does not.
+        /// Shaded glass carries sky light; the sunlit wall is brighter.
         /// </summary>
         public const float ShadedGlassGain = 1.30f;
         public const float SunlitGlassGain = 2.60f;
@@ -54,57 +41,36 @@ namespace BarPromenade
 
         // The candles never go out - this is a church - but by day they
         // are leftovers against the windows rather than the light.
-        public const float DayWarmScale = 0.62f;
+        public const float DayWarmScale = 2f / 3f;
         public const float NightWarmScale = 1f;
 
-        // The sun is the key light of this room and enters it only
-        // through the ten apertures.
-        //
-        // The comment that used to stand here said the vault sealed
-        // the nave from the directional. It never did: INT_RibbedVault
-        // was a six-vertex single-sided shell whose faces point DOWN
-        // into the room, and the ShadowCaster pass culls back faces,
-        // so from the sun's side there was nothing there at all. The
-        // interior also had no roof over either aisle, the narthex or
-        // the sanctuary, and an open rectangle over the west door.
-        // Daylight arrived over the walls, which is why this number
-        // had to be held down at 0.62 to stop it washing the room out.
-        // The shell is closed now and the sun can be a sun.
-        public const float DaySunIntensity = 1.55f;
+        // The solid roof and walls restrict the directional to the
+        // authored glazing openings.
+        public const float DaySunIntensity = .85f;
         public const float NightSunIntensity = 0.10f;
 
         /// <summary>
-        /// How much of the directional a shadow actually removes. This
-        /// was 0.48 - meaning every wall in the church leaked away
-        /// more than half the sun - and no amount of tuning anything
-        /// else could have made a window matter while it stood.
+        /// Keep directional leakage through the opaque shell small.
         /// </summary>
         public const float SunShadowStrength = 0.97f;
 
         public static readonly Color DayShaftColor =
             new Color(0.62f, 0.77f, 0.98f);
         public static readonly Color DuskShaftColor =
-            new Color(1f, 0.58f, 0.34f);
+            new Color(.67f, .71f, .80f);
         public static readonly Color NightShaftColor =
             new Color(0.42f, 0.54f, 0.86f);
-        public const float DuskShaftBlend = 0.72f;
+        public const float DuskShaftBlend = 0.25f;
 
         // An ambient floor the hero and the pews stay legible on
         // between the pools. The mood is in the contrast between the
         // cold glass and the warm wax, never in raw blackness.
         public static readonly Color DayAmbientColor =
-            new Color(0.340f, 0.344f, 0.350f);
+            new Color(.245f, .25f, .26f);
         public static readonly Color NightAmbientColor =
-            new Color(0.205f, 0.198f, 0.214f);
+            new Color(.155f, .15f, .165f);
         /// <summary>
-        /// Cool, because in this building EVERY ray of sun has come
-        /// through coloured glass to get here. Once the shell is sealed
-        /// and the ten lancets are the only way in, tinting the
-        /// directional is not a cheat standing in for a light cookie -
-        /// it is the physically true colour of the only light there is.
-        /// Held well short of the glass's own (0.556, 0.900, 1.011),
-        /// because a lancet is a mosaic of warm and cold panes and the
-        /// light that arrives is their average, not one of them.
+        /// Average cool transmission through the coloured glazing.
         /// </summary>
         public static readonly Color DaySunColor =
             new Color(0.734f, 0.889f, 0.917f);

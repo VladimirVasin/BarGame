@@ -7,11 +7,9 @@
 - Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC:native/SMAA High/saved effects/grade/UI;City/balcony Soft;bar Neutral/bounce.
-  City/Home/bar UV0+1;house air. Bar:WC wear/mirror/sign/local light.
-  Maps/response/cubes. Pilots:
-  coastal stems(City crowns static);one road RGB chunk/
-  pistol slide normals;fountain foam/mips. Caps/geometry retained.
+- PC:native/SMAA High/saved effects;City/balcony Soft;bar/church Neutral.
+  Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
+  Pilots:coastal stems(static City crowns),road RGB,pistol normals;fountain foam/mips.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -116,7 +114,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
-- Mountain/village/cableway/interiors; local physical maps/unique closeups.
+- Mountain/village/cableway/interiors; physical maps/closeups. Church shares
+  exterior metres/openings; kit shell/furniture, bounded light and garden donors.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.

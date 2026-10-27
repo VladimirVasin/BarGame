@@ -37,8 +37,8 @@ namespace BarPromenade.Editor
         private const float ExpectedWidth = 23f;
         private const float ExpectedLength = 44f;
         private const float ExpectedHeight = 32f;
-        private const float ExpectedDoorWidth = 2.8f;
-        private const float ExpectedDoorHeight = 4.2f;
+        private const float ExpectedDoorWidth = 1.8f / CityChurchPlanner.ExteriorModelScale;
+        private const float ExpectedDoorHeight = 2.6f / CityChurchPlanner.ExteriorModelScale;
         private const int ExteriorMaximumTriangles = 12000;
         private const int ExteriorMaximumRenderers = 18;
         private const int InteriorMaximumTriangles = 22000;
@@ -75,7 +75,13 @@ namespace BarPromenade.Editor
             "ChurchTextileAlbedo.png",
             "ChurchSacredArtAtlasAlbedo.png",
             "ChurchMuralAtlasAlbedo.png",
-            "ChurchGlassAtlasAlbedo.png"
+            "ChurchGlassAtlasAlbedo.png",
+            "ChurchPlasterResponse.png",
+            "ChurchStoneResponse.png",
+            "ChurchWoodResponse.png",
+            "ChurchMetalResponse.png",
+            "ChurchFloorResponse.png",
+            "ChurchTextileResponse.png"
         };
 
         private static readonly string[] AtlasTextureFileNames =
@@ -159,6 +165,9 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase));
         }
 
+        public static bool IsResponseTexturePath(string path) =>
+            IsTexturePath(path) && path.EndsWith("Response.png", StringComparison.OrdinalIgnoreCase);
+
         public static bool SourcesExist()
         {
             return File.Exists(ExteriorModelPath) &&
@@ -201,7 +210,7 @@ namespace BarPromenade.Editor
                 ImportSources();
                 ChurchManifest manifest = LoadAndValidateManifest();
                 Dictionary<ChurchMaterialSlot, Material> materials =
-                    BuildMaterials();
+                    BuildMaterials(false);
                 BuildPrefab(
                     ExteriorModelPath,
                     ExteriorPrefabPath,
@@ -209,13 +218,14 @@ namespace BarPromenade.Editor
                     RequireAsset(manifest, "Exterior"),
                     manifest,
                     materials);
+                Dictionary<ChurchMaterialSlot, Material> interiorMaterials = BuildMaterials(true);
                 BuildPrefab(
                     InteriorModelPath,
                     InteriorPrefabPath,
                     ChurchAssetKind.Interior,
                     RequireAsset(manifest, "Interior"),
                     manifest,
-                    materials);
+                    interiorMaterials);
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -254,7 +264,9 @@ namespace BarPromenade.Editor
                     : TextureWrapMode.Repeat;
                 if (importer == null ||
                     importer.wrapMode != expectedWrap ||
-                    importer.mipmapEnabled == isAtlas)
+                    importer.mipmapEnabled == isAtlas ||
+                    importer.sRGBTexture == IsResponseTexturePath(path) ||
+                    IsResponseTexturePath(path) && importer.alphaSource != TextureImporterAlphaSource.FromInput)
                 {
                     throw new InvalidOperationException(
                         $"Church texture importer contract drifted for '{path}'.");
@@ -291,7 +303,7 @@ namespace BarPromenade.Editor
         }
 
         private static Dictionary<ChurchMaterialSlot, Material>
-            BuildMaterials()
+            BuildMaterials(bool interior)
         {
             Material sharedLit =
                 AssetDatabase.LoadAssetAtPath<Material>(
@@ -312,14 +324,14 @@ namespace BarPromenade.Editor
             {
                 bool emissive = IsEmissive(slot);
                 Material source = emissive ? sharedEmission : sharedLit;
-                string path = MaterialPath(slot);
+                string path = MaterialPath(slot, interior);
                 Material material =
                     AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (material == null)
                 {
                     material = new Material(source)
                     {
-                        name = $"Church{slot}"
+                        name = $"Church{(interior && !emissive ? "Interior" : "")}{slot}"
                     };
                     AssetDatabase.CreateAsset(material, path);
                 }
@@ -327,7 +339,7 @@ namespace BarPromenade.Editor
                 {
                     material.shader = source.shader;
                     material.CopyPropertiesFromMaterial(source);
-                    material.name = $"Church{slot}";
+                    material.name = $"Church{(interior && !emissive ? "Interior" : "")}{slot}";
                 }
 
                 material.enableInstancing = true;
@@ -339,6 +351,21 @@ namespace BarPromenade.Editor
                 SetColorIfPresent(material, "_Color", color);
                 if (!emissive)
                 {
+                    if (interior)
+                    {
+                        Shader surface = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Resources/Shaders/CitySurfaceLit.shader");
+                        if (surface == null) throw new InvalidOperationException("Missing shared material response shader.");
+                        material.shader = surface;
+                        string responsePath = TexturePath(slot).Replace("Albedo.png", "Response.png");
+                        Texture2D response = slot == ChurchMaterialSlot.SacredArt || slot == ChurchMaterialSlot.Mural
+                            ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(responsePath);
+                        if (response == null && slot != ChurchMaterialSlot.SacredArt && slot != ChurchMaterialSlot.Mural)
+                            throw new InvalidOperationException("Missing Church physical material response: " + responsePath);
+                        SetTextureIfPresent(material, "_SceneMaterialResponse", response);
+                        SetFloatIfPresent(material, "_SceneResponseStrength", response != null ? 1f : 0f);
+                        SetFloatIfPresent(material, "_SceneNormalStrength", response != null ? .65f : 0f);
+                        SetFloatIfPresent(material, "_ClearCoatMask", slot == ChurchMaterialSlot.Gold || slot == ChurchMaterialSlot.Iron ? .45f : 0f);
+                    }
                     SetFloatIfPresent(
                         material,
                         "_Metallic",
@@ -474,11 +501,11 @@ namespace BarPromenade.Editor
                         StringComparer.Ordinal).ToArray(),
                     calculatedLocalBounds,
                     new ChurchDimensions(
-                        manifest.dimensions_m.width,
-                        manifest.dimensions_m.length,
-                        manifest.dimensions_m.height,
-                        manifest.door_opening_m.width,
-                        manifest.door_opening_m.height),
+                        sourceAsset.dimensions_m.width,
+                        sourceAsset.dimensions_m.length,
+                        sourceAsset.dimensions_m.height,
+                        sourceAsset.door_opening_m.width,
+                        sourceAsset.door_opening_m.height),
                     sourceAsset.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
@@ -583,7 +610,7 @@ namespace BarPromenade.Editor
             {
                 Material expected =
                     AssetDatabase.LoadAssetAtPath<Material>(
-                        MaterialPath(binding.MaterialSlot));
+                        MaterialPath(binding.MaterialSlot, kind == ChurchAssetKind.Interior));
                 if (binding == null ||
                     binding.Renderer == null ||
                     string.IsNullOrWhiteSpace(binding.Role) ||
@@ -595,16 +622,16 @@ namespace BarPromenade.Editor
                 }
             }
 
-            AssertNear(registry.Dimensions.Width, ExpectedWidth, "width");
-            AssertNear(registry.Dimensions.Length, ExpectedLength, "length");
-            AssertNear(registry.Dimensions.Height, ExpectedHeight, "height");
+            AssertNear(registry.Dimensions.Width, sourceAsset.dimensions_m.width, "width");
+            AssertNear(registry.Dimensions.Length, sourceAsset.dimensions_m.length, "length");
+            AssertNear(registry.Dimensions.Height, sourceAsset.dimensions_m.height, "height");
             AssertNear(
                 registry.Dimensions.DoorWidth,
-                ExpectedDoorWidth,
+                sourceAsset.door_opening_m.width,
                 "door width");
             AssertNear(
                 registry.Dimensions.DoorHeight,
-                ExpectedDoorHeight,
+                sourceAsset.door_opening_m.height,
                 "door height");
         }
 
@@ -722,6 +749,9 @@ namespace BarPromenade.Editor
         {
             if (asset.parts == null ||
                 asset.anchors == null ||
+                asset.dimensions_m == null || asset.door_opening_m == null ||
+                asset.dimensions_m.width <= 0f || asset.dimensions_m.length <= 0f ||
+                asset.dimensions_m.height <= 0f || asset.door_opening_m.width <= 0f || asset.door_opening_m.height <= 0f ||
                 !IsValidManifestBounds(asset.bounds_min, asset.bounds_max) ||
                 asset.mesh_count != asset.parts.Length ||
                 asset.renderer_count != asset.parts.Length ||
@@ -1178,9 +1208,9 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static string MaterialPath(ChurchMaterialSlot slot)
+        private static string MaterialPath(ChurchMaterialSlot slot, bool interior = false)
         {
-            return $"{MaterialFolder}/Church{slot}.mat";
+            return $"{MaterialFolder}/Church{(interior && !IsEmissive(slot) ? "Interior" : "")}{slot}.mat";
         }
 
         private static void RequireAnchor(Transform anchor, string label)
@@ -1397,6 +1427,8 @@ namespace BarPromenade.Editor
         private sealed class ChurchManifestAsset
         {
             public string kind;
+            public ChurchManifestDimensions dimensions_m;
+            public ChurchManifestDoor door_opening_m;
             public string root_name;
             public float runtime_wrapper_yaw_degrees;
             public int mesh_count;

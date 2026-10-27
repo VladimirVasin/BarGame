@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEditor;
 
 namespace BarPromenade.Tests.EditMode
 {
@@ -15,17 +16,11 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 plan.RoomSize,
-                Is.EqualTo(new Vector2(23f, 44f)));
-            // 14.28 rather than 14.0 because the nave vault is a SOLID
-            // now. It used to be a single-sided surface at the ridge
-            // line - which cast no shadow at all, so the sun came
-            // straight through the roof - and giving it a thickness
-            // and a cap over the ridge joint raised the model's peak.
-            Assert.That(plan.RoomHeight, Is.EqualTo(14.5f));
-            AssertBoundsNear(
-                plan.ModelLocalBounds,
-                new Vector3(-11.41f, -0.24f, -22.01f),
-                new Vector3(11.41f, 14.28f, 22.01f));
+                Is.EqualTo(new Vector2(12.1f, 24.2f)));
+            Assert.That(plan.RoomHeight, Is.EqualTo(7.6f));
+            AssertBoundsNear(plan.ModelLocalBounds,
+                ChurchInteriorLayoutPlanner.ModelLocalBounds.min,
+                ChurchInteriorLayoutPlanner.ModelLocalBounds.max);
             Assert.That(
                 plan.ModelResourcePath,
                 Is.EqualTo("Church/ChurchInterior3D"));
@@ -41,9 +36,9 @@ namespace BarPromenade.Tests.EditMode
                 plan.Fixtures,
                 Has.Count.EqualTo(
                     ChurchInteriorLayoutValidator.RequiredFixtureCount));
-            Assert.That(plan.PlayerSpawn.z, Is.EqualTo(-18.8f));
-            Assert.That(plan.ExitPosition.z, Is.EqualTo(-21f));
-            Assert.That(plan.ExitTriggerSize.x, Is.EqualTo(2.8f));
+            Assert.That(plan.PlayerSpawn.z, Is.EqualTo(-10.1f));
+            Assert.That(plan.ExitPosition.z, Is.EqualTo(-11.2f));
+            Assert.That(plan.ExitTriggerSize.x, Is.EqualTo(1.8f));
 
             foreach (ChurchInteriorZoneKind kind in
                      Enum.GetValues(typeof(ChurchInteriorZoneKind)))
@@ -72,7 +67,7 @@ namespace BarPromenade.Tests.EditMode
                 ChurchInteriorFixtureKind.AltarRail);
             Assert.That(
                 rail.Bounds,
-                Is.EqualTo(new Rect(-10.8f, 12.2f, 21.6f, 0.4f)));
+                Is.EqualTo(new Rect(-5.75f, 7.86f, 11.5f, .28f)));
             Assert.That(rail.BlocksMovement, Is.True);
             Assert.DoesNotThrow(
                 () => ChurchInteriorLayoutValidator
@@ -82,259 +77,101 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Generate_PinsCatholicFurnitureAndClearRoutes()
         {
-            ChurchInteriorLayoutPlan plan =
-                ChurchInteriorLayoutPlanner.Generate(17);
-
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.Pier,
-                4);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.Pew,
-                ChurchInteriorLayoutValidator.RequiredPewCount);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.Confessional,
-                2);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.VotiveCandleStand,
-                2);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.BaptismalFont,
-                1);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.ChoirLoftSupport,
-                ChurchInteriorLayoutValidator
-                    .RequiredChoirLoftSupportCount);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.AltarTable,
-                1);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.HighAltar,
-                1);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.Crucifix,
-                1);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.ChoirLoft,
-                1);
-            AssertFixtureCount(
-                plan,
-                ChurchInteriorFixtureKind.Organ,
-                1);
-
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.Pier,
-                new[]
-                {
-                    new Vector2(-5.5f, -3.5f),
-                    new Vector2(5.5f, -3.5f),
-                    new Vector2(-5.5f, 5.5f),
-                    new Vector2(5.5f, 5.5f)
-                },
-                new Vector2(1.56f, 1.56f),
-                0f,
-                9.6f);
-
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.Pew,
-                new[]
-                {
-                    new Vector2(-2.9f, -8.5f),
-                    new Vector2(2.9f, -8.5f),
-                    new Vector2(-2.9f, -6.95f),
-                    new Vector2(2.9f, -6.95f),
-                    new Vector2(-2.9f, -5.4f),
-                    new Vector2(2.9f, -5.4f),
-                    new Vector2(-2.9f, -3.85f),
-                    new Vector2(2.9f, -3.85f),
-                    new Vector2(-2.9f, -2.3f),
-                    new Vector2(2.9f, -2.3f),
-                    new Vector2(-2.9f, -0.75f),
-                    new Vector2(2.9f, -0.75f),
-                    new Vector2(-2.9f, 0.8f),
-                    new Vector2(2.9f, 0.8f),
-                    new Vector2(-2.9f, 2.35f),
-                    new Vector2(2.9f, 2.35f),
-                    new Vector2(-2.9f, 3.9f),
-                    new Vector2(2.9f, 3.9f),
-                    new Vector2(-2.9f, 5.45f),
-                    new Vector2(2.9f, 5.45f)
-                },
-                new Vector2(3.8f, 0.72f),
-                0f,
-                1.5f);
-            // The nave was re-seated because six rows ended sixteen
-            // metres short of the rail; the front row must stay in
-            // front of the sanctuary and behind the transept crossing.
-            ChurchInteriorFixturePlan frontPew = plan.Fixtures
-                .Where(fixture =>
-                    fixture.Kind == ChurchInteriorFixtureKind.Pew)
-                .OrderByDescending(fixture => fixture.Bounds.center.y)
-                .First();
-            ChurchInteriorFixturePlan rail = plan.Fixtures.Single(
-                fixture =>
-                    fixture.Kind == ChurchInteriorFixtureKind.AltarRail);
-            Assert.That(
-                rail.Bounds.yMin - frontPew.Bounds.yMax,
-                Is.LessThan(7.5f),
-                "The pews must reach the sanctuary, not stop a nave " +
-                "away from it.");
-            ChurchInteriorPathPlan transept = plan.Paths.Single(
-                path =>
-                    path.Kind ==
-                    ChurchInteriorPathKind.TranseptChoirCrossing);
-            Assert.That(
-                frontPew.Bounds.yMax,
-                Is.LessThan(transept.Bounds.yMin),
-                "The front row may not block the transept crossing.");
-
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.AltarRail,
-                new[] { new Vector2(0f, 12.4f) },
-                new Vector2(21.6f, 0.4f),
-                0f,
-                0.92f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.AltarTable,
-                new[] { new Vector2(0f, 15.7f) },
-                new Vector2(2.75f, 1.55f),
-                0f,
-                1.14f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.HighAltar,
-                new[] { new Vector2(0f, 18.0f) },
-                new Vector2(4.2f, 2.5f),
-                0f,
-                6.2f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.Crucifix,
-                new[] { new Vector2(0f, 20.65f) },
-                new Vector2(2.5f, 0.35f),
-                3.5f,
-                4.7f);
-            Assert.That(
-                SingleFixture(plan, ChurchInteriorFixtureKind.Crucifix)
-                    .BlocksMovement,
-                Is.False);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.Confessional,
-                new[]
-                {
-                    new Vector2(-9.7f, 7.3f),
-                    new Vector2(9.7f, 7.3f)
-                },
-                new Vector2(1.8f, 3.3f),
-                0f,
-                3.15f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.VotiveCandleStand,
-                new[]
-                {
-                    new Vector2(-8.8f, 10.5f),
-                    new Vector2(8.8f, 10.5f)
-                },
-                new Vector2(0.8f, 0.8f),
-                0f,
-                1.35f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.BaptismalFont,
-                new[] { new Vector2(-8.8f, -16.8f) },
-                new Vector2(1.1f, 1.1f),
-                0f,
-                1.11f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.ChoirLoftSupport,
-                new[]
-                {
-                    new Vector2(-8f, -18.2f),
-                    new Vector2(-5.3f, -18.2f),
-                    new Vector2(5.3f, -18.2f),
-                    new Vector2(8f, -18.2f)
-                },
-                new Vector2(0.32f, 0.32f),
-                0f,
-                4.4f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.ChoirLoft,
-                new[] { new Vector2(0f, -18.4f) },
-                new Vector2(17f, 4.2f),
-                4.4f,
-                0.4f);
-            AssertFixtureContract(
-                plan,
-                ChurchInteriorFixtureKind.Organ,
-                new[] { new Vector2(0f, -20.3f) },
-                new Vector2(12f, 1.6f),
-                4.8f,
-                6.9f);
-
-            Assert.That(
-                SingleFixture(
-                    plan,
-                    ChurchInteriorFixtureKind.BaptismalFont)
-                    .Bounds.center,
-                Is.EqualTo(new Vector2(-8.8f, -16.8f)));
-            Assert.That(
-                SingleFixture(
-                    plan,
-                    ChurchInteriorFixtureKind.ChoirLoft)
-                    .BaseHeight,
-                Is.EqualTo(4.4f));
-            Assert.That(
-                SingleFixture(
-                    plan,
-                    ChurchInteriorFixtureKind.Organ)
-                    .BaseHeight,
-                Is.EqualTo(4.8f));
-
-            for (int pathIndex = 0;
-                 pathIndex < plan.Paths.Count;
-                 pathIndex++)
+            ChurchInteriorLayoutPlan plan = ChurchInteriorLayoutPlanner.Generate(17);
+            TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Church/Models/Church3D.json");
+            Assert.That(source, Is.Not.Null);
+            LayoutManifest manifest = JsonUtility.FromJson<LayoutManifest>(source.text);
+            ShellContract shell = manifest.shell_contract;
+            Assert.That(shell, Is.Not.Null);
+            Assert.That(shell.room_size_xz_m, Is.EqualTo(new[] { plan.RoomSize.x, plan.RoomSize.y }));
+            Assert.That(shell.narthex_clear_bounds_xz_m,
+                Is.EqualTo(new[] { -ChurchInteriorLayoutPlanner.NarthexHalfWidth, plan.WalkableBounds.yMin,
+                    ChurchInteriorLayoutPlanner.NarthexHalfWidth, ChurchInteriorLayoutPlanner.NarthexEndZ }));
+            Assert.That(shell.aisle_clear_bounds_xz_m[0], Is.EqualTo(-ChurchInteriorLayoutPlanner.AisleHalfWidth));
+            Assert.That(shell.aisle_clear_bounds_xz_m[1], Is.EqualTo(ChurchInteriorLayoutPlanner.NarthexEndZ));
+            Assert.That(shell.aisle_clear_bounds_xz_m[2], Is.EqualTo(ChurchInteriorLayoutPlanner.AisleHalfWidth));
+            Assert.That(shell.window_depths_m, Is.EqualTo(ChurchInteriorLayoutPlanner.WindowDepths));
+            Assert.That(shell.window_plane_x_m, Is.EqualTo(ChurchInteriorLayoutPlanner.WindowApertureX));
+            Assert.That(shell.window_center_height_m, Is.EqualTo(ChurchInteriorLayoutPlanner.WindowCenterY));
+            Assert.That(shell.window_clear_size_m, Is.EqualTo(new[] {
+                ChurchInteriorLayoutPlanner.WindowOpeningWidth, ChurchInteriorLayoutPlanner.WindowOpeningHeight }));
+            Assert.That(shell.door_threshold_xz_m, Is.EqualTo(new[] { 0f, ChurchInteriorLayoutPlanner.DoorPlaneZ }));
+            Assert.That(shell.rose_center_xyz_m, Is.EqualTo(new[] { ChurchInteriorLayoutPlanner.RoseCenter.x,
+                ChurchInteriorLayoutPlanner.RoseCenter.z, ChurchInteriorLayoutPlanner.RoseCenter.y }),
+                "The measured manifest stores the rose centre in Blender XYZ.");
+            Assert.That(shell.rose_clear_diameter_m, Is.EqualTo(ChurchInteriorLayoutPlanner.RoseOpeningDiameter));
+            LayoutAsset interior = manifest.assets.Single(asset => asset.kind == "Interior");
+            Assert.That(interior.layout_contract, Has.Length.EqualTo(12));
+            foreach (LayoutContract contract in interior.layout_contract)
             {
-                ChurchInteriorPathPlan path = plan.Paths[pathIndex];
-                Assert.That(
-                    path.MinimumClearance,
-                    Is.GreaterThanOrEqualTo(
-                        ChurchInteriorLayoutValidator
-                            .MinimumRouteClearance));
-                for (int fixtureIndex = 0;
-                     fixtureIndex < plan.Fixtures.Count;
-                     fixtureIndex++)
+                ChurchInteriorFixtureKind kind = FixtureKind(contract.name);
+                ChurchInteriorFixturePlan[] fixtures = Fixtures(plan, kind);
+                Assert.That(fixtures, Has.Length.EqualTo(contract.count), contract.name);
+                Assert.That(contract.centers_xz_flat, Has.Length.EqualTo(fixtures.Length * 2));
+                for (int index = 0; index < fixtures.Length; index++)
                 {
-                    ChurchInteriorFixturePlan fixture =
-                        plan.Fixtures[fixtureIndex];
-                    if (fixture.BlocksMovement &&
-                        fixture.BaseHeight <
-                        ChurchInteriorLayoutValidator
-                            .PlayerRouteClearHeight)
-                    {
-                        Assert.That(
-                            path.Bounds.Overlaps(fixture.Bounds),
-                            Is.False,
-                            $"{fixture.Id} blocks {path.Id}.");
-                    }
+                    ChurchInteriorFixturePlan fixture = fixtures[index];
+                    Assert.That(fixture.Bounds.center.x, Is.EqualTo(contract.centers_xz_flat[index * 2]).Within(.001f), fixture.Id);
+                    Assert.That(fixture.Bounds.center.y, Is.EqualTo(contract.centers_xz_flat[index * 2 + 1]).Within(.001f), fixture.Id);
+                    Assert.That(fixture.Bounds.width, Is.EqualTo(contract.footprint_xz_m[0]).Within(.001f), fixture.Id);
+                    Assert.That(fixture.Bounds.height, Is.EqualTo(contract.footprint_xz_m[1]).Within(.001f), fixture.Id);
+                    Assert.That(fixture.BaseHeight, Is.EqualTo(contract.vertical_envelope_m[0]).Within(.001f), fixture.Id);
+                    Assert.That(fixture.BaseHeight + fixture.Height, Is.EqualTo(contract.vertical_envelope_m[1]).Within(.001f), fixture.Id);
                 }
             }
+            foreach (ChurchInteriorPathPlan path in plan.Paths)
+            {
+                Assert.That(plan.ContainsWalkable(path.Bounds), Is.True, path.Id);
+                Assert.That(Mathf.Min(path.Bounds.width, path.Bounds.height),
+                    Is.GreaterThanOrEqualTo(path.MinimumClearance - .001f), path.Id);
+                AssertGroundRouteClear(plan, path);
+            }
+            ChurchInteriorFixturePlan pew = Fixtures(plan, ChurchInteriorFixtureKind.Pew)[0];
+            Assert.That(pew.Bounds.width, Is.GreaterThan(2f), "Furniture retains human metres.");
+            Assert.That(pew.Height, Is.InRange(.9f, 1.2f));
+            Assert.That(plan.Contains(new Vector3(5f, 0f, -10f)), Is.False,
+                "The smaller narthex cannot inherit the wider nave's rectangular bounds.");
+            Assert.That(plan.Contains(new Vector3(5f, 0f, 0f)), Is.True);
+            Vector3 constrained = plan.Constrain(Vector3.zero, new Vector3(5f, 0f, -10f), .25f);
+            Assert.That(plan.Contains(constrained, .25f), Is.True);
+            Assert.That(constrained.x, Is.EqualTo(4.35f).Within(.001f));
+        }
+
+        private static ChurchInteriorFixtureKind FixtureKind(string name)
+        {
+            switch (name)
+            {
+                case "nave_piers": return ChurchInteriorFixtureKind.Pier;
+                case "pew_halves": return ChurchInteriorFixtureKind.Pew;
+                case "communion_rail": return ChurchInteriorFixtureKind.AltarRail;
+                case "altar_table": return ChurchInteriorFixtureKind.AltarTable;
+                case "high_altar": return ChurchInteriorFixtureKind.HighAltar;
+                case "crucifix": return ChurchInteriorFixtureKind.Crucifix;
+                case "confessionals": return ChurchInteriorFixtureKind.Confessional;
+                case "votive_stands": return ChurchInteriorFixtureKind.VotiveCandleStand;
+                case "baptismal_font": return ChurchInteriorFixtureKind.BaptismalFont;
+                case "choir_loft": return ChurchInteriorFixtureKind.ChoirLoft;
+                case "choir_loft_supports": return ChurchInteriorFixtureKind.ChoirLoftSupport;
+                case "pipe_organ": return ChurchInteriorFixtureKind.Organ;
+                default: throw new InvalidOperationException("Unknown church contract: " + name);
+            }
+        }
+
+        [Serializable] private sealed class LayoutManifest { public LayoutAsset[] assets; public ShellContract shell_contract; }
+        [Serializable] private sealed class ShellContract
+        {
+            public float[] room_size_xz_m, narthex_clear_bounds_xz_m, aisle_clear_bounds_xz_m,
+                window_depths_m, window_clear_size_m, door_threshold_xz_m, rose_center_xyz_m;
+            public float window_plane_x_m, window_center_height_m, rose_clear_diameter_m;
+        }
+        [Serializable] private sealed class LayoutAsset { public string kind; public LayoutContract[] layout_contract; }
+        [Serializable] private sealed class LayoutContract
+        {
+            public string name;
+            public int count;
+            public float[] centers_xz_flat;
+            public float[] footprint_xz_m;
+            public float[] vertical_envelope_m;
         }
 
         [Test]
@@ -381,6 +218,16 @@ namespace BarPromenade.Tests.EditMode
                 prefab.GetComponentsInChildren<Collider>(true),
                 Is.Empty,
                 "The prefab must stay passive; the layout builds collision.");
+            GameObject host = new GameObject("Church Metric Contract");
+            try
+            {
+                ChurchInteriorWorldResult placed = ChurchInteriorWorldBuilder.Build(host.transform, plan);
+                Assert.That(placed.Model.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(placed.GameplayColliders.Count,
+                    Is.EqualTo(10 + plan.Fixtures.Count(fixture => fixture.BlocksMovement)));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(host); }
+
         }
 
         [Test]
@@ -560,12 +407,12 @@ namespace BarPromenade.Tests.EditMode
                     travel);
                 Assert.That(
                     pool.x,
-                    Is.InRange(4f, 10.5f),
+                    Is.InRange(.8f, ChurchInteriorLayoutPlanner.AisleHalfWidth),
                     $"the pool from the lancet at z={depth} misses the " +
                     "aisle floor");
                 Assert.That(
                     pool.z,
-                    Is.InRange(-21f, 21f),
+                    Is.InRange(-11.9f, ChurchInteriorLayoutPlanner.SanctuaryBoundaryZ),
                     $"the pool from the lancet at z={depth} falls " +
                     "outside the building");
             }
@@ -647,51 +494,5 @@ namespace BarPromenade.Tests.EditMode
                 .ToArray();
         }
 
-        private static void AssertFixtureContract(
-            ChurchInteriorLayoutPlan plan,
-            ChurchInteriorFixtureKind kind,
-            Vector2[] expectedCenters,
-            Vector2 expectedFootprint,
-            float expectedBaseHeight,
-            float expectedHeight)
-        {
-            ChurchInteriorFixturePlan[] fixtures =
-                Fixtures(plan, kind);
-            Assert.That(fixtures, Has.Length.EqualTo(expectedCenters.Length));
-            for (int index = 0; index < fixtures.Length; index++)
-            {
-                ChurchInteriorFixturePlan fixture = fixtures[index];
-                Assert.That(
-                    fixture.Bounds.center.x,
-                    Is.EqualTo(expectedCenters[index].x).Within(0.001f),
-                    fixture.Id);
-                Assert.That(
-                    fixture.Bounds.center.y,
-                    Is.EqualTo(expectedCenters[index].y).Within(0.001f),
-                    fixture.Id);
-                Assert.That(
-                    fixture.Bounds.size,
-                    Is.EqualTo(expectedFootprint),
-                    fixture.Id);
-                Assert.That(
-                    fixture.BaseHeight,
-                    Is.EqualTo(expectedBaseHeight),
-                    fixture.Id);
-                Assert.That(
-                    fixture.Height,
-                    Is.EqualTo(expectedHeight),
-                    fixture.Id);
-            }
-        }
-
-        private static void AssertFixtureCount(
-            ChurchInteriorLayoutPlan plan,
-            ChurchInteriorFixtureKind kind,
-            int expected)
-        {
-            Assert.That(
-                plan.Fixtures.Count(fixture => fixture.Kind == kind),
-                Is.EqualTo(expected));
-        }
     }
 }

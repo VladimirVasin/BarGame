@@ -33,4 +33,6 @@ MonoBehaviour:
     prefab: {fileID: 6164790188436796879, guid: e86d0330d402ba3458b5943063ced193, type: 3}
   - kind: 9
     prefab: {fileID: 8999911033900557133, guid: ada546ed79e86e44681c50e6c5395f0b, type: 3}
-  buildSignature: 8ac90bf25caa80581cf3a4afce3376852d3d464facf23c274be4160523086d31
+  - kind: 10
+    prefab: {fileID: 9203883262304466222, guid: 22c8156018c1d486f8fc5e278c45143a, type: 3}
+  buildSignature: 23d90d6a5890bd5d53717e0474a27c0eaeb9b4860778de5c7544cc5efeec9303

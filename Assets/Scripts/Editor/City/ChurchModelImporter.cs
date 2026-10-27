@@ -44,8 +44,9 @@ namespace BarPromenade.Editor
 
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
-            importer.sRGBTexture = true;
-            importer.alphaSource = TextureImporterAlphaSource.None;
+            bool response = ChurchAssetSetup.IsResponseTexturePath(assetPath);
+            importer.sRGBTexture = !response;
+            importer.alphaSource = response ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
             bool isAtlas = ChurchAssetSetup.IsAtlasTexturePath(assetPath);
             importer.mipmapEnabled = !isAtlas;
             importer.wrapMode = isAtlas
@@ -53,7 +54,7 @@ namespace BarPromenade.Editor
                 : UnityEngine.TextureWrapMode.Repeat;
             importer.filterMode = UnityEngine.FilterMode.Bilinear;
             importer.anisoLevel = 1;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.textureCompression = response ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
             importer.maxTextureSize = 512;
         }
 

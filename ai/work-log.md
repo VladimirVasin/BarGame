@@ -5,48 +5,52 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-27
 
-Compact coastal rebuild: Residential/Industrial keep lived fronts, courts and
-low-rise streetwalls; park, semantic POIs, fair/arch and hero/bar/shop survive.
-Dry land is about 29.2% smaller without scaling vehicles. Substation/municipal/
-port workshops feed bounded poles/cables.
+Compact coastal rebuild keeps lived fronts/courts, park/POIs/fair/arch and
+hero/bar/shop; less land, ordinary vehicle metres. Industrial purposes own
+roofs/gates/equipment/surfaces, service recesses, pooled task light and coastal
+repair stock. Substation/municipal/port workshops feed bounded poles/cables.
+User removed Blender version/hash pin; identity/output/geometry checks stay.
+City Buildings direct validation/FBX roundtrip and Coastal Infrastructure
+validation passed; wrapper-metre Empty aim preserves lenses/lit unit halos.
 
-Industrial functions select authored roofs/gates/equipment and purpose surfaces.
-Service recesses retain lot/court/passage contracts; shared maps/task-light pool
-and coastal repair stock follow purpose. User removed Blender version/hash
-pin; discovery retains identity/output/geometry checks. City Buildings direct
-validation/FBX roundtrip and Coastal Infrastructure validation passed. FBX Empty
-aim uses the wrapper metre frame; separate lenses/unit-scale halos remain lit.
+Shared road/ground datums and bus-independent court paving remove a build
+cycle. Fringe IDs/arch opening stay. Home/bar/shop forecourts grade to pavement
+with embedded skirts/door tops; Home copies City planes. Bank-local bus routes
+retain body/turn/bridge clearance; stops exclude services. Truck retains factory
+exit/market frontage.
 
-Road/ground share datums. Pure factory datum and bus-independent court paving
-remove a construction cycle. Split fringe strips retain IDs; arch keeps its
-opening. Home/bar/shop forecourts grade to pavement with embedded skirts/shared
-fixture/door tops; Home copies City planes, fixing the floating bar slab.
-Bank-local bus cycles/bounded reachability retain body/turn/bridge clearance;
-stops exclude service routes. Truck retains factory exit/market frontage.
+Park gazebo shares deck/steps/games/men at the old chess anchor, with free docks,
+beam pendants/physical rain shelter. ParkPath lamps removed; cardinal framing
+separates stairs/tables. Statue/bins/blank notice/repaired benches retain openness.
+CityParkBandstand passed steps, seat support/transfers/light/rain/furniture;
+views reviewed.
 
-Park gazebo now occupies the old chess anchor: common deck/steps, games/men,
-free hero docks, beam pendants and exact physical structure/rain trigger.
-Municipal ParkPath lamps removed; cardinal framing fixes stairs versus tables.
-Statue/bins/blank notice/repaired benches retain the open park. CityParkBandstand
-passed real steps, seat transfers/support/light/rain/furniture; views reviewed.
+River coping/bridge fastenings/stair noses/bollards/lamp housings reuse bounded
+batches/routes. Old cylinders/box hoods removed; skins clear legacy planes and
+stone clears cramps. Collision matches castings. City misc geometry/import/
+determinism retains old signatures. CityRiverEmbankments passed imported bounds/
+materials/support/clearance/lamp spill/cleanup; day/night/rain/grayscale/
+intoxication views reviewed. User found buried feet: post-centred coping now
+supports full inclined soles; optional unsupported soles removed. Rendered-
+triangle contact regression and low views extend CityRiverEmbankments.
 
-River coping, bridge fastenings, stair noses, cast bollards and lamp housings
-reuse bounded surface batches and physical routes. Old cylinders/box hoods
-removed; skins clear legacy planes, recessed stone clears repair cramps.
-Measured bollard collision matches the casting. City misc geometry/import/
-determinism retains old catalog signatures. Effects keep shared owners/profiles.
-CityRiverEmbankments passed real imported bounds/materials, supported clear
-banks/bridges/steps, constant lamp spill and cleanup; day/night/rain/grayscale/
-intoxication views reviewed.
-User review found buried rail feet: post-centred coping now supports the full
-inclined sole; unsupported optional soles removed. Rendered-triangle contact
-regression and low glancing views extend CityRiverEmbankments.
+Church interior now shares exterior metres/openings through shaped kit geometry,
+physical furniture/door datums and model-anchored bounded light/response.
+Garden craft retains composition, pot/water contacts and old albedo bytes.
+CHURCH GARDEN ART BUILD OK passed geometry/contact/response/determinism.
+ChurchRemodelAcceptance passed metric/glazing/rose/door/routes/threshold/roundtrip/
+cleanup; garden/day/night/rain/grayscale/intoxication views reviewed.
+Preserved weather MPBs keep Layered Ground donors off unsupported BRG draws;
+the frame colour guard rejects the observed magenta failure.
+User review exposed upper-lancet/rose-rim roof overlap;
+validate_upper_lancet_clearances checks actual roof triangles and frame support;
+upper-window views reviewed.
 
-CityIndustrialFunctions passed function/material/task-light bounds; views
-reviewed. CityFabric passed courts/nav/entrances/landmark/utility and City/Home
-views. ProductionCityRoute_AllStopsExposeBothDoorPrompts passed real doors.
+CityIndustrialFunctions and CityFabric passed function/material/light/courts/nav/
+entrances/utility; City/Home views reviewed.
+ProductionCityRoute_AllStopsExposeBothDoorPrompts passed real doors.
 CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup imports, generator
-art/determinism, check-docs and diff checks passed. Church/karaoke edits retained.
+art/determinism, check-docs and diff checks passed. Karaoke edits retained.
 
 ## 2026-10-26
 

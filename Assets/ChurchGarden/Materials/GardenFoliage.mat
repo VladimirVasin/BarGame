@@ -97,6 +97,10 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _GeometricMirrorStencilComp: 8
+    - _GeometricMirrorStencilMotionRef: 1
+    - _GeometricMirrorStencilReadMask: 0
+    - _GeometricMirrorStencilRef: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -105,6 +109,8 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _ScreenSpaceReflections: 1
+    - _ScreenSpaceReflectionsContributeTransparent: 1
     - _Smoothness: 0.04
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

@@ -8,11 +8,11 @@ namespace BarPromenade
     {
         public const int RequiredZoneCount = 4;
         public const int RequiredPathCount = 5;
-        // Ten rows of pews, two halves each. The census below is
+        // Six human-sized rows of pews, two halves each. The census below is
         // derived from that rather than written out, because the last
         // time the nave was re-seated three separate hardcoded totals
         // had to be found by running into them one at a time.
-        public const int RequiredPewRowCount = 10;
+        public const int RequiredPewRowCount = 6;
         public const int RequiredPewCount = RequiredPewRowCount * 2;
         public const int RequiredPierCount = 4;
         public const int RequiredFixtureCount =
@@ -26,7 +26,7 @@ namespace BarPromenade
         public const int RequiredConfessionalCount = 2;
         public const int RequiredVotiveStandCount = 2;
         public const int RequiredChoirLoftSupportCount = 4;
-        public const float MinimumRouteClearance = 2.0f;
+        public const float MinimumRouteClearance = 1.2f;
         public const float PlayerRouteClearHeight = 2.2f;
 
         private const float Tolerance = 0.001f;
@@ -47,7 +47,7 @@ namespace BarPromenade
                 !IsPositive(plan.ModelLocalBounds.size) ||
                 !IsPositive(plan.WalkableBounds.size) ||
                 !Contains(plan.RoomBounds, plan.WalkableBounds) ||
-                !Contains(plan.WalkableBounds, plan.PlayerSpawn) ||
+                !plan.Contains(plan.PlayerSpawn) ||
                 !IsFinite(plan.ExitPosition) ||
                 !IsPositive(plan.ExitTriggerSize) ||
                 string.IsNullOrWhiteSpace(plan.ModelResourcePath))
@@ -220,7 +220,7 @@ namespace BarPromenade
                     !IsPositive(path.Bounds.size) ||
                     !IsPositiveFinite(path.MinimumClearance) ||
                     path.MinimumClearance < MinimumRouteClearance ||
-                    !Contains(plan.WalkableBounds, path.Bounds))
+                    !plan.ContainsWalkable(path.Bounds))
                 {
                     throw new InvalidOperationException(
                         "Every protected church route must be unique, " +
@@ -308,7 +308,7 @@ namespace BarPromenade
                 plan.WalkableBounds.yMax >
                 altarRail.Bounds.yMin + Tolerance ||
                 plan.WalkableBounds.yMax <
-                altarRail.Bounds.yMin - 0.05f ||
+                altarRail.Bounds.yMin - 0.1f ||
                 sanctuary.Bounds.yMin <
                 altarRail.Bounds.yMax - Tolerance)
             {

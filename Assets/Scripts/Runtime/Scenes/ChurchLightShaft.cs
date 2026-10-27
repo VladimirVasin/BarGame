@@ -23,14 +23,12 @@ namespace BarPromenade
             "Shaders/ChurchLightShaft";
 
         /// <summary>
-        /// Above the church grade's 0.62 bloom threshold, so a shaft
-        /// haloes the way the lighthouse lens does rather than being a
-        /// flat pane of colour.
+        /// Restrained air scattering below the direct glass highlight.
         /// </summary>
-        public const float PeakIntensity = 1.05f;
-        public const float ShortestLength = 3.5f;
+        public const float PeakIntensity = .23f;
+        public const float ShortestLength = 1f;
 
-        public const float LongestLength = 12f;
+        public const float LongestLength = 6f;
 
         /// <summary>
         /// Sunlight is very nearly collimated, but not quite, and a
@@ -48,6 +46,7 @@ namespace BarPromenade
         private float wallSide;
         private float halfHeight;
         private float halfWidth;
+        private bool hasDaylight;
 
         public float WallSide => wallSide;
         public bool IsLit => meshRenderer != null && meshRenderer.enabled;
@@ -132,7 +131,6 @@ namespace BarPromenade
                 name = "Church Light Shaft",
                 hideFlags = HideFlags.HideAndDontSave,
             };
-            mesh.MarkDynamic();
             mesh.vertices = vertices;
             mesh.uv = new[]
             {
@@ -183,6 +181,7 @@ namespace BarPromenade
         /// </summary>
         public void Apply(Color color, float weight)
         {
+            hasDaylight = weight > .001f;
             if (mesh == null || meshRenderer == null)
             {
                 return;
@@ -194,11 +193,22 @@ namespace BarPromenade
                 return;
             }
 
-            meshRenderer.enabled = true;
+            meshRenderer.enabled = GraphicsEffectsSettings.CleanVolumeEnabled;
             meshRenderer.GetPropertyBlock(block);
             block.SetColor("_BeamColor", color);
             block.SetFloat("_Intensity", PeakIntensity * weight);
             meshRenderer.SetPropertyBlock(block);
+        }
+
+        private void LateUpdate()
+        {
+            if (meshRenderer != null)
+                meshRenderer.enabled = hasDaylight && GraphicsEffectsSettings.CleanVolumeEnabled;
+        }
+
+        private void OnDisable()
+        {
+            if (meshRenderer != null) meshRenderer.enabled = false;
         }
 
         /// <summary>

@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-church-garden-3d-model.py",
-  "generator_version": "1.1.0",
+  "generator_version": "1.2.0",
   "design_id": "church_garden_v1",
-  "build_signature": "8ac90bf25caa80581cf3a4afce3376852d3d464facf23c274be4160523086d31",
-  "triangle_count": 12492,
+  "build_signature": "23d90d6a5890bd5d53717e0474a27c0eaeb9b4860778de5c7544cc5efeec9303",
+  "triangle_count": 14632,
   "coordinate_contract": "Unity x,y,z = Blender x,z,y; fixed metre bare meshes",
   "textures": [
     {
@@ -15,8 +15,24 @@
       "sha256": "c46115a3ea3f4baeaf6698620d2efe3f4a376b60b060fd1f48f923cc1a1ebc09"
     },
     {
+      "path": "Assets/ChurchGarden/Textures/GardenStoneResponse.png",
+      "sha256": "4d3c22433dda8025d89f96ded085f4156ac63b9cad3540dbd2a98cccb3b0193d"
+    },
+    {
       "path": "Assets/ChurchGarden/Textures/GardenTerracottaAlbedo.png",
       "sha256": "7ca169380d5d4a3fcf262d80ffeca93f4d4b0e352ec61301ff12b5291d84941e"
+    },
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenTerracottaResponse.png",
+      "sha256": "1b10bb271db1eeac317605c7d1e486531442dbb546b5859e281df4e184587b02"
+    },
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenTimberAlbedo.png",
+      "sha256": "9e37127ee199b8d424ba3979adbfea3175c9b0f98b2c02fae3f8452861e41c92"
+    },
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenTimberResponse.png",
+      "sha256": "162e724470c091225606b94d6caad57056e47d0455abad448f724a2ecca0fb59"
     }
   ],
   "pieces": [
@@ -25,9 +41,10 @@
       "mesh": "GEO_FountainStone",
       "material_role": "Stone",
       "material_roles": [
-        "Stone"
+        "Stone",
+        "Metal"
       ],
-      "geometry_signature": "f9e0262a925e8df9198598e0e9b431915903d9e472d21a17b400e77f3a0e2991",
+      "geometry_signature": "b5ffb26ff5af00219412ed5153033cc3668eca189b5679fedb9e14f5f1545e99",
       "bounds_min": [
         -0.8,
         0.0,
@@ -38,7 +55,7 @@
         0.73,
         0.8
       ],
-      "triangle_count": 1652
+      "triangle_count": 1888
     },
     {
       "kind": "FountainWater",
@@ -107,7 +124,7 @@
       "material_roles": [
         "Terracotta"
       ],
-      "geometry_signature": "2f9eafacdfda66c1bdeae80eae17b929500953d978a30eb4388be54b9f403346",
+      "geometry_signature": "2a10c2d332ad992ac8a36f61e3a0aef9c83eaa59f0ed8928ba326b5ba5045bf3",
       "bounds_min": [
         -0.12,
         0.0,
@@ -118,7 +135,7 @@
         0.23,
         0.12
       ],
-      "triangle_count": 668
+      "triangle_count": 956
     },
     {
       "kind": "PotMedium",
@@ -147,7 +164,7 @@
       "material_roles": [
         "Terracotta"
       ],
-      "geometry_signature": "4d3cc3655b72300decc0643adb9f628c665676d59f8202ab73c7d386a5bbb631",
+      "geometry_signature": "8a899d5b7dcaecad141b1578f1dfe7654cd3f83bb3d5d10e319aabaff292dec9",
       "bounds_min": [
         -0.24,
         0.0,
@@ -158,7 +175,7 @@
         0.44,
         0.24
       ],
-      "triangle_count": 668
+      "triangle_count": 956
     },
     {
       "kind": "StonePottingLedge",
@@ -167,7 +184,7 @@
       "material_roles": [
         "Stone"
       ],
-      "geometry_signature": "0d3f2e1a182680751419d046e84567ef2c1859ccee34b878fcfc84929a979dde",
+      "geometry_signature": "778e45682545c976e2041a06eb11895d6507685c6ff2e181c58f2e3be75663fb",
       "bounds_min": [
         -0.575,
         0.0,
@@ -178,7 +195,7 @@
         0.65,
         0.26
       ],
-      "triangle_count": 420
+      "triangle_count": 568
     },
     {
       "kind": "HedgeSegment",
@@ -220,6 +237,27 @@
         0.114955
       ],
       "triangle_count": 912
+    },
+    {
+      "kind": "Bench",
+      "mesh": "GEO_Bench",
+      "material_role": "Timber",
+      "material_roles": [
+        "Timber",
+        "Metal"
+      ],
+      "geometry_signature": "7d316352e9fb88b65fbf1ccb45f29c12e93844ea4c4f8f275c057ee855648ee0",
+      "bounds_min": [
+        -0.86,
+        0.0,
+        -0.31
+      ],
+      "bounds_max": [
+        0.86,
+        0.995,
+        0.2065
+      ],
+      "triangle_count": 1180
     }
   ],
   "pot_medium": {
@@ -252,6 +290,18 @@
     "depth_m": 0.85,
     "height_m": 0.8,
     "suggested_continuous_pitch_m": 1.8
+  },
+  "bench": {
+    "seat_height_m": 0.49,
+    "seat_width_m": 1.6,
+    "seat_depth_m": 0.42,
+    "front": "+Z",
+    "construction": "chamfered timber slats, bolted iron trestles"
+  },
+  "surface_response": {
+    "packing": "R smoothness factor; G shallow height; B cavities",
+    "rain_owner": "City shared weather; dry/wet scalar remains bounded",
+    "texture_size": 256
   },
   "uplight": {
     "lens_position": [

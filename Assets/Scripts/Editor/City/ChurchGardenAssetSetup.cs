@@ -178,21 +178,26 @@ namespace BarPromenade.Editor
 
         private static Dictionary<string, Material> BuildMaterials()
         {
-            var stone = AssetDatabase.LoadAssetAtPath<Material>("Assets/Church/Materials/ChurchStone.mat");
-            if (stone == null) throw new InvalidOperationException("The shared church stone is missing.");
+            var stone = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/RuntimePrimitiveLit.mat");
+            if (stone == null) throw new InvalidOperationException("The shared Lit material is missing.");
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureFolder}/GardenStoneAlbedo.png");
             var clayTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureFolder}/GardenTerracottaAlbedo.png");
             var foliageTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureFolder}/GardenFoliageAlbedo.png");
+            var timberTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureFolder}/GardenTimberAlbedo.png");
+            Texture2D stoneResponse = Response("Stone");
+            Texture2D clayResponse = Response("Terracotta");
+            Texture2D timberResponse = Response("Timber");
             var emission = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/CityNoirEmission.mat");
-            if (texture == null || clayTexture == null || foliageTexture == null)
+            if (texture == null || clayTexture == null || foliageTexture == null || timberTexture == null)
                 throw new InvalidOperationException("The garden material grain sheets are missing.");
             if (emission == null)
                 throw new InvalidOperationException("The shared City emission material is missing.");
             return new Dictionary<string, Material>(StringComparer.Ordinal)
             {
-                ["Stone"] = Material("GardenStone", stone, texture, new Color(.49f, .515f, .49f), .16f),
-                ["Statue"] = Material("GardenStatueStone", stone, texture, new Color(.66f, .665f, .605f), .16f),
-                ["Terracotta"] = Material("GardenTerracotta", stone, clayTexture, new Color(.43f, .255f, .17f), .08f),
+                ["Stone"] = Material("GardenStone", stone, texture, new Color(.49f, .515f, .49f), .16f, stoneResponse, 4f),
+                ["Statue"] = Material("GardenStatueStone", stone, texture, new Color(.66f, .665f, .605f), .16f, stoneResponse, 6f),
+                ["Terracotta"] = Material("GardenTerracotta", stone, clayTexture, new Color(.43f, .255f, .17f), .08f, clayResponse, 1f),
+                ["Timber"] = Material("GardenTimber", stone, timberTexture, new Color(.35f, .22f, .12f), .08f, timberResponse, 8f),
                 ["Water"] = Material("GardenWater", stone, null, new Color(.145f, .19f, .18f), .54f),
                 ["Stream"] = Material("GardenStream", stone, null, new Color(.365f, .405f, .38f), .48f),
                 ["Foliage"] = Material("GardenFoliage", stone, foliageTexture, new Color(.42f, .58f, .35f), .04f),
@@ -201,8 +206,19 @@ namespace BarPromenade.Editor
             };
         }
 
+        private static Texture2D Response(string role)
+        {
+            string path = $"{TextureFolder}/Garden{role}Response.png";
+            var response = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (response == null || response.width != 256 || response.height != 256 ||
+                importer == null || importer.sRGBTexture || !importer.mipmapEnabled || importer.isReadable)
+                throw new InvalidOperationException($"Garden {role} response must be a linear, mipmapped, non-readable 256px sheet.");
+            return response;
+        }
+
         private static Material Material(string name, Material source, Texture texture,
-            Color color, float smoothness)
+            Color color, float smoothness, Texture2D response = null, float groundKind = 0f)
         {
             string path = $"{MaterialFolder}/{name}.mat";
             var result = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -211,7 +227,23 @@ namespace BarPromenade.Editor
                 result = new Material(source) { name = name };
                 AssetDatabase.CreateAsset(result, path);
             }
-            else result.CopyPropertiesFromMaterial(source);
+            else
+            {
+                result.shader = source.shader;
+                result.CopyPropertiesFromMaterial(source);
+            }
+            if (response != null)
+            {
+                Shader shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Resources/Shaders/GroundSurfaceLit.shader");
+                if (shader == null) throw new InvalidOperationException("The shared ground material shader is missing.");
+                result.shader = shader;
+                result.SetTexture("_GroundResponse", response);
+                result.SetFloat("_GroundKind", groundKind);
+                result.SetFloat("_GroundCityClimate", 1f);
+                result.SetFloat("_GroundWetness", 0f);
+                result.SetFloat("_GroundRoadCoordinates", 0f);
+                result.SetFloat("_GroundVertexData", 0f);
+            }
             result.name = name;
             result.enableInstancing = true;
             if (result.HasProperty("_BaseMap")) result.SetTexture("_BaseMap", texture);
@@ -219,7 +251,7 @@ namespace BarPromenade.Editor
             if (result.HasProperty("_BaseColor")) result.SetColor("_BaseColor", color);
             if (result.HasProperty("_Color")) result.SetColor("_Color", color);
             if (result.HasProperty("_Smoothness")) result.SetFloat("_Smoothness", smoothness);
-            if (result.HasProperty("_Metallic")) result.SetFloat("_Metallic", .02f);
+            if (result.HasProperty("_Metallic")) result.SetFloat("_Metallic", name == "GardenMetal" ? .42f : .02f);
             EditorUtility.SetDirty(result);
             return result;
         }
@@ -260,7 +292,8 @@ namespace BarPromenade.Editor
                 !(assetImporter is TextureImporter importer)) return;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
-            importer.sRGBTexture = true;
+            importer.sRGBTexture = !assetPath.EndsWith("Response.png", StringComparison.OrdinalIgnoreCase);
+            importer.isReadable = false;
             importer.alphaSource = TextureImporterAlphaSource.None;
             importer.mipmapEnabled = true;
             importer.wrapMode = TextureWrapMode.Repeat;
