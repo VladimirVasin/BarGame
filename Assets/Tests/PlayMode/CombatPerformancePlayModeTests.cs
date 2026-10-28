@@ -21,10 +21,6 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator SetUp()
         {
             zombieFixtureStarted = false;
-            string method = TestContext.CurrentContext.Test.MethodName;
-            if (method != nameof(Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts) &&
-                method != nameof(Range_RecoveryRootUsesActualStairSupportAndRefusesBlockedLanding))
-                Assert.Ignore("Retired human duel fixture: this legacy scenario has not been migrated to zombie-only combat.");
             zombieFixtureStarted = true;
             CombatTestRoot.UseLegacyArenaForTests = true;
             previousCaptureDelta = Time.captureDeltaTime;
@@ -46,6 +42,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Opponent.Weapon, Is.Null, "The zombie fixture cannot create a human weapon opponent.");
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_OpponentKeepsWeaponRoomAndAnswersTheObservedWhiff()
         {
@@ -186,6 +184,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_SimulationTicksStayWithinFrameBudget()
         {
@@ -243,6 +243,8 @@ namespace BarPromenade.Tests.PlayMode
                     labels[scenario] + ": leave CPU headroom for LateUpdate, physics and rendering");
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_FrameHitchDropsCatchUpDebtAndKeepsFractionalStep()
         {
@@ -273,6 +275,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_RecoveryClickKeepsOneShortLivedIntent()
         {
@@ -369,6 +373,8 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_CloseContactUsesFastShove()
         {
@@ -475,6 +481,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_ShoveWindowRequiresOneRealContact()
         {
@@ -544,6 +552,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_CrowdingRestoresGripAndAttack()
         {
@@ -637,6 +647,8 @@ namespace BarPromenade.Tests.PlayMode
             public string opponent_style, kind, from, to, action_kind;
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_DuelJournalRecordsReasonsWithoutChangingCombat()
         {
@@ -945,6 +957,9 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Category("CombatDiagnostic")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest, Explicit("Bounded shove comparison; writes review frames and measures Editor frames separately.")]
         public IEnumerator Range_MinimumShoveRecoveryComparison()
         {
@@ -1057,6 +1072,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_BalanceRecoveryUsesActualSupports()
         {

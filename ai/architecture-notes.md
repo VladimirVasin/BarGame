@@ -1,6 +1,14 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-28 — protect the cat's unique tin before its quest:**
+  User accepted the audit fix: `OpenStewCan` is reserved until `FeedTheCat`
+  completes, including day one. This explicitly replaces active-only inventory
+  reservation. Quest activation, feeding and descent checks still begin on day two;
+  no new source, replenishment, player text or story fact. The same refusal line is
+  reused. This bounded exception prevents eating the only Home tin before
+  the quest opens and blocking the stairwell later.
+
 - **Accepted 2026-10-28 — continuous City street support:**
   User:road/pavement plus soil/lawn/paths form one continuous surface.
   `CityStreetSupportPlan`:typed station polygons; courtyard paving avoids
@@ -2101,13 +2109,13 @@
   Editor diagnostics are local evidence, not a player guarantee. `ai/debug-log.md`.
 - **Current — Read-only build gate and checked authoring (2026-09-06):**
   `PlayerBuildAssetValidation` runs on all player-build paths, aggregating
-  required-resource, owner-contract and Hero dependency-stamp failures with
-  repair commands. It never regenerates assets. `tools/toolchain.json` pins
-  the supported environment; `tools/run-blender.py` propagates Python failure
+  resources, owner contracts, Hero stamps, StreetProfile topology and weapon
+  bindings. Validation never repairs; `HeroDerivedAssetSetup.RebuildBatch` is
+  explicit authoring. `tools/toolchain.json` pins the environment;
+  `tools/run-blender.py` propagates Python failure
   and verifies fresh outputs, with mapped staging/publication where output
   directories are supplied. Native VHS validates its candidate DLL before
-  publishing. See `tools/README.md`; direct generator invocations still own
-  their ordinary output paths.
+  publishing. See `tools/README.md` for staging and explicit rebuilds.
 
 - **Accepted — Distant passing fishing boats (2026-09-05):** The user
   accepted the decorative offshore plan, requested a soft positional motor,
@@ -3771,18 +3779,11 @@
   `ai/tutorial-scenario.md` has always had the hero descend the stairwell and
   use the street door on day one — which the descent blocker made literally
   impossible. The dating fixes a contradiction rather than introducing one.
-- **Accepted — the cat offers no feeding at all before his quest opens:** the
-  obvious reading of "no checks on day one" is to leave the descent blocker and
-  the tin reservation gated (they already read `IsQuestActive`) and let the
-  feeding itself stand. That is a trap. The tin is consumed the frame the cat
-  puts his head in it, and `TryCompleteQuest` returns false while the quest is
-  not active — so a feeding allowed on day one would eat the can, record
-  nothing, and leave the hero locked in his own stairwell on day two with
-  nothing to feed the cat and no way down. `StairwellCatInteraction.TryOpen`
-  therefore answers with the ordinary «Кот молча смотрит» line and opens no
-  menu until the quest exists. **Note what was NOT done:** `FeedTheCat` is
-  still not repeatable, so it does not recur daily the way §9's «Каждый день»
-  describes. That was already true before this work and is left alone.
+- **Accepted — the cat offers no feeding at all before his quest opens:**
+  `StairwellCatInteraction.TryOpen` shows the existing silent cat response and
+  opens no menu before day two. Feeding earlier would spend the finite tin
+  without completing the inactive quest. `FeedTheCat` remains nonrepeatable;
+  the descent blocker still requires the active quest.
 - **Accepted 2026-09-02 by direct user decision — every spoken line types out,
   and writing has sound:** `SpeechDelivery` owns shared reveal; Russian uses the
   procedural vocalizer under the 2026-10-24 decision. English writing clicks use

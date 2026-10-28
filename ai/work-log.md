@@ -5,51 +5,52 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-28
 
-World-location queue is Current. Stairwell/transition use the Blender interior
-kit; joined rails, hardware and imported hand docks retain ramps/pivots/cameras.
-STAIRWELL_INTERIOR_ART_DETERMINISM_OK, STAIRWELL_CONTACT_MANIFEST_MATCH_OK,
-Scene_BootstrapsVerticalRouteAndAtmosphere, StairwellDoorHandleContacts and
-Scene_FeedingConsumesOneStewAndCompletesPairedAnimation passed; frames reviewed.
-Room-audio excludes the existing UI-owned hero emitter.
+Stairwell/transition rails/hardware/hand docks
+retain ramps/pivots/cameras. STAIRWELL_INTERIOR_ART_DETERMINISM_OK,
+StairwellDoorHandleContacts and Scene_FeedingConsumesOneStewAndCompletesPairedAnimation
+passed; frames reviewed. Room audio excludes the UI emitter.
 
-City coastal/cemetery profiles, pier joints and coping use fixed-metre meshes.
-Gazebo steps clear the deck; clock hands read; compact cemetery retains the
-church cross-alley. CityCatalogAndPassage, CityChurchCourtyard, City,
-CityLandmarksFromStreets, CityDomesticCourts and CityBarYardCircuit passed;
-functional views/contacts reviewed. CityDistrictAcousticContrast retained
-physical cloth/pipe/fountain voices with music muted.
+City coastal/cemetery/pier use fixed-metre meshes; gazebo steps clear
+deck, clock hands read, cemetery keeps church cross-alley. CityCatalogAndPassage,
+CityChurchCourtyard, City, CityLandmarksFromStreets, CityDomesticCourts and
+CityBarYardCircuit passed; views/contacts reviewed. CityDistrictAcousticContrast
+retains cloth/pipe/fountain voices.
 
-Mountain structures retain bounds/collision/pivots; shared meshes release.
-MountainRoadNativeLighting passed; native day/night/close views reviewed.
-ForestCrownAuthoredPilot worsened silhouettes; LodgeBounce missed useful
-receivers without visible gain. Both removed; original presentation retained.
-VillageWorkroomWalls passed after terrain/snow cuts cleared the plinth.
-Native village/Home/mother-house art retained. ChurchRemodelAcceptance,
-AlpineVillageBrookDetails, AlpineVillageAvalanche, AlpineVillageFootbridge,
-FourDirectionsAndThreeAspectRatios and
-AreaTravel_ComposesEachDestinationBeforeCompleting passed; routes/views reviewed.
+Mountain bounds/pivots remain; meshes release.
+MountainRoadNativeLighting passed; day/night/close frames reviewed.
+ForestCrownAuthoredPilot/LodgeBounce lacked benefit; removed, originals retained.
+VillageWorkroomWalls passed after terrain/snow cuts cleared plinth. ChurchRemodelAcceptance, AlpineVillageBrookDetails,
+AlpineVillageAvalanche, AlpineVillageFootbridge, FourDirectionsAndThreeAspectRatios
+and AreaTravel_ComposesEachDestinationBeforeCompleting passed; views reviewed.
 
-CCTV pivots use tracking +Z; children keep world poses. Supermarket lens
-front/normal probes and views passed. Input System replaces Both; shared
-pointer capture/scroll and Unicode editing retain IMGUI rendering.
-InputSystemUiPlayModeTests passed hitboxes, drag/scroll/focus, actual menus,
-Russian selection/paste and function keys. MainMenuManualNative covered
-closed-bar return/combat/wide/4:3; menu/vocalizer frames reviewed.
+CCTV +Z tracking keeps child poses; lens probes/views passed.
+Input System replaces Both; shared pointer/capture/scroll/Unicode retains IMGUI.
+InputSystemUiPlayModeTests passed menus/focus/Russian editing/function keys;
+MainMenuManualNative covered menus/aspects; frames reviewed.
 CombatLaboratoryArtVisuals, CombatWarehouseDetailVisuals, check-docs,
-scoped diff and check-workspace passed; temporary output removed/worktrees archived.
+check-workspace/scoped diff passed; temporary output removed/worktrees archived.
 
-City street support now shares grade stations, typed asphalt/pavement/path
-regions and exterior terrain boundaries. Blender deformation topology replaces
-separate road donors; Home copies bounded real terrain. Indexed support grounds
-walkers/bus/benches/fences; weather/steps and dynamic cuts retain their owners.
-CITY STREET PROFILE BUILD OK proved topology/winding/metres/determinism.
-Support_GradedStreetAndPavementShareJunctionCapStations,
-SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap and
-FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority passed.
-CityGroundSurface passed; city seams and Home balcony frames reviewed.
-BodyNpc torso centres now retain triangle-corner multiplicity after FBX
-welding; cardigan metadata no longer shifts. CombatBodyAssetPipelineTests
-passed, including invalid-frame rejection; affine guard unchanged.
+City streets share stations/coatings/terrain; Blender topology replaces donors;
+Home copies terrain. Indexed support grounds walkers/
+bus/benches/fences; weather/steps/cuts keep owners.
+CITY STREET PROFILE BUILD OK, Support_GradedStreetAndPavementShareJunctionCapStations,
+SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap,
+FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority and
+CityGroundSurface passed; seams/balcony reviewed. BodyNpc triangle-corner
+multiplicity survives FBX welding; cardigan stays. CombatBodyAssetPipelineTests
+passed invalid-frame rejection; affine guard retained.
+
+Audit repairs: stew reserved until cat quest Completed; inventory hides Use.
+Hero-derived assets regenerated/rebound; StreetProfile joins read-only gate,
+carry validation no longer writes. Truck saturation grows/retries/falls back.
+GameSessionStateTests, PlayerBuildAssetValidationTests, PerformanceCaptureTests,
+CityFishSupplySessionTests passed. City trace removed recurring audio geometry,
+worker-anchor strings and light-name reads; sound/light parity passed.
+ScarfPerformance, inventory/shop/retained-City/cableway proofs passed.
+Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs and MountainRoadCityTunnel
+passed: ribbon clears M65; disable keeps palm while releasing clip.
+macOS native preflight/ABI/DSP and asset_pipeline rollback passed. Details:
+project-audit-2026-10-28.md and audit-remediation-plan.md.
 
 ## 2026-10-27
 

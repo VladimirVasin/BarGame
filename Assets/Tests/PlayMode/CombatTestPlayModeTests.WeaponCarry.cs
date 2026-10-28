@@ -12,6 +12,8 @@ namespace BarPromenade.Tests.PlayMode
         private static readonly CombatWeaponId[] CarryWeaponIds =
             { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun };
 
+        [Category("CurrentCombat")]
+        [Category("ProductionCombat")]
         [UnityTest]
         public IEnumerator Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs()
         {
@@ -26,18 +28,8 @@ namespace BarPromenade.Tests.PlayMode
                 VerifyThreeWeaponPreparation();
                 foreach (CombatWeaponId secondary in new[] { CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
                 {
-                    yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                     var selection = new CombatLoadoutSelection(secondary);
-                    Assert.That(CombatTestStartService.TryStart(selection), Is.True);
-                    yield return AwaitSelectedCombatRange();
-                    PlacePair(8f);
-                    // Keep control shots clear of the opponent so a round-end cannot cancel a carry action.
-                    root.Opponent.ResetActor(root.Hero.transform.position + Vector3.right * 8f, Vector3.left);
-                    Physics.SyncTransforms();
-                    Assert.That(root.SetOpponentFocus(false), Is.True);
-                    root.SendMessage("OnApplicationFocus", true);
-                    GameInput.HandleApplicationFocus(true);
-                    yield return null; // Let the rig and its later cloth pass settle after changing focus.
+                    yield return EnterWarehouseWeaponCarryRange(secondary);
                     var hero = root.Hero;
                     var visual = (Player3DCharacterPresentation)root.Player.Visual;
                     GameObject pistol = hero.CarriedWeapon(CombatWeaponId.Pistol);
@@ -88,6 +80,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(hero.TryAttack(), Is.False);
                     Assert.That(hero.RequestPistolShot(), Is.False);
                     root.Tick(.2f);
+                    AssertShotgunSling(hero); // Complete the late rig/ribbon before capturing the frozen baseline.
                     float pausedProgress = hero.WeaponCarryActionProgress;
                     Vector3 pausedPistol = pistol.transform.position;
                     CombatShotgunSling pausedSling = hero.CarriedWeapon(CombatWeaponId.Shotgun).GetComponent<CombatShotgunSling>();
@@ -101,7 +94,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(pistol.transform.position, Is.EqualTo(pausedPistol));
                     if (pausedFabric != null)
                         for (int i = 0; i < pausedFabric.Length; i++)
-                            Assert.That(pausedSling.WorldCenterlinePoint(i), Is.EqualTo(pausedFabric[i]), "Pause freezes the soft fabric as well as the gun.");
+                            Assert.That(pausedSling.WorldCenterlinePoint(i), Is.EqualTo(pausedFabric[i]), "Pause freezes the presented ribbon as well as the gun.");
                     Assert.That(hero.TrySelectWeapon(secondary), Is.False);
                     Assert.That(root.PauseMenu.Cancel(), Is.True);
                     yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Carry pause did not release input.");
@@ -113,7 +106,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (secondary == CombatWeaponId.Shotgun)
                     {
                         AssertShotgunFrontRoute(hero);
-                        yield return AssertShotgunFabricMoves(hero);
+                        yield return AssertShotgunSlingFollowsMovement(hero);
                         AssertShotgunFrontRoute(hero);
                     }
 
@@ -179,62 +172,42 @@ namespace BarPromenade.Tests.PlayMode
                         root.Tick(.45f);
                     }
 
-                    // A floor prop keeps its own identity while the other slot is active.
+                    // Accepted 2026-10-19 retention: a living hero never
+                    // creates a floor pickup by dropping his held weapon.
+                    var retainedWeapon = new HeroHeldWeaponSnapshot(hero);
+                    Transform retainedParent = longWeapon.transform.parent;
                     hero.SendMessage("DropWeapon", SendMessageOptions.RequireReceiver);
-                    Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
-                    Assert.That(hero.TrySelectWeapon(secondary), Is.False);
-                    var pickup = longWeapon.GetComponent<CombatDroppedWeaponPickup>();
-                    Assert.That(pickup, Is.Not.Null);
-                    string pickupPrompt = pickup.PromptKey;
+                    retainedWeapon.AssertMatches(hero, "Living hero retains the held weapon");
+                    Assert.That(longWeapon.transform.parent, Is.SameAs(retainedParent));
+                    AssertRetainedCarryBody(longWeapon);
+                    Assert.That(hero.TrySelectWeapon(secondary), Is.True,
+                        "The retained record remains selectable instead of becoming a floor pickup.");
                     Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
-                    TestContext.WriteLine(secondary + " carry: draw pistol after dropping secondary.");
                     yield return FinishWeaponCarry(CombatWeaponId.Pistol, null);
-                    Assert.That(pickup.PromptKey, Is.EqualTo(pickupPrompt), "Changing the held slot cannot rename a floor prop.");
-                    Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
-                    Assert.That(longWeapon.transform.IsChildOf(hero.transform), Is.False);
+                    AssertStowedCarry(hero, secondary);
+                    Assert.That(hero.CarriedWeapon(secondary), Is.SameAs(longWeapon));
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
                     Assert.That(hero.CarriedWeapon(other), Is.SameAs(otherWeapon));
                     AssertStowedCarry(hero, other);
                     Assert.That(hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgunState));
                     Assert.That(shotgunState.Rounds, Is.EqualTo(1));
-                    yield return PressCarryCycle(other);
-                    yield return FinishWeaponCarry(other, null);
-                    Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped),
-                        "Cycling skips the dropped record and leaves its original floor prop alone.");
-                    Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
-                    yield return FinishWeaponCarry(CombatWeaponId.Pistol, null);
-                    Assert.That(pickup.PromptKey, Is.EqualTo(pickupPrompt));
-
-                    // The shared screen reclaims the exact floor record even while
-                    // the other weapon is in hand. Cancelling cannot equip it.
-                    Rigidbody droppedBody = longWeapon.GetComponent<Rigidbody>();
-                    droppedBody.linearVelocity = droppedBody.angularVelocity = Vector3.zero;
-                    Vector3 stand = longWeapon.transform.position + Vector3.right * .75f;
-                    stand.y = hero.transform.position.y;
-                    root.Player.Motor.Teleport(stand);
-                    Physics.SyncTransforms();
-                    yield return null;
-                    Assert.That(pickup.TryBeginPickup(root.Player.Interactor), Is.True);
-                    WorldItemFoundScreen found = WorldItemFoundScreen.For(root.Player.Interactor);
-                    yield return WaitFor(() => found.IsShowing, "The dropped slot did not reach the shared pickup panel.");
-                    found.Abandon();
-                    yield return null;
-                    Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
-                    Assert.That(hero.Weapon, Is.SameAs(pistol));
-                    yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Cancelled pickup kept its input lock.");
-                    Assert.That(pickup.TryBeginPickup(root.Player.Interactor), Is.True);
-                    yield return WaitFor(() => found.IsShowing, "The same floor record could not be inspected again.");
-                    yield return null;
-                    Assert.That(found.Confirm(), Is.True);
-                    yield return WaitFor(() => !found.IsPresenting, "Accepted pickup kept its presentation ownership.");
-                    yield return null;
-                    TestContext.WriteLine(secondary + " carry: draw recovered secondary after pickup.");
+                    Assert.That(hero.TrySelectWeapon(secondary), Is.True);
                     yield return FinishWeaponCarry(secondary, null);
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
-                    Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
-                    if (secondary == CombatWeaponId.Shotgun) Assert.That(hero.Shotgun.Rounds, Is.EqualTo(1));
 
-                    // Reset reclaims all three originals, including the detached prop.
+                    // Terminal defeat is the supported physical release. The
+                    // dead owner cannot inspect it; reset reclaims that exact
+                    // original together with both still-stowed records.
+                    var defeatedWeapon = new HeroHeldWeaponSnapshot(hero);
+                    hero.State.ReceiveProjectileHit(hero.State.Settings.MaxHealth);
+                    hero.Step(CombatAssetProvider.DefeatHandoffSeconds + .05f);
+                    Assert.That(hero.IsRagdollActive, Is.True);
+                    defeatedWeapon.AssertDroppedMatches(hero, "Terminal defeat releases the original held prop");
+                    CombatDroppedWeaponPickup pickup = longWeapon.GetComponent<CombatDroppedWeaponPickup>();
+                    Assert.That(pickup, Is.Not.Null);
+                    Assert.That(pickup.CanInteract(root.Player.Interactor), Is.False);
+                    AssertStowedCarry(hero, CombatWeaponId.Pistol);
+                    AssertStowedCarry(hero, other);
                     root.ResetRound();
                     Assert.That(hero.LoadoutSelection, Is.EqualTo(selection));
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
@@ -245,6 +218,9 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(shotgunState.Rounds, Is.EqualTo(2));
                     AssertStowedCarry(hero, CombatWeaponId.Pistol);
                     AssertStowedCarry(hero, other);
+                    AssertRetainedCarryBody(longWeapon);
+                    Assert.That(pickup.CanInteract(root.Player.Interactor), Is.False,
+                        "The reclaimed original cannot also remain an available floor pickup.");
 
                     // The gamepad uses the same selection path. A later request is queued
                     // until the visible action reaches a stable endpoint.
@@ -293,19 +269,30 @@ namespace BarPromenade.Tests.PlayMode
                             }
                             Assert.That(longWeapon.transform.parent, Is.SameAs(transientHand),
                                 "Both temporary physical holds must be reachable before the firing grip.");
+                            AssertShotgunSling(hero); // Snapshot the final held pose, not a pre-LateUpdate rig.
+                            var interruptedWeapon = new HeroHeldWeaponSnapshot(hero);
+                            float interruptedProgress = hero.WeaponCarryActionProgress;
                             Vector3 position = longWeapon.transform.position;
                             Quaternion rotation = longWeapon.transform.rotation;
                             hero.enabled = false;
-                            Assert.That(hero.CarriedWeaponLocation(CombatWeaponId.Shotgun), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
+                            interruptedWeapon.AssertMatches(hero, "Disable retains the actual palm/catch hold");
+                            Assert.That(longWeapon.transform.parent, Is.SameAs(transientHand));
                             Assert.That(Vector3.Distance(longWeapon.transform.position, position), Is.LessThan(.001f));
                             Assert.That(Quaternion.Angle(longWeapon.transform.rotation, rotation), Is.LessThan(.1f),
-                                "Interrupted palm/catch ownership releases at its live pose without a hidden grip snap.");
-                            Assert.That(longWeapon.GetComponent<CombatDroppedWeaponPickup>(), Is.Not.Null);
+                                "Interrupted palm/catch ownership keeps its live pose without a hidden grip snap.");
+                            AssertRetainedCarryBody(longWeapon);
+                            Assert.That(hero.WeaponCarryRecoveryPending, Is.True);
                             Assert.That(hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgunState));
                             Assert.That(shotgunState.Rounds, Is.EqualTo(rounds));
                             Assert.That(visual.OwnsClip(hero), Is.False);
                             hero.enabled = true;
+                            root.Tick(1f / 60f);
+                            Assert.That(hero.IsSwitchingWeapon && hero.WeaponCarryActionIsDraw, Is.True);
+                            Assert.That(hero.WeaponCarryActionProgress, Is.GreaterThanOrEqualTo(interruptedProgress),
+                                "Re-enable resumes the retained draw instead of restarting its push/catch sequence.");
+                            interruptedWeapon.AssertMatches(hero, "Resumed draw keeps model and ammunition");
                             root.ResetRound();
+                            Assert.That(hero.WeaponCarryRecoveryPending || hero.IsSwitchingWeapon, Is.False);
                             Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                             AssertStowedCarry(hero, CombatWeaponId.Pistol);
                             yield return null;
@@ -331,6 +318,30 @@ namespace BarPromenade.Tests.PlayMode
                 if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
                 input.TearDown();
             }
+        }
+
+        private IEnumerator EnterWarehouseWeaponCarryRange(CombatWeaponId initialHeld)
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            Assert.That(CombatTestStartService.TryStart(new CombatLoadoutSelection(initialHeld)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            Assert.That(root.WarehousePlan, Is.Not.Null, "Carry and journal coverage must enter the shipped warehouse.");
+            Assert.That(root.Opponent.IsZombie, Is.True, "The control target is a production zombie, never a human duelist.");
+            foreach (CombatWeaponId weapon in CarryWeaponIds)
+                Assert.That(root.Hero.LoadoutSelection.Contains(weapon), Is.True);
+            SuspendRigidCombatOpponents();
+            ForceAmmoFocus();
+            Vector3 origin = root.WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset;
+            root.Hero.ResetActor(origin, Vector3.forward);
+            // Keep control shots clear of the zombie without requesting the
+            // retired human-duel target lock from the shared PlacePair helper.
+            root.Opponent.ResetActor(origin + Vector3.right * 8f, Vector3.left);
+            Physics.SyncTransforms();
+            Assert.That(root.SetOpponentFocus(false), Is.True);
+            root.CameraFollow.Snap();
+            yield return null;
         }
 
         private static void VerifyThreeWeaponPreparation()
@@ -377,6 +388,13 @@ namespace BarPromenade.Tests.PlayMode
             TestContext.WriteLine("Stowed " + id + " actor-local dock " +
                 hero.transform.InverseTransformPoint(dock.position).ToString("F6") + " rotation " +
                 (Quaternion.Inverse(hero.transform.rotation) * dock.rotation).ToString("F6"));
+        }
+
+        private static void AssertRetainedCarryBody(GameObject model)
+        {
+            Rigidbody body = model.GetComponent<Rigidbody>();
+            Assert.That(body.isKinematic, Is.True, "The owned standing prop cannot escape into world rigidbody simulation.");
+            Assert.That(body.useGravity || body.detectCollisions, Is.False);
         }
 
         private IEnumerator FinishWeaponCarry(CombatWeaponId expected, string capture, float? maximumSeconds = null)
@@ -571,14 +589,44 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private void AssertShotgunSling(CombatActor hero)
+        private void AssertShotgunSling(CombatActor hero, bool synchronizeRig = true)
         {
             GameObject shotgun = hero.CarriedWeapon(CombatWeaponId.Shotgun);
             if (shotgun == null) return;
             CombatShotgunSling sling = shotgun.GetComponent<CombatShotgunSling>();
             Assert.That(sling, Is.Not.Null, "The same shotgun carries its own sling.");
+            if (!sling.PhysicsSimulationEnabled)
+            {
+                // Coroutine continuations run before LateUpdate. Observe the
+                // same final rig and rigid ribbon as the rendered frame;
+                // neither operation advances an animation or physics clock.
+                if (synchronizeRig)
+                    ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                sling.Present();
+            }
             Assert.That(sling.Ribbon.transform.IsChildOf(shotgun.transform), Is.True,
                 "The strap travels with the original weapon through hand, back and floor ownership.");
+            Transform stock = CombatAssetProvider.FindAnchor(shotgun, "SlingStock");
+            Transform foreend = CombatAssetProvider.FindAnchor(shotgun, "SlingForeend");
+            Assert.That(Vector3.Distance(sling.WorldCenterlinePoint(0), stock.position), Is.LessThan(.002f),
+                "The presented strap retains its original stock swivel.");
+            Assert.That(Vector3.Distance(sling.WorldCenterlinePoint(sling.CenterlinePointCount - 1), foreend.position), Is.LessThan(.002f),
+                "The presented strap retains its original foreend swivel.");
+            if (!sling.PhysicsSimulationEnabled)
+            {
+                // CombatTest deliberately selects rig-only clothes. Its
+                // current-pose ribbon retains real attachments and grasp,
+                // without promising the physical solver's material length.
+                Assert.That(sling.LastBakedDecision, Is.EqualTo(CombatShotgunSling.BakedPlaybackDecision.Kinematic));
+                Assert.That(sling.LastSimulationSteps + sling.SteadyProjectionIterations + sling.SteadyLengthRepairIterations, Is.Zero);
+                if (sling.LeftHandAttachmentAmount >= .999f)
+                {
+                    NpcHandPose hands = hero.GetComponentInChildren<NpcHandPose>();
+                    Assert.That(Vector3.Distance(sling.WorldCenterlinePoint(sling.HandCenterlineIndex), hands.CylinderCentre(true)),
+                        Is.LessThan(.002f), "The fully grasped ribbon remains in the current left palm during physical gun handoffs.");
+                }
+                return;
+            }
             float lengthError = Mathf.Abs(sling.PresentedLength - sling.AuthoredLength);
             if (lengthError < .03f) return;
             if (lengthError >= .03f)
@@ -605,8 +653,9 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.ProjectOnPlane(contactFromGrip, sling.HandAxisWorld).magnitude.ToString("F4"));
         }
 
-        private IEnumerator AssertShotgunFabricMoves(CombatActor hero)
+        private IEnumerator AssertShotgunSlingFollowsMovement(CombatActor hero)
         {
+            AssertShotgunSling(hero);
             CombatShotgunSling sling = hero.CarriedWeapon(CombatWeaponId.Shotgun).GetComponent<CombatShotgunSling>();
             Assert.That(sling.CenterlinePointCount, Is.EqualTo(81));
             Vector3 origin = hero.transform.position;
@@ -616,32 +665,58 @@ namespace BarPromenade.Tests.PlayMode
             float movement = 0f;
             try
             {
-                // A short real movement stays below teleport-reset distance.
-                // A rigid actor-local arch would retain every local point.
+                // The rig-only branch must follow the current actor pose
+                // immediately. Only the physical branch promises inertia.
                 hero.transform.position += hero.transform.right * .035f;
                 Physics.SyncTransforms();
-                for (int frame = 0; frame < 24; frame++)
+                if (!sling.PhysicsSimulationEnabled)
                 {
-                    root.Tick(1f / 60f);
-                    yield return null;
-                    AssertShotgunSling(hero);
-                    for (int i = 1; i < before.Length - 1; i++)
+                    long steps = sling.TotalSimulationSteps, bakes = sling.BakedPlaybackFrames;
+                    long allocations = sling.ProjectionWorkspaceAllocations;
+                    // Translation is the only input difference from the
+                    // baseline; do not resample additive rig overlays here.
+                    AssertShotgunSling(hero, synchronizeRig: false);
+                    for (int i = 0; i < before.Length; i++)
                     {
-                        Vector3 local = hero.transform.InverseTransformPoint(sling.WorldCenterlinePoint(i));
-                        Assert.That(float.IsNaN(local.x + local.y + local.z), Is.False);
-                        movement = Mathf.Max(movement, Vector3.Distance(before[i], local));
+                        Vector3 expected = hero.transform.TransformPoint(before[i]);
+                        Assert.That(Vector3.Distance(sling.WorldCenterlinePoint(i), expected), Is.LessThan(.002f),
+                            "Every rig-only ribbon point follows the translated weapon and rig instead of freezing in world space.");
                     }
+                    Assert.That(sling.TotalSimulationSteps, Is.EqualTo(steps));
+                    Assert.That(sling.BakedPlaybackFrames, Is.EqualTo(bakes));
+                    Assert.That(sling.ProjectionWorkspaceAllocations, Is.EqualTo(allocations));
                 }
-                Assert.That(movement, Is.GreaterThan(.0008f),
-                    "Soft webbing must settle and lag behind movement rather than remain a rigid local shape.");
-                Assert.That(movement, Is.LessThan(.25f), "Fabric inertia must remain bounded around the shoulder and gun.");
+                else
+                {
+                    for (int frame = 0; frame < 24; frame++)
+                    {
+                        root.Tick(1f / 60f);
+                        yield return null;
+                        AssertShotgunSling(hero);
+                        for (int i = 1; i < before.Length - 1; i++)
+                        {
+                            Vector3 local = hero.transform.InverseTransformPoint(sling.WorldCenterlinePoint(i));
+                            Assert.That(float.IsNaN(local.x + local.y + local.z), Is.False);
+                            movement = Mathf.Max(movement, Vector3.Distance(before[i], local));
+                        }
+                    }
+                    Assert.That(movement, Is.GreaterThan(.0008f),
+                        "Soft webbing must settle and lag behind movement rather than remain a rigid local shape.");
+                    Assert.That(movement, Is.LessThan(.25f), "Fabric inertia must remain bounded around the shoulder and gun.");
+                }
             }
-            finally { hero.transform.position = origin; Physics.SyncTransforms(); }
+            finally
+            {
+                hero.transform.position = origin;
+                Physics.SyncTransforms();
+                if (!sling.PhysicsSimulationEnabled) sling.Present();
+            }
             yield return null;
         }
 
         private void AssertShotgunFrontRoute(CombatActor hero)
         {
+            AssertShotgunSling(hero);
             CombatShotgunSling sling = hero.CarriedWeapon(CombatWeaponId.Shotgun).GetComponent<CombatShotgunSling>();
             Player3DAssetRegistry rig = ((Player3DCharacterPresentation)root.Player.Visual).Registry;
             Vector3 leftShoulder = CityPedestrianHandProps.FindSocket(rig.Animator.transform, "upper_arm.L").position;

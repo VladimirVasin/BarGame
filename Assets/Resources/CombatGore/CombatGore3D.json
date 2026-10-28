@@ -43,7 +43,7 @@
     },
     "Npc": {
       "path": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "sha256": "b2261c19ea75881483f011173c80dbc11a7460196963257651fcca24fec83bf8",
+      "sha256": "465234396ca2fe01c4966588b2be61b149d52c12671c003a40a323bcf1a73af8",
       "renderers": [
         "CLO_Hat_everydayBand",
         "CLO_Hat_everydayCrown",

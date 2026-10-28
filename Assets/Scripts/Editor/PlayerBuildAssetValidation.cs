@@ -46,6 +46,8 @@ namespace BarPromenade.Editor
                 "Run tools/build-player-flashlight-3d-model.py through tools/run-blender.py, then BarPromenade.Editor.CombatFlashlightAssetSetup.RebuildBatch.");
             RegisterGenerated("Bar", BarAssetSetup.ValidateOrThrow, "BarAssetSetup");
             RegisterGenerated("City buildings", CityBuildingAssetSetup.ValidateOrThrow, "CityBuildingAssetSetup");
+            Register("City street profile", CityStreetProfileAssetValidation.ValidateOrThrow,
+                "Run tools/build-city-street-profile-3d-model.py through tools/run-blender.py and reimport CityStreetProfile3D.fbx.");
             RegisterGenerated("City misc", CityMiscAssetSetup.ValidateOrThrow, "CityMiscAssetSetup");
             Register("City fair", CityFairAssetSetup.ValidateOrThrow,
                 "Run tools/build-city-fair-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Fair.");

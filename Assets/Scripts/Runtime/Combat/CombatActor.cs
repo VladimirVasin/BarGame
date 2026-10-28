@@ -866,6 +866,11 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            // Releasing the graph must not first move a live push/catch hand
+            // whose weapon remains attached for the interrupted draw.
+            bool transientCarryHandoff = gameObject.activeInHierarchy && HasTransientShotgunHold &&
+                hero != null && hero.OwnsClip(this);
+            if (transientCarryHandoff) hero.EndClipForHandoff();
             EndDoorAmbush();
             CancelRestraint();
             RoomAttackSuppressed = false;
@@ -893,7 +898,7 @@ namespace BarPromenade
             // Scene teardown is already deactivating the arena hierarchy;
             // Unity forbids reparenting the dropped prop during that operation.
             if (gameObject.activeInHierarchy && !releasedTransientCarry) { ReturnWeaponToRightHand(); RestoreWeapon(); }
-            ReleasePresentation();
+            ReleasePresentation(preservePresentedPose: transientCarryHandoff);
             ResetDamage();
         }
 

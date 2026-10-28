@@ -19,59 +19,83 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertConcealedPistolDoesNotDriveJacket(CombatActor hero)
         {
             PlayerJacketCloth cloth = hero.GetComponentInChildren<PlayerJacketCloth>();
-            var contacts = (PlayerScarfBodyContacts)CarrySupportField(cloth, "contacts");
-            var equipment = (PlayerEquipmentContacts)CarrySupportField(contacts, "equipment");
-            Assert.That(equipment, Is.Not.Null, "The comparison must retain the real equipment contacts for other carried gear.");
-            // The coroutine resumes after Update, before the cloth's LateUpdate.
-            // Refresh both baselines from the same current rig pose.
-            equipment.UpdatePose(); contacts.UpdatePose();
-            var managedWithGear = new Vector3[cloth.SurfaceCount][];
-            var nativeWithGear = new Vector3[cloth.SurfaceCount][];
-            var managedCounts = new int[cloth.SurfaceCount];
-            var nativeCounts = new int[cloth.SurfaceCount];
-            int compared = 0;
-            for (int surface = 0; surface < cloth.SurfaceCount; surface++)
-                if (cloth.TryCompareSurfaceSolverForDiagnostics(surface, out managedWithGear[surface], out nativeWithGear[surface],
-                    out managedCounts[surface], out nativeCounts[surface], out _)) compared++;
-            Assert.That(compared, Is.GreaterThan(0), "The moving-pose comparison must solve actual pinned jacket panels.");
+            Assert.That(cloth.ClothPhysicsEnabled, Is.False, "The gameplay jacket uses the current rig-only contract.");
+            var visual = hero.GetComponentInChildren<Player3DCharacterPresentation>();
+            var presented = new System.Collections.Generic.Dictionary<SkinnedMeshRenderer, Vector3[]>();
+            var bones = new System.Collections.Generic.Dictionary<Transform, Matrix4x4>();
+            var baked = new Mesh { name = "Test concealed gear jacket silhouette" };
             GameObject pistol = hero.CarriedWeapon(CombatWeaponId.Pistol);
             GameObject holster = hero.CarryMount(CombatWeaponId.Pistol).parent.gameObject;
             bool pistolActive = pistol.activeSelf, holsterActive = holster.activeSelf;
             int frame = Time.frameCount;
+            long steps = cloth.TotalSimulationSteps;
             try
             {
-                // The bones, raw panel inputs and secondary-motion history do
-                // not advance. Only concealed equipment presence changes.
-                pistol.SetActive(false); holster.SetActive(false);
-                equipment.UpdatePose(); contacts.UpdatePose();
-                for (int surface = 0; surface < cloth.SurfaceCount; surface++)
+                // Sample the completed rig once. Reapplying overlays between
+                // comparisons would supply a different skinning input even
+                // though no animation time or frame had advanced.
+                visual.ReapplyLatePresentationPose();
+                RefreshCurrentJacket();
+                foreach (SkinnedMeshRenderer skin in hero.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
-                    if (nativeWithGear[surface] == null) continue;
-                    Assert.That(cloth.TryCompareSurfaceSolverForDiagnostics(surface, out Vector3[] managedWithout,
-                        out Vector3[] nativeWithout, out int managedCount, out int nativeCount, out _), Is.True);
-                    Assert.That(managedCount, Is.EqualTo(managedCounts[surface]));
-                    Assert.That(nativeCount, Is.EqualTo(nativeCounts[surface]));
-                    AssertSameOutput(managedWithGear[surface], managedWithout, "Managed jacket panel " + surface);
-                    AssertSameOutput(nativeWithGear[surface], nativeWithout, "Native jacket panel " + surface);
+                    if (!skin.name.StartsWith("CLO_Jacket", StringComparison.Ordinal) ||
+                        !skin.enabled || skin.forceRenderingOff || !skin.gameObject.activeInHierarchy) continue;
+                    skin.BakeMesh(baked, true);
+                    presented.Add(skin, baked.vertices);
+                    foreach (Transform bone in skin.bones)
+                        if (!bones.ContainsKey(bone)) bones.Add(bone, bone.localToWorldMatrix);
                 }
+                Assert.That(presented.Count, Is.GreaterThan(0), "Compare the current visible M65, not retired solver output.");
+                RefreshCurrentJacket();
+                AssertCurrentOutput("Same-gear control");
+                // Same bones and authored access state, with only concealed
+                // equipment presence changed. Bake the actual rendered skin.
+                pistol.SetActive(false); holster.SetActive(false);
+                RefreshCurrentJacket();
+                AssertCurrentOutput("Concealed gear absent");
                 Assert.That(Time.frameCount, Is.EqualTo(frame), "The hidden-gear baseline must use the same moving pose.");
+                Assert.That(cloth.TotalSimulationSteps, Is.EqualTo(steps), "The geometry oracle must not enable cloth simulation.");
             }
             finally
             {
                 holster.SetActive(holsterActive); pistol.SetActive(pistolActive);
-                equipment.UpdatePose(); contacts.UpdatePose();
+                RefreshCurrentJacket();
+                UnityEngine.Object.DestroyImmediate(baked);
             }
 
-            static void AssertSameOutput(Vector3[] withGear, Vector3[] withoutGear, string label)
+            void RefreshCurrentJacket()
+            {
+                cloth.ApplyAt(0d, paused: false, outside: false, wind: default);
+            }
+
+            void AssertCurrentOutput(string phase)
+            {
+                foreach (var pair in bones)
+                    Assert.That(pair.Key.localToWorldMatrix, Is.EqualTo(pair.Value),
+                        phase + ": the geometry comparison must retain the exact same bone pose: " + pair.Key.name);
+                foreach (var pair in presented)
+                {
+                    pair.Key.BakeMesh(baked, true);
+                    AssertSameOutput(pair.Value, baked.vertices, pair.Key, phase);
+                }
+            }
+
+            static void AssertSameOutput(Vector3[] withGear, Vector3[] withoutGear, SkinnedMeshRenderer skin, string phase)
             {
                 Assert.That(withoutGear.Length, Is.EqualTo(withGear.Length));
                 int differentComponents = 0;
+                float maximumWorldDelta = 0f;
                 for (int vertex = 0; vertex < withGear.Length; vertex++)
+                {
+                    maximumWorldDelta = Mathf.Max(maximumWorldDelta,
+                        skin.transform.TransformVector(withGear[vertex] - withoutGear[vertex]).magnitude);
                     for (int axis = 0; axis < 3; axis++)
                         if (BitConverter.SingleToInt32Bits(withGear[vertex][axis]) !=
                             BitConverter.SingleToInt32Bits(withoutGear[vertex][axis])) differentComponents++;
+                }
                 Assert.That(differentComponents, Is.Zero,
-                    label + ": concealed pistol and holster must add no cloth displacement to the identical ordinary-cloth input.");
+                    $"{phase}, {skin.name}: concealed pistol and holster must not alter the visible jacket at the identical rig pose; " +
+                    $"changed components={differentComponents}, maximum world delta={maximumWorldDelta:R} m.");
             }
         }
 
@@ -99,6 +123,8 @@ namespace BarPromenade.Tests.PlayMode
             PlayerJacketCloth cloth = hero.GetComponentInChildren<PlayerJacketCloth>();
             Assert.That(cloth, Is.Not.Null);
             if (!measureSettledDrape) return;
+            if (!cloth.ClothPhysicsEnabled)
+                cloth.ApplyAt(0d, paused: false, outside: false, wind: default);
             float largestBulge = 0f;
             string largestPoint = "";
             int samples = 0;
@@ -108,7 +134,8 @@ namespace BarPromenade.Tests.PlayMode
                     skin.name.Contains("Sleeve") || skin.name.Contains("Forearm") || skin.name.Contains("Cuff")) continue;
                 int surface = -1;
                 for (int i = 0; i < cloth.SurfaceCount; i++)
-                    if (skin.sharedMesh == cloth.DeformedMesh(i)) { surface = i; break; }
+                    if (skin.sharedMesh == cloth.DeformedMesh(i) || skin.sharedMesh == cloth.SourceMesh(i))
+                    { surface = i; break; }
                 if (surface < 0) continue;
                 Mesh presented = skin.sharedMesh;
                 var actual = new Mesh { name = "Test jacket chest" };

@@ -807,7 +807,8 @@ namespace BarPromenade
             InventoryItemId itemId)
         {
             return itemId == InventoryItemId.OpenStewCan &&
-                   IsQuestActive(QuestId.FeedTheCat);
+                   GetQuestStatus(QuestId.FeedTheCat) !=
+                       QuestStatus.Completed;
         }
 
         public static bool TryAddInventoryItem(

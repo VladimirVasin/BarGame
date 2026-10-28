@@ -10,7 +10,7 @@
     },
     "Npc": {
       "path": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "sha256": "b2261c19ea75881483f011173c80dbc11a7460196963257651fcca24fec83bf8"
+      "sha256": "465234396ca2fe01c4966588b2be61b149d52c12671c003a40a323bcf1a73af8"
     }
   },
   "patches": {
@@ -9217,7 +9217,7 @@
   },
   "files": {
     "WoundsHero.fbx": "1dbbebc5b36d228ad6fa213797077b33a2cb33e2036882d8f2dfee8d84f56c2c",
-    "WoundsNpc.fbx": "9632df0968a033a53d98f6c1393e9b4bf5888b15ce542fce41ef3b6a1531b07f",
+    "WoundsNpc.fbx": "4407d0c2397c300c8a765f322ec62a9f8d383bc7dda9ad2d4a8011e4484f3740",
     "BloodShapes.fbx": "131015e721f09d1740bda4328232401bef4d22b1fadd36e8d245f9d837941357",
     "BloodSurface.png": "bbc679fe59cc4568522747b943ad8a70448bc3213470bd86a9e0cb8857de7b8d"
   }

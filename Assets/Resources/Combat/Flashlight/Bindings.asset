@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab31203c6ac8429db4bea6d41d3819c2, type: 3}
   m_Name: Bindings
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CombatFlashlightBindings
-  BoneLocalPosition: {x: 0.00088523864, y: 0.0014248686, z: -0.0013795837}
+  BoneLocalPosition: {x: 0.00088523864, y: 0.0014248686, z: -0.0013795835}
   BoneLocalRotation: {x: 0.0017442812, y: -0.9995856, z: -0.028731197, w: -0.00010158166}
-  SourceSignature: 1c5f8c6de866ccba25018b6e31b12e9ad6fc4a22dd43bbf703ce9ce02b194ef3:6bc8706edac7acafe6932d586e1b0b6fab7f7aa7dfd69aa94f3f0a5260a2af6f
+  SourceSignature: 667673082bbd34711c11ca593cf2592c9a77f4f25b3decaf2d88f21510893e2e:3851703e436373371e5f9ebb23069f6f0aa6f792af1d8e51d63fcf50d0e77db4

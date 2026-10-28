@@ -29,6 +29,8 @@
     "note": {}
   },
   "documents": {
+    "ai/audit-remediation-plan.md": {"type": "note", "budget": 16000},
+    "ai/project-audit-2026-10-28.md": {"type": "note", "budget": 24000},
     "ai/world-location-update-plan.md": {"type": "note", "budget": 30000},
     "ai/karaoke-plan.md": {"type": "note", "budget": 6000},
     "AI.md": {

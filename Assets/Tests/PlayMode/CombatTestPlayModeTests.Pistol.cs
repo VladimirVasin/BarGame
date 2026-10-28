@@ -15,6 +15,8 @@ namespace BarPromenade.Tests.PlayMode
     {
         private readonly List<string> pistolGeometryIssues = new List<string>();
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_UnfocusedPistolCarryKeepsBothArmsWalkingAndCanAim()
         {
@@ -317,6 +319,7 @@ namespace BarPromenade.Tests.PlayMode
             { CombatWeaponId.Pistol, CombatWeaponId.Shotgun };
         private const float AimedWalkSpeed = 2.21f, AimedBackwardSpeed = 1.19f;
 
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether(
             [ValueSource(nameof(AimedMovementWeapons))] CombatWeaponId weapon)
@@ -754,6 +757,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_PistolAimMovesInAllDirectionsWithoutChangingAim(
             [ValueSource(nameof(AimedMovementWeapons))] CombatWeaponId weapon)
@@ -1019,6 +1024,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy(
             [ValueSource(nameof(AimedMovementWeapons))] CombatWeaponId weapon)
@@ -1917,6 +1924,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(hero.Footwork.CatchStepCount, Is.Zero, context);
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim()
         {
@@ -2196,6 +2205,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera()
         {
@@ -2359,6 +2370,8 @@ namespace BarPromenade.Tests.PlayMode
             public bool FollowEnabled, FreeAim, AimRequested;
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_PistolSurfaceImpactsStayOnTheHitObjectUntilReset()
         {
@@ -2385,6 +2398,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel()
         {

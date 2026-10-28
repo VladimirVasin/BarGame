@@ -105,7 +105,7 @@ namespace BarPromenade
             new CitySoundProvenanceEntry[ProvenanceCapacity];
 
         private Transform listener;
-        private IReadOnlyList<BuildingLot> buildingLots;
+        private CitySoundOcclusion.Geometry occlusionGeometry;
         private CityWeighbridgeNeedleController weighbridgeNeedle;
         private Func<float> nightFactorProvider;
         private float previousWeighbridgeDeflection;
@@ -184,7 +184,7 @@ namespace BarPromenade
                     $"loop voices, but the pool owns {LoopVoiceCount}.");
             }
 
-            buildingLots = layout.BuildingMasses;
+            occlusionGeometry = CitySoundOcclusion.Capture(layout.BuildingMasses);
             weighbridgeNeedle = needle;
             nightFactorProvider = nightProvider;
             previousWeighbridgeDeflection =
@@ -499,10 +499,9 @@ namespace BarPromenade
                 if (refreshOcclusion)
                 {
                     CitySoundOcclusionSample occlusion =
-                        CitySoundOcclusion.Evaluate(
+                        occlusionGeometry.Evaluate(
                             descriptor.WorldPosition,
-                            listener.position,
-                            buildingLots);
+                            listener.position);
                     voice.OcclusionVolume = occlusion.VolumeMultiplier;
                     voice.OcclusionCutoff =
                         occlusion.MaximumCutoffFrequency;
@@ -775,10 +774,9 @@ namespace BarPromenade
             Vector3 worldPosition =
                 positionOverride ?? descriptor.WorldPosition;
             CitySoundOcclusionSample occlusion =
-                CitySoundOcclusion.Evaluate(
+                occlusionGeometry.Evaluate(
                     worldPosition,
-                    listener.position,
-                    buildingLots);
+                    listener.position);
 
             voice.Source.Stop();
             voice.Source.transform.position = worldPosition;
@@ -982,6 +980,7 @@ namespace BarPromenade
             }
 
             runtimeClips.Clear();
+            occlusionGeometry = null;
             IsInitialized = false;
         }
     }

@@ -13,10 +13,12 @@ namespace BarPromenade
         public double WarmupSeconds { get; }
         public double DurationSeconds { get; }
         public double TargetFramesPerSecond { get; }
+        public int RequestedRenderWidth { get; }
+        public int RequestedRenderHeight { get; }
 
         public PerformanceCaptureOptions(string scene, string label = "manual",
             double warmupSeconds = 5, double durationSeconds = 30,
-            double targetFramesPerSecond = 60)
+            double targetFramesPerSecond = 60, int requestedRenderWidth = 0, int requestedRenderHeight = 0)
         {
             if (string.IsNullOrWhiteSpace(scene) || scene.Length > 64)
                 throw new ArgumentException("A scene name of 1-64 characters is required.", nameof(scene));
@@ -25,12 +27,23 @@ namespace BarPromenade
             ValidateRange(warmupSeconds, 0, 60, nameof(warmupSeconds));
             ValidateRange(durationSeconds, 1, 120, nameof(durationSeconds));
             ValidateRange(targetFramesPerSecond, 1, 360, nameof(targetFramesPerSecond));
+            if ((requestedRenderWidth == 0) != (requestedRenderHeight == 0) ||
+                requestedRenderWidth < 0 || requestedRenderHeight < 0 ||
+                requestedRenderWidth > 16384 || requestedRenderHeight > 16384)
+                throw new ArgumentOutOfRangeException(nameof(requestedRenderWidth),
+                    "Request both render dimensions in 1-16384, or leave both unspecified.");
             Scene = scene;
             Label = label;
             WarmupSeconds = warmupSeconds;
             DurationSeconds = durationSeconds;
             TargetFramesPerSecond = targetFramesPerSecond;
+            RequestedRenderWidth = requestedRenderWidth;
+            RequestedRenderHeight = requestedRenderHeight;
         }
+
+        public bool MatchesRenderResolution(int actualWidth, int actualHeight) =>
+            actualWidth > 0 && actualHeight > 0 && (RequestedRenderWidth == 0 ||
+                RequestedRenderWidth == actualWidth && RequestedRenderHeight == actualHeight);
 
         public static PerformanceCaptureOptions FromArguments(string[] arguments)
         {
@@ -40,7 +53,17 @@ namespace BarPromenade
                 ReadArgument(arguments, "-bp-perf-label") ?? "command-line",
                 ReadNumber(arguments, "-bp-perf-warmup", 5),
                 ReadNumber(arguments, "-bp-perf-seconds", 30),
-                ReadNumber(arguments, "-bp-perf-target-fps", 60));
+                ReadNumber(arguments, "-bp-perf-target-fps", 60),
+                ReadDimension(arguments, "-bp-perf-width"), ReadDimension(arguments, "-bp-perf-height"));
+        }
+
+        private static int ReadDimension(string[] arguments, string key)
+        {
+            string value = ReadArgument(arguments, key);
+            if (value == null) return 0;
+            if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int dimension) || dimension <= 0)
+                throw new ArgumentException("Invalid performance capture dimension: " + key);
+            return dimension;
         }
 
         private static string ReadArgument(string[] arguments, string key)

@@ -14,6 +14,8 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_ArmClearanceBroadphaseKeepsLiveAnatomy()
         {
@@ -213,9 +215,13 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_StrongShoveKeepsRecipientGripWhileMoving() => CheckShoveArmMotion(false);
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_ObstructedShoveRecipientArmRecoversWhileMoving() => CheckShoveArmMotion(true);
 

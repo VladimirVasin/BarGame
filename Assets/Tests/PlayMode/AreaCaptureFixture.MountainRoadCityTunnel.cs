@@ -95,6 +95,7 @@ namespace BarPromenade.Tests.PlayMode
                 carRoot.SetPositionAndRotation(savedCarPosition, savedCarRotation);
                 mountain.Player.Motor.Teleport(mountain.Plan.Route.Sample(30f).Position);
                 AssertMountainCityTunnelGeometry(mountain);
+                AssertMountainRoadWalkingCorridor(mountain, carRoot);
             }
             finally
             {
@@ -107,6 +108,134 @@ namespace BarPromenade.Tests.PlayMode
                 mountain.CameraFollow.enabled = savedFollow;
                 camera.fieldOfView = savedFov;
                 foreach (Renderer renderer in hidden) if (renderer != null) renderer.enabled = true;
+            }
+        }
+
+        private static void AssertMountainRoadWalkingCorridor(MountainRoadRoot mountain, Transform carRoot)
+        {
+            PlayerMotor motor = mountain.Player.Motor;
+            CharacterController body = motor.GetComponent<CharacterController>();
+            Assert.That(body, Is.Not.Null);
+            Assert.That(body.enabled, Is.True);
+            Assert.That(body.radius, Is.GreaterThan(0f));
+            Assert.That(body.skinWidth, Is.GreaterThan(0f));
+            Assert.That(body.stepOffset, Is.GreaterThan(0f));
+            Collider roadFloor = mountain.World.RoadSurface.GetComponent<Collider>();
+            Assert.That(roadFloor, Is.Not.Null);
+            bool savedMotor = motor.enabled;
+            Vector3 savedPosition = motor.transform.position;
+            var actorColliders = new List<Collider>();
+            try
+            {
+                // Exercise the real capsule against the composed world in one
+                // bounded pass. Only the two owned ride actors are removed:
+                // their parked bodies are not defects in the road corridor.
+                motor.enabled = false;
+                foreach (Transform actor in new[] { carRoot, mountain.LastRouteFerryman.transform })
+                    foreach (Collider collider in actor.GetComponentsInChildren<Collider>(true))
+                        if (collider.enabled) { actorColliders.Add(collider); collider.enabled = false; }
+                Physics.SyncTransforms();
+
+                // Turning/widening ribbon rows form non-coplanar quads.
+                // Their real triangles need not follow the centreline Lerp,
+                // nor its maximum grade. Check the authored row datums
+                // separately, then sweep the actual lower capsule sphere.
+                float footOffset = body.transform.TransformVector(
+                    body.center - Vector3.up * (body.height * .5f)).y;
+                motor.Teleport(mountain.Plan.Tunnel.SpawnPosition + Vector3.up * (body.skinWidth - footOffset));
+                MoveTo(mountain.Plan.Tunnel.SpawnPosition, "tunnel start");
+                Vector3 previous = mountain.Plan.Tunnel.SpawnPosition;
+                foreach (MountainRoadRouteSample sample in mountain.Plan.Route.Samples)
+                    WalkChord(sample.Position, "climb " + sample.StableId);
+                WalkChord(mountain.Plan.Terminal.VehicleApron.Center, "terminal apron");
+                for (int index = mountain.Plan.Route.Samples.Count - 1; index >= 0; index--)
+                    WalkChord(mountain.Plan.Route.Samples[index].Position, "descent " + mountain.Plan.Route.Samples[index].StableId);
+                WalkChord(mountain.Plan.Tunnel.SpawnPosition, "tunnel return");
+                Debug.Log("MOUNTAIN ROAD CORRIDOR: native hero capsule reached the terminal apron and returned " +
+                    "through every serpentine chord with physical support; this is a geometry proof, not a timed ride.");
+
+                void WalkChord(Vector3 destination, string stage)
+                {
+                    RaycastHit datum = FloorAt(destination, stage);
+                    Assert.That(datum.point.y, Is.EqualTo(destination.y).Within(NumericTolerance(destination.y)),
+                        $"The physical floor misses an authored route datum at {stage}: " +
+                        $"planned={destination:F6}, collider={datum.collider.name}, floor={datum.point:F6}.");
+                    Vector3 start = previous;
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(start, destination) / body.radius));
+                    for (int step = 1; step <= steps; step++)
+                        MoveTo(Vector3.Lerp(start, destination, step / (float)steps), stage);
+                    previous = destination;
+                }
+
+                void MoveTo(Vector3 ground, string stage)
+                {
+                    Assert.That(mountain.World.WalkableArea.Contains(ground, body.radius), Is.True,
+                        $"The planned hero corridor leaves the walkable area at {stage}: {ground:F4}.");
+                    Vector3 delta = ground - motor.transform.position;
+                    // Native slope/step handling must earn the height. No
+                    // upward positioning or teleports may bridge a blocker
+                    // or missing floor between the corridor's endpoints.
+                    delta.y = -body.stepOffset;
+                    CollisionFlags flags = body.Move(delta);
+                    Vector3 actual = motor.transform.position;
+                    Vector2 planarError = new Vector2(actual.x - ground.x, actual.z - ground.z);
+                    Assert.That(planarError.magnitude, Is.LessThanOrEqualTo(body.skinWidth),
+                        $"The actual capsule is blocked at {stage}: planned={ground:F4}, actual={actual:F4}, flags={flags}.");
+                    Assert.That((flags & CollisionFlags.Below) != 0, Is.True,
+                        $"The actual capsule has no physical support at {stage}: planned={ground:F4}, actual={actual:F4}.");
+                    RaycastHit floor = FloorAt(new Vector3(actual.x, ground.y, actual.z), stage);
+                    Vector3 lowerSphere = body.transform.TransformPoint(body.center -
+                        Vector3.up * (body.height * .5f - body.radius));
+                    float lift = body.stepOffset + body.skinWidth;
+                    RaycastHit support = default;
+                    foreach (RaycastHit hit in Physics.SphereCastAll(lowerSphere + Vector3.up * lift,
+                        body.radius, Vector3.down, lift * 2f, ~0, QueryTriggerInteraction.Ignore))
+                        if (hit.collider == floor.collider &&
+                            (support.collider == null || hit.distance < support.distance)) support = hit;
+                    Assert.That(support.collider, Is.Not.Null,
+                        $"The actual capsule sphere cannot reach its intended floor at {stage}: {floor.collider.name}.");
+                    Assert.That(support.normal.y, Is.GreaterThanOrEqualTo(
+                        Mathf.Cos(body.slopeLimit * Mathf.Deg2Rad) - .00001f),
+                        $"The actual supporting triangle is too steep at {stage}: normal={support.normal:F6}.");
+                    // SphereCast already accounts for hemisphere rise and
+                    // triangle edges. Only the native skin/contact pair and
+                    // single-precision rounding remain as separation bounds.
+                    float nativeGap = (body.skinWidth + body.contactOffset + support.collider.contactOffset) /
+                        support.normal.y;
+                    float supportGap = support.distance - lift;
+                    float footY = body.transform.TransformPoint(body.center - Vector3.up * (body.height * .5f)).y;
+                    Assert.That(Mathf.Abs(supportGap), Is.LessThanOrEqualTo(nativeGap + NumericTolerance(footY)),
+                        $"The capsule separates from the actual road triangles at {stage}: " +
+                        $"actualFootY={footY:F8}, floorY={floor.point.y:F8}, sphereGap={supportGap:F8}, " +
+                        $"nativeSkinAndContactGap={nativeGap:F8}.");
+                    Assert.That(mountain.World.WalkableArea.Contains(actual, body.radius), Is.True,
+                        $"The actual capsule leaves the corridor at {stage}: {actual:F4}.");
+                }
+
+                RaycastHit FloorAt(Vector3 point, string stage)
+                {
+                    var ray = new Ray(point + Vector3.up, Vector3.down);
+                    if (roadFloor.Raycast(ray, out RaycastHit roadHit, 2f)) return roadHit;
+                    // The terminal's vehicle apron may extend beyond the
+                    // ribbon; its actual terrain still owns physical support.
+                    RaycastHit nearest = default;
+                    foreach (RaycastHit hit in Physics.RaycastAll(ray, 2f, ~0, QueryTriggerInteraction.Ignore))
+                        if (hit.collider.transform.IsChildOf(mountain.World.PhysicalRoot.transform) &&
+                            hit.normal.y > 0f && (nearest.collider == null || hit.distance < nearest.distance)) nearest = hit;
+                    Assert.That(nearest.collider, Is.Not.Null,
+                        $"The planned corridor has no world floor at {stage}: {point:F6}.");
+                    return nearest;
+                }
+
+                float NumericTolerance(float height) => Mathf.Max(.00001f,
+                    Mathf.Abs(height) * 4f * 1.1920929e-7f);
+            }
+            finally
+            {
+                motor.Teleport(savedPosition);
+                foreach (Collider collider in actorColliders) if (collider != null) collider.enabled = true;
+                motor.enabled = savedMotor;
+                Physics.SyncTransforms();
             }
         }
 

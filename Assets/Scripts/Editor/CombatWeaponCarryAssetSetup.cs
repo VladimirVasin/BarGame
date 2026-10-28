@@ -29,7 +29,7 @@ namespace BarPromenade.Editor
             {
                 validationQueued = false;
                 if (EditorApplication.isCompiling || EditorApplication.isUpdating) { QueueValidation(); return; }
-                BuildOrThrow();
+                ValidateOrThrow();
             };
         }
 
@@ -83,10 +83,15 @@ namespace BarPromenade.Editor
             }
         }
 
-        public void OnPreprocessBuild(BuildReport report) => BuildOrThrow();
+        public void OnPreprocessBuild(BuildReport report) => ValidateOrThrow();
 
-        [MenuItem("Bar Promenade/Combat Test/Validate Weapon Carry Assets")]
-        public static void BuildOrThrow()
+        [MenuItem("Bar Promenade/Combat Test/Rebuild Weapon Carry Bindings")]
+        public static void BuildOrThrow() => CheckAssets(true);
+
+        [MenuItem("Bar Promenade/Combat Test/Validate Weapon Carry Assets (Read Only)")]
+        public static void ValidateOrThrow() => CheckAssets(false);
+
+        private static void CheckAssets(bool rebuild)
         {
             if (!File.Exists(ManifestPath)) throw new InvalidOperationException("Missing authored weapon carry manifest.");
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
@@ -122,7 +127,7 @@ namespace BarPromenade.Editor
                 finally { UnityEngine.Object.DestroyImmediate(mount.Root); }
                 foreach (bool draw in new[] { true, false }) ValidateClip(CombatWeaponCarryAssetProvider.LoadClip(id, draw));
             }
-            BuildAndValidateBindings();
+            BuildAndValidateBindings(rebuild);
             Debug.Log("WEAPON CARRY IMPORTED METRES / BODY SLOTS / CONTINUOUS TRANSFERS / BONE-ONLY ACTIONS OK");
         }
 
@@ -138,7 +143,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void BuildAndValidateBindings()
+        private static void BuildAndValidateBindings(bool rebuild)
         {
             GameObject template = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
             if (template == null) throw new InvalidOperationException("Weapon carry requires the production hero prefab.");
@@ -198,6 +203,11 @@ namespace BarPromenade.Editor
                     finally { UnityEngine.Object.DestroyImmediate(weapon); UnityEngine.Object.DestroyImmediate(mount.Root); }
                 }
                 CombatWeaponCarryBindings bindings = AssetDatabase.LoadAssetAtPath<CombatWeaponCarryBindings>(BindingsPath);
+                if (!rebuild)
+                {
+                    ValidateBindings(bindings, slots);
+                    return;
+                }
                 bool create = bindings == null;
                 if (create) bindings = ScriptableObject.CreateInstance<CombatWeaponCarryBindings>();
                 string beforeBindings = EditorJsonUtility.ToJson(bindings);
@@ -208,6 +218,37 @@ namespace BarPromenade.Editor
             }
             finally { UnityEngine.Object.DestroyImmediate(actor); }
         }
+
+        /// <summary>Compare measured contacts without repairing or dirtying the stored asset.</summary>
+        public static void ValidateBindings(CombatWeaponCarryBindings bindings, CombatWeaponCarryBindings.Slot[] expected)
+        {
+            const string repair = " Run BarPromenade.Editor.CombatWeaponCarryAssetSetup.BuildOrThrow explicitly.";
+            if (bindings == null || bindings.Slots == null || expected == null || bindings.Slots.Length != expected.Length)
+                throw new InvalidOperationException("Missing or stale weapon carry bindings." + repair);
+            foreach (CombatWeaponCarryBindings.Slot measured in expected)
+            {
+                CombatWeaponCarryBindings.Slot actual = null;
+                foreach (CombatWeaponCarryBindings.Slot candidate in bindings.Slots)
+                    if (candidate != null && candidate.Weapon == measured.Weapon)
+                    {
+                        if (actual != null) throw new InvalidOperationException("Repeated weapon carry binding." + repair);
+                        actual = candidate;
+                    }
+                if (actual == null || !Near(actual.BoneLocalPosition, measured.BoneLocalPosition) ||
+                    !Near(actual.BoneLocalRotation, measured.BoneLocalRotation) ||
+                    !Near(actual.PushHandLocalPosition, measured.PushHandLocalPosition) ||
+                    !Near(actual.PushHandLocalRotation, measured.PushHandLocalRotation) ||
+                    !Near(actual.CatchHandLocalPosition, measured.CatchHandLocalPosition) ||
+                    !Near(actual.CatchHandLocalRotation, measured.CatchHandLocalRotation))
+                    throw new InvalidOperationException("Stale weapon carry contact: " + measured.Weapon + "." + repair);
+            }
+        }
+
+        private static bool Near(Vector3 actual, Vector3 expected) => (actual - expected).sqrMagnitude <= .00000001f;
+        private static bool Near(Quaternion actual, Quaternion expected) =>
+            float.IsFinite(actual.x) && float.IsFinite(actual.y) && float.IsFinite(actual.z) && float.IsFinite(actual.w) &&
+            Mathf.Abs(actual.x * actual.x + actual.y * actual.y + actual.z * actual.z + actual.w * actual.w - 1f) < .001f &&
+            Quaternion.Angle(actual, expected) <= .01f;
 
         private static void ValidateShotgunDrawTransfers(Player3DAssetRegistry registry, NpcHandPose hands,
             GameObject weapon, CombatWeaponCarryBindings.Slot slot)

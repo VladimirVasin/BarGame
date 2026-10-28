@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-player-flashlight-3d-model.py",
   "generator_version": "1.1.0",
-  "blender_version": "5.0.1",
-  "build_signature": "1c5f8c6de866ccba25018b6e31b12e9ad6fc4a22dd43bbf703ce9ce02b194ef3",
+  "blender_version": "5.2.3 LTS",
+  "build_signature": "667673082bbd34711c11ca593cf2592c9a77f4f25b3decaf2d88f21510893e2e",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -116,7 +116,7 @@
       0.9838361
     ],
     "maximum_imported_clip_gap_m": 0.006,
-    "hero_manifest_sha256": "6bc8706edac7acafe6932d586e1b0b6fab7f7aa7dfd69aa94f3f0a5260a2af6f"
+    "hero_manifest_sha256": "3851703e436373371e5f9ebb23069f6f0aa6f792af1d8e51d63fcf50d0e77db4"
   },
   "geometry_signature": "30869d041abc75ab1b120fd24787d4efc7df465a491c5a2d3395a63e0c6e7cfe"
 }

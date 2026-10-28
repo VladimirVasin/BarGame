@@ -91,6 +91,8 @@ House:`build-mothers-house-interior-3d-model.py` via launcher;
 
 Close Unity. Order:hero source→`build-default-npc-3d-model.py`→
 `refresh-default-npc-damage.py` (launcher)→`DefaultNpcAssetSetup`.
+Worker/scarf:`--model-dir`+`--source-dir` staging;damage publish rolls back.
+Then:`HeroDerivedAssetSetup.RebuildBatch`.
 Residents:WoodWoman/actions;`--phase-two`:four;prebuild imports props/doors.
 
 ```powershell
@@ -135,7 +137,7 @@ python tools/toolchain.py --scope all
 ```
 
 `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
-`BP_BLENDER`/`--blender`:same pinned build; native Windows:MSVC/SDK.
+`BP_BLENDER`/`--blender`:installed Blender;Windows:MSVC/SDK.
 Mac:`native.macos` pins Python/NumPy/clang/SDK;
 `python3 tools/toolchain.py --scope native`.
 

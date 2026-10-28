@@ -18,7 +18,7 @@ import sys
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from asset_pipeline import workspace_temporary_directory
+from asset_pipeline import publish_files, workspace_temporary_directory
 KIND = "Npc"
 SOURCE = "Assets/Resources/VillageLife/StationWorker.fbx"
 GORE = ROOT / "Assets/Resources/CombatGore"
@@ -107,14 +107,17 @@ def main():
             next_body["files"]["BodyNpc.fbx"] = digest(stage / "BodyNpc.fbx")
             next_blood["files"]["WoundsNpc.fbx"] = digest(stage / "WoundsNpc.fbx")
             # Only these two exports and the three NPC manifest portions are published.
-            (GORE / "BodyNpc.fbx").write_bytes((stage / "BodyNpc.fbx").read_bytes())
-            (BLOOD / "WoundsNpc.fbx").write_bytes((stage / "WoundsNpc.fbx").read_bytes())
+            publication = [(stage / "BodyNpc.fbx", GORE / "BodyNpc.fbx"),
+                           (stage / "WoundsNpc.fbx", BLOOD / "WoundsNpc.fbx")]
             for folder, filename, manifest in (
                 (GORE, "CombatBody3D.json", next_body),
                 (BLOOD, "CombatBlood3D.json", next_blood),
                 (GORE, "CombatGore3D.json", next_gore),
             ):
-                (folder / filename).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+                candidate = stage / filename
+                candidate.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+                publication.append((candidate, folder / filename))
+            publish_files(publication)
     print("DEFAULT NPC DAMAGE BODY/WOUNDS, UNCHANGED HEAD AND INDEPENDENT SEMANTIC REBUILDS OK", flush=True)
 
 

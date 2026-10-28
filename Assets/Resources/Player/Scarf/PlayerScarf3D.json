@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-player-scarf-3d-model.py",
   "version": 1,
-  "generator_sha256": "2df0cbda72bcc6edbf6917631a332bea84288087aade6ea1e85e6ed1014fae80",
-  "source_hero_sha256": "b138c9221e995e362a285f3f3bdfaa8eb63ec8f74a5c90a4946b18de812d9160",
+  "generator_sha256": "51a83be3526c0929bfb5c73f7b4c6a1687ac6e92d35428697a0f8afcb7415b18",
+  "source_hero_sha256": "e3faf9acb17eb67374ccaba751e6e55d676874b5f4d35e21503789a8f7b7b1aa",
   "source_hero": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
   "coordinate_space": "Blender hero metres, forward -Y; Unity swaps Y/Z then hero yaw 180",
   "atlas_resource": "MothersHouse/Textures/MothersHousePositiveAtlas",

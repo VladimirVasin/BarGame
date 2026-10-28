@@ -51,32 +51,13 @@ namespace BarPromenade.Tests.PlayMode
             zombieFixtureStarted = false;
             CombatTestRoot.UseDockerPopulationForTests = false;
             CombatTestRoot.AuthoredEnemyKindForTests = null;
-            string method = TestContext.CurrentContext.Test.MethodName;
-            if (method != nameof(Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads) &&
-                method != nameof(Range_BodyProxiesShareTransformsAndFollowSameFrameChanges) &&
-                method != nameof(Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus) &&
-                method != nameof(Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse) &&
-                method != nameof(Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle) &&
-                method != nameof(Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether) &&
-                method != nameof(Range_MouseLookKeepsAimAndCursorHandoffsIndependent) &&
-                method != nameof(Range_GameplayHudRespondsToAimDamageAndDebugToggle) &&
-                method != nameof(Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle) &&
-                method != nameof(Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate) &&
-                method != nameof(Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset) &&
-                method != nameof(Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup) &&
-                method != nameof(Range_CraneCaptureYieldsMixedOpponentsUntilRelease) &&
-                method != nameof(Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum) &&
-                method != nameof(Range_GroundEnemiesRouteAroundRailsStairsAndChangedTargets) &&
-                method != nameof(Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight) &&
-                method != nameof(Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset) &&
-                method != nameof(Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset) &&
-                method != nameof(Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch) &&
-                method != nameof(Range_CraneSuspensionKeepsContactOcclusionPauseAndReset) &&
-                method != nameof(Range_CraneHookCaptureEscapeRetreatAndRegeneration) &&
-                method != nameof(Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies))
-                Assert.Ignore("Retired human duel fixture: this legacy scenario has not been migrated to zombie-only combat.");
             zombieFixtureStarted = true;
+            // Existing contact fixtures explicitly retain the authored arena;
+            // production-flow scenarios select the warehouse before launching.
+            // Migration status belongs to discovery attributes on each test,
+            // never to a method-name admission list that can hide new coverage.
             CombatTestRoot.UseLegacyArenaForTests = true;
+            CombatTestRoot.WarehouseSeedForTests = null;
             previousCaptureDelta = Time.captureDeltaTime;
             previousAudioPause = AudioListener.pause;
             Time.captureDeltaTime = 1f / 60f;
@@ -96,6 +77,7 @@ namespace BarPromenade.Tests.PlayMode
             zombieFixtureStarted = false;
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.UseDockerPopulationForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = null;
             if (root != null) root.AutomaticSimulation = false;
             // Contact voices are pooled under DontDestroyOnLoad. End them before
             // removing the scene's ear, then keep the synthetic cleanup scene valid
@@ -126,6 +108,8 @@ namespace BarPromenade.Tests.PlayMode
             new GameObject("Combat Fixture Audio Listener").AddComponent<AudioListener>();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_AuthoredContactsRespectGuardWallsPauseAndOwnerCleanup()
         {
@@ -325,6 +309,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent()
         {
@@ -570,6 +556,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_TargetLockedShoulderCameraTracksOpponentAndResets()
         {
@@ -786,6 +774,8 @@ namespace BarPromenade.Tests.PlayMode
                 "The camera stays over the right shoulder when the opponent crosses sides.");
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_CrowbarVictoryAdvancesWithoutFirearmPools()
         {
@@ -817,6 +807,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat()
         {
@@ -888,6 +880,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_CombatWalkingUsesLiveInputAndMovingLegs()
         {
@@ -1131,6 +1125,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput()
         {
@@ -1250,6 +1246,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp()
         {
@@ -1537,6 +1535,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Duel_SimultaneousContactsInterruptsAndOpponentDecisionsAreDeterministic()
         {

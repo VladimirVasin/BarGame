@@ -242,6 +242,26 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.IsExamining, Is.False);
             Assert.That(inventory.IsOpen, Is.True);
 
+            Assert.That(GameSessionState.TryAddInventoryItem(
+                InventoryItemId.OpenStewCan), Is.True);
+            Assert.That(inventory.SelectItem(
+                GameSessionState.InventoryItems.Count - 1), Is.True);
+            GameSessionState.UpdateNeeds(60, 0);
+            AssertNoUseAction();
+            Assert.That(GameSessionState.TryConsumeInventoryItem(
+                InventoryItemId.OpenStewCan).Status,
+                Is.EqualTo(InventoryItemUseStatus.ReservedForQuest),
+                "Hiding the first-day action must also protect direct use.");
+            Assert.That(GameSessionState.IsQuestActive(QuestId.FeedTheCat), Is.False);
+            Assert.That(GameSessionState.TrySetDebugGameDay(
+                GameDaySchedule.GetFirstDayNumber(GameDayEventId.FeedTheCatOpens)), Is.True);
+            Assert.That(inventory.HasSelectedUseAction, Is.True);
+            Assert.That(inventory.CanUseSelected, Is.False);
+            Assert.That(inventory.SelectedUseActionLabel, Is.EqualTo(
+                LocalizationService.Get("inventory.action.eat.reserved")));
+            Assert.That(GameSessionState.TryCompleteQuest(QuestId.FeedTheCat), Is.True);
+            Assert.That(inventory.HasSelectedUseAction && inventory.CanUseSelected, Is.True);
+
             var questItems = new[]
             {
                 InventoryItemId.WarehouseGateKey,

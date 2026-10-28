@@ -387,7 +387,7 @@ Source-preservation означает review владельцев/coverage без
 | 19. AA | Native/SMAA and preview AA retained; no TAA/history change. |
 | 20. Vignette | Soft stairwell and shared state weights retained; routes/handles/corners readable. |
 | 21. Grain/dither | Existing weak interior grain/crisp UI; no unproven banding or retro pass. |
-| 22. Flares | Existing real sources/occlusion; overcast/darkness retained. |
+| 22. Flares | URP capability only; no active flare provider or visible contribution. No new effect. |
 | 23. Blur | No new motion blur: no demonstrated benefit to gameplay readability. |
 | 24. CA/distortion | Shared intoxication optics/cleanup retained; native state views. |
 

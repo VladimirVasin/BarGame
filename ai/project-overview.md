@@ -70,9 +70,9 @@ City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map tr
 uses its last leg. It adds no text, story fact or travel time; art-bible §15a
 and the accepted architecture decision define this bounded exception.
 
-Performance capture reports frame/GPU/GC, inclusive combat/NPC CPU and
-separate City-fountain/warehouse-probe work. Unsupported counters stay unavailable;
-Editor captures give local evidence, not a project-wide performance guarantee.
+Performance capture reports frame/GPU/GC, inclusive combat/NPC and fountain/probe
+work. Requested/actual targets and texture mode are recorded; mismatch rejects
+samples. Missing counters stay unavailable; Editor evidence is local.
 
 `PlayerBuildAssetValidation` gates packaging with read-only asset checks and
 repair commands. Generation/publication: [../tools/README.md](../tools/README.md).

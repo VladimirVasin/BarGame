@@ -13,6 +13,7 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse()
         {

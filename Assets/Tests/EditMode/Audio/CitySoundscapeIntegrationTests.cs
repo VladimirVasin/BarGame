@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
@@ -121,6 +122,77 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 multiple.MaximumCutoffFrequency,
                 Is.EqualTo(CitySoundOcclusion.MultipleBlockerCutoff));
+            AssertSameOcclusion(CitySoundOcclusion.Capture(Array.Empty<BuildingLot>()).Evaluate(source, listener), clear);
+            AssertSameOcclusion(CitySoundOcclusion.Capture(new[] { first }).Evaluate(source, listener), one);
+            AssertSameOcclusion(CitySoundOcclusion.Capture(new[] { first, second }).Evaluate(source, listener), multiple);
+        }
+
+        [TestCase(0, 0f)]
+        [TestCase(0, 27f)]
+        [TestCase(3, 27f)]
+        public void OcclusionSnapshot_MatchesLiveGeometryAcrossMovingEndpoints(int variant, float yaw)
+        {
+            Vector3 forward = Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
+            var lots = new[] { CreateBuildingLot(-3f, variant, forward), null, CreateBuildingLot(3f, variant, forward) };
+            CitySoundOcclusion.Geometry geometry = CitySoundOcclusion.Capture(lots);
+            Assert.That(geometry.BuildingCount, Is.EqualTo(2));
+            var points = new[] { new Vector3(-30f, 1f, 0f), new Vector3(30f, 1f, 0f),
+                new Vector3(0f, 1f, -30f), new Vector3(0f, 1f, 30f), Vector3.zero, new Vector3(3f, 1f, 0f) };
+            foreach (Vector3 source in points)
+            foreach (Vector3 listener in points)
+            {
+                CitySoundOcclusionSample expected = CitySoundOcclusion.Evaluate(source, listener, lots);
+                AssertSameOcclusion(geometry.Evaluate(source, listener), expected);
+                AssertSameOcclusion(geometry.Evaluate(source + Vector3.up * 20f, listener + Vector3.up * 100f), expected);
+            }
+        }
+
+        [Test]
+        public void OcclusionSnapshot_OwnsFiniteGeometryAndDoesNotAllocateWhileEndpointsMove()
+        {
+            var lots = new List<BuildingLot> { CreateBuildingLot(-3f, 3, new Vector3(1f, 0f, 1f)), CreateBuildingLot(3f) };
+            Vector3 source = new Vector3(-30f, 1f, 0f), listener = new Vector3(30f, 1f, 0f);
+            CitySoundOcclusionSample expected = CitySoundOcclusion.Evaluate(source, listener, lots);
+            CitySoundOcclusion.Geometry geometry = CitySoundOcclusion.Capture(lots);
+            lots.Clear();
+            Assert.That(geometry.BuildingCount, Is.EqualTo(2));
+            Assert.That(geometry.PolygonCount, Is.GreaterThan(0));
+            Assert.That(geometry.VertexCount, Is.GreaterThanOrEqualTo(geometry.PolygonCount * 3));
+            AssertSameOcclusion(geometry.Evaluate(source, listener), expected);
+            for (int i = 0; i < 16; i++) geometry.Evaluate(source + Vector3.forward * i, listener);
+
+            // Unity Mono may report zero from thread allocation totals. Prove
+            // this current-thread profiler observes a known allocation first.
+            using var recorder = new ProfilerRecorder(ProfilerCategory.Memory, "GC.Alloc", 1,
+                ProfilerRecorderOptions.WrapAroundWhenCapacityReached | ProfilerRecorderOptions.SumAllSamplesInFrame |
+                ProfilerRecorderOptions.CollectOnlyOnCurrentThread);
+            Assert.That(recorder.Valid, Is.True);
+            recorder.Start();
+            GC.KeepAlive(new byte[16]);
+            recorder.Stop();
+            if (recorder.Count > 0) recorder.GetSample(0);
+            recorder.Reset();
+            recorder.Start();
+            var control = new byte[16384];
+            recorder.Stop();
+            ProfilerRecorderSample positive = recorder.Count > 0 ? recorder.GetSample(0) : default;
+            GC.KeepAlive(control);
+            Assert.That(positive.Count, Is.EqualTo(1));
+            recorder.Reset(); recorder.Start();
+            int blockers = 0;
+            for (int i = 0; i < 256; i++)
+                blockers += geometry.Evaluate(source + Vector3.forward * (i % 16), listener - Vector3.forward * (i % 8)).BlockerCount;
+            recorder.Stop();
+            ProfilerRecorderSample measured = recorder.Count > 0 ? recorder.GetSample(0) : default;
+            Assert.That(measured.Count, Is.Zero, "A retained building snapshot must allocate nothing for moving sound/listener endpoints.");
+            GC.KeepAlive(blockers);
+        }
+
+        private static void AssertSameOcclusion(CitySoundOcclusionSample actual, CitySoundOcclusionSample expected)
+        {
+            Assert.That(actual.BlockerCount, Is.EqualTo(expected.BlockerCount));
+            Assert.That(actual.VolumeMultiplier, Is.EqualTo(expected.VolumeMultiplier));
+            Assert.That(actual.MaximumCutoffFrequency, Is.EqualTo(expected.MaximumCutoffFrequency));
         }
 
         [Test]
@@ -268,7 +340,7 @@ namespace BarPromenade.Tests.EditMode
             return cues;
         }
 
-        private static BuildingLot CreateBuildingLot(float centerX)
+        private static BuildingLot CreateBuildingLot(float centerX, int variant = 0, Vector3? facadeForward = null)
         {
             return new BuildingLot(
                 Vector2Int.zero,
@@ -287,7 +359,9 @@ namespace BarPromenade.Tests.EditMode
                 Vector2Int.right,
                 Vector3.zero,
                 Vector3.zero,
-                Vector3.zero);
+                Vector3.zero,
+                buildingVariant: variant,
+                facadeForward: facadeForward);
         }
     }
 }

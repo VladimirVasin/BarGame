@@ -23,6 +23,8 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatTorsoAssetsSetup))]
         public IEnumerator Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset()
@@ -171,6 +173,8 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts()
         {
@@ -459,6 +463,7 @@ namespace BarPromenade.Tests.PlayMode
             finally { hand.SetBlendShapeWeight(shape, original); }
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_BodyProxiesShareTransformsAndFollowSameFrameChanges()
@@ -909,6 +914,8 @@ namespace BarPromenade.Tests.PlayMode
             finally { deformation.Dispose(); UnityEngine.Object.Destroy(host); }
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset()
         {

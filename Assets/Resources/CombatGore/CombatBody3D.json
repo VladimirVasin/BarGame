@@ -11351,7 +11351,7 @@
       "semantic_sha256": "7b0b6cf614eebe8ec0c29e8eecf762fb0b6f97b16f9cc429bc933eda28b4b4ee"
     },
     "Npc": {
-      "source_sha256": "b2261c19ea75881483f011173c80dbc11a7460196963257651fcca24fec83bf8",
+      "source_sha256": "465234396ca2fe01c4966588b2be61b149d52c12671c003a40a323bcf1a73af8",
       "coverage": [
         {
           "source": "CLO_ApronPanel",
@@ -38595,7 +38595,7 @@
   ],
   "files": {
     "BodyHero.fbx": "ed5a2a218e75958e6b8f9d09705e54505d0e55ac8727aeccbc6c86ec50a1d915",
-    "BodyNpc.fbx": "809c0c9b92332b5929137b903b947b4e222e0613db4584d809223beef3ba0758",
+    "BodyNpc.fbx": "61b929209d2e95e6ff576d34f3bdeda1b5df2cc19d3750008df4f6aefafd82af",
     "BoneSurface.png": "a33402f40159965e305a944a0d801d1becdbc457ec170bc8159fd88ba41aadc2"
   }
 }

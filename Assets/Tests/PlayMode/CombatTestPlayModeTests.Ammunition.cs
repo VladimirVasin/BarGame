@@ -11,6 +11,8 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
+        [Category("ProductionCombat")]
         [UnityTest]
         public IEnumerator Range_AmmoReservesAndRespawningPickupsStayFinite()
         {
@@ -29,10 +31,12 @@ namespace BarPromenade.Tests.PlayMode
                     CombatTestMode.Endless, new CombatEncounterSettings(1, 60f, 60f, 60f, 60f));
                 Assert.That(CombatTestStartService.TryStart(selection), Is.True);
                 yield return AwaitSelectedCombatRange();
+                SuspendRigidCombatOpponents();
                 ForceAmmoFocus();
                 yield return null;
                 Assert.That(root.WarehousePlan, Is.Not.Null);
-                Assert.That(root.LiveOpponentCount, Is.Zero);
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(selection.EncounterSettings.MaximumLiveOpponents),
+                    "The warehouse populates its retained encounter immediately; pickup isolation suspends decisions, not population.");
                 Assert.That(root.AmmoSpawns.SlotCount, Is.EqualTo(12));
                 var pickups = new CombatAmmoPickup[root.AmmoSpawns.SlotCount];
                 var models = new Transform[pickups.Length];
@@ -240,7 +244,10 @@ namespace BarPromenade.Tests.PlayMode
                     { locker = candidate; sourceBay = bay; break; }
             Assert.That(locker, Is.Not.Null);
             Vector3 approach = root.WarehousePlan.AmmoApproaches[slot];
-            root.Hero.ResetActor(approach + Vector3.up * PlayerFactory.GroundedRootOffset,
+            // Approaching a shelf must preserve the partially spent magazine
+            // and collected reserve. ResetActor starts a fresh loadout.
+            root.Player.Motor.Teleport(approach + Vector3.up * PlayerFactory.GroundedRootOffset);
+            root.Hero.transform.rotation = Quaternion.LookRotation(
                 Vector3.ProjectOnPlane(pickup.transform.position - approach, Vector3.up).normalized);
             Physics.SyncTransforms();
             ForceAmmoFocus();

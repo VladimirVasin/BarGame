@@ -25,6 +25,7 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
         public IEnumerator Range_CraneCaptureYieldsMixedOpponentsUntilRelease()
@@ -161,6 +162,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(actor.RoomAttackSuppressed, Is.False, "Every prepared opponent releases only the finished capture's suppression.");
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup()

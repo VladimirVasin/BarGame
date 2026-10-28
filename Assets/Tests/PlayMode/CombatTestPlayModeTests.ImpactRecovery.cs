@@ -19,6 +19,7 @@ namespace BarPromenade.Tests.PlayMode
         private const float ChargedDiagnosticImpulse = 205f;
         private int diagnosticImpactSequence;
 
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_HeroAirborneRagdollKeepsHorizontalMomentumAndFallWeight()
         {
@@ -64,6 +65,8 @@ namespace BarPromenade.Tests.PlayMode
             return mass > 0f ? momentum / mass : Vector3.zero;
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_ImpactRecoveryMovesBothRigsThroughSupportFallRiseAndRegrip()
         {

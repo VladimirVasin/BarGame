@@ -1173,8 +1173,15 @@ def grip_previews(result,data,texture):
 
 
 def main():
+    global ASSETS, SOURCE
     parser=argparse.ArgumentParser();parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true");parser.add_argument("--grip-preview-only",action="store_true")
+    parser.add_argument("--model-dir", type=Path, default=ASSETS)
+    parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
+    ASSETS, SOURCE = args.model_dir, args.source_dir
+    if not args.validate_only:
+        ASSETS.mkdir(parents=True, exist_ok=True)
+        SOURCE.mkdir(parents=True, exist_ok=True)
     builder=WorkerBuilder();result=builder.build();data=wardrobe(builder);checks=validate(builder,data)
     texture=ASSETS/(MODEL+"Atlas.png");texture_hash=atlas(texture,args.validate_only)
     face_data={"default_face_id":"face-01","items":[]}

@@ -17,6 +17,8 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_ManualCpuTimelineStopsAndRestoresProfiler()
         {
@@ -96,6 +98,9 @@ namespace BarPromenade.Tests.PlayMode
 
         // Keep the normal Editor and render loop: a manually ticked/headless
         // simulation cannot attribute the recorded post-render delivery gaps.
+        [Category("CombatMigrationPending")]
+        [Category("CombatDiagnostic")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest, Explicit("Short rendered CPU Timeline with Editor work and exact duel-frame correlation.")]
         public IEnumerator Range_RenderedDeliverySeparatesEditorWaitFromCombatWork()
         {

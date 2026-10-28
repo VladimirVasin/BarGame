@@ -22,6 +22,60 @@ namespace BarPromenade.Tests.EditMode
             Time.timeScale = previousTimeScale;
         }
 
+        [TestCase(96)]
+        [TestCase(320)]
+        public void TruckObstacleQuery_SaturationKeepsFilteringAndFindsBlockingBodies(int ownBodyCount)
+        {
+            var owner = new GameObject("Cannery obstacle query owner");
+            var external = new GameObject("Cannery obstacle query external bodies");
+            Vector3 origin = new Vector3(10000f, 10000f, 10000f);
+            owner.transform.position = external.transform.position = origin;
+            var cannery = owner.AddComponent<CityCanneryController>();
+            try
+            {
+                // Fill both the retained-growth and complete-fallback paths
+                // with hits which the final body filter must ignore.
+                for (int index = 0; index < ownBodyCount; index++)
+                {
+                    var ownBody = new GameObject("Own truck body " + index);
+                    ownBody.transform.SetParent(owner.transform, false);
+                    ownBody.transform.localPosition = Vector3.up;
+                    ownBody.AddComponent<BoxCollider>().size = Vector3.one * .2f;
+                }
+                var lowBody = new GameObject("Low ground body");
+                lowBody.transform.SetParent(external.transform, false);
+                lowBody.transform.localPosition = Vector3.down;
+                lowBody.AddComponent<BoxCollider>().size = Vector3.one * .2f;
+                var blockingBody = new GameObject("Blocking pedestrian body");
+                blockingBody.transform.SetParent(external.transform, false);
+                blockingBody.transform.localPosition = Vector3.up;
+                BoxCollider blocker = blockingBody.AddComponent<BoxCollider>();
+                blocker.size = Vector3.one * .3f;
+                blocker.enabled = false;
+
+                Physics.SyncTransforms();
+                Assert.That(cannery.FindTruckObstacle(origin, Vector3.one * 2f,
+                    Quaternion.identity, origin.y), Is.Null,
+                    "A saturated set of ignored bodies must not stop delivery forever.");
+                blocker.enabled = true;
+                Physics.SyncTransforms();
+                Assert.That(cannery.FindTruckObstacle(origin, Vector3.one * 2f,
+                    Quaternion.identity, origin.y), Is.SameAs(blocker),
+                    "A real body cannot disappear behind a full scratch buffer.");
+                blocker.enabled = false;
+                Physics.SyncTransforms();
+                Assert.That(cannery.FindTruckObstacle(origin, Vector3.one * 2f,
+                    Quaternion.identity, origin.y), Is.Null,
+                    "Reusing query storage cannot retain a disabled blocker.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(external);
+                Object.DestroyImmediate(owner);
+                Physics.SyncTransforms();
+            }
+        }
+
         [Test]
         public void FirstActualDockArrivalStartsOnceAndSurvivesLeavingAndSceneIntervalsUntilNewGame()
         {

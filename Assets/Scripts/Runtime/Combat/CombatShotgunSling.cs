@@ -1090,8 +1090,11 @@ namespace BarPromenade
             bodyUp = (registry.Anchors.Head.position - registry.Anchors.Chest.position).normalized;
             bodyForward = Vector3.Cross(bodyRight, bodyUp).normalized;
             shoulderTarget = shoulder.position + bodyUp * .07f - bodyRight * .012f + bodyForward * .04f;
-            frontChest = registry.Anchors.Chest.position + bodyForward * .15f - bodyRight * .06f;
-            frontAbdomen = registry.Anchors.Pelvis.position + bodyUp * .18f + bodyForward * .14f + bodyRight * .13f;
+            // Rig-only presentation has no contact projection to keep a rotated
+            // ribbon corner outside the coat's raised pockets and flaps.
+            float frontClearance = physicsSimulationEnabled ? 0f : HalfWidth + HalfThickness;
+            frontChest = registry.Anchors.Chest.position + bodyForward * (.15f + frontClearance) - bodyRight * .06f;
+            frontAbdomen = registry.Anchors.Pelvis.position + bodyUp * .18f + bodyForward * (.14f + frontClearance) + bodyRight * .13f;
             rightSide = registry.Anchors.Pelvis.position + bodyUp * .13f + bodyRight * .22f - bodyForward * .02f;
             chestRouteLength = Vector3.Distance(shoulderTarget, frontChest);
             abdomenRouteLength = chestRouteLength + Vector3.Distance(frontChest, frontAbdomen);

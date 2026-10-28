@@ -13,11 +13,22 @@ namespace BarPromenade
         private bool handlingActive;
         private readonly Vector3[] groundPathPoints = new Vector3[11];
         private readonly Vector3[] trayRoute = new Vector3[5];
+        private readonly Transform[] rawStoreAnchors = new Transform[CityFishSupplyCycle.HandlingUnits];
+        private readonly Transform[] readyStoreAnchors = new Transform[CityFishSupplyCycle.HandlingUnits];
         public float TruckSteeringAngle { get; private set; }
 
         private Vector3 Anchor(string name) => anchors[name].position;
-        private Vector3 RawStore(int i) => Anchor("RawStore" + i);
-        private Vector3 ReadyStore(int i) => Anchor("ReadyCase" + i);
+        private Vector3 RawStore(int i) => rawStoreAnchors[i].position;
+        private Vector3 ReadyStore(int i) => readyStoreAnchors[i].position;
+
+        private void CacheStoreAnchors()
+        {
+            for (int i = 0; i < rawStoreAnchors.Length; i++)
+            {
+                rawStoreAnchors[i] = anchors["RawStore" + i];
+                readyStoreAnchors[i] = anchors["ReadyCase" + i];
+            }
+        }
         // A single east-side row leaves the west aisle and the dock cart's
         // common drop clear, including a full three-unit buffer. The driver
         // stands behind each jack in the free strip along the east wall.

@@ -49,6 +49,8 @@ namespace BarPromenade
         private bool frameTimingEnabled;
         private Camera requestedCamera;
         private Camera captureCamera;
+        private RenderTexture captureTarget;
+        private bool hadCaptureCamera;
         private SceneHandle sceneHandle;
         private int graphicsSettingsVersion;
         private bool recordersSettled;
@@ -219,21 +221,12 @@ namespace BarPromenade
             // ends with sample_limit rather than silently dropping frame samples.
             int capacity = Math.Min(PerformanceCaptureOptions.MaximumSamples,
                 (int)Math.Ceiling(options.DurationSeconds * 1000d) + 2);
-            samples = new PerformanceCaptureSamples(capacity);
-            mainThread = TryRecorder(ProfilerCategory.Internal, "Main Thread");
-            renderThread = TryRecorder(ProfilerCategory.Internal, "Render Thread");
-            gcBytes = TryRecorder(ProfilerCategory.Memory, "GC Allocated In Frame");
-            editorLoop = TryRecorder(ProfilerCategory.Internal, "EditorLoop");
-            waitTargetFps = TryRecorder(ProfilerCategory.Internal, "WaitForTargetFPS");
-            waitPresent = TryRecorder(ProfilerCategory.Internal, "Gfx.WaitForPresentOnGfxThread");
-            // The only world lookup; source/list references are retained for the window.
-            combatRoot = UnityEngine.Object.FindAnyObjectByType<CombatTestRoot>();
-            combatOpponents = combatRoot != null ? combatRoot.Opponents : null;
-            warehouseProbe = WarehouseCleanPresentation.Current != null ? WarehouseCleanPresentation.Current.Reflection : null;
             frameTimingEnabled = FrameTimingManager.IsFeatureEnabled();
             // Explicit render requests can use a disabled camera, which Camera.main
             // omits. Keep its actual target size instead of falling back to the Editor window.
             captureCamera = requestedCamera != null ? requestedCamera : Camera.main;
+            hadCaptureCamera = captureCamera != null;
+            captureTarget = captureCamera != null ? captureCamera.targetTexture : null;
             report = new PerformanceCaptureReport
             {
                 utc = DateTime.UtcNow.ToString("O"),
@@ -256,6 +249,9 @@ namespace BarPromenade
                 renderScale = RenderScale(),
                 renderWidth = captureCamera != null ? captureCamera.pixelWidth : Screen.width,
                 renderHeight = captureCamera != null ? captureCamera.pixelHeight : Screen.height,
+                requestedRenderWidth = options.RequestedRenderWidth,
+                requestedRenderHeight = options.RequestedRenderHeight,
+                renderTarget = captureTarget != null ? "render_texture" : "screen",
                 cleanAntialiasing = GraphicsEffectsSettings.CleanAntialiasingEnabled,
                 cleanReflections = GraphicsEffectsSettings.CleanReflectionsEnabled,
                 cleanVolume = GraphicsEffectsSettings.CleanVolumeEnabled,
@@ -279,6 +275,25 @@ namespace BarPromenade
                 managedBytesAtStart = GC.GetTotalMemory(false),
                 totalAllocatedBytesAtStart = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong()
             };
+            report.resolutionMatched = options.MatchesRenderResolution(report.renderWidth, report.renderHeight);
+            if (!report.resolutionMatched)
+            {
+                // A label such as 4K must never turn a smaller Editor view into
+                // a successful benchmark. Retain the rejected context, with no samples.
+                Finish("resolution_mismatch");
+                return;
+            }
+            samples = new PerformanceCaptureSamples(capacity);
+            mainThread = TryRecorder(ProfilerCategory.Internal, "Main Thread");
+            renderThread = TryRecorder(ProfilerCategory.Internal, "Render Thread");
+            gcBytes = TryRecorder(ProfilerCategory.Memory, "GC Allocated In Frame");
+            editorLoop = TryRecorder(ProfilerCategory.Internal, "EditorLoop");
+            waitTargetFps = TryRecorder(ProfilerCategory.Internal, "WaitForTargetFPS");
+            waitPresent = TryRecorder(ProfilerCategory.Internal, "Gfx.WaitForPresentOnGfxThread");
+            // The only world lookup; source/list references are retained for the window.
+            combatRoot = UnityEngine.Object.FindAnyObjectByType<CombatTestRoot>();
+            combatOpponents = combatRoot != null ? combatRoot.Opponents : null;
+            warehouseProbe = WarehouseCleanPresentation.Current != null ? WarehouseCleanPresentation.Current.Reflection : null;
             report.recorders = new[]
             {
                 DescribeRecorder(mainThread, "Internal", "Main Thread"),
@@ -488,8 +503,8 @@ namespace BarPromenade
 
         private bool MatchesContext() => Screen.width == report.width &&
             Screen.height == report.height && RenderScale() == report.renderScale &&
-            (captureCamera == null || captureCamera.pixelWidth == report.renderWidth &&
-                captureCamera.pixelHeight == report.renderHeight) &&
+            (!hadCaptureCamera || captureCamera != null && captureCamera.targetTexture == captureTarget &&
+                captureCamera.pixelWidth == report.renderWidth && captureCamera.pixelHeight == report.renderHeight) &&
             QualitySettings.GetQualityLevel() == report.qualityLevel &&
             QualitySettings.vSyncCount == report.vSyncCount &&
             Application.targetFrameRate == report.targetFrameRate &&
@@ -523,7 +538,6 @@ namespace BarPromenade
             DisposeRecorders();
             if (samples != null)
             {
-                report.reason = reason;
                 report.measuredSeconds = Time.realtimeSinceStartupAsDouble - captureStarted;
                 report.frameIntervalMs = samples.Summarize(PerformanceCaptureSamples.FrameInterval);
                 report.mainThreadMs = samples.Summarize(PerformanceCaptureSamples.MainThread);
@@ -551,6 +565,10 @@ namespace BarPromenade
                 report.secondaryMotionAtEnd = CaptureSecondaryMotion();
                 report.frameP95WithinBudget = report.frameIntervalMs.sampleCount > 0 &&
                     report.frameIntervalMs.p95 <= report.frameBudgetMilliseconds;
+            }
+            if (report != null)
+            {
+                report.reason = reason;
                 report.managedBytesAtEnd = GC.GetTotalMemory(false);
                 report.totalAllocatedBytesAtEnd = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
                 report.gameDayAtEnd = GameSessionState.GameDayNumber;
@@ -613,7 +631,7 @@ namespace BarPromenade
     [Serializable]
     internal sealed class PerformanceCaptureReport
     {
-        public int schemaVersion = 2;
+        public int schemaVersion = 3;
         public string interpretation = "Frame intervals include frame pacing; main/render-thread markers can include waits. " +
             "Metric sampleCount=0 means unavailable, not zero cost. Recorder observations retain exact requested names/categories; " +
             "absent optional markers are not subtracted or inferred. CPU counters are per-frame inclusive deltas after setup/warmup; " +
@@ -624,10 +642,15 @@ namespace BarPromenade
             "process-cumulative boundaries in Stopwatch ticks; their difference includes only the captured window. " +
             "sampleCapacity is fixed at min(MaximumSamples, ceil(requestedSeconds*1000)+2); a full buffer ends as sample_limit. " +
             "GPU timings require supported Frame Timing Stats; capture does not enable that Player setting. " +
+            "requestedRenderWidth/Height=0 means no resolution contract; a mismatch is rejected before recording. " +
+            "renderWidth/Height are the actual camera target dimensions; width/height describe the screen. " +
+            "render_texture windows are offscreen diagnostics, not screen/player resolution comparisons. " +
             "Compare the same scene, route, seed, weather and intoxication with matching focus/pause state. " +
             "Editor results are diagnostic and are not player benchmarks.";
-        public string utc, scene, label, reason, unityVersion, applicationVersion, cpu, gpu, graphicsApi, gpuDriver;
+        public string utc, scene, label, reason, unityVersion, applicationVersion, cpu, gpu, graphicsApi, gpuDriver, renderTarget;
         public int seed, width, height, renderWidth, renderHeight, qualityLevel, vSyncCount, targetFrameRate, renderFrameInterval;
+        public int requestedRenderWidth, requestedRenderHeight;
+        public bool resolutionMatched;
         public bool editor, developmentBuild, gpuTimingEnabled, frameP95WithinBudget;
         public bool mainThreadAvailable, renderThreadAvailable, gcCounterAvailable, gpuTimingAvailable;
         public bool combatCountersAvailable, npcCountersAvailable, warehouseProbeCountersAvailable, npcPopulationTruncated;

@@ -23,7 +23,8 @@ namespace BarPromenade
         private Vector3 liftDock, leftDoorDock, rightDoorDock, seamerDock, retortDoorDock;
         private Transform tray, basket, trolley, preparationFish, forks, retortRam;
         private Vector3 forksDock, ramDock;
-        private readonly Collider[] obstacles = new Collider[64];
+        private const int MaximumObstacleScratchSize = 256;
+        private Collider[] obstacles = new Collider[64];
         private float movementRate = 1f;
         private float waveTime;
         private bool previousPortAutoAdvance, previousPortSupplyDriven;
@@ -76,6 +77,7 @@ namespace BarPromenade
             ReportCanneryPhase("equipment_model", phaseTimer);
             foreach (Transform part in equipment.GetComponentsInChildren<Transform>(true))
                 if (part.name.StartsWith("ANCHOR_", StringComparison.Ordinal)) anchors[part.name.Substring(7)] = part;
+            CacheStoreAnchors();
             ReportCanneryPhase("equipment_anchors", phaseTimer);
             Cycle = new CityFishSupplyCycle(Travel(CityCanneryTruckLeg.PortToFactory),
                 Travel(CityCanneryTruckLeg.FactoryReverse), Travel(CityCanneryTruckLeg.FactoryToShop),
@@ -242,19 +244,47 @@ namespace BarPromenade
             double lookAhead = Math.Min(.7d, Math.Max(0,Snapshot.Duration-Snapshot.Seconds-.001d));
             CityPortTruckPose next = TruckPose(Cycle.Sample(WorkingSeconds+lookAhead));
             Vector3 center = next.RearAxle + next.Rotation * CityCanneryTruckDimensions.BodyCenter;
-            int count = Physics.OverlapBoxNonAlloc(center, new Vector3(
+            Collider obstacle = FindTruckObstacle(center, new Vector3(
                 CityCanneryTruckDimensions.HalfWidth + .03f,CityCanneryTruckDimensions.BodyHalfExtents.y,
                 (CityCanneryTruckDimensions.Front - CityCanneryTruckDimensions.Rear) * .5f + .03f),
-                obstacles,next.Rotation,~0,QueryTriggerInteraction.Ignore);
-            LastObstacleName = null;
-            for (int i = 0; i < count; i++)
+                next.Rotation, Truck.position.y);
+            LastObstacleName = obstacle != null ? obstacle.name : null;
+            return obstacle != null;
+        }
+
+        // Both live traffic and debug placement require a complete answer.
+        // Retain a bounded scratch array for ordinary density; a full final
+        // buffer cannot prove clearance after filtering our own/low bodies.
+        internal Collider FindTruckObstacle(Vector3 center, Vector3 halfExtents,
+            Quaternion rotation, float groundY)
+        {
+            int count = Physics.OverlapBoxNonAlloc(center, halfExtents, obstacles,
+                rotation, ~0, QueryTriggerInteraction.Ignore);
+            while (count == obstacles.Length && obstacles.Length < MaximumObstacleScratchSize)
             {
-                Collider hit = obstacles[i];
-                if (hit == null || hit.transform.IsChildOf(transform) || hit.bounds.max.y < Truck.position.y + .45f) continue;
-                LastObstacleName = hit.name;
-                return true;
+                Array.Resize(ref obstacles, Math.Min(obstacles.Length * 2, MaximumObstacleScratchSize));
+                count = Physics.OverlapBoxNonAlloc(center, halfExtents, obstacles,
+                    rotation, ~0, QueryTriggerInteraction.Ignore);
             }
-            return false;
+            Collider[] hits = count == obstacles.Length
+                ? Physics.OverlapBox(center, halfExtents, rotation, ~0, QueryTriggerInteraction.Ignore)
+                : obstacles;
+            int scratchCount = count;
+            if (hits != obstacles) count = hits.Length;
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Collider hit = hits[i];
+                    if (hit == null || hit.transform.IsChildOf(transform) || hit.bounds.max.y < groundY + .45f) continue;
+                    return hit;
+                }
+                return null;
+            }
+            finally
+            {
+                Array.Clear(obstacles, 0, scratchCount);
+            }
         }
 
         private static Transform Require(Transform root, string name)

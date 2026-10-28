@@ -22,9 +22,26 @@ namespace BarPromenade
         private static readonly int BounceMaxId = Shader.PropertyToID("_WarehouseBounceMax");
         private static readonly int BounceNormalsId = Shader.PropertyToID("_SceneBounceNormals");
 
+        internal readonly struct SourceZoneBinding
+        {
+            internal readonly Zone? FixedZone;
+            internal readonly bool Pooled;
+
+            internal SourceZoneBinding(string name)
+            {
+                Pooled = name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
+                FixedZone = name.StartsWith("Port ", StringComparison.Ordinal) || name == "Hut Lamp Light" || name == "Ferryman Car Floodlight Light" ? Zone.CoastPort :
+                    name.Contains("Cemetery") || name == "Porch Lamp Light" || name == "Ground Planting Light" ? Zone.ChurchCemetery :
+                    name.StartsWith("Cannery ", StringComparison.Ordinal) || name.StartsWith("Delivery Truck ", StringComparison.Ordinal) ? Zone.Industrial :
+                    name == "Chess Lamp Light" ? Zone.Park :
+                    name == CityArchShelterPresentation.FireLightObjectName || name == "Island Mast Floodlight Light" ? Zone.Nightlife : null;
+            }
+        }
+
         private sealed class Practical
         {
-            internal Light Light;
+            internal readonly Light Light;
+            internal readonly SourceZoneBinding ZoneBinding;
             internal Zone Zone;
             internal bool Moving, Pooled, AllowVolume, AllowBounce, SupportValid;
             internal Bounds Bounds;
@@ -33,6 +50,12 @@ namespace BarPromenade
             internal float SupportAt;
             internal readonly Vector4[] Planes = new Vector4[SceneLocalLightSource.MaximumClipPlanes];
             internal readonly Bounds[] Blockers = new Bounds[SceneLocalLightSource.MaximumBlockers];
+
+            internal Practical(Light light, string registeredName)
+            {
+                Light = light;
+                ZoneBinding = new SourceZoneBinding(registeredName);
+            }
         }
 
         private struct Emitter
@@ -193,21 +216,23 @@ namespace BarPromenade
             foreach (Light light in sourceRoot.GetComponentsInChildren<Light>(true))
             {
                 if (light.type != LightType.Point && light.type != LightType.Spot) continue;
-                if (!IsExistingPractical(light)) continue;
+                string name = light.name;
+                if (!IsExistingPractical(name)) continue;
                 if (practicals.Count >= MaximumPracticals) throw new InvalidOperationException("City practical budget exceeds 192.");
-                bool pooled = light.name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
-                bool moving = pooled || light.name.StartsWith("Bus ", StringComparison.Ordinal) ||
-                    light.name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
-                    light.name == "Port Vessel Searchlight";
-                bool volume = light.name != "Home Yard Spotlight Light" &&
-                    light.name != "Island Mast Floodlight Light" &&
-                    light.name != "Ferryman Car Floodlight Light" &&
-                    light.name != "Ground Planting Light" && !light.name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal);
-                practicals.Add(new Practical { Light = light, Moving = moving, Pooled = pooled,
-                    Zone = ResolveZone(light), AllowVolume = volume,
+                bool pooled = name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
+                bool moving = pooled || name.StartsWith("Bus ", StringComparison.Ordinal) ||
+                    name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
+                    name == "Port Vessel Searchlight";
+                bool volume = name != "Home Yard Spotlight Light" &&
+                    name != "Island Mast Floodlight Light" &&
+                    name != "Ferryman Car Floodlight Light" &&
+                    name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal);
+                var practical = new Practical(light, name) { Moving = moving, Pooled = pooled, AllowVolume = volume,
                     // Existing fire spill is already causal; do not sum it again.
-                    AllowBounce = light.name != CityArchShelterPresentation.FireLightObjectName &&
-                        light.name != "Ground Planting Light" && !light.name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) });
+                    AllowBounce = name != CityArchShelterPresentation.FireLightObjectName &&
+                        name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
+                practical.Zone = ResolveZone(practical);
+                practicals.Add(practical);
                 // Fixed mast bulbs have their own stable physical emitters. The
                 // travelling pool is a Light lease, not another visible bulb.
                 if (pooled) continue;
@@ -225,9 +250,8 @@ namespace BarPromenade
             }
         }
 
-        private static bool IsExistingPractical(Light light)
+        private static bool IsExistingPractical(string name)
         {
-            string name = light.name;
             return name.StartsWith("Pooled Street Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Bar Entrance Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Bus Headlight ", StringComparison.Ordinal) || name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) ||
@@ -337,7 +361,7 @@ namespace BarPromenade
             {
                 Light light = entry.Light;
                 if (!entry.AllowVolume || !IsLit(light)) continue;
-                entry.Zone = ResolveZone(light); ConfigureBounds(entry);
+                entry.Zone = ResolveZone(entry); ConfigureBounds(entry);
                 if (!GeometryUtility.TestPlanesAABB(frustum, entry.Bounds)) continue;
                 float distance = entry.Bounds.SqrDistance(camera.transform.position) +
                     (light.transform.position - camera.transform.position).sqrMagnitude * .08f;
@@ -542,25 +566,26 @@ namespace BarPromenade
             Shader.SetGlobalVectorArray(BounceNormalsId, normals);
         }
 
-        private Zone ResolveZone(Light light)
+        private Zone ResolveZone(Practical practical) => ResolveSourceZone(practical.ZoneBinding,
+            practical.Light.transform.position, fixtureZones, layout);
+
+        internal static Zone ResolveSourceZone(in SourceZoneBinding binding, Vector3 position,
+            IReadOnlyDictionary<Vector3, Zone> fixtureZones, CityLayout layout)
         {
-            string name = light.name;
-            if (name.StartsWith("Port ", StringComparison.Ordinal) || name == "Hut Lamp Light" || name == "Ferryman Car Floodlight Light") return Zone.CoastPort;
-            if (name.Contains("Cemetery") || name == "Porch Lamp Light" || name == "Ground Planting Light") return Zone.ChurchCemetery;
-            if (name.StartsWith("Cannery ", StringComparison.Ordinal) || name.StartsWith("Delivery Truck ", StringComparison.Ordinal)) return Zone.Industrial;
-            if (name == "Chess Lamp Light") return Zone.Park;
-            if (name == CityArchShelterPresentation.FireLightObjectName || name == "Island Mast Floodlight Light") return Zone.Nightlife;
-            if (name.StartsWith("Pooled Street Light ", StringComparison.Ordinal) &&
-                fixtureZones.TryGetValue(light.transform.position, out Zone zone)) return zone;
-            return ResolveDistrict(light.transform.position);
+            if (binding.FixedZone.HasValue) return binding.FixedZone.Value;
+            if (binding.Pooled && fixtureZones.TryGetValue(position, out Zone zone)) return zone;
+            return ResolveDistrict(layout, position);
         }
 
-        private Zone ResolveDistrict(Vector3 position)
+        private Zone ResolveDistrict(Vector3 position) => ResolveDistrict(layout, position);
+
+        private static Zone ResolveDistrict(CityLayout layout, Vector3 position)
         {
             if (layout == null) return Zone.Residential;
             Vector2Int cell = Vector2Int.FloorToInt(layout.GetWorldGridCoordinate(position));
-            foreach (CityDistrictDescriptor district in layout.Districts)
+            for (int index = 0; index < layout.Districts.Count; index++)
             {
+                CityDistrictDescriptor district = layout.Districts[index];
                 if (!district.ContainsCell(cell)) continue;
                 switch (district.Kind)
                 {
@@ -600,7 +625,13 @@ namespace BarPromenade
             foreach (Practical entry in practicals) if (entry.Light == light) return entry.AllowVolume;
             return false;
         }
-        public Zone GetSourceZone(Light light) => light != null ? ResolveZone(light) : Zone.Residential;
+        public Zone GetSourceZone(Light light)
+        {
+            if (light == null) return Zone.Residential;
+            foreach (Practical practical in practicals)
+                if (practical.Light == light) return ResolveZone(practical);
+            return ResolveSourceZone(new SourceZoneBinding(light.name), light.transform.position, fixtureZones, layout);
+        }
         public bool TryGetVolumeSource(int index, out SceneLocalLightSource source)
         {
             source = index >= 0 && index < VolumeSourceCount ? selected[index] : default;

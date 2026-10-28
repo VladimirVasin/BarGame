@@ -12,19 +12,15 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
+        [Category("ProductionCombat")]
         [UnityTest]
         public IEnumerator Range_QueuedWeaponCarryJournalKeepsItsSelectionRequests()
         {
             string folder = Path.GetFullPath("TestResults/Test combat inventory journal");
             try
             {
-                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-                Assert.That(CombatTestStartService.TryStart(new CombatLoadoutSelection(CombatWeaponId.Pistol)), Is.True);
-                yield return AwaitSelectedCombatRange();
-                PlacePair(8f);
-                Assert.That(root.SetOpponentFocus(false), Is.True);
-                root.SendMessage("OnApplicationFocus", true); GameInput.HandleApplicationFocus(true);
-                yield return null;
+                yield return EnterWarehouseWeaponCarryRange(CombatWeaponId.Pistol);
                 root.SetDuelLogging(true, folder);
                 CombatActor hero = root.Hero;
                 Assert.That(hero.TrySelectWeapon(CombatWeaponId.Shotgun), Is.True);

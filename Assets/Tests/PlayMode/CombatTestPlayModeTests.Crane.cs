@@ -33,6 +33,7 @@ namespace BarPromenade.Tests.PlayMode
         private AudioSource[] craneVoices;
         private Vector3 craneOriginalAnchor, craneMinimumCommand, craneMaximumCommand;
 
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum()
         {
@@ -115,6 +116,7 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_CraneHookCaptureEscapeRetreatAndRegeneration()
         {
@@ -661,6 +663,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatCraneAssetsSetup))]
         public IEnumerator Range_CraneSuspensionKeepsContactOcclusionPauseAndReset()

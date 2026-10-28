@@ -391,25 +391,94 @@ namespace BarPromenade.Tests.PlayMode
 
         private static IEnumerator CaptureAtResolution(int width, int height)
         {
-            Screen.SetResolution(width, height, FullScreenMode.Windowed);
-            for (int i = 0; i < 5; i++) yield return null;
-            string label = $"city-idle-requested-{width}x{height}";
-            string directory = Path.GetFullPath(Path.Combine(Application.dataPath,
-                "..", "TestResults", "PerformanceCaptures"));
-            Assert.That(RuntimePerformanceCapture.StartCapture(
-                new PerformanceCaptureOptions(SceneIds.City, label, 2, 5, 60), directory), Is.True);
-            float deadline = Time.realtimeSinceStartup + 20f;
-            while (RuntimePerformanceCapture.IsRunning && Time.realtimeSinceStartup < deadline)
-                yield return null;
-            Assert.That(RuntimePerformanceCapture.IsRunning, Is.False);
-            Assert.That(RuntimePerformanceCapture.LastReportPath, Is.Not.Empty);
-            PerformanceCaptureReport report = JsonUtility.FromJson<PerformanceCaptureReport>(
-                File.ReadAllText(RuntimePerformanceCapture.LastReportPath));
-            Assert.That(report.reason, Is.EqualTo("completed"));
-            Assert.That(report.label, Is.EqualTo(label));
-            Assert.That(report.frameIntervalMs.sampleCount, Is.GreaterThan(0));
-            Debug.Log($"Performance measurement requested {width}x{height}, actual " +
-                $"{report.width}x{report.height}: {RuntimePerformanceCapture.LastReportPath}");
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            Assert.That(camera.enabled, Is.True, "The production camera must render each measured frame.");
+            RenderTexture previousTarget = camera.targetTexture;
+            float previousAspect = camera.aspect;
+            var target = new RenderTexture(width, height, 24, RenderTextureFormat.DefaultHDR)
+            { name = "Lifecycle performance target", hideFlags = HideFlags.DontSave, antiAliasing = 1 };
+            try
+            {
+                Assert.That(target.Create(), Is.True);
+                camera.targetTexture = target;
+                camera.aspect = width / (float)height;
+                for (int i = 0; i < 5; i++) yield return null;
+                Assert.That(camera.pixelWidth, Is.EqualTo(width));
+                Assert.That(camera.pixelHeight, Is.EqualTo(height));
+                string label = $"city-idle-offscreen-{width}x{height}";
+                string directory = Path.GetFullPath(Path.Combine(Application.dataPath,
+                    "..", "TestResults", "PerformanceCaptures"));
+                Assert.That(RuntimePerformanceCapture.StartCapture(
+                    new PerformanceCaptureOptions(SceneIds.City, label, 2, 5, 60, width, height), directory, camera), Is.True);
+                float deadline = Time.realtimeSinceStartup + 20f;
+                while (RuntimePerformanceCapture.IsRunning && Time.realtimeSinceStartup < deadline)
+                    yield return null;
+                Assert.That(RuntimePerformanceCapture.IsRunning, Is.False);
+                Assert.That(RuntimePerformanceCapture.LastReportPath, Is.Not.Empty);
+                PerformanceCaptureReport report = JsonUtility.FromJson<PerformanceCaptureReport>(
+                    File.ReadAllText(RuntimePerformanceCapture.LastReportPath));
+                Assert.That(report.reason, Is.EqualTo("completed"));
+                Assert.That(report.label, Is.EqualTo(label));
+                Assert.That(report.renderTarget, Is.EqualTo("render_texture"));
+                Assert.That(report.resolutionMatched, Is.True);
+                Assert.That(report.requestedRenderWidth, Is.EqualTo(width));
+                Assert.That(report.requestedRenderHeight, Is.EqualTo(height));
+                Assert.That(report.renderWidth, Is.EqualTo(width));
+                Assert.That(report.renderHeight, Is.EqualTo(height));
+                Assert.That(report.frameIntervalMs.sampleCount, Is.GreaterThan(0));
+                Debug.Log($"Offscreen performance measurement {report.renderWidth}x{report.renderHeight}, " +
+                    $"Editor screen {report.width}x{report.height}: {RuntimePerformanceCapture.LastReportPath}");
+            }
+            finally
+            {
+                RuntimePerformanceCapture.StopCapture();
+                if (camera != null) { camera.targetTexture = previousTarget; camera.aspect = previousAspect; }
+                target.Release();
+                Object.Destroy(target);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PerformanceCapture_RejectsMismatchedExplicitTargetBeforeRecording()
+        {
+            var host = new GameObject("Resolution rejection camera");
+            var target = new RenderTexture(64, 32, 0) { hideFlags = HideFlags.DontSave };
+            try
+            {
+                Camera camera = host.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.targetTexture = target;
+                Assert.That(camera.pixelWidth, Is.EqualTo(64));
+                Assert.That(camera.pixelHeight, Is.EqualTo(32));
+                string directory = Path.GetFullPath(Path.Combine(Application.dataPath,
+                    "..", "TestResults", "PerformanceCaptureContracts"));
+                Assert.That(RuntimePerformanceCapture.StartCapture(new PerformanceCaptureOptions(
+                    SceneManager.GetActiveScene().name, "rejected target", 0, 1, 60, 128, 64), directory, camera), Is.True);
+                float deadline = Time.realtimeSinceStartup + 2f;
+                while (RuntimePerformanceCapture.IsRunning && Time.realtimeSinceStartup < deadline) yield return null;
+                Assert.That(RuntimePerformanceCapture.IsRunning, Is.False);
+                Assert.That(RuntimePerformanceCapture.LastReportPath, Is.Not.Empty);
+                PerformanceCaptureReport report = JsonUtility.FromJson<PerformanceCaptureReport>(
+                    File.ReadAllText(RuntimePerformanceCapture.LastReportPath));
+                Assert.That(report.reason, Is.EqualTo("resolution_mismatch"));
+                Assert.That(report.resolutionMatched, Is.False);
+                Assert.That(report.requestedRenderWidth, Is.EqualTo(128));
+                Assert.That(report.requestedRenderHeight, Is.EqualTo(64));
+                Assert.That(report.renderWidth, Is.EqualTo(64));
+                Assert.That(report.renderHeight, Is.EqualTo(32));
+                Assert.That(report.renderTarget, Is.EqualTo("render_texture"));
+                Assert.That(report.frameIntervalMs.sampleCount, Is.Zero);
+                Assert.That(report.gcAllocatedBytes.sampleCount, Is.Zero);
+                Assert.That(report.measuredSeconds, Is.Zero);
+            }
+            finally
+            {
+                RuntimePerformanceCapture.StopCapture();
+                Object.Destroy(host);
+                target.Release();
+                Object.Destroy(target);
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_LaboratoryMenuSpawnsEachEnemyAndReturnsWithoutWarehouseLatch()

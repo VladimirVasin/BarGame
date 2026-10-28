@@ -71,8 +71,14 @@ namespace BarPromenade
 
         public bool HasSelectedUseAction =>
             HasSelection &&
+            !HidesUnannouncedQuestFood &&
             (SelectedIsEquippable || InventoryConsumableCatalog.TryGet(
                 SelectedStack.ItemId, out _));
+
+        private bool HidesUnannouncedQuestFood =>
+            SelectedStack.ItemId == InventoryItemId.OpenStewCan &&
+            GameSessionState.GetQuestStatus(QuestId.FeedTheCat) ==
+                QuestStatus.NotStarted;
 
         public bool CanUseSelected =>
             HasSelectedUseAction &&
@@ -89,7 +95,7 @@ namespace BarPromenade
                         : "inventory.action.equip");
                 }
 
-                if (!HasSelection ||
+                if (!HasSelectedUseAction ||
                     !InventoryConsumableCatalog.TryGet(
                         SelectedStack.ItemId,
                         out _))

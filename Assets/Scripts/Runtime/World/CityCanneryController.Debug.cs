@@ -78,17 +78,8 @@ namespace BarPromenade
         private bool DebugTruckBodyIsClear(CityPortTruckPose pose)
         {
             Vector3 center = pose.RearAxle + pose.Rotation * CityCanneryTruckDimensions.BodyCenter;
-            int count = Physics.OverlapBoxNonAlloc(center, CityCanneryTruckDimensions.BodyHalfExtents +
-                new Vector3(.08f, 0f, .08f), obstacles, pose.Rotation, ~0, QueryTriggerInteraction.Ignore);
-            // A full buffer cannot establish that a hidden extra body is clear.
-            if (count == obstacles.Length) return false;
-            for (int i = 0; i < count; i++)
-            {
-                Collider hit = obstacles[i];
-                if (hit == null || hit.transform.IsChildOf(transform) || hit.bounds.max.y < pose.RearAxle.y + .45f) continue;
-                return false;
-            }
-            return true;
+            return FindTruckObstacle(center, CityCanneryTruckDimensions.BodyHalfExtents +
+                new Vector3(.08f, 0f, .08f), pose.Rotation, pose.RearAxle.y) == null;
         }
     }
 }

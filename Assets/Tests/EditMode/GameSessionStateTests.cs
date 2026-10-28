@@ -648,16 +648,12 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void FoodUse_ClearsFractionalHungerProgress()
         {
-            // The cat's quest opens on its own day, so a new game
-            // reserves nothing and the can is the hero's to eat. Kept
-            // explicit rather than relied upon: this test is about
-            // hunger arithmetic and must not start failing the day
-            // somebody dates the cat differently.
-            GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
+            // Ordinary shop food keeps this arithmetic independent of
+            // the unique refrigerator tin reserved for the cat.
             GameSessionState.UpdateNeeds(60, 0);
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
-                    InventoryItemId.OpenStewCan),
+                    InventoryItemId.ClosedStewCan),
                 Is.True);
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
@@ -667,7 +663,7 @@ namespace BarPromenade.Tests.EditMode
 
             InventoryItemUseResult result =
                 GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.OpenStewCan);
+                    InventoryItemId.ClosedStewCan);
 
             Assert.That(result.Succeeded, Is.True);
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
@@ -680,30 +676,47 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The cat's claim on the stew lasts exactly as long as the cat
-        /// is owed a tin: not a moment before the quest, and never again
-        /// once it has been fed.
+        /// The finite refrigerator source must still feed the cat when
+        /// its quest opens, even if the hero found it the previous day.
         /// </summary>
         [Test]
-        public void StewReservation_LastsExactlyAsLongAsTheCatQuest()
+        public void StewReservation_PreservesUniqueSourceUntilCatQuestCompletes()
         {
+            string sourceId = HomeRefrigeratorInventoryAdapter.GetSourceId(
+                "shelf-middle-right");
             Assert.That(
                 GameSessionState.IsQuestActive(QuestId.FeedTheCat),
                 Is.False,
-                "The first day owes the cat nothing.");
+                "The first day still opens no feeding quest.");
             Assert.That(
-                GameSessionState.TrySetDebugGameDay(
-                    GameDaySchedule.GetFirstDayNumber(
-                        GameDayEventId.FeedTheCatOpens)),
+                GameSessionState.TryStartGameTimeAt(7 * 60 + 40),
                 Is.True);
             Assert.That(
-                GameSessionState.IsQuestActive(QuestId.FeedTheCat),
-                Is.True,
-                "The cat's own day opens owing him a tin.");
+                GameSessionState.TryCollectWorldItem(
+                    sourceId, InventoryItemId.OpenStewCan), Is.True);
+            GameSessionState.AdvanceGameTime(900f);
+            Assert.That(GameSessionState.GameDayIndex, Is.Zero);
+            Assert.That(GameSessionState.HungerLevel, Is.GreaterThan(20),
+                "The ordinary food rule would allow eating this tin.");
+            Assert.That(GameSessionState.TryConsumeInventoryItem(
+                InventoryItemId.OpenStewCan).Status,
+                Is.EqualTo(InventoryItemUseStatus.ReservedForQuest));
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.OpenStewCan), Is.EqualTo(1));
+
+            GameSessionState.EnterHome();
+            GameSessionState.AdvanceGameTime(1980f);
+            GameSessionState.PrepareHomeReturn();
+            Assert.That(GameSessionState.GameDayIndex, Is.EqualTo(1));
+            Assert.That(GameSessionState.IsQuestActive(QuestId.FeedTheCat),
+                Is.True, "The scheduled second day still opens the quest.");
+            Assert.That(GameSessionState.IsWorldItemCollected(sourceId), Is.True);
+            Assert.That(GameSessionState.TryCollectWorldItem(
+                sourceId, InventoryItemId.OpenStewCan), Is.False,
+                "Visiting another scene cannot replenish the unique source.");
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
-                    InventoryItemId.OpenStewCan,
-                    2),
+                    InventoryItemId.OpenStewCan),
                 Is.True);
             GameSessionState.UpdateNeeds(60, 0);
 
@@ -753,24 +766,22 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void CheapFoodUse_StopsAtFloorAndKeepsUnusedItem()
         {
-            // As above: settle any claim on the can before measuring.
-            GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             GameSessionState.UpdateNeeds(60, 40);
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
-                    InventoryItemId.OpenStewCan,
+                    InventoryItemId.ClosedStewCan,
                     3),
                 Is.True);
 
             InventoryItemUseResult first =
                 GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.OpenStewCan);
+                    InventoryItemId.ClosedStewCan);
             InventoryItemUseResult second =
                 GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.OpenStewCan);
+                    InventoryItemId.ClosedStewCan);
             InventoryItemUseResult blocked =
                 GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.OpenStewCan);
+                    InventoryItemId.ClosedStewCan);
 
             Assert.That(first.Succeeded, Is.True);
             Assert.That(first.ActualHungerRelief, Is.EqualTo(35));
@@ -784,7 +795,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.OpenStewCan),
+                    InventoryItemId.ClosedStewCan),
                 Is.EqualTo(1));
         }
 

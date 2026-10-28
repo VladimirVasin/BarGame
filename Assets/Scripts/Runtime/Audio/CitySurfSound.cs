@@ -304,7 +304,7 @@ namespace BarPromenade
 
         private CitySurfSoundPlayer player;
         private Transform listener;
-        private IReadOnlyList<BuildingLot> buildingLots;
+        private CitySoundOcclusion.Geometry occlusionGeometry;
         private float occlusionCountdown;
         private bool ready;
 
@@ -321,8 +321,9 @@ namespace BarPromenade
                 ? listenerTransform
                 : throw new ArgumentNullException(
                     nameof(listenerTransform));
-            buildingLots = occlusionLots ??
-                throw new ArgumentNullException(nameof(occlusionLots));
+            if (occlusionLots == null) throw new ArgumentNullException(nameof(occlusionLots));
+            occlusionGeometry = null;
+            ready = false;
             if (seacoastPlan == null)
             {
                 ready = false;
@@ -331,6 +332,7 @@ namespace BarPromenade
             }
 
             player.SetShoreline(seacoastPlan);
+            occlusionGeometry = CitySoundOcclusion.Capture(occlusionLots);
             ready = true;
         }
 
@@ -349,11 +351,12 @@ namespace BarPromenade
             if (occlusionCountdown <= 0f)
             {
                 occlusionCountdown = OcclusionRefreshSeconds;
-                player.SetOcclusion(CitySoundOcclusion.Evaluate(
+                player.SetOcclusion(occlusionGeometry.Evaluate(
                     player.Anchor,
-                    listener.position,
-                    buildingLots));
+                    listener.position));
             }
         }
+
+        private void OnDestroy() { ready = false; occlusionGeometry = null; }
     }
 }

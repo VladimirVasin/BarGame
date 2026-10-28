@@ -92,16 +92,19 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CombatTestPlayModeTests
     {
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_RoomBodyKeepsAuthoredSurfacesContactDamageAndReset()
         { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Room); }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_ImprintBodyKeepsConcaveSurfacesContactDamageAndReset()
         { yield return VerifyAuthoredBodyLifecycle(CombatEnemyKind.Imprint); }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
         public IEnumerator Range_LongExposureBodyKeepsFusedSurfacesContactDamageAndReset()
@@ -839,6 +842,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
         public IEnumerator Range_MixedEndlessRetainsTwoHitWoundsPopulationAndFishGate()
@@ -1347,6 +1351,8 @@ namespace BarPromenade.Tests.PlayMode
             AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit()
         {
@@ -1550,6 +1556,7 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CurrentCombat")]
         [UnityTest]
         [PrebuildSetup(typeof(CombatStoredSecondaryMotionAssetsSetup))]
         public IEnumerator Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads()
@@ -1723,6 +1730,7 @@ namespace BarPromenade.Tests.PlayMode
 
         // A headless Tick benchmark cannot reproduce the log's long intervals
         // after render submission. Keep this opt-in test on real Editor frames.
+        [Category("CombatDiagnostic")]
         [UnityTest, Explicit("Rendered warehouse performance evidence with optional CPU Timeline; no machine-dependent FPS gate.")]
         public IEnumerator Range_EndlessWarehouseRetainsRenderedPerformanceEvidence()
         {
@@ -2144,6 +2152,8 @@ namespace BarPromenade.Tests.PlayMode
 #endif
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_EndlessProjectilesResolveEveryVictim()
         {

@@ -8,6 +8,7 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [Category("CurrentCombat")]
         [UnityTest]
         public IEnumerator Range_RecoveryRootUsesActualStairSupportAndRefusesBlockedLanding()
         {
@@ -122,6 +123,8 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Category("CombatMigrationPending")]
+        [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]
         public IEnumerator Range_RecoveryQueriesGrowPastOwnShapesAndStillRejectRealBlockers()
         {

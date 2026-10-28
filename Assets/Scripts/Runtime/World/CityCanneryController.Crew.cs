@@ -21,6 +21,9 @@ namespace BarPromenade
         private readonly Vector3[] driverPlantedFeet = new Vector3[2];
         private readonly Quaternion[] driverPlantedFootRotations = new Quaternion[2];
         private readonly Transform[] workerSpines = new Transform[5];
+        private readonly Transform[] stationWorkers = new Transform[2];
+        private readonly Transform[] stationRightHands = new Transform[2];
+        private readonly Transform[] stationLeftHands = new Transform[2];
         private readonly Vector3[] workerRoute = new Vector3[6];
         private Vector3 driverDoorDock;
         private Quaternion driverDoorRest;
@@ -30,6 +33,13 @@ namespace BarPromenade
         private void CreateWorkers()
         {
             hairDetailCamera = GetComponentInParent<CityGameRoot>()?.Camera;
+            for (int station = 0; station < stationWorkers.Length; station++)
+            {
+                string name = station == 0 ? "Preparation" : "Seamer";
+                stationWorkers[station] = anchors[name + "Worker"];
+                stationRightHands[station] = anchors[name + "RightHand"];
+                stationLeftHands[station] = anchors[name + "LeftHand"];
+            }
             DefaultNpcCatalog.GetPrefab();
             string[] names = { "Cannery Receiver", "Cannery Preparation Worker", "Cannery Seamer",
                 "Cannery Retort and Packing Worker", "Fish Delivery Driver" };
@@ -96,9 +106,9 @@ namespace BarPromenade
                 if (!ApplyFactoryShift(0)) ApplyReceiver();
 
                 if (!ApplyFactoryShift(1))
-                    ApplyStationWorker(1, "Preparation", Production.Stage == CityCanneryProductionStage.Prepare);
+                    ApplyStationWorker(1, Production.Stage == CityCanneryProductionStage.Prepare);
                 if (!ApplyFactoryShift(2))
-                    ApplyStationWorker(2, "Seamer", Production.Stage == CityCanneryProductionStage.Fill ||
+                    ApplyStationWorker(2, Production.Stage == CityCanneryProductionStage.Fill ||
                         Production.Stage == CityCanneryProductionStage.Seal);
                 if (!ApplyFactoryShift(3)) ApplyRetortWorker((float)Production.Seconds);
             }
@@ -138,18 +148,20 @@ namespace BarPromenade
             }
         }
 
-        private void ApplyStationWorker(int index, string station, bool working)
+        private void ApplyStationWorker(int index, bool working)
         {
             VillageResidentPresentation actor = workers[index];
-            Vector3 right = Anchor(station + "RightHand"), left = Anchor(station + "LeftHand");
+            int station = index - 1;
+            Vector3 right = stationRightHands[station].position, left = stationLeftHands[station].position;
+            Vector3 workPosition = stationWorkers[station].position;
             Vector3 load = index == 1 ? Anchor("PreparationLoad") : tray.position;
-            StandWorker(actor, Anchor(station + "Worker"), Plan.Right, load);
+            StandWorker(actor, workPosition, Plan.Right, load);
             // Equipment labels predate this rig's imported facing. The actual
             // shoulder frame assigns the two physical rim contacts to hands.
             if (index == 1) OrderFactoryHandTargets(index, ref right, ref left);
             if (!working)
             {
-                ApplyFactoryIdleLife(index, Anchor(station + "Worker"), Plan.Right, load);
+                ApplyFactoryIdleLife(index, workPosition, Plan.Right, load);
                 return;
             }
             factoryDutyBusy[index] = true;

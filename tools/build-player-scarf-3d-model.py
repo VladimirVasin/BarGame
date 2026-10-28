@@ -271,10 +271,14 @@ def validate_face_fit(wrap_object):
 
 
 def main():
+    global OUT, SOURCE
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--model-dir", type=Path, default=OUT)
+    parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    OUT, SOURCE = args.model_dir, args.source_dir
     bpy.ops.wm.open_mainfile(filepath=str(HERO))
     rig = next(obj for obj in bpy.data.objects if obj.type == "ARMATURE")
     rig.animation_data_clear()

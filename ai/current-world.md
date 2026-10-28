@@ -2056,12 +2056,11 @@ cemetery:own interiors/returns.
   grin — a tooth crescent wider than the head on an arc-length reveal
   shader — can draw itself in from the center outward while the head turns
   over the shoulder to the live camera; only a future script triggers it
-  through `StairwellInteriorRoot.CatGrin`. Activating the shared
-  `IInteractable` path opens a localized default-Talk `Talk`/`Interact`
-  target menu: Talk preserves the existing temporary cat response, while
-  Interact checks the run inventory for one open stew can and either shows a
-  localized missing-item thought or opens a default-No `Feed the cat?`
-  confirmation;
+  through `StairwellInteriorRoot.CatGrin`. The shared `IInteractable` menu opens
+  only for active day-two `FeedTheCat`: default-Talk, the existing silent cat
+  response, and default-No feeding confirmation or missing-item feedback.
+  `OpenStewCan` stays reserved until completion, including day one, so the
+  unique Home tin cannot be eaten before the quest;
 - one reusable inventory-backed target-interaction model and controller own the
   pure item requirement, `Choice -> Confirmation -> Executing -> Closed`
   states, pointer/keyboard/gamepad choices, shared modal lock, temporary prompt
