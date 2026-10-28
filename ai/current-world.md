@@ -1206,39 +1206,41 @@ cemetery:own interiors/returns.
   night-gated), rendered on its own no-fog shaders with a
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
-- Port (`CityPort{Plan,Cycle,Controller}`): `20 m` trawler, one berth west of
-  river mouth; 2 cranes/trolley/cold store, 3 units. First running/unpaused dock
-  entry starts ship/supply once; earlier time excluded. Autonomous across scenes/
-  reentry, reset by new game only. Before: Approach `0`.
-  `432 s`+waits: mooring, `3*64 s` deliveries, securing/departure/idle;
-  next ship awaits truck. Seek restores custody silently.
-  Cargo passes store baffle; roller leaf/rails move together, bumpers on outer jambs.
+- Port (`CityPort{Plan,Cycle,Controller}`): `20 m` trawler, west-mouth berth;
+  2 cranes/trolley/cold store, 3 units. First running/unpaused entry starts
+  ship/supply once; pre-entry time excluded. Autonomous scenes/reentry;
+  new-game reset. Before: Approach `0`. `432 s`+waits: moor, `3*64 s`
+  deliveries, secure/depart/idle; truck gates next ship. Silent custody seek.
+  Cargo clears baffle; roller leaf/rails move together, outer-jamb bumpers.
   Sway <`9 cm` settles before lowering; empty trolley/cranes return.
   Five default workers: captain/deckhand/operators/docker; shore trio rests under
-  canopy, returns by clear south lanes. Paired speech retains absent/no-repeat
-  rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
+  canopy, returns via south lanes. Paired speech keeps absent/no-repeat rounds;
+  rest ends before greetings, staggered farewells fit earshot, no replay.
   Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
-  Driver talks only to docker. Tare/cart avoided; people/cargo physical, custody-owned.
+  Driver↔docker only; tare/cart avoided, physical custody-owned people/cargo.
   `CityPortForeman`: store wall/cart-facing/quay light, left carrot: 3 bites→pail→pocket.
   E/pair gate, `1.65 m` approach/two side chest shots; spoken «Хочу»/«Не сейчас».
-  Shared sprite mouths/brows/blink/soil twins; punctuation/tail close. Face fills
-  mouth; chin/jowls lag/decay. Pause freezes; cancel restores faces/input/HUD/rig.
-  Held carrot clock/bite, lowered left/right gesture, pose/camera together.
-  No job/pay/quest; village/Mother unchanged.
-  Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
+  Shared mouths/brows/blink/soil twins; punctuation/tail close, face fills mouth,
+  chin/jowls lag/decay. Pause freezes; cancel restores faces/input/HUD/rig.
+  Held carrot clock/bite; left down/right gestures, paired pose/camera.
+  No job/pay/quest. Solid caissons: `20 m` seaward/`-3.4 m` below sea.
   `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
-  `6.481 x 2.4 m` truck; road/shoulders are the city approach, ramp/yard masks joined.
-  No bypass/spur/crossing in geometry, terrain, walk/map masks or fence openings.
-  Shore NPCs use natural sand east of the road opening.
-  Rear/side walks stay; boats avoid `3.4 m` basin. City asphalt/`12 m` phase/wetness.
-  Store panels/guards/joists/wired lamps preserve baffle/east stock. West rack/
-  bench/lids/inserts/tare/tools/gloves/squeegee have physical bounds; flush drains/
-  wheel rubs clear handling lanes. Two-fan evaporator→outside condensers/drain.
-  Three warm shadowed spots join quay/store/canopy lights: two-thirds day/distance gate.
+  `6.481 x 2.4 m` truck; road/shoulders form city approach; ramp/yard masks join.
+  No bypass/spur/crossing in geometry/terrain/walk/map/fence openings.
+  Shore NPCs use sand east of road opening. Rear/side walks stay; boats avoid
+  `3.4 m` basin. City asphalt/`12 m` phase/wetness.
+  Panels/guards/joists/wired lamps keep baffle/east stock; solid west rack/bench/
+  lids/inserts/tare/tools/gloves/squeegee, flush drains/wheel rubs clear lanes.
+  Braced canopy/east rope-shackle-chock rack/cooler supports: three passive
+  groups/≤5 renderers/shared surfaces; anchors/rest docks/bounds stay.
+  Roof flashing/fender/ladder/bollard/crane bolts refine old meshes.
+  Rack/cooler solids join canopy/wall collision, clear of loading opening.
+  Two-fan evaporator→outside condensers/drain.
+  Three warm shadowed spots join quay/store/canopy lights: day≥2/3,distance gate.
   Searchlight shadows deck/water; wake `CityPortWater`; `CityPortSound`:
   Motor `.6/.24`, `48 m`; horns `20/4 s` pre-Moor/Depart. Arrival ×2,
-  echo `780 ms`/reverb `6.2 s`. Pause/teardown own people/audio/wake.
-  Small blueprints without room retain the nonoperational mol;
+  echo `780 ms`/reverb `6.2 s`. Pause/teardown: people/audio/wake.
+  Cramped blueprints retain nonoperational mol;
 - Cannery: `8 x 14 m` hall/`18 x 18 m` site/bay/public bypass.
   Side/public + west/staff openings; machines/glass stay.
   `CityCanneryPlan`: ten Blender parts/five maps/port surfaces, fifteen cans/

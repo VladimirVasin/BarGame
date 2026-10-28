@@ -11,6 +11,41 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Passive port construction: imported metres, crew/cart clearance and actual day/night detail frames.")]
+        public IEnumerator CityPortConstructionDetails() => CaptureFocusedPort(CapturePortConstructionDetails);
+
+        private static IEnumerator CapturePortConstructionDetails(Camera camera, CityGameRoot city,
+            CityPortController port, CityPortCrew crew)
+        {
+            Type setup = Type.GetType("BarPromenade.Editor.CityPortAssetSetup, BarPromenade.Editor");
+            Assert.That(setup, Is.Not.Null);
+            setup.GetMethod("ValidateOrThrow").Invoke(null, null);
+            port.Plan.ValidateOrThrow();
+            double elapsed = CityPortCycle.UnloadStartSeconds + 16d;
+            port.ApplyAt(elapsed, 15f);
+            crew.ApplyAt(elapsed);
+            Physics.SyncTransforms();
+            ValidatePortPassiveDetails(port, crew, city);
+            foreach (int hour in new[] { 12, 21 })
+            {
+                GameSessionState.AdvanceGameTime((float)((hour * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                    GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                yield return null;
+                string phase = hour == 12 ? "day" : "night";
+                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-quay",
+                    new Vector3(18.5f, 3.22f, -5f), new Vector3(0f, 3f, 3.2f));
+                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-rack",
+                    new Vector3(10.5f, 3.22f, -11.1f), new Vector3(11.3f, 2.9f, -6.9f), 58f);
+                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-cooling",
+                    new Vector3(8f, 3.22f, -18f), new Vector3(3.9f, 3.0f, -17f), 58f);
+                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-mooring",
+                    new Vector3(-13.5f, 3.22f, -3.7f), new Vector3(-11f, 1.85f, -.25f), 56f);
+            }
+            Debug.Log("CITY PORT CONSTRUCTION DETAILS OK: imported dimensions, shared surfaces, crew docks, public path, solid rack, parked cart and day/night construction views.");
+        }
+
+        [UnityTest]
         [Explicit("Working fishing port: imported metres, complete finite visit, physical transfers, lifecycle and day/night frames.")]
         public IEnumerator CityPort()
         {
@@ -270,6 +305,82 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private static void ValidatePortPassiveDetails(CityPortController port, CityPortCrew crew, CityGameRoot city)
+        {
+            AssertPortDetailEnvelope(port, "DockCanopyStructure", new Vector3(5.5f, 1.5f, -9.2f),
+                new Vector3(13.5f, 4.485f, -4.4f), new Vector3(6f, 2f, 3f));
+            AssertPortDetailEnvelope(port, "DockServiceRack", new Vector3(12.27f, 1.5f, -8.7f),
+                new Vector3(13.3f, 2.95f, -6.4f), new Vector3(.65f, 1.3f, 1.8f));
+            AssertPortDetailEnvelope(port, "DockWarehouseServiceDetails", new Vector3(4.1f, 2.2f, -17.9f),
+                new Vector3(4.65f, 3.1f, -15.5f), new Vector3(.25f, .75f, 1.8f));
+            var canopy = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_Awning").GetComponent<MeshCollider>();
+            Assert.That(canopy, Is.Not.Null);
+            Vector3 expectedMin = port.Plan.World(new Vector3(5.5f, 1.5f, -9.2f));
+            Vector3 expectedMax = port.Plan.World(new Vector3(13.5f, 4.485f, -4.4f));
+            Assert.That(Vector3.Distance(canopy.bounds.min, expectedMin), Is.LessThan(.03f),
+                "New service fittings retain the existing roof bounds used to place resting workers.");
+            Assert.That(Vector3.Distance(canopy.bounds.max, expectedMax), Is.LessThan(.03f));
+            Assert.That(Vector3.Distance(crew.RestCanopyBounds.center, canopy.bounds.center), Is.LessThan(.003f));
+            Assert.That(Vector3.Distance(crew.RestCanopyBounds.size, canopy.bounds.size), Is.LessThan(.003f));
+            for (int role = 2; role < 5; role++)
+            {
+                var body = crew.GetWorker(role).GetComponent<CapsuleCollider>();
+                Assert.That(body, Is.Not.Null);
+                bool hit = Physics.ComputePenetration(body, crew.RestPosition(role), body.transform.rotation,
+                    canopy, canopy.transform.position, canopy.transform.rotation, out _, out float depth);
+                Assert.That(hit && depth > .005f, Is.False,
+                    "Service storage and canopy braces leave the existing rest place clear: role " + role);
+            }
+            var probeObject = new GameObject("Port service rack clearance probe") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                var hero = city.Player.GameObject.GetComponent<CharacterController>();
+                var probe = probeObject.AddComponent<CapsuleCollider>();
+                probe.isTrigger = true; probe.radius = hero.radius; probe.height = hero.height; probe.center = hero.center;
+                for (int step = 0; step <= 12; step++)
+                {
+                    Vector3 point = port.Plan.World(new Vector3(11.8f, 1.52f, Mathf.Lerp(-8.7f, -6.4f, step / 12f)));
+                    bool hit = Physics.ComputePenetration(probe, point, Quaternion.identity, canopy,
+                        canopy.transform.position, canopy.transform.rotation, out _, out float depth);
+                    Assert.That(hit && depth > .005f, Is.False, "The hero can walk along the service rack's open side.");
+                }
+                // Approach the outward face: PhysX ignores backfaces when a
+                // capsule is already entirely inside a non-convex mesh.
+                bool blocked = Physics.ComputePenetration(probe, port.Plan.World(new Vector3(12.12f, 1.52f, -7.55f)),
+                    Quaternion.identity, canopy, canopy.transform.position, canopy.transform.rotation, out _, out float penetration);
+                Assert.That(blocked && penetration > .01f, Is.True, "The service rack's outer face physically blocks the hero.");
+                probe.enabled = false;
+                var cartProbe = probeObject.AddComponent<BoxCollider>();
+                cartProbe.isTrigger = true;
+                Bounds cartBounds = PortLocalMeshBounds(city.Cannery.PortTrolley);
+                cartProbe.center = cartBounds.center;
+                cartProbe.size = cartBounds.size;
+                bool cartBlocked = Physics.ComputePenetration(cartProbe, city.Cannery.PortTrolleyParkingPosition,
+                    Quaternion.LookRotation(Vector3.back), canopy, canopy.transform.position, canopy.transform.rotation,
+                    out _, out float cartDepth);
+                Assert.That(cartBlocked && cartDepth > .005f, Is.False,
+                    "Canopy feet leave the measured parked trolley envelope clear.");
+            }
+            finally { Object.DestroyImmediate(probeObject); }
+        }
+
+        private static void AssertPortDetailEnvelope(CityPortController port, string name, Vector3 minimum,
+            Vector3 maximum, Vector3 minimumSize)
+        {
+            Transform root = CityPortAssetProvider.FindPart(port.Dock.gameObject, name);
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers.Length, Is.InRange(1, 3), name + " uses a bounded set of shared surface renderers.");
+            Bounds bounds = renderers[0].bounds;
+            foreach (Renderer renderer in renderers) bounds.Encapsulate(renderer.bounds);
+            Vector3 low = bounds.min - port.Plan.Origin, high = bounds.max - port.Plan.Origin;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                Assert.That(low[axis], Is.GreaterThanOrEqualTo(minimum[axis] - .03f), name + " lower metre boundary");
+                Assert.That(high[axis], Is.LessThanOrEqualTo(maximum[axis] + .03f), name + " upper metre boundary");
+                Assert.That(bounds.size[axis], Is.GreaterThan(minimumSize[axis]), name + " must retain its imported world scale");
+            }
+        }
+
         private static void ValidatePortAccess(CityPortController port, CityGameRoot city)
         {
             CityPortAccessPlan access=port.Plan.Access;
@@ -520,7 +631,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator CapturePort(Camera camera, CityGameRoot city, CityPortController port,
-            CityPortCrew crew, double seconds, string name, Vector3 fromLocal, Vector3 targetLocal)
+            CityPortCrew crew, double seconds, string name, Vector3 fromLocal, Vector3 targetLocal, float fieldOfView = 68f)
         {
             Assert.That(port.AutoAdvance, Is.False, "A capture must hold its requested port timestamp.");
             PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
@@ -536,7 +647,7 @@ namespace BarPromenade.Tests.PlayMode
                     ? port.Vessel.position + Vector3.up * 2.5f : port.Plan.World(targetLocal);
                 Quaternion rotation = Quaternion.LookRotation(target - from);
                 camera.transform.SetPositionAndRotation(from, rotation);
-                camera.fieldOfView = 68f;
+                camera.fieldOfView = fieldOfView;
                 Physics.SyncTransforms();
 
                 // Production uses GPU Resident Drawer, whose transform uploads

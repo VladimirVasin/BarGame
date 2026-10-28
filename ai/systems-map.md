@@ -112,7 +112,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
 | Seacoast precinct | Port reached by truck road/shoulders; internal dock walks and station/east-shore approaches retained. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
-| Port cold store | Three warm lamps, refrigeration and passive furniture retain cargo lanes; local fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
+| Port cold store | Braced canopy/rigging rack, supported cooling and three warm lamps retain cargo lanes; fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | Carrot custody retained; voluntary two-speaker E dialogue, no work/pay. | `CityPortForeman*`, `CityPortConversation*` | Current |
 | NPC dialogue | Graph, approach/two shots/cancel; foreman. Translucent choices; shared inspection camera. | `DialogueGraph`, `DialogueSessionController`, `ContextualCameraDirector` | Current |
 | Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |

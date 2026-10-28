@@ -14,6 +14,8 @@ from pathlib import Path
 import random
 import sys
 
+sys.dont_write_bytecode = True
+
 import bpy
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -162,6 +164,94 @@ def crate(geom,x,y,z,fish=False):
                       (xx-.055,y+.255,zz-.22),(xx+.055,y+.255,zz-.22),(xx,y+.265,zz-.10)],
                      [(0,2,1),(3,4,5),(0,1,4,3),(1,2,5,4),(2,0,3,5)],FISH)
     geom.role=previous_role
+
+
+def canopy_structure(root,mat,collision):
+    """Braced, bolted roof support inside the existing shelter envelope."""
+    steel=Geometry();steel.role="SteelDark"
+    for target in (steel,collision):
+        for x in (6,13):
+            for z in (-9,-4.6):
+                chamfer(target,(x,1.55,z),(.34,.10,.34),METAL,.015)
+                # Knee braces end above head height and keep the old post axes.
+                inward=1 if x==6 else -1
+                target.rod((x,3.65,z),(x+inward*.66,4.12,z),.045,METAL,8)
+            for y,width,height in ((4.105,.16,.045),(4.20,.055,.15),(4.295,.16,.04)):
+                target.box((x,y,-6.8),(width,height,4.52),METAL)
+        for z in (-9,-4.6):
+            for y,width,height in ((4.105,.16,.045),(4.20,.055,.15),(4.295,.16,.04)):
+                target.box((9.5,y,z),(7.12,height,width),METAL)
+    for x in (6,13):
+        for z in (-9,-4.6):
+            for dx in (-.115,.115):
+                for dz in (-.115,.115):
+                    steel.rod((x+dx,1.60,z+dz),(x+dx,1.635,z+dz),.022,DARK,6)
+            for y in (3.80,4.08):
+                chamfer(steel,(x,y,z-.078),(.20,.13,.025),METAL,.008)
+                steel.rod((x,y,z-.10),(x,y,z-.12),.025,DARK,6)
+    obj(steel,"DockCanopyStructure",root,mat)
+
+
+def service_rack(root,mat,collision):
+    """One finite rigging bay beside the east posts, outside the crew routes.
+
+    Only reusable rope, shackles and chocks live here. The rack cannot imply
+    a second fish buffer; its solid shares the existing shelter collider.
+    """
+    rack=Geometry();rack.role="SteelDark"
+    for x in (12.48,13.15):
+        for z in (-8.48,-6.62):
+            chamfer(rack,(x,2.20,z),(.055,1.40,.055),METAL,.009)
+            chamfer(rack,(x,1.525,z),(.16,.05,.16),METAL,.010)
+    for y in (1.70,2.72):
+        for x in (12.48,13.15):
+            chamfer(rack,(x,y,-7.55),(.06,.07,1.92),METAL,.010)
+        for z in (-8.48,-6.62):
+            chamfer(rack,(12.815,y,z),(.73,.07,.06),METAL,.010)
+    rack.rod((13.15,1.74,-8.43),(13.15,2.72,-6.67),.025,METAL,6)
+    rack.rod((13.15,1.74,-6.67),(13.15,2.72,-8.43),.025,METAL,6)
+    for z in (-8.13,-7.42,-6.86):
+        rack.rod((12.48,2.72,z),(12.37,2.72,z),.025,METAL,6)
+        rack.rod((12.37,2.72,z),(12.37,2.79,z),.025,METAL,6)
+    rack.role="Timber"
+    for i in range(5):
+        chamfer(rack,(12.815,1.755,-8.33+i*.39),(.69,.045,.32),WOOD,.010)
+    for i in range(3):
+        chamfer(rack,(12.81,1.82+i*.075,-8.08),(.50,.065,.30),WOOD,.012)
+    # Ropes drape from real projecting hooks; the second coil is shorter.
+    rack.role=None
+    for z,radius in ((-8.13,.25),(-7.42,.21)):
+        for turn in range(3):
+            ring(rack,(12.37-turn*.027,2.52,z),radius,.019,ROPE,(1,0,0),16)
+    for z in (-6.92,-6.80):
+        ring(rack,(12.37,2.64,z),.065,.017,METAL,(1,0,0),10)
+        rack.rod((12.37,2.695,z-.055),(12.37,2.695,z+.055),.022,METAL,6)
+    obj(rack,"DockServiceRack",root,mat)
+    chamfer(collision,(12.76,2.20,-7.55),(1.00,1.40,2.08),METAL,.015)
+
+
+def warehouse_service_details(root,mat,collision,exterior):
+    """Supported outdoor refrigeration and folded roof edges, at old datums."""
+    steel=Geometry();steel.role="SteelDark"
+    for z in (-16,-17.3):
+        # Existing condenser bodies end at x=4.555. Brackets bear directly
+        # on the masonry and stop behind the east loading-door aperture.
+        for dz in (-.39,.39):
+            chamfer(steel,(4.16,2.63,z+dz),(.035,.76,.12),METAL,.008)
+            chamfer(steel,(4.37,2.25,z+dz),(.46,.065,.12),METAL,.010)
+            steel.rod((4.18,2.28,z+dz),(4.56,2.58,z+dz),.025,METAL,6)
+            for y in (2.40,2.89):
+                steel.rod((4.18,y,z+dz),(4.20,y,z+dz),.022,DARK,6)
+        for y in (2.50,2.64,2.78,2.92,3.06):
+            steel.box((4.575,y,z),(.025,.022,.70),METAL)
+        chamfer(collision,(4.37,2.64,z),(.46,.84,.96),METAL,.010)
+    # Folded flashings terminate at the existing gutter runs, with small
+    # wall plates beneath; they do not grow the building or seal an opening.
+    for x in (-8.18,4.18):
+        exterior.box((x,4.98,-15.5),(.10,.20,7.26),METAL)
+    for x in (-7.6,-4.8,-2,.8,3.6):
+        chamfer(exterior,(x,4.87,-11.84),(.16,.25,.08),METAL,.012)
+    obj(steel,"DockWarehouseServiceDetails",root,mat)
 
 
 def warehouse_interior(root,mat):
@@ -407,16 +497,27 @@ def dock(mat):
             g.rod((x+j*.17,1.504,z+j*.11),(x+(j+1)*.17,1.504,z+(j+1)*.11+(.06 if j%2 else -.04)),.009,METAL,4)
     for x in (-11,11):
         bollard(g,x,1.5,-.3)
+        for dx in (-.24,.24):
+            for dz in (-.20,.20):
+                g.rod((x+dx,1.60,-.3+dz),(x+dx,1.64,-.3+dz),.030,DARK,6)
         empty("ANCHOR_Bollard"+("West" if x<0 else "East"),root,(x,2,-.3))
         empty("ANCHOR_Moor"+("Bow" if x<0 else "Stern"),root,(x,2,-.3))
     for x in (-12,-8,-4,0,4,8,12):
         g.role="Rubber"
         ring(g,(x,.65,.28),.39,.12,DARK,(0,0,1),12)
         g.role=None
-        for dx in (-.2,.2): g.rod((x+dx,1.48,-.12),(x+dx,.92,.25),.025,METAL)
+        for dx in (-.2,.2):
+            chamfer(g,(x+dx,1.33,.015),(.16,.25,.055),METAL,.015)
+            g.rod((x+dx,1.48,-.12),(x+dx,.92,.25),.025,METAL)
+            for y in (1.26,1.40):
+                g.rod((x+dx,y,.04),(x+dx,y,.065),.023,DARK,6)
     for x in (-15,15):
         for dx in (-.27,.27): g.rod((x+dx,-1,.26),(x+dx,2,.26),.04,METAL)
         for j in range(9): g.rod((x-.27,-.8+j*.32,.28),(x+.27,-.8+j*.32,.28),.032,METAL)
+        for y in (-.45,.65,1.35):
+            for dx in (-.27,.27):
+                chamfer(g,(x+dx,y,.025),(.14,.18,.05),METAL,.009)
+                g.rod((x+dx,y,.05),(x+dx,y,.26),.025,METAL,6)
     # Warehouse: physical reveals and a 2.8 m opening, no painted-on doorway.
     walls=[kit.translated(kit.wall_run(12,3.5,.28,[kit.Opening(2,2.8,2.85)]),(-2,-12,1.5)),
            kit.translated(kit.wall_run(12,3.5,.28),(-2,-19,1.5)),
@@ -504,6 +605,9 @@ def dock(mat):
                 x=a[0]+(b[0]-a[0])*i/count;z=a[1]+(b[1]-a[1])*i/count
                 target.rod((x,1.5,z),(x,2.55,z),.045,METAL)
             for y in (1.94,2.50):target.rod((a[0],y,a[1]),(b[0],y,b[1]),.045,METAL)
+    canopy_structure(root,mat,awning)
+    service_rack(root,mat,awning)
+    warehouse_service_details(root,mat,cw,g)
     obj(g,"DockVisible",root,mat)
     obj(glow,"WorkLampGlass",root,mat)
     for name,geom in (("COL_Quay",cq),("COL_Breakwater",cb),("COL_WarehouseWalls",cw),("COL_Ramps",cr),("COL_Rail",rail),("COL_Awning",awning)):
@@ -738,6 +842,10 @@ def crane_base(mat):
     root=empty("CraneBase");g=Geometry()
     chamfer(g,(0,.22,0),(2.7,.44,2.7),CONCRETE,.10)
     g.rod((0,.44,0),(0,.70,0),1.05,METAL,16)
+    for x in (-1.10,1.10):
+        for z in (-1.10,1.10):
+            chamfer(g,(x,.47,z),(.17,.06,.17),METAL,.012)
+            g.rod((x,.50,z),(x,.56,z),.045,DARK,6)
     g.rod((0,.7,0),(0,3.85,0),.38,PAINT,12)
     for x in (-.5,.5):
         g.rod((x,1.1,0),(x,3.72,0),.075,METAL)
@@ -963,6 +1071,28 @@ def validate_warehouse_interior(roots):
     def extents(name):
         points=measured(name)
         return tuple(max(p[i] for p in points)-min(p[i] for p in points) for i in range(3))
+
+    detail_envelopes=(
+        ("DockCanopyStructure",(5.5,1.5,-9.2),(13.5,4.485,-4.4)),
+        ("DockServiceRack",(12.27,1.5,-8.7),(13.3,2.95,-6.4)),
+        ("DockWarehouseServiceDetails",(4.1,2.2,-17.9),(4.65,3.1,-15.5)))
+    detail_meshes=[]
+    for name,low,high in detail_envelopes:
+        for point in measured(name):
+            if any(value<lo-.001 or value>hi+.001 for value,lo,hi in zip(point,low,high)):
+                raise RuntimeError("Dock service detail leaves its safe working bay: "+name)
+        detail_meshes.extend(p for p in parts[name].children_recursive if p.type=="MESH")
+    if len(detail_meshes)>5:
+        raise RuntimeError("Dock detailing exceeded its five shared-surface renderer budget")
+    canopy=measured("COL_Awning")
+    for axis,(low,high) in enumerate(zip((5.5,1.5,-9.2),(13.5,4.485,-4.4))):
+        if abs(min(p[axis] for p in canopy)-low)>.0001 or abs(max(p[axis] for p in canopy)-high)>.0001:
+            raise RuntimeError("Service details moved the canopy bounds used by the existing crew docks")
+    # The whole rack, including the outer coil, fits its solid rather than
+    # exposing walk-through ropes. Runtime checks the hero's adjacent path.
+    for x,y,z in measured("DockServiceRack"):
+        if not (12.26-.001<=x<=13.26+.001 and 1.5-.001<=y<=2.9+.001 and -8.59-.001<=z<=-6.51+.001):
+            raise RuntimeError("Service rack geometry protrudes beyond its physical storage bay")
 
     for name,minimum in (("DockWarehousePanels",(10,3,5)),
                          ("DockWarehouseStorage",(.7,2,2)),
