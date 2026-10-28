@@ -1,6 +1,19 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-28 — residential laundry:**
+  User:one `0-5` residual `8.6×6.6 m` L-shell(Blender/interior_kit):
+  windows/floor/roof; front closed/side open, buildings/routes kept.
+  Permanent global DefaultNpc/shared rig: `48 s` folds/carries same cloth/basket.
+  Only text:generated «ПРАЧЕЧНАЯ»/washer-cloth enamel `2.4×.76 m`;
+  nonemissive, ArtSource TXT/SHA. No speech/service/economy/quest/reward/hint/
+  §6 waiver. Port tiles/City response; covered concrete dry, no new tiles.
+  4 lens/light/halo centres↓:warm work/neutral machines/cool canopy/weak front4m;
+  no air beams.
+  pool12/Soft256/day≥2/3/bounce≤4/air≤4/probes≤2; hum/static Home.
+  All24 City stack kept; §16/21/art§16. Pause/cull/retained City/
+  unload:time/custody/contacts/cleanup kept; cost unmeasured.
+
 - **Accepted 2026-10-28 — protect the cat's unique tin before its quest:**
   User accepted the audit fix: `OpenStewCan` is reserved until `FeedTheCat`
   completes, including day one. This explicitly replaces active-only inventory
@@ -59,48 +72,41 @@
   pins stay separate. Installation on this host belongs to the user.
 
 - **Accepted 2026-10-27 — functional industrial buildings:**
-  User approved eight ordinary uses: dry warehouse/cold storage, repair/metal/
-  packaging workshops, boiler/compressor houses and repair garage, plus stronger
-  equipment on the three existing coastal facilities. Passive deterministic
-  Blender models own distinct roofs/gates/equipment, occupied service niches
-  and warm window rows. Existing IDs01–05 survive;06–08 append to the catalog.
-  Purpose derives from the selected fit-tested variant; adjacency/port tendency
-  choose functions, not unrelated pipe/cargo clusters. Three optional metre-UV
-  equipment roles reuse timber/concrete/steel sheets; purpose changes brick/
-  painted-sheet recipes without new maps or per-instance materials.
-  Authored task anchors reuse the total12-Light pool, always-lit halos/day≥2/3;
-  selection/lifetime are bounded. Source bounce≤4, air≤4, halo≤24 and probes≤2
-  remain. All24 effects reviewed: SSAO/shared fog/soft shadows/grade retained;
-  no SSGI/SCGI, facade SSR, vertex-colour or DBuffer rollout. Existing wet ground,
-  response/bevels/cloth/causal marks/particles/BRDF/affordances remain; post
-  bloom/DOF/SMAA/vignette/grain/flares/blur/CA-distortion keep shared owners.
-  Story meaning/text unchanged; §16/21 and all nine art checks bind. No canon
-  exception, new interaction or performance gain is implied.
+  User:dry/cold stores,repair/metal/packaging workshops,boiler/compressor,
+  repair garage(8 uses); stronger equipment at3 existing coastal sites.
+  Passive deterministic Blender:distinct roofs/gates/equipment, stocked
+  niches/warm window rows. IDs01–05 kept;06–08 added. Fit-tested variant sets
+  purpose; adjacency/port bias selects uses, no pipe/cargo scatter.
+  3 optional metre-UV roles:shared timber/concrete/steel; purpose changes
+  brick/paint recipes, no new maps/instance mats.
+  Task anchors:pool12/always-lit halos/day≥2/3/bounded selection/lifetime;
+  bounce≤4/air≤4/halo≤24/probes≤2. All24:SSAO/fog/soft shadows/grade kept;
+  no SSGI/SCGI/facade SSR/COLOR/DBuffer rollout. Other shared material/motion/
+  post owners kept(AA:SMAA).
+  Story/text kept; §16/21/art§16; no exception/interaction/gain claim.
 
 - **Accepted architecture exception 2026-10-27 — compact coastal town:**
-  Residential east/Industrial west+park replace map OldTown/Nightlife; old enums
-  remain semantic catalog IDs. Water court/clock, drying yard/greenhouse,
-  cannery/gantry, last-route island/cinema and fair/arch retain owners/IDs.
-  Story §6 records the scope; §16/21 and nine art checks bind.
-  `IsCompactCoastal`:144 lots,pitch26m,west/south12m,east four17.5m strips,
-  coast28m. Dry land193828→137186m²(−29.2%); models/vehicles retain metres.
-  Homes3–5 floors/10–15.8m,work6–8.6m; compact/long/L/passage/wing footprints,
-  fronts≤15.5m,wings10×6m with full padded fit. Setback1.25–1.55m; four domestic
-  recesses2.4m preserve balcony/basket scenes outside pavement. Court gap2.4m,
-  passage3.6m with overhead collision; continuous safe-grade courts join nav.
-  Expanded OldTown oblique pilot removed. Stable home/bar12,5/12,6,BarId,
-  SplitTheG/door return retained. Route01 coverage loop preserves real turns,
-  both-door stops and factory/shop truck access. Streets8m/asphalt6m,pavements2m;
-  shared road/ground contours and Home triangle planes. Graded home/bar/shop
-  forecourts, embedded skirts and fixture tops retain door datums; Home copies
-  are collision-free. Port civil/eastern road geometry follows terrain.
-  Substation5×4×3.7m,municipal workshop7.4×4.2×4.4m,port workshop6×4.4×4.2m
-  clear old works/routes; support spread≤.24m. Network≤64poles/192spans,poles
-  5.35m off axis,wires≥7m over roads,real facade drops. One owned fitted cable
-  mesh/shared materials/no wire physics; Home bounded48m slice. RU stop labels
-  follow places, existing EN remains. No new NPC/interaction/quest/Light/clue.
-  PC_Renderer/CityNoirVolume/CityLightingPresentation retain shared effects,
-  pool12, finite bounce/air/probes and post profiles; no claimed FPS gain.
+  Map:Residential east/Industrial west+park; OldTown/Nightlife semantic enums.
+  Water court/clock,drying yard/greenhouse,cannery/gantry,
+  last-route island/cinema,fair/arch retain IDs/owners. §6 scope/§16/21/art§16.
+  `IsCompactCoastal`:144lots/pitch26m/west-south12m/east4×17.5m/coast28m;
+  land193828→137186m²(−29.2%); models/vehicles:metres.
+  Homes3–5floors/10–15.8m,work6–8.6m; forms:compact/long/L/passage/wing,
+  fronts≤15.5m/wings10×6m/full padded fit; setback1.25–1.55m. Four domestic2.4m
+  recesses:balcony/basket off pavement. Court gaps2.4m/passages3.6m/overhead
+  collision; continuous safe grades to nav. Expanded oblique OldTown pilot
+  removed; home/bar12,5/12,6/BarId/SplitTheG/door return kept.
+  Route01 coverage loop:real turns/both-door stops/factory-shop truck access kept.
+  Streets8m/asphalt6m/pavements2m; shared road-ground contours/Home triangle planes.
+  Graded home/bar/shop forecourts/embedded skirts/fixture tops keep door datums;
+  Home copies collision-free; port civil/eastern roads follow terrain.
+  Substation5×4×3.7m; workshops:municipal7.4×4.2×4.4m/port6×4.4×4.2m
+  clear old works/routes; support spread≤.24m;≤64poles/192spans;
+  poles5.35m off-axis/wires≥7m over roads/real facade drops. One fitted owned
+  cable mesh/shared mats/no wire physics; Home slice≤48m. RU place labels;
+  EN kept. No new NPC/interaction/quest/Light/clue.
+  PC_Renderer/CityNoirVolume/CityLightingPresentation:shared effects,
+  pool12/finite bounce-air-probes/post; FPS unmeasured.
 
 - **Accepted 2026-10-26 — karaoke:** Wordless singing, hall silence/gaze,
   breath grace, real intoxication pitch drift; fixed narrow source-pitch UI.

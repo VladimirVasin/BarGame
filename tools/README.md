@@ -17,7 +17,7 @@ source `ArtSource/City/EastExit`.
 
 `build-city-buildings-3d-model.py` v4.0.0;
 `Assets/City/Models/CityBuildings3D.{fbx,json}`;
-import `CityBuildingAssetSetup.BuildOrThrow`.
+`CityBuildingAssetSetup.BuildOrThrow`.
 `build-city-coastal-infrastructure-3d-model.py` v1.0.0;
 `Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
@@ -25,10 +25,11 @@ Both:launcher/`--validate-only`.
 
 `build-city-street-profile-3d-model.py`:launcher/`--validate-only`;
 `Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`,
-source:`ArtSource/City/StreetProfile`. Passive top/edge topology follows
+`ArtSource/City/StreetProfile`. Passive top/edge follows
 `CityStreetSupportPlan`; `CityStreetSurfaceWorldBuilder` measures imported metres.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
+`build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.
 
 `build-city-fair-3d-model.py`:10 props;`--verify-fbx`.
 `build-city-fair-child-3d-model.py`: child base/3 outfits/toys.
@@ -47,11 +48,11 @@ source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes/layered clothes/hair-glasses contacts;launcher/`--validate-only`.
 
 `build-city-port-3d-model.py`:launcher/`--validate-only`;9 FBXs/`CityPort3D.json`→
-`Assets/Resources/City/Port`, source `ArtSource/City/Port`;grips/store/beam/rigging/
+`{Assets/Resources,ArtSource}/City/Port`;grips/store/beam/rigging/
 `PortAccessLayout.json`/metre UVs. 12×512px ImageGen maps (sRGB/mipmap/repeat):
-provenance:`ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
-city asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
-model/manifest/actions/atlas/lower face/chin-jowl/mouth/export validation.
+`ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
+asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
+model/manifest/actions/atlas/lower-face/chin-jowl/mouth/export check.
 `dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
 `build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.

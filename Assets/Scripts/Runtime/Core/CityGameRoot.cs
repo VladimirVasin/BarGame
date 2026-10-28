@@ -543,6 +543,8 @@ namespace BarPromenade
                 World.WalkableArea,
                 prompt);
             GameLogPhases.Report("city", "hero", stepTimer);
+            CityLaundryController laundry = World.Root.GetComponentInChildren<CityLaundryController>();
+            if (laundry != null) laundry.PresentationObserver = Player.GameObject.transform;
             World.Root.GetComponentInChildren<CityOffshoreBoatController>()
                 ?.AttachHero(Player.GameObject.transform);
             CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();
@@ -1053,6 +1055,7 @@ namespace BarPromenade
             var rainShelters = new List<Collider>(World.ArchShelter.RainShelterColliders);
             if (World.Fair != null) rainShelters.AddRange(World.Fair.RainShelters);
             if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
+            if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
             Rain.SetLocalShelters(rainShelters);
             if (World.MountainBoundaryPlan.HasTunnel)
             {

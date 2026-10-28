@@ -14,6 +14,7 @@ namespace BarPromenade
         public const string VillageStationWorker = "village.station-worker";
         // Added after existing allocation identities: preserve their appearances.
         public const string BarBartender = "zzz.bar.bartender";
+        public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
@@ -249,6 +250,13 @@ namespace BarPromenade
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
             roster.Add(new CharacterDefinition(BarBartender, model,
+                new SlotConstraint("outerwear", "outerwear.work"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", "apron.work")));
+            roster.Add(new CharacterDefinition(CityLaundryWorker, model, false,
                 new SlotConstraint("outerwear", "outerwear.work"),
                 new SlotConstraint("boots", "boots.work"),
                 new SlotConstraint("headwear", new string[] { null }),

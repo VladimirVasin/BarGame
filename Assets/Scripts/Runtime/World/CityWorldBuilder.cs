@@ -100,6 +100,7 @@ namespace BarPromenade
                 plans.ChurchCourtyard;
             CityFringeYardPlan fringeYardPlan = plans.FringeYard;
             CityCoastalInfrastructurePlan infrastructurePlan = plans.Infrastructure;
+            CityLaundryPlan laundryPlan = plans.Laundry;
             CityEastExitPlan eastExitPlan = plans.EastExit;
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan);
@@ -349,6 +350,7 @@ namespace BarPromenade
             if (fairPlan.IsEnabled) walkableArea.Add(fairPlan.Bounds);
 
             CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan);
+            CityLaundryWorldBuilder.Build(world, laundryPlan);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -2770,6 +2772,7 @@ namespace BarPromenade
             Infrastructure = CityCoastalInfrastructurePlan.Create(layout, FringeYard);
             Seacoast = CitySeacoastPlanner.Create(layout);
             EastExit = CityEastExitPlanner.Create(layout);
+            Laundry = CityLaundryPlan.ForLayout(layout);
         }
 
         internal CityLayout Layout { get; }
@@ -2784,6 +2787,7 @@ namespace BarPromenade
         internal CityCoastalInfrastructurePlan Infrastructure { get; }
         internal CitySeacoastPlan Seacoast { get; }
         internal CityEastExitPlan EastExit { get; }
+        internal CityLaundryPlan Laundry { get; }
 
         internal static bool IsMemoised(CityLayout layout)
         {

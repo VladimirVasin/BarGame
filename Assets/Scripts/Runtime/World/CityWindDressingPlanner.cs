@@ -494,6 +494,13 @@ namespace BarPromenade
             CityDecorationPlan decorationPlan)
         {
             var result = new List<Bounds>();
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
+            if (laundry.IsEnabled)
+            {
+                Rect reserved = laundry.ReservationBounds;
+                result.Add(new Bounds(new Vector3(reserved.center.x, laundry.Position.y + 2.1f, reserved.center.y),
+                    new Vector3(reserved.width, 4.2f, reserved.height)));
+            }
             var buffer = new List<Bounds>(
                 CityStaticCollisionBuilder.MaximumDecorationProxyCount);
             for (int index = 0;

@@ -674,6 +674,8 @@ namespace BarPromenade
                     circles.Add(new Circle(XZ(lot.DoorPosition), lot.IsBar ? 2.5f : 1.8f));
                     circles.Add(new Circle(XZ(lot.SidewalkArrivalPosition), 1f));
                 }
+                CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
+                if (laundry.IsEnabled) blocked.Add(Expand(laundry.ReservationBounds, .25f));
                 foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
                 {
                     blocked.Add(Expand(point.PublicBounds, 1f));

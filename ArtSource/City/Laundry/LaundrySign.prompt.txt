@@ -1,0 +1,14 @@
+Mode: built-in image_gen; generate; opaque background.
+Source SHA256: a80083f8c303846802f790b2cf94655f2e2426c35e4ba224db3e3d87d2b75cf5
+Native output: 2172 x 724 RGB, exact 3:1; copied unchanged.
+Final prompt:
+Use case: stylized-concept
+Asset type: an opaque, flat, full-bleed 3:1 panoramic enamel storefront sign texture for a modest ordinary residential municipal laundry in a video game, preferably exactly 1536 x 512 pixels.
+Primary request: make the actual two-dimensional printed sign artwork, viewed perfectly straight-on orthographic, with no wall or environment. The entire image is the rectangular sign surface, reaching every image edge.
+Composition: left 23 percent contains one simple tasteful painted illustration of a vintage utilitarian front-loading washing machine beside neatly folded cloth. The right 77 percent contains one very large, high-contrast, beautifully spaced line of upright practical Russian block lettering. Keep generous cream negative space around the illustration and letters. Everything must remain legible from the street.
+Text (verbatim, exactly once): "ПРАЧЕЧНАЯ"
+Exact Cyrillic sequence: П Р А Ч Е Ч Н А Я — nine Cyrillic letters, all uppercase. Do not substitute Latin characters, omit letters, add characters or add any other words.
+Color palette: faded warm cream enamel ground; muted dark petrol/blue-green lettering and illustration outlines, with restrained cream, dusty blue-green and pale slate illustration fills. Simple weathered civic craftsmanship, neither glossy advertising nor a cartoon mascot.
+Materials/textures: flat printed enamel artwork with very subtle scattered edge paint chips and sparse small patina, mostly clean readable paint. Matte, even color. Wear must never obscure the letters.
+Lighting: completely flat unlit base-color texture; no lighting gradients, baked highlights, shine, cast shadows, ambient shadows or specular reflections. The physical game scene supplies all day/night lighting later.
+Constraints: flat rectangular artwork only, full bleed, no perspective, no photographed or rendered sign object, no bevel, no thickness, no frame, no bolts, no mounting hardware, no surrounding wall, no mockup, no decorative border. No brand, slogan, price, people, occult symbols, extra text, watermark or logos. Opaque background, not transparent.

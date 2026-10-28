@@ -1377,45 +1377,45 @@ cemetery:own interiors/returns.
   Shared door actions use the physical opening/exact outside return. Model-owned
   threshold/lamp include hidden sloped support; projected sill/buried foundation
   extend the nominal main body. City/ChurchInterior load only their own payload;
-- one deterministic city-decoration plan with a distinct silhouette or facade
-  treatment on every ordinary building lot, four primary urban landmarks, two
-  park landmarks and optional frontage, roadside and park clusters. Its 24
-  visual-family catalog includes chimneys, scaffolding, balconies, laundry,
-  tanks, pipe racks, billboards, fire escapes, markets, discarded furniture,
-  cargo, vending queues, a legacy shelter recipe, phone booths, roadworks, a
-  fountain/statue, bandstand, chess tables and playground equipment. The
-  playground's two swing seats are the one decoration not baked into a
-  batch: each hangs from the top beam as a hinged rigid body the hero
-  pushes by walking into it. The ordinary random roadside pool omits bus
-  shelters because Route 01 owns its target-derived physical stop poles.
-  Ground-level frontage and roadside descriptors sample the rendered terrain
-  at their final XZ anchor, so geometry, collision proxies and interaction
-  docks share the actual pavement height rather than the lot datum;
-- one deterministic residential-courtyard pass selects at most four shallow
-  facade-side pockets, each no more than `1.05 m` deep. Six imported variants
-  cover a Nardi table, bicycle repair, balcony basket/pulley, chair repair,
-  sweeping kit and a quiet bench with planters. The planner keeps their full
-  proxies clear of doors, accesses, district POIs, existing blocking geometry
-  and drying lines; because those proxies enter the shared static-collision
-  plan before wind dressing, laundry moves or is omitted instead of intersecting
-  a pocket. Selected active pockets may receive generic, colliderless
-  residents, capped at five; bicycle (since `2026-09-16`), balcony-basket and
-  quiet pockets stay unoccupied; fringe Yards get none. They add no text, interaction, light,
-  audio or story reaction;
-- every ordinary Residential building contributes one deterministic passive
-  balcony-smoker candidate, while a per-session director rolls local
-  appearances around the moving player on the fog-readable lowest balcony row,
-  prefers docks `12-22 m` across the street and ahead of travel, keeps at most
-  two active and one
-  per building, and releases them by distance; the player home is never
-  eligible. Each candidate varies the current roaming
-  archetype, samples the literal Hero V2 `SmokeLoop` with its authored holds on
-  a hidden native driver, transfers all `31` canonical local bone channels,
-  and reuses the existing Blender cigarette/ember meshes plus its mouth-exhale
-  plume on the shared rig. Home instead keeps its bounded deterministic
-  selection only where complete prototypes fit the reconstructed half-space,
-  and enables those actors only for the Balcony shot.
-  They have no collision, interaction, speech, sound, light or story state;
+- deterministic decoration gives each ordinary lot a distinct silhouette/facade;
+  four urban/two park landmarks and optional frontage/roadside/park clusters.
+  Its 24 visual families include chimneys/scaffolding/balconies/laundry/tanks/
+  pipe racks/billboards/fire escapes/markets/discarded furniture/cargo/vending
+  queues/legacy shelter/phone booths/roadworks/fountain-statue/bandstand/chess/
+  playground. Only the two swings remain unbatched: hinged rigid seats hang
+  from the top beam and move on hero contact. Random roadside excludes bus
+  shelters; Route 01 owns target-derived physical stop poles. Ground frontage/
+  roadside descriptors sample final XZ rendered terrain; geometry/collision/
+  interaction docks share pavement heights, not lot datums;
+- Residential pockets:≤four facade sites/depth≤`1.05 m`; six imports:Nardi/
+  bicycle repair/basket-pulley/chair repair/sweeping/bench-planters. Full proxies
+  yield to doors/access/POIs/collision/lines; entering static collision before
+  wind dressing moves/omits intersecting wash. ≤five generic colliderless residents;
+  bicycle(since `2026-09-16`)/basket/quiet pockets empty. No fringe Yard residents/
+  text/interaction/light/audio/story reaction;
+- Residential:one passive smoker candidate per ordinary house, lowest fog-readable
+  balcony row. Session-local appearances around the moving hero prefer `12-22 m`
+  across/ahead, ≤two active/one per house, distance release; hero home excluded.
+  Roaming archetypes sample Hero V2 `SmokeLoop`/holds on a hidden native driver;
+  all `31` canonical local bone channels/Blender cigarette-ember/shared-rig mouth
+  exhale transfer. Home's bounded deterministic selection fits complete prototypes
+  in its reconstructed half-space, enabled only in the Balcony shot.
+  No collision/interaction/speech/sound/light/story state;
+- one residual residential laundry (`CityLaundry{Plan,AssetProvider,Controller}`):
+  fixed-metre kit `8.6 x 6.6 m` L-shell, physical windows, closed front door/open
+  side entry, two drums, sorting table/shelves and service canopy/trolley.
+  One permanent global worker folds the same hinged cloth and carries its
+  basket in a `48 s` loop; contacts/collision/free floor share authored anchors.
+  Nonemissive enamel `2.4 x .76 m` sign: generated «ПРАЧЕЧНАЯ»/washer-cloth,
+  full UV/Clamp/sRGB/mips/BC7/1024/nonreadable; ArtSource LaundrySign prompt/SHA.
+  Shared Port metre tiles: plaster/concrete2m, metal1.5m, timber/fabric1m,
+  Roof2m/Rubber; City albedo/packed slopes/roughness/cavity, no new tiling maps.
+  Covered GroundAuthoredConcrete floor uses CityClimate=false and stays dry.
+  4 cached lens-centred sources point down165°/20°: warm work/neutral machines/
+  cool canopy/front(range`4 m`). Small halos have no offset; no laundry air beams.
+  Pool12/Soft shadows/low tier256/day floor/bounce4/air4/probes2; other profiles/hum kept.
+  Bounded time/pause/cleanup; static Home copy.
+  Ordinary `0-5` life; no other text/service/economy/quest/reward/story hint;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
   `4.14.0` supplies the passive visuals for the broad City misc pass: `104`
   semantic kinds resolve to `145` assemblies, `305` role meshes and
@@ -1429,24 +1429,20 @@ cemetery:own interiors/returns.
   of all four district points of interest and the Nightlife arch-shelter kit,
   including its full-height masonry platform support and worn slab. Its former
   bar, supermarket and player-home shells remain in the catalog only for v4
-  compatibility and are not instantiated. These are role meshes rather than
-  world prefabs:
-  validated plans still own placement, terrain, collision,
-  dynamics, interactions, realtime lights/halos, cloth and NPCs. The standing,
-  seated and sleeping Nightlife shelter meshes remain compatibility-only and
-  are not instantiated. The live trio are staged `NpcHumanV2` adults on the
+  compatibility and are not instantiated. Role meshes, not world prefabs;
+  plans own placement/terrain/collision/dynamics/interactions/realtime lights/
+  halos/cloth/NPCs. Standing/seated/sleeping Nightlife shelter meshes are also
+  compatibility-only, never instantiated. The live trio are staged `NpcHumanV2` adults on the
   Hero V2 Avatar, with three separate `256 px` detail atlases and an isolated
   three-loop idle bank. Fifteen shell, terrace, barrel, bedding and clutter
   renderers reuse measured City surface albedos through property blocks.
   Tilted cemetery monuments intentionally retain their legacy visual builder;
-- four first-class semantic places on their own full-block land-use lots:
-  the working bank owns the old waterworks court and cannery; the residential
-  bank owns the drying yard and last-route island. Their canonical
-  descriptors reserve public ground and street access, excluding ordinary
-  buildings, bars, home and primary landmarks. The cannery's own hall excludes
-  production from its public passage/bypass. Each place has a distinct
-  silhouette and movement grammar; the Home exterior reconstructs the
-  same nearby descriptors in local space. The last-route island keeps its broken
+- four full-block semantic places: working bank waterworks court/cannery;
+  residential drying yard/last-route island. Canonical descriptors reserve
+  public ground/street access, excluding ordinary buildings/bars/home/primary
+  landmarks; cannery hall keeps production out of its public passage/bypass.
+  Each has a distinct silhouette/movement grammar; Home reconstructs nearby
+  descriptors locally. The last-route island keeps its broken
   canopy ring but uses no emissive strips: the old departure board is visibly
   grounded on two supports and weathered route plates, layered posters, a
   waste bin, bottles, a discarded timetable and a lost scarf replace the

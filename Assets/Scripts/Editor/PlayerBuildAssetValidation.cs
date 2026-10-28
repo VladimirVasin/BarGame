@@ -63,6 +63,8 @@ namespace BarPromenade.Editor
             RegisterGenerated("Eastern duty guards", EastGuardAssetSetup.ValidateOrThrow, "EastGuardAssetSetup");
             Register("Working fishing port", CityPortAssetSetup.ValidateOrThrow,
                 "Run tools/build-city-port-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Port.");
+            Register("Residential laundry", CityLaundryAssetSetup.ValidateOrThrow,
+                "Run tools/build-city-laundry-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Laundry.");
             RegisterGenerated("Church", ChurchAssetSetup.ValidateOrThrow, "ChurchAssetSetup");
             RegisterGenerated("Player home exterior", PlayerHomeExteriorAssetSetup.ValidateOrThrow, "PlayerHomeExteriorAssetSetup");
             RegisterGenerated("Supermarket exterior", SupermarketExteriorAssetSetup.ValidateOrThrow, "SupermarketExteriorAssetSetup");

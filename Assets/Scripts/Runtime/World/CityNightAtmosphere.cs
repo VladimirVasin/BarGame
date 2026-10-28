@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -75,6 +76,10 @@ namespace BarPromenade
         private int quayAnchorStartIndex = int.MaxValue;
         private int industrialAnchorStartIndex = int.MaxValue;
         private CityIndustrialPurpose[] industrialPurposes = Array.Empty<CityIndustrialPurpose>();
+        private bool[] industrialUseShadows = Array.Empty<bool>();
+        private float[] industrialIntensityScales = Array.Empty<float>();
+        private float[] industrialRangeLimits = Array.Empty<float>();
+        private UniversalAdditionalLightData[] pooledShadowData = Array.Empty<UniversalAdditionalLightData>();
         private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
         public int IndustrialTaskLightCount => industrialPurposes.Length;
         private float nextReassignmentTime;
@@ -134,15 +139,37 @@ namespace BarPromenade
             lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors, taskAnchors);
             quayAnchorStartIndex = streetLampAnchors.Count;
             industrialPurposes = new CityIndustrialPurpose[taskAnchors.Length];
+            industrialUseShadows = new bool[taskAnchors.Length];
+            industrialIntensityScales = new float[taskAnchors.Length];
+            industrialRangeLimits = new float[taskAnchors.Length];
             industrialFixtureHalos = new CityLightHalo[taskAnchors.Length];
             for (int index = 0; index < taskAnchors.Length; index++)
             {
                 string purposeName = taskAnchors[index].name.Substring(IndustrialTaskLightPrefix.Length);
+                industrialIntensityScales[index] = 1f;
+                industrialRangeLimits[index] = float.PositiveInfinity;
                 switch (purposeName)
                 {
                     case "Substation": industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse; break;
                     case "MunicipalWorkshop": industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop; break;
                     case "PortWorkshop": industrialPurposes[index] = CityIndustrialPurpose.MetalWorkshop; break;
+                    case "LaundryWork":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialIntensityScales[index] = .75f;
+                        industrialUseShadows[index] = true; break;
+                    case "LaundryMachines":
+                        industrialPurposes[index] = CityIndustrialPurpose.ColdStorage;
+                        industrialIntensityScales[index] = .625f;
+                        industrialUseShadows[index] = true; break;
+                    case "LaundryCourt":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialIntensityScales[index] = .60f;
+                        industrialUseShadows[index] = true; break;
+                    case "LaundryEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .01f;
+                        industrialRangeLimits[index] = 4f; break;
                     default:
                         if (!Enum.TryParse(purposeName, out industrialPurposes[index]) || industrialPurposes[index] == CityIndustrialPurpose.None)
                             throw new InvalidOperationException("Unknown functional industrial task light: " + taskAnchors[index].name);
@@ -154,10 +181,14 @@ namespace BarPromenade
                 // of the fixture housing and the adjacent opaque facade.
                 Transform haloOwner = new GameObject("Industrial Fixed Halo " + index).transform;
                 haloOwner.SetParent(transform, true);
-                haloOwner.SetPositionAndRotation(taskAnchors[index].position + taskAnchors[index].forward * .30f,
+                haloOwner.SetPositionAndRotation(taskAnchors[index].position +
+                    taskAnchors[index].forward * (industrialUseShadows[index] ? 0f : .30f),
                     taskAnchors[index].rotation);
                 industrialFixtureHalos[index] = CityLightHalo.CreateAlwaysBurning(haloOwner, Vector3.zero,
-                    profile.HaloInnerSize, profile.HaloOuterSize, profile.HaloInnerColor, profile.HaloOuterColor);
+                    profile.HaloInnerSize * (industrialUseShadows[index] ? .5f : 1f),
+                    profile.HaloOuterSize * (industrialUseShadows[index] ? .5f : 1f),
+                    profile.HaloInnerColor * industrialIntensityScales[index],
+                    profile.HaloOuterColor * industrialIntensityScales[index]);
             }
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
@@ -191,6 +222,7 @@ namespace BarPromenade
             selectedAnchorDistances = new float[streetLightCount];
             pooledLightBaseIntensities = new float[streetLightCount];
             pooledHaloVisible = new bool[streetLightCount];
+            pooledShadowData = new UniversalAdditionalLightData[streetLightCount];
             for (int index = 0; index < streetLightCount; index++)
             {
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
@@ -391,7 +423,9 @@ namespace BarPromenade
                 bool isQuay = !isIndustrial && anchorIndex >= quayAnchorStartIndex;
                 if (isIndustrial)
                 {
-                    ApplyIndustrialProfile(index, industrialPurposes[anchorIndex - industrialAnchorStartIndex]);
+                    int taskIndex = anchorIndex - industrialAnchorStartIndex;
+                    ApplyIndustrialProfile(index, industrialPurposes[taskIndex], industrialUseShadows[taskIndex],
+                        industrialIntensityScales[taskIndex], industrialRangeLimits[taskIndex]);
                 }
                 else if (isQuay)
                 {
@@ -533,16 +567,50 @@ namespace BarPromenade
             halo.SetVisible(visible);
         }
 
-        private void ApplyIndustrialProfile(int poolIndex, CityIndustrialPurpose purpose)
+        private void ApplyIndustrialProfile(int poolIndex, CityIndustrialPurpose purpose, bool useShadows,
+            float intensityScale, float rangeLimit)
         {
             PracticalLightProfile profile = GetIndustrialProfile(purpose);
-            ApplyPooledLightProfile(poolIndex, profile.Color, profile.Intensity, profile.Range,
-                profile.SpotAngle, profile.InnerSpotAngle, profile.HaloInnerSize, profile.HaloOuterSize,
-                profile.HaloInnerColor, profile.HaloOuterColor);
+            ApplyPooledLightProfile(poolIndex, profile.Color, profile.Intensity * intensityScale,
+                Mathf.Min(profile.Range, rangeLimit),
+                useShadows ? 165f : profile.SpotAngle, useShadows ? 20f : profile.InnerSpotAngle,
+                profile.HaloInnerSize, profile.HaloOuterSize,
+                profile.HaloInnerColor * intensityScale, profile.HaloOuterColor * intensityScale);
+            if (!useShadows) return;
+            Light light = streetLightPool[poolIndex];
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = .85f;
+            light.shadowBias = .015f;
+            light.shadowNormalBias = .06f;
+            light.shadowNearPlane = .05f;
+            UniversalAdditionalLightData data = pooledShadowData[poolIndex];
+            if (data == null)
+                pooledShadowData[poolIndex] = data = light.GetUniversalAdditionalLightData();
+            data.usePipelineSettings = false;
+            // The pinned PC asset's Low tier is 256. URP rejects its public
+            // tier setter outside Play mode; edit-time composition retains
+            // valid geometry and shadows with the pipeline's default tier.
+            if (Application.isPlaying)
+                data.additionalLightsShadowResolutionTier =
+                    UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
         }
 
         internal static Color GetIndustrialTaskLightColor(CityIndustrialPurpose purpose) =>
             GetIndustrialProfile(purpose).Color;
+
+        // Native frosted laundry lenses emit a broad downward hemisphere.
+        // Their pooled leases illuminate surfaces, without a separate air beam.
+        internal bool IsLaundryDiffuser(Light light)
+        {
+            for (int i = 0; i < streetLightPool.Length; i++)
+            {
+                if (streetLightPool[i] != light) continue;
+                if (IsPracticalSlotLeased && i == streetLightPool.Length - 1) return false;
+                int task = selectedAnchorIndices[i] - industrialAnchorStartIndex;
+                return task >= 0 && task < industrialUseShadows.Length && industrialUseShadows[task];
+            }
+            return false;
+        }
 
         private static PracticalLightProfile GetIndustrialProfile(CityIndustrialPurpose purpose)
         {
@@ -631,6 +699,8 @@ namespace BarPromenade
             light.spotAngle = spotAngle;
             light.innerSpotAngle = innerSpotAngle;
             light.shadows = LightShadows.None;
+            if (pooledShadowData[poolIndex] != null)
+                pooledShadowData[poolIndex].usePipelineSettings = true;
             pooledLightBaseIntensities[poolIndex] = intensity;
             light.intensity =
                 intensity * GetPooledIntensityFactor(poolIndex);

@@ -44,6 +44,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City street support | Shared stations/outer seams join asphalt, pavement and terrain; imported topology. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
 | City Blender ordinary buildings | Eight work functions own forms/equipment/surfaces/task light; passages and wings share solid footprints. | `CityBuilding*`, `CityNightAtmosphere`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
+| Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.7f1`, `17.6.0` | Current |
 | Scene presentation | Native/SMAA/4:3; City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |

@@ -360,7 +360,7 @@ namespace BarPromenade
             foreach (Practical entry in practicals)
             {
                 Light light = entry.Light;
-                if (!entry.AllowVolume || !IsLit(light)) continue;
+                if (!AllowsVolume(entry) || !IsLit(light)) continue;
                 entry.Zone = ResolveZone(entry); ConfigureBounds(entry);
                 if (!GeometryUtility.TestPlanesAABB(frustum, entry.Bounds)) continue;
                 float distance = entry.Bounds.SqrDistance(camera.transform.position) +
@@ -622,9 +622,12 @@ namespace BarPromenade
         }
         public bool IsVolumeAllowed(Light light)
         {
-            foreach (Practical entry in practicals) if (entry.Light == light) return entry.AllowVolume;
+            foreach (Practical entry in practicals) if (entry.Light == light) return AllowsVolume(entry);
             return false;
         }
+
+        private bool AllowsVolume(Practical entry) => entry.AllowVolume &&
+            !(entry.Pooled && Atmosphere.IsLaundryDiffuser(entry.Light));
         public Zone GetSourceZone(Light light)
         {
             if (light == null) return Zone.Residential;

@@ -41,7 +41,8 @@ namespace BarPromenade
                 float northWest,
                 float northEast,
                 CityPortAccessPlan access,
-                CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null)
+                CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null,
+                CityLaundryPlan laundry = null)
             {
                 SouthWest = southWest;
                 SouthEast = southEast;
@@ -49,6 +50,7 @@ namespace BarPromenade
                 NorthEast = northEast;
                 Access = access;
                 StreetBoundary = streetBoundary;
+                Laundry = laundry;
             }
 
             internal float SouthWest { get; }
@@ -57,6 +59,7 @@ namespace BarPromenade
             internal float NorthEast { get; }
             internal CityPortAccessPlan Access { get; }
             internal CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext StreetBoundary { get; }
+            internal CityLaundryPlan Laundry { get; }
         }
 
         internal static SurfaceContext ResolveSurfaceContext(
@@ -91,7 +94,8 @@ namespace BarPromenade
                 northWest,
                 northEast,
                 access,
-                CityTerrainStreetBoundaryPlan.ForSurface(layout, surface));
+                CityTerrainStreetBoundaryPlan.ForSurface(layout, surface),
+                CityLaundryPlan.CachedForSurface(layout, surface));
         }
 
         public static float SampleDatum(
@@ -124,7 +128,8 @@ namespace BarPromenade
         {
             float datum = SampleDatumWithoutRigidSupports(layout, surface, worldXZ, in context);
             float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
-            return CityFairGroundSupportPlan.ForLayout(layout).Apply(worldXZ, datum + offset) - offset;
+            float supported = CityFairGroundSupportPlan.ForLayout(layout).Apply(worldXZ, datum + offset);
+            return (context.Laundry != null ? context.Laundry.ApplyGround(worldXZ, supported) : supported) - offset;
         }
 
         internal static float SampleTopWithoutRigidSupports(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)

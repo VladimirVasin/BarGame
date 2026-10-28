@@ -10,26 +10,25 @@ retain ramps/pivots/cameras. STAIRWELL_INTERIOR_ART_DETERMINISM_OK,
 StairwellDoorHandleContacts and Scene_FeedingConsumesOneStewAndCompletesPairedAnimation
 passed; room audio excludes UI emitter.
 
-City coastal/cemetery/pier: fixed metres; gazebo steps clear
-deck, clock hands read, cemetery keeps church cross-alley. CityCatalogAndPassage,
+Coastal/cemetery/pier metre kit; clear gazebo steps/readable clock/church cross-alley. CityCatalogAndPassage,
 CityChurchCourtyard, City, CityLandmarksFromStreets, CityDomesticCourts and
 CityBarYardCircuit passed; views/contacts reviewed. CityDistrictAcousticContrast
 retains cloth/pipe/fountain voices.
 
 Mountain bounds/pivots remain; meshes release.
-MountainRoadNativeLighting passed; day/night/close frames reviewed.
+MountainRoadNativeLighting passed; day/night/close reviewed.
 ForestCrownAuthoredPilot/LodgeBounce removed: no benefit.
-VillageWorkroomWalls passed after terrain/snow cuts cleared plinth. ChurchRemodelAcceptance, AlpineVillageBrookDetails,
+VillageWorkroomWalls passed terrain/snow plinth cuts. ChurchRemodelAcceptance, AlpineVillageBrookDetails,
 AlpineVillageAvalanche, AlpineVillageFootbridge, FourDirectionsAndThreeAspectRatios
 and AreaTravel_ComposesEachDestinationBeforeCompleting passed; views reviewed.
 
-CCTV +Z tracking keeps child poses; lens probes/views passed.
+CCTV+Z keeps child poses; lens probes/views passed.
 Input System replaces Both; shared pointer/capture/scroll/Unicode retains IMGUI.
 InputSystemUiPlayModeTests passed menus/focus/Russian editing/function keys;
 CombatLaboratoryArtVisuals, CombatWarehouseDetailVisuals, check-docs,
 check-workspace/scoped diff passed; cleaned/archived.
 
-City streets share stations/coatings/terrain; Blender replaces donors;
+City stations/coatings/terrain share Blender donors;
 CITY STREET PROFILE BUILD OK, Support_GradedStreetAndPavementShareJunctionCapStations,
 SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap,
 FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority and
@@ -37,22 +36,25 @@ CityGroundSurface passed; seams/balcony reviewed. BodyNpc corner multiplicity su
 passed invalid-frame rejection; affine guard retained.
 
 Audit repairs: stew reserved until cat quest Completed; inventory hides Use.
-Hero-derived assets regenerated/rebound; StreetProfile joins read-only gate,
-carry validation no longer writes. Truck saturation grows/retries/falls back.
+Hero-derived assets regenerated/rebound; StreetProfile read-only gate;
+carry validation read-only. Truck saturation grows/retries/falls back.
 GameSessionStateTests, PlayerBuildAssetValidationTests, PerformanceCaptureTests,
-CityFishSupplySessionTests passed. City trace drops recurring audio geometry/anchor strings/light-name reads;
-sound/light parity passed.
+CityFishSupplySessionTests passed. City trace removes recurring audio geometry/anchor strings/light-name reads;
+parity passed.
 ScarfPerformance, inventory/shop/retained-City/cableway proofs passed.
 Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs and MountainRoadCityTunnel
-passed: ribbon clears M65; disable keeps palm while releasing clip.
+passed: ribbon clears M65; disable keeps palm/releases clip.
 macOS preflight/ABI/DSP/asset_pipeline rollback passed; audit-remediation-plan.md.
 
 Ground partition reuses one-sided polygons, retaining mixed cuts.
-GroundSurfacePartitionerTests/CityGroundSurfaceSystemTests and
-AreaTravel_ComposesEachDestinationBeforeCompleting passed; GC probe calibrated.
+GroundSurfacePartitionerTests/CityGroundSurfaceSystemTests plus above
+AreaTravel proof passed; GC probe calibrated.
 
 Port metres/lanes kept; CITY PORT ART CONTRACT OK/CityPortConstructionDetails
 passed, views checked. CityPort hull/road asserts stale.
+
+Laundry kit/custody: CITY LAUNDRY ART CONTRACT OK/CityLaundry passed;
+sign UV/diffuse light passed; views reviewed.
 
 ## 2026-10-27
 

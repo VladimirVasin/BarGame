@@ -75,6 +75,7 @@ namespace BarPromenade
                 context,
                 context.NearbyDecorations);
             CityCoastalInfrastructureWorldBuilder.BuildHomeExterior(root, context);
+            CityLaundryWorldBuilder.BuildHomeExterior(root, context);
             BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             ground.FinalizeSurface();

@@ -669,6 +669,12 @@ namespace BarPromenade
             if (layout.SpatialPlan.IsCompactCoastal)
                 foreach (Rect footprint in CityCoastalInfrastructurePlan.ForLayout(layout).SolidFootprints)
                     area.Exclude(footprint);
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
+            if (laundry.IsEnabled)
+            {
+                foreach (Rect floor in laundry.WalkableFootprints) area.Add(floor);
+                foreach (Rect solid in laundry.SolidFootprints) area.Exclude(solid);
+            }
             return area;
         }
 

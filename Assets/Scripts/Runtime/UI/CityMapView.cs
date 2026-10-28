@@ -1095,6 +1095,10 @@ namespace BarPromenade
 
         private void DrawBuildings(MapProjection projection)
         {
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(controller.Layout);
+            if (laundry.IsEnabled)
+                foreach (Rect solid in laundry.BodyFootprints)
+                    DrawSolidRect(ProjectWorldRect(projection, solid), new Color(.28f, .36f, .34f, 1f));
             IReadOnlyList<BuildingLot> lots =
                 controller.Layout.BuildingLots;
             for (int index = 0; index < lots.Count; index++)

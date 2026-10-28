@@ -1,0 +1,694 @@
+{
+  "design_id": "city_household_laundry_v1",
+  "version": "1.0.0",
+  "generator": "build-city-laundry-3d-model.py",
+  "sign_resource": "City/Laundry/LaundrySign",
+  "sign_source_sha256": "a80083f8c303846802f790b2cf94655f2e2426c35e4ba224db3e3d87d2b75cf5",
+  "sign_text": "\u041f\u0420\u0410\u0427\u0415\u0427\u041d\u0410\u042f",
+  "sign_uv": "unique full face 0..1",
+  "coordinate_system": "Unity metres +Y up/+Z frontage; floor Y=0; swap YZ/reverse winding for Blender",
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ],
+  "bounds_min": [
+    -4.3,
+    -0.15,
+    -3.3
+  ],
+  "bounds_max": [
+    4.3,
+    4.2,
+    3.3
+  ],
+  "body_size": [
+    8,
+    3.65,
+    6
+  ],
+  "main_room_bounds": [
+    -4,
+    -3,
+    1.5,
+    3
+  ],
+  "service_court_bounds": [
+    1.5,
+    0,
+    4,
+    3
+  ],
+  "floor_walk_bounds": [
+    -4.3,
+    -3.3,
+    4.3,
+    3.3
+  ],
+  "solid_footprints": [
+    {
+      "id": "front-wall-and-closed-door",
+      "rect_xz": [
+        -4,
+        2.88,
+        1.5,
+        3.12
+      ]
+    },
+    {
+      "id": "rear-wall",
+      "rect_xz": [
+        -4,
+        -3.12,
+        4,
+        -2.88
+      ]
+    },
+    {
+      "id": "west-wall",
+      "rect_xz": [
+        -4.12,
+        -3,
+        -3.88,
+        3
+      ]
+    },
+    {
+      "id": "side-wall-before-opening",
+      "rect_xz": [
+        1.38,
+        0,
+        1.62,
+        0.3
+      ]
+    },
+    {
+      "id": "side-wall-after-opening",
+      "rect_xz": [
+        1.38,
+        1.9,
+        1.62,
+        3
+      ]
+    },
+    {
+      "id": "service-east-wall",
+      "rect_xz": [
+        3.88,
+        -3,
+        4.12,
+        0
+      ]
+    },
+    {
+      "id": "service-front-wall",
+      "rect_xz": [
+        1.5,
+        -0.12,
+        4,
+        0.12
+      ]
+    },
+    {
+      "id": "sorting-table",
+      "rect_xz": [
+        -3.5,
+        -0.4,
+        -1.8,
+        0.8
+      ]
+    },
+    {
+      "id": "shelf",
+      "rect_xz": [
+        -3.81,
+        -2.275,
+        -3.03,
+        -0.625
+      ]
+    },
+    {
+      "id": "machine-a",
+      "rect_xz": [
+        -1.36,
+        -2.67,
+        -0.24,
+        -1.57
+      ]
+    },
+    {
+      "id": "machine-b",
+      "rect_xz": [
+        -0.06,
+        -2.67,
+        1.06,
+        -1.57
+      ]
+    },
+    {
+      "id": "trolley",
+      "rect_xz": [
+        2.54,
+        0.6,
+        3.46,
+        1.475
+      ]
+    },
+    {
+      "id": "canopy-foot-rear",
+      "rect_xz": [
+        3.93,
+        0.06,
+        4.17,
+        0.3
+      ]
+    },
+    {
+      "id": "canopy-foot-front",
+      "rect_xz": [
+        3.93,
+        2.78,
+        4.17,
+        3.02
+      ]
+    }
+  ],
+  "front_door_closed": true,
+  "entry_side": "east service court",
+  "public_door_width": 1.2,
+  "service_door_width": 1.6,
+  "floor_height": 0,
+  "table_height": 0.96,
+  "triangles": 8462,
+  "maximum_triangles": 18000,
+  "renderer_count": 29,
+  "maximum_renderers": 30,
+  "geometry_signature": "5a70f86532cf7afbe5903deb121c7b87275399010aa1d9a7cc9228b10e273377",
+  "semantic_uv_tiles_metres": {
+    "Concrete": 2.0,
+    "Plaster": 2.0,
+    "Steel": 1.5,
+    "SteelDark": 1.5,
+    "SteelLight": 1.5,
+    "Timber": 1.0,
+    "Fabric": 1.0,
+    "Rubber": 0.5,
+    "Roof": 2.0,
+    "Plain": 0,
+    "Glass": 2.0,
+    "Sign": 0
+  },
+  "anchors": [
+    {
+      "name": "ANCHOR_BasketGripLeft",
+      "position": [
+        -2.98,
+        1.35,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_BasketGripRight",
+      "position": [
+        -2.32,
+        1.35,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_BasketRest",
+      "position": [
+        -2.65,
+        1.15,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_CanopyBasketGripLeft",
+      "position": [
+        2.9,
+        1.22,
+        1.43
+      ]
+    },
+    {
+      "name": "ANCHOR_CanopyBasketGripRight",
+      "position": [
+        2.9,
+        1.22,
+        0.77
+      ]
+    },
+    {
+      "name": "ANCHOR_CanopyHandoff",
+      "position": [
+        2.9,
+        1.02,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_CanopyWorker",
+      "position": [
+        2.25,
+        0.0,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_CarryWaypointA",
+      "position": [
+        0.7,
+        0.0,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_CarryWaypointB",
+      "position": [
+        2.25,
+        0.0,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_ClothRest",
+      "position": [
+        -2.65,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_CourtLight",
+      "position": [
+        2.6,
+        2.675,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_DrumA",
+      "position": [
+        -0.8,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "ANCHOR_DrumB",
+      "position": [
+        0.5,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "ANCHOR_EntranceLight",
+      "position": [
+        -2.65,
+        3.365,
+        3.26
+      ]
+    },
+    {
+      "name": "ANCHOR_ExteriorApproach",
+      "position": [
+        -2.8,
+        0.0,
+        4.3
+      ]
+    },
+    {
+      "name": "ANCHOR_MachineAudio",
+      "position": [
+        -0.15,
+        0.78,
+        -2.0
+      ]
+    },
+    {
+      "name": "ANCHOR_MachinesLight",
+      "position": [
+        -0.15,
+        3.215,
+        -1.3
+      ]
+    },
+    {
+      "name": "ANCHOR_MainDoor",
+      "position": [
+        -2.8,
+        0.0,
+        3.0
+      ]
+    },
+    {
+      "name": "ANCHOR_ServiceDoor",
+      "position": [
+        1.5,
+        0.0,
+        1.1
+      ]
+    },
+    {
+      "name": "ANCHOR_TableLeft",
+      "position": [
+        -2.95,
+        0.97,
+        0.38
+      ]
+    },
+    {
+      "name": "ANCHOR_TableRight",
+      "position": [
+        -2.35,
+        0.97,
+        0.38
+      ]
+    },
+    {
+      "name": "ANCHOR_TableSurface",
+      "position": [
+        -2.65,
+        0.96,
+        0.12
+      ]
+    },
+    {
+      "name": "ANCHOR_Ventilation",
+      "position": [
+        2.7,
+        3.65,
+        -1.65
+      ]
+    },
+    {
+      "name": "ANCHOR_Worker",
+      "position": [
+        -2.65,
+        0.0,
+        1.2
+      ]
+    },
+    {
+      "name": "ANCHOR_WorkLight",
+      "position": [
+        -2.5,
+        3.215,
+        0.25
+      ]
+    },
+    {
+      "name": "LaundryCanopyStructure",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryClosedFrontDoor",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryFloor",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryFrames",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryFurniture",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryFurnitureIron",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryMachineFittings",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryMachineGlass",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryMachines",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryRoof",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryRubberFittings",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryServicePipesAndLightBody",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryShell",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundrySillsAndDrain",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryStoredCloth",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "LaundryWindows",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "MOVE_CarryBasket",
+      "position": [
+        -2.65,
+        1.15,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_BasketLeft",
+      "position": [
+        -2.98,
+        1.35,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_BasketRight",
+      "position": [
+        -2.32,
+        1.35,
+        0.5
+      ]
+    },
+    {
+      "name": "CarryBasket",
+      "position": [
+        -2.65,
+        1.15,
+        0.5
+      ]
+    },
+    {
+      "name": "MOVE_ClothA",
+      "position": [
+        -2.65,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "MOVE_ClothLeft",
+      "position": [
+        -2.75,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "WorkClothLeft",
+      "position": [
+        -2.75,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "MOVE_ClothRight",
+      "position": [
+        -2.55,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "WorkClothRight",
+      "position": [
+        -2.55,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "WorkCloth",
+      "position": [
+        -2.65,
+        1.34,
+        0.5
+      ]
+    },
+    {
+      "name": "MOVE_DrumA",
+      "position": [
+        -0.8,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "DrumA",
+      "position": [
+        -0.8,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "DrumClothA",
+      "position": [
+        -0.8,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "MOVE_DrumB",
+      "position": [
+        0.5,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "DrumB",
+      "position": [
+        0.5,
+        0.78,
+        -1.56
+      ]
+    },
+    {
+      "name": "DrumClothB",
+      "position": [
+        0.5,
+        0.78,
+        -1.56
+      ]
+    }
+  ],
+  "moving_parts": [
+    "MOVE_DrumA",
+    "MOVE_DrumB",
+    "MOVE_CarryBasket",
+    "MOVE_ClothA",
+    "MOVE_ClothLeft",
+    "MOVE_ClothRight"
+  ],
+  "collider_parts": [
+    "COL_Canopy",
+    "COL_Door",
+    "COL_Floor",
+    "COL_Furniture",
+    "COL_Machines",
+    "COL_Walls"
+  ],
+  "material_roles": [
+    "Concrete",
+    "Fabric",
+    "Glass",
+    "Plain",
+    "Plaster",
+    "Roof",
+    "Rubber",
+    "Sign",
+    "Steel",
+    "SteelDark",
+    "SteelLight",
+    "Timber"
+  ],
+  "assets": [
+    "StaticLaundry.fbx"
+  ]
+}
