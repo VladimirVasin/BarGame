@@ -65,7 +65,7 @@ namespace BarPromenade
             root.SetParent(parent, false);
             CityGroundSurfaceSystem ground = CityGroundSurfaceSystem.Begin(root, collision: false);
 
-            BuildTerminalEnvironment(root, balcony);
+            BuildTerminalEnvironment(root, balcony, context);
             BuildRoads(root, context);
             BuildBuildings(root, context);
             CityDistrictPointOfInterestWorldBuilder
@@ -78,6 +78,11 @@ namespace BarPromenade
             BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             ground.FinalizeSurface();
+            // The retained exterior is presentation only. Shared fixture
+            // builders and imported kits may carry collision components;
+            // this owner keeps the entire view passive.
+            foreach (Collider collider in root.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
             return root;
         }
 
@@ -114,25 +119,15 @@ namespace BarPromenade
 
         private static void BuildTerminalEnvironment(
             Transform parent,
-            HomeBalconyLayoutPlan balcony)
+            HomeBalconyLayoutPlan balcony,
+            HomeExteriorContextPlan context)
         {
             float radius =
                 HomeExteriorContextPlanner.ViewRadius;
             float facadeX =
                 PlayerHomeBalconyGeometry.HomeFacadeX;
             float groundWidth = radius * 2.5f;
-            CreateExteriorGroundBox(
-                "Home Exterior Ground",
-                parent,
-                new Bounds(
-                    new Vector3(
-                        facadeX + radius * 0.18f,
-                        balcony.StreetGroundY - 0.24f,
-                        0f),
-                    new Vector3(
-                        groundWidth,
-                        0.32f,
-                        groundWidth)));
+            CityHomeGroundWorldBuilder.Build(parent, context);
 
             float horizonX = facadeX + radius + 22f;
             float horizonHeight = 25f;
@@ -202,28 +197,13 @@ namespace BarPromenade
                     road.xMax + reach, road.yMax + reach));
             }
 
-            var streets = new List<Bounds>();
-            var parkPaths = new List<Bounds>();
-            var sidewalks = new List<Bounds>();
+            CityStreetSurfaceWorldBuilder.Build("Home Exterior Unified Street", parent, context.Layout, plan, context);
+            foreach (BuildingLot lot in context.NearbyLots)
+                if (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket)
+                    CityEntranceForecourtWorldBuilder.Build("Home Exterior Entrance " + lot.Cell, parent,
+                        CityStreetSurfacePlanner.CreateEntranceForecourt(context.Layout, lot, 3f), context);
             var centerMarkings = new List<Bounds>();
             var crosswalkMarkings = new List<Bounds>();
-            if(context.Layout.SpatialPlan.IsCompactCoastal)
-                CityEntranceForecourtWorldBuilder.BuildHomeRoads(parent,context,plan,nearbyRoadRectangles);
-            else AddHomeLocalStreetGeometry(plan.StreetSurfaces,nearbyRoadRectangles,context,streets);
-            AddHomeLocalStreetGeometry(
-                plan.ParkPaths,
-                nearbyRoadRectangles,
-                context,
-                parkPaths);
-            if (context.Layout.SpatialPlan.IsCompactCoastal)
-            {
-                CityEntranceForecourtWorldBuilder.BuildHomeSidewalks(parent,context,plan,nearbyRoadRectangles);
-                foreach (BuildingLot lot in context.NearbyLots)
-                    if (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket)
-                        CityEntranceForecourtWorldBuilder.Build("Home Exterior Entrance "+lot.Cell,parent,
-                            CityStreetSurfacePlanner.CreateEntranceForecourt(context.Layout,lot,3f),context);
-            }
-            else AddHomeLocalStreetGeometry(plan.Sidewalks,nearbyRoadRectangles,context,sidewalks);
             AddHomeLocalStreetGeometry(
                 plan.CenterMarkings,
                 nearbyRoadRectangles,
@@ -235,20 +215,6 @@ namespace BarPromenade
                 context,
                 crosswalkMarkings);
 
-            BuildRoadSurfaceBoxesIfAny(
-                "Home Exterior Street Surfaces",
-                parent,
-                streets,
-                context,
-                plan.StreetGeometry);
-            BuildParkPathBoxesIfAny(
-                "Home Exterior Park Paths",
-                parent,
-                parkPaths);
-            BuildSidewalkSurfaceBoxesIfAny(
-                "Home Exterior Sidewalk Surfaces",
-                parent,
-                sidewalks);
             BuildRoadMarkingBoxesIfAny(
                 "Home Exterior Road Center Markings",
                 parent,

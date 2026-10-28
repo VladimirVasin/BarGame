@@ -69,7 +69,7 @@ MonoBehaviour:
   doorButtonTravelLocal: {x: 1.0490732e-11, y: -0.00011999999, z: 1.8626451e-11}
   doorButtonRestLocalPosition: {x: 0.003, y: -0.03335, z: -0.015}
   steeringWheelRestLocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071067}
-  doorButtonRestLocalRotation: {x: 0, y: 0, z: 1, w: -0.0000000754979}
+  doorButtonRestLocalRotation: {x: 0, y: -0, z: 1, w: -0.0000000754979}
   driverSeatAnchor: {fileID: 1659239685656588377}
   frontDoorEntryAnchor: {fileID: 2890993935501852732}
   rearDoorEntryAnchor: {fileID: 7398763593982233016}

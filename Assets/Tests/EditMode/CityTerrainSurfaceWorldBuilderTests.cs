@@ -21,6 +21,94 @@ namespace BarPromenade.Tests.EditMode
         // vertex that far outside a deliberate bank still sees its slope.
         private const float NormalTapReach = 0.1f;
 
+        [TestCase(CitySurfaceKind.BuildableGround)]
+        [TestCase(CitySurfaceKind.ParkGround)]
+        [TestCase(CitySurfaceKind.OpenGround)]
+        public void SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap(CitySurfaceKind kind)
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, 20260727);
+            if (kind == CitySurfaceKind.BuildableGround) AssertOverlappingBoundaryBandsAreContinuous(layout);
+            int checkedSegments = 0;
+            foreach (CitySurfaceDescriptor surface in layout.Surfaces)
+            {
+                if (surface.Kind != kind || surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east") continue;
+                CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext context =
+                    CityTerrainStreetBoundaryPlan.ForSurface(layout, surface);
+                if (context == null) continue;
+                foreach (CityTerrainStreetBoundaryPlan.Segment segment in context.Segments)
+                {
+                    Vector3 middle = (segment.Start + segment.End) * .5f;
+                    Vector2 point = new Vector2(middle.x, middle.z);
+                    if (!surface.WorldBounds.Contains(point) || Vector3.Distance(segment.Start, segment.End) < .1f) continue;
+                    if (layout.DistrictPointsOfInterest.Any(poi => poi.PublicBounds.Contains(point))) continue;
+                    if (!CityStreetSupportPlan.ForLayout(layout).TrySampleTop(point, out float streetTop, out _)) continue;
+                    if (Mathf.Abs(streetTop - middle.y) > .001f) continue;
+                    // Test the whole selected sub-edge, including positions
+                    // between original grid vertices. Endpoint-only tests miss
+                    // the former single-plane pavement/graded-road mismatch.
+                    Rect retained = Rect.MinMaxRect(Mathf.Min(segment.Start.x, segment.End.x) - .1f,
+                        Mathf.Min(segment.Start.z, segment.End.z) - .1f,
+                        Mathf.Max(segment.Start.x, segment.End.x) + .1f,
+                        Mathf.Max(segment.Start.z, segment.End.z) + .1f);
+                    CityTerrainMeshSource source = CityTerrainSurfaceWorldBuilder.CreateMeshSource(layout, kind,
+                        null, null, null, false, CityBeachSandPlan.MeshPitch, retained);
+                    for (int sample = 1; sample <= 5; sample++)
+                    {
+                        Vector3 edge = Vector3.Lerp(segment.Start, segment.End, sample / 6f);
+                        Vector2 xz = new Vector2(edge.x, edge.z);
+                        if (!surface.WorldBounds.Contains(xz) ||
+                            layout.DistrictPointsOfInterest.Any(poi => poi.PublicBounds.Contains(xz))) continue;
+                        float top = CityTerrainSurfacePlan.SampleTop(layout, surface, xz);
+                        Assert.That(top, Is.EqualTo(edge.y).Within(.001f), $"{kind} sampler seam at {xz}");
+                        bool found = false;
+                        for (int triangle = 0; triangle < source.Triangles.Count; triangle += 3)
+                        {
+                            var vertices = new[] { source.Vertices[source.Triangles[triangle]],
+                                source.Vertices[source.Triangles[triangle + 1]], source.Vertices[source.Triangles[triangle + 2]] };
+                            if (!CityStreetSupportPatch.TrySampleTop(vertices, xz, out float meshTop)) continue;
+                            Assert.That(meshTop, Is.EqualTo(edge.y).Within(.001f),
+                                $"{kind} triangulated seam at {xz}; segment {segment.Start:F5}->{segment.End:F5}; " +
+                                $"triangle {vertices[0]:F5}, {vertices[1]:F5}, {vertices[2]:F5}; " +
+                                $"scalar at triangle vertices " + string.Join(", ", vertices.Select(vertex =>
+                                    CityTerrainSurfacePlan.SampleTop(layout, surface, new Vector2(vertex.x, vertex.z)).ToString("F6"))));
+                            found = true;
+                        }
+                        Assert.That(found, Is.True, $"{kind} terrain must reach its paving seam at {xz}");
+                    }
+                    checkedSegments++;
+                    if (checkedSegments >= 3) break;
+                }
+                if (checkedSegments >= 3) break;
+            }
+            Assert.That(checkedSegments, Is.GreaterThan(0), $"{kind} needs a real retained paving/earth seam");
+        }
+
+        private static void AssertOverlappingBoundaryBandsAreContinuous(CityLayout layout)
+        {
+            // The service fringe can leave only four metres of earth between
+            // street edges, so their four-metre transition bands overlap.
+            // Put this pure field outside the real city to retain production
+            // support lookup without introducing a test-only null contract.
+            const float origin = 10000f;
+            var left = new CityTerrainStreetBoundaryPlan.Segment(
+                new Vector3(origin, 0f, 0f), new Vector3(origin, 0f, 10f), Vector2.right);
+            var right = new CityTerrainStreetBoundaryPlan.Segment(
+                new Vector3(origin + 4f, 1f, 0f), new Vector3(origin + 4f, 1f, 10f), Vector2.left);
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            var both = new CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext(new[] { left, right }, support);
+            float before = both.Apply(new Vector2(origin + 1.99f, 5f), .5f);
+            float after = both.Apply(new Vector2(origin + 2.01f, 5f), .5f);
+            Assert.That(Mathf.Abs(after - before), Is.LessThan(.03f),
+                "Opposing street bands must blend across their bisector rather than change the nearest target abruptly.");
+            Assert.That(both.Apply(new Vector2(origin, 5f), .5f), Is.EqualTo(0f).Within(.0001f));
+            Assert.That(both.Apply(new Vector2(origin + 4f, 5f), .5f), Is.EqualTo(1f).Within(.0001f));
+            Assert.That(both.Apply(new Vector2(origin - 5f, 5f), .5f), Is.EqualTo(.5f).Within(.0001f));
+            var single = new CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext(new[] { left }, support);
+            Assert.That(single.Apply(new Vector2(origin + 2f, 5f), .5f), Is.EqualTo(.25f).Within(.0001f),
+                "One boundary retains its original bounded smoothstep transition.");
+        }
+
         [Test]
         [Category("CityTraversal")]
         public void Build_DefaultContinuousTerrain_MatchesPlanAndOwnsCollider()

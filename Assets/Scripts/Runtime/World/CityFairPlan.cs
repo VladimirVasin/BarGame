@@ -40,6 +40,99 @@ namespace BarPromenade
         public Vector3 End { get; }
     }
 
+    /// <summary>One authored rigid prop's actual foot rectangle, before terrain sampling.</summary>
+    internal readonly struct CityFairGroundPropSite
+    {
+        internal CityFairGroundPropSite(string id, float x, float z, Vector3 facing, float width, float depth)
+        { Id = id; CenterXZ = new Vector2(x, z); Facing = facing; Width = width; Depth = depth; }
+        internal string Id { get; }
+        internal Vector2 CenterXZ { get; }
+        internal Vector3 Facing { get; }
+        internal float Width { get; }
+        internal float Depth { get; }
+    }
+
+    /// <summary>Pure shared site/feet authoring. Terrain may consume this without
+    /// constructing the final, terrain-grounded fair or entering its cache.</summary>
+    internal sealed class CityFairGroundSitePlan
+    {
+        private static readonly ConditionalWeakTable<CityLayout, CityFairGroundSitePlan> Plans =
+            new ConditionalWeakTable<CityLayout, CityFairGroundSitePlan>();
+        private static readonly CityFairGroundSitePlan Absent = new CityFairGroundSitePlan();
+        private CityFairGroundSitePlan() { }
+
+        private CityFairGroundSitePlan(UnityEngine.Bounds south, UnityEngine.Bounds north, float boundaryZ)
+        {
+            IsEnabled = true; SouthBuildingBounds = south; NorthBuildingBounds = north; BoundaryZ = boundaryZ;
+            Bounds = Rect.MinMaxRect(Mathf.Max(south.min.x, north.min.x), south.max.z,
+                Mathf.Min(south.max.x, north.max.x), north.min.z);
+            CenterX = Bounds.center.x;
+            SouthRowZ = Bounds.yMin + 1.50f; NorthRowZ = Bounds.yMax - 1.50f;
+            Stalls = new[] {
+                new CityFairGroundPropSite("fair-south-west", CenterX - 3.15f, SouthRowZ, Vector3.forward, 2.64f, 2f),
+                new CityFairGroundPropSite("fair-south-east", CenterX + 3.15f, SouthRowZ, Vector3.forward, 2.64f, 2f),
+                new CityFairGroundPropSite("fair-north-west", CenterX - 3.15f, NorthRowZ, Vector3.back, 2.64f, 2f),
+                new CityFairGroundPropSite("fair-north-east", CenterX + 3.15f, NorthRowZ, Vector3.back, 2.64f, 2f)
+            };
+            Organ = new CityFairGroundPropSite("fair-organ", CenterX - 3.15f, boundaryZ - 1.05f, Vector3.back, 1.10f, .80f);
+            Bell = new CityFairGroundPropSite("fair-bell", CenterX + 3.15f, boundaryZ - 1.05f, Vector3.back, .82f, .66f);
+            Benches = new[] {
+                new CityFairGroundPropSite("fair-bench-west", CenterX - 3.15f, boundaryZ + .80f, Vector3.forward, 1.32f, .50f),
+                new CityFairGroundPropSite("fair-bench-east", CenterX + 3.15f, boundaryZ + .80f, Vector3.forward, 1.32f, .50f)
+            };
+            Clutter = new CityFairGroundPropSite("fair-clutter", CenterX, Bounds.yMin + .75f, Vector3.forward, 1.70f, .90f);
+            ChildTable = new CityFairGroundPropSite("fair-child-table", Bounds.xMin + .95f, boundaryZ - .10f, Vector3.forward, .80f, .55f);
+            var supports = new List<CityFairGroundPropSite>(10);
+            supports.AddRange(Stalls); supports.Add(Organ); supports.Add(Bell); supports.AddRange(Benches);
+            supports.Add(Clutter); supports.Add(ChildTable); Supports = supports.AsReadOnly();
+        }
+
+        internal bool IsEnabled { get; }
+        internal Rect Bounds { get; }
+        internal UnityEngine.Bounds SouthBuildingBounds { get; }
+        internal UnityEngine.Bounds NorthBuildingBounds { get; }
+        internal float BoundaryZ { get; }
+        internal float CenterX { get; }
+        internal float SouthRowZ { get; }
+        internal float NorthRowZ { get; }
+        internal IReadOnlyList<CityFairGroundPropSite> Stalls { get; } = Array.Empty<CityFairGroundPropSite>();
+        internal IReadOnlyList<CityFairGroundPropSite> Benches { get; } = Array.Empty<CityFairGroundPropSite>();
+        internal IReadOnlyList<CityFairGroundPropSite> Supports { get; } = Array.Empty<CityFairGroundPropSite>();
+        internal CityFairGroundPropSite Organ { get; }
+        internal CityFairGroundPropSite Bell { get; }
+        internal CityFairGroundPropSite Clutter { get; }
+        internal CityFairGroundPropSite ChildTable { get; }
+
+        internal static CityFairGroundSitePlan ForLayout(CityLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            return Plans.GetValue(layout, Create);
+        }
+
+        private static CityFairGroundSitePlan Create(CityLayout layout)
+        {
+            if (layout.BlueprintId != CityBlueprintCatalog.DefaultBlueprintId || layout.Seed != GameSessionState.DefaultCitySeed)
+                return Absent;
+            BuildingLot south = Find(CityFairPlanner.SouthCell), north = Find(CityFairPlanner.NorthCell);
+            if (south == null || north == null || !south.IsOrdinaryBuilding || !north.IsOrdinaryBuilding ||
+                !IsFairDistrict(south.District) || !IsFairDistrict(north.District) ||
+                south.FrontageDirection != Vector2Int.down || north.FrontageDirection != Vector2Int.left ||
+                layout.HasRoad(RoadEdge.ForCellFrontage(CityFairPlanner.SouthCell, Vector2Int.up))) return Absent;
+            return new CityFairGroundSitePlan(CityArchShelterPlacementResolver.ResolveExpectedBuildingBounds(south),
+                CityArchShelterPlacementResolver.ResolveExpectedBuildingBounds(north),
+                layout.GetGridWorldPosition(CityFairPlanner.NorthCell).z);
+
+            BuildingLot Find(Vector2Int cell)
+            {
+                foreach (BuildingLot lot in layout.BuildingLots) if (lot.Cell == cell) return lot;
+                return null;
+            }
+        }
+
+        private static bool IsFairDistrict(CityDistrictKind district) =>
+            district == CityDistrictKind.Residential || district == CityDistrictKind.Nightlife;
+    }
+
     /// <summary>
     /// The fair follows the existing continuous City terrain. Cell elevations
     /// place building lots; they are not the walking surface between facades.
@@ -52,37 +145,28 @@ namespace BarPromenade
 
         private CityFairPlan() { }
 
-        internal CityFairPlan(CityLayout layout, UnityEngine.Bounds south,
-            UnityEngine.Bounds north, float boundaryZ)
+        internal CityFairPlan(CityLayout layout, CityFairGroundSitePlan site)
         {
             this.layout = layout;
             IsEnabled = true;
-            SouthBuildingBounds = south;
-            NorthBuildingBounds = north;
-            BoundaryZ = boundaryZ;
-            Bounds = Rect.MinMaxRect(Mathf.Max(south.min.x, north.min.x),
-                south.max.z, Mathf.Min(south.max.x, north.max.x), north.min.z);
-            float centerX = Bounds.center.x;
+            SouthBuildingBounds = site.SouthBuildingBounds;
+            NorthBuildingBounds = site.NorthBuildingBounds;
+            BoundaryZ = site.BoundaryZ;
+            Bounds = site.Bounds;
+            float centerX = site.CenterX, boundaryZ = site.BoundaryZ;
             // The extra wall setback also accommodates the canopy's small
             // horizontal displacement when its whole stall follows the slope.
-            float southRowZ = Bounds.yMin + 1.50f;
-            float northRowZ = Bounds.yMax - 1.50f;
+            float southRowZ = site.SouthRowZ;
+            float northRowZ = site.NorthRowZ;
             SouthY = SampleGroundY(new Vector3(centerX, 0f, southRowZ));
             NorthY = SampleGroundY(new Vector3(centerX, 0f, northRowZ));
-            Stalls = new[]
-            {
-                CreateStall("fair-south-west", centerX - 3.15f, southRowZ, Vector3.forward, 0),
-                CreateStall("fair-south-east", centerX + 3.15f, southRowZ, Vector3.forward, 1),
-                CreateStall("fair-north-west", centerX - 3.15f, northRowZ, Vector3.back, 2),
-                CreateStall("fair-north-east", centerX + 3.15f, northRowZ, Vector3.back, 3)
-            };
+            Stalls = new CityFairStall[site.Stalls.Count];
+            for (int i = 0; i < Stalls.Length; i++) Stalls[i] = CreateStall(site.Stalls[i], i);
 
-            ResolveGroundPose(new Vector3(centerX - 3.15f, 0f, boundaryZ - 1.05f),
-                Vector3.back, 1.10f, 0.80f, out Vector3 organPosition, out Quaternion organRotation);
+            ResolveGroundPose(site.Organ, out Vector3 organPosition, out Quaternion organRotation);
             OrganPosition = organPosition;
             OrganRotation = organRotation;
-            ResolveGroundPose(new Vector3(centerX + 3.15f, 0f, boundaryZ - 1.05f),
-                Vector3.back, 0.82f, 0.66f, out Vector3 bellPosition, out Quaternion bellRotation);
+            ResolveGroundPose(site.Bell, out Vector3 bellPosition, out Quaternion bellRotation);
             BellPosition = bellPosition;
             BellRotation = bellRotation;
             BenchPositions = new Vector3[2];
@@ -90,9 +174,7 @@ namespace BarPromenade
             Benches = new CityBenchSeat[2];
             for (int i = 0; i < Benches.Length; i++)
             {
-                ResolveGroundPose(new Vector3(centerX + (i == 0 ? -3.15f : 3.15f), 0f,
-                    boundaryZ + 0.80f), Vector3.forward, 1.80f, 0.70f,
-                    out Vector3 position, out Quaternion rotation);
+                ResolveGroundPose(site.Benches[i], out Vector3 position, out Quaternion rotation);
                 BenchPositions[i] = position;
                 BenchRotations[i] = rotation;
                 Vector3 seatTop = position + rotation * (Vector3.up * CityFairPlanner.BenchSeatHeight);
@@ -101,12 +183,10 @@ namespace BarPromenade
                 Benches[i] = new CityBenchSeat(i == 0 ? "fair-bench-west" : "fair-bench-east",
                     seatTop, 1.80f, 0.50f, SampleGroundY(dock), facing, frontApproachOnly: true);
             }
-            ResolveGroundPose(new Vector3(centerX, 0f, Bounds.yMin + 0.75f),
-                Vector3.forward, 1.70f, 0.90f, out Vector3 clutterPosition, out Quaternion clutterRotation);
+            ResolveGroundPose(site.Clutter, out Vector3 clutterPosition, out Quaternion clutterRotation);
             ClutterPositions = new[] { clutterPosition };
             ClutterRotations = new[] { clutterRotation };
-            ResolveGroundPose(new Vector3(Bounds.xMin + .95f, 0f, boundaryZ - .10f),
-                Vector3.forward, .80f, .55f, out Vector3 tablePosition, out Quaternion tableRotation);
+            ResolveGroundPose(site.ChildTable, out Vector3 tablePosition, out Quaternion tableRotation);
             ChildTablePosition = tablePosition;
             ChildTableRotation = tableRotation;
             Garlands = new CityFairGarland[3];
@@ -222,31 +302,58 @@ namespace BarPromenade
             return point;
         }
 
-        private CityFairStall CreateStall(string id, float x, float z, Vector3 facing, int goods)
+        private CityFairStall CreateStall(CityFairGroundPropSite site, int goods)
         {
-            ResolveGroundPose(new Vector3(x, 0f, z), facing, 2.8f, 2.2f,
-                out Vector3 position, out Quaternion rotation);
+            ResolveGroundPose(site, out Vector3 position, out Quaternion rotation);
             Vector3 vendor = position + rotation * new Vector3(0f, 0f, -.60f);
             vendor.y = SampleGroundY(vendor);
-            return new CityFairStall(id, position, rotation, vendor, facing, goods);
+            return new CityFairStall(site.Id, position, rotation, vendor, site.Facing, goods);
         }
+
+        private void ResolveGroundPose(CityFairGroundPropSite site, out Vector3 position, out Quaternion rotation) =>
+            ResolveGroundPose(new Vector3(site.CenterXZ.x, 0f, site.CenterXZ.y), site.Facing,
+                site.Width, site.Depth, out position, out rotation);
 
         private void ResolveGroundPose(Vector3 anchor, Vector3 facing, float width, float depth,
             out Vector3 position, out Quaternion rotation)
         {
             position = GroundPoint(anchor.x, anchor.z);
-            rotation = Quaternion.FromToRotation(Vector3.up, SampleGroundNormal(position)) *
-                Quaternion.LookRotation(facing, Vector3.up);
-            // The terrain is piecewise bilinear, so its centre tangent can be
-            // millimetres below a corner. Lift by that measured residual only.
-            float lift = 0f;
+            Quaternion yaw = Quaternion.LookRotation(facing, Vector3.up);
+            rotation = yaw;
+            // Fit the actual feet, not the canopy/seat envelope. A street
+            // transition can curve across a prop: the centre tangent plus a
+            // highest-corner lift leaves the opposite feet hanging. Refit the
+            // four measured world contacts as their XZ positions change with tilt.
+            for (int iteration = 0; iteration < 6; iteration++)
+            {
+                float xx = 0f, xz = 0f, zz = 0f, xy = 0f, zy = 0f, sum = 0f;
+                for (int x = -1; x <= 1; x += 2)
+                    for (int z = -1; z <= 1; z += 2)
+                    {
+                        Vector3 offset = rotation * new Vector3(x * width * .5f, 0f, z * depth * .5f);
+                        float height = SampleGroundY(position + offset);
+                        xx += offset.x * offset.x; xz += offset.x * offset.z; zz += offset.z * offset.z;
+                        xy += offset.x * height; zy += offset.z * height; sum += height;
+                    }
+                float determinant = xx * zz - xz * xz;
+                if (determinant <= .000001f)
+                    throw new InvalidOperationException("Fair support feet must span a ground plane.");
+                float xSlope = (xy * zz - zy * xz) / determinant;
+                float zSlope = (zy * xx - xy * xz) / determinant;
+                position.y = sum * .25f;
+                rotation = Quaternion.FromToRotation(Vector3.up, new Vector3(-xSlope, 1f, -zSlope).normalized) * yaw;
+            }
+            // Centre the remaining non-planar residual instead of lifting all
+            // feet to the highest one. The unchanged validator checks each foot.
+            float minimum = float.PositiveInfinity, maximum = float.NegativeInfinity;
             for (int x = -1; x <= 1; x += 2)
                 for (int z = -1; z <= 1; z += 2)
                 {
                     Vector3 support = position + rotation * new Vector3(x * width * .5f, 0f, z * depth * .5f);
-                    lift = Mathf.Max(lift, SampleGroundY(support) - support.y);
+                    float residual = support.y - SampleGroundY(support);
+                    minimum = Mathf.Min(minimum, residual); maximum = Mathf.Max(maximum, residual);
                 }
-            position.y += lift;
+            position.y -= (minimum + maximum) * .5f;
         }
     }
 
@@ -268,31 +375,12 @@ namespace BarPromenade
 
         private static CityFairPlan CreateUncached(CityLayout layout)
         {
-            if (layout.BlueprintId != CityBlueprintCatalog.DefaultBlueprintId ||
-                layout.Seed != GameSessionState.DefaultCitySeed)
-                return CityFairPlan.Absent;
-            BuildingLot south = FindLot(layout, SouthCell);
-            BuildingLot north = FindLot(layout, NorthCell);
-            if (south == null || north == null || !south.IsOrdinaryBuilding ||
-                !north.IsOrdinaryBuilding || !IsFairDistrict(south.District) ||
-                !IsFairDistrict(north.District) ||
-                south.FrontageDirection != Vector2Int.down ||
-                north.FrontageDirection != Vector2Int.left ||
-                layout.HasRoad(RoadEdge.ForCellFrontage(SouthCell, Vector2Int.up)))
-                return CityFairPlan.Absent;
-
-            UnityEngine.Bounds southBounds = CityArchShelterPlacementResolver
-                .ResolveExpectedBuildingBounds(south);
-            UnityEngine.Bounds northBounds = CityArchShelterPlacementResolver
-                .ResolveExpectedBuildingBounds(north);
-            float boundaryZ = layout.GetGridWorldPosition(NorthCell).z;
-            var plan = new CityFairPlan(layout, southBounds, northBounds, boundaryZ);
+            CityFairGroundSitePlan site = CityFairGroundSitePlan.ForLayout(layout);
+            if (!site.IsEnabled) return CityFairPlan.Absent;
+            var plan = new CityFairPlan(layout, site);
             ValidateOrThrow(layout, plan);
             return plan;
         }
-
-        private static bool IsFairDistrict(CityDistrictKind district) =>
-            district == CityDistrictKind.Residential || district == CityDistrictKind.Nightlife;
 
         public static void ValidateOrThrow(CityLayout layout, CityFairPlan plan)
         {
@@ -379,8 +467,10 @@ namespace BarPromenade
                 for (int z = -1; z <= 1; z += 2)
                 {
                     Vector3 foot = position + rotation * new Vector3(x * width * .5f, 0f, z * depth * .5f);
-                    Require(Mathf.Abs(foot.y - plan.SampleGroundY(foot)) <= .035f,
-                        "A fair prop must contact the actual continuous terrain at every support.");
+                    float residual = foot.y - plan.SampleGroundY(foot);
+                    if (Mathf.Abs(residual) > .035f)
+                        throw new InvalidOperationException("A fair prop must contact the actual continuous terrain at every support: " +
+                            $"position={position}, foot={foot}, residual={residual:F5}, feet={width} x {depth}.");
                 }
         }
 

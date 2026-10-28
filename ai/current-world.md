@@ -703,22 +703,24 @@ cemetery:own interiors/returns.
   linear multiply and never clamps the brightest lot, a bar. Whole ordinary
   Blender prototypes instead use the later 24-sheet semantic surface contract
   described below.
-  `CityStreetSurfacePlan` owns the Road v2 `8 m` footprint: `6 m` carriageway
-  (`+0.08 m` datum), two raised `1 m` sidewalks (`+0.14 m`), `8 x 8 m` node
-  cores and ordinary `6 x 6 m` clear aprons. Road v2.1 moves supported corner
-  pads outward and ends real curbs `4.5 m` short of selected two-/three-/four-way
-  nodes; a three-way node closes its missing side with `1 x 8 m` paving.
-  Dashes clear nodes/zebras; up to six crossings use the signal selector.
-  Bus bodies retain `0.30 m` pole clearance. `CityGroundSurfaceSystem` snapshots
-  explicit ground meshes/appearance.
-  `GroundSurfacePartitioner` removes lower-priority top
-  overlaps, retaining source planes, normals and metre UVs. Roads, curbs, ParkPath
-  and paving are regions of this surface; paint clips/projects onto exact support
-  faces. `48 m` render/collision sectors share indexed weather recipes and triangle
-  footstep kinds. Source hosts remain disabled for staging/semantics; structural
-  volumes stay. Cemetery coatings/excavation walls rebuild locally; beach sand
-  retains its deformable skin/fixed collider. Home uses the same owner without
-  collision. Ordinary facade panes consume the first channel
+  `CityStreetSurfacePlan`: Road v2 `8 m` traffic reserve, `6 m`
+  asphalt at `+0.08 m`, pavement at `+0.14 m`; the `1 m` inset stays while
+  compact public frontage widens outward to `2 m`. `8 x 8 m` node cores and
+  ordinary `6 x 6 m` aprons remain. Road v2.1 moves supported corner pads
+  outward, cuts raised kerbs back `4.5 m` at selected 2/3/4-way
+  nodes and closes missing three-way sides with `1 x 8 m` paving. Compact
+  narrow/wide approaches continue flush over bus aprons. Dashes clear nodes/
+  zebras; up to six crossings share signals; bus/pole gap stays `0.30 m`.
+  `CityStreetSupportPlan` typed stations drive imported Blender top/edge
+  topology. Cached outer boundaries constrain
+  soil/lawn/path triangles through a `4 m` blend;
+  internal/buried edges do not pull earth down. `CityGroundSurfaceSystem` and
+  `GroundSurfacePartitioner` retain planes/normals/metre UVs while removing
+  lower-priority overlaps. Typed submeshes preserve priority/weather/triangle
+  footsteps in `48 m` render/collision sectors; paint clips/projects to support.
+  Disabled hosts retain semantics; structures stay. Local cemetery cuts/
+  coatings and deformable sand/fixed collision remain. Home
+  copies bounded actual street/terrain triangles without collision. Ordinary facade panes consume the first channel
   of the pure `CityDistrictPresentationPlanner`: each district keeps its own
   lit ratio, while every authored facade row quantizes that ratio to a stable
   warm/dark selection. At least one warm street-lamp-coloured pane reaches
@@ -1249,8 +1251,8 @@ cemetery:own interiors/returns.
   Men:hero anatomy/NPC rig,160–185cm/slim–chubby+belly.
   4faces/3haircolors/21skinned items/8slots/3presets,shared assets/coverage;
   vest/jackets/cardigan/coat/overshirt/trousers/shoes;hero/bespoke/combat kept.
-  Known initial-import gap: `BodyNpc/CLO_Outer_cardiganBody` affine-basis
-  validation fails before skin remap; source hashes/coordinates checked, unresolved.
+  BodyNpc torso metadata retains triangle-corner multiplicity after FBX welding;
+  imported frames keep the strict affine check.
   Hero/NPC hands:+20%,slim,fixed wrists;`NpcHandPose`:bare/gloved grip.
   `DefaultNpcPopulation`/`CreateForCharacter`:stable IDs/looks by role,no repeats.
   Four wait at bench. Snapshot-owned `DriverRest`/`DriverLunch`:

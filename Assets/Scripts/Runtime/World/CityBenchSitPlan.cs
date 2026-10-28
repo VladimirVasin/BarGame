@@ -883,24 +883,18 @@ namespace BarPromenade
                 new Vector2(dock.x, dock.z),
                 out float groundY,
                 out _);
-            SampleWalkwayTops(
-                streetSurfacePlan.SidewalkGeometry,
-                dock,
-                ref groundY,
-                ref sampled);
-            SampleWalkwayTops(
-                streetSurfacePlan.ParkPathGeometry,
-                dock,
-                ref groundY,
-                ref sampled);
-
-            // A dock that overhangs the kerb stands its sitter on the
-            // carriageway surface rather than the strip behind him.
-            SampleWalkwayTops(
-                streetSurfacePlan.StreetGeometry,
-                dock,
-                ref groundY,
-                ref sampled);
+            if (streetSurfacePlan.SupportPlan != null)
+            {
+                if (streetSurfacePlan.SupportPlan.TrySampleTop(new Vector2(dock.x, dock.z), out float top, out _))
+                { groundY = sampled ? Mathf.Max(groundY, top) : top; sampled = true; }
+            }
+            else
+            {
+                SampleWalkwayTops(streetSurfacePlan.SidewalkGeometry, dock, ref groundY, ref sampled);
+                SampleWalkwayTops(streetSurfacePlan.ParkPathGeometry, dock, ref groundY, ref sampled);
+                // A dock over the kerb stands on the carriageway.
+                SampleWalkwayTops(streetSurfacePlan.StreetGeometry, dock, ref groundY, ref sampled);
+            }
             if (!sampled)
             {
                 groundY = seat.GroundY;

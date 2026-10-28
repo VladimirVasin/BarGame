@@ -86,7 +86,8 @@ namespace BarPromenade
                         Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
                         Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
                         part.Style,
-                        part.BlocksMovement);
+                        part.BlocksMovement,
+                        part.IsProjectedGroundCoating);
                     if (importedIds.Contains(part.StableId))
                     {
                         if (part.BlocksMovement)
@@ -121,17 +122,17 @@ namespace BarPromenade
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                         $"Fringe Chunk {key.X} {key.Z} {key.Style} " +
-                        $"{(key.BlocksMovement ? "Solid" : "Visual")}",
+                        $"{(key.BlocksMovement ? "Solid" : key.IsProjectedGroundCoating ? "Coating" : "Visual")}",
                         root.transform,
                         batches[key],
                         color,
                         key.BlocksMovement,
                         ResolveTileSize(key.Style),
                         ResolveUvMode(key.Style),
-                        keepReadable: IsGroundStyle(key.Style));
+                        keepReadable: key.IsProjectedGroundCoating);
                 Renderer renderer = chunk.GetComponent<Renderer>();
                 ApplyAppearance(renderer, key.Style, color);
-                RegisterGround(chunk, key.Style);
+                RegisterGround(chunk, key);
                 if (!key.BlocksMovement &&
                     (key.Style == CityFringeYardStyle.ServiceGround ||
                      key.Style == CityFringeYardStyle.ServiceTrack ||
@@ -152,17 +153,17 @@ namespace BarPromenade
                     RuntimePrimitiveFactory.CreateCombinedMeshes(
                         $"Imported Fringe Chunk {key.X} {key.Z} " +
                         $"{key.Style} " +
-                        $"{(key.BlocksMovement ? "Solid" : "Visual")}",
+                        $"{(key.BlocksMovement ? "Solid" : key.IsProjectedGroundCoating ? "Coating" : "Visual")}",
                         root.transform,
                         importedBatches[key],
                         color,
                         false,
                         ResolveTileSize(key.Style),
                         ResolveUvMode(key.Style),
-                        keepReadable: IsGroundStyle(key.Style));
+                        keepReadable: key.IsProjectedGroundCoating);
                 Renderer renderer = chunk.GetComponent<Renderer>();
                 ApplyAppearance(renderer, key.Style, color);
-                RegisterGround(chunk, key.Style);
+                RegisterGround(chunk, key);
                 if (!key.BlocksMovement &&
                     (key.Style == CityFringeYardStyle.ServiceGround ||
                      key.Style == CityFringeYardStyle.ServiceTrack ||
@@ -195,14 +196,15 @@ namespace BarPromenade
         }
 
         private static bool IsGroundStyle(CityFringeYardStyle style) =>
-            style == CityFringeYardStyle.ServiceGround ||
-            style == CityFringeYardStyle.ServiceTrack;
+            CityFringeYardPartDescriptor.IsProjectedGroundStyle(style);
 
-        private static void RegisterGround(GameObject chunk, CityFringeYardStyle style)
+        private static void RegisterGround(GameObject chunk, BatchKey key)
         {
-            if (!IsGroundStyle(style)) return;
+            if (!key.IsProjectedGroundCoating) return;
             FootstepGround.Stamp(chunk, FootstepGroundKind.Soil);
-            CityGroundSurfaceSystem.Register(chunk, 40, paint: true);
+            // Ruts retain their dark drainage recipe over the plain service
+            // coating. Actual channels never enter this projected batch.
+            CityGroundSurfaceSystem.Register(chunk, key.Style == CityFringeYardStyle.Drainage ? 41 : 40, paint: true);
         }
 
         private static void TryAppendImportedYardParts(
@@ -533,7 +535,8 @@ namespace BarPromenade
                     Mathf.FloorToInt(origin.x / SpatialChunkSize),
                     Mathf.FloorToInt(origin.z / SpatialChunkSize),
                     style,
-                    blocksMovement);
+                    blocksMovement,
+                    !blocksMovement && IsGroundStyle(style));
                 if (!batches.TryGetValue(
                         key,
                         out List<RuntimeMeshPlacement> placements))
@@ -896,25 +899,29 @@ namespace BarPromenade
                 int x,
                 int z,
                 CityFringeYardStyle style,
-                bool blocksMovement)
+                bool blocksMovement,
+                bool projectedGroundCoating)
             {
                 X = x;
                 Z = z;
                 Style = style;
                 BlocksMovement = blocksMovement;
+                IsProjectedGroundCoating = projectedGroundCoating;
             }
 
             public int X { get; }
             public int Z { get; }
             public CityFringeYardStyle Style { get; }
             public bool BlocksMovement { get; }
+            public bool IsProjectedGroundCoating { get; }
 
             public bool Equals(BatchKey other)
             {
                 return X == other.X &&
                        Z == other.Z &&
                        Style == other.Style &&
-                       BlocksMovement == other.BlocksMovement;
+                       BlocksMovement == other.BlocksMovement &&
+                       IsProjectedGroundCoating == other.IsProjectedGroundCoating;
             }
 
             public override bool Equals(object obj)
@@ -929,7 +936,8 @@ namespace BarPromenade
                     int hash = X;
                     hash = (hash * 397) ^ Z;
                     hash = (hash * 397) ^ (int)Style;
-                    return (hash * 397) ^ BlocksMovement.GetHashCode();
+                    hash = (hash * 397) ^ BlocksMovement.GetHashCode();
+                    return (hash * 397) ^ IsProjectedGroundCoating.GetHashCode();
                 }
             }
 
@@ -948,9 +956,9 @@ namespace BarPromenade
                 }
 
                 int style = left.Style.CompareTo(right.Style);
-                return style != 0
-                    ? style
-                    : left.BlocksMovement.CompareTo(right.BlocksMovement);
+                if (style != 0) return style;
+                int blocking = left.BlocksMovement.CompareTo(right.BlocksMovement);
+                return blocking != 0 ? blocking : left.IsProjectedGroundCoating.CompareTo(right.IsProjectedGroundCoating);
             }
         }
     }

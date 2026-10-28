@@ -15,8 +15,6 @@ namespace BarPromenade
         private const float SampleNormalOffset = 0.10f;
         private const float BeachTopAboveSeaWater = 0.32f;
         internal const float DistrictPointBlendDistance = 4f;
-        private static readonly Vector2Int[] RoadGradeDirections =
-        { Vector2Int.down, Vector2Int.right, Vector2Int.up, Vector2Int.left };
 
         public static bool UsesContinuousTop(
             CitySurfaceDescriptor surface)
@@ -42,13 +40,15 @@ namespace BarPromenade
                 float southEast,
                 float northWest,
                 float northEast,
-                CityPortAccessPlan access)
+                CityPortAccessPlan access,
+                CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null)
             {
                 SouthWest = southWest;
                 SouthEast = southEast;
                 NorthWest = northWest;
                 NorthEast = northEast;
                 Access = access;
+                StreetBoundary = streetBoundary;
             }
 
             internal float SouthWest { get; }
@@ -56,6 +56,7 @@ namespace BarPromenade
             internal float NorthWest { get; }
             internal float NorthEast { get; }
             internal CityPortAccessPlan Access { get; }
+            internal CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext StreetBoundary { get; }
         }
 
         internal static SurfaceContext ResolveSurfaceContext(
@@ -89,7 +90,8 @@ namespace BarPromenade
                 southEast,
                 northWest,
                 northEast,
-                access);
+                access,
+                CityTerrainStreetBoundaryPlan.ForSurface(layout, surface));
         }
 
         public static float SampleDatum(
@@ -120,6 +122,24 @@ namespace BarPromenade
             Vector2 worldXZ,
             in SurfaceContext context)
         {
+            float datum = SampleDatumWithoutRigidSupports(layout, surface, worldXZ, in context);
+            float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
+            return CityFairGroundSupportPlan.ForLayout(layout).Apply(worldXZ, datum + offset) - offset;
+        }
+
+        internal static float SampleTopWithoutRigidSupports(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
+        {
+            SurfaceContext context = ResolveSurfaceContext(layout, surface);
+            float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
+            return SampleDatumWithoutRigidSupports(layout, surface, point, in context) + offset;
+        }
+
+        private static float SampleDatumWithoutRigidSupports(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            Vector2 worldXZ,
+            in SurfaceContext context)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
@@ -141,7 +161,15 @@ namespace BarPromenade
                 worldXZ,
                 baseDatum);
             datum = ApplyCompactSouthWestCornerGrade(layout, surface, worldXZ, datum);
-            datum = ApplyCurvedRoadGrade(layout, surface, worldXZ, datum);
+            // The street's actual outer seam owns the shared edge. The
+            // old curved-only radial datum could not follow widened paving,
+            // junction aprons or road grade breaks.
+            if (context.StreetBoundary != null && !IsInsideDistrictPointPad(layout, surface, worldXZ))
+            {
+                float topOffset = surface.Kind == CitySurfaceKind.ParkGround
+                    ? 0f : CityElevationPlan.GroundTopOffset;
+                datum = context.StreetBoundary.Apply(worldXZ, datum + topOffset) - topOffset;
+            }
             if (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east")
                 datum = CityEastExitPlanner.Create(layout).ApplyGroundTop(worldXZ,
                     datum + CityElevationPlan.GroundTopOffset) - CityElevationPlan.GroundTopOffset;
@@ -462,25 +490,12 @@ namespace BarPromenade
             return Mathf.Lerp(baseDatum, targetDatum, strongestWeight);
         }
 
-        private static float ApplyCurvedRoadGrade(CityLayout layout, CitySurfaceDescriptor surface,
-            Vector2 point, float datum)
+        private static bool IsInsideDistrictPointPad(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
         {
-            if (!layout.RoadGeometry.IsReplannedCell(surface.Cell)) return datum;
-            float nearest = float.PositiveInfinity;
-            float target = datum;
-            foreach (Vector2Int direction in RoadGradeDirections)
-            {
-                RoadEdge edge = RoadEdge.ForCellFrontage(surface.Cell, direction);
-                if (!layout.RoadGeometry.IsCurved(edge)) continue;
-                CityRoadPath path = layout.RoadGeometry.Get(edge);
-                CityRoadProjection projection = path.Project(point);
-                if (projection.DistanceSquared >= nearest) continue;
-                nearest = projection.DistanceSquared;
-                target = layout.ElevationPlan.SampleRoadDatum(edge, projection.DistanceAlong / path.Length);
-            }
-            float outside = Mathf.Sqrt(nearest) - layout.RoadWidth * .5f;
-            float weight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(outside / 4f));
-            return Mathf.Lerp(datum, target, weight);
+            if (surface.Kind != CitySurfaceKind.BuildableGround) return false;
+            foreach (CityDistrictPointOfInterestDescriptor descriptor in layout.DistrictPointsOfInterest)
+                if (DistanceOutside(descriptor.PublicBounds, point) <= .001f) return true;
+            return false;
         }
 
         private static float DistanceOutside(Rect bounds, Vector2 point)

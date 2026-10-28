@@ -869,68 +869,9 @@ namespace BarPromenade
                     plan.CenterMarkingGeometry.Count +
                     plan.CrosswalkMarkingGeometry.Count));
             subTimer.Restart();
-            BuildOrientedSurfaceBoxesIfAny(
-                "Street Surfaces",
-                roads,
-                plan.StreetGeometry,
-                CityExteriorAppearance.Asphalt,
-                true,
-                CityExteriorAppearance.RoadTextureTileSize,
-                renderer =>
-                {
-                    CityExteriorAppearance.ApplyRoadSurface(renderer);
-                    GroundSurfaceCoordinates.AssignBoxes(
-                        renderer.GetComponent<MeshFilter>().sharedMesh,
-                        plan.StreetGeometry, CityStreetSurfacePlanner.SidewalkWidth);
-                    GroundSurfaceCoordinates.Enable(renderer);
-                },
-                FootstepGroundKind.Concrete);
-            BuildStreetRibbonMeshes("Curved Street Surfaces", roads, layout,
-                plan.CurvedStreetRibbons, CityExteriorAppearance.Asphalt, true,
-                CityExteriorAppearance.RoadTextureTileSize, CityExteriorAppearance.ApplyRoadSurface,
-                FootstepGroundKind.Concrete, true);
-            BuildOrientedSurfaceBoxesIfAny(
-                "Park Paths",
-                roads,
-                plan.ParkPathGeometry,
-                CityExteriorAppearance.ParkPath,
-                true,
-                CityParkSurfaceAppearance
-                    .GetRecipe(CityParkSurfaceKind.Path)
-                    .MetersPerTile,
-                renderer => CityParkSurfaceAppearance.ApplyCombined(
-                    renderer,
-                    CityParkSurfaceKind.Path,
-                    CityExteriorAppearance.ParkPath),
-                FootstepGroundKind.Soil);
-            ReportBlock(
-                "roads_and_river/streets",
-                subTimer,
-                GameLog.Field(
-                    "boxes",
-                    plan.StreetGeometry.Count +
-                    plan.ParkPathGeometry.Count));
-            subTimer.Restart();
-            // The raised sidewalk is laid in light flags, so it sounds of
-            // stone against the road's asphalt: the most-walked join in
-            // the city is audible.
-            BuildOrientedSurfaceBoxesIfAny(
-                "Sidewalk Surfaces",
-                roads,
-                plan.SidewalkGeometry,
-                Color.white,
-                true,
-                CityExteriorAppearance.SidewalkTextureTileSize,
-                CityExteriorAppearance.ApplySidewalkSurface,
-                FootstepGroundKind.Stone);
-            BuildStreetRibbonMeshes("Curved Sidewalk Surfaces", roads, layout,
-                plan.CurvedSidewalkRibbons, Color.white, true,
-                CityExteriorAppearance.SidewalkTextureTileSize, CityExteriorAppearance.ApplySidewalkSurface,
-                FootstepGroundKind.Stone, false);
-            ReportBlock(
-                "roads_and_river/sidewalks",
-                subTimer,
-                GameLog.Field("boxes", plan.SidewalkGeometry.Count));
+            CityStreetSurfaceWorldBuilder.Build("Unified Street Surface", roads, layout, plan);
+            ReportBlock("roads_and_river/street_support", subTimer,
+                GameLog.Field("patches", plan.SupportPlan.Patches.Count));
             subTimer.Restart();
             BuildOrientedSurfaceBoxesIfAny(
                 "Road Center Markings",

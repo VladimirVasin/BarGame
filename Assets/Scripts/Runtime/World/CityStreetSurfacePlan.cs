@@ -8,13 +8,16 @@ namespace BarPromenade
     public readonly struct CityStreetRibbonDescriptor
     {
         internal CityStreetRibbonDescriptor(RoadEdge edge, IReadOnlyList<Vector2[]> polygons,
-            float topOffset, float thickness, Vector2Int? flatNode = null)
-        { Edge = edge; Polygons = polygons; TopOffset = topOffset; Thickness = thickness; FlatNode = flatNode; }
+            float topOffset, float thickness, Vector2Int? flatNode = null,
+            IReadOnlyList<Vector3[]> topPolygons = null)
+        { Edge = edge; Polygons = polygons; TopOffset = topOffset; Thickness = thickness; FlatNode = flatNode; TopPolygons = topPolygons; }
         public RoadEdge Edge { get; }
         public IReadOnlyList<Vector2[]> Polygons { get; }
         public float TopOffset { get; }
         public float Thickness { get; }
         public Vector2Int? FlatNode { get; }
+        // Original centreline-station heights, including miter vertices.
+        public IReadOnlyList<Vector3[]> TopPolygons { get; }
     }
 
     public readonly struct CityCrosswalkDescriptor :
@@ -93,7 +96,8 @@ namespace BarPromenade
             IList<CityStreetRibbonDescriptor> curvedStreetRibbons = null,
             IList<CityStreetRibbonDescriptor> curvedSidewalkRibbons = null,
             IList<CityStreetRibbonDescriptor> curvedCenterMarkingRibbons = null,
-            float publicSidewalkWidth = CityStreetSurfacePlanner.SidewalkWidth)
+            float publicSidewalkWidth = CityStreetSurfacePlanner.SidewalkWidth,
+            IList<int> sidewalkClosureGeometryIndices = null)
         {
             if (float.IsNaN(carriagewayWidth) ||
                 float.IsInfinity(carriagewayWidth) ||
@@ -113,6 +117,7 @@ namespace BarPromenade
             StreetGeometry = Copy(streetGeometry);
             ParkPathGeometry = Copy(parkPathGeometry);
             SidewalkGeometry = Copy(sidewalkGeometry);
+            SidewalkClosureGeometryIndices = Copy(sidewalkClosureGeometryIndices ?? new List<int>());
             CenterMarkingGeometry = Copy(centerMarkingGeometry);
             CrosswalkMarkingGeometry = Copy(crosswalkMarkingGeometry);
             SidewalkWalkableRectangles = Copy(
@@ -130,6 +135,7 @@ namespace BarPromenade
             CurvedSidewalkPolygons = polygons.AsReadOnly();
         }
 
+        public CityStreetSupportPlan SupportPlan { get; internal set; }
         public float CarriagewayWidth { get; }
         // The old one-metre road-band inset remains the traffic contract.
         // Compact City adds walking width outward into the frontage reserve.
@@ -142,6 +148,8 @@ namespace BarPromenade
         public IReadOnlyList<RuntimeOrientedBox> StreetGeometry { get; }
         public IReadOnlyList<RuntimeOrientedBox> ParkPathGeometry { get; }
         public IReadOnlyList<RuntimeOrientedBox> SidewalkGeometry { get; }
+        // Explicitly authored buried skirts have sides but no traversable top.
+        public IReadOnlyList<int> SidewalkClosureGeometryIndices { get; }
         public IReadOnlyList<RuntimeOrientedBox> CenterMarkingGeometry
         {
             get;

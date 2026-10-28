@@ -179,6 +179,55 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority()
+        {
+            MeshRenderer street = CreateSurface("Combined Street", new[]
+            {
+                new Vector3(0, .08f, 0), new Vector3(0, .08f, 2),
+                new Vector3(2, .08f, 0), new Vector3(2, .08f, 2),
+                new Vector3(2, .14f, 0), new Vector3(2, .14f, 2),
+                new Vector3(4, .14f, 0), new Vector3(4, .14f, 2)
+            }, new[] { 0, 1, 2, 2, 1, 3, 4, 5, 6, 6, 5, 7 },
+                CityExteriorAppearance.ApplyRoadSurface, FootstepGroundKind.Concrete);
+            Mesh mesh = street.GetComponent<MeshFilter>().sharedMesh;
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(new[] { 0, 1, 2, 2, 1, 3 }, 0);
+            mesh.SetTriangles(new[] { 4, 5, 6, 6, 5, 7 }, 1);
+            street.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, RuntimePrimitiveFactory.DefaultMaterial };
+            CityExteriorAppearance.ApplyRoadSurface(street, 0);
+            CityExteriorAppearance.ApplySidewalkSurface(street, 1);
+            MeshRenderer overlap = CreateSurface("Intermediate Coating", Quad(1, 3, 0, 2, .12f), QuadIndices,
+                CityExteriorAppearance.ApplyGroundSurface, FootstepGroundKind.Grass);
+            CityGroundSurfaceSystem.Register(street, new[]
+            {
+                new CityGroundSurfaceRegion(FootstepGroundKind.Concrete, 20),
+                new CityGroundSurfaceRegion(FootstepGroundKind.Stone, 40)
+            });
+            CityGroundSurfaceSystem.Register(overlap, 30);
+            system.FinalizeSurface();
+
+            Assert.That(system.SourceCount, Is.EqualTo(2), "Material regions must remain one street source.");
+            Physics.SyncTransforms();
+            AssertRegion(.5f, .08f, FootstepGroundKind.Concrete, GroundSurfaceKind.Asphalt);
+            AssertRegion(1.5f, .12f, FootstepGroundKind.Grass, GroundSurfaceKind.Soil);
+            AssertRegion(2.5f, .14f, FootstepGroundKind.Stone, GroundSurfaceKind.Paving);
+
+            void AssertRegion(float x, float top, FootstepGroundKind footstep, GroundSurfaceKind materialKind)
+            {
+                RaycastHit hit = GroundHit(new Vector3(x, 2f, 1f));
+                Assert.That(hit.point.y, Is.EqualTo(top).Within(.0001f));
+                Assert.That(hit.collider.GetComponent<FootstepGround>().ResolveKind(hit.triangleIndex), Is.EqualTo(footstep));
+                Mesh hitMesh = ((MeshCollider)hit.collider).sharedMesh;
+                int triangle = hit.triangleIndex, slot = 0;
+                while (slot < hitMesh.subMeshCount - 1 && triangle >= hitMesh.GetIndexCount(slot) / 3)
+                { triangle -= (int)hitMesh.GetIndexCount(slot) / 3; slot++; }
+                var properties = new MaterialPropertyBlock();
+                hit.collider.GetComponent<MeshRenderer>().GetPropertyBlock(properties, slot);
+                Assert.That(properties.GetFloat("_GroundKind"), Is.EqualTo((float)materialKind));
+            }
+        }
+
         private static void ApplyStyleProbe(Renderer renderer, string property, bool alternate)
         {
             var properties = new MaterialPropertyBlock();

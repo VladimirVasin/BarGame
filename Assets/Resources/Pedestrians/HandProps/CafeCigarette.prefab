@@ -230,9 +230,9 @@ MonoBehaviour:
   socketName: SOCKET_Cigarette.R
   referenceDesignId: cafe_couple_woman_v2
   mount: {fileID: 4073860865733958868}
-  mountLocalPosition: {x: -3.5502372e-11, y: -0.0000000015195648, z: 0.000000008990437}
-  mountLocalRotation: {x: 0.00000025911558, y: 0.7071068, z: -0.7071068, w: 0.00000029509374}
-  mountLocalScale: {x: 0.010000005, y: 0.01, z: 0.010000006}
+  mountLocalPosition: {x: -6.045049e-10, y: -0.000000001828166, z: 0.0000000087097245}
+  mountLocalRotation: {x: 0.0000002554214, y: 0.7071068, z: -0.7071068, w: 0.0000003324349}
+  mountLocalScale: {x: 0.010000004, y: 0.009999999, z: 0.010000003}
   referenceSocketRestPosition: {x: -0.7377602, y: 1.0450001, z: -0.02888012}
   referenceSocketRestRotation: {x: -0.00000018661328, y: -0.7071069, z: 0.707107, w: 0.0000003177845}
   renderers:
@@ -296,9 +296,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8972450108139743248}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.00000025911558, y: 0.7071068, z: -0.7071068, w: 0.00000029509374}
-  m_LocalPosition: {x: -3.5502372e-11, y: -0.0000000015195648, z: 0.000000008990437}
-  m_LocalScale: {x: 0.010000005, y: 0.01, z: 0.010000006}
+  m_LocalRotation: {x: 0.0000002554214, y: 0.7071068, z: -0.7071068, w: 0.0000003324349}
+  m_LocalPosition: {x: -6.045049e-10, y: -0.000000001828166, z: 0.0000000087097245}
+  m_LocalScale: {x: 0.010000004, y: 0.009999999, z: 0.010000003}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6175317467928400474}

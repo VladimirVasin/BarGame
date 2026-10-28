@@ -1,6 +1,19 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-28 — continuous City street support:**
+  User:road/pavement plus soil/lawn/paths form one continuous surface.
+  `CityStreetSupportPlan`:typed station polygons; courtyard paving avoids
+  terrain/cannery cycles. Cached indexed outer seams constrain terrain heights/
+  triangles in a `4 m` blend; hidden/internal edges are excluded.
+  Road-only Blender `CityStreetProfile3D` top/edge topology deforms through
+  `CityStreetSurfaceWorldBuilder`, without temporary colliders. Typed regions
+  retain priority/weather/steps in existing `48 m` ground sectors. Docks,
+  walkers, benches and fences sample support. Home copies bounded actual
+  terrain/streets without collision. Widths/IDs/openings/thresholds and
+  bridges/stairs/church/cemetery/sand keep owners. Effects kept; cost unmeasured.
+  Fair rigid feet use local support planes at unchanged contact tolerance.
+
 - **Accepted 2026-10-27 — river construction details:**
   User approved the park/industrial pass on both riverbanks.
   Seven additive fixed-metre CityMisc families supply coping/repair stones,
@@ -788,16 +801,12 @@
   identity-palette/§16/9checks/0§6 deviation.
 
 - **Accepted — 2026-10-04, unified City ground:**
-  User:all City ground/streets/paths share one composition.
-  `CityGroundSurfaceSystem` snapshots sources; priority XZ partitions retain
-  planes/normals/metre UVs. `48 m` render/collision sectors bind indexed weather
-  recipes/triangle footsteps. Markings clip/project exact support, including
-  grade breaks. Disabled hosts keep staging/semantics; bridges/piers/stairs
-  remain structural. Cemetery excavation rebuilds coatings/walls; sand keeps
-  deformable skin/fixed collision. Home uses the compositor without collision.
-  Composition:one synchronous stage.
-  Vertex/plane/contour/SAT/style caching avoids repeat work; bounded grids:
-  partition `2 m`, supports `1 m`, edges `.5 m`. Geometry remains exact.
+  `CityGroundSurfaceSystem` partitions typed sources in XZ, retaining exact
+  planes/normals/metre UVs. `48 m` sectors bind weather and triangle footsteps;
+  markings project/clip to support. Disabled hosts retain semantics. Structural
+  bridges/piers/stairs, cemetery cuts and deformable sand remain local; Home
+  composition has no collision. One synchronous stage caches vertices/planes/
+  contours/styles; partition/support/edge grids stay `2/1/.5 m`.
   Routes/anchors/palettes/story §16/nine checks stay.
 
 
@@ -3302,12 +3311,9 @@
   district. Sea water stays at datum `0`. The river descends
   monotonically from `2.4 m` in the south to the sea datum. Legacy/custom
   blueprints retain the exact flat fallback.
-  `CityTerrainSurfacePlan` is the authoritative top sampler for
-  `BuildableGround`, `ParkGround`, `OpenGround` and `Beach`. It interpolates
-  the surrounding road-node datums across each cell and keeps the road-edge
-  plateaus, so adjacent cells form one continuous terrain surface instead of
-  stacked slabs with vertical seams; the beach has its own continuous descent
-  to the waterline and bounded deterministic sand relief.
+  `CityTerrainSurfacePlan` owns `BuildableGround`, `ParkGround`, `OpenGround`
+  and `Beach` tops. Cell interiors interpolate road-node datums; margins take
+  the shared street boundary. Beach descent/sand relief remain local.
   `CityTerrainSurfaceWorldBuilder` materializes that contract
   as triangulated render meshes with matching mesh colliders; the beach's
   shallow deformable visual skin sits over its separate fixed collider (see
@@ -3326,11 +3332,9 @@
   the water cave beyond them is not traversable. Traversable tunnels and
   overlapping walkable levels at the same XZ projection remain outside this
   navigation architecture.
-  Street intersections and stop pads are level. Between their `4 m` setbacks,
-  oriented road/sidewalk strips may grade up to `6%` for Street/Route 01 and
-  `8.3%` for pedestrian ParkPath. The bus route excludes non-bus transitions,
-  samples Y and grade tangent, pitches without roll and grounds stop/ride
-  anchors locally. Every urban district also owns one signature sidewalk
+  Level nodes/stops retain `4 m` setbacks; grades stay `6%` Street/Route 01,
+  `8.3%` ParkPath. Bus routes exclude non-bus transitions, sample Y/tangent,
+  pitch without roll and ground stops locally. Each urban district has a sidewalk
   stair: `6-12` visible collider-free steps, `0.15-0.17 m` rise,
   `0.30-0.34 m` tread, two `1.5 m` landings, physical rails/retaining walls
   and exactly one continuous hidden ramp collider. A grade-safe roadway stays
@@ -3357,21 +3361,18 @@
   unmapped cells and space outside the active footprint remain excluded;
   buildings and other visible obstacles are governed by their physical
   colliders instead of being carved out of the macro walkable mask.
-- **Accepted — Road v2 deterministic street corridor:** The canonical default
-  footprint is `8 m`: dark `6 m` carriageway at local datum `+0.08 m` and two
-  `1 m` sidewalks at `+0.14 m`. `CitySpatialPlan` supplies block spans around
-  nominal `26 m`; settings reject nonpositive carriageways. The pure plan owns
-  graded strips/level nodes, `8 x 8 m` cores, ordinary `6 x 6 m` clear aprons,
-  corner pavement/radius queries and center dashes excluded at nodes/zebras.
-  A stable selector shares signals with at most six four-stripe zebras on
-  degree-3+ Street-only nodes clear of ParkPath/blocked public space.
-  Road v2.1 selects supported, building-free perpendicular two-way corners and
-  three-/four-way nodes. Four `1 m` pads move outward; curbs stop `4.5 m` short,
-  exposing `8 x 8 m` asphalt and a flush pedestrian apron. Corner links follow
-  the pads. Signals/flat zebra paint may coincide; inflated bus bodies must
-  clear actual poles by `0.30 m`, else `StaticFixtureOverlap` rejects the turn.
-  Asphalt/sidewalk/paint retain their three albedos as regions of the common
-  ground. Home includes surfaces touching its retained slice without collision.
+- **Accepted — Road v2 deterministic street corridor:** The traffic reserve
+  stays `8 m`, with `6 m` asphalt at `+0.08 m`. Pavement at `+0.14 m` keeps
+  the `1 m` inset; compact public frontage expands outward to `2 m`.
+  `CitySpatialPlan` owns nominal `26 m` spans; settings reject nonpositive
+  carriageways. Shared stations retain level nodes, graded spans, corner/radius
+  queries and paint exclusions. Up to six Street-only degree-3+ nodes have
+  four-stripe zebras/signals, clear of ParkPath and blocked public space.
+  Road v2.1 selects supported building-free turns/nodes, moves corner pads
+  outward and cuts raised kerbs back `4.5 m`, keeping `8 x 8 m` asphalt and
+  flush walking aprons. Corner links follow pads; inflated bus bodies clear
+  actual poles by `0.30 m` or `StaticFixtureOverlap` rejects the turn.
+  Shared material regions and collision-free Home slices use actual support.
 - **Accepted — One route-driven real-scale bus on canonical Route 01:**
   Immutable `bus-route:default-coastal:route-01` is a deterministic right-hand,
   Street-only closed loop through existing district POIs plus `PlayerHome`.

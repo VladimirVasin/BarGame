@@ -543,8 +543,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Samples the highest physical sidewalk/street surface covering
-        /// the point, if any of the built boxes actually does. This is
+        /// Samples the physical sidewalk/street surface covering the point.
+        /// The shared support describes both straight and curved regions. This is
         /// the surface a walker's CharacterController grounds on, so
         /// planners that place street furniture stand it on this value
         /// rather than on an analytic grade line.
@@ -559,6 +559,10 @@ namespace BarPromenade
             {
                 return false;
             }
+
+            if (streetSurfacePlan.SupportPlan != null)
+                return streetSurfacePlan.SupportPlan.TrySampleTop(
+                    new Vector2(position.x, position.z), out surfaceTop, out _);
 
             bool hasPhysicalSurface = false;
             SampleTopMax(
@@ -587,23 +591,7 @@ namespace BarPromenade
                 return localSidewalkTop + groundedRootOffset;
             }
 
-            // The walker stands on the highest physical surface at the
-            // point, so sidewalks and street/apron boxes sample together:
-            // a graded sidewalk's end dips under the flat junction pad
-            // that physically covers it, and sampling sidewalks first
-            // used to report the buried slope instead of the pad.
-            float surfaceTop = 0f;
-            hasPhysicalSurface = false;
-            SampleTopMax(
-                streetSurfacePlan.SidewalkGeometry,
-                position,
-                ref surfaceTop,
-                ref hasPhysicalSurface);
-            SampleTopMax(
-                streetSurfacePlan.StreetGeometry,
-                position,
-                ref surfaceTop,
-                ref hasPhysicalSurface);
+            hasPhysicalSurface = TryResolvePhysicalSurfaceTop(position, streetSurfacePlan, out float surfaceTop);
             if (!hasPhysicalSurface)
             {
                 surfaceTop = localSidewalkTop -

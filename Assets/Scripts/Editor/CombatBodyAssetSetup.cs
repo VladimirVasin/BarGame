@@ -310,19 +310,19 @@ namespace BarPromenade.Editor
                 else
                 {
                     piece.sharedMesh.GetUVs(6, xy); piece.sharedMesh.GetUVs(7, z);
-                    var cells = new Dictionary<int, HashSet<Vector3>>();
-                    var centres = new Dictionary<int, Vector3>();
-                    for (int i = 0; i < labels.Count; i++)
+                    // The generator emits one triangle per exterior cell. FBX
+                    // can weld nearly coincident corners of a clipped sliver;
+                    // retain corner multiplicity when reconstructing its centre.
+                    // Averaging unique positions moves that centre off its
+                    // authored affine frame even though the export is correct.
+                    int[] triangles = piece.sharedMesh.triangles;
+                    for (int i = 0; i < triangles.Length; i += 3)
                     {
-                        int cell = Mathf.RoundToInt(labels[i].x);
-                        if (!cells.TryGetValue(cell, out HashSet<Vector3> points))
-                        { cells.Add(cell, points = new HashSet<Vector3>()); centres.Add(cell, new Vector3(xy[i].x, xy[i].y, z[i].x)); }
-                        points.Add(vertices[i]);
-                    }
-                    foreach (var cell in cells)
-                    {
-                        Vector3 centre = Vector3.zero; foreach (Vector3 point in cell.Value) centre += point;
-                        rows.Authored.Add(centres[cell.Key]); rows.Imported.Add(toSource.MultiplyPoint3x4(centre / cell.Value.Count));
+                        int a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+                        if (labels[a].x != labels[b].x || labels[a].x != labels[c].x)
+                            throw new InvalidOperationException("Torso face crosses erosion cells: " + piece.name);
+                        rows.Authored.Add(new Vector3(xy[a].x, xy[a].y, z[a].x));
+                        rows.Imported.Add(toSource.MultiplyPoint3x4((vertices[a] + vertices[b] + vertices[c]) / 3f));
                     }
                 }
             }

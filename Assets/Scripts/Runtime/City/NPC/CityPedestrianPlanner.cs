@@ -225,6 +225,8 @@ namespace BarPromenade
         private static float CurvedSidewalkHeight(CityLayout layout,
             CityStreetSurfacePlan surfaces, RoadEdge edge, Vector2 point)
         {
+            if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
+                return supportTop;
             CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
             if (junction != null && layout.RoadGeometry.ContainsJunction(point))
             {
@@ -645,6 +647,8 @@ namespace BarPromenade
         private static float JunctionSidewalkHeight(CityLayout layout,
             CityStreetSurfacePlan surfaces, CityRoadJunction junction, Vector2 point)
         {
+            if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
+                return supportTop;
             foreach (Vector2[] polygon in junction.SidewalkPolygons)
                 if (CityRoadPolygon.Contains(polygon, point))
                     return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
@@ -853,7 +857,12 @@ namespace BarPromenade
 
                 across.Normalize();
                 Vector3 center = streetSurfacePlan.Crosswalks[index].Center;
-                if (layout.ElevationPlan.TrySampleSurface(
+                if (streetSurfacePlan.SupportPlan != null && streetSurfacePlan.SupportPlan.TrySampleTop(
+                        new Vector2(center.x, center.z), FootstepGroundKind.Concrete, out float supportTop))
+                {
+                    center.y = supportTop;
+                }
+                else if (layout.ElevationPlan.TrySampleSurface(
                         new Vector2(center.x, center.z),
                         CitySurfaceRole.RoadTop,
                         out float roadHeight,
@@ -1062,6 +1071,9 @@ namespace BarPromenade
             RoadEdge edge,
             CityStreetSurfacePlan streetSurfacePlan)
         {
+            if (streetSurfacePlan.SupportPlan != null && streetSurfacePlan.SupportPlan.TrySampleTop(
+                    new Vector2(position.x, position.z), out float supportTop, out _))
+                return supportTop;
             float height = elevationPlan.SampleRoadDatum(
                                edge,
                                Mathf.Clamp01(distance / length)) +

@@ -459,8 +459,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 8009733195801225253}
     Bone: {fileID: 2484933515965576932}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 2623586544780904119}
     Bone: {fileID: 2105648513633496982}
@@ -469,8 +469,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 5543541843990803606}
     Bone: {fileID: 2484933515965576932}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 1289723682090093458}
     Bone: {fileID: 627633830054425897}

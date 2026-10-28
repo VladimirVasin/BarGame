@@ -164,7 +164,9 @@ namespace BarPromenade
                 // colliders remain untouched; a geometric mismatch beyond the
                 // established surface tolerance is a plan defect, not a seam fix.
                 if (Mathf.Abs(garden.Position.y - field.Position.y) > .015f)
-                    throw new InvalidOperationException("Eastern shared edge departs from original collision at X=" + x);
+                    throw new InvalidOperationException($"Eastern shared edge departs from original collision at X={x:F5}; " +
+                        $"gardenY={garden.Position.y:F6}, yardY={field.Position.y:F6}; " +
+                        $"garden edge {DescribeEdge(churchEdges, x)}; yard edge {DescribeEdge(yardEdges, x)}");
                 result.Add(new Vertex(new Vector3(x, field.Position.y, plan.SeamZ),
                     (garden.Normal + field.Normal).normalized, field.Uv));
             }
@@ -195,6 +197,15 @@ namespace BarPromenade
                 }
                 return edges;
             }
+        }
+
+        private static string DescribeEdge(IReadOnlyList<SeamEdge> edges, float x)
+        {
+            foreach (SeamEdge edge in edges)
+                if (x >= Mathf.Min(edge.A.Position.x, edge.B.Position.x) - Epsilon &&
+                    x <= Mathf.Max(edge.A.Position.x, edge.B.Position.x) + Epsilon)
+                    return $"{edge.A.Position:F5}->{edge.B.Position:F5}";
+            return "missing";
         }
 
         private static bool TrySample(IReadOnlyList<SeamEdge> edges, float x, out Vertex sample)

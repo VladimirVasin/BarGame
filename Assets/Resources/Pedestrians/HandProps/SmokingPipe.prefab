@@ -230,9 +230,9 @@ MonoBehaviour:
   socketName: SOCKET_Mouth
   referenceDesignId: lake_fisherman_v1
   mount: {fileID: 5078719885755129556}
-  mountLocalPosition: {x: 1.8302746e-12, y: -1.5344356e-10, z: 0.0000000018993362}
-  mountLocalRotation: {x: 0.00000006117958, y: -0.7071067, z: 0.7071068, w: -0.0000000072904762}
-  mountLocalScale: {x: 0.01, y: 0.010000002, z: 0.010000004}
+  mountLocalPosition: {x: 1.8303059e-12, y: -5.5037325e-10, z: 0.0000000024422786}
+  mountLocalRotation: {x: 0.0000000611796, y: -0.70710677, z: 0.7071068, w: -0.0000000072904847}
+  mountLocalScale: {x: 0.01, y: 0.009999999, z: 0.01}
   referenceSocketRestPosition: {x: 0.002, y: 1.5379995, z: -0.14099991}
   referenceSocketRestRotation: {x: -0.000000061179584, y: 0.7071067, z: -0.7071068, w: -0.0000000072904687}
   renderers:
@@ -298,9 +298,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6464478269844438302}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.00000006117958, y: -0.7071067, z: 0.7071068, w: -0.0000000072904762}
-  m_LocalPosition: {x: 1.8302746e-12, y: -1.5344356e-10, z: 0.0000000018993362}
-  m_LocalScale: {x: 0.01, y: 0.010000002, z: 0.010000004}
+  m_LocalRotation: {x: 0.0000000611796, y: -0.70710677, z: 0.7071068, w: -0.0000000072904847}
+  m_LocalPosition: {x: 1.8303059e-12, y: -5.5037325e-10, z: 0.0000000024422786}
+  m_LocalScale: {x: 0.01, y: 0.009999999, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 600229914483592461}

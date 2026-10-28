@@ -56,7 +56,10 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The default coastal city requires five bounded fringe " +
-                    "Yards and one budgeted tunnel forecourt.");
+                    "Yards and one budgeted tunnel forecourt. " +
+                    $"enabled={plan.IsEnabled}, yards={plan.Yards.Count}/{CityFringeYardPlanner.ExpectedYardCount}, " +
+                    $"forecourt={plan.HasTunnelForecourt}, parts={plan.PartCount}/{CityFringeYardPlanner.MaximumPartCount}; " +
+                    DescribePartCounts(plan));
             }
 
             ValidateForecourt(mountains, plan.TunnelForecourt);
@@ -87,6 +90,23 @@ namespace BarPromenade
             ValidateExpectedMapping(plan);
             CityFringeYardLifeValidator.ValidateOrThrow(layout, plan);
             CityFringeYardPracticalValidator.ValidateOrThrow(layout, plan);
+        }
+
+        private static string DescribePartCounts(CityFringeYardPlan plan)
+        {
+            var result = new System.Text.StringBuilder();
+            foreach (CityFringeYardDescriptor yard in plan.Yards)
+            {
+                if (result.Length > 0) result.Append("; ");
+                result.Append(yard.AreaId).Append('=').Append(yard.Parts.Count).Append('[');
+                var kinds = new SortedDictionary<CityFringeYardPartKind, int>();
+                foreach (CityFringeYardPartDescriptor part in yard.Parts)
+                { kinds.TryGetValue(part.Kind, out int count); kinds[part.Kind] = count + 1; }
+                foreach (KeyValuePair<CityFringeYardPartKind, int> kind in kinds)
+                    result.Append(kind.Key).Append(':').Append(kind.Value).Append(',');
+                result.Append(']');
+            }
+            return result.ToString();
         }
 
         private static void ValidateYard(
@@ -469,6 +489,9 @@ namespace BarPromenade
                     $"Fringe part '{part.StableId}' leaves its owner Yard.");
             }
 
+            if (part.IsProjectedGroundCoating)
+                ValidateProjectedCoating(layout, yard, part);
+
             if (part.BlocksMovement &&
                 (part.Footprint.Overlaps(yard.Access.ApproachBounds) ||
                  part.Footprint.Overlaps(yard.TraversalBounds)))
@@ -728,6 +751,7 @@ namespace BarPromenade
             float maximumGap,
             float maximumEmbed)
         {
+            if (part.IsProjectedGroundCoating) return; // Checked against exact projected support in ValidatePart.
             Vector3 right =
                 (part.Rotation * Vector3.right) * (part.Size.x * 0.5f);
             Vector3 forward =
@@ -763,6 +787,7 @@ namespace BarPromenade
             float maximumGap,
             float maximumEmbed)
         {
+            if (part.IsProjectedGroundCoating) return; // It has no independent physical bottom plane.
             Vector3 bottom = part.Center -
                 (part.Rotation * Vector3.up) * (part.Size.y * 0.5f);
             ValidateSurfacePoint(
@@ -773,6 +798,21 @@ namespace BarPromenade
                 bottom,
                 maximumGap,
                 maximumEmbed);
+        }
+
+        private static void ValidateProjectedCoating(CityLayout layout,
+            CityFringeYardDescriptor yard, CityFringeYardPartDescriptor part)
+        {
+            Vector3 top = part.Center + part.Rotation * Vector3.up * (part.Size.y * .5f);
+            Vector3 right = part.Rotation * Vector3.right * (part.Size.x * .5f);
+            Vector3 forward = part.Rotation * Vector3.forward * (part.Size.z * .5f);
+            float reach = CityGroundSurfaceSystem.MaximumPaintProjectionDistance;
+            // This is the staging-to-support reach, not a relaxation of final
+            // contacts: the compositor publishes the substrate's exact planes.
+            for (int x = -1; x <= 1; x++)
+                for (int z = -1; z <= 1; z++)
+                    ValidateSurfacePoint(layout, yard, part, "projected coating", top + right * x + forward * z,
+                        reach, reach);
         }
 
         private static void ValidateSurfacePoint(

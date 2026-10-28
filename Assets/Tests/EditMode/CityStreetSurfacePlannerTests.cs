@@ -11,6 +11,80 @@ namespace BarPromenade.Tests.EditMode
         private const float Tolerance = 0.0001f;
 
         [Test]
+        public void Support_GradedStreetAndPavementShareJunctionCapStations()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            CityStreetSurfacePlan surfaces = CityStreetSurfacePlanner.CreateCourtyardPaving(layout);
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            Assert.That(support, Is.SameAs(surfaces.SupportPlan));
+            Assert.That(support.Patches.Count(patch => patch.Kind == CityStreetSupportKind.Sidewalk && patch.IsSupport),
+                Is.EqualTo(surfaces.SidewalkGeometry.Count - surfaces.SidewalkClosureGeometryIndices.Count +
+                    surfaces.CurvedSidewalkRibbons.Sum(ribbon => ribbon.Polygons.Count)),
+                "Only explicitly declared closure skirts may lose their upper support face.");
+            int verifiedCaps = 0;
+            var busNodes = new HashSet<Vector2Int>(CityBusIntersectionSelector.Select(layout));
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.Street || layout.RoadGeometry.IsCurved(edge) ||
+                    layout.ElevationPlan.TryGetSignatureStair(edge, out _) || layout.TryGetBridge(edge, out _)) continue;
+                if (Mathf.Abs(layout.ElevationPlan.GetNodeElevation(edge.A) -
+                        layout.ElevationPlan.GetNodeElevation(edge.B)) < .01f) continue;
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                foreach (Vector2Int node in new[] { edge.A, edge.B })
+                {
+                    if (layout.RoadEdges.Count(candidate => candidate.Contains(node)) > 2) continue;
+                    foreach (float fromNode in new[] { .75f, 2f, 3.75f, 4.25f, 6f })
+                    {
+                        float station = node == edge.A ? fromNode : path.Length - fromNode;
+                        CityRoadSample sample = path.SampleDistance(station);
+                        Vector2 right = new Vector2(sample.Tangent.y, -sample.Tangent.x);
+                        foreach (int sign in new[] { -1, 1 })
+                        {
+                            Vector2 point = sample.Position + right * (sign * (layout.RoadWidth * .5f - .5f));
+                            if (!support.TrySampleTop(point, FootstepGroundKind.Stone, out float top)) continue;
+                            // Compact public paving crosses the selected bus
+                            // turning apron flush with asphalt until the raised
+                            // kerb resumes after its authored cutback.
+                            float offset = busNodes.Contains(node) && fromNode >= layout.RoadWidth * .5f &&
+                                fromNode < layout.RoadWidth * .5f + CityStreetSurfacePlanner.BusApproachApronLength
+                                ? CityStreetSurfacePlanner.RoadTop : CityStreetSurfacePlanner.SidewalkTop;
+                            float expected = layout.ElevationPlan.SampleRoadDatum(edge, station / path.Length) + offset;
+                            Assert.That(top, Is.EqualTo(expected).Within(.001f),
+                                $"Pavement at {point} must share the road's flat-cap/grade station on {edge}.");
+                            if (fromNode < 4f) verifiedCaps++;
+                        }
+                    }
+                }
+            }
+            Assert.That(verifiedCaps, Is.GreaterThan(0), "Exercise a real graded street's flat junction cap.");
+            var nearby = new List<CityStreetSupportPatch>();
+            CityStreetSupportPatch first = support.Patches.First(patch => patch.IsSupport);
+            support.GetNearby(first.Bounds, nearby);
+            Assert.That(nearby, Does.Contain(first));
+            Assert.That(nearby.Distinct().Count(), Is.EqualTo(nearby.Count));
+            Assert.That(nearby.All(patch => patch.IsSupport), Is.True, "Buried skirts are sides, not terrain support.");
+        }
+
+        [Test]
+        public void Support_NonPlanarRegionUsesItsPhysicalTriangleFan()
+        {
+            var patch = new CityStreetSupportPatch(new[] {
+                new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f),
+                new Vector3(4f, 4f, 4f), new Vector3(0f, 0f, 4f)
+            }, CityStreetSupportKind.Sidewalk, .3f, 30);
+            Assert.That(patch.TrySampleTop(new Vector2(3f, 1f), out float first), Is.True);
+            Assert.That(first, Is.EqualTo(1f).Within(Tolerance));
+            Assert.That(patch.TrySampleTop(new Vector2(1f, 3f), out float second), Is.True);
+            Assert.That(second, Is.EqualTo(1f).Within(Tolerance));
+            Assert.That(patch.TrySampleTop(new Vector2(4.0005f, 2f), out _), Is.True,
+                "Preserve the existing one-millimetre physical contact tolerance.");
+            Assert.That(patch.TrySampleTop(new Vector2(4.002f, 2f), out _), Is.False);
+            Assert.That(patch.TrySampleTop(new Vector2(5f, 2f), out _), Is.False);
+            Assert.That(patch.FootstepKind, Is.EqualTo(FootstepGroundKind.Stone));
+        }
+
+        [Test]
         public void Create_WithSameLayout_ProducesIdenticalGeometry()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -220,7 +294,9 @@ namespace BarPromenade.Tests.EditMode
                 for(int row=0;row<forecourt.Rows;row++)
                 {
                     Vector3 edge=forecourt.Top[row*forecourt.Columns+forecourt.Columns-1];
-                    Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,new Vector2(edge.x,edge.z),out float top),Is.True);
+                    Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,new Vector2(edge.x,edge.z),out float top),Is.True,
+                        $"Forecourt {lot.Cell}, row {row} must touch public support at {edge}. " +
+                        DescribeSupport(CityStreetSupportPlan.ForLayout(layout), new Vector2(edge.x,edge.z)));
                     Assert.That(edge.y,Is.EqualTo(top).Within(.002f),"The entire apron edge must meet the real pitched pavement.");
                 }
                 for(int i=0;i<forecourt.Top.Count;i++)
@@ -815,6 +891,13 @@ namespace BarPromenade.Tests.EditMode
                    Mathf.Abs(first.y - second.y) <= Tolerance &&
                    Mathf.Abs(first.width - second.width) <= Tolerance &&
                    Mathf.Abs(first.height - second.height) <= Tolerance;
+        }
+
+        private static string DescribeSupport(CityStreetSupportPlan support, Vector2 point)
+        {
+            return string.Join("; ", support.Patches.Where(patch => patch.Kind == CityStreetSupportKind.Sidewalk)
+                .OrderBy(patch => (patch.Bounds.center-point).sqrMagnitude).Take(4)
+                .Select(patch => $"support={patch.IsSupport}, bounds={patch.Bounds}, contains={patch.TrySampleTop(point,out _)}"));
         }
 
         private static CityGenerationSettings CreateDenseSettings()

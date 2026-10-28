@@ -408,7 +408,8 @@ namespace BarPromenade
             IReadOnlyList<Rect> excavations,
             CityTerrainSurfaceAreaFilter areaFilter,
             bool seabedOnly,
-            float beachPitch)
+            float beachPitch,
+            Rect? worldBounds = null)
         {
             if (layout == null)
             {
@@ -444,7 +445,8 @@ namespace BarPromenade
                     !CityTerrainSurfacePlan.UsesContinuousTop(surface) ||
                     (seabedOnly && surface.Feature != CityAreaFeatureKind.NorthWaterfront) ||
                     (areaFilter != null &&
-                     !areaFilter.Includes(surface.AreaId)))
+                     !areaFilter.Includes(surface.AreaId)) ||
+                    (worldBounds.HasValue && !surface.WorldBounds.Overlaps(worldBounds.Value)))
                 {
                     continue;
                 }
@@ -452,7 +454,7 @@ namespace BarPromenade
                 if (!seabedOnly && layout.RoadGeometry.IsReplannedCell(surface.Cell))
                 {
                     AppendCurvedCellGround(layout, surface, excavations, tileSize,
-                        vertices, normals, uvs, triangles);
+                        vertices, normals, uvs, triangles, worldBounds);
                     continue;
                 }
 
@@ -491,6 +493,13 @@ namespace BarPromenade
                                 ? port.SeaBounds.yMax : patch.yMax + CitySeacoastSeaLayout.SeabedReach);
                     }
 
+                    if (worldBounds.HasValue)
+                    {
+                        Rect clip = worldBounds.Value;
+                        patch = Rect.MinMaxRect(Mathf.Max(patch.xMin, clip.xMin), Mathf.Max(patch.yMin, clip.yMin),
+                            Mathf.Min(patch.xMax, clip.xMax), Mathf.Min(patch.yMax, clip.yMax));
+                        if (patch.width <= MinimumPatchSize || patch.height <= MinimumPatchSize) continue;
+                    }
                     if (!gradedCore.HasValue)
                     {
                         AppendPatch(
@@ -1098,6 +1107,12 @@ namespace BarPromenade
                     }
                 }
             }
+            if (!seabedOnly)
+                CityEastGroundTransitionPlan.Create(layout).AppendSharedSeamAnchors(surface, patch, xAnchors, zAnchors);
+            if (!seabedOnly && context.StreetBoundary != null)
+                context.StreetBoundary.AppendAxisAnchors(patch, xAnchors, zAnchors);
+            CityFairGroundSupportPlan rigidSupports = CityFairGroundSupportPlan.ForLayout(layout);
+            if (!seabedOnly) rigidSupports.AppendAxisAnchors(patch, xAnchors, zAnchors);
             List<float> xCoordinates = CreateAxisCoordinates(
                 patch.xMin,
                 patch.xMax,
@@ -1152,6 +1167,15 @@ namespace BarPromenade
                      xIndex < xCoordinates.Count - 1;
                      xIndex++)
                 {
+                    Rect cell = Rect.MinMaxRect(xCoordinates[xIndex], zCoordinates[zIndex],
+                        xCoordinates[xIndex + 1], zCoordinates[zIndex + 1]);
+                    if (!seabedOnly && ((context.StreetBoundary != null && context.StreetBoundary.HasCut(cell)) || rigidSupports.HasCut(cell)))
+                    {
+                        AppendConstrainedPolygon(layout, surface, in context,
+                            CityRoadPolygon.Rectangle(cell), worldUvTileSize,
+                            vertices, normals, uvs, triangles);
+                        continue;
+                    }
                     int southWest = firstVertex +
                                     zIndex * rowLength +
                                     xIndex;
@@ -1170,9 +1194,23 @@ namespace BarPromenade
 
         private static void AppendCurvedCellGround(CityLayout layout, CitySurfaceDescriptor surface,
             IReadOnlyList<Rect> excavations, float tileSize, List<Vector3> vertices,
-            List<Vector3> normals, List<Vector2> uvs, List<int> triangles)
+            List<Vector3> normals, List<Vector2> uvs, List<int> triangles, Rect? worldBounds = null)
         {
             var pieces = new List<Vector2[]>(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
+            if (worldBounds.HasValue)
+            {
+                Vector2[] clip = CityRoadPolygon.Rectangle(worldBounds.Value);
+                var clipped = new List<Vector2[]>();
+                foreach (Vector2[] piece in pieces)
+                {
+                    IReadOnlyList<Vector2> polygon = piece;
+                    for (int side = 0; side < clip.Length && polygon.Count >= 3; side++)
+                        polygon = CityRoadPolygon.Clip(polygon, clip[side], clip[(side + 1) % clip.Length]);
+                    if (polygon.Count >= 3 && CityRoadPolygon.Area(polygon) > .00001f)
+                        clipped.Add(new List<Vector2>(polygon).ToArray());
+                }
+                pieces = clipped;
+            }
             var cuts = new List<Rect>();
             if (excavations != null) cuts.AddRange(excavations);
             foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
@@ -1211,6 +1249,13 @@ namespace BarPromenade
                             clean.RemoveAt(clean.Count - 1);
                         polygon = clean;
                         if (polygon.Count < 3) continue;
+                        if ((context.StreetBoundary != null && context.StreetBoundary.HasCut(CityRoadPolygon.Bounds(polygon))) ||
+                            CityFairGroundSupportPlan.ForLayout(layout).HasCut(CityRoadPolygon.Bounds(polygon)))
+                        {
+                            AppendConstrainedPolygon(layout, surface, in context, polygon, tileSize,
+                                vertices, normals, uvs, triangles);
+                            continue;
+                        }
                         int first = vertices.Count;
                         foreach (Vector2 point in polygon)
                         {
@@ -1226,6 +1271,111 @@ namespace BarPromenade
                             triangles.Add(first); triangles.Add(first + corner + 1); triangles.Add(first + corner);
                         }
                     }
+            }
+        }
+
+        /// <summary>
+        /// Split only the grid cells crossed by an actual street seam or
+        /// its grade-break station. A coarse chord across a change of plane
+        /// would reopen a gap even when the endpoint sampler was correct.
+        /// </summary>
+        private static void AppendConstrainedPolygon(CityLayout layout, CitySurfaceDescriptor surface,
+            in CityTerrainSurfacePlan.SurfaceContext context, IReadOnlyList<Vector2> polygon,
+            float tileSize, ICollection<Vector3> vertices, ICollection<Vector3> normals,
+            ICollection<Vector2> uvs, ICollection<int> triangles)
+        {
+            var pieces = new List<IReadOnlyList<Vector2>> { polygon };
+            Rect bounds = CityRoadPolygon.Bounds(polygon);
+            var constraintCuts = new List<CityTerrainStreetBoundaryPlan.Cut>();
+            if (context.StreetBoundary != null)
+                foreach (CityTerrainStreetBoundaryPlan.Cut cut in context.StreetBoundary.Cuts) constraintCuts.Add(cut);
+            CityFairGroundSupportPlan.ForLayout(layout).AppendCuts(bounds, constraintCuts);
+            foreach (CityTerrainStreetBoundaryPlan.Cut cut in constraintCuts)
+            {
+                if (!cut.Bounds.Overlaps(bounds)) continue;
+                var next = new List<IReadOnlyList<Vector2>>(pieces.Count + 1);
+                foreach (IReadOnlyList<Vector2> piece in pieces)
+                {
+                    bool positive = false, negative = false;
+                    for (int i = 0; i < piece.Count; i++)
+                    {
+                        float side = CityRoadPolygon.Cross(cut.Second - cut.First, piece[i] - cut.First);
+                        positive |= side > .000001f;
+                        negative |= side < -.000001f;
+                    }
+                    if (!positive || !negative) { next.Add(piece); continue; }
+                    List<Vector2> left = CityRoadPolygon.Clip(piece, cut.First, cut.Second);
+                    List<Vector2> right = CityRoadPolygon.Clip(piece, cut.First, cut.Second, false);
+                    if (left.Count >= 3 && CityRoadPolygon.Area(left) > .000001f) next.Add(left);
+                    if (right.Count >= 3 && CityRoadPolygon.Area(right) > .000001f) next.Add(right);
+                }
+                pieces = next;
+            }
+            CityTerrainSurfacePlan.SurfaceContext sampledContext = context;
+            foreach (IReadOnlyList<Vector2> piece in pieces)
+            {
+                Vector2 centerXZ = Vector2.zero;
+                for (int i = 0; i < piece.Count; i++) centerXZ += piece[i];
+                centerXZ /= piece.Count;
+                Vector3 center = new Vector3(centerXZ.x,
+                    CityTerrainSurfacePlan.SampleTop(layout, surface, centerXZ, in context), centerXZ.y);
+                var firstTops = new Vector3[piece.Count];
+                var secondTops = new Vector3[piece.Count];
+                for (int i = 0; i < piece.Count; i++)
+                {
+                    int next = (i + 1) % piece.Count;
+                    Vector2 first = piece[i], second = piece[next];
+                    float firstTop = CityTerrainSurfacePlan.SampleTop(layout, surface, first, in context);
+                    float secondTop = CityTerrainSurfacePlan.SampleTop(layout, surface, second, in context);
+                    // A raised corner and a lowered apron may intentionally
+                    // have two top heights at one projected endpoint. Keep
+                    // each boundary edge's own pair instead of overwriting a
+                    // shared corner's one Y with whichever edge ran last.
+                    if (context.StreetBoundary != null && context.StreetBoundary.TrySampleSharedEdge(first, second,
+                        out float sharedFirst, out float sharedSecond))
+                    {
+                        firstTop = sharedFirst;
+                        secondTop = sharedSecond;
+                    }
+                    firstTops[i] = new Vector3(first.x, firstTop, first.y);
+                    secondTops[i] = new Vector3(second.x, secondTop, second.y);
+                    AppendTerrainFace(firstTops[i], center, secondTops[i], false);
+                }
+                for (int i = 0; i < piece.Count; i++)
+                {
+                    int previous = (i + piece.Count - 1) % piece.Count;
+                    Vector3 prior = secondTops[previous], next = firstTops[i];
+                    if (Mathf.Abs(prior.y - next.y) <= .00001f) continue;
+                    // Close the radial wedge between the two owned endpoint
+                    // heights. Adjacent cells retain their scalar edge, while
+                    // the exterior edge meets its exact street support. This
+                    // is a real closed step face, never an open triangle slit.
+                    Vector3 lowerInterior = prior.y < next.y
+                        ? (firstTops[previous] + prior + center) / 3f
+                        : (next + secondTops[i] + center) / 3f;
+                    Vector3 normal = Vector3.Cross(next - prior, center - prior);
+                    if (Vector3.Dot(normal, lowerInterior - (prior + next + center) / 3f) < 0f)
+                        AppendTerrainFace(prior, center, next, true);
+                    else AppendTerrainFace(prior, next, center, true);
+                }
+            }
+
+            void AppendTerrainFace(Vector3 a, Vector3 b, Vector3 c, bool vertical)
+            {
+                Vector3 faceNormal = Vector3.Cross(b - a, c - a);
+                if (faceNormal.sqrMagnitude < .000000000001f) return;
+                faceNormal.Normalize();
+                int first = vertices.Count;
+                Append(a); Append(b); Append(c);
+                triangles.Add(first); triangles.Add(first + 1); triangles.Add(first + 2);
+
+                void Append(Vector3 point)
+                {
+                    Vector2 xz = new Vector2(point.x, point.z);
+                    vertices.Add(point);
+                    normals.Add(vertical ? faceNormal : CityTerrainSurfacePlan.SampleNormal(layout, surface, xz, in sampledContext));
+                    uvs.Add(xz / tileSize);
+                }
             }
         }
 

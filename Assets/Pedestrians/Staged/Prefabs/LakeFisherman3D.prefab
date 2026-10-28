@@ -569,8 +569,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 2032997042162853347}
     Bone: {fileID: 5892826046383384849}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 809151624993621660}
     Bone: {fileID: 8867036158218447580}
@@ -599,8 +599,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 4929603016439431787}
     Bone: {fileID: 5892826046383384849}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
 --- !u!1 &5085600375507885633
 GameObject:
@@ -627,7 +627,7 @@ Transform:
   m_GameObject: {fileID: 5085600375507885633}
   serializedVersion: 2
   m_LocalRotation: {x: -0.00000006149797, y: 0.74666625, z: -0.6651989, w: -0.0000000037540384}
-  m_LocalPosition: {x: 0.000033663975, y: 0.0013149802, z: -0.00073412585}
+  m_LocalPosition: {x: 0.000033663975, y: 0.00131498, z: -0.0007341255}
   m_LocalScale: {x: 0.72, y: 0.72, z: 0.72}
   m_ConstrainProportionsScale: 0
   m_Children: []

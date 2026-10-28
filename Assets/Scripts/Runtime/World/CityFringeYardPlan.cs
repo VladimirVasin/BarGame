@@ -131,6 +131,13 @@ namespace BarPromenade
         public Quaternion Rotation { get; }
         public Vector3 Size { get; }
         public bool BlocksMovement { get; }
+        // These descriptors are paint footprints. The ground compositor clips
+        // and projects their actual triangles onto terrain, never a rigid slab.
+        public bool IsProjectedGroundCoating => !BlocksMovement && IsProjectedGroundTrace(Kind, Style);
+        internal static bool IsProjectedGroundTrace(CityFringeYardPartKind kind, CityFringeYardStyle style) =>
+            IsProjectedGroundStyle(style) || kind == CityFringeYardPartKind.WheelRut;
+        internal static bool IsProjectedGroundStyle(CityFringeYardStyle style) =>
+            style == CityFringeYardStyle.ServiceGround || style == CityFringeYardStyle.ServiceTrack;
         /// <summary>One authored ground stroke, including its fitted physical pieces.</summary>
         public string SurfaceRunId { get; }
 

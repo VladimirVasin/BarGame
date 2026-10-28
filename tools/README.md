@@ -23,6 +23,11 @@ import `CityBuildingAssetSetup.BuildOrThrow`.
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
 Both:launcher/`--validate-only`.
 
+`build-city-street-profile-3d-model.py`:launcher/`--validate-only`;
+`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`,
+source:`ArtSource/City/StreetProfile`. Passive top/edge topology follows
+`CityStreetSupportPlan`; `CityStreetSurfaceWorldBuilder` measures imported metres.
+
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 
 `build-city-fair-3d-model.py`:10 props;`--verify-fbx`.

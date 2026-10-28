@@ -648,7 +648,7 @@ MonoBehaviour:
   spoutAnchor: {fileID: 2351126773749681363}
   lidRenderer: {fileID: 932090293881890459}
   knobRenderer: {fileID: 3553195022294123086}
-  lidCentreLocal: {x: -0.000035999925, y: 0.0014849134, z: 0.00053786667}
+  lidCentreLocal: {x: -0.000035999925, y: 0.001484913, z: 0.00053786655}
   kettleAxisLocal: {x: -0.37742317, y: 0.91770476, z: -0.12397329}
   lidTiltAxisALocal: {x: -0.3225487, y: -0.25576794, z: -0.9113423}
   lidTiltAxisBLocal: {x: -0.86805195, y: -0.30397433, z: 0.39253724}
@@ -683,8 +683,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 6749347645390531757}
     Bone: {fileID: 1224547909864452716}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 1651391715767271999}
     Bone: {fileID: 3439327490081418014}
@@ -693,8 +693,8 @@ MonoBehaviour:
     Shape: 0
   - Renderer: {fileID: 9109845143429066782}
     Bone: {fileID: 1224547909864452716}
-    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
-    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
+    LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
   - Renderer: {fileID: 2550219162045533978}
     Bone: {fileID: 4195098308518392225}
@@ -731,7 +731,7 @@ Transform:
   m_GameObject: {fileID: 7523810441934211924}
   serializedVersion: 2
   m_LocalRotation: {x: 0.10921359, y: -0.83278257, z: -0.3090556, w: -0.44612822}
-  m_LocalPosition: {x: 0.0041232095, y: 0.0013257734, z: -0.0014494973}
+  m_LocalPosition: {x: 0.0041232095, y: 0.0013257732, z: -0.001449497}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

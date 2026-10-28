@@ -1534,6 +1534,24 @@ namespace BarPromenade.Tests.EditMode
             float maximumGap,
             float maximumEmbed)
         {
+            if (part.IsProjectedGroundCoating)
+            {
+                // Staging footprints are projected onto exact terrain planes;
+                // rigid bottom contact belongs only to non-coating objects.
+                Vector3 top = part.Center + part.Rotation * Vector3.up * (part.Size.y * .5f);
+                Vector3 across = part.Rotation * Vector3.right * (part.Size.x * .5f);
+                Vector3 along = part.Rotation * Vector3.forward * (part.Size.z * .5f);
+                for (int x = -1; x <= 1; x++)
+                    for (int z = -1; z <= 1; z++)
+                    {
+                        Vector3 point = top + across * x + along * z;
+                        float support = SampleOwnerTop(layout, yard, point);
+                        Assert.That(Mathf.Abs(point.y - support),
+                            Is.LessThanOrEqualTo(CityGroundSurfaceSystem.MaximumPaintProjectionDistance),
+                            $"{part.StableId} leaves its exact support projection reach.");
+                    }
+                return;
+            }
             Vector3 right =
                 (part.Rotation * Vector3.right) * (part.Size.x * 0.5f);
             Vector3 forward =

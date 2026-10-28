@@ -114,9 +114,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3467025765672801788}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.00000023423118, y: 0.7071068, z: -0.7071068, w: 0.0000002333068}
-  m_LocalPosition: {x: -4.8335036e-10, y: -0.0000000014557474, z: 0.000000008037153}
-  m_LocalScale: {x: 0.0100000035, y: 0.009999999, z: 0.0100000035}
+  m_LocalRotation: {x: 0.0000002980233, y: 0.7071069, z: -0.70710677, w: 0.00000020116573}
+  m_LocalPosition: {x: -0.0000000014227542, y: -0.0000000015108358, z: 0.000000008519903}
+  m_LocalScale: {x: 0.010000001, y: 0.009999999, z: 0.009999999}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5642838602487772462}
@@ -536,9 +536,9 @@ MonoBehaviour:
   socketName: SOCKET_Grip.R
   referenceDesignId: cemetery_mourner_v1
   mount: {fileID: 3244941877743643017}
-  mountLocalPosition: {x: -4.8335036e-10, y: -0.0000000014557474, z: 0.000000008037153}
-  mountLocalRotation: {x: 0.00000023423118, y: 0.7071068, z: -0.7071068, w: 0.0000002333068}
-  mountLocalScale: {x: 0.0100000035, y: 0.009999999, z: 0.0100000035}
+  mountLocalPosition: {x: -0.0000000014227542, y: -0.0000000015108358, z: 0.000000008519903}
+  mountLocalRotation: {x: 0.0000002980233, y: 0.7071069, z: -0.70710677, w: 0.00000020116573}
+  mountLocalScale: {x: 0.010000001, y: 0.009999999, z: 0.009999999}
   referenceSocketRestPosition: {x: -0.7377602, y: 1.0330001, z: -0.018880129}
   referenceSocketRestRotation: {x: -0.00000030270067, y: -0.70710695, z: 0.70710695, w: 0.00000018825729}
   renderers:

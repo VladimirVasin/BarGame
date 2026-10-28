@@ -7,6 +7,15 @@ using Vertex = BarPromenade.GroundSurfacePartitioner.Vertex;
 
 namespace BarPromenade
 {
+    /// <summary>The physical material and coating precedence of one source submesh.</summary>
+    internal readonly struct CityGroundSurfaceRegion
+    {
+        internal CityGroundSurfaceRegion(FootstepGroundKind kind, int priority)
+        { Kind = kind; Priority = priority; }
+        internal FootstepGroundKind Kind { get; }
+        internal int Priority { get; }
+    }
+
     /// <summary>One owner for the City's ground coatings. Builders supply their
     /// measured surfaces; priority partitioning removes buried/overlapping skins,
     /// and render/collision sectors preserve their exact planes and UVs.</summary>
@@ -14,6 +23,7 @@ namespace BarPromenade
     internal sealed class CityGroundSurfaceSystem : MonoBehaviour
     {
         internal const float SectorSize = 48f;
+        internal const float MaximumPaintProjectionDistance = .45f;
         private const float SurfaceBucketSize = 2f;
         private const float SupportBucketSize = 1f;
         private const float EdgeBucketSize = .5f;
@@ -48,14 +58,36 @@ namespace BarPromenade
         }
 
         internal static void Register(Renderer renderer, int priority = 10, bool paint = false, bool dynamic = false)
+            => Register(renderer, priority, paint, dynamic, null);
+
+        internal static void Register(GameObject source, IReadOnlyList<CityGroundSurfaceRegion> regions, bool dynamic = false)
+        {
+            if (source == null) return;
+            foreach (Renderer renderer in source.GetComponents<Renderer>()) Register(renderer, regions, dynamic);
+        }
+
+        internal static void Register(Renderer renderer, IReadOnlyList<CityGroundSurfaceRegion> regions, bool dynamic = false)
+        {
+            if (regions == null) throw new ArgumentNullException(nameof(regions));
+            int priority = int.MinValue;
+            for (int i = 0; i < regions.Count; i++) priority = Mathf.Max(priority, regions[i].Priority);
+            Register(renderer, priority, false, dynamic, regions);
+        }
+
+        private static void Register(Renderer renderer, int priority, bool paint, bool dynamic,
+            IReadOnlyList<CityGroundSurfaceRegion> regions)
         {
             if (renderer == null) return;
             CityGroundSurfaceSystem system = renderer.GetComponentInParent<CityGroundSurfaceSystem>(true);
             if (system == null) return;
             for (int i = 0; i < system.sources.Count; i++)
                 if (system.sources[i].Renderer == renderer)
-                { system.sources[i].Priority = priority; system.sources[i].Paint = paint; return; }
-            var source = new Source(renderer, priority, paint, dynamic);
+                {
+                    Source existing = system.sources[i];
+                    existing.Priority = priority; existing.Paint = paint; existing.SetRegions(regions);
+                    return;
+                }
+            var source = new Source(renderer, priority, paint, dynamic, regions);
             system.Capture(source);
             if (system.sealedSurface)
             {
@@ -119,6 +151,7 @@ namespace BarPromenade
                 if (!source.Paint) sides.AddRange(source.Sides);
             }
             double routingMilliseconds = timer.Elapsed.TotalMilliseconds;
+            OrderByPriority(input);
             List<Triangle> surface = GroundSurfacePartitioner.Partition(input, out GroundSurfacePartitioner.Statistics statistics, SurfaceBucketSize);
             double partitionMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
@@ -163,6 +196,8 @@ namespace BarPromenade
             MeshFilter filter = source.Renderer.GetComponent<MeshFilter>();
             if (filter == null || filter.sharedMesh == null) throw new InvalidOperationException("Ground needs a MeshFilter: " + source.Renderer.name);
             Mesh mesh = filter.sharedMesh;
+            if (source.Regions != null && source.Regions.Length != mesh.subMeshCount)
+                throw new InvalidOperationException("Ground region count must match its submeshes: " + source.Renderer.name);
             if (!mesh.isReadable)
             {
                 if (source.Top != null) return;
@@ -194,10 +229,12 @@ namespace BarPromenade
             FootstepGroundKind kind = marker != null ? marker.Kind : source.Paint ? FootstepGroundKind.None : FootstepGroundKind.Soil;
             for (int slot = 0; slot < mesh.subMeshCount; slot++)
             {
+                FootstepGroundKind regionKind = source.Regions != null ? source.Regions[slot].Kind : kind;
+                int priority = source.Regions != null ? source.Regions[slot].Priority : source.Priority;
                 var block = new MaterialPropertyBlock();
                 source.Renderer.GetPropertyBlock(block, slot);
                 if (block.isEmpty) source.Renderer.GetPropertyBlock(block);
-                int style = FindStyle(new Style(source.Renderer, slot, materials[Mathf.Min(slot, materials.Length - 1)], block, kind));
+                int style = FindStyle(new Style(source.Renderer, slot, materials[Mathf.Min(slot, materials.Length - 1)], block, regionKind, priority));
                 int[] indices = mesh.GetTriangles(slot);
                 for (int index = 0; index < indices.Length; index += 3)
                 {
@@ -317,7 +354,7 @@ namespace BarPromenade
                         {
                             Vector3 centre = (part.A.Position + part.B.Position + part.C.Position) / 3f;
                             float y = plane.Height(centre);
-                            if (Mathf.Abs(y - centre.y) > .45f) continue;
+                            if (Mathf.Abs(y - centre.y) > MaximumPaintProjectionDistance) continue;
                             FootstepGroundKind paintKind = styles[part.Surface].Kind;
                             int style = ProjectedStyle(part.Surface, paintKind == FootstepGroundKind.None ? styles[support.Surface].Kind : paintKind);
                             projected.Add(new Triangle(plane.Project(part.A), plane.Project(part.B), plane.Project(part.C), style));
@@ -334,6 +371,47 @@ namespace BarPromenade
 
         private static int CompareHeight(Triangle a, Triangle b) =>
             (b.A.Position.y + b.B.Position.y + b.C.Position.y).CompareTo(a.A.Position.y + a.B.Position.y + a.C.Position.y);
+
+        // Partitioning is first-owner-wins. A combined source can straddle
+        // another source's priority, so ordering renderers alone is insufficient.
+        // Bucket only the priorities and permute compact indices in place;
+        // equal-priority faces retain source/height ordering.
+        private void OrderByPriority(List<Triangle> triangles)
+        {
+            bool sorted = true;
+            for (int i = 1; i < triangles.Count; i++)
+                if (styles[triangles[i - 1].Surface].Priority < styles[triangles[i].Surface].Priority)
+                { sorted = false; break; }
+            if (sorted) return;
+            var starts = new Dictionary<int, int>();
+            foreach (Triangle triangle in triangles)
+            {
+                int priority = styles[triangle.Surface].Priority;
+                starts.TryGetValue(priority, out int count); starts[priority] = count + 1;
+            }
+            var priorities = new List<int>(starts.Keys); priorities.Sort((a, b) => b.CompareTo(a));
+            int next = 0;
+            foreach (int priority in priorities)
+            { int count = starts[priority]; starts[priority] = next; next += count; }
+            var order = new int[triangles.Count];
+            for (int i = 0; i < triangles.Count; i++)
+            {
+                int priority = styles[triangles[i].Surface].Priority;
+                int destination = starts[priority]; order[destination] = i; starts[priority] = destination + 1;
+            }
+            for (int first = 0; first < order.Length; first++)
+            {
+                if (order[first] == first) continue;
+                Triangle saved = triangles[first];
+                int destination = first;
+                while (order[destination] != first)
+                {
+                    int source = order[destination]; triangles[destination] = triangles[source];
+                    order[destination] = destination; destination = source;
+                }
+                triangles[destination] = saved; order[destination] = destination;
+            }
+        }
 
         private int ProjectedStyle(int paint, FootstepGroundKind kind)
         {
@@ -387,10 +465,17 @@ namespace BarPromenade
             var positions = new List<Vector3>(); var normals = new List<Vector3>(); var uv = new List<Vector2>();
             var road = new List<Vector4>(); var colors = new List<Color>();
             var slots = new List<int>(); var indices = new List<List<int>>();
+            var styleSlots = new Dictionary<int, int>();
             foreach (Triangle triangle in triangles)
             {
-                int slot = slots.IndexOf(triangle.Surface);
-                if (slot < 0) { slot = slots.Count; slots.Add(triangle.Surface); indices.Add(new List<int>()); }
+                if (!styleSlots.TryGetValue(triangle.Surface, out int slot))
+                {
+                    slot = -1;
+                    for (int i = 0; i < slots.Count; i++)
+                        if (styles[slots[i]].Equivalent(styles[triangle.Surface], includePriority: false)) { slot = i; break; }
+                    if (slot < 0) { slot = slots.Count; slots.Add(triangle.Surface); indices.Add(new List<int>()); }
+                    styleSlots.Add(triangle.Surface, slot);
+                }
                 int first = positions.Count;
                 Append(triangle.A); Append(triangle.B); Append(triangle.C);
                 indices[slot].Add(first); indices[slot].Add(first + 1); indices[slot].Add(first + 2);
@@ -448,6 +533,7 @@ namespace BarPromenade
                     input = remaining;
                 }
             input.AddRange(region.Source.Top);
+            OrderByPriority(input);
             List<Triangle> surface = GroundSurfacePartitioner.Conform(
                 GroundSurfacePartitioner.Partition(input, SurfaceBucketSize), bucketSize: EdgeBucketSize);
             surface.AddRange(region.Source.Sides);
@@ -476,11 +562,18 @@ namespace BarPromenade
         private sealed class Source
         {
             private static int nextOrder;
-            internal Source(Renderer renderer, int priority, bool paint, bool dynamic)
-            { Renderer = renderer; Priority = priority; Paint = paint; Dynamic = dynamic; Order = nextOrder++; }
+            internal Source(Renderer renderer, int priority, bool paint, bool dynamic, IReadOnlyList<CityGroundSurfaceRegion> regions)
+            { Renderer = renderer; Priority = priority; Paint = paint; Dynamic = dynamic; Order = nextOrder++; SetRegions(regions); }
             internal readonly Renderer Renderer; internal readonly bool Dynamic; internal readonly int Order;
             internal int Priority; internal bool Paint;
+            internal CityGroundSurfaceRegion[] Regions;
             internal List<Triangle> Top, Sides, Support;
+            internal void SetRegions(IReadOnlyList<CityGroundSurfaceRegion> regions)
+            {
+                if (regions == null) { Regions = null; return; }
+                Regions = new CityGroundSurfaceRegion[regions.Count];
+                for (int i = 0; i < regions.Count; i++) Regions[i] = regions[i];
+            }
         }
         private sealed class Style
         {
@@ -489,9 +582,9 @@ namespace BarPromenade
             private readonly PropertyLayout propertyLayout;
             private readonly PropertyValue[] propertyValues;
 
-            internal Style(Renderer source, int slot, Material material, MaterialPropertyBlock properties, FootstepGroundKind kind)
+            internal Style(Renderer source, int slot, Material material, MaterialPropertyBlock properties, FootstepGroundKind kind, int priority)
             {
-                Material = material; Properties = properties; Kind = kind;
+                Material = material; Properties = properties; Kind = kind; Priority = priority;
                 HasWeather = CityWetSurfaceRegistry.TryReadRegistration(source, slot, out CityWetSurfaceKind wetKind, out Color dryTint) ||
                     CityWetSurfaceRegistry.TryReadRegistration(source, -1, out wetKind, out dryTint);
                 WetKind = wetKind; DryTint = dryTint;
@@ -503,16 +596,18 @@ namespace BarPromenade
             internal Style(Style source, FootstepGroundKind kind)
             {
                 Material = source.Material; Properties = source.Properties; Kind = kind;
+                Priority = source.Priority;
                 HasWeather = source.HasWeather; WetKind = source.WetKind; DryTint = source.DryTint;
                 propertyLayout = source.propertyLayout; propertyValues = source.propertyValues;
             }
             internal readonly Material Material;
             internal readonly MaterialPropertyBlock Properties; internal readonly FootstepGroundKind Kind;
+            internal readonly int Priority;
             internal readonly bool HasWeather; internal readonly CityWetSurfaceKind WetKind; internal readonly Color DryTint;
 
-            internal bool Equivalent(Style other)
+            internal bool Equivalent(Style other, bool includePriority = true)
             {
-                if (Material != other.Material || Kind != other.Kind || HasWeather != other.HasWeather ||
+                if ((includePriority && Priority != other.Priority) || Material != other.Material || Kind != other.Kind || HasWeather != other.HasWeather ||
                     (HasWeather && (WetKind != other.WetKind || DryTint != other.DryTint))) return false;
                 if (!ReferenceEquals(propertyLayout, other.propertyLayout)) return false;
                 // Capture native shader/MPB state once. Comparisons happen for

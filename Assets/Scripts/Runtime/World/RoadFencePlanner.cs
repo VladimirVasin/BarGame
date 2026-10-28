@@ -414,6 +414,9 @@ namespace BarPromenade
             CityLayout layout,
             Vector3 position)
         {
+            if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(
+                    new Vector2(position.x, position.z), out float supportTop, out _))
+                return supportTop - CityStreetSurfacePlanner.RoadTop;
             if (layout.ElevationPlan.TrySampleSurface(
                     new Vector2(position.x, position.z),
                     CitySurfaceRole.RoadDatum,

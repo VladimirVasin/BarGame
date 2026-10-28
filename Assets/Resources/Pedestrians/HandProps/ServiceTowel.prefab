@@ -140,9 +140,9 @@ MonoBehaviour:
   socketName: SOCKET_Grip.L
   referenceDesignId: cafe_attendant_v2
   mount: {fileID: 6212947020692708171}
-  mountLocalPosition: {x: -0.000000017716404, y: 0.0000000016709851, z: -0.000000033218473}
-  mountLocalRotation: {x: 0.0000015666468, y: 0.7071068, z: -0.7071067, w: 0.0000015296562}
-  mountLocalScale: {x: 0.010000007, y: 0.010000006, z: 0.010000008}
+  mountLocalPosition: {x: -0.000000016335457, y: 0.000000001788691, z: -0.00000003405026}
+  mountLocalRotation: {x: 0.0000016101764, y: 0.7071068, z: -0.7071067, w: 0.0000015405795}
+  mountLocalScale: {x: 0.010000004, y: 0.0100000035, z: 0.010000006}
   referenceSocketRestPosition: {x: 0.7397586, y: 1.0389962, z: -0.02287972}
   referenceSocketRestRotation: {x: 0.0000017650141, y: 0.70710695, z: -0.7071067, w: -0.0000014754834}
   renderers:
@@ -186,9 +186,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8319006124243507188}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.0000015666468, y: 0.7071068, z: -0.7071067, w: 0.0000015296562}
-  m_LocalPosition: {x: -0.000000017716404, y: 0.0000000016709851, z: -0.000000033218473}
-  m_LocalScale: {x: 0.010000007, y: 0.010000006, z: 0.010000008}
+  m_LocalRotation: {x: 0.0000016101764, y: 0.7071068, z: -0.7071067, w: 0.0000015405795}
+  m_LocalPosition: {x: -0.000000016335457, y: 0.000000001788691, z: -0.00000003405026}
+  m_LocalScale: {x: 0.010000004, y: 0.0100000035, z: 0.010000006}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8574503436080325477}

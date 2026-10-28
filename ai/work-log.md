@@ -5,47 +5,51 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-28
 
-World-location queue is Current; all locations reviewed. Stairwell and transition leaf use the
-shared Blender interior kit. Steel necks/saddles close the wooden rail joints;
-doors/cabinet have hardware. Door docks align the production hand clip and
-backplates with actual imported surfaces, preserving ramps/pivots/cameras.
+World-location queue is Current. Stairwell/transition use the Blender interior
+kit; joined rails, hardware and imported hand docks retain ramps/pivots/cameras.
 STAIRWELL_INTERIOR_ART_DETERMINISM_OK, STAIRWELL_CONTACT_MANIFEST_MATCH_OK,
 Scene_BootstrapsVerticalRouteAndAtmosphere, StairwellDoorHandleContacts and
 Scene_FeedingConsumesOneStewAndCompletesPairedAnimation passed; frames reviewed.
-The room-audio check excludes the existing UI-owned hero emitter.
+Room-audio excludes the existing UI-owned hero emitter.
 
-City coastal/cemetery profiles, pier joints and esplanade coping use shared
-fixed-metre meshes. Gazebo steps no longer overlap the deck; clock pigment
-keeps hands readable. Compact cemetery planning retains the shared church
-cross-alley instead of dropping it at the old reserve width. CityCatalogAndPassage,
-CityChurchCourtyard, City and CityLandmarksFromStreets passed; functional site views reviewed. CityDomesticCourts and
-CityBarYardCircuit preserve work contacts and supported yard props.
-CityDistrictAcousticContrast recorded distinct physical cloth/pipe/fountain
-voices with music muted; no anonymous ambient was added.
+City coastal/cemetery profiles, pier joints and coping use fixed-metre meshes.
+Gazebo steps clear the deck; clock hands read; compact cemetery retains the
+church cross-alley. CityCatalogAndPassage, CityChurchCourtyard, City,
+CityLandmarksFromStreets, CityDomesticCourts and CityBarYardCircuit passed;
+functional views/contacts reviewed. CityDistrictAcousticContrast retained
+physical cloth/pipe/fountain voices with music muted.
 
-Mountain drive/cabin/support and structural profiles retain existing bounds,
-collision and pivots; world-owned shared meshes release on unload.
-MountainRoadNativeLighting passed; native day/night and close views reviewed.
-ForestCrownAuthoredPilot was rejected for worse silhouettes; LodgeBounce table
-A/B had no visible benefit and its receiver region missed useful room surfaces.
-Both candidates were removed, original lighting/forest retained.
-VillageWorkroomWalls passed after final ground triangles and lying snow were
-cut around the physical plinth; the two visible peaks are gone. Native village,
-home and mother-house views preserve current art. ChurchRemodelAcceptance,
-AlpineVillageBrookDetails, AlpineVillageAvalanche and AlpineVillageFootbridge
-passed; routes/thresholds/river joints reviewed. Loading FourDirectionsAndThreeAspectRatios
-and AreaTravel_ComposesEachDestinationBeforeCompleting passed.
+Mountain structures retain bounds/collision/pivots; shared meshes release.
+MountainRoadNativeLighting passed; native day/night/close views reviewed.
+ForestCrownAuthoredPilot worsened silhouettes; LodgeBounce missed useful
+receivers without visible gain. Both removed; original presentation retained.
+VillageWorkroomWalls passed after terrain/snow cuts cleared the plinth.
+Native village/Home/mother-house art retained. ChurchRemodelAcceptance,
+AlpineVillageBrookDetails, AlpineVillageAvalanche, AlpineVillageFootbridge,
+FourDirectionsAndThreeAspectRatios and
+AreaTravel_ComposesEachDestinationBeforeCompleting passed; routes/views reviewed.
 
-CCTV imported pivots now use the tracking +Z basis while children keep world
-poses. Supermarket passed actual lens front/normal probes; all fronts reviewed.
-Input System only replaces the deprecated Both workaround. Shared UI pointer
-capture/scroll and a bounded Unicode editor preserve fixed IMGUI rendering.
-InputSystemUiPlayModeTests passed scaled hitboxes, drag/scroll/focus cleanup,
-actual Pause/MainMenu, Russian selection/paste and function-key editing.
-MainMenuManualNative covered closed-bar return, combat preparation and wide/4:3;
-final menu/vocalizer frames reviewed. CombatLaboratoryArtVisuals,
-CombatWarehouseDetailVisuals, check-docs, scoped diff and
-check-workspace passed; temporary output removed, worktrees archived.
+CCTV pivots use tracking +Z; children keep world poses. Supermarket lens
+front/normal probes and views passed. Input System replaces Both; shared
+pointer capture/scroll and Unicode editing retain IMGUI rendering.
+InputSystemUiPlayModeTests passed hitboxes, drag/scroll/focus, actual menus,
+Russian selection/paste and function keys. MainMenuManualNative covered
+closed-bar return/combat/wide/4:3; menu/vocalizer frames reviewed.
+CombatLaboratoryArtVisuals, CombatWarehouseDetailVisuals, check-docs,
+scoped diff and check-workspace passed; temporary output removed/worktrees archived.
+
+City street support now shares grade stations, typed asphalt/pavement/path
+regions and exterior terrain boundaries. Blender deformation topology replaces
+separate road donors; Home copies bounded real terrain. Indexed support grounds
+walkers/bus/benches/fences; weather/steps and dynamic cuts retain their owners.
+CITY STREET PROFILE BUILD OK proved topology/winding/metres/determinism.
+Support_GradedStreetAndPavementShareJunctionCapStations,
+SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap and
+FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority passed.
+CityGroundSurface passed; city seams and Home balcony frames reviewed.
+BodyNpc torso centres now retain triangle-corner multiplicity after FBX
+welding; cardigan metadata no longer shifts. CombatBodyAssetPipelineTests
+passed, including invalid-frame rejection; affine guard unchanged.
 
 ## 2026-10-27
 

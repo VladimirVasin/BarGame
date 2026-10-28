@@ -1411,10 +1411,15 @@ namespace BarPromenade
                     maximum = Mathf.Max(maximum, offset);
                 }
 
-            // Pitch alone bridges the new corner's crossfall. Fit the full
-            // footprint, and divide only genuinely curved patches rather than
-            // raising a rigid strip above its low corners or burying its centre.
-            if (maximum - minimum > .035f && depth < 4 &&
+            // Ground-style runs are projected coatings in the compositor.
+            // Their staging planes need its projection reach, not the rigid
+            // part's 35 mm corner fit; that finer recursion multiplied footprint
+            // descriptors while leaving the final projected triangles unchanged.
+            // Wheel ruts are ground marks with the drainage recipe; actual
+            // drain channels, iron and solids retain the rigid-fit contract.
+            float fitRange = CityFringeYardPartDescriptor.IsProjectedGroundTrace(kind, style)
+                ? CityGroundSurfaceSystem.MaximumPaintProjectionDistance : .035f;
+            if (maximum - minimum > fitRange && depth < 4 &&
                 new Vector2(slope.x, slope.z).magnitude > .5f)
             {
                 Vector3 topMiddle = middle;

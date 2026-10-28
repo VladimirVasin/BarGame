@@ -65,7 +65,7 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Rendering/Inspect Surface Cache GI Readiness")]
         public static void Run()
         {
-            BarInteriorRoot bar = UnityEngine.Object.FindFirstObjectByType<BarInteriorRoot>();
+            BarInteriorRoot bar = UnityEngine.Object.FindAnyObjectByType<BarInteriorRoot>();
             Debug.Log(Inspect(bar != null ? bar.Room : null).ToString());
         }
 

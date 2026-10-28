@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "signature": "9a0dd1a1b281a0937b748c6b1af02c0c37726fe5ba295170bc0c86202a74af13",
+  "unity_axes": "Blender (x,z,y), reversed face winding",
+  "asphalt_width": 6,
+  "public_sidewalk_width": 2,
+  "road_top": 0.08,
+  "sidewalk_top": 0.14,
+  "parts": {
+    "SurfacePatch": {
+      "vertices": 3,
+      "triangles": 1,
+      "min": [
+        0,
+        0,
+        0
+      ],
+      "max": [
+        1,
+        0,
+        1
+      ]
+    },
+    "BoundaryStrip": {
+      "vertices": 4,
+      "triangles": 2,
+      "min": [
+        0,
+        -1,
+        0
+      ],
+      "max": [
+        1,
+        0,
+        0
+      ]
+    },
+    "StreetProfile": {
+      "vertices": 24,
+      "triangles": 36,
+      "min": [
+        -5.0,
+        -0.15999999999999998,
+        0.0
+      ],
+      "max": [
+        5.0,
+        0.14,
+        1.0
+      ]
+    }
+  }
+}

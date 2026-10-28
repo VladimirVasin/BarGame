@@ -735,6 +735,8 @@ namespace BarPromenade
 
         private static float CurvedRoadHeight(CityLayout layout, RoadEdge edge, CityRoadPath road, Vector2 point)
         {
+            if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(point, FootstepGroundKind.Concrete, out float physicalTop))
+                return physicalTop;
             return layout.ElevationPlan.SampleRoadDatum(edge,
                 road.Project(point).DistanceAlong / road.Length) + CityStreetSurfacePlanner.RoadTop;
         }
