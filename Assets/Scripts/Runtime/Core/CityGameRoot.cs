@@ -245,6 +245,9 @@ namespace BarPromenade
             get;
             private set;
         }
+        public MountainRoadCafeSeatView CafeSeatView { get; private set; }
+        public MountainRoadCafeMenuController CafeMenu { get; private set; }
+        public MountainRoadCafeConversationController CafeConversation { get; private set; }
         public IReadOnlyList<CityStreetUtilityInteraction> StreetUtilities
         {
             get;
@@ -842,6 +845,8 @@ namespace BarPromenade
                     benchPlans.Add(new CityBenchSitPlan(seat));
                 World.Fair.InstallInteractions(Player, camera);
             }
+            if (World.CafeSite != null)
+                benchPlans.Add(new CityBenchSitPlan(World.CafeSite.CounterSeat.ToBenchSeat()));
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
                 benchPlans,
@@ -853,6 +858,8 @@ namespace BarPromenade
             // Fair seats stay available to the hero; background walkers
             // have no authored approach through the fair's props.
             var restBenchPlans = new List<CityBenchSitPlan>(benchPlans);
+            if (World.CafeSite != null)
+                restBenchPlans.RemoveAll(bench => bench.Id == World.CafeSite.CounterSeat.StableId);
             if (World.Fair != null)
                 foreach (CityBenchSeat fairSeat in World.Fair.Plan.Benches)
                     restBenchPlans.RemoveAll(bench => bench.Id == fairSeat.Id);
@@ -878,6 +885,7 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            BindCafe(ui.transform, camera, follow);
             GameLogPhases.Report("city", "park_and_benches", stepTimer);
             yield return new CompositionStep("residents_and_interactions", 0.87f);
             stepTimer.Restart();
@@ -1056,6 +1064,7 @@ namespace BarPromenade
             if (World.Fair != null) rainShelters.AddRange(World.Fair.RainShelters);
             if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
             if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
+            if (World.CafeRainShelter != null) rainShelters.Add(World.CafeRainShelter);
             Rain.SetLocalShelters(rainShelters);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
@@ -1115,8 +1124,10 @@ namespace BarPromenade
                 camera.transform,
                 () =>
                     (BusRide != null && BusRide.IsPassengerAboard) ||
-                    (TunnelShelter != null && TunnelShelter.IsSheltered),
-                new CityEternalRainShaper());
+                    (TunnelShelter != null && TunnelShelter.IsSheltered) ||
+                    (World.Cafe != null && World.Cafe.ContainsInterior(camera.transform.position)),
+                new CityEternalRainShaper(),
+                Night.FogField);
             World.Root.GetComponentInChildren<CityCoastalGrassWind>(true)?.Initialize(Weather, Player.GameObject.transform);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
@@ -1993,6 +2004,30 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     inventoryTimer.Elapsed.TotalMilliseconds));
+        }
+
+        private void BindCafe(Transform ui, Camera camera, PlayerCameraFollow follow)
+        {
+            MountainRoadCafeWorldResult cafe = World.Cafe;
+            if (cafe == null) return;
+            if (!cafe.Cast.BindActivationObserver(Player.GameObject.transform, cafe.Entrance.position) ||
+                !cafe.Cast.BindHeroAttention(Player.GameObject.transform))
+                throw new System.InvalidOperationException("The City diner could not bind its hero and service clock.");
+            CafeConversation = MountainRoadCafeConversationController.Create(
+                ui, cafe.Plan, cafe.Cast, Player.GameObject.transform, camera, Layout.Seed);
+            if (CafeConversation == null)
+                throw new System.InvalidOperationException("The City diner conversation could not bind.");
+            foreach (CityBenchSitInteraction seat in BenchSits)
+            {
+                if (seat.Plan.Id != World.CafeSite.CounterSeat.StableId) continue;
+                CafeSeatView = gameObject.AddComponent<MountainRoadCafeSeatView>();
+                CafeSeatView.Initialize(seat, Player, follow);
+                MountainRoadCafeMenuPresentation menu = MountainRoadCafeMenuPresentation.CreateAndBind(cafe.Model, cafe.Cast);
+                CafeMenu = gameObject.AddComponent<MountainRoadCafeMenuController>();
+                CafeMenu.Initialize(seat, CafeSeatView, cafe.Cast, menu);
+                return;
+            }
+            throw new System.InvalidOperationException("The City diner has no hero seat.");
         }
 
         private void OnDestroy()

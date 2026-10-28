@@ -223,7 +223,6 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadPlan plan = BuildMountainPlan();
             MountainRoadVehicleApronPlan apron = plan.Terminal.VehicleApron;
-            MountainRoadCafePlan cafe = plan.Terminal.Cafe;
             LastRouteCarDrivePath path =
                 LastRouteMountainDrivePlanner.CreateDeparture(plan);
             var walkable = new MountainRoadWalkableArea(plan);
@@ -252,12 +251,7 @@ namespace BarPromenade.Tests.EditMode
                         Vector3 corner = position +
                                          (forward * along) +
                                          (right * across);
-                        corner.y = cafe.FloorY;
-                        Assert.That(
-                            cafe.ContainsInterior(corner, 0f),
-                            Is.False,
-                            $"The car reaches the cafe at {distance:0.0} m " +
-                            "of the manoeuvre.");
+                        corner.y = plan.Plateau.Center.y;
                         Assert.That(
                             plan.Terminal.Cableway.ContainsClearanceXZ(
                                 new Vector2(corner.x, corner.z),

@@ -275,7 +275,7 @@ namespace BarPromenade
                     layout.RoadGeometry.Get(edge).Project(point).DistanceSquared < trafficClearance * trafficClearance)
                     return true;
             foreach (BuildingLot lot in layout.BuildingLots)
-                if (lot.HasBuilding && IntersectsBuilding(point, lot)) return true;
+                if ((lot.HasBuilding || lot.IsCafe) && IntersectsBuilding(point, lot)) return true;
             return false;
         }
 

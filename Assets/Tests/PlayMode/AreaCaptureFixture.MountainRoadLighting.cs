@@ -85,7 +85,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 foreach (string effect in new[] { "Reflections", "Lit air", "Halation", "Metal highlights", "Bounce" })
                     AssertRoadLightingDifference(effect + " baseline", effect + " enabled");
-                foreach (string material in new[] { "Cafe pigment", "Cafe physical response", "Station physical response", "Road pigment" })
+                foreach (string material in new[] { "Station physical response", "Road pigment" })
                     AssertRoadLightingDifference(material + " baseline", material + " enabled");
                 yield return VerifyRoadHeadlightTransport(road);
                 yield return VerifyRoadLightingOwnership(road);
@@ -157,32 +157,35 @@ namespace BarPromenade.Tests.PlayMode
             MountainRoadLightingPresentation lighting = road.Lighting;
             Assert.That(lighting, Is.Not.Null);
             Assert.That(lighting.Reflection, Is.Not.Null);
-            Assert.That(lighting.Reflection.ZoneCount, Is.EqualTo(2));
+            Assert.That(lighting.Reflection.ZoneCount, Is.EqualTo(1));
+            Assert.That(lighting.Reflection.Cafe, Is.Null);
             Assert.That(lighting.HalationSourceCount, Is.InRange(1, MountainRoadLightingPresentation.MaximumHalationSources));
             Assert.That(lighting.BounceRegionCount, Is.InRange(1, MountainRoadLightingPresentation.MaximumBounceRegions));
             AssertRoadExistingPracticals(road);
             AssertRoadNativeShaders();
             var plateau = road.Plan.Plateau;
-            var cafe = road.Plan.Terminal.Cafe;
+            var station = road.Plan.Terminal.Cableway.StationArea;
             Vector3 yardEye = plateau.Center - plateau.Forward * 8f + plateau.Right * 14f + Vector3.up * 3.2f;
             Vector3 yardAim = plateau.Center + plateau.Forward * 6f + Vector3.up * 1.25f;
-            Vector3 cafeEye = cafe.Center - cafe.Right * 3.5f - cafe.Forward * 2.5f + Vector3.up * EyeHeight;
-            Vector3 cafeAim = cafe.Center + cafe.Right * .8f - cafe.Forward * .3f + Vector3.up * 1.5f;
-            Assert.That(cafe.ContainsInterior(cafeEye), Is.True, "The material frame must be inside the real cafe.");
+            Renderer stationMetal = Array.Find(road.World.Cableway.StationRoot.GetComponentsInChildren<Renderer>(true),
+                renderer => renderer.name == "Bullwheel Bearing Housing");
+            Assert.That(stationMetal, Is.Not.Null);
+            Vector3 stationAim = stationMetal.bounds.center;
+            Vector3 stationEye = stationAim - station.Forward * 3.1f + station.Right * 1.9f + Vector3.up * .8f;
             var brink = plateau.Brink;
             Vector3 edgeEye = brink.Corridor.Apex - brink.Corridor.Axis * 7f + plateau.Right * 4f + Vector3.up * EyeHeight;
             Vector3 edgeAim = brink.Corridor.Apex + brink.Corridor.Axis * 32f + Vector3.down * 1.4f;
             Light yard = road.Atmosphere.YardLamp;
             Vector3 haloEye = yard.transform.position + plateau.Right * 6f + plateau.Forward * 3f + Vector3.down * 3f;
             Vector3 bounceAim = RoadBounceReceiver(road);
-            Vector3 bounceEye = bounceAim - cafe.Right * 1.5f - cafe.Forward * 1.8f + Vector3.up * .8f;
+            Vector3 bounceEye = bounceAim - plateau.Right * 1.5f - plateau.Forward * 1.8f + Vector3.up * .8f;
             MountainRoadBrookPlan brook = MountainRoadBrookPlanner.Create(road.Plan);
             foreach (SceneReflectionCapture zone in RoadReflectionZones(road))
             {
                 Assert.That(zone.Bounds.Contains(brook.Bore), Is.False,
-                    "The distant culvert must not borrow the terminal or cafe environment.");
+                    "The distant culvert must not borrow the terminal environment.");
                 Assert.That(zone.Bounds.Contains(brink.RimCenter), Is.False,
-                    "The dark brink must stay outside the two reflection receiver regions.");
+                    "The dark brink must stay outside the station reflection receiver region.");
             }
             var shots = new List<Shot>();
             double deadline = 0d;
@@ -191,7 +194,6 @@ namespace BarPromenade.Tests.PlayMode
             shots.Add(Shot.At(RoadLightingFrame("Day terminal"), yardEye, yardAim, 64, readyWhen: () =>
                 RoadReflectionsReady(road, ref deadline)));
             MountainRoadCablewayPlan cablewayPlan = road.Plan.Terminal.Cableway;
-            var station = cablewayPlan.StationArea;
             shots.Add(Shot.At(RoadLightingFrame("Crafted lower station frame"),
                 station.Center + station.Right * 5.4f + station.Forward * 2.2f + Vector3.up * 2.1f,
                 station.Center + Vector3.up * 2.65f, 58f));
@@ -223,7 +225,6 @@ namespace BarPromenade.Tests.PlayMode
                         part.Center, 56f));
                     break;
                 }
-            shots.Add(Shot.At(RoadLightingFrame("Day cafe"), cafeEye, cafeAim, 64));
             shots.Add(Shot.At(RoadLightingFrame("Day dark edge"), edgeEye, edgeAim, 58));
             // Generation invalidation and probe quiet time use real seconds.
             // Pace this callback so 900 fast editor frames cannot pre-empt its existing 25 s deadline.
@@ -247,12 +248,11 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 return RoadReflectionsReady(road, ref deadline);
             }, readyPollSeconds: .04f));
-            shots.Add(Shot.At(RoadLightingFrame("Night cafe"), cafeEye, cafeAim, 64));
             shots.Add(Shot.At(RoadLightingFrame("Night dark edge"), edgeEye, edgeAim, 58));
-            AddPair("Reflections", cafeEye, cafeAim, value => GraphicsEffectsSettings.CleanReflectionsEnabled = value);
+            AddPair("Reflections", stationEye, stationAim, value => GraphicsEffectsSettings.CleanReflectionsEnabled = value);
             AddPair("Lit air", yardEye, yardAim, value => GraphicsEffectsSettings.CleanVolumeEnabled = value);
             AddPair("Halation", haloEye, yard.transform.position, value => GraphicsEffectsSettings.CleanHalationEnabled = value);
-            AddPair("Metal highlights", cafeEye, cafeAim, value => GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled = value);
+            AddPair("Metal highlights", stationEye, stationAim, value => GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled = value);
             AddPair("Bounce", bounceEye, bounceAim, value => GraphicsEffectsSettings.CleanBounceEnabled = value);
             return shots.ToArray();
 
@@ -287,23 +287,23 @@ namespace BarPromenade.Tests.PlayMode
 
         private static Vector3 RoadBounceReceiver(MountainRoadRoot road)
         {
-            // Ground does not reflect onto itself. Frame a real piece of
-            // counter/stool metal within a measured floor patch instead.
+            // Ground does not reflect onto itself. Frame a real stationary
+            // cableway surface reached by one of the retained floor patches.
+            Renderer[] stationSurfaces = road.World.Cableway.StationRoot.GetComponentsInChildren<Renderer>(true);
             for (int index = 0; index < road.Lighting.BounceRegionCount; index++)
             {
                 Assert.That(road.Lighting.TryGetBounceRegion(index, out var region), Is.True);
                 Assert.That(region.Source, Is.Not.Null);
                 Assert.That(region.Normal.y, Is.GreaterThan(.85f));
                 Assert.That(region.Visibility, Is.InRange(0f, 1f));
-                if (region.Source != road.World.Cafe.Lights[0] && region.Source != road.World.Cafe.Lights[1]) continue;
-                foreach (MountainRoadCafePartBinding part in road.World.Cafe.Model.Parts)
+                foreach (Renderer renderer in stationSurfaces)
                 {
-                    if (part.Renderer == null || (part.SourceName != "Cafe_StoolMetal" &&
-                        part.SourceName != "Cafe_CounterFootRail") || !part.Renderer.bounds.Intersects(region.Bounds)) continue;
-                    return part.Renderer.bounds.ClosestPoint(region.Center + Vector3.up * .65f);
+                    if (!MountainRoadMetalAppearance.Supports(renderer) || !renderer.bounds.Intersects(region.Bounds)) continue;
+                    Vector3 receiver = renderer.bounds.ClosestPoint(region.Center + Vector3.up * .65f);
+                    if (receiver.y > region.Center.y + .1f && region.Bounds.Contains(receiver)) return receiver;
                 }
             }
-            Assert.Fail("A new floor bounce must reach a real cafe counter or stool surface.");
+            Assert.Fail("A retained floor bounce must reach a real cableway surface.");
             return default;
         }
 
@@ -312,8 +312,10 @@ namespace BarPromenade.Tests.PlayMode
             if (deadline == 0d) deadline = Time.realtimeSinceStartupAsDouble + 25d;
             road.Lighting.PrepareForCamera(Camera.main);
             SceneReflectionCapture[] zones = RoadReflectionZones(road);
-            Assert.That(zones[0].CaptureInProgress && zones[1].CaptureInProgress, Is.False,
-                "Only one of the two bounded captures may own a GPU request at once.");
+            int activeCaptures = 0;
+            foreach (SceneReflectionCapture zone in zones) if (zone.CaptureInProgress) activeCaptures++;
+            Assert.That(activeCaptures, Is.LessThanOrEqualTo(1),
+                "Only one bounded capture may own a GPU request at once.");
             if (road.Lighting.Reflection.IsReady)
             {
                 foreach (SceneReflectionCapture zone in zones)
@@ -321,7 +323,7 @@ namespace BarPromenade.Tests.PlayMode
                 return true;
             }
             Assert.That(Time.realtimeSinceStartupAsDouble, Is.LessThan(deadline),
-                "Both real road reflection paths must complete, rather than silently accepting fallback lighting.");
+                "The real station reflection path must complete rather than silently accepting fallback lighting.");
             return false;
         }
 
@@ -341,7 +343,7 @@ namespace BarPromenade.Tests.PlayMode
             bool savedDriver = driver.enabled, savedRide = road.Ride.enabled,
                 savedFollow = road.CameraFollow.enabled, savedHeadlights = headlights.enabled;
             SceneReflectionCapture[] zones = RoadReflectionZones(road);
-            int initialCaptures = zones[0].CaptureCount + zones[1].CaptureCount;
+            int initialCaptures = road.Lighting.Reflection.CaptureCount;
             try
             {
                 road.CameraFollow.enabled = false;
@@ -394,8 +396,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(feature.DebugCleanVolumeResolution.x, Is.InRange(1, 320));
                 Assert.That(feature.DebugCleanVolumeResolution.y, Is.InRange(1, 180));
                 for (int frame = 0; frame < 12; frame++) yield return null;
-                Assert.That(zones[0].CaptureCount + zones[1].CaptureCount, Is.EqualTo(initialCaptures),
-                    "Moving headlights must not recapture static terminal and cafe environments.");
+                Assert.That(road.Lighting.Reflection.CaptureCount, Is.EqualTo(initialCaptures),
+                    "Moving headlights must not recapture the static station environment.");
             }
             finally
             {
@@ -442,7 +444,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static SceneReflectionCapture[] RoadReflectionZones(MountainRoadRoot road)
         {
-            var zones = new SceneReflectionCapture[2];
+            var zones = new SceneReflectionCapture[road.Lighting.Reflection.ZoneCount];
             for (int index = 0; index < zones.Length; index++)
             {
                 Assert.That(road.Lighting.Reflection.TryGetZone(index, out zones[index]), Is.True);
@@ -453,12 +455,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertRoadExistingPracticals(MountainRoadRoot road)
         {
-            Assert.That(road.World.Root.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(6));
+            Assert.That(road.World.Root.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(3));
             Assert.That(road.Atmosphere.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(3));
-            Assert.That(road.World.Cafe.Lights.Count, Is.EqualTo(3));
-            float[] cafeIntensities = { 60f, 53f, 8.5f };
-            for (int index = 0; index < cafeIntensities.Length; index++)
-                Assert.That(road.World.Cafe.Lights[index].intensity, Is.EqualTo(cafeIntensities[index]));
+            Assert.That(road.World.Cafe, Is.Null);
+            Assert.That(road.Plan.Terminal.Cafe, Is.Null);
         }
 
         private sealed class RoadPracticalSnapshot

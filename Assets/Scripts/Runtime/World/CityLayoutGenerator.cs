@@ -1007,6 +1007,12 @@ namespace BarPromenade
             }
             foreach (Vector2Int cell in primaryLandmarkCells.Values)
                 reservedLots.Add(ToLotIndex(cell.x, cell.y, settings.BlocksX));
+            int cafeLotIndex = SelectCafeLot(settings, roadSet, pathKinds, reservedLots);
+            if (cafeLotIndex >= 0)
+            {
+                reservedLots.Add(cafeLotIndex);
+                frontages[cafeLotIndex] = Vector2Int.down;
+            }
             HashSet<Vector2Int> domesticPockets = SelectCompactDomesticPocketLots(
                 settings, frontages, reservedLots);
             foreach (int index in reservedLots)
@@ -1055,6 +1061,11 @@ namespace BarPromenade
                         barOrdinal++;
                     }
 
+                    if (lotIndex == cafeLotIndex)
+                    {
+                        lots.Add(CityCafePlan.CreateLot(settings, origin, cell));
+                        continue;
+                    }
                     lots.Add(CreateBuildingLot(
                         settings,
                         seed,
@@ -1078,6 +1089,28 @@ namespace BarPromenade
             }
 
             return lots;
+        }
+
+        private static int SelectCafeLot(CityGenerationSettings settings,
+            ISet<RoadEdge> roads, IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
+            ISet<int> reserved)
+        {
+            if (!CityCafePlan.Supports(settings)) return -1;
+            // Existing home, shop, landmarks and public places win. These
+            // candidates consume no seeded draws and face a real south street.
+            foreach (Vector2Int cell in CityCafePlan.CandidateCells)
+            {
+                int index = ToLotIndex(cell.x, cell.y, settings.BlocksX);
+                RoadEdge frontage = RoadEdge.ForCellFrontage(cell, Vector2Int.down);
+                if (!settings.CreatesLot(cell) || settings.IsParkCell(cell) || reserved.Contains(index) ||
+                    settings.RoadGeometry.IsAffectedCell(cell) || !roads.Contains(frontage) ||
+                    !pathKinds.TryGetValue(frontage, out CityPathKind kind) || kind != CityPathKind.Street)
+                    continue;
+                Vector2 block = settings.GetBlockSize(cell);
+                if (block.x < 15f || block.y < 15f) continue;
+                return index;
+            }
+            throw new InvalidOperationException("The coastal city needs one unreserved south-facing cafe lot.");
         }
 
         private static bool IsReservedLandmarkCell(

@@ -68,7 +68,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Time.captureDeltaTime = 0f;
             GameSessionState.BeginNewGame();
-            Scene road = SceneManager.GetSceneByName(SceneIds.MountainRoad);
+            Scene road = SceneManager.GetSceneByName(SceneIds.City);
             if (!road.isLoaded)
             {
                 yield break;
@@ -83,7 +83,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             NearCafe_PatronsDrinkAttendantRefillsAndSeatUsesFirstPerson()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return null;
 
@@ -92,10 +92,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cast.IsTimelineArmed, Is.False,
                 "The cafe clock advanced from the tunnel spawn.");
 
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(root.Player, seat.Plan.EntryRootPosition,
                 seat.Plan.EntryRotation);
@@ -357,7 +357,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(seat.IsSeated, Is.True);
             Assert.That(root.CafeSeatView, Is.Not.Null);
             Assert.That(root.CafeSeatView.IsFirstPerson, Is.True);
-            Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
+            Assert.That(root.Camera.GetComponent<PlayerCameraFollow>().FixedPoseActive, Is.True);
             Assert.That(
                 root.CafeSeatView.HiddenHeadRendererCount,
                 Is.GreaterThan(0));
@@ -373,27 +373,27 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.ProjectOnPlane(
                         Camera.main.transform.forward,
                         Vector3.up).normalized,
-                    root.Plan.Terminal.Cafe.Forward),
+                    root.World.Cafe.Plan.Forward),
                 Is.GreaterThan(0.99f),
                 "The first-person stool view does not face the counter.");
 
             Assert.That(seat.RequestExit(), Is.True);
             yield return null;
             Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
-            Assert.That(root.CameraFollow.FixedPoseActive, Is.False);
+            Assert.That(root.Camera.GetComponent<PlayerCameraFollow>().FixedPoseActive, Is.False);
             Assert.That(
                 root.CafeSeatView.HiddenHeadRendererCount,
                 Is.Zero);
             Assert.That(
                 visibleHeadRenderers.All(renderer => renderer.enabled),
                 Is.True);
-            Assert.That(root.CameraFollow.CinematicMotionEnabled, Is.True);
+            Assert.That(root.Camera.GetComponent<PlayerCameraFollow>().CinematicMotionEnabled, Is.True);
         }
 
         [UnityTest]
         public IEnumerator DrinkReleaseFrame_ReturnsEveryCupToAuthoredDock()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             MountainRoadCafeCastController cast = root.World.Cafe.Cast;
             SetCastAlwaysAnimate(root.World.Cafe.NpcRoot);
@@ -494,7 +494,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator ServiceCarrySweep_KeepsHandSleeveAndPotOutOfCounter()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             MountainRoadCafeCastController cast = root.World.Cafe.Cast;
             SetCastAlwaysAnimate(root.World.Cafe.NpcRoot);
@@ -704,7 +704,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator PairWoman_CigaretteIsSilentAndPhaseLocked()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             SetCastAlwaysAnimate(root.World.Cafe.NpcRoot);
             yield return null;
@@ -768,7 +768,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator AuthoredIdles_TapCounterAndBringFilterToMouth()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             SetCastAlwaysAnimate(root.World.Cafe.NpcRoot);
             yield return null;
@@ -935,12 +935,12 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Visual contact review, not an ordinary regression.")]
         public IEnumerator CaptureCafeContactFrames()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(
                 root.Player,
@@ -1575,10 +1575,10 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(
-            Action<MountainRoadRoot> capture)
+            Action<CityGameRoot> capture)
         {
             AsyncOperation operation = SceneManager.LoadSceneAsync(
-                SceneIds.MountainRoad,
+                SceneIds.City,
                 LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             float deadline = Time.realtimeSinceStartup + LoadTimeoutSeconds;
@@ -1588,12 +1588,12 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(operation.isDone, Is.True,
-                "Mountain Road did not load before the timeout.");
-            MountainRoadRoot root = null;
-            while (root == null && Time.realtimeSinceStartup < deadline)
+                "City did not load before the timeout.");
+            CityGameRoot root = null;
+            while ((root == null || !root.IsInitialized) && Time.realtimeSinceStartup < deadline)
             {
-                root = Object.FindAnyObjectByType<MountainRoadRoot>();
-                if (root == null)
+                root = Object.FindAnyObjectByType<CityGameRoot>();
+                if (root == null || !root.IsInitialized)
                 {
                     yield return null;
                 }

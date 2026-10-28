@@ -20,7 +20,10 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The mountain endpoint requires a terminal plan.");
             ValidateVehicleApron(plan, terminal.VehicleApron);
-            ValidateCafe(plan, terminal.Cafe, terminal.VehicleApron);
+            if (terminal.Cafe != null)
+            {
+                ValidateCafe(plan, terminal.Cafe, terminal.VehicleApron);
+            }
             ValidateCableway(plan, terminal.Cableway, terminal.VehicleApron);
             ValidateLandmarkSeparation(terminal);
             ValidateLandmarks(plan, terminal.Landmarks);
@@ -363,6 +366,11 @@ namespace BarPromenade
             MountainRoadTerminalPlan terminal)
         {
             MountainRoadCafePlan cafe = terminal.Cafe;
+            if (cafe == null)
+            {
+                return;
+            }
+
             MountainRoadTerminalRect station = terminal.Cableway.StationArea;
             int[] stationCornerOrder = { 0, 1, 3, 2 };
             var stationCorners = new Vector2[4];
@@ -417,11 +425,12 @@ namespace BarPromenade
             MountainRoadPlan plan,
             IReadOnlyList<MountainRoadTerminalLandmark> landmarks)
         {
-            if (landmarks.Count != 3)
+            int expected = plan.Terminal.Cafe != null ? 3 : 2;
+            if (landmarks.Count != expected)
             {
                 throw new InvalidOperationException(
-                    "The mountain map needs the cafe, the cableway " +
-                    "and the brink.");
+                    "The mountain map must match its cableway, brink " +
+                    "and any installed optional cafe.");
             }
 
             var kinds = new HashSet<MountainRoadTerminalLandmarkKind>();

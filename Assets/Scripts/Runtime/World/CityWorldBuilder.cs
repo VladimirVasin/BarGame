@@ -346,6 +346,32 @@ namespace BarPromenade
                     world,
                     layout,
                     archShelterPlan);
+            CityCafePlan cafePlan = CityCafePlan.Create(layout);
+            MountainRoadCafeWorldResult cafe = null;
+            MountainRoadTerminalSitePlan cafeSite = null;
+            Collider cafeRainShelter = null;
+            if (cafePlan != null)
+            {
+                cafe = MountainRoadCafeWorldBuilder.Build(world, cafePlan.Cafe);
+                cafe.Root.name = "City Diner";
+                cafeSite = MountainRoadTerminalSitePlanner.CreateCafeSite(cafePlan.Cafe);
+                MountainRoadTerminalSiteWorldBuilder.Build(cafe.Root.transform, cafeSite)
+                    .Root.name = "Diner Entrance Furniture";
+                walkableArea.Add(cafePlan.Bounds);
+                walkableArea.Add(cafePlan.ApproachBounds);
+                foreach (MountainRoadCafePartBinding part in cafe.Model.Parts)
+                {
+                    if (part.Role != "roof" || part.Renderer == null) continue;
+                    MeshFilter mesh = part.Renderer.GetComponent<MeshFilter>();
+                    if (mesh == null || mesh.sharedMesh == null) continue;
+                    var shelter = part.Renderer.gameObject.AddComponent<MeshCollider>();
+                    shelter.sharedMesh = mesh.sharedMesh;
+                    shelter.convex = true;
+                    shelter.isTrigger = true;
+                    cafeRainShelter = shelter;
+                    break;
+                }
+            }
             CityFairWorldBuilder.Build(world, fairPlan);
             if (fairPlan.IsEnabled) walkableArea.Add(fairPlan.Bounds);
 
@@ -444,7 +470,10 @@ namespace BarPromenade
                 archShelter,
                 eastExitPlan,
                 eastExit,
-                bounds));
+                bounds,
+                cafe,
+                cafeSite,
+                cafeRainShelter));
             ReportBlock(
                 "world_complete",
                 blockTimer,

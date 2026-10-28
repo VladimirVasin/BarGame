@@ -38,6 +38,7 @@ namespace BarPromenade
         private MaterialPropertyBlock properties;
         private Transform sourceRoot;
         private CityNightAtmosphere atmosphere;
+        private MountainRoadCafeWorldResult cafe;
         private Func<bool> contextEligible;
         private Light[] movingLights = Array.Empty<Light>();
         private int[] movingMasks = Array.Empty<int>();
@@ -76,7 +77,14 @@ namespace BarPromenade
         public void Initialize(CityGameRoot root, CityLightingPresentation presentation)
         {
             if (root == null || root.World == null || root.Night == null) throw new ArgumentNullException(nameof(root));
+            cafe = root.World.Cafe;
             CacheDynamicRoots(root.transform);
+            if (cafe != null)
+            {
+                AddDynamic(cafe.NpcRoot.transform);
+                foreach (MountainRoadCafeDynamicPropBinding prop in cafe.Model.Props)
+                    if (prop?.PropRoot != null) AddDynamic(prop.PropRoot);
+            }
             if (root.Player.GameObject != null) AddDynamic(root.Player.GameObject.transform);
             if (root.Bus != null) AddDynamic(root.Bus.transform);
             if (root.Pedestrians != null) AddDynamic(root.Pedestrians.transform);
@@ -110,6 +118,7 @@ namespace BarPromenade
             foreach (Light light in allLights) if (IsDynamic(light.transform)) moving.Add(light);
             movingLights = moving.ToArray(); movingMasks = new int[movingLights.Length];
             CacheGeometry();
+            AddCafeRegion();
             // Fixed mast/quay anchors survive reassignment of the twelve live light slots.
             if (atmosphere != null)
                 foreach (Transform anchor in atmosphere.LampAnchors)
@@ -150,6 +159,20 @@ namespace BarPromenade
             if (regions.Count >= MaximumRegions) throw new InvalidOperationException("City reflection regions exceed their bounded budget.");
             regions.Add(new Region { Position = position,
                 Bounds = new Bounds(position + Vector3.up * 3f, new Vector3(28f, 18f, 28f)) });
+        }
+
+        private void AddCafeRegion()
+        {
+            if (cafe == null) return;
+            MountainRoadCafePlan plan = cafe.Plan;
+            var bounds = new Bounds(new Vector3(plan.FootprintXZ[0].x, plan.FloorY + .02f, plan.FootprintXZ[0].y), Vector3.zero);
+            foreach (Vector2 point in plan.FootprintXZ)
+            {
+                bounds.Encapsulate(new Vector3(point.x, plan.FloorY + .02f, point.y));
+                bounds.Encapsulate(new Vector3(point.x, plan.FloorY + plan.Height - .03f, point.y));
+            }
+            regions.Add(new Region { Bounds = bounds, Position = plan.Center + plan.Forward * .35f + Vector3.up * 1.65f,
+                Cafe = true });
         }
 
         private void CacheDynamicRoots(Transform root)
@@ -304,6 +327,9 @@ namespace BarPromenade
                 float distance = regions[i].Bounds.SqrDistance(position);
                 // Stable tie breaking retains the nearer capture point inside overlapping boxes.
                 distance += (regions[i].Position - position).sqrMagnitude * .05f;
+                // Overlapping street capture boxes must not evict the room's
+                // own static environment while the hero sits at its counter.
+                if (regions[i].Cafe && cafe.Plan.ContainsInterior(position)) distance = -1f;
                 if (IsSelected(i)) distance *= .8f;
                 if (distance < firstDistance) { second = first; secondDistance = firstDistance; first = i; firstDistance = distance; }
                 else if (distance < secondDistance) { second = i; secondDistance = distance; }
@@ -508,7 +534,7 @@ namespace BarPromenade
             RestoreGeometry(); SetReceiverOwnership(false); ResetCaptureWarmup(); ClearGlobals();
         }
 
-        private struct Region { internal Bounds Bounds; internal Vector3 Position; }
+        private struct Region { internal Bounds Bounds; internal Vector3 Position; internal bool Cafe; }
         private struct Receiver { internal Renderer Renderer; internal int MaterialIndex; internal float OriginalFloor; }
         private struct Geometry { internal MeshRenderer Renderer; internal GameObject Object; internal Bounds Bounds; internal int PreviousLayer; }
     }

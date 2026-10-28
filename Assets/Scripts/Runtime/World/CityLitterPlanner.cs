@@ -676,6 +676,12 @@ namespace BarPromenade
                 }
                 CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
                 if (laundry.IsEnabled) blocked.Add(Expand(laundry.ReservationBounds, .25f));
+                CityCafePlan cafe = CityCafePlan.Create(layout);
+                if (cafe != null)
+                {
+                    blocked.Add(Expand(cafe.Bounds, .25f));
+                    blocked.Add(Expand(cafe.ApproachBounds, .25f));
+                }
                 foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
                 {
                     blocked.Add(Expand(point.PublicBounds, 1f));

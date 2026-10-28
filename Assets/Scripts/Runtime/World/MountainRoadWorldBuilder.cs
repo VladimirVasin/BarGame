@@ -39,7 +39,7 @@ namespace BarPromenade
             WalkableArea = walkableArea ??
                 throw new ArgumentNullException(nameof(walkableArea));
             Bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
-            Cafe = cafe ?? throw new ArgumentNullException(nameof(cafe));
+            Cafe = cafe;
             Cableway = cableway ??
                 throw new ArgumentNullException(nameof(cableway));
             Site = site ?? throw new ArgumentNullException(nameof(site));
@@ -207,16 +207,6 @@ namespace BarPromenade
             ReportBlock("tunnel", blockTimer);
             yield return new CompositionStep("road_bridge_tunnel", 0.40f);
             blockTimer.Restart();
-            MountainRoadCafeWorldResult cafe =
-                MountainRoadCafeWorldBuilder.Build(
-                    physicalRoot.transform,
-                    plan.Terminal.Cafe);
-            MergeSemanticObjects(
-                semanticObjects,
-                cafe.SemanticAnchors);
-            ReportBlock("cafe", blockTimer);
-            yield return new CompositionStep("cafe", 0.55f);
-            blockTimer.Restart();
             MountainCablewayWorldResult cableway =
                 MountainCablewayWorldBuilder.Build(
                     physicalRoot.transform,
@@ -281,7 +271,7 @@ namespace BarPromenade
                 terrainRoot,
                 new MountainRoadWalkableArea(plan),
                 bridge,
-                cafe,
+                null,
                 cableway,
                 site,
                 vista,

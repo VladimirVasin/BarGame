@@ -129,7 +129,9 @@ namespace BarPromenade
             float datum = SampleDatumWithoutRigidSupports(layout, surface, worldXZ, in context);
             float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
             float supported = CityFairGroundSupportPlan.ForLayout(layout).Apply(worldXZ, datum + offset);
-            return (context.Laundry != null ? context.Laundry.ApplyGround(worldXZ, supported) : supported) - offset;
+            supported = context.Laundry != null ? context.Laundry.ApplyGround(worldXZ, supported) : supported;
+            CityCafePlan cafe = CityCafePlan.Create(layout);
+            return (cafe != null ? cafe.ApplyGroundTop(worldXZ, supported) : supported) - offset;
         }
 
         internal static float SampleTopWithoutRigidSupports(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)

@@ -713,7 +713,8 @@ namespace BarPromenade
 
                 if (!lot.HasBuilding &&
                     !lot.IsPark &&
-                    !lot.IsDistrictPointOfInterest)
+                    !lot.IsDistrictPointOfInterest &&
+                    !lot.IsCafe)
                 {
                     throw new InvalidOperationException(
                         $"Lot {lot.Cell} has unsupported land use.");
@@ -725,6 +726,12 @@ namespace BarPromenade
                     throw new InvalidOperationException(
                         "District points of interest must occupy urban land.");
                 }
+
+                if (lot.IsCafe && (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket ||
+                    lot.District != CityDistrictKind.Residential ||
+                    !TryGetFrontageEdge(lot, out RoadEdge cafeFrontage) ||
+                    GetPathKind(cafeFrontage) != CityPathKind.Street))
+                    throw new InvalidOperationException("The cafe needs its own residential lot and a street entrance.");
 
                 if (!lot.IsBar)
                 {

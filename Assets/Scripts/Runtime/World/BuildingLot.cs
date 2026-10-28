@@ -90,6 +90,7 @@ namespace BarPromenade
         public bool IsPark => LandUse == CityLandUseKind.Park;
         public bool IsDistrictPointOfInterest =>
             LandUse == CityLandUseKind.DistrictPointOfInterest;
+        public bool IsCafe => LandUse == CityLandUseKind.Cafe;
         public bool IsBar { get; }
         public bool IsPlayerHome { get; }
         public bool IsSupermarket { get; }
@@ -117,6 +118,7 @@ namespace BarPromenade
 
         public IReadOnlyList<Rect> CreateCollisionFootprints()
         {
+            if (IsCafe) return new[] { CityRoadPolygon.Bounds(CityCafePlan.CreateFootprint(Center)) };
             if (HasFacadeRotation)
             {
                 IReadOnlyList<Vector2[]> polygons = CreateCollisionPolygons();
@@ -144,6 +146,7 @@ namespace BarPromenade
 
         public IReadOnlyList<Vector2[]> CreateCollisionPolygons()
         {
+            if (IsCafe) return new[] { CityCafePlan.CreateFootprint(Center) };
             if (!IsOrdinaryBuilding || BuildingVariant == 0)
             {
                 float width = FrontageDirection.x != 0 ? Size.y : Size.x;
@@ -181,6 +184,9 @@ namespace BarPromenade
         {
             get
             {
+                if (IsCafe)
+                    return new Bounds(Center + new Vector3(-.42f, Height * .5f, .44f),
+                        new Vector3(9.8f, Height, 10f));
                 if (HasFacadeRotation)
                 {
                     IReadOnlyList<Vector2[]> polygons = CreateCollisionPolygons();

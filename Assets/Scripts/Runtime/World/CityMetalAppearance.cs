@@ -73,7 +73,8 @@ namespace BarPromenade
             Restore(); disposed = true; entries.Clear();
         }
 
-        internal static bool Supports(Renderer renderer) => CitySurfaceLibrary.SupportsOpaque(renderer);
+        internal static bool Supports(Renderer renderer) => CitySurfaceLibrary.SupportsOpaque(renderer) ||
+            renderer != null && TryGetCafeResponse(renderer.name, out _) && MountainRoadMetalAppearance.Supports(renderer);
 
         internal static bool TryGetResponse(Renderer renderer, MaterialPropertyBlock scratch, out Vector2 response)
             => TryGetResponse(renderer, renderer != null ? renderer.sharedMaterial : null, scratch, -1, out response);
@@ -81,7 +82,11 @@ namespace BarPromenade
         internal static bool TryGetResponse(Renderer renderer, Material material, MaterialPropertyBlock scratch, int materialIndex, out Vector2 response)
         {
             response = default;
-            if (renderer == null || !CitySurfaceLibrary.SupportsOpaque(material)) return false;
+            if (renderer == null) return false;
+            if (TryGetCafeResponse(renderer.name, out response))
+                return material != null && material.shader != null &&
+                    (CitySurfaceLibrary.SupportsOpaque(material) || material.shader.name == MountainRoadSurfaceLibrary.ShaderName);
+            if (!CitySurfaceLibrary.SupportsOpaque(material)) return false;
             string name = renderer.name;
             // Authored surface-role suffixes, shared by the building, misc, port and cannery catalogs.
             bool bare = name.EndsWith("__SteelLight", StringComparison.Ordinal) ||
@@ -120,6 +125,22 @@ namespace BarPromenade
             if (!bare && !painted) return false;
             response = bare ? new Vector2(.23f, .27f) : new Vector2(.14f, .21f);
             return true;
+        }
+
+        private static bool TryGetCafeResponse(string name, out Vector2 response)
+        {
+            // Keep the cafe's measured material response while its scene owner
+            // changes. These exact parts share the original maps and property blocks.
+            switch (name)
+            {
+                case "Cafe_CoffeeUrns": case "Cafe_KitchenHandles": case "Cafe_CounterFootRail":
+                    response = new Vector2(.30f, .28f); return true;
+                case "Cafe_StoolMetal": case "Cafe_Stove": case "Cafe_FryingPan":
+                case "Cafe_RefrigeratorBody": case "Cafe_FridgeDoor": case "Cafe_StoveTaskFixture":
+                    response = new Vector2(.20f, .23f); return true;
+                default:
+                    response = default; return false;
+            }
         }
 
         private struct Entry

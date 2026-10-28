@@ -929,7 +929,7 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadPlan plan = MountainRoadPlanner.Create(
                 GameSessionState.DefaultCitySeed);
-            Vector3 entrance = plan.Terminal.Cafe.DoorCenter;
+            Vector3 entrance = MountainRoadTerminalPlanner.CreateCafe(plan.Plateau).DoorCenter;
             float nearest = float.PositiveInfinity;
             foreach (MountainRoadRouteSample sample in plan.Route.Samples)
             {
@@ -1472,8 +1472,7 @@ namespace BarPromenade.Tests.EditMode
 
         private static MountainRoadCafePlan CreateCafePlan()
         {
-            return MountainRoadPlanner.Create(
-                GameSessionState.DefaultCitySeed).Terminal.Cafe;
+            return MountainRoadTerminalPlanner.CreateCafe(MountainRoadPlanner.Create(GameSessionState.DefaultCitySeed).Plateau);
         }
 
         private static MountainRoadCafeCastMemberPlan Find(

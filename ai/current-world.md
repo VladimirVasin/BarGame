@@ -155,14 +155,8 @@ cemetery:own interiors/returns.
   Generic middle/far ridges sit around the outer perimeter of the complete
   route bounds, ground their bases against the minimum sampled terrain beneath
   each oriented footprint and reserve those footprints from both the road
-  corridor and tree crowns. The left side owns an enterable glass cafe with a
-  bespoke four-role cast: its attendant stays silent, the drinking couple share
-  a private localized text conversation, and the lone patron intermittently
-  wakes to call his wife home without a response. Four deliberate stools remain
-  empty and rare deterministic gesture beats continue. Behind them, a passive
-  kitchen run carries a hinge-ready closed refrigerator, a stove and pan, an
-  extended cabinet and a cutting-board station; neither the cast nor the player
-  uses it yet. The right
+  corridor and tree crowns. The terminal has no cafe, cafe threshold or counter
+  seat; the brink bench, LastRoute apron and station remain. The right
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
   absolute world heights. Imported crafted profiles replace existing drive,
@@ -171,7 +165,7 @@ cemetery:own interiors/returns.
   stay outside the established openings and road. At the normal `2.6 m/s`
   walk speed the route takes about `238.5 s`, or `3 min 58 s`; continuous
   `4.2 m/s` run input takes about `148 s`, or `2 min 28 s`. The Ferryman's
-  Last Route car reads and drives the same route. At the cafe he waits for the
+  Last Route car reads and drives the same route. On the terminal apron he waits for the
   passenger to get out, then alights and returns to the bonnet. The return leg
   is armed after the passenger's exit; a fresh boarding can then take him back
   to the wheel. Layered forest retains physical/mid/far budgets and three crown
@@ -627,8 +621,8 @@ cemetery:own interiors/returns.
   Warehouse:fan/steel/bounce. Village:window/garland air-snow/clip,
   snow bounce/metal/spring cube. House:halos/metal/bounce/air, two cubes;
   atlas/half-shadow/mirror stay. Road:air/snow/headlights/halos/metal/bounce,
-  cafe/station cubes. City:9 areas, real lamps/windows/traffic;
-  finite air/bounce/metal; two reused metal/water cubes.
+  station cube. City:9 areas plus diner, real lamps/windows/traffic;
+  finite air/bounce/metal; cafe joins two reused reflection slots.
   Home balcony shares City; indoors off. Dark places retained.
   Filtered256 captures:one pending per owner, no actors/vehicles/precipitation;
   post-submit watchdog gives bounded frame grace for cold stalls.
@@ -799,7 +793,7 @@ cemetery:own interiors/returns.
   `NpcHumanV2`, the Hero V2 31-bone body core and compatible A-pose Avatar from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The `53`-clip `CityPedestrianLocomotion` bank uses `4.5.2`.
-  The four Mountain Road cafe models and their separate `10`-clip bank use
+  The four relocated cafe models and their separate `10`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
   Nothing an NPC holds is part of a body model. The nine hand props
   (carpet beater, cigarette, funeral bouquet, chalk, fishing rod, smoking
@@ -1827,7 +1821,7 @@ cemetery:own interiors/returns.
   supermarket `Center`, each district POI its authored position. Mountain
   Road owns the current
   player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
-  cafe, cableway and brink. Road polylines, intermediate route samples
+  cableway and brink. City also owns its cafe POI. Road polylines, intermediate route samples
   and mountain hatches remain decorative. Point inspection is mutually
   exclusive with debug teleport and suppresses area travel and
   teleport confirmation until the player exits `XYZ` mode. Confirming the
@@ -1840,12 +1834,16 @@ cemetery:own interiors/returns.
   all ten authored hairpins, distinct mountain bridge, enlarged endpoint
   terminal and surrounding mountain hatch. Hairpins and bridge come from the
   same pure route plan used by the world. The terminal plan also supplies
-  distinct localized cafe, cableway and brink landmarks; the map does not
+  distinct localized cableway and brink landmarks; the map does not
   infer them from runtime GameObjects. The physical terminal
   keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
-  plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
-  enterable without a scene load; a linoleum slab `4 mm` over the plateau is
-  its floor collider, so a step inside reads linoleum. Its lone patron,
+  plateau. City owns the relocated five-sided Nighthawks-inspired cafe on one
+  reserved lot: candidate `[10;0]`, fallback `[9..10;0..2]`. Its level support
+  joins the existing sidewalk, retaining road widths/routes and open foreground
+  at the glass. It is enterable without scene loading; its linoleum floor
+  collider remains `4 mm` over support. Seven threshold props and the hero
+  counter seat use the cafe's transformed frame; shelter/map/XYZ/debug arrival
+  share the plan. There is no MountainRoad copy. Its lone patron,
   neighbouring couple and attendant are four dedicated staged models, not
   pedestrian-pool substitutes. Its fixed-metre Blender set has `61` meshes /
   `5,794` triangles, `52` semantic anchors and seven dynamic prop assemblies.
@@ -1878,8 +1876,7 @@ cemetery:own interiors/returns.
   carry, lift and action blends. During Pour, separate runtime geometry is
   rebuilt every frame from the animated pot spout to the active cup's
   `PourTarget`; the stream is not baked into any clip. A pure clock arms on the
-  player's first entry into the cafe's `16 m` entrance radius, which excludes
-  every earlier hairpin. Role-local windows and distinct fill/consumption
+  player's first entry into the cafe's `16 m` entrance radius. Role-local windows and distinct fill/consumption
   profiles and non-overlapping windows keep the pair out of lockstep while the
   first visible sip still crosses the refill threshold within one minute. The
   attendant wipes between episodes, then walks and pours when either of those
@@ -1946,7 +1943,7 @@ cemetery:own interiors/returns.
   with a cold emissive lens. Its widened bisector cone contains the stove and
   pan task surface as well as all four figures, where it works with the wash to
   keep the tableau readable. These remain the cafe's three runtime Lights and
-  still miss the terrace, parapet and black brink. `MountainRoadSurfaceLibrary`
+  stay local to the cafe and near foreground. `MountainRoadSurfaceLibrary`
   owns 15 pigment/physical families; palette/metre UVs stay. Cafe
   unique UV0 uses 4K colour/2K response, UV1 intact. Signed
   slopes/roughness/cavity differ from pigment; ground keeps format,
@@ -1958,11 +1955,10 @@ cemetery:own interiors/returns.
   player lit material rather than adding per-instance materials.
   On the right, a `230 m` continuously looping cableway moves eight
   colliderless cabins over nine supports while its upper return remains beyond
-  the Mountain Road draw range. The cafe interior and lower station participate
-  in the shared weather-shelter query. The rest of the pad is a dressed
-  transfer yard of `85` batched parts on existing sheets and existing tints:
-  a ploughed snow bank and grit bin, the last road board and a seized
-  barrier, winter furniture on the cafe threshold, a freight dock with one
+  the Mountain Road draw range. The lower station retains its weather shelter;
+  the cafe's shelter is installed in City. The remaining mountain pad is a
+  bounded dressed transfer yard on existing sheets/tints: a ploughed snow bank
+  and grit bin, the last road board and a seized barrier, a freight dock with one
   abandoned suitcase, and a `0.66 m` retaining wall whose two three-riser
   flights climb to a back terrace. A `1.02 m` parapet closes that terrace
   `0.35 m` inside the rim, carrying a sittable bench, a survey pillar, a
@@ -2751,7 +2747,7 @@ cemetery:own interiors/returns.
   cached movement_summary before end-close. Duel:20MiB/70%samples/32-action summary tail;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
   stock and the bar's four-item visible drink menu. The bar now uses the same
-  physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe.
+  physical counter-seat and `CounterMenu` behavior as the relocated City cafe.
   `BarCounterSeatPlanner` exposes all three stools not occupied by patrons; each
   owns a collision-safe entry/exit, and the rightmost sits at local `x = 1.95`
   clear of the counter return. Three closely spaced taps occupy the seat-free

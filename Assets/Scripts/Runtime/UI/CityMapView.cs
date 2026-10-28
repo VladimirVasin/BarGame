@@ -3518,6 +3518,20 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.ArchShelter:
                     DrawArchOutline(center, halfSize, width, color);
                     break;
+                case CityMapPointOfInterestKind.Cafe:
+                    DrawLine(center + new Vector2(-halfSize, -halfSize * .55f),
+                        center + new Vector2(-halfSize * .8f, halfSize * .65f), width, color);
+                    DrawLine(center + new Vector2(-halfSize * .8f, halfSize * .65f),
+                        center + new Vector2(halfSize * .4f, halfSize * .65f), width, color);
+                    DrawLine(center + new Vector2(halfSize * .4f, halfSize * .65f),
+                        center + new Vector2(halfSize * .55f, -halfSize * .55f), width, color);
+                    DrawLine(center + new Vector2(-halfSize, -halfSize * .55f),
+                        center + new Vector2(halfSize * .55f, -halfSize * .55f), width, color);
+                    DrawLine(center + new Vector2(halfSize * .55f, -halfSize * .35f),
+                        center + new Vector2(halfSize, halfSize * .1f), width, color);
+                    DrawLine(center + new Vector2(halfSize, halfSize * .1f),
+                        center + new Vector2(halfSize * .5f, halfSize * .35f), width, color);
+                    break;
                 case CityMapPointOfInterestKind.Church:
                     // A Latin cross: the only glyph whose strokes intersect.
                     DrawLine(

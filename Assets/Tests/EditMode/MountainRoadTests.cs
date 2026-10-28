@@ -621,14 +621,6 @@ namespace BarPromenade.Tests.EditMode
                     .Select(sound => sound.SourceObjectStableId)
                     .Concat(new[]
                     {
-                        first.Terminal.Cafe.StableId,
-                        MountainRoadCafeWorldBuilder.EntranceAnchorId,
-                        MountainRoadCafeWorldBuilder.CounterAnchorId,
-                        MountainRoadCafeWorldBuilder.GlassAnchorId,
-                        MountainRoadCafeWorldBuilder.LonePatronAnchorId,
-                        MountainRoadCafeWorldBuilder.PairFirstAnchorId,
-                        MountainRoadCafeWorldBuilder.PairSecondAnchorId,
-                        MountainRoadCafeWorldBuilder.AttendantAnchorId,
                         first.Terminal.Cableway.StableId
                     })
                     .Concat(first.Terminal.Cableway.Nodes.Select(
@@ -659,22 +651,14 @@ namespace BarPromenade.Tests.EditMode
                     camera.farClipPlane,
                     Is.EqualTo(RuntimeSceneSetup.MountainRoadFarClipPlane));
 
-                int cafePhysicalColliders = result.Cafe.PhysicalRoot
-                    .GetComponentsInChildren<Collider>(true)
-                    .Count(collider => collider.enabled);
+                Assert.That(result.Cafe, Is.Null,
+                    "The mountain world must not instantiate the City cafe.");
                 int stationColliders = result.Cableway.StationRoot
                     .GetComponentsInChildren<Collider>(true)
                     .Count(collider => collider.enabled);
                 int cablewayColliders = result.Cableway.Root
                     .GetComponentsInChildren<Collider>(true)
                     .Count(collider => collider.enabled);
-                Assert.That(
-                    cafePhysicalColliders,
-                    Is.EqualTo(
-                        MountainRoadCafeCollisionWorldBuilder
-                            .ExpectedColliderCount),
-                    "The authored cafe must use only its exact plan-owned " +
-                    "shell, counter, service and seven-stool obstacles.");
                 // Exactly the station's own obstacle plan, and nothing else.
                 // A magic range used to stand here; it read `20` as a ceiling
                 // and said nothing about WHICH solids those were - which is
@@ -699,12 +683,6 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(stationColliders),
                     "Remote towers, cables and cabins must remain " +
                     "presentation-only.");
-                Assert.That(
-                    result.Cafe.Root
-                        .GetComponentsInChildren<MeshRenderer>(true).Length,
-                    Is.LessThan(280),
-                    "The cafe tableau exceeded its broad-strokes MVP " +
-                    "renderer budget.");
                 // A `230 m` line now: nine towers and eight cabins, each a
                 // handful of boxes, so the budget follows the plan rather
                 // than the old `58 m` line's `150`.
@@ -718,8 +696,6 @@ namespace BarPromenade.Tests.EditMode
                         (12 * result.Cableway.Cabins.Count)),
                     "The operating cableway exceeded its low-poly MVP " +
                     "renderer budget.");
-
-                AssertCafeEntranceClear(result, first.Terminal.Cafe);
             }
             finally
             {
@@ -766,7 +742,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
-        public void TunnelToCafe_IsOneUnbrokenDrivableSurface()
+        public void TunnelToTerminal_IsOneUnbrokenDrivableSurface()
         {
             const float carHalfWidth = 1.05f;
             const float minimumRoadBed = 0.1f;
@@ -829,7 +805,7 @@ namespace BarPromenade.Tests.EditMode
                     "climbing road and not its own approach.");
             }
 
-            // ...and the whole drive, tunnel mouth to cafe door.
+            // ...and the whole drive from the tunnel to the terminal.
             for (float distance = 0f;
                  distance <= plan.Route.Length;
                  distance += 1f)
@@ -842,22 +818,18 @@ namespace BarPromenade.Tests.EditMode
                     $"The car corridor breaks at {distance:0.0} m.");
             }
 
-            MountainRoadCafePlan cafe = plan.Terminal.Cafe;
             Vector3 apronEntry = plan.Terminal.VehicleApron.EntryCenter;
-            Vector3 doorApproach = new Vector3(
-                cafe.DoorCenter.x,
-                cafe.FloorY,
-                cafe.DoorCenter.z) - cafe.DoorForward * carHalfWidth;
+            Vector3 apronCenter = plan.Terminal.VehicleApron.Center;
             for (int step = 0; step <= 32; step++)
             {
                 Vector3 point = Vector3.Lerp(
                     apronEntry,
-                    doorApproach,
+                    apronCenter,
                     step / 32f);
                 Assert.That(
                     walkable.Contains(point, carHalfWidth),
                     Is.True,
-                    $"The drive from the apron to the cafe door breaks at " +
+                    $"The drive from the road mouth to the apron breaks at " +
                     $"step {step}.");
                 float ground = MountainRoadTerrainSampler.SampleHeight(
                     plan.Route,
@@ -865,7 +837,7 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(point.x, point.z));
                 Assert.That(
                     ground,
-                    Is.LessThanOrEqualTo(cafe.FloorY - minimumRoadBed),
+                    Is.LessThanOrEqualTo(plan.Plateau.Center.y - minimumRoadBed),
                     $"The terminal pad is buried at step {step}.");
             }
         }
@@ -921,60 +893,6 @@ namespace BarPromenade.Tests.EditMode
                             tree.CrownRadius +
                             MountainRoadPlanner.RidgeTreeClearance - 0.03f),
                         $"{ridge.StableId} clips {tree.StableId}.");
-                }
-            }
-        }
-
-        private static void AssertCafeEntranceClear(
-            MountainRoadWorldResult world,
-            MountainRoadCafePlan cafe)
-        {
-            const float playerRadius = 0.28f;
-            Collider[] cafeColliders = world.Cafe.PhysicalRoot
-                .GetComponentsInChildren<Collider>(true)
-                .Where(collider => collider.enabled)
-                .ToArray();
-            Vector3 groundCenter = new Vector3(
-                cafe.DoorCenter.x,
-                cafe.FloorY,
-                cafe.DoorCenter.z);
-            Assert.That(
-                Vector3.Distance(
-                    world.Cafe.Entrance.position,
-                    groundCenter),
-                Is.LessThan(0.001f));
-
-            for (int alongStep = -4; alongStep <= 4; alongStep++)
-            {
-                Vector3 corridorGround = groundCenter +
-                    cafe.DoorForward * (alongStep * 0.20f);
-                Assert.That(
-                    world.WalkableArea.Contains(
-                        corridorGround,
-                        playerRadius),
-                    Is.True,
-                    $"Cafe threshold leaves the walkable plateau at " +
-                    $"step {alongStep}.");
-                float[] sampleHeights = { 0.42f, 1.0f, 1.62f };
-                for (int heightIndex = 0;
-                     heightIndex < sampleHeights.Length;
-                     heightIndex++)
-                {
-                    Vector3 sample = corridorGround +
-                        Vector3.up * sampleHeights[heightIndex];
-                    for (int colliderIndex = 0;
-                         colliderIndex < cafeColliders.Length;
-                         colliderIndex++)
-                    {
-                        Collider collider = cafeColliders[colliderIndex];
-                        Assert.That(
-                            collider.bounds.SqrDistance(sample),
-                            Is.GreaterThanOrEqualTo(
-                                playerRadius * playerRadius),
-                            $"Cafe entrance is blocked by " +
-                            $"'{collider.name}' at threshold step " +
-                            $"{alongStep}.");
-                    }
                 }
             }
         }

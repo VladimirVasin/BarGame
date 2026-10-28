@@ -24,7 +24,8 @@ namespace BarPromenade
     {
         Building = 0,
         Park = 1,
-        DistrictPointOfInterest = 2
+        DistrictPointOfInterest = 2,
+        Cafe = 3
     }
 
     public enum CityPathKind

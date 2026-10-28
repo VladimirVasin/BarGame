@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
-    /// <summary>Two finite static receiver regions, one pending capture and no moving-headlight invalidation.</summary>
+    /// <summary>Finite static receiver regions, one pending capture and no moving-headlight invalidation.</summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadReflectionController : MonoBehaviour
     {
@@ -38,16 +38,17 @@ namespace BarPromenade
         private uint lightingGeneration;
         private Camera maskedCamera;
         private int maskedLightCount, submissionFrame = -1;
+        private int zoneCount, cafeZoneIndex = -1, terminalZoneIndex = -1;
         private bool initialized, eventsSubscribed;
 
         public SceneLightingPresentation Presentation { get; private set; }
-        public int ZoneCount => initialized ? 2 : 0;
+        public int ZoneCount => initialized ? zoneCount : 0;
         public int ReadyZoneCount => (zones[0] != null && zones[0].IsReady ? 1 : 0) + (zones[1] != null && zones[1].IsReady ? 1 : 0);
-        public bool AllReady => initialized && ReadyZoneCount == 2;
+        public bool AllReady => initialized && ZoneCount > 0 && ReadyZoneCount == ZoneCount;
         public bool IsReady => AllReady;
         public bool CaptureInProgress => zones[0] != null && zones[0].CaptureInProgress || zones[1] != null && zones[1].CaptureInProgress;
-        public SceneReflectionCapture Cafe => zones[0];
-        public SceneReflectionCapture Terminal => zones[1];
+        public SceneReflectionCapture Cafe => cafeZoneIndex >= 0 ? zones[cafeZoneIndex] : null;
+        public SceneReflectionCapture Terminal => terminalZoneIndex >= 0 ? zones[terminalZoneIndex] : null;
         public int CaptureRendererCount => layers.Count;
         public int ReceiverCount => receivers.Count;
         public int MovingLightCount => movingLights.Length;
@@ -63,15 +64,19 @@ namespace BarPromenade
             root = road != null && road.World != null ? road : throw new ArgumentNullException(nameof(road));
             Presentation = provider != null ? provider : throw new ArgumentNullException(nameof(provider));
             properties = new MaterialPropertyBlock();
-            MountainRoadCafePlan cafe = root.Plan.Terminal.Cafe;
-            var cafeBounds = new Bounds(new Vector3(cafe.FootprintXZ[0].x, cafe.FloorY + .02f, cafe.FootprintXZ[0].y), Vector3.zero);
-            foreach (Vector2 point in cafe.FootprintXZ)
+            MountainRoadCafePlan cafe = root.World.Cafe?.Plan;
+            if (cafe != null)
             {
-                cafeBounds.Encapsulate(new Vector3(point.x, cafe.FloorY + .02f, point.y));
-                cafeBounds.Encapsulate(new Vector3(point.x, cafe.FloorY + cafe.Height - .03f, point.y));
+                var cafeBounds = new Bounds(new Vector3(cafe.FootprintXZ[0].x, cafe.FloorY + .02f, cafe.FootprintXZ[0].y), Vector3.zero);
+                foreach (Vector2 point in cafe.FootprintXZ)
+                {
+                    cafeBounds.Encapsulate(new Vector3(point.x, cafe.FloorY + .02f, point.y));
+                    cafeBounds.Encapsulate(new Vector3(point.x, cafe.FloorY + cafe.Height - .03f, point.y));
+                }
+                cafeZoneIndex = zoneCount++;
+                CreateZone(cafeZoneIndex, "Cafe static environment", cafeBounds,
+                    cafe.Center + cafe.Forward * .35f + Vector3.up * 1.65f);
             }
-            CreateZone(0, "Cafe static environment", cafeBounds,
-                cafe.Center + cafe.Forward * .35f + Vector3.up * 1.65f);
             MountainRoadTerminalRect station = root.Plan.Terminal.Cableway.StationArea;
             var stationBounds = new Bounds(station.GetCorner(0), Vector3.zero);
             for (int corner = 0; corner < 4; corner++)
@@ -79,7 +84,8 @@ namespace BarPromenade
                 stationBounds.Encapsulate(station.GetCorner(corner) + Vector3.up * .02f);
                 stationBounds.Encapsulate(station.GetCorner(corner) + Vector3.up * 5f);
             }
-            CreateZone(1, "Terminal static environment", stationBounds,
+            terminalZoneIndex = zoneCount++;
+            CreateZone(terminalZoneIndex, "Terminal static environment", stationBounds,
                 station.Center + station.Right * 2.1f - station.Forward * 1.2f + Vector3.up * 2.1f);
             CacheStaticLights();
             CacheDynamicRoots();
@@ -105,7 +111,8 @@ namespace BarPromenade
             AddLight(lights, root.Atmosphere.TunnelLamp);
             AddLight(lights, root.Atmosphere.YardLamp);
             AddLight(lights, root.Atmosphere.ApronFloodlight);
-            foreach (Light light in root.World.Cafe.Lights) AddLight(lights, light);
+            if (root.World.Cafe != null)
+                foreach (Light light in root.World.Cafe.Lights) AddLight(lights, light);
             foreach (Light light in root.World.Cableway.StationRoot.GetComponentsInChildren<Light>(true)) AddLight(lights, light);
             staticLights = lights.ToArray();
             sourceReference = new Color[staticLights.Length]; sourceLive = new bool[staticLights.Length];
@@ -120,9 +127,12 @@ namespace BarPromenade
 
         private void CacheDynamicRoots()
         {
-            dynamicRoots.Add(root.World.Cafe.NpcRoot.transform);
-            foreach (MountainRoadCafeDynamicPropBinding prop in root.World.Cafe.Model.Props)
-                if (prop?.PropRoot != null) dynamicRoots.Add(prop.PropRoot);
+            if (root.World.Cafe != null)
+            {
+                dynamicRoots.Add(root.World.Cafe.NpcRoot.transform);
+                foreach (MountainRoadCafeDynamicPropBinding prop in root.World.Cafe.Model.Props)
+                    if (prop?.PropRoot != null) dynamicRoots.Add(prop.PropRoot);
+            }
             foreach (Transform cabin in root.World.Cableway.Cabins)
                 if (cabin != null) dynamicRoots.Add(cabin);
             if (root.World.Cableway.Bullwheel != null) dynamicRoots.Add(root.World.Cableway.Bullwheel);
@@ -151,8 +161,10 @@ namespace BarPromenade
         private bool IsStaticCapture(MeshRenderer renderer)
         {
             // Large terrain/road meshes can cross the capture while their centre lies far down the mountain.
-            if (renderer.bounds.SqrDistance(zones[0].Position) > CaptureRadius * CaptureRadius &&
-                renderer.bounds.SqrDistance(zones[1].Position) > CaptureRadius * CaptureRadius) return false;
+            bool nearby = false;
+            for (int index = 0; index < zoneCount; index++)
+                nearby |= renderer.bounds.SqrDistance(zones[index].Position) <= CaptureRadius * CaptureRadius;
+            if (!nearby) return false;
             foreach (Transform moving in dynamicRoots)
                 if (moving != null && renderer.transform.IsChildOf(moving)) return false;
             if (renderer.GetComponentInParent<Animator>() != null || renderer.GetComponentInParent<Rigidbody>() != null ||
@@ -177,7 +189,12 @@ namespace BarPromenade
             }
         }
 
-        private bool InReceiverZone(Vector3 position) => zones[0].Bounds.Contains(position) || zones[1].Bounds.Contains(position);
+        private bool InReceiverZone(Vector3 position)
+        {
+            for (int index = 0; index < zoneCount; index++)
+                if (zones[index].Bounds.Contains(position)) return true;
+            return false;
+        }
 
         public bool TryGetZone(int index, out SceneReflectionCapture zone)
         { zone = index >= 0 && index < ZoneCount ? zones[index] : null; return zone != null; }
@@ -198,7 +215,8 @@ namespace BarPromenade
             if (!requested) return;
             Shader.SetGlobalVectorArray(OriginsId, origins); Shader.SetGlobalVectorArray(MinimaId, minima);
             Shader.SetGlobalVectorArray(MaximaId, maxima); Shader.SetGlobalVectorArray(DecodeId, decode);
-            Shader.SetGlobalTexture(Cube0Id, zones[0].Texture); Shader.SetGlobalTexture(Cube1Id, zones[1].Texture);
+            Shader.SetGlobalTexture(Cube0Id, zones[0].Texture);
+            Shader.SetGlobalTexture(Cube1Id, ZoneCount > 1 ? zones[1].Texture : null);
         }
 
         public void Rearm()

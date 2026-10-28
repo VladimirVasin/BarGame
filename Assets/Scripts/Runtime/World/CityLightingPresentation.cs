@@ -43,7 +43,7 @@ namespace BarPromenade
             internal readonly Light Light;
             internal readonly SourceZoneBinding ZoneBinding;
             internal Zone Zone;
-            internal bool Moving, Pooled, AllowVolume, AllowBounce, SupportValid;
+            internal bool Moving, Pooled, AllowVolume, AllowBounce, SupportValid, CafeInterior;
             internal Bounds Bounds;
             internal Vector3 SupportPosition;
             internal Quaternion SupportRotation;
@@ -119,6 +119,9 @@ namespace BarPromenade
         private Func<bool> exteriorActive;
         private CityLayout layout;
         private CityMetalAppearance metal;
+        private MountainRoadCafeWorldResult cafe;
+        private Bounds cafeBounds;
+        private readonly Bounds[] cafeStructure = new Bounds[MountainRoadCafeCollisionWorldBuilder.PerimeterColliderCount + 1];
         private MaterialPropertyBlock properties;
         private float refreshAt;
         private Vector3 lastBounceCamera;
@@ -142,6 +145,8 @@ namespace BarPromenade
             Root = root != null && root.World != null && root.Night?.Atmosphere != null ? root :
                 throw new ArgumentNullException(nameof(root));
             sourceRoot = root.transform; Atmosphere = root.Night.Atmosphere; layout = root.Layout;
+            cafe = root.World.Cafe;
+            CacheCafeSupport();
             CitySurfaceLibrary.ApplyHierarchy(sourceRoot);
             CacheWorld(root.World.Root.transform);
             metal = new CityMetalAppearance(); metal.Initialize(root);
@@ -181,6 +186,9 @@ namespace BarPromenade
             Renderer[] renderers = sourceRoot.GetComponentsInChildren<Renderer>(true);
             foreach (Renderer renderer in renderers)
             {
+                // The long cafe soffit has three authored luminous runs, not
+                // a light at the empty centre of its combined mesh.
+                if (cafe != null && renderer.transform.IsChildOf(cafe.Root.transform)) continue;
                 Material material = renderer.sharedMaterial;
                 bool window = material != null && material.name.StartsWith("City Window ", StringComparison.Ordinal) &&
                     material.IsKeywordEnabled("_EMISSION") && material.HasProperty(EmissionColorId) &&
@@ -217,7 +225,8 @@ namespace BarPromenade
             {
                 if (light.type != LightType.Point && light.type != LightType.Spot) continue;
                 string name = light.name;
-                if (!IsExistingPractical(name)) continue;
+                int cafeLight = CafeLightIndex(light);
+                if (cafeLight < 0 && !IsExistingPractical(name)) continue;
                 if (practicals.Count >= MaximumPracticals) throw new InvalidOperationException("City practical budget exceeds 192.");
                 bool pooled = name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
                 bool moving = pooled || name.StartsWith("Bus ", StringComparison.Ordinal) ||
@@ -231,8 +240,16 @@ namespace BarPromenade
                     // Existing fire spill is already causal; do not sum it again.
                     AllowBounce = name != CityArchShelterPresentation.FireLightObjectName &&
                         name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
+                if (cafeLight >= 0)
+                {
+                    // The third Light only extends the same warm energy at the
+                    // entrance. It is never a new emitter, air or bounce source.
+                    practical.CafeInterior = cafeLight < 2;
+                    practical.AllowVolume = practical.AllowBounce = cafeLight < 2;
+                }
                 practical.Zone = ResolveZone(practical);
                 practicals.Add(practical);
+                if (cafeLight >= 0) continue;
                 // Fixed mast bulbs have their own stable physical emitters. The
                 // travelling pool is a Light lease, not another visible bulb.
                 if (pooled) continue;
@@ -247,6 +264,55 @@ namespace BarPromenade
                 if (nearest != null) continue;
                 AddEmitter(new Emitter { Anchor = light.transform, Light = light,
                     LocalPosition = Vector3.forward * .035f, Radius = moving ? .10f : .13f, Strength = .30f }, moving);
+            }
+            CacheCafeEmitters();
+        }
+
+        private int CafeLightIndex(Light light)
+        {
+            if (cafe != null)
+                for (int index = 0; index < cafe.Lights.Count; index++)
+                    if (cafe.Lights[index] == light) return index;
+            return -1;
+        }
+
+        private void CacheCafeSupport()
+        {
+            if (cafe == null) return;
+            Physics.SyncTransforms();
+            MountainRoadCafePlan plan = cafe.Plan;
+            cafeBounds = new Bounds(new Vector3(plan.FootprintXZ[0].x, plan.FloorY, plan.FootprintXZ[0].y), Vector3.zero);
+            foreach (Vector2 point in plan.FootprintXZ)
+                cafeBounds.Encapsulate(new Vector3(point.x, plan.FloorY + plan.Height, point.y));
+            for (int index = 0; index < MountainRoadCafeCollisionWorldBuilder.PerimeterColliderCount; index++)
+                cafeStructure[index] = cafe.Collision.Colliders[index].bounds;
+            Bounds roof = cafeBounds;
+            roof.SetMinMax(new Vector3(roof.min.x, roof.max.y - .05f, roof.min.z),
+                new Vector3(roof.max.x, roof.max.y + .18f, roof.max.z));
+            cafeStructure[cafeStructure.Length - 1] = roof;
+        }
+
+        private void CacheCafeEmitters()
+        {
+            if (cafe == null) return;
+            foreach (MountainRoadCafePartBinding part in cafe.Model.Parts)
+            {
+                if (!part.Emissive || part.Renderer == null) continue;
+                if (part.Role == "stove_task_lens")
+                    AddEmitter(new Emitter { Light = cafe.Lights[1], Renderer = part.Renderer,
+                        Anchor = part.Renderer.transform,
+                        LocalPosition = part.Renderer.transform.InverseTransformPoint(part.Renderer.bounds.center),
+                        Radius = .23f, Strength = .7f }, false);
+                if (part.Role != "practical_emission") continue;
+                MountainRoadCafePlan plan = cafe.Plan;
+                for (int edge = 0; edge < 3; edge++)
+                {
+                    Vector2 middle = Vector2.Lerp(plan.FootprintXZ[edge], plan.FootprintXZ[edge + 1], edge == 0 ? .68f : .5f);
+                    Vector3 point = new Vector3(middle.x, plan.FloorY + 3.68f, middle.y);
+                    AddEmitter(new Emitter { Light = cafe.Lights[0], Renderer = part.Renderer,
+                        Anchor = part.Renderer.transform, LocalPosition = part.Renderer.transform.InverseTransformPoint(point),
+                        Radius = .26f, Strength = .7f }, false);
+                }
             }
         }
 
@@ -381,7 +447,7 @@ namespace BarPromenade
                     (entry.SupportPosition - entry.Light.transform.position).sqrMagnitude > .25f ||
                     Quaternion.Angle(entry.SupportRotation, entry.Light.transform.rotation) > 3f) ConfigureSupport(entry);
                 if (!entry.SupportValid) continue;
-                float gain = entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
+                float gain = entry.CafeInterior ? .30f : entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
                     entry.Zone == Zone.ChurchCemetery ? .16f : entry.Zone == Zone.CoastPort ? .30f : .34f;
                 selected[valid++] = new SceneLocalLightSource(entry.Light, entry.Bounds, Vector4.zero, gain,
                     entry.Light.type == LightType.Spot && entry.Light.shadows != LightShadows.None, entry.Planes, entry.Blockers);
@@ -391,6 +457,7 @@ namespace BarPromenade
 
         private void ConfigureBounds(Practical entry)
         {
+            if (entry.CafeInterior) { entry.Bounds = cafeBounds; return; }
             Light light = entry.Light; Vector3 position = light.transform.position;
             float reach = Mathf.Min(light.range, entry.Moving && !entry.Pooled ? 16f : 7f);
             Vector3 end = light.type == LightType.Spot ? position + light.transform.forward * reach : position;
@@ -418,6 +485,21 @@ namespace BarPromenade
             entry.SupportAt = Time.unscaledTime + RefreshSeconds;
             entry.SupportPosition = entry.Light.transform.position; entry.SupportRotation = entry.Light.transform.rotation;
             Array.Clear(entry.Planes, 0, entry.Planes.Length); Array.Clear(entry.Blockers, 0, entry.Blockers.Length);
+            if (entry.CafeInterior)
+            {
+                MountainRoadCafePlan plan = cafe.Plan;
+                for (int index = 0; index < plan.FootprintXZ.Count; index++)
+                {
+                    Vector2 a = plan.FootprintXZ[index], b = plan.FootprintXZ[(index + 1) % plan.FootprintXZ.Count];
+                    Vector3 normal = new Vector3(-(b.y - a.y), 0f, b.x - a.x).normalized;
+                    Vector3 edge = new Vector3(a.x, 0f, a.y);
+                    if (Vector3.Dot(normal, plan.Center - edge) < 0f) normal = -normal;
+                    entry.Planes[index] = new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, edge));
+                }
+                Array.Copy(cafeStructure, entry.Blockers, cafeStructure.Length);
+                entry.SupportValid = true;
+                return;
+            }
             if (Root == null) { ConfigureExteriorSupport(entry); return; }
             int count;
             while (true)
@@ -441,6 +523,13 @@ namespace BarPromenade
                 // closed support, never silently truncated light through walls.
                 if (blockers == entry.Blockers.Length) { entry.SupportValid = false; return; }
                 entry.Blockers[blockers++] = bounds;
+            }
+            // The imported roof is visual-only; the shared outdoor owner must
+            // still stop light above the room without adding gameplay collision.
+            if (cafe != null && entry.Bounds.Intersects(cafeStructure[cafeStructure.Length - 1]))
+            {
+                if (blockers == entry.Blockers.Length) { entry.SupportValid = false; return; }
+                entry.Blockers[blockers] = cafeStructure[cafeStructure.Length - 1];
             }
             entry.SupportValid = true;
         }
@@ -478,8 +567,19 @@ namespace BarPromenade
             if (Root == null) { TryAddExteriorPatch(entry); return; }
             Light light = entry.Light; Vector3 position = light.transform.position;
             Vector3 direction = light.type == LightType.Spot && light.transform.forward.y < -.12f ? light.transform.forward : Vector3.down;
-            if (!Physics.Raycast(position + direction * .1f, direction, out RaycastHit hit, Mathf.Min(light.range, 15f),
+            Vector3 origin = position + direction * .1f;
+            float rayLength = Mathf.Min(light.range, 15f);
+            if (entry.CafeInterior)
+            {
+                Vector3 aim = position;
+                if (direction.y < -.15f) aim += direction * ((cafe.Plan.FloorY - aim.y) / direction.y);
+                aim.y = cafe.Plan.FloorY;
+                if (!cafe.Plan.ContainsInterior(aim, .4f)) aim = new Vector3(position.x, cafe.Plan.FloorY, position.z);
+                origin = aim + Vector3.up * .6f; direction = Vector3.down; rayLength = 1.2f;
+            }
+            if (!Physics.Raycast(origin, direction, out RaycastHit hit, rayLength,
                     ~0, QueryTriggerInteraction.Ignore) || !structure.Contains(hit.collider) || hit.normal.y < .85f) return;
+            if (entry.CafeInterior && Mathf.Abs(hit.point.y - cafe.Plan.FloorY) > .20f) return;
             Vector3 center = hit.point + hit.normal * .035f;
             if (!SourceReaches(light, center)) return;
             float radius = entry.Zone == Zone.Park || entry.Zone == Zone.ChurchCemetery ? .55f : 1.1f;

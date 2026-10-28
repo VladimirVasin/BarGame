@@ -1702,7 +1702,7 @@ namespace BarPromenade
                 // recurse through courtyard allocation and paving again.
                 foreach (BuildingLot lot in layout.BuildingLots)
                 {
-                    if (!lot.HasBuilding) continue;
+                    if (!lot.HasBuilding && !lot.IsCafe) continue;
                     Bounds bounds = lot.WorldBounds;
                     Rect solid = Rect.MinMaxRect(bounds.min.x - .1f, bounds.min.z - .1f,
                         bounds.max.x + .1f, bounds.max.z + .1f);

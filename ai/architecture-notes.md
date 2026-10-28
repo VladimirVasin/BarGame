@@ -1,6 +1,24 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-29 — relocate the complete diner to City:**
+  User approved moving the existing MountainRoad cafe, including its seven
+  stools, four bespoke actors, cups/service/smoke/conversation, hero seat/view,
+  physical selection-only menu, three Lights, three device voices and seven
+  threshold props. City owns one whole lot: candidate `[10;0]`, deterministic
+  fallback `[9..10;0..2]`; metres, IDs, assets/materials and existing RU/EN stay.
+  Level ground joins the existing sidewalk; entry, walkability, weather shelter,
+  map/XYZ/debug arrival and retained-City lifecycle follow that same plan.
+  This is only a location exception to art §10f and story §17/§6. Keep open
+  foreground at the glass: no copied American street or close facade backdrop.
+  No new cast, story, text, order, payment, food or drink. Shared City lighting
+  owns finite source-derived bounce/air/halation/metal and the cafe reflection
+  region within its existing two slots; no second global provider or duplicated
+  light energy. All 24 effects were reviewed; existing post-processing/saved
+  flags remain. Runtime cost is unmeasured. MountainRoad has no cafe, threshold,
+  counter seat, warm patch, device voices or cafe cube; LastRoute, cableway,
+  terrace and dark brink remain. Shared bar assets/contracts are retained.
+
 - **Accepted 2026-10-28 — residential laundry:**
   User:one `0-5` residual `8.6×6.6 m` L-shell(Blender/interior_kit):
   windows/floor/roof; front closed/side open, buildings/routes kept.
@@ -481,17 +499,16 @@
 - **Accepted exception 2026-10-20, Mountain Road local lighting — explicit user decision:**
   Art §10f/§15a; story §6: `MountainRoadLightingPresentation` reuses five saved
   flags without new Light/geometry/global fog/weather/text/story. Existing
-  tunnel/yard/apron/cafe/station sources keep power/hierarchy and car beams move.
+  tunnel/yard/apron/station sources keep power/hierarchy and car beams move.
   Halation: 24 physical emitters, no helper wash. Air/snow: four sources,
-  320x180, ten steps, six clip planes/eight blockers each; cafe prism/perimeter/
-  roof prevent leaks, tunnel support ends at its mouth. Real transforms/cones/
+  320x180, ten steps, six clip planes/eight blockers each;
+  tunnel support ends at its mouth. Real transforms/cones/
   ranges and existing shadows apply; no extra shadow render or full small-object
   shadow promise.
-  Terrace/parapet/brink/valley stay dark; cafe is one warm patch in a cold yard.
-  Four validated patches use source energy, measured normals/albedo, finite
+  Terrace/parapet/brink/valley stay dark. Validated patches use source energy, measured normals/albedo, finite
   bounds and ≤10 Hz occlusion. Receiver reach is separate from footprint radius.
-  Existing allowlisted cafe/station metal responds without material clones.
-  Two finite receiver zones use filtered 256 HDR cubes/SceneReflectionCapture,
+  Existing allowlisted station metal responds without material clones.
+  The station receiver zone uses a filtered 256 HDR cube/SceneReflectionCapture,
   one pending. Captures omit actors/car/cabins/rotors/dynamic props/rain/fire;
   temporary moving-light masks restore on camera end/recovery/teardown.
   Stable light drift invalidates at most every five seconds; beam motion and
@@ -4525,62 +4542,22 @@
   the five causal sound owners. The map reads the bridge centre and every
   hairpin apex from that same route plan.
 - **Accepted — The raised Mountain Road keeps its existing terminal chapter:**
-  The road and plateau reuse the same entry vertices, terrain height and open
-  lower edge, so neither a visual gap nor a transverse collider lip interrupts
-  a future car. A reserved `7.5 m` centre circle keeps the arrival usable by
-  that car. The left landmark
-  is a same-scene, physically enterable five-sided glass cafe with a `1.6 m`
-  open door, exactly two visible practicals and one shadowless technical wash
-  Spot with no third visible fixture. Its tableau is a dedicated staged
-  subsystem rather than part of the pedestrian pool: one lone patron, one
-  couple and one attendant use four distinct Generic prefabs and an isolated
-  ten-clip cafe library: one sleeping loop and one interjection for the lone
-  patron, two clips for
-  each member of the pair and four attendant clips. Seven stools are modeled
-  with their seat tops at `0.8175 m`; three are occupied with real butt contact
-  and four stay deliberately empty. The lone patron nearest the entrance sleeps
-  with his head on strongly crossed forearms stacked without intersection on
-  the counter and owns no cup or service
-  state. A pure service clock, armed on the player's first entry into the
-  cafe's `16 m` entrance radius, holds `18-32 s` Wipe loops, permits at most one
-  drink/refill episode and derives two non-overlapping role-local Drink windows
-  for the pair. That radius excludes every earlier hairpin; the initial
-  `0.44/0.56` fills make the first visible sip cross the refill threshold and
-  start a Pour within one minute. Two authored cups visibly drain at different
-  rates; below the threshold only the owning cup enters the service queue and
-  receives a refill. Completing the sit on
-  the hero's stool gives a bounded eye-level first-person view of the counter;
-  the owner hides head geometry for the seated interval and restores the exact
-  prior camera mode, pose, FOV and cinematic-motion state on exit or teardown.
-  The pair's conversation uses the shared overhead reveal and Russian vocalizer
-  (English retains writing clicks); recordings and free ambience are absent,
-  and the hero is never a cup/refill target or spoken
-  addressee; the single physical menu exception is recorded below.
-  The
-  right landmark is a `230 m` cableway: eight colliderless cabins traverse one
-  continuous loop over nine supports, while the far turn stands beyond the
-  Mountain Road draw range and the passenger ride cuts to black at `73 m`
-  without presenting an endpoint. Cable nodes derive all vertical offsets from
-  the raised terminal anchor rather than retaining absolute world heights. The
-  cafe remains same-scene; the cableway ride owns its established transition.
-  Continuous road/plateau geometry remains the driving collider. A separate
-  colliderless asphalt apron at `+0.025 m` overlaps the
-  entry by `0.45 m` and exposes the complete R`7.5 m` turning pocket without a
-  second physics skin, coplanar patchwork or a shoulder lip. Larger grounded
-  forest and roadside misc form the close layer,
-  middle ridges carry the perceived elevation, and far snowy mountains close
-  the view. Five positional road sound anchors remain causal and attributable
-  to visible fixtures or structures rather than free ambience; one tunnel lamp
-  shares its visible deterministic flicker with its local sound behaviour. The
-  cafe adds three short-range appliance voices, and the cableway adds only a
-  visible reducer motor plus roller-crossing clacks. Cafe/cableway map landmarks
-  and rain shelter volumes are read from the same validated terminal plan.
-- **Accepted and implemented — The terminal cafe is a bounded Blender
+  Shared road/plateau entry vertices retain the open, level driving seam and
+  reserved `7.5 m` vehicle circle. A colliderless asphalt apron at `+0.025 m`
+  overlaps the entry by `0.45 m`; continuous road/plateau geometry owns physics.
+  The right landmark is a `230 m` cableway: eight colliderless cabins loop over
+  nine supports, far turn beyond draw range, passenger cut at `73 m`. Heights
+  derive from the terminal anchor; the ride owns its existing area transition.
+  Grounded forest/misc form the close layer, ridges carry elevation and far
+  snowy mountains close the view. Five road sounds remain fixture-owned,
+  including the tunnel lamp's matched flicker. The cableway owns reducer/roller
+  sounds. Terminal map landmarks are cableway/brink; shelter is the station.
+- **Accepted and implemented — The authored cafe is a bounded Blender
   migration, not a rewrite of the whole terminal:** the cafe's visible
   runtime-primitive shell, interior and furniture were replaced by one
   fixed-metre deterministic Blender-authored set and measured manifest (`61`
-  meshes / `5,794` triangles / `52` anchors / seven dynamic props). The terminal
-  plan continues to own the five-sided
+  meshes / `5,794` triangles / `52` anchors / seven dynamic props). The cafe
+  plan owns the five-sided
   footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
   logical collision, shelter, map landmark, semantic/audio anchors and
   lighting; imported geometry brings no collider, Light, camera or material.
@@ -5188,9 +5165,8 @@
   island's copy, keeping the man and car in exactly one area and preserving
   the drive down after either route to the mountain.
 - **Accepted — a car parked nose-in leaves by backing round, not by turning:**
-  the terminal apron is a `7.5 m` pocket whose cafe corner stands `8.24 m` from
-  its centre, so no U-turn of a usable radius fits (this is why the arrival
-  parks nose-in in the first place). `LastRouteMountainDrivePlanner.CreateDeparture`
+  the terminal apron retains its reserved `7.5 m` pocket and nose-in parking;
+  cafe relocation does not change the established departure manoeuvre. `LastRouteMountainDrivePlanner.CreateDeparture`
   therefore opens with a two-point turn — a quarter-circle backed on lock and a
   quarter-circle driven off it, both at `5 m` — and `LastRouteCarDrivePath`
   carries the reverse leg as a first-class part of the road. What it stores per
@@ -5747,7 +5723,7 @@
   its generic lot at `ReturnPosition`; home and supermarket replace theirs at
   `Center`; a district POI replaces its lot at the authored POI position.
   Mountain Road contributes the current player, tunnel, all authored hairpin
-  apexes, bridge centre, plateau endpoint and terminal cafe/cableway landmarks.
+  apexes, bridge centre, plateau endpoint and terminal cableway/brink landmarks.
   Road polylines, intermediate route samples and mountain hatches are
   presentation, not catalog points. Inspection never treats a coordinate as a
   safe spawn: it is mutually exclusive with debug teleport and consumes map

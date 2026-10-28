@@ -62,17 +62,11 @@ namespace BarPromenade
                 plateau.Forward,
                 MountainRoadPlanner.RoadWidth,
                 VehicleTurningRadius);
-            MountainRoadCafePlan cafe = CreateCafe(plateau);
             MountainRoadCablewayPlan cableway = CreateCableway(
                 route,
                 plateau);
             var landmarks = new List<MountainRoadTerminalLandmark>
             {
-                new MountainRoadTerminalLandmark(
-                    "terminal-landmark-cafe",
-                    MountainRoadTerminalLandmarkKind.Cafe,
-                    cafe.Center,
-                    "map.mountain_road.cafe"),
                 new MountainRoadTerminalLandmark(
                     "terminal-landmark-cableway",
                     MountainRoadTerminalLandmarkKind.Cableway,
@@ -86,13 +80,15 @@ namespace BarPromenade
             };
             return new MountainRoadTerminalPlan(
                 vehicle,
-                cafe,
+                null,
                 cableway,
                 landmarks,
-                MountainRoadTerminalSitePlanner.Create(plateau, cafe));
+                MountainRoadTerminalSitePlanner.Create(plateau));
         }
 
-        private static MountainRoadCafePlan CreateCafe(
+        // Retained for authored model/animation contracts; the road no longer
+        // installs this optional location.
+        public static MountainRoadCafePlan CreateCafe(
             MountainRoadPlateauDescriptor plateau)
         {
             Vector2[] localFootprint =

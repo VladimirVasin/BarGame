@@ -374,8 +374,7 @@ namespace BarPromenade.Tests.EditMode
             Camera camera = cameraObject.AddComponent<Camera>();
             try
             {
-                MountainRoadCafePlan cafePlan = MountainRoadPlanner.Create(
-                    Seed).Terminal.Cafe;
+                MountainRoadCafePlan cafePlan = MountainRoadTerminalPlanner.CreateCafe(MountainRoadPlanner.Create(Seed).Plateau);
                 MountainRoadCafeWorldResult cafe =
                     MountainRoadCafeWorldBuilder.Build(
                         root.transform,
@@ -700,7 +699,7 @@ namespace BarPromenade.Tests.EditMode
                 MountainRoadCafeWorldResult cafe =
                     MountainRoadCafeWorldBuilder.Build(
                         parent.transform,
-                        MountainRoadPlanner.Create(Seed).Terminal.Cafe);
+                        MountainRoadTerminalPlanner.CreateCafe(MountainRoadPlanner.Create(Seed).Plateau));
                 MountainRoadCafeCastController cast = cafe.Cast;
 
                 Assert.That(cast.TryRequestHeroNotice(), Is.True,

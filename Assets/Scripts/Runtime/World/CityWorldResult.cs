@@ -43,9 +43,15 @@ namespace BarPromenade
             CityArchShelterWorldResult archShelter,
             CityEastExitPlan eastExitPlan,
             CityEastExitWorldResult eastExit,
-            Bounds bounds)
+            Bounds bounds,
+            MountainRoadCafeWorldResult cafe = null,
+            MountainRoadTerminalSitePlan cafeSite = null,
+            Collider cafeRainShelter = null)
         {
             Root = root;
+            Cafe = cafe;
+            CafeSite = cafeSite;
+            CafeRainShelter = cafeRainShelter;
             Fair = root != null ? root.GetComponentInChildren<CityFairWorld>(true) : null;
             WalkableArea = walkableArea;
             Bars = new ReadOnlyCollection<BarEntrance>(
@@ -124,6 +130,9 @@ namespace BarPromenade
         }
 
         public GameObject Root { get; }
+        public MountainRoadCafeWorldResult Cafe { get; }
+        public MountainRoadTerminalSitePlan CafeSite { get; }
+        public Collider CafeRainShelter { get; }
         public CityFairWorld Fair { get; }
         public RoadWalkableArea WalkableArea { get; }
         public IReadOnlyList<BarEntrance> Bars { get; }

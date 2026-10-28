@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The two sit offers on the summit.
+    /// The summit bench and portable cafe stool.
     ///
     /// Both failure modes here are silent. A dock outside the walkable
     /// mask is a prompt the hero can see and never reach; a dock at the
@@ -24,7 +24,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.DefaultCitySeed);
             List<CityBenchSitPlan> seats =
                 MountainRoadSeatPlanner.CreateAll(plan);
-            Assert.That(seats, Has.Count.EqualTo(2));
+            Assert.That(seats, Has.Count.EqualTo(1));
 
             var walkable = new MountainRoadWalkableArea(plan);
             var ids = new HashSet<string>();
@@ -66,13 +66,15 @@ namespace BarPromenade.Tests.EditMode
                 "If the terrace were within the tolerance this test could " +
                 "pass against the wrong datum.");
 
-            // The stool is the cafe's own timber, not a copy of it.
-            CityBenchSitPlan stool = seats[1];
+            // The portable cafe stool keeps its own measured model contacts.
+            MountainRoadCafePlan cafe = MountainRoadTerminalPlanner.CreateCafe(plan.Plateau);
+            site = MountainRoadTerminalSitePlanner.CreateCafeSite(cafe);
+            CityBenchSitPlan stool = new CityBenchSitPlan(site.CounterSeat.ToBenchSeat());
             Assert.That(stool.Id, Is.EqualTo(site.CounterSeat.StableId));
             Assert.That(
                 site.CounterSeat.SeatTopCenter.y,
                 Is.EqualTo(
-                    plan.Terminal.Cafe.FloorY +
+                    cafe.FloorY +
                     MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor)
                     .Within(0.0001f));
             Assert.That(
@@ -86,7 +88,7 @@ namespace BarPromenade.Tests.EditMode
             // occupies three others, and sitting on one of those would
             // put the hero inside a staged figure.
             MountainRoadCafeCastPlan cast =
-                MountainRoadCafeCastPlan.Create(plan.Terminal.Cafe);
+                MountainRoadCafeCastPlan.Create(cafe);
             for (int index = 0; index < cast.Members.Count; index++)
             {
                 Vector3 member = cast.Members[index].Position;
@@ -116,17 +118,17 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Dot(
                     site.CounterSeat.FaceDirection,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.GreaterThan(0.99f));
             Assert.That(
                 Vector3.Dot(
                     site.CounterSeat.ApproachDirection,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.LessThan(-0.99f));
             Assert.That(
                 Vector3.Dot(
                     stool.EntryRotation * Vector3.forward,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.GreaterThan(0.99f),
                 "The interaction turned the seated hero away from the " +
                 "counter.");
@@ -137,14 +139,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Dot(
                     dockOffset,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.EqualTo(
                     -(site.CounterSeat.SeatDepth * 0.5f +
                       CityBenchSitPlan.EntryEdgeDistance))
                     .Within(0.0001f),
                 "Facing the counter must not move the dock into it.");
             Assert.That(
-                plan.Terminal.Cafe.ContainsInterior(
+                cafe.ContainsInterior(
                     stool.EntryRootPosition,
                     0.3f),
                 Is.True,

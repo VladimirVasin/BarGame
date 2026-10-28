@@ -24,7 +24,8 @@ namespace BarPromenade
         EasternPost = 5,
         Docks = 6,
         ArchShelter = 7,
-        Church = 8
+        Church = 8,
+        Cafe = 9
     }
 
     public readonly struct CityMapPointOfInterest
@@ -943,6 +944,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Church:
                     key = "map.poi.church_entrance";
                     return true;
+                case CityMapPointOfInterestKind.Cafe:
+                    key = "map.mountain_road.cafe";
+                    return true;
                 default:
                     key = string.Empty;
                     return false;
@@ -1442,6 +1446,16 @@ namespace BarPromenade
                             church.GroundTopY + rootOffset,
                             door.z)));
             }
+            CityCafePlan cafe = CityCafePlan.Create(Layout);
+            if (cafe != null)
+            {
+                Vector3 arrival = cafe.Cafe.DoorCenter + cafe.Cafe.DoorForward * 1.5f;
+                arrival.y = cafe.FloorY + rootOffset;
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "city-cafe", CityMapPointOfInterestKind.Cafe, CityDistrictKind.Residential,
+                    arrival, cafe.Bounds, true));
+            }
+
         }
 
         private static int CompareBarLots(BuildingLot left, BuildingLot right)

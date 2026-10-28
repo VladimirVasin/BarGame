@@ -29,6 +29,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Time.captureDeltaTime = PinnedFrameSeconds;
             GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeAt(12 * 60);
         }
 
         [UnityTearDown]
@@ -36,7 +37,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Time.captureDeltaTime = 0f;
             GameSessionState.BeginNewGame();
-            Scene road = SceneManager.GetSceneByName(SceneIds.MountainRoad);
+            Scene road = SceneManager.GetSceneByName(SceneIds.City);
             if (!road.isLoaded)
             {
                 yield break;
@@ -60,7 +61,7 @@ namespace BarPromenade.Tests.PlayMode
                 inputFixture.Setup();
                 keyboard = InputSystem.AddDevice<Keyboard>();
 
-                MountainRoadRoot root = null;
+                CityGameRoot root = null;
                 yield return LoadSceneAndWaitForRoot(value => root = value);
                 yield return null;
 
@@ -68,17 +69,31 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.CafeMenu, Is.Not.Null);
                 Assert.That(root.CafeMenu.IsInitialized, Is.True);
                 Assert.That(root.CafeSeatView, Is.Not.Null);
+                Assert.That(root.World.CafeSite.GetCount(MountainRoadSiteGroup.CafeThreshold), Is.EqualTo(7));
+                Assert.That(root.World.Cafe.Lights.Count, Is.EqualTo(3));
+                Assert.That(root.Map.PointsOfInterest.Any(point => point.Kind == CityMapPointOfInterestKind.Cafe), Is.True);
+                Assert.That(root.Rain.LocalShelters, Does.Contain(root.World.CafeRainShelter));
+                MountainRoadCafePlan cafePlan = root.World.Cafe.Plan;
+                for (int step = -4; step <= 4; step++)
+                {
+                    Vector3 point = cafePlan.DoorCenter + cafePlan.DoorForward * (step * .25f);
+                    Assert.That(root.World.WalkableArea.Contains(point, .25f), Is.True, "Diner entry mask.");
+                    Assert.That(Physics.CheckCapsule(point + Vector3.up * .35f, point + Vector3.up * 1.45f,
+                        .24f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.False, "Diner entry collision.");
+                }
 
-                CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+                CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                     string.Equals(
                         candidate.Plan.Id,
-                        root.Plan.Terminal.Site.CounterSeat.StableId,
+                        root.World.CafeSite.CounterSeat.StableId,
                         StringComparison.Ordinal));
                 TeleportPlayer(
                     root.Player,
                     seat.Plan.EntryRootPosition,
                     seat.Plan.EntryRotation);
                 yield return null;
+
+                yield return AreaCaptureFixture.CaptureRelocatedCafe(root, "day");
 
                 Assert.That(seat.CanInteract(root.Player.Interactor), Is.True);
                 seat.Interact(root.Player.Interactor);
@@ -184,43 +199,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     MountainRoadCafeMenuItemIds.Ordered.Count,
                     Is.EqualTo(3));
-                for (int index = 0;
-                     index < MountainRoadCafeMenuItemIds.Ordered.Count;
-                     index++)
-                {
-                    Transform line = presentation.PropRoot.Find(
-                        $"MenuText.Item.{index:00} Text");
-                    Assert.That(line, Is.Not.Null, $"menu row {index}");
-                    Assert.That(line.gameObject.activeInHierarchy, Is.True);
-                    Renderer lineRenderer = line.GetComponent<Renderer>();
-                    TMP_Text lineText = line.GetComponent<TMP_Text>();
-                    Assert.That(lineRenderer, Is.Not.Null,
-                        $"menu row {index}");
-                    Assert.That(lineText, Is.Not.Null,
-                        $"menu row {index}");
-                    Assert.That(
-                        lineText.fontSizeMax,
-                        Is.GreaterThanOrEqualTo(0.14f),
-                        "World lettering must remain readable at the " +
-                        "menu close-up distance.");
-                    Assert.That(
-                        lineRenderer.enabled,
-                        Is.True,
-                        line.name);
-                }
-
-                Transform marker = presentation.PropRoot.Find(
-                    MountainRoadCafeMenuPresentation.SelectionAnchorName +
-                    " Text");
-                Assert.That(marker, Is.Not.Null);
-                Renderer markerRenderer = marker.GetComponent<Renderer>();
-                Assert.That(markerRenderer, Is.Not.Null);
-                Assert.That(markerRenderer.enabled, Is.True);
-                Assert.That(
-                    menu.SelectedItemId,
-                    Is.EqualTo(MountainRoadCafeMenuItemIds.FriedEggs));
-
-                Camera camera = root.CameraFollow.GetComponent<Camera>();
+                Camera camera = root.Camera.GetComponent<PlayerCameraFollow>().GetComponent<Camera>();
                 Assert.That(camera, Is.Not.Null);
                 float focusDeadline = Time.realtimeSinceStartup + 2f;
                 while (!root.CafeSeatView.IsMenuFocusComplete &&
@@ -236,6 +215,41 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 Assert.That(root.CafeSeatView.IsMenuFocusComplete, Is.True);
+                for (int index = 0;
+                     index < MountainRoadCafeMenuItemIds.Ordered.Count;
+                     index++)
+                {
+                    TMP_Text lineText = presentation.ItemLines[index];
+                    Assert.That(lineText, Is.Not.Null, $"menu row {index}");
+                    Transform line = lineText.transform;
+                    Assert.That(line.gameObject.activeInHierarchy, Is.True);
+                    Renderer lineRenderer = line.GetComponent<Renderer>();
+                    Assert.That(lineRenderer, Is.Not.Null,
+                        $"menu row {index}");
+                    Assert.That(lineText, Is.Not.Null,
+                        $"menu row {index}");
+                    Assert.That(
+                        lineText.fontSizeMax,
+                        Is.GreaterThanOrEqualTo(0.14f),
+                        "World lettering must remain readable at the " +
+                        "menu close-up distance.");
+                    Assert.That(
+                        lineRenderer.enabled,
+                        Is.True,
+                        line.name);
+                }
+
+                Transform marker = presentation.SelectionMarker.transform;
+                Assert.That(marker, Is.Not.Null);
+                Renderer markerRenderer = marker.GetComponent<Renderer>();
+                Assert.That(markerRenderer, Is.Not.Null);
+                Assert.That(markerRenderer.enabled, Is.True);
+                Assert.That(
+                    menu.SelectedItemId,
+                    Is.EqualTo(MountainRoadCafeMenuItemIds.FriedEggs));
+
+                if (AreaCaptureFixture.CafeRelocationFramesRequested)
+                    AreaCaptureFixture.CaptureCurrentCamera(root.Camera, SceneIds.City, "diner-menu");
                 Pose expectedFocus = root.CafeSeatView.MenuFocusPose;
                 Assert.That(
                     Vector3.Distance(
@@ -551,6 +565,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(seat.IsSeated, Is.False);
                 Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
                 Assert.That(menu.IsInputActive, Is.False);
+                GameSessionState.AdvanceGameTime((float)(9f * 60f / GameTimeState.GameMinutesPerRealSecond));
+                root.DayNight.ApplyCurrentTime(true);
+                yield return AreaCaptureFixture.CaptureRelocatedCafe(root, "night");
             }
             finally
             {
@@ -561,29 +578,30 @@ namespace BarPromenade.Tests.PlayMode
 
                 inputFixture?.TearDown();
             }
+            yield return AreaCaptureFixture.CaptureTerminalAfterCafeRelocation();
         }
 
         [UnityTest]
         public IEnumerator
             CounterSeat_StandingWithoutChoiceRetrievesMenuAndRestoresCamera()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return null;
 
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(
                 root.Player,
                 seat.Plan.EntryRootPosition,
                 seat.Plan.EntryRotation);
             yield return null;
-            bool previousFixedPose = root.CameraFollow.FixedPoseActive;
+            bool previousFixedPose = root.Camera.GetComponent<PlayerCameraFollow>().FixedPoseActive;
             float previousFieldOfView =
-                root.CameraFollow.GetComponent<Camera>().fieldOfView;
+                root.Camera.GetComponent<PlayerCameraFollow>().GetComponent<Camera>().fieldOfView;
 
             seat.Interact(root.Player.Interactor);
             int seatFrames = 0;
@@ -638,7 +656,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False);
             yield return null;
 
-            Camera camera = root.CameraFollow.GetComponent<Camera>();
+            Camera camera = root.Camera.GetComponent<PlayerCameraFollow>().GetComponent<Camera>();
             Vector3 restingCenter = presentation.Page
                 .RestingWorldCenter;
             Assert.That(
@@ -724,12 +742,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
             Assert.That(root.CafeSeatView.IsMenuFocusLocked, Is.False);
             Assert.That(
-                root.CameraFollow.FixedPoseActive,
+                root.Camera.GetComponent<PlayerCameraFollow>().FixedPoseActive,
                 Is.EqualTo(previousFixedPose));
             if (!previousFixedPose)
             {
                 Assert.That(
-                    root.CameraFollow.GetComponent<Camera>().fieldOfView,
+                    root.Camera.GetComponent<PlayerCameraFollow>().GetComponent<Camera>().fieldOfView,
                     Is.EqualTo(previousFieldOfView).Within(0.1f));
             }
 
@@ -764,14 +782,14 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             CounterSeat_ForcedExitDuringDeliveryClosesBeforeRetrieval()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return null;
 
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(
                 root.Player,
@@ -846,14 +864,14 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             CounterSeat_CancelledQuickReentryRetrievesDeliveredMenu()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return null;
 
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(
                 root.Player,
@@ -1079,10 +1097,10 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(
-            Action<MountainRoadRoot> capture)
+            Action<CityGameRoot> capture)
         {
             AsyncOperation operation = SceneManager.LoadSceneAsync(
-                SceneIds.MountainRoad,
+                SceneIds.City,
                 LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             float deadline = Time.realtimeSinceStartup + LoadTimeoutSeconds;
@@ -1092,12 +1110,12 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(operation.isDone, Is.True,
-                "Mountain Road did not load before the timeout.");
-            MountainRoadRoot root = null;
-            while (root == null && Time.realtimeSinceStartup < deadline)
+                "City did not load before the timeout.");
+            CityGameRoot root = null;
+            while ((root == null || !root.IsInitialized) && Time.realtimeSinceStartup < deadline)
             {
-                root = Object.FindAnyObjectByType<MountainRoadRoot>();
-                if (root == null)
+                root = Object.FindAnyObjectByType<CityGameRoot>();
+                if (root == null || !root.IsInitialized)
                 {
                     yield return null;
                 }

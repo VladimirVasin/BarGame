@@ -596,16 +596,19 @@ namespace BarPromenade
         {
             float placementNormalized = MountainRoadCafeServiceTimeline
                 .ResolveMenuPlacementNormalized(phaseNormalized);
-            if (propMotion != null)
+            if (placementNormalized <= 0f)
             {
-                propMotion.EvaluateDelivery(placementNormalized);
+                // The walk's final pose may be sampled after its last carry
+                // update. Keep the grip on that hand through the hold before
+                // interpolating from the actual placement start.
+                AttachToHand();
+                RememberPlacementStart();
                 return;
             }
 
-            if (placementNormalized <= 0f)
+            if (propMotion != null)
             {
-                AttachToHand();
-                RememberPlacementStart();
+                propMotion.EvaluateDelivery(placementNormalized);
                 return;
             }
 

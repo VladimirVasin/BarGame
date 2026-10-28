@@ -31,7 +31,6 @@ namespace BarPromenade.Tests.EditMode
                 plateau.Center,
                 plan.Terminal.VehicleApron.Center,
                 plan.Terminal.VehicleApron.EntryCenter,
-                plan.Terminal.Cafe.Center,
                 plan.Terminal.Cableway.StationArea.Center
             };
             for (int index = 0; index < interior.Length; index++)

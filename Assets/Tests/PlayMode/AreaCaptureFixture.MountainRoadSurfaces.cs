@@ -174,44 +174,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(foliage, Is.GreaterThan(0), "Real conifer crowns keep the wind variant.");
             AssertRoadSurfaceGroup(root.World.Cableway.StationRoot.transform, audit, "Cableway station");
             AssertRoadSurfaceGroup(root.World.PhysicalRoot.transform.Find("Authored Forest Misc"), audit, "Road furniture and forest misc");
-            int unique = 0;
-            foreach (MountainRoadCafePartBinding part in root.World.Cafe.Model.Parts)
-            {
-                Renderer renderer = part.Renderer;
-                if (renderer == null) continue;
-                ReadRoadSurfaceBlock(renderer, -1, block);
-                Material material = renderer.sharedMaterial;
-                if (part.Role == "menu_cover" || part.Role == "menu_pages")
-                    Assert.That(MountainRoadCafeSurfaceAppearance.IsUnique(part), Is.False,
-                        "The complete menu retains its legacy path, including the cover used to build its folding leaves.");
-                if (MountainRoadCafeSurfaceAppearance.IsUnique(part))
-                {
-                    unique++;
-                    Assert.That(material.shader.name, Is.EqualTo(MountainRoadSurfaceLibrary.ShaderName), part.SourceName);
-                    Assert.That(RoadBoundTexture(block, material, "_BaseMap"), Is.SameAs(uniqueAlbedo), part.SourceName);
-                    Assert.That(RoadBoundTexture(block, material, "_SceneMaterialResponse"), Is.SameAs(uniqueResponse), part.SourceName);
-                    Assert.That(block.GetVector("_BaseMap_ST"), Is.EqualTo(new Vector4(1, 1, 0, 0)), part.SourceName);
-                    Assert.That(block.GetColor("_BaseColor"), Is.EqualTo(Color.white), part.SourceName);
-                    Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
-                    Assert.That(mesh.HasVertexAttribute(VertexAttribute.TexCoord0) && mesh.HasVertexAttribute(VertexAttribute.TexCoord1),
-                        Is.True, part.SourceName + " retains original UV1 and receives unique UV0.");
-                }
-                else RememberProtected(renderer);
-            }
-            Assert.That(unique, Is.GreaterThan(0));
-            Assert.That(root.CafeMenu, Is.Not.Null);
-            Assert.That(root.CafeMenu.Presentation, Is.Not.Null);
-            var menuPage = root.CafeMenu.Presentation.Page;
-            Assert.That(menuPage, Is.Not.Null);
-            Assert.That(menuPage.RestingPropRenderers, Is.Not.Empty,
-                "Audit the separate runtime folding leaves as well as the authored menu meshes.");
-            foreach (Renderer renderer in menuPage.PropRenderers) if (renderer != null) RememberProtected(renderer);
-            foreach (Renderer renderer in menuPage.RestingPropRenderers) if (renderer != null) RememberProtected(renderer);
-            foreach (Renderer renderer in menuPage.RestingHighlightRenderers) if (renderer != null) RememberProtected(renderer);
+            Assert.That(root.World.Cafe, Is.Null, "Cafe surfaces are now composed only by City.");
+            Assert.That(root.CafeMenu, Is.Null);
             Transform vehicleRoot = root.LastRouteCar != null ?
                 root.LastRouteCar.GetComponentInParent<LastRouteCarDriver>()?.transform : null;
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-                if (renderer is SkinnedMeshRenderer || renderer.transform.IsChildOf(root.World.Cafe.NpcRoot.transform) ||
+                if (renderer is SkinnedMeshRenderer ||
                     renderer.transform.IsChildOf(root.Player.GameObject.transform) ||
                     vehicleRoot != null && renderer.transform.IsChildOf(vehicleRoot) ||
                     root.LastRouteFerryman != null && renderer.transform.IsChildOf(root.LastRouteFerryman.transform))
@@ -280,22 +248,6 @@ namespace BarPromenade.Tests.PlayMode
         private static Shot[] RoadSurfaceShots(MountainRoadRoot root, RoadSurfaceAudit audit)
         {
             var shots = new List<Shot>();
-            var cafe = root.Plan.Terminal.Cafe;
-            Vector3 cafeEye = cafe.Center - cafe.Right * 2.9f - cafe.Forward * 2.6f + Vector3.up * 1.55f;
-            Vector3 cafeAim = cafe.Center + cafe.Right * .4f - cafe.Forward * .2f + Vector3.up * 1.1f;
-            AddPair("Cafe pigment", cafeEye, cafeAim, audit.SetPigment);
-            AddPair("Cafe physical response", cafeEye, cafeAim, audit.SetResponse);
-            foreach (string name in new[] { "Cafe_RefrigeratorBody", "Cafe_Stove", "Cafe_CounterTop", "Cafe_StoolSeats" })
-                foreach (MountainRoadCafePartBinding part in root.World.Cafe.Model.Parts)
-                    if (part.SourceName == name && part.Renderer != null)
-                    {
-                        Vector3 aim = part.Renderer.bounds.center;
-                        string description = name == "Cafe_RefrigeratorBody" ? "Cafe refrigerator enamel" :
-                            name == "Cafe_Stove" ? "Cafe stove surface" : name == "Cafe_CounterTop" ?
-                            "Cafe counter surface" : "Cafe stool upholstery";
-                        AddView(description, aim - cafe.Forward * 2f - cafe.Right * 1.3f + Vector3.up * .6f, aim, 56f);
-                        break;
-                    }
             Renderer stationMetal = Array.Find(root.World.Cableway.StationRoot.GetComponentsInChildren<Renderer>(true),
                 renderer => renderer.name == "Bullwheel Bearing Housing");
             Assert.That(stationMetal, Is.Not.Null);

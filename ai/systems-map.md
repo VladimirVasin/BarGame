@@ -35,8 +35,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Road rhythm | Openings/five debris chapters/clear rails-kerbs retain the climb. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
 | Road surfaces/cafe | Local 15 families/4K+2K cafe; BC7≤80MiB, unchanged geometry/wind/light. | `MountainRoadSurfaceLibrary`, `MountainRoadCafeSurfaceAppearance` | Current |
 | Bar counter seat / shared physical menu | One-hip supported seating; three free stools share the physical booklet lifecycle. | `BarCounterStation`, `BarCounterSeatPlanner` | Current |
-| Mountain terminal cafe cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
-| Mountain terminal cafe menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
+| City diner placement | Whole lot/level entry/threshold/shelter/map; existing cast/menu/light. | `CityCafePlan`, `CityWorldBuilder`, `CityGameRoot` | Current |
+| City diner cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
+| City diner menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
 | City Blender misc catalog | Shared street/park/river/coastal meshes; plans retain placement/collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
@@ -49,7 +50,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.7f1`, `17.6.0` | Current |
 | Scene presentation | Native/SMAA/4:3; City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
-| Road lighting | Bounded air/snow/headlights/halos/metal/bounce; cafe/station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
+| Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
@@ -81,7 +82,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
-| Mountain Road area | Tunnel/hairpins/bridge/cafe/cableway; forest 48m chunks. | `MountainRoad*`, `MountainRoadBridge*` | Current |
+| Mountain Road area | Tunnel/hairpins/bridge/brink/cableway; forest 48m chunks. | `MountainRoad*`, `MountainRoadBridge*` | Current |
 | Mountain crafted slots | Shared imported drive/cabin/support and structural profiles retain bounds/pivots/collision. | `MountainCablewayCraftedGeometry`, `MountainRoadStructureDetails` | Current |
 | Crown/slide pilots | One forest RGB chunk/one authored slide normal field; A/B reviewed. | `MountainRoadCrownGradientPilot`, `pistol_normal_pilot.py` | Current |
 | Village above the cableway | Snow bowl, abandoned settlement, ski base; mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |

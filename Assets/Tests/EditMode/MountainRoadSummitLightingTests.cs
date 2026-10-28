@@ -5,16 +5,7 @@ using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
-    /// <summary>
-    /// What burns on the summit, and how hard.
-    ///
-    /// Two failures this pins have already happened. The cafe lit only its
-    /// own room, so from the yard it was a glowing box rather than
-    /// something to steer towards; and the cable station ran at `1.65`
-    /// beside a cafe counter at `10.5`, which made it a night-light next
-    /// to a lit window. Neither showed up as an error, because neither is
-    /// one.
-    /// </summary>
+    /// <summary>Summit fixtures retain their scale; the relocated cafe retains its contact lighting.</summary>
     public sealed class MountainRoadSummitLightingTests
     {
         /// <summary>
@@ -32,7 +23,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
-        public void Summit_IsLitByBothItsLandmarksAndOnItsOwnScale()
+        public void Summit_IsLitByItsCablewayOnItsOwnScale()
         {
             MountainRoadPlan plan = MountainRoadPlanner.Create(
                 GameSessionState.DefaultCitySeed);
@@ -62,38 +53,87 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(
                     onTheSummit,
-                    Has.Count.EqualTo(6),
-                    "The summit burns three in the cafe and three at the " +
-                    "cable station - the pad lens, the yard flood and the " +
+                    Has.Count.EqualTo(3),
+                    "The summit retains three at the cable station: " +
+                    "the pad lens, the yard flood and the " +
                     "boom over the boarding dock; the yard lamp belongs to " +
                     "the atmosphere and is not built here.");
 
                 for (int index = 0; index < onTheSummit.Count; index++)
                 {
                     Light light = onTheSummit[index];
-                    bool isCafeInteriorKey =
-                        light.name == "Sulphur Counter Light" ||
-                        light.name == "Cold Service Light";
-                    float maximumIntensity = isCafeInteriorKey
-                        ? MaximumCafeKeyIntensity
-                        : MaximumIntensity;
                     Assert.That(
                         light.intensity,
-                        Is.InRange(MinimumIntensity, maximumIntensity),
+                        Is.InRange(MinimumIntensity, MaximumIntensity),
                         $"'{light.name}' burns at {light.intensity:0.00}, " +
                         "outside this area's own scale.");
                     Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 }
 
+                Assert.That(world.Cafe, Is.Null, "The diner now belongs to City.");
+                // The station still lights its own dock on the summit scale.
+                Assert.That(
+                    world.Cableway.StationLight.intensity,
+                    Is.GreaterThan(5f),
+                    "The station no longer reads as the summit's working destination.");
+                Assert.That(
+                    plan.Terminal.Site.TryGetPart(
+                        "site-loading-kerb",
+                        out MountainRoadSitePartDescriptor kerb),
+                    Is.True);
+
+                float reach = float.PositiveInfinity;
+                for (int index = 0; index < onTheSummit.Count; index++)
+                {
+                    Light light = onTheSummit[index];
+                    if (!light.name.Contains("Station") &&
+                        !light.name.Contains("Boarding"))
+                    {
+                        continue;
+                    }
+
+                    reach = Mathf.Min(
+                        reach,
+                        Vector3.Distance(
+                            light.transform.position,
+                            kerb.Center) - light.range);
+                }
+
+                Assert.That(
+                    reach,
+                    Is.LessThan(0f),
+                    "No station fixture reaches the freight kerb it is " +
+                    "supposed to be lighting.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+                Object.DestroyImmediate(cameraObject);
+            }
+        }
+
+        [Test]
+        [Category("City")]
+        public void RelocatedCafe_PreservesItsThreeSourcesAndCounterContacts()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            MountainRoadCafePlan cafePlan = CityCafePlan.Create(layout).Cafe;
+            var parent = new GameObject("Relocated Cafe Lighting Test Parent");
+            try
+            {
+                MountainRoadCafeWorldResult cafe = MountainRoadCafeWorldBuilder.Build(parent.transform, cafePlan);
+                Assert.That(cafe.Lights, Has.Count.EqualTo(3));
+                foreach (Light light in cafe.Lights)
+                    Assert.That(light.intensity, Is.InRange(MinimumIntensity, MaximumCafeKeyIntensity));
                 // The cafe has to reach past its own glass. A fixture
                 // standing inside the footprint cannot, whatever its
                 // range: the walls are opaque.
                 Light wash = null;
-                IReadOnlyList<Light> cafeLights = world.Cafe.Lights;
+                IReadOnlyList<Light> cafeLights = cafe.Lights;
                 for (int index = 0; index < cafeLights.Count; index++)
                 {
                     Vector3 position = cafeLights[index].transform.position;
-                    if (!plan.Terminal.Cafe.ContainsInterior(position, 0f))
+                    if (!cafePlan.ContainsInterior(position, 0f))
                     {
                         wash = cafeLights[index];
                     }
@@ -105,9 +145,9 @@ namespace BarPromenade.Tests.EditMode
                     "Every cafe light stands inside the cafe, so the " +
                     "building throws none onto the yard.");
                 Assert.That(
-                    Vector3.Distance(wash.transform.position, apron),
+                    Vector3.Distance(wash.transform.position, cafePlan.DoorCenter),
                     Is.LessThan(wash.range),
-                    "The facade wash does not reach where the car parks.");
+                    "The facade wash does not reach the relocated entrance.");
                 Assert.That(
                     wash.shadows,
                     Is.EqualTo(LightShadows.None),
@@ -131,7 +171,7 @@ namespace BarPromenade.Tests.EditMode
                     "The stove practical still points across the room " +
                     "instead of down onto its task surface.");
                 Assert.That(
-                    world.Cafe.Model.TryGetAnchor(
+                    cafe.Model.TryGetAnchor(
                         "StovePanDock",
                         out Transform stovePanDock),
                     Is.True);
@@ -146,7 +186,7 @@ namespace BarPromenade.Tests.EditMode
                     "The sleeping head and folded forearms self-occlude " +
                     "under the warm key when it casts a hard shadow.");
                 MountainRoadCafeCastPlan castPlan =
-                    MountainRoadCafeCastPlan.Create(plan.Terminal.Cafe);
+                    MountainRoadCafeCastPlan.Create(cafePlan);
                 foreach (MountainRoadCafeCastMemberPlan member in
                          castPlan.Members)
                 {
@@ -221,63 +261,10 @@ namespace BarPromenade.Tests.EditMode
                     "The warm practical no longer reads the sleeping " +
                     "patron in his contact-frame pose.");
 
-                Assert.That(
-                    IsInsideInnerCone(wash, apron),
-                    Is.True,
-                    "The technical wash no longer covers the arrival apron.");
-                float closestDarkBandMargin = plan.Terminal.Site.Parts
-                    .Where(part =>
-                        part.Group == MountainRoadSiteGroup.Terrace ||
-                        part.Group == MountainRoadSiteGroup.Brink)
-                    .Min(part =>
-                        ConeAngleDegrees(wash, part.Center) -
-                        wash.spotAngle * 0.5f);
-                Assert.That(
-                    closestDarkBandMargin,
-                    Is.GreaterThanOrEqualTo(3f),
-                    "The cafe wash reaches the terrace or the black brink " +
-                    $"(nearest cone margin {closestDarkBandMargin:0.00} deg).");
-
-                // And the station is the other half of the pair, cold
-                // against the cafe's sulphur, reaching its own dock.
-                Assert.That(
-                    world.Cableway.StationLight.intensity,
-                    Is.GreaterThan(5f),
-                    "The station is a night-light beside the cafe again.");
-                Assert.That(
-                    plan.Terminal.Site.TryGetPart(
-                        "site-loading-kerb",
-                        out MountainRoadSitePartDescriptor kerb),
-                    Is.True);
-
-                float reach = float.PositiveInfinity;
-                for (int index = 0; index < onTheSummit.Count; index++)
-                {
-                    Light light = onTheSummit[index];
-                    if (!light.name.Contains("Station") &&
-                        !light.name.Contains("Boarding"))
-                    {
-                        continue;
-                    }
-
-                    reach = Mathf.Min(
-                        reach,
-                        Vector3.Distance(
-                            light.transform.position,
-                            kerb.Center) - light.range);
-                }
-
-                Assert.That(
-                    reach,
-                    Is.LessThan(0f),
-                    "No station fixture reaches the freight kerb it is " +
-                    "supposed to be lighting.");
+                Assert.That(IsInsideInnerCone(wash, cafePlan.DoorCenter), Is.True,
+                    "The technical wash must still reach the public entrance.");
             }
-            finally
-            {
-                Object.DestroyImmediate(parent);
-                Object.DestroyImmediate(cameraObject);
-            }
+            finally { Object.DestroyImmediate(parent); }
         }
 
         private static bool IsInsideInnerCone(

@@ -35,9 +35,14 @@ namespace BarPromenade.Tests.EditMode
             foreach (MountainRoadSiteGroup group in
                      System.Enum.GetValues(typeof(MountainRoadSiteGroup)))
             {
-                Assert.That(
-                    first.GetCount(group),
-                    Is.GreaterThan(0),
+                if (group == MountainRoadSiteGroup.CafeThreshold)
+                {
+                    Assert.That(first.GetCount(group), Is.Zero,
+                        "The cafe threshold moved to City.");
+                    continue;
+                }
+
+                Assert.That(first.GetCount(group), Is.GreaterThan(0),
                     $"The site has nothing in the {group} band.");
             }
 
@@ -78,9 +83,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.BrinkSeat.SeatTopCenter.y,
                 Is.InRange(floor, ceiling));
-            Assert.That(
-                first.CounterSeat.SeatTopCenter.y,
-                Is.InRange(floor, ceiling));
+            Assert.That(first.CounterSeat.StableId, Is.Null.Or.Empty,
+                "The mountain must not retain the cafe stool.");
         }
 
         [Test]
@@ -158,22 +162,26 @@ namespace BarPromenade.Tests.EditMode
                 parapetTop - site.YardTopY,
                 Is.GreaterThan(1.6f));
 
-            MountainRoadSiteSeatDescriptor stool = site.CounterSeat;
+            MountainRoadCafePlan cafe = MountainRoadTerminalPlanner.CreateCafe(plan.Plateau);
+            MountainRoadTerminalSitePlan cafeSite = MountainRoadTerminalSitePlanner.CreateCafeSite(cafe);
+            Assert.That(cafeSite.Parts, Has.Count.EqualTo(7));
+            Assert.That(cafeSite.GetCount(MountainRoadSiteGroup.CafeThreshold), Is.EqualTo(7));
+            MountainRoadSiteSeatDescriptor stool = cafeSite.CounterSeat;
             Assert.That(
                 Vector3.Dot(
                     stool.FaceDirection,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.GreaterThan(0.99f),
                 "The seated hero must look into the cafe counter.");
             Assert.That(
                 Vector3.Dot(
                     stool.ApproachDirection,
-                    plan.Terminal.Cafe.Forward),
+                    cafe.Forward),
                 Is.LessThan(-0.99f),
                 "The counter-facing stool still needs its dock in the " +
                 "open aisle.");
             Assert.That(
-                plan.Terminal.Cafe.ContainsInterior(
+                cafe.ContainsInterior(
                     stool.SeatTopCenter,
                     0.2f),
                 Is.True);

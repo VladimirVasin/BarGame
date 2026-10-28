@@ -1213,6 +1213,7 @@ namespace BarPromenade
             out Vector3 forward,
             float depthOverride = -1f)
         {
+            CityCafePlan cafe = CityCafePlan.Create(layout);
             float[] attempts =
             {
                 lateralFraction,
@@ -1234,6 +1235,7 @@ namespace BarPromenade
                         fencePlan,
                         nightPlan) ||
                     BlocksCourtyardRoute(layout, position, objectRadius) ||
+                    (cafe != null && cafe.BlocksGroundPosition(position, objectRadius)) ||
                     !IsSeparated(
                         position,
                         occupiedGroundPositions,

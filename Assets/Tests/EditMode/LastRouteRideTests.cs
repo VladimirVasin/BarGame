@@ -181,10 +181,10 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void MountainPath_NeverDrivesThroughTheCafe()
+        public void MountainPath_NeverDrivesThroughTheCableStation()
         {
             MountainRoadPlan plan = BuildMountainPlan();
-            MountainRoadCafePlan cafe = plan.Terminal.Cafe;
+            MountainRoadCablewayPlan cableway = plan.Terminal.Cableway;
             LastRouteCarDrivePath path =
                 LastRouteMountainDrivePlanner.CreateArrival(plan);
 
@@ -204,11 +204,11 @@ namespace BarPromenade.Tests.EditMode
                 foreach (float side in new[] { -1f, 0f, 1f })
                 {
                     Vector3 probe = position + (right * (side * CarHalfWidth));
-                    probe.y = cafe.FloorY;
+                    probe.y = plan.Plateau.Center.y;
                     Assert.That(
-                        cafe.ContainsInterior(probe, 0f),
+                        cableway.StationArea.ContainsXZ(probe, 0f),
                         Is.False,
-                        $"The car drives into the cafe at {distance:0.0} m, " +
+                        $"The car drives into the cable station at {distance:0.0} m, " +
                         $"{side:+0;-0;0} of the centreline.");
                 }
             }

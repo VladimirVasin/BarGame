@@ -3,6 +3,18 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-29
+
+City owns the complete existing diner: whole lot/ground/threshold, original
+cast/seat/menu, shelter/map and bounded City lighting/reflections. MountainRoad
+keeps LastRoute/cableway/brink without a cafe copy. Location-only canon exception
+preserves menu placeholder and open glass foreground; shared bar assets retained.
+Menu carry retains its final hand grip through the placement hold; text checks
+wait for unfolding. CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
+CoastalCafe_ReservesOneWholeLotWithGroundedOriginalFootprint and
+NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed.
+City day/night/menu and emptied terminal views reviewed; check-docs passed.
+
 ## 2026-10-28
 
 Stairwell/transition rails/hardware/hand docks

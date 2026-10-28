@@ -328,11 +328,14 @@ namespace BarPromenade
             var anchorRoot = new GameObject(AnchorRootName);
             anchorRoot.transform.SetParent(root, false);
 
-            AddAnchor(
-                anchorRoot.transform,
-                semanticObjects,
-                plan.YardLamp.StableId,
-                plan.YardLamp.Position);
+            if (!string.IsNullOrEmpty(plan.YardLamp.StableId))
+            {
+                AddAnchor(
+                    anchorRoot.transform,
+                    semanticObjects,
+                    plan.YardLamp.StableId,
+                    plan.YardLamp.Position);
+            }
 
             if (plan.TryGetPart(
                     LooseRailAnchorId,

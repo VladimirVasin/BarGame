@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             GameSessionState.BeginNewGame();
-            Scene road = SceneManager.GetSceneByName(SceneIds.MountainRoad);
+            Scene road = SceneManager.GetSceneByName(SceneIds.City);
             if (!road.isLoaded)
             {
                 yield break;
@@ -71,14 +71,14 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Capture, not a test. Look at Captures/CafeMenu/.")]
         public IEnumerator CafeMenu_PhotographsTheOpenedBooklet()
         {
-            MountainRoadRoot root = null;
+            CityGameRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return null;
 
-            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+            CityBenchSitInteraction seat = root.BenchSits.Single(candidate =>
                 string.Equals(
                     candidate.Plan.Id,
-                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    root.World.CafeSite.CounterSeat.StableId,
                     StringComparison.Ordinal));
             TeleportPlayer(
                 root.Player,
@@ -140,7 +140,7 @@ namespace BarPromenade.Tests.PlayMode
                 TextureFormat.RGB24,
                 false);
 
-            Camera gameCamera = root.CameraFollow.GetComponent<Camera>();
+            Camera gameCamera = root.Camera.GetComponent<PlayerCameraFollow>().GetComponent<Camera>();
             ReportGeometry(root, menu, gameCamera);
 
             yield return CaptureFrom(gameCamera, folder, "menu-focus.png");
@@ -205,7 +205,7 @@ namespace BarPromenade.Tests.PlayMode
         /// A negative number is a glyph sunk into the paper.
         /// </summary>
         private static void ReportGeometry(
-            MountainRoadRoot root,
+            CityGameRoot root,
             MountainRoadCafeMenuController menu,
             Camera camera)
         {
@@ -318,10 +318,10 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(
-            Action<MountainRoadRoot> capture)
+            Action<CityGameRoot> capture)
         {
             AsyncOperation operation = SceneManager.LoadSceneAsync(
-                SceneIds.MountainRoad,
+                SceneIds.City,
                 LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             float deadline = Time.realtimeSinceStartup + LoadTimeoutSeconds;
@@ -331,11 +331,11 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(operation.isDone, Is.True);
-            MountainRoadRoot root = null;
-            while (root == null && Time.realtimeSinceStartup < deadline)
+            CityGameRoot root = null;
+            while ((root == null || !root.IsInitialized) && Time.realtimeSinceStartup < deadline)
             {
-                root = Object.FindAnyObjectByType<MountainRoadRoot>();
-                if (root == null)
+                root = Object.FindAnyObjectByType<CityGameRoot>();
+                if (root == null || !root.IsInitialized)
                 {
                     yield return null;
                 }

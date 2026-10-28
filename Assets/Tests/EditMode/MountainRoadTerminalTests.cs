@@ -80,31 +80,15 @@ namespace BarPromenade.Tests.EditMode
                     apron.TurningRadius),
                 Is.True,
                 "The traversal mask must retain the complete turning circle.");
-            float cafeSide = Vector3.Dot(
-                terminal.Cafe.Center - apron.Center,
-                apron.Right);
+            Assert.That(terminal.Cafe, Is.Null,
+                "The cafe moved to City; no mountain placeholder remains.");
             float cablewaySide = Vector3.Dot(
                 terminal.Cableway.StationArea.Center - apron.Center,
                 apron.Right);
             Assert.That(
-                cafeSide,
-                Is.LessThanOrEqualTo(-8f),
-                "The cafe must remain left of arrival.");
-            Assert.That(
                 cablewaySide,
                 Is.GreaterThanOrEqualTo(8f),
                 "The cableway must remain right of arrival.");
-
-            for (int index = 0;
-                 index < terminal.Cafe.FootprintXZ.Count;
-                 index++)
-            {
-                Assert.That(
-                    plan.Plateau.Contains(
-                        terminal.Cafe.FootprintXZ[index]),
-                    Is.True,
-                    $"Cafe corner {index} leaves the actual plateau polygon.");
-            }
 
             for (int corner = 0; corner < 4; corner++)
             {
@@ -116,12 +100,11 @@ namespace BarPromenade.Tests.EditMode
                     "plateau polygon.");
             }
 
-            Assert.That(terminal.Landmarks, Has.Count.EqualTo(3));
+            Assert.That(terminal.Landmarks, Has.Count.EqualTo(2));
             Assert.That(
                 terminal.Landmarks.Select(landmark => landmark.Kind),
                 Is.EquivalentTo(new[]
                 {
-                    MountainRoadTerminalLandmarkKind.Cafe,
                     MountainRoadTerminalLandmarkKind.Cableway,
                     MountainRoadTerminalLandmarkKind.Brink
                 }));

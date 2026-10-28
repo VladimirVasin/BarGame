@@ -96,8 +96,11 @@ namespace BarPromenade
             CacheSources();
             // Separate warm/cold interior keys and two outdoor pools. Helpers
             // do not contribute a second emitter or a second bounce of the same energy.
-            TryAddPatch(owner.World.Cafe.Lights[0], true);
-            TryAddPatch(owner.World.Cafe.Lights[1], true);
+            if (owner.World.Cafe != null)
+            {
+                TryAddPatch(owner.World.Cafe.Lights[0], true);
+                TryAddPatch(owner.World.Cafe.Lights[1], true);
+            }
             TryAddPatch(owner.Atmosphere.YardLamp, false);
             foreach (Practical entry in practicals)
             {
@@ -210,25 +213,28 @@ namespace BarPromenade
             AddEmitter(list, owner.Atmosphere.YardLamp, null, .16f, .12f);
             AddPractical(owner.Atmosphere.ApronFloodlight);
             AddEmitter(list, owner.Atmosphere.ApronFloodlight, null, .18f, .26f);
-            foreach (Light light in owner.World.Cafe.Lights)
-                AddPractical(light, owner.World.Cafe.Plan.ContainsInterior(light.transform.position, 0f));
-            foreach (MountainRoadCafePartBinding part in owner.World.Cafe.Model.Parts)
+            if (owner.World.Cafe != null)
             {
-                if (!part.Emissive || part.Renderer == null) continue;
-                if (part.Role == "stove_task_lens") AddEmitter(list, owner.World.Cafe.Lights[1], part.Renderer, .23f);
-                if (part.Role == "practical_emission")
+                foreach (Light light in owner.World.Cafe.Lights)
+                    AddPractical(light, owner.World.Cafe.Plan.ContainsInterior(light.transform.position, 0f));
+                foreach (MountainRoadCafePartBinding part in owner.World.Cafe.Model.Parts)
                 {
-                    // Three real frontage runs, sampled on the luminous soffit
-                    // rather than at the combined mesh's empty centre.
-                    MountainRoadCafePlan cafe = owner.World.Cafe.Plan;
-                    for (int edge = 0; edge < 3; edge++)
+                    if (!part.Emissive || part.Renderer == null) continue;
+                    if (part.Role == "stove_task_lens") AddEmitter(list, owner.World.Cafe.Lights[1], part.Renderer, .23f);
+                    if (part.Role == "practical_emission")
                     {
-                        Vector2 a = cafe.FootprintXZ[edge], b = cafe.FootprintXZ[edge + 1];
-                        Vector2 middle = Vector2.Lerp(a, b, edge == 0 ? .68f : .5f);
-                        Vector3 point = new Vector3(middle.x, cafe.FloorY + 3.68f, middle.y);
-                        list.Add(new Emitter { Light = owner.World.Cafe.Lights[0], Renderer = part.Renderer,
-                            Anchor = part.Renderer.transform, Offset = part.Renderer.transform.InverseTransformPoint(point),
-                            Radius = .26f, BaseIntensity = owner.World.Cafe.Lights[0].intensity });
+                        // Three real frontage runs, sampled on the luminous soffit
+                        // rather than at the combined mesh's empty centre.
+                        MountainRoadCafePlan cafe = owner.World.Cafe.Plan;
+                        for (int edge = 0; edge < 3; edge++)
+                        {
+                            Vector2 a = cafe.FootprintXZ[edge], b = cafe.FootprintXZ[edge + 1];
+                            Vector2 middle = Vector2.Lerp(a, b, edge == 0 ? .68f : .5f);
+                            Vector3 point = new Vector3(middle.x, cafe.FloorY + 3.68f, middle.y);
+                            list.Add(new Emitter { Light = owner.World.Cafe.Lights[0], Renderer = part.Renderer,
+                                Anchor = part.Renderer.transform, Offset = part.Renderer.transform.InverseTransformPoint(point),
+                                Radius = .26f, BaseIntensity = owner.World.Cafe.Lights[0].intensity });
+                        }
                     }
                 }
             }
@@ -276,6 +282,7 @@ namespace BarPromenade
 
         private void CacheStructure()
         {
+            if (owner.World.Cafe == null) { structure = Array.Empty<Bounds>(); return; }
             var bounds = new List<Bounds>(8);
             // Six collider-owned perimeter pieces retain their physical blocking
             // even if a future presentation hides a rendered cafe wall.
@@ -293,7 +300,7 @@ namespace BarPromenade
 
         private Bounds CafeBounds()
         {
-            MountainRoadCafePlan cafe = owner.Plan.Terminal.Cafe;
+            MountainRoadCafePlan cafe = owner.World.Cafe.Plan;
             var bounds = new Bounds(new Vector3(cafe.FootprintXZ[0].x, cafe.FloorY, cafe.FootprintXZ[0].y), Vector3.zero);
             foreach (Vector2 p in cafe.FootprintXZ)
                 bounds.Encapsulate(new Vector3(p.x, cafe.FloorY + cafe.Height, p.y));
@@ -309,7 +316,7 @@ namespace BarPromenade
             if (entry.Interior)
             {
                 entry.Bounds = CafeBounds();
-                MountainRoadCafePlan cafe = owner.Plan.Terminal.Cafe;
+                MountainRoadCafePlan cafe = owner.World.Cafe.Plan;
                 for (int i = 0; i < cafe.FootprintXZ.Count; i++)
                 {
                     Vector2 a = cafe.FootprintXZ[i], b = cafe.FootprintXZ[(i + 1) % cafe.FootprintXZ.Count];
@@ -327,7 +334,7 @@ namespace BarPromenade
                 entry.Bounds.Encapsulate(position); entry.Bounds.Encapsulate(end);
                 entry.Bounds.Expand(new Vector3(entry.Moving ? 12f : 8f, entry.Moving ? 8f : 1.5f, entry.Moving ? 12f : 8f));
                 Vector3 min = entry.Bounds.min, max = entry.Bounds.max;
-                if (!entry.Moving) min.y = Mathf.Max(min.y, owner.Plan.Terminal.Cafe.FloorY - .1f);
+                if (!entry.Moving) min.y = Mathf.Max(min.y, owner.Plan.Plateau.Center.y - .1f);
                 // Tunnel ground is far below the summit's floor.
                 if (entry.Tunnel) min.y = owner.Plan.Tunnel.PortalGroundCenter.y + .02f;
                 entry.Bounds.SetMinMax(min, max);
@@ -416,13 +423,13 @@ namespace BarPromenade
 
         private void TryAddPatch(Light light, bool interior)
         {
-            if (light == null || BounceRegionCount >= MaximumBounceRegions) return;
-            float floorY = interior ? owner.Plan.Terminal.Cafe.FloorY : owner.Plan.Plateau.Center.y;
+            if (light == null || BounceRegionCount >= MaximumBounceRegions || interior && owner.World.Cafe == null) return;
+            float floorY = interior ? owner.World.Cafe.Plan.FloorY : owner.Plan.Plateau.Center.y;
             Vector3 aim = light.transform.position;
             if (light.transform.forward.y < -.15f)
                 aim += light.transform.forward * ((floorY - aim.y) / light.transform.forward.y);
             aim.y = floorY;
-            if (interior && !owner.Plan.Terminal.Cafe.ContainsInterior(aim, .4f))
+            if (interior && !owner.World.Cafe.Plan.ContainsInterior(aim, .4f))
                 aim = new Vector3(light.transform.position.x, floorY, light.transform.position.z);
             if (!Physics.Raycast(aim + Vector3.up * .6f, Vector3.down, out RaycastHit hit, 1.2f,
                     ~0, QueryTriggerInteraction.Ignore) || hit.normal.y < .85f || Mathf.Abs(hit.point.y - floorY) > .20f) return;

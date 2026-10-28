@@ -134,7 +134,7 @@ namespace BarPromenade
                             "turns in.");
                     }
 
-                    if (terminal.Cafe.ContainsInterior(
+                    if (terminal.Cafe != null && terminal.Cafe.ContainsInterior(
                             new Vector3(
                                 point.x,
                                 terminal.Cafe.FloorY + 0.5f,
@@ -301,25 +301,31 @@ namespace BarPromenade
             MountainRoadTerminalSitePlan site,
             ICollection<string> problems)
         {
-            CheckOneApproach(
-                site,
-                terminal.Cafe.DoorCenter,
-                terminal.Cafe.DoorForward,
-                terminal.Cafe.DoorWidth,
-                -0.1f,
-                DoorApproachDepth,
-                "the cafe door",
-                problems);
+            if (terminal.Cafe != null)
+            {
+                CheckOneApproach(
+                    site,
+                    terminal.Cafe.DoorCenter,
+                    terminal.Cafe.DoorForward,
+                    terminal.Cafe.DoorWidth,
+                    -0.1f,
+                    DoorApproachDepth,
+                    "the cafe door",
+                    problems);
+            }
             CheckSeatApproach(
                 site,
                 site.BrinkSeat,
                 "the brink bench",
                 problems);
-            CheckSeatApproach(
-                site,
-                site.CounterSeat,
-                "the counter stool",
-                problems);
+            if (!string.IsNullOrEmpty(site.CounterSeat.StableId))
+            {
+                CheckSeatApproach(
+                    site,
+                    site.CounterSeat,
+                    "the counter stool",
+                    problems);
+            }
         }
 
         /// <summary>
@@ -420,14 +426,17 @@ namespace BarPromenade
                 return;
             }
 
-            CheckReached(
-                bounds,
-                reached,
-                open,
-                terminal.Cafe.DoorCenter +
-                terminal.Cafe.DoorForward * 1.2f,
-                "the cafe doorstep",
-                problems);
+            if (terminal.Cafe != null)
+            {
+                CheckReached(
+                    bounds,
+                    reached,
+                    open,
+                    terminal.Cafe.DoorCenter +
+                    terminal.Cafe.DoorForward * 1.2f,
+                    "the cafe doorstep",
+                    problems);
+            }
             CheckReached(
                 bounds,
                 reached,
@@ -543,12 +552,12 @@ namespace BarPromenade
                         plateau.Contains(point) &&
                         DistanceToPolygonEdge(plateau.VerticesXZ, point) >=
                         CapsuleRadius &&
-                        !terminal.Cafe.ContainsInterior(
+                        (terminal.Cafe == null || !terminal.Cafe.ContainsInterior(
                             new Vector3(
                                 point.x,
                                 terminal.Cafe.FloorY + 0.5f,
                                 point.y),
-                            0f);
+                            0f));
                     height[column, row] = site.YardTopY;
                 }
             }

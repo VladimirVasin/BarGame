@@ -8,6 +8,40 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityLayoutGeneratorTests
     {
+        [TestCase(GameSessionState.DefaultCitySeed)]
+        [TestCase(71923)]
+        [TestCase(-99123)]
+        public void CoastalCafe_ReservesOneWholeLotWithGroundedOriginalFootprint(int seed)
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, seed);
+            BuildingLot lot = layout.BuildingLots.Single(value => value.IsCafe);
+            CityCafePlan cafe = CityCafePlan.Create(layout);
+            Assert.That(cafe, Is.Not.Null);
+            Assert.That(CityCafePlan.Create(layout), Is.SameAs(cafe));
+            Assert.That(cafe.Cell, Is.EqualTo(lot.Cell));
+            Assert.That(lot.HasBuilding, Is.False, "The imported cafe owns its shell and floor.");
+            Assert.That(lot.IsOrdinaryBuilding, Is.False);
+            Assert.That(layout.CourtyardBlocks.Any(block => block.Cell == lot.Cell), Is.False);
+            Assert.That(layout.PrimaryLandmarkCells.Values, Has.No.Member(lot.Cell));
+            Assert.That(layout.DistrictPointsOfInterest.Any(point => point.Cell == lot.Cell), Is.False);
+            Assert.That(lot.FrontageDirection, Is.EqualTo(Vector2Int.down));
+            Assert.That(cafe.Bounds.width, Is.EqualTo(9.8f).Within(.001f));
+            Assert.That(cafe.Bounds.height, Is.EqualTo(10f).Within(.001f));
+            Assert.That(cafe.Cafe.DoorForward, Is.EqualTo(Vector3.back));
+            Rect cellBounds = layout.GetCellWorldBounds(lot.Cell);
+            foreach (Vector2 point in cafe.Cafe.FootprintXZ)
+            {
+                Assert.That(cellBounds.Contains(point), Is.True);
+                Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, point,
+                    out float top, out _), Is.True);
+                Assert.That(top, Is.EqualTo(cafe.FloorY).Within(.001f), "No sloped ground pierces the flat cafe floor.");
+            }
+            Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout,
+                new Vector2(cafe.Cafe.DoorCenter.x, cafe.Cafe.DoorCenter.z), out float doorTop, out _), Is.True);
+            Assert.That(doorTop, Is.EqualTo(cafe.FloorY).Within(.001f));
+        }
+
         [Test]
         public void Generate_WithSameSeed_ProducesIdenticalLayout()
         {

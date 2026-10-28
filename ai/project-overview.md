@@ -115,8 +115,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
-- Mountain/village/cableway/interiors; physical maps/closeups. Church shares
-  exterior metres/openings; kit shell/furniture, bounded light and garden donors.
+- City diner: original cast/seat/menu/shelter/light; mountain keeps brink/car/cableway.
+  Church shares exterior metres/openings, kit and bounded light.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.

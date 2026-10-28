@@ -1104,6 +1104,7 @@ namespace BarPromenade
             }
 
             for (int index = 0;
+                 plan.Terminal.Cafe != null &&
                  index < plan.Terminal.Cafe.FootprintXZ.Count;
                  index++)
             {

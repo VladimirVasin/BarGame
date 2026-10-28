@@ -713,7 +713,7 @@ namespace BarPromenade
         {
             VehicleApron = vehicleApron ??
                 throw new ArgumentNullException(nameof(vehicleApron));
-            Cafe = cafe ?? throw new ArgumentNullException(nameof(cafe));
+            Cafe = cafe;
             Cableway = cableway ??
                 throw new ArgumentNullException(nameof(cableway));
             landmarks = new ReadOnlyCollection<MountainRoadTerminalLandmark>(
@@ -732,7 +732,7 @@ namespace BarPromenade
 
         public bool IsSheltered(Vector3 position)
         {
-            return Cafe.ContainsInterior(position) ||
+            return Cafe != null && Cafe.ContainsInterior(position) ||
                    Cableway.StationArea.ContainsXZ(position, 0.2f) &&
                    position.y >= Cableway.StationArea.Center.y - 0.3f &&
                    position.y <= Cableway.StationArea.Center.y + 5.4f;

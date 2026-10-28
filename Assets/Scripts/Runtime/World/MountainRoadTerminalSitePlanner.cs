@@ -77,16 +77,11 @@ namespace BarPromenade
 
         public static MountainRoadTerminalSitePlan Create(
             MountainRoadPlateauDescriptor plateau,
-            MountainRoadCafePlan cafe)
+            MountainRoadCafePlan cafe = null)
         {
             if (plateau == null)
             {
                 throw new ArgumentNullException(nameof(plateau));
-            }
-
-            if (cafe == null)
-            {
-                throw new ArgumentNullException(nameof(cafe));
             }
 
             // The pad IS the walking surface: the plateau slab belongs to
@@ -101,7 +96,10 @@ namespace BarPromenade
             AppendPloughing(plateau, yardTop, parts);
             AppendApronFloodlight(plateau, yardTop, parts);
             AppendRoadEnd(plateau, yardTop, parts);
-            AppendCafeThreshold(plateau, cafe, yardTop, parts);
+            if (cafe != null)
+            {
+                AppendCafeThreshold(cafe, parts);
+            }
             AppendServiceYard(plateau, yardTop, parts, cloth, chains);
             AppendTerrace(plateau, yardTop, terraceTop, parts);
             AppendBrink(plateau, yardTop, terraceTop, parts, cloth, chains);
@@ -116,9 +114,35 @@ namespace BarPromenade
                 yardTop,
                 terraceTop,
                 CreateBrinkSeat(plateau, terraceTop),
-                CreateCounterSeat(plateau, cafe, yardTop),
+                cafe != null ? CreateCounterSeat(cafe) : default,
                 CreateYardLamp(plateau, yardTop),
                 CreateApronFloodlight(plateau, yardTop));
+        }
+
+        /// <summary>
+        /// The cafe's portable threshold and hero stool. It has no mountain
+        /// yard, terrace, weather dressing or practicals.
+        /// </summary>
+        public static MountainRoadTerminalSitePlan CreateCafeSite(
+            MountainRoadCafePlan cafe)
+        {
+            if (cafe == null)
+            {
+                throw new ArgumentNullException(nameof(cafe));
+            }
+
+            var parts = new List<MountainRoadSitePartDescriptor>(7);
+            AppendCafeThreshold(cafe, parts);
+            return new MountainRoadTerminalSitePlan(
+                parts,
+                new List<MountainRoadSiteClothDescriptor>(),
+                new List<MountainRoadSiteChainDescriptor>(),
+                cafe.FloorY,
+                cafe.FloorY,
+                default,
+                CreateCounterSeat(cafe),
+                default,
+                default);
         }
 
         /// <summary>
@@ -303,17 +327,15 @@ namespace BarPromenade
         /// for a winter that does not end.
         /// </summary>
         private static void AppendCafeThreshold(
-            MountainRoadPlateauDescriptor plateau,
             MountainRoadCafePlan cafe,
-            float yardTop,
             ICollection<MountainRoadSitePartDescriptor> parts)
         {
-            Vector3 door = cafe.DoorCenter;
+            float yardTop = cafe.FloorY;
             float doorRight = Vector3.Dot(
-                door - plateau.Center,
-                plateau.Right);
-            parts.Add(Part(
-                plateau,
+                cafe.DoorCenter - cafe.Center,
+                cafe.Right) - 12.68f;
+            parts.Add(CafePart(
+                cafe,
                 "site-door-grate",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.RustedIron,
@@ -329,8 +351,8 @@ namespace BarPromenade
             // bin `0.9 m` from one jamb, an ash post `0.5 m` from the
             // other and a snow bank across the middle, so the way in was
             // a slot rather than a door.
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-stacked-tables",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.Timber,
@@ -340,8 +362,8 @@ namespace BarPromenade
                 new Vector3(1.5f, 0.84f, 0.9f),
                 8f,
                 true));
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-stacked-chairs",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.PaintedSteel,
@@ -354,8 +376,8 @@ namespace BarPromenade
 
             // Off the threshold entirely, against the cafe's blind west
             // flank where the rubbish actually goes.
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-threshold-bin",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.PaintedSteel,
@@ -365,8 +387,8 @@ namespace BarPromenade
                 new Vector3(0.56f, 0.92f, 0.56f),
                 0f,
                 true));
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-ash-post",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.RustedIron,
@@ -376,8 +398,8 @@ namespace BarPromenade
                 new Vector3(0.18f, 1.14f, 0.18f),
                 0f,
                 true));
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-cafe-sign-bracket",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.RustedIron,
@@ -387,8 +409,8 @@ namespace BarPromenade
                 new Vector3(0.08f, 0.5f, 0.24f),
                 0f,
                 false));
-            parts.Add(Part(
-                plateau,
+            parts.Add(CafePart(
+                cafe,
                 "site-cafe-sign-board",
                 MountainRoadSiteGroup.CafeThreshold,
                 MountainRoadSiteStyle.FadedSign,
@@ -1144,10 +1166,33 @@ namespace BarPromenade
                 plateau.Forward);
         }
 
-        private static MountainRoadSiteSeatDescriptor CreateCounterSeat(
-            MountainRoadPlateauDescriptor plateau,
+        private static MountainRoadSitePartDescriptor CafePart(
             MountainRoadCafePlan cafe,
-            float yardTop)
+            string stableId,
+            MountainRoadSiteGroup group,
+            MountainRoadSiteStyle style,
+            float sourceRight,
+            float heightY,
+            float sourceForward,
+            Vector3 size,
+            float localYaw,
+            bool blocksMovement)
+        {
+            // Keep the original threshold's measured offsets while expressing
+            // them in the cafe model's frame, independent of any plateau.
+            Vector3 center = cafe.Center +
+                             cafe.Right * (sourceRight + 12.68f) +
+                             cafe.Forward * (sourceForward - 6.86f);
+            center.y = heightY;
+            float bearing = Mathf.Atan2(cafe.Forward.x, cafe.Forward.z) *
+                            Mathf.Rad2Deg;
+            return new MountainRoadSitePartDescriptor(
+                stableId, group, style, center, size,
+                bearing + localYaw, blocksMovement);
+        }
+
+        private static MountainRoadSiteSeatDescriptor CreateCounterSeat(
+            MountainRoadCafePlan cafe)
         {
             Vector3 seat = cafe.Center +
                            cafe.Right * CounterSeatCafeRight +
@@ -1160,7 +1205,7 @@ namespace BarPromenade
                 seat,
                 MountainRoadCafeWorldBuilder.StoolSeatDiameter,
                 MountainRoadCafeWorldBuilder.StoolSeatDiameter,
-                yardTop,
+                cafe.FloorY,
                 cafe.Forward,
                 -cafe.Forward);
         }

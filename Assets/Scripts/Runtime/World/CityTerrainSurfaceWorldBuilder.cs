@@ -1113,6 +1113,7 @@ namespace BarPromenade
                 context.StreetBoundary.AppendAxisAnchors(patch, xAnchors, zAnchors);
             CityFairGroundSupportPlan rigidSupports = CityFairGroundSupportPlan.ForLayout(layout);
             if (!seabedOnly) rigidSupports.AppendAxisAnchors(patch, xAnchors, zAnchors);
+            if (!seabedOnly) CityCafePlan.Create(layout)?.AppendAxisAnchors(patch, xAnchors, zAnchors);
             List<float> xCoordinates = CreateAxisCoordinates(
                 patch.xMin,
                 patch.xMax,

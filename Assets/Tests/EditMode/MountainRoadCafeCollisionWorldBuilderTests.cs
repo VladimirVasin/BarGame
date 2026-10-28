@@ -13,8 +13,7 @@ namespace BarPromenade.Tests.EditMode
             var parent = new GameObject("Cafe Collision Test Root");
             try
             {
-                MountainRoadCafePlan plan = MountainRoadPlanner.Create(
-                    GameSessionState.DefaultCitySeed).Terminal.Cafe;
+                MountainRoadCafePlan plan = MountainRoadTerminalPlanner.CreateCafe(MountainRoadPlanner.Create(GameSessionState.DefaultCitySeed).Plateau);
                 MountainRoadCafeCollisionWorldResult result =
                     MountainRoadCafeCollisionWorldBuilder.Build(
                         parent.transform,

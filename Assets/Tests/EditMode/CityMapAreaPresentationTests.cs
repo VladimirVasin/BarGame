@@ -921,7 +921,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The five named places exist only on the shipped city, so the
+        /// The named places exist only on the shipped city, so the
         /// legacy-layout tests never see them. This is the one proof that
         /// they join the list after the district lots, carry localized
         /// names, and that every marker is a point the teleport ground
@@ -958,19 +958,21 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.EasternPost,
                     CityMapPointOfInterestKind.Docks,
                     CityMapPointOfInterestKind.ArchShelter,
-                    CityMapPointOfInterestKind.Church
+                    CityMapPointOfInterestKind.Church,
+                    CityMapPointOfInterestKind.Cafe
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe"
                 };
                 var expectedDistricts = new[]
                 {
-                    CityDistrictKind.Nightlife,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Yard,
                     CityDistrictKind.NorthWaterfront,
-                    CityDistrictKind.Nightlife,
-                    CityDistrictKind.Church
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Church,
+                    CityDistrictKind.Residential
                 };
                 int lotCount = layout.DistrictPointsOfInterest.Count;
                 Assert.That(controller.PointsOfInterest, Has.Count.EqualTo(lotCount + expectedKinds.Length));
@@ -984,6 +986,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(eastExit.IsEnabled, Is.True);
                 CityFairPlan fair = CityFairPlanner.Create(layout);
                 Assert.That(fair.IsEnabled, Is.True);
+                CityCafePlan cafe = CityCafePlan.Create(layout);
+                Assert.That(cafe, Is.Not.Null);
                 // The world adds the fair ground to its mask after the
                 // buildings (CityWorldBuilder); the landing check needs the
                 // same mask the hero actually walks.
@@ -1004,11 +1008,22 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(label, Does.Not.StartWith("map."), $"{context} is not localized.");
 
                     var xz = new Vector2(place.WorldPosition.x, place.WorldPosition.z);
-                    Assert.That(place.HasFootprint, Is.EqualTo(place.Kind == CityMapPointOfInterestKind.Fair), context);
-                    if (place.HasFootprint)
+                    Assert.That(place.HasFootprint, Is.EqualTo(place.Kind == CityMapPointOfInterestKind.Fair ||
+                        place.Kind == CityMapPointOfInterestKind.Cafe), context);
+                    if (place.Kind == CityMapPointOfInterestKind.Fair)
                     {
                         Assert.That(place.Footprint, Is.EqualTo(fair.Bounds), context);
                         Assert.That(place.Footprint.Contains(xz), Is.True, context);
+                    }
+
+                    if (place.Kind == CityMapPointOfInterestKind.Cafe)
+                    {
+                        Assert.That(place.Footprint, Is.EqualTo(cafe.Bounds), context);
+                        Vector3 arrival = cafe.Cafe.DoorCenter + cafe.Cafe.DoorForward * 1.5f;
+                        arrival.y = cafe.FloorY + PlayerFactory.GroundedRootOffset;
+                        Assert.That(Vector3.Distance(place.WorldPosition, arrival), Is.LessThan(.001f), context);
+                        Assert.That(cafe.ApproachBounds.Contains(xz), Is.True, context);
+                        Assert.That(label, Is.EqualTo(LocalizationService.Get("map.mountain_road.cafe")), context);
                     }
 
                     if (place.Kind == CityMapPointOfInterestKind.EasternPost)
