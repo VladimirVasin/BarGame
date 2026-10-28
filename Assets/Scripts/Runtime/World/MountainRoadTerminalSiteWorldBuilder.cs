@@ -114,11 +114,15 @@ namespace BarPromenade
         {
             var physical = new List<RuntimeOrientedBox>(64);
             var visual = new List<RuntimeOrientedBox>(64);
+            var physicalCoping = new List<bool>(64);
+            var visualCoping = new List<bool>(64);
             foreach (MountainRoadSiteStyle style in
                      Enum.GetValues(typeof(MountainRoadSiteStyle)))
             {
                 physical.Clear();
                 visual.Clear();
+                physicalCoping.Clear();
+                visualCoping.Clear();
                 for (int index = 0; index < plan.Parts.Count; index++)
                 {
                     MountainRoadSitePartDescriptor part = plan.Parts[index];
@@ -134,15 +138,17 @@ namespace BarPromenade
                     if (part.BlocksMovement)
                     {
                         physical.Add(box);
+                        physicalCoping.Add(part.StableId.StartsWith("site-parapet-coping-", StringComparison.Ordinal));
                     }
                     else
                     {
                         visual.Add(box);
+                        visualCoping.Add(part.StableId.StartsWith("site-parapet-coping-", StringComparison.Ordinal));
                     }
                 }
 
-                EmitBatch(root, style, physical, true);
-                EmitBatch(root, style, visual, false);
+                EmitBatch(root, style, physical, physicalCoping, true);
+                EmitBatch(root, style, visual, visualCoping, false);
             }
         }
 
@@ -150,6 +156,7 @@ namespace BarPromenade
             Transform root,
             MountainRoadSiteStyle style,
             IReadOnlyList<RuntimeOrientedBox> boxes,
+            IReadOnlyList<bool> coping,
             bool physical)
         {
             if (boxes.Count == 0)
@@ -172,6 +179,7 @@ namespace BarPromenade
                     physical,
                     recipe.MetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
+            MountainRoadStructureDetails.ReplaceCoping(batch, boxes, coping, recipe.MetersPerTile);
             MountainRoadSurfaceAppearance.ApplyCombined(
                 batch.GetComponent<Renderer>(),
                 kind,

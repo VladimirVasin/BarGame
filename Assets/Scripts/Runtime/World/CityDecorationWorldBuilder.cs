@@ -8,7 +8,7 @@ namespace BarPromenade
     public static class CityDecorationWorldBuilder
     {
         private const float SpatialChunkSize = 48f;
-        private const int BatchStyleCount = 7;
+        private const int BatchStyleCount = 8;
 
         private static readonly Color MasonryColor =
             new Color(0.27f, 0.22f, 0.17f);
@@ -18,6 +18,10 @@ namespace BarPromenade
             new Color(0.20f, 0.22f, 0.21f);
         private static readonly Color StreetColor =
             new Color(0.10f, 0.12f, 0.13f);
+        // The existing worn warm-stone palette, raised only on the four
+        // clock dials so their unchanged dark hands read through the fog.
+        // This remains opaque pigment, with no new lamp or emissive state.
+        private static readonly Color ClockFaceColor = new Color(0.44f, 0.40f, 0.31f);
         private static readonly Color MagentaGlow =
             new Color(1.25f, 0.18f, 0.72f);
         private static readonly Color CyanGlow =
@@ -721,7 +725,8 @@ namespace BarPromenade
                     style = context.Neon;
                     break;
                 case CityMiscMeshRole.Residential:
-                    style = BatchStyle.Residential;
+                    style = part.Kind == CityMiscKind.OldTownClockTower
+                        ? BatchStyle.ClockFace : BatchStyle.Residential;
                     break;
                 case CityMiscMeshRole.BacklitSign:
                     style = BatchStyle.BacklitSign;
@@ -998,9 +1003,9 @@ namespace BarPromenade
             AddClockFace(parts, c, width, -1f, 0f);
             AddClockFace(parts, c, width, 0f, 1f);
             AddClockFace(parts, c, width, 0f, -1f);
-            Add(parts, c, BatchStyle.Residential, 0f, 4.36f,
+            Add(parts, c, BatchStyle.Street, 0f, 4.36f,
                 width * 0.425f, 0.68f, 0.10f, 0.08f);
-            Add(parts, c, BatchStyle.Residential, 0f, 4.36f,
+            Add(parts, c, BatchStyle.Street, 0f, 4.36f,
                 width * 0.43f, 0.10f, 0.62f, 0.08f);
         }
 
@@ -1015,7 +1020,7 @@ namespace BarPromenade
             Vector3 size = xSide != 0f
                 ? new Vector3(0.08f, 1.02f, 1.02f)
                 : new Vector3(1.02f, 1.02f, 0.08f);
-            Add(parts, c, BatchStyle.Residential,
+            Add(parts, c, BatchStyle.ClockFace,
                 xSide * offset, 4.36f, zSide * offset,
                 size.x, size.y, size.z);
         }
@@ -2468,6 +2473,8 @@ namespace BarPromenade
                     return "Cyan Emissive Details";
                 case BatchStyle.BacklitSign:
                     return "Backlit Sign Details";
+                case BatchStyle.ClockFace:
+                    return "Clock Dial Details";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }
@@ -2491,6 +2498,8 @@ namespace BarPromenade
                     return CyanGlow;
                 case BatchStyle.BacklitSign:
                     return BacklitSignGlow;
+                case BatchStyle.ClockFace:
+                    return ClockFaceColor;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }
@@ -2531,7 +2540,8 @@ namespace BarPromenade
             Street = 3,
             NeonMagenta = 4,
             NeonCyan = 5,
-            BacklitSign = 6
+            BacklitSign = 6,
+            ClockFace = 7
         }
 
         private readonly struct RecipeContext

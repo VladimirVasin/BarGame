@@ -1,13 +1,13 @@
 # Project overview
 
-## Current baseline
+## Baseline
 
 - Windows/PC Unity, Mac Editor supported; runtime-composed city/road/village/interiors.
   [World](current-world.md).
 - Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC:native/SMAA High/saved effects;City/balcony Soft;bar/church Neutral.
+- PC:native/SMAA/saved effects;City/balcony Soft;bar/church Neutral.
   Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
   Pilots:coastal stems(static City crowns),road RGB,pistol normals;fountain foam/mips.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
@@ -49,6 +49,7 @@ ownership. Vehicle reset/ride leases cannot affect later sessions. Journey
 progress is distinct from temporary rides; no disk save/load.
 
 `GameInput`/`GameInputPolicy`: bindings; pause/transition/modal priority.
+Input System only; shared UI pointer/text.
 Balance recovery live; unfocused movement=0; return:neutral WASD/stick.
 Mouse orbit: no button; RMB aims; Alt frees cursor/pauses mouse look/combat.
 `GameCursor`: leases; UI frees cursor; focus return drops delta.
@@ -69,7 +70,7 @@ City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map tr
 uses its last leg. It adds no text, story fact or travel time; art-bible §15a
 and the accepted architecture decision define this bounded exception.
 
-Opt-in performance capture reports frame/GPU/GC, inclusive combat/NPC CPU and
+Performance capture reports frame/GPU/GC, inclusive combat/NPC CPU and
 separate City-fountain/warehouse-probe work. Unsupported counters stay unavailable;
 Editor captures give local evidence, not a project-wide performance guarantee.
 
@@ -139,7 +140,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 Long-term saves, broader economy/story progression, release/platform work and
 other omissions are itemized in [current-world.md#deferred](current-world.md#deferred).
-A `Partial` system states its own gap in the systems map. Code and coverage do not imply a fresh regression or build.
+A `Partial` system states its own gap in the systems map. Coverage does not imply a fresh run.
 
 ## Verification policy
 

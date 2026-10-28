@@ -1,0 +1,358 @@
+{
+  "design_id": "mountain_cableway_crafted_parts_v1",
+  "generator_version": "1.0.0",
+  "build_signature": "52fbfd29f440b79faad8cc5e9fcb5aa3a6416fa5c428fbd27533d893fe0ab0e6",
+  "mesh_count": 20,
+  "triangle_count": 4732,
+  "parts": [
+    {
+      "name": "GEO_Cableway_Canopy",
+      "role": "Canopy",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 1424,
+      "vertex_count": 724,
+      "signed_volume": 0.1878130873333338
+    },
+    {
+      "name": "GEO_Cableway_Door",
+      "role": "Door",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "vertex_count": 80,
+      "signed_volume": 0.8606713653333337
+    },
+    {
+      "name": "GEO_Cableway_Reducer",
+      "role": "Reducer",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 168,
+      "vertex_count": 96,
+      "signed_volume": 0.9531029440000007
+    },
+    {
+      "name": "GEO_Cableway_Deck",
+      "role": "Deck",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 84,
+      "vertex_count": 48,
+      "signed_volume": 0.48261469866666645
+    },
+    {
+      "name": "GEO_Cableway_Roof",
+      "role": "Roof",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 56,
+      "vertex_count": 32,
+      "signed_volume": 0.9627783333333334
+    },
+    {
+      "name": "GEO_Cableway_Skirt",
+      "role": "Skirt",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 280,
+      "vertex_count": 160,
+      "signed_volume": 1.057066682666667
+    },
+    {
+      "name": "GEO_Cableway_Bench",
+      "role": "Bench",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 168,
+      "vertex_count": 96,
+      "signed_volume": 0.352562604
+    },
+    {
+      "name": "GEO_Cableway_PostY",
+      "role": "PostY",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 84,
+      "vertex_count": 48,
+      "signed_volume": 0.6452355973333335
+    },
+    {
+      "name": "GEO_Cableway_Grip",
+      "role": "Grip",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 84,
+      "vertex_count": 48,
+      "signed_volume": 0.6518749999999999
+    },
+    {
+      "name": "GEO_Cableway_RailZ",
+      "role": "RailZ",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 92,
+      "vertex_count": 48,
+      "signed_volume": 0.3232959999999996
+    },
+    {
+      "name": "GEO_Cableway_BeamZ",
+      "role": "BeamZ",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "vertex_count": 80,
+      "signed_volume": 0.4050326187093329
+    },
+    {
+      "name": "GEO_Cableway_BeamX",
+      "role": "BeamX",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "vertex_count": 80,
+      "signed_volume": 0.4050326187093329
+    },
+    {
+      "name": "GEO_Cableway_ChannelZ",
+      "role": "ChannelZ",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "vertex_count": 80,
+      "signed_volume": 0.42340445870933285
+    },
+    {
+      "name": "GEO_Cableway_Weight",
+      "role": "Weight",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 84,
+      "vertex_count": 48,
+      "signed_volume": 0.9383874106666664
+    },
+    {
+      "name": "GEO_Cableway_Bullwheel",
+      "role": "Bullwheel",
+      "bounds_min": [
+        -0.5,
+        -1,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        1,
+        0.5
+      ],
+      "triangle_count": 384,
+      "vertex_count": 192,
+      "signed_volume": 0.6288671500082518
+    },
+    {
+      "name": "GEO_Cableway_Hub",
+      "role": "Hub",
+      "bounds_min": [
+        -0.5,
+        -1,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        1,
+        0.5
+      ],
+      "triangle_count": 380,
+      "vertex_count": 192,
+      "signed_volume": 0.2622975730687001
+    },
+    {
+      "name": "GEO_Cableway_Roller",
+      "role": "Roller",
+      "bounds_min": [
+        -0.5,
+        -1,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        1,
+        0.5
+      ],
+      "triangle_count": 380,
+      "vertex_count": 192,
+      "signed_volume": 0.31731007874333017
+    },
+    {
+      "name": "GEO_Cableway_Hut",
+      "role": "Hut",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 280,
+      "vertex_count": 160,
+      "signed_volume": 1.057066682666667
+    },
+    {
+      "name": "GEO_Cableway_Carriage",
+      "role": "Carriage",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 168,
+      "vertex_count": 96,
+      "signed_volume": 0.9531029440000007
+    },
+    {
+      "name": "GEO_Cableway_Nosing",
+      "role": "Nosing",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 56,
+      "vertex_count": 32,
+      "signed_volume": 0.5098355520000001
+    }
+  ],
+  "source_axes": "X right, Y forward, Z up",
+  "unity_axes": "X right, Y up, Z forward",
+  "origin": "existing_primitive_envelope",
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "maximum_template_vertices": 24000,
+  "maximum_replacements": 512
+}

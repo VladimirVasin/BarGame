@@ -32,11 +32,15 @@ namespace BarPromenade
             float inside = Mathf.Min(house.FootprintSize.x * .475f - TerrainBedInset - Mathf.Abs(Vector2.Dot(delta, right)),
                 house.FootprintSize.y * .445f - TerrainBedInset - Mathf.Abs(Vector2.Dot(delta, forward)));
             if (inside <= 0f) return height;
-            // The floor and every actor dock stay at zero. Soil belongs below
-            // the boards. A full cell diagonal is reserved inside the real
-            // plinth: the interpolated return stays under its solid foundation,
-            // and cannot make a ditch beyond the facade.
+            // Keep the sampled bed inside the real foundation. The floor and
+            // actor docks stay at zero; FitWorkroomGround also clips the final
+            // interpolated return, whose exterior corners can be above datum.
             return Mathf.Min(height, house.GroundCenter.y - TerrainBedDepth);
+        }
+        internal static Rect TerrainCavity(AlpineVillagePlotDescriptor house)
+        {
+            Vector2 half = Vector2.Scale(house.FootprintSize, new Vector2(.475f, .445f));
+            return UnityEngine.Rect.MinMaxRect(-half.x, -half.y, half.x, half.y);
         }
         public bool Contains(Vector3 world, float padding = 0f)
         {

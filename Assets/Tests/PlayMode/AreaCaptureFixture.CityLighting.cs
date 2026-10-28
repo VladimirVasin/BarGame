@@ -128,7 +128,9 @@ namespace BarPromenade.Tests.PlayMode
             foreach (BuildingLot lot in city.Layout.BuildingLots) if (lot.IsBar) { bar = lot; break; }
             Assert.That(bar, Is.Not.Null);
             poses.Add(FrameWindowFacade("Residential", bar));
-            poses.Add(FrameWindowFacade("Old town", FindOrdinaryFrontage(city.Layout, CityDistrictKind.OldTown)));
+            // The compact city has two built districts. OldTown remains a
+            // semantic POI layer, so it no longer owns ordinary frontages.
+            poses.Add(FrameWindowFacade("Working street", FindOrdinaryFrontage(city.Layout, CityDistrictKind.Industrial)));
             CityDecorationDescriptor cinema = default;
             bool cinemaFound = false;
             foreach (CityDecorationDescriptor decoration in city.World.DecorationPlan.Descriptors)
@@ -192,8 +194,7 @@ namespace BarPromenade.Tests.PlayMode
 
             var shots = new List<Shot>();
             bool nightApplied = false;
-            foreach (CityDistrictKind district in new[] { CityDistrictKind.Residential, CityDistrictKind.OldTown,
-                         CityDistrictKind.Nightlife, CityDistrictKind.Industrial })
+            foreach (CityDistrictKind district in new[] { CityDistrictKind.Residential, CityDistrictKind.Industrial })
             {
                 BuildingLot closeLot = FindOrdinaryFrontage(city.Layout, district);
                 Add("Day close " + district + " masonry", FrameBuildingSurface("Masonry close", closeLot,

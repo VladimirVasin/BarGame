@@ -27,7 +27,7 @@ namespace BarPromenade
                 grounds.xMin + 23.3f + NorthOpeningWidth, grounds.yMax);
         }
 
-        private static Rect GetNorthOpeningBounds(CityChurchCourtyardPlan plan)
+        internal static Rect GetNorthOpeningBounds(CityChurchCourtyardPlan plan)
         {
             return Rect.MinMaxRect(plan.GardenOrigin.x + 23.3f,
                 plan.GardenOrigin.y + 31.4f,

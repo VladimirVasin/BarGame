@@ -190,6 +190,11 @@ namespace BarPromenade
                 plan,
                 semanticObjects);
 
+            // Swap only passive mesh slots after all authored transforms and
+            // materials exist. Collision, cabin anchors and every moving
+            // controller pivot remain the exact plan-owned objects above.
+            root.AddComponent<MountainCablewayCraftedGeometry>().Apply(root.transform);
+
             MountainCablewayController controller =
                 root.AddComponent<MountainCablewayController>();
             controller.Initialize(

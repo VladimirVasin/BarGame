@@ -144,7 +144,8 @@ namespace BarPromenade.Tests.PlayMode
                 float fieldOfView,
                 bool relativeToHero,
                 int delayFrames,
-                Func<bool> readyWhen)
+                Func<bool> readyWhen,
+                float readyPollSeconds = 0f)
             {
                 Name = name;
                 Position = position;
@@ -153,6 +154,7 @@ namespace BarPromenade.Tests.PlayMode
                 RelativeToHero = relativeToHero;
                 DelayFrames = Mathf.Max(0, delayFrames);
                 ReadyWhen = readyWhen;
+                ReadyPollSeconds = Mathf.Max(0f, readyPollSeconds);
             }
 
             public string Name { get; }
@@ -170,6 +172,9 @@ namespace BarPromenade.Tests.PlayMode
             /// </summary>
             public Func<bool> ReadyWhen { get; }
 
+            // Opt-in cadence for readiness governed by real-time debouncing.
+            public float ReadyPollSeconds { get; }
+
             /// <summary>A fixed place, for a room whose layout is known.</summary>
             public static Shot At(
                 string name,
@@ -177,7 +182,8 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 target,
                 float fieldOfView = 60f,
                 int delayFrames = 0,
-                Func<bool> readyWhen = null)
+                Func<bool> readyWhen = null,
+                float readyPollSeconds = 0f)
             {
                 return new Shot(
                     name,
@@ -186,7 +192,8 @@ namespace BarPromenade.Tests.PlayMode
                     fieldOfView,
                     false,
                     delayFrames,
-                    readyWhen);
+                    readyWhen,
+                    readyPollSeconds);
             }
 
             /// <summary>
@@ -232,6 +239,23 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Capture, not a test. Run one area at a time.")]
         [PrebuildSetup(typeof(CompactBarAssetsSetup))]
         public IEnumerator Bar()
+        {
+            float previousDelta = Time.captureDeltaTime;
+            GameTimeRuntime clock = BarPromenadeRuntimeBootstrap.EnsureGameTimeRuntimeInstalled();
+            bool clockWasEnabled = clock.enabled;
+            Time.captureDeltaTime = 1f / 30f;
+            // Hold the chosen attendance hour while real dialogue, drinking,
+            // physics and animation keep advancing through the close views.
+            clock.enabled = false;
+            try { yield return CaptureBarWorldAudit(); }
+            finally
+            {
+                if (clock != null) clock.enabled = clockWasEnabled;
+                Time.captureDeltaTime = previousDelta;
+            }
+        }
+
+        private IEnumerator CaptureBarWorldAudit()
         {
             foreach (BarActivityKind activity in new[] { BarActivityKind.BeerPong,
                 BarActivityKind.Cocktail, BarActivityKind.SplitTheG, BarActivityKind.TinctureMatch })
@@ -386,7 +410,12 @@ namespace BarPromenade.Tests.PlayMode
             foreach (Renderer surface in surfaces)
                 if (!(surface is ParticleSystemRenderer)) placed.Encapsulate(surface.bounds);
             Assert.That(placed.size.x, Is.InRange(11.3f, 11.9f));
-            Assert.That(placed.size.z, Is.InRange(7.7f, 8.2f));
+            // These are whole-room bounds, including the authored WC rear
+            // wing; RoomSize.y alone describes only the public hall.
+            float fullDepth = bar.Layout.RoomSize.y * .5f + bar.Layout.WallThickness * .5f +
+                BarWashroomLayout.Bounds.yMax + BarWashroomLayout.WallThickness;
+            Assert.That(placed.size.z, Is.EqualTo(fullDepth).Within(.05f),
+                "The placed hall and washroom wing must retain their shared metre envelope.");
             Assert.That(placed.max.y, Is.LessThan(3.3f));
             Renderer counter = bar.Room.Find("Counter Top").GetComponent<Renderer>();
             Assert.That(bar.Layout.CounterPosition.x, Is.EqualTo(0.875f));
@@ -720,6 +749,7 @@ namespace BarPromenade.Tests.PlayMode
                 BarPatronDrinkingArmPose pose = patron.Drinking;
                 if (pose == null) continue;
                 detail.Append($"\n{patron.Anchor.Id}/{pose.DrinkProp?.Kind}: {pose.Timeline.Phase}, " +
+                    $"phaseSeconds={pose.Timeline.PhaseElapsed:F3}, dt={Time.deltaTime:F4}, paused={GameTimeScaleRuntime.IsPaused}, " +
                     $"drinks={pose.Timeline.CompletedDrinks}, base={pose.BottleSurfaceContactError:F4}, " +
                     $"upright={pose.BottleRestUprightErrorDegrees:F2}, grip={pose.BottleGripError:F4}, " +
                     $"roll={pose.BottleHandOrientationErrorDegrees:F2}, mouth={pose.BottleMouthDistance:F4}, axis={pose.BottleSipAxisErrorDegrees:F2}, support={pose.TableSupportError:F4}, " +
@@ -830,6 +860,8 @@ namespace BarPromenade.Tests.PlayMode
                     if (counter)
                     {
                         counterCount++;
+                        Assert.That(patron.Drinking.DrinkProp.Kind, Is.Not.EqualTo(BarPatronDrinkPropKind.Bottle),
+                            "Counter clips use the typed vessel substitution: " + patron.Anchor.Id);
                     }
                     else
                     {
@@ -952,11 +984,18 @@ namespace BarPromenade.Tests.PlayMode
                 AssertTypedBarSip(patron);
             }
 
-            Assert.That(vesselKinds.Count, Is.EqualTo(5), "Each visit must mix all five vessel forms.");
+            // Counter clips replace Bottle with ShotGlass. If the only
+            // allocated bottle lands at a counter, four forms are correct.
+            Assert.That(vesselKinds, Is.SupersetOf(new[]
+            {
+                BarPatronDrinkPropKind.Pint, BarPatronDrinkPropKind.WineGlass,
+                BarPatronDrinkPropKind.ShotGlass, BarPatronDrinkPropKind.Snifter
+            }));
+            Assert.That(vesselKinds.Count, Is.InRange(4, 5));
             Assert.That(boothCount, Is.EqualTo(4));
             Assert.That(occupiedSofas.Count, Is.EqualTo(4));
             Assert.That(counterCount, Is.EqualTo(2));
-            Assert.That(tableCount, Is.EqualTo(3));
+            Assert.That(tableCount, Is.EqualTo(2));
         }
 
         private static string DescribeBarSupportPose(BarPatron patron)
@@ -1098,10 +1137,24 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(CityWorldAuditAssetsSetup))]
         public IEnumerator City()
         {
-            yield return Capture(
-                SceneIds.City, Root<CityGameRoot>(), HeroShots());
+            GameSessionState.BeginNewGame("World location audit");
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            try
+            {
+                yield return Capture(SceneIds.City, () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized ? city : null;
+                }, () => CityLocationAuditShots(city));
+            }
+            finally
+            {
+                GameSessionState.BeginNewGame("World location audit cleanup");
+            }
         }
 
         [UnityTest]
@@ -1352,9 +1405,41 @@ namespace BarPromenade.Tests.PlayMode
             bedRenderer.GetPropertyBlock(bedProperties);
             int mapId = Shader.PropertyToID("_BaseMap");
             int colorId = Shader.PropertyToID("_BaseColor");
-            Assert.That(bedProperties.GetTexture(mapId), Is.SameAs(
-                CitySeacoastSurfaceAppearance.GetTexture(CitySeacoastSurfaceKind.Sand)));
-            Assert.That(bedProperties.GetTexture(mapId), Is.SameAs(dryProperties.GetTexture(mapId)));
+            // The City presentation replaces the builders' ingredient sheet
+            // with the manifest-owned albedo and packed ground response.
+            CitySurfaceSheet sandSheet = null;
+            foreach (CitySurfaceSheet sheet in CitySurfaceLibrary.Manifest.sheets)
+                if (sheet.family == "CitySeacoastSand" &&
+                    sheet.source == CitySeacoastSurfaceAppearance.SandTextureResourcePath)
+                {
+                    Assert.That(sandSheet, Is.Null, "The sand source must have one City surface owner.");
+                    sandSheet = sheet;
+                }
+            Assert.That(sandSheet, Is.Not.Null);
+            Texture expectedSand = Resources.Load<Texture2D>(sandSheet.albedo);
+            Texture expectedResponse = Resources.Load<Texture2D>(sandSheet.ground_response);
+            Assert.That(expectedResponse, Is.Not.Null);
+            Texture bedSand = bedProperties.GetTexture(mapId);
+            Texture drySand = dryProperties.GetTexture(mapId);
+            Assert.That(expectedSand, Is.Not.Null);
+            Assert.That(bedSand, Is.Not.Null);
+            Assert.That(drySand, Is.Not.Null);
+            // Native property-block getters may return another managed wrapper.
+            // Require the same native texture, not merely the same asset name.
+            Assert.That(bedSand.GetEntityId(), Is.EqualTo(expectedSand.GetEntityId()),
+                "Seabed/resource native sand identity diverged: bed=" + bedSand.GetEntityId() +
+                ", resource=" + expectedSand.GetEntityId() + ", dry=" + drySand.GetEntityId());
+            Assert.That(bedSand.GetEntityId(), Is.EqualTo(drySand.GetEntityId()),
+                "Both sand skins must reuse the same native texture.");
+            int responseId = Shader.PropertyToID("_GroundResponse");
+            Texture bedResponse = bedProperties.GetTexture(responseId);
+            Texture dryResponse = dryProperties.GetTexture(responseId);
+            Assert.That(bedResponse, Is.Not.Null);
+            Assert.That(dryResponse, Is.Not.Null);
+            Assert.That(bedResponse.GetEntityId(), Is.EqualTo(expectedResponse.GetEntityId()),
+                "The seabed must retain the exact manifest-owned packed ground response.");
+            Assert.That(dryResponse.GetEntityId(), Is.EqualTo(expectedResponse.GetEntityId()),
+                "The dry sand must retain the same packed ground response.");
             Assert.That(bedProperties.GetColor(colorId), Is.EqualTo(dryProperties.GetColor(colorId)),
                 "The water, rather than a tint seam, must darken the submerged sand.");
 
@@ -1413,6 +1498,61 @@ namespace BarPromenade.Tests.PlayMode
                     return cityRoot;
                 },
                 () => CityArchShelterShots(cityRoot));
+            CityArchShelterPlan plan = cityRoot.World.ArchShelterPlan;
+            Assert.That(plan.IsEnabled, Is.True);
+            Assert.That(plan.ClearLanes, Is.Not.Empty);
+            CityArchShelterClearLaneDescriptor lane = plan.ClearLanes[0];
+            PlayerMotor motor = cityRoot.Player.Motor;
+            CharacterController body = motor.GetComponent<CharacterController>();
+            Vector3 savedPosition = motor.transform.position;
+            Quaternion savedRotation = motor.transform.rotation;
+            bool savedInput = motor.InputEnabled;
+            var landing = new CityMapCityTeleportGround(cityRoot.Layout);
+            Physics.SyncTransforms();
+            Vector3 south = ArchFoot(lane.Footprint.yMin - .8f);
+            Vector3 middle = ArchFoot(lane.Footprint.center.y);
+            Vector3 north = ArchFoot(lane.Footprint.yMax + .8f);
+            try
+            {
+                motor.SetInputEnabled(false);
+                motor.Teleport(south + Vector3.up * PlayerFactory.GroundedRootOffset);
+                yield return null;
+                yield return WalkChurchGardenLeg(motor, middle, "arch-south-to-clear-lane");
+                yield return WalkChurchGardenLeg(motor, north, "arch-clear-lane-to-north");
+                yield return WalkChurchGardenLeg(motor, middle, "arch-north-to-clear-lane");
+                yield return WalkChurchGardenLeg(motor, south, "arch-clear-lane-to-south");
+                Debug.Log("ARCH ACTUAL MOTOR OK: south -> ClearLanes[0] -> north -> ClearLanes[0] -> south.");
+            }
+            finally
+            {
+                motor.CancelInteractionPoseMove();
+                motor.Teleport(savedPosition);
+                motor.transform.rotation = savedRotation;
+                motor.SetInputEnabled(savedInput);
+            }
+
+            Vector3 ArchFoot(float z)
+            {
+                Vector2 xz = new Vector2(lane.Footprint.center.x, z);
+                Assert.That(landing.TryResolveStandingPosition(xz, out Vector3 planned), Is.True);
+                Assert.That(Vector2.Distance(xz, new Vector2(planned.x, planned.z)), Is.LessThan(.001f),
+                    "The arch route must use its real clear lane, not a projected landing.");
+                float expected = planned.y - PlayerFactory.GroundedRootOffset;
+                RaycastHit? support = null;
+                foreach (RaycastHit hit in Physics.RaycastAll(new Vector3(xz.x, expected + 1f, xz.y),
+                    Vector3.down, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                {
+                    if (hit.normal.y < .7f || Mathf.Abs(hit.point.y - expected) > .25f ||
+                        hit.collider.transform.IsChildOf(cityRoot.Player.GameObject.transform) ||
+                        hit.collider.GetComponentInParent<DefaultNpcAppearance>() != null) continue;
+                    if (!support.HasValue || hit.point.y > support.Value.point.y) support = hit;
+                }
+                Assert.That(support.HasValue, Is.True, "The actual arch route lacks supporting ground at " + xz);
+                Vector3 foot = support.Value.point;
+                Assert.That(cityRoot.World.WalkableArea.Contains(foot, body.radius), Is.True);
+                AssertLocalClearColumn(cityRoot, foot, body.radius, "arch clear lane");
+                return foot;
+            }
         }
 
         [UnityTest]
@@ -1651,16 +1791,53 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector3(courtyard.Passage.AxisX, courtyard.GroundTopY, z + 1.2f), "passage-approach");
             yield return WalkChurchGardenLeg(city.Player.Motor,
                 new Vector3(courtyard.Passage.AxisX, courtyard.GroundTopY, z - 4f), "cemetery-passage");
+            yield return WalkChurchGardenLeg(city.Player.Motor,
+                new Vector3(courtyard.Passage.AxisX, courtyard.GroundTopY, z + 1.2f), "cemetery-passage-return");
 
-            // The former north wall must agree with the actual ground mesh,
-            // not merely disappear from presentation.
-            Assert.That(landing.TryResolveStandingPosition(
-                new Vector2(x + 25.5f, z + 34f), out Vector3 gradeStart), Is.True);
+            // The garden's hedge opening is not an opening into the closed
+            // checkpoint. Follow it to the real southern return fence first,
+            // then cross the graded seam on the checkpoint's public side.
+            Rect northOpening = ChurchGardenBorderPlan.GetNorthOpeningBounds(courtyard);
+            CityEastExitPlan eastExit = city.World.EastExitPlan;
+            Assert.That(eastExit.IsEnabled, Is.True);
+            CharacterController heroBody = city.Player.Motor.GetComponent<CharacterController>();
+            float seamZ = courtyard.Grounds.yMax;
+            Vector2 requestedStart = new Vector2(northOpening.center.x, northOpening.yMin + 1f);
+            Assert.That(landing.TryResolveStandingPosition(requestedStart, out Vector3 gradeStart), Is.True);
+            Assert.That(Vector2.Distance(new Vector2(gradeStart.x, gradeStart.z), requestedStart), Is.LessThan(.01f),
+                "Use the actual hedge opening, never a clamped map substitute.");
             city.Player.Motor.Teleport(gradeStart);
             yield return null;
             yield return WalkChurchGardenLeg(city.Player.Motor,
-                new Vector3(x + 25.5f, courtyard.GroundTopY, courtyard.Grounds.yMax + 2f), "north-grade-through-hedge-gap");
-            Debug.Log("Church garden acceptance: route and north grade traversed.");
+                new Vector3(northOpening.center.x, courtyard.GroundTopY,
+                    seamZ - heroBody.radius - CityEastExitPlan.FenceThickness * .5f - .35f), "north-hedge-to-return-fence");
+            for (int frame = 0; frame < 30; frame++)
+            {
+                city.Player.Motor.MoveTowardsApproachWaypoint(
+                    new Vector3(northOpening.center.x, courtyard.GroundTopY, seamZ + 2f), .1f, .1f);
+                yield return null;
+            }
+            city.Player.Motor.CancelInteractionPoseMove();
+            Assert.That(city.Player.Motor.transform.position.z, Is.LessThan(seamZ - heroBody.radius),
+                "The checkpoint return fence must continue to close its outboard ground.");
+            Assert.That(Physics.Raycast(city.Player.Motor.transform.position + Vector3.up * .8f, Vector3.forward,
+                out RaycastHit returnFence, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+            Assert.That(returnFence.collider.name, Does.Contain("Boundary Fence"),
+                "The old hardcoded trial stopped at the actual visible checkpoint fence, not an unexplained walking seam.");
+
+            float publicMinimumX = Mathf.Max(courtyard.Grounds.xMin, eastExit.YardBounds.xMin);
+            float publicMaximumX = Mathf.Min(courtyard.Grounds.xMax, eastExit.ClosedGroundBounds.xMin);
+            Assert.That(publicMaximumX - publicMinimumX, Is.GreaterThan(heroBody.radius * 2f + 1f));
+            float publicX = (publicMinimumX + publicMaximumX) * .5f;
+            Assert.That(landing.TryResolveStandingPosition(new Vector2(publicX, seamZ - 1.5f), out Vector3 publicSouth), Is.True);
+            Assert.That(landing.TryResolveStandingPosition(new Vector2(publicX, seamZ + 2f), out Vector3 publicNorth), Is.True);
+            Assert.That(publicNorth.x, Is.EqualTo(publicX).Within(.01f));
+            Assert.That(publicNorth.z, Is.EqualTo(seamZ + 2f).Within(.01f));
+            yield return WalkChurchGardenLeg(city.Player.Motor, publicSouth, "north-grade-public-approach");
+            yield return WalkChurchGardenLeg(city.Player.Motor, publicNorth, "north-grade-public-seam");
+            Assert.That(city.Player.Motor.transform.position.y, Is.EqualTo(publicNorth.y).Within(.08f));
+            yield return WalkChurchGardenLeg(city.Player.Motor, publicSouth, "north-grade-public-seam-return");
+            Debug.Log("Church garden acceptance: hedge opening reaches the visible closed return fence; actual motor crosses the public north grade in both directions.");
 
             ChurchGardenFountain fountain = city.World.ChurchCourtyardRoot
                 .GetComponentInChildren<ChurchGardenFountain>();
@@ -1798,6 +1975,8 @@ namespace BarPromenade.Tests.PlayMode
             float x = plan.Grounds.xMin;
             float z = plan.Grounds.yMin;
             float y = plan.GroundTopY;
+            CityChurchCemeteryPassagePlan passage = plan.Passage;
+            Assert.That(passage, Is.Not.Null, "The passage capture needs the shared physical opening.");
             return new[]
             {
                 Shot.At("church-garden-00-overview", new Vector3(x + 22f, y + 10f, z + 37f),
@@ -1810,8 +1989,9 @@ namespace BarPromenade.Tests.PlayMode
                     new Vector3(x + 22f, y + 4f, z + 18f), 62f),
                 Shot.At("church-garden-04-statue", new Vector3(x + 29f, y + EyeHeight, z + 29f),
                     new Vector3(x + 32.4f, y + 1f, z + 32.7f), 58f),
-                Shot.At("church-garden-05-cemetery", new Vector3(x + 40f, y + EyeHeight, z - 3f),
-                    new Vector3(x + 39f, y + 1.1f, z + 15f), 65f),
+                Shot.At("church-garden-05-cemetery",
+                    new Vector3(passage.AxisX, passage.CemeteryGroundTopY + EyeHeight, passage.BoundaryZ - 3f),
+                    new Vector3(passage.AxisX, passage.ChurchGroundTopY + 1.1f, passage.BoundaryZ + 15f), 65f),
                 Shot.At("church-garden-06-north-grade", new Vector3(x + 44f, y + 3.5f, z + 47f),
                     new Vector3(x + 24f, y + 1.5f, z + 31f), 65f)
             };
@@ -2846,28 +3026,92 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(StairwellAuthoredAssetsSetup))]
         public IEnumerator Stairwell()
         {
+            StairwellInteriorRoot stairwell = null;
             yield return Capture(
                 SceneIds.StairwellInterior,
-                Root<StairwellInteriorRoot>(),
-                HeroShots());
+                () => stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>(),
+                () => StairwellAuthoredShots(stairwell));
+        }
+
+        private static Shot[] StairwellAuthoredShots(StairwellInteriorRoot stairwell)
+        {
+            Assert.That(stairwell, Is.Not.Null);
+            var shots = new List<Shot>();
+            // Authored gameplay poses live inside the shell. Hero-relative
+            // generic shots could photograph a wall or the outside of the box.
+            foreach (StairwellCameraShot pose in StairwellFixedCameraController.CreateDefaultShots(stairwell.Layout))
+                shots.Add(Shot.At("0" + (shots.Count + 1) + "-gameplay-" + pose.Kind,
+                    stairwell.transform.TransformPoint(pose.Position),
+                    stairwell.transform.TransformPoint(pose.Position + pose.Rotation * Vector3.forward * 4f),
+                    pose.FieldOfView, delayFrames: 4));
+            Transform room = stairwell.World.Root;
+            shots.Add(Shot.At("04-cat-perch-and-rail",
+                room.TransformPoint(new Vector3(-3.55f, 3.60f, 3.75f)),
+                stairwell.Cat.Renderer.bounds.center, 54f, delayFrames: 4));
+            shots.Add(Shot.At("05-apartment-door-and-reveal",
+                room.TransformPoint(new Vector3(1.9f, 4.7f, -4.0f)),
+                room.TransformPoint(new Vector3(4.1f, 4.4f, -3.72f)), 55f, delayFrames: 4));
+            shots.Add(Shot.At("06-upper-debris-and-fixture",
+                room.TransformPoint(new Vector3(.5f, 5.1f, -3.65f)),
+                room.TransformPoint(stairwell.Layout.UpperBlockerBounds.center), 62f, delayFrames: 4));
+            shots.Add(Shot.At("07-ground-service-and-grille",
+                room.TransformPoint(new Vector3(.1f, 1.8f, -.7f)),
+                room.TransformPoint(new Vector3(-1.6f, 1.1f, -3.2f)), 68f, delayFrames: 4));
+            shots.Add(Shot.At("08-street-door-handle",
+                room.TransformPoint(new Vector3(-2.5f, 1.65f, -3.9f)),
+                stairwell.World.StreetDoor.Find("Street Door Hardware").GetComponent<MeshRenderer>().bounds.center, 56f, delayFrames: 4));
+            shots.Add(Shot.At("09-cabinet-pull",
+                room.TransformPoint(new Vector3(2.65f, 1.6f, .3f)),
+                room.TransformPoint(new Vector3(4.05f, 1.16f, -.35f)), 56f, delayFrames: 4));
+            return shots.ToArray();
         }
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator Supermarket()
         {
+            GameSessionState.BeginNewGame("Test supermarket visual itinerary");
             SupermarketInteriorRoot supermarketRoot = null;
-            yield return Capture(
-                SceneIds.SupermarketInterior,
-                () =>
+            float previousDelta = Time.captureDeltaTime;
+            Pose previousHero = default;
+            bool borrowed = false, motorInput = false, followEnabled = false;
+            try
+            {
+                Time.captureDeltaTime = 1f / 30f;
+                yield return Capture(
+                    SceneIds.SupermarketInterior,
+                    () =>
+                    {
+                        supermarketRoot = Object.FindAnyObjectByType<SupermarketInteriorRoot>();
+                        return supermarketRoot;
+                    },
+                    () =>
+                    {
+                        Assert.That(supermarketRoot, Is.Not.Null);
+                        previousHero = new Pose(supermarketRoot.Player.GameObject.transform.position,
+                            supermarketRoot.Player.GameObject.transform.rotation);
+                        motorInput = supermarketRoot.Player.Motor.InputEnabled;
+                        followEnabled = supermarketRoot.CameraFollow.enabled;
+                        borrowed = true;
+                        supermarketRoot.Player.Motor.SetInputEnabled(false);
+                        supermarketRoot.CameraFollow.enabled = false;
+                        return SupermarketShots(supermarketRoot);
+                    });
+            }
+            finally
+            {
+                if (borrowed && supermarketRoot != null)
                 {
-                    supermarketRoot = Object.FindAnyObjectByType<
-                        SupermarketInteriorRoot>();
-                    return supermarketRoot;
-                },
-                () => SupermarketShots(supermarketRoot));
+                    supermarketRoot.Player.Motor.Teleport(previousHero.position);
+                    supermarketRoot.Player.GameObject.transform.rotation = previousHero.rotation;
+                    supermarketRoot.Player.Motor.SetInputEnabled(motorInput);
+                    supermarketRoot.CameraFollow.enabled = followEnabled;
+                }
+                Time.captureDeltaTime = previousDelta;
+            }
         }
 
         private static Shot[] SupermarketShots(
@@ -2876,19 +3120,150 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(supermarketRoot, Is.Not.Null);
             Assert.That(supermarketRoot.World, Is.Not.Null);
             Assert.That(supermarketRoot.World.Shelves, Has.Count.EqualTo(3));
-            IReadOnlyList<SupermarketShelfView> shelves =
-                supermarketRoot.World.Shelves;
-            return new[]
+            Assert.That(supermarketRoot.Cashier, Is.Not.Null);
+            Assert.That(supermarketRoot.SecurityCameras, Has.Count.EqualTo(4));
+            Transform room = supermarketRoot.World.Root;
+            SupermarketInteriorLayoutPlan plan = supermarketRoot.Layout;
+            SupermarketInteriorAssetRegistry assets = supermarketRoot.World.AssetRegistry;
+            IReadOnlyList<SupermarketShelfView> shelves = supermarketRoot.World.Shelves;
+            var shots = new List<Shot>();
+            bool CanStand(Vector3 eye)
             {
-                Shot.NearHero(
-                    "01-entrance-overview",
-                    new Vector3(0f, 1.5f, -3.6f),
-                    new Vector3(0f, 1.2f, 9f),
-                    62f),
-                ShelfShot("02-dry-products", shelves[0]),
-                ShelfShot("03-pantry-products", shelves[1]),
-                ShelfShot("04-cold-product", shelves[2]),
-            };
+                const float radius = .32f;
+                Vector2 foot = new Vector2(eye.x, eye.z);
+                Rect walkable = plan.WalkableBounds;
+                if (!Rect.MinMaxRect(walkable.xMin + radius, walkable.yMin + radius,
+                    walkable.xMax - radius, walkable.yMax - radius).Contains(foot)) return false;
+                bool Blocks(Rect bounds) => Rect.MinMaxRect(bounds.xMin - radius, bounds.yMin - radius,
+                    bounds.xMax + radius, bounds.yMax + radius).Contains(foot);
+                foreach (SupermarketShelfView shelf in shelves) if (Blocks(shelf.Plan.Bounds)) return false;
+                foreach (SupermarketFixturePlan fixture in plan.Fixtures)
+                    if (fixture.BlocksMovement && Blocks(fixture.Bounds)) return false;
+                return true;
+            }
+            void AssertLensSurface(SupermarketSecurityCamera controller, string label)
+            {
+                Transform pivot = controller.HeadPivot;
+                MeshFilter lens = null;
+                foreach (MeshFilter candidate in pivot.GetComponentsInChildren<MeshFilter>(true))
+                    if (candidate.name.EndsWith(" Lens", StringComparison.Ordinal))
+                    {
+                        Assert.That(lens, Is.Null, label + ": duplicate authored lens mesh.");
+                        lens = candidate;
+                    }
+                Assert.That(lens, Is.Not.Null, label + ": the tracked head must carry its actual lens mesh.");
+                var probe = new GameObject("CCTV lens surface proof");
+                try
+                {
+                    probe.transform.SetParent(lens.transform, false);
+                    MeshCollider surface = probe.AddComponent<MeshCollider>();
+                    surface.sharedMesh = lens.sharedMesh;
+                    Physics.SyncTransforms();
+                    Vector3 front = pivot.position + pivot.forward * .6075f;
+                    Vector3 forward = pivot.forward;
+                    Assert.That(surface.Raycast(new Ray(front + forward * .3f, -forward), out RaycastHit hit, .6f),
+                        Is.True, label + ": the actual lens front must intersect the production tracking axis.");
+                    Assert.That(Vector3.Distance(hit.point, front), Is.LessThan(.002f),
+                        label + ": production tracking must aim through the authored iris front, not the housing side.");
+                    Assert.That(Vector3.Dot(hit.normal, forward), Is.GreaterThan(.999f),
+                        label + ": actual rendered lens triangles must face along tracking +Z.");
+                    Assert.That(Vector3.Dot(hit.normal, (Camera.main.transform.position - hit.point).normalized),
+                        Is.GreaterThan(.99f), label + ": the recorded observer must see the lens surface.");
+                }
+                finally { Object.DestroyImmediate(probe); }
+            }
+            Shot SupermarketShot(Shot shot, SupermarketSecurityCamera trackingCamera = null)
+            {
+                Vector3 localEye = room.InverseTransformPoint(shot.Position);
+                Assert.That(CanStand(localEye), Is.True, shot.Name + ": the ordinary hero capsule must fit this shop-floor viewpoint.");
+                Vector3 observer = room.TransformPoint(new Vector3(localEye.x, PlayerFactory.GroundedRootOffset, localEye.z));
+                Camera camera = Camera.main;
+                Assert.That(camera, Is.Not.Null);
+                Assert.That(camera.GetComponent<AudioListener>(), Is.Not.Null);
+                int stagedFrame = -1;
+                bool Ready()
+                {
+                    if (stagedFrame < 0)
+                    {
+                        supermarketRoot.Player.Motor.Teleport(observer);
+                        Vector3 facing = Vector3.ProjectOnPlane(shot.Target - observer, room.up);
+                        supermarketRoot.Player.GameObject.transform.rotation = Quaternion.LookRotation(facing, room.up);
+                        camera.transform.SetPositionAndRotation(shot.Position, Quaternion.LookRotation(shot.Target - shot.Position, room.up));
+                        Physics.SyncTransforms();
+                        stagedFrame = Time.frameCount;
+                    }
+                    int elapsed = Time.frameCount - stagedFrame;
+                    // Let real cashier/CCTV LateUpdates observe the relocated
+                    // hidden hero. Capture already owns renderer hiding/restoring.
+                    if (elapsed < 12) return false;
+                    Assert.That(Vector3.ProjectOnPlane(supermarketRoot.Player.GameObject.transform.position - observer, room.up).magnitude,
+                        Is.LessThan(.01f), shot.Name + ": the observer left its authored shop-floor point.");
+                    if (trackingCamera != null)
+                    {
+                        Transform pivot = trackingCamera.HeadPivot;
+                        Vector3 focus = supermarketRoot.Player.GameObject.transform.position + Vector3.up * SupermarketSecurityCamera.FocusHeightMeters;
+                        float angle = Quaternion.Angle(pivot.rotation, SupermarketSecurityCamera.ResolveAim(pivot.position, focus));
+                        Assert.That(elapsed, Is.LessThanOrEqualTo(90), shot.Name + ": the live CCTV servo did not converge; angle=" + angle);
+                        if (angle > 1f) return false;
+                        Assert.That(Vector3.Angle(pivot.forward, shot.Position - pivot.position), Is.LessThan(6f),
+                            shot.Name + ": the recorded observer must see the actual lens-facing side.");
+                        AssertLensSurface(trackingCamera, shot.Name);
+                    }
+                    return shot.ReadyWhen == null || shot.ReadyWhen();
+                }
+                return Shot.At(shot.Name, shot.Position, shot.Target, shot.FieldOfView, shot.DelayFrames, Ready, shot.ReadyPollSeconds);
+            }
+            void Standing(string name, Vector3 eye, Vector3 target, float fov, SupermarketSecurityCamera trackingCamera = null)
+            {
+                shots.Add(SupermarketShot(Shot.At(name, room.TransformPoint(eye), target, fov, delayFrames: 4), trackingCamera));
+            }
+            Vector3 entrance = room.InverseTransformPoint(assets.GetAnchor("entrance").position);
+            Standing("01-entrance-overview", entrance + new Vector3(0f, 1.65f, 1.1f),
+                assets.GetAnchor("room_centre").position + room.up * 1.15f, 62f);
+            shots.Add(SupermarketShot(ShelfShot("02-dry-products", shelves[0])));
+            shots.Add(SupermarketShot(ShelfShot("03-pantry-products", shelves[1])));
+            shots.Add(SupermarketShot(ShelfShot("04-cold-product", shelves[2])));
+            Vector3 checkout = room.InverseTransformPoint(assets.GetAnchor("checkout").position);
+            Vector3 head = supermarketRoot.Cashier.Presentation.HeadWorldPosition;
+            Standing("05-checkout-and-cashier", checkout + new Vector3(-2.2f, 1.65f, -1.1f),
+                Vector3.Lerp(head, assets.GetAnchor("checkout").position + room.up * 1.05f, .4f), 62f);
+            Standing("06-cashier-face", plan.Cashier.Position + Quaternion.Euler(0f, plan.Cashier.YawDegrees, 0f) *
+                new Vector3(.15f, 1.65f, 1.85f), head, 30f);
+            Bounds register = assets.GetRendererByRole("register").bounds;
+            Standing("07-register-keys-and-support", new Vector3(room.InverseTransformPoint(register.center).x, 1.65f, checkout.z - 1.1f),
+                register.center, 48f);
+            Vector3 cold = room.InverseTransformPoint(assets.GetAnchor("shelf_cold").position);
+            // The rear aisle is too close for the complete wide niche at a
+            // normal lens. Two standing views retain both ends and its cavity.
+            foreach (float side in new[] { -1.55f, 1.55f })
+                Standing(side < 0f ? "08-cold-niche-left" : "09-cold-niche-right",
+                    cold + new Vector3(side, 1.65f, -1.35f), room.TransformPoint(cold + new Vector3(side, 1.32f, 0f)), 80f);
+            int number = 10;
+            foreach (SupermarketShelfView shelf in shelves)
+            {
+                Vector3 facing = shelf.transform.TransformDirection(shelf.Plan.FacingDirection).normalized;
+                foreach (SupermarketProductView product in shelf.Products)
+                {
+                    Assert.That(product.TryGetWorldBounds(out Bounds bounds), Is.True);
+                    Vector3 eye = room.InverseTransformPoint(bounds.center + facing * 1.35f);
+                    eye.y = 1.65f;
+                    Standing($"{number++:00}-support-and-price-{product.ItemId}", eye,
+                        new Vector3(bounds.center.x, bounds.min.y + .04f, bounds.center.z), 36f);
+                }
+            }
+            for (int i = 0; i < supermarketRoot.SecurityCameras.Count; i++)
+            {
+                Transform pivot = supermarketRoot.SecurityCameras[i].HeadPivot;
+                Assert.That(Vector3.Distance(pivot.position, assets.GetAnchor($"cctv_head_{i + 1:00}").position), Is.LessThan(.01f));
+                Vector3 corner = room.InverseTransformPoint(pivot.position);
+                Vector3 eye = new Vector3(corner.x - Mathf.Sign(corner.x) * 2f, 1.65f, corner.z);
+                // The rear-right stockroom facade occupies the first option;
+                // stay in its real side passage instead of inside the cabinet.
+                if (!CanStand(eye)) eye = new Vector3(corner.x, 1.65f, corner.z - Mathf.Sign(corner.z) * 2f);
+                Standing($"{number++:00}-cctv-corner-{i + 1:00}", eye, pivot.position + room.up * .16f, 40f,
+                    supermarketRoot.SecurityCameras[i]);
+            }
+            return shots.ToArray();
         }
 
         private static Shot ShelfShot(
@@ -4868,6 +5243,8 @@ namespace BarPromenade.Tests.PlayMode
                     if (finalBarPose == null && shot.ReadyWhen != null)
                     {
                         int waited = 0;
+                        WaitForSecondsRealtime readyDelay = shot.ReadyPollSeconds > 0f
+                            ? new WaitForSecondsRealtime(shot.ReadyPollSeconds) : null;
                         while (!shot.ReadyWhen() &&
                                waited < MaximumReadyFrames)
                         {
@@ -4878,7 +5255,7 @@ namespace BarPromenade.Tests.PlayMode
                             if (sceneName == SceneIds.BarInterior)
                                 yield return new WaitForFixedUpdate();
                             else
-                                yield return null;
+                                yield return readyDelay;
                         }
 
                         Assert.That(
@@ -4919,16 +5296,21 @@ namespace BarPromenade.Tests.PlayMode
                     else
                     {
                         bool captured = false;
+                        string failedFinalPose = null;
                         for (int waited = 0; waited < MaximumReadyFrames && !captured; waited++)
                             yield return AtWarehouseFridgePresentation(finalBarPose, () =>
                             {
-                                if (shot.ReadyWhen != null && !shot.ReadyWhen()) return;
+                                if (shot.ReadyWhen != null && !shot.ReadyWhen())
+                                {
+                                    if (waited + 1 == MaximumReadyFrames) failedFinalPose = DescribeBarDrinkMoments();
+                                    return;
+                                }
                                 captureShot();
                                 captured = true;
                             });
                         Assert.That(captured, Is.True,
                             $"'{sceneName}/{shot.Name}' never reached its final presentation moment." +
-                            DescribeBarDrinkMoments());
+                            failedFinalPose);
                     }
                 }
             }

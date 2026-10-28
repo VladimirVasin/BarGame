@@ -159,6 +159,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsOpen || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
             EnsureStyles();
             RefreshSelection();
@@ -178,13 +179,13 @@ namespace BarPromenade
                 var items = GameSessionState.InventoryItems;
                 int maximumFirstRow = Mathf.Max(0, (items.Count + GridColumns - 1) / GridColumns - VisibleRows);
                 firstVisibleRow = Mathf.Min(firstVisibleRow, maximumFirstRow);
-                if (AcceptsInput && Panel.Contains(mouse) && Event.current.type == EventType.ScrollWheel)
+                if (AcceptsInput && Panel.Contains(mouse) && RetroUiInput.ScrollDelta.sqrMagnitude > 0f)
                 {
-                    firstVisibleRow = Mathf.Clamp(firstVisibleRow + (Event.current.delta.y > 0f ? 1 : -1),
+                    firstVisibleRow = Mathf.Clamp(firstVisibleRow + (RetroUiInput.ScrollDelta.y > 0f ? 1 : -1),
                         0, maximumFirstRow);
                     SelectItem(Mathf.Clamp(SelectedItemIndex, firstVisibleRow * GridColumns,
                         Mathf.Min(items.Count - 1, (firstVisibleRow + VisibleRows) * GridColumns - 1)));
-                    Event.current.Use();
+                    RetroUiInput.ConsumeScroll();
                 }
                 int lastVisibleItem = Mathf.Min(items.Count, (firstVisibleRow + VisibleRows) * GridColumns);
                 for (int index = firstVisibleRow * GridColumns; index < lastVisibleItem; index++)
@@ -193,13 +194,13 @@ namespace BarPromenade
                     Rect slot = new Rect(454f + index % GridColumns * 86f,
                         44f + (index / GridColumns - firstVisibleRow) * 49f, 80f, 47f);
                     bool usable = CanUse(stack.ItemId);
-                    if (AcceptsInput && slot.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                    if (AcceptsInput && slot.Contains(mouse) && RetroUiInput.PointerMoved)
                         SelectItem(index);
                     bool selected = index == SelectedItemIndex;
                     if (selected) RetroUiTheme.DrawSelection(slot, true);
                     bool previousEnabled = GUI.enabled;
                     GUI.enabled = previousEnabled && AcceptsInput && usable;
-                    bool clicked = GUI.Button(slot, GUIContent.none, buttonStyle);
+                    bool clicked = RetroUiInput.Button(slot, GUIContent.none, buttonStyle);
                     GUI.enabled = previousEnabled;
                     Color previousColor = GUI.color;
                     if (!usable) GUI.color = RetroUiTheme.Muted;
@@ -220,11 +221,11 @@ namespace BarPromenade
                     }
                 }
 
-                if (AcceptsInput && ExitButton.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                if (AcceptsInput && ExitButton.Contains(mouse) && RetroUiInput.PointerMoved)
                     SelectItem(items.Count);
                 if (IsExitSelected) RetroUiTheme.DrawSelection(ExitButton, true);
                 else RetroUiTheme.DrawFrame(ExitButton, RetroUiTheme.FrameInner, RetroUiTheme.FrameInner);
-                if (GUI.Button(ExitButton, GUIContent.none, buttonStyle) && AcceptsInput)
+                if (RetroUiInput.Button(ExitButton, GUIContent.none, buttonStyle) && AcceptsInput)
                 {
                     RequestExit();
                     return;

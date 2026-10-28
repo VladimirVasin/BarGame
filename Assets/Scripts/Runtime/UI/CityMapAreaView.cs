@@ -52,7 +52,7 @@ namespace BarPromenade
                 string currentPrefix = area == controller.CurrentArea
                     ? "\u25C6 "
                     : string.Empty;
-                if (GUI.Button(
+                if (RetroUiInput.Button(
                     tab,
                     currentPrefix + controller.GetAreaLabel(area),
                     smallButtonStyle))
@@ -476,7 +476,7 @@ namespace BarPromenade
                 LandmarkHoverPriority);
             if (!controller.MapPointInspectionEnabled &&
                 !controller.IsSelectedAreaCurrent &&
-                GUI.Button(marker, GUIContent.none, GUIStyle.none))
+                RetroUiInput.Button(marker, GUIContent.none, GUIStyle.none))
             {
                 controller.QueueRequestAreaTravel(GameAreaId.MountainRoad);
             }
@@ -528,7 +528,7 @@ namespace BarPromenade
                 1f);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = controller.CanRequestSelectedAreaTravel;
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                 travelButton,
                 LocalizationService.Get("map.area.travel"),
                 hintStyle))

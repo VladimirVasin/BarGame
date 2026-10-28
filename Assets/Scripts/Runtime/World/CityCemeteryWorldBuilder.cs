@@ -144,6 +144,7 @@ namespace BarPromenade
             CityMiscAssetProvider miscProvider =
                 CityMiscAssetProvider.Load();
 
+            AppendImportedEntrance(parts, miscProvider, importedBatches, importedIds);
             TryAppendImportedGraves(
                 parts,
                 miscProvider,
@@ -248,14 +249,14 @@ namespace BarPromenade
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedMeshes(
                         $"Imported {namePrefix} {key.X} {key.Z} " +
-                        $"{key.Style}",
+                        $"{key.Style}" + (key.BoxProjected ? " Site" : ""),
                         root,
                         importedBatches[key],
                         ResolveColor(key.Style),
                         false,
                         uvTileSize,
-                    RuntimeWorldUvMode.XZPlanar,
-                    keepReadable: key.Style == CityCemeteryStyle.Gravel);
+                        key.BoxProjected ? RuntimeWorldUvMode.BoxProjected : RuntimeWorldUvMode.XZPlanar,
+                        keepReadable: key.Style == CityCemeteryStyle.Gravel);
                 if (surface.HasValue)
                 {
                     CityCemeterySurfaceAppearance.ApplyCombined(
@@ -792,6 +793,90 @@ namespace BarPromenade
                    part.Center.z + halfZ <= bounds.yMax + tolerance;
         }
 
+        private static void AppendImportedEntrance(
+            IReadOnlyList<CityCemeteryPartDescriptor> descriptors,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var lodge = new List<CityCemeteryPartDescriptor>();
+            CityCemeteryPartDescriptor floor = default, front = default, outer = default;
+            bool hasFloor = false, hasFront = false, hasOuter = false;
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                CityCemeteryPartDescriptor part = descriptors[i];
+                if (part.Kind == CityCemeteryPartKind.Lodge &&
+                    part.StableId != "cemetery-lodge-door-leaf") lodge.Add(part);
+                switch (part.StableId)
+                {
+                    case "cemetery-lodge-base": floor = part; hasFloor = true; break;
+                    case "cemetery-lodge-wall-front": front = part; hasFront = true; break;
+                    case "cemetery-lodge-wall-out": outer = part; hasOuter = true; break;
+                }
+            }
+            if (lodge.Count > 0)
+            {
+                if (!hasFloor || !hasFront || !hasOuter)
+                    throw new InvalidOperationException("Cemetery lodge lost its physical authoring frame.");
+                Vector3 inward = Vector3.ProjectOnPlane(floor.Center - front.Center, Vector3.up).normalized;
+                Quaternion rotation = Quaternion.LookRotation(inward, Vector3.up);
+                int variant = Vector3.Dot(outer.Center - floor.Center, rotation * Vector3.right) >= 0f ? 0 : 1;
+                RequireEntranceAssembly(provider, CityMiscKind.CemeteryLodgeShell, variant,
+                    floor.Center - Vector3.up * .05f, rotation,
+                    CityCemeteryStyle.WeatheredConcrete, lodge, Vector3.one, batches, importedIds);
+            }
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                CityCemeteryPartDescriptor part = descriptors[i];
+                CityMiscKind kind;
+                Quaternion rotation = part.Rotation;
+                Vector3 scale = part.Size;
+                if (part.StableId == "cemetery-lodge-door-leaf")
+                {
+                    kind = CityMiscKind.CoastalDoorLeaf;
+                    rotation *= Quaternion.Euler(0f, 90f, 0f);
+                    scale = new Vector3(part.Size.z, part.Size.y, part.Size.x);
+                }
+                else if (part.Kind == CityCemeteryPartKind.GatePillar ||
+                         part.Kind == CityCemeteryPartKind.CornerPillar)
+                    kind = CityMiscKind.CemeteryGatePillar;
+                else if (part.Kind == CityCemeteryPartKind.GateLeaf &&
+                         !part.StableId.EndsWith("-lattice", StringComparison.Ordinal))
+                    kind = CityMiscKind.CemeteryGateLeaf;
+                else if (part.StableId == "cemetery-gate-arch")
+                {
+                    kind = CityMiscKind.CemeteryGateArch;
+                    // The unit ironwork runs along Z, like a leaf. Rotate the
+                    // south/north entrance frame once, retaining its metres.
+                    if (part.Size.x > part.Size.z)
+                    {
+                        rotation *= Quaternion.Euler(0f, 90f, 0f);
+                        scale = new Vector3(part.Size.z, part.Size.y, part.Size.x);
+                    }
+                }
+                else continue;
+                var replaced = new List<CityCemeteryPartDescriptor> { part };
+                if (part.Kind == CityCemeteryPartKind.GateLeaf)
+                    for (int j = 0; j < descriptors.Count; j++)
+                        if (descriptors[j].StableId == part.StableId + "-lattice")
+                            replaced.Add(descriptors[j]);
+                RequireEntranceAssembly(provider, kind, 0,
+                    part.Center - Vector3.up * (part.Size.y * .5f), rotation,
+                    part.Style, replaced, scale, batches, importedIds);
+            }
+        }
+
+        private static void RequireEntranceAssembly(
+            CityMiscAssetProvider provider, CityMiscKind kind, int variant,
+            Vector3 origin, Quaternion rotation, CityCemeteryStyle style,
+            IReadOnlyList<CityCemeteryPartDescriptor> replaced, Vector3 scale,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches, ISet<string> importedIds)
+        {
+            if (!TryAppendAssembly(provider, kind, variant, origin, rotation,
+                    style, replaced, batches, importedIds, scale))
+                throw new InvalidOperationException("Missing authored cemetery entrance assembly: " + kind);
+        }
+
         private static bool TryAppendAssembly(
             CityMiscAssetProvider provider,
             CityMiscKind kind,
@@ -801,7 +886,8 @@ namespace BarPromenade
             CityCemeteryStyle sourceStyle,
             IReadOnlyList<CityCemeteryPartDescriptor> sourceParts,
             IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
-            ISet<string> importedIds)
+            ISet<string> importedIds,
+            Vector3? scale = null)
         {
             if (sourceParts == null || sourceParts.Count == 0 ||
                 !TryGetImportedParts(
@@ -823,7 +909,9 @@ namespace BarPromenade
                 var key = new BatchKey(
                     Mathf.FloorToInt(origin.x / SpatialChunkSize),
                     Mathf.FloorToInt(origin.z / SpatialChunkSize),
-                    style);
+                    style,
+                    (int)kind >= (int)CityMiscKind.CemeteryLodgeShell &&
+                    (int)kind <= (int)CityMiscKind.SeacoastEsplanadeCoping);
                 if (!batches.TryGetValue(
                         key,
                         out List<RuntimeMeshPlacement> placements))
@@ -835,7 +923,8 @@ namespace BarPromenade
                 placements.Add(new RuntimeMeshPlacement(
                     part.Mesh,
                     origin,
-                    rotation));
+                    rotation,
+                    scale ?? Vector3.one));
             }
 
             for (int index = 0; index < sourceParts.Count; index++)
@@ -890,6 +979,10 @@ namespace BarPromenade
         {
             switch (kind)
             {
+                case CityMiscKind.CemeteryLodgeShell:
+                case CityMiscKind.CoastalDoorLeaf:
+                    return role == CityMiscMeshRole.Masonry ? CityCemeteryStyle.WeatheredConcrete :
+                        role == CityMiscMeshRole.Timber ? CityCemeteryStyle.Timber : CityCemeteryStyle.Iron;
                 case CityMiscKind.CemeteryOvergrownMound:
                     return role == CityMiscMeshRole.Residential
                         ? CityCemeteryStyle.Flowers
@@ -1244,22 +1337,24 @@ namespace BarPromenade
 
         private readonly struct BatchKey : IEquatable<BatchKey>
         {
-            public BatchKey(int x, int z, CityCemeteryStyle style)
+            public BatchKey(int x, int z, CityCemeteryStyle style, bool boxProjected = false)
             {
                 X = x;
                 Z = z;
                 Style = style;
+                BoxProjected = boxProjected;
             }
 
             public int X { get; }
             public int Z { get; }
             public CityCemeteryStyle Style { get; }
+            public bool BoxProjected { get; }
 
             public bool Equals(BatchKey other)
             {
                 return X == other.X &&
                        Z == other.Z &&
-                       Style == other.Style;
+                       Style == other.Style && BoxProjected == other.BoxProjected;
             }
 
             public override bool Equals(object obj)
@@ -1273,7 +1368,8 @@ namespace BarPromenade
                 {
                     int hash = X;
                     hash = (hash * 397) ^ Z;
-                    return (hash * 397) ^ (int)Style;
+                    hash = (hash * 397) ^ (int)Style;
+                    return (hash * 397) ^ BoxProjected.GetHashCode();
                 }
             }
 
@@ -1286,9 +1382,9 @@ namespace BarPromenade
                 }
 
                 int z = left.Z.CompareTo(right.Z);
-                return z != 0
-                    ? z
-                    : left.Style.CompareTo(right.Style);
+                if (z != 0) return z;
+                int style = left.Style.CompareTo(right.Style);
+                return style != 0 ? style : left.BoxProjected.CompareTo(right.BoxProjected);
             }
         }
     }

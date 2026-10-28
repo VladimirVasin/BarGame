@@ -85,7 +85,18 @@ namespace BarPromenade
                 plan.ApartmentEntrancePosition,
                 plan.ApartmentEntranceTriggerSize,
                 "apartment entrance");
+            ValidateDoorDock(plan.StreetLobbyBounds, plan.StreetDoorActionRoot, plan.StreetElevation);
+            ValidateDoorDock(plan.ApartmentLandingBounds, plan.ApartmentDoorActionRoot, plan.ApartmentElevation);
             ValidateUpperBlocker(plan);
+        }
+
+        private static void ValidateDoorDock(Rect floor, Vector3 dock, float elevation)
+        {
+            Rect safe = Rect.MinMaxRect(floor.xMin + PlayerRadius, floor.yMin + PlayerRadius,
+                floor.xMax - PlayerRadius, floor.yMax - PlayerRadius);
+            if (!safe.Contains(new Vector2(dock.x, dock.z)) ||
+                Mathf.Abs(dock.y - elevation - PlayerFactory.GroundedRootOffset) > Epsilon)
+                throw new InvalidOperationException("The source door gesture needs a grounded, capsule-clear dock on its own landing.");
         }
 
         private static void ValidateFlight(

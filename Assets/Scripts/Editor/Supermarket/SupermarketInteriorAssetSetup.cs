@@ -814,18 +814,27 @@ namespace BarPromenade.Editor
             for (int index = 1; index <= 4; index++)
             {
                 string suffix = index.ToString("00");
-                if (!registry.TryGetAnchor(
-                        $"cctv_head_{suffix}",
-                        out Transform pivot) ||
-                    !registry.TryGetPart(
-                        $"CCTV Head {suffix}",
-                        out SupermarketInteriorPartBinding part) ||
-                    part.Renderer == null ||
-                    !part.Renderer.transform.IsChildOf(pivot))
+                if (!registry.TryGetAnchor($"cctv_head_{suffix}", out Transform pivot))
                 {
-                    problems.Add(
-                        $"CCTV head {suffix} is not parented to its " +
-                        "imported pivot");
+                    problems.Add($"CCTV head {suffix} has no imported pivot");
+                    continue;
+                }
+                foreach (string partSuffix in new[] { "", " Lens", " LED" })
+                {
+                    string name = $"CCTV Head {suffix}{partSuffix}";
+                    if (!registry.TryGetPart(name, out SupermarketInteriorPartBinding part) ||
+                        part.Renderer == null || !part.Renderer.transform.IsChildOf(pivot))
+                    {
+                        problems.Add($"'{name}' is not parented to its imported pivot");
+                        continue;
+                    }
+                    if (partSuffix.Length == 0) continue;
+                    Vector3 centre = Quaternion.Inverse(pivot.rotation) * (part.Renderer.transform.TransformPoint(
+                        part.Renderer.localBounds.center) - pivot.position);
+                    Vector3 expected = partSuffix == " Lens"
+                        ? new Vector3(0f, 0f, .55125f) : new Vector3(.09f, .105f, -.08f);
+                    if (Vector3.Distance(centre, expected) > .01f)
+                        problems.Add($"'{name}' does not use the runtime +Z lens/+Y hood basis: {centre}");
                 }
             }
         }
@@ -841,11 +850,27 @@ namespace BarPromenade.Editor
                     transforms,
                     $"ANCHOR_cctv_head_{suffix}",
                     $"CCTV head {suffix} pivot");
-                Renderer renderer = renderers[$"CCTV Head {suffix}"];
-                if (!renderer.transform.IsChildOf(pivot))
+                foreach (string partSuffix in new[] { "", " Lens", " LED" })
                 {
-                    renderer.transform.SetParent(pivot, true);
+                    Renderer renderer = renderers[$"CCTV Head {suffix}{partSuffix}"];
+                    if (!renderer.transform.IsChildOf(pivot))
+                        renderer.transform.SetParent(pivot, true);
                 }
+
+                // FBX keeps the Blender +Y-forward basis below its converted
+                // root. Runtime tracking overwrites this pivot's world rotation
+                // with a Unity +Z LookRotation. Canonicalize only the authoring
+                // frame; keep every child's authored world pose exactly intact.
+                var children = new Transform[pivot.childCount];
+                var poses = new Pose[children.Length];
+                for (int child = 0; child < children.Length; child++)
+                {
+                    children[child] = pivot.GetChild(child);
+                    poses[child] = new Pose(children[child].position, children[child].rotation);
+                }
+                pivot.rotation = Quaternion.identity;
+                for (int child = 0; child < children.Length; child++)
+                    children[child].SetPositionAndRotation(poses[child].position, poses[child].rotation);
             }
         }
 

@@ -762,6 +762,13 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind), Is.Not.Null,
                     "The accepted passive model bank must include " + kind + ".");
+                if (kind == "LockerProps")
+                {
+                    // Production replaces this passive bank with the authored,
+                    // hollow three-door cabinets, including the hallway banks.
+                    AssertWarehouseLockerMetres(root);
+                    continue;
+                }
                 GameObject wrapper = null;
                 foreach (Transform child in root.GetComponentsInChildren<Transform>())
                     if (child.name == "Warehouse " + kind) { wrapper = child.gameObject; break; }
@@ -782,9 +789,36 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void AssertWarehouseSourceMetres(string kind, GameObject wrapper)
+        private static void AssertWarehouseLockerMetres(CombatTestRoot root)
         {
-            GameObject source = Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind);
+            GameObject source = Resources.Load<GameObject>(WarehouseLockerFactory.ResourceFolder + "WarehouseLocker");
+            Assert.That(source, Is.Not.Null, "The production cabinet uses the LockerFactory resource.");
+            WarehouseLocker[] lockers = root.GetComponentsInChildren<WarehouseLocker>(true);
+            var checkedBanks = new HashSet<WarehouseLocker>();
+            void Check(Vector3 position, float yaw)
+            {
+                WarehouseLocker locker = System.Array.Find(lockers,
+                    bank => Vector3.Distance(bank.transform.localPosition, position) < .001f);
+                Assert.That(locker, Is.Not.Null, "A planned interactive cabinet must retain its exact position: " + position);
+                Assert.That(checkedBanks.Add(locker), Is.True, "Each planned bank maps to one distinct cabinet.");
+                Assert.That(locker.transform.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(Quaternion.Angle(locker.transform.localRotation, Quaternion.Euler(0f, yaw, 0f)), Is.LessThan(.01f));
+                // Reuse the actual imported source-mesh metre proof, preserving
+                // its FBX unit factor and excluding independent ammo attachments.
+                AssertWarehouseSourceMetres("WarehouseLocker", locker.gameObject, source);
+                for (int bay = 0; bay < WarehouseLocker.DoorCount; bay++)
+                    Assert.That(locker.GetDoor(bay).DoorOpenAmount, Is.Zero, "Measure each authored cabinet in its initial closed pose.");
+            }
+            foreach (WarehouseArenaPlacement part in root.WarehousePlan.ModulePlacements)
+                if (part.Kind == "LockerProps") Check(part.Position, part.Yaw);
+            foreach (WarehouseLockerPlacement part in root.WarehousePlan.HallwayLockers) Check(part.Position, part.Yaw);
+            Assert.That(checkedBanks, Has.Count.EqualTo(lockers.Length), "All room and hallway banks must come from the planned factory placements.");
+            Assert.That(checkedBanks, Is.Not.Empty);
+        }
+
+        private static void AssertWarehouseSourceMetres(string kind, GameObject wrapper, GameObject source = null)
+        {
+            source = source != null ? source : Resources.Load<GameObject>(WarehouseArenaAssetProvider.ResourceFolder + kind);
             var sourceMeshes = new Dictionary<Mesh,int>();
             Bounds expected = default, actual = default;
             bool hasExpected = false, hasActual = false;
@@ -942,6 +976,9 @@ namespace BarPromenade.Tests.PlayMode
             WarehouseFishLamp fishLamp = root.GetComponentInChildren<WarehouseFishLamp>();
             int poweredFishLamp = fishLamp != null && fishLamp.Light.isActiveAndEnabled && fishLamp.Light.intensity > 0f ? 1 : 0;
             int poweredFan = machines.FanLight.isActiveAndEnabled && machines.FanLight.intensity > 0f ? 1 : 0;
+            Light bodySpill = root.Flashlight.BodyFill;
+            Assert.That(bodySpill, Is.Not.Null, "The chest lamp retains its existing hero-only spill owner.");
+            int poweredBodySpill = bodySpill.isActiveAndEnabled && bodySpill.intensity > 0f ? 1 : 0;
             foreach (Light light in Object.FindObjectsByType<Light>())
             {
                 if (!light.isActiveAndEnabled || light.intensity <= 0f) continue;
@@ -951,9 +988,22 @@ namespace BarPromenade.Tests.PlayMode
                     AssertWarehouseIndicatorShadowProfile(light);
                     continue;
                 }
+                if (light == bodySpill)
+                {
+                    Assert.That(light.transform.IsChildOf(root.Hero.transform), Is.True);
+                    Assert.That(light.type, Is.EqualTo(LightType.Point));
+                    Assert.That(light.shadows, Is.EqualTo(LightShadows.None));
+                    Assert.That(light.range, Is.EqualTo(CombatFlashlightBodyFill.Range).Within(.0001f));
+                    Assert.That(light.intensity, Is.InRange(CombatChestFlashlight.BodyFillBaseIntensity,
+                        CombatChestFlashlight.BodyFillMaximumIntensity));
+                    Assert.That((uint)light.GetUniversalAdditionalLightData().renderingLayers,
+                        Is.EqualTo(CombatFlashlightBodyFill.HeroLayer), "Body spill must stay off warehouse receivers.");
+                    continue;
+                }
                 if (light.gameObject.name != "Warehouse Work Lamp")
                 {
-                    Assert.That(light == root.Flashlight.SpotLight || light == machines.FanLight, Is.True);
+                    Assert.That(light == root.Flashlight.SpotLight || light == machines.FanLight, Is.True,
+                        "Unexpected active source: " + light.name + " at " + light.transform.position);
                     continue;
                 }
                 practical++;
@@ -971,8 +1021,8 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow));
             }
             Assert.That(practical, Is.EqualTo(5 + poweredFishLamp));
-            Assert.That(active, Is.EqualTo(6 + ActiveWarehouseRoomIndicatorCount(root) + poweredFishLamp + poweredFan),
-                "Five steady practicals, conditional pendant/fan/room indicators and the chest light.");
+            Assert.That(active, Is.EqualTo(6 + ActiveWarehouseRoomIndicatorCount(root) + poweredFishLamp + poweredFan + poweredBodySpill),
+                "Five steady practicals, conditional pendant/fan/room indicators, chest beam and bounded body spill.");
             Assert.That(machines.MachineCount, Is.EqualTo(4));
             Assert.That(machines.FanRotor.position.y, Is.EqualTo(WarehouseArenaPlan.CeilingHeight - .42f).Within(.001f));
             float sweptRadius = 0f;

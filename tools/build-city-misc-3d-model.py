@@ -48,20 +48,22 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import city_river_parts as river_parts  # noqa: E402
+import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.13.0"
+GENERATOR_VERSION = "4.14.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
-    "Residential Courtyard Life + Park Gazebo and Furniture + River Fittings"
+    "Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + "
+    "Cemetery Entrance and Closed Boat Station"
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
 # Deliberately advances for the accepted 2026-10-27 park remodel. The separate
 # unaffected-v2 pin proves that only the gazebo and fountain statue changed.
 V2_COMPATIBILITY_SIGNATURE = (
-    "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a"
+    "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3"
 )
 V2_UNCHANGED_COMPATIBILITY_SIGNATURE = (
     "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739"
@@ -2301,15 +2303,30 @@ def build_park_bandstand() -> AssemblySpec:
     stone = [ring_solid_z((
         (0.0, 0.0, 0.0, 4.50, 3.90, 0.0),
         (0.36, 0.0, 0.0, 4.40, 3.80, 0.0)), sides)]
-    # Three .18 m risers, positive forward. A wide top landing intersects
-    # the deck polygon, avoiding a seam or a final hidden vertical lip.
+    # Three .18 m risers, positive forward. The top landing meets the true
+    # twelve-gon boundary. Its old rectangular top overlapped timber at
+    # y=.54, exposing flickering pale triangles from the stone underneath.
     for forward0, forward1, top in (
         (4.35, 4.90, 0.18), (3.80, 4.35, 0.36),
-        (2.90, 3.80, 0.54),
     ):
         stone.append(recipe_box(
             0.0, top * 0.5, (forward0 + forward1) * 0.5,
             2.40, top, forward1 - forward0, chamfer=0.006))
+    edge_forward = deck_ry + (deck_ry * math.sin(math.pi / 3) - deck_ry) * \
+        1.2 / (deck_rx * math.cos(math.pi / 3))
+    for x0, x1, back0, back1 in (
+        (-1.2, 0., edge_forward, deck_ry),
+        (0., 1.2, deck_ry, edge_forward),
+    ):
+        # Two convex halves keep caps valid for the FBX triangulator and
+        # leave exactly one material owner on every interior floor point.
+        footprint = ((x0, back0), (x1, back1), (x1, 3.80), (x0, 3.80))
+        vertices = [(x, forward, height) for height in (0., .54)
+                    for x, forward in footprint]
+        faces = [(3, 2, 1, 0), (4, 5, 6, 7)]
+        faces.extend((i, (i + 1) % 4, (i + 1) % 4 + 4, i + 4)
+                     for i in range(4))
+        stone.append((vertices, faces))
     residential_timber = [
         ring_solid_z(((0.36, 0.0, 0.0, deck_rx, deck_ry, 0.0),
                       (0.54, 0.0, 0.0, deck_rx, deck_ry, 0.0)), sides),
@@ -5728,6 +5745,7 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_park_chess_lamp_pendant(),
         # Citywide v4.13: additive passive river fittings; old meshes retain IDs.
         *river_parts.make_assemblies(sys.modules[__name__]),
+        *coastal_site_parts.make_assemblies(sys.modules[__name__]),
     )
 
 
@@ -5903,9 +5921,12 @@ EXPECTED_VARIANTS = {
     "ParkBenchRepaired": 1,
     "ParkChessLampPendant": 1,
     **{kind: 1 for kind in river_parts.KINDS},
+    **coastal_site_parts.VARIANTS,
 }
 
 EXPECTED_ROLES = {
+    **{(kind, variant): roles for kind, roles in coastal_site_parts.PART_ROLES.items()
+       for variant in range(coastal_site_parts.VARIANTS[kind])},
     **{(kind, 0): roles for kind, roles in river_parts.PART_ROLES.items()},
     ("ParkBin", 0): ("Residential_PaintedMetal", "Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
@@ -6070,6 +6091,8 @@ EXPECTED_MESH_SUFFIXES = {
         if (roles := EXPECTED_ROLES.get((kind, variant))) is not None
     },
     **{(kind, 0): suffixes for kind, suffixes in river_parts.PART_SUFFIXES.items()},
+    **{(kind, variant): suffixes for kind, suffixes in coastal_site_parts.PART_SUFFIXES.items()
+       for variant in range(coastal_site_parts.VARIANTS[kind])},
     ("ParkBin", 0): (
         "Basket_Residential_PaintedMetal", "Cradle_Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
@@ -6257,6 +6280,28 @@ def validate_park_access(assemblies: Sequence[AssemblySpec],
                         all(c <= BOUNDS_EPSILON for c in cross_values):
                     hits.append(height)
         return max(hits) if hits else None
+
+    # Contacts alone cannot catch two coincident, differently coloured
+    # faces. Count distinct source owners away from edges in the old
+    # overlap region, where a renderer used to alternate stone and timber.
+    for x, forward in ((-.8, 3.1), (.8, 3.1), (-.8, 3.4),
+                       (.8, 3.4), (0., 3.65), (-.8, 3.75), (.8, 3.75)):
+        owners = set()
+        for part in gazebo.parts[:2]:
+            vertices, faces = part.geometry
+            for face in faces:
+                if face_normal(vertices, face)[2] < .99 or any(
+                        abs(vertices[i][2] - .54) > BOUNDS_EPSILON for i in face):
+                    continue
+                crosses = [
+                    (vertices[j][0] - vertices[i][0]) * (forward - vertices[i][1]) -
+                    (vertices[j][1] - vertices[i][1]) * (x - vertices[i][0])
+                    for i, j in zip(face, (*face[1:], face[0]))]
+                if all(c >= -BOUNDS_EPSILON for c in crosses) or \
+                        all(c <= BOUNDS_EPSILON for c in crosses):
+                    owners.add(part.mesh)
+        if len(owners) != 1:
+            problems.append(f"Gazebo entry at {x}/{forward} has {len(owners)} top material owners")
 
     for x in (-0.80, 0.0, 0.80):
         for forward, expected in ((4.65, 0.18), (4.10, 0.36),
@@ -6690,6 +6735,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     validate_handedness(problems)
     validate_park_access(assemblies, problems)
     river_parts.validate(sys.modules[__name__], assemblies, problems)
+    coastal_site_parts.validate(sys.modules[__name__], assemblies, problems)
     for assembly in assemblies:
         key = assembly.kind, assembly.variant
         if key in keys:
@@ -6836,11 +6882,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 134:
+    if len(assemblies) != 145:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 134")
-    if len(names) != 283:
-        problems.append(f"mesh count is {len(names)}, expected 283")
+            f"assembly count is {len(assemblies)}, expected 145")
+    if len(names) != 305:
+        problems.append(f"mesh count is {len(names)}, expected 305")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

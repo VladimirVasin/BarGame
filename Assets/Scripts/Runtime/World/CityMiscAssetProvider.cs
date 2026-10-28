@@ -103,7 +103,17 @@ namespace BarPromenade
         RiverTimberJoint = 90,
         RiverMooringBollard = 91,
         RiverLanternShell = 92,
-        RiverStairNosing = 93
+        RiverStairNosing = 93,
+        CemeteryLodgeShell = 94,
+        CoastalDoorLeaf = 95,
+        CemeteryGatePillar = 96,
+        CemeteryGateLeaf = 97,
+        CemeteryGateArch = 98,
+        SeacoastHutShell = 99,
+        SeacoastPierDeckBoard = 100,
+        SeacoastPierPile = 101,
+        SeacoastTimberJoint = 102,
+        SeacoastEsplanadeCoping = 103
     }
 
     /// <summary>
@@ -194,11 +204,11 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.13.0";
+        public const string GeneratorVersion = "4.14.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 134;
-        public const int ExpectedMeshCount = 283;
-        public const int SupportedKindCount = 94;
+        public const int ExpectedAssemblyCount = 145;
+        public const int ExpectedMeshCount = 305;
+        public const int SupportedKindCount = 104;
 
         private const float GroundTolerance = 0.003f;
 
@@ -297,7 +307,17 @@ namespace BarPromenade
             CityMiscKind.RiverTimberJoint,
             CityMiscKind.RiverMooringBollard,
             CityMiscKind.RiverLanternShell,
-            CityMiscKind.RiverStairNosing
+            CityMiscKind.RiverStairNosing,
+            CityMiscKind.CemeteryLodgeShell,
+            CityMiscKind.CoastalDoorLeaf,
+            CityMiscKind.CemeteryGatePillar,
+            CityMiscKind.CemeteryGateLeaf,
+            CityMiscKind.CemeteryGateArch,
+            CityMiscKind.SeacoastHutShell,
+            CityMiscKind.SeacoastPierDeckBoard,
+            CityMiscKind.SeacoastPierPile,
+            CityMiscKind.SeacoastTimberJoint,
+            CityMiscKind.SeacoastEsplanadeCoping
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -694,6 +714,7 @@ namespace BarPromenade
                 case CityMiscKind.FringePipeStock:
                 case CityMiscKind.FringeFloodGaugeShell:
                 case CityMiscKind.NightlifeShelterBedding:
+                case CityMiscKind.CemeteryLodgeShell:
                     return 2;
                 case CityMiscKind.ParkTree:
                 case CityMiscKind.SeacoastBoat:
@@ -1361,6 +1382,27 @@ namespace BarPromenade
                     return RiverLanternShellParts;
                 case CityMiscKind.RiverStairNosing:
                     return RiverStairNosingParts;
+                case CityMiscKind.CemeteryLodgeShell:
+                    return CemeteryLodgeShellParts;
+                case CityMiscKind.CoastalDoorLeaf:
+                    return CoastalDoorLeafParts;
+                case CityMiscKind.CemeteryGatePillar:
+                    return CemeteryGatePillarParts;
+                case CityMiscKind.CemeteryGateLeaf:
+                    return CemeteryGateLeafParts;
+                case CityMiscKind.CemeteryGateArch:
+                    return CemeteryGateArchParts;
+                case CityMiscKind.SeacoastHutShell:
+                    return SeacoastHutShellParts;
+                case CityMiscKind.SeacoastPierDeckBoard:
+                    return SeacoastPierDeckBoardParts;
+                case CityMiscKind.SeacoastPierPile:
+                    return SeacoastPierPileParts;
+                case CityMiscKind.SeacoastTimberJoint:
+                    return SeacoastTimberJointParts;
+                case CityMiscKind.SeacoastEsplanadeCoping:
+                    return SeacoastEsplanadeCopingParts;
+
                 default:
                     throw UnsupportedKind(kind);
             }

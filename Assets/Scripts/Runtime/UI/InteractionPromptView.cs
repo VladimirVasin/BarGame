@@ -513,6 +513,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             HasRenderedLayout = false;
             if (HasHeldPage && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
                 heldPageRequiresRunningGameTime && !GameSessionState.IsGameTimeRunning)) return;
@@ -580,7 +581,7 @@ namespace BarPromenade
                 {
                     // A prompt is never spoken, so it is never typed:
                     // the button always carries its whole word.
-                    if (GUI.Button(rect, text, buttonStyle))
+                    if (RetroUiInput.Button(rect, text, buttonStyle))
                     {
                         TryInvokePrompt();
                     }
@@ -660,7 +661,7 @@ namespace BarPromenade
                         controlsRect.y, (controlsRect.width - 8f) * .5f, controlsRect.height);
                     RetroUiTheme.DrawSelection(choice, yes == HeldYesSelected);
                     GUI.Label(choice, LocalizationService.Get(yes ? heldYesKey : heldNoKey), labelStyle);
-                    if (GUI.Button(choice, GUIContent.none, GUIStyle.none))
+                    if (RetroUiInput.Button(choice, GUIContent.none, GUIStyle.none))
                     { HeldYesSelected = yes; TryInvokePrompt(); break; }
                 }
             }
@@ -672,7 +673,7 @@ namespace BarPromenade
                 pageControlsStyle.CalcSize(new GUIContent(controls)).x <= textWidth;
             HasRenderedLayout = true;
             if (!confirmation && Time.frameCount > heldPageFrame && GameInput.CanRead(GameInputContext.Menu) &&
-                GUI.Button(controlsRect, GUIContent.none, GUIStyle.none)) TryInvokePrompt();
+                RetroUiInput.Button(controlsRect, GUIContent.none, GUIStyle.none)) TryInvokePrompt();
         }
     }
 }

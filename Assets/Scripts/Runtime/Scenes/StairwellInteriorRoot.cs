@@ -323,12 +323,7 @@ namespace BarPromenade
                 Layout.StreetExitTriggerSize;
             StreetExit =
                 street.AddComponent<StairwellStreetExit>();
-            Vector3 streetDockLocal = new Vector3(
-                Layout.StreetExitPosition.x,
-                Layout.StreetElevation +
-                PlayerFactory.GroundedRootOffset,
-                Layout.StreetLobbyBounds.yMin +
-                PlayerDoorActionPlan.DockBoundaryClearance);
+            Vector3 streetDockLocal = Layout.StreetDoorActionRoot;
             PlayerDoorActionTarget streetDoorAction =
                 street.AddComponent<PlayerDoorActionTarget>();
             streetDoorAction.Configure(
@@ -350,12 +345,7 @@ namespace BarPromenade
             ApartmentEntrance =
                 apartment.AddComponent<
                     StairwellApartmentEntrance>();
-            Vector3 apartmentDockLocal = new Vector3(
-                Layout.ApartmentLandingBounds.xMax -
-                PlayerDoorActionPlan.DockBoundaryClearance,
-                Layout.ApartmentElevation +
-                PlayerFactory.GroundedRootOffset,
-                Layout.ApartmentEntrancePosition.z);
+            Vector3 apartmentDockLocal = Layout.ApartmentDoorActionRoot;
             PlayerDoorActionTarget apartmentDoorAction =
                 apartment.AddComponent<PlayerDoorActionTarget>();
             apartmentDoorAction.Configure(

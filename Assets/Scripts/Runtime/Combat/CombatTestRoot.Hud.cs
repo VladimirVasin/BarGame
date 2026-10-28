@@ -129,6 +129,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             bool inspectionDefeat = DefeatResultVisible && !HudCanRender;
             if (!HudCanRender && !inspectionDefeat) return;
             EnsureHudStyles();
@@ -273,7 +274,7 @@ namespace BarPromenade
             RetroUiTheme.DrawSelection(rect, hover || navigation && index == resultSelection);
             bool enabled = GUI.enabled;
             GUI.enabled = enabled && pointer;
-            bool pressed = GUI.Button(rect, LocalizationService.Get(key), button);
+            bool pressed = RetroUiInput.Button(rect, LocalizationService.Get(key), button);
             GUI.enabled = enabled;
             if (pressed) ActivateHudResult(index);
         }

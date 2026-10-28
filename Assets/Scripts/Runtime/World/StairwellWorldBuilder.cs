@@ -440,14 +440,20 @@ namespace BarPromenade
                 endPlanar.x,
                 flight.TopElevation + 1.02f,
                 endPlanar.y);
-            CreateBeamBetween(
-                $"{label} Handrail " +
-                (sideIndex < 0 ? "A" : "B"),
+            string handrailName = $"{label} Handrail " + (sideIndex < 0 ? "A" : "B");
+            Transform handrail = CreateBeamBetween(
+                handrailName,
                 root,
                 start,
                 end,
                 0.095f,
                 Rust);
+            // The Blender assembly is authored in the beam's metric frame.
+            // It is a sibling so the wood's nonuniform scale cannot stretch it.
+            GameObject supports = StairwellAuthoredVisualFactory.CreateAnchoredPart(
+                handrailName + " Supports", root, handrail.localPosition, handrail.localRotation, Metal);
+            StairwellSurfaceAppearance.Apply(supports.GetComponent<Renderer>(),
+                StairwellSurfaceKind.CorrodedMetal, StairwellSurfaceProjection.BoxZY, Metal);
         }
 
         private static void BuildRailSegment(
@@ -532,6 +538,7 @@ namespace BarPromenade
                 Quaternion.identity,
                 1.72f,
                 2.36f);
+            BuildDoorHardware(door, "Street Door Hardware", plan.StreetDoorHardwareLocal, plan.StreetDoorHardwareRotation);
             return door;
         }
 
@@ -562,7 +569,15 @@ namespace BarPromenade
                 Quaternion.Euler(0f, 90f, 0f),
                 1.24f,
                 2.32f);
+            BuildDoorHardware(door, "Apartment Door Hardware", plan.ApartmentDoorHardwareLocal, plan.ApartmentDoorHardwareRotation);
             return door;
+        }
+
+        private static void BuildDoorHardware(Transform door, string name, Vector3 position, Quaternion rotation)
+        {
+            GameObject hardware = CreateSurfaceBox(name, door, position, new Vector3(.240f, .240f, .075f),
+                new Color(.38f, .31f, .18f), StairwellSurfaceKind.CorrodedMetal, StairwellSurfaceProjection.BoxXY, false);
+            hardware.transform.localRotation = rotation;
         }
 
         private static void BuildDoorFrame(
@@ -635,7 +650,7 @@ namespace BarPromenade
             StairwellSurfaceProjection projection,
             bool collider = true)
         {
-            GameObject box = RuntimePrimitiveFactory.CreateBox(
+            GameObject box = StairwellAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 position,
@@ -650,7 +665,7 @@ namespace BarPromenade
             return box;
         }
 
-        private static void CreateBeamBetween(
+        private static Transform CreateBeamBetween(
             string name,
             Transform parent,
             Vector3 start,
@@ -673,6 +688,7 @@ namespace BarPromenade
                 false);
             beam.transform.localRotation =
                 Quaternion.LookRotation(direction.normalized, Vector3.up);
+            return beam.transform;
         }
     }
 }

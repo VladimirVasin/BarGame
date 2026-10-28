@@ -489,6 +489,8 @@ namespace BarPromenade
         /// Height on the built ground triangles, with the same grid spacing
         /// and near-right/far-left diagonal as WorldBuilder.AppendCell.
         /// Points outside TerrainMeshBounds are clamped to its boundary.
+        /// The workroom's hidden foundation cap is fitted afterwards; skins
+        /// keep this original grid interpolation and snow is cut at the plinth.
         /// The analytic height remains the planning contract; visible skins
         /// also need this height where a coarse triangle bridges a hollow.
         /// </summary>

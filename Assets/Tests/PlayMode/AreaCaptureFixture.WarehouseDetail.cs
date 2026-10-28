@@ -71,12 +71,9 @@ namespace BarPromenade.Tests.PlayMode
                 pendant.Advance(3f);
                 Assert.That(pendant.Phase, Is.EqualTo(WarehouseFishLampPhase.Burst));
                 Assert.That(machines.FanSpeedFactor, Is.Zero);
-                Assert.That(root.Flashlight.SpotLight.isActiveAndEnabled, Is.True,
-                    "The production chest light must remain the blackout's only source.");
-                foreach (Light light in root.GetComponentsInChildren<Light>())
-                    if (light != root.Flashlight.SpotLight)
-                        Assert.That(light.isActiveAndEnabled && light.intensity > 0f, Is.False,
-                            "The production blackout must disable " + light.name + ".");
+                // The existing failure circuit preserves the independent red
+                // valve practical and the hero's complete chest-light owner.
+                AssertWarehousePendantBlackout(root);
                 for (int frame = 0; frame < 4; frame++) yield return null;
                 yield return MeasureWarehouseDetailFrames(root, "Power off", phases);
                 yield return CaptureWarehouseEnvironment(root, "Power off", false, closeViewsOnly: true);

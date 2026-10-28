@@ -3,6 +3,50 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-28
+
+World-location queue is Current; all locations reviewed. Stairwell and transition leaf use the
+shared Blender interior kit. Steel necks/saddles close the wooden rail joints;
+doors/cabinet have hardware. Door docks align the production hand clip and
+backplates with actual imported surfaces, preserving ramps/pivots/cameras.
+STAIRWELL_INTERIOR_ART_DETERMINISM_OK, STAIRWELL_CONTACT_MANIFEST_MATCH_OK,
+Scene_BootstrapsVerticalRouteAndAtmosphere, StairwellDoorHandleContacts and
+Scene_FeedingConsumesOneStewAndCompletesPairedAnimation passed; frames reviewed.
+The room-audio check excludes the existing UI-owned hero emitter.
+
+City coastal/cemetery profiles, pier joints and esplanade coping use shared
+fixed-metre meshes. Gazebo steps no longer overlap the deck; clock pigment
+keeps hands readable. Compact cemetery planning retains the shared church
+cross-alley instead of dropping it at the old reserve width. CityCatalogAndPassage,
+CityChurchCourtyard, City and CityLandmarksFromStreets passed; functional site views reviewed. CityDomesticCourts and
+CityBarYardCircuit preserve work contacts and supported yard props.
+CityDistrictAcousticContrast recorded distinct physical cloth/pipe/fountain
+voices with music muted; no anonymous ambient was added.
+
+Mountain drive/cabin/support and structural profiles retain existing bounds,
+collision and pivots; world-owned shared meshes release on unload.
+MountainRoadNativeLighting passed; native day/night and close views reviewed.
+ForestCrownAuthoredPilot was rejected for worse silhouettes; LodgeBounce table
+A/B had no visible benefit and its receiver region missed useful room surfaces.
+Both candidates were removed, original lighting/forest retained.
+VillageWorkroomWalls passed after final ground triangles and lying snow were
+cut around the physical plinth; the two visible peaks are gone. Native village,
+home and mother-house views preserve current art. ChurchRemodelAcceptance,
+AlpineVillageBrookDetails, AlpineVillageAvalanche and AlpineVillageFootbridge
+passed; routes/thresholds/river joints reviewed. Loading FourDirectionsAndThreeAspectRatios
+and AreaTravel_ComposesEachDestinationBeforeCompleting passed.
+
+CCTV imported pivots now use the tracking +Z basis while children keep world
+poses. Supermarket passed actual lens front/normal probes; all fronts reviewed.
+Input System only replaces the deprecated Both workaround. Shared UI pointer
+capture/scroll and a bounded Unicode editor preserve fixed IMGUI rendering.
+InputSystemUiPlayModeTests passed scaled hitboxes, drag/scroll/focus cleanup,
+actual Pause/MainMenu, Russian selection/paste and function-key editing.
+MainMenuManualNative covered closed-bar return, combat preparation and wide/4:3;
+final menu/vocalizer frames reviewed. CombatLaboratoryArtVisuals,
+CombatWarehouseDetailVisuals, check-docs, scoped diff and
+check-workspace passed; temporary output removed, worktrees archived.
+
 ## 2026-10-27
 
 Compact coastal rebuild keeps lived fronts/courts, park/POIs/fair/arch and
@@ -38,19 +82,21 @@ Church interior now shares exterior metres/openings through shaped kit geometry,
 physical furniture/door datums and model-anchored bounded light/response.
 Garden craft retains composition, pot/water contacts and old albedo bytes.
 CHURCH GARDEN ART BUILD OK passed geometry/contact/response/determinism.
-ChurchRemodelAcceptance passed metric/glazing/rose/door/routes/threshold/roundtrip/
-cleanup; garden/day/night/rain/grayscale/intoxication views reviewed.
+ChurchRemodelAcceptance passed; garden/day/night/rain/grayscale/intoxication
+views reviewed.
 Preserved weather MPBs keep Layered Ground donors off unsupported BRG draws;
 the frame colour guard rejects the observed magenta failure.
 User review exposed upper-lancet/rose-rim roof overlap;
 validate_upper_lancet_clearances checks actual roof triangles and frame support;
 upper-window views reviewed.
 
-CityIndustrialFunctions and CityFabric passed function/material/light/courts/nav/
-entrances/utility; City/Home views reviewed.
+CityIndustrialFunctions/CityFabric passed; City/Home views reviewed.
 ProductionCityRoute_AllStopsExposeBothDoorPrompts passed real doors.
-CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup imports, generator
-art/determinism, check-docs and diff checks passed. Karaoke edits retained.
+CityBuildingAssetSetup/CityCoastalInfrastructureAssetSetup imports and generator
+art/determinism passed. Karaoke edits retained.
+
+World-location-update-plan records the full ordered audit/update queue;
+proposals remain separate from shipped work. check-docs/diff checks passed.
 
 ## 2026-10-26
 

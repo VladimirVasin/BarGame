@@ -212,16 +212,27 @@ namespace BarPromenade.Tests.EditMode
                 CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed);
-            CityChurchPlan church = CityChurchPlanner.Create(layout);
-            CityChurchCemeteryPassagePlan passage =
-                CityChurchCemeteryPassagePlanner.Create(layout, church);
+            CityWorldPlans owners = CityWorldPlans.GetOrCreate(layout);
+            CityChurchPlan church = owners.Church;
+            CityChurchCemeteryPassagePlan passage = owners.ChurchCemeteryPassage;
             CityCemeteryPlan cemetery =
-                CityCemeteryPlanner.Create(layout);
+                CityCemeteryPlanner.Create(layout, passage);
 
             Assert.That(church, Is.Not.Null);
             Assert.That(passage, Is.Not.Null);
             Assert.That(cemetery, Is.Not.Null);
-            Assert.That(cemetery.ChurchPassage, Is.EqualTo(passage));
+            Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
+            Assert.That(cemetery.Grounds.width, Is.EqualTo(48.5f).Within(.001f));
+            Assert.That(CityCemeteryPlanner.CreateCrossAlleyDepths(cemetery.Grounds.width),
+                Is.EqualTo(new[] { 20f }), "The independent null-passage overload keeps its previous alley set.");
+            Assert.That(CityCemeteryPlanner.CreateCrossAlleyDepths(cemetery.Grounds.width, true),
+                Is.EqualTo(new[] { 20f, 40f }), "The physically fitting second alley must survive compacting.");
+            Assert.That(CityCemeteryPlanner.CreateCrossAlleyDepths(74f, true),
+                Is.EqualTo(CityCemeteryPlanner.CreateCrossAlleyDepths(74f)), "The former wide precinct keeps all its old axes.");
+            Assert.That(owners.ChurchCourtyard.Passage, Is.SameAs(passage));
+            Assert.That(cemetery.ChurchPassage, Is.SameAs(passage));
+            Assert.That(CityChurchCemeteryPassagePlanner.Create(layout, church), Is.EqualTo(passage));
+            AssertCompactPassageKeepsPlotIdentity(layout, cemetery, passage);
             Assert.That(
                 passage.AxisX,
                 Is.EqualTo(226f).Within(0.001f),
@@ -335,6 +346,68 @@ namespace BarPromenade.Tests.EditMode
                 cemetery.GetLampCount(
                     CityCemeteryLampKind.LodgePorch),
                 Is.EqualTo(1));
+        }
+
+        private static void AssertCompactPassageKeepsPlotIdentity(CityLayout layout,
+            CityCemeteryPlan connected, CityChurchCemeteryPassagePlan passage)
+        {
+            CityCemeteryPlan previous = CityCemeteryPlanner.Create(layout, null);
+            Assert.That(connected.Plots.Select(plot => plot.StableId),
+                Is.EqualTo(previous.Plots.Select(plot => plot.StableId)),
+                "Opening the canonical connection must not remove, reorder or rename burial-lattice slots.");
+            // Match the existing half-metre grave exclusion around the new
+            // cross alley. Everything outside it retains its job address and
+            // geometry; visual grave ordinals are not persistent job keys.
+            Rect corridor = Rect.MinMaxRect(
+                passage.AxisX - CityChurchCemeteryPassagePlanner.CrossAlleyHalfWidth - .5f,
+                connected.Grounds.yMin,
+                passage.AxisX + CityChurchCemeteryPassagePlanner.CrossAlleyHalfWidth + .5f,
+                connected.Grounds.yMax);
+            var ledger = new CemeteryGraveWorkLedger();
+            int restoredJobs = 0;
+            int unchangedGraves = 0;
+            foreach (CityCemeteryPartDescriptor oldAlley in previous.Parts.Where(part => part.Kind == CityCemeteryPartKind.Alley))
+                Assert.That(connected.Parts.Single(part => part.StableId == oldAlley.StableId), Is.EqualTo(oldAlley),
+                    "Existing alley parts keep their IDs and physical geometry.");
+            for (int index = 0; index < previous.Plots.Count; index++)
+            {
+                CityCemeteryPlotDescriptor before = previous.Plots[index];
+                CityCemeteryPlotDescriptor after = connected.Plots[index];
+                Assert.That(after.Row, Is.EqualTo(before.Row), before.StableId);
+                Assert.That(after.Column, Is.EqualTo(before.Column), before.StableId);
+                Assert.That(after.Ground, Is.EqualTo(before.Ground), before.StableId);
+                Assert.That(after.Yaw, Is.EqualTo(before.Yaw), before.StableId);
+                Assert.That(after.Footprint, Is.EqualTo(before.Footprint), before.StableId);
+                if (OverlapsInterior(before.Footprint, corridor)) continue;
+                Assert.That(after.State, Is.EqualTo(before.State), before.StableId);
+                if (before.State == CityCemeteryPlotState.Occupied)
+                {
+                    CityCemeteryPartDescriptor[] oldParts = previous.Parts.Where(part => part.GraveOrdinal == before.GraveOrdinal).ToArray();
+                    CityCemeteryPartDescriptor[] newParts = connected.Parts.Where(part => part.GraveOrdinal == after.GraveOrdinal).ToArray();
+                    Assert.That(newParts.Length, Is.EqualTo(oldParts.Length), before.StableId);
+                    for (int part = 0; part < oldParts.Length; part++)
+                    {
+                        Assert.That(newParts[part].Kind, Is.EqualTo(oldParts[part].Kind), before.StableId);
+                        Assert.That(newParts[part].Style, Is.EqualTo(oldParts[part].Style), before.StableId);
+                        Assert.That(newParts[part].Variant, Is.EqualTo(oldParts[part].Variant), before.StableId);
+                        Assert.That(newParts[part].Center, Is.EqualTo(oldParts[part].Center), before.StableId);
+                        Assert.That(newParts[part].Rotation, Is.EqualTo(oldParts[part].Rotation), before.StableId);
+                        Assert.That(newParts[part].Size, Is.EqualTo(oldParts[part].Size), before.StableId);
+                    }
+                    unchangedGraves++;
+                }
+                if (!before.IsVacant) continue;
+                CemeteryGravediggingPlan oldJob = CemeteryGravediggingPlan.CreateFor(previous, before.StableId);
+                CemeteryGravediggingPlan restored = CemeteryGravediggingPlan.CreateFor(connected, before.StableId);
+                Assert.That(restored.IsPresent, Is.True, before.StableId);
+                Assert.That(restored.Plot.StableId, Is.EqualTo(oldJob.Plot.StableId));
+                Assert.That(restored.Ground, Is.EqualTo(oldJob.Ground));
+                Assert.That(ledger.TryAdvance(before.StableId, CemeteryGraveWorkStage.Marked), Is.True);
+                Assert.That(ledger.GetStage(restored.Plot.StableId), Is.EqualTo(CemeteryGraveWorkStage.Marked));
+                restoredJobs++;
+            }
+            Assert.That(restoredJobs, Is.GreaterThan(0), "The existing work pool must retain restorable jobs outside the repaired path.");
+            Assert.That(unchangedGraves, Is.GreaterThan(6), "Compare actual standing monument parts, not only vacant slot geometry.");
         }
 
         [Test]

@@ -381,7 +381,29 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.RiverTimberJoint, 0, "CollarAndBolts_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
             Part(CityMiscKind.RiverMooringBollard, 0, "Casting_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
             Part(CityMiscKind.RiverLanternShell, 0, "OpenHousing_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
-            Part(CityMiscKind.RiverStairNosing, 0, "WornNosing_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone)
+            Part(CityMiscKind.RiverStairNosing, 0, "WornNosing_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.CemeteryLodgeShell, 0, "Plaster_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.CemeteryLodgeShell, 0, "Joinery_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.CemeteryLodgeShell, 0, "Roof_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.CemeteryLodgeShell, 0, "Hardware_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.CemeteryLodgeShell, 1, "Plaster_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.CemeteryLodgeShell, 1, "Joinery_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.CemeteryLodgeShell, 1, "Roof_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.CemeteryLodgeShell, 1, "Hardware_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.CoastalDoorLeaf, 0, "Panel_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.CoastalDoorLeaf, 0, "Straps_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.CemeteryGatePillar, 0, "DressedStone_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.CemeteryGateLeaf, 0, "OpenIronwork_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.CemeteryGateArch, 0, "ForgedFrame_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.SeacoastHutShell, 0, "Plaster_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.SeacoastHutShell, 0, "Joinery_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.SeacoastHutShell, 0, "Hardware_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.SeacoastPierDeckBoard, 0, "Planks_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.SeacoastPierDeckBoard, 0, "Nails_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.SeacoastPierPile, 0, "Pile_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.SeacoastPierPile, 0, "Band_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.SeacoastTimberJoint, 0, "Sleeve_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.SeacoastEsplanadeCoping, 0, "DressedStone_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone)
         };
 
         [Test]
@@ -392,17 +414,17 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.13.0"));
+                Is.EqualTo("4.14.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
-                Is.EqualTo(94));
+                Is.EqualTo(104));
             Assert.That(
                 CityMiscAssetProvider.ExpectedAssemblyCount,
-                Is.EqualTo(134));
+                Is.EqualTo(145));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(283));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(283));
+                Is.EqualTo(305));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(305));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -432,13 +454,13 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(assemblies, Is.EqualTo(134));
+            Assert.That(assemblies, Is.EqualTo(145));
             Assert.That(
                 actualNames,
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(283));
+                Is.EqualTo(305));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -477,13 +499,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(283));
-            Assert.That(manifest.assembly_count, Is.EqualTo(134));
-            Assert.That(manifest.triangle_count, Is.EqualTo(52126));
+            Assert.That(manifest.mesh_count, Is.EqualTo(305));
+            Assert.That(manifest.assembly_count, Is.EqualTo(145));
+            Assert.That(manifest.triangle_count, Is.EqualTo(57218));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5"));
+                    "68c43ebeb61cadb86c6d8d2ce5887c133de775bfd9310ae3cfa383cf62319ed2"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -491,7 +513,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a"));
+                    "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3"));
             Assert.That(
                 manifest.v2_unchanged_compatibility_signature,
                 Is.EqualTo(
@@ -609,7 +631,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(283));
+            Assert.That(meshes, Has.Length.EqualTo(305));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -677,7 +699,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(283));
+            Assert.That(actualNames, Has.Count.EqualTo(305));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);

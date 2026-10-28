@@ -27,6 +27,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (screen == null || !screen.IsShowing)
             {
                 return;
@@ -75,7 +76,7 @@ namespace BarPromenade
 
             Rect take = RetroItemPanel.SoleActionRect;
             RetroUiTheme.DrawSelection(take, true);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     take,
                     LocalizationService.Get(
                         screen.ActionKey),

@@ -29,6 +29,7 @@
     "note": {}
   },
   "documents": {
+    "ai/world-location-update-plan.md": {"type": "note", "budget": 30000},
     "ai/karaoke-plan.md": {"type": "note", "budget": 6000},
     "AI.md": {
       "type": "entry",

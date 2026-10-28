@@ -341,6 +341,7 @@ namespace BarPromenade
                     false,
                     IronMetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
+            MountainRoadStructureDetails.ReplaceGirders(beams, boxes, IronMetersPerTile);
             MountainRoadSurfaceAppearance.ApplyCombined(
                 beams.GetComponent<Renderer>(),
                 MountainRoadSurfaceKind.RustedIron,

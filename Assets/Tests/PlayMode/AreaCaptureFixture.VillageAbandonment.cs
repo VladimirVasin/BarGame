@@ -190,8 +190,15 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Assert.That(settlement.GetComponentsInChildren<Light>(true), Is.Empty);
                     Assert.That(settlement.GetComponentsInChildren<AudioSource>(true), Is.Empty);
-                    Assert.That(settlement.GetComponentsInChildren<MonoBehaviour>(true), Is.Empty,
-                        "New scenery must not silently acquire NPCs, interactions or light drivers.");
+                    foreach (MonoBehaviour component in settlement.GetComponentsInChildren<MonoBehaviour>(true))
+                    {
+                        Assert.That(component, Is.TypeOf<VillageHouseholdIdentity>(),
+                            "Passive household IDs do not permit NPCs, interactions or light drivers.");
+                        var identity = (VillageHouseholdIdentity)component;
+                        Assert.That(identity.HouseId, Is.EqualTo(identity.name));
+                        Assert.That(VillageHouseholdCatalog.FindHouse(identity.HouseId), Is.Not.Null);
+                        Assert.That(identity.Occupied, Is.False, "The abandoned household remains unoccupied.");
+                    }
                     foreach (Renderer renderer in settlement.GetComponentsInChildren<Renderer>(true))
                     {
                         var block = new MaterialPropertyBlock();
@@ -228,6 +235,32 @@ namespace BarPromenade.Tests.PlayMode
                     }
                     shots.Add(AbandonmentShot(root, "abandonment-10-" + plot.Id, foot,
                         plot.GroundCenter + Vector3.up * Mathf.Min(2.8f, plot.Height * .45f), 74f));
+                    if (plot.Id == "outbuilding-05")
+                    {
+                        // Its original front view crosses the warehouse chair
+                        // pile. Keep every prop; find one existing safe side
+                        // whose broad facade is really the first opaque hit.
+                        bool clearSide = false;
+                        foreach (int side in new[] { 1, 3, 2 })
+                        {
+                            if (!TryAbandonmentFoot(root, plot.GroundCenter, plot.Rotation, plot.Size,
+                                side, out Vector3 reviewFoot, true)) continue;
+                            Vector3 eye = reviewFoot + Vector3.up * EyeHeight;
+                            Vector3 aim = plot.GroundCenter + Vector3.up * 1.5f;
+                            Vector3 across = Vector3.Cross(Vector3.up, aim - eye).normalized;
+                            Transform body = settlement.Find(plot.Id);
+                            bool visible = true;
+                            for (int column = -1; column <= 1; column++)
+                                visible &= Physics.Linecast(eye, aim + across * column, out RaycastHit hit,
+                                    ~0, QueryTriggerInteraction.Ignore) && hit.transform.IsChildOf(body);
+                            if (!visible) continue;
+                            shots.Add(AbandonmentShot(root, "abandonment-11-outbuilding-05-clear-side",
+                                reviewFoot, aim, 74f));
+                            clearSide = true;
+                            break;
+                        }
+                        if (!clearSide) failures.Add(plot.Id + ": no safe unobstructed facade review point");
+                    }
                     if (plot.Yard == null || plot.Yard.StartsWith("Household", StringComparison.Ordinal)) continue;
                     if (TryAbandonmentFoot(root, plot.GroundCenter, plot.Rotation, plot.Size, 1,
                             out Vector3 sideFoot, true))

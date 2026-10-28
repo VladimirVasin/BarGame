@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,10 +17,13 @@ namespace BarPromenade.Tests.PlayMode
         private const float TimeoutSeconds = 15f;
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
+        private bool previousMovementFocus;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            previousMovementFocus = GameInput.MovementFocused;
+            GameInput.HandleApplicationFocus(true);
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
             keyboard = InputSystem.AddDevice<Keyboard>();
@@ -43,10 +47,12 @@ namespace BarPromenade.Tests.PlayMode
             keyboard = null;
             inputFixture?.TearDown();
             inputFixture = null;
+            GameInput.HandleApplicationFocus(previousMovementFocus);
             yield return null;
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(StairwellAuthoredAssetsSetup))]
         public IEnumerator Scene_BootstrapsVerticalRouteAndAtmosphere()
         {
             GameSessionState.PrepareStairwellArrival(
@@ -137,6 +143,7 @@ namespace BarPromenade.Tests.PlayMode
                     StairwellLightFlicker>(),
                 Has.Length.EqualTo(3));
             AssertPracticalSources(root);
+            AssertAuthoredStairwell(root);
             Assert.That(root.Ambience, Is.Not.Null);
             Assert.That(root.Ambience.Source.loop, Is.True);
             Assert.That(
@@ -149,9 +156,17 @@ namespace BarPromenade.Tests.PlayMode
                     AudioSource>(true),
                 Has.Length.EqualTo(
                     StairwellSoundscape.OwnedSourceCount));
+            // Hero effects also live under Runtime UI. Exclude their concrete
+            // owner when checking the room's independent audio budget.
+            Transform vomitHost = root.IntoxicationStatus.VomitHost;
+            var environmentSources = new List<AudioSource>();
+            foreach (AudioSource source in root.GetComponentsInChildren<AudioSource>(true))
+                if (!source.transform.IsChildOf(root.Player.GameObject.transform) &&
+                    (vomitHost == null || !source.transform.IsChildOf(vomitHost)))
+                    environmentSources.Add(source);
             Assert.That(
-                root.GetComponentsInChildren<AudioSource>(true),
-                Has.Length.EqualTo(
+                environmentSources,
+                Has.Count.EqualTo(
                     2 +
                     StairwellSoundscape.OwnedSourceCount),
                 "Stairwell audio must remain one music source, " +
@@ -492,6 +507,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             Scene_CatTalkChoiceShowsExistingResponseAndRestoresPlayer()
         {
+            GameSessionState.TryActivateQuest(QuestId.FeedTheCat);
             GameSessionState.PrepareStairwellArrival(
                 StairwellArrivalKind.StreetDoor);
             StairwellInteriorRoot root = null;
@@ -558,6 +574,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             Scene_CatInteractionWithoutStewShowsMissingMessage()
         {
+            GameSessionState.TryActivateQuest(QuestId.FeedTheCat);
             while (GameSessionState.TryRemoveInventoryItem(
                        InventoryItemId.OpenStewCan))
             {
@@ -654,6 +671,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             Scene_FeedingConsumesOneStewAndCompletesPairedAnimation()
         {
+            GameSessionState.TryActivateQuest(QuestId.FeedTheCat);
             while (GameSessionState.TryRemoveInventoryItem(
                        InventoryItemId.OpenStewCan))
             {
@@ -733,6 +751,17 @@ namespace BarPromenade.Tests.PlayMode
                     root.CatInteraction),
                 "The cat did not become the active interaction.");
 
+            // Optional anatomy covered by the authored outfit is already off.
+            // Feeding must preserve the exact world-rig selection throughout.
+            var originalRendererStates = new Dictionary<Renderer, bool>();
+            foreach (Renderer renderer in root.Player.Visual.Renderers)
+            {
+                Assert.That(renderer, Is.Not.Null);
+                originalRendererStates.Add(renderer, renderer.enabled);
+            }
+            Assert.That(originalRendererStates.Values, Does.Contain(true),
+                "The pre-feeding snapshot must include the visible world hero.");
+
             Assert.That(
                 root.CatInteraction.TryOpen(
                     root.Player.Interactor),
@@ -799,7 +828,7 @@ namespace BarPromenade.Tests.PlayMode
                     entryWorldRotation),
                 Is.GreaterThan(90f),
                 "The test must begin with a materially non-target facing.");
-            AssertRigRendererState(root, true);
+            AssertRigRendererState(root, originalRendererStates);
             Assert.That(root.Player.ContactShadow.enabled, Is.True);
             Assert.That(
                 root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
@@ -827,7 +856,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.01f));
             AssertContinuous3DPresentation(
                 root,
-                "CatFeedEnter");
+                "CatFeedEnter",
+                originalRendererStates);
             Assert.That(
                 root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.True);
@@ -846,7 +876,8 @@ namespace BarPromenade.Tests.PlayMode
                     PlayerAnimatedInteractionPhase.Looping));
             AssertContinuous3DPresentation(
                 root,
-                "CatFeedLoop");
+                "CatFeedLoop",
+                originalRendererStates);
             Assert.That(
                 root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.True);
@@ -890,6 +921,8 @@ namespace BarPromenade.Tests.PlayMode
                 () => !root.TargetInteraction.IsOpen,
                 "The paired feeding animation did not finish.");
 
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.OpenStewCan), Is.Zero);
+            Assert.That(GameSessionState.GetQuestStatus(QuestId.FeedTheCat), Is.EqualTo(QuestStatus.Completed));
             Assert.That(root.AnimatedInteraction.IsActive, Is.False);
             Assert.That(root.Cat.IsFeeding, Is.False);
             Assert.That(root.Cat.IsFeedingPrepared, Is.False);
@@ -906,7 +939,7 @@ namespace BarPromenade.Tests.PlayMode
                     root.Player.GameObject.transform.rotation,
                     exitWorldRotation),
                 Is.LessThan(0.01f));
-            AssertRigRendererState(root, true);
+            AssertRigRendererState(root, originalRendererStates);
             Assert.That(root.Player.ContactShadow.enabled, Is.True);
             Assert.That(
                 ((IPlayerClipPresentation)root.Player.Visual)
@@ -915,6 +948,133 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.False);
+        }
+
+        private static void AssertAuthoredStairwell(StairwellInteriorRoot root)
+        {
+            StairwellInteriorModelLibrary library = StairwellInteriorModelLibrary.Load();
+            Assert.That(library.BuildSignature, Has.Length.EqualTo(64));
+            Assert.That(library.Parts.Count, Is.LessThanOrEqualTo(128));
+            int visibleCount = 0;
+            foreach (MeshRenderer renderer in root.World.Root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!renderer.enabled) continue; // Hidden plan-owned ramp/safety proxies.
+                MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                Assert.That(filter, Is.Not.Null, renderer.name);
+                Assert.That(filter.sharedMesh.name, Does.StartWith("StairwellPart_"), renderer.name);
+                Bounds bounds = filter.sharedMesh.bounds;
+                Assert.That(Vector3.Distance(bounds.center, Vector3.zero), Is.LessThan(.0001f), renderer.name);
+                Assert.That(bounds.size.x, Is.EqualTo(1f).Within(.001f), renderer.name);
+                Assert.That(bounds.size.z, Is.EqualTo(1f).Within(.001f), renderer.name);
+                visibleCount++;
+            }
+            Assert.That(visibleCount, Is.InRange(1, 300));
+            // The imported shape and the retained authoritative proxy must still
+            // occupy the same actual metres after the FBX root's unit factor.
+            Transform floor = root.World.Root.Find("Stairwell Ground Floor");
+            Assert.That(floor.GetComponent<Renderer>().bounds.size.x,
+                Is.EqualTo(root.Layout.RoomSize.x).Within(.001f));
+            Assert.That(floor.GetComponent<Renderer>().bounds.size.z,
+                Is.EqualTo(root.Layout.RoomSize.y).Within(.001f));
+            Transform tread = root.World.Root.Find("Lower Stair 16");
+            Assert.That(tread.GetComponent<Renderer>().bounds.max.y,
+                Is.EqualTo(root.Layout.MiddleElevation).Within(.001f));
+            Assert.That(tread.Find(FootProbeSurface.ProbeChildName).GetComponent<BoxCollider>().size,
+                Is.EqualTo(Vector3.one));
+            Assert.That(root.World.Root.Find("Apartment Door/Apartment Door Leaf")
+                .GetComponent<Renderer>().bounds.size.y, Is.EqualTo(2.32f).Within(.001f));
+            AssertAuthoredRailAndHardwareContacts(root);
+        }
+
+        private static void AssertAuthoredRailAndHardwareContacts(StairwellInteriorRoot root)
+        {
+            var meshes = new Dictionary<Mesh, (Vector3[] vertices, int[] triangles)>();
+            void Contains(Transform shape, Vector3 worldPoint, string contact)
+            {
+                Assert.That(shape, Is.Not.Null, contact);
+                Mesh mesh = shape.GetComponent<MeshFilter>().sharedMesh;
+                if (!meshes.TryGetValue(mesh, out var data))
+                {
+                    data = (mesh.vertices, mesh.triangles);
+                    meshes.Add(mesh, data);
+                }
+                Vector3 p = shape.InverseTransformPoint(worldPoint);
+                double angle = 0;
+                for (int i = 0; i < data.triangles.Length; i += 3)
+                {
+                    Vector3 a = data.vertices[data.triangles[i]] - p;
+                    Vector3 b = data.vertices[data.triangles[i + 1]] - p;
+                    Vector3 c = data.vertices[data.triangles[i + 2]] - p;
+                    double la = a.magnitude, lb = b.magnitude, lc = c.magnitude;
+                    angle += 2 * Math.Atan2(Vector3.Dot(a, Vector3.Cross(b, c)),
+                        la * lb * lc + Vector3.Dot(a, b) * lc + Vector3.Dot(b, c) * la + Vector3.Dot(c, a) * lb);
+                }
+                // Generalized winding also handles the saddle/neck overlap;
+                // bounds and odd/even rays cannot prove these union contacts.
+                Assert.That(Math.Abs(angle), Is.GreaterThan(Math.PI * 2), contact);
+            }
+            string[] labels = { "Lower", "Apartment", "Upper" };
+            StairwellFlightPlan[] flights = { root.Layout.LowerFlight, root.Layout.ApartmentFlight, root.Layout.UpperFlight };
+            for (int f = 0; f < flights.Length; f++)
+            {
+                StairwellFlightPlan flight = flights[f];
+                float rise = flight.TopElevation - flight.BaseElevation;
+                float cosine = flight.RunLength / Mathf.Sqrt(flight.RunLength * flight.RunLength + rise * rise);
+                foreach (int side in new[] { -1, 1 })
+                {
+                    string suffix = side < 0 ? "A" : "B";
+                    Transform wood = root.World.Root.Find(labels[f] + " Handrail " + suffix);
+                    Transform supports = root.World.Root.Find(labels[f] + " Handrail " + suffix + " Supports");
+                    Vector2 lateral = new Vector2(-flight.Direction.y, flight.Direction.x) *
+                        (flight.Width * .5f + .055f) * side;
+                    for (int i = 0; i < flight.StepCount; i++)
+                        foreach (int end in new[] { -1, 1 })
+                        {
+                            float along = (i + .5f) * flight.StepDepth + end * .095f;
+                            Vector2 planar = flight.Start + flight.Direction * along + lateral;
+                            Vector3 foot = new Vector3(planar.x,
+                                flight.BaseElevation + (i + 1) * flight.StepRise + .68f - .015f, planar.y);
+                            Vector3 head = new Vector3(planar.x,
+                                flight.BaseElevation + 1.02f + rise / flight.RunLength * along - .0475f / cosine + .006f, planar.y);
+                            foot = root.World.Root.TransformPoint(foot); head = root.World.Root.TransformPoint(head);
+                            Transform metal = root.World.Root.Find(labels[f] + " Rail Curb " + (i + 1).ToString("00") + " " + suffix);
+                            string contact = labels[f] + " " + suffix + " post " + i + "/" + end;
+                            Contains(metal, foot, contact + " metal");
+                            Contains(supports, foot, contact + " support foot");
+                            Contains(supports, head, contact + " support head");
+                            Contains(wood, head, contact + " wood");
+                        }
+                }
+            }
+            foreach (string name in new[] { "Middle Landing Back Rail", "Apartment Landing Center Rail",
+                "Apartment Landing Right Rail", "Apartment Landing Left Edge" })
+            {
+                Transform metal = root.World.Root.Find(name);
+                Transform cap = root.World.Root.Find(name + " Top");
+                Vector3 size = metal.localScale;
+                foreach (int side in new[] { -1, 1 })
+                {
+                    Vector3 local = size.x > size.z
+                        ? new Vector3(side * (.5f - .0225f / size.x), .5f - .02f / size.y, 0f)
+                        : new Vector3(0f, .5f - .02f / size.y, side * (.5f - .0225f / size.z));
+                    Vector3 point = metal.TransformPoint(local);
+                    Contains(metal, point, name + " post");
+                    Contains(cap, point, name + " wood cap");
+                }
+            }
+            foreach (string name in new[] { "Street", "Apartment" })
+            {
+                Transform door = name == "Street" ? root.World.StreetDoor : root.World.ApartmentDoor;
+                Transform hardware = door.Find(name + " Door Hardware");
+                Vector3 point = hardware.position + hardware.rotation * new Vector3(.090f, 0f, -.0365f);
+                Contains(hardware, point, name + " backplate");
+                Contains(door.Find(name + " Door Leaf"), point, name + " backplate into leaf");
+                Assert.That(hardware.GetComponent<Collider>(), Is.Null);
+            }
+            Transform pull = root.World.Root.Find("Stairwell Dressing/Electrical Cabinet Pull");
+            Vector3 pullContact = pull.position + pull.rotation * new Vector3(0f, 0f, -.0165f);
+            Contains(pull, pullContact, "Cabinet pull");
+            Contains(root.World.Root.Find("Stairwell Dressing/Ground Electrical Cabinet Door"), pullContact, "Cabinet pull into leaf");
         }
 
         private static Bounds ComputeRendererBounds(Transform root)
@@ -1045,13 +1205,15 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertRigRendererState(
             StairwellInteriorRoot root,
-            bool expectedEnabled)
+            IReadOnlyDictionary<Renderer, bool> originalStates)
         {
             Assert.That(root, Is.Not.Null);
             Assert.That(root.Player.Visual, Is.Not.Null);
             Assert.That(
                 root.Player.Visual.Renderers,
                 Is.Not.Empty);
+            Assert.That(root.Player.Visual.Renderers.Count, Is.EqualTo(originalStates.Count),
+                "Feeding must retain the original world-rig renderers.");
             for (int index = 0;
                  index < root.Player.Visual.Renderers.Count;
                  index++)
@@ -1059,19 +1221,22 @@ namespace BarPromenade.Tests.PlayMode
                 Renderer renderer =
                     root.Player.Visual.Renderers[index];
                 Assert.That(renderer, Is.Not.Null);
+                Assert.That(originalStates.TryGetValue(renderer, out bool expectedEnabled), Is.True,
+                    "Feeding replaced a world-rig renderer.");
                 Assert.That(
                     renderer.enabled,
                     Is.EqualTo(expectedEnabled),
-                    $"Player rig renderer {index} has the wrong state.");
+                    $"Player rig renderer {index} ({renderer.name}) differs from its pre-feeding state.");
             }
         }
 
         private static void AssertContinuous3DPresentation(
             StairwellInteriorRoot root,
-            string expectedClip)
+            string expectedClip,
+            IReadOnlyDictionary<Renderer, bool> originalStates)
         {
             Assert.That(root.Player.ContactShadow.enabled, Is.True);
-            AssertRigRendererState(root, true);
+            AssertRigRendererState(root, originalStates);
             IPlayerClipPresentation clips =
                 (IPlayerClipPresentation)root.Player.Visual;
             Assert.That(clips.IsClipActive, Is.True);
@@ -1122,7 +1287,8 @@ namespace BarPromenade.Tests.PlayMode
                         StairwellInteriorRoot root =
                             roots[index].GetComponent<
                                 StairwellInteriorRoot>();
-                        if (root != null)
+                        if (root != null && root.IsInitialized &&
+                            !SceneTransitionService.IsTransitioning && GameInput.CanRead(GameInputContext.Gameplay))
                         {
                             capture(root);
                             yield break;

@@ -1,0 +1,99 @@
+{
+  "design_id": "mountain_road_structure_details_v1",
+  "generator_version": "1.0.0",
+  "build_signature": "3d67a53c3f41f658e879c798c20b216ebd5807f0b0a261c40aff1cb42c80d199",
+  "mesh_count": 5,
+  "triangle_count": 1020,
+  "parts": [
+    {
+      "name": "GEO_RoadStructure_Portal",
+      "role": "Portal",
+      "bounds_min": [
+        -4.720000000000001,
+        0.009000000000000008,
+        0.0
+      ],
+      "bounds_max": [
+        4.720000000000001,
+        6.220000000000001,
+        0.113
+      ],
+      "triangle_count": 700,
+      "signed_volume": 1.398997681333335
+    },
+    {
+      "name": "GEO_RoadStructure_GirderZ",
+      "role": "GirderZ",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "signed_volume": 0.4051941760426662
+    },
+    {
+      "name": "GEO_RoadStructure_GirderX",
+      "role": "GirderX",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 140,
+      "signed_volume": 0.4051941760426662
+    },
+    {
+      "name": "GEO_RoadStructure_Coping",
+      "role": "Coping",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 28,
+      "signed_volume": 0.9921430000000001
+    },
+    {
+      "name": "GEO_RoadStructure_Plain",
+      "role": "Plain",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangle_count": 12,
+      "signed_volume": 1.0
+    }
+  ],
+  "aperture_size": [
+    8,
+    5.5
+  ],
+  "maximum_template_vertices": 16000,
+  "maximum_batch_parts": 256,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0
+}

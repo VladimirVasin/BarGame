@@ -112,7 +112,7 @@ repository evidence. This does not require running every test layer.
   stock, while the open stew can enters the world only through the Home
   refrigerator/cat flow. Home and the metric church remodel use the kit;
   church openings/collision/light share placed exterior metres and anchors.
-  Stairwell awaits migration.
+  Stairwell and the transition leaf use the same fixed-metre kit; ramps, pivots and cat contacts stay in their plans.
 - **Blender's axes reach Unity by SWAPPING the last two, not by negating one.**
   Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
   (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the

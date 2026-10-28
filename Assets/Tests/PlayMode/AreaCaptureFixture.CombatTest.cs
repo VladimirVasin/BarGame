@@ -50,6 +50,114 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Explicit("Focused old arena and six current laboratory targets; no damage, duel or regeneration sequence.")]
+        [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
+        public IEnumerator CombatLaboratoryArtVisuals()
+        {
+            float previousDelta = Time.captureDeltaTime;
+            CombatTestRoot root = null;
+            Camera camera = null;
+            bool following = false;
+            Vector3 position = default;
+            Quaternion rotation = default;
+            float fov = 60f;
+            WarehouseRefrigeratorPresentationProbe probe = null;
+            try
+            {
+                Time.captureDeltaTime = 1f / 60f;
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.AuthoredEnemyKindForTests = null;
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                // The production launch selection composes the real old arena
+                // and its prepared laboratory pool, without a test-only body.
+                var selection = new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Laboratory);
+                Assert.That(CombatTestStartService.TryStart(selection), Is.True);
+                float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                while (Time.realtimeSinceStartup < deadline)
+                {
+                    root = Object.FindAnyObjectByType<CombatTestRoot>();
+                    if (root != null && root.IsInitialized && !SceneTransitionService.IsTransitioning &&
+                        GameInput.CanRead(GameInputContext.Gameplay)) break;
+                    yield return null;
+                }
+                Assert.That(root != null && root.IsInitialized && GameInput.CanRead(GameInputContext.Gameplay), Is.True);
+                Assert.That(root.IsLaboratory && root.WarehousePlan == null, Is.True);
+                Assert.That(root.LoadoutSelection, Is.EqualTo(selection.Loadout));
+                Assert.That(root.GetComponentsInChildren<CombatActor>(true), Has.Length.EqualTo(7));
+                root.AutomaticSimulation = false;
+                root.SetSparring(false);
+                camera = root.CameraFollow.Camera;
+                following = root.CameraFollow.enabled;
+                position = camera.transform.position;
+                rotation = camera.transform.rotation;
+                fov = camera.fieldOfView;
+                root.CameraFollow.enabled = false;
+                probe = camera.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+                for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                yield return AtWarehouseFridgePresentation(probe, () =>
+                {
+                    CaptureCombatGrip(camera, root.Hero, "Test laboratory art - Hero current crowbar grip");
+                    CaptureLaboratoryArtView(camera, "Test laboratory art - Old arena overview",
+                        new Vector3(9f, 8f, -10f), new Vector3(0f, .5f, 0f), 60f);
+                });
+
+                foreach (CombatEnemyKind kind in new[] { CombatEnemyKind.Zombie, CombatEnemyKind.Docker,
+                    CombatEnemyKind.Crane, CombatEnemyKind.Room, CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure })
+                {
+                    Assert.That(root.SpawnLaboratoryEnemy(kind), Is.True);
+                    CombatActor actor = root.Opponent;
+                    Assert.That(actor.EnemyKind, Is.EqualTo(kind));
+                    Assert.That(actor.IsZombie && actor.State.Settings.IsUnarmedZombie, Is.True);
+                    Assert.That(actor.Weapon, Is.Null, "Current opponents are unarmed; the retired duel's crowbar grip does not apply.");
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    yield return AtWarehouseFridgePresentation(probe, () =>
+                    {
+                        actor.CaptureContactPose();
+                        NpcHandPose hands = actor.GetComponentInChildren<NpcHandPose>();
+                        Assert.That(hands, Is.Not.Null);
+                        if (!actor.IsCrane)
+                        {
+                            float closure = actor.IsDocker ? .12f : 0f;
+                            Assert.That(hands.RightGripWeight, Is.EqualTo(closure).Within(.0001f));
+                            Assert.That(hands.LeftGripWeight, Is.EqualTo(closure).Within(.0001f));
+                        }
+                        Assert.That(actor.State.IsDefeated || actor.IsRagdollActive, Is.False);
+                        Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head,
+                            out Vector3 head, out Vector3 outward, out _), Is.True);
+                        Vector3 focus = actor.IsCrane ? (actor.CraneAnchorPosition + actor.transform.position) * .5f
+                            : actor.transform.position + Vector3.up;
+                        Vector3 eye = focus + (actor.IsCrane ? new Vector3(7f, 2f, 8f) : new Vector3(3.5f, 1.6f, 4.5f));
+                        CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " full rig", eye, focus, 60f);
+                        CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " head",
+                            head + outward * .9f + Vector3.up * .08f, head, 40f);
+                    });
+                }
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            }
+            finally
+            {
+                if (probe != null) { probe.CancelPending(); Object.Destroy(probe); }
+                if (root != null && camera != null)
+                {
+                    root.AutomaticSimulation = false;
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                    camera.fieldOfView = fov;
+                    root.CameraFollow.enabled = following;
+                }
+                CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.AuthoredEnemyKindForTests = null;
+                Time.captureDeltaTime = previousDelta;
+            }
+        }
+
+        private static void CaptureLaboratoryArtView(Camera camera, string name, Vector3 position, Vector3 target, float fov)
+        {
+            camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
+            camera.fieldOfView = fov;
+            CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+        }
+
+        [UnityTest]
         [Explicit("The shoulder camera, charged strikes and damage. Run without -batchmode to capture the actual HUD too.")]
         [PrebuildSetup(typeof(CombatTestAssetsSetup))]
         public IEnumerator CombatTestLockedCamera()

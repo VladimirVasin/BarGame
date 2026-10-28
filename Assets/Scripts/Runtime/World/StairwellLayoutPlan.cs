@@ -91,6 +91,31 @@ namespace BarPromenade
         public IReadOnlyList<Rect> WalkableRectangles =>
             walkableRectangles;
 
+        // Measured production world-rig DoorUseLoop grip, not an IK target.
+        // Put each escutcheon on its full-depth latch stile; the source dock
+        // aligns the unchanged right-hand press with the lever's front face.
+        private static readonly Vector3 DoorUseGrip = new Vector3(.3017243f, 1.1148247f, .6069756f);
+        private const float StreetLeverRight = .710f;
+        private const float ApartmentLeverRight = .4725f;
+        private const float HardwareNormalOffset = .1005f;
+        private const float LeverFrontOffset = .0375f;
+        private const float LeverHeightOffset = .025f;
+        public Vector3 StreetDoorHardwareLocal => new Vector3(-StreetLeverRight,
+            PlayerFactory.GroundedRootOffset + DoorUseGrip.y + LeverHeightOffset, HardwareNormalOffset);
+        public Vector3 ApartmentDoorHardwareLocal => new Vector3(-HardwareNormalOffset,
+            PlayerFactory.GroundedRootOffset + DoorUseGrip.y + LeverHeightOffset, -ApartmentLeverRight);
+        public Quaternion StreetDoorHardwareRotation => Quaternion.Euler(0f, 0f, 180f);
+        public Quaternion ApartmentDoorHardwareRotation =>
+            Quaternion.Euler(0f, -90f, 0f) * StreetDoorHardwareRotation;
+        public Vector3 StreetDoorActionRoot => new Vector3(
+            StreetExitPosition.x - StreetLeverRight + DoorUseGrip.x,
+            StreetElevation + PlayerFactory.GroundedRootOffset,
+            -RoomSize.y * .5f + .13f + HardwareNormalOffset + LeverFrontOffset + DoorUseGrip.z);
+        public Vector3 ApartmentDoorActionRoot => new Vector3(
+            RoomSize.x * .5f - .13f - HardwareNormalOffset - LeverFrontOffset - DoorUseGrip.z,
+            ApartmentElevation + PlayerFactory.GroundedRootOffset,
+            ApartmentEntrancePosition.z - ApartmentLeverRight + DoorUseGrip.x);
+
         public Vector3 GetSpawn(StairwellArrivalKind arrival)
         {
             switch (arrival)

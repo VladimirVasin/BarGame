@@ -646,6 +646,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsInitialized ||
                 restored ||
                 timeline == null ||
@@ -711,7 +712,7 @@ namespace BarPromenade
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                RetroUiInput.PointerMoved)
             {
                 SelectedOption = option;
             }
@@ -723,7 +724,7 @@ namespace BarPromenade
             }
 
             string prefix = selected ? "> " : "  ";
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     prefix +
                     LocalizationService.Get(localizationKey),

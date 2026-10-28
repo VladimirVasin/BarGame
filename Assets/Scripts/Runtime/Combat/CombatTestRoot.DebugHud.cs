@@ -47,7 +47,7 @@ namespace BarPromenade
             GUI.SetNextControlName(control);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && enabled && pointerAvailable;
-            bool pressed = GUI.Button(rect, text, button);
+            bool pressed = RetroUiInput.Button(rect, text, button);
             GUI.enabled = previousEnabled;
             return pressed;
         }

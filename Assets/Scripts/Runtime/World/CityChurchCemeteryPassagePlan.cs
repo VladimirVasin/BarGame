@@ -214,7 +214,8 @@ namespace BarPromenade
 
             List<float> depths =
                 CityCemeteryPlanner.CreateCrossAlleyDepths(
-                    cemeteryGrounds.width);
+                    cemeteryGrounds.width,
+                    layout.SpatialPlan.IsCompactCoastal);
             for (int index = 0; index < depths.Count; index++)
             {
                 float axisX = cemeteryGrounds.xMin + depths[index];
@@ -333,7 +334,8 @@ namespace BarPromenade
 
             List<float> depths =
                 CityCemeteryPlanner.CreateCrossAlleyDepths(
-                    plan.CemeteryGrounds.width);
+                    plan.CemeteryGrounds.width,
+                    layout.SpatialPlan.IsCompactCoastal);
             bool matchesCrossAlley = false;
             for (int index = 0; index < depths.Count; index++)
             {

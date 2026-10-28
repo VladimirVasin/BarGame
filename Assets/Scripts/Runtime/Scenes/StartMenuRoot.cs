@@ -51,6 +51,9 @@ namespace BarPromenade
         private GUIStyle titleStyle;
         private GUIStyle descriptionStyle;
 
+        private Vector2 lastPointerPosition, logicalPointerPosition;
+        private bool hasPointerPosition, pointerMoved;
+
         public Camera BackdropCamera { get; private set; }
         public bool IsStartingNewGame { get; private set; }
         public bool IsStartingCombatTest { get; private set; }
@@ -318,12 +321,37 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            hasPointerPosition = false;
+            pointerMoved = false;
             if (VocalizerLab != null) VocalizerLab.Close();
             if (model.IsVocalizerActive) model.ReturnToMainMenu();
         }
 
+        private void RefreshPointerHover(RetroUiCanvas canvas)
+        {
+            pointerMoved = false;
+            if (Event.current.type != EventType.Repaint) return;
+            if (!GameCursor.ApplicationFocused || !GameInput.CanRead(GameInputContext.Menu))
+            {
+                hasPointerPosition = false;
+                return;
+            }
+            // Runtime OnGUI receives no MouseMove events. Read the shared
+            // Input System pointer once, before GUI.matrix applies the canvas.
+            // Its bottom-left screen origin becomes the GUI's top-left origin.
+            Vector2 pointer = GameInput.ModalPointerPosition;
+            pointer.y = Screen.height - pointer.y;
+            logicalPointerPosition = canvas.ScreenToLogical(pointer);
+            pointerMoved = hasPointerPosition && (pointer - lastPointerPosition).sqrMagnitude >= .25f;
+            if (!hasPointerPosition || pointerMoved) lastPointerPosition = pointer;
+            hasPointerPosition = true;
+            // First observation establishes a baseline. Retaining it across
+            // page changes lets stationary mouse/keyboard focus coexist.
+        }
+
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (IsBusy)
             {
                 return;
@@ -334,6 +362,7 @@ namespace BarPromenade
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
+            RefreshPointerHover(canvas);
             Matrix4x4 previousMatrix =
                 RetroUiTheme.BeginCanvas(canvas);
             try
@@ -410,20 +439,20 @@ namespace BarPromenade
             GUI.Label(new Rect(178f, 26f, 284f, 22f),
                 string.Format(LocalizationService.Get("opening.choose_location_at"),
                     model.SelectedStartMinuteOfDay / 60, model.SelectedStartMinuteOfDay % 60), titleStyle);
-            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            Vector2 mouse = logicalPointerPosition;
             for (int index = 0; index <= NewGameLocationCatalog.Count; index++)
             {
                 bool back = index == NewGameLocationCatalog.Count;
                 NewGameLocation location = back ? NewGameLocation.Count : NewGameLocationCatalog.Get(index);
                 Rect rect = LocationOptionRect(index);
-                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                if (rect.Contains(mouse) && pointerMoved)
                 {
                     if (back) SelectBack(); else SelectLocation(location);
                 }
                 bool selected = model.SelectedLocation == location;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
                 string label = LocalizationService.Get(back ? "opening.back" : NewGameLocationCatalog.LabelKey(location));
-                if (GUI.Button(rect, (selected ? "> " : "  ") + label, selected ? selectedStyle : optionStyle))
+                if (RetroUiInput.Button(rect, (selected ? "> " : "  ") + label, selected ? selectedStyle : optionStyle))
                 {
                     if (back) SelectBack(); else SelectLocation(location);
                     ConfirmSelection();
@@ -444,12 +473,12 @@ namespace BarPromenade
             GUI.Label(new Rect(178f, 112f, 284f, 18f),
                 string.Format("{0:00}:{1:00}", model.SelectedStartMinuteOfDay / 60,
                     model.SelectedStartMinuteOfDay % 60), titleStyle);
-            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            Vector2 mouse = logicalPointerPosition;
             for (int index = 0; index < (int)StartTimeOption.Count; index++)
             {
                 var option = (StartTimeOption)index;
                 Rect rect = StartTimeOptionRect(option);
-                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) SelectStartTimeOption(option);
+                if (rect.Contains(mouse) && pointerMoved) SelectStartTimeOption(option);
                 bool selected = model.SelectedStartTimeOption == option;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
                 if (option < StartTimeOption.Continue)
@@ -457,20 +486,20 @@ namespace BarPromenade
                     int value = option == StartTimeOption.Hour ? model.SelectedStartMinuteOfDay / 60 :
                         model.SelectedStartMinuteOfDay % 60;
                     string key = option == StartTimeOption.Hour ? "opening.start_hour" : "opening.start_minute";
-                    if (GUI.Button(new Rect(rect.x, rect.y, 32f, rect.height), "−", optionStyle))
+                    if (RetroUiInput.Button(new Rect(rect.x, rect.y, 32f, rect.height), "−", optionStyle))
                     {
                         SelectStartTimeOption(option);
                         AdjustStartTime(-1);
                     }
                     GUI.Label(new Rect(rect.x + 36f, rect.y, rect.width - 72f, rect.height),
                         string.Format(LocalizationService.Get(key), value), titleStyle);
-                    if (GUI.Button(new Rect(rect.xMax - 32f, rect.y, 32f, rect.height), "+", optionStyle))
+                    if (RetroUiInput.Button(new Rect(rect.xMax - 32f, rect.y, 32f, rect.height), "+", optionStyle))
                     {
                         SelectStartTimeOption(option);
                         AdjustStartTime(1);
                     }
                 }
-                else if (GUI.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(
+                else if (RetroUiInput.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(
                     option == StartTimeOption.Continue ? "opening.continue" : "opening.back"),
                     selected ? selectedStyle : optionStyle))
                 {
@@ -500,12 +529,12 @@ namespace BarPromenade
                 LocalizationService.Get("combat.loadout.initial_held"), descriptionStyle);
             GUI.Label(new Rect(166f, 181f, 308f, 14f),
                 LocalizationService.Get(laboratory ? "combat.laboratory.choose_enemy" : "combat.mode.title"), descriptionStyle);
-            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            Vector2 mouse = logicalPointerPosition;
             for (int index = 0; index < model.CombatOptionCount; index++)
             {
                 CombatPreparationOption option = model.CombatOptionAt(index);
                 Rect rect = laboratory ? LaboratoryOptionRect(index) : CombatOptionRect(index);
-                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) FocusCombatOption(option);
+                if (rect.Contains(mouse) && pointerMoved) FocusCombatOption(option);
                 bool selected = model.SelectedCombatOption == option;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
                 string key = option switch
@@ -536,7 +565,7 @@ namespace BarPromenade
                     option == CombatPreparationOption.LaboratoryEnemy ? string.Format(LocalizationService.Get(key),
                         LocalizationService.Get(StartMenuModel.LaboratoryEnemyLabelKey(model.SelectedLaboratoryEnemy))) :
                     LocalizationService.Get(key);
-                if (GUI.Button(rect, (selected ? "> " : "  ") + mark + label,
+                if (RetroUiInput.Button(rect, (selected ? "> " : "  ") + mark + label,
                     selected ? selectedStyle : optionStyle))
                 {
                     FocusCombatOption(option);
@@ -554,13 +583,13 @@ namespace BarPromenade
                 false, 0f, 1f);
             GUI.Label(new Rect(178f, 72f, 284f, 20f),
                 LocalizationService.Get("combat.laboratory.choose_enemy"), titleStyle);
-            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            Vector2 mouse = logicalPointerPosition;
             for (int index = 0; index <= StartMenuModel.LaboratoryEnemyCount; index++)
             {
                 bool back = index == StartMenuModel.LaboratoryEnemyCount;
                 var kind = (CombatEnemyKind)index;
                 Rect rect = LaboratoryEnemyOptionRect(index);
-                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                if (rect.Contains(mouse) && pointerMoved)
                 {
                     if (back) SelectBack(); else SelectLaboratoryEnemy(kind);
                 }
@@ -568,7 +597,7 @@ namespace BarPromenade
                     !model.IsBackSelected && model.SelectedLaboratoryEnemy == kind;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
                 string key = back ? "opening.back" : StartMenuModel.LaboratoryEnemyLabelKey(kind);
-                if (GUI.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(key),
+                if (RetroUiInput.Button(rect, (selected ? "> " : "  ") + LocalizationService.Get(key),
                     selected ? selectedStyle : optionStyle))
                 {
                     if (back) SelectBack(); else SelectLaboratoryEnemy(kind);
@@ -585,10 +614,9 @@ namespace BarPromenade
             string localizationKey,
             bool literal = false)
         {
-            Vector2 mouse =
-                RetroUiTheme.LogicalMousePosition(canvas);
+            Vector2 mouse = logicalPointerPosition;
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                pointerMoved)
             {
                 SelectOption(option);
             }
@@ -600,7 +628,7 @@ namespace BarPromenade
             }
 
             string prefix = selected ? "> " : "  ";
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     prefix +
                     (literal ? localizationKey : LocalizationService.Get(localizationKey)),

@@ -198,7 +198,8 @@ namespace BarPromenade
             var parts = new List<CityCemeteryPartDescriptor>(460);
             var lamps = new List<CityCemeteryLampDescriptor>(3);
 
-            List<Rect> alleys = CreateAlleys(frame, churchPassage);
+            List<Rect> alleys = CreateAlleys(frame, churchPassage,
+                layout.SpatialPlan.IsCompactCoastal);
             EmitAlleys(parts, frame, alleys);
             AddFenceAndGate(parts, frame, access, churchPassage);
             // Lamps and benches claim their alley-side spots first so
@@ -672,7 +673,8 @@ namespace BarPromenade
 
         private static List<Rect> CreateAlleys(
             Frame frame,
-            CityChurchCemeteryPassagePlan churchPassage)
+            CityChurchCemeteryPassagePlan churchPassage,
+            bool compactCoastal)
         {
             var alleys = new List<Rect>(4);
             alleys.Add(frame.RectFromDepthLateral(
@@ -681,7 +683,8 @@ namespace BarPromenade
                 frame.GateLateral - MainAlleyHalfWidth,
                 frame.GateLateral + MainAlleyHalfWidth));
             List<float> crossAlleyDepths =
-                CreateCrossAlleyDepths(frame.DepthExtent);
+                CreateCrossAlleyDepths(frame.DepthExtent,
+                    compactCoastal && churchPassage != null);
             for (int index = 0;
                  index < crossAlleyDepths.Count;
                  index++)
@@ -707,11 +710,22 @@ namespace BarPromenade
         /// the shared church-passage selector.
         /// </summary>
         internal static List<float> CreateCrossAlleyDepths(
-            float depthExtent)
+            float depthExtent,
+            bool allowFarCrossAlley = false)
         {
             var depths = new List<float>(4);
+            // The compact east strip is 48.5 m deep. Its former 11 m
+            // decorative end reserve removed the 40 m alley even though
+            // 8.5 m remains beyond it, silently sealing the church link.
+            // A connected compact precinct uses the actual fence/alley/
+            // capsule clearance; independent, custom and legacy plans keep
+            // their previous axes and burial lattice.
+            float farReserve = allowFarCrossAlley
+                ? FenceInset + CrossAlleyHalfWidth +
+                  CityGroundTraversalPlanner.MaximumAgentRadius
+                : CrossAlleySpacing * 0.55f;
             for (float depth = CrossAlleySpacing;
-                 depth < depthExtent - CrossAlleySpacing * 0.55f;
+                 depth < depthExtent - farReserve;
                  depth += CrossAlleySpacing)
             {
                 depths.Add(depth);

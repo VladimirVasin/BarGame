@@ -79,6 +79,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsOpen ||
                 controller.SelectedProduct == null)
             {
@@ -205,7 +206,7 @@ namespace BarPromenade
                 hovered ? 0.75f : 0.55f);
             RetroUiTheme.FillRect(rect, fill);
             RetroUiTheme.StrokeRect(rect, 1f, border);
-            if (GUI.Button(rect, label, navigationStyle))
+            if (RetroUiInput.Button(rect, label, navigationStyle))
             {
                 controller.MoveSelection(direction);
             }
@@ -321,7 +322,7 @@ namespace BarPromenade
                     rect.Contains(logicalPointer));
             }
 
-            if (GUI.Button(rect, label, buttonStyle))
+            if (RetroUiInput.Button(rect, label, buttonStyle))
             {
                 action?.Invoke();
             }

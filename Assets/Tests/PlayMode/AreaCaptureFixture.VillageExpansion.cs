@@ -740,6 +740,7 @@ namespace BarPromenade.Tests.PlayMode
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageExpansion()
         {
+            GameSessionState.BeginNewGame("Test AlpineVillageExpansion visual itinerary");
             GameSessionState.TryStartGameTimeFromWake();
             Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
             GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));
@@ -886,8 +887,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 var properties = new MaterialPropertyBlock();
                 wreck.Find(part).GetComponent<Renderer>().GetPropertyBlock(properties);
-                string resource = part == "CabShell" || part == "BentNose"
-                    ? VillageExpansionAssetProvider.WreckPaintTexturePath : VillageExpansionAssetProvider.WreckRustTexturePath;
+                string family = part == "CabShell" || part == "BentNose" ? "WreckPaint" : "WreckRust";
+                string resource = VillageSurfaceAppearance.GetSheet(family).albedo;
                 Assert.That(properties.GetTexture("_BaseMap"), Is.SameAs(Resources.Load<Texture2D>(resource)),
                     "Wreck must use its corrosion albedo, not the active truck paint.");
                 Assert.That(properties.GetFloat("_Smoothness"), Is.LessThan(.1f));

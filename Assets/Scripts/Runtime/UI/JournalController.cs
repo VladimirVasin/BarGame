@@ -253,6 +253,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsOpen)
             {
                 return;
@@ -276,8 +277,8 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                if (Event.current.type == EventType.MouseDown ||
-                    Event.current.type == EventType.MouseDrag)
+                if (RetroUiInput.AnyPointerPressed ||
+                    RetroUiInput.AnyPointerDragged)
                 {
                     SelectRowUnderPointer(canvas);
                 }

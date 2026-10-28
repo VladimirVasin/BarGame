@@ -261,6 +261,7 @@ namespace BarPromenade
             CityMiscAssetProvider miscProvider =
                 CityMiscAssetProvider.Load();
 
+            AppendImportedBoatStation(plan.Parts, miscProvider, importedBatches, importedIds);
             TryAppendImportedBoats(
                 plan.Parts,
                 miscProvider,
@@ -374,12 +375,13 @@ namespace BarPromenade
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedMeshes(
                         $"Imported Seacoast Chunk {key.X} {key.Z} " +
-                        $"{key.Style}",
+                        $"{key.Style}" + (key.BoxProjected ? " Site" : ""),
                         root,
                         importedBatches[key],
                         ResolveColor(key.Style),
                         false,
-                        uvTileSize);
+                        uvTileSize,
+                        key.BoxProjected ? RuntimeWorldUvMode.BoxProjected : RuntimeWorldUvMode.XZPlanar);
                 if (surface.HasValue)
                 {
                     CitySeacoastSurfaceAppearance.ApplyCombined(
@@ -692,6 +694,70 @@ namespace BarPromenade
             }
         }
 
+        private static void AppendImportedBoatStation(
+            IReadOnlyList<CitySeacoastPartDescriptor> descriptors,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var hut = new List<CitySeacoastPartDescriptor>();
+            var cosmeticIds = new HashSet<string>(StringComparer.Ordinal);
+            CitySeacoastPartDescriptor floor = default;
+            bool hasFloor = false;
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                CitySeacoastPartDescriptor part = descriptors[i];
+                if (part.Kind == CitySeacoastPartKind.Hut &&
+                    part.StableId != CitySeacoastPlanner.HutDoorId) hut.Add(part);
+                if (part.StableId == "seacoast-hut-floor") { floor = part; hasFloor = true; }
+            }
+            if (hut.Count > 0)
+            {
+                if (!hasFloor) throw new InvalidOperationException("Boat station lost its authored floor frame.");
+                RequireStationAssembly(provider, CityMiscKind.SeacoastHutShell,
+                    floor.Center - Vector3.up * .08f, Quaternion.identity,
+                    CitySeacoastStyle.Concrete, hut, Vector3.one, batches, importedIds);
+            }
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                CitySeacoastPartDescriptor part = descriptors[i];
+                CityMiscKind kind;
+                if (part.StableId == CitySeacoastPlanner.HutDoorId) kind = CityMiscKind.CoastalDoorLeaf;
+                else if (part.Kind == CitySeacoastPartKind.PierDeck) kind = CityMiscKind.SeacoastPierDeckBoard;
+                else if (part.Kind == CitySeacoastPartKind.PierPile) kind = CityMiscKind.SeacoastPierPile;
+                else if (part.Kind == CitySeacoastPartKind.EsplanadeParapet) kind = CityMiscKind.SeacoastEsplanadeCoping;
+                else
+                {
+                    if (part.Kind == CitySeacoastPartKind.PierRail &&
+                        part.StableId.StartsWith("seacoast-pier-post-", StringComparison.Ordinal))
+                    {
+                        // Fixed-metre sleeve at each existing one-sided rail
+                        // joint. Neither the post nor the fisherman's end dock
+                        // is moved, duplicated or given a new collider.
+                        RequireStationAssembly(provider, CityMiscKind.SeacoastTimberJoint,
+                            part.Center + Vector3.up * (part.Size.y * .5f - .20f),
+                            part.Rotation, CitySeacoastStyle.Iron,
+                            new[] { part }, Vector3.one, batches, cosmeticIds);
+                    }
+                    continue;
+                }
+                RequireStationAssembly(provider, kind,
+                    part.Center - Vector3.up * (part.Size.y * .5f), part.Rotation,
+                    part.Style, new[] { part }, part.Size, batches, importedIds);
+            }
+        }
+
+        private static void RequireStationAssembly(
+            CityMiscAssetProvider provider, CityMiscKind kind, Vector3 origin,
+            Quaternion rotation, CitySeacoastStyle style,
+            IReadOnlyList<CitySeacoastPartDescriptor> replaced, Vector3 scale,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches, ISet<string> importedIds)
+        {
+            if (!TryAppendAssembly(provider, kind, 0, origin, rotation,
+                    style, replaced, scale, batches, importedIds))
+                throw new InvalidOperationException("Missing authored boat station assembly: " + kind);
+        }
+
         private static bool TryAppendAssembly(
             CityMiscAssetProvider provider,
             CityMiscKind kind,
@@ -724,7 +790,9 @@ namespace BarPromenade
                 var key = new BatchKey(
                     Mathf.FloorToInt(origin.x / SpatialChunkSize),
                     Mathf.FloorToInt(origin.z / SpatialChunkSize),
-                    style);
+                    style,
+                    boxProjected: (int)kind >= (int)CityMiscKind.CemeteryLodgeShell &&
+                    (int)kind <= (int)CityMiscKind.SeacoastEsplanadeCoping);
                 if (!batches.TryGetValue(
                         key,
                         out List<RuntimeMeshPlacement> placements))
@@ -792,6 +860,13 @@ namespace BarPromenade
         {
             switch (kind)
             {
+                case CityMiscKind.SeacoastHutShell:
+                    return role == CityMiscMeshRole.Masonry ? CitySeacoastStyle.Concrete :
+                        role == CityMiscMeshRole.Timber ? CitySeacoastStyle.Planking : CitySeacoastStyle.Iron;
+                case CityMiscKind.CoastalDoorLeaf:
+                case CityMiscKind.SeacoastPierDeckBoard:
+                case CityMiscKind.SeacoastPierPile:
+                    return role == CityMiscMeshRole.Timber ? sourceStyle : CitySeacoastStyle.Iron;
                 case CityMiscKind.SeacoastBoat:
                     if (role == CityMiscMeshRole.Timber)
                     {
@@ -1084,13 +1159,15 @@ namespace BarPromenade
 
         private readonly struct BatchKey : IEquatable<BatchKey>
         {
-            public BatchKey(int x, int z, CitySeacoastStyle style, bool ground = false, bool grassWind = false)
+            public BatchKey(int x, int z, CitySeacoastStyle style, bool ground = false, bool grassWind = false,
+                bool boxProjected = false)
             {
                 X = x;
                 Z = z;
                 Style = style;
                 Ground = ground;
                 GrassWind = grassWind;
+                BoxProjected = boxProjected;
             }
 
             public int X { get; }
@@ -1098,13 +1175,15 @@ namespace BarPromenade
             public CitySeacoastStyle Style { get; }
             public bool Ground { get; }
             public bool GrassWind { get; }
+            public bool BoxProjected { get; }
 
             public bool Equals(BatchKey other)
             {
                 return X == other.X &&
                        Z == other.Z &&
                        Style == other.Style &&
-                       Ground == other.Ground && GrassWind == other.GrassWind;
+                       Ground == other.Ground && GrassWind == other.GrassWind &&
+                       BoxProjected == other.BoxProjected;
             }
 
             public override bool Equals(object obj)
@@ -1120,7 +1199,8 @@ namespace BarPromenade
                     hash = (hash * 397) ^ Z;
                     hash = (hash * 397) ^ (int)Style;
                     hash = (hash * 397) ^ Ground.GetHashCode();
-                    return (hash * 397) ^ GrassWind.GetHashCode();
+                    hash = (hash * 397) ^ GrassWind.GetHashCode();
+                    return (hash * 397) ^ BoxProjected.GetHashCode();
                 }
             }
 
@@ -1137,7 +1217,9 @@ namespace BarPromenade
                 int style = left.Style.CompareTo(right.Style);
                 if (style != 0) return style;
                 int ground = left.Ground.CompareTo(right.Ground);
-                return ground != 0 ? ground : left.GrassWind.CompareTo(right.GrassWind);
+                if (ground != 0) return ground;
+                int grass = left.GrassWind.CompareTo(right.GrassWind);
+                return grass != 0 ? grass : left.BoxProjected.CompareTo(right.BoxProjected);
             }
         }
     }

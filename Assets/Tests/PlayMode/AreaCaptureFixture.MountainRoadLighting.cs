@@ -11,10 +11,22 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class MountainCraftedAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.MountainCablewayCraftedAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("RunAllBatch", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
         [Explicit("Focused mountain road material surfaces, native lighting, real headlights and lifecycle acceptance.")]
+        [PrebuildSetup(typeof(MountainCraftedAssetsSetup))]
         public IEnumerator MountainRoadNativeLighting()
         {
             string[] keys = { "graphics.clean_aa", "graphics.clean_reflections", "graphics.clean_volume",
@@ -28,6 +40,8 @@ namespace BarPromenade.Tests.PlayMode
             RoadSurfaceAudit surfaces = null;
             GameTimeRuntime clock = null;
             bool clockWasEnabled = false;
+            bool cablewayWasEnabled = false;
+            var craftedMeshes = new HashSet<Mesh>();
             try
             {
                 Time.captureDeltaTime = 1f / 60f;
@@ -55,11 +69,19 @@ namespace BarPromenade.Tests.PlayMode
                         clock.enabled = false;
                         road.Atmosphere.enabled = false;
                         road.Weather.enabled = false;
+                        AssertRoadCraftedStructures(road);
+                        cablewayWasEnabled = road.World.Cableway.Controller.enabled;
+                        road.World.Cableway.Controller.enabled = false;
+                        foreach (MeshFilter filter in road.World.Cableway.Root.GetComponentsInChildren<MeshFilter>(true))
+                            if (filter.sharedMesh != null && filter.sharedMesh.name.StartsWith("GEO_Cableway_", StringComparison.Ordinal))
+                                craftedMeshes.Add(filter.sharedMesh);
                         surfaces = AssertRoadSurfaceContracts(road);
                         var shots = new List<Shot>(RoadNativeLightingShots(road));
                         shots.InsertRange(1, RoadSurfaceShots(road, surfaces));
                         return shots.ToArray();
                     });
+
+                road.World.Cableway.Controller.enabled = cablewayWasEnabled;
 
                 foreach (string effect in new[] { "Reflections", "Lit air", "Halation", "Metal highlights", "Bounce" })
                     AssertRoadLightingDifference(effect + " baseline", effect + " enabled");
@@ -74,6 +96,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(road == null, Is.True, "The Single-loaded area must release its presentation owner.");
                 foreach (SceneReflectionCapture zone in oldZones)
                     Assert.That(zone == null, Is.True, "Area unload must destroy each owned reflection capture.");
+                foreach (Mesh mesh in craftedMeshes)
+                    Assert.That(mesh == null, Is.True, "Area unload must release each shared authored cableway slot.");
                 Assert.That(SceneLightingPresentation.Resolve(Camera.main), Is.Null);
                 Assert.That(Shader.GetGlobalInt("_SceneSurfaceReflectionCount"), Is.Zero);
                 Assert.That(Shader.GetGlobalInt("_WarehouseBounceCount"), Is.Zero);
@@ -85,6 +109,7 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     if (road.Atmosphere != null) road.Atmosphere.enabled = true;
                     if (road.Weather != null) road.Weather.enabled = true;
+                    if (road.World?.Cableway?.Controller != null) road.World.Cableway.Controller.enabled = cablewayWasEnabled;
                 }
                 if (clock != null) clock.enabled = clockWasEnabled;
                 foreach (KeyValuePair<string, int?> preference in preferences)
@@ -94,6 +119,36 @@ namespace BarPromenade.Tests.PlayMode
                 GraphicsEffectsSettings.ResetLoadedStateForTests();
                 Time.captureDeltaTime = previousCaptureDelta;
                 GameSessionState.BeginNewGame("Test mountain road lighting cleanup");
+            }
+        }
+
+        private static void AssertRoadCraftedStructures(MountainRoadRoot road)
+        {
+            MountainCablewayCraftedGeometry cableway = road.World.Cableway.Root.GetComponent<MountainCablewayCraftedGeometry>();
+            Assert.That(cableway, Is.Not.Null);
+            Assert.That(cableway.SharedMeshCount, Is.EqualTo(MountainCablewayCraftedGeometry.ExpectedMeshCount));
+            Assert.That(cableway.ReplacementCount, Is.InRange(40, MountainCablewayCraftedGeometry.MaximumReplacements));
+            MountainRoadStructureDetails structures = road.World.Root.GetComponent<MountainRoadStructureDetails>();
+            Assert.That(structures, Is.Not.Null);
+            Assert.That(structures.SharedMeshCount, Is.EqualTo(MountainRoadStructureDetails.ExpectedMeshCount));
+            Assert.That(structures.ReplacedBatchCount, Is.EqualTo(2), "Only bridge steel and existing parapet coping migrate.");
+            Assert.That(road.World.Bridge.StructuralBeams.GetComponent<MeshFilter>().sharedMesh.name,
+                Does.Contain("Authored Profiles"));
+            Assert.That(road.World.Bridge.ActiveColliderCount, Is.EqualTo(MountainRoadBridgeValidator.MaximumActiveColliderCount));
+            Assert.That(road.World.Bridge.RendererCount, Is.LessThanOrEqualTo(MountainRoadBridgeValidator.MaximumRendererCount));
+            Transform portal = road.World.PhysicalRoot.transform.Find("Tunnel Exit/" + MountainRoadStructureDetails.PortalName);
+            Assert.That(portal, Is.Not.Null);
+            Assert.That(portal.GetComponent<Collider>(), Is.Null, "Portal relief must not change passage collision.");
+            MountainRoadTunnelDescriptor tunnel = road.Plan.Tunnel;
+            Vector3 right = Vector3.Cross(Vector3.up, tunnel.OutwardAxis);
+            Mesh mesh = portal.GetComponent<MeshFilter>().sharedMesh;
+            foreach (Vector3 local in ReadTunnelProbeVertices(mesh))
+            {
+                Vector3 point = portal.TransformPoint(local) - tunnel.PortalGroundCenter;
+                float x = Vector3.Dot(point, right), y = point.y, z = Vector3.Dot(point, tunnel.OutwardAxis);
+                Assert.That(Mathf.Abs(x) >= tunnel.OpeningWidth * .5f - .002f || y >= tunnel.OpeningHeight - .002f, Is.True,
+                    "Actual imported portal triangles must leave the entire old aperture clear.");
+                Assert.That(z, Is.InRange(-.002f, .122f));
             }
         }
 
@@ -135,8 +190,43 @@ namespace BarPromenade.Tests.PlayMode
             uint dayLightingGeneration = 0;
             shots.Add(Shot.At(RoadLightingFrame("Day terminal"), yardEye, yardAim, 64, readyWhen: () =>
                 RoadReflectionsReady(road, ref deadline)));
+            MountainRoadCablewayPlan cablewayPlan = road.Plan.Terminal.Cableway;
+            var station = cablewayPlan.StationArea;
+            shots.Add(Shot.At(RoadLightingFrame("Crafted lower station frame"),
+                station.Center + station.Right * 5.4f + station.Forward * 2.2f + Vector3.up * 2.1f,
+                station.Center + Vector3.up * 2.65f, 58f));
+            Transform cabin = road.World.Cableway.Cabins[0];
+            Vector3 cabinAim = cabin.TransformPoint(new Vector3(0f,
+                -MountainRoadCablewayPlan.CabinRoofDrop - cablewayPlan.CabinSize.y * .45f, 0f));
+            shots.Add(Shot.At(RoadLightingFrame("Crafted cabin and open entry"),
+                cabinAim + cabin.right * 3.2f + cabin.forward * 2.6f + Vector3.up * .65f,
+                cabinAim, 58f));
+            MountainRoadBridgeDescriptor bridge = road.Plan.Bridge;
+            Vector3 bridgeSpan = bridge.End - bridge.Start;
+            Vector3 bridgeUp = Quaternion.LookRotation(bridgeSpan.normalized, Vector3.up) * Vector3.up;
+            float girderHeight = Mathf.Clamp(bridge.DeckThickness * .82f, .52f, .78f);
+            int crossIntervals = Mathf.Clamp(Mathf.CeilToInt(bridge.Length / 4.5f), 6, 14);
+            // Frame the actual second crossbeam/outer-girder junction from
+            // beyond the side and below the deck, with both profiles oblique.
+            Vector3 bridgeJoint = Vector3.Lerp(bridge.Start, bridge.End, 2f / crossIntervals) +
+                bridge.Right * (bridge.DeckWidth * .34f) - bridgeUp *
+                (MountainRoadBridgeWorldBuilder.StructuralDeckSurfaceClearance + bridge.DeckThickness + girderHeight * .72f);
+            Vector3 bridgeEye = bridgeJoint + bridge.Right * 3.8f - bridgeSpan.normalized * 3.6f - bridgeUp * 1.1f;
+            Assert.That(Physics.CheckSphere(bridgeEye, .20f, ~0, QueryTriggerInteraction.Ignore), Is.False,
+                "The bridge detail camera must stay outside actual deck, support and terrain collision.");
+            shots.Add(Shot.At(RoadLightingFrame("Crafted bridge steel joints"), bridgeEye, bridgeJoint, 58f));
+            foreach (MountainRoadSitePartDescriptor part in road.Plan.Terminal.Site.Parts)
+                if (part.StableId == "site-parapet-coping-00")
+                {
+                    shots.Add(Shot.At(RoadLightingFrame("Crafted parapet coping contact"),
+                        part.Center - plateau.Forward * 2f + plateau.Right * .6f + Vector3.up * .65f,
+                        part.Center, 56f));
+                    break;
+                }
             shots.Add(Shot.At(RoadLightingFrame("Day cafe"), cafeEye, cafeAim, 64));
             shots.Add(Shot.At(RoadLightingFrame("Day dark edge"), edgeEye, edgeAim, 58));
+            // Generation invalidation and probe quiet time use real seconds.
+            // Pace this callback so 900 fast editor frames cannot pre-empt its existing 25 s deadline.
             shots.Add(Shot.At(RoadLightingFrame("Night terminal"), yardEye, yardAim, 64, readyWhen: () =>
             {
                 if (!night)
@@ -156,7 +246,7 @@ namespace BarPromenade.Tests.PlayMode
                     return false;
                 }
                 return RoadReflectionsReady(road, ref deadline);
-            }));
+            }, readyPollSeconds: .04f));
             shots.Add(Shot.At(RoadLightingFrame("Night cafe"), cafeEye, cafeAim, 64));
             shots.Add(Shot.At(RoadLightingFrame("Night dark edge"), edgeEye, edgeAim, 58));
             AddPair("Reflections", cafeEye, cafeAim, value => GraphicsEffectsSettings.CleanReflectionsEnabled = value);

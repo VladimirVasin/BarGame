@@ -595,6 +595,7 @@ namespace BarPromenade
             foreach (MeshFilter path in parent.Find("Visible Village Paths").GetComponentsInChildren<MeshFilter>())
                 paths.Add(path.sharedMesh);
             AlpineVillageRoadSurfaceBuilder.Apply(mesh, plan, paths);
+            FitWorkroomGround(mesh, plan);
             double uploadMs = stageTimer.Elapsed.TotalMilliseconds;
 
             var host = new GameObject("Village Ground");
@@ -661,6 +662,80 @@ namespace BarPromenade
                 GameLog.Field("split_ms", splitMs),
                 GameLog.Field("upload_ms", uploadMs));
             return host;
+        }
+
+        private static void FitWorkroomGround(Mesh mesh, AlpineVillagePlan plan)
+        {
+            AlpineVillagePlotDescriptor house = null;
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+                if (plot.StableId == VillageWorkroomPlan.HouseId) { house = plot; break; }
+            if (house == null) return;
+
+            // Sampling a deep vertex bed cannot guarantee clearance at the
+            // rotated floor edge: a neighbouring outdoor corner may be above
+            // the shelf datum. Split at the physical plinth instead. Exterior
+            // fragments retain their exact plane, normals and appearance;
+            // only its hidden soil cap is lowered. The same final mesh feeds
+            // collision and spatial render batches below.
+            var positions = new List<Vector3>(mesh.vertices);
+            var normals = new List<Vector3>(mesh.normals);
+            var uvs = new List<Vector2>(mesh.uv);
+            var road = new List<Vector4>();
+            mesh.GetUVs(3, road);
+            bool hasRoad = road.Count == positions.Count;
+            Quaternion rotation = Quaternion.LookRotation(house.Facing);
+            Quaternion inverse = Quaternion.Inverse(rotation);
+            Vector3 centre = house.GroundCenter;
+            Rect broad = house.BoundsXZ, cavity = VillageWorkroomPlan.TerrainCavity(house);
+            var result = new List<int>[mesh.subMeshCount];
+            for (int material = 0; material < mesh.subMeshCount; material++)
+            {
+                int[] indices = mesh.GetTriangles(material);
+                var kept = new List<int>(indices.Length);
+                result[material] = kept;
+                for (int index = 0; index < indices.Length; index += 3)
+                {
+                    int a = indices[index], b = indices[index + 1], c = indices[index + 2];
+                    Vector3 first = positions[a], second = positions[b], third = positions[c];
+                    if (Mathf.Max(first.x, Mathf.Max(second.x, third.x)) <= broad.xMin ||
+                        Mathf.Min(first.x, Mathf.Min(second.x, third.x)) >= broad.xMax ||
+                        Mathf.Max(first.z, Mathf.Max(second.z, third.z)) <= broad.yMin ||
+                        Mathf.Min(first.z, Mathf.Min(second.z, third.z)) >= broad.yMax)
+                    { Keep(); continue; }
+                    // Most interior faces already lie on the deep bed. Keep
+                    // their shared vertices; only the narrow return needs cuts.
+                    float bed = centre.y - VillageWorkroomPlan.TerrainBedDepth;
+                    if (Mathf.Abs(first.y - bed) < .00001f && Mathf.Abs(second.y - bed) < .00001f &&
+                        Mathf.Abs(third.y - bed) < .00001f) { Keep(); continue; }
+                    var source = new GroundSurfacePartitioner.Triangle(Pack(a), Pack(b), Pack(c), material);
+                    List<GroundSurfacePartitioner.Triangle> inside = GroundSurfacePartitioner.ClipToRect(source, cavity);
+                    if (inside.Count == 0) { Keep(); continue; }
+                    foreach (GroundSurfacePartitioner.Triangle piece in GroundSurfacePartitioner.SubtractRect(source, cavity))
+                    { Append(piece.A, false); Append(piece.B, false); Append(piece.C, false); }
+                    foreach (GroundSurfacePartitioner.Triangle piece in inside)
+                    { Append(piece.A, true); Append(piece.B, true); Append(piece.C, true); }
+                    void Keep() { kept.Add(a); kept.Add(b); kept.Add(c); }
+                    void Append(GroundSurfacePartitioner.Vertex vertex, bool belowFloor)
+                    {
+                        Vector3 local = vertex.Position;
+                        if (belowFloor) local.y = -VillageWorkroomPlan.TerrainBedDepth;
+                        kept.Add(positions.Count);
+                        positions.Add(centre + rotation * local);
+                        normals.Add(belowFloor ? Vector3.up : rotation * vertex.Normal);
+                        uvs.Add(vertex.Uv0);
+                        if (hasRoad) road.Add(vertex.RoadCoordinates);
+                    }
+                }
+            }
+            mesh.indexFormat = positions.Count > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16;
+            mesh.SetVertices(positions); mesh.SetNormals(normals); mesh.SetUVs(0, uvs);
+            if (hasRoad) mesh.SetUVs(3, road);
+            for (int material = 0; material < result.Length; material++) mesh.SetTriangles(result[material], material);
+            mesh.RecalculateBounds();
+
+            GroundSurfacePartitioner.Vertex Pack(int index) => new GroundSurfacePartitioner.Vertex(
+                inverse * (positions[index] - centre), inverse * normals[index], uvs[index],
+                hasRoad ? road[index] : Vector4.zero, Color.white);
         }
 
         /// <summary>
@@ -804,6 +879,7 @@ namespace BarPromenade
                 triangles.RemoveRange(kept, triangles.Count - kept);
             }
 
+            CutWorkroomSnow(plan, vertices, uvs, triangles, grounds, depths);
             CompactSnowVertices(vertices, uvs, triangles, grounds, depths);
             Func<Vector2, float> asphaltWeight = AlpineVillageRoadSurfaceBuilder.CreateSnowAsphaltSampler(plan);
             var surfaceControls = new List<Color>(vertices.Count);
@@ -907,6 +983,65 @@ namespace BarPromenade
                 null,
                 null);
             return treading;
+        }
+
+        private static void CutWorkroomSnow(AlpineVillagePlan plan, List<Vector3> vertices,
+            List<Vector2> uvs, List<int> triangles, List<float> grounds, List<float> depths)
+        {
+            AlpineVillagePlotDescriptor house = null;
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+                if (plot.StableId == VillageWorkroomPlan.HouseId) { house = plot; break; }
+            if (house == null) return;
+
+            // Zero depth at a sampled foundation does not prevent the coarse
+            // triangle beside it from rising through the occupied floor. Cut
+            // only under the real plinth, retaining every exterior fragment on
+            // its original plane. Ground/depth must be interpolated with UVs:
+            // treading and refill still own the resulting vertices afterwards.
+            Quaternion rotation = Quaternion.LookRotation(house.Facing);
+            Quaternion inverse = Quaternion.Inverse(rotation);
+            Vector3 centre = house.GroundCenter;
+            Rect broad = house.BoundsXZ;
+            Vector2 half = Vector2.Scale(house.FootprintSize, new Vector2(.475f, .445f));
+            Rect cut = Rect.MinMaxRect(-half.x, -half.y, half.x, half.y);
+            var added = new List<int>();
+            int kept = 0;
+            int count = triangles.Count;
+            for (int index = 0; index < count; index += 3)
+            {
+                int a = triangles[index], b = triangles[index + 1], c = triangles[index + 2];
+                Vector3 first = vertices[a], second = vertices[b], third = vertices[c];
+                if (Mathf.Max(first.x, Mathf.Max(second.x, third.x)) <= broad.xMin ||
+                    Mathf.Min(first.x, Mathf.Min(second.x, third.x)) >= broad.xMax ||
+                    Mathf.Max(first.z, Mathf.Max(second.z, third.z)) <= broad.yMin ||
+                    Mathf.Min(first.z, Mathf.Min(second.z, third.z)) >= broad.yMax)
+                { Keep(); continue; }
+
+                var source = new GroundSurfacePartitioner.Triangle(Pack(a), Pack(b), Pack(c), 0);
+                List<GroundSurfacePartitioner.Triangle> outside = GroundSurfacePartitioner.SubtractRect(source, cut);
+                if (outside.Count == 1 && outside[0].A.Position.Equals(source.A.Position) &&
+                    outside[0].B.Position.Equals(source.B.Position) && outside[0].C.Position.Equals(source.C.Position))
+                { Keep(); continue; }
+                foreach (GroundSurfacePartitioner.Triangle piece in outside)
+                { Append(piece.A); Append(piece.B); Append(piece.C); }
+
+                void Keep()
+                { triangles[kept++] = a; triangles[kept++] = b; triangles[kept++] = c; }
+            }
+            triangles.RemoveRange(kept, triangles.Count - kept);
+            triangles.AddRange(added);
+
+            GroundSurfacePartitioner.Vertex Pack(int index) => new GroundSurfacePartitioner.Vertex(
+                inverse * (vertices[index] - centre), Vector3.up, uvs[index],
+                new Vector4(grounds[index], depths[index], 0f, 0f), Color.white);
+            void Append(GroundSurfacePartitioner.Vertex vertex)
+            {
+                added.Add(vertices.Count);
+                vertices.Add(centre + rotation * vertex.Position);
+                uvs.Add(vertex.Uv0);
+                grounds.Add(vertex.RoadCoordinates.x);
+                depths.Add(vertex.RoadCoordinates.y);
+            }
         }
 
         private static void CompactSnowVertices(List<Vector3> vertices, List<Vector2> uvs,

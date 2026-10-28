@@ -71,6 +71,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(village != null && village.IsInitialized, Is.True);
                 AssertWorkroomShadowBudget(village.Workroom.Environment);
+                AssertWorkroomSnowGeometry(village);
+                AssertWorkroomGroundGeometry(village);
                 VillageWorkroomInstance room = village.Workroom.Room;
                 Camera camera = Camera.main;
                 bool followEnabled = village.CameraFollow.enabled;
@@ -93,6 +95,12 @@ namespace BarPromenade.Tests.PlayMode
                         Quaternion.LookRotation(room.Plan.World(new Vector3(-2.1f, 1.1f, 1f)) - room.Plan.World(new Vector3(-2.1f, 1.8f, 5.2f))));
                     camera.fieldOfView = 52f;
                     CaptureCurrentCamera(camera, "VillageWorkroomWalls", "exterior-window");
+                    Vector3 closePosition = room.Plan.World(new Vector3(-.8f, 1.3f, .3f));
+                    camera.transform.SetPositionAndRotation(closePosition,
+                        Quaternion.LookRotation(room.Plan.Anchor("ClothRest") - closePosition));
+                    camera.fieldOfView = 48f;
+                    yield return null;
+                    CaptureCurrentCamera(camera, "VillageWorkroomWalls", "repairs-cloth-floor");
 
                     Physics.SyncTransforms();
                     MeshCollider[] shells = room.HouseRoot.GetComponentsInChildren<MeshCollider>().Where(c =>
@@ -148,6 +156,96 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Application.logMessageReceived -= RecordShadowMessage;
             }
+        }
+
+        private static void AssertWorkroomGroundGeometry(AlpineVillageRoot village)
+        {
+            VillageWorkroomPlan room = village.Workroom.Plan;
+            Transform ground = village.World.TerrainRoot.transform;
+            MeshCollider collision = ground.GetComponent<MeshCollider>();
+            Assert.That(collision, Is.Not.Null);
+            // These are the two actual terrain-triangle hits in the failed
+            // repairs/cloth camera. Probe the final collider, not the analytic
+            // depth field or a face centroid; chunk indices change after cuts.
+            foreach (Vector2 local in new[] { new Vector2(-1.58926f, 2.51993f), new Vector2(-1.41435f, 2.51345f) })
+            {
+                Vector3 origin = room.World(new Vector3(local.x, 1f, local.y));
+                Assert.That(collision.Raycast(new Ray(origin, Vector3.down), out RaycastHit hit, 2f), Is.True);
+                Assert.That(room.Local(hit.point).y, Is.LessThanOrEqualTo(-.025f),
+                    $"Terrain still pierces the floor at the reproduced peak {local}.");
+                Assert.That(room.Local(hit.point).y, Is.EqualTo(-VillageWorkroomPlan.TerrainBedDepth).Within(.001f));
+            }
+            Vector2 half = room.House.FootprintSize * .5f;
+            foreach (Vector2 local in new[] { new Vector2(-half.x - .05f, 0f), new Vector2(half.x + .05f, 0f),
+                new Vector2(0f, -half.y - .05f), new Vector2(0f, half.y + .05f) })
+            {
+                Vector3 origin = room.World(new Vector3(local.x, 2f, local.y));
+                Assert.That(collision.Raycast(new Ray(origin, Vector3.down), out RaycastHit hit, 4f), Is.True);
+                Assert.That(hit.point.y, Is.EqualTo(AlpineVillageTerrainSampler.SampleMeshHeight(
+                    village.Plan, new Vector2(hit.point.x, hit.point.z))).Within(.001f),
+                    "The cavity must retain the outdoor collision plane.");
+            }
+            int checkedSectors = 0;
+            foreach (MeshFilter filter in ground.GetComponentsInChildren<MeshFilter>())
+            {
+                Renderer renderer = filter.GetComponent<Renderer>();
+                if (renderer == null || !renderer.enabled || !renderer.bounds.Intersects(
+                    new Bounds(room.House.GroundCenter, new Vector3(12f, 4f, 12f)))) continue;
+                AssertWorkroomFloorClearance(room, filter, "Visible terrain", false);
+                checkedSectors++;
+            }
+            Assert.That(checkedSectors, Is.GreaterThan(0), "Probe the actual enabled ground sectors as well as collision.");
+        }
+
+        private static void AssertWorkroomSnowGeometry(AlpineVillageRoot village)
+        {
+            Transform drifts = village.World.Root.transform.Find(AlpineVillageWorldBuilder.SnowDriftObjectName);
+            Assert.That(drifts, Is.Not.Null);
+            AssertWorkroomFloorClearance(village.Workroom.Plan, drifts.GetComponent<MeshFilter>(), "Static snow", true);
+        }
+
+        private static void AssertWorkroomFloorClearance(VillageWorkroomPlan room, MeshFilter filter, string owner, bool fullThreshold)
+        {
+            Mesh mesh = filter.sharedMesh;
+            Vector3[] positions = mesh.vertices;
+            int[] indices = mesh.triangles;
+            for (int index = 0; index < positions.Length; index++)
+                positions[index] = room.Local(filter.transform.TransformPoint(positions[index]));
+            Bounds main = VillageWorkroomPlan.LocalRoomBounds;
+            var floors = new[]
+            {
+                Rect.MinMaxRect(main.min.x + .005f, main.min.z + .005f, main.max.x - .005f, main.max.z - .005f),
+                Rect.MinMaxRect(1.205f, -2.265f, 3.495f, 1.395f),
+                Rect.MinMaxRect(room.House.DoorAcrossOffset - .515f, 2.535f,
+                    room.House.DoorAcrossOffset + .515f, fullThreshold ? 2.785f : room.House.FootprintSize.y * .445f - .005f)
+            };
+            int intrusions = 0;
+            float highest = float.NegativeInfinity;
+            for (int index = 0; index < indices.Length; index += 3)
+            {
+                Vector3 a = positions[indices[index]], b = positions[indices[index + 1]], c = positions[indices[index + 2]];
+                if (Mathf.Max(a.y, Mathf.Max(b.y, c.y)) <= -.025f) continue;
+                Rect bounds = Rect.MinMaxRect(Mathf.Min(a.x, Mathf.Min(b.x, c.x)), Mathf.Min(a.z, Mathf.Min(b.z, c.z)),
+                    Mathf.Max(a.x, Mathf.Max(b.x, c.x)), Mathf.Max(a.z, Mathf.Max(b.z, c.z)));
+                foreach (Rect floor in floors)
+                {
+                    if (!bounds.Overlaps(floor)) continue;
+                    // Intersect actual faces with the occupied boards: checking
+                    // depth samples or centroids misses a narrow wall-edge peak.
+                    var face = new GroundSurfacePartitioner.Triangle(Pack(a), Pack(b), Pack(c), 0);
+                    foreach (GroundSurfacePartitioner.Triangle piece in GroundSurfacePartitioner.ClipToRect(face, floor))
+                    {
+                        float top = Mathf.Max(piece.A.Position.y, Mathf.Max(piece.B.Position.y, piece.C.Position.y));
+                        highest = Mathf.Max(highest, top);
+                        if (top > -.025f) intrusions++;
+                    }
+                }
+            }
+            Assert.That(intrusions, Is.Zero,
+                $"{owner} rises through the workroom boards: {intrusions} clipped faces, highest {highest:F4} m.");
+
+            GroundSurfacePartitioner.Vertex Pack(Vector3 position) => new GroundSurfacePartitioner.Vertex(
+                position, Vector3.up, Vector2.zero, Vector4.zero, Color.white);
         }
 
         private static void AssertWorkroomShadowBudget(VillageWorkroomEnvironment environment)

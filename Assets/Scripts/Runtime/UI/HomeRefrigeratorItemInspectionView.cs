@@ -35,6 +35,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (controller == null || !controller.BrowsingEnabled)
             {
                 return;
@@ -129,25 +130,23 @@ namespace BarPromenade
 
             Vector2 logicalMouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
-            EventType eventType = Event.current.type;
             for (int index = 0; index < Actions.Length; index++)
             {
-                DrawAction(index, logicalMouse, eventType);
+                DrawAction(index, logicalMouse);
             }
         }
 
         private void DrawAction(
             int index,
-            Vector2 logicalMouse,
-            EventType eventType)
+            Vector2 logicalMouse)
         {
             HomeRefrigeratorItemAction action = Actions[index];
             Rect rect = RetroItemPanel.ActionRect(index, Actions.Length);
             bool selected = (int)action == controller.SelectedActionIndex;
             bool hovered = rect.Contains(logicalMouse);
             if (hovered &&
-                (eventType == EventType.MouseMove ||
-                 eventType == EventType.MouseDown))
+                (RetroUiInput.PointerMoved ||
+                 RetroUiInput.PointerPressed))
             {
                 controller.SelectAction((int)action);
                 selected = true;
@@ -169,7 +168,7 @@ namespace BarPromenade
                         : RetroUiTheme.FrameInner,
                     RetroUiTheme.FrameInner);
             }
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     LocalizationService.Get(action == HomeRefrigeratorItemAction.Take
                         ? HomeRefrigeratorItemInspectionController.TakeActionKey

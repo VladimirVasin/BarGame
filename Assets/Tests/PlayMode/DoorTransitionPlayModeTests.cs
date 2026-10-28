@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -15,6 +16,7 @@ namespace BarPromenade.Tests.PlayMode
         private const float TimeoutSeconds = 15f;
 
         [UnityTest]
+        [PrebuildSetup(typeof(StairwellAuthoredAssetsSetup))]
         public IEnumerator DirectLoad_IsIdleUntilExplicitInitialization()
         {
             Assert.That(
@@ -119,6 +121,13 @@ namespace BarPromenade.Tests.PlayMode
             Renderer[] renderers =
                 root.GetComponentsInChildren<Renderer>(true);
             Assert.That(renderers, Is.Not.Empty);
+            Assert.That(root.DoorPivot.localPosition, Is.EqualTo(new Vector3(-.87f, .08f, 0f)));
+            Assert.That(root.HandlePivot.localPosition, Is.EqualTo(new Vector3(1.46f, 1.40f, -.105f)));
+            Transform leaf = root.DoorPivot.Find("Door Leaf");
+            Assert.That(leaf.GetComponent<MeshFilter>().sharedMesh.name, Does.StartWith("StairwellPart_"));
+            Assert.That(leaf.GetComponent<Renderer>().bounds.size.y, Is.EqualTo(2.84f).Within(.001f));
+            Assert.That(leaf.childCount, Is.Zero, "The authored inset panels travel as one leaf.");
+
             Assert.That(
                 root.GetComponentsInChildren<Collider>(true),
                 Is.Empty,
@@ -180,6 +189,10 @@ namespace BarPromenade.Tests.PlayMode
                 AudioListener.pause = previousPause;
             }
 
+            LogAssert.Expect(LogType.Log,
+                new Regex(@"Area capture wrote .*authored-door-enter\.png"));
+            AreaCaptureFixture.CaptureCurrentCamera(root.Camera,
+                SceneIds.DoorTransition, "authored-door-enter");
             yield return root.Play();
 
             Assert.That(
@@ -195,6 +208,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(extraListener == null, Is.True);
             root.Initialize(DoorTransitionDirection.ExitBar);
             yield return null;
+            LogAssert.Expect(LogType.Log,
+                new Regex(@"Area capture wrote .*authored-door-exit\.png"));
+            AreaCaptureFixture.CaptureCurrentCamera(root.Camera,
+                SceneIds.DoorTransition, "authored-door-exit");
             AssertSingleActiveCameraListener(root.Camera);
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<AudioListener>(

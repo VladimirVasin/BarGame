@@ -1711,4 +1711,136 @@ MonoBehaviour:
     role: 2
     surface: 1
     mesh: {fileID: -6162425157852074956, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5
+  - kind: 94
+    variant: 0
+    component: Plaster_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -7492397116612898592, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 0
+    component: Joinery_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -4456420647160743914, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 0
+    component: Roof_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -5852544776671288336, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 0
+    component: Hardware_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 9001541242265982438, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 1
+    component: Plaster_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -7335147085732693409, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 1
+    component: Joinery_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -5620180353458425732, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 1
+    component: Roof_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 1541791172904478941, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 94
+    variant: 1
+    component: Hardware_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 4626184613615197389, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 95
+    variant: 0
+    component: Panel_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -7032966035941830923, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 95
+    variant: 0
+    component: Straps_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 3031296184502291643, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 96
+    variant: 0
+    component: DressedStone_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 306471128962694055, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 97
+    variant: 0
+    component: OpenIronwork_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -1358638321300080067, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 98
+    variant: 0
+    component: ForgedFrame_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -1922933749032049551, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 99
+    variant: 0
+    component: Plaster_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -3517534304535020267, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 99
+    variant: 0
+    component: Joinery_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -7771243820819003881, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 99
+    variant: 0
+    component: Hardware_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -8456853769850685209, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 100
+    variant: 0
+    component: Planks_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 7536150252552222300, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 100
+    variant: 0
+    component: Nails_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 7006024681889086527, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 101
+    variant: 0
+    component: Pile_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 5200832142277332267, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 101
+    variant: 0
+    component: Band_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 7726427051407548530, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 102
+    variant: 0
+    component: Sleeve_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -6886092715575380609, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 103
+    variant: 0
+    component: DressedStone_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 8952813868899882856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 68c43ebeb61cadb86c6d8d2ce5887c133de775bfd9310ae3cfa383cf62319ed2

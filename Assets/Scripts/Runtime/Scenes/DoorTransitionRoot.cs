@@ -281,7 +281,6 @@ namespace BarPromenade
             Color frameColor = new Color(0.105f, 0.040f, 0.025f);
             Color frameEdgeColor = new Color(0.050f, 0.020f, 0.014f);
             Color doorColor = new Color(0.205f, 0.070f, 0.043f);
-            Color panelColor = new Color(0.118f, 0.035f, 0.025f);
             Color brassColor = new Color(0.58f, 0.39f, 0.12f);
 
             CreateBox(
@@ -313,42 +312,13 @@ namespace BarPromenade
             DoorPivot.SetParent(parent, false);
             DoorPivot.localPosition = new Vector3(-0.87f, 0.08f, 0f);
 
-            Transform doorLeaf = CreateBox(
+            CreateBox(
                 "Door Leaf",
                 DoorPivot,
                 new Vector3(0.87f, 1.43f, 0f),
                 new Vector3(1.73f, 2.84f, 0.14f),
-                doorColor).transform;
-            AddDoorPanels(doorLeaf, panelColor);
+                doorColor);
             BuildHandle(brassColor);
-        }
-
-        private void AddDoorPanels(Transform doorLeaf, Color panelColor)
-        {
-            Vector3[] panelPositions =
-            {
-                new Vector3(-0.23f, 0.27f, -0.56f),
-                new Vector3(0.23f, 0.27f, -0.56f),
-                new Vector3(-0.23f, -0.27f, -0.56f),
-                new Vector3(0.23f, -0.27f, -0.56f)
-            };
-
-            for (int index = 0; index < panelPositions.Length; index++)
-            {
-                CreateBox(
-                    $"Door Recess {index + 1}",
-                    doorLeaf,
-                    panelPositions[index],
-                    new Vector3(0.36f, 0.31f, 0.12f),
-                    panelColor);
-            }
-
-            CreateBox(
-                "Door Center Rail",
-                doorLeaf,
-                new Vector3(0f, 0f, -0.56f),
-                new Vector3(0.84f, 0.075f, 0.11f),
-                panelColor);
         }
 
         private void BuildHandle(Color brassColor)
@@ -357,7 +327,7 @@ namespace BarPromenade
             HandlePivot.SetParent(DoorPivot, false);
             HandlePivot.localPosition = new Vector3(1.46f, 1.40f, -0.105f);
 
-            GameObject spindle = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject spindle = StairwellAuthoredVisualFactory.CreateCylinder(
                 "Handle Spindle",
                 HandlePivot,
                 Vector3.zero,
@@ -410,14 +380,14 @@ namespace BarPromenade
             Material sharedMaterial = null)
         {
             GameObject result = sharedMaterial == null
-                ? RuntimePrimitiveFactory.CreateBox(
+                ? StairwellAuthoredVisualFactory.CreateBox(
                     name,
                     parent,
                     localPosition,
                     size,
                     color,
                     false)
-                : RuntimePrimitiveFactory.CreateBox(
+                : StairwellAuthoredVisualFactory.CreateBox(
                     name,
                     parent,
                     localPosition,

@@ -358,6 +358,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsPlaying) return;
             if (timeStyle == null)
             {
@@ -374,10 +375,10 @@ namespace BarPromenade
                 GUI.Label(TimecodeRect, CurrentTimecode, timeStyle);
                 if (!debugPreview || menu.IsOpen) return;
                 GUI.enabled = !returnPending && Time.frameCount > inputGuardFrame;
-                if (GUI.Button(new Rect(270f, 333f, 72f, 18f), LocalizationService.Get(
+                if (RetroUiInput.Button(new Rect(270f, 333f, 72f, 18f), LocalizationService.Get(
                     IsPlaybackPaused ? "cutscene.resume" : "cutscene.pause"), buttonStyle)) TogglePause();
-                if (GUI.Button(new Rect(346f, 333f, 76f, 18f), LocalizationService.Get("cutscene.restart"), buttonStyle)) Restart();
-                if (GUI.Button(new Rect(426f, 333f, 76f, 18f), LocalizationService.Get("cutscene.back"), buttonStyle)) ReturnToList();
+                if (RetroUiInput.Button(new Rect(346f, 333f, 76f, 18f), LocalizationService.Get("cutscene.restart"), buttonStyle)) Restart();
+                if (RetroUiInput.Button(new Rect(426f, 333f, 76f, 18f), LocalizationService.Get("cutscene.back"), buttonStyle)) ReturnToList();
             }
             finally
             {

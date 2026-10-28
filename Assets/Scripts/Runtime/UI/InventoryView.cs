@@ -79,6 +79,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsOpen)
             {
                 return;
@@ -249,7 +250,6 @@ namespace BarPromenade
                     RetroUiTheme.CalculateCanvas(
                         Screen.width,
                         Screen.height));
-            EventType eventType = Event.current.type;
             const float slotWidth = 80f;
             const float slotHeight = 61f;
             const float horizontalGap = 6f;
@@ -270,13 +270,13 @@ namespace BarPromenade
 
                 bool selected = index == controller.SelectedItemIndex;
                 bool hovered = slot.Contains(logicalMouse);
-                if (hovered && eventType == EventType.MouseMove)
+                if (hovered && RetroUiInput.PointerMoved)
                 {
                     controller.SelectItem(index);
                     selected = true;
                 }
 
-                if (GUI.Button(
+                if (RetroUiInput.Button(
                         slot,
                         string.Empty,
                         transparentButtonStyle))
@@ -519,7 +519,7 @@ namespace BarPromenade
                     RetroUiTheme.FrameInner,
                     RetroUiTheme.FrameInner);
             }
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     label,
                     commandStyle))

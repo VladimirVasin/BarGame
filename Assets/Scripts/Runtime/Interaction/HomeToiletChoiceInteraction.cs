@@ -154,6 +154,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsOpen) return;
             if (optionStyle == null)
             {
@@ -191,7 +192,7 @@ namespace BarPromenade
             bool selected = SelectedChoice == choice;
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f);
             RetroUiTheme.DrawSelection(rect, selected);
-            if (GUI.Button(rect, LocalizationService.Get(key), selected ? selectedOptionStyle : optionStyle))
+            if (RetroUiInput.Button(rect, LocalizationService.Get(key), selected ? selectedOptionStyle : optionStyle))
             {
                 SelectChoice(choice);
                 Confirm();

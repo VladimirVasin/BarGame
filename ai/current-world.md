@@ -165,7 +165,10 @@ cemetery:own interiors/returns.
   uses it yet. The right
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
-  absolute world heights. At the normal `2.6 m/s`
+  absolute world heights. Imported crafted profiles replace existing drive,
+  cabin and support slots through shared world-owned meshes, keeping their
+  envelopes/collision/pivots. Tunnel stone joints and bridge/terminal profiles
+  stay outside the established openings and road. At the normal `2.6 m/s`
   walk speed the route takes about `238.5 s`, or `3 min 58 s`; continuous
   `4.2 m/s` run input takes about `148 s`, or `2 min 28 s`. The Ferryman's
   Last Route car reads and drives the same route. At the cafe he waits for the
@@ -258,7 +261,10 @@ cemetery:own interiors/returns.
   local correction keep every seeded rotated footprint out of its neighbours
   and the lane without cascading the whole frontage away from the street.
   `AlpineVillageTerrainSampler` shares height between planning, validation,
-  collision and map teleport. Core shelves ease to the macro slope over `3.6 m`;
+  collision and map teleport. The workroom plinth cuts lying snow and clips
+  final ground triangles into a shallow cavity; render sectors and collision
+  use that final mesh. The planning sampler remains the pre-cavity terrain.
+  Core shelves ease to the macro slope over `3.6 m`;
   expansion terrain levels buildings/yards and shapes the old-road brink. The ridge
   rises at `3.6` (`74°`) to `60 m`, beyond the hero's `45°` limit.
   `TerrainBounds` charts the expanded ground; `TerrainMeshBounds` also contains
@@ -634,7 +640,7 @@ cemetery:own interiors/returns.
   keeps nearby people/furniture/gestures legible. Priority-10 Bokeh serves
   modal close-ups, then yields to the scene grade;
 - prompts/pause/start/inventory/shops/inspectors/journal/HUD/maps
-  use crisp `640x360` IMGUI after the world: soot/charcoal/
+  use Input System pointer/text and crisp `640x360` IMGUI after the world: soot/charcoal/
   dirty-bone, flat rectangular panels, thin nested frames, stable grain and
   grayscale focus. Packaged `Roboto-Regular`: RU/EN, no OS fonts;
   Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
@@ -1407,14 +1413,15 @@ cemetery:own interiors/returns.
   and enables those actors only for the Balcony shot.
   They have no collision, interaction, speech, sound, light or story state;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
-  `4.9.0` supplies the passive visuals for the broad City misc pass: `82`
-  semantic kinds resolve to `122` assemblies, `259` role meshes and
-  `46,546` triangles. It covers the 24-family
+  `4.14.0` supplies the passive visuals for the broad City misc pass: `104`
+  semantic kinds resolve to `145` assemblies, `305` role meshes and
+  `57,218` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
     north-fence posts and rails,
-  seacoast boats/barge/driftwood, fringe utility dressing, the static shells
+  seacoast hut/pier/esplanade joints, cemetery hut/gates, boats/barge/driftwood,
+  fringe utility dressing, the static shells
   of all four district points of interest and the Nightlife arch-shelter kit,
   including its full-height masonry platform support and worn slab. Its former
   bar, supermarket and player-home shells remain in the catalog only for v4
@@ -2018,23 +2025,17 @@ cemetery:own interiors/returns.
   colliders, radius-safe overlapping navigation corridors keep every
   floor/flight seam traversable by the real `PlayerMotor`, and side-aware
   arrival restores the player beside the correct door;
-- a decayed industrial-horror stairwell treatment with stained concrete,
-  rusty rails, exposed pipes, ventilation grilles, electrical cabinets,
-  radiators, damp damage, trash and dense upper-floor junk. Eight opaque RGB
-  ImageGen albedos (the city facade set is scripted instead) under
-  `Resources/Stairwell/Textures` cover wall paint,
-  ordinary concrete, stair concrete, corroded metal, door paint, damage, dirty
-  wood and mixed debris; the active wall, door and metal variants use stronger
-  macro contrast for the low-resolution presentation. `StairwellSurfaceAppearance`
-  caches those recipes and applies projection-aware deterministic per-renderer
-  native-UV `_BaseMap_ST` scale/offset plus smoothness and metallic through
-  material property blocks. Per-recipe linear-albedo compensation converts the
-  original semantic tint into a brighter display tint so Lit multiplication
-  preserves the former flat-color mean brightness and the one shared
-  `RuntimePrimitiveLit` material. Every enabled ordinary shell and dressing
-  renderer is covered, including walls/bands, floors, steps, landings, rails,
-  doors/frames, pipes, vents, cabinets, radiator, damage, litter, upper debris
-  and non-emissive fluorescent parts. Hidden walkable ramps and the upper
+- the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
+  steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
+  docks align the right-hand clip with the lever, plates with the latch stile.
+  Concrete, rust, pipes/grilles, cabinets/radiators, damp
+  damage/litter and upper junk remain. Eight RGB ImageGen albedos under
+  `Resources/Stairwell/Textures` cover wall/concrete/stairs/metal/door/damage/
+  wood/debris; wall/door/metal retain stronger macro contrast.
+  `StairwellSurfaceAppearance` caches recipes and uses deterministic native-UV
+  `_BaseMap_ST`, smoothness/metallic and compensated tint through property blocks
+  on the shared `RuntimePrimitiveLit`. All ordinary shell/dressing renderers,
+  including non-emissive fixture parts, receive the appropriate recipe. Hidden walkable ramps and the upper
   safety blocker, emissive tubes and halos, the hero, cat and dust/VFX remain
   outside that surface layer. Three bounded fixed camera shots cut between the
   lower flight, middle flight and apartment landing with height hysteresis;

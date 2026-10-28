@@ -184,6 +184,10 @@ namespace BarPromenade
                 StairwellSurfaceKind.CorrodedMetal,
                 StairwellSurfaceProjection.BoxZY,
                 false);
+            CreateSurfaceBox("Electrical Cabinet Pull", root,
+                new Vector3(rightX - .1055f, 1.16f, .03f), new Vector3(.080f, .120f, .035f),
+                new Color(.30f, .29f, .23f), StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY, false).transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
             CreateSurfaceBox(
                 "Apartment Fuse Box",
                 root,
@@ -485,7 +489,7 @@ namespace BarPromenade
                 StairwellSurfaceKind.CorrodedMetal,
                 StairwellSurfaceProjection.BoxXZ,
                 false);
-            GameObject tube = RuntimePrimitiveFactory.CreateBox(
+            GameObject tube = StairwellAuthoredVisualFactory.CreateBox(
                 $"{label} Fluorescent Tube",
                 root,
                 position,
@@ -560,7 +564,7 @@ namespace BarPromenade
             StairwellSurfaceProjection projection,
             bool collider = true)
         {
-            GameObject box = RuntimePrimitiveFactory.CreateBox(
+            GameObject box = StairwellAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 position,
@@ -585,7 +589,7 @@ namespace BarPromenade
             StairwellSurfaceProjection projection,
             bool collider = true)
         {
-            GameObject cylinder = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject cylinder = StairwellAuthoredVisualFactory.CreateCylinder(
                 name,
                 parent,
                 position,

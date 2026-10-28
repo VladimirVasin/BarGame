@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.13.0",
+  "generator_version": "4.14.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + Cemetery Entrance and Closed Boat Station",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -72,7 +72,7 @@
     }
   },
   "wave1_compatibility_signature": "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6",
-  "v2_compatibility_signature": "377c9609b43dcff332a46b7161cb6ed40f68a40f8ddcf3bc2773ff04faa7599a",
+  "v2_compatibility_signature": "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3",
   "v2_unchanged_compatibility_signature": "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739",
   "colliders": false,
   "lights": false,
@@ -80,9 +80,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 283,
-  "assembly_count": 134,
-  "triangle_count": 52126,
+  "mesh_count": 305,
+  "assembly_count": 145,
+  "triangle_count": 57218,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -6090,6 +6090,483 @@
         0.0,
         0.04
       ]
+    },
+    {
+      "kind": "CemeteryLodgeShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "floor_width_m": 2.4,
+        "floor_depth_m": 2.2,
+        "door_width_m": 0.92,
+        "window_width_m": 1.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryLodgeShell_Variant01_Plaster_Masonry_Stone",
+        "GEO_CMM_CemeteryLodgeShell_Variant01_Joinery_Timber",
+        "GEO_CMM_CemeteryLodgeShell_Variant01_Roof_Timber",
+        "GEO_CMM_CemeteryLodgeShell_Variant01_Hardware_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.448,
+        -1.35,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.448,
+        1.52,
+        2.97
+      ],
+      "bounds_min_unity": [
+        -1.448,
+        0.0,
+        -1.35
+      ],
+      "bounds_max_unity": [
+        1.448,
+        2.97,
+        1.52
+      ]
+    },
+    {
+      "kind": "CemeteryLodgeShell",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "floor_width_m": 2.4,
+        "floor_depth_m": 2.2,
+        "door_width_m": 0.92,
+        "window_width_m": 1.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryLodgeShell_Variant02_Plaster_Masonry_Stone",
+        "GEO_CMM_CemeteryLodgeShell_Variant02_Joinery_Timber",
+        "GEO_CMM_CemeteryLodgeShell_Variant02_Roof_Timber",
+        "GEO_CMM_CemeteryLodgeShell_Variant02_Hardware_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.448,
+        -1.35,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.448,
+        1.52,
+        2.97
+      ],
+      "bounds_min_unity": [
+        -1.448,
+        0.0,
+        -1.35
+      ],
+      "bounds_max_unity": [
+        1.448,
+        2.97,
+        1.52
+      ]
+    },
+    {
+      "kind": "CoastalDoorLeaf",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CoastalDoorLeaf_Variant01_Panel_Timber",
+        "GEO_CMM_CoastalDoorLeaf_Variant01_Straps_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "CemeteryGatePillar",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryGatePillar_Variant01_DressedStone_Masonry_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "CemeteryGateLeaf",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryGateLeaf_Variant01_OpenIronwork_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "CemeteryGateArch",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryGateArch_Variant01_ForgedFrame_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "SeacoastHutShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "floor_width_m": 3.04,
+        "floor_depth_m": 3.84,
+        "door_width_m": 0.86,
+        "wall_height_m": 2.35
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SeacoastHutShell_Variant01_Plaster_Masonry_Stone",
+        "GEO_CMM_SeacoastHutShell_Variant01_Joinery_Timber",
+        "GEO_CMM_SeacoastHutShell_Variant01_Hardware_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.618,
+        -2.02,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.618,
+        2.5,
+        3.6
+      ],
+      "bounds_min_unity": [
+        -1.618,
+        0.0,
+        -2.02
+      ],
+      "bounds_max_unity": [
+        1.618,
+        3.6,
+        2.5
+      ]
+    },
+    {
+      "kind": "SeacoastPierDeckBoard",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SeacoastPierDeckBoard_Variant01_Planks_Timber",
+        "GEO_CMM_SeacoastPierDeckBoard_Variant01_Nails_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "SeacoastPierPile",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SeacoastPierPile_Variant01_Pile_Timber",
+        "GEO_CMM_SeacoastPierPile_Variant01_Band_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
+    },
+    {
+      "kind": "SeacoastTimberJoint",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SeacoastTimberJoint_Variant01_Sleeve_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.07,
+        -0.07,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.07,
+        0.07,
+        0.16
+      ],
+      "bounds_min_unity": [
+        -0.07,
+        0.0,
+        -0.07
+      ],
+      "bounds_max_unity": [
+        0.07,
+        0.16,
+        0.07
+      ]
+    },
+    {
+      "kind": "SeacoastEsplanadeCoping",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Collision",
+        "DoorPose",
+        "ActorDocks",
+        "Water",
+        "LightState"
+      ],
+      "root_derivation": "CityCemeteryPlan/CitySeacoastPlan.ExistingDescriptorFrame",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SeacoastEsplanadeCoping_Variant01_DressedStone_Masonry_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ]
     }
   ],
   "parts": [
@@ -9383,7 +9860,7 @@
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
       "vertices": 72,
-      "triangles": 128,
+      "triangles": 124,
       "bounds_min_source": [
         -4.5,
         -3.9,
@@ -17412,7 +17889,887 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant01_Plaster_Masonry_Stone",
+      "kind": "CemeteryLodgeShell",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min_source": [
+        -1.2,
+        -1.1,
+        0.1
+      ],
+      "bounds_max_source": [
+        1.2,
+        1.1,
+        2.35
+      ],
+      "bounds_min_unity": [
+        -1.2,
+        0.1,
+        -1.1
+      ],
+      "bounds_max_unity": [
+        1.2,
+        2.35,
+        1.1
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant01_Joinery_Timber",
+      "kind": "CemeteryLodgeShell",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 240,
+      "triangles": 420,
+      "bounds_min_source": [
+        -1.25,
+        -1.1,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.2,
+        1.52,
+        2.084
+      ],
+      "bounds_min_unity": [
+        -1.25,
+        0.0,
+        -1.1
+      ],
+      "bounds_max_unity": [
+        1.2,
+        2.084,
+        1.52
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant01_Roof_Timber",
+      "kind": "CemeteryLodgeShell",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 240,
+      "triangles": 420,
+      "bounds_min_source": [
+        -1.448,
+        -1.35,
+        2.35
+      ],
+      "bounds_max_source": [
+        1.448,
+        1.35,
+        2.49
+      ],
+      "bounds_min_unity": [
+        -1.448,
+        2.35,
+        -1.35
+      ],
+      "bounds_max_unity": [
+        1.448,
+        2.49,
+        1.35
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant01_Hardware_Street_PaintedMetal",
+      "kind": "CemeteryLodgeShell",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 52,
+      "triangles": 92,
+      "bounds_min_source": [
+        0.8275,
+        0.7775,
+        2.42
+      ],
+      "bounds_max_source": [
+        0.9725,
+        0.9225,
+        2.97
+      ],
+      "bounds_min_unity": [
+        0.8275,
+        2.42,
+        0.7775
+      ],
+      "bounds_max_unity": [
+        0.9725,
+        2.97,
+        0.9225
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant02_Plaster_Masonry_Stone",
+      "kind": "CemeteryLodgeShell",
+      "variant": 1,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min_source": [
+        -1.2,
+        -1.1,
+        0.1
+      ],
+      "bounds_max_source": [
+        1.2,
+        1.1,
+        2.35
+      ],
+      "bounds_min_unity": [
+        -1.2,
+        0.1,
+        -1.1
+      ],
+      "bounds_max_unity": [
+        1.2,
+        2.35,
+        1.1
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant02_Joinery_Timber",
+      "kind": "CemeteryLodgeShell",
+      "variant": 1,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 240,
+      "triangles": 420,
+      "bounds_min_source": [
+        -1.2,
+        -1.1,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.25,
+        1.52,
+        2.084
+      ],
+      "bounds_min_unity": [
+        -1.2,
+        0.0,
+        -1.1
+      ],
+      "bounds_max_unity": [
+        1.25,
+        2.084,
+        1.52
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant02_Roof_Timber",
+      "kind": "CemeteryLodgeShell",
+      "variant": 1,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 240,
+      "triangles": 420,
+      "bounds_min_source": [
+        -1.448,
+        -1.35,
+        2.35
+      ],
+      "bounds_max_source": [
+        1.448,
+        1.35,
+        2.49
+      ],
+      "bounds_min_unity": [
+        -1.448,
+        2.35,
+        -1.35
+      ],
+      "bounds_max_unity": [
+        1.448,
+        2.49,
+        1.35
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryLodgeShell_Variant02_Hardware_Street_PaintedMetal",
+      "kind": "CemeteryLodgeShell",
+      "variant": 1,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 52,
+      "triangles": 92,
+      "bounds_min_source": [
+        -0.9725,
+        0.7775,
+        2.42
+      ],
+      "bounds_max_source": [
+        -0.8275,
+        0.9225,
+        2.97
+      ],
+      "bounds_min_unity": [
+        -0.9725,
+        2.42,
+        0.7775
+      ],
+      "bounds_max_unity": [
+        -0.8275,
+        2.97,
+        0.9225
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CoastalDoorLeaf_Variant01_Panel_Timber",
+      "kind": "CoastalDoorLeaf",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CoastalDoorLeaf_Variant01_Straps_Street_PaintedMetal",
+      "kind": "CoastalDoorLeaf",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -0.415,
+        0.3,
+        0.1625
+      ],
+      "bounds_max_source": [
+        0.415,
+        0.5,
+        0.8375
+      ],
+      "bounds_min_unity": [
+        -0.415,
+        0.1625,
+        0.3
+      ],
+      "bounds_max_unity": [
+        0.415,
+        0.8375,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryGatePillar_Variant01_DressedStone_Masonry_Stone",
+      "kind": "CemeteryGatePillar",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryGateLeaf_Variant01_OpenIronwork_Street_PaintedMetal",
+      "kind": "CemeteryGateLeaf",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 208,
+      "triangles": 364,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryGateArch_Variant01_ForgedFrame_Street_PaintedMetal",
+      "kind": "CemeteryGateArch",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 136,
+      "triangles": 236,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastHutShell_Variant01_Plaster_Masonry_Stone",
+      "kind": "SeacoastHutShell",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 160,
+      "triangles": 280,
+      "bounds_min_source": [
+        -1.4,
+        -1.8,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.4,
+        2.24,
+        2.51
+      ],
+      "bounds_min_unity": [
+        -1.4,
+        0.0,
+        -1.8
+      ],
+      "bounds_max_unity": [
+        1.4,
+        2.51,
+        2.24
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastHutShell_Variant01_Joinery_Timber",
+      "kind": "SeacoastHutShell",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 432,
+      "triangles": 756,
+      "bounds_min_source": [
+        -1.618,
+        -2.02,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.618,
+        2.5,
+        2.69
+      ],
+      "bounds_min_unity": [
+        -1.618,
+        0.0,
+        -2.02
+      ],
+      "bounds_max_unity": [
+        1.618,
+        2.69,
+        2.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastHutShell_Variant01_Hardware_Street_PaintedMetal",
+      "kind": "SeacoastHutShell",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 84,
+      "triangles": 148,
+      "bounds_min_source": [
+        -1.169,
+        -0.977817,
+        1.461
+      ],
+      "bounds_max_source": [
+        0.864,
+        1.861,
+        3.6
+      ],
+      "bounds_min_unity": [
+        -1.169,
+        1.461,
+        -0.977817
+      ],
+      "bounds_max_unity": [
+        0.864,
+        3.6,
+        1.861
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastPierDeckBoard_Variant01_Planks_Timber",
+      "kind": "SeacoastPierDeckBoard",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastPierDeckBoard_Variant01_Nails_Street_PaintedMetal",
+      "kind": "SeacoastPierDeckBoard",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -0.426,
+        -0.344333,
+        0.976
+      ],
+      "bounds_max_source": [
+        0.426,
+        0.344333,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.426,
+        0.976,
+        -0.344333
+      ],
+      "bounds_max_unity": [
+        0.426,
+        1.0,
+        0.344333
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastPierPile_Variant01_Pile_Timber",
+      "kind": "SeacoastPierPile",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastPierPile_Variant01_Band_Street_PaintedMetal",
+      "kind": "SeacoastPierPile",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.8975
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.9425
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.8975,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.9425,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastTimberJoint_Variant01_Sleeve_Street_PaintedMetal",
+      "kind": "SeacoastTimberJoint",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 76,
+      "triangles": 132,
+      "bounds_min_source": [
+        -0.07,
+        -0.07,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.07,
+        0.07,
+        0.16
+      ],
+      "bounds_min_unity": [
+        -0.07,
+        0.0,
+        -0.07
+      ],
+      "bounds_max_unity": [
+        0.07,
+        0.16,
+        0.07
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SeacoastEsplanadeCoping_Variant01_DressedStone_Masonry_Stone",
+      "kind": "SeacoastEsplanadeCoping",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "3071e669308f8010460b72c708206a402613e66cf3c6b92c0bee5c85cb2594c5"
+  "build_signature": "68c43ebeb61cadb86c6d8d2ce5887c133de775bfd9310ae3cfa383cf62319ed2"
 }

@@ -153,6 +153,7 @@ namespace BarPromenade
             var root = new GameObject("Mountain Road World");
             root.transform.SetParent(parent, false);
             root.AddComponent<MountainRoadSurfaceScope>();
+            root.AddComponent<MountainRoadStructureDetails>();
             var physicalRoot = new GameObject("Physical World");
             physicalRoot.transform.SetParent(root.transform, false);
             var backdropRoot = new GameObject("Mountain Backdrop");
@@ -541,6 +542,7 @@ namespace BarPromenade
                 TunnelRockColor, false, MountainRoadSurfaceKind.LayeredStone);
             BuildTunnelBatch(root.transform, "Tunnel Floor Continuation", visualFloor,
                 RoadColor, false, MountainRoadSurfaceKind.Asphalt);
+            MountainRoadStructureDetails.CreatePortal(root.transform, tunnel);
             // The far end is deliberately uncapped. The bend, opaque side
             // walls and ordinary fog conceal it; a dark plate is still a wall
             // when the descending car shines its headlights onto it.

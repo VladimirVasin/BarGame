@@ -14,7 +14,6 @@ namespace BarPromenade
         public const double GameWindowSeconds = NpcSpeechBubbleView.VisibleSeconds -
             NpcSpeechVoice.SynthesisWindowReserveSeconds;
         public const float PreviewVolume = 0.8f;
-        private const string TextControlName = "RussianVocalizerPhrase";
         private static readonly string[] Presets =
         {
             "Хорошо. Сейчас подам.", "Маршрут отменили. Я всё равно жду.",
@@ -24,7 +23,8 @@ namespace BarPromenade
         private string phrase = Presets[0], status = "Введите фразу или выберите пример.";
         private string characterCount, requestedText, requestedLabel, comparisonALabel, comparisonBLabel;
         private string[] voiceLabels;
-        private bool focusText, discardGeneration, playbackRequested;
+        private bool discardGeneration, playbackRequested;
+        private RetroUiTextField phraseField;
         private int requestedVoice;
         private double requestedWindowSeconds;
         private AudioSource source;
@@ -80,7 +80,8 @@ namespace BarPromenade
         public void Open()
         {
             IsOpen = true;
-            focusText = true;
+            phraseField ??= new RetroUiTextField(RussianSpeechPhonetics.MaximumTextLength);
+            phraseField.Open(phrase);
             UpdateComparisonLabels();
             status = "Выберите пресет. Кнопки А / Б читают одну фразу с одинаковой громкостью.";
         }
@@ -88,7 +89,7 @@ namespace BarPromenade
         public void Close()
         {
             IsOpen = false;
-            focusText = false;
+            phraseField?.Close();
             Stop();
         }
 
@@ -214,6 +215,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            phraseField?.Tick();
             if (clip != null && !IsPlaying)
             {
                 ReleaseClip();
@@ -308,22 +310,15 @@ namespace BarPromenade
         {
             if (!IsOpen) return false;
             EnsureStyles();
-            Event current = Event.current;
-            if (current.type == EventType.KeyDown)
-            {
-                if (current.keyCode == KeyCode.Escape) { current.Use(); return true; }
-                if (current.control && (current.keyCode == KeyCode.Return || current.keyCode == KeyCode.KeypadEnter))
-                { Play(); current.Use(); }
-            }
             RetroUiTheme.DrawPanel(new Rect(24f, 4f, 592f, 352f), RetroUiTheme.PanelInset,
                 RetroUiTheme.FrameOuter, false, 0f, 1f);
             GUI.Label(new Rect(36f, 12f, 568f, 20f), "Вокализатор · 12 голосов", titleStyle);
             Rect textRect = new Rect(36f, 38f, 568f, 50f);
             RetroUiTheme.DrawPanel(textRect, RetroUiTheme.Ink, RetroUiTheme.BorderMuted, false, 0f, 1f);
-            GUI.SetNextControlName(TextControlName);
-            Phrase = GUI.TextArea(new Rect(42f, 44f, 556f, 38f), phrase,
-                RussianSpeechPhonetics.MaximumTextLength, textStyle);
-            if (focusText && current.type == EventType.Repaint) { GUI.FocusControl(TextControlName); focusText = false; }
+            Phrase = phraseField.Draw(new Rect(42f, 44f, 556f, 38f), phrase, textStyle,
+                out bool submit, out bool cancel);
+            if (cancel) return true;
+            if (submit) Play();
             characterCount ??= phrase.Length + " / " + RussianSpeechPhonetics.MaximumTextLength +
                 " · Ударения приблизительные · Ctrl+Enter — слушать · Esc — назад";
             GUI.Label(new Rect(36f, 90f, 568f, 12f), characterCount, hintStyle);
@@ -385,7 +380,7 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelRaised, RetroUiTheme.BorderMuted, false, 0f, 1f);
             if (selected) RetroUiTheme.DrawSelection(rect, true);
-            return GUI.Button(rect, label, selected ? selectedStyle : buttonStyle);
+            return RetroUiInput.Button(rect, label, selected ? selectedStyle : buttonStyle);
         }
         private void EnsureStyles()
         {

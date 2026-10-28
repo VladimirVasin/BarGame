@@ -3,17 +3,16 @@
 Start with [`AI.md`](../AI.md), then the overview, system index and relevant
 details. AI.md owns source order; entry documents do not catalogue the world.
 
-Every document below has a **type** and a **byte budget**, both owned by
-[`tools/docs-budget.json`](../tools/docs-budget.json) and enforced by
-`python tools/check-docs.py`. The type says how you write to the document; see
-Retention below. The budget column here must match the manifest — the checker
-compares them, so this index cannot quietly drift out of date again.
+Document **types** and **byte budgets** come from
+[`tools/docs-budget.json`](../tools/docs-budget.json).
+`python tools/check-docs.py` enforces them and checks this table; see Retention.
 
 | File | Type | Budget | Purpose |
 | --- | --- | --- | --- |
 | `prompt-templates.md` | entry | 6000 | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
 | `project-overview.md` | entry | 9000 | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
+| `world-location-update-plan.md` | note | 30000 | Ordered audit/update checklist for every scene and location; effects and focused acceptance |
 | `village-life-plan.md` | state | 12000 | The accepted four-part village household update; all four parts are implemented |
 | `village-narrative-plan.md` | note | 40000 | Place-based inspections, families, reusable object camera/text; acceptance contract |
 | `city-lighting-plan.md` | note | 8000 | Nine City lighting stages and acceptance |

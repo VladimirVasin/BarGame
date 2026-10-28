@@ -7,6 +7,64 @@ namespace BarPromenade
     /// </summary>
     public sealed partial class CityMiscAssetProvider
     {
+        private static readonly ExpectedPartSpec[] CemeteryLodgeShellParts =
+        {
+            P("Plaster_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            P("Joinery_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Roof_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Hardware_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] CoastalDoorLeafParts =
+        {
+            P("Panel_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Straps_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] CemeteryGatePillarParts =
+        {
+            P("DressedStone_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone)
+        };
+
+        private static readonly ExpectedPartSpec[] CemeteryGateLeafParts =
+        {
+            P("OpenIronwork_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] CemeteryGateArchParts =
+        {
+            P("ForgedFrame_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] SeacoastHutShellParts =
+        {
+            P("Plaster_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            P("Joinery_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Hardware_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] SeacoastPierDeckBoardParts =
+        {
+            P("Planks_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Nails_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] SeacoastPierPileParts =
+        {
+            P("Pile_Timber", CityMiscMeshRole.Timber, CityMiscSurfaceKind.Default),
+            P("Band_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] SeacoastTimberJointParts =
+        {
+            P("Sleeve_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal)
+        };
+
+        private static readonly ExpectedPartSpec[] SeacoastEsplanadeCopingParts =
+        {
+            P("DressedStone_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone)
+        };
+
         private static readonly ExpectedPartSpec[] RiverQuayRepairParts =
         {
             P("Coping_Masonry_Stone", CityMiscMeshRole.Masonry,

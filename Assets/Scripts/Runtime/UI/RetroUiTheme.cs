@@ -192,7 +192,7 @@ namespace BarPromenade
         public static Vector2 LogicalMousePosition(
             RetroUiCanvas canvas)
         {
-            return canvas.ScreenToLogical(Event.current.mousePosition);
+            return canvas.ScreenToLogical(RetroUiInput.WindowPointerPosition);
         }
 
         public static float Snap(float value)

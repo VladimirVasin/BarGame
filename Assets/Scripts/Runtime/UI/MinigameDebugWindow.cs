@@ -314,6 +314,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsOpen)
             {
                 return;
@@ -478,7 +479,7 @@ namespace BarPromenade
             RetroUiTheme.DrawSelection(button, enabled);
             string label = (enabled ? "[X] " : "[ ] ") +
                 LocalizationService.Get("debug.speed_selection");
-            if (GUI.Button(button, label, rowStyle))
+            if (RetroUiInput.Button(button, label, rowStyle))
             {
                 GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(!enabled);
                 RetroAudio.Play(RetroSfxId.UiMove);
@@ -495,7 +496,7 @@ namespace BarPromenade
                 false,
                 0f,
                 1f);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     button,
                     LocalizationService.Get("debug.nausea.trigger"),
                     rowStyle))
@@ -514,7 +515,7 @@ namespace BarPromenade
                 false,
                 0f,
                 1f);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     button,
                     LocalizationService.Get("debug.vomit.trigger"),
                     rowStyle))
@@ -540,7 +541,7 @@ namespace BarPromenade
                 DebugTeleportEnabled
                     ? "debug.teleport.enabled"
                     : "debug.teleport.disabled");
-            if (GUI.Button(button, label, rowStyle))
+            if (RetroUiInput.Button(button, label, rowStyle))
             {
                 ToggleDebugTeleport();
             }
@@ -552,7 +553,7 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && CanSpawnLoadedCanneryTruck;
-            if (GUI.Button(button, LocalizationService.Get("debug.cannery.spawn_loaded"), rowStyle))
+            if (RetroUiInput.Button(button, LocalizationService.Get("debug.cannery.spawn_loaded"), rowStyle))
                 TrySpawnLoadedCanneryTruck();
             GUI.enabled = previousEnabled;
         }
@@ -590,7 +591,7 @@ namespace BarPromenade
 
                 bool previousEnabled = GUI.enabled;
                 GUI.enabled = previousEnabled && !selected;
-                if (GUI.Button(
+                if (RetroUiInput.Button(
                         button,
                         dayNumber.ToString(),
                         rowStyle))
@@ -612,7 +613,7 @@ namespace BarPromenade
                 false,
                 0f,
                 1f);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     button,
                     LocalizationService.Get("debug.home.skip_to_city"),
                     rowStyle))
@@ -641,7 +642,7 @@ namespace BarPromenade
 
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && enabled;
-            if (GUI.Button(rect, label, rowStyle))
+            if (RetroUiInput.Button(rect, label, rowStyle))
             {
                 TryAdjustIntoxication(delta);
             }

@@ -1,0 +1,3337 @@
+{
+  "schema_version": 1,
+  "design_id": "stairwell_interior_v1",
+  "generator_version": "1.1.0",
+  "signature": "758538be9ffd621986aea7d5efb67ce86c3eae2ea4ad36cf6c9fc292c7c504c2",
+  "report": {
+    "meshes": 101,
+    "triangles": 14844,
+    "bindings": 293,
+    "maximum_meshes": 128,
+    "maximum_triangles": 16000,
+    "flight_support_necks": 192,
+    "landing_cap_overlap_m": 0.05,
+    "door_hardware_leaf_overlap_m": 0.002,
+    "door_mount_contact_samples": 50
+  },
+  "coordinates": "Unity metres; Blender Y/Z swap with outward winding",
+  "contract": {
+    "room_size": [
+      8.6,
+      9.6
+    ],
+    "room_height": 6.25,
+    "elevations": [
+      0,
+      1.6,
+      3.2
+    ],
+    "steps_per_flight": 16,
+    "street_door_floor": [
+      -1.45,
+      0,
+      -4.67
+    ],
+    "apartment_door_floor": [
+      4.17,
+      3.2,
+      -3.72
+    ],
+    "cat_perch": [
+      -1.7,
+      2.76,
+      2.32
+    ],
+    "collision": "existing runtime proxies and FootProbe unit boxes",
+    "transition_door_pivot": [
+      -0.87,
+      0.08,
+      0
+    ],
+    "transition_handle_pivot": [
+      1.46,
+      1.4,
+      -0.105
+    ],
+    "effects": "retain all existing light/SSAO/grade/particles/post owners; no SSR/GI rollout",
+    "rail_supports": {
+      "flights": 3,
+      "sides": 2,
+      "necks_per_side": 32,
+      "post_foot_overlap": 0.01,
+      "wood_head_overlap": 0.006
+    },
+    "door_hardware": {
+      "street_plate": [
+        -0.8,
+        1.1798247,
+        0.065
+      ],
+      "apartment_plate": [
+        -0.065,
+        1.1798247,
+        -0.5625
+      ],
+      "street_hardware": [
+        -0.71,
+        1.1798247,
+        0.1005
+      ],
+      "apartment_hardware": [
+        -0.1005,
+        1.1798247,
+        -0.4725
+      ],
+      "street_rotation_euler": [
+        0,
+        0,
+        180
+      ],
+      "apartment_rotation_euler": [
+        0,
+        -90,
+        180
+      ],
+      "source_door_use_grip": [
+        0.3017243,
+        1.1148247,
+        0.6069756
+      ],
+      "street_source_dock": [
+        -1.8582757,
+        0.04,
+        -3.9250244
+      ],
+      "apartment_source_dock": [
+        3.4250244,
+        3.24,
+        -3.8907757
+      ],
+      "cabinet_pull": true
+    }
+  },
+  "parts": [
+    {
+      "name": "StairwellPart_000",
+      "aliases": [
+        "Stairwell Ground Floor"
+      ],
+      "size": [
+        8.6,
+        0.24,
+        9.6
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.3,
+        -0.12,
+        -4.8
+      ],
+      "bounds_max": [
+        4.3,
+        0.12,
+        4.8
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_001",
+      "aliases": [
+        "Stairwell Ceiling"
+      ],
+      "size": [
+        8.6,
+        0.2,
+        9.6
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.3,
+        -0.1,
+        -4.8
+      ],
+      "bounds_max": [
+        4.3,
+        0.1,
+        4.8
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_002",
+      "aliases": [
+        "Stairwell Back Wall"
+      ],
+      "size": [
+        8.6,
+        6.25,
+        0.24
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.3,
+        -3.125,
+        -0.12
+      ],
+      "bounds_max": [
+        4.3,
+        3.125,
+        0.12
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_003",
+      "aliases": [
+        "Stairwell Front Wall"
+      ],
+      "size": [
+        8.6,
+        6.25,
+        0.24
+      ],
+      "kind": "Box",
+      "style": "front-wall",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.3,
+        -3.125,
+        -0.12
+      ],
+      "bounds_max": [
+        4.3,
+        3.125,
+        0.12
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_004",
+      "aliases": [
+        "Stairwell Left Wall"
+      ],
+      "size": [
+        0.24,
+        6.25,
+        9.6
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.12,
+        -3.125,
+        -4.8
+      ],
+      "bounds_max": [
+        0.12,
+        3.125,
+        4.8
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_005",
+      "aliases": [
+        "Stairwell Right Wall"
+      ],
+      "size": [
+        0.24,
+        6.25,
+        9.6
+      ],
+      "kind": "Box",
+      "style": "right-wall",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.12000000000000029,
+        -3.125,
+        -4.800000000000001
+      ],
+      "bounds_max": [
+        0.12000000000000029,
+        3.125,
+        4.8
+      ],
+      "triangles": 112,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_006",
+      "aliases": [
+        "Back Dirty Wall Band"
+      ],
+      "size": [
+        8.32,
+        1.18,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.16,
+        -0.59,
+        -0.0125
+      ],
+      "bounds_max": [
+        4.16,
+        0.59,
+        0.0125
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_007",
+      "aliases": [
+        "Front Dirty Wall Band"
+      ],
+      "size": [
+        8.32,
+        1.18,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "front-band",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.16,
+        -0.59,
+        -0.0125
+      ],
+      "bounds_max": [
+        4.16,
+        0.59,
+        0.0125
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_008",
+      "aliases": [
+        "Left Dirty Wall Band",
+        "Right Dirty Wall Band"
+      ],
+      "size": [
+        0.025,
+        1.18,
+        9.32
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.0125,
+        -0.59,
+        -4.66
+      ],
+      "bounds_max": [
+        0.0125,
+        0.59,
+        4.66
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_009",
+      "aliases": [
+        "Stairwell Column 1",
+        "Stairwell Column 2"
+      ],
+      "size": [
+        0.34,
+        6.25,
+        0.34
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.17,
+        -3.125,
+        -0.17
+      ],
+      "bounds_max": [
+        0.17,
+        3.125,
+        0.17
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_010",
+      "aliases": [
+        "Lower Stair 01",
+        "Apartment Stair 01",
+        "Upper Stair 01"
+      ],
+      "size": [
+        1.55,
+        0.1,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.05,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.05,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_011",
+      "aliases": [
+        "Lower Stair 02",
+        "Apartment Stair 02",
+        "Upper Stair 02"
+      ],
+      "size": [
+        1.55,
+        0.2,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.1,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.1,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_012",
+      "aliases": [
+        "Lower Stair 03",
+        "Apartment Stair 03",
+        "Upper Stair 03"
+      ],
+      "size": [
+        1.55,
+        0.30000000000000004,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.15000000000000002,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.15000000000000002,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_013",
+      "aliases": [
+        "Lower Stair 04",
+        "Apartment Stair 04",
+        "Upper Stair 04"
+      ],
+      "size": [
+        1.55,
+        0.4,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.2,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.2,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_014",
+      "aliases": [
+        "Lower Stair 05",
+        "Apartment Stair 05",
+        "Upper Stair 05"
+      ],
+      "size": [
+        1.55,
+        0.5,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.25,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.25,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_015",
+      "aliases": [
+        "Lower Stair 06",
+        "Apartment Stair 06",
+        "Upper Stair 06"
+      ],
+      "size": [
+        1.55,
+        0.6000000000000001,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.30000000000000004,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.30000000000000004,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_016",
+      "aliases": [
+        "Lower Stair 07",
+        "Apartment Stair 07",
+        "Upper Stair 07"
+      ],
+      "size": [
+        1.55,
+        0.7000000000000001,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.35000000000000003,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.35000000000000003,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_017",
+      "aliases": [
+        "Lower Stair 08",
+        "Apartment Stair 08",
+        "Upper Stair 08"
+      ],
+      "size": [
+        1.55,
+        0.8,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.4,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.4,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_018",
+      "aliases": [
+        "Lower Stair 09",
+        "Apartment Stair 09",
+        "Upper Stair 09"
+      ],
+      "size": [
+        1.55,
+        0.9,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.45,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.45,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_019",
+      "aliases": [
+        "Lower Stair 10",
+        "Apartment Stair 10",
+        "Upper Stair 10"
+      ],
+      "size": [
+        1.55,
+        1.0,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.5,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.5,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_020",
+      "aliases": [
+        "Lower Stair 11",
+        "Apartment Stair 11",
+        "Upper Stair 11"
+      ],
+      "size": [
+        1.55,
+        1.1,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.55,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.55,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_021",
+      "aliases": [
+        "Lower Stair 12",
+        "Apartment Stair 12",
+        "Upper Stair 12"
+      ],
+      "size": [
+        1.55,
+        1.2000000000000002,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.6000000000000001,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.6000000000000001,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_022",
+      "aliases": [
+        "Lower Stair 13",
+        "Apartment Stair 13",
+        "Upper Stair 13"
+      ],
+      "size": [
+        1.55,
+        1.3,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.65,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.65,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_023",
+      "aliases": [
+        "Lower Stair 14",
+        "Apartment Stair 14",
+        "Upper Stair 14"
+      ],
+      "size": [
+        1.55,
+        1.4000000000000001,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.7000000000000001,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.7000000000000001,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_024",
+      "aliases": [
+        "Lower Stair 15",
+        "Apartment Stair 15",
+        "Upper Stair 15"
+      ],
+      "size": [
+        1.55,
+        1.5,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.75,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.75,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_025",
+      "aliases": [
+        "Lower Stair 16",
+        "Apartment Stair 16",
+        "Upper Stair 16"
+      ],
+      "size": [
+        1.55,
+        1.6,
+        0.255
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.775,
+        -0.8,
+        -0.1275
+      ],
+      "bounds_max": [
+        0.775,
+        0.8,
+        0.1275
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_026",
+      "aliases": [
+        "Middle Landing"
+      ],
+      "size": [
+        4.45,
+        0.24,
+        1.45
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -2.225,
+        -0.12,
+        -0.725
+      ],
+      "bounds_max": [
+        2.225,
+        0.12,
+        0.725
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_027",
+      "aliases": [
+        "Apartment Landing"
+      ],
+      "size": [
+        6.45,
+        0.24,
+        1.36
+      ],
+      "kind": "Box",
+      "style": "tread",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -3.225,
+        -0.12,
+        -0.68
+      ],
+      "bounds_max": [
+        3.225,
+        0.12,
+        0.68
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_028",
+      "aliases": [
+        "Lower Rail Curb 01 A",
+        "Lower Rail Curb 01 B",
+        "Lower Rail Curb 02 A",
+        "Lower Rail Curb 02 B",
+        "Lower Rail Curb 03 A",
+        "Lower Rail Curb 03 B",
+        "Lower Rail Curb 04 A",
+        "Lower Rail Curb 04 B",
+        "Lower Rail Curb 05 A",
+        "Lower Rail Curb 05 B",
+        "Lower Rail Curb 06 A",
+        "Lower Rail Curb 06 B",
+        "Lower Rail Curb 07 A",
+        "Lower Rail Curb 07 B",
+        "Lower Rail Curb 08 A",
+        "Lower Rail Curb 08 B",
+        "Lower Rail Curb 09 A",
+        "Lower Rail Curb 09 B",
+        "Lower Rail Curb 10 A",
+        "Lower Rail Curb 10 B",
+        "Lower Rail Curb 11 A",
+        "Lower Rail Curb 11 B",
+        "Lower Rail Curb 12 A",
+        "Lower Rail Curb 12 B",
+        "Lower Rail Curb 13 A",
+        "Lower Rail Curb 13 B",
+        "Lower Rail Curb 14 A",
+        "Lower Rail Curb 14 B",
+        "Lower Rail Curb 15 A",
+        "Lower Rail Curb 15 B",
+        "Lower Rail Curb 16 A",
+        "Lower Rail Curb 16 B",
+        "Apartment Rail Curb 01 A",
+        "Apartment Rail Curb 01 B",
+        "Apartment Rail Curb 02 A",
+        "Apartment Rail Curb 02 B",
+        "Apartment Rail Curb 03 A",
+        "Apartment Rail Curb 03 B",
+        "Apartment Rail Curb 04 A",
+        "Apartment Rail Curb 04 B",
+        "Apartment Rail Curb 05 A",
+        "Apartment Rail Curb 05 B",
+        "Apartment Rail Curb 06 A",
+        "Apartment Rail Curb 06 B",
+        "Apartment Rail Curb 07 A",
+        "Apartment Rail Curb 07 B",
+        "Apartment Rail Curb 08 A",
+        "Apartment Rail Curb 08 B",
+        "Apartment Rail Curb 09 A",
+        "Apartment Rail Curb 09 B",
+        "Apartment Rail Curb 10 A",
+        "Apartment Rail Curb 10 B",
+        "Apartment Rail Curb 11 A",
+        "Apartment Rail Curb 11 B",
+        "Apartment Rail Curb 12 A",
+        "Apartment Rail Curb 12 B",
+        "Apartment Rail Curb 13 A",
+        "Apartment Rail Curb 13 B",
+        "Apartment Rail Curb 14 A",
+        "Apartment Rail Curb 14 B",
+        "Apartment Rail Curb 15 A",
+        "Apartment Rail Curb 15 B",
+        "Apartment Rail Curb 16 A",
+        "Apartment Rail Curb 16 B",
+        "Upper Rail Curb 01 A",
+        "Upper Rail Curb 01 B",
+        "Upper Rail Curb 02 A",
+        "Upper Rail Curb 02 B",
+        "Upper Rail Curb 03 A",
+        "Upper Rail Curb 03 B",
+        "Upper Rail Curb 04 A",
+        "Upper Rail Curb 04 B",
+        "Upper Rail Curb 05 A",
+        "Upper Rail Curb 05 B",
+        "Upper Rail Curb 06 A",
+        "Upper Rail Curb 06 B",
+        "Upper Rail Curb 07 A",
+        "Upper Rail Curb 07 B",
+        "Upper Rail Curb 08 A",
+        "Upper Rail Curb 08 B",
+        "Upper Rail Curb 09 A",
+        "Upper Rail Curb 09 B",
+        "Upper Rail Curb 10 A",
+        "Upper Rail Curb 10 B",
+        "Upper Rail Curb 11 A",
+        "Upper Rail Curb 11 B",
+        "Upper Rail Curb 12 A",
+        "Upper Rail Curb 12 B",
+        "Upper Rail Curb 13 A",
+        "Upper Rail Curb 13 B",
+        "Upper Rail Curb 14 A",
+        "Upper Rail Curb 14 B",
+        "Upper Rail Curb 15 A",
+        "Upper Rail Curb 15 B",
+        "Upper Rail Curb 16 A",
+        "Upper Rail Curb 16 B"
+      ],
+      "size": [
+        0.11,
+        0.68,
+        0.26
+      ],
+      "kind": "Box",
+      "style": "curb",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05500000000000001,
+        -0.34,
+        -0.13
+      ],
+      "bounds_max": [
+        0.05500000000000001,
+        0.34,
+        0.13
+      ],
+      "triangles": 112,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_029",
+      "aliases": [
+        "Lower Handrail A",
+        "Lower Handrail B",
+        "Apartment Handrail A",
+        "Apartment Handrail B",
+        "Upper Handrail A",
+        "Upper Handrail B"
+      ],
+      "size": [
+        0.095,
+        0.095,
+        4.16
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.0475,
+        -0.0475,
+        -2.08
+      ],
+      "bounds_max": [
+        0.0475,
+        0.0475,
+        2.08
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_030",
+      "aliases": [
+        "Middle Landing Back Rail"
+      ],
+      "size": [
+        4.75,
+        1.16,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "rail",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -2.375,
+        -0.58,
+        -0.05
+      ],
+      "bounds_max": [
+        2.375,
+        0.58,
+        0.05
+      ],
+      "triangles": 616,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_031",
+      "aliases": [
+        "Middle Landing Back Rail Top"
+      ],
+      "size": [
+        4.83,
+        0.1,
+        0.18
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -2.415,
+        -0.05,
+        -0.09
+      ],
+      "bounds_max": [
+        2.415,
+        0.05,
+        0.09
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_032",
+      "aliases": [
+        "Apartment Landing Center Rail"
+      ],
+      "size": [
+        1.2,
+        1.16,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "rail",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.6,
+        -0.58,
+        -0.05
+      ],
+      "bounds_max": [
+        0.6,
+        0.58,
+        0.05
+      ],
+      "triangles": 224,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_033",
+      "aliases": [
+        "Apartment Landing Center Rail Top"
+      ],
+      "size": [
+        1.28,
+        0.1,
+        0.18
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.64,
+        -0.05,
+        -0.09
+      ],
+      "bounds_max": [
+        0.64,
+        0.05,
+        0.09
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_034",
+      "aliases": [
+        "Apartment Landing Right Rail"
+      ],
+      "size": [
+        1.65,
+        1.16,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "rail",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.825,
+        -0.58,
+        -0.05
+      ],
+      "bounds_max": [
+        0.825,
+        0.58,
+        0.05
+      ],
+      "triangles": 280,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_035",
+      "aliases": [
+        "Apartment Landing Right Rail Top"
+      ],
+      "size": [
+        1.73,
+        0.1,
+        0.18
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.865,
+        -0.05,
+        -0.09
+      ],
+      "bounds_max": [
+        0.865,
+        0.05,
+        0.09
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_036",
+      "aliases": [
+        "Apartment Landing Left Edge"
+      ],
+      "size": [
+        0.1,
+        1.16,
+        2.35
+      ],
+      "kind": "Box",
+      "style": "rail",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05000000000000007,
+        -0.58,
+        -1.175
+      ],
+      "bounds_max": [
+        0.05000000000000007,
+        0.58,
+        1.175
+      ],
+      "triangles": 336,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_037",
+      "aliases": [
+        "Apartment Landing Left Edge Top"
+      ],
+      "size": [
+        0.18,
+        0.1,
+        2.43
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.09,
+        -0.05,
+        -1.215
+      ],
+      "bounds_max": [
+        0.09,
+        0.05,
+        1.215
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_038",
+      "aliases": [
+        "Under Stair Grille Blocker"
+      ],
+      "size": [
+        1.78,
+        1.84,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "grille",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.89,
+        -0.92,
+        -0.05
+      ],
+      "bounds_max": [
+        0.89,
+        0.92,
+        0.05
+      ],
+      "triangles": 112,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_039",
+      "aliases": [
+        "Under Stair Grille Bar 1",
+        "Under Stair Grille Bar 2",
+        "Under Stair Grille Bar 3",
+        "Under Stair Grille Bar 4",
+        "Under Stair Grille Bar 5",
+        "Under Stair Grille Bar 6",
+        "Under Stair Grille Bar 7"
+      ],
+      "size": [
+        0.045,
+        1.84,
+        0.045
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.0225,
+        -0.92,
+        -0.0225
+      ],
+      "bounds_max": [
+        0.0225,
+        0.92,
+        0.0225
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_040",
+      "aliases": [
+        "Street Door Leaf"
+      ],
+      "size": [
+        1.72,
+        2.36,
+        0.13
+      ],
+      "kind": "Box",
+      "style": "leaf",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.86,
+        -1.18,
+        -0.065
+      ],
+      "bounds_max": [
+        0.86,
+        1.18,
+        0.065
+      ],
+      "triangles": 1176,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_041",
+      "aliases": [
+        "Apartment Door Leaf"
+      ],
+      "size": [
+        0.13,
+        2.32,
+        1.24
+      ],
+      "kind": "Box",
+      "style": "side-leaf",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.06500000000000004,
+        -1.16,
+        -0.62
+      ],
+      "bounds_max": [
+        0.06500000000000004,
+        1.16,
+        0.62
+      ],
+      "triangles": 1176,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_042",
+      "aliases": [
+        "Door Frame Left",
+        "Door Frame Right"
+      ],
+      "size": [
+        0.16,
+        2.56,
+        0.2
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.08,
+        -1.28,
+        -0.1
+      ],
+      "bounds_max": [
+        0.08,
+        1.28,
+        0.1
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_043",
+      "aliases": [
+        "Door Frame Lintel"
+      ],
+      "size": [
+        2.04,
+        0.18,
+        0.2
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -1.02,
+        -0.09,
+        -0.1
+      ],
+      "bounds_max": [
+        1.02,
+        0.09,
+        0.1
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_044",
+      "aliases": [
+        "Door Frame Left",
+        "Door Frame Right"
+      ],
+      "size": [
+        0.16,
+        2.52,
+        0.2
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.08,
+        -1.26,
+        -0.1
+      ],
+      "bounds_max": [
+        0.08,
+        1.26,
+        0.1
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_045",
+      "aliases": [
+        "Door Frame Lintel"
+      ],
+      "size": [
+        1.56,
+        0.18,
+        0.2
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.78,
+        -0.09,
+        -0.1
+      ],
+      "bounds_max": [
+        0.78,
+        0.09,
+        0.1
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_046",
+      "aliases": [
+        "Left Waste Stack"
+      ],
+      "size": [
+        0.13,
+        3,
+        0.13
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.065,
+        -3,
+        -0.065
+      ],
+      "bounds_max": [
+        0.065,
+        3,
+        0.065
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_047",
+      "aliases": [
+        "Left Water Riser"
+      ],
+      "size": [
+        0.055,
+        3,
+        0.055
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0275,
+        -3,
+        -0.0275
+      ],
+      "bounds_max": [
+        0.0275,
+        3,
+        0.0275
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_048",
+      "aliases": [
+        "Right Waste Stack"
+      ],
+      "size": [
+        0.1,
+        3,
+        0.1
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.05,
+        -3,
+        -0.05
+      ],
+      "bounds_max": [
+        0.05,
+        3,
+        0.05
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_049",
+      "aliases": [
+        "Ceiling Main Pipe"
+      ],
+      "size": [
+        0.085,
+        4,
+        0.085
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0425,
+        -4,
+        -0.0425
+      ],
+      "bounds_max": [
+        0.0425,
+        4,
+        0.0425
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_050",
+      "aliases": [
+        "Apartment Feed Pipe"
+      ],
+      "size": [
+        0.065,
+        2.05,
+        0.065
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0325,
+        -2.05,
+        -0.0325
+      ],
+      "bounds_max": [
+        0.0325,
+        2.05,
+        0.0325
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_051",
+      "aliases": [
+        "Radiator Feed"
+      ],
+      "size": [
+        0.045,
+        0.46,
+        0.045
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0225,
+        -0.46,
+        -0.0225
+      ],
+      "bounds_max": [
+        0.0225,
+        0.46,
+        0.0225
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_052",
+      "aliases": [
+        "Pipe Clamp 1",
+        "Pipe Clamp 2",
+        "Pipe Clamp 3",
+        "Pipe Clamp 4",
+        "Pipe Clamp 5"
+      ],
+      "size": [
+        0.17,
+        0.025,
+        0.17
+      ],
+      "kind": "Cylinder",
+      "style": "clamp",
+      "projection": "CylinderCapXZ",
+      "bounds_min": [
+        -0.085,
+        -0.025,
+        -0.085
+      ],
+      "bounds_max": [
+        0.085,
+        0.025,
+        0.085
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_053",
+      "aliases": [
+        "Pipe Shutoff Valve"
+      ],
+      "size": [
+        0.22,
+        0.035,
+        0.22
+      ],
+      "kind": "Cylinder",
+      "style": "valve",
+      "projection": "CylinderCapXZ",
+      "bounds_min": [
+        -0.11,
+        -0.035,
+        -0.11
+      ],
+      "bounds_max": [
+        0.11,
+        0.035,
+        0.11
+      ],
+      "triangles": 208,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_054",
+      "aliases": [
+        "Large Vent Recess"
+      ],
+      "size": [
+        1.9,
+        1.12,
+        0.08
+      ],
+      "kind": "Box",
+      "style": "recess",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.95,
+        -0.56,
+        -0.04
+      ],
+      "bounds_max": [
+        0.95,
+        0.56,
+        0.04
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_055",
+      "aliases": [
+        "Large Vent Slat 1",
+        "Large Vent Slat 2",
+        "Large Vent Slat 3",
+        "Large Vent Slat 4",
+        "Large Vent Slat 5",
+        "Large Vent Slat 6",
+        "Large Vent Slat 7",
+        "Large Vent Slat 8"
+      ],
+      "size": [
+        1.7,
+        0.045,
+        0.045
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.85,
+        -0.0225,
+        -0.0225
+      ],
+      "bounds_max": [
+        0.85,
+        0.0225,
+        0.0225
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_056",
+      "aliases": [
+        "Ground Vent Recess"
+      ],
+      "size": [
+        1.12,
+        0.78,
+        0.08
+      ],
+      "kind": "Box",
+      "style": "recess",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.56,
+        -0.39,
+        -0.04
+      ],
+      "bounds_max": [
+        0.56,
+        0.39,
+        0.04
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_057",
+      "aliases": [
+        "Ground Vent Slat 1",
+        "Ground Vent Slat 2",
+        "Ground Vent Slat 3",
+        "Ground Vent Slat 4",
+        "Ground Vent Slat 5"
+      ],
+      "size": [
+        0.94,
+        0.04,
+        0.045
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.47,
+        -0.02,
+        -0.0225
+      ],
+      "bounds_max": [
+        0.47,
+        0.02,
+        0.0225
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_058",
+      "aliases": [
+        "Ground Electrical Cabinet"
+      ],
+      "size": [
+        0.1,
+        1.48,
+        1.12
+      ],
+      "kind": "Box",
+      "style": "side-recess",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05000000000000004,
+        -0.74,
+        -0.56
+      ],
+      "bounds_max": [
+        0.05000000000000004,
+        0.74,
+        0.56
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_059",
+      "aliases": [
+        "Ground Electrical Cabinet Door"
+      ],
+      "size": [
+        0.05,
+        1.34,
+        0.98
+      ],
+      "kind": "Box",
+      "style": "side-leaf",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.025000000000000033,
+        -0.67,
+        -0.49
+      ],
+      "bounds_max": [
+        0.025000000000000033,
+        0.67,
+        0.49
+      ],
+      "triangles": 1176,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_060",
+      "aliases": [
+        "Apartment Fuse Box"
+      ],
+      "size": [
+        0.1,
+        0.82,
+        0.68
+      ],
+      "kind": "Box",
+      "style": "side-recess",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.050000000000000024,
+        -0.41000000000000003,
+        -0.3400000000000001
+      ],
+      "bounds_max": [
+        0.050000000000000024,
+        0.41000000000000003,
+        0.3400000000000001
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_061",
+      "aliases": [
+        "Loose Cable 1",
+        "Loose Cable 2",
+        "Loose Cable 3",
+        "Loose Cable 4"
+      ],
+      "size": [
+        0.035,
+        0.035,
+        0.72
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.0175,
+        -0.0175,
+        -0.36
+      ],
+      "bounds_max": [
+        0.0175,
+        0.0175,
+        0.36
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_062",
+      "aliases": [
+        "Radiator Rib 1",
+        "Radiator Rib 2",
+        "Radiator Rib 3",
+        "Radiator Rib 4",
+        "Radiator Rib 5",
+        "Radiator Rib 6",
+        "Radiator Rib 7"
+      ],
+      "size": [
+        0.18,
+        0.92,
+        0.075
+      ],
+      "kind": "Box",
+      "style": "radiator",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.09,
+        -0.46,
+        -0.0375
+      ],
+      "bounds_max": [
+        0.09,
+        0.46,
+        0.0375
+      ],
+      "triangles": 112,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_063",
+      "aliases": [
+        "Damp Wall Patch 1"
+      ],
+      "size": [
+        1.25,
+        1.85,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.625,
+        -0.925,
+        -0.0125
+      ],
+      "bounds_max": [
+        0.625,
+        0.925,
+        0.0125
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_064",
+      "aliases": [
+        "Damp Wall Patch 2"
+      ],
+      "size": [
+        0.92,
+        1.35,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.46,
+        -0.675,
+        -0.0125
+      ],
+      "bounds_max": [
+        0.46,
+        0.675,
+        0.0125
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_065",
+      "aliases": [
+        "Damp Wall Patch 3"
+      ],
+      "size": [
+        1.72,
+        0.65,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.86,
+        -0.325,
+        -0.0125
+      ],
+      "bounds_max": [
+        0.86,
+        0.325,
+        0.0125
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_066",
+      "aliases": [
+        "Damp Wall Patch 4"
+      ],
+      "size": [
+        0.52,
+        1.05,
+        0.025
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.26,
+        -0.525,
+        -0.0125
+      ],
+      "bounds_max": [
+        0.26,
+        0.525,
+        0.0125
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_067",
+      "aliases": [
+        "Peeling Paint Chip 1",
+        "Peeling Paint Chip 3",
+        "Peeling Paint Chip 5"
+      ],
+      "size": [
+        0.3,
+        0.18,
+        0.018
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.15,
+        -0.09,
+        -0.009
+      ],
+      "bounds_max": [
+        0.15,
+        0.09,
+        0.009
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_068",
+      "aliases": [
+        "Peeling Paint Chip 2",
+        "Peeling Paint Chip 4",
+        "Peeling Paint Chip 6"
+      ],
+      "size": [
+        0.45999999999999996,
+        0.18,
+        0.018
+      ],
+      "kind": "Box",
+      "style": "patch",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.22999999999999998,
+        -0.09,
+        -0.009
+      ],
+      "bounds_max": [
+        0.22999999999999998,
+        0.09,
+        0.009
+      ],
+      "triangles": 24,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_069",
+      "aliases": [
+        "Ground Damp Puddle"
+      ],
+      "size": [
+        0.82,
+        0.008,
+        0.48
+      ],
+      "kind": "Cylinder",
+      "style": "clamp",
+      "projection": "CylinderCapXZ",
+      "bounds_min": [
+        -0.41,
+        -0.008,
+        -0.23999999999999996
+      ],
+      "bounds_max": [
+        0.41,
+        0.008,
+        0.23999999999999996
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_070",
+      "aliases": [
+        "Discarded Paper 1",
+        "Discarded Paper 2",
+        "Discarded Paper 3",
+        "Discarded Paper 4"
+      ],
+      "size": [
+        0.38,
+        0.012,
+        0.26
+      ],
+      "kind": "Box",
+      "style": "paper",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.19,
+        -0.006,
+        -0.13
+      ],
+      "bounds_max": [
+        0.19,
+        0.006,
+        0.13
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_071",
+      "aliases": [
+        "Empty Bottle"
+      ],
+      "size": [
+        0.075,
+        0.22,
+        0.075
+      ],
+      "kind": "Cylinder",
+      "style": "bottle",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0375,
+        -0.22,
+        -0.0375
+      ],
+      "bounds_max": [
+        0.0375,
+        0.22,
+        0.0375
+      ],
+      "triangles": 188,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_072",
+      "aliases": [
+        "Collapsed Wardrobe"
+      ],
+      "size": [
+        1.18,
+        1.72,
+        0.42
+      ],
+      "kind": "Box",
+      "style": "wardrobe",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.59,
+        -0.86,
+        -0.21
+      ],
+      "bounds_max": [
+        0.59,
+        0.86,
+        0.21
+      ],
+      "triangles": 168,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_073",
+      "aliases": [
+        "Mouldy Mattress"
+      ],
+      "size": [
+        1.42,
+        0.26,
+        1.82
+      ],
+      "kind": "Box",
+      "style": "mattress",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.71,
+        -0.13,
+        -0.91
+      ],
+      "bounds_max": [
+        0.71,
+        0.13,
+        0.91
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_074",
+      "aliases": [
+        "Broken Metal Cabinet"
+      ],
+      "size": [
+        0.72,
+        1.05,
+        0.56
+      ],
+      "kind": "Box",
+      "style": "recess",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.36,
+        -0.525,
+        -0.28
+      ],
+      "bounds_max": [
+        0.36,
+        0.525,
+        0.28
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_075",
+      "aliases": [
+        "Wire Mesh Sheet"
+      ],
+      "size": [
+        1.66,
+        1.28,
+        0.055
+      ],
+      "kind": "Box",
+      "style": "mesh",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.83,
+        -0.64,
+        -0.0275
+      ],
+      "bounds_max": [
+        0.83,
+        0.64,
+        0.0275
+      ],
+      "triangles": 560,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_076",
+      "aliases": [
+        "Debris Plank 1",
+        "Debris Plank 2",
+        "Debris Plank 3",
+        "Debris Plank 4",
+        "Debris Plank 5"
+      ],
+      "size": [
+        0.16,
+        1.48,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.08,
+        -0.74,
+        -0.05
+      ],
+      "bounds_max": [
+        0.08,
+        0.74,
+        0.05
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_077",
+      "aliases": [
+        "Debris Sack 1",
+        "Debris Sack 2",
+        "Debris Sack 3"
+      ],
+      "size": [
+        0.55,
+        0.42,
+        0.58
+      ],
+      "kind": "Box",
+      "style": "sack",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.275,
+        -0.21,
+        -0.29
+      ],
+      "bounds_max": [
+        0.275,
+        0.21,
+        0.29
+      ],
+      "triangles": 136,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_078",
+      "aliases": [
+        "Ground Fluorescent Housing"
+      ],
+      "size": [
+        1.34,
+        0.1,
+        0.3
+      ],
+      "kind": "Box",
+      "style": "housing",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.67,
+        -0.05,
+        -0.15000000000000002
+      ],
+      "bounds_max": [
+        0.67,
+        0.05,
+        0.15000000000000002
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_079",
+      "aliases": [
+        "Ground Fluorescent Tube"
+      ],
+      "size": [
+        1.18,
+        0.11,
+        0.15
+      ],
+      "kind": "Box",
+      "style": "tube",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.59,
+        -0.055,
+        -0.075
+      ],
+      "bounds_max": [
+        0.59,
+        0.055,
+        0.075
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_080",
+      "aliases": [
+        "Ground Fluorescent End Cap Left",
+        "Ground Fluorescent End Cap Right"
+      ],
+      "size": [
+        0.1,
+        0.16,
+        0.22
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05,
+        -0.08,
+        -0.10999999999999999
+      ],
+      "bounds_max": [
+        0.05,
+        0.08,
+        0.10999999999999999
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_081",
+      "aliases": [
+        "Ground Fluorescent Suspension Left",
+        "Ground Fluorescent Suspension Right"
+      ],
+      "size": [
+        0.035,
+        0.11999999999999997,
+        0.035
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0175,
+        -0.11999999999999997,
+        -0.0175
+      ],
+      "bounds_max": [
+        0.0175,
+        0.11999999999999997,
+        0.0175
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_082",
+      "aliases": [
+        "Middle Fluorescent Housing"
+      ],
+      "size": [
+        1.34,
+        0.1,
+        0.3
+      ],
+      "kind": "Box",
+      "style": "housing",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.67,
+        -0.05,
+        -0.15000000000000002
+      ],
+      "bounds_max": [
+        0.67,
+        0.05,
+        0.15000000000000002
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_083",
+      "aliases": [
+        "Middle Fluorescent Tube"
+      ],
+      "size": [
+        1.18,
+        0.11,
+        0.15
+      ],
+      "kind": "Box",
+      "style": "tube",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.59,
+        -0.055,
+        -0.075
+      ],
+      "bounds_max": [
+        0.59,
+        0.055,
+        0.075
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_084",
+      "aliases": [
+        "Middle Fluorescent End Cap Left",
+        "Middle Fluorescent End Cap Right"
+      ],
+      "size": [
+        0.1,
+        0.16,
+        0.22
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05,
+        -0.08,
+        -0.10999999999999999
+      ],
+      "bounds_max": [
+        0.05,
+        0.08,
+        0.10999999999999999
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_085",
+      "aliases": [
+        "Middle Fluorescent Suspension Left",
+        "Middle Fluorescent Suspension Right"
+      ],
+      "size": [
+        0.035,
+        0.8949999999999999,
+        0.035
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0175,
+        -0.8949999999999999,
+        -0.0175
+      ],
+      "bounds_max": [
+        0.0175,
+        0.8949999999999999,
+        0.0175
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_086",
+      "aliases": [
+        "Apartment Fluorescent Housing"
+      ],
+      "size": [
+        1.34,
+        0.1,
+        0.3
+      ],
+      "kind": "Box",
+      "style": "housing",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -0.67,
+        -0.05,
+        -0.15000000000000002
+      ],
+      "bounds_max": [
+        0.67,
+        0.05,
+        0.15000000000000002
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_087",
+      "aliases": [
+        "Apartment Fluorescent Tube"
+      ],
+      "size": [
+        1.18,
+        0.11,
+        0.15
+      ],
+      "kind": "Box",
+      "style": "tube",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.59,
+        -0.055,
+        -0.075
+      ],
+      "bounds_max": [
+        0.59,
+        0.055,
+        0.075
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_088",
+      "aliases": [
+        "Apartment Fluorescent End Cap Left",
+        "Apartment Fluorescent End Cap Right"
+      ],
+      "size": [
+        0.1,
+        0.16,
+        0.22
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxZY",
+      "bounds_min": [
+        -0.05,
+        -0.08,
+        -0.10999999999999999
+      ],
+      "bounds_max": [
+        0.05,
+        0.08,
+        0.10999999999999999
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_089",
+      "aliases": [
+        "Apartment Fluorescent Suspension Left",
+        "Apartment Fluorescent Suspension Right"
+      ],
+      "size": [
+        0.035,
+        0.07999999999999993,
+        0.035
+      ],
+      "kind": "Cylinder",
+      "style": "pipe",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0175,
+        -0.07999999999999993,
+        -0.0175
+      ],
+      "bounds_max": [
+        0.0175,
+        0.07999999999999993,
+        0.0175
+      ],
+      "triangles": 92,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_090",
+      "aliases": [
+        "Black Void"
+      ],
+      "size": [
+        8,
+        6,
+        0.2
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.0,
+        -3.0,
+        -0.1
+      ],
+      "bounds_max": [
+        4.0,
+        3.0,
+        0.1
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_091",
+      "aliases": [
+        "Threshold Floor"
+      ],
+      "size": [
+        5.5,
+        0.07,
+        4.8
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -2.75,
+        -0.035,
+        -2.4
+      ],
+      "bounds_max": [
+        2.75,
+        0.035,
+        2.4
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_092",
+      "aliases": [
+        "Left Door Frame",
+        "Right Door Frame"
+      ],
+      "size": [
+        0.24,
+        3.08,
+        0.27
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.12,
+        -1.54,
+        -0.135
+      ],
+      "bounds_max": [
+        0.12,
+        1.54,
+        0.135
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_093",
+      "aliases": [
+        "Door Lintel"
+      ],
+      "size": [
+        2.24,
+        0.28,
+        0.31
+      ],
+      "kind": "Box",
+      "style": "jamb",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -1.12,
+        -0.14,
+        -0.15499999999999997
+      ],
+      "bounds_max": [
+        1.12,
+        0.14,
+        0.15499999999999997
+      ],
+      "triangles": 56,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_094",
+      "aliases": [
+        "Door Threshold"
+      ],
+      "size": [
+        1.82,
+        0.07,
+        0.34
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.91,
+        -0.035,
+        -0.17
+      ],
+      "bounds_max": [
+        0.91,
+        0.035,
+        0.17
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_095",
+      "aliases": [
+        "Door Leaf"
+      ],
+      "size": [
+        1.73,
+        2.84,
+        0.14
+      ],
+      "kind": "Box",
+      "style": "leaf",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.865,
+        -1.42,
+        -0.07
+      ],
+      "bounds_max": [
+        0.865,
+        1.42,
+        0.07
+      ],
+      "triangles": 1176,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_096",
+      "aliases": [
+        "Handle Lever"
+      ],
+      "size": [
+        0.34,
+        0.065,
+        0.075
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.17,
+        -0.0325,
+        -0.0375
+      ],
+      "bounds_max": [
+        0.17,
+        0.0325,
+        0.0375
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_097",
+      "aliases": [
+        "Handle Spindle"
+      ],
+      "size": [
+        0.105,
+        0.055,
+        0.105
+      ],
+      "kind": "Cylinder",
+      "style": "spindle",
+      "projection": "CylinderSide",
+      "bounds_min": [
+        -0.0525,
+        -0.055,
+        -0.0525
+      ],
+      "bounds_max": [
+        0.0525,
+        0.055,
+        0.0525
+      ],
+      "triangles": 140,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_098",
+      "aliases": [
+        "Lower Handrail A Supports",
+        "Lower Handrail B Supports",
+        "Apartment Handrail A Supports",
+        "Apartment Handrail B Supports",
+        "Upper Handrail A Supports",
+        "Upper Handrail B Supports"
+      ],
+      "size": [
+        0.06,
+        0.2943461538461541,
+        4.217817307692307
+      ],
+      "kind": "Box",
+      "style": "rail-supports",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.03,
+        -0.14717307692307705,
+        -2.1089086538461537
+      ],
+      "bounds_max": [
+        0.03,
+        0.14717307692307702,
+        2.1089086538461537
+      ],
+      "triangles": 1792,
+      "position": [
+        0.0,
+        -0.18167307692307702,
+        -0.0557836538461538
+      ]
+    },
+    {
+      "name": "StairwellPart_099",
+      "aliases": [
+        "Street Door Hardware",
+        "Apartment Door Hardware"
+      ],
+      "size": [
+        0.24,
+        0.24,
+        0.075
+      ],
+      "kind": "Box",
+      "style": "door-hardware",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.12,
+        -0.12,
+        -0.0375
+      ],
+      "bounds_max": [
+        0.12,
+        0.12,
+        0.0375
+      ],
+      "triangles": 196,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_100",
+      "aliases": [
+        "Electrical Cabinet Pull"
+      ],
+      "size": [
+        0.08,
+        0.12,
+        0.035
+      ],
+      "kind": "Box",
+      "style": "cabinet-pull",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.04,
+        -0.06,
+        -0.0175
+      ],
+      "bounds_max": [
+        0.04,
+        0.06,
+        0.0175
+      ],
+      "triangles": 84,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

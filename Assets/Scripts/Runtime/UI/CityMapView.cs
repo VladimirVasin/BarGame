@@ -345,6 +345,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsInitialized)
             {
                 return;
@@ -614,7 +615,7 @@ namespace BarPromenade
                 // The same rect the hover layer registers, so what the map
                 // names under the pointer is what the pointer can click.
                 Rect cell = ProjectWorldRect(projection, bounds[index]);
-                if (GUI.Button(cell, GUIContent.none, GUIStyle.none))
+                if (RetroUiInput.Button(cell, GUIContent.none, GUIStyle.none))
                 {
                     controller.QueueSelectMapObject(selectionIndex);
                 }
@@ -719,10 +720,10 @@ namespace BarPromenade
                 }
             }
 
-            Event current = Event.current;
+            Vector2 localPointer = RetroUiInput.MousePosition;
             Vector2 globalPointer =
-                current.mousePosition + hoverCoordinateOffset;
-            bool clicked = GUI.Button(
+                localPointer + hoverCoordinateOffset;
+            bool clicked = RetroUiInput.Button(
                 mapLineClipRect,
                 GUIContent.none,
                 GUIStyle.none);
@@ -737,7 +738,7 @@ namespace BarPromenade
             if (pointIndex < 0 &&
                 TryResolveTeleportSquarePoint(
                     projection,
-                    current.mousePosition,
+                    localPointer,
                     out int squarePointIndex))
             {
                 pointIndex = squarePointIndex;
@@ -913,26 +914,34 @@ namespace BarPromenade
             Rect mapBounds,
             Vector2 logicalPointer)
         {
-            Event current = Event.current;
+            // Shared pointer edges are sampled once per frame and exposed
+            // only while painting; Layout must not cancel a held drag.
+            if (Event.current.type != EventType.Repaint) return;
             if (isPointerPanning)
             {
-                if (current.type == EventType.MouseDrag &&
-                    current.button == pointerPanButton)
+                if (RetroUiInput.GetPointerDragged(pointerPanButton))
                 {
                     mapViewport.ScrollBy(
                         previousPanPointer - logicalPointer);
                     previousPanPointer = logicalPointer;
-                    current.Use();
+                    RetroUiInput.ConsumePointerDrag(pointerPanButton);
                     return;
                 }
 
-                if (current.type == EventType.MouseUp &&
-                    current.button == pointerPanButton)
+                if (RetroUiInput.GetPointerReleased(pointerPanButton))
+                {
+                    RetroUiInput.ConsumePointerRelease(pointerPanButton);
+                    isPointerPanning = false;
+                    pointerPanButton = -1;
+                    return;
+                }
+
+                // Focus/modal loss can suppress the release edge. Do not
+                // resume an old pan when the pointer later returns.
+                if (!RetroUiInput.GetPointerHeld(pointerPanButton))
                 {
                     isPointerPanning = false;
                     pointerPanButton = -1;
-                    current.Use();
-                    return;
                 }
             }
 
@@ -941,26 +950,27 @@ namespace BarPromenade
                 return;
             }
 
-            if (current.type == EventType.MouseDown &&
-                (current.button == 1 || current.button == 2) &&
+            int pressedPanButton = RetroUiInput.GetPointerPressed(1) ? 1 :
+                RetroUiInput.GetPointerPressed(2) ? 2 : -1;
+            if (pressedPanButton >= 0 &&
                 (mapViewport.CanScrollHorizontal ||
                  mapViewport.CanScrollVertical))
             {
                 isPointerPanning = true;
-                pointerPanButton = current.button;
+                pointerPanButton = pressedPanButton;
                 previousPanPointer = logicalPointer;
-                current.Use();
+                RetroUiInput.ConsumePointerPress(pointerPanButton);
                 return;
             }
 
-            if (current.type != EventType.ScrollWheel)
+            Vector2 wheel = RetroUiInput.ScrollDelta * MouseWheelStep;
+            if (wheel.sqrMagnitude == 0f)
             {
                 return;
             }
 
-            Vector2 wheel = current.delta * MouseWheelStep;
             Vector2 scrollDelta = Vector2.zero;
-            if (current.shift && mapViewport.CanScrollHorizontal)
+            if (RetroUiInput.ShiftHeld && mapViewport.CanScrollHorizontal)
             {
                 scrollDelta.x = Mathf.Abs(wheel.x) > 0.01f
                     ? wheel.x
@@ -984,7 +994,7 @@ namespace BarPromenade
 
             if (mapViewport.ScrollBy(scrollDelta))
             {
-                current.Use();
+                RetroUiInput.ConsumeScroll();
             }
         }
 
@@ -1136,7 +1146,7 @@ namespace BarPromenade
                             RetroUiTheme.AccentPale);
                     }
 
-                    if (GUI.Button(
+                    if (RetroUiInput.Button(
                         buildingRect,
                         GUIContent.none,
                         GUIStyle.none))
@@ -2313,7 +2323,7 @@ namespace BarPromenade
                 if (controller.DebugTeleportEnabled &&
                     !controller.MapPointInspectionEnabled)
                 {
-                    if (GUI.Button(marker, markerLabel, markerButtonStyle))
+                    if (RetroUiInput.Button(marker, markerLabel, markerButtonStyle))
                     {
                         controller.QueueSelectMapObject(mapObjectIndex);
                     }
@@ -3002,7 +3012,7 @@ namespace BarPromenade
                 // transition and not a teleport - which the panel used to
                 // report and then stop at. It is still a trip the map can
                 // start, and the coordinate rides along.
-                if (GUI.Button(
+                if (RetroUiInput.Button(
                         button,
                         LocalizationService.Get("map.point.travel"),
                         hintStyle))
@@ -3022,7 +3032,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     button,
                     LocalizationService.Get("map.point.teleport"),
                     hintStyle))
@@ -3074,7 +3084,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     button,
                     LocalizationService.Get("map.point.enter"),
                     hintStyle))
@@ -3100,7 +3110,7 @@ namespace BarPromenade
             RetroUiTheme.DrawSelection(
                 button,
                 controller.MapPointInspectionEnabled);
-            if (GUI.Button(button, "XYZ", smallButtonStyle))
+            if (RetroUiInput.Button(button, "XYZ", smallButtonStyle))
             {
                 controller.QueueToggleMapPointInspection();
             }
@@ -3182,7 +3192,7 @@ namespace BarPromenade
                 false,
                 0f,
                 1f);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                 confirmButton,
                 LocalizationService.Get("common.yes"),
                 hintStyle))

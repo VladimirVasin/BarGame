@@ -35,6 +35,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (controller == null ||
                 !controller.IsOpen ||
                 controller.UsesPhysicalMenu)
@@ -175,7 +176,7 @@ namespace BarPromenade
                     rect.Contains(logicalPointer));
             }
 
-            if (GUI.Button(rect, label, buttonStyle))
+            if (RetroUiInput.Button(rect, label, buttonStyle))
             {
                 action?.Invoke();
             }

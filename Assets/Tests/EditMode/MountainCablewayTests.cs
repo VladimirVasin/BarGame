@@ -52,19 +52,24 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(1));
         }
 
-        [Test]
+        [TestCase(MountainCablewayStationKind.Drive)]
+        [TestCase(MountainCablewayStationKind.Return)]
         [Category("MountainRoad")]
-        public void WorldBuilder_KeepsOnlyLowerStationPhysical()
+        public void WorldBuilder_KeepsOnlyLocalStationPhysical(MountainCablewayStationKind stationKind)
         {
-            MountainRoadCablewayPlan plan = MountainRoadPlanner.Create(
-                GameSessionState.DefaultCitySeed).Terminal.Cableway;
+            bool drive = stationKind == MountainCablewayStationKind.Drive;
+            MountainRoadCablewayPlan plan = drive
+                ? MountainRoadPlanner.Create(GameSessionState.DefaultCitySeed).Terminal.Cableway
+                : AlpineVillagePlanner.Create(GameSessionState.DefaultCitySeed).Station.Cableway;
             var host = new GameObject("Cableway Test Host");
             try
             {
                 MountainCablewayWorldResult result =
                     MountainCablewayWorldBuilder.Build(
                         host.transform,
-                        plan);
+                        plan,
+                        stationKind,
+                        villageSurfaces: !drive);
                 Assert.That(
                     result.Cabins,
                     Has.Count.EqualTo(
@@ -122,7 +127,7 @@ namespace BarPromenade.Tests.EditMode
                 // The motor, the lower bullwheel's clack and one clack per
                 // tower's rollers: every voice a visible machine's.
                 Assert.That(result.Controller.AudioSources,
-                    Has.Count.EqualTo(2 + supportCount));
+                    Has.Count.EqualTo((drive ? 2 : 1) + supportCount));
                 Assert.That(
                     result.StationRoot.GetComponentsInChildren<Collider>(true)
                         .Length,
@@ -148,11 +153,62 @@ namespace BarPromenade.Tests.EditMode
                         source.GetComponentInChildren<Renderer>() != null),
                     Is.True,
                     "Every cableway voice must belong to visible machinery.");
+
+                AssertCraftedMetreSlots(result, plan, drive);
             }
             finally
             {
                 Object.DestroyImmediate(host);
             }
+        }
+
+        private static void AssertCraftedMetreSlots(MountainCablewayWorldResult result,
+            MountainRoadCablewayPlan plan, bool drive)
+        {
+            MountainCablewayCraftedGeometry geometry = result.Root.GetComponent<MountainCablewayCraftedGeometry>();
+            Assert.That(geometry, Is.Not.Null);
+            Assert.That(geometry.SharedMeshCount, Is.EqualTo(MountainCablewayCraftedGeometry.ExpectedMeshCount));
+            Assert.That(geometry.TemplateVertexCount, Is.InRange(1, MountainCablewayCraftedGeometry.MaximumTemplateVertices));
+            Assert.That(geometry.ReplacementCount, Is.InRange(40, MountainCablewayCraftedGeometry.MaximumReplacements));
+            MeshFilter[] slots = result.Root.GetComponentsInChildren<MeshFilter>(true)
+                .Where(filter => MountainCablewayCraftedGeometry.RoleFor(filter.name) != null).ToArray();
+            Assert.That(slots.Length, Is.EqualTo(geometry.ReplacementCount));
+            foreach (var group in slots.GroupBy(filter => MountainCablewayCraftedGeometry.RoleFor(filter.name)))
+            {
+                Mesh shared = group.First().sharedMesh;
+                Assert.That(group.All(filter => filter.sharedMesh == shared), Is.True,
+                    "Cabins and support towers must reuse one authored mesh per role.");
+                bool cylinder = group.Key == "Bullwheel" || group.Key == "Hub" || group.Key == "Roller";
+                Vector3 expected = new Vector3(1f, cylinder ? 2f : 1f, 1f);
+                Assert.That(Vector3.Distance(shared.bounds.center, Vector3.zero), Is.LessThan(.002f));
+                Assert.That(Vector3.Distance(shared.bounds.size, expected), Is.LessThan(.002f),
+                    "Imported axis/unit factors changed the actual visible slot " + group.Key);
+            }
+            foreach (MeshFilter slot in slots)
+            {
+                var renderer = slot.GetComponent<MeshRenderer>();
+                Assert.That(renderer.isPartOfStaticBatch, Is.False,
+                    "Authored slot geometry must not freeze a moving cabin, wheel or reducer.");
+                if (slot.TryGetComponent(out BoxCollider solid))
+                {
+                    Assert.That(Vector3.Distance(renderer.bounds.min, solid.bounds.min), Is.LessThan(.003f));
+                    Assert.That(Vector3.Distance(renderer.bounds.max, solid.bounds.max), Is.LessThan(.003f));
+                }
+            }
+            foreach (Transform cabin in result.Cabins)
+            {
+                Transform seat = cabin.Find(MountainCablewayWorldBuilder.CabinSeatAnchorName);
+                float seatY = -MountainRoadCablewayPlan.CabinRoofDrop - plan.CabinSize.y +
+                    MountainRoadCablewayPlan.CabinSkirtHeight + MountainCablewayWorldBuilder.CabinBenchHeight;
+                Assert.That(seat.localPosition.y, Is.EqualTo(seatY).Within(.001f));
+                Assert.That(cabin.GetComponentsInChildren<MeshFilter>(true)
+                    .Where(filter => filter.name.Contains("Window")).All(filter =>
+                        !filter.sharedMesh.name.StartsWith("GEO_Cableway_")), Is.True,
+                    "The authored pack must preserve cabin glass and its open side entrance.");
+            }
+            Assert.That(result.StationRoot.GetComponentsInChildren<MeshFilter>(true)
+                .Any(filter => filter.name == "Visible Cableway Motor Reducer"), Is.EqualTo(drive),
+                "Only the lower drive station owns a motor.");
         }
     }
 }

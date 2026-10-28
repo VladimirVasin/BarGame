@@ -300,6 +300,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin();
             if (!IsChoosing || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             if (optionStyle == null)
             {
@@ -325,13 +326,13 @@ namespace BarPromenade
                 {
                     int index = first + row;
                     Rect rect = new Rect(panel.x + 10f, panel.y + 8f + row * 28f, 260f, 26f);
-                    if (GUI.enabled && Event.current.type == EventType.MouseMove && rect.Contains(Event.current.mousePosition))
+                    if (GUI.enabled && RetroUiInput.PointerMoved && rect.Contains(RetroUiInput.MousePosition))
                         SelectedChoice = index;
                     bool selected = index == SelectedChoice;
                     RetroUiTheme.DrawSelection(rect, selected, RetroUiTheme.DialoguePanelOpacity);
                     GUI.Label(new Rect(rect.x + 7f, rect.y, rect.width - 14f, rect.height),
                         LocalizationService.Get(cursor.Current.Choices[index].TextKey), selected ? selectedStyle : optionStyle);
-                    if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+                    if (RetroUiInput.Button(rect, GUIContent.none, GUIStyle.none))
                     { SelectChoice(index); Confirm(); break; }
                 }
             }

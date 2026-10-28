@@ -14,6 +14,7 @@ namespace BarPromenade.Tests.PlayMode
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageAvalanche()
         {
+            GameSessionState.BeginNewGame("Test AlpineVillageAvalanche visual itinerary");
             GameSessionState.TryStartGameTimeFromWake();
             Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
             GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));

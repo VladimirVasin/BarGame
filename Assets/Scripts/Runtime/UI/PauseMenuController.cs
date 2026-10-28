@@ -463,6 +463,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var input = RetroUiInput.Begin(GameInputContext.PauseMenu);
             if (!IsOpen)
             {
                 return;
@@ -610,15 +611,15 @@ namespace BarPromenade
                     }
                 }
 
-                if (Event.current.type == EventType.ScrollWheel &&
+                if (RetroUiInput.ScrollDelta.sqrMagnitude > 0f &&
                     panel.Contains(RetroUiTheme.LogicalMousePosition(canvas)))
                 {
                     cutscenesScroll = Mathf.Clamp(
                         cutscenesScroll +
-                        (Event.current.delta.y > 0f ? 1 : -1),
+                        (RetroUiInput.ScrollDelta.y > 0f ? 1 : -1),
                         0,
                         maximumScroll);
-                    Event.current.Use();
+                    RetroUiInput.ConsumeScroll();
                 }
 
                 for (int slot = 0; slot < visibleRows; slot++)
@@ -669,14 +670,14 @@ namespace BarPromenade
             Rect rect = new Rect(156f, 94f + slot * 32f, 328f, 28f);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                RetroUiInput.PointerMoved)
             {
                 model.SelectCutscene(index);
             }
 
             bool selected = model.SelectedCutsceneIndex == index;
             DrawSelection(rect, selected);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     (selected ? "> " : "  ") + LocalizationService.Get(titleKey),
                     selected ? selectedStyle : optionStyle))
@@ -728,15 +729,15 @@ namespace BarPromenade
                 optionsScroll = selectedIndex - VisibleOptionsRows + 1;
             }
 
-            if (Event.current.type == EventType.ScrollWheel &&
+            if (RetroUiInput.ScrollDelta.sqrMagnitude > 0f &&
                 panel.Contains(RetroUiTheme.LogicalMousePosition(canvas)))
             {
                 optionsScroll = Mathf.Clamp(
                     optionsScroll +
-                    (Event.current.delta.y > 0f ? 1 : -1),
+                    (RetroUiInput.ScrollDelta.y > 0f ? 1 : -1),
                     0,
                     maximumScroll);
-                Event.current.Use();
+                RetroUiInput.ConsumeScroll();
             }
 
             for (int slot = 0; slot < VisibleOptionsRows; slot++)
@@ -810,7 +811,7 @@ namespace BarPromenade
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                RetroUiInput.PointerMoved)
             {
                 model.SelectOptionsRow(row);
             }
@@ -818,7 +819,7 @@ namespace BarPromenade
             bool selected = SelectedOptionsRow == row;
             DrawSelection(rect, selected);
             string label = LocalizationService.Get(localizationKey);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     (selected ? "> " : "  ") + label,
                     selected ? selectedStyle : optionStyle))
@@ -959,14 +960,14 @@ namespace BarPromenade
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                RetroUiInput.PointerMoved)
             {
                 model.SelectOption(option);
             }
 
             bool selected = SelectedOption == option;
             DrawSelection(rect, selected);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     (selected ? "> " : "  ") +
                     LocalizationService.Get(localizationKey),
@@ -1022,14 +1023,14 @@ namespace BarPromenade
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             if (rect.Contains(mouse) &&
-                Event.current.type == EventType.MouseMove)
+                RetroUiInput.PointerMoved)
             {
                 model.SelectConfirmation(yes);
             }
 
             bool selected = ConfirmationYesSelected == yes;
             DrawSelection(rect, selected);
-            if (GUI.Button(
+            if (RetroUiInput.Button(
                     rect,
                     (selected ? "> " : "  ") +
                     LocalizationService.Get(localizationKey),
