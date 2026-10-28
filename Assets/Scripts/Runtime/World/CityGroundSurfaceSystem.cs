@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Triangle = BarPromenade.GroundSurfacePartitioner.Triangle;
@@ -107,6 +108,9 @@ namespace BarPromenade
         internal void FinalizeSurface()
         {
             if (sealedSurface) return;
+            using var partitionAllocations = CreatePartitionAllocationRecorder(out string partitionAllocationStatus);
+            bool recordPartitionAllocations = partitionAllocationStatus == "available";
+            long partitionAllocationCount = -1;
             var timer = System.Diagnostics.Stopwatch.StartNew();
             foreach (Source source in sources) Capture(source);
             double captureMilliseconds = timer.Elapsed.TotalMilliseconds;
@@ -152,7 +156,25 @@ namespace BarPromenade
             }
             double routingMilliseconds = timer.Elapsed.TotalMilliseconds;
             OrderByPriority(input);
-            List<Triangle> surface = GroundSurfacePartitioner.Partition(input, out GroundSurfacePartitioner.Statistics statistics, SurfaceBucketSize);
+            List<Triangle> surface;
+            GroundSurfacePartitioner.Statistics statistics;
+            if (recordPartitionAllocations) { partitionAllocations.Reset(); partitionAllocations.Start(); }
+            try
+            {
+                surface = GroundSurfacePartitioner.Partition(input, out statistics, SurfaceBucketSize);
+            }
+            finally
+            {
+                if (recordPartitionAllocations) partitionAllocations.Stop();
+            }
+            if (recordPartitionAllocations)
+            {
+                ProfilerRecorderSample sample = partitionAllocations.Count > 0 ? partitionAllocations.GetSample(0) : default;
+                // Partition constructs result storage even for empty input;
+                // an absent/zero sample cannot describe this measured scope.
+                if (sample.Count > 0) partitionAllocationCount = sample.Count;
+                else partitionAllocationStatus = "unavailable";
+            }
             double partitionMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
             double conformMilliseconds = timer.Elapsed.TotalMilliseconds;
@@ -183,12 +205,55 @@ namespace BarPromenade
             GameLog.Debug("city", "ground_surface_complete", GameLog.Field("sources", sources.Count),
                 GameLog.Field("sectors", SectorCount), GameLog.Field("triangles", SurfaceTriangleCount),
                 GameLog.Field("candidates", statistics.CandidatePairs), GameLog.Field("bucket_entries", statistics.BucketEntriesVisited),
+                GameLog.Field("clipped_pairs", statistics.ClippedPairs),
+                GameLog.Field("input_triangles", statistics.InputTriangles),
+                GameLog.Field("partition_allocation_status", partitionAllocationStatus),
+                GameLog.Field("partition_allocation_count", partitionAllocationCount),
                 GameLog.Field("duration_ms", BuildMilliseconds),
                 GameLog.Field("capture_ms", captureMilliseconds), GameLog.Field("paint_ms", paintMilliseconds - captureMilliseconds),
                 GameLog.Field("routing_ms", routingMilliseconds - paintMilliseconds),
                 GameLog.Field("partition_ms", partitionMilliseconds - routingMilliseconds),
                 GameLog.Field("conform_ms", conformMilliseconds - partitionMilliseconds),
                 GameLog.Field("publish_ms", BuildMilliseconds - conformMilliseconds));
+        }
+
+        private static ProfilerRecorder CreatePartitionAllocationRecorder(out string status)
+        {
+            status = "disabled";
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-bp-ground-allocations") < 0) return default;
+            status = "unavailable";
+            ProfilerRecorder recorder = default;
+            bool retained = false;
+            long calibrationCount = -1, calibrationValue = -1;
+            try
+            {
+                recorder = new ProfilerRecorder(ProfilerCategory.Memory, "GC.Alloc", 1,
+                    ProfilerRecorderOptions.WrapAroundWhenCapacityReached | ProfilerRecorderOptions.SumAllSamplesInFrame |
+                    ProfilerRecorderOptions.CollectOnlyOnCurrentThread);
+                if (!recorder.Valid) return default;
+                recorder.Start();
+                GC.KeepAlive(new byte[16]);
+                recorder.Stop();
+                if (recorder.Count > 0) recorder.GetSample(0);
+                recorder.Reset(); recorder.Start();
+                var control = new byte[16384];
+                recorder.Stop();
+                ProfilerRecorderSample positive = recorder.Count > 0 ? recorder.GetSample(0) : default;
+                GC.KeepAlive(control);
+                calibrationCount = positive.Count; calibrationValue = positive.Value;
+                if (positive.Count != 1) return default;
+                recorder.Reset();
+                status = "available";
+                retained = true;
+                return recorder;
+            }
+            catch (Exception) { return default; }
+            finally
+            {
+                if (!retained) recorder.Dispose();
+                GameLog.Debug("city", "ground_allocation_calibration", GameLog.Field("status", status),
+                    GameLog.Field("count", calibrationCount), GameLog.Field("raw_value", calibrationValue));
+            }
         }
 
         private void Capture(Source source)

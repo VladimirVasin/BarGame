@@ -19,7 +19,7 @@
 | 7 | City CPU и GC | По trace: owner-held audio geometry, сохранённые Transform рабочих точек и классификация света при регистрации. Повтор и parity/zero-GC checks пройдены. |
 | 8 | Анимация и одежда | ScarfPerformance прошёл; повторного spatial rebuild нет. Carry oracle выявил кромку ремня в клапане M65; rig-only guides учитывают сечение ленты. Guards/solver сохранены. |
 | 9 | GPU и эффекты | SSR, volumetrics и halation проверены по одному. Разница в шуме; качество сохранено. |
-| 10 | Loading и память | Stage costs, retained exterior и owner plateau измерены. Cut-workspace candidate удалён: выигрыш в шуме. Бюджеты/геометрия сохранены. |
+| 10 | Loading и память | Stage costs/owner plateau измерены; односторонний Split уменьшил GC.Alloc count. Неудачные index candidates удалены; бюджеты/геометрия прежние. |
 | 11 | Toolchain и provenance | Установленные clang/SDK проверяются ABI/DSP; source generations получают staged output; NPC damage публикуется с rollback. Semantic fingerprints меняются только при доказанном смысле. |
 | 12 | Игровые доказательства и канон | Адресные сценарии реального мира, current docs и принятый cat exception; flares coverage исправлено. |
 
@@ -98,22 +98,35 @@ Managed heap вырос ~12 MB без принудительного GC: это 
 подтвердил настоящий retained exterior roundtrip. Cold-process scene-ready
 16.76/15.69 s в разных Editor runs не считается улучшением loading.
 
-`AreaTravel_ComposesEachDestinationBeforeCompleting` с verbose stage logging
-прошёл MountainRoad → AlpineVillage → City: overlay закрывает незавершённый мир,
-time/audio pause и progress/ready/cleanup сохранены. Первый City build в процессе,
-seed 20260727: advance 15.439 s, wall 15.526 s, overhead 0.087 s; ground 4.605 s,
-ground finalization 5.376 s. Основной расход — CPU stages, а не yield overhead.
-Residential/industrial/beach sampling: 914/799/1059 ms. Finalization:
-partition 1971 ms, conform 1590 ms; cooking отдельно от mesh preparation.
+Первичная loading-приёмка: City wall 15.526 s; cut-workspace candidate
+удалён после выигрыша около 1% на фоне шума.
 
-Проверен cut-workspace candidate без per-polygon копирования street cuts.
-Границы и pool/main bit parity прошли четыре существующих terrain cases;
-vertices/indices, 492986 triangles, 78 sectors и bucket counters совпали.
-Однако ground 4.605 → 4.560 s, advance 15.439 → 15.339 s: около 1% при
-изменении стороннего world-plans stage на 2.6% и ухудшении Yard sampling.
-Убедительного выигрыша нет, candidate удалён. Budget 8/250 ms, render interval,
-partition/conform и intentional dormant City не переписывались. Эти измерения
-не означают холодный OS cache или доказанное ускорение загрузки.
+### Продолжение загрузки после 11ddc5ff
+
+`Split` переиспользует односторонний полигон. Исходные >=0/<0, mixed math и
+порядок сохранены; callers только читают списки. Глобальный cache/pool не нужен.
+Неудачные value/fine/packed-index candidates удалены; исходный индекс сохранён.
+
+`-bp-ground-allocations` включает recorder только на синхронный Partition;
+контрольная аллокация обязана дать Count=1. Единица измерения — событие
+[GC.Alloc](https://docs.unity.com/en-us/engine/6000.3/script-reference/unity/profiling/profilerrecordersample).
+Недоступный счётчик обозначается -1; вне диагностики recorder выключен.
+
+| Профилированный scope | Исходный Split | Одностороннее переиспользование |
+| --- | --- | --- |
+| GC.Alloc count | 3534023 | 2573924 (−27.17%) |
+| Partition, ms | 2030.24 | 1933.95 |
+
+Recorder добавляет измерительную нагрузку. Общего ускорения City эти окна не
+доказывают; получен измеренный выигрыш в числе выделений Partition.
+Сохранены 235365 inputs, 201900 clipped pairs, 547376 candidates,
+23360714 bucket visits, 492986 triangles и 78 sectors. Budget 8/250 ms,
+render interval, Conform и intentional dormant City прежние.
+
+`GroundSurfacePartitionerTests`/`CityGroundSurfaceSystemTests`: 22 Passed;
+winding, full/empty cuts, атрибуты, priority, коллизии/материалы/шаги сохранены.
+AreaTravel с recorder и без него прошёл. Без recorder: Partition
+1975→1876 ms; City wall 15318→15080 ms (локальные Editor/M5 runs).
 
 ## Именованные доказательства
 
@@ -145,10 +158,9 @@ partition/conform и intentional dormant City не переписывались.
   Windows binary не пересобирался; semantic fingerprints не ослаблялись ради
   отсутствующего измеренного выигрыша.
 
-Последние результаты по каждому из 13 различных PlayMode cases — Passed,
-без skipped в selections. Это совокупность адресных запусков с повтором только
-исправленных failures, не новая общая selection. Основная EditMode selection —
-53 Passed; отдельные terrain cases относятся к затем отклонённому candidate.
+Исходная приёмка: 13 различных PlayMode cases — Passed, без skipped в selections;
+основная EditMode selection — 53 Passed. Terrain cases относятся к удалённому
+candidate. Зелёные случаи не расширялись в полные suites.
 `check-docs`, `check-workspace` и `git diff --check` прошли. Временные
 frames/audio/trace/staging удалены; сохранены named checks и эта сводка.
 Unity serialization noise без изменения import settings удалён из diff.

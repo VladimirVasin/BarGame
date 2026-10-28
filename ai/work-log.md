@@ -8,7 +8,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 Stairwell/transition rails/hardware/hand docks
 retain ramps/pivots/cameras. STAIRWELL_INTERIOR_ART_DETERMINISM_OK,
 StairwellDoorHandleContacts and Scene_FeedingConsumesOneStewAndCompletesPairedAnimation
-passed; frames reviewed. Room audio excludes the UI emitter.
+passed; room audio excludes UI emitter.
 
 City coastal/cemetery/pier use fixed-metre meshes; gazebo steps clear
 deck, clock hands read, cemetery keeps church cross-alley. CityCatalogAndPassage,
@@ -26,13 +26,10 @@ and AreaTravel_ComposesEachDestinationBeforeCompleting passed; views reviewed.
 CCTV +Z tracking keeps child poses; lens probes/views passed.
 Input System replaces Both; shared pointer/capture/scroll/Unicode retains IMGUI.
 InputSystemUiPlayModeTests passed menus/focus/Russian editing/function keys;
-MainMenuManualNative covered menus/aspects; frames reviewed.
 CombatLaboratoryArtVisuals, CombatWarehouseDetailVisuals, check-docs,
 check-workspace/scoped diff passed; temporary output removed/worktrees archived.
 
 City streets share stations/coatings/terrain; Blender topology replaces donors;
-Home copies terrain. Indexed support grounds walkers/
-bus/benches/fences; weather/steps/cuts keep owners.
 CITY STREET PROFILE BUILD OK, Support_GradedStreetAndPavementShareJunctionCapStations,
 SharedStreetBoundary_TerrainMeshAndSamplerMeetPavingWithoutGap,
 FinalizeSurface_CombinedStreetRetainsRegionMaterialFootstepAndPriority and
@@ -50,7 +47,11 @@ ScarfPerformance, inventory/shop/retained-City/cableway proofs passed.
 Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs and MountainRoadCityTunnel
 passed: ribbon clears M65; disable keeps palm while releasing clip.
 macOS native preflight/ABI/DSP and asset_pipeline rollback passed. Details:
-project-audit-2026-10-28.md and audit-remediation-plan.md.
+audit-remediation-plan.md.
+
+Ground partition reuses one-sided polygons; mixed cuts stay identical.
+GroundSurfacePartitionerTests/CityGroundSurfaceSystemTests and
+AreaTravel_ComposesEachDestinationBeforeCompleting passed; GC probe calibrated.
 
 ## 2026-10-27
 

@@ -403,9 +403,23 @@ namespace BarPromenade
         private static void Split(List<Vertex> polygon, Vector2 start, Vector2 end,
             out List<Vertex> inside, out List<Vertex> outside)
         {
+            Vector2 axis = end - start;
+            bool allInside = true, allOutside = true;
+            foreach (Vertex vertex in polygon)
+            {
+                double distance = Cross(axis, XZ(vertex.Position) - start);
+                allInside &= distance >= 0;
+                allOutside &= distance < 0;
+                if (!allInside && !allOutside) break;
+            }
+            // Split callers only read polygons. Reuse their original vertex
+            // order and attributes when this edge does not divide the face.
+            if (allInside)
+            { inside = polygon; outside = new List<Vertex>(); return; }
+            if (allOutside)
+            { inside = new List<Vertex>(); outside = polygon; return; }
             inside = new List<Vertex>(polygon.Count + 1);
             outside = new List<Vertex>(polygon.Count + 1);
-            Vector2 axis = end - start;
             Vertex previous = polygon[polygon.Count - 1];
             double previousDistance = Cross(axis, XZ(previous.Position) - start);
             foreach (Vertex current in polygon)

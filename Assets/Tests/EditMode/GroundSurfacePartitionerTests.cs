@@ -6,15 +6,23 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class GroundSurfacePartitionerTests
     {
-        [TestCase(.5f)]
-        [TestCase(2f)]
-        [TestCase(8f)]
-        public void Partition_PriorityRemovesOverlapAndRetainsSourcePlaneAndCoordinates(float bucketSize)
+        [TestCase(.5f, false)]
+        [TestCase(.5f, true)]
+        [TestCase(2f, false)]
+        [TestCase(2f, true)]
+        [TestCase(8f, false)]
+        [TestCase(8f, true)]
+        public void Partition_PriorityRemovesOverlapAndRetainsSourcePlaneAndCoordinates(float bucketSize, bool reverse)
         {
             var upper = new GroundSurfacePartitioner.Triangle(
                 Vertex(.25f, .25f, 10f), Vertex(.25f, .75f, 10f), Vertex(.75f, .25f, 10f), 0);
             var lower = new GroundSurfacePartitioner.Triangle(
                 Vertex(0f, 0f), Vertex(0f, 2f), Vertex(2f, 0f), 1);
+            if (reverse)
+            {
+                upper = new GroundSurfacePartitioner.Triangle(upper.C, upper.B, upper.A, upper.Surface);
+                lower = new GroundSurfacePartitioner.Triangle(lower.C, lower.B, lower.A, lower.Surface);
+            }
             List<GroundSurfacePartitioner.Triangle> result = GroundSurfacePartitioner.Partition(
                 new[] { upper, lower }, out GroundSurfacePartitioner.Statistics statistics, bucketSize);
 
@@ -27,6 +35,13 @@ namespace BarPromenade.Tests.EditMode
                 "Raw bucket visits include each candidate and its repeated bucket entries.");
             foreach (GroundSurfacePartitioner.Triangle triangle in result)
             {
+                GroundSurfacePartitioner.Triangle original = triangle.Surface == upper.Surface ? upper : lower;
+                float expectedWinding = Vector3.Cross(original.B.Position - original.A.Position,
+                    original.C.Position - original.A.Position).y;
+                float actualWinding = Vector3.Cross(triangle.B.Position - triangle.A.Position,
+                    triangle.C.Position - triangle.A.Position).y;
+                Assert.That(actualWinding * expectedWinding, Is.GreaterThan(0f),
+                    "Partitioned faces must retain their input winding for either support contour orientation.");
                 if (triangle.Surface != 1) continue;
                 foreach (GroundSurfacePartitioner.Vertex vertex in new[] { triangle.A, triangle.B, triangle.C })
                 {
@@ -123,6 +138,19 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(vertex.RoadCoordinates.x, Is.EqualTo(point.x));
                         Assert.That(vertex.Color.g, Is.EqualTo(point.z / 4f));
                     }
+
+            var enclosing = new Rect(-1f, -1f, 4f, 4f);
+            List<GroundSurfacePartitioner.Triangle> contained = GroundSurfacePartitioner.ClipToRect(source, enclosing);
+            Assert.That(contained.Count, Is.EqualTo(1));
+            Assert.That(contained[0], Is.EqualTo(source), "One-sided inside clips retain the original face and every vertex attribute.");
+            Assert.That(GroundSurfacePartitioner.SubtractRect(source, enclosing), Is.Empty,
+                "A fully contained face has no outside polygon.");
+
+            var disjoint = new Rect(3f, 3f, 1f, 1f);
+            Assert.That(GroundSurfacePartitioner.ClipToRect(source, disjoint), Is.Empty);
+            List<GroundSurfacePartitioner.Triangle> retained = GroundSurfacePartitioner.SubtractRect(source, disjoint);
+            Assert.That(retained.Count, Is.EqualTo(1));
+            Assert.That(retained[0], Is.EqualTo(source), "A disjoint cut retains the original face without changing its data.");
         }
 
         [TestCase(false)]
