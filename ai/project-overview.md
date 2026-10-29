@@ -87,8 +87,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Ground:1.5m asphalt;shared courts/light/seats/carrier;
-  4POIs/Route01;dog3/owners2.
+  Courts/light/seats/carrier;Route01;dog3/owners2.
+  NPC192/≤36/cache48;Home5/2.
   Eight industrial functions own roofs/equipment/surfaces and pooled task light;
   substation/municipal/port workshops remain passive.
   First unpaused dock entry starts finite port→factory→shop supply once;

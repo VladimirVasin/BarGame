@@ -64,6 +64,7 @@ namespace BarPromenade
         private Quaternion modelBaseLocalRotation;
         private float animationSpeed = 0.91f;
         private float targetWalkWeight;
+        private float pendingEvaluationTime;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
         private float archetypeGroundTrim;
@@ -91,6 +92,11 @@ namespace BarPromenade
         public AnimationClip AuthoredActionClip => authoredActionClip;
         public float AuthoredActionWeight => authoredActionWeight;
 
+        /// <summary>Minimum interval between ordinary locomotion evaluations.
+        /// World movement keeps its own rate; skipped animation time is consumed
+        /// at the next evaluation. Seats and authored actions always evaluate.</summary>
+        public float MinimumEvaluationInterval { get; set; }
+
         /// <summary>The seat this walker is aligned to, or <c>null</c> on
         /// the pavement.</summary>
         public Transform SeatAnchor => seatAnchor;
@@ -105,8 +111,8 @@ namespace BarPromenade
         /// <summary>Whether this rig has a head bone the glance can turn.</summary>
         public bool HasAttentionHead => attention.HasHead;
 
-        /// <summary>The sanitised delta the graph was last evaluated with -
-        /// already accelerated for a distant walker.</summary>
+        /// <summary>The elapsed animation time consumed by the last evaluation,
+        /// including ordinary locomotion ticks accumulated by distance LOD.</summary>
         public float LastAdvanceDeltaTime { get; private set; }
 
         /// <summary>
@@ -221,6 +227,8 @@ namespace BarPromenade
             float phase = IsFinite(phase01)
                 ? Mathf.Repeat(phase01, 1f)
                 : 0f;
+            pendingEvaluationTime = 0f;
+            MinimumEvaluationInterval = 0f;
             idlePlayable.SetSpeed(1d);
             walkPlayable.SetSpeed(animationSpeed);
             idlePlayable.SetTime(phase * activeIdleClip.length);
@@ -274,6 +282,7 @@ namespace BarPromenade
                 return false;
             }
 
+            FlushPendingEvaluation();
             seatAnchor = anchor;
             // Imported FBX empty axes need not match the cushion plane.
             // The owner supplies its physical normal; retain it in anchor
@@ -323,6 +332,7 @@ namespace BarPromenade
                 return false;
             }
 
+            FlushPendingEvaluation();
             EnsureAuthoredActionPlayable(clip);
             authoredActionPlayable.SetTime(
                 Mathf.Clamp01(normalizedTime) * clip.length);
@@ -340,6 +350,7 @@ namespace BarPromenade
                 return;
             }
 
+            FlushPendingEvaluation();
             authoredActionWeight = 0f;
             ApplyMixerWeights();
             EvaluateGraph(0f);
@@ -408,10 +419,32 @@ namespace BarPromenade
                 ApplyMixerWeights();
             }
 
-            EvaluateGraph(safeDeltaTime);
-            attention.Apply(safeDeltaTime);
-            LastAdvanceDeltaTime = safeDeltaTime;
-            Advanced?.Invoke(safeDeltaTime);
+            pendingEvaluationTime += safeDeltaTime;
+            float interval = IsFinite(MinimumEvaluationInterval)
+                ? Mathf.Max(0f, MinimumEvaluationInterval) : 0f;
+            if (!immediately && !IsSeated && authoredActionWeight <= 0f &&
+                interval > 0f && pendingEvaluationTime < interval)
+                return;
+
+            float elapsed = pendingEvaluationTime;
+            pendingEvaluationTime = 0f;
+            EvaluateAnimation(elapsed);
+        }
+
+        private void FlushPendingEvaluation()
+        {
+            if (pendingEvaluationTime <= 0f) return;
+            float elapsed = pendingEvaluationTime;
+            pendingEvaluationTime = 0f;
+            EvaluateAnimation(elapsed);
+        }
+
+        private void EvaluateAnimation(float elapsed)
+        {
+            EvaluateGraph(elapsed);
+            attention.Apply(elapsed);
+            LastAdvanceDeltaTime = elapsed;
+            Advanced?.Invoke(elapsed);
         }
 
         public void Shutdown()
@@ -438,6 +471,8 @@ namespace BarPromenade
             authoredActionWeight = 0f;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
+            pendingEvaluationTime = 0f;
+            MinimumEvaluationInterval = 0f;
             archetypeGroundTrim = 0f;
             archetypeGroundTrimResolved = false;
             legLayer.Dispose();
@@ -692,6 +727,8 @@ namespace BarPromenade
             IsMoving = false;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
+            pendingEvaluationTime = 0f;
+            MinimumEvaluationInterval = 0f;
             authoredActionWeight = 0f;
             if (locomotionMixer.IsValid())
             {

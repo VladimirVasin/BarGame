@@ -41,7 +41,10 @@ namespace BarPromenade
         SittingOnBench,
 
         /// <summary>Scripted walk back onto the pavement network.</summary>
-        ReturningFromBench
+        ReturningFromBench,
+
+        /// <summary>Standing at a scheduled destination until the next task.</summary>
+        WaitingAtDestination
     }
 
     [RequireComponent(typeof(CharacterController))]
@@ -104,6 +107,7 @@ namespace BarPromenade
         private float? forcedCrosswalkRoll;
         private Vector3? approachTarget;
         private IReadOnlyList<float> approachNodeDistances;
+        private IReadOnlyList<float> residentNodeDistances;
         private Vector3? waitSlot;
         private Vector3 waitFacing = Vector3.forward;
         private IReadOnlyList<float> stopApproachNodeDistances;
@@ -138,6 +142,9 @@ namespace BarPromenade
         public Vector3 LastDisplacement { get; private set; }
         public int PreviousNodeIndex => previousNodeIndex;
         public int TargetNodeIndex => targetNodeIndex;
+        public int ResidentDestinationNode { get; private set; } = -1;
+        public bool IsAtResidentDestination =>
+            MotionState == CityPedestrianMotionState.WaitingAtDestination;
         public float AgentRadius => agentRadius;
         public string SpawnAnchorId { get; private set; } = string.Empty;
         public string DesignId => presentation != null &&
@@ -191,6 +198,38 @@ namespace BarPromenade
             requestedLateralBias = IsFinite(lateralBias)
                 ? Mathf.Clamp(lateralBias, -1f, 1f)
                 : 0f;
+        }
+
+        /// <summary>Assigns an ordinary street destination. Bus and bench
+        /// ownership retain priority; resuming the graph resumes this task.</summary>
+        public void SetResidentDestination(int node, IReadOnlyList<float> distances)
+        {
+            if (plan == null || node < 0 || node >= plan.Nodes.Count)
+                throw new ArgumentOutOfRangeException(nameof(node));
+            if (distances == null || distances.Count != plan.Nodes.Count)
+                throw new ArgumentException("Destination distances must cover the pedestrian graph.", nameof(distances));
+
+            residentNodeDistances = distances;
+            if (ResidentDestinationNode == node) return;
+            ResidentDestinationNode = node;
+            if (MotionState == CityPedestrianMotionState.WaitingAtDestination)
+            {
+                MotionState = CityPedestrianMotionState.Walking;
+                blockedTime = 0f;
+                IsYielding = false;
+            }
+        }
+
+        public void ClearResidentDestination()
+        {
+            ResidentDestinationNode = -1;
+            residentNodeDistances = null;
+            if (MotionState == CityPedestrianMotionState.WaitingAtDestination)
+            {
+                MotionState = CityPedestrianMotionState.Walking;
+                blockedTime = 0f;
+                IsYielding = false;
+            }
         }
 
         public void Initialize(
@@ -397,7 +436,7 @@ namespace BarPromenade
                 approachNodeDistances = null;
                 presentation.SetAttentionFocus(attention.Resolve(
                     transform.position, transform.eulerAngles.y, attentionCandidate));
-                presentation.Advance(safeDeltaTime, false);
+                presentation.Advance(safeDeltaTime, false, true);
                 return;
             }
 
@@ -1113,6 +1152,36 @@ namespace BarPromenade
                 return;
             }
 
+            if (MotionState == CityPedestrianMotionState.Walking &&
+                ResidentDestinationNode >= 0 && residentNodeDistances != null)
+            {
+                if (reachedNode == ResidentDestinationNode)
+                {
+                    MotionState = CityPedestrianMotionState.WaitingAtDestination;
+                    blockedTime = 0f;
+                    lateralOffset = 0f;
+                    IsYielding = false;
+                    return;
+                }
+
+                // A destination can be a dead end or lie behind the walker.
+                // Unlike roaming, use every link, including the one just
+                // traversed, and measure curved links by their physical path.
+                int destinationLink = SelectResidentDestinationLink(reachedNode);
+                if (destinationLink < 0)
+                {
+                    targetNodeIndex = -1;
+                    MotionState = CityPedestrianMotionState.RouteEnded;
+                    return;
+                }
+
+                CityPedestrianLink next = plan.Links[destinationLink];
+                previousNodeIndex = reachedNode;
+                targetNodeIndex = next.Other(reachedNode);
+                incomingLinkKind = next.Kind;
+                return;
+            }
+
             normalCandidates.Clear();
             crosswalkCandidates.Clear();
             IReadOnlyList<int> linkIndices =
@@ -1175,6 +1244,30 @@ namespace BarPromenade
             previousNodeIndex = reachedNode;
             targetNodeIndex = selected.Other(reachedNode);
             incomingLinkKind = selected.Kind;
+        }
+
+        private int SelectResidentDestinationLink(int reachedNode)
+        {
+            int selected = -1;
+            float bestDistance = float.PositiveInfinity;
+            IReadOnlyList<int> links = plan.GetLinkIndices(reachedNode);
+            for (int index = 0; index < links.Count; index++)
+            {
+                CityPedestrianLink link = plan.Links[links[index]];
+                int other = link.Other(reachedNode);
+                float remaining = residentNodeDistances[other];
+                if (!IsFinite(remaining)) continue;
+                Vector3 offset = plan.Nodes[other].Position - plan.Nodes[reachedNode].Position;
+                offset.y = 0f;
+                float distance = (link.Path?.Length ?? offset.magnitude) + remaining;
+                if (distance < bestDistance - .0001f)
+                {
+                    bestDistance = distance;
+                    selected = links[index];
+                }
+            }
+
+            return selected;
         }
 
         private bool TryGetDirectWaitSlot(Vector3 current, out Vector3 slot)
@@ -1372,7 +1465,7 @@ namespace BarPromenade
 
         private Vector3 GetTravelDirection()
         {
-            if (plan == null || targetNodeIndex < 0)
+            if (plan == null || targetNodeIndex < 0 || IsAtResidentDestination)
             {
                 return Vector3.zero;
             }
@@ -1404,6 +1497,8 @@ namespace BarPromenade
             forcedCrosswalkRoll = null;
             approachTarget = null;
             approachNodeDistances = null;
+            ResidentDestinationNode = -1;
+            residentNodeDistances = null;
             stopApproachNodeDistances = null;
             waitSlot = null;
             waitFacing = Vector3.forward;

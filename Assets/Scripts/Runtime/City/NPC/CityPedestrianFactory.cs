@@ -84,6 +84,32 @@ namespace BarPromenade
 
             CityPedestrianAssetRegistry donor =
                 CityPedestrianResources.LoadStreetClipDonor();
+            if (profile.UsesResidentSchedules)
+            {
+                // Resolve the world allocation once, rather than revalidating
+                // the complete wardrobe/catalog on every streamed body.
+                var assignments = new DefaultNpcPopulation.Assignment[DefaultNpcPopulation.PedestrianCount];
+                foreach (DefaultNpcPopulation.Assignment assignment in DefaultNpcPopulation.GetAssignments())
+                {
+                    if (assignment.CharacterId.StartsWith(DefaultNpcPopulation.PedestrianIdPrefix, StringComparison.Ordinal) &&
+                        int.TryParse(assignment.CharacterId.Substring(DefaultNpcPopulation.PedestrianIdPrefix.Length), out int resident))
+                        assignments[resident] = assignment;
+                }
+                return Create(
+                    parent,
+                    plan,
+                    player,
+                    walkableArea,
+                    poolRoot => new List<CityPedestrianAssetRegistry>(),
+                    nightModeProvider,
+                    profile,
+                    true,
+                    (poolRoot, residentIndex) => CreateResidentPresentation(
+                        poolRoot,
+                        assignments[residentIndex],
+                        donor));
+            }
+
             return Create(
                 parent,
                 plan,
@@ -208,7 +234,8 @@ namespace BarPromenade
             Func<Transform, List<CityPedestrianAssetRegistry>> buildPool,
             Func<bool> nightModeProvider,
             CityPedestrianPopulationProfile profile,
-            bool requireCatalogComposition)
+            bool requireCatalogComposition,
+            Func<Transform, int, CityPedestrianPresentation> createResidentPresentation = null)
         {
             if (parent == null)
             {
@@ -273,7 +300,8 @@ namespace BarPromenade
 
                 List<CityPedestrianAssetRegistry> pooledBodies =
                     buildPool(modelPoolRoot.transform);
-                if (slotCount > 0 && pooledBodies.Count == 0)
+                if (slotCount > 0 && pooledBodies.Count == 0 &&
+                    createResidentPresentation == null)
                 {
                     throw new InvalidOperationException(
                         "At least one city pedestrian presentation is " +
@@ -285,134 +313,25 @@ namespace BarPromenade
                 for (int index = 0; index < pooledBodies.Count; index++)
                 {
                     CityPedestrianAssetRegistry registry = pooledBodies[index];
-                    if (registry == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"City pedestrian pooled body {index + 1} is " +
-                            "missing its registry.");
-                    }
-
-                    ValidatePassivePresentation(registry);
-                    if (string.IsNullOrWhiteSpace(registry.DesignId))
-                    {
-                        throw new InvalidOperationException(
-                            "Every city pedestrian presentation requires a " +
-                            "stable design ID.");
-                    }
-
-                    CityKettleHatRigAnchors kettle =
-                        registry.GetComponent<CityKettleHatRigAnchors>();
-                    if (requireCatalogComposition)
-                    {
-                        if (!CityPedestrianResources.TryGetArchetype(
-                                registry.DesignId,
-                                out CityPedestrianArchetype archetype) ||
-                            !CityPedestrianResources.Roams(registry.DesignId))
-                        {
-                            throw new InvalidOperationException(
-                                $"Pedestrian design '{registry.DesignId}' " +
-                                "is not a street design: only default NPC " +
-                                "catalog models roam.");
-                        }
-
-                        // The boil is declared twice on purpose - on the
-                        // catalog entry and on the prefab's rig anchors -
-                        // and a prefab that carries one without the other
-                        // is a build that went wrong, not a design choice.
-                        if (archetype.CarriesBoilingKettle != (kettle != null))
-                        {
-                            throw new InvalidOperationException(
-                                $"Pedestrian design '{registry.DesignId}' " +
-                                (archetype.CarriesBoilingKettle
-                                    ? "declares a boiling kettle but its " +
-                                      "prefab carries no " +
-                                      nameof(CityKettleHatRigAnchors) + "."
-                                    : "carries " +
-                                      nameof(CityKettleHatRigAnchors) +
-                                      " but declares no boiling kettle."));
-                        }
-
-                        int existing = 0;
-                        for (int previous = 0;
-                             previous < presentations.Count;
-                             previous++)
-                        {
-                            if (string.Equals(
-                                    presentations[previous]
-                                        .Registry.DesignId,
-                                    registry.DesignId,
-                                    StringComparison.Ordinal))
-                            {
-                                existing++;
-                            }
-                        }
-
-                        // A design that carries a working light declares one
-                        // pooled instance, which is what keeps the worn lights
-                        // in the world bounded now that the pool repeats
-                        // ordinary designs.
-                        if (existing >= archetype.MaximumPoolInstances)
-                        {
-                            throw new InvalidOperationException(
-                                $"Pedestrian design '{registry.DesignId}' " +
-                                "allows at most " +
-                                $"{archetype.MaximumPoolInstances} pooled " +
-                                "instance(s).");
-                        }
-                    }
-
-                    // A population body already names itself after its
-                    // permanent identity; a prefab copy is numbered here.
-                    if (registry.GetComponent<CityPedestrianDefaultNpcBody>() == null)
-                    {
-                        registry.gameObject.name =
-                            $"Pedestrian Model {index + 1:00} " +
-                            $"({registry.DesignId})";
-                    }
-
-                    // An anonymous body carries nothing in its hands by
-                    // construction: every hand prop is a separate prefab a
-                    // role attaches through CityPedestrianHandProps, so
-                    // there is no beater to strip here any more.
-                    CityPedestrianPresentation presentation =
-                        registry.GetComponent<
-                            CityPedestrianPresentation>();
-                    if (presentation == null)
-                    {
-                        presentation = registry.gameObject.AddComponent<
-                            CityPedestrianPresentation>();
-                    }
-
-                    presentation.Initialize(registry);
-                    if (kettle != null)
-                    {
-                        // Every kettle instance starts with its lid seated,
-                        // whether or not this run gives it an effect: the
-                        // prefab's pivot is identity by contract and the
-                        // pool must never inherit a lid left mid-vent.
-                        kettle.ResetLid();
-                        CityKettleHatBoilEffect boil =
-                            registry.GetComponent<CityKettleHatBoilEffect>();
-                        if (boil == null)
-                        {
-                            boil = registry.gameObject.AddComponent<
-                                CityKettleHatBoilEffect>();
-                        }
-
-                        boil.Initialize(presentation, kettle, (uint)index);
-                    }
-
-                    presentation.gameObject.SetActive(false);
-                    presentations.Add(presentation);
+                    presentations.Add(InitializePresentation(
+                        registry,
+                        index,
+                        requireCatalogComposition,
+                        presentations));
                 }
 
-                if (requireCatalogComposition)
+                if (requireCatalogComposition && createResidentPresentation == null)
                 {
                     ValidateCatalogCoverage(presentations);
                 }
 
                 CityPedestrianDirector director =
                     runtimeRoot.AddComponent<CityPedestrianDirector>();
+                Func<int, CityPedestrianPresentation> residentPresentationFactory =
+                    createResidentPresentation != null
+                        ? residentIndex => createResidentPresentation(
+                            modelPoolRoot.transform, residentIndex)
+                        : null;
                 director.Initialize(
                     plan,
                     actors,
@@ -420,7 +339,8 @@ namespace BarPromenade
                     player,
                     modelPoolRoot.transform,
                     nightModeProvider,
-                    profile);
+                    profile,
+                    residentPresentationFactory);
                 return director;
             }
             catch
@@ -428,6 +348,158 @@ namespace BarPromenade
                 CityPedestrianResources.DestroyObject(runtimeRoot);
                 throw;
             }
+        }
+
+        private static CityPedestrianPresentation CreateResidentPresentation(
+            Transform poolRoot,
+            DefaultNpcPopulation.Assignment assignment,
+            CityPedestrianAssetRegistry clipDonor)
+        {
+            CityPedestrianAssetRegistry registry = null;
+            try
+            {
+                registry = CityPedestrianDefaultNpcBody.Create(
+                    poolRoot,
+                    assignment,
+                    clipDonor);
+                return InitializePresentation(registry, 0, true, null);
+            }
+            catch
+            {
+                if (registry != null)
+                {
+                    CityPedestrianResources.DestroyObject(registry.gameObject);
+                }
+
+                throw;
+            }
+        }
+
+        private static CityPedestrianPresentation InitializePresentation(
+            CityPedestrianAssetRegistry registry,
+            int index,
+            bool requireCatalogComposition,
+            IReadOnlyList<CityPedestrianPresentation> existingPresentations)
+        {
+            if (registry == null)
+            {
+                throw new InvalidOperationException(
+                    $"City pedestrian pooled body {index + 1} is " +
+                    "missing its registry.");
+            }
+
+            ValidatePassivePresentation(registry);
+            if (string.IsNullOrWhiteSpace(registry.DesignId))
+            {
+                throw new InvalidOperationException(
+                    "Every city pedestrian presentation requires a " +
+                    "stable design ID.");
+            }
+
+            CityKettleHatRigAnchors kettle =
+                registry.GetComponent<CityKettleHatRigAnchors>();
+            if (requireCatalogComposition)
+            {
+                if (!CityPedestrianResources.TryGetArchetype(
+                        registry.DesignId,
+                        out CityPedestrianArchetype archetype) ||
+                    !CityPedestrianResources.Roams(registry.DesignId))
+                {
+                    throw new InvalidOperationException(
+                        $"Pedestrian design '{registry.DesignId}' " +
+                        "is not a street design: only default NPC " +
+                        "catalog models roam.");
+                }
+
+                // The boil is declared twice on purpose - on the
+                // catalog entry and on the prefab's rig anchors -
+                // and a prefab that carries one without the other
+                // is a build that went wrong, not a design choice.
+                if (archetype.CarriesBoilingKettle != (kettle != null))
+                {
+                    throw new InvalidOperationException(
+                        $"Pedestrian design '{registry.DesignId}' " +
+                        (archetype.CarriesBoilingKettle
+                            ? "declares a boiling kettle but its " +
+                              "prefab carries no " +
+                              nameof(CityKettleHatRigAnchors) + "."
+                            : "carries " +
+                              nameof(CityKettleHatRigAnchors) +
+                              " but declares no boiling kettle."));
+                }
+
+                int existing = 0;
+                for (int previous = 0;
+                     previous < (existingPresentations != null ? existingPresentations.Count : 0);
+                     previous++)
+                {
+                    if (string.Equals(
+                            existingPresentations[previous]
+                                .Registry.DesignId,
+                            registry.DesignId,
+                            StringComparison.Ordinal))
+                    {
+                        existing++;
+                    }
+                }
+
+                // A design that carries a working light declares one
+                // pooled instance, which is what keeps the worn lights
+                // in the world bounded now that the pool repeats
+                // ordinary designs.
+                if (existing >= archetype.MaximumPoolInstances)
+                {
+                    throw new InvalidOperationException(
+                        $"Pedestrian design '{registry.DesignId}' " +
+                        "allows at most " +
+                        $"{archetype.MaximumPoolInstances} pooled " +
+                        "instance(s).");
+                }
+            }
+
+            // A population body already names itself after its
+            // permanent identity; a prefab copy is numbered here.
+            if (registry.GetComponent<CityPedestrianDefaultNpcBody>() == null)
+            {
+                registry.gameObject.name =
+                    $"Pedestrian Model {index + 1:00} " +
+                    $"({registry.DesignId})";
+            }
+
+            // An anonymous body carries nothing in its hands by
+            // construction: every hand prop is a separate prefab a
+            // role attaches through CityPedestrianHandProps, so
+            // there is no beater to strip here any more.
+            CityPedestrianPresentation presentation =
+                registry.GetComponent<
+                    CityPedestrianPresentation>();
+            if (presentation == null)
+            {
+                presentation = registry.gameObject.AddComponent<
+                    CityPedestrianPresentation>();
+            }
+
+            presentation.Initialize(registry);
+            if (kettle != null)
+            {
+                // Every kettle instance starts with its lid seated,
+                // whether or not this run gives it an effect: the
+                // prefab's pivot is identity by contract and the
+                // pool must never inherit a lid left mid-vent.
+                kettle.ResetLid();
+                CityKettleHatBoilEffect boil =
+                    registry.GetComponent<CityKettleHatBoilEffect>();
+                if (boil == null)
+                {
+                    boil = registry.gameObject.AddComponent<
+                        CityKettleHatBoilEffect>();
+                }
+
+                boil.Initialize(presentation, kettle, (uint)index);
+            }
+
+            presentation.gameObject.SetActive(false);
+            return presentation;
         }
 
         private static void ValidateCatalogCoverage(

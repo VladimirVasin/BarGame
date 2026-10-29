@@ -42,14 +42,15 @@ namespace BarPromenade
         public const int FairVisitorCount = 3;
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
         /// <summary>
-        /// The street pool since 2026-09-16: one permanent identity per pooled
-        /// City walker, so a repeat encounter meets the same person. They declare
+        /// The street population: permanent identities outlive the smaller
+        /// presentation cache, so a repeat encounter meets the same person. They declare
         /// no model - <see cref="AnyCatalogModel"/> - and take the least-used
         /// catalog model, which is how a model added to <see cref="DefaultNpcCatalog"/>
         /// joins the pavement without a registration here.
         /// </summary>
         public const string PedestrianIdPrefix = "city.pedestrian.";
-        public static int PedestrianCount => CityPedestrianPopulationProfile.City.PoolSize;
+        private const int OriginalPedestrianCount = 13;
+        public static int PedestrianCount => CityResidentLifeRules.ResidentCount;
         /// <summary>A character whose model the population picks from the whole catalog.</summary>
         public const string AnyCatalogModel = null;
 
@@ -137,8 +138,8 @@ namespace BarPromenade
         public static string PedestrianId(int index)
         {
             if (index < 0 || index >= PedestrianCount)
-                throw new ArgumentOutOfRangeException(nameof(index), "The street pool holds " + PedestrianCount + " permanent walkers.");
-            return PedestrianIdPrefix + index.ToString("00");
+                throw new ArgumentOutOfRangeException(nameof(index), "The street population holds " + PedestrianCount + " permanent walkers.");
+            return PedestrianIdPrefix + index.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -282,8 +283,27 @@ namespace BarPromenade
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
-            roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            // Preserve the complete original allocation order, including the
+            // Home balcony's first eight walkers. Additional residents allocate
+            // after the existing cast rather than reshuffling its appearances.
+            roster.Sort((a, b) =>
+            {
+                bool addedA = IsAdditionalPedestrian(a.Id);
+                bool addedB = IsAdditionalPedestrian(b.Id);
+                return addedA != addedB
+                    ? (addedA ? 1 : -1)
+                    : string.CompareOrdinal(a.Id, b.Id);
+            });
             return roster.ToArray();
+        }
+
+        private static bool IsAdditionalPedestrian(string characterId)
+        {
+            return characterId.StartsWith(PedestrianIdPrefix, StringComparison.Ordinal) &&
+                int.TryParse(characterId.Substring(PedestrianIdPrefix.Length),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out int index) &&
+                index >= OriginalPedestrianCount;
         }
 
         public static CharacterDefinition GetCharacter(string characterId)

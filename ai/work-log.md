@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
+City residents follow seeded calendar destinations and hour-dependent caps;
+logical routes continue without bodies. Lazy identity cache, local peer index
+and animation cadence bound presentation; Home profile retained. CityResidentWorldTests/CityResidentLife passed; frames reviewed.
+
 City body/wing/service perimeters replace soil/lawn with wet asphalt,
 retaining hard surfaces/sand/gardens, weather/steps and Home parity. Lodge
 repaint survives grave changes; low grass excluded. CityBuildingPerimeters

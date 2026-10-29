@@ -746,31 +746,27 @@ cemetery:own interiors/returns.
   suppress; overlap priority is active interaction→nearest;
 - one radius-safe sidewalk/crosswalk/Courtyard graph; courtyard knots use
   exact free ground holes/heights and .35 m radius. Street spawn anchors stay.
-  At most two low-poly walkers are
-  active near the player: one randomized runtime event activates one slot at a
-  randomly ranked obstacle-safe anchor in the preferred fog-hidden `76-86 m`
-  band. If that band contains no anchor in a graph component capable of reaching
-  the player, a linked dense-fog fallback may use `32-86 m`. The
-  first event waits `1.25-7.5 s`; every later slot or replacement waits its own
-  `3.5-12.5 s`, so the two walkers are staggered. Each walks
-  forward through available turns, has an independent 50% choice at a zebra,
-  and is recycled only after moving beyond `88 m` from the hero. Before a fresh
-  walker first reaches `24 m`, eligible non-backtracking turns follow the
-  shortest physical Path.Length graph distance to the closest node in that
-  component; after that first encounter the guidance stays
-  off and ordinary random roaming resumes. By day, its hidden distant
-  simulation smoothly accelerates from authored pace at `32 m`
-  to at most `2.75x` from `76 m`, bringing an approaching walker inward sooner
-  and sending an outward walker back to the pool sooner. Camera
-  direction, frustum membership and far-clip settings do not participate in
-  spawn or recycling. Before `06:00` and from `19:00`, fresh population is
-  capped at one slot and uses much longer `15-35 s` initial and `30-70 s`
-  replacement delays without distant acceleration; the clock never removes an
-  already active dusk walker.
-  Every pooled body is the permanent default NPC `city.pedestrian.i` (`13`
-  City, first `8` Home): model least-used over the catalog, street wear,
-  own village gait; the weigher lends sit and guard/shove. The six library
-  residents left the street on `2026-09-16`.
+  City has `192` permanent default residents with seeded daily home/work/shop/
+  walk/return destinations on this graph. Destinations are logical states,
+  not new interiors, purchases or jobs. Four staggered routine cohorts read
+  absolute session day/time directly after a jump or return. Offscreen routes
+  advance without scene objects; nearby actors continue their actual routes.
+  The local population target is a cap, not a guaranteed head count:
+  `00–06` → `5`, `06–10` → `28`, `10–17` → `22`, `17–22` → `36`,
+  `22–24` → `10`, with smooth half-hour boundary ramps. Clearance, connected
+  journeys and eligible residents can leave fewer people present.
+  City has at most `36` physical slots and `48` lazily built cached bodies;
+  incremental construction warms nearby residents beneath the loading overlay.
+  Replacements use distance/clearance rather than camera direction. Ordinary
+  movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
+  time, collision and immediate interactions stay live. A spatial index limits
+  peer-avoidance queries. Active bus/rest ownership retains the same person.
+  Each resident keeps `city.pedestrian.NN`, catalog model, face, hair and street
+  clothes across scene loads; new IDs allocate after the original cast so
+  existing appearances remain. The six library residents do not roam.
+  Home retains its separate `5` daytime/`2` night slots over the original first
+  `8` identities, enabled only during the Balcony shot; it uses the existing
+  fog-hidden roaming cadence rather than City resident schedules.
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
@@ -838,40 +834,12 @@ cemetery:own interiors/returns.
   `watcher_cashier_v1` asset. The appearance catalog covers `27` authored designs — `7` bizarre and `20` normal.
   The active cashier is normal; his retained Watcher predecessor is bizarre
   and never creates a duplicate active role. The default-worker bartender is ordinary.
-  The pool holds one presentation per registered design — Lampshade Walker,
-  Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
-  each with four material-property-block palettes. All five use dedicated
-  in-place `Idle`/`Walk` loops: the Lampshade keeps a persistent
-  hunch and uneven short step, the chair-burdened walker stays upright with a
-  quicker high-knee gait, the stout Kettle Hat Walker moves at `0.90-1.02 m/s`
-  on `1.08-1.18x` clips with a constant waddle and counter-phased belly and
-  kettle — a kettle that is always on the boil: an editor-built lid pivot
-  under the head bone (the lid and knob re-skinned to it, no bone added)
-  trembles and jumps on a seeded `2.2-3.1 s` vent cycle driven by the
-  presentation's own delta, and a factory-attached grey steam plume leaves the
-  spout anchor, in every state including the Route 01 ride, with no light and
-  no sound; he is the first pooled walker with a `256 px` detail atlas
-  (greys multiplied by the palette tint through the shared material, `2,004`
-  triangles / `52` meshes with real sleeves, cuffs, lapels, thumbs and booted
-  toes) — and the narrow Long-Arm Walker is the slowest at `0.72-0.84 m/s` on
-  `0.86-0.94x` clips, shuffling on barely lifted feet while its ground-reaching
-  bare forearms swing a quarter cycle behind the legs and never fully settle in
-  idle, and the Helmet Lamp Hopper is the fastest at `1.32-1.48 m/s` on
-  `0.94-1.06x` clips, never taking a step at all: it coils on `0.46 m` hind
-  feet and covers ground in two-footed bounds with a proven `0.24 m` apex. It
-  is also the only walker allowed a working light — one always-on shadowless
-  `7.5 m` Spot bolted to its miner's helmet and parented to the animated head
-  bone, capped at one instance because the pool holds a single hopper. Every
-  design keeps the shared `1.75 m` envelope and the fixed `1.7 m`
-  collider: the kettle walker's overhanging belly, tiny legs and oversized
-  skewed kettle carry its short read, because a genuinely shorter walker would
-  need its own collider parameterisation. A seeded choice among free
-  presentations fills one slot per event, so the pool is twice the two-actor
-  cap and concurrent walkers keep distinct silhouettes while repeat encounters
-  vary the pair. Home transforms that same graph into its local exterior,
-  retains a bounded `100 m` fog-hidden approach context beyond the facade while
-  rendering its existing `48 m` street slice, and runs the slots only while the
-  Balcony shot is active;
+  The five withdrawn library walkers retain their authored silhouettes, clips,
+  kettle/lid/steam and declared-light metadata as inspectable assets; none is
+  instantiated by the default street catalog. Their staged availability does
+  not place them in City, Home or Route 01. Home transforms the shared pavement
+  graph into its local exterior, retaining a bounded `100 m` approach context
+  beyond the facade while rendering its `48 m` street slice;
 - one route-driven ambient midibus with a strict single-slot cap. The production
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
@@ -1245,7 +1213,7 @@ cemetery:own interiors/returns.
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
   Receiver/seamer: fixed `NpcWardrobe`; body/ink/face/hair/glasses independent.
-  `ordinary-worker-v1`:fair/port/factory/driver/station/bartender +13walkers.
+  `ordinary-worker-v1`:fair/port/factory/driver/station/bartender +192 residents.
   Men:hero anatomy/NPC rig,160–185cm/slim–chubby+belly.
   4faces/3haircolors/21skinned items/8slots/3presets,shared assets/coverage;
   vest/jackets/cardigan/coat/overshirt/trousers/shoes;hero/bespoke/combat kept.
@@ -2313,8 +2281,8 @@ cemetery:own interiors/returns.
   background, `48 m` visibility cap, current time-of-day lighting, grading,
   local fog field and bounded `12`-light street/bar pool, then restores the
   captured Home visibility and lighting for MainRoom, Bathroom, disable and
-  destroy. During that shot only, the same two-slot pedestrian runtime supplies
-  distance-managed passers-by in the fog-hidden band on the reconstructed
+  destroy. During that shot only, the separate `5` day/`2` night pedestrian profile
+  supplies distance-managed passers-by in the fog-hidden band on the reconstructed
   street below; leaving the shot immediately pools them. The static stop is not
   a vehicle activation boundary: the balcony does not compose a bus actor or
   director because its real street context has no two-ended, complete-body

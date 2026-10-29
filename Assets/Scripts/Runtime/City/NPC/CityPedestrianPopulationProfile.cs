@@ -10,13 +10,13 @@ namespace BarPromenade
     /// </summary>
     public sealed class CityPedestrianPopulationProfile
     {
-        public const int DefaultDaytimePopulation = 8;
-        public const int DefaultNightPopulation = 3;
-        public const int DefaultPoolSize = 13;
-        public const int DefaultSpawnsPerEvent = 2;
-        public const float DefaultPeerSeparation = 12f;
-        public const int DefaultWalkersPerStreetLane = 2;
-        public const int DefaultApproachGuidedPopulation = 2;
+        public const int DefaultDaytimePopulation = 36;
+        public const int DefaultNightPopulation = 5;
+        public const int DefaultPoolSize = 48;
+        public const int DefaultSpawnsPerEvent = 1;
+        public const float DefaultPeerSeparation = 3f;
+        public const int DefaultWalkersPerStreetLane = 4;
+        public const int DefaultApproachGuidedPopulation = 0;
 
         public static readonly CityPedestrianPopulationProfile City =
             new CityPedestrianPopulationProfile(
@@ -121,6 +121,8 @@ namespace BarPromenade
             ApproachGuidedPopulation = approachGuidedPopulation;
             FillsImmediately = fillsImmediately;
         }
+
+        public bool UsesResidentSchedules => string.Equals(Id, "city", StringComparison.Ordinal);
 
         public string Id { get; }
 

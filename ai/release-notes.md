@@ -8,13 +8,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-29
 
+- Улицы живут по часу: жители ходят по делам, внешность сохраняется.
+  CityResidentLife; кадры просмотрены.
 - City: реальные тамбуры/дорожки к тротуару, мокрый асфальт вдоль зданий.
   CityBuildingPerimeters; виды City/Home.
 - Дворы: общее покрытие/проход, открытая середина и зелёные края;
   лавки/кашпо и хозяйственные навесы привязаны к стенам. Общая посадка,
   перенос корзины, контакт рук/инструмента; пауза и дальность.
   Генератор/импортный контракт пройдены.
-  CityResidentialEntrances passed; shared day/night spaces reviewed.
+  CityResidentialEntrances; виды дворов.
 - HUD/карта: исправлена засветка редактора.
   HudOverlay_PreservesAuthoredGammaColors; Game view просмотрен.
 - Закусочная в City сохраняет посетителей/меню/посадку/свет; в горах —
@@ -26,7 +28,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - City — Silent Hill; деревня — туристический буклет с зачёркнутым курортом.
   Живые метки/выбор/XYZ; чёткие подписи мест без координат.
   ImageGenVillageBrochure_PreservesResortAndLivePlaces; карты просмотрены.
-  Прежняя карта City восстановлена; пассивное оформление дворов не требует перерисовки.
+  Карта City восстановлена; дворы не требуют перерисовки.
 
 ### 2026-10-28
 

@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     [DefaultExecutionOrder(310)]
     [DisallowMultipleComponent]
-    public sealed class CityPedestrianDirector : MonoBehaviour
+    public sealed partial class CityPedestrianDirector : MonoBehaviour
     {
         public const int MaximumActiveModels =
             CityPedestrianPopulationProfile.DefaultDaytimePopulation;
@@ -113,7 +113,9 @@ namespace BarPromenade
         public float TimeUntilNextSpawn => spawnCooldown;
         public bool IsNightSpawnMode => isNightSpawnMode;
         public int CurrentActiveLimit =>
-            profile.GetPopulation(isNightSpawnMode);
+            HasResidentLife
+                ? CityResidentLifeRules.TargetStreetPopulation(GameSessionState.GameTimeOfDayMinutes)
+                : profile.GetPopulation(isNightSpawnMode);
         public int ApproachGuidedCount
         {
             get
@@ -155,7 +157,8 @@ namespace BarPromenade
             Transform playerTransform,
             Transform presentationPoolRoot,
             Func<bool> runtimeNightModeProvider = null,
-            CityPedestrianPopulationProfile populationProfile = null)
+            CityPedestrianPopulationProfile populationProfile = null,
+            Func<int, CityPedestrianPresentation> residentPresentationFactory = null)
         {
             if (IsInitialized)
             {
@@ -188,8 +191,9 @@ namespace BarPromenade
             }
 
             if (routeActors.Count > profile.DaytimePopulation ||
-                (routeActors.Count > 0 && pooledPresentations.Count == 0) ||
-                pooledPresentations.Count < routeActors.Count)
+                (residentPresentationFactory == null &&
+                 ((routeActors.Count > 0 && pooledPresentations.Count == 0) ||
+                  pooledPresentations.Count < routeActors.Count)))
             {
                 throw new ArgumentException(
                     "The pedestrian actor pool must stay within the profile " +
@@ -238,6 +242,7 @@ namespace BarPromenade
             spawnCooldown = GetNextInitialSpawnDelay();
             IsInitialized = true;
             personalSpace = new CityPedestrianPersonalSpaceController(player, actors);
+            InitializeResidentLife(residentPresentationFactory);
         }
 
         public bool IsActorPresented(int actorIndex)
@@ -257,6 +262,13 @@ namespace BarPromenade
                 return;
             }
 
+            if (HasResidentLife)
+            {
+                using (ResidentSimulationMarker.Auto())
+                    AdvanceResidentLife(SanitizeDeltaTime(deltaTime), false);
+                return;
+            }
+
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshSpawnMode();
             RefreshPlayerTravel(safeDeltaTime);
@@ -270,6 +282,7 @@ namespace BarPromenade
             // and facing him turns its head after him, the way his turns
             // after them.
             Vector3 heroHead = ResolveHeroFocus();
+            pedestrianIndex.Rebuild(actors);
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
@@ -289,6 +302,7 @@ namespace BarPromenade
                         ? null
                         : initialApproachNodeDistances,
                     heroHead);
+                pedestrianIndex.Update(index, actor);
                 RefreshInitialApproachState(index, actor.Position);
             }
 
@@ -311,7 +325,7 @@ namespace BarPromenade
         {
             return Mathf.Min(
                 actors.Count,
-                Mathf.Min(presentationPool.Count, CurrentActiveLimit));
+                Mathf.Min(HasResidentLife ? profile.PoolSize : presentationPool.Count, CurrentActiveLimit));
         }
 
         private int TrySpawnBatch(int populationLimit)
@@ -555,6 +569,7 @@ namespace BarPromenade
             uint behaviorSeed = CityPedestrianStableHash.Combine(
                 spawnSeed,
                 BehaviorSalt);
+            if (HasResidentLife) speed = CityResidentWorld.WalkingSpeed;
             actor.PrepareSpawn(
                 plan,
                 anchor,
@@ -578,6 +593,7 @@ namespace BarPromenade
                 }
 
                 actor.BindPresentation(available);
+                BindResidentIdentity(actorIndex, available);
             }
             catch
             {
@@ -617,7 +633,7 @@ namespace BarPromenade
             }
 
             CityPedestrianPresentation available =
-                FindAvailableRidingPresentation(spawnSeed);
+                HasResidentLife ? AcquireTransitResident(slotPosition, spawnSeed) : FindAvailableRidingPresentation(spawnSeed);
             if (available == null)
             {
                 return null;
@@ -683,7 +699,7 @@ namespace BarPromenade
             }
 
             CityPedestrianPresentation available =
-                FindAvailableRidingPresentation(spawnSeed);
+                HasResidentLife ? AcquireTransitResident(position, spawnSeed) : FindAvailableRidingPresentation(spawnSeed);
             if (available == null)
             {
                 return null;
@@ -1197,8 +1213,11 @@ namespace BarPromenade
                 yield = true;
             }
 
-            for (int index = 0; index < actors.Count; index++)
+            int nearbyCount = pedestrianIndex.Query(
+                actor.Position, PedestrianAvoidanceDistance);
+            for (int nearby = 0; nearby < nearbyCount; nearby++)
             {
+                int index = pedestrianIndex.GetActorIndex(nearby);
                 CityPedestrianActor other = actors[index];
                 if (other == actor ||
                     !other.IsSpawned ||
@@ -1279,6 +1298,7 @@ namespace BarPromenade
 
         private void ReleaseActor(int actorIndex)
         {
+            RetainResident(actorIndex);
             actors[actorIndex].ReleasePresentation(poolRoot);
             initialApproachCompleted[actorIndex] = false;
         }

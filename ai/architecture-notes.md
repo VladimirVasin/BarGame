@@ -1,6 +1,28 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-29 — City resident life:**
+  User:more simultaneous street people by hour, prototype daily life.
+  `CityResidentLifeRules` owns192 permanent resident schedules; runtime assigns
+  logical home/work/shop/walk places on the actual pavement graph. No new
+  interior, economy, speech/model/light, death or story timer. Target caps:
+  00–06:5/06–10:28/10–17:22/17–22:36/22–24:10, smooth30min ramps;
+  eligible routes/clearance may leave fewer. ≤36 actors/cache48 lazy default
+  bodies; one construction step/body warms the loading overlay. Same identity
+  follows bus/rest; background routes read absolute calendar time. First13
+  `city.pedestrian.NN` and all existing cast keep allocation order; extra IDs
+  append after them. `CreateForCharacter`/street wardrobe/no apron; donor
+  sit/guard/shove, shared rig/footsteps; six placed residents stay off streets.
+  Home retains5/2 over first8. Spatial peer index/bounded animation sampling;
+  collision/time/input stay live. Shared effects/PP retained; cost unmeasured.
+  Effects audit: GI/SSAO/fog/volumetrics/shadows/grading keep existing City
+  coverage; moving rig bounds/contact shadows retained, no new light or GI pass.
+  Reflections/SSR/water/wetness/bevels/vertex colour/wind/decals/particles/rim/
+  outlines reuse existing assets/providers; this task adds no receiver or effect.
+  Bloom/DOF/AA/vignette/grain/flares/blur/lens settings retain shared ownership;
+  reviewed scene frames preserve faces, silhouettes, approach space and palette.
+  Ordinary distributed life only; story§16/17/21/art§15/16, no new§6 exception.
+
 - **Accepted 2026-10-29 — residential court functions:**
   User:shared court/spine/open center/wall edges;
   through/quiet/service,≤6 courts/≤6 Blender props. Shared ground/light/
@@ -1083,17 +1105,6 @@
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
   §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;W-Swalk/A-Dstrafe.
-
-- **Accepted — 2026-09-16, street pool is the default NPC catalog:**
-  User:default-only/new models join. `DefaultNpcPopulation`:
-  `city.pedestrian.00..12`/City slot/first8 Home;`AnyCatalogModel`:
-  least-used `DefaultNpcCatalog.ModelIds`→face/hair/streetwear;
-  apron0/optional hat-scarf-gloves. `CityPedestrianResources.Archetypes`:one/model.
-  `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:alignment/villagegraph released/
-  one footstep root/own village Idle-Walk/palette0/bootsole→legs/person-keyed insult voice.
-  Weigher seated-guard-shove/same rig-paths;trouser seatlift.076.
-  Six `OrdinaryResidentArchetypes`:placed/balcony/donor;
-  library never roams (`pool_eligible=false`,resolvable prefab).
 
 - **Accepted — 2026-09-15, default NPC catalog:**
   `DefaultNpcCatalog`:allowlist;extensions/bespoke:user request.
@@ -4112,7 +4123,7 @@
   `CityPedestrianResources.OrderedArchetypes` remains the roaming catalog (see
   the promotion note below for the second table beside it, which the Pipeback
   Roller is also absent from), no directory scan discovers staged prefabs, and
-  the City/Home pool compositions remain `13` and `8`. Consequently the
+  City/Home admit only default catalog models. Consequently the
   Pipeback Roller cannot
   roam either exterior, wait at a stop or occupy Route 01 merely because its
   imported asset exists.
@@ -4196,89 +4207,15 @@
   roaming order. This does not narrow the street catalog; it only prevents an
   incompatible body or prop from being forced into bar furniture.
 - **Accepted — Local player-relative street pedestrians:** City layout and session
-  seed produce one immutable, radius-safe graph over sidewalk lanes, junction
-  turns and explicit three-link zebra connectors. Recursive 2-core pruning
-  removes every reachable dead-end branch before runtime. Long sidewalk links
-  expose deterministic spawn anchors. A `CityPedestrianPopulationProfile` owns
-  the complete runtime population, so City and the Home balcony scale
-  independently instead of sharing one constant: City runs `8` daytime and `3`
-  night slots over a `13`-presentation pool, Home runs `5` and `2` over `8`.
-  A director-local runtime random stream mixes
-  plan seed, activation time and instance identity, then independently samples
-  candidate rank, motion/palette values and every delay. The first event waits
-  `1.25-7.5 s`. One event activates at most `2` slots, and while the population
-  is below its profile target the next event follows in `0.4-2 s`; once the
-  target is complete, only replacements remain and the long `3.5-12.5 s`
-  cadence returns. Failed searches retry after a randomized
-  `0.8-2.4 s`. A slot may activate only at a unique, obstacle-safe anchor
-  in the preferred `76-86 m` band from the player. With City's fixed `0.070`
-  Exp2 fog, the inner edge
-  retains less than `0.2%` scene transmittance even at the widest production
-  `70-degree` 16:9 frustum corner after a conservative combined `6 m` camera
-  and full visual-envelope depth offset. A nearer ring was evaluated and
-  rejected: that proof measures depth *along the view axis* at the frustum
-  corner, only `0.574` of the radial distance, so the same bound is not met
-  until roughly `72 m` radially — a `44-56 m` ring leaves `16%` transmittance,
-  which is a visible silhouette rather than fog. Population size, batch fill
-  and forward bias close the street instead of a shorter approach.
-  Candidate search collects eligible anchors into reusable buffers and probes
-  static clearance on at most `4` sampled picks rather than on every anchor,
-  and one `Physics.SyncTransforms` covers a whole spawn batch. A candidate must
-  also disperse: it keeps `12 m` from every active walker and at most `2`
-  walkers share one sidewalk lane, which is one side of one street edge. The
-  fallback ladder drops connectivity before it drops dispersion, because a
-  walker farther away still reads as city life while two stacked on one lane
-  does not; only the last resort relaxes both. When that band offers only
-  disconnected sidewalk components whose closest point remains outside the
-  `24 m` encounter radius, selection falls back to a connected obstacle-safe
-  anchor at `32-86 m`; the nearer bound remains inside dense fog. A walker
-  remains active
-  regardless of camera direction or frustum membership and returns to the pool
-  only after crossing beyond `88 m` from the player. To prevent daytime
-  slots remaining occupied by invisible actors, at most `2` walkers at a time
-  follow the eligible non-backtracking continuation with the shortest physical
-  graph distance to the nearest player-side node in its connected component
-  until they first enter a `24 m` encounter radius. This guidance
-  then stays disabled for that spawn so ordinary seeded roaming resumes instead
-  of turning into pursuit. Every other walker takes a seeded `50/50` initial
-  direction with no player-proximity preference at all, so a busy street shows
-  opposing streams rather than a crowd converging on the hero. That shared
-  guidance search is one multi-source Dijkstra over the whole graph, so it uses
-  a binary heap and recomputes only when the player has moved past `4 m` and
-  the nearest node per component actually changed. When the player travels
-  faster than `3 m/s` — a bus ride, above all — candidate selection prefers
-  anchors in the smoothed forward half-plane, because anything spawned behind a
-  `6 m/s` vehicle is outrun before it can be seen; a per-frame jump beyond
-  `12 m` is read as a teleport and clears that heading instead of biasing it.
-  Player-distance-only simulation acceleration rises
-  smoothly from authored pace at `32 m` to
-  `2.75x` at and beyond `76 m`; this advances both inward approaches and
-  outward recycling without reintroducing a camera dependency. Strict night is
-  before `06:00` and from `19:00`: it keeps authored simulation pace, activates
-  exactly one walker per event, waits
-  `15-35 s` for the first event and `30-70 s` for every later one including
-  while still below its own population, and retries
-  failed searches after `4-10 s`. Walkers already alive at dusk are not
-  culled by the clock and leave only through the same distance rule. Actors
-  never reverse at artificial route endpoints: they continue through graph turns,
-  avoid immediate backtracking and make one seeded 50% cross/don't-cross
-  choice when passing each zebra entry. An explicit stable catalog owns one
-  pooled `1.75 m` presentation per design: Lampshade Walker, Chair Carrier,
-  Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper. Each copies the production Generic
-  Avatar contract while
-  directly referencing its own looping in-place `Idle` and `Walk` clips from the
-  animation-only pedestrian locomotion FBX. Lampshade clips preserve a hunched
-  C-curve and short asymmetric step in both states; Chair Carrier clips balance
-  the inverted cafe chair with an upright, precise high-knee gait; Kettle Hat
-  clips keep a low stout stance with fast short steps and a constant waddle
-  whose belly and kettle roll against each other; Long-Arm clips hold a narrow
-  still torso over a slow shuffle while the ground-reaching forearms swing a
-  quarter cycle behind the legs and keep a residual sway through idle; Helmet
-  Lamp clips take no step at all and hop on both hind feet through crouch,
-  launch, a tucked airborne apex and landing. Every
-  clip is baked and verified against its own archetype's footwear rather than
-  a shared model, and a design may declare an animated hand-to-pavement
-  clearance band that footwear grounding alone cannot express.
+  seed produce one immutable radius-safe sidewalk/junction/zebra graph; 2-core
+  pruning removes dead-end branches. Home retains its independent `5` daytime/
+  `2` night slots and `8` default bodies, only during the Balcony shot. Its
+  randomized, distance-owned activation uses the existing fog-hidden anchors,
+  unique obstacle-safe clearance, lane dispersion and `88 m` recycling. Camera
+  direction/frustum never determine presence. Legacy explicit-prefab fixtures
+  retain their own roaming/cadence and declared archetype validation. City now
+  uses the accepted resident schedules above; library availability never puts
+  a staged body on the pavement.
 - **Accepted — Declared pedestrian exceptions over blanket bans:** a walker
   may leave the pavement or wear one working light, but only by declaring it.
   An airborne archetype declares an apex band; its clips receive a single

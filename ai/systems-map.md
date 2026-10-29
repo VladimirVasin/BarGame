@@ -133,7 +133,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City and Home street pedestrians | Pool = default NPC population (`city.pedestrian.NN`, any catalog model); Home reuses its first eight. | `Runtime/City/NPC`, `CityPedestrianDefaultNpcBody`, `DefaultNpcPopulation` | Current |
+| City/Home pedestrians | City:192 schedules/≤36 actors/cache48; Home5/2, first8. | `CityResidentLifeRules`, `CityResidentWorld`, `CityPedestrianDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City Route 01 bus | One validated route and pooled bus run in City. Gap: no Home simulation or live map vehicle marker. | `Runtime/Vehicles`, `CityBus{Plan,Planner,Actor,Audio,Director,Presentation,Factory,AssetRegistry}` | Partial |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |

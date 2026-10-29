@@ -614,6 +614,9 @@ namespace BarPromenade
                 PedestrianPlan,
                 Player.GameObject.transform,
                 pedestrianWalkableArea);
+            Pedestrians.ConfigureResidentPlaces(Layout);
+            while (Pedestrians.WarmResidentPopulation())
+                yield return new CompositionStep("resident_population", 0.75f);
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
             var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);

@@ -928,9 +928,30 @@ namespace BarPromenade.Tests.EditMode
                 "repeat encounters can vary the visible mix.");
             Assert.That(
                 DefaultNpcPopulation.PedestrianCount,
-                Is.EqualTo(cityProfile.PoolSize),
-                "The population registers one permanent walker per pooled " +
-                "City slot.");
+                Is.EqualTo(CityResidentLifeRules.ResidentCount),
+                "The permanent population is independent of the smaller " +
+                "City presentation cache.");
+            Assert.That(cityProfile.PoolSize,
+                Is.LessThan(DefaultNpcPopulation.PedestrianCount));
+
+            var addedResidentIds = new HashSet<string>(
+                Enumerable.Range(13, DefaultNpcPopulation.PedestrianCount - 13)
+                    .Select(DefaultNpcPopulation.PedestrianId),
+                StringComparer.Ordinal);
+            string[] allocationIds = DefaultNpcPopulation.Characters
+                .Select(character => character.Id).ToArray();
+            string[] legacyIds = allocationIds
+                .Where(id => !addedResidentIds.Contains(id))
+                .OrderBy(id => id, StringComparer.Ordinal).ToArray();
+            Assert.That(allocationIds.Take(legacyIds.Length),
+                Is.EqualTo(legacyIds),
+                "All existing characters, including the first eight Home " +
+                "walkers, retain their original appearance allocation order.");
+            Assert.That(allocationIds.Skip(legacyIds.Length),
+                Is.EqualTo(addedResidentIds.OrderBy(id => id, StringComparer.Ordinal)),
+                "New residents allocate after the complete existing cast.");
+            Assert.That(DefaultNpcPopulation.PedestrianId(0), Is.EqualTo("city.pedestrian.00"));
+            Assert.That(DefaultNpcPopulation.PedestrianId(100), Is.EqualTo("city.pedestrian.100"));
 
             // Slot i is the permanent walker city.pedestrian.i, whose model
             // the whole-world allocation chose least-used first, so every
@@ -1538,6 +1559,124 @@ namespace BarPromenade.Tests.EditMode
             finally
             {
                 ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Actor_ResidentDestinationCrossesWaitsAndResumesFromDeadEnd()
+        {
+            GameObject root = new GameObject("Resident Destination Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateCrosswalkChoicePlan();
+                actor = CreateBoundActor(root.transform, plan, plan.SpawnAnchors[0], 1, out presentation);
+                IReadOnlyList<float> toCross = CityBusStopWaitPlanner.CreateNodeDistances(plan, 3);
+                actor.SetResidentDestination(3, toCross);
+                actor.ForceNextCrosswalkRoll(1f);
+                actor.Advance(1.1f);
+                Assert.That(actor.TargetNodeIndex, Is.EqualTo(3),
+                    "A scheduled route must cross when required, regardless of the roaming crosswalk roll.");
+                for (int step = 0; step < 14 && !actor.IsAtResidentDestination; step++) actor.Advance(.2f);
+                Assert.That(actor.MotionState, Is.EqualTo(CityPedestrianMotionState.WaitingAtDestination));
+                Assert.That(PlanarDistance(actor.Position, plan.Nodes[3].Position),
+                    Is.LessThanOrEqualTo(CityPedestrianActor.ArrivalRadius + .001f));
+                Vector3 arrived = actor.Position;
+                actor.SetResidentDestination(3, toCross);
+                actor.Advance(1f);
+                Assert.That(actor.Position, Is.EqualTo(arrived), "Repeating the same task must preserve its waiting state.");
+
+                actor.SetResidentDestination(2, CityBusStopWaitPlanner.CreateNodeDistances(plan, 2));
+                actor.Advance(.01f);
+                Assert.That(actor.TargetNodeIndex, Is.EqualTo(1),
+                    "Leaving a destination at a dead end requires the link behind the walker.");
+                for (int step = 0; step < 30 && !actor.IsAtResidentDestination; step++) actor.Advance(.2f);
+                Assert.That(actor.IsAtResidentDestination, Is.True);
+                Assert.That(actor.ResidentDestinationNode, Is.EqualTo(2));
+                actor.ClearResidentDestination();
+                Assert.That(actor.ResidentDestinationNode, Is.EqualTo(-1));
+                Assert.That(actor.MotionState, Is.EqualTo(CityPedestrianMotionState.Walking));
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Actor_ResidentDestinationSurvivesStopOwnershipAndResume()
+        {
+            GameObject root = new GameObject("Resident Stop Override Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateCrosswalkChoicePlan();
+                actor = CreateBoundActor(root.transform, plan, plan.SpawnAnchors[0], 1, out presentation);
+                actor.SetResidentDestination(3, CityBusStopWaitPlanner.CreateNodeDistances(plan, 3));
+                Assert.That(actor.BeginStopApproach(2, plan.Nodes[2].Position, Vector3.forward,
+                    CityBusStopWaitPlanner.CreateNodeDistances(plan, 2)), Is.True);
+                actor.Advance(3.2f);
+                Assert.That(actor.MotionState, Is.EqualTo(CityPedestrianMotionState.WaitingAtStop));
+                Assert.That(actor.ResidentDestinationNode, Is.EqualTo(3));
+
+                actor.ResumeRoaming(2);
+                actor.Advance(.01f);
+                Assert.That(actor.TargetNodeIndex, Is.EqualTo(1));
+                for (int step = 0; step < 30 && !actor.IsAtResidentDestination; step++) actor.Advance(.2f);
+                Assert.That(actor.IsAtResidentDestination, Is.True);
+                Assert.That(actor.ResidentDestinationNode, Is.EqualTo(3));
+                actor.ReleasePresentation(root.transform);
+                Assert.That(actor.ResidentDestinationNode, Is.EqualTo(-1), "A reused actor cannot inherit its former resident's task.");
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Presentation_ResidentLodPreservesElapsedTimeAndForcesActions()
+        {
+            GameObject root = new GameObject("Resident Animation LOD Test Root");
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                presentation = CreateStandalonePresentation(root.transform);
+                int evaluations = 0;
+                float elapsed = 0f;
+                presentation.Advanced += delta => { evaluations++; elapsed += delta; };
+                presentation.MinimumEvaluationInterval = .125f;
+                for (int tick = 0; tick < 3; tick++) presentation.Advance(.03125f, true);
+                Assert.That(evaluations, Is.Zero);
+                presentation.Advance(.03125f, true);
+                Assert.That(evaluations, Is.EqualTo(1));
+                Assert.That(elapsed, Is.EqualTo(.125f));
+                presentation.Advance(.03125f, true);
+                presentation.Advance(0f, true, true);
+                Assert.That(evaluations, Is.EqualTo(2));
+                Assert.That(elapsed, Is.EqualTo(.15625f), "An immediate tick must consume the pending animation time exactly once.");
+
+                presentation.MinimumEvaluationInterval = 10f;
+                Assert.That(presentation.ApplyAuthoredAction(presentation.Registry.IdleClip, .5f, 1f), Is.True);
+                presentation.Advance(.03125f, false);
+                Assert.That(evaluations, Is.EqualTo(3), "Authored actions must evaluate even below the distance interval.");
+                Assert.That(elapsed, Is.EqualTo(.1875f));
+                presentation.ClearAuthoredAction();
+                presentation.Advance(.03125f, true);
+                presentation.ConfigureCycle(.91f, 0f);
+                Assert.That(presentation.MinimumEvaluationInterval, Is.Zero);
+                presentation.Advance(.03125f, true);
+                Assert.That(evaluations, Is.EqualTo(4));
+                Assert.That(elapsed, Is.EqualTo(.21875f), "Rebinding a cycle must drop its former resident's pending time.");
+            }
+            finally
+            {
+                presentation?.Shutdown();
                 UnityEngine.Object.DestroyImmediate(root);
             }
         }
