@@ -41,9 +41,15 @@ namespace BarPromenade
             var timings = new FitTimings();
             int parts = 0;
             var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
+            // Resolve only during construction: the perimeter mask itself
+            // consumes the completed City plans. Low ground stems clear the
+            // paving while authored shrubs, trees and garden plants stay.
+            CityBuildingPerimeterPlan perimeter = CityBuildingPerimeterPlan.ForLayout(exit.Layout);
             foreach (CityEastExitDressingPart part in plan.Parts)
             {
                 if (IsEmbeddedGroundPart(part)) continue;
+                if ((part.Assembly == "MattedGrass" || part.Assembly == "TallWeeds" || part.Assembly == "DryGrass") &&
+                    perimeter.Overlaps(part.Footprint)) continue;
                 if (!groups.TryGetValue(part.GroupId, out Transform group))
                 {
                     group = new GameObject(part.GroupId).transform;

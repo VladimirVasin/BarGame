@@ -26,6 +26,7 @@ namespace BarPromenade.Tests.PlayMode
                 return city != null && city.IsInitialized ? city : null;
             }, () => CommonGroundShots(city, deferredStreetChecks));
             foreach (System.Action check in deferredStreetChecks) check();
+            AssertBuildingPerimeters(city);
             AssertProjectedFringeCoatings(city, city.World.Root.GetComponent<CityGroundSurfaceSystem>());
             AssertCommonGroundExcavation(city);
             yield return AssertCommonGroundSand(city);
@@ -164,6 +165,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertCommonStreetOuterSeams(city, system, plan.SupportPlan, authoredPads, shots, deferredStreetChecks);
             AssertCommonStreetGradeBreak(city, system, plan.SupportPlan, authoredPads, false, shots, deferredStreetChecks);
             AssertCommonStreetGradeBreak(city, system, plan.SupportPlan, authoredPads, true, shots, deferredStreetChecks);
+            AddBuildingPerimeterShots(city, shots);
             return shots.ToArray();
         }
 
@@ -320,8 +322,11 @@ namespace BarPromenade.Tests.PlayMode
                 AssertCommonGroundContact(system, new Vector3(inward.x, pavementTop, inward.y), FootstepGroundKind.Stone,
                     Resources.Load<Texture2D>(CityExteriorAppearance.SidewalkTextureResourcePath));
                 Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout, outward, out float soilTop, out _), Is.True);
-                AssertCommonGroundContact(system, new Vector3(outward.x, soilTop, outward.y), FootstepGroundKind.Soil,
-                    Resources.Load<Texture2D>(CityExteriorAppearance.GroundTextureResourcePath));
+                bool apron = CityBuildingPerimeterPlan.ForLayout(city.Layout).Contains(outward);
+                AssertCommonGroundContact(system, new Vector3(outward.x, soilTop, outward.y),
+                    apron ? FootstepGroundKind.Concrete : FootstepGroundKind.Soil,
+                    Resources.Load<Texture2D>(apron ? CityExteriorAppearance.RoadTextureResourcePath :
+                        CityExteriorAppearance.GroundTextureResourcePath));
             });
             Vector3 normal = new Vector3(selectedOutward.x, 0, selectedOutward.y);
             Vector3 tangent = new Vector3(selectedTangent.x, 0, selectedTangent.y);
@@ -518,6 +523,8 @@ namespace BarPromenade.Tests.PlayMode
                 CityGroundSurfaceSystem system = exterior.GetComponent<CityGroundSurfaceSystem>();
                 Assert.That(system, Is.Not.Null);
                 Assert.That(system.SectorCount, Is.GreaterThan(0));
+                Assert.That(system.BuildingPerimeterTriangleCount, Is.GreaterThan(0),
+                    "The Home reconstruction must include the same asphalt aprons.");
                 Assert.That(exterior.GetComponentsInChildren<Collider>(true).Any(collider => collider.enabled), Is.False,
                     "The bounded Home reconstruction must remain collider-free.");
                 foreach (Renderer renderer in exterior.GetComponentsInChildren<Renderer>(true))

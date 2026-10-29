@@ -710,11 +710,12 @@ cemetery:own interiors/returns.
   soil/lawn/path triangles through a `4 m` blend;
   internal/buried edges do not pull earth down. `CityGroundSurfaceSystem` and
   `GroundSurfacePartitioner` retain planes/normals/metre UVs while removing
-  lower-priority overlaps. Typed submeshes preserve priority/weather/triangle
-  footsteps in `48 m` render/collision sectors; paint clips/projects to support.
-  Disabled hosts retain semantics; structures stay. Local cemetery cuts/
-  coatings and deformable sand/fixed collision remain. Home
-  copies bounded actual street/terrain triangles without collision. Ordinary facade panes consume the first channel
+  lower-priority overlaps. `48 m` render/collision sectors keep weather/steps/
+  priority; paint projects to support. `CityBuildingPerimeterPlan` reclassifies
+  soil/grass triangles within `1.5 m` outside body contours as asphalt,
+  preserving planes/hard surfaces and excluding low grass. Hosts keep
+  semantics; cemetery cuts/coatings, sand/fixed collision stay. Home copies
+  bounded street/terrain/perimeters without collision. Ordinary facade panes consume the first channel
   of the pure `CityDistrictPresentationPlanner`: each district keeps its own
   lit ratio, while every authored facade row quantizes that ratio to a stable
   warm/dark selection. At least one warm street-lamp-coloured pane reaches

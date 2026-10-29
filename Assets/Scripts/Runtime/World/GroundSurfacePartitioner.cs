@@ -99,12 +99,19 @@ namespace BarPromenade
         /// edges retain the original face instead of introducing slivers.</summary>
         internal static List<Triangle> SubtractRect(Triangle source, Rect bounds)
         {
+            if (!HasArea(source.A, source.B, source.C)) return new List<Triangle>();
+            if (bounds.width <= 0f || bounds.height <= 0f)
+                return new List<Triangle> { source };
+            return Subtract(source, new Footprint(bounds));
+        }
+
+        /// <summary>Complements Intersect using a prepared convex contour.</summary>
+        internal static List<Triangle> Subtract(Triangle source, Footprint footprint)
+        {
+            if (footprint == null) throw new ArgumentNullException(nameof(footprint));
             var result = new List<Triangle>();
             if (!HasArea(source.A, source.B, source.C)) return result;
-            if (bounds.width <= 0f || bounds.height <= 0f)
-            { result.Add(source); return result; }
-            var footprint = new Footprint(bounds);
-            if (!Bounds(XZ(source.A.Position), XZ(source.B.Position), XZ(source.C.Position)).Overlaps(bounds)
+            if (!Bounds(XZ(source.A.Position), XZ(source.B.Position), XZ(source.C.Position)).Overlaps(footprint.Bounds)
                 || !HasPositiveOverlap(source, footprint))
             { result.Add(source); return result; }
             var inside = new List<Vertex> { source.A, source.B, source.C };

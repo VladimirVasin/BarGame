@@ -5,6 +5,13 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
+City perimeters follow body/wing/service contours. Soil/lawn triangles become
+wet asphalt with shared weather/steps/Home parity; hard surfaces/sand/gardens
+stay. Lodge repaint survives grave changes; low grass excluded. All24 keep
+City profiles/road-only SSR. CityBuildingPerimeters passed; City/Home views
+reviewed. CityGroundSurface found an unrelated frontage sampler/support seam
+mismatch.
+
 HUD/map gamma lift reproduced in Game view; shared Editor colour/texture
 boundaries preserve authored values and native clipping/matrices.
 HudOverlay_PreservesAuthoredGammaColors and

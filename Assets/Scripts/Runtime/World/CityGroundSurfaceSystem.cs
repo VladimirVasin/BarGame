@@ -21,7 +21,7 @@ namespace BarPromenade
     /// measured surfaces; priority partitioning removes buried/overlapping skins,
     /// and render/collision sectors preserve their exact planes and UVs.</summary>
     [DisallowMultipleComponent]
-    internal sealed class CityGroundSurfaceSystem : MonoBehaviour
+    internal sealed partial class CityGroundSurfaceSystem : MonoBehaviour
     {
         internal const float SectorSize = 48f;
         internal const float MaximumPaintProjectionDistance = .45f;
@@ -176,6 +176,8 @@ namespace BarPromenade
                 else partitionAllocationStatus = "unavailable";
             }
             double partitionMilliseconds = timer.Elapsed.TotalMilliseconds;
+            surface = ApplyBuildingPerimeters(surface);
+            double perimeterMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
             double conformMilliseconds = timer.Elapsed.TotalMilliseconds;
             SurfaceTriangleCount = surface.Count;
@@ -213,7 +215,8 @@ namespace BarPromenade
                 GameLog.Field("capture_ms", captureMilliseconds), GameLog.Field("paint_ms", paintMilliseconds - captureMilliseconds),
                 GameLog.Field("routing_ms", routingMilliseconds - paintMilliseconds),
                 GameLog.Field("partition_ms", partitionMilliseconds - routingMilliseconds),
-                GameLog.Field("conform_ms", conformMilliseconds - partitionMilliseconds),
+                GameLog.Field("perimeter_ms", perimeterMilliseconds - partitionMilliseconds),
+                GameLog.Field("conform_ms", conformMilliseconds - perimeterMilliseconds),
                 GameLog.Field("publish_ms", BuildMilliseconds - conformMilliseconds));
         }
 
@@ -599,8 +602,9 @@ namespace BarPromenade
                 }
             input.AddRange(region.Source.Top);
             OrderByPriority(input);
-            List<Triangle> surface = GroundSurfacePartitioner.Conform(
-                GroundSurfacePartitioner.Partition(input, SurfaceBucketSize), bucketSize: EdgeBucketSize);
+            List<Triangle> surface = GroundSurfacePartitioner.Partition(input, SurfaceBucketSize);
+            surface = ApplyBuildingPerimeters(surface);
+            surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
             surface.AddRange(region.Source.Sides);
             if (region.Built != null) { region.Built.SetActive(false); DestroyGenerated(region.Built); }
             region.Built = BuildMesh("Dynamic ground sector - " + region.Name, region.Source.Renderer.transform, surface, buildCollision);
@@ -664,6 +668,16 @@ namespace BarPromenade
                 Priority = source.Priority;
                 HasWeather = source.HasWeather; WetKind = source.WetKind; DryTint = source.DryTint;
                 propertyLayout = source.propertyLayout; propertyValues = source.propertyValues;
+            }
+            internal Style(MaterialPropertyBlock asphaltProperties)
+            {
+                Material = GroundSurfaceAppearance.SharedMaterial;
+                Properties = asphaltProperties; Kind = FootstepGroundKind.Concrete; Priority = 0;
+                HasWeather = true; WetKind = CityWetSurfaceKind.Road; DryTint = Color.white;
+                propertyLayout = PropertyLayouts.GetValue(Material.shader, ReadPropertyLayout);
+                propertyValues = new PropertyValue[propertyLayout.Ids.Length];
+                for (int p = 0; p < propertyValues.Length; p++)
+                    propertyValues[p] = new PropertyValue(Properties, propertyLayout.Ids[p], propertyLayout.Types[p]);
             }
             internal readonly Material Material;
             internal readonly MaterialPropertyBlock Properties; internal readonly FootstepGroundKind Kind;

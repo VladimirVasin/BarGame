@@ -41,7 +41,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City Blender misc catalog | Shared street/park/river/coastal meshes; plans retain placement/collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
-| City ground | Typed submesh coatings retain priority/weather/steps in 48m sectors; cemetery/sand change locally. | `CityGroundSurfaceSystem`, `GroundSurfacePartitioner` | Current |
+| City ground | Typed sectors retain planes/weather/steps; 1.5m asphalt follows buildings; cemetery/sand stay local. | `CityGroundSurfaceSystem`, `CityBuildingPerimeterPlan` | Current |
 | City street support | Shared stations/outer seams join asphalt, pavement and terrain; imported topology. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
 | City Blender ordinary buildings | Work8 functions; homes: real entries/paved links; passages/wings share footprints. | `CityBuilding*`, `CityResidentialEntrance*`, generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |

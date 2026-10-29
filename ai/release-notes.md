@@ -8,9 +8,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-29
 
-- Каждый жилой корпус/флигель City получил подъезд с тамбуром и дорожку
-  до общего тротуара. Подходы свободны; карта обновлена.
-  CityResidentialEntrances; виды City/Home просмотрены.
+- City: жилые корпуса/флигели с тамбурами и свободными дорожками к тротуару;
+  вдоль зданий — мокрый асфальт 1,5 м. Мощение/песок/сады сохранены.
+  CityResidentialEntrances/CityBuildingPerimeters; виды City/Home, карта.
+
 - HUD/карта: исправлена засветка редактора.
   HudOverlay_PreservesAuthoredGammaColors; Game view/карта/XYZ просмотрены.
 - Закусочная целиком перенесена в City: прежние посетители, меню-пустышка,

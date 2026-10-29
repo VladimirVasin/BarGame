@@ -114,6 +114,21 @@ namespace BarPromenade
             }
         }
 
+        // A pedestrian apron shares the asphalt recipe, without the road
+        // coordinates that opt traffic lanes into ruts and screen reflections.
+        internal static MaterialPropertyBlock CreateBuildingPerimeterProperties()
+        {
+            var properties = new MaterialPropertyBlock();
+            properties.SetTexture(BaseMapId, RoadTexture);
+            properties.SetColor(BaseColorId, Color.white);
+            properties.SetColor(ColorId, Color.white);
+            properties.SetFloat(SmoothnessId, RoadSmoothness);
+            properties.SetFloat(MetallicId, 0f);
+            properties.SetFloat(Shader.PropertyToID("_GroundKind"), (float)GroundSurfaceKind.Asphalt);
+            properties.SetTexture(Shader.PropertyToID("_GroundResponse"), GroundSurfaceAppearance.GetResponse(RoadTexture));
+            return properties;
+        }
+
         /// <summary>
         /// What a district's soil has taken on from the district. This
         /// is the first consumer of <see cref="CityDistrictArtProfile"/>'s

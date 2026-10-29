@@ -86,8 +86,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
-- City: west work/east housing+park;144 lots,homes3–5 storeys,courts/wings.
-  Shared ground/Home views,4 POIs/landmarks,Route01;dog yard:3dogs/2owners.
+- City:west work/east homes3–5storeys+park;144lots/courts/wings.
+  Shared ground/Home:1.5m asphalt perimeters;4POIs/Route01;dog yard3dogs/2owners.
   Eight industrial functions own roofs/equipment/surfaces and pooled task light;
   substation/municipal/port workshops remain passive.
   First unpaused dock entry starts finite port→factory→shop supply once;

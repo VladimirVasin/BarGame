@@ -102,6 +102,8 @@ namespace BarPromenade
             CityCoastalInfrastructurePlan infrastructurePlan = plans.Infrastructure;
             CityLaundryPlan laundryPlan = plans.Laundry;
             CityEastExitPlan eastExitPlan = plans.EastExit;
+            CityCemeteryPlan cemeteryPlan = CityCemeteryPlanner.Create(layout, churchCemeteryPassagePlan);
+            groundSurface.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(layout, cemeteryPlan));
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan);
             // Planned before the ground pass: when the seacoast will
@@ -204,10 +206,6 @@ namespace BarPromenade
             ReportBlock("park_and_districts", blockTimer);
             yield return new CompositionStep("park_and_districts", 0.50f);
             blockTimer.Restart();
-            CityCemeteryPlan cemeteryPlan =
-                CityCemeteryPlanner.Create(
-                    layout,
-                    churchCemeteryPassagePlan);
             if (cemeteryPlan != null)
             {
                 CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
