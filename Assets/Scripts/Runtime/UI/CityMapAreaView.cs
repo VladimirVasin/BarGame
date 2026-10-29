@@ -30,6 +30,8 @@ namespace BarPromenade
             RetroUiTheme.PanelRaised;
         private static readonly Color AlpineVillageLane =
             RetroUiTheme.Text;
+        private static readonly Color AlpineVillageBrochureInk =
+            new Color(.10f, .19f, .16f, 1f);
 
         private GameAreaId lastPresentedArea = GameAreaId.City;
 
@@ -105,21 +107,17 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The village tab. Same primitives as the mountain road because it
-        /// is the same kind of chart - a line and a patch of ground - but on
-        /// a warmer field, which is the one thing the map says about the
-        /// place. The buildings are not drawn: the points carry them, and a
-        /// village drawn plan-view stops being a village and becomes a plan.
+        /// The old brochure is a paper backing. Its measured map panel keeps
+        /// every live position, hover target and arrival in the plan's metres.
+        /// A stale/missing image retains the existing line-chart fallback.
         /// </summary>
         private void DrawAlpineVillageMap(MapProjection projection)
         {
-            RetroUiTheme.DrawPanel(
-                projection.ScreenRect,
-                AlpineVillageGround,
-                RetroUiTheme.BorderMuted,
-                false,
-                0f,
-                1f);
+            if (IsUsingIllustratedVillageMap)
+                GUI.DrawTexture(mapViewport.ContentRect, IllustratedVillageMapTexture, ScaleMode.StretchToFill, false);
+            else
+                RetroUiTheme.DrawPanel(projection.ScreenRect, AlpineVillageGround,
+                    RetroUiTheme.BorderMuted, false, 0f, 1f);
             CityMapMountainRoadOverlay overlay =
                 controller.AlpineVillageOverlay;
             if (overlay.IsEmpty)
@@ -127,31 +125,41 @@ namespace BarPromenade
                 return;
             }
 
-            DrawMountainRoadHatches(projection, overlay);
-            Rect extent = ProjectWorldRect(
-                projection,
-                overlay.PlateauBounds);
-            DrawSolidRect(extent, AlpineVillageSettled);
-            RetroUiTheme.StrokeRect(extent, 1f, RetroUiTheme.BorderMuted);
-
-            IReadOnlyList<Vector3> lane = overlay.RoutePoints;
-            foreach (CityMapRouteSegment branch in overlay.BranchRoutes)
+            if (!IsUsingIllustratedVillageMap)
             {
-                DrawLine(projection.WorldToScreen(branch.Start),
-                    projection.WorldToScreen(branch.End), 2f, AlpineVillageLane);
+                DrawMountainRoadHatches(projection, overlay);
+                Rect extent = ProjectWorldRect(projection, overlay.PlateauBounds);
+                DrawSolidRect(extent, AlpineVillageSettled);
+                RetroUiTheme.StrokeRect(extent, 1f, RetroUiTheme.BorderMuted);
+
+                IReadOnlyList<Vector3> lane = overlay.RoutePoints;
+                foreach (CityMapRouteSegment branch in overlay.BranchRoutes)
+                    DrawLine(projection.WorldToScreen(branch.Start),
+                        projection.WorldToScreen(branch.End), 2f, AlpineVillageLane);
+                for (int index = 1; index < lane.Count; index++)
+                    DrawLine(projection.WorldToScreen(lane[index - 1]),
+                        projection.WorldToScreen(lane[index]), 4f, AlpineVillageLane);
             }
 
-            for (int index = 1; index < lane.Count; index++)
-            {
-                DrawLine(
-                    projection.WorldToScreen(lane[index - 1]),
-                    projection.WorldToScreen(lane[index]),
-                    4f,
-                    AlpineVillageLane);
-            }
-
+            DrawAlpineVillageLandmarkMarkers(projection);
             DrawMothersHouseMark(projection);
             DrawPlayer(projection);
+        }
+
+        private void DrawAlpineVillageLandmarkMarkers(MapProjection projection)
+        {
+            IReadOnlyList<CityMapPointDescriptor> points = controller.ActiveMapPoints;
+            for (int index = 0; index < points.Count; index++)
+            {
+                CityMapPointDescriptor point = points[index];
+                if (point.Kind != CityMapPointKind.Cableway && point.Kind != CityMapPointKind.Village)
+                    continue;
+                Vector2 center = projection.WorldToScreen(point.WorldPosition);
+                DrawOpenOctagonOutline(center, 3.5f, 1f,
+                    IsUsingIllustratedVillageMap ? AlpineVillageBrochureInk : RetroUiTheme.Ink);
+                RegisterHoverTarget(Intersect(CreateCenteredRect(center, 17f, 17f), projection.ScreenRect), center,
+                    point.Label, LandmarkHoverPriority, controller.MapPointInspectionEnabled ? index : -1);
+            }
         }
 
         /// <summary>
@@ -177,7 +185,8 @@ namespace BarPromenade
             Vector2 center = projection.WorldToScreen(
                 controller.ResolveMapPointWorldPosition(point));
             Rect mark = CreateCenteredRect(center, 13f, 13f);
-            RetroUiTheme.StrokeRect(mark, 1f, RetroUiTheme.Ink);
+            RetroUiTheme.StrokeRect(mark, 1f,
+                IsUsingIllustratedVillageMap ? AlpineVillageBrochureInk : RetroUiTheme.Ink);
             RetroUiTheme.StrokeRect(
                 new Rect(
                     mark.x + 1f,

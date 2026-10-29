@@ -65,14 +65,18 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
 
 ## Unity rules
 
-- Scripted scenes use expressive camera staging: deliberate FOV changes,
-  Dutch angles and other horizon rolls timed to the action. Author and review
-  lens and roll changes together with framing and character contacts.
+- Scripted cameras time expressive FOV/Dutch/horizon rolls to the action.
+  Author and review lens, roll, framing and character contacts together.
 - Do not edit or commit `Library`, `Temp`, `Logs`, `UserSettings`, generated IDE files, or build output.
 - Preserve Unity `.meta` files with their assets. Move or rename assets through Unity when practical.
 - Avoid hand-editing serialized scenes, prefabs, and ScriptableObjects unless the change is deliberate and verified in Unity.
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
+- Maps use built-in ImageGen/pure plans: City charcoal/Silent Hill;
+  AlpineVillage worn tourist brochure/red-crossed former resort.
+  Redraw after every authored map change; keep geometry/RU labels/live markers/
+  selection/XYZ/safe arrivals. Add new objects in the same change; group related
+  props/actors and verify presence/arrival.
 - Reuse shared materials and assets; avoid per-instance material creation.
 - New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
   keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.

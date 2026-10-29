@@ -14,7 +14,6 @@ namespace BarPromenade
         public const float Depth = 6.6f;
         public const float MaximumGroundSpread = .18f;
         public const int MaximumCandidatesPerLot = 160;
-        private const float BuildingClearance = .45f;
         private const float GroundBlend = .45f;
         private static readonly ConditionalWeakTable<CityLayout, CityLaundryPlan> Plans =
             new ConditionalWeakTable<CityLayout, CityLaundryPlan>();
@@ -100,15 +99,15 @@ namespace BarPromenade
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (!IsEnabled) return;
-            var context = new PlacementContext(layout);
-            if (!context.Fits(Footprint, ApproachBounds, Position, Rotation, out _))
+            var context = new CityResidentialInfillPlacement(layout);
+            if (!context.Fits(Footprint, ApproachBounds, Position, Rotation, new Vector3(-2.8f,0f,4.3f), out _))
                 throw new InvalidOperationException("Laundry infill no longer fits the existing residential ground and clear routes.");
         }
 
         private static CityLaundryPlan Create(CityLayout layout)
         {
             if (!layout.SpatialPlan.IsCompactCoastal) return Absent;
-            var context = new PlacementContext(layout);
+            var context = new CityResidentialInfillPlacement(layout);
             var lots = new List<BuildingLot>();
             foreach (BuildingLot lot in layout.BuildingLots)
                 if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential &&
@@ -134,7 +133,7 @@ namespace BarPromenade
                     Quaternion rotation = Quaternion.Euler(0f, side * 90f, 0f);
                     Rect footprint = RectAt(position, rotation, -4.3f,-3.3f,4.3f,3.3f);
                     Rect approach = RectAt(position, rotation, -3.65f,3.25f,-1.95f,4.9f);
-                    if (!context.Fits(footprint, approach, position, rotation, out Vector3 access)) continue;
+                    if (!context.Fits(footprint, approach, position, rotation, new Vector3(-2.8f,0f,4.3f), out Vector3 access)) continue;
                     if (!context.Foundation(footprint, out float top)) continue;
                     position.y = top + .04f;
                     return new CityLaundryPlan(lot.Cell, position, rotation, access);
@@ -156,177 +155,5 @@ namespace BarPromenade
             Mathf.Min(a.yMin,b.yMin),Mathf.Max(a.xMax,b.xMax),Mathf.Max(a.yMax,b.yMax));
         private static uint Rank(int seed, Vector2Int cell) => unchecked((uint)seed ^
             ((uint)cell.x * 73856093u) ^ ((uint)cell.y * 19349663u) ^ 0x4C41554Eu);
-        private static Vector2 XZ(Vector3 p) => new Vector2(p.x,p.z);
-
-        private sealed class PlacementContext
-        {
-            private readonly CityLayout layout;
-            private readonly List<Vector2[]> ground = new List<Vector2[]>();
-            private readonly List<Vector2[]> bodies = new List<Vector2[]>();
-            private readonly List<Rect> blocked = new List<Rect>();
-            private readonly List<Rect> connectorObstacles = new List<Rect>();
-            private readonly List<Rect> paths = new List<Rect>();
-            private readonly List<Vector3> accesses = new List<Vector3>();
-            private readonly HashSet<Vector2Int> protectedCells = new HashSet<Vector2Int>();
-
-            internal PlacementContext(CityLayout source)
-            {
-                layout = source;
-                foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) protectedCells.Add(cell);
-                foreach (BuildingLot lot in layout.BuildingLots)
-                {
-                    if (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket || lot.IsDistrictPointOfInterest)
-                    { protectedCells.Add(lot.Cell); blocked.Add(Expanded(layout.GetCellWorldBounds(lot.Cell), .5f)); }
-                    if (lot.HasRoadFrontage) accesses.Add(lot.SidewalkArrivalPosition);
-                    if (lot.HasBuilding)
-                    {
-                        Vector2 a = XZ(lot.DoorPosition), b = XZ(lot.SidewalkArrivalPosition);
-                        blocked.Add(Expanded(Rect.MinMaxRect(Mathf.Min(a.x,b.x),Mathf.Min(a.y,b.y),
-                            Mathf.Max(a.x,b.x),Mathf.Max(a.y,b.y)), .9f));
-                    }
-                }
-                foreach (Vector2Int cell in new[] { new Vector2Int(10,5), new Vector2Int(11,3),
-                    new Vector2Int(11,4), new Vector2Int(11,5) })
-                { protectedCells.Add(cell); blocked.Add(Expanded(layout.GetCellWorldBounds(cell), .5f)); }
-                foreach (Vector2Int cell in protectedCells) blocked.Add(layout.GetCellWorldBounds(cell));
-                foreach (CitySurfaceDescriptor surface in layout.Surfaces)
-                    if (surface.Kind == CitySurfaceKind.BuildableGround && layout.TryGetArea(surface.Cell, out CityAreaDefinition area) &&
-                        area.Archetype == CityDistrictKind.Residential)
-                        ground.AddRange(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
-                foreach (BuildingLot lot in layout.BuildingMasses)
-                    if (lot.HasBuilding) bodies.AddRange(lot.CreateCollisionPolygons());
-                foreach (CityRoadPath path in layout.CourtyardPaths)
-                {
-                    foreach (Vector2[] strip in path.Ribbon(1.5f)) paths.Add(CityRoadPolygon.Bounds(strip));
-                    foreach (Vector2 point in path.Vertices) accesses.Add(new Vector3(point.x,0f,point.y));
-                }
-                CityStreetSurfacePlan paving = CityStreetSurfacePlanner.CreateCourtyardPaving(layout);
-                foreach (RuntimeOrientedBox box in paving.StreetGeometry) blocked.Add(BoxBounds(box));
-                foreach (RuntimeOrientedBox box in paving.SidewalkGeometry) blocked.Add(BoxBounds(box));
-                foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
-                {
-                    blocked.Add(Expanded(point.PublicBounds, 1f));
-                    foreach (CityDistrictPointOfInterestAccessDescriptor access in point.Accesses)
-                        blocked.Add(Expanded(access.ApproachBounds, .6f));
-                }
-                if (HomeYardSitePlanner.TryCreate(layout,out HomeYardSitePlan yard)) blocked.Add(Expanded(yard.GroundBounds,1f));
-                RoadFencePlan fence = RoadFencePlanner.CreatePlan(layout);
-                foreach (RoadFenceSegmentDescriptor segment in fence.Segments)
-                    AddSolid(Expanded(Rect.MinMaxRect(Mathf.Min(segment.Start.x,segment.End.x),Mathf.Min(segment.Start.z,segment.End.z),
-                        Mathf.Max(segment.Start.x,segment.End.x),Mathf.Max(segment.Start.z,segment.End.z)),.5f));
-                CityNightFixturePlan night = CityNightFixturePlanner.CreatePlan(layout);
-                foreach (StreetLampDescriptor lamp in night.StreetLamps) AddSolid(Around(lamp.Position,.65f));
-                foreach (TrafficSignalDescriptor signal in night.TrafficSignals) AddSolid(Around(signal.Position,.65f));
-                foreach (CityBusStopDescriptor stop in CityBusPlanner.CreateRoadRouting(layout).Stops)
-                    AddSolid(Expanded(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop), .6f));
-                foreach (Rect footprint in CityCoastalInfrastructurePlan.ForLayout(layout).SolidFootprints)
-                    AddSolid(Expanded(footprint,.25f));
-                // Preserve the already selected pocket tableaux and other
-                // solid dressing. The decoration planner never reads laundry,
-                // so this baseline has no dependency back to the infill site.
-                CityDecorationPlan decoration = CityDecorationPlanner.CreatePlan(layout,fence,night);
-                var proxies = new List<Bounds>();
-                foreach (CityDecorationDescriptor descriptor in decoration.Descriptors)
-                {
-                    if (descriptor.CollisionTier == CityDecorationCollisionTier.None) continue;
-                    proxies.Clear(); CityStaticCollisionBuilder.AddDecorationProxyBounds(layout,descriptor,proxies);
-                    foreach (Bounds bounds in proxies) AddSolid(Expanded(Rect.MinMaxRect(bounds.min.x,bounds.min.z,bounds.max.x,bounds.max.z), .35f));
-                }
-            }
-
-            internal bool ProtectedCell(Vector2Int cell) => protectedCells.Contains(cell);
-            internal bool Fits(Rect footprint, Rect approach, Vector3 position, Quaternion rotation, out Vector3 access)
-            {
-                access = default;
-                Rect padded = Expanded(footprint,BuildingClearance);
-                foreach (Rect obstacle in blocked) if (padded.Overlaps(obstacle) || approach.Overlaps(obstacle)) return false;
-                foreach (Rect path in paths) if (Expanded(footprint,.45f).Overlaps(path)) return false;
-                foreach (Vector2[] body in bodies)
-                    if (Intersects(padded,body) || Intersects(approach,body)) return false;
-                if (!Covered(padded) || !Covered(approach)) return false;
-                Vector3 entry = position + rotation * new Vector3(-2.8f,0f,4.3f);
-                float best = 14f*14f;
-                foreach (Vector3 target in accesses)
-                {
-                    float distance = (XZ(target)-XZ(entry)).sqrMagnitude;
-                    if (distance >= best || !ClearConnector(entry,target,footprint)) continue;
-                    access = target; best = distance;
-                }
-                if (best >= 14f*14f) return false;
-                if (!RawTop(XZ(entry),out float y)) return false;
-                access.y = RawTop(XZ(access),out float targetY) ? targetY : y;
-                return true;
-            }
-
-            private bool ClearConnector(Vector3 start, Vector3 end, Rect ownBody)
-            {
-                int count = Mathf.Max(1,Mathf.CeilToInt(Vector2.Distance(XZ(start),XZ(end))/.4f));
-                float previous=0f;
-                for (int step=0;step<=count;step++)
-                {
-                    Vector3 point=Vector3.Lerp(start,end,step/(float)count);
-                    Rect body=Around(point,.42f);
-                    if (body.Overlaps(ownBody)) return false;
-                    foreach (Vector2[] mass in bodies) if (Intersects(body,mass)) return false;
-                    foreach (Rect obstacle in connectorObstacles) if (body.Overlaps(obstacle)) return false;
-                    // Public paving and existing walking routes are allowed
-                    // connector destinations; furnishing and special grounds are not.
-                    if (!RawTop(XZ(point),out float top) || (step>0 && Mathf.Abs(top-previous)>.22f)) return false;
-                    previous=top;
-                }
-                return true;
-            }
-
-            private void AddSolid(Rect footprint)
-            { blocked.Add(footprint); connectorObstacles.Add(footprint); }
-
-            internal bool Foundation(Rect footprint,out float top)
-            {
-                top=float.NegativeInfinity;float low=float.PositiveInfinity;
-                for(int z=0;z<3;z++) for(int x=0;x<3;x++)
-                {
-                    Vector2 point=new Vector2(Mathf.Lerp(footprint.xMin,footprint.xMax,x*.5f),
-                        Mathf.Lerp(footprint.yMin,footprint.yMax,z*.5f));
-                    if(!RawTop(point,out float y))return false;
-                    top=Mathf.Max(top,y);low=Mathf.Min(low,y);
-                }
-                return top-low<=MaximumGroundSpread;
-            }
-
-            private bool RawTop(Vector2 point,out float top)
-            {
-                foreach(CitySurfaceDescriptor surface in layout.Surfaces)
-                    if(!surface.IsWater && surface.WorldBounds.Contains(point))
-                    {top=CityTerrainSurfacePlan.SampleTopWithoutRigidSupports(layout,surface,point);return true;}
-                top=0;return false;
-            }
-
-            private bool Covered(Rect rect)
-            {
-                float area=0f;
-                foreach(Vector2[] polygon in ground)
-                {
-                    if(!rect.Overlaps(CityRoadPolygon.Bounds(polygon)))continue;
-                    area+=IntersectionArea(rect,polygon);
-                }
-                return area>=rect.width*rect.height-.01f;
-            }
-            private static bool Intersects(Rect rect,Vector2[] polygon) => rect.Overlaps(CityRoadPolygon.Bounds(polygon)) &&
-                IntersectionArea(rect,polygon)>.0001f;
-            private static float IntersectionArea(Rect rect,Vector2[] polygon)
-            {
-                var clipped=new List<Vector2>(CityRoadPolygon.Rectangle(rect));
-                for(int side=0;side<polygon.Length && clipped.Count>=3;side++)
-                    clipped=CityRoadPolygon.Clip(clipped,polygon[side],polygon[(side+1)%polygon.Length]);
-                return CityRoadPolygon.Area(clipped);
-            }
-            private static Rect Around(Vector3 point,float radius) => new Rect(point.x-radius,point.z-radius,radius*2,radius*2);
-            private static Rect BoxBounds(RuntimeOrientedBox box)
-            {
-                Bounds bounds=CityBuildingPrototypePlacement.TransformBounds(new Bounds(Vector3.zero,box.Size),
-                    new CityBuildingPrototypePose(box.Center,box.Rotation));
-                return Expanded(Rect.MinMaxRect(bounds.min.x,bounds.min.z,bounds.max.x,bounds.max.z),.2f);
-            }
-        }
     }
 }

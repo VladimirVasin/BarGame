@@ -76,6 +76,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (!Visible || worldCamera == null)
             {
                 return;

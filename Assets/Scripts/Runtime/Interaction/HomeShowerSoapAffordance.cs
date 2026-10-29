@@ -160,6 +160,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint || interaction == null ||
                 (!interaction.GaugeVisible && !interaction.ExitPromptVisible) || PauseMenuController.IsAnyPaused) return;
             int oldDepth = GUI.depth;

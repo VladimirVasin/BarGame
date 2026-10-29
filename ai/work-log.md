@@ -5,6 +5,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
+Editor HUD gamma writes are scoped/restored across every runtime OnGUI;
+charcoal/bone palette and world effects stay authored. HudGammaScopeSourceInventory
+passed; runtime/test dependencies compiled. HudOverlay_PreservesAuthoredGammaColors
+requires visible Game view; batch capture produced no IMGUI frame.
+
 City owns the complete existing diner: whole lot/ground/threshold, original
 cast/seat/menu, shelter/map and bounded City lighting/reflections. MountainRoad
 keeps LastRoute/cableway/brink without a cafe copy. Location-only canon exception
@@ -14,6 +19,36 @@ wait for unfolding. CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
 CoastalCafe_ReservesOneWholeLotWithGroundedOriginalFootprint and
 NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed.
 City day/night/menu and emptied terminal views reviewed; check-docs passed.
+
+Residential dog yard fits leftover ground after laundry without moving homes
+or public routes. Blender animals use paw IK and independent calendar activity;
+permanent owners, local collision, positioned bark/paws and pause/distance
+continuity share existing city owners. Palette import explicitly requires
+Texture2D so Unity cannot reinterpret its swatches as a cubemap.
+Blender determinism, imported asset contract and CityDogPark passed; native
+day/night/close/movement/grayscale/intoxication views reviewed.
+
+AGENTS/AI now require every new world object/place to join its area's map
+in the same change. Laundry/dog-yard markers use Russian labels and planned
+clear approaches; the yard has an open-ground footprint, laundry keeps its
+L-shell. NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed
+with both places, coordinates and shared XYZ arrivals.
+
+Default City keeps built-in ImageGen/Silent Hill. AlpineVillage uses a worn
+cream/blue/green/ochre tourist brochure: former skiing ad hand-crossed red,
+existing lodge/lift/avalanche/house geography. Paper-only canon exception
+permits fixed brief ad copy; no new 3D. Shared view keeps live markers/selection/
+XYZ inside mapUvRect; ad column has no coordinates. Persistent sharp Russian
+labels use bounded contrast backing/leaders/collision layout; cached regional
+names omit coordinates/anonymous yards; named POIs/clicks retain XYZ inspector. Village plan/RU SHA is
+independent; City SHA excludes Village keys. Both maps were redrawn. Bounds/size/
+SHA reject stale art; other seeds/MountainRoad use schematics. Shared effect owners
+stay; wear/grain/ink baked. AGENTS/AI require redraw after authored map changes/
+new objects, not live motion. ImageGenVillageBrochure_PreservesResortAndLivePlaces passed; native map/resort/
+XYZ views reviewed.
+
+Global diff-check: pre-existing Laundry/StreetProfile .meta whitespace;
+baseline bytes unchanged. Scoped task diff is clean.
 
 ## 2026-10-28
 

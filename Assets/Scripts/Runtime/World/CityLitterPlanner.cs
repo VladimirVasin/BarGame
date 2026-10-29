@@ -676,6 +676,8 @@ namespace BarPromenade
                 }
                 CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
                 if (laundry.IsEnabled) blocked.Add(Expand(laundry.ReservationBounds, .25f));
+                CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(layout);
+                if (dogPark.IsEnabled) blocked.Add(Expand(dogPark.ReservationBounds, .25f));
                 CityCafePlan cafe = CityCafePlan.Create(layout);
                 if (cafe != null)
                 {

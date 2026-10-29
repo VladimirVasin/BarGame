@@ -959,11 +959,13 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Docks,
                     CityMapPointOfInterestKind.ArchShelter,
                     CityMapPointOfInterestKind.Church,
-                    CityMapPointOfInterestKind.Cafe
+                    CityMapPointOfInterestKind.Cafe,
+                    CityMapPointOfInterestKind.Laundry,
+                    CityMapPointOfInterestKind.DogPark
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park"
                 };
                 var expectedDistricts = new[]
                 {
@@ -972,6 +974,8 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential
                 };
                 int lotCount = layout.DistrictPointsOfInterest.Count;
@@ -988,6 +992,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(fair.IsEnabled, Is.True);
                 CityCafePlan cafe = CityCafePlan.Create(layout);
                 Assert.That(cafe, Is.Not.Null);
+                CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
+                CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(layout);
+                Assert.That(laundry.IsEnabled && dogPark.IsEnabled, Is.True);
                 // The world adds the fair ground to its mask after the
                 // buildings (CityWorldBuilder); the landing check needs the
                 // same mask the hero actually walks.
@@ -1009,7 +1016,7 @@ namespace BarPromenade.Tests.EditMode
 
                     var xz = new Vector2(place.WorldPosition.x, place.WorldPosition.z);
                     Assert.That(place.HasFootprint, Is.EqualTo(place.Kind == CityMapPointOfInterestKind.Fair ||
-                        place.Kind == CityMapPointOfInterestKind.Cafe), context);
+                        place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark), context);
                     if (place.Kind == CityMapPointOfInterestKind.Fair)
                     {
                         Assert.That(place.Footprint, Is.EqualTo(fair.Bounds), context);
@@ -1031,6 +1038,15 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(eastExit.ClosedGroundBounds.Contains(xz), Is.False, context);
                         Assert.That(eastExit.BoothPad.Contains(xz), Is.False, context);
                         Assert.That(eastExit.RoadBounds.Contains(xz), Is.True, context);
+                    }
+
+                    if (place.Kind == CityMapPointOfInterestKind.Laundry || place.Kind == CityMapPointOfInterestKind.DogPark)
+                    {
+                        bool isDogPark = place.Kind == CityMapPointOfInterestKind.DogPark;
+                        Vector3 approach = isDogPark ? dogPark.ApproachWorld : laundry.ApproachWorld;
+                        Assert.That(Vector2.Distance(xz, new Vector2(approach.x, approach.z)), Is.LessThan(.001f), context);
+                        Assert.That(label, Is.EqualTo(isDogPark ? "Собачья площадка" : "Прачечная"), context);
+                        if (isDogPark) Assert.That(place.Footprint, Is.EqualTo(dogPark.Footprint), context);
                     }
 
                     Vector3 standing;

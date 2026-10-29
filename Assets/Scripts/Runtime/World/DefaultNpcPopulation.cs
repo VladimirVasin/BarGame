@@ -15,6 +15,8 @@ namespace BarPromenade
         // Added after existing allocation identities: preserve their appearances.
         public const string BarBartender = "zzz.bar.bartender";
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
+        public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
+        public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
         // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
@@ -263,6 +265,14 @@ namespace BarPromenade
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", "apron.work")));
+            foreach (string id in new[] { CityDogParkStandingOwner, CityDogParkSeatedOwner })
+                roster.Add(new CharacterDefinition(id, model, false,
+                    new SlotConstraint("outerwear", "outerwear.work"),
+                    new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", new string[] { null }),
+                    new SlotConstraint("gloves", new string[] { null }),
+                    new SlotConstraint("scarf", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }

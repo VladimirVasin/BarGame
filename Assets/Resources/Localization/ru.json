@@ -1425,6 +1425,10 @@
       "value": "Родник"
     },
     {
+      "key": "map.alpine_village.ski_resort",
+      "value": "Горнолыжный курорт"
+    },
+    {
       "key": "map.bar_name",
       "value": "Бар {0}"
     },
@@ -1727,6 +1731,14 @@
     {
       "key": "map.poi.church_entrance",
       "value": "Вход в церковь"
+    },
+    {
+      "key": "map.poi.laundry",
+      "value": "Прачечная"
+    },
+    {
+      "key": "map.poi.dog_park",
+      "value": "Собачья площадка"
     },
     {
       "key": "map.poi.more",

@@ -86,8 +86,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
   Hero:wounds/no detach/frontguard. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
-- City: west work/east housing+park;144 lots,29.2% less land. Homes3–5 storeys,
-  courts/passages/wings; shared ground/Home views,4 POIs/landmarks,Route01.
+- City: west work/east housing+park;144 lots,homes3–5 storeys,courts/wings.
+  Shared ground/Home views,4 POIs/landmarks,Route01;dog yard:3dogs/2owners.
   Eight industrial functions own roofs/equipment/surfaces and pooled task light;
   substation/municipal/port workshops remain passive.
   First unpaused dock entry starts finite port→factory→shop supply once;
@@ -133,7 +133,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.
-- Map/inventory/journal/pause/options/localized;warehouse door ambush/debug.
+- City/Village maps:ImageGen;localized inventory/journal/pause/options;warehouse ambush/debug.
 - Shared styles, causal audio and bounded diagnostics.
 
 ## Deferred

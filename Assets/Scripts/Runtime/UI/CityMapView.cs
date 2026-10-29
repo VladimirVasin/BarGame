@@ -291,6 +291,16 @@ namespace BarPromenade
             new CityMapViewport();
 
         private CityMapController controller;
+        public Texture2D IllustratedMapTexture { get; private set; }
+        public Rect IllustratedMapBounds { get; private set; }
+        public bool IsUsingIllustratedMap => IllustratedMapTexture != null && controller != null &&
+            controller.SelectedArea == GameAreaId.City;
+        public Texture2D IllustratedVillageMapTexture { get; private set; }
+        public Rect IllustratedVillageMapBounds { get; private set; }
+        public Rect IllustratedVillageMapUvRect { get; private set; }
+        public bool IsUsingIllustratedVillageMap => IllustratedVillageMapTexture != null && controller != null &&
+            controller.SelectedArea == GameAreaId.AlpineVillage;
+        private AlpineVillagePlan boundVillageMapPlan;
         private bool wasOpen;
         private int lastMapPointFocusRevision = -1;
         private bool isPointerPanning;
@@ -322,6 +332,24 @@ namespace BarPromenade
         public void Initialize(CityMapController mapController)
         {
             controller = mapController;
+            CityMapArtResources.ResetBinding(controller);
+            CityMapArtResources.TryGet(controller, out Texture2D image, out Rect bounds);
+            IllustratedMapTexture = image; IllustratedMapBounds = bounds;
+            boundVillageMapPlan = null;
+            IllustratedVillageMapTexture = null;
+            BindVillageArtwork();
+            ResetIllustratedMapLabels();
+        }
+
+        private void BindVillageArtwork()
+        {
+            AlpineVillagePlan plan = controller?.AlpineVillagePlan;
+            if (ReferenceEquals(boundVillageMapPlan, plan)) return;
+            boundVillageMapPlan = plan;
+            AlpineVillageMapArtResources.TryGet(plan, out Texture2D image, out Rect bounds, out Rect uvRect);
+            IllustratedVillageMapTexture = image;
+            IllustratedVillageMapBounds = bounds;
+            IllustratedVillageMapUvRect = uvRect;
         }
 
         private void Update()
@@ -345,6 +373,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsInitialized)
             {
@@ -425,11 +454,20 @@ namespace BarPromenade
                     sidePanelWidth,
                     content.height);
 
+                BindVillageArtwork();
+                Rect viewportWorldBounds = IsUsingIllustratedVillageMap
+                    ? AlpineVillageMapArtResources.GetSheetWorldBounds(IllustratedVillageMapBounds, IllustratedVillageMapUvRect)
+                    : controller.ActiveDisplayWorldXZBounds;
+                // Preserve the printed sheet's pixel aspect, while the map
+                // panel below retains its independent geographic projection.
+                Rect viewportSizingBounds = IsUsingIllustratedVillageMap
+                    ? new Rect(0f, 0f, IllustratedVillageMapTexture.width, IllustratedVillageMapTexture.height)
+                    : viewportWorldBounds;
                 mapViewport.Configure(
-                    controller.ActiveDisplayWorldXZBounds,
+                    viewportSizingBounds,
                     controller.ActiveMapReferenceWorldSize,
                     mapArea.size,
-                    MinimumMapCellPixels);
+                    IsUsingIllustratedVillageMap ? .01f : MinimumMapCellPixels);
                 if (!wasOpen ||
                     lastPresentedArea != controller.SelectedArea)
                 {
@@ -437,7 +475,7 @@ namespace BarPromenade
                         controller.ShouldDrawPlayerOnSelectedArea
                             ? controller.PlayerWorldPosition
                             : controller.GetSelectedAreaTravelTargetPosition(),
-                        controller.ActiveDisplayWorldXZBounds);
+                        viewportWorldBounds);
                     wasOpen = true;
                     lastPresentedArea = controller.SelectedArea;
                 }
@@ -451,7 +489,7 @@ namespace BarPromenade
                 {
                     mapViewport.CenterOnWorld(
                         selectedPointPosition,
-                        controller.ActiveDisplayWorldXZBounds);
+                        viewportWorldBounds);
                 }
 
                 lastMapPointFocusRevision =
@@ -501,6 +539,7 @@ namespace BarPromenade
 
         private void DrawMap(MapProjection projection)
         {
+            PrepareIllustratedMapLabels(projection);
             if (controller.SelectedArea == GameAreaId.MountainRoad)
             {
                 DrawMountainRoadMap(projection);
@@ -512,6 +551,7 @@ namespace BarPromenade
             {
                 DrawAlpineVillageMap(projection);
                 DrawMapPointInspectionPass(projection);
+                DrawIllustratedMapLabels();
                 return;
             }
 
@@ -522,19 +562,31 @@ namespace BarPromenade
                 false,
                 0f,
                 1f);
-            DrawSurfaces(projection);
-            DrawAreaGrounds(projection);
-            DrawRiver(projection);
-            DrawMountainBoundary(projection);
-            DrawBuildings(projection);
-            DrawRoads(projection);
-            DrawRiverBridges(projection);
-            DrawAreaOutlines(projection);
-            DrawMountainTunnel(projection);
-            DrawSeacoastLandmarks(projection);
+            bool illustrated = IsUsingIllustratedMap;
+            if (illustrated)
+            {
+                GUI.DrawTexture(ProjectWorldRect(projection, IllustratedMapBounds), IllustratedMapTexture,
+                    ScaleMode.StretchToFill, false);
+                DrawAreaGrounds(projection, false);
+                DrawBuildings(projection, false);
+                DrawSeacoastLandmarks(projection, false);
+            }
+            else
+            {
+                DrawSurfaces(projection);
+                DrawAreaGrounds(projection);
+                DrawRiver(projection);
+                DrawMountainBoundary(projection);
+                DrawBuildings(projection);
+                DrawRoads(projection);
+                DrawRiverBridges(projection);
+                DrawAreaOutlines(projection);
+                DrawMountainTunnel(projection);
+                DrawSeacoastLandmarks(projection);
+            }
             DrawBusRoute(projection);
             DrawBusStops(projection);
-            DrawPointsOfInterest(projection);
+            DrawPointsOfInterest(projection, !illustrated);
             DrawSupermarket(projection);
             DrawBars(projection);
             DrawPlayerHome(projection);
@@ -543,6 +595,7 @@ namespace BarPromenade
             DrawBusLegend();
             DrawAreaSelectionPass(projection);
             DrawMapPointInspectionPass(projection);
+            DrawIllustratedMapLabels();
         }
 
         /// <summary>
@@ -696,6 +749,9 @@ namespace BarPromenade
                     anchor = hitbox.center;
                 }
 
+                if (IsUsingIllustratedVillageMap)
+                    hitbox = Intersect(hitbox, projection.ScreenRect);
+
                 RegisterHoverTarget(
                     hitbox,
                     anchor,
@@ -727,7 +783,8 @@ namespace BarPromenade
                 mapLineClipRect,
                 GUIContent.none,
                 GUIStyle.none);
-            if (!clicked || hoverBlockRect.Contains(globalPointer))
+            if (!clicked || hoverBlockRect.Contains(globalPointer) ||
+                (IsUsingIllustratedVillageMap && !projection.ScreenRect.Contains(localPointer)))
             {
                 return;
             }
@@ -953,6 +1010,7 @@ namespace BarPromenade
             int pressedPanButton = RetroUiInput.GetPointerPressed(1) ? 1 :
                 RetroUiInput.GetPointerPressed(2) ? 2 : -1;
             if (pressedPanButton >= 0 &&
+                !IsPointerOverIllustratedMapLabel(logicalPointer - mapBounds.position) &&
                 (mapViewport.CanScrollHorizontal ||
                  mapViewport.CanScrollVertical))
             {
@@ -1093,12 +1151,8 @@ namespace BarPromenade
             }
         }
 
-        private void DrawBuildings(MapProjection projection)
+        private void DrawBuildings(MapProjection projection, bool drawGeometry = true)
         {
-            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(controller.Layout);
-            if (laundry.IsEnabled)
-                foreach (Rect solid in laundry.BodyFootprints)
-                    DrawSolidRect(ProjectWorldRect(projection, solid), new Color(.28f, .36f, .34f, 1f));
             IReadOnlyList<BuildingLot> lots =
                 controller.Layout.BuildingLots;
             for (int index = 0; index < lots.Count; index++)
@@ -1123,10 +1177,8 @@ namespace BarPromenade
                     bottomRight.y);
                 bool isPointOfInterest =
                     controller.IsPointOfInterestLot(lot.Cell);
-                DrawSolidRect(
-                    buildingRect,
-                    GetLotColor(lot, isPointOfInterest));
-                if (isPointOfInterest)
+                if (drawGeometry) DrawSolidRect(buildingRect, GetLotColor(lot, isPointOfInterest));
+                if (drawGeometry && isPointOfInterest)
                 {
                     DrawOpenPublicPlaceLot(
                         buildingRect,
@@ -1159,6 +1211,12 @@ namespace BarPromenade
                     }
                 }
             }
+            // Residual infill sits beyond the real housing envelopes; draw
+            // it after the schematic lot rectangles, which can overrun them.
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(controller.Layout);
+            if (drawGeometry && laundry.IsEnabled)
+                foreach (Rect solid in laundry.BodyFootprints)
+                    DrawSolidRect(ProjectWorldRect(projection, solid), new Color(.28f, .36f, .34f, 1f));
         }
 
         private void DrawRiver(MapProjection projection)
@@ -1656,7 +1714,7 @@ namespace BarPromenade
         /// says what it is by how it is drawn, and gives its name only to
         /// a pointer resting on it.
         /// </summary>
-        private void DrawAreaGrounds(MapProjection projection)
+        private void DrawAreaGrounds(MapProjection projection, bool drawGeometry = true)
         {
             IReadOnlyList<CityMapAreaRegion> regions =
                 controller.AreaRegions;
@@ -1664,7 +1722,7 @@ namespace BarPromenade
             {
                 CityMapAreaRegion region = regions[index];
                 RegisterAreaHoverTargets(projection, region);
-                if (region.IsUrban)
+                if (region.IsUrban || !drawGeometry)
                 {
                     continue;
                 }
@@ -1925,11 +1983,20 @@ namespace BarPromenade
         /// to the border at the island's true easting — off the map,
         /// the way it is off the shore.
         /// </summary>
-        private void DrawSeacoastLandmarks(MapProjection projection)
+        private void DrawSeacoastLandmarks(MapProjection projection, bool drawGeometry = true)
         {
             CitySeacoastPlan coast = controller.SeacoastPlan;
             if (coast == null)
             {
+                return;
+            }
+
+            if (!drawGeometry)
+            {
+                DrawSeacoastLighthouseMarker(projection, coast);
+                if (TryProjectSeacoastParts(projection, coast, CitySeacoastPartKind.Hut, out Rect hutBounds))
+                    RegisterHoverTarget(Expand(hutBounds, 4f), hutBounds.center,
+                        LocalizationService.Get("map.seacoast.boat_station"), LandmarkHoverPriority);
                 return;
             }
 
@@ -1973,21 +2040,7 @@ namespace BarPromenade
                 DrawSolidRect(mol, MolConcrete);
             }
 
-            if (CityLighthouseIslandPlanner.TryResolveLanternPosition(
-                    coast,
-                    out Vector3 lantern))
-            {
-                Vector2 island = projection.WorldToScreen(new Vector3(
-                    lantern.x,
-                    0f,
-                    lantern.z));
-                DrawSolidRect(
-                    new Rect(island.x - 2f, island.y - 2f, 4f, 4f),
-                    RetroUiTheme.Ink);
-                DrawSolidRect(
-                    new Rect(island.x - 1f, island.y - 1f, 2f, 2f),
-                    LighthouseLight);
-            }
+            DrawSeacoastLighthouseMarker(projection, coast);
 
             for (int index = 0; index < coast.Parts.Count; index++)
             {
@@ -2043,6 +2096,16 @@ namespace BarPromenade
                 marker.center,
                 LocalizationService.Get("map.seacoast.boat_station"),
                 LandmarkHoverPriority);
+        }
+
+        private void DrawSeacoastLighthouseMarker(MapProjection projection, CitySeacoastPlan coast)
+        {
+            if (!CityLighthouseIslandPlanner.TryResolveLanternPosition(coast, out Vector3 lantern)) return;
+            // The off-shore island stays on the north chart edge at its
+            // real easting through the shared normalized projection.
+            Vector2 island = projection.WorldToScreen(new Vector3(lantern.x, 0f, lantern.z));
+            DrawSolidRect(new Rect(island.x - 2f, island.y - 2f, 4f, 4f), RetroUiTheme.Ink);
+            DrawSolidRect(new Rect(island.x - 1f, island.y - 1f, 2f, 2f), LighthouseLight);
         }
 
         private static bool TryProjectSeacoastParts(
@@ -2341,7 +2404,7 @@ namespace BarPromenade
             }
         }
 
-        private void DrawPointsOfInterest(MapProjection projection)
+        private void DrawPointsOfInterest(MapProjection projection, bool drawGround = true)
         {
             IReadOnlyList<CityMapPointOfInterest> pointsOfInterest =
                 controller.PointsOfInterest;
@@ -2351,7 +2414,7 @@ namespace BarPromenade
                     pointsOfInterest[index];
                 Color districtColor =
                     GetDistrictColor(pointOfInterest.District);
-                if (pointOfInterest.HasFootprint)
+                if (drawGround && pointOfInterest.HasFootprint)
                 {
                     // A place squeezed between two ordinary lots: their
                     // drawn rects follow lot.Size and overrun the built
@@ -2460,7 +2523,7 @@ namespace BarPromenade
                 tip + screenForward,
                 tail - screenForward,
                 halfBase + 1.4f,
-                RetroUiTheme.Ink);
+                IsUsingIllustratedVillageMap ? AlpineVillageBrochureInk : RetroUiTheme.Ink);
             FillArrowhead(tip, tail, halfBase, Player);
             RegisterHoverTarget(
                 CreateCenteredRect(position, 17f, 17f),
@@ -3350,6 +3413,14 @@ namespace BarPromenade
         private MapProjection CreateProjection(Rect mapRect)
         {
             Rect bounds = controller.ActiveDisplayWorldXZBounds;
+            if (IsUsingIllustratedVillageMap)
+            {
+                Rect uv = IllustratedVillageMapUvRect;
+                mapRect = new Rect(mapRect.x + mapRect.width * uv.xMin,
+                    mapRect.y + mapRect.height * (1f - uv.yMax),
+                    mapRect.width * uv.width, mapRect.height * uv.height);
+                bounds = IllustratedVillageMapBounds;
+            }
             float minimumX = bounds.xMin;
             float maximumX = bounds.xMax;
             float minimumZ = bounds.yMin;
@@ -3544,6 +3615,28 @@ namespace BarPromenade
                         new Vector2(center.x + halfSize * 0.6f, center.y - halfSize * 0.35f),
                         width,
                         color);
+                    break;
+                case CityMapPointOfInterestKind.Laundry:
+                    // Washer body with a diamond-shaped drum: distinct in grayscale.
+                    RetroUiTheme.StrokeRect(new Rect(center.x - halfSize, center.y - halfSize,
+                        halfSize * 2f, halfSize * 2f), width, color);
+                    DrawDiamondOutline(center + Vector2.up * (-halfSize * .55f),
+                        center + Vector2.right * (halfSize * .55f),
+                        center + Vector2.up * (halfSize * .55f),
+                        center + Vector2.right * (-halfSize * .55f), width, color);
+                    break;
+                case CityMapPointOfInterestKind.DogPark:
+                    // A paw pad and three toes. The same strokes serve map and legend.
+                    DrawTriangleOutline(center + new Vector2(0f, -halfSize * .1f),
+                        center + new Vector2(halfSize * .8f, halfSize),
+                        center + new Vector2(-halfSize * .8f, halfSize), width, color);
+                    for (int toe = -1; toe <= 1; toe++)
+                    {
+                        Vector2 at = center + new Vector2(toe * halfSize * .75f,
+                            -halfSize * (toe == 0 ? .9f : .6f));
+                        DrawLine(at + Vector2.up * (halfSize * -.2f),
+                            at + Vector2.up * (halfSize * .2f), width, color);
+                    }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(

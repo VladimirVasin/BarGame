@@ -1,23 +1,49 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-29 — AlpineVillage brochure:**
+  User:Village map→worn tourist brochure/red-crossed former skiing ad.
+  Scope/print:art§10g/15a,story§6(0)/12/21 only;§16/other§21/nine
+  checks kept. Current lodge/lift/avalanche;access open. No new3D/pistes/
+  people/event/country/year/price. Paper decor≠geography. Baked wear/grain/
+  ink;live UI/all24 kept.
+
+- **Accepted 2026-10-29 — ImageGen map artwork:**
+  User:built-in ImageGen/pure plans;City charcoal/Silent Hill. PNG/metadata:
+  bounds/size/geography/RU SHA;stale/nondefault→schematic. Live player/POIs/
+  bus/selection/XYZ/safe arrivals. Cached clamped nonreadable≤2K bitmap/area;
+  Village independent SHA/mapUvRect;MountainRoad schematic. Authored changes/
+  new objects→redraw,live motion0. Shared UI/all24 kept;cost unmeasured.
+
+- **Accepted 2026-10-29 — residential dog park:**
+  User:8×10m residual Residential:park-first after laundry/stable seed-cell
+  fallback;homes/POIs/paths kept. Preterrain immutable plan/shared infill
+  keeps laundry params. Blender/metre fence/open1.6m/earth/bench/lowbarrier.
+  Small/shaggy/large dogs;4legIK/walk/trot/sniff/sit/independent calendar;
+  contained movement/collision/avoidance. Standing/seated permanent global
+  owners/shared humanoid rig. Positioned village barks/shared softpaws→
+  AmbienceDetails;no speech/text/service/reward/quest/Cat reaction;0-5/no§6
+  waiver. Distance pose sleeps,time/collision kept;pause/disable/retainedCity/
+  unload frees audio/rig. CityGI/SSAO/fog/Soft/grade/savedPP/roadSSR/barSCGI
+  kept;mattefur/wornmetal/bevels/localcolour/groundwear/weather/wind.
+  Water/newairbeams/particles/rim/outlines/flares/motionblur/newlens0;
+  all24 reviewed,cost unmeasured.
+
 - **Accepted 2026-10-29 — relocate the complete diner to City:**
-  User approved moving the existing MountainRoad cafe, including its seven
-  stools, four bespoke actors, cups/service/smoke/conversation, hero seat/view,
-  physical selection-only menu, three Lights, three device voices and seven
-  threshold props. City owns one whole lot: candidate `[10;0]`, deterministic
-  fallback `[9..10;0..2]`; metres, IDs, assets/materials and existing RU/EN stay.
+  User:MountainRoad cafe→City:seven stools/four bespoke actors/cups/service/
+  smoke/conversation/hero seat-view/physical selection-only menu/three Lights/
+  three device voices/seven threshold props. Whole lot:candidate `[10;0]`,
+  deterministic fallback `[9..10;0..2]`;metres/IDs/assets/materials/RU/EN kept.
   Level ground joins the existing sidewalk; entry, walkability, weather shelter,
   map/XYZ/debug arrival and retained-City lifecycle follow that same plan.
   This is only a location exception to art §10f and story §17/§6. Keep open
   foreground at the glass: no copied American street or close facade backdrop.
-  No new cast, story, text, order, payment, food or drink. Shared City lighting
-  owns finite source-derived bounce/air/halation/metal and the cafe reflection
+  New cast/story/text/order/payment/food/drink0. Shared City lighting owns
+  finite source-derived bounce/air/halation/metal and the cafe reflection
   region within its existing two slots; no second global provider or duplicated
-  light energy. All 24 effects were reviewed; existing post-processing/saved
-  flags remain. Runtime cost is unmeasured. MountainRoad has no cafe, threshold,
-  counter seat, warm patch, device voices or cafe cube; LastRoute, cableway,
-  terrace and dark brink remain. Shared bar assets/contracts are retained.
+  light energy. All24 reviewed;saved post-processing kept;cost unmeasured.
+  MountainRoad:cafe/threshold/counter seat/warm patch/device voices/cafe cube0;
+  LastRoute/cableway/terrace/dark brink and shared bar assets/contracts kept.
 
 - **Accepted 2026-10-28 — residential laundry:**
   User:one `0-5` residual `8.6×6.6 m` L-shell(Blender/interior_kit):
@@ -5832,8 +5858,9 @@
   warp/chromatic sampling/warmth/exposure/vignette, optional halation and SMAA.
   `ScenePresentationExclusion` keeps preview/reflection cameras outside shared
   lens/post effects. No low-resolution presentation profile remains.
-- **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
-  drawn after the world composite instead of being degraded with the 3D image.
+- **Accepted — Crisp UI after the composite:** Runtime IMGUI follows the world
+  composite. `OnGUI` scopes Editor gamma writes with `RetroUiTheme.BeginGui`,
+  restoring state; builds keep native output.
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
   and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
   Corner intoxication/journal HUDs use its full-screen logical bounds at the
@@ -5844,8 +5871,8 @@
   because Unity 6.5 legacy IMGUI cannot reliably repaint them. Unity's legacy
   face is emergency fallback only. The
   former plum/orange cards, cut corners, bevel highlights and glow are not part
-  of the language. The reference does not alter world rendering, camera,
-  aspect, composite, audio, gameplay or localized copy. Menus, modal
+  of the language. World rendering/camera/aspect/composite/audio/gameplay/copy
+  stay unchanged. Menus, modal
   inspectors and the map omit persistent key-binding guides and control-hint
   footers.
   Clickable modal actions keep action-only labels; every active contextual

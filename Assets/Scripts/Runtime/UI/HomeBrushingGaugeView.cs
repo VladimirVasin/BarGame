@@ -8,6 +8,7 @@ namespace BarPromenade
         public void Bind(HomeTeethBrushingInteraction value) => interaction = value;
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (interaction == null || !interaction.GaugeVisible) return;
             GUI.depth = -85;
             Matrix4x4 previous = RetroUiTheme.BeginCanvas(RetroUiTheme.CalculateCanvas(Screen.width, Screen.height));

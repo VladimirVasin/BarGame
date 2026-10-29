@@ -144,6 +144,44 @@ namespace BarPromenade
         /// </summary>
         public static Font InterfaceFont => ResolveInterfaceFont();
 
+        /// <summary>
+        /// Keeps legacy IMGUI's gamma output from receiving a second sRGB
+        /// conversion in the Editor, then restores the surrounding render state.
+        /// </summary>
+        public static GuiScope BeginGui()
+        {
+#if UNITY_EDITOR
+            return new GuiScope(
+                Event.current != null && Event.current.type == EventType.Repaint);
+#else
+            return default;
+#endif
+        }
+
+        public readonly struct GuiScope : System.IDisposable
+        {
+#if UNITY_EDITOR
+            private readonly bool previousSrgbWrite;
+            private readonly bool restoreSrgbWrite;
+#endif
+
+            internal GuiScope(bool repaint)
+            {
+#if UNITY_EDITOR
+                previousSrgbWrite = repaint && GL.sRGBWrite;
+                restoreSrgbWrite = repaint && previousSrgbWrite;
+                if (restoreSrgbWrite) GL.sRGBWrite = false;
+#endif
+            }
+
+            public void Dispose()
+            {
+#if UNITY_EDITOR
+                if (restoreSrgbWrite) GL.sRGBWrite = previousSrgbWrite;
+#endif
+            }
+        }
+
         public static RetroUiCanvas CalculateCanvas(
             int screenWidth,
             int screenHeight)

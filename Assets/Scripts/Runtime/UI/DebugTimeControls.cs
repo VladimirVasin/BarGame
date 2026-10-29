@@ -37,6 +37,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             int multiplier = GameTimeScaleRuntime.DebugTimeMultiplier;
             if (!GameTimeScaleRuntime.DebugSpeedSelectionEnabled ||
                 (multiplier == 1 && Time.unscaledTime >= normalSpeedNoticeUntil) ||

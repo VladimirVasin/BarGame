@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen",
+  "intent": "redraw of registered map artwork for crisp live Russian label overlays",
+  "prompt": "imagegen-labels-prompt.txt",
+  "reference": "CityMapImage.reference.png",
+  "geography": "map-reference.json",
+  "image": "CityMapImage.generated.png",
+  "image_sha256": "eeac7f48f31a137cef134e2955f4e9575c794251a2e17fdfb221c89b1ee959a2",
+  "fingerprint": "76306f7aadd6fd4a5af65c564a44633a29c85f7a232f84d310780a1c2b33ccd3",
+  "survey_fingerprint": "8418f89cb73df16d01202bc138c481a048882f5fd56bef44184f54452900362c",
+  "schemaVersion": 2,
+  "width": 1422,
+  "height": 1106
+}

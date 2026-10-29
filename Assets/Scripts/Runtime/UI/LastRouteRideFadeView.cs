@@ -106,6 +106,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (opacity <= 0f || Event.current.type != EventType.Repaint)
             {
                 return;

@@ -222,6 +222,18 @@ namespace BarPromenade
             }
         }
 
+        internal static void AddDogParkColliders(Transform parent, CityDogParkPlan plan)
+        {
+            if (!plan.IsEnabled) return;
+            var bounds = new List<Bounds>(8);
+            plan.AppendLocalCollisionBounds(bounds);
+            var group = new GameObject("Dog Park Colliders").transform;
+            group.SetParent(parent, false);
+            group.SetPositionAndRotation(plan.Position, plan.Rotation);
+            AddBoxColliders(group, bounds);
+            FootstepGround.Stamp(group.gameObject, FootstepGroundKind.Soil);
+        }
+
         internal static void AddParkBenchColliders(
             Transform parent,
             IReadOnlyList<CityParkBenchDescriptor> benches)

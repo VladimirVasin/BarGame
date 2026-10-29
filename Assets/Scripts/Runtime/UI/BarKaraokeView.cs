@@ -50,6 +50,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (!IsOpen || PauseMenuController.IsAnyPaused) return;
             if (labelStyle == null)
             {

@@ -111,6 +111,7 @@ namespace BarPromenade
 
         protected virtual void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (!Visible || Event.current.type != EventType.Repaint)
             {
                 return;

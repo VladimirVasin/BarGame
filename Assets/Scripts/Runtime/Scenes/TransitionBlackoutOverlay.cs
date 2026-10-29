@@ -41,6 +41,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             Draw(1f);
         }
     }

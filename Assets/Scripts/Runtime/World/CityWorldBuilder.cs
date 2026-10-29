@@ -377,6 +377,8 @@ namespace BarPromenade
 
             CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan);
             CityLaundryWorldBuilder.Build(world, laundryPlan);
+            CityDogParkWorldBuilder.Build(world, layout);
+            CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -2802,6 +2804,7 @@ namespace BarPromenade
             Seacoast = CitySeacoastPlanner.Create(layout);
             EastExit = CityEastExitPlanner.Create(layout);
             Laundry = CityLaundryPlan.ForLayout(layout);
+            DogPark = CityDogParkPlan.ForLayout(layout);
         }
 
         internal CityLayout Layout { get; }
@@ -2817,6 +2820,7 @@ namespace BarPromenade
         internal CitySeacoastPlan Seacoast { get; }
         internal CityEastExitPlan EastExit { get; }
         internal CityLaundryPlan Laundry { get; }
+        internal CityDogParkPlan DogPark { get; }
 
         internal static bool IsMemoised(CityLayout layout)
         {

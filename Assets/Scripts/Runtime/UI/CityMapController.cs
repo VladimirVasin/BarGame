@@ -25,7 +25,9 @@ namespace BarPromenade
         Docks = 6,
         ArchShelter = 7,
         Church = 8,
-        Cafe = 9
+        Cafe = 9,
+        Laundry = 10,
+        DogPark = 11
     }
 
     public readonly struct CityMapPointOfInterest
@@ -947,6 +949,12 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Cafe:
                     key = "map.mountain_road.cafe";
                     return true;
+                case CityMapPointOfInterestKind.Laundry:
+                    key = "map.poi.laundry";
+                    return true;
+                case CityMapPointOfInterestKind.DogPark:
+                    key = "map.poi.dog_park";
+                    return true;
                 default:
                     key = string.Empty;
                     return false;
@@ -1455,7 +1463,23 @@ namespace BarPromenade
                     "city-cafe", CityMapPointOfInterestKind.Cafe, CityDistrictKind.Residential,
                     arrival, cafe.Bounds, true));
             }
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(Layout);
+            if (laundry.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "laundry", CityMapPointOfInterestKind.Laundry, CityDistrictKind.Residential,
+                    ResolveNamedPlaceArrival(laundry.ApproachWorld)));
+            CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(Layout);
+            if (dogPark.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "dog-park", CityMapPointOfInterestKind.DogPark, CityDistrictKind.Residential,
+                    ResolveNamedPlaceArrival(dogPark.ApproachWorld), dogPark.Footprint, true));
+        }
 
+        private Vector3 ResolveNamedPlaceArrival(Vector3 approach)
+        {
+            if (CityTerrainSurfacePlan.TrySampleGroundTop(Layout, new Vector2(approach.x, approach.z),
+                out float top, out CitySurfaceDescriptor surface) && !surface.IsWater) approach.y = top;
+            return approach + Vector3.up * PlayerFactory.GroundedRootOffset;
         }
 
         private static int CompareBarLots(BuildingLot left, BuildingLot right)

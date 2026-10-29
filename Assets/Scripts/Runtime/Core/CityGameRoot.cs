@@ -548,6 +548,8 @@ namespace BarPromenade
             GameLogPhases.Report("city", "hero", stepTimer);
             CityLaundryController laundry = World.Root.GetComponentInChildren<CityLaundryController>();
             if (laundry != null) laundry.PresentationObserver = Player.GameObject.transform;
+            CityDogParkController dogPark = World.Root.GetComponentInChildren<CityDogParkController>();
+            if (dogPark != null) dogPark.PresentationObserver = Player.GameObject.transform;
             World.Root.GetComponentInChildren<CityOffshoreBoatController>()
                 ?.AttachHero(Player.GameObject.transform);
             CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();

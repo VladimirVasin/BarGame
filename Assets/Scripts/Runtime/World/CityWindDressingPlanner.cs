@@ -501,6 +501,13 @@ namespace BarPromenade
                 result.Add(new Bounds(new Vector3(reserved.center.x, laundry.Position.y + 2.1f, reserved.center.y),
                     new Vector3(reserved.width, 4.2f, reserved.height)));
             }
+            CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(layout);
+            if (dogPark.IsEnabled)
+            {
+                Rect reserved = dogPark.ReservationBounds;
+                result.Add(new Bounds(new Vector3(reserved.center.x, dogPark.Position.y + 2.1f, reserved.center.y),
+                    new Vector3(reserved.width, 4.2f, reserved.height)));
+            }
             var buffer = new List<Bounds>(
                 CityStaticCollisionBuilder.MaximumDecorationProxyCount);
             for (int index = 0;

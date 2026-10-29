@@ -675,6 +675,12 @@ namespace BarPromenade
                 foreach (Rect floor in laundry.WalkableFootprints) area.Add(floor);
                 foreach (Rect solid in laundry.SolidFootprints) area.Exclude(solid);
             }
+            CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(layout);
+            if (dogPark.IsEnabled)
+            {
+                foreach (Rect floor in dogPark.WalkableFootprints) area.Add(floor);
+                foreach (Rect solid in dogPark.SolidFootprints) area.Exclude(solid);
+            }
             return area;
         }
 

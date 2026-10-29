@@ -1396,20 +1396,21 @@ cemetery:own interiors/returns.
   in its reconstructed half-space, enabled only in the Balcony shot.
   No collision/interaction/speech/sound/light/story state;
 - one residual residential laundry (`CityLaundry{Plan,AssetProvider,Controller}`):
-  fixed-metre kit `8.6 x 6.6 m` L-shell, physical windows, closed front door/open
-  side entry, two drums, sorting table/shelves and service canopy/trolley.
-  One permanent global worker folds the same hinged cloth and carries its
-  basket in a `48 s` loop; contacts/collision/free floor share authored anchors.
-  Nonemissive enamel `2.4 x .76 m` sign: generated «ПРАЧЕЧНАЯ»/washer-cloth,
-  full UV/Clamp/sRGB/mips/BC7/1024/nonreadable; ArtSource LaundrySign prompt/SHA.
-  Shared Port metre tiles: plaster/concrete2m, metal1.5m, timber/fabric1m,
-  Roof2m/Rubber; City albedo/packed slopes/roughness/cavity, no new tiling maps.
-  Covered GroundAuthoredConcrete floor uses CityClimate=false and stays dry.
-  4 cached lens-centred sources point down165°/20°: warm work/neutral machines/
-  cool canopy/front(range`4 m`). Small halos have no offset; no laundry air beams.
-  Pool12/Soft shadows/low tier256/day floor/bounce4/air4/probes2; other profiles/hum kept.
-  Bounded time/pause/cleanup; static Home copy.
-  Ordinary `0-5` life; no other text/service/economy/quest/reward/story hint;
+  fixed-metre `8.6x6.6m` L-kit/windows/front closed/side open;two drums/table/shelves/canopy/trolley.
+  Permanent global worker:hinged cloth/basket `48s`,authored contacts/collision/free floor.
+  Nonemissive enamel `2.4x.76m`:generated «ПРАЧЕЧНАЯ»/washer-cloth;
+  UV/Clamp/sRGB/mips/BC7/1024/nonreadable;ArtSource LaundrySign prompt/SHA.
+  Port tiles:plaster/concrete2m,metal1.5m,timber/fabric1m,Roof2m/Rubber;
+  City albedo/slopes/roughness/cavity. Covered GroundAuthoredConcrete:CityClimate=false/dry.
+  4 cached lens/halo centres↓165°/20°:warm work/neutral machines/cool canopy/front4m;
+  no air beams.Pool12/Soft256/day floor/bounce4/air4/probes2/hum/shared profiles.
+  Bounded time/pause/cleanup;static Home. `0-5`;no other text/service/economy/quest/reward/hint;
+- `8x10m` residential dog park (`CityDogPark*`,`CityDogPose`,`CityDogActivity`):
+  residual ground after laundry,park-first fitting;homes/POIs/routes retained.
+  Fence/open1.6m entry/earth/bench/barrier;three distinct articulated dogs walk,
+  sniff,play/sit;two permanent silent global owners,one seated. Local bounded
+  collision/avoidance,calendar phases/30Hz poses/distance sleep;pause/disable/unload cleanup.
+  Dog bark reuses village synthesis;shared soft paws.No new light/text/quest/story;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
   `4.14.0` supplies the passive visuals for the broad City misc pass: `104`
   semantic kinds resolve to `145` assemblies, `305` role meshes and
@@ -1776,25 +1777,24 @@ cemetery:own interiors/returns.
 
 ### Map, transitions and shared interaction
 
-- a full-screen city map projected from a display envelope seeded by the
-  blueprint's centered map bounds,
-  with area colors and labels anchored on real active cells, distinct park,
-  beach, sea, river, promenade and cemetery surfaces and paths, the one
-  cemetery/church internal passage cut into both precinct outlines without
-  becoming a street gate or teleport anchor, the
-  seacoast's landmarks (mol, pier, hut, piles, barge, and the
-  lighthouse island's dot pinned to the chart's north border at its
-  true easting),
-  plus separate map treatments for the Works, Mouth and timber bridges,
-  player/home-bar markers,
-  a dedicated labeled home icon, a distinct grocery-shop marker and nine
-  kind-specific point-of-interest markers (four public lots, fair, eastern
-  post, docks, arch, church door) in one localized legend that caps its rows
-  to the panel. Hovering a bar, home, shop or point-of-interest marker shows
-  its localized name in a bounded tooltip. Public lots and the fair ground
-  are drawn as open ground rather than buildings; lot data comes from the
-  validated layout the world builder uses, the five places from the memoised
-  world plans and the port. It consumes `CityWorldResult.MountainBoundaryPlan`,
+- City map:full-screen blueprint-centred;cell labels/area colours. Park/beach/sea/river/promenade/cemetery surfaces
+  and paths; cemetery–church passage cuts both outlines without street gate/
+  teleport anchor. Coast:mol/pier/hut/piles/barge,lighthouse dot on the north
+  border at true easting; Works/Mouth/timber bridges have distinct treatments.
+  Player/home-bar/home/grocery markers;twelve POI glyphs (four lots,
+  fair/post/docks/arch/church/cafe/laundry/dog yard),bounded localized legend/
+  hover names. Public lots/fair use open ground,not buildings;locations come
+  from validated memoised plans/port.
+  Default ImageGen `UI/Maps`:City charcoal/Silent Hill;Village worn tourist
+  brochure/red-crossed resort.
+  LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
+  stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
+  keys;Village mapUvRect separates map/nonXYZ ad. Cached clamped nonreadable
+  bitmap≤2K/area. Bounded RU cache:contrast plates/leaders/collision/clip;
+  no anonymous yards/plate coords;named POIs/click→XYZ inspector;
+  player/POIs/bus/selection/XYZ/arrivals live. Authored edits/new objects→redraw;
+  live motion0.
+  It consumes `CityWorldResult.MountainBoundaryPlan`,
   expands display bounds only west and south, including the visible cave
   approach and the first `12 m` of tunnel, and draws each ridge as a
   toe-to-outer-foot hatch carrying only the visible narrow river approach

@@ -57,7 +57,8 @@ namespace BarPromenade
             Vector3 bridgePosition,
             Rect plateauBounds,
             Rect displayWorldXZBounds,
-            IList<CityMapRouteSegment> branchRoutes = null)
+            IList<CityMapRouteSegment> branchRoutes = null,
+            AlpineVillagePlan sourceVillagePlan = null)
         {
             RoutePoints = new ReadOnlyCollection<Vector3>(
                 new List<Vector3>(routePoints));
@@ -77,6 +78,7 @@ namespace BarPromenade
             BranchRoutes = new ReadOnlyCollection<CityMapRouteSegment>(
                 branchRoutes == null ? new List<CityMapRouteSegment>() :
                 new List<CityMapRouteSegment>(branchRoutes));
+            SourceVillagePlan = sourceVillagePlan;
         }
 
         private CityMapMountainRoadOverlay()
@@ -96,6 +98,7 @@ namespace BarPromenade
             new CityMapMountainRoadOverlay();
 
         public IReadOnlyList<Vector3> RoutePoints { get; }
+        internal AlpineVillagePlan SourceVillagePlan { get; }
         public IReadOnlyList<CityMapRouteSegment> BranchRoutes { get; }
         public IReadOnlyList<Vector3> HairpinPositions { get; }
         public IReadOnlyList<CityMapMountainHatchSegment> MountainHatches

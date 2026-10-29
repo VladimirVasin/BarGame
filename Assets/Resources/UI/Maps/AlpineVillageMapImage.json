@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "villageSeed": 20260727,
+  "fingerprint": "e927d365ffe4b427c55019d652106e72848339157cfd0e1a273a2f7e22ed7ecf",
+  "worldBounds": {
+    "serializedVersion": "2",
+    "x": 599.8555297851562,
+    "y": 147.83872985839844,
+    "width": 312.92364501953125,
+    "height": 258.43621826171875
+  },
+  "mapUvRect": {
+    "serializedVersion": "2",
+    "x": 0.03500000014901161,
+    "y": 0.054999999701976776,
+    "width": 0.6899999976158142,
+    "height": 0.8899999856948853
+  },
+  "imageWidth": 1448,
+  "imageHeight": 1086
+}

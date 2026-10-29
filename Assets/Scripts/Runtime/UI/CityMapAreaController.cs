@@ -185,6 +185,7 @@ namespace BarPromenade
             mountainRoadOverlay;
         public CityMapMountainRoadOverlay AlpineVillageOverlay =>
             villageOverlay;
+        public AlpineVillagePlan AlpineVillagePlan => villageOverlay.SourceVillagePlan;
 
         /// <summary>The overlay of whichever tab is showing, or empty on the
         /// City tab, which draws itself from the layout.</summary>
@@ -1002,6 +1003,16 @@ namespace BarPromenade
                 villageOverlay.TunnelPosition,
                 30,
                 new Vector2(22f, 18f));
+
+            if (AlpineVillagePlan != null)
+            {
+                // The old skiing complex is closed. Its intact lodge approach
+                // remains an ordinary, safe destination outside the avalanche.
+                AddMapPoint(villageMapPoints, "alpine-village:ski-resort",
+                    GameAreaId.AlpineVillage, CityMapPointKind.Village,
+                    LocalizationService.Get("map.alpine_village.ski_resort"),
+                    AlpineVillagePlan.Expansion.LodgeApproach, 28, new Vector2(24f, 20f));
+            }
 
             for (int index = 0;
                  index < villagePlots.Count;

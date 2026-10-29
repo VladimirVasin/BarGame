@@ -1,0 +1,1578 @@
+{
+  "design_id": "city_residential_dog_park_v1",
+  "version": "1.0.0",
+  "generator": "build-city-dog-park-3d-model.py",
+  "coordinates": "Unity metres +Y up, +Z muzzle/entrance, paw sole Y=0",
+  "footprint": [
+    -4,
+    -5,
+    4,
+    5
+  ],
+  "entrance_width": 1.6,
+  "fence_height": 1.25,
+  "palette": [
+    [
+      0.3,
+      0.235,
+      0.17,
+      1
+    ],
+    [
+      0.47,
+      0.375,
+      0.25,
+      1
+    ],
+    [
+      0.65,
+      0.565,
+      0.41,
+      1
+    ],
+    [
+      0.76,
+      0.715,
+      0.59,
+      1
+    ],
+    [
+      0.37,
+      0.385,
+      0.36,
+      1
+    ],
+    [
+      0.19,
+      0.205,
+      0.195,
+      1
+    ],
+    [
+      0.105,
+      0.115,
+      0.105,
+      1
+    ],
+    [
+      0.055,
+      0.062,
+      0.055,
+      1
+    ],
+    [
+      0.59,
+      0.445,
+      0.285,
+      1
+    ],
+    [
+      0.36,
+      0.29,
+      0.225,
+      1
+    ],
+    [
+      0.72,
+      0.665,
+      0.55,
+      1
+    ],
+    [
+      0.285,
+      0.355,
+      0.33,
+      1
+    ],
+    [
+      0.4,
+      0.375,
+      0.315,
+      1
+    ],
+    [
+      0.49,
+      0.465,
+      0.39,
+      1
+    ],
+    [
+      0.255,
+      0.265,
+      0.225,
+      1
+    ],
+    [
+      0.58,
+      0.555,
+      0.485,
+      1
+    ]
+  ],
+  "models": [
+    {
+      "name": "StaticDogPark",
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -5.0
+      ],
+      "bounds_max": [
+        4.0,
+        1.25,
+        5.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Barrier",
+          "position": [
+            2.45,
+            0.22,
+            -2.3
+          ]
+        },
+        {
+          "name": "ANCHOR_BenchSeat",
+          "position": [
+            -2.6,
+            0.46,
+            -4.05
+          ]
+        },
+        {
+          "name": "ANCHOR_Entry",
+          "position": [
+            0.0,
+            0.0,
+            5.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_OwnerSeated",
+          "position": [
+            -2.6,
+            0.0,
+            -4.05
+          ]
+        },
+        {
+          "name": "ANCHOR_OwnerStanding",
+          "position": [
+            2.7,
+            0.0,
+            2.3
+          ]
+        }
+      ],
+      "triangles": 4044,
+      "geometry_signature": "e370fc6fbd5bc6e6743e816ba253571002dcb75fa0977af1e780b9efd2c2997c",
+      "renderer_count": 5,
+      "maximum_triangles": 12000,
+      "maximum_renderers": 6,
+      "pivots": []
+    },
+    {
+      "name": "DogSmall",
+      "bounds_min": [
+        -0.1235,
+        1e-05,
+        -0.36766
+      ],
+      "bounds_max": [
+        0.1235,
+        0.6108,
+        0.4403
+      ],
+      "anchors": [
+        {
+          "name": "MOVE_Torso",
+          "position": [
+            0.0,
+            0.3496,
+            -0.1568
+          ]
+        },
+        {
+          "name": "MOVE_Head",
+          "position": [
+            0.0,
+            0.4066,
+            0.2107
+          ]
+        },
+        {
+          "name": "ANCHOR_Muzzle",
+          "position": [
+            0.0,
+            0.4484,
+            0.4375
+          ]
+        },
+        {
+          "name": "MOVE_EarL",
+          "position": [
+            -0.0686,
+            0.5016,
+            0.2352
+          ]
+        },
+        {
+          "name": "MOVE_EarR",
+          "position": [
+            0.0686,
+            0.5016,
+            0.2352
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper",
+          "position": [
+            -0.0836,
+            0.323,
+            -0.1764
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower",
+          "position": [
+            -0.0836,
+            0.1596,
+            -0.2144
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw",
+          "position": [
+            -0.0836,
+            0.02174,
+            -0.1555
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBL",
+          "position": [
+            -0.0836,
+            0.0,
+            -0.14463
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper",
+          "position": [
+            0.0836,
+            0.323,
+            -0.1764
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower",
+          "position": [
+            0.0836,
+            0.1596,
+            -0.2144
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw",
+          "position": [
+            0.0836,
+            0.02174,
+            -0.1555
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBR",
+          "position": [
+            0.0836,
+            0.0,
+            -0.14463
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper",
+          "position": [
+            -0.0792,
+            0.3382,
+            0.147
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower",
+          "position": [
+            -0.0792,
+            0.1596,
+            0.1337
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw",
+          "position": [
+            -0.0792,
+            0.02174,
+            0.1679
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFL",
+          "position": [
+            -0.0792,
+            0.0,
+            0.17877
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper",
+          "position": [
+            0.0792,
+            0.3382,
+            0.147
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower",
+          "position": [
+            0.0792,
+            0.1596,
+            0.1337
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw",
+          "position": [
+            0.0792,
+            0.02174,
+            0.1679
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFR",
+          "position": [
+            0.0792,
+            0.0,
+            0.17877
+          ]
+        },
+        {
+          "name": "MOVE_Tail01",
+          "position": [
+            0.0,
+            0.3724,
+            -0.2744
+          ]
+        },
+        {
+          "name": "MOVE_Tail02",
+          "position": [
+            0.0,
+            0.494,
+            -0.3528
+          ]
+        }
+      ],
+      "triangles": 2924,
+      "geometry_signature": "8932b031a48c73ca467f66fc2866483d22d535edd0f3d6f19dc71a4fbc8dc768",
+      "renderer_count": 18,
+      "maximum_triangles": 6500,
+      "maximum_renderers": 23,
+      "pivots": [
+        {
+          "name": "MOVE_Torso",
+          "parent": "DogSmall",
+          "position": [
+            0.0,
+            0.3496,
+            -0.1568
+          ]
+        },
+        {
+          "name": "MOVE_Head",
+          "parent": "MOVE_Torso",
+          "position": [
+            0.0,
+            0.4066,
+            0.2107
+          ]
+        },
+        {
+          "name": "MOVE_EarL",
+          "parent": "MOVE_Head",
+          "position": [
+            -0.0686,
+            0.5016,
+            0.2352
+          ]
+        },
+        {
+          "name": "MOVE_EarR",
+          "parent": "MOVE_Head",
+          "position": [
+            0.0686,
+            0.5016,
+            0.2352
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper",
+          "parent": "MOVE_Torso",
+          "position": [
+            -0.0836,
+            0.323,
+            -0.1764
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower",
+          "parent": "MOVE_LegBL_Upper",
+          "position": [
+            -0.0836,
+            0.1596,
+            -0.2144
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw",
+          "parent": "MOVE_LegBL_Lower",
+          "position": [
+            -0.0836,
+            0.02174,
+            -0.1555
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper",
+          "parent": "MOVE_Torso",
+          "position": [
+            0.0836,
+            0.323,
+            -0.1764
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower",
+          "parent": "MOVE_LegBR_Upper",
+          "position": [
+            0.0836,
+            0.1596,
+            -0.2144
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw",
+          "parent": "MOVE_LegBR_Lower",
+          "position": [
+            0.0836,
+            0.02174,
+            -0.1555
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper",
+          "parent": "MOVE_Torso",
+          "position": [
+            -0.0792,
+            0.3382,
+            0.147
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower",
+          "parent": "MOVE_LegFL_Upper",
+          "position": [
+            -0.0792,
+            0.1596,
+            0.1337
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw",
+          "parent": "MOVE_LegFL_Lower",
+          "position": [
+            -0.0792,
+            0.02174,
+            0.1679
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper",
+          "parent": "MOVE_Torso",
+          "position": [
+            0.0792,
+            0.3382,
+            0.147
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower",
+          "parent": "MOVE_LegFR_Upper",
+          "position": [
+            0.0792,
+            0.1596,
+            0.1337
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw",
+          "parent": "MOVE_LegFR_Lower",
+          "position": [
+            0.0792,
+            0.02174,
+            0.1679
+          ]
+        },
+        {
+          "name": "MOVE_Tail01",
+          "parent": "MOVE_Torso",
+          "position": [
+            0.0,
+            0.3724,
+            -0.2744
+          ]
+        },
+        {
+          "name": "MOVE_Tail02",
+          "parent": "MOVE_Tail01",
+          "position": [
+            0.0,
+            0.494,
+            -0.3528
+          ]
+        }
+      ],
+      "joints": [
+        {
+          "leg": "FL",
+          "upper": [
+            -0.07919999999999999,
+            0.3382,
+            0.147
+          ],
+          "lower": [
+            -0.07919999999999999,
+            0.1596,
+            0.13369999999999999
+          ],
+          "paw": [
+            -0.07919999999999999,
+            0.021736000000000002,
+            0.1679
+          ],
+          "contact": [
+            -0.07919999999999999,
+            0,
+            0.17876799999999998
+          ]
+        },
+        {
+          "leg": "FR",
+          "upper": [
+            0.07919999999999999,
+            0.3382,
+            0.147
+          ],
+          "lower": [
+            0.07919999999999999,
+            0.1596,
+            0.13369999999999999
+          ],
+          "paw": [
+            0.07919999999999999,
+            0.021736000000000002,
+            0.1679
+          ],
+          "contact": [
+            0.07919999999999999,
+            0,
+            0.17876799999999998
+          ]
+        },
+        {
+          "leg": "BL",
+          "upper": [
+            -0.08360000000000001,
+            0.323,
+            -0.1764
+          ],
+          "lower": [
+            -0.08360000000000001,
+            0.1596,
+            -0.2144
+          ],
+          "paw": [
+            -0.08360000000000001,
+            0.021736000000000002,
+            -0.1555
+          ],
+          "contact": [
+            -0.08360000000000001,
+            0,
+            -0.144632
+          ]
+        },
+        {
+          "leg": "BR",
+          "upper": [
+            0.08360000000000001,
+            0.323,
+            -0.1764
+          ],
+          "lower": [
+            0.08360000000000001,
+            0.1596,
+            -0.2144
+          ],
+          "paw": [
+            0.08360000000000001,
+            0.021736000000000002,
+            -0.1555
+          ],
+          "contact": [
+            0.08360000000000001,
+            0,
+            -0.144632
+          ]
+        }
+      ],
+      "ground_y": 0,
+      "variant": "small alert terrier",
+      "shoulder_height": 0.38
+    },
+    {
+      "name": "DogShaggy",
+      "bounds_min": [
+        -0.17765,
+        1e-05,
+        -0.70696
+      ],
+      "bounds_max": [
+        0.17765,
+        0.83123,
+        0.6205
+      ],
+      "anchors": [
+        {
+          "name": "MOVE_Torso",
+          "position": [
+            0.0,
+            0.5244,
+            -0.2272
+          ]
+        },
+        {
+          "name": "MOVE_Head",
+          "position": [
+            0.0,
+            0.6099,
+            0.3053
+          ]
+        },
+        {
+          "name": "ANCHOR_Muzzle",
+          "position": [
+            0.0,
+            0.6726,
+            0.6167
+          ]
+        },
+        {
+          "name": "MOVE_EarL",
+          "position": [
+            -0.0931,
+            0.7524,
+            0.3408
+          ]
+        },
+        {
+          "name": "MOVE_EarR",
+          "position": [
+            0.0931,
+            0.7524,
+            0.3408
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper",
+          "position": [
+            -0.1178,
+            0.4845,
+            -0.2556
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower",
+          "position": [
+            -0.1178,
+            0.2394,
+            -0.3126
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw",
+          "position": [
+            -0.1178,
+            0.0326,
+            -0.22425
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBL",
+          "position": [
+            -0.1178,
+            0.0,
+            -0.20795
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper",
+          "position": [
+            0.1178,
+            0.4845,
+            -0.2556
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower",
+          "position": [
+            0.1178,
+            0.2394,
+            -0.3126
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw",
+          "position": [
+            0.1178,
+            0.0326,
+            -0.22425
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBR",
+          "position": [
+            0.1178,
+            0.0,
+            -0.20795
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper",
+          "position": [
+            -0.1116,
+            0.5073,
+            0.213
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower",
+          "position": [
+            -0.1116,
+            0.2394,
+            0.19305
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw",
+          "position": [
+            -0.1116,
+            0.0326,
+            0.24435
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFL",
+          "position": [
+            -0.1116,
+            0.0,
+            0.26065
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper",
+          "position": [
+            0.1116,
+            0.5073,
+            0.213
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower",
+          "position": [
+            0.1116,
+            0.2394,
+            0.19305
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw",
+          "position": [
+            0.1116,
+            0.0326,
+            0.24435
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFR",
+          "position": [
+            0.1116,
+            0.0,
+            0.26065
+          ]
+        },
+        {
+          "name": "MOVE_Tail01",
+          "position": [
+            0.0,
+            0.5586,
+            -0.3976
+          ]
+        },
+        {
+          "name": "MOVE_Tail02",
+          "position": [
+            0.0,
+            0.5928,
+            -0.6177
+          ]
+        }
+      ],
+      "triangles": 3152,
+      "geometry_signature": "063a41c95eee5f31e12f0f4481ac27be8220ab8ae3ae29a4a327244c9dace6df",
+      "renderer_count": 18,
+      "maximum_triangles": 6500,
+      "maximum_renderers": 23,
+      "pivots": [
+        {
+          "name": "MOVE_Torso.001",
+          "parent": "DogShaggy",
+          "position": [
+            0.0,
+            0.5244,
+            -0.2272
+          ]
+        },
+        {
+          "name": "MOVE_Head.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            0.0,
+            0.6099,
+            0.3053
+          ]
+        },
+        {
+          "name": "MOVE_EarL.001",
+          "parent": "MOVE_Head.001",
+          "position": [
+            -0.0931,
+            0.7524,
+            0.3408
+          ]
+        },
+        {
+          "name": "MOVE_EarR.001",
+          "parent": "MOVE_Head.001",
+          "position": [
+            0.0931,
+            0.7524,
+            0.3408
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            -0.1178,
+            0.4845,
+            -0.2556
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower.001",
+          "parent": "MOVE_LegBL_Upper.001",
+          "position": [
+            -0.1178,
+            0.2394,
+            -0.3126
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw.001",
+          "parent": "MOVE_LegBL_Lower.001",
+          "position": [
+            -0.1178,
+            0.0326,
+            -0.22425
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            0.1178,
+            0.4845,
+            -0.2556
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower.001",
+          "parent": "MOVE_LegBR_Upper.001",
+          "position": [
+            0.1178,
+            0.2394,
+            -0.3126
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw.001",
+          "parent": "MOVE_LegBR_Lower.001",
+          "position": [
+            0.1178,
+            0.0326,
+            -0.22425
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            -0.1116,
+            0.5073,
+            0.213
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower.001",
+          "parent": "MOVE_LegFL_Upper.001",
+          "position": [
+            -0.1116,
+            0.2394,
+            0.19305
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw.001",
+          "parent": "MOVE_LegFL_Lower.001",
+          "position": [
+            -0.1116,
+            0.0326,
+            0.24435
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            0.1116,
+            0.5073,
+            0.213
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower.001",
+          "parent": "MOVE_LegFR_Upper.001",
+          "position": [
+            0.1116,
+            0.2394,
+            0.19305
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw.001",
+          "parent": "MOVE_LegFR_Lower.001",
+          "position": [
+            0.1116,
+            0.0326,
+            0.24435
+          ]
+        },
+        {
+          "name": "MOVE_Tail01.001",
+          "parent": "MOVE_Torso.001",
+          "position": [
+            0.0,
+            0.5586,
+            -0.3976
+          ]
+        },
+        {
+          "name": "MOVE_Tail02.001",
+          "parent": "MOVE_Tail01.001",
+          "position": [
+            0.0,
+            0.5928,
+            -0.6177
+          ]
+        }
+      ],
+      "joints": [
+        {
+          "leg": "FL",
+          "upper": [
+            -0.11159999999999999,
+            0.5073,
+            0.213
+          ],
+          "lower": [
+            -0.11159999999999999,
+            0.23939999999999997,
+            0.19305
+          ],
+          "paw": [
+            -0.11159999999999999,
+            0.032603999999999994,
+            0.24434999999999998
+          ],
+          "contact": [
+            -0.11159999999999999,
+            0,
+            0.260652
+          ]
+        },
+        {
+          "leg": "FR",
+          "upper": [
+            0.11159999999999999,
+            0.5073,
+            0.213
+          ],
+          "lower": [
+            0.11159999999999999,
+            0.23939999999999997,
+            0.19305
+          ],
+          "paw": [
+            0.11159999999999999,
+            0.032603999999999994,
+            0.24434999999999998
+          ],
+          "contact": [
+            0.11159999999999999,
+            0,
+            0.260652
+          ]
+        },
+        {
+          "leg": "BL",
+          "upper": [
+            -0.1178,
+            0.48449999999999993,
+            -0.2556
+          ],
+          "lower": [
+            -0.1178,
+            0.23939999999999997,
+            -0.3126
+          ],
+          "paw": [
+            -0.1178,
+            0.032603999999999994,
+            -0.22425
+          ],
+          "contact": [
+            -0.1178,
+            0,
+            -0.20794800000000002
+          ]
+        },
+        {
+          "leg": "BR",
+          "upper": [
+            0.1178,
+            0.48449999999999993,
+            -0.2556
+          ],
+          "lower": [
+            0.1178,
+            0.23939999999999997,
+            -0.3126
+          ],
+          "paw": [
+            0.1178,
+            0.032603999999999994,
+            -0.22425
+          ],
+          "contact": [
+            0.1178,
+            0,
+            -0.20794800000000002
+          ]
+        }
+      ],
+      "ground_y": 0,
+      "variant": "medium shaggy mongrel",
+      "shoulder_height": 0.57
+    },
+    {
+      "name": "DogLarge",
+      "bounds_min": [
+        -0.2221,
+        2e-05,
+        -0.82788
+      ],
+      "bounds_max": [
+        0.2221,
+        1.06797,
+        0.8024
+      ],
+      "anchors": [
+        {
+          "name": "MOVE_Torso",
+          "position": [
+            0.0,
+            0.6808,
+            -0.3072
+          ]
+        },
+        {
+          "name": "MOVE_Head",
+          "position": [
+            0.0,
+            0.7918,
+            0.4128
+          ]
+        },
+        {
+          "name": "ANCHOR_Muzzle",
+          "position": [
+            0.0,
+            0.8732,
+            0.7978
+          ]
+        },
+        {
+          "name": "MOVE_EarL",
+          "position": [
+            -0.1127,
+            0.9768,
+            0.4608
+          ]
+        },
+        {
+          "name": "MOVE_EarR",
+          "position": [
+            0.1127,
+            0.9768,
+            0.4608
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper",
+          "position": [
+            -0.1444,
+            0.629,
+            -0.3456
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower",
+          "position": [
+            -0.1444,
+            0.3108,
+            -0.4196
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw",
+          "position": [
+            -0.1444,
+            0.04233,
+            -0.3049
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBL",
+          "position": [
+            -0.1444,
+            0.0,
+            -0.28374
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper",
+          "position": [
+            0.1444,
+            0.629,
+            -0.3456
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower",
+          "position": [
+            0.1444,
+            0.3108,
+            -0.4196
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw",
+          "position": [
+            0.1444,
+            0.04233,
+            -0.3049
+          ]
+        },
+        {
+          "name": "ANCHOR_FootBR",
+          "position": [
+            0.1444,
+            0.0,
+            -0.28374
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper",
+          "position": [
+            -0.1368,
+            0.6586,
+            0.288
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower",
+          "position": [
+            -0.1368,
+            0.3108,
+            0.2621
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw",
+          "position": [
+            -0.1368,
+            0.04233,
+            0.3287
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFL",
+          "position": [
+            -0.1368,
+            0.0,
+            0.34986
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper",
+          "position": [
+            0.1368,
+            0.6586,
+            0.288
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower",
+          "position": [
+            0.1368,
+            0.3108,
+            0.2621
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw",
+          "position": [
+            0.1368,
+            0.04233,
+            0.3287
+          ]
+        },
+        {
+          "name": "ANCHOR_FootFR",
+          "position": [
+            0.1368,
+            0.0,
+            0.34986
+          ]
+        },
+        {
+          "name": "MOVE_Tail01",
+          "position": [
+            0.0,
+            0.7252,
+            -0.5376
+          ]
+        },
+        {
+          "name": "MOVE_Tail02",
+          "position": [
+            0.0,
+            0.481,
+            -0.7968
+          ]
+        }
+      ],
+      "triangles": 3092,
+      "geometry_signature": "81eb8666d022e0c7183e1b18a93c15d948a288ca62efb503caad326c1f2c1363",
+      "renderer_count": 18,
+      "maximum_triangles": 6500,
+      "maximum_renderers": 23,
+      "pivots": [
+        {
+          "name": "MOVE_Torso.002",
+          "parent": "DogLarge",
+          "position": [
+            0.0,
+            0.6808,
+            -0.3072
+          ]
+        },
+        {
+          "name": "MOVE_Head.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            0.0,
+            0.7918,
+            0.4128
+          ]
+        },
+        {
+          "name": "MOVE_EarL.002",
+          "parent": "MOVE_Head.002",
+          "position": [
+            -0.1127,
+            0.9768,
+            0.4608
+          ]
+        },
+        {
+          "name": "MOVE_EarR.002",
+          "parent": "MOVE_Head.002",
+          "position": [
+            0.1127,
+            0.9768,
+            0.4608
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Upper.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            -0.1444,
+            0.629,
+            -0.3456
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Lower.002",
+          "parent": "MOVE_LegBL_Upper.002",
+          "position": [
+            -0.1444,
+            0.3108,
+            -0.4196
+          ]
+        },
+        {
+          "name": "MOVE_LegBL_Paw.002",
+          "parent": "MOVE_LegBL_Lower.002",
+          "position": [
+            -0.1444,
+            0.04233,
+            -0.3049
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Upper.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            0.1444,
+            0.629,
+            -0.3456
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Lower.002",
+          "parent": "MOVE_LegBR_Upper.002",
+          "position": [
+            0.1444,
+            0.3108,
+            -0.4196
+          ]
+        },
+        {
+          "name": "MOVE_LegBR_Paw.002",
+          "parent": "MOVE_LegBR_Lower.002",
+          "position": [
+            0.1444,
+            0.04233,
+            -0.3049
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Upper.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            -0.1368,
+            0.6586,
+            0.288
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Lower.002",
+          "parent": "MOVE_LegFL_Upper.002",
+          "position": [
+            -0.1368,
+            0.3108,
+            0.2621
+          ]
+        },
+        {
+          "name": "MOVE_LegFL_Paw.002",
+          "parent": "MOVE_LegFL_Lower.002",
+          "position": [
+            -0.1368,
+            0.04233,
+            0.3287
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Upper.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            0.1368,
+            0.6586,
+            0.288
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Lower.002",
+          "parent": "MOVE_LegFR_Upper.002",
+          "position": [
+            0.1368,
+            0.3108,
+            0.2621
+          ]
+        },
+        {
+          "name": "MOVE_LegFR_Paw.002",
+          "parent": "MOVE_LegFR_Lower.002",
+          "position": [
+            0.1368,
+            0.04233,
+            0.3287
+          ]
+        },
+        {
+          "name": "MOVE_Tail01.002",
+          "parent": "MOVE_Torso.002",
+          "position": [
+            0.0,
+            0.7252,
+            -0.5376
+          ]
+        },
+        {
+          "name": "MOVE_Tail02.002",
+          "parent": "MOVE_Tail01.002",
+          "position": [
+            0.0,
+            0.481,
+            -0.7968
+          ]
+        }
+      ],
+      "joints": [
+        {
+          "leg": "FL",
+          "upper": [
+            -0.1368,
+            0.6586,
+            0.288
+          ],
+          "lower": [
+            -0.1368,
+            0.31079999999999997,
+            0.2621
+          ],
+          "paw": [
+            -0.1368,
+            0.042328000000000005,
+            0.3287
+          ],
+          "contact": [
+            -0.1368,
+            0,
+            0.349864
+          ]
+        },
+        {
+          "leg": "FR",
+          "upper": [
+            0.1368,
+            0.6586,
+            0.288
+          ],
+          "lower": [
+            0.1368,
+            0.31079999999999997,
+            0.2621
+          ],
+          "paw": [
+            0.1368,
+            0.042328000000000005,
+            0.3287
+          ],
+          "contact": [
+            0.1368,
+            0,
+            0.349864
+          ]
+        },
+        {
+          "leg": "BL",
+          "upper": [
+            -0.1444,
+            0.629,
+            -0.34559999999999996
+          ],
+          "lower": [
+            -0.1444,
+            0.31079999999999997,
+            -0.4196
+          ],
+          "paw": [
+            -0.1444,
+            0.042328000000000005,
+            -0.30489999999999995
+          ],
+          "contact": [
+            -0.1444,
+            0,
+            -0.28373599999999993
+          ]
+        },
+        {
+          "leg": "BR",
+          "upper": [
+            0.1444,
+            0.629,
+            -0.34559999999999996
+          ],
+          "lower": [
+            0.1444,
+            0.31079999999999997,
+            -0.4196
+          ],
+          "paw": [
+            0.1444,
+            0.042328000000000005,
+            -0.30489999999999995
+          ],
+          "contact": [
+            0.1444,
+            0,
+            -0.28373599999999993
+          ]
+        }
+      ],
+      "ground_y": 0,
+      "variant": "large calm short coat mongrel",
+      "shoulder_height": 0.74
+    }
+  ]
+}

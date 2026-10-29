@@ -42,8 +42,6 @@ namespace BarPromenade
             }
 
             lane.Add(plan.Lane.End);
-            CityMapMountainRoadOverlay chart = CityMapMountainRoadOverlayBuilder.Create(
-                lane, plan.TerrainBounds);
             var branches = new List<CityMapRouteSegment>();
             foreach (AlpineVillagePathDescriptor path in plan.Expansion.Paths)
             {
@@ -53,7 +51,7 @@ namespace BarPromenade
             return new CityMapMountainRoadOverlay(lane, new List<Vector3>(),
                 new List<CityMapMountainHatchSegment>(),
                 new List<MountainRoadTerminalLandmark>(), false, Vector3.zero,
-                plan.CoreTerrainBounds, chart.DisplayWorldXZBounds, branches);
+                plan.CoreTerrainBounds, AlpineVillageMapArtResources.GetWorldBounds(plan), branches, plan);
         }
     }
 }

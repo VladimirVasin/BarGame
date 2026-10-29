@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen",
+  "intent": "redraw of registered map artwork for crisp live Russian label overlays",
+  "prompt": "imagegen-labels-prompt.txt",
+  "reference": "AlpineVillageMapImage.reference.png",
+  "geography": "map-reference.json",
+  "image": "AlpineVillageMapImage.generated.png",
+  "image_sha256": "4908732afb6fa176e4f94f63ae9ba0fce31267626b6c3a4dc3750063bfcdb140",
+  "fingerprint": "e927d365ffe4b427c55019d652106e72848339157cfd0e1a273a2f7e22ed7ecf",
+  "survey_fingerprint": "e927d365ffe4b427c55019d652106e72848339157cfd0e1a273a2f7e22ed7ecf",
+  "schemaVersion": 1,
+  "width": 1448,
+  "height": 1086
+}

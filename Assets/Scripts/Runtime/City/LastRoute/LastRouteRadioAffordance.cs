@@ -55,6 +55,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint) return;
             RepaintFrame = Time.frameCount;
             Power.RenderedFrame = Tuning.RenderedFrame = Glovebox.RenderedFrame = -1;

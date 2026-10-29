@@ -42,7 +42,8 @@ namespace BarPromenade
                 float northEast,
                 CityPortAccessPlan access,
                 CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null,
-                CityLaundryPlan laundry = null)
+                CityLaundryPlan laundry = null,
+                CityDogParkPlan dogPark = null)
             {
                 SouthWest = southWest;
                 SouthEast = southEast;
@@ -51,6 +52,7 @@ namespace BarPromenade
                 Access = access;
                 StreetBoundary = streetBoundary;
                 Laundry = laundry;
+                DogPark = dogPark;
             }
 
             internal float SouthWest { get; }
@@ -60,6 +62,7 @@ namespace BarPromenade
             internal CityPortAccessPlan Access { get; }
             internal CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext StreetBoundary { get; }
             internal CityLaundryPlan Laundry { get; }
+            internal CityDogParkPlan DogPark { get; }
         }
 
         internal static SurfaceContext ResolveSurfaceContext(
@@ -95,7 +98,8 @@ namespace BarPromenade
                 northEast,
                 access,
                 CityTerrainStreetBoundaryPlan.ForSurface(layout, surface),
-                CityLaundryPlan.CachedForSurface(layout, surface));
+                CityLaundryPlan.CachedForSurface(layout, surface),
+                CityDogParkPlan.CachedForSurface(layout, surface));
         }
 
         public static float SampleDatum(
@@ -130,6 +134,7 @@ namespace BarPromenade
             float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
             float supported = CityFairGroundSupportPlan.ForLayout(layout).Apply(worldXZ, datum + offset);
             supported = context.Laundry != null ? context.Laundry.ApplyGround(worldXZ, supported) : supported;
+            supported = context.DogPark != null ? context.DogPark.ApplyGround(worldXZ, supported) : supported;
             CityCafePlan cafe = CityCafePlan.Create(layout);
             return (cafe != null ? cafe.ApplyGroundTop(worldXZ, supported) : supported) - offset;
         }
