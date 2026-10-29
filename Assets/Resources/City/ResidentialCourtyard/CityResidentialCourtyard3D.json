@@ -1,0 +1,438 @@
+{
+  "design_id": "city_residential_courtyard_kit_v1",
+  "version": "1.0.0",
+  "generator": "build-city-residential-courtyard-3d-model.py",
+  "coordinate_system": "Unity metres +Y up/+Z court; root at ground; swap YZ/reverse winding for Blender",
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ],
+  "material_source": "Existing shared City/Port/Ground/Park materials; no new texture or Light",
+  "semantic_uv_tiles_metres": {
+    "Concrete": 2.0,
+    "Steel": 1.5,
+    "SteelDark": 1.5,
+    "Timber": 1.0,
+    "Roof": 2.0,
+    "Tare": 0.75,
+    "Soil": 12.0,
+    "Foliage": 1.6,
+    "Lens": 1.0
+  },
+  "models": [
+    {
+      "name": "CourtyardBench",
+      "bounds_min": [
+        -0.95,
+        0.0,
+        -0.35
+      ],
+      "bounds_max": [
+        0.95,
+        0.9,
+        0.35
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BenchDock",
+          "position": [
+            0.0,
+            0.0,
+            0.85
+          ]
+        },
+        {
+          "name": "ANCHOR_BenchLeftSeat",
+          "position": [
+            -0.46,
+            0.46,
+            0.05
+          ]
+        },
+        {
+          "name": "ANCHOR_BenchRightSeat",
+          "position": [
+            0.46,
+            0.46,
+            0.05
+          ]
+        },
+        {
+          "name": "ANCHOR_BenchSeat",
+          "position": [
+            0.0,
+            0.46,
+            0.05
+          ]
+        },
+        {
+          "name": "BenchBoltedFrame",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "BenchSlatsAndRepair",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 624,
+      "geometry_signature": "252524eb05e9b965280dd1ef60a29481486c18756e1fd8ee186b38c23055939e",
+      "renderer_count": 2,
+      "maximum_triangles": 3500,
+      "maximum_renderers": 4,
+      "material_roles": [
+        "SteelDark",
+        "Timber"
+      ]
+    },
+    {
+      "name": "CourtyardPlanter",
+      "bounds_min": [
+        -0.65,
+        0.0,
+        -0.325
+      ],
+      "bounds_max": [
+        0.65,
+        0.45,
+        0.325
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_PlantingSurface",
+          "position": [
+            0.0,
+            0.245,
+            0.0
+          ]
+        },
+        {
+          "name": "PlanterLowLeaves",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PlanterRepairedTrough",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PlanterSoil",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 280,
+      "geometry_signature": "de6cda184b04725086f7922ebc38ce21d88cbe72b2686ee13b627ee7242e92b3",
+      "renderer_count": 3,
+      "maximum_triangles": 4000,
+      "maximum_renderers": 4,
+      "material_roles": [
+        "Concrete",
+        "Foliage",
+        "Soil"
+      ]
+    },
+    {
+      "name": "CourtyardUtilityShelter",
+      "bounds_min": [
+        -1.25,
+        0.0,
+        -0.625
+      ],
+      "bounds_max": [
+        1.25,
+        2.15,
+        0.625
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BasketShelf",
+          "position": [
+            -0.67,
+            0.85,
+            0.25
+          ]
+        },
+        {
+          "name": "ANCHOR_BasketShelfEnd",
+          "position": [
+            0.67,
+            0.85,
+            0.25
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceEnd",
+          "position": [
+            0.67,
+            0.0,
+            0.85
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceStart",
+          "position": [
+            -0.67,
+            0.0,
+            0.85
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceWaypoint",
+          "position": [
+            0.0,
+            0.0,
+            1.25
+          ]
+        },
+        {
+          "name": "UtilityBoardsAndShelves",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "UtilityBoltedSupports",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "UtilityClosedBin",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "UtilityFoldedRoof",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 1212,
+      "geometry_signature": "4a6fd0e618b4d3e9c22c873d9489e1eca1aebb7b69fae1bef7536bcab525186e",
+      "renderer_count": 4,
+      "maximum_triangles": 9000,
+      "maximum_renderers": 5,
+      "material_roles": [
+        "Roof",
+        "Steel",
+        "SteelDark",
+        "Timber"
+      ]
+    },
+    {
+      "name": "CourtyardEntranceCanopy",
+      "bounds_min": [
+        -1.15,
+        0.0455,
+        -0.06
+      ],
+      "bounds_max": [
+        1.15,
+        2.95,
+        1.1
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_CanopyThreshold",
+          "position": [
+            0.0,
+            0.0,
+            0.12
+          ]
+        },
+        {
+          "name": "ANCHOR_DrainOutfall",
+          "position": [
+            1.08,
+            0.04,
+            0.25
+          ]
+        },
+        {
+          "name": "EntranceCanopyBracesAndDrainpipe",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "EntranceCanopyRoof",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "EntranceLampLens",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "IndustrialTaskLight_CourtyardEntrance",
+          "position": [
+            0.0,
+            2.68,
+            0.38
+          ]
+        }
+      ],
+      "triangles": 416,
+      "geometry_signature": "0c743819b658906232dbc3ff7cc65f36282cdb0842cec11ca3bc55b73d2bf94b",
+      "renderer_count": 3,
+      "maximum_triangles": 4500,
+      "maximum_renderers": 3,
+      "material_roles": [
+        "Lens",
+        "Roof",
+        "SteelDark"
+      ]
+    },
+    {
+      "name": "CourtyardDrain",
+      "bounds_min": [
+        -0.225,
+        0.0,
+        -0.325
+      ],
+      "bounds_max": [
+        0.225,
+        0.025,
+        0.325
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_DrainSurface",
+          "position": [
+            0.0,
+            0.025,
+            0.0
+          ]
+        },
+        {
+          "name": "DrainOpenGrating",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DrainSetFrame",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 364,
+      "geometry_signature": "9d126c1dbc62bba3e1910c8626e2974ae3eb9545844c5ea418719319368138e4",
+      "renderer_count": 2,
+      "maximum_triangles": 1600,
+      "maximum_renderers": 2,
+      "material_roles": [
+        "Concrete",
+        "SteelDark"
+      ]
+    },
+    {
+      "name": "CourtyardBasket",
+      "bounds_min": [
+        -0.28,
+        0.0,
+        -0.19
+      ],
+      "bounds_max": [
+        0.28,
+        0.27826,
+        0.19
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BasketCarry",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_BasketLeft",
+          "position": [
+            -0.28,
+            0.235,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_BasketRight",
+          "position": [
+            0.28,
+            0.235,
+            0.0
+          ]
+        },
+        {
+          "name": "CarryBasketSlottedShell",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 596,
+      "geometry_signature": "17788fe49c93c7afe4ac2e887a4c7a95ce5cf1430881d8ad76dbc129f08db96e",
+      "renderer_count": 1,
+      "maximum_triangles": 2500,
+      "maximum_renderers": 2,
+      "material_roles": [
+        "Tare"
+      ]
+    }
+  ],
+  "assets": [
+    "CourtyardBench.fbx",
+    "CourtyardPlanter.fbx",
+    "CourtyardUtilityShelter.fbx",
+    "CourtyardEntranceCanopy.fbx",
+    "CourtyardDrain.fbx",
+    "CourtyardBasket.fbx"
+  ]
+}

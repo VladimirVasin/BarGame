@@ -550,6 +550,9 @@ namespace BarPromenade
             if (laundry != null) laundry.PresentationObserver = Player.GameObject.transform;
             CityDogParkController dogPark = World.Root.GetComponentInChildren<CityDogParkController>();
             if (dogPark != null) dogPark.PresentationObserver = Player.GameObject.transform;
+            CityResidentialCourtyardLife courtyardLife = World.ResidentialCourtyardRoot != null
+                ? World.ResidentialCourtyardRoot.GetComponent<CityResidentialCourtyardLife>() : null;
+            if (courtyardLife != null) courtyardLife.PresentationObserver = Player.GameObject.transform;
             World.Root.GetComponentInChildren<CityOffshoreBoatController>()
                 ?.AttachHero(Player.GameObject.transform);
             CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();
@@ -849,6 +852,7 @@ namespace BarPromenade
             }
             if (World.CafeSite != null)
                 benchPlans.Add(new CityBenchSitPlan(World.CafeSite.CounterSeat.ToBenchSeat()));
+            benchPlans.AddRange(CityBenchRestPlanner.CreateCourtyardSeats(World.ResidentialCourtyards));
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
                 benchPlans,
@@ -867,7 +871,7 @@ namespace BarPromenade
                     restBenchPlans.RemoveAll(bench => bench.Id == fairSeat.Id);
             BenchRests = CityBenchNpcRestController.Create(
                 transform,
-                CityBenchRestPlanner.Create(restBenchPlans, PedestrianPlan),
+                CityBenchRestPlanner.Create(restBenchPlans, PedestrianPlan, World.ResidentialCourtyards),
                 Pedestrians,
                 GameSessionState.CitySeed);
             // Placeholder interactions on every booth door and dumpster

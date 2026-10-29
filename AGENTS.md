@@ -72,11 +72,11 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
 - Avoid hand-editing serialized scenes, prefabs, and ScriptableObjects unless the change is deliberate and verified in Unity.
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
-- Maps use built-in ImageGen/pure plans: City charcoal/Silent Hill;
-  AlpineVillage worn tourist brochure/red-crossed former resort.
-  Redraw after every authored map change; keep geometry/RU labels/live markers/
-  selection/XYZ/safe arrivals. Add new objects in the same change; group related
-  props/actors and verify presence/arrival.
+- Maps: built-in ImageGen/pure plans; City charcoal/Silent Hill;
+  AlpineVillage old brochure/red-crossed former resort. Redraw authored map
+  changes; keep geometry/RU labels/live markers/selection/XYZ/safe arrivals.
+  Add/group mapped objects with presence/arrival. Courtyard props need no map
+  change/redraw (user `2026-10-29`).
 - Reuse shared materials and assets; avoid per-instance material creation.
 - New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
   keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.

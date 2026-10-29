@@ -170,6 +170,11 @@ namespace BarPromenade
                         industrialUseShadows[index] = true;
                         industrialIntensityScales[index] = .01f;
                         industrialRangeLimits[index] = 4f; break;
+                    case "CourtyardEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .16f;
+                        industrialRangeLimits[index] = 4.5f; break;
                     default:
                         if (!Enum.TryParse(purposeName, out industrialPurposes[index]) || industrialPurposes[index] == CityIndustrialPurpose.None)
                             throw new InvalidOperationException("Unknown functional industrial task light: " + taskAnchors[index].name);

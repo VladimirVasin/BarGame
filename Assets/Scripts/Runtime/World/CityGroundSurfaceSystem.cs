@@ -177,6 +177,7 @@ namespace BarPromenade
             }
             double partitionMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = ApplyBuildingPerimeters(surface);
+            surface = ApplyResidentialCourtyards(surface);
             double perimeterMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
             double conformMilliseconds = timer.Elapsed.TotalMilliseconds;
@@ -670,10 +671,14 @@ namespace BarPromenade
                 propertyLayout = source.propertyLayout; propertyValues = source.propertyValues;
             }
             internal Style(MaterialPropertyBlock asphaltProperties)
+                : this(asphaltProperties, FootstepGroundKind.Concrete, CityWetSurfaceKind.Road, Color.white) { }
+
+            internal Style(MaterialPropertyBlock properties, FootstepGroundKind kind,
+                CityWetSurfaceKind wetKind, Color dryTint, bool hasWeather = true)
             {
                 Material = GroundSurfaceAppearance.SharedMaterial;
-                Properties = asphaltProperties; Kind = FootstepGroundKind.Concrete; Priority = 0;
-                HasWeather = true; WetKind = CityWetSurfaceKind.Road; DryTint = Color.white;
+                Properties = properties; Kind = kind; Priority = 0;
+                HasWeather = hasWeather; WetKind = wetKind; DryTint = dryTint;
                 propertyLayout = PropertyLayouts.GetValue(Material.shader, ReadPropertyLayout);
                 propertyValues = new PropertyValue[propertyLayout.Ids.Length];
                 for (int p = 0; p < propertyValues.Length; p++)

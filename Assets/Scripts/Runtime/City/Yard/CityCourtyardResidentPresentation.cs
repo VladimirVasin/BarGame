@@ -15,10 +15,23 @@ namespace BarPromenade
         public const float MaximumStepSeconds = 0.1f;
 
         private CityPedestrianPresentation pedestrian;
+        private ArmSupport rightArm, leftArm;
+        private CityCourtyardSweepingTool sweepingTool;
+        private Transform supportSpine;
+        private float supportSeconds;
 
         public bool IsInitialized { get; private set; }
         public CityCourtyardResidentDescriptor Descriptor { get; private set; }
         public CityPedestrianPresentation Pedestrian => pedestrian;
+        public bool HasSupportContacts => rightArm != null && leftArm != null;
+        public bool HasSweepingTool => sweepingTool != null;
+        public float MaximumSupportContactError { get; private set; }
+
+        private sealed class ArmSupport
+        {
+            public Transform Upper, Lower, Hand, Grip;
+            public SeatedArmHandAttachment Attachment;
+        }
 
         public void Initialize(
             CityPedestrianAssetRegistry registry,
@@ -127,6 +140,15 @@ namespace BarPromenade
                     : 0f,
                 false,
                 true);
+            if (descriptor.Activity == CityCourtyardResidentActivity.NardiPlayer ||
+                descriptor.Activity == CityCourtyardResidentActivity.ChairRepair ||
+                descriptor.Activity == CityCourtyardResidentActivity.Sweeping)
+            {
+                rightArm = CaptureArm(registry.ModelRoot, ".R");
+                leftArm = CaptureArm(registry.ModelRoot, ".L");
+                supportSpine = CityPedestrianHandProps.FindSocket(registry.ModelRoot, "spine");
+                ApplySupportContacts();
+            }
             IsInitialized = true;
         }
 
@@ -143,6 +165,11 @@ namespace BarPromenade
             }
 
             pedestrian = null;
+            if (sweepingTool != null) sweepingTool.RestoreRestPose();
+            sweepingTool = null;
+            rightArm = null;
+            leftArm = null;
+            supportSpine = null;
             IsInitialized = false;
         }
 
@@ -157,6 +184,81 @@ namespace BarPromenade
                 Mathf.Min(Time.deltaTime, MaximumStepSeconds),
                 false,
                 true);
+            supportSeconds += Time.deltaTime;
+            ApplySupportContacts();
+        }
+
+        private static ArmSupport CaptureArm(Transform root, string side)
+        {
+            Transform Bone(string name) => CityPedestrianHandProps.FindSocket(root, name + side);
+            var arm = new ArmSupport { Upper = Bone("upper_arm"), Lower = Bone("forearm"),
+                Hand = Bone("hand"), Grip = Bone("SOCKET_Grip") };
+            if (arm.Upper == null || arm.Lower == null || arm.Hand == null || arm.Grip == null)
+                throw new InvalidOperationException("Courtyard resident lacks an authored support-contact arm.");
+            arm.Attachment = new SeatedArmHandAttachment(arm.Hand, arm.Grip);
+            return arm;
+        }
+
+        private void ApplySupportContacts()
+        {
+            if (!HasSupportContacts) return;
+            Vector3 right, left;
+            if (Descriptor.Activity == CityCourtyardResidentActivity.NardiPlayer)
+            {
+                bool second = Descriptor.StableId.EndsWith("nardi-b", StringComparison.Ordinal);
+                float side = second ? 1f : -1f;
+                // Both palms rest on the near timber edge. The baked counters
+                // remain where they are; a turn never mimics moving a piece.
+                right = Pocket(new Vector3(side * .61f - .11f, .775f, .09f));
+                left = Pocket(new Vector3(side * .61f + .11f, .775f, .09f));
+            }
+            else if (Descriptor.Activity == CityCourtyardResidentActivity.ChairRepair)
+            {
+                // Inspect the actual upper rail: one hand steadies the joint
+                // while the other makes a short, slow checking pass along it.
+                float check = .025f * Mathf.Sin(supportSeconds * .8f);
+                right = Pocket(new Vector3(-.82f + check, 1.19f, -.265f));
+                left = Pocket(new Vector3(-.54f, 1.19f, -.265f));
+            }
+            else if (Descriptor.Activity == CityCourtyardResidentActivity.Sweeping)
+            {
+                if (sweepingTool == null && !CityCourtyardSweepingTool.TryGet(
+                    Descriptor.SourceStableId, out sweepingTool))
+                { MaximumSupportContactError = float.PositiveInfinity; return; }
+                sweepingTool.ApplySweep(Mathf.Repeat(supportSeconds / 5.6f + Descriptor.AnimationPhase01, 1f));
+                right = sweepingTool.RightGrip.position;
+                left = sweepingTool.LeftGrip.position;
+            }
+            else return;
+            Quaternion upright = supportSpine != null ? supportSpine.rotation : Quaternion.identity;
+            Vector3 toSupport = (right + left) * .5f - transform.position;
+            toSupport.y = 0f;
+            Vector3 leanAxis = Vector3.Cross(Vector3.up, toSupport.normalized);
+            for (int attempt = 0; attempt <= 12; attempt++)
+            {
+                if (supportSpine != null)
+                    supportSpine.rotation = Quaternion.AngleAxis(attempt * 4f, leanAxis) * upright;
+                Vector3 anatomicalRight = Vector3.ProjectOnPlane(
+                    rightArm.Upper.position - leftArm.Upper.position, Vector3.up).normalized;
+                if (Descriptor.Activity != CityCourtyardResidentActivity.Sweeping &&
+                    Vector3.Dot(right - left, anatomicalRight) < 0f)
+                { Vector3 temporary = right; right = left; left = temporary; }
+                SolveSupport(rightArm, right, anatomicalRight);
+                SolveSupport(leftArm, left, -anatomicalRight);
+                MaximumSupportContactError = Mathf.Max(Vector3.Distance(rightArm.Grip.position, right),
+                    Vector3.Distance(leftArm.Grip.position, left));
+                if (MaximumSupportContactError <= .025f || supportSpine == null) break;
+            }
+        }
+
+        private Vector3 Pocket(Vector3 local) => Descriptor.PocketOrigin + Descriptor.PocketRotation * local;
+
+        private void SolveSupport(ArmSupport arm, Vector3 socketTarget, Vector3 elbowSide)
+        {
+            Quaternion handRotation = arm.Hand.rotation;
+            Vector3 wrist = socketTarget - handRotation * arm.Attachment.SocketPositionInHand;
+            Vector3 hint = arm.Upper.position + elbowSide * .24f - Vector3.up * .20f + transform.forward * .08f;
+            LimbTwoBoneIk.Solve(arm.Upper, arm.Lower, arm.Hand, wrist, handRotation, hint);
         }
 
         private void OnDestroy()

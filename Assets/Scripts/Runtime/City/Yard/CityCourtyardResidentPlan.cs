@@ -30,7 +30,9 @@ namespace BarPromenade
             int paletteVariant,
             float animationPhase01,
             bool isSeated,
-            Vector3 seatAnchorPosition)
+            Vector3 seatAnchorPosition,
+            Vector3 pocketOrigin,
+            Quaternion pocketRotation)
         {
             if (string.IsNullOrWhiteSpace(stableId) ||
                 string.IsNullOrWhiteSpace(sourceStableId) ||
@@ -68,6 +70,8 @@ namespace BarPromenade
             SeatAnchorPosition = isSeated
                 ? seatAnchorPosition
                 : position;
+            PocketOrigin = pocketOrigin;
+            PocketRotation = pocketRotation;
         }
 
         public string StableId { get; }
@@ -80,6 +84,8 @@ namespace BarPromenade
         public float AnimationPhase01 { get; }
         public bool IsSeated { get; }
         public Vector3 SeatAnchorPosition { get; }
+        public Vector3 PocketOrigin { get; }
+        public Quaternion PocketRotation { get; }
 
         private static bool IsFinite(Vector3 value)
         {
@@ -135,9 +141,9 @@ namespace BarPromenade
         private static readonly Vector3 BicycleTargetLocal =
             new Vector3(-0.20f, 0f, 0f);
         private static readonly Vector3 ChairDockLocal =
-            new Vector3(1.00f, 0f, 0.35f);
+            new Vector3(-0.25f, 0f, 0.38f);
         private static readonly Vector3 ChairTargetLocal =
-            new Vector3(-0.55f, 0f, -0.10f);
+            new Vector3(-0.68f, 0f, -0.10f);
         private static readonly Vector3 SweepingDockLocal =
             new Vector3(0f, 0f, 0.35f);
         private static readonly Vector3 SweepingTargetLocal =
@@ -308,6 +314,8 @@ namespace BarPromenade
                                 target - first,
                                 true,
                                 first + Vector3.up * NardiSeatHeight,
+                                pocket.Position,
+                                rotation,
                                 0),
                             CreateResident(
                                 layout.Seed,
@@ -319,6 +327,8 @@ namespace BarPromenade
                                 target - second,
                                 true,
                                 second + Vector3.up * NardiSeatHeight,
+                                pocket.Position,
+                                rotation,
                                 2)
                         });
                 }
@@ -353,15 +363,8 @@ namespace BarPromenade
                         ChairTargetLocal,
                         "chair-repair",
                         CityCourtyardResidentActivity.ChairRepair,
-                        // The watchman, and the point is that HIS HANDS ARE
-                        // EMPTY. The Chair Carrier stood here until
-                        // 2026-09-02 and put three chairs in one three-metre
-                        // frame - the one on his shoulders, the one being
-                        // mended and the bench - which is the fault the user
-                        // photographed. `WatchmanWatch` is hands clasped
-                        // behind the back, a disapproving head shake and one
-                        // smug chin jut: a man who has put the plane down and
-                        // does not like what he made.
+                        // The same quiet resident now checks the real chair
+                        // rail from a reachable dock; no carried duplicate.
                         CityPedestrianResources.WatchmanDesignId,
                         null,
                         2);
@@ -434,6 +437,8 @@ namespace BarPromenade
                         target - dock,
                         false,
                         dock,
+                        origin,
+                        rotation,
                         paletteOffset)
                 });
         }
@@ -448,6 +453,8 @@ namespace BarPromenade
             Vector3 facing,
             bool isSeated,
             Vector3 seatAnchor,
+            Vector3 pocketOrigin,
+            Quaternion pocketRotation,
             int paletteOffset)
         {
             string stableId = $"{sourceStableId}/resident-{actorSuffix}";
@@ -467,7 +474,9 @@ namespace BarPromenade
                 palette,
                 phase,
                 isSeated,
-                seatAnchor);
+                seatAnchor,
+                pocketOrigin,
+                pocketRotation);
         }
 
         private static Vector3 SampleGroundedDock(

@@ -96,6 +96,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential street fair | Four staffed stalls, three adult visitors and three children; shared seats/actions and clear paths. | `CityFair{Plan,World,Adults,Children,Interaction}` | Current |
 | Church precinct and interior | Metric shell/openings match exterior; crafted garden, bounded bounce/air/cube. | `CityChurch*`, `ChurchInterior*`, `ChurchGarden*` | Current |
 | Residential courtyard pockets | Plan-owned residential courtyards preserve walkable approaches and bounded authored dressing. | `CityCourtyardPocket{Planner,Geometry}`, `CityCourtyardResident{Plan,Factory,Presentation}` | Current |
+| Residential courts | Shared ground/spine/green edges/wall groups; seats/carrier/Home. | `CityResidentialCourtyard*` | Current |
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |
 | District public places | Four semantic POIs/landmarks survive across two districts; validated public approaches and local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |

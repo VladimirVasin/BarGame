@@ -406,17 +406,18 @@ cemetery:own interiors/returns.
 
 ### City generation and layout
 
-- Compact coastal City has two urban districts: working Industrial west bank
-  and Residential east bank; the park remains open between them. OldTown/Nightlife
-  enum values and catalog entries are compatibility identities, not extra map areas.
-  `CitySpatialPlan.IsCompactCoastal` preserves 144 logical lots in `13 x 12`;
-  internal pitch `26 m`, west/south service belts `12 m`, eastern four strips
-  `17.5 m` and coastal land `28 m`. Declared land excluding sea/river changes
-  `193828→137186 m²` (about `−29.2%`), without scaling models or vehicles.
-  Short residential fronts/shared rear courts contrast with parallel work streets
-  and loading courts. Ordinary fronts stand `1.25–1.55 m` behind the reserved edge.
-  Four reserved domestic frontage lots instead keep `2.4 m` for the existing
-  courtyard scenes; their footprints stay outside public pavement.
+- Compact City: Industrial west/Residential east/open park; OldTown/Nightlife
+  remain compatibility IDs. `CitySpatialPlan.IsCompactCoastal`: 144 lots/`13×12`,
+  pitch `26 m`, land `137186 m²`/`−29.2%`; models/vehicles retain metres.
+  Short residential fronts/rear courts contrast with work streets.
+  Setback `1.25–1.55 m`; four domestic pockets retain `2.4 m` outside pavement.
+  `CityResidentialCourtyardPlan`: ≤6 courts/≤6 props; contour,
+  shared paving/entry-street spine/open center/green edges. Service/quiet/through
+  furniture groups back onto actual walls; clear connectors reach circulation.
+  Original ground planes/hard paths stay; sheltered concrete dry. Doorway pool
+  light/shared seats/permanent silent basket carrier retain phase/identity/
+  pause/distance/disable. Home:props; special sites/pockets stay.
+  Court props need no map/redraw.
   The expanded oblique/L pilot is absent. Metre bodies retain real fit; `10×6 m` rear wings require full padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

@@ -681,6 +681,8 @@ namespace BarPromenade
                 foreach (Rect floor in dogPark.WalkableFootprints) area.Add(floor);
                 foreach (Rect solid in dogPark.SolidFootprints) area.Exclude(solid);
             }
+            foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
+                area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
             return area;
         }
 

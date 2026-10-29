@@ -101,9 +101,11 @@ namespace BarPromenade
             CityFringeYardPlan fringeYardPlan = plans.FringeYard;
             CityCoastalInfrastructurePlan infrastructurePlan = plans.Infrastructure;
             CityLaundryPlan laundryPlan = plans.Laundry;
+            CityResidentialCourtyardPlan residentialCourtyards = CityResidentialCourtyardPlan.ForLayout(layout);
             CityEastExitPlan eastExitPlan = plans.EastExit;
             CityCemeteryPlan cemeteryPlan = CityCemeteryPlanner.Create(layout, churchCemeteryPassagePlan);
             groundSurface.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(layout, cemeteryPlan));
+            groundSurface.SetResidentialCourtyards(residentialCourtyards);
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan);
             // Planned before the ground pass: when the seacoast will
@@ -377,6 +379,9 @@ namespace BarPromenade
             CityLaundryWorldBuilder.Build(world, laundryPlan);
             CityDogParkWorldBuilder.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
+            GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
+            CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
+            courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -473,7 +478,9 @@ namespace BarPromenade
                 bounds,
                 cafe,
                 cafeSite,
-                cafeRainShelter));
+                cafeRainShelter,
+                residentialCourtyards,
+                residentialCourtyardRoot));
             ReportBlock(
                 "world_complete",
                 blockTimer,

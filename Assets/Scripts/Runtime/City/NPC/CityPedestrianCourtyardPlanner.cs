@@ -57,6 +57,20 @@ namespace BarPromenade
                     previous = next;
                 }
             }
+
+            // Tie each wall-side domestic group to an actual spine node.
+            // The shared bench controller owns the short final crossing from
+            // here; an ordinary roaming branch would be pruned by FindTwoCore.
+            foreach (CityResidentialCourtyardDescriptor group in
+                CityResidentialCourtyardPlan.ForLayout(layout).Courts)
+            {
+                IReadOnlyList<Vector3> access = group.ConnectionPath;
+                if (access.Count < 2 || !courtNodes.ContainsKey(group.Cell)) continue;
+                string prefix = $"courtyard:{group.Cell.x}:{group.Cell.y}:";
+                Func<Vector2, float> sampleHeight = point => CourtyardHeight(layout, surfaces, point, null);
+                Vector2 junction = XZ(access[access.Count - 1]);
+                graph.SplitCourtyardAt(group.StableId + ":junction", prefix, junction, sampleHeight);
+            }
         }
 
         private static void AddCourtyardLink(GraphBuilder graph, string id,
@@ -136,7 +150,19 @@ namespace BarPromenade
             public int SplitSidewalkAt(string id, RoadEdge edge, Vector2 arrival,
                 Func<Vector2, float> sampleHeight)
             {
-                string prefix = $"sidewalk:{EdgeId(edge)}:";
+                return SplitWalkingPathAt(id, CityPedestrianLinkKind.Sidewalk, $"sidewalk:{EdgeId(edge)}:",
+                    arrival, sampleHeight, CityStreetSurfacePlanner.SidewalkWidth *
+                    CityStreetSurfacePlanner.SidewalkWidth * .25f);
+            }
+
+            public int SplitCourtyardAt(string id, string prefix, Vector2 arrival,
+                Func<Vector2, float> sampleHeight) => SplitWalkingPathAt(id,
+                    CityPedestrianLinkKind.Courtyard, prefix, arrival, sampleHeight,
+                    CourtyardKnotTolerance * CourtyardKnotTolerance * 4f);
+
+            private int SplitWalkingPathAt(string id, CityPedestrianLinkKind kind, string prefix,
+                Vector2 arrival, Func<Vector2, float> sampleHeight, float maximumDistanceSquared)
+            {
                 int selected = -1;
                 CityRoadPath selectedPath = null;
                 CityRoadProjection projection = default;
@@ -144,7 +170,7 @@ namespace BarPromenade
                 for (int i = 0; i < links.Count; i++)
                 {
                     CityPedestrianLink candidate = links[i];
-                    if (candidate.Kind != CityPedestrianLinkKind.Sidewalk ||
+                    if (candidate.Kind != kind ||
                         !candidate.Id.StartsWith(prefix, StringComparison.Ordinal)) continue;
                     CityRoadPath path = candidate.Path ?? new CityRoadPath(new[] {
                         XZ(nodes[candidate.FirstNodeIndex].Position), XZ(nodes[candidate.SecondNodeIndex].Position) });
@@ -152,9 +178,8 @@ namespace BarPromenade
                     if (projected.DistanceSquared >= best) continue;
                     selected = i; selectedPath = path; projection = projected; best = projected.DistanceSquared;
                 }
-                if (selected < 0 || best > CityStreetSurfacePlanner.SidewalkWidth *
-                    CityStreetSurfacePlanner.SidewalkWidth * .25f)
-                    throw new InvalidOperationException($"Courtyard gate {id} has no adjacent physical sidewalk lane.");
+                if (selected < 0 || best > maximumDistanceSquared)
+                    throw new InvalidOperationException($"Courtyard access {id} has no matching existing walking lane.");
                 CityPedestrianLink original = links[selected];
                 float along = projection.DistanceAlong;
                 float station = 0f;

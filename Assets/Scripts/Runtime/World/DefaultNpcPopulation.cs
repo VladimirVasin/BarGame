@@ -17,6 +17,8 @@ namespace BarPromenade
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
+        // Append after every existing identity to retain their allocated looks.
+        public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
         // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
@@ -273,6 +275,13 @@ namespace BarPromenade
                     new SlotConstraint("gloves", new string[] { null }),
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
+            roster.Add(new CharacterDefinition(CityResidentialCourtyardCarrier, model, false,
+                new SlotConstraint("outerwear", "outerwear.everyday", "outerwear.work"),
+                new SlotConstraint("boots", "boots.everyday", "boots.work"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }

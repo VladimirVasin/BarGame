@@ -123,6 +123,23 @@ namespace BarPromenade
     /// </summary>
     public static class CityBenchRestPlanner
     {
+        /// <summary>New ordinary courtyard planks use the same seat IDs,
+        /// interaction plans and claims as every other City bench.</summary>
+        public static IReadOnlyList<CityBenchSitPlan> CreateCourtyardSeats(
+            CityResidentialCourtyardPlan courtyardPlan)
+        {
+            if (courtyardPlan == null) throw new ArgumentNullException(nameof(courtyardPlan));
+            var seats = new List<CityBenchSitPlan>();
+            foreach (CityResidentialCourtyardDescriptor court in courtyardPlan.Courts)
+            foreach (CityResidentialCourtyardPropDescriptor prop in court.Props)
+            {
+                if (prop.Kind != CityResidentialCourtyardPropKind.Bench) continue;
+                seats.Add(new CityBenchSitPlan(new CityBenchSeat(prop.StableId,
+                    prop.SeatPosition, 1.8f, .46f, prop.StandPosition.y, prop.Forward)));
+            }
+            return new ReadOnlyCollection<CityBenchSitPlan>(seats);
+        }
+
         /// <summary>
         /// The longest scripted off-network crossing a walker will make
         /// from the bench's graph node to its seat slot. Deliberately
@@ -133,7 +150,8 @@ namespace BarPromenade
 
         public static CityBenchRestPlan Create(
             IReadOnlyList<CityBenchSitPlan> benchPlans,
-            CityPedestrianPlan pedestrianPlan)
+            CityPedestrianPlan pedestrianPlan,
+            CityResidentialCourtyardPlan courtyardPlan = null)
         {
             if (benchPlans == null)
             {
@@ -145,6 +163,15 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(pedestrianPlan));
             }
 
+            var courtyardApproaches = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+            if (courtyardPlan != null)
+                foreach (CityResidentialCourtyardDescriptor court in courtyardPlan.Courts)
+                {
+                    if (court.ConnectionPath.Count < 2) continue;
+                    foreach (CityResidentialCourtyardPropDescriptor prop in court.Props)
+                        if (prop.Kind == CityResidentialCourtyardPropKind.Bench)
+                            courtyardApproaches.Add(prop.StableId, court.ConnectionPath[court.ConnectionPath.Count - 1]);
+                }
             var points = new List<CityBenchRestPoint>(benchPlans.Count);
             for (int index = 0; index < benchPlans.Count; index++)
             {
@@ -167,13 +194,16 @@ namespace BarPromenade
                 }
 
                 Vector3 standSlot = bench.EntryRootPosition;
+                bool hasAuthoredApproach = courtyardApproaches.TryGetValue(bench.Id, out Vector3 authoredApproach);
                 if (!CityBusStopWaitPlanner.TryFindNearestNode(
                         pedestrianPlan,
-                        standSlot,
+                        hasAuthoredApproach ? authoredApproach : standSlot,
                         out int nodeIndex))
                 {
                     continue;
                 }
+                if (hasAuthoredApproach && Vector3.Distance(
+                    pedestrianPlan.Nodes[nodeIndex].Position, authoredApproach) > .025f) continue;
 
                 Vector3 crossing =
                     pedestrianPlan.Nodes[nodeIndex].Position - standSlot;

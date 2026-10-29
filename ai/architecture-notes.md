@@ -1,27 +1,30 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-29 — residential court functions:**
+  User:shared court/spine/open center/wall edges;
+  through/quiet/service,≤6 courts/≤6 Blender props. Shared ground/light/
+  seats/default carrier/Home;real contacts/lifecycle. Canon/all24 kept.
+
+- **Accepted 2026-10-29 — courtyard map exemption:**
+  User:courtyard props need no map/redraw;City art kept.
+
 - **Accepted 2026-10-29 — residential entrances:**
-  User:visual-only, every body/wing. Blender open1.4×2.4m/vestibule1.8m;
-  threshold/split mass/skirt/floor;finite graded1.5m paths→public
-  pavement. Primary reservations precede infill; final plan follows;
-  cached terrain support;shared City/Home/map/redraw. No new
-  interaction/text/NPC/story;no§6 waiver. All24 retain City owners:ambient/bounce,
-  SSAO/fog/Soft/grade/probes/roadSSR/materials/savedPP;no new provider/signal.
+  User:every body/wing:Blender open1.4×2.4m/vestibule1.8m/split mass/
+  skirt/floor;graded1.5m paths→pavement. Reservations→infill→cached support;
+  City/Home/map/redraw;canon/all24 kept.
 
 - **Accepted architecture exception 2026-10-29 — AlpineVillage brochure:**
-  User:Village map→worn tourist brochure/red-crossed former skiing ad.
-  Scope/print:art§10g/15a,story§6(0)/12/21 only;§16/other§21/nine
-  checks kept. Current lodge/lift/avalanche;access open. No new3D/pistes/
-  people/event/country/year/price. Paper decor≠geography. Baked wear/grain/
-  ink;live UI/all24 kept.
+  User:Village map→worn brochure/red-crossed former skiing ad.
+  Paper-only art§10g/15a,story§6(0)/12/21;§16/other§21/nine checks kept.
+  Lodge/lift/avalanche/access kept;no3D/pistes/people/event/country/year/price.
+  Ink/wear/grain only;live UI/all24 kept.
 
 - **Accepted 2026-10-29 — ImageGen map artwork:**
-  User:built-in ImageGen/pure plans;City charcoal/Silent Hill. PNG/metadata:
-  bounds/size/geography/RU SHA;stale/nondefault→schematic. Live player/POIs/
-  bus/selection/XYZ/safe arrivals. Cached clamped nonreadable≤2K bitmap/area;
-  Village independent SHA/mapUvRect;MountainRoad schematic. Authored changes/
-  new objects→redraw,live motion0. Shared UI/all24 kept;cost unmeasured.
+  User:built-in ImageGen/pure plans;City charcoal/Silent Hill;bounds/size/
+  geography/RU SHA;stale/nondefault→scheme. Live player/POIs/bus/selection/
+  XYZ/safe arrivals;clamped nonreadable≤2K. Village independent SHA/mapUvRect;
+  MountainRoad scheme. Authored map changes→redraw;live motion0/UI/all24 kept.
 
 - **Accepted 2026-10-29 — residential dog park:**
   User:8×10m residual Residential:park-first after laundry/stable seed-cell

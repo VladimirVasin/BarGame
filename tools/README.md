@@ -24,12 +24,12 @@ source `ArtSource/City/EastExit`.
 Both:launcher/`--validate-only`.
 
 `build-city-street-profile-3d-model.py`:launcher/`--validate-only`;
-`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`,
-`ArtSource/City/StreetProfile`. Passive top/edge follows
-`CityStreetSupportPlan`; `CityStreetSurfaceWorldBuilder` measures imported metres.
+`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`.
+Top/edge:`CityStreetSupportPlan`; `CityStreetSurfaceWorldBuilder` measures metres.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 `build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.
+`build-city-residential-courtyard-3d-model.py`:6;`--validate-only`.
 
 `build-city-fair-3d-model.py`:10 props;`--verify-fbx`.
 `build-city-fair-child-3d-model.py`: child base/3 outfits/toys.

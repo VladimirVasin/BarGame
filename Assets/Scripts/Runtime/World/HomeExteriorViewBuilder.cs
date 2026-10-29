@@ -76,9 +76,12 @@ namespace BarPromenade
                 context.NearbyDecorations);
             CityCoastalInfrastructureWorldBuilder.BuildHomeExterior(root, context);
             CityLaundryWorldBuilder.BuildHomeExterior(root, context);
+            CityResidentialCourtyardPlan courtyards = CityResidentialCourtyardPlan.ForLayout(context.Layout);
+            CityResidentialCourtyardWorldBuilder.BuildHomeExterior(root, courtyards, context);
             BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             ground.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(context.Layout), context);
+            ground.SetResidentialCourtyards(courtyards, context);
             ground.FinalizeSurface();
             // The retained exterior is presentation only. Shared fixture
             // builders and imported kits may carry collision components;

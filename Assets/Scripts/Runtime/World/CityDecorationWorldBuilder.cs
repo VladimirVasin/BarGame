@@ -140,6 +140,7 @@ namespace BarPromenade
                 CityDecorationDescriptor descriptor = descriptors[index];
                 bool imported = homeContext == null &&
                     TryAppendImportedDecoration(
+                        root,
                         chunks,
                         layout,
                         descriptor,
@@ -216,6 +217,7 @@ namespace BarPromenade
         }
 
         private static bool TryAppendImportedDecoration(
+            Transform root,
             IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
             CityLayout layout,
             CityDecorationDescriptor descriptor,
@@ -283,6 +285,16 @@ namespace BarPromenade
                     context,
                     out BatchStyle style,
                     out CityParkSurfaceKind? surface);
+                if (kind == CityMiscKind.ResidentialCourtyardPocket &&
+                    variant == CityCourtyardPocketGeometry.SweepingVariant &&
+                    part.Component == CityCourtyardSweepingTool.BroomComponentName)
+                {
+                    // Only the real broom leaves its static batch. The other
+                    // two pocket parts keep the existing chunk/material path.
+                    CityCourtyardSweepingTool.Create(root, descriptor.StableId,
+                        part.Mesh, context.Origin, rotation, scale, GetBatchColor(style));
+                    continue;
+                }
                 geometry.AddMesh(
                     style,
                     surface,
