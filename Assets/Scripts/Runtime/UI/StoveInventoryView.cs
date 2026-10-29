@@ -159,7 +159,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (!IsOpen || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
             EnsureStyles();
@@ -204,8 +203,8 @@ namespace BarPromenade
                     bool clicked = RetroUiInput.Button(slot, GUIContent.none, buttonStyle);
                     GUI.enabled = previousEnabled;
                     Color previousColor = GUI.color;
-                    if (!usable) GUI.color = RetroUiTheme.Muted;
-                    GUI.DrawTexture(new Rect(slot.x + 26f, slot.y + 1f, 28f, 28f),
+                    if (!usable) GUI.color = RetroUiTheme.ToGuiColor(RetroUiTheme.Muted);
+                    RetroUiTexture.DrawTexture(new Rect(slot.x + 26f, slot.y + 1f, 28f, 28f),
                         InventoryIconLibrary.GetIcon(stack.ItemId), ScaleMode.ScaleToFit, true);
                     GUI.color = previousColor;
                     GUI.Label(new Rect(slot.x + 2f, slot.y + 28f, 76f, 18f),

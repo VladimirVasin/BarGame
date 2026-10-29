@@ -132,7 +132,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint ||
                 !ShouldRender)
             {
@@ -177,7 +176,7 @@ namespace BarPromenade
                     JournalIconLibrary.GetNotebookIcon();
                 if (texture != null)
                 {
-                    GUI.DrawTexture(
+                    RetroUiTexture.DrawTexture(
                         new Rect(
                             icon.x + 2f,
                             icon.y + 2f,

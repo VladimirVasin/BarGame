@@ -8,8 +8,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-29
 
-- HUD/карта: защита от повторной гамма-коррекции в редакторе.
-  HudGammaScopeSourceInventory; визуальная проверка Game view ожидается.
+- HUD/карта: засветка редактора исправлена; проверено в Game view.
+  HudOverlay_PreservesAuthoredGammaColors; кадры карты/XYZ просмотрены.
 
 - Закусочная целиком перенесена в City: прежние посетители/работник,
   посадка, меню-пустышка, интерьер, порог, свет и звук. На горной площадке

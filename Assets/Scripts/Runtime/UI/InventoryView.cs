@@ -79,7 +79,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsOpen)
             {
@@ -163,7 +162,7 @@ namespace BarPromenade
                 portraitRect,
                 RetroUiTheme.FrameOuter,
                 RetroUiTheme.FrameInner);
-            GUI.DrawTextureWithTexCoords(
+            RetroUiTexture.DrawTextureWithTexCoords(
                 new Rect(29f, 48f, 52f, 69f),
                 InventoryIconLibrary.GetHeroPortrait(),
                 InventoryIconLibrary.HeroPortraitUv,
@@ -303,7 +302,7 @@ namespace BarPromenade
                         RetroUiTheme.FrameInner);
                 }
                 InventoryItemStack stack = items[index];
-                GUI.DrawTexture(
+                RetroUiTexture.DrawTexture(
                     new Rect(slot.x + 22f, slot.y + 5f, 36f, 36f),
                     InventoryIconLibrary.GetIcon(stack.ItemId),
                     ScaleMode.ScaleToFit,
@@ -399,9 +398,9 @@ namespace BarPromenade
             }
 
             Color previousColor = GUI.color;
-            GUI.color = controller.UseFeedbackSucceeded
+            GUI.color = RetroUiTheme.ToGuiColor(controller.UseFeedbackSucceeded
                 ? RetroUiTheme.SelectionText
-                : RetroUiTheme.Text;
+                : RetroUiTheme.Text);
             GUI.Label(
                 new Rect(128f, 307f, 334f, 28f),
                 controller.UseFeedbackMessage,
@@ -466,7 +465,7 @@ namespace BarPromenade
                 : null;
             if (texture != null && PreviewRenderer.IsRendering)
             {
-                GUI.DrawTexture(
+                RetroUiTexture.DrawTexture(
                     new Rect(
                         rect.x + 2f,
                         rect.y + 2f,

@@ -55,7 +55,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint) return;
             RepaintFrame = Time.frameCount;
             Power.RenderedFrame = Tuning.RenderedFrame = Glovebox.RenderedFrame = -1;
@@ -109,7 +108,7 @@ namespace BarPromenade
             }
             if (count < 3) return;
             Vector2 minimum = hull[0], maximum = hull[0];
-            GUI.color = HighlightColor;
+            GUI.color = RetroUiTheme.ToGuiColor(HighlightColor);
             for (int index = 1; index < count; index++)
             {
                 minimum = Vector2.Min(minimum, hull[index]);
@@ -135,7 +134,7 @@ namespace BarPromenade
                 nearest = distance;
                 closest = point;
             }
-            GUI.color = HighlightColor;
+            GUI.color = RetroUiTheme.ToGuiColor(HighlightColor);
             DrawLine(from, closest);
             callout.LeaderStart = from;
             callout.LeaderEnd = closest;
@@ -173,7 +172,7 @@ namespace BarPromenade
             Matrix4x4 previous = GUI.matrix;
             Vector2 delta = to - from;
             GUIUtility.RotateAroundPivot(Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg, from);
-            GUI.DrawTexture(new Rect(from.x, from.y, delta.magnitude, 1.5f), Texture2D.whiteTexture);
+            RetroUiTexture.DrawTexture(new Rect(from.x, from.y, delta.magnitude, 1.5f), Texture2D.whiteTexture);
             GUI.matrix = previous;
         }
     }

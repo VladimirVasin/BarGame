@@ -452,7 +452,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (!active || Suspended || Phase != WarehouseFishAssemblyPhase.Assembling) return;
             controlsStyle ??= RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleCenter, RetroUiTheme.Text);
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
@@ -471,11 +470,11 @@ namespace BarPromenade
                 Vector2 q = canvas.ScreenToLogical(new Vector2(b.x, Screen.height - b.y));
                 Rect outline = Rect.MinMaxRect(Mathf.Min(p.x, q.x) - 3f, Mathf.Min(p.y, q.y) - 3f,
                     Mathf.Max(p.x, q.x) + 3f, Mathf.Max(p.y, q.y) + 3f);
-                Color previousColor = GUI.color; GUI.color = RetroUiTheme.AccentPale;
-                GUI.DrawTexture(new Rect(outline.x, outline.y, outline.width, 1f), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(outline.x, outline.yMax, outline.width, 1f), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(outline.x, outline.y, 1f, outline.height), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(outline.xMax, outline.y, 1f, outline.height), Texture2D.whiteTexture);
+                Color previousColor = GUI.color; GUI.color = RetroUiTheme.ToGuiColor(RetroUiTheme.AccentPale);
+                RetroUiTexture.DrawTexture(new Rect(outline.x, outline.y, outline.width, 1f), Texture2D.whiteTexture);
+                RetroUiTexture.DrawTexture(new Rect(outline.x, outline.yMax, outline.width, 1f), Texture2D.whiteTexture);
+                RetroUiTexture.DrawTexture(new Rect(outline.x, outline.y, 1f, outline.height), Texture2D.whiteTexture);
+                RetroUiTexture.DrawTexture(new Rect(outline.xMax, outline.y, 1f, outline.height), Texture2D.whiteTexture);
                 GUI.color = previousColor;
             }
             finally { RetroUiTheme.EndCanvas(previous); }

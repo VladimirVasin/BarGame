@@ -553,7 +553,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (!IsOpen ||
                 model.State == InventoryTargetInteractionState.Executing)

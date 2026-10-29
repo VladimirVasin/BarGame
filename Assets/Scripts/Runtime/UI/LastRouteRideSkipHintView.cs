@@ -72,7 +72,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (!ShouldRender || Event.current.type != EventType.Repaint)
             {
                 return;
@@ -105,7 +104,7 @@ namespace BarPromenade
                 // One pixel of shadow, because the line sits over a road that
                 // is sometimes headlight-white and sometimes forest-black.
                 Color previousColor = GUI.color;
-                GUI.color = RetroUiTheme.Shadow;
+                GUI.color = RetroUiTheme.ToGuiColor(RetroUiTheme.Shadow);
                 GUI.Label(
                     new Rect(area.x + 1f, area.y + 1f, area.width, area.height),
                     text,

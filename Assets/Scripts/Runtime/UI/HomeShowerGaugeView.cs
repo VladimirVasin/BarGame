@@ -12,7 +12,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (interaction == null || !interaction.GaugeVisible) return;
             GUI.depth = -85;
             Matrix4x4 previous = RetroUiTheme.BeginCanvas(

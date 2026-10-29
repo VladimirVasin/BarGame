@@ -373,7 +373,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (controller == null || !controller.IsInitialized)
             {
@@ -565,7 +564,7 @@ namespace BarPromenade
             bool illustrated = IsUsingIllustratedMap;
             if (illustrated)
             {
-                GUI.DrawTexture(ProjectWorldRect(projection, IllustratedMapBounds), IllustratedMapTexture,
+                RetroUiTexture.DrawTexture(ProjectWorldRect(projection, IllustratedMapBounds), IllustratedMapTexture,
                     ScaleMode.StretchToFill, false);
                 DrawAreaGrounds(projection, false);
                 DrawBuildings(projection, false);
@@ -2383,7 +2382,7 @@ namespace BarPromenade
                 DrawSolidRect(marker, BarMarker);
 
                 Color previousContentColor = GUI.contentColor;
-                GUI.contentColor = RetroUiTheme.Text;
+                GUI.contentColor = RetroUiTheme.ToGuiColor(RetroUiTheme.Text);
                 string markerLabel = GetNumberLabel(index + 1);
                 // A bar is a place on the chart, not a control: only the
                 // debug teleport mode makes its marker pick a destination.
@@ -3459,7 +3458,7 @@ namespace BarPromenade
 
             Matrix4x4 previousMatrix = GUI.matrix;
             Color previousColor = GUI.color;
-            GUI.color = color;
+            GUI.color = RetroUiTheme.ToGuiColor(color);
             GUI.matrix = CreateLineMatrix(
                 previousMatrix,
                 start,
@@ -3467,7 +3466,7 @@ namespace BarPromenade
                 isMapLineContextActive
                     ? mapLineGroupOffset
                     : Vector2.zero);
-            GUI.DrawTexture(
+            RetroUiTexture.DrawTexture(
                 new Rect(0f, -width * 0.5f, length, width),
                 Texture2D.whiteTexture);
             GUI.matrix = previousMatrix;

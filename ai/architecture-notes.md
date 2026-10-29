@@ -5859,8 +5859,8 @@
   `ScenePresentationExclusion` keeps preview/reflection cameras outside shared
   lens/post effects. No low-resolution presentation profile remains.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI follows the world
-  composite. `OnGUI` scopes Editor gamma writes with `RetroUiTheme.BeginGui`,
-  restoring state; builds keep native output.
+  composite. `RetroUi{Theme,Texture}` decode Editor colours/textures once;
+  clipping/matrices and builds stay intact.
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
   and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
   Corner intoxication/journal HUDs use its full-screen logical bounds at the

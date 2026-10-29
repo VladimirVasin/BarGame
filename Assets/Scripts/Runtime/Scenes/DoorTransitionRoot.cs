@@ -419,7 +419,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (IsInitialized)
             {
                 TransitionBlackoutOverlay.Draw(blackOpacity);

@@ -114,7 +114,7 @@ namespace BarPromenade
         private void DrawAlpineVillageMap(MapProjection projection)
         {
             if (IsUsingIllustratedVillageMap)
-                GUI.DrawTexture(mapViewport.ContentRect, IllustratedVillageMapTexture, ScaleMode.StretchToFill, false);
+                RetroUiTexture.DrawTexture(mapViewport.ContentRect, IllustratedVillageMapTexture, ScaleMode.StretchToFill, false);
             else
                 RetroUiTheme.DrawPanel(projection.ScreenRect, AlpineVillageGround,
                     RetroUiTheme.BorderMuted, false, 0f, 1f);

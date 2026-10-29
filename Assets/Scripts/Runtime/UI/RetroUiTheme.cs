@@ -144,43 +144,18 @@ namespace BarPromenade
         /// </summary>
         public static Font InterfaceFont => ResolveInterfaceFont();
 
-        /// <summary>
-        /// Keeps legacy IMGUI's gamma output from receiving a second sRGB
-        /// conversion in the Editor, then restores the surrounding render state.
-        /// </summary>
-        public static GuiScope BeginGui()
-        {
+        // Unity's Editor UI overlay writes to an sRGB target even when the
+        // legacy GL.sRGBWrite flag is false. Convert authored display colours
+        // at the drawing boundary; keep the palette and player output intact.
+        internal static readonly bool UsesLinearGuiOutput =
 #if UNITY_EDITOR
-            return new GuiScope(
-                Event.current != null && Event.current.type == EventType.Repaint);
+            QualitySettings.activeColorSpace == ColorSpace.Linear;
 #else
-            return default;
-#endif
-        }
-
-        public readonly struct GuiScope : System.IDisposable
-        {
-#if UNITY_EDITOR
-            private readonly bool previousSrgbWrite;
-            private readonly bool restoreSrgbWrite;
+            false;
 #endif
 
-            internal GuiScope(bool repaint)
-            {
-#if UNITY_EDITOR
-                previousSrgbWrite = repaint && GL.sRGBWrite;
-                restoreSrgbWrite = repaint && previousSrgbWrite;
-                if (restoreSrgbWrite) GL.sRGBWrite = false;
-#endif
-            }
-
-            public void Dispose()
-            {
-#if UNITY_EDITOR
-                if (restoreSrgbWrite) GL.sRGBWrite = previousSrgbWrite;
-#endif
-            }
-        }
+        public static Color ToGuiColor(Color authoredColor) =>
+            UsesLinearGuiOutput ? authoredColor.linear : authoredColor;
 
         public static RetroUiCanvas CalculateCanvas(
             int screenWidth,
@@ -256,8 +231,8 @@ namespace BarPromenade
         public static void FillRect(Rect rect, Color color)
         {
             Color previousColor = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(SnapRect(rect), Texture2D.whiteTexture);
+            GUI.color = ToGuiColor(color);
+            RetroUiTexture.DrawTexture(SnapRect(rect), Texture2D.whiteTexture);
             GUI.color = previousColor;
         }
 
@@ -421,9 +396,9 @@ namespace BarPromenade
 
             EnsureDitherTexture();
             Color previousColor = GUI.color;
-            GUI.color = color;
+            GUI.color = ToGuiColor(color);
             Rect snapped = SnapRect(rect);
-            GUI.DrawTextureWithTexCoords(
+            RetroUiTexture.DrawTextureWithTexCoords(
                 snapped,
                 ditherTexture,
                 new Rect(
@@ -516,6 +491,7 @@ namespace BarPromenade
                 throw new System.ArgumentNullException(nameof(style));
             }
 
+            color = ToGuiColor(color);
             style.normal.textColor = color;
             style.hover.textColor = color;
             style.active.textColor = color;
@@ -530,14 +506,15 @@ namespace BarPromenade
             GUIStyle style,
             Color color)
         {
+            color = ToGuiColor(color);
             style.normal.textColor = color;
-            style.hover.textColor = SelectionText;
-            style.active.textColor = Accent;
-            style.focused.textColor = SelectionText;
-            style.onNormal.textColor = SelectionText;
-            style.onHover.textColor = SelectionText;
-            style.onActive.textColor = Text;
-            style.onFocused.textColor = SelectionText;
+            style.hover.textColor = ToGuiColor(SelectionText);
+            style.active.textColor = ToGuiColor(Accent);
+            style.focused.textColor = ToGuiColor(SelectionText);
+            style.onNormal.textColor = ToGuiColor(SelectionText);
+            style.onHover.textColor = ToGuiColor(SelectionText);
+            style.onActive.textColor = ToGuiColor(Text);
+            style.onFocused.textColor = ToGuiColor(SelectionText);
         }
 
         private static Rect InsetRect(Rect rect, float inset)

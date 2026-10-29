@@ -5,10 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
-Editor HUD gamma writes are scoped/restored across every runtime OnGUI;
-charcoal/bone palette and world effects stay authored. HudGammaScopeSourceInventory
-passed; runtime/test dependencies compiled. HudOverlay_PreservesAuthoredGammaColors
-requires visible Game view; batch capture produced no IMGUI frame.
+Game view reproduced HUD/map gamma lift; GL.sRGBWrite was ineffective.
+Shared Editor colour/texture boundaries preserve authored values and native
+clipping/matrices; player/world output kept. HudOverlay_PreservesAuthoredGammaColors
+and ImageGenCityMap_PreservesPlanAndLivePlaces passed; native UI frames reviewed.
 
 City owns the complete existing diner: whole lot/ground/threshold, original
 cast/seat/menu, shelter/map and bounded City lighting/reflections. MountainRoad

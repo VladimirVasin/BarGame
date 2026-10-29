@@ -300,7 +300,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             using var input = RetroUiInput.Begin();
             if (!IsChoosing || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             if (optionStyle == null)

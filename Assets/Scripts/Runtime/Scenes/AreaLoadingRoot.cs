@@ -112,7 +112,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint)
             {
                 return;
@@ -132,7 +131,7 @@ namespace BarPromenade
                 RetroUiTheme.FillRect(viewport, RetroUiTheme.Ink);
                 if (HasArtwork)
                 {
-                    GUI.DrawTexture(viewport, artwork.Texture,
+                    RetroUiTexture.DrawTexture(viewport, artwork.Texture,
                         ScaleMode.ScaleAndCrop, false);
                 }
 

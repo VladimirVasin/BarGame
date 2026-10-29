@@ -106,7 +106,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (opacity <= 0f || Event.current.type != EventType.Repaint)
             {
                 return;
@@ -115,10 +114,10 @@ namespace BarPromenade
             Color previousColor = GUI.color;
             int previousDepth = GUI.depth;
             GUI.depth = -1000;
-            GUI.color = RetroUiTheme.WithAlpha(
+            GUI.color = RetroUiTheme.ToGuiColor(RetroUiTheme.WithAlpha(
                 RetroUiTheme.Ink,
-                opacity);
-            GUI.DrawTexture(
+                opacity));
+            RetroUiTexture.DrawTexture(
                 new Rect(0f, 0f, Screen.width, Screen.height),
                 Texture2D.whiteTexture,
                 ScaleMode.StretchToFill);

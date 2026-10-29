@@ -18,7 +18,6 @@ namespace BarPromenade
         public static Rect Track => new Rect(RetroUiTheme.LogicalWidth - 27f, 113f, 11f, 120f);
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (interaction == null || !interaction.GaugeVisible) return;
             GUI.depth = -85;
             Matrix4x4 previous = RetroUiTheme.BeginCanvas(

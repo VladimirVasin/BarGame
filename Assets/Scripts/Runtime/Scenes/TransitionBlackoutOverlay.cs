@@ -31,7 +31,7 @@ namespace BarPromenade
             int previousDepth = GUI.depth;
             GUI.depth = Depth;
             GUI.color = new Color(0f, 0f, 0f, opacity);
-            GUI.DrawTexture(
+            RetroUiTexture.DrawTexture(
                 new Rect(0f, 0f, Screen.width, Screen.height),
                 Texture2D.whiteTexture,
                 ScaleMode.StretchToFill);
@@ -41,7 +41,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             Draw(1f);
         }
     }

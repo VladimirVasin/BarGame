@@ -160,7 +160,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (Event.current.type != EventType.Repaint || interaction == null ||
                 (!interaction.GaugeVisible && !interaction.ExitPromptVisible) || PauseMenuController.IsAnyPaused) return;
             int oldDepth = GUI.depth;
@@ -168,7 +167,7 @@ namespace BarPromenade
             GUI.depth = -86;
             try
             {
-                GUI.color = HighlightColor;
+                GUI.color = RetroUiTheme.ToGuiColor(HighlightColor);
                 bool showPrompt = interaction.SoapPromptVisible;
                 if (Highlighted || showPrompt) DrawOutline(mesh);
                 if (showPrompt)
@@ -180,7 +179,7 @@ namespace BarPromenade
                 }
                 if (interaction.ExitPromptVisible)
                 {
-                    GUI.color = HighlightColor;
+                    GUI.color = RetroUiTheme.ToGuiColor(HighlightColor);
                     DrawOutline(exitMesh);
                     ExitOutlineCount = outlineCount;
                     if (outlineCount > 0)
@@ -210,7 +209,7 @@ namespace BarPromenade
                 }
                 if (contactVisible && interaction.WashingPointerAvailable)
                 {
-                    GUI.color = Color.Lerp(Color.white, HighlightColor, regionAmount);
+                    GUI.color = RetroUiTheme.ToGuiColor(Color.Lerp(Color.white, HighlightColor, regionAmount));
                     DrawLine(pointer + new Vector2(-5f, -5f), pointer + new Vector2(5f, -5f));
                     DrawLine(pointer + new Vector2(5f, -5f), pointer + new Vector2(5f, 5f));
                     DrawLine(pointer + new Vector2(5f, 5f), pointer + new Vector2(-5f, 5f));
@@ -302,7 +301,7 @@ namespace BarPromenade
                 nearest = distance;
                 closest = point;
             }
-            GUI.color = HighlightColor;
+            GUI.color = RetroUiTheme.ToGuiColor(HighlightColor);
             DrawLine(from, closest);
             return closest;
         }
@@ -313,7 +312,7 @@ namespace BarPromenade
             Matrix4x4 previous = GUI.matrix;
             Vector2 delta = to - from;
             GUIUtility.RotateAroundPivot(Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg, from);
-            GUI.DrawTexture(new Rect(from.x, from.y, delta.magnitude, 1.5f), Texture2D.whiteTexture);
+            RetroUiTexture.DrawTexture(new Rect(from.x, from.y, delta.magnitude, 1.5f), Texture2D.whiteTexture);
             GUI.matrix = previous;
         }
     }

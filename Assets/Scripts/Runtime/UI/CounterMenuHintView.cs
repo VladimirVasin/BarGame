@@ -111,7 +111,6 @@ namespace BarPromenade
 
         protected virtual void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (!Visible || Event.current.type != EventType.Repaint)
             {
                 return;
@@ -139,7 +138,7 @@ namespace BarPromenade
                     Width,
                     Height));
                 Color previousColor = GUI.color;
-                GUI.color = RetroUiTheme.Shadow;
+                GUI.color = RetroUiTheme.ToGuiColor(RetroUiTheme.Shadow);
                 GUI.Label(
                     new Rect(area.x + 1f, area.y + 1f, area.width, area.height),
                     DisplayedText,

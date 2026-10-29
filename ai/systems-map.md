@@ -26,7 +26,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Narrative inspection | Village 24+4; hatch choice/reply; Home silent painting close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*`, `HomeWallPainting` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Pause/modal priority; Alt cursor blocks mouse combat; focus guard. | `GameInput`, `GameInputPolicy`, `GameCursor` | Current |
-| IMGUI input | Input System pointer/capture/scroll and bounded Unicode editing; focus/close cleanup. | `RetroUiInput`, `RetroUiTextField` | Current |
+| IMGUI | Bounded Input System pointer/text; Editor colours/textures preserve authored values. | `RetroUi{Input,TextField,Theme,Texture}` | Current |
 | Performance capture | Frame/GPU/GC, inclusive CPU; requested/actual target, mismatch rejection; missing counters explicit. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
 | Player build asset gate | Read-only validators block stale/missing runtime assets with explicit repair instructions. | `PlayerBuildAssetValidation` | Current |
 | Reproducible asset tooling | Pinned tools, failure propagation, output checks and staged publication preserve existing metas. | `tools/run-blender.py`, `tools/asset_pipeline.py` | Current |

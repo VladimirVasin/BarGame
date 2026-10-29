@@ -136,7 +136,6 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            using var presentation = RetroUiTheme.BeginGui();
             if (!ShouldRender)
             {
                 return;
@@ -226,7 +225,7 @@ namespace BarPromenade
                 RetroUiTheme.Accent);
 
             Rect icon = ResolveIconRect(track);
-            GUI.DrawTexture(
+            RetroUiTexture.DrawTexture(
                 icon,
                 IntoxicationNauseaIconLibrary.GetStomachIcon(),
                 ScaleMode.ScaleToFit,

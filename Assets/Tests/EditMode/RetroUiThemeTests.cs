@@ -178,7 +178,7 @@ namespace BarPromenade.Tests.EditMode
             };
             foreach (GUIStyleState state in states)
             {
-                Assert.That(state.textColor, Is.EqualTo(expected));
+                Assert.That(state.textColor, Is.EqualTo(RetroUiTheme.ToGuiColor(expected)));
             }
         }
 
@@ -231,10 +231,10 @@ namespace BarPromenade.Tests.EditMode
                     Luminance(style.normal.textColor) + 0.30f));
             Assert.That(
                 style.focused.textColor,
-                Is.EqualTo(RetroUiTheme.SelectionText));
+                Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
             Assert.That(
                 style.onNormal.textColor,
-                Is.EqualTo(RetroUiTheme.SelectionText));
+                Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
         }
 
         [Test]
