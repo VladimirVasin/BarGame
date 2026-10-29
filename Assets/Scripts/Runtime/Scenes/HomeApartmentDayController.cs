@@ -5,9 +5,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Applies calendar dressing at a safe interaction boundary. Only
-    /// dedicated visual groups belong here; collision and interactive props
-    /// keep their existing owners throughout a day change.
+    /// Applies calendar or committed sleep dressing at a safe interaction
+    /// boundary. Only dedicated visual groups belong here; collision and
+    /// interactive props keep their owners throughout an appearance change.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class HomeApartmentDayController : MonoBehaviour
@@ -19,8 +19,7 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public int AppliedDayNumber { get; private set; }
-        public int PendingDayNumber => HomeApartmentDayRules.ResolveDay(
-            GameSessionState.GameDayNumber);
+        public int PendingDayNumber => GameSessionState.HomeAppearanceDayNumber;
 
         public void Initialize(HomeInteriorRoot homeRoot, Action<int> apply)
         {
@@ -91,6 +90,34 @@ namespace BarPromenade
                 return false;
             }
 
+            Apply(PendingDayNumber);
+            return true;
+        }
+
+        /// <summary>
+        /// The sleep presentation calls this while its cut fully covers the
+        /// room. Only that bed's held sleep pose permits the mid-action swap;
+        /// ordinary calendar refreshes still wait for a safe boundary.
+        /// </summary>
+        public bool CommitSleepAppearance(HomeBedInteraction owner)
+        {
+            if (!IsInitialized || !isActiveAndEnabled || home == null ||
+                !home.isActiveAndEnabled ||
+                owner == null || owner != home.Bed ||
+                !owner.isActiveAndEnabled || !owner.OwnsActiveInteraction ||
+                home.AnimatedInteraction == null ||
+                owner.Controller != home.AnimatedInteraction ||
+                home.AnimatedInteraction.Phase !=
+                    PlayerAnimatedInteractionPhase.Looping ||
+                SceneTransitionService.IsTransitioning ||
+                (home.Opening != null &&
+                 home.Opening.isActiveAndEnabled &&
+                 home.Opening.Phase != HomeOpeningPhase.Complete))
+            {
+                return false;
+            }
+
+            GameSessionState.CommitHomeSleepAppearance();
             Apply(PendingDayNumber);
             return true;
         }

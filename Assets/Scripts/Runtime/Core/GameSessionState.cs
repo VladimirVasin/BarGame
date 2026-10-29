@@ -156,6 +156,11 @@ namespace BarPromenade
             get;
             private set;
         } = HomeArrivalKind.Normal;
+        /// <summary>The sleep cut keeps its maximum apartment dressing across travel.</summary>
+        public static bool HomeSleepAppearanceActive { get; private set; }
+        public static int HomeAppearanceDayNumber => HomeSleepAppearanceActive
+            ? HomeApartmentDayRules.LastDayNumber
+            : HomeApartmentDayRules.ResolveDay(GameDayNumber);
         public static AlpineVillageArrivalKind AlpineVillageArrival
         {
             get;
@@ -393,11 +398,15 @@ namespace BarPromenade
             }
 
             int previousDayNumber = gameTime.DayNumber;
-            if (!gameTime.TrySetDayNumber(dayNumber))
+            if (!gameTime.TrySetDayNumber(dayNumber) &&
+                !(HomeSleepAppearanceActive && previousDayNumber == dayNumber))
             {
                 return false;
             }
 
+            // Explicit debug selection must still show its exact calendar
+            // appearance, including the current day after a sleep override.
+            HomeSleepAppearanceActive = false;
             // A debug jump to a later day must land on that day's world,
             // not on day one's with a different number on it.
             SyncDayEvents();
@@ -411,6 +420,11 @@ namespace BarPromenade
                 GameLog.Field("hour", gameTime.Hour),
                 GameLog.Field("minute", gameTime.Minute));
             return true;
+        }
+
+        internal static void CommitHomeSleepAppearance()
+        {
+            HomeSleepAppearanceActive = true;
         }
 
         public static void AdvanceGameTime(float scaledDelta)
@@ -537,6 +551,7 @@ namespace BarPromenade
             ReturnKind = CityReturnKind.None;
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
+            HomeSleepAppearanceActive = false;
             AlpineVillageArrival = AlpineVillageArrivalKind.Default;
             DebugCityMapOnArrivalRequested = false;
             IntoxicationLevel = 0;

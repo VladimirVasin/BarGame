@@ -44,6 +44,7 @@ namespace BarPromenade
             private set;
         }
         public HomeBedInteraction Bed { get; private set; }
+        public HomeSleepController Sleep { get; private set; }
         public HomeBedSurfaceDeformer BedSurface { get; private set; }
         public HomeBedInteractionPlan BedInteractionPlan
         {
@@ -435,6 +436,8 @@ namespace BarPromenade
             ApartmentDays = ui.AddComponent<HomeApartmentDayController>();
             HomeApartmentDressing dressing = Room.GetComponent<HomeApartmentDressing>();
             ApartmentDays.Initialize(this, dressing.ApplyDay);
+            Sleep = ui.AddComponent<HomeSleepController>();
+            Sleep.Initialize(this);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(Player, CameraFollow, IntoxicationHud);
             DebugWindow.BindHome(this, DebugCityMapShortcut, ApartmentDays);

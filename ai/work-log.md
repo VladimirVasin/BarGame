@@ -5,53 +5,49 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
-City residents follow seeded calendar destinations and hour-dependent caps;
-logical routes continue without bodies. Lazy identity cache, local peer index
-and animation cadence bound presentation; Home profile retained. CityResidentWorldTests/CityResidentLife passed; frames reviewed.
+City residents follow calendar destinations/hour caps; routes survive body
+culling. Lazy identity cache/local peer index/animation cadence retain Home.
+CityResidentWorldTests/CityResidentLife passed; views reviewed.
 
-City body/wing/service perimeters replace soil/lawn with wet asphalt,
-retaining hard surfaces/sand/gardens, weather/steps and Home parity. Lodge
-repaint survives grave changes; low grass excluded. CityBuildingPerimeters
-passed; City/Home views reviewed. CityGroundSurface retains an unrelated
-frontage sampler/support-seam mismatch.
+Body/wing/service perimeters use wet asphalt, retaining hard surfaces/sand/
+gardens/weather/steps/Home. Lodge repaint survives grave changes; low grass
+excluded. CityBuildingPerimeters passed; City/Home reviewed. CityGroundSurface
+retains unrelated frontage sampler/support-seam mismatch.
 
-HUD/map gamma lift reproduced in Game view; shared Editor colour/texture
-boundaries retain authored values, clipping and matrices.
-HudOverlay_PreservesAuthoredGammaColors and
+HUD/map gamma lift fixed at shared Editor colour/texture boundaries; clipping/
+matrices retained. HudOverlay_PreservesAuthoredGammaColors and
 ImageGenCityMap_PreservesPlanAndLivePlaces passed; native UI reviewed.
 
-City owns the complete diner: original cast/seat/menu, lot/threshold,
-shelter/map and bounded light/reflections. MountainRoad keeps LastRoute,
-cableway/brink. The location exception keeps menu placeholder/open glass;
-menu carry retains grip and waits for unfolding before text.
-CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
+City gets the whole diner/cast/seat/menu/lot/threshold/shelter/map/light;
+MountainRoad keeps LastRoute/cableway/brink. Exception keeps placeholder/open
+glass; grip waits for menu unfolding. CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
 CoastalCafe_ReservesOneWholeLotWithGroundedOriginalFootprint and
-NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed;
-City/menu and emptied terminal views reviewed.
+NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed; views reviewed.
 
-Dog yard fits after laundry without moving homes/routes. Blender dogs use
-paw IK/calendar activity; permanent owners, collision, positioned voices and
-pause/distance continuity share City owners. Palette pins Texture2D.
-Blender determinism, imported contract and CityDogPark passed; views reviewed.
-Laundry/dog-yard labels/footprints/XYZ follow clear arrivals; NamedPlaces proof above.
+Dog yard follows laundry without moving homes/routes. Blender paw IK/calendar,
+permanent owners/collision/positioned voices/pause/distance share City. Palette
+pins Texture2D. Blender determinism/imported contract/CityDogPark passed;
+views reviewed. Laundry/dog-yard map arrivals use NamedPlaces proof above.
 
-City remains ImageGen/Silent Hill; Village becomes a worn brochure with the
-former skiing ad crossed red. Paper-only exception keeps geography.
-Live markers/selection/XYZ respect mapUvRect; sharp RU labels omit coordinates
-and anonymous yards. Village RU SHA is independent; City excludes Village keys.
-Both maps redrawn; stale art/other seeds/MountainRoad use schematics.
+City keeps ImageGen/Silent Hill; Village is a worn brochure/red-crossed resort.
+Paper-only exception keeps geography; mapUvRect/live markers/selection/XYZ,
+sharp RU labels/no coordinates/anonymous yards. Village SHA independent; City
+omits Village keys. Redrawn maps; stale art/seeds/MountainRoad→schematics.
 ImageGenVillageBrochure_PreservesResortAndLivePlaces passed; maps reviewed.
 
-Residential bodies/wings have open vestibules, split masses/skirts and floors;
-protected paving reaches sidewalks without crossing ramps. Cached routing and
-lower-pole bounds retain clearance. Courts now compose a whole shared hardstand
-contour/spine, open middle and soil/green edges; wall-bound seat/planter and
-service groups replace loose props. Shared seats, a permanent basket carrier,
-real old-pocket hand/tool contacts and bounded pause/distance ownership retain
-City/Home parity and shared effects. Pre-courtyard City map restored; the user exempts
-passive courtyard dressing from map/redraw. Blender recipe,
-CITY RESIDENTIAL COURTYARD ART CONTRACT OK and imported-metre validators passed.
-CityResidentialEntrances passed; shared day/night spaces reviewed.
+Residential entrances/vestibules/split masses/skirts/floors and protected paths
+retain ramps/cached routing/lower-pole bounds. Courts share hardstand/spine/open
+middle/green edges; wall seats/planters/service groups, shared seats/permanent
+carrier/old-pocket hand-tool contacts retain City/Home/lifecycle/effects.
+City map restored; user exempts courtyard props from redraw. Blender recipe,
+CITY RESIDENTIAL COURTYARD ART CONTRACT OK/imported-metre/CityResidentialEntrances
+passed; shared day/night views reviewed.
+
+Sleep MVP: same-rig face push/closed eyes/hold/blinking cut/automatic wake;
+session view7 avoids advancing calendar/quests, fixed camera and owned cleanup.
+Narrow canon exception/effects audit recorded.
+HomeBedInteractionPlayModeTests.SleepMvp_AutomaticCutAndCleanup passed;
+closed-eye close-up/day-seven wake/fixed-room views reviewed.
 
 ## 2026-10-28
 

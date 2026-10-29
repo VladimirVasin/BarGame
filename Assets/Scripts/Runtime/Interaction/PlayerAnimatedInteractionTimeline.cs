@@ -313,6 +313,53 @@ namespace BarPromenade
     }
 
     /// <summary>
+    /// Retimes two contiguous portions of one authored exit. Clip and pelvis
+    /// sample the same progress, preserving every contact and both endpoints.
+    /// </summary>
+    public readonly struct PlayerAnimatedInteractionExitTiming
+    {
+        public PlayerAnimatedInteractionExitTiming(
+            float splitClipProgress,
+            float firstSegmentSeconds,
+            float remainingSegmentSeconds)
+        {
+            SplitClipProgress = splitClipProgress;
+            FirstSegmentSeconds = firstSegmentSeconds;
+            RemainingSegmentSeconds = remainingSegmentSeconds;
+            Validate();
+        }
+
+        public float SplitClipProgress { get; }
+        public float FirstSegmentSeconds { get; }
+        public float RemainingSegmentSeconds { get; }
+        public double DurationSeconds =>
+            (double)FirstSegmentSeconds + RemainingSegmentSeconds;
+
+        public float Evaluate(double elapsedSeconds)
+        {
+            if (elapsedSeconds <= 0d) return 0f;
+            if (elapsedSeconds < FirstSegmentSeconds)
+                return (float)(elapsedSeconds / FirstSegmentSeconds) * SplitClipProgress;
+            if (elapsedSeconds >= DurationSeconds) return 1f;
+            return SplitClipProgress +
+                (float)((elapsedSeconds - FirstSegmentSeconds) / RemainingSegmentSeconds) *
+                (1f - SplitClipProgress);
+        }
+
+        internal void Validate()
+        {
+            if (float.IsNaN(SplitClipProgress) ||
+                SplitClipProgress <= 0f || SplitClipProgress >= 1f ||
+                float.IsNaN(FirstSegmentSeconds) || float.IsInfinity(FirstSegmentSeconds) ||
+                FirstSegmentSeconds <= 0f ||
+                float.IsNaN(RemainingSegmentSeconds) || float.IsInfinity(RemainingSegmentSeconds) ||
+                RemainingSegmentSeconds <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(PlayerAnimatedInteractionExitTiming),
+                    "Exit timing requires an interior clip split and two finite positive durations.");
+        }
+    }
+
+    /// <summary>
     /// Pure frame-rate-independent state for a three-range presentation
     /// sequence. The loop persists until RequestExit succeeds.
     /// </summary>
@@ -322,6 +369,7 @@ namespace BarPromenade
         private readonly bool exitAfterOneLoopCycle;
         private double phaseElapsedSeconds;
         private float exitDurationMultiplier = 1f;
+        private PlayerAnimatedInteractionExitTiming? exitTiming;
         private bool exitEndpointPresented;
         private bool exitAtLoopBoundaryRequested;
 
@@ -345,7 +393,7 @@ namespace BarPromenade
         public float ExitDurationMultiplier =>
             exitDurationMultiplier;
         public double ExitDurationSeconds =>
-            definition.ExitFrameCount /
+            exitTiming?.DurationSeconds ?? definition.ExitFrameCount /
             (double)definition.ExitFramesPerSecond *
             exitDurationMultiplier;
         public float PhaseProgress
@@ -371,7 +419,9 @@ namespace BarPromenade
         public float ClipProgress =>
             Phase == PlayerAnimatedInteractionPhase.Looping
                 ? GetLoopClipProgress()
-                : PhaseProgress;
+                : Phase == PlayerAnimatedInteractionPhase.Exiting && exitTiming.HasValue
+                    ? exitTiming.Value.Evaluate(phaseElapsedSeconds)
+                    : PhaseProgress;
 
         public bool Begin()
         {
@@ -467,11 +517,22 @@ namespace BarPromenade
             }
 
             exitDurationMultiplier = durationMultiplier;
+            exitTiming = null;
             exitEndpointPresented = false;
             exitAtLoopBoundaryRequested = false;
             Phase = PlayerAnimatedInteractionPhase.Exiting;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.ExitStartFrame;
+            return true;
+        }
+
+        public bool RequestExitWithTiming(PlayerAnimatedInteractionExitTiming timing)
+        {
+            timing.Validate();
+            if (!RequestExit()) return false;
+            exitTiming = timing;
+            exitDurationMultiplier = (float)(timing.DurationSeconds /
+                GetDuration(definition.ExitFrameCount, definition.ExitFramesPerSecond));
             return true;
         }
 
@@ -498,6 +559,7 @@ namespace BarPromenade
             phaseElapsedSeconds = 0d;
             FrameIndex = -1;
             exitDurationMultiplier = 1f;
+            exitTiming = null;
             exitEndpointPresented = false;
             exitAtLoopBoundaryRequested = false;
         }
@@ -532,6 +594,7 @@ namespace BarPromenade
                 phaseElapsedSeconds = 0d;
                 exitAtLoopBoundaryRequested = false;
                 exitDurationMultiplier = 1f;
+                exitTiming = null;
                 exitEndpointPresented = false;
                 Phase = PlayerAnimatedInteractionPhase.Exiting;
                 FrameIndex = definition.ExitStartFrame;
@@ -542,6 +605,7 @@ namespace BarPromenade
             {
                 phaseElapsedSeconds -= duration;
                 exitDurationMultiplier = 1f;
+                exitTiming = null;
                 exitEndpointPresented = false;
                 Phase = PlayerAnimatedInteractionPhase.Exiting;
                 FrameIndex = definition.ExitStartFrame;
@@ -574,9 +638,10 @@ namespace BarPromenade
             }
 
             FrameIndex = definition.ExitStartFrame +
-                GetLocalFrameForDuration(
-                    definition.ExitFrameCount,
-                    duration);
+                (exitTiming.HasValue
+                    ? Math.Min(definition.ExitFrameCount - 1,
+                        (int)Math.Floor(ClipProgress * definition.ExitFrameCount))
+                    : GetLocalFrameForDuration(definition.ExitFrameCount, duration));
         }
 
         private int GetLocalFrame(

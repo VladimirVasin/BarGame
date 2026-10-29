@@ -1,6 +1,38 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-29 — technical Home sleep MVP:**
+  User: sleep on the existing sofa, slow push into the sleeping face, hold
+  three seconds after the push, finite blinking montage, abrupt wake in the
+  most neglected existing apartment and cut to its normal fixed camera.
+  Story §6 records this narrow exception to held-face, before/after montage
+  and rapid blinking restrictions; no dream content, woman, clue, text,
+  self-awareness, new story level or supernatural room is introduced.
+  The production rig retains positioned entry, neutral settle, sleep/contact
+  and authored exit. Closed eyes reuse the registered face; wake opens them
+  sharply on the same rig. The camera loan/focus and input/HUD cleanup use
+  shared ownership. This cut changes presentation, never hides a mismatched
+  body endpoint or teleports the hero.
+  Home's existing day-seven dressing is a session presentation override,
+  independent of calendar, quests, acts, decay and intoxication. Commit once
+  under the opaque cut; retain on Home re-entry, clear with a new session or
+  explicit debug day selection. Interrupted pre-cut sleep commits nothing;
+  ordinary completed exit keeps the existing fatigue transaction.
+  `HomeSleepController` stages push3/hold3/cut0.44 s. The first wake frame
+  uses the main-room
+  fixed pose and ordinary lens. The existing `BedExit` reaches sample .3
+  in .35 s, then finishes its remaining authored path over 4.2 s; the owned
+  face changes ClosedBlink→Watchful→Neutral without a new FBX/clip.
+  Pause freezes staging; cancel, disable,
+  transition and destroy release camera/DOF/input/HUD/face/overlay ownership.
+  Reuse prepared dressing, materials and buffers; no scene reload or
+  recurring world reconstruction. Cost is unmeasured.
+  Effects: existing GI/SSAO/fog/volumetrics/shadows/grade remain; Home has no
+  SSGI/SCGI/interior SSR provider. Probes/water/roughness/bevels/vertex colour/
+  wind/decals/dust/rim/outlines keep their current scope. Bloom/AA/vignette/
+  grain/flares/blur/lens settings remain; only owned face DOF and the finite
+  montage are added, respecting the saved DOF switch. No new light/GI pass.
+
 - **Accepted 2026-10-29 — City resident life:**
   User:more simultaneous street people by hour, prototype daily life.
   `CityResidentLifeRules` owns192 permanent resident schedules; runtime assigns

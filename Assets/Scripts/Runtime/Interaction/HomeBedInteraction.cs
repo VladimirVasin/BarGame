@@ -23,6 +23,9 @@ namespace BarPromenade
         public const float FullExhaleExtraHoldSeconds = 0.75f;
         public const int FullInhaleLoopFrameOffset = 10;
         public const float FullInhaleExtraHoldSeconds = 0.25f;
+        public const float AbruptWakeClipSplit = 0.3f;
+        public const float AbruptWakeStartSeconds = 0.35f;
+        public const float AbruptWakeRemainingSeconds = 4.2f;
 
         private PlayerAnimatedInteractionController controller;
         private PlayerMotor motor;
@@ -32,6 +35,10 @@ namespace BarPromenade
         private bool ownsActiveInteraction;
         private HomeBedInteractionPlan plan;
         private PlayerAnimatedInteractionDefinition definition;
+        private HomeSleepController sleepPresentation;
+        private Player3DCharacterPresentation heroPresentation;
+        private bool ownsWakeFace;
+        private bool wakeFaceSettled;
 
         public string PromptKey =>
             ownsActiveInteraction &&
@@ -85,6 +92,7 @@ namespace BarPromenade
 
             controller = interactionController;
             motor = player.Motor;
+            heroPresentation = player.Visual as Player3DCharacterPresentation;
             playerRoot = player.GameObject.transform;
             plan = interactionPlan;
             surfaceClutter = bedSurfaceClutter;
@@ -115,6 +123,7 @@ namespace BarPromenade
         public bool CanInteract(PlayerInteractor interactor)
         {
             if (interactor == null ||
+                (sleepPresentation != null && sleepPresentation.IsActive) ||
                 !isActiveAndEnabled ||
                 controller == null ||
                 !controller.IsInitialized ||
@@ -152,7 +161,20 @@ namespace BarPromenade
                 return;
             }
 
-            BeginOwnedInteraction(false);
+            if (sleepPresentation != null)
+                sleepPresentation.TryBegin();
+            else
+                BeginPositionedSleep();
+        }
+
+        public void BindSleepPresentation(HomeSleepController presentation)
+        {
+            sleepPresentation = presentation;
+        }
+
+        public bool BeginPositionedSleep()
+        {
+            return CanBeginOwnedInteraction() && BeginOwnedInteraction(false);
         }
 
         public bool BeginSleeping()
@@ -177,6 +199,34 @@ namespace BarPromenade
                    controller.Phase ==
                    PlayerAnimatedInteractionPhase.Looping &&
                    controller.RequestExit(durationMultiplier);
+        }
+
+        public bool RequestAbruptWake()
+        {
+            if (!ownsActiveInteraction || controller == null ||
+                controller.Phase != PlayerAnimatedInteractionPhase.Looping ||
+                heroPresentation == null ||
+                !heroPresentation.TrySetContextualFacialExpression(
+                    this, PlayerFacialExpression.Watchful))
+                return false;
+
+            ownsWakeFace = true;
+            wakeFaceSettled = false;
+            bool accepted = controller.RequestExitWithTiming(
+                new PlayerAnimatedInteractionExitTiming(AbruptWakeClipSplit,
+                    AbruptWakeStartSeconds, AbruptWakeRemainingSeconds));
+            if (!accepted) ReleaseWakeFace();
+            return accepted;
+        }
+
+        private void Update()
+        {
+            if (ownsWakeFace && !wakeFaceSettled && controller != null &&
+                controller.Phase == PlayerAnimatedInteractionPhase.Exiting &&
+                controller.PhaseProgress >= AbruptWakeStartSeconds /
+                    (AbruptWakeStartSeconds + AbruptWakeRemainingSeconds))
+                wakeFaceSettled = heroPresentation.TrySetContextualFacialExpression(
+                    this, PlayerFacialExpression.Neutral);
         }
 
         private bool BeginOwnedInteraction(bool startSleeping)
@@ -302,6 +352,7 @@ namespace BarPromenade
             if (phase ==
                 PlayerAnimatedInteractionPhase.Idle)
             {
+                ReleaseWakeFace();
                 ownsActiveInteraction = false;
             }
         }
@@ -318,6 +369,7 @@ namespace BarPromenade
 
         private void CancelOwnedInteraction()
         {
+            ReleaseWakeFace();
             if (!ownsActiveInteraction)
             {
                 return;
@@ -326,6 +378,14 @@ namespace BarPromenade
             controller?.CancelActiveInteraction();
             ownsActiveInteraction = false;
             RestoreSurfaceClutter();
+        }
+
+        private void ReleaseWakeFace()
+        {
+            if (!ownsWakeFace) return;
+            heroPresentation?.ReleaseContextualFacialExpression(this);
+            ownsWakeFace = false;
+            wakeFaceSettled = false;
         }
 
         private void RestoreSurfaceClutter()

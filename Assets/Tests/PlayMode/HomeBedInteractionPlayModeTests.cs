@@ -25,6 +25,8 @@ namespace BarPromenade.Tests.PlayMode
             new List<Vector3>();
         private readonly HashSet<Renderer> bodyProbeRenderers =
             new HashSet<Renderer>();
+        private readonly Dictionary<Renderer, bool> rendererBaseline =
+            new Dictionary<Renderer, bool>();
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -38,6 +40,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.EnterHome();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.TrySetDebugGameDay(1);
             GameSessionState.UpdateFatigue(
                 GameSessionState.DefaultFatigue);
             yield return null;
@@ -82,6 +85,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.TrySetDebugGameDay(1);
             GameSessionState.UpdateFatigue(
                 GameSessionState.DefaultFatigue);
             yield return null;
@@ -89,9 +93,38 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            Bed_EStartsPersistentSleepAndSecondE_RestoresMovement()
+            SleepMvp_AutomaticCutAndCleanup()
         {
+            var timing = new PlayerAnimatedInteractionExitTiming(.3f, .35f, 4.2f);
+            var timingDefinition = new PlayerAnimatedInteractionDefinition(
+                "BedEnter", "BedSleepLoop", "BedExit", exitFrameCount: 72,
+                exitFramesPerSecond: 12f);
+            var timingTimeline = new PlayerAnimatedInteractionTimeline(timingDefinition);
+            Assert.That(timingTimeline.BeginLooping(), Is.True);
+            Assert.That(timingTimeline.RequestExitWithTiming(timing), Is.True);
+            timingTimeline.Advance(.35f);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.3f).Within(.0001f));
+            Assert.That(timingTimeline.PhaseProgress,
+                Is.EqualTo(.35f / 4.55f).Within(.0001f));
+            timingTimeline.Advance(2.1f);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.65f).Within(.0001f));
+            timingTimeline.Advance(10f);
+            Assert.That(timingTimeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(1f));
+            timingTimeline.Advance(.01f);
+            Assert.That(timingTimeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+
+            GameSessionState.TrySetDebugGameDay(1);
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
             yield return LoadHome();
+            Assert.That(home.Sleep, Is.Not.Null);
+            Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            GameSessionState.UpdateFatigue(67);
+            double clockBefore = GameSessionState.GameTimeOfDayMinutes;
+            bool hudBefore = home.IntoxicationHud.Visible;
+            bool orbitBefore = home.CameraFollow.OrbitInputEnabled;
+            bool motionBefore = home.CameraFollow.CinematicMotionEnabled;
+            CaptureSleepFrame("00-before-sleep");
             Assert.That(home.Bed, Is.Not.Null);
             Assert.That(home.AnimatedInteraction, Is.Not.Null);
             Assert.That(
@@ -151,7 +184,9 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
 
-            Time.timeScale = 0.25f;
+            // The approach includes a real half-turn at the normal walking
+            // turn rate; quarter-speed cannot finish inside this bounded wait.
+            Time.timeScale = 1f;
             keyboard.MakeCurrent();
             inputFixture.Press(
                 keyboard.eKey,
@@ -263,219 +298,137 @@ namespace BarPromenade.Tests.PlayMode
                 entryPosition,
                 entryRotation);
             AssertContinuous3DPresentation(home, "BedEnter");
-            Vector3 lockedPosition = entryPosition;
 
+            Assert.That(home.Sleep.IsActive, Is.True);
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.LyingDown));
+            Assert.That(home.IntoxicationHud.Visible, Is.False);
+            Assert.That(home.Bed.CanInteract(home.Player.Interactor), Is.False);
             Time.timeScale = FastTimeScale;
-            yield return WaitForPhaseCompletion(
-                home,
-                PlayerAnimatedInteractionPhase.Looping);
-
-            Assert.That(
-                home.Player.Motor.InputEnabled,
-                Is.False);
-            Assert.That(
-                home.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(
-                home.Bed.PromptKey,
-                Is.EqualTo(HomeBedInteraction.WakePromptKey));
+            yield return WaitForPhaseCompletion(home, PlayerAnimatedInteractionPhase.Looping);
+            Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.False);
             AssertContinuous3DPresentation(home, "BedSleepLoop");
-            Assert.That(home.Player.ContactShadow.enabled, Is.True);
-            Assert.That(surfaceClutter.gameObject.activeSelf, Is.False);
-            AssertRigRendererState(home, true);
-            yield return WaitForActiveBed(home);
-
-            int initialLoopFrame =
-                home.AnimatedInteraction.FrameIndex;
-            bool frameChanged = false;
-            float persistenceDeadline = Time.time + 6f;
-            while (Time.time < persistenceDeadline)
-            {
-                yield return null;
-                Assert.That(
-                    home.AnimatedInteraction.Phase,
-                    Is.EqualTo(
-                        PlayerAnimatedInteractionPhase.Looping),
-                    "Sleep must remain in its loop until another E press.");
-                Assert.That(
-                    home.AnimatedInteraction.FrameIndex,
-                    Is.InRange(
-                        home.Bed.Definition.LoopStartFrame,
-                        home.Bed.Definition.LoopStartFrame +
-                            home.Bed.Definition.LoopFrameCount - 1),
-                    "Sleep must keep cycling inside its own loop frames.");
-                frameChanged |=
-                    home.AnimatedInteraction.FrameIndex !=
-                    initialLoopFrame;
-                AssertPlanarPosition(
-                    home.Player.GameObject.transform.position,
-                    lockedPosition);
-            }
-
-            Assert.That(
-                frameChanged,
-                Is.True,
-                "The persistent sleep loop must continue animating.");
-
+            yield return WaitForSleepPhase(HomeSleepPhase.FaceHold);
             Time.timeScale = 1f;
-            yield return null;
-            yield return WaitForActiveBed(home);
-            Assert.That(
-                keyboard.eKey.isPressed,
-                Is.False,
-                "The first interaction key press must be released.");
-            keyboard.MakeCurrent();
-            inputFixture.Press(
-                keyboard.eKey,
-                queueEventOnly: true);
-            yield return WaitForPhase(
-                home,
-                PlayerAnimatedInteractionPhase.Exiting);
+            var hero = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(hero, Is.Not.Null);
+            Assert.That(hero.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.ClosedBlink));
+            Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(67));
+            AssertSleepingHeadToFootOrientation(home);
+            AssertHeadRestsOnPillow(home);
+            float holdStarted = Time.time - home.Sleep.PhaseElapsedSeconds;
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                float heldElapsed = home.Sleep.PhaseElapsedSeconds;
+                Vector3 heldCamera = home.CameraFollow.FixedBasePosition;
+                yield return new WaitForSecondsRealtime(.08f);
+                Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.FaceHold));
+                Assert.That(home.Sleep.PhaseElapsedSeconds, Is.EqualTo(heldElapsed));
+                Assert.That(home.CameraFollow.FixedBasePosition, Is.EqualTo(heldCamera));
+                Assert.That(hero.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.ClosedBlink));
+                CaptureSleepFrame("01-sleeping-face");
+            }
+            Time.timeScale = 1f;
+            yield return WaitForSleepPhase(HomeSleepPhase.Cut);
+            Assert.That(Time.time - holdStarted,
+                Is.GreaterThanOrEqualTo(HomeSleepController.FaceHoldSeconds - .03f),
+                "The settled face must remain visible for three scaled seconds.");
+            Assert.That(home.Sleep.IsScreenDark, Is.True);
+            Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.False);
+            bool sawCoveredCommit = false;
+            float cutDeadline = Time.realtimeSinceStartup + 3f;
+            while (home.Sleep.Phase == HomeSleepPhase.Cut &&
+                   Time.realtimeSinceStartup < cutDeadline)
+            {
+                if (!sawCoveredCommit && home.ApartmentDays.AppliedDayNumber == 7)
+                {
+                    sawCoveredCommit = true;
+                    Assert.That(home.Sleep.IsScreenDark, Is.True,
+                        "The maximum apartment dressing must commit under the dark cut.");
+                    Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+                    Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(67));
+                    Assert.That(home.AnimatedInteraction.Phase,
+                        Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+                    Assert.That(hero.CurrentFacialExpression,
+                        Is.EqualTo(PlayerFacialExpression.Watchful));
+                    AssertSleepGameplayCamera();
+                }
+                yield return null;
+            }
+            Assert.That(sawCoveredCommit, Is.True);
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Waking));
+            Assert.That(home.Sleep.IsScreenDark, Is.False);
+            Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(7));
+            Assert.That(GameSessionState.HomeAppearanceDayNumber, Is.EqualTo(7));
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.GameTimeOfDayMinutes - clockBefore,
+                Is.InRange(0d, 15d), "Sleep changes apartment appearance without skipping the calendar.");
+            Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.False);
             AssertContinuous3DPresentation(home, "BedExit");
-            Assert.That(
-                home.Player.Motor.InputEnabled,
-                Is.False);
-            Assert.That(
-                home.Player.Interactor.InputEnabled,
-                Is.False);
+            AssertSleepGameplayCamera();
+            CaptureSleepFrame("02-corrupted-wake");
 
-            inputFixture.Release(
-                keyboard.eKey,
-                queueEventOnly: true);
-            yield return null;
             Time.timeScale = FastTimeScale;
-            yield return WaitForPhaseCompletion(
-                home,
-                PlayerAnimatedInteractionPhase.Idle);
+            yield return WaitForSleepPhase(HomeSleepPhase.Idle);
             Time.timeScale = 1f;
             yield return null;
-
-            Assert.That(
-                home.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                home.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(
-                home.AnimatedInteraction.IsActive,
-                Is.False);
-            Assert.That(
-                home.Bed.PromptKey,
-                Is.EqualTo(HomeBedInteraction.SleepPromptKey));
-            Assert.That(
-                home.Player.ContactShadow.enabled,
-                Is.True);
+            Assert.That(home.AnimatedInteraction.IsActive, Is.False);
+            Assert.That(home.Bed.OwnsActiveInteraction, Is.False);
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(home.IntoxicationHud.Visible, Is.EqualTo(hudBefore));
+            Assert.That(home.CameraFollow.OrbitInputEnabled, Is.EqualTo(orbitBefore));
+            Assert.That(home.CameraFollow.CinematicMotionEnabled, Is.EqualTo(motionBefore));
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(hero.HasContextualFacialExpression, Is.False);
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(GameSessionState.DefaultFatigue));
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
-            Assert.That(
-                ((IPlayerClipPresentation)home.Player.Visual)
-                    .IsClipActive,
-                Is.False);
-            AssertExactPose(
-                home.Player.GameObject.transform,
-                home.BedInteractionPlan.ExitRootPosition,
-                home.BedInteractionPlan.ExitRotation);
-
-            Vector3 wakePosition =
-                home.Player.GameObject.transform.position;
-            keyboard.MakeCurrent();
-            inputFixture.Press(
-                keyboard.wKey,
-                queueEventOnly: true);
-            InputSystem.Update();
+            AssertExactPose(home.Player.GameObject.transform,
+                home.BedInteractionPlan.ExitRootPosition, home.BedInteractionPlan.ExitRotation);
+            AssertSleepGameplayCamera();
+            CaptureSleepFrame("03-corrupted-room");
+            GameSessionState.UpdateFatigue(23);
             yield return null;
-            Assert.That(Keyboard.current, Is.SameAs(keyboard));
-            Assert.That(SceneTransitionService.IsTransitioning, Is.False);
             yield return null;
-            float movementDeadline =
-                Time.realtimeSinceStartup + 2f;
-            while (PlanarDistance(
-                       home.Player.GameObject.transform.position,
-                       wakePosition) <
-                   0.04f &&
-                   Time.realtimeSinceStartup <
-                   movementDeadline)
-            {
-                keyboard.MakeCurrent();
-                inputFixture.Press(
-                    keyboard.wKey,
-                    queueEventOnly: true);
-                yield return null;
-            }
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(23),
+                "A completed sleep must not keep resetting fatigue.");
 
-            Assert.That(
-                PlanarDistance(
-                    home.Player.GameObject.transform.position,
-                    wakePosition),
-                Is.GreaterThanOrEqualTo(0.04f),
-                "Movement input must work again after waking. " +
-                $"key={keyboard.wKey.isPressed}, " +
-                $"motorEnabled={home.Player.Motor.enabled}, " +
-                $"inputEnabled={home.Player.Motor.InputEnabled}, " +
-                $"speedMultiplier={home.Player.Motor.SpeedMultiplier}, " +
-                $"timeScale={Time.timeScale}, " +
-                $"deltaTime={Time.deltaTime}, " +
-                $"start={wakePosition}, " +
-                $"end={home.Player.GameObject.transform.position}, " +
-                $"spawn={home.Layout.PlayerSpawn}, " +
-                $"approach={home.BedInteractionPlan.ApproachRootPosition}");
-            inputFixture.Release(
-                keyboard.wKey,
-                queueEventOnly: true);
-            InputSystem.Update();
-            yield return null;
-
-            home.AnimatedInteraction.enabled = false;
-            Assert.That(
-                home.Bed.CanInteract(home.Player.Interactor),
-                Is.False,
-                "A disabled controller must not advertise the bed.");
-            home.AnimatedInteraction.enabled = true;
-            surfaceClutter.gameObject.SetActive(false);
-            home.Player.Motor.Teleport(
-                home.BedInteractionPlan
-                    .EntryRootPosition);
-            home.Player.GameObject.transform.rotation =
-                home.BedInteractionPlan.EntryRotation;
+            Assert.That(GameSessionState.TrySetDebugGameDay(1), Is.True);
+            Assert.That(home.ApartmentDays.RefreshImmediate(), Is.True);
+            Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            GameSessionState.UpdateFatigue(83);
+            home.Player.Motor.Teleport(entryPosition);
+            home.Player.GameObject.transform.rotation = entryRotation;
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
-
             home.Bed.Interact(home.Player.Interactor);
-            yield return null;
-            Assert.That(
-                home.AnimatedInteraction.Phase,
-                Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Entering));
+            Assert.That(home.Sleep.IsActive, Is.True);
             Time.timeScale = FastTimeScale;
-            yield return WaitForPhase(
-                home,
-                PlayerAnimatedInteractionPhase.Looping);
+            yield return WaitForSleepPhase(HomeSleepPhase.FaceHold);
             Time.timeScale = 1f;
+            home.Sleep.enabled = false;
             yield return null;
-
-            home.Bed.enabled = false;
-            yield return null;
-            Assert.That(
-                home.AnimatedInteraction.Phase,
-                Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Idle),
-                "Disabling the owning bed must cancel persistent sleep.");
-            Assert.That(
-                home.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                home.Player.Interactor.InputEnabled,
-                Is.True);
+            Assert.That(home.Sleep.IsActive, Is.False);
+            Assert.That(home.Sleep.IsScreenDark, Is.False);
+            Assert.That(home.AnimatedInteraction.IsActive, Is.False);
+            Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.False);
+            Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(83));
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(home.IntoxicationHud.Visible, Is.EqualTo(hudBefore));
+            Assert.That(home.CameraFollow.OrbitInputEnabled, Is.EqualTo(orbitBefore));
+            Assert.That(home.CameraFollow.CinematicMotionEnabled, Is.EqualTo(motionBefore));
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(hero.HasContextualFacialExpression, Is.False);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
-            Assert.That(
-                surfaceClutter.gameObject.activeSelf,
-                Is.False,
-                "Cancellation must restore the clutter state captured " +
-                "for the current interaction.");
-            Assert.That(
-                home.Bed.CanInteract(home.Player.Interactor),
-                Is.False);
+            AssertSleepGameplayCamera();
         }
 
         [UnityTest]
@@ -483,6 +436,7 @@ namespace BarPromenade.Tests.PlayMode
             Bed_SceneTransitionCancelsPositioningWithoutFurtherMovement()
         {
             yield return LoadHome();
+            home.Bed.BindSleepPresentation(null);
 
             Vector3 entryPosition =
                 home.BedInteractionPlan.EntryRootPosition;
@@ -690,6 +644,7 @@ namespace BarPromenade.Tests.PlayMode
             Bed_MattressDentsUnderTheSleeperAndSlowlyRecovers()
         {
             yield return LoadHome();
+            home.Bed.BindSleepPresentation(null);
             Assert.That(home.BedSurface, Is.Not.Null);
 
             float restTop =
@@ -1330,6 +1285,31 @@ namespace BarPromenade.Tests.PlayMode
                 "slide the lying pose across the mattress.");
         }
 
+        private IEnumerator WaitForSleepPhase(HomeSleepPhase phase)
+        {
+            float deadline = Time.realtimeSinceStartup + 5f;
+            while (home.Sleep.Phase != phase && Time.realtimeSinceStartup < deadline)
+                yield return null;
+            Assert.That(home.Sleep.Phase, Is.EqualTo(phase));
+        }
+
+        private void AssertSleepGameplayCamera()
+        {
+            HomeCameraShot shot = home.FixedCamera.ActiveShot;
+            Assert.That(Vector3.Distance(home.CameraFollow.FixedBasePosition, shot.Position),
+                Is.LessThan(.001f));
+            Assert.That(Quaternion.Angle(home.CameraFollow.FixedBaseRotation, shot.Rotation),
+                Is.LessThan(.01f));
+            Assert.That(home.CameraFollow.FixedBaseFieldOfView,
+                Is.EqualTo(home.FixedCamera.ZoomFieldOfView).Within(.001f));
+        }
+
+        private static void CaptureSleepFrame(string name)
+        {
+            if (AreaCaptureFixture.CaptureHomeBedEnabled)
+                AreaCaptureFixture.CaptureCurrentCamera(Camera.main, "HomeSleep", name);
+        }
+
         private IEnumerator LoadHome()
         {
             AsyncOperation load =
@@ -1360,6 +1340,12 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(home, Is.Not.Null);
             Assert.That(home.IsInitialized, Is.True);
+            // Wardrobe keeps alternate anatomy and garment variants hidden.
+            // The action must preserve that settled authored visibility.
+            yield return null;
+            rendererBaseline.Clear();
+            foreach (Renderer renderer in home.Player.Visual.Renderers)
+                rendererBaseline.Add(renderer, renderer.enabled);
         }
 
         private static IEnumerator WaitForActiveBed(
@@ -1431,7 +1417,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThanOrEqualTo(minimumFrame));
         }
 
-        private static IEnumerator WaitForPhaseCompletion(
+        private IEnumerator WaitForPhaseCompletion(
             HomeInteriorRoot home,
             PlayerAnimatedInteractionPhase expected)
         {
@@ -1467,7 +1453,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void AssertGuidedApproachPresentation(
+        private void AssertGuidedApproachPresentation(
             HomeInteriorRoot home)
         {
             Assert.That(
@@ -1482,7 +1468,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False);
         }
 
-        private static void AssertContinuous3DPresentation(
+        private void AssertContinuous3DPresentation(
             HomeInteriorRoot home,
             string expectedClip)
         {
@@ -1558,7 +1544,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.001f));
         }
 
-        private static void AssertRigRendererState(
+        private void AssertRigRendererState(
             HomeInteriorRoot home,
             bool expected)
         {
@@ -1566,10 +1552,11 @@ namespace BarPromenade.Tests.PlayMode
                  index < home.Player.Visual.Renderers.Count;
                  index++)
             {
-                Assert.That(
-                    home.Player.Visual.Renderers[index].enabled,
-                    Is.EqualTo(expected),
-                    $"Unexpected rig renderer state at index {index}.");
+                Renderer renderer = home.Player.Visual.Renderers[index];
+                Assert.That(rendererBaseline.TryGetValue(renderer, out bool baseline), Is.True,
+                    $"The rig gained an unregistered renderer '{renderer.name}'.");
+                Assert.That(renderer.enabled, Is.EqualTo(expected && baseline),
+                    $"Rig renderer '{renderer.name}' changed its authored visibility.");
             }
         }
 

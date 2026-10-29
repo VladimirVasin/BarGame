@@ -2161,12 +2161,13 @@ cemetery:own interiors/returns.
   an owned filter retains seat E/prompt through cleanup.
   Five living sheets preserve bathroom/balcony maps. `HomeWallPainting` adds
   anonymous wall art with silent standing close-up/E-Esc exit, no text/reward;
-- seven calendar apartment appearances through `HomeApartmentDayRules` and
-  `HomeApartmentDayController`: day one is relatively kept, days two through
-  seven accumulate domestic clutter and grime, and later days retain day seven.
-  The exact clamped day can be inspected forward or backward in Home debug.
-  This presentation is separate from alcohol level, acts and future decay;
-  sleep, sobering and scene round trips do not clean it or disable actions;
+- seven apartment appearances through `HomeApartmentDayRules` and
+  `HomeApartmentDayController`: calendar days one through seven accumulate
+  domestic clutter/grime, later days retain seven. Sleep MVP commits the
+  existing day-seven appearance as a session override under its cut, retained
+  across Home visits independently of the calendar, quests, acts and alcohol.
+  New-session reset or explicit Home debug day clears the override; exact
+  debug days remain reversible. Sobering/visits never clean the apartment;
 - one visually prominent data-first refrigerator fitted into a split kitchen
   counter, with an independently authored player-width approach; its enamel cabinet contains a
   hollow liner, three stained shelves, a lower drawer, frost, grime and two
@@ -2354,9 +2355,16 @@ cemetery:own interiors/returns.
   lifts, transfers under alternating planted hands and full seated stops.
   The hands change support during the pause, and reclining starts only after
   both transfers. The
-  deterministic `BedSleepLoop` repeats with the existing breathing holds until
-  a second `E` plays the `6.0 s` `BedExit`; the opening can begin directly in
-  that loop and apply its one-shot wake-duration multiplier. Waking is a
+  deterministic `BedSleepLoop` holds the registered closed-eye face while
+  an owned camera pushes toward it, then holds the close-up for `3 s`.
+  A finite `0.3–0.5 s` blinking cut commits the session's day-seven dressing,
+  sharply opens the eyes and restores the normal fixed main-room camera.
+  The same rig then plays `BedExit` automatically; early cancellation commits
+  nothing. No dream scene, calendar skip, text, world reload or hidden hero
+  relocation is added. Shared camera/DOF/input/HUD/face/overlay ownership
+  freezes on pause and restores on cancellation, transition, disable/destroy.
+  The retained opening starts directly in the loop with its own wake multiplier.
+  Waking is a
   four-beat sit-up rather than a roll: he curls onto his elbows into a
   half-crouch on the mattress with both boots drawn under him, uses the same
   two supported pelvis steps to reach the side, then drops the right

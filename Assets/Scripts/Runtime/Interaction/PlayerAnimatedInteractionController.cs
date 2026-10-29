@@ -830,6 +830,26 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Retimes an authored exit while keeping clip and pelvis contacts on
+        /// the same sample. Ownership and terminal-frame cleanup stay shared.
+        /// </summary>
+        public bool RequestExitWithTiming(PlayerAnimatedInteractionExitTiming timing)
+        {
+            timing.Validate();
+            Vector3 frozenActionHip = GetResolvedActionHipPosition();
+            if (IsNestedLoopActionActive || timeline == null ||
+                !timeline.RequestExitWithTiming(timing))
+                return false;
+
+            actionHip = frozenActionHip;
+            actionPelvisTarget = null;
+            ApplyInputForPhase(timeline.Phase);
+            ApplyCurrentPresentation();
+            PhaseChanged?.Invoke(timeline.Phase);
+            return true;
+        }
+
+        /// <summary>
         /// Opt-in for stationary actions with matching lower-body samples. Settle
         /// from the last visible pose into the authored exit without waiting for
         /// an idle-loop seam; an owned nested gesture is included in that pose.
@@ -1489,13 +1509,13 @@ namespace BarPromenade
                         return pelvisTransition.EvaluateExiting(
                             actionHip,
                             exitHip,
-                            timeline.PhaseProgress);
+                            timeline.ClipProgress);
                     }
 
                     return Vector3.LerpUnclamped(
                         actionHip,
                         exitHip,
-                        SmoothProgress(timeline.PhaseProgress));
+                        SmoothProgress(timeline.ClipProgress));
                 default:
                     return standHip;
             }
