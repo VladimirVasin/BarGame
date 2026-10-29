@@ -309,12 +309,12 @@ namespace BarPromenade
             float foundationDepth,
             string name)
         {
-            if (lot.BuildingVariant > 0)
+            if (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential)
             {
                 for (int index = 0; index < registry.ColliderBounds.Count; index++)
                 {
                     Bounds solid = registry.ColliderBounds[index];
-                    if (lot.BuildingVariant == 3 && solid.min.y >= 2.5f) continue;
+                    if (solid.min.y >= .1f) continue;
                     BuildFoundationBox(parent, lot, solid, pose, foundationDepth,
                         name + " " + index);
                 }
@@ -364,7 +364,7 @@ namespace BarPromenade
             BuildingLot lot,
             float foundationDepth)
         {
-            if (lot.BuildingVariant > 0)
+            if (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential)
             {
                 CityBuildingPrototypePose pose =
                     CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
@@ -372,7 +372,7 @@ namespace BarPromenade
                     .GetExpectedCollisionBounds(lot.District, lot.BuildingVariant);
                 for (int index = 0; index < solids.Count; index++)
                 {
-                    float extension = lot.BuildingVariant == 3 && solids[index].min.y >= 2.5f
+                    float extension = solids[index].min.y >= .1f
                         ? 0f : foundationDepth;
                     var part = new GameObject(LogicalCollisionObjectName + " " + index);
                     part.transform.SetParent(parent, false);
@@ -381,6 +381,19 @@ namespace BarPromenade
                     part.transform.localRotation = pose.Rotation;
                     BoxCollider body = part.AddComponent<BoxCollider>();
                     body.size = solids[index].size + Vector3.up * extension;
+                }
+                if (lot.District == CityDistrictKind.Residential)
+                {
+                    Vector3 threshold = CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant);
+                    const float floorThickness = .12f;
+                    var floor = new GameObject("Residential Vestibule Floor");
+                    floor.transform.SetParent(parent, false);
+                    floor.transform.localPosition = pose.TransformPoint(threshold -
+                        Vector3.forward * CityBuildingAssetProvider.EntranceDepth * .5f - Vector3.up * floorThickness * .5f);
+                    floor.transform.localRotation = pose.Rotation;
+                    floor.AddComponent<BoxCollider>().size = new Vector3(CityBuildingAssetProvider.EntranceClearWidth,
+                        floorThickness, CityBuildingAssetProvider.EntranceDepth);
+                    FootstepGround.Stamp(floor, FootstepGroundKind.Stone);
                 }
                 return;
             }

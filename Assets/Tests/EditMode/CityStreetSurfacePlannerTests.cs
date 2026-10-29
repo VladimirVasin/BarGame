@@ -264,11 +264,12 @@ namespace BarPromenade.Tests.EditMode
                 "with one axis-aligned sidewalk spanning both corner pads.");
         }
 
-        [Test]
-        public void CompactCoastal_WidensPublicPavingAndJoinsWholeEntranceFrontsWithoutNarrowingTraffic()
+        [TestCase(GameSessionState.DefaultCitySeed)]
+        [TestCase(9923)]
+        public void CompactCoastal_WidensPublicPavingAndJoinsWholeEntranceFrontsWithoutNarrowingTraffic(int seed)
         {
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
-                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+                CityGenerationSettings.Default, seed);
             CityStreetSurfacePlan plan = CityStreetSurfacePlanner.Create(layout);
             Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
             Assert.That(plan.CarriagewayWidth, Is.EqualTo(6f));
@@ -310,6 +311,49 @@ namespace BarPromenade.Tests.EditMode
                     HasPositiveOverlap(sidewalk, footprint)), Is.True,
                     "Every entrance front must overlap its continuous public pavement.");
             }
+
+            CityResidentialEntrancePlan residential = CityResidentialEntrancePlan.ForLayout(layout);
+            BuildingLot[] houses = layout.BuildingMasses.Where(lot =>
+                lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential).ToArray();
+            Assert.That(residential, Is.SameAs(CityResidentialEntrancePlan.ForLayout(layout)),
+                "Access is one immutable plan per layout, shared by City, Home and the map.");
+            Assert.That(residential.Entrances.Select(entry => entry.Lot), Is.EquivalentTo(houses),
+                "Every physical residential mass, including rear wings, must have an entrance route.");
+            foreach (CityResidentialEntranceDescriptor entry in residential.Entrances)
+            {
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(entry.Lot);
+                Assert.That(Vector3.Distance(entry.Threshold, pose.TransformPoint(
+                    CityBuildingAssetProvider.GetExpectedEntranceThreshold(entry.Lot.BuildingVariant))), Is.LessThan(.001f));
+                Assert.That(entry.Points[0], Is.EqualTo(entry.Threshold));
+                Vector3 end = entry.Points[entry.Points.Count - 1];
+                Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout, new Vector2(end.x, end.z),
+                    out float endTop), Is.True, $"Residential {entry.Lot.Cell} must end on existing public pavement.");
+                Assert.That(end.y, Is.EqualTo(endTop).Within(.002f));
+                Assert.That(entry.Paving.Count, Is.EqualTo(entry.Points.Count - 1));
+                for (int leg = 1; leg < entry.Points.Count; leg++)
+                {
+                    Vector3 a = entry.Points[leg - 1], b = entry.Points[leg];
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b) / .25f));
+                    for (int step = 0; step <= steps; step++)
+                    {
+                        Vector3 point = Vector3.Lerp(a, b, step / (float)steps);
+                        Assert.That(residential.TrySampleTop(new Vector2(point.x, point.z), out float top), Is.True,
+                            $"Residential {entry.Lot.Cell}, leg {leg} must retain continuous triangulated support.");
+                        Assert.That(float.IsNaN(top) || float.IsInfinity(top), Is.False,
+                            "The route follows the shared ground grade between its fixed endpoints.");
+                    }
+                    if (leg == 1) continue;
+                    CityEntranceForecourtPlan before = entry.Paving[leg - 2], after = entry.Paving[leg - 1];
+                    Assert.That(before.Top[before.Columns - 1], Is.EqualTo(after.Top[0]));
+                    Assert.That(before.Top[before.Rows * before.Columns - 1], Is.EqualTo(after.Top[(after.Rows - 1) * after.Columns]),
+                        "Both paved shoulders share their actual turn seam, without overlapping end slabs.");
+                }
+            }
+            foreach (CityStreetSupportPatch patch in residential.SurfacePatches)
+                foreach (Vector3 vertex in patch.TopVertices)
+                    if (residential.TrySampleTop(new Vector2(vertex.x, vertex.z), out float ownerTop))
+                        Assert.That(ownerTop, Is.EqualTo(vertex.y).Within(.025f),
+                            "Intersecting entry routes must agree on the shared ground grade, regardless of source ownership.");
 
             foreach (Vector2Int node in CityBusIntersectionSelector.Select(layout))
             {

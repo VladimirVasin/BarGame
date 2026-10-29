@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "4.1.0";
+        private const string ExpectedGeneratorVersion = "4.2.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -358,7 +358,11 @@ namespace BarPromenade.Editor
                     manifest.design_id,
                     manifest.build_signature,
                     prototype.collision_bounds.Select(solid => ConvertSourceBoundsToUnity(
-                        solid.bounds_min_source, solid.bounds_max_source)).ToArray());
+                        solid.bounds_min_source, solid.bounds_max_source)).ToArray(),
+                    ParseDistrict(prototype.district) == CityDistrictKind.Residential,
+                    ParseDistrict(prototype.district) == CityDistrictKind.Residential
+                        ? Vector3FromArray(prototype.entrance.threshold_unity, "entrance threshold")
+                        : Vector3.zero);
                 registry.ValidateOrThrow();
 
                 string prefabPath = GetPrefabPath(prototype.stable_id);
@@ -735,6 +739,7 @@ namespace BarPromenade.Editor
 
             ValidatePrototypeBounds(prototype, envelope);
             ValidateFrontAnchor(prototype);
+            ValidateEntrance(prototype, expectedIndex);
             ValidateTaskLightAnchor(prototype, expectedIndex);
             ValidateAttachments(prototype);
             ValidateParts(prototype);
@@ -753,6 +758,30 @@ namespace BarPromenade.Editor
                 AssertBoundsNear(actual, BoundsFromArrays(solid.bounds_min_unity, solid.bounds_max_unity),
                     prototype.stable_id + " collision axes");
             }
+        }
+
+        private static void ValidateEntrance(BuildingPrototype prototype, int expectedIndex)
+        {
+            BuildingEntrance entrance = prototype.entrance;
+            if (ParseDistrict(prototype.district) != CityDistrictKind.Residential)
+            {
+                if (entrance != null && entrance.HasPayload)
+                    throw new InvalidOperationException("Only residential templates declare collective entrances.");
+                return;
+            }
+            if (entrance == null || !entrance.HasPayload)
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' has no collective entrance.");
+            int variant = CityBuildingAssetProvider.GetExpectedVariantIndex(expectedIndex);
+            Vector3 threshold = Vector3FromArray(entrance.threshold_unity, "entrance threshold");
+            Vector3 outward = Vector3FromArray(entrance.outward_unity, "entrance outward");
+            if (Vector3.Distance(threshold, CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant)) > ContractTolerance ||
+                Vector3.Distance(threshold, ConvertSourceVectorToUnity(entrance.threshold_source)) > ContractTolerance ||
+                Vector3.Distance(outward, CityBuildingAssetProvider.GetExpectedEntranceOutward(variant)) > ContractTolerance ||
+                Vector3.Distance(outward, ConvertSourceVectorToUnity(entrance.outward_source)) > ContractTolerance ||
+                Mathf.Abs(entrance.clear_width_m - CityBuildingAssetProvider.EntranceClearWidth) > ContractTolerance ||
+                Mathf.Abs(entrance.clear_height_m - CityBuildingAssetProvider.EntranceClearHeight) > ContractTolerance ||
+                Mathf.Abs(entrance.depth_m - CityBuildingAssetProvider.EntranceDepth) > ContractTolerance)
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' entrance metres or axes drifted.");
         }
 
         private static void ValidateTaskLightAnchor(BuildingPrototype prototype, int expectedIndex)
@@ -1872,6 +1901,7 @@ namespace BarPromenade.Editor
             public string root_name;
             public string industrial_purpose;
             public BuildingTaskLightAnchor task_light_anchor;
+            public BuildingEntrance entrance;
             public float frontage_width_m;
             public float depth_m;
             public float height_m;
@@ -1888,6 +1918,20 @@ namespace BarPromenade.Editor
             public BuildingBalconySlot[] balcony_slots;
             public BuildingPart[] parts;
             public BuildingCollisionBounds[] collision_bounds;
+        }
+
+        [Serializable]
+        private sealed class BuildingEntrance
+        {
+            public bool HasPayload => (threshold_unity?.Length ?? 0) != 0 ||
+                (threshold_source?.Length ?? 0) != 0 || clear_width_m != 0f;
+            public float[] threshold_source;
+            public float[] threshold_unity;
+            public float[] outward_source;
+            public float[] outward_unity;
+            public float clear_width_m;
+            public float clear_height_m;
+            public float depth_m;
         }
 
         [Serializable]

@@ -404,6 +404,8 @@ MonoBehaviour:
   colliderBounds:
   - m_Center: {x: 0, y: 7.3, z: 0}
     m_Extent: {x: 6.25, y: 7.3, z: 6}
+  hasEntrance: 0
+  localEntranceThreshold: {x: 0, y: 0, z: 0}
   facadeAttachments:
   - side: Front
     localBounds:
@@ -668,9 +670,9 @@ MonoBehaviour:
   height: 15.8
   unitFactor: 1
   sourceTriangleCount: 480
-  sourceGeneratorVersion: 4.1.0
+  sourceGeneratorVersion: 4.2.0
   designId: city_buildings_coastal_v4
-  buildSignature: 2762f52408f0b450cdff4bd9929ff7c6d99deab826854f3b963980f1a92a5c89
+  buildSignature: 81b67b2e2e4893cb6ad5d267467d23870ce7a5c41dba3288d61920dfe2a333f6
 --- !u!1 &3903671697525545957
 GameObject:
   m_ObjectHideFlags: 0

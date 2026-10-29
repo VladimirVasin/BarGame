@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-buildings-3d-model.py",
-  "generator_version": "4.1.0",
+  "generator_version": "4.2.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_buildings_coastal_v4",
   "display_name": "City Buildings 3D Prototype Catalog",
@@ -52,7 +52,7 @@
   },
   "prototype_count": 23,
   "mesh_count": 188,
-  "triangle_count": 14682,
+  "triangle_count": 15650,
   "prototypes": [
     {
       "stable_id": "old-town-prototype-01",
@@ -64,6 +64,7 @@
       "height_m": 13.4,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -1249,6 +1250,31 @@
       "height_m": 13.4,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": {
+        "threshold_source": [
+          0.0,
+          4.601,
+          0.0
+        ],
+        "threshold_unity": [
+          0.0,
+          0.0,
+          4.601
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 1.8
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -1257,7 +1283,7 @@
             0.0
           ],
           "bounds_max_source": [
-            5.801,
+            -0.7,
             4.601,
             12.2
           ],
@@ -1267,13 +1293,79 @@
             -5.801
           ],
           "bounds_max_unity": [
+            -0.7,
+            12.2,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.801,
+            0.0
+          ],
+          "bounds_max_source": [
             5.801,
+            4.601,
+            12.2
+          ],
+          "bounds_min_unity": [
+            0.7,
+            0.0,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            5.801,
+            12.2,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            -5.801,
+            0.0
+          ],
+          "bounds_max_source": [
+            0.7,
+            2.801,
+            12.2
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            0.0,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            0.7,
+            12.2,
+            2.801
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            2.801,
+            2.4
+          ],
+          "bounds_max_source": [
+            0.7,
+            4.601,
+            12.2
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            2.4,
+            2.801
+          ],
+          "bounds_max_unity": [
+            0.7,
             12.2,
             4.601
           ]
         }
       ],
-      "triangle_count": 1000,
+      "triangle_count": 1194,
       "bounds_min_source": [
         -5.831,
         -5.831,
@@ -2227,8 +2319,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 40,
           "bounds_min_source": [
             -5.801,
             -5.801,
@@ -2272,7 +2364,7 @@
           "bounds_min_source": [
             -5.761,
             4.426,
-            2.46
+            2.56
           ],
           "bounds_max_source": [
             5.761,
@@ -2281,7 +2373,7 @@
           ],
           "bounds_min_unity": [
             -5.761,
-            2.46,
+            2.56,
             4.426
           ],
           "bounds_max_unity": [
@@ -2291,7 +2383,7 @@
           ],
           "uv0_min": [
             0.004834,
-            0.186113
+            0.193516
           ],
           "uv0_max": [
             0.78268,
@@ -2307,27 +2399,27 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 20,
+          "triangles": 26,
           "bounds_min_source": [
             -5.761,
-            4.396,
+            2.801,
             0.0
           ],
           "bounds_max_source": [
             5.761,
-            4.636,
+            4.641,
             0.7
           ],
           "bounds_min_unity": [
             -5.761,
             0.0,
-            4.396
+            2.801
           ],
           "bounds_max_unity": [
             5.761,
             0.7,
-            4.636
+            4.641
           ],
           "uv0_min": [
             0.0,
@@ -2387,12 +2479,12 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 272,
-          "triangles": 412,
+          "vertices": 360,
+          "triangles": 564,
           "bounds_min_source": [
             -5.6585,
             -5.541,
-            0.2
+            0.0
           ],
           "bounds_max_source": [
             5.6585,
@@ -2401,7 +2493,7 @@
           ],
           "bounds_min_unity": [
             -5.6585,
-            0.2,
+            0.0,
             -5.541
           ],
           "bounds_max_unity": [
@@ -2613,6 +2705,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -3274,6 +3367,7 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -4269,6 +4363,7 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -5454,6 +5549,31 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": {
+        "threshold_source": [
+          0.0,
+          4.55,
+          0.0
+        ],
+        "threshold_unity": [
+          0.0,
+          0.0,
+          4.55
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 1.8
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -5462,7 +5582,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.75,
+            -0.7,
             4.55,
             14.6
           ],
@@ -5472,13 +5592,79 @@
             -5.75
           ],
           "bounds_max_unity": [
+            -0.7,
+            14.6,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
             7.75,
+            4.55,
+            14.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            7.75,
+            14.6,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            0.7,
+            2.75,
+            14.6
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            0.7,
+            14.6,
+            2.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            2.75,
+            2.4
+          ],
+          "bounds_max_source": [
+            0.7,
+            4.55,
+            14.6
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            2.4,
+            2.75
+          ],
+          "bounds_max_unity": [
+            0.7,
             14.6,
             4.55
           ]
         }
       ],
-      "triangle_count": 1234,
+      "triangle_count": 1428,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -6637,8 +6823,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 40,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -6682,7 +6868,7 @@
           "bounds_min_source": [
             -7.71,
             4.375,
-            2.46
+            2.56
           ],
           "bounds_max_source": [
             7.71,
@@ -6691,7 +6877,7 @@
           ],
           "bounds_min_unity": [
             -7.71,
-            2.46,
+            2.56,
             4.375
           ],
           "bounds_max_unity": [
@@ -6701,7 +6887,7 @@
           ],
           "uv0_min": [
             0.004625,
-            0.158451
+            0.164729
           ],
           "uv0_max": [
             0.782935,
@@ -6717,27 +6903,27 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 20,
+          "triangles": 26,
           "bounds_min_source": [
             -7.71,
-            4.345,
+            2.75,
             0.0
           ],
           "bounds_max_source": [
             7.71,
-            4.585,
+            4.59,
             0.7
           ],
           "bounds_min_unity": [
             -7.71,
             0.0,
-            4.345
+            2.75
           ],
           "bounds_max_unity": [
             7.71,
             0.7,
-            4.585
+            4.59
           ],
           "uv0_min": [
             0.0,
@@ -6797,12 +6983,12 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 352,
-          "triangles": 532,
+          "vertices": 440,
+          "triangles": 684,
           "bounds_min_source": [
             -7.6075,
             -5.49,
-            0.2
+            0.0
           ],
           "bounds_max_source": [
             7.6075,
@@ -6811,7 +6997,7 @@
           ],
           "bounds_min_unity": [
             -7.6075,
-            0.2,
+            0.0,
             -5.49
           ],
           "bounds_max_unity": [
@@ -7041,6 +7227,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -7624,6 +7811,7 @@
       "height_m": 12.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -8448,6 +8636,7 @@
       "height_m": 12.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -9332,6 +9521,31 @@
       "height_m": 12.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": {
+        "threshold_source": [
+          0.0,
+          5.8,
+          0.0
+        ],
+        "threshold_unity": [
+          0.0,
+          0.0,
+          5.8
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 1.8
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -9340,7 +9554,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.5,
+            -0.7,
             5.8,
             11.6
           ],
@@ -9350,7 +9564,73 @@
             0.0
           ],
           "bounds_max_unity": [
+            -0.7,
+            11.6,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            0.0,
+            0.0
+          ],
+          "bounds_max_source": [
             7.5,
+            5.8,
+            11.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            0.0,
+            0.0
+          ],
+          "bounds_max_unity": [
+            7.5,
+            11.6,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            0.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            0.7,
+            4.0,
+            11.6
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            0.0,
+            0.0
+          ],
+          "bounds_max_unity": [
+            0.7,
+            11.6,
+            4.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            4.0,
+            2.4
+          ],
+          "bounds_max_source": [
+            0.7,
+            5.8,
+            11.6
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            2.4,
+            4.0
+          ],
+          "bounds_max_unity": [
+            0.7,
             11.6,
             5.8
           ]
@@ -9378,7 +9658,7 @@
           ]
         }
       ],
-      "triangle_count": 896,
+      "triangle_count": 1098,
       "bounds_min_source": [
         -7.53,
         -7.03,
@@ -10128,8 +10408,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 12,
-          "triangles": 20,
+          "vertices": 32,
+          "triangles": 56,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -10173,7 +10453,7 @@
           "bounds_min_source": [
             -7.46,
             5.625,
-            2.46
+            2.56
           ],
           "bounds_max_source": [
             7.46,
@@ -10182,7 +10462,7 @@
           ],
           "bounds_min_unity": [
             -7.46,
-            2.46,
+            2.56,
             5.625
           ],
           "bounds_max_unity": [
@@ -10192,7 +10472,7 @@
           ],
           "uv0_min": [
             0.004645,
-            0.19465
+            0.2024
           ],
           "uv0_max": [
             0.777768,
@@ -10208,27 +10488,27 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 20,
+          "triangles": 26,
           "bounds_min_source": [
             -7.46,
-            5.595,
+            4.0,
             0.0
           ],
           "bounds_max_source": [
             7.46,
-            5.835,
+            5.84,
             0.7
           ],
           "bounds_min_unity": [
             -7.46,
             0.0,
-            5.595
+            4.0
           ],
           "bounds_max_unity": [
             7.46,
             0.7,
-            5.835
+            5.84
           ],
           "uv0_min": [
             0.0,
@@ -10288,12 +10568,12 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 272,
-          "triangles": 412,
+          "vertices": 360,
+          "triangles": 564,
           "bounds_min_source": [
             -7.3575,
             -6.74,
-            0.2
+            0.0
           ],
           "bounds_max_source": [
             7.3575,
@@ -10302,7 +10582,7 @@
           ],
           "bounds_min_unity": [
             -7.3575,
-            0.2,
+            0.0,
             -6.74
           ],
           "bounds_max_unity": [
@@ -10490,6 +10770,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -11211,6 +11492,7 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -12152,6 +12434,7 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -13153,6 +13436,31 @@
       "height_m": 15.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": {
+        "threshold_source": [
+          -3.6,
+          4.55,
+          0.0
+        ],
+        "threshold_unity": [
+          -3.6,
+          0.0,
+          4.55
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 1.8
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -13161,7 +13469,7 @@
             0.0
           ],
           "bounds_max_source": [
-            -1.8,
+            -4.3,
             4.55,
             3.2
           ],
@@ -13171,7 +13479,73 @@
             -5.75
           ],
           "bounds_max_unity": [
+            -4.3,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -2.9,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
             -1.8,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -2.9,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -1.8,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.3,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            -2.9,
+            2.75,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.3,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -2.9,
+            3.2,
+            2.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.3,
+            2.75,
+            2.4
+          ],
+          "bounds_max_source": [
+            -2.9,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.3,
+            2.4,
+            2.75
+          ],
+          "bounds_max_unity": [
+            -2.9,
             3.2,
             4.55
           ]
@@ -13221,7 +13595,7 @@
           ]
         }
       ],
-      "triangle_count": 1232,
+      "triangle_count": 1416,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -13625,7 +13999,7 @@
           "bay": 1,
           "opening_kind": "Window",
           "center_source": [
-            -3.86,
+            3.86,
             4.55,
             1.6
           ],
@@ -13642,7 +14016,7 @@
           "bay": 2,
           "opening_kind": "Window",
           "center_source": [
-            3.86,
+            4.82,
             4.55,
             1.6
           ],
@@ -13654,18 +14028,18 @@
         },
         {
           "slot_id": 20,
-          "side": "Front",
+          "side": "Rear",
           "floor": 0,
-          "bay": 3,
+          "bay": 0,
           "opening_kind": "Window",
           "center_source": [
-            4.82,
-            4.55,
+            -6.2,
+            -5.75,
             1.6
           ],
           "size_m": [
-            0.72,
-            1.55
+            0.85,
+            1.6
           ],
           "uv2_slot_id": 20
         },
@@ -13673,10 +14047,10 @@
           "slot_id": 21,
           "side": "Rear",
           "floor": 0,
-          "bay": 0,
+          "bay": 1,
           "opening_kind": "Window",
           "center_source": [
-            -6.2,
+            -3.1,
             -5.75,
             1.6
           ],
@@ -13690,10 +14064,10 @@
           "slot_id": 22,
           "side": "Rear",
           "floor": 0,
-          "bay": 1,
+          "bay": 2,
           "opening_kind": "Window",
           "center_source": [
-            -3.1,
+            3.1,
             -5.75,
             1.6
           ],
@@ -13707,10 +14081,10 @@
           "slot_id": 23,
           "side": "Rear",
           "floor": 0,
-          "bay": 2,
+          "bay": 3,
           "opening_kind": "Window",
           "center_source": [
-            3.1,
+            6.2,
             -5.75,
             1.6
           ],
@@ -13723,13 +14097,13 @@
         {
           "slot_id": 24,
           "side": "Rear",
-          "floor": 0,
-          "bay": 3,
+          "floor": 1,
+          "bay": 0,
           "opening_kind": "Window",
           "center_source": [
-            6.2,
+            -6.2,
             -5.75,
-            1.6
+            4.4
           ],
           "size_m": [
             0.85,
@@ -13741,10 +14115,10 @@
           "slot_id": 25,
           "side": "Rear",
           "floor": 1,
-          "bay": 0,
+          "bay": 1,
           "opening_kind": "Window",
           "center_source": [
-            -6.2,
+            -3.1,
             -5.75,
             4.4
           ],
@@ -13758,10 +14132,10 @@
           "slot_id": 26,
           "side": "Rear",
           "floor": 1,
-          "bay": 1,
+          "bay": 2,
           "opening_kind": "Window",
           "center_source": [
-            -3.1,
+            3.1,
             -5.75,
             4.4
           ],
@@ -13775,10 +14149,10 @@
           "slot_id": 27,
           "side": "Rear",
           "floor": 1,
-          "bay": 2,
+          "bay": 3,
           "opening_kind": "Window",
           "center_source": [
-            3.1,
+            6.2,
             -5.75,
             4.4
           ],
@@ -13791,13 +14165,13 @@
         {
           "slot_id": 28,
           "side": "Rear",
-          "floor": 1,
-          "bay": 3,
+          "floor": 2,
+          "bay": 0,
           "opening_kind": "Window",
           "center_source": [
-            6.2,
+            -6.2,
             -5.75,
-            4.4
+            7.2
           ],
           "size_m": [
             0.85,
@@ -13809,10 +14183,10 @@
           "slot_id": 29,
           "side": "Rear",
           "floor": 2,
-          "bay": 0,
+          "bay": 1,
           "opening_kind": "Window",
           "center_source": [
-            -6.2,
+            -3.1,
             -5.75,
             7.2
           ],
@@ -13826,10 +14200,10 @@
           "slot_id": 30,
           "side": "Rear",
           "floor": 2,
-          "bay": 1,
+          "bay": 2,
           "opening_kind": "Window",
           "center_source": [
-            -3.1,
+            3.1,
             -5.75,
             7.2
           ],
@@ -13843,10 +14217,10 @@
           "slot_id": 31,
           "side": "Rear",
           "floor": 2,
-          "bay": 2,
+          "bay": 3,
           "opening_kind": "Window",
           "center_source": [
-            3.1,
+            6.2,
             -5.75,
             7.2
           ],
@@ -13859,13 +14233,13 @@
         {
           "slot_id": 32,
           "side": "Rear",
-          "floor": 2,
-          "bay": 3,
+          "floor": 3,
+          "bay": 0,
           "opening_kind": "Window",
           "center_source": [
-            6.2,
+            -6.2,
             -5.75,
-            7.2
+            10.0
           ],
           "size_m": [
             0.85,
@@ -13877,10 +14251,10 @@
           "slot_id": 33,
           "side": "Rear",
           "floor": 3,
-          "bay": 0,
+          "bay": 1,
           "opening_kind": "Window",
           "center_source": [
-            -6.2,
+            -3.1,
             -5.75,
             10.0
           ],
@@ -13894,10 +14268,10 @@
           "slot_id": 34,
           "side": "Rear",
           "floor": 3,
-          "bay": 1,
+          "bay": 2,
           "opening_kind": "Window",
           "center_source": [
-            -3.1,
+            3.1,
             -5.75,
             10.0
           ],
@@ -13911,23 +14285,6 @@
           "slot_id": 35,
           "side": "Rear",
           "floor": 3,
-          "bay": 2,
-          "opening_kind": "Window",
-          "center_source": [
-            3.1,
-            -5.75,
-            10.0
-          ],
-          "size_m": [
-            0.85,
-            1.6
-          ],
-          "uv2_slot_id": 35
-        },
-        {
-          "slot_id": 36,
-          "side": "Rear",
-          "floor": 3,
           "bay": 3,
           "opening_kind": "Window",
           "center_source": [
@@ -13939,10 +14296,10 @@
             0.85,
             1.6
           ],
-          "uv2_slot_id": 36
+          "uv2_slot_id": 35
         },
         {
-          "slot_id": 37,
+          "slot_id": 36,
           "side": "Rear",
           "floor": 4,
           "bay": 0,
@@ -13956,10 +14313,10 @@
             0.85,
             1.6
           ],
-          "uv2_slot_id": 37
+          "uv2_slot_id": 36
         },
         {
-          "slot_id": 38,
+          "slot_id": 37,
           "side": "Rear",
           "floor": 4,
           "bay": 1,
@@ -13973,10 +14330,10 @@
             0.85,
             1.6
           ],
-          "uv2_slot_id": 38
+          "uv2_slot_id": 37
         },
         {
-          "slot_id": 39,
+          "slot_id": 38,
           "side": "Rear",
           "floor": 4,
           "bay": 2,
@@ -13990,10 +14347,10 @@
             0.85,
             1.6
           ],
-          "uv2_slot_id": 39
+          "uv2_slot_id": 38
         },
         {
-          "slot_id": 40,
+          "slot_id": 39,
           "side": "Rear",
           "floor": 4,
           "bay": 3,
@@ -14007,10 +14364,10 @@
             0.85,
             1.6
           ],
-          "uv2_slot_id": 40
+          "uv2_slot_id": 39
         },
         {
-          "slot_id": 41,
+          "slot_id": 40,
           "side": "Left",
           "floor": 0,
           "bay": 0,
@@ -14018,6 +14375,23 @@
           "center_source": [
             -7.75,
             -3.1625,
+            4.4
+          ],
+          "size_m": [
+            0.8,
+            1.55
+          ],
+          "uv2_slot_id": 40
+        },
+        {
+          "slot_id": 41,
+          "side": "Left",
+          "floor": 0,
+          "bay": 1,
+          "opening_kind": "Window",
+          "center_source": [
+            -7.75,
+            2.5025,
             4.4
           ],
           "size_m": [
@@ -14029,23 +14403,6 @@
         {
           "slot_id": 42,
           "side": "Left",
-          "floor": 0,
-          "bay": 1,
-          "opening_kind": "Window",
-          "center_source": [
-            -7.75,
-            2.5025,
-            4.4
-          ],
-          "size_m": [
-            0.8,
-            1.55
-          ],
-          "uv2_slot_id": 42
-        },
-        {
-          "slot_id": 43,
-          "side": "Left",
           "floor": 1,
           "bay": 0,
           "opening_kind": "Window",
@@ -14058,10 +14415,10 @@
             0.8,
             1.55
           ],
-          "uv2_slot_id": 43
+          "uv2_slot_id": 42
         },
         {
-          "slot_id": 44,
+          "slot_id": 43,
           "side": "Left",
           "floor": 1,
           "bay": 1,
@@ -14075,7 +14432,7 @@
             0.8,
             1.55
           ],
-          "uv2_slot_id": 44
+          "uv2_slot_id": 43
         }
       ],
       "balcony_slots": [
@@ -14295,8 +14652,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 40,
+          "triangles": 64,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -14340,7 +14697,7 @@
           "bounds_min_source": [
             -7.71,
             4.375,
-            2.46
+            2.56
           ],
           "bounds_max_source": [
             7.71,
@@ -14349,7 +14706,7 @@
           ],
           "bounds_min_unity": [
             -7.71,
-            2.46,
+            2.56,
             4.375
           ],
           "bounds_max_unity": [
@@ -14359,7 +14716,7 @@
           ],
           "uv0_min": [
             0.004625,
-            0.158451
+            0.164729
           ],
           "uv0_max": [
             0.782935,
@@ -14375,27 +14732,27 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 16,
-          "triangles": 24,
+          "vertices": 28,
+          "triangles": 38,
           "bounds_min_source": [
             -7.71,
-            4.345,
+            2.75,
             0.0
           ],
           "bounds_max_source": [
             7.71,
-            4.585,
+            4.59,
             0.7
           ],
           "bounds_min_unity": [
             -7.71,
             0.0,
-            4.345
+            2.75
           ],
           "bounds_max_unity": [
             7.71,
             0.7,
-            4.585
+            4.59
           ],
           "uv0_min": [
             0.0,
@@ -14455,12 +14812,12 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 352,
-          "triangles": 532,
+          "vertices": 440,
+          "triangles": 684,
           "bounds_min_source": [
             -7.6075,
             -5.49,
-            0.2
+            0.0
           ],
           "bounds_max_source": [
             7.6075,
@@ -14469,7 +14826,7 @@
           ],
           "bounds_min_unity": [
             -7.6075,
-            0.2,
+            0.0,
             -5.49
           ],
           "bounds_max_unity": [
@@ -14495,8 +14852,8 @@
           "surface_kind": "WindowFrame",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 0.8,
-          "vertices": 704,
-          "triangles": 352,
+          "vertices": 688,
+          "triangles": 344,
           "bounds_min_source": [
             -7.78,
             -5.78,
@@ -14568,8 +14925,7 @@
             40,
             41,
             42,
-            43,
-            44
+            43
           ]
         },
         {
@@ -14578,8 +14934,8 @@
           "surface_kind": "WindowGlass",
           "uv_scheme": "per_window_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 176,
-          "triangles": 88,
+          "vertices": 172,
+          "triangles": 86,
           "bounds_min_source": [
             -7.768,
             -5.768,
@@ -14651,8 +15007,7 @@
             40,
             41,
             42,
-            43,
-            44
+            43
           ]
         }
       ]
@@ -14689,6 +15044,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -15373,6 +15729,7 @@
       "height_m": 12.8,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -16146,6 +16503,7 @@
       "height_m": 10.0,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -16951,6 +17309,31 @@
       "height_m": 10.0,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": {
+        "threshold_source": [
+          0.0,
+          1.8,
+          0.0
+        ],
+        "threshold_unity": [
+          0.0,
+          0.0,
+          1.8
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 1.8
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -16959,7 +17342,7 @@
             0.0
           ],
           "bounds_max_source": [
-            5.0,
+            -0.7,
             1.8,
             8.8
           ],
@@ -16969,13 +17352,79 @@
             -3.0
           ],
           "bounds_max_unity": [
+            -0.7,
+            8.8,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -3.0,
+            0.0
+          ],
+          "bounds_max_source": [
             5.0,
+            1.8,
+            8.8
+          ],
+          "bounds_min_unity": [
+            0.7,
+            0.0,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            5.0,
+            8.8,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            -3.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            0.7,
+            0.0,
+            8.8
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            0.0,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            0.7,
+            8.8,
+            0.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.7,
+            0.0,
+            2.4
+          ],
+          "bounds_max_source": [
+            0.7,
+            1.8,
+            8.8
+          ],
+          "bounds_min_unity": [
+            -0.7,
+            2.4,
+            0.0
+          ],
+          "bounds_max_unity": [
+            0.7,
             8.8,
             1.8
           ]
         }
       ],
-      "triangle_count": 734,
+      "triangle_count": 928,
       "bounds_min_source": [
         -5.03,
         -3.03,
@@ -17690,8 +18139,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 40,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -17735,7 +18184,7 @@
           "bounds_min_source": [
             -4.96,
             1.625,
-            2.46
+            2.56
           ],
           "bounds_max_source": [
             4.96,
@@ -17744,7 +18193,7 @@
           ],
           "bounds_min_unity": [
             -4.96,
-            2.46,
+            2.56,
             1.625
           ],
           "bounds_max_unity": [
@@ -17754,7 +18203,7 @@
           ],
           "uv0_min": [
             0.004968,
-            0.248032
+            0.257952
           ],
           "uv0_max": [
             0.809458,
@@ -17770,27 +18219,27 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 20,
+          "triangles": 26,
           "bounds_min_source": [
             -4.96,
-            1.595,
+            0.0,
             0.0
           ],
           "bounds_max_source": [
             4.96,
-            1.835,
+            1.84,
             0.7
           ],
           "bounds_min_unity": [
             -4.96,
             0.0,
-            1.595
+            0.0
           ],
           "bounds_max_unity": [
             4.96,
             0.7,
-            1.835
+            1.84
           ],
           "uv0_min": [
             0.0,
@@ -17850,12 +18299,12 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 192,
-          "triangles": 292,
+          "vertices": 280,
+          "triangles": 444,
           "bounds_min_source": [
             -4.8575,
             -2.74,
-            0.2
+            0.0
           ],
           "bounds_max_source": [
             4.8575,
@@ -17864,7 +18313,7 @@
           ],
           "bounds_min_unity": [
             -4.8575,
-            0.2,
+            0.0,
             -2.74
           ],
           "bounds_max_unity": [
@@ -18054,6 +18503,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -18696,6 +19146,7 @@
       "height_m": 10.0,
       "industrial_purpose": "",
       "task_light_anchor": null,
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -19447,6 +19898,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -20052,6 +20504,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -20657,6 +21110,7 @@
           0.573576
         ]
       },
+      "entrance": null,
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -21288,5 +21742,5 @@
       ]
     }
   ],
-  "build_signature": "2762f52408f0b450cdff4bd9929ff7c6d99deab826854f3b963980f1a92a5c89"
+  "build_signature": "81b67b2e2e4893cb6ad5d267467d23870ce7a5c41dba3288d61920dfe2a333f6"
 }

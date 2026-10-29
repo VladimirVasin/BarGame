@@ -127,7 +127,7 @@ namespace BarPromenade
                     bounds[index] = CityRoadPolygon.Bounds(polygons[index]);
                 return bounds;
             }
-            if (!IsOrdinaryBuilding || BuildingVariant == 0)
+            if (!IsOrdinaryBuilding || BuildingVariant == 0 && District != CityDistrictKind.Residential)
                 return new[] { new Rect(Center.x - Size.x * .5f,
                     Center.z - Size.y * .5f, Size.x, Size.y) };
             CityBuildingPrototypePose pose =
@@ -147,7 +147,7 @@ namespace BarPromenade
         public IReadOnlyList<Vector2[]> CreateCollisionPolygons()
         {
             if (IsCafe) return new[] { CityCafePlan.CreateFootprint(Center) };
-            if (!IsOrdinaryBuilding || BuildingVariant == 0)
+            if (!IsOrdinaryBuilding || BuildingVariant == 0 && District != CityDistrictKind.Residential)
             {
                 float width = FrontageDirection.x != 0 ? Size.y : Size.x;
                 float depth = FrontageDirection.x != 0 ? Size.x : Size.y;

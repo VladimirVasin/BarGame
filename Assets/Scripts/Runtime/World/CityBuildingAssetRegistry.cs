@@ -192,6 +192,8 @@ namespace BarPromenade
         [SerializeField] private Bounds localBounds;
         [SerializeField] private Bounds roofAttachmentBounds;
         [SerializeField] private Bounds[] colliderBounds = Array.Empty<Bounds>();
+        [SerializeField] private bool hasEntrance;
+        [SerializeField] private Vector3 localEntranceThreshold;
         [SerializeField] private CityBuildingFacadeAttachment[]
             facadeAttachments =
                 Array.Empty<CityBuildingFacadeAttachment>();
@@ -217,6 +219,9 @@ namespace BarPromenade
         public Bounds LocalBounds => localBounds;
         public Bounds RoofAttachmentBounds => roofAttachmentBounds;
         public IReadOnlyList<Bounds> ColliderBounds => colliderBounds;
+        public bool HasEntrance => hasEntrance;
+        public Vector3 LocalEntranceThreshold => localEntranceThreshold;
+        public Vector3 LocalEntranceOutward => hasEntrance ? Vector3.forward : Vector3.zero;
         public IReadOnlyList<CityBuildingFacadeAttachment>
             FacadeAttachments => facadeAttachments;
         public IReadOnlyList<CityBuildingWindowSlot> WindowSlots =>
@@ -312,7 +317,9 @@ namespace BarPromenade
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
             string configuredBuildSignature,
-            Bounds[] configuredColliderBounds = null)
+            Bounds[] configuredColliderBounds = null,
+            bool configuredHasEntrance = false,
+            Vector3 configuredEntranceThreshold = default)
         {
             stableId = configuredStableId ?? string.Empty;
             district = configuredDistrict;
@@ -324,6 +331,8 @@ namespace BarPromenade
             localBounds = configuredLocalBounds;
             roofAttachmentBounds = configuredRoofAttachmentBounds;
             colliderBounds = configuredColliderBounds ?? new[] { configuredLocalBounds };
+            hasEntrance = configuredHasEntrance;
+            localEntranceThreshold = configuredEntranceThreshold;
             facadeAttachments = configuredFacadeAttachments ??
                 Array.Empty<CityBuildingFacadeAttachment>();
             windowSlots = configuredWindowSlots ??
@@ -395,8 +404,32 @@ namespace BarPromenade
 
             ValidateParts();
             ValidateColliderBounds();
+            ValidateEntrance();
             ValidateAttachmentMetadata();
             ValidatePassiveHierarchy();
+        }
+
+        private void ValidateEntrance()
+        {
+            if (hasEntrance != (district == CityDistrictKind.Residential))
+                throw new InvalidOperationException($"City building '{stableId}' lost its entrance contract.");
+            if (!hasEntrance) return;
+            int variant = -1;
+            for (int index = 0; index < CityBuildingAssetProvider.ExpectedPrototypeCount; index++)
+                if (string.Equals(stableId, CityBuildingAssetProvider.GetExpectedStableId(index), StringComparison.Ordinal))
+                { variant = CityBuildingAssetProvider.GetExpectedVariantIndex(index); break; }
+            if (variant < 0 || Vector3.Distance(localEntranceThreshold,
+                    CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant)) > .003f)
+                throw new InvalidOperationException($"City building '{stableId}' entrance threshold drifted.");
+            Bounds clear = new Bounds(localEntranceThreshold +
+                new Vector3(0f, CityBuildingAssetProvider.EntranceClearHeight * .5f,
+                    -CityBuildingAssetProvider.EntranceDepth * .5f),
+                new Vector3(CityBuildingAssetProvider.EntranceClearWidth - .02f,
+                    CityBuildingAssetProvider.EntranceClearHeight - .02f,
+                    CityBuildingAssetProvider.EntranceDepth - .02f));
+            foreach (Bounds solid in colliderBounds)
+                if (solid.Intersects(clear))
+                    throw new InvalidOperationException($"City building '{stableId}' entrance is blocked.");
         }
 
         private void ValidateColliderBounds()

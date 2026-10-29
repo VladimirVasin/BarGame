@@ -1,14 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "redraw of registered map artwork for crisp live Russian label overlays",
-  "prompt": "imagegen-labels-prompt.txt",
-  "reference": "CityMapImage.reference.png",
+  "intent": "residential entrance connectors redraw",
+  "prompt": "imagegen-entrances-prompt.txt",
+  "references": [
+    "map-reference.png",
+    "CityMapImage.reference.png"
+  ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "eeac7f48f31a137cef134e2955f4e9575c794251a2e17fdfb221c89b1ee959a2",
-  "fingerprint": "76306f7aadd6fd4a5af65c564a44633a29c85f7a232f84d310780a1c2b33ccd3",
-  "survey_fingerprint": "8418f89cb73df16d01202bc138c481a048882f5fd56bef44184f54452900362c",
+  "image_sha256": "7af61fb23476891cb486ba7ef1ade7a41e6ea0008939d9ee31b856c8e65df0b9",
+  "fingerprint": "4e6a7d94d00eda62c223332b6067b13dafb7de30969a62e387f8a76212e46d1d",
   "schemaVersion": 2,
   "width": 1422,
-  "height": 1106
+  "height": 1106,
+  "generation_fingerprint": "b0c7c39b69022a97fa7672cdb880e4ec685bffaca66dac04c8bf2fe046b508b7",
+  "survey_equivalence": "Identical measured 2D survey, all polygons/strokes/places/bounds preserved after shared walkway grade correction."
 }

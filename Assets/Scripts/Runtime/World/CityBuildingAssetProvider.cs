@@ -40,6 +40,9 @@ namespace BarPromenade
         public const string ExpectedDesignId =
             "city_buildings_coastal_v4";
         public const int ExpectedPrototypeCount = 23;
+        public const float EntranceClearWidth = 1.4f;
+        public const float EntranceClearHeight = 2.4f;
+        public const float EntranceDepth = 1.8f;
 
         private static readonly PrototypeSpec[] ExpectedPrototypes =
         {
@@ -195,14 +198,50 @@ namespace BarPromenade
             if (variantIndex == 3)
             {
                 float clearance = GetExpectedPassageBounds(district, variantIndex).size.y;
-                return new[] { Solid(-halfWidth, 0f, -halfDepth, -1.8f, clearance, front),
+                Bounds[] passageSolids = { Solid(-halfWidth, 0f, -halfDepth, -1.8f, clearance, front),
                     Solid(1.8f, 0f, -halfDepth, halfWidth, clearance, front),
                     Solid(-halfWidth, clearance, -halfDepth, halfWidth, bodyTop, front) };
+                return district == CityDistrictKind.Residential
+                    ? CutEntrance(passageSolids, variantIndex) : passageSolids;
             }
-            return variantIndex == 2
+            Bounds[] solids = variantIndex == 2
                 ? new[] { Solid(-halfWidth, 0f, 0f, halfWidth, bodyTop, front),
                     Solid(-halfWidth, 0f, -halfDepth, -halfWidth + 5f, bodyTop, 0f) }
                 : new[] { Solid(-halfWidth, 0f, -halfDepth, halfWidth, bodyTop, front) };
+            return district == CityDistrictKind.Residential ? CutEntrance(solids, variantIndex) : solids;
+        }
+
+        public static Vector3 GetExpectedEntranceThreshold(int variantIndex)
+        {
+            Vector3 envelope = GetExpectedEnvelope(CityDistrictKind.Residential, variantIndex);
+            return new Vector3(variantIndex == 3 ? -3.6f : 0f, 0f, envelope.z * .5f - 1.2f);
+        }
+
+        public static Vector3 GetExpectedEntranceOutward(int variantIndex)
+        {
+            GetExpectedEnvelope(CityDistrictKind.Residential, variantIndex);
+            return Vector3.forward;
+        }
+
+        private static IReadOnlyList<Bounds> CutEntrance(IReadOnlyList<Bounds> solids, int variantIndex)
+        {
+            Vector3 threshold = GetExpectedEntranceThreshold(variantIndex);
+            float left = threshold.x - EntranceClearWidth * .5f;
+            float right = threshold.x + EntranceClearWidth * .5f;
+            float back = threshold.z - EntranceDepth;
+            var result = new List<Bounds>(solids.Count + 3);
+            foreach (Bounds solid in solids)
+            {
+                Vector3 low = solid.min, high = solid.max;
+                if (high.x <= left || low.x >= right || high.z <= back || low.y >= EntranceClearHeight)
+                { result.Add(solid); continue; }
+                if (low.x < left) result.Add(Solid(low.x, low.y, low.z, left, high.y, high.z));
+                if (high.x > right) result.Add(Solid(right, low.y, low.z, high.x, high.y, high.z));
+                float a = Mathf.Max(left, low.x), b = Mathf.Min(right, high.x);
+                if (low.z < back) result.Add(Solid(a, low.y, low.z, b, high.y, back));
+                result.Add(Solid(a, EntranceClearHeight, back, b, high.y, high.z));
+            }
+            return result;
         }
 
         public static int GetExpectedBalconyFloorCount(float height)
@@ -233,11 +272,13 @@ namespace BarPromenade
             CityDistrictKind district, int variantIndex)
         {
             IReadOnlyList<Bounds> solids = GetExpectedCollisionBounds(district, variantIndex);
-            if (variantIndex != 3) return solids;
+            if (variantIndex != 3 && district != CityDistrictKind.Residential) return solids;
             var ground = new List<Bounds>(2);
             for (int index = 0; index < solids.Count; index++)
             {
-                if (solids[index].min.y < 2.5f) ground.Add(solids[index]);
+                // Only floor-seated solids block the walking plane. Bounds
+                // centre/extent roundoff must never turn a lintel into a wall.
+                if (solids[index].min.y < .1f) ground.Add(solids[index]);
             }
             return ground;
         }

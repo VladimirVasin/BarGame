@@ -5,50 +5,45 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-29
 
-Game view reproduced HUD/map gamma lift; GL.sRGBWrite was ineffective.
-Shared Editor colour/texture boundaries preserve authored values and native
-clipping/matrices; player/world output kept. HudOverlay_PreservesAuthoredGammaColors
-and ImageGenCityMap_PreservesPlanAndLivePlaces passed; native UI frames reviewed.
+HUD/map gamma lift reproduced in Game view; shared Editor colour/texture
+boundaries preserve authored values and native clipping/matrices.
+HudOverlay_PreservesAuthoredGammaColors and
+ImageGenCityMap_PreservesPlanAndLivePlaces passed; native UI views reviewed.
 
-City owns the complete existing diner: whole lot/ground/threshold, original
-cast/seat/menu, shelter/map and bounded City lighting/reflections. MountainRoad
-keeps LastRoute/cableway/brink without a cafe copy. Location-only canon exception
-preserves menu placeholder and open glass foreground; shared bar assets retained.
-Menu carry retains its final hand grip through the placement hold; text checks
-wait for unfolding. CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
+City owns the complete diner: lot/ground/threshold, original cast/seat/menu,
+shelter/map and bounded lighting/reflections. MountainRoad keeps LastRoute/
+cableway/brink. Location-only exception preserves menu placeholder/open glass.
+Menu carry retains hand grip through placement; text waits for unfolding.
+CounterSeat_FocusesConfirmsAndRetrievesWorldMenu,
 CoastalCafe_ReservesOneWholeLotWithGroundedOriginalFootprint and
+NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed;
+City/menu and emptied terminal views reviewed.
+
+Dog yard fits after laundry without moving homes/routes. Blender animals use
+paw IK/calendar activity; permanent owners, local collision, positioned voices
+and pause/distance continuity share City owners. Palette import pins Texture2D.
+Blender determinism, imported contract and CityDogPark passed; native views reviewed.
+
+Laundry/dog-yard map labels/footprints/XYZ arrivals follow actual clear approaches.
 NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed.
-City day/night/menu and emptied terminal views reviewed; check-docs passed.
+City remains ImageGen/Silent Hill; Village is a worn tourist brochure with the
+former skiing ad crossed red. Paper-only canon exception keeps current geography.
+Live markers/selection/XYZ respect mapUvRect; persistent sharp Russian labels omit
+coordinates/anonymous yards. Village RU SHA is independent; City excludes Village
+keys. Both maps redrawn; stale art/other seeds/MountainRoad use schematics.
+ImageGenVillageBrochure_PreservesResortAndLivePlaces passed; native maps reviewed.
+AGENTS/AI require new objects and authored map changes to join the map/redraw.
 
-Residential dog yard fits leftover ground after laundry without moving homes
-or public routes. Blender animals use paw IK and independent calendar activity;
-permanent owners, local collision, positioned bark/paws and pause/distance
-continuity share existing city owners. Palette import explicitly requires
-Texture2D so Unity cannot reinterpret its swatches as a cubemap.
-Blender determinism, imported asset contract and CityDogPark passed; native
-day/night/close/movement/grayscale/intoxication views reviewed.
+Residential bodies/wings now share real open vestibules, split masses/skirts and
+physical floors. Protected paving reaches public sidewalks around fixtures;
+shared ground grade removes crossing ramps. Lower-pole bounds and bounded cached
+routing preserve clearance; shelters yield to doorway reservations.
+Blender recipe and CityResidentialEntrances passed; City/Home views reviewed.
+City map redrawn with built-in ImageGen; surveyed geometry parity verified after
+the grade correction. Shared effects retained; check-docs passed.
 
-AGENTS/AI now require every new world object/place to join its area's map
-in the same change. Laundry/dog-yard markers use Russian labels and planned
-clear approaches; the yard has an open-ground footprint, laundry keeps its
-L-shell. NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity passed
-with both places, coordinates and shared XYZ arrivals.
-
-Default City keeps built-in ImageGen/Silent Hill. AlpineVillage uses a worn
-cream/blue/green/ochre tourist brochure: former skiing ad hand-crossed red,
-existing lodge/lift/avalanche/house geography. Paper-only canon exception
-permits fixed brief ad copy; no new 3D. Shared view keeps live markers/selection/
-XYZ inside mapUvRect; ad column has no coordinates. Persistent sharp Russian
-labels use bounded contrast backing/leaders/collision layout; cached regional
-names omit coordinates/anonymous yards; named POIs/clicks retain XYZ inspector. Village plan/RU SHA is
-independent; City SHA excludes Village keys. Both maps were redrawn. Bounds/size/
-SHA reject stale art; other seeds/MountainRoad use schematics. Shared effect owners
-stay; wear/grain/ink baked. AGENTS/AI require redraw after authored map changes/
-new objects, not live motion. ImageGenVillageBrochure_PreservesResortAndLivePlaces passed; native map/resort/
-XYZ views reviewed.
-
-Global diff-check: pre-existing Laundry/StreetProfile .meta whitespace;
-baseline bytes unchanged. Scoped task diff is clean.
+Global diff-check retains the previously recorded unchanged meta baseline;
+this task's diff is clean.
 
 ## 2026-10-28
 

@@ -230,6 +230,13 @@ namespace BarPromenade.Editor
             int court = 0;
             foreach (CityRoadPath path in layout.CourtyardPaths)
                 Line("court-path:" + court++, "court-path", 1.5f, new List<Vector2>(path.Vertices));
+            int entranceIndex = 0;
+            foreach (var entrance in CityResidentialEntrancePlan.ForLayout(layout).Entrances)
+            {
+                var points = new List<Vector2>(entrance.Points.Count);
+                foreach (Vector3 point in entrance.Points) points.Add(XZ(point));
+                Line("residential-entrance:" + entranceIndex++, "court-path", 1.5f, points);
+            }
             foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges)
                 Box("bridge:" + bridge.Definition.Id, "bridge", bridge.DeckBounds);
             CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);

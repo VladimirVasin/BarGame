@@ -83,4 +83,4 @@ MonoBehaviour:
     district: 2
     prefab: {fileID: 8047748976794001992, guid: 208bee43cfd5645258596b328d3851f5, type: 3}
   designId: city_buildings_coastal_v4
-  buildSignature: 2762f52408f0b450cdff4bd9929ff7c6d99deab826854f3b963980f1a92a5c89
+  buildSignature: 81b67b2e2e4893cb6ad5d267467d23870ce7a5c41dba3288d61920dfe2a333f6

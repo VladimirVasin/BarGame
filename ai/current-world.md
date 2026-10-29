@@ -1525,23 +1525,20 @@ cemetery:own interiors/returns.
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- ordinary fixed-metre models: Residential five forms, `3–5` storeys,
-  heights `13.4/15.8/12.8/15.8/10 m`; Industrial eight functions,
-  heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`: dry warehouse, cold storage,
-  repair/metal/packaging workshops, boiler/compressor houses and repair garage.
-  Roofs/gates/service recesses carry equipment; timber/concrete/steel reuse
-  existing pigment/response.
-  `IndustrialTaskLight_*` anchors join the same twelve-Light pool; fixed halos
-  and day floor remain. Generic pipe/cargo clusters yield to authored equipment.
-  Twenty original IDs plus three Industrial IDs retain other catalogs.
-  Fronts fit `15.5 m`, L `15×14 m`, wing `10×6 m`; fit-tested
-  selection retains passage clearance `3.6×4.2 m` in the working district.
-  Measured base/equipment/emissive-lens roles;
-  Blender metres/`+Z` front align to `DoorPosition + 0.08 m`. Home/shop/bar
-  retain their heights. Facades/plinth use unique sides, roof/metal/frame and
-  equipment metre UVs, glass pane-local `0..1`; warm panes keep the day floor.
-  Trim/skirts avoid coplanarity. Home shares the pose; clipped crossings alone
-  retain legacy silhouettes;
+- ordinary Blender models: five Residential forms, `3–5` storeys,
+  heights `13.4/15.8/12.8/15.8/10 m`. Every body/wing has an open `1.4×2.4 m`
+  entrance/`1.8 m` vestibule: measured threshold, split collision/skirt, real floor.
+  Cached `CityResidentialEntrancePlan` owns protected graded paving→public
+  sidewalk; City/Home/map share it, without new interactions or apartments.
+  Industrial eight functions, heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`:
+  dry/cold storage, repair/metal/packaging, boiler/compressor, repair garage.
+  Equipment owns roofs/gates/recesses; timber/concrete/steel retain response.
+  `IndustrialTaskLight_*` uses the twelve-Light pool/halos/day floor.
+  Twenty original IDs plus three Industrial IDs; fronts≤15.5m,L15×14m,wing10×6m;
+  work passage3.6×4.2m. Measured roles/Blender metres/+Z front align to
+  `DoorPosition+0.08m`. Home/shop/bar retain heights. Unique facade/plinth sides,
+  metric equipment/roof/metal/frame,pane-local glass; warm day emission kept.
+  Trim/skirts avoid coplanarity; Home shares pose, crossings alone clip silhouettes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;

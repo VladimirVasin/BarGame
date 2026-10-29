@@ -136,7 +136,12 @@ namespace BarPromenade
             supported = context.Laundry != null ? context.Laundry.ApplyGround(worldXZ, supported) : supported;
             supported = context.DogPark != null ? context.DogPark.ApplyGround(worldXZ, supported) : supported;
             CityCafePlan cafe = CityCafePlan.Create(layout);
-            return (cafe != null ? cafe.ApplyGroundTop(worldXZ, supported) : supported) - offset;
+            supported = cafe != null ? cafe.ApplyGroundTop(worldXZ, supported) : supported;
+            // Composition primes entrance paving after court/infill placement.
+            // Terrain queries must only read the cached result, never trigger it.
+            if (CityResidentialEntrancePlan.TrySampleCachedTop(layout, worldXZ, out float entranceTop))
+                supported = Mathf.Min(supported, entranceTop - .04f);
+            return supported - offset;
         }
 
         internal static float SampleTopWithoutRigidSupports(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)

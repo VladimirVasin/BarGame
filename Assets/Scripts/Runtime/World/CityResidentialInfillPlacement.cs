@@ -86,6 +86,8 @@ namespace BarPromenade
         {
             access = default;
             Rect padded = Expanded(footprint,.45f);
+            if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout, padded) ||
+                CityResidentialEntrancePlan.IntersectsReservedApproach(layout, approach)) return false;
             foreach (Rect obstacle in blocked) if (padded.Overlaps(obstacle) || approach.Overlaps(obstacle)) return false;
             foreach (Rect path in paths) if (Expanded(footprint,.45f).Overlaps(path)) return false;
             foreach (Vector2[] body in bodies)

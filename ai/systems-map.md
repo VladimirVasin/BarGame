@@ -43,7 +43,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Typed submesh coatings retain priority/weather/steps in 48m sectors; cemetery/sand change locally. | `CityGroundSurfaceSystem`, `GroundSurfacePartitioner` | Current |
 | City street support | Shared stations/outer seams join asphalt, pavement and terrain; imported topology. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
-| City Blender ordinary buildings | Eight work functions own forms/equipment/surfaces/task light; passages and wings share solid footprints. | `CityBuilding*`, `CityNightAtmosphere`, building generators | Current |
+| City Blender ordinary buildings | Work8 functions; homes: real entries/paved links; passages/wings share footprints. | `CityBuilding*`, `CityResidentialEntrance*`, generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |

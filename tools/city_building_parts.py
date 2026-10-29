@@ -13,6 +13,8 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
+from interior_kit import door_frame, panelled_leaf
+
 
 Vec2 = tuple[float, float]
 Vec3 = tuple[float, float, float]
@@ -104,6 +106,52 @@ class PrototypeSpec:
     collision_bounds: tuple[tuple[Vec3, Vec3], ...] = ()
     task_light_anchor_source: Vec3 | None = None
     industrial_purpose: str = ""
+    entrance_threshold_source: Vec3 | None = None
+
+
+ENTRANCE_CLEAR_WIDTH = 1.4
+ENTRANCE_CLEAR_HEIGHT = 2.4
+ENTRANCE_DEPTH = 1.8
+
+
+def residential_entrance_x(variant: int) -> float:
+    # The through-passage keeps its full throat; the collective entrance
+    # belongs to its left pier, not to the middle of the arch.
+    return -3.6 if variant == 4 else 0.0
+
+
+def split_entrance_solids(solids: tuple[tuple[Vec3, Vec3], ...],
+                          threshold: Vec3) -> tuple[tuple[Vec3, Vec3], ...]:
+    """Subtract the real vestibule from the same solids used by navigation."""
+    x, front, _ = threshold
+    left, right = x - ENTRANCE_CLEAR_WIDTH * .5, x + ENTRANCE_CLEAR_WIDTH * .5
+    back = front - ENTRANCE_DEPTH
+    result = []
+    for low, high in solids:
+        if high[0] <= left or low[0] >= right or high[1] <= back or low[2] >= ENTRANCE_CLEAR_HEIGHT:
+            result.append((low, high))
+            continue
+        # Disjoint left/right/back walls and overhead lintel. Keep their order
+        # stable: the C# provider uses this same metre-authored decomposition.
+        if low[0] < left:
+            result.append((low, (left, high[1], high[2])))
+        if high[0] > right:
+            result.append(((right, low[1], low[2]), high))
+        a, b = max(left, low[0]), min(right, high[0])
+        if low[1] < back:
+            result.append(((a, low[1], low[2]), (b, back, high[2])))
+        result.append(((a, back, ENTRANCE_CLEAR_HEIGHT), (b, high[1], high[2])))
+    return tuple(result)
+
+
+def kit_geometry(item, offset: Vec3, turn: float = 0.0) -> Geometry:
+    """Reuse the metre kit in this catalog's +Y-front source frame."""
+    vertices, faces = item
+    c, s = math.cos(turn), math.sin(turn)
+    transformed = tuple((offset[0] + c * x - s * y,
+                         offset[1] + s * x + c * y, offset[2] + z)
+                        for x, y, z in vertices)
+    return Geometry(transformed, tuple(tuple(face) for face in faces), (0,) * len(faces))
 
 
 def empty() -> Geometry:
@@ -565,6 +613,60 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
         plinth = box((0.0, front_y - 0.085, 0.35), (width - 0.08, 0.24, 0.7))
         secondary = [box((0.0, front_y - 0.055, 2.6),
                          (width - 0.08, 0.24, 0.28))]
+    entrance = None
+    entrance_metal = []
+    if district == "Residential":
+        entrance_x = residential_entrance_x(variant)
+        entrance = (entrance_x, front_y, 0.0)
+        opening_half, opening_head = .82, 2.52
+        back_y = front_y - ENTRANCE_DEPTH
+
+        def vestibule_outline(outline):
+            result = []
+            for index, point in enumerate(outline):
+                following = outline[(index + 1) % len(outline)]
+                result.append(point)
+                if point[1] == front_y and following[1] == front_y and point[0] > entrance_x > following[0]:
+                    result.extend(((entrance_x + opening_half, front_y),
+                                   (entrance_x + opening_half, back_y),
+                                   (entrance_x - opening_half, back_y),
+                                   (entrance_x - opening_half, front_y)))
+            return tuple(result)
+
+        if passage:
+            facade_primary = merge((prism(vestibule_outline(left), 0.0, opening_head),
+                prism(left, opening_head, passage_top), prism(right, 0.0, passage_top),
+                prism(polygon, passage_top, body_top)))
+        else:
+            facade_primary = merge((prism(vestibule_outline(polygon), 0.0, opening_head),
+                                    prism(polygon, opening_head, body_top)))
+        solids = split_entrance_solids(solids, entrance)
+        # Split the plinth rather than painting a door over a continuous base.
+        plinth_pieces = []
+        intervals = ((-half_w + .04, -1.84), (1.84, half_w - .04)) if passage else ((-half_w + .04, half_w - .04),)
+        for a, b in intervals:
+            for start, end in ((a, min(b, entrance_x - .86)), (max(a, entrance_x + .86), b)):
+                if end > start:
+                    plinth_pieces.append(box(((start + end) * .5, front_y - .085, .35),
+                                            (end - start, .24, .7)))
+        # The vestibule floor is exactly the imported ground datum, matching
+        # the continuous approach. Its four edges have no raised threshold.
+        floor = Geometry(((entrance_x - opening_half, back_y, 0.),
+                          (entrance_x + opening_half, back_y, 0.),
+                          (entrance_x + opening_half, front_y + .04, 0.),
+                          (entrance_x - opening_half, front_y + .04, 0.)), ((0, 1, 2, 3),), (0,))
+        plinth = merge((*plinth_pieces, floor))
+        secondary = [Geometry(tuple((x, y, z + .1) for x, y, z in item.vertices),
+                              item.faces, item.face_slot_ids) for item in secondary]
+        entrance_metal.extend((kit_geometry(door_frame(ENTRANCE_CLEAR_WIDTH,
+            ENTRANCE_CLEAR_HEIGHT, .22, jamb=.09, chamfer=.012), (entrance_x, front_y + .02, 0.)),
+            # Hinged at the mouth and parked against the left reveal, so the
+            # leaf visibly swings into a real volume rather than into a wall.
+            kit_geometry(panelled_leaf(1.30, 2.30, .055, panels=0),
+                         (entrance_x - .76, front_y - .08, .02), -math.pi * .5),
+            kit_geometry(panelled_leaf(1.1, 2.12, .07, panels=0),
+                         (entrance_x - .55, back_y + .05, 0.))))
+        entrance_metal.append(box((entrance_x - .68, front_y - 1.12, 1.05), (.09, .12, .045)))
     if district == "OldTown":
         roof = (merge((gable_roof((0.0, front_y * 0.5), width, front_y,
                                  body_top, height),
@@ -595,6 +697,7 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                          (width - 0.08, 0.24, 0.28))]
     metal = [cylinder_z((-half_w + 0.35, -half_d + 0.4),
                         body_top, height - 0.10, 0.14, 8)]
+    metal.extend(entrance_metal)
     # Water runs and patched entrance hardware follow actual building joints.
     # All stay inside the metre envelope and keep the public pavement clear.
     for drain_x in (-half_w + .18, half_w - .18):
@@ -637,7 +740,8 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                 metal.append(box((center_x, half_d - 0.04, deck_level + 0.96),
                                  (2.42, 0.05, 0.06)))
         slots.extend(slots_for_grid(len(slots) + 1, "Front", front_y,
-            tuple(value for center in centers for value in (center - 0.48, center + 0.48)),
+            tuple(value for center in centers for value in (center - 0.48, center + 0.48)
+                  if abs(value - entrance[0]) > .82 + .36 + .03),
             (1.6,), (0.72, 1.55)))
     else:
         floor_heights = ((2.1, 5.1, 8.1, 11.1) if district == "OldTown"
@@ -719,7 +823,7 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
         (-half_w + 0.4, 0.4 if corner else -half_d + 0.4, body_top),
         (half_w - 0.4, front_y - 0.4, height), tuple(attachments), tuple(slots),
         parts_for(stable_id, role_geometry, 1.6 if district == "OldTown" else 1.8),
-        tuple(balconies), solids)
+        tuple(balconies), solids, entrance_threshold_source=entrance)
 
 
 def build_prototypes() -> tuple[PrototypeSpec, ...]:

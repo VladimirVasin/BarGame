@@ -52,6 +52,7 @@ from city_building_parts import (  # noqa: E402
     box,
     build_prototypes,
     collision_bounds_for,
+    ENTRANCE_CLEAR_WIDTH, ENTRANCE_CLEAR_HEIGHT, ENTRANCE_DEPTH,
     combine,
     cylinder_z,
 )
@@ -63,7 +64,7 @@ from city_building_coplanarity import (  # noqa: E402
 from city_industrial_parts import OPTIONAL_ROLES  # noqa: E402
 
 
-GENERATOR_VERSION = "4.1.0"
+GENERATOR_VERSION = "4.2.0"
 DESIGN_ID = "city_buildings_coastal_v4"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -726,6 +727,21 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             problems.append(
                 f"{prototype.stable_id} roof attachment bounds are invalid")
         solids = collision_bounds_for(prototype)
+        threshold = prototype.entrance_threshold_source
+        if prototype.district == "Residential":
+            expected_x = -3.6 if prototype.grammar == "ThroughPassage" else 0.0
+            if threshold != (expected_x, prototype.depth_m * .5 - 1.2, 0.0):
+                problems.append(f"{prototype.stable_id} lost its collective entrance")
+            else:
+                for dx in (-.6, 0., .6):
+                    for dy in (-.1, -.9, -1.7):
+                        for z in (.1, 1.1, 2.3):
+                            probe = (threshold[0] + dx, threshold[1] + dy, z)
+                            if any(all(a[axis] < probe[axis] < b[axis] for axis in range(3))
+                                   for a, b in solids):
+                                problems.append(f"{prototype.stable_id} entrance is blocked by collision")
+        elif threshold is not None:
+            problems.append(f"{prototype.stable_id} unexpectedly declares a residential entrance")
         if not solids:
             problems.append(f"{prototype.stable_id} has no authored collision solids")
         for minimum, maximum in solids:
@@ -738,7 +754,7 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             # The rear-right cutout must remain a real empty footprint, rather
             # than one AABB copied from the overall renderer envelope.
             probe = (prototype.frontage_width_m * 0.25, -prototype.depth_m * 0.25, 1.0)
-            if len(solids) != 2 or any(all(minimum[axis] <= probe[axis] <= maximum[axis]
+            if (prototype.district != "Residential" and len(solids) != 2) or any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                          for axis in range(3)) for minimum, maximum in solids):
                 problems.append(f"{prototype.stable_id} fills its open corner with collision")
         if prototype.grammar == "ThroughPassage":
@@ -750,7 +766,7 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
                     if any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                for axis in range(3)) for minimum, maximum in solids):
                         problems.append(f"{prototype.stable_id} passage has an obstruction")
-            if len(solids) != 3 or sum(minimum[2] >= clearance - 1e-5
+            if (prototype.district != "Residential" and len(solids) != 3) or sum(minimum[2] >= clearance - 1e-5
                                      for minimum, _ in solids) != 1:
                 problems.append(f"{prototype.stable_id} passage must have two piers and a lintel")
 
@@ -767,6 +783,21 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             "\n  - ".join(problems))
 
 
+def entrance_record(prototype: PrototypeSpec) -> dict | None:
+    threshold = prototype.entrance_threshold_source
+    if threshold is None:
+        return None
+    return {
+        "threshold_source": [stable(value) for value in threshold],
+        "threshold_unity": source_to_unity(threshold),
+        "outward_source": [0., 1., 0.],
+        "outward_unity": [0., 0., 1.],
+        "clear_width_m": ENTRANCE_CLEAR_WIDTH,
+        "clear_height_m": ENTRANCE_CLEAR_HEIGHT,
+        "depth_m": ENTRANCE_DEPTH,
+    }
+
+
 def prototype_signature_record(prototype: PrototypeSpec) -> dict:
     return {
         "stable_id": prototype.stable_id,
@@ -777,6 +808,7 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
         "height_m": stable(prototype.height_m),
         "industrial_purpose": prototype.industrial_purpose,
         "task_light_anchor_source": prototype.task_light_anchor_source,
+        "entrance": entrance_record(prototype),
         "collision_bounds": [{"bounds_min_source": list(minimum),
                               "bounds_max_source": list(maximum)}
                              for minimum, maximum in collision_bounds_for(prototype)],
@@ -915,6 +947,7 @@ def manifest_for(
                 "forward_source": [0.0, .573576, -.819152],
                 "forward_unity": [0.0, -.819152, .573576],
             } if prototype.task_light_anchor_source else None),
+            "entrance": entrance_record(prototype),
             "collision_bounds": [{
                 "bounds_min_source": [stable(value) for value in minimum],
                 "bounds_max_source": [stable(value) for value in maximum],

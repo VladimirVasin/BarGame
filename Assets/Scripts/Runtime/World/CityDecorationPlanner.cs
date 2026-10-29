@@ -152,6 +152,10 @@ namespace BarPromenade
                 descriptors,
                 occupiedGroundPositions);
 
+            // Entrance approaches own their ground before incidental dressing.
+            // During infill placement this reads only primary reservations;
+            // the final composition also sees the cached rear-house routes.
+            descriptors.RemoveAll(descriptor => BlocksResidentialEntrance(layout, descriptor));
             var plan = new CityDecorationPlan(layout.Seed, descriptors);
             CityDecorationValidator.ValidateOrThrow(
                 plan,
@@ -1264,6 +1268,9 @@ namespace BarPromenade
 
         private static bool BlocksCourtyardRoute(CityLayout layout, Vector3 position, float objectRadius)
         {
+            if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout,
+                new Rect(position.x - objectRadius, position.z - objectRadius,
+                    objectRadius * 2f, objectRadius * 2f))) return true;
             float clearance = objectRadius + CityGroundTraversalPlanner.MaximumAgentRadius;
             var point = new Vector2(position.x, position.z);
             foreach (CityRoadPath path in layout.CourtyardPaths)
@@ -1294,6 +1301,21 @@ namespace BarPromenade
                                 new Vector2(to.x, to.z), halfSize)) return true;
                     }
                 }
+            }
+            return false;
+        }
+
+        private static bool BlocksResidentialEntrance(CityLayout layout, CityDecorationDescriptor descriptor)
+        {
+            if (descriptor.CollisionTier == CityDecorationCollisionTier.None) return false;
+            var proxies = new List<RuntimeOrientedBox>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            CityStaticCollisionBuilder.AddDecorationProxyBoxes(layout, descriptor, proxies);
+            foreach (RuntimeOrientedBox proxy in proxies)
+            {
+                Bounds bounds = CityBuildingPrototypePlacement.TransformBounds(
+                    new Bounds(Vector3.zero, proxy.Size), new CityBuildingPrototypePose(proxy.Center, proxy.Rotation));
+                if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout,
+                    Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z))) return true;
             }
             return false;
         }

@@ -1,6 +1,14 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-29 — residential entrances:**
+  User:visual-only, every body/wing. Blender open1.4×2.4m/vestibule1.8m;
+  threshold/split mass/skirt/floor;finite graded1.5m paths→public
+  pavement. Primary reservations precede infill; final plan follows;
+  cached terrain support;shared City/Home/map/redraw. No new
+  interaction/text/NPC/story;no§6 waiver. All24 retain City owners:ambient/bounce,
+  SSAO/fog/Soft/grade/probes/roadSSR/materials/savedPP;no new provider/signal.
+
 - **Accepted architecture exception 2026-10-29 — AlpineVillage brochure:**
   User:Village map→worn tourist brochure/red-crossed former skiing ad.
   Scope/print:art§10g/15a,story§6(0)/12/21 only;§16/other§21/nine
@@ -4971,25 +4979,20 @@
   retains the pitched roof slab; collision, shelter and the exterior
   silhouette contract are unchanged.
 - **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
-  `city_buildings_coastal_v4`, generator `4.0.0`, supplies twenty passive roots:
-  compact/long/L/through-passage/secondary wing per district; 140 semantic meshes,
-  10,576 triangles; window slots follow the manifest. Fixed dimensions belong to the provider/
-  manifest; no lot scales or shears an imported model. Origin is footprint centre
-  on ground; source `+Y` imports Unity `+Z`, front aligns to `DoorPosition + 0.08 m`.
-  Seven roles and a `3,500`-triangle ceiling per root; no imported materials,
-  colliders, lights, cameras or clips. Registry measures ground/overhead bodies,
-  attachment mounts, opening slots and Residential balcony docks. Models,
-  foundations, proxies, navigation and Home share one body/pose. Passage sides
-  and lintels remain separate; L recesses clear. World bounds include both height
-  maxima. OldTown/Nightlife floor pitch is `3 m`, Residential `2.8 m`.
+  `city_buildings_coastal_v4`:compact/long/L/passage/wing per district plus
+  three Industrial IDs; measured meshes/triangles/windows follow the manifest.
+  Fixed provider metres:no lot scale/shear. Ground-centred origin;source`+Y`→
+  Unity`+Z`;front=`DoorPosition+0.08m`.
+  Seven roles/root≤3500triangles;no imported materials/collision/light/camera/clip.
+  Registry:ground/overhead bodies,mounts,openings,Residential balcony/entry docks.
+  Model/foundation/proxy/nav/Home share pose;passage sides/lintels separate,L clear.
+  Bounds include height maxima;floor pitch OldTown/Nightlife3m,Residential2.8m.
 
-  UV0: four non-repeating facade columns, full `0..1` plinth faces, metre-repeat
-  roof/metal/frame and pane-local glass. Twenty-four opaque sheets keep facade/
-  plinth clamp and microtexture repeat; no windows/apertures/signs/text/lore baked
-  into opaque maps. Six opaque roles share one material/MPBs. WindowGlass decodes
-  UV2 `(slotId + 0.5) / 256` into a 64-entry state table. Each row keeps warm/dark
-  panes, lamp colour `(1, 0.72, 0.42)`, four-step brightness, shared fixture factor,
-  curtain quadrant. Daylight retains the two-thirds emission floor.
+  UV0:four unique facade columns,plinth`0..1`,metric roof/metal/frame,pane-local
+  glass.24 opaque sheets:facade/plinth clamp,micro repeat;no baked openings/text/
+  signs/lore.Six opaque roles share material/MPBs.Glass UV2`(slotId+.5)/256`→
+  64states:warm/dark,lamp`(1,.72,.42)`,four brightness steps,fixture factor,
+  curtain quadrant;day emission≥2/3.
 
   Geometry audit rejects positive-area same-facing coplanar exterior overlap
   and opaque overlap >= `0.05 m2` below `0.03 m` relief. Plinth/secondary margins

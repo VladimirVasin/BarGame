@@ -588,6 +588,8 @@ namespace BarPromenade
             Vector3 pole = GetShelterPosition(layout, position, right);
             Vector3 wall = pole + (forward *
                 CityBusStopWorldBuilder.ShelterOffsetAlongLane);
+            if (CityResidentialEntrancePlan.IntersectsPrimaryApproach(layout,
+                CityBusStopWorldBuilder.DescribeFurnitureFootprint(pole, forward, -right))) return false;
             for (int index = 0; index < entrancePoints.Count; index++)
             {
                 Vector3 entrance = entrancePoints[index];
