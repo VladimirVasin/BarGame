@@ -2,23 +2,25 @@
 
 ## Current facts
 - **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
-  User: three Silent Hill-like tasks repeat Home painting's
-  Philomela/Procne/Tereus motifs: woven image/thread; shutter-stop-weight
-  delivery; shadow-read bird stops. Shared positioned rig/hand actions/RU prompts.
-  Guarded/enclosed domestic→shaft→machinery, normal gravity/third-person,
-  fixed below; Single-load warehouse retains session/fish/key/ambush/retry.
-  Three gates cut stage1→2→3→warehouse; reversible attempts,
-  monotonic session solutions/New Game reset. Painting anonymous/silent;
-  no hero/woman/crime clue, voice, apparition, loss or timer.
-  User correction: statue/initial stairs keep their previous light until the
-  first labyrinth flight; return restores it. Two shadowed lamps switch
-  on within22m/off beyond24m, same-storey/room-isolated; lens/hum/contactors
-  follow power. Darkness outside.
-  Blender lower stairs/supports/cables vanish before finite ends; no visible floor.
-  All24: black ambient/SH/sun/fog/reflection beyond boundary; local Hard/SSAO/
-  grade/material/motion/dust/outline and saved post owners, no lifted black.
-  No new GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur. Bounded lights/shadows/
-  cached bindings/pause/cleanup; cost unmeasured. §6/16/21/nine art checks bind.
+  Home painting:Philomela/Procne/Tereus→weave,shutter-stop-weight delivery,
+  shadow-read birds;shared positioned rig/grips/RU. Enclosed/guarded domestic→
+  shaft→machines/branches/loops;normal gravity/third-person traversal/fixed below.
+  Three gates/reversible attempts/monotonic solutions/New Game reset→Single-load
+  warehouse/session/fish/key/ambush/retry. Anonymous/silent;no hero/woman/crime
+  clue/voice/apparition/loss/timer. Statue/initial light stays;first flight→two
+  shadowed lamps on22m/off24m,same-floor/room;power→lens/hum/contactor;return
+  restores. Black beyond;Blender lower stairs/supports/cables vanish before
+  finite ends/floor unseen. Bounded lights/shadows/caches/pause/cleanup.
+
+- **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
+  User visibility exception:E→FP/whole hero hidden;←→/E/Q;scoped lease.
+  rig/grips live;exit/cancel restore exact state;no alternate geometry.
+  Solved1→cabinet→shared take1x→ChestFlashlight/equip/session/reset;
+  story grant0/debug kit kept.
+  PlayerFactory:event/lazy;warehouse-only ambient. All24:
+  outline/lamp+spill;bird shadows/black retained.
+  No new GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur/fog/post;
+  cost unmeasured;§6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.
@@ -992,7 +994,7 @@
   Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;
   orbit≤35full→90zero/rootlegs/Llight/actionpriority/pausemodal;
   cleanup-hotalloc0/Advance-repeatApply0timebend.
-- **Accepted exception 2026-10-19, chest fixture:** LM65/on:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/GIhero3D3→black12m/shared-Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery-inventory-story0.
+- **Accepted exception 2026-10-19, chest fixture:** LM65:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/warehouse GIhero3D3→black12m/shared-Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery0.
 - **Accepted 2026-10-22, global jacket rig-only — user:**
   `PlayerJacketCloth`:all gameplay uses CombatTest rig-only;0live/baked cloth,
   contacts/wind. Rig/elbow folds/hand-opening/mirror-arms stay;Editor authoring stays.

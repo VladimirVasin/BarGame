@@ -36,7 +36,10 @@ namespace BarPromenade
         CombatNextWeapon,
         EquipShotgun,
         CutscenePause,
-        CutsceneRestart
+        CutsceneRestart,
+        PuzzlePreviousControl,
+        PuzzleNextControl,
+        PuzzleExit
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

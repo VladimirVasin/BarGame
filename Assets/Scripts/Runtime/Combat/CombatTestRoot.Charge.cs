@@ -203,7 +203,7 @@ namespace BarPromenade
             SuspendWarehouseAudio();
             ReleaseWarehouseAcoustics();
             Hero?.ClearWarehouseTorsoLook();
-            if (Flashlight != null) Flashlight.enabled = false;
+            flashlightEquipment?.SetPresentationSuppressed(true);
             AmmoSpawns?.SetInteractionEnabled(false);
             ResetPistolCrosshair();
             ClearWeaponPools();

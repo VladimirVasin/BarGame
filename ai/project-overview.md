@@ -78,7 +78,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- Sleep→Escher/three myth gates→warehouse; local lamps/abyss/session retained.
+- Sleep→three myth gates→warehouse;FP←→/E/Q;first→lamp pickup/equip.
   CombatTest:fish-key-gate;all3fish→power-music-spawn0.
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
   Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.

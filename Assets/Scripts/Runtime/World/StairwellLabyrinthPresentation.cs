@@ -13,14 +13,24 @@ namespace BarPromenade
         public Motion[] motions;
         public PuzzleNode[] puzzle_nodes;
         public Gate[] gates;
+        public RewardCabinet reward_cabinet;
         [Serializable] internal sealed class PuzzleNode
         {
             public string id, kind;
             public int stage;
-            public string[] parts;
-            public float step_angle;
+            public string[] parts, lever_parts;
+            public float step_angle, lever_angle;
+            public bool lever_follows_node;
+            public float[] lever_pivot, lever_axis;
             public float[] pivot, axis, travel, dock, facing, exit_dock, exit_facing, contact,
                 bounds_center, bounds_size;
+        }
+        [Serializable] internal sealed class RewardCabinet
+        {
+            public string[] parts;
+            public float[] pivot, axis, collider_center, collider_size, item_position,
+                item_euler, interaction_position;
+            public float open_angle;
         }
         [Serializable] internal sealed class Gate
         {

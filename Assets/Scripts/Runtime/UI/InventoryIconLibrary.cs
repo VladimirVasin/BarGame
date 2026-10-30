@@ -67,6 +67,15 @@ namespace BarPromenade
             Color32 amber = new Color32(190, 121, 48, 255);
             switch (itemId)
             {
+                case InventoryItemId.ChestFlashlight:
+                    painter.FillRect(10, 5, 12, 19, metal);
+                    painter.OutlineRect(9, 4, 14, 21, ink);
+                    painter.FillRect(12, 7, 2, 14, pale);
+                    painter.FillRect(8, 19, 16, 7, metal);
+                    painter.OutlineRect(7, 18, 18, 9, ink);
+                    painter.Ellipse(16, 22, 5, 3, pale);
+                    painter.EllipseOutline(16, 22, 5, 3, ink);
+                    break;
                 case InventoryItemId.LodgeGroupPhotograph:
                     // The same small framed group silhouette as the authored prop.
                     painter.FillRect(3, 6, 26, 20, new Color32(102, 73, 48, 255));

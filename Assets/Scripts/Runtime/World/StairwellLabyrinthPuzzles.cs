@@ -11,8 +11,10 @@ namespace BarPromenade
         private sealed class Node
         {
             internal StairwellLabyrinthManifest.PuzzleNode Plan;
-            internal Transform Root;
-            internal Vector3 Rest, Axis, Travel;
+            internal Transform Root, Lever;
+            internal Vector3 Rest, Axis, Travel, LeverAxis;
+            internal Quaternion LeverRest;
+            internal Renderer[] LeverRenderers;
         }
         private sealed class Gate
         {
@@ -28,7 +30,16 @@ namespace BarPromenade
         private StairwellLabyrinthPuzzleInteraction active;
         private StairwellInteriorAtmosphere atmosphere;
         private StairwellSoundscape soundscape;
+        private Transform cabinetLeaf;
+        private Quaternion cabinetRest;
+        private Vector3 cabinetAxis;
+        private Collider pickupTrigger;
+        public const string FlashlightSourceId = "stairwell.labyrinth.first_puzzle.flashlight";
         public StairwellLabyrinthPuzzleState State { get; private set; }
+        public StairwellLabyrinthPuzzleModeController PuzzleMode { get; private set; }
+        public WorldItemPickup FlashlightPickup { get; private set; }
+        public Transform CabinetLeaf => cabinetLeaf;
+        public bool IsCabinetOpen => State != null && State.CanPassGate(1);
         public IReadOnlyList<StairwellLabyrinthPuzzleInteraction> Controls { get; private set; } = Array.Empty<StairwellLabyrinthPuzzleInteraction>();
         public IReadOnlyList<Transform> PuzzleRoots { get; private set; } = Array.Empty<Transform>();
         public IReadOnlyList<Transform> GateRoots { get; private set; } = Array.Empty<Transform>();
@@ -52,6 +63,17 @@ namespace BarPromenade
                 MoveParts(roots[i], plan.parts, renderers, claimed);
                 nodes[i] = new Node { Plan = plan, Root = roots[i], Rest = rest, Axis = axis.normalized,
                     Travel = StairwellLabyrinthManifest.Vector(plan.travel) };
+                Node node = nodes[i];
+                if (!TryAction(plan.id, out _)) continue;
+                Vector3 leverPivot = StairwellLabyrinthManifest.Vector(plan.lever_pivot);
+                node.LeverAxis = StairwellLabyrinthManifest.Vector(plan.lever_axis);
+                node.Lever = CreatePivot("Handle " + plan.id, leverPivot);
+                if (plan.lever_follows_node) node.Lever.SetParent(node.Root, true);
+                MoveParts(node.Lever, plan.lever_parts, renderers, claimed);
+                node.LeverRest = node.Lever.localRotation;
+                node.LeverRenderers = new Renderer[plan.lever_parts.Length];
+                for (int part = 0; part < plan.lever_parts.Length; part++)
+                    node.LeverRenderers[part] = renderers[plan.lever_parts[part]];
             }
             PuzzleRoots = Array.AsReadOnly(roots);
             gates = new Gate[3];
@@ -70,6 +92,7 @@ namespace BarPromenade
                     Travel = StairwellLabyrinthManifest.Vector(plan.travel) };
             }
             GateRoots = Array.AsReadOnly(gateRoots);
+            PrepareCabinet(data.reward_cabinet, renderers, claimed);
             Shader clothShader = Resources.Load<Shader>("Shaders/Lit");
             if (clothShader == null) throw new InvalidOperationException("Missing project Lit shader for labyrinth cloth.");
             foreach (var part in data.parts)
@@ -114,14 +137,8 @@ namespace BarPromenade
             {
                 if (!TryAction(node.Plan.id, out StairwellLabyrinthPuzzleAction action)) continue;
                 var control = new GameObject("Operate " + node.Plan.id);
-                control.transform.SetParent(transform, false);
-                control.transform.localPosition = StairwellLabyrinthManifest.Vector(node.Plan.contact);
-                if (node.Plan.id == "bird-lift")
-                {
-                    // This handle is itself the moving part; the other controls operate remote linkages.
-                    control.transform.SetParent(node.Root, false);
-                    control.transform.localPosition = StairwellLabyrinthManifest.Vector(node.Plan.contact) - node.Rest;
-                }
+                control.transform.SetParent(node.Lever, false);
+                control.transform.position = transform.TransformPoint(StairwellLabyrinthManifest.Vector(node.Plan.contact));
                 var trigger = control.AddComponent<SphereCollider>();
                 trigger.isTrigger = true; trigger.radius = .20f;
                 var interaction = control.AddComponent<StairwellLabyrinthPuzzleInteraction>();
@@ -130,7 +147,49 @@ namespace BarPromenade
             }
             if (controls.Count != 12) throw new InvalidOperationException("Three labyrinth puzzles require exactly twelve distinct controls.");
             Controls = controls.AsReadOnly();
+            PuzzleMode = gameObject.AddComponent<StairwellLabyrinthPuzzleModeController>();
+            PuzzleMode.Initialize(this, player, controller);
+            CreateFlashlightPickup();
             Apply(State.Current);
+        }
+
+        public IReadOnlyList<Renderer> GetControlRenderers(StairwellLabyrinthPuzzleInteraction control)
+        {
+            if (control != null)
+                foreach (Node node in nodes)
+                    if (node.Plan.id == control.Id) return node.LeverRenderers;
+            return Array.Empty<Renderer>();
+        }
+
+        private void PrepareCabinet(StairwellLabyrinthManifest.RewardCabinet plan,
+            Dictionary<string, MeshRenderer> renderers, HashSet<string> claimed)
+        {
+            if (plan == null || !float.IsFinite(plan.open_angle) || plan.open_angle < 80f || plan.open_angle > 150f)
+                throw new InvalidOperationException("The first labyrinth puzzle requires its measured reward cabinet.");
+            cabinetAxis = StairwellLabyrinthManifest.Vector(plan.axis).normalized;
+            if (cabinetAxis.sqrMagnitude < .9f) throw new InvalidOperationException("The cabinet needs a rotation axis.");
+            cabinetLeaf = CreatePivot("Flashlight Cabinet Leaf", StairwellLabyrinthManifest.Vector(plan.pivot));
+            cabinetRest = cabinetLeaf.localRotation;
+            MoveParts(cabinetLeaf, plan.parts, renderers, claimed);
+            var collider = cabinetLeaf.gameObject.AddComponent<BoxCollider>();
+            collider.center = StairwellLabyrinthManifest.Vector(plan.collider_center);
+            collider.size = StairwellLabyrinthManifest.Vector(plan.collider_size);
+        }
+
+        private void CreateFlashlightPickup()
+        {
+            var plan = manifest.reward_cabinet;
+            FlashlightPickup = WorldItemPickup.Create(transform, new WorldItemPickupPlan(
+                FlashlightSourceId, InventoryItemId.ChestFlashlight, "interaction.take_flashlight",
+                StairwellLabyrinthManifest.Vector(plan.item_position), new Vector3(.05f, .1055f, .0845f),
+                "interaction.flashlight_taken"));
+            if (FlashlightPickup == null) return;
+            pickupTrigger = FlashlightPickup.GetComponent<Collider>();
+            FlashlightPickup.Model.localRotation = Quaternion.Euler(StairwellLabyrinthManifest.Vector(plan.item_euler));
+            // The trigger sits at the reachable shelf edge; the authored model stays on its support.
+            Vector3 itemPosition = FlashlightPickup.transform.position;
+            FlashlightPickup.transform.position = transform.TransformPoint(StairwellLabyrinthManifest.Vector(plan.interaction_position));
+            FlashlightPickup.Model.position += itemPosition - FlashlightPickup.transform.position;
         }
 
         public bool CanPassGate(int stage) => State != null && State.CanPassGate(stage);
@@ -165,19 +224,38 @@ namespace BarPromenade
                 if (blocked && (node.Plan.id == actionId || actionId == "carriage-send" && node.Plan.id == "carriage"))
                     value += Mathf.Sin(fraction * Mathf.PI) * .08f;
                 SetNode(node, value);
+                if (node.Lever != null && !node.Plan.lever_follows_node)
+                {
+                    float stroke = node.Plan.id == actionId ? Mathf.Sin(fraction * Mathf.PI) * (blocked ? .15f : 1f) : 0f;
+                    node.Lever.localRotation = node.LeverRest * Quaternion.AngleAxis(node.Plan.lever_angle * stroke,
+                        node.LeverAxis);
+                }
             }
             foreach (Gate gate in gates)
             {
                 float from = before.CanPassGate(gate.Stage) ? 1f : 0f, to = after.CanPassGate(gate.Stage) ? 1f : 0f;
                 gate.Root.localPosition = gate.Rest + gate.Travel * Mathf.Lerp(from, to, fraction);
             }
+            SetCabinet(Mathf.Lerp(before.CanPassGate(1) ? 1f : 0f, after.CanPassGate(1) ? 1f : 0f, fraction));
         }
 
         private void Apply(StairwellLabyrinthPuzzleState.Snapshot value)
         {
-            foreach (Node node in nodes) SetNode(node, Value(node.Plan.id, value));
+            foreach (Node node in nodes)
+            {
+                SetNode(node, Value(node.Plan.id, value));
+                if (node.Lever != null) node.Lever.localRotation = node.LeverRest;
+            }
             foreach (Gate gate in gates) gate.Root.localPosition = gate.Rest + gate.Travel * (value.CanPassGate(gate.Stage) ? 1f : 0f);
+            SetCabinet(value.CanPassGate(1) ? 1f : 0f);
+            if (FlashlightPickup != null)
+            {
+                FlashlightPickup.enabled = value.CanPassGate(1);
+                pickupTrigger.enabled = value.CanPassGate(1);
+            }
         }
+        private void SetCabinet(float fraction) => cabinetLeaf.localRotation = cabinetRest *
+            Quaternion.AngleAxis(manifest.reward_cabinet.open_angle * Mathf.Clamp01(fraction), cabinetAxis);
         private static void SetNode(Node node, float value) => node.Root.SetLocalPositionAndRotation(
             node.Rest + node.Travel * value, Quaternion.AngleAxis(node.Plan.step_angle * value, node.Axis));
         private static Material ClothMaterial(Shader shader, string label, Color color)
@@ -246,6 +324,7 @@ namespace BarPromenade
         }
         private void OnDisable()
         {
+            if (PuzzleMode != null) PuzzleMode.Cancel();
             if (active != null) active.Cancel();
         }
         private void OnDestroy()

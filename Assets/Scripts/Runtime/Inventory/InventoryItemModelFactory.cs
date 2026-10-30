@@ -85,6 +85,13 @@ namespace BarPromenade
 
             switch (itemId)
             {
+                case InventoryItemId.ChestFlashlight:
+                    GameObject flashlight = CombatFlashlightAssetProvider.CreateUnbound(parent);
+                    CombatFlashlightAssetProvider.SetLensLit(CombatFlashlightAssetProvider.FindLensRenderer(flashlight), false);
+                    // The passive model retains its imported metre scale; its
+                    // authored bottom rests on the pickup's support surface.
+                    flashlight.transform.localPosition = Vector3.up * .0555f;
+                    return flashlight.transform;
                 case InventoryItemId.WarehouseGateKey:
                     return WarehouseFishAssemblyAssets.CreateKey(parent).transform;
                 case InventoryItemId.RottenFishTailCan:

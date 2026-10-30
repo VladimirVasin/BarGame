@@ -20,7 +20,7 @@ namespace BarPromenade
             }
             SubscribeEndlessSpawnGate();
             AcquireWarehouseAcoustics();
-            if (Flashlight != null) Flashlight.enabled = true;
+            flashlightEquipment?.SetPresentationSuppressed(false);
             AmmoSpawns?.SetInteractionEnabled(Hero != null && !Hero.State.IsDefeated && pistolApplicationFocused);
         }
 

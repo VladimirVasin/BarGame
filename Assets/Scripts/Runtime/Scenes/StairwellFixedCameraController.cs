@@ -197,8 +197,21 @@ namespace BarPromenade
         private bool returningToFixed;
         private float fixedReturnElapsed, fixedReturnLens;
         private Pose fixedReturnPose;
+        private object puzzleViewOwner;
 
         public bool IsLabyrinthOrbit => orbitInLabyrinth;
+
+        public bool TryAcquirePuzzleView(object owner)
+        {
+            if (owner == null || puzzleViewOwner != null) return false;
+            puzzleViewOwner = owner;
+            return true;
+        }
+
+        public void ReleasePuzzleView(object owner)
+        {
+            if (ReferenceEquals(puzzleViewOwner, owner)) puzzleViewOwner = null;
+        }
 
         public void ConfigureLabyrinth(Transform worldSpace, StairwellLabyrinthPlan plan)
         {
@@ -393,6 +406,8 @@ namespace BarPromenade
 
         private void RefreshSelection(bool forceApply)
         {
+            if (puzzleViewOwner is UnityEngine.Object unityOwner && unityOwner == null) puzzleViewOwner = null;
+            if (puzzleViewOwner != null) return;
             if (cameraFollow == null ||
                 target == null ||
                 selector == null)

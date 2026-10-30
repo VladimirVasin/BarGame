@@ -1,11 +1,11 @@
 {
-  "schema_version": 4,
-  "generator_version": "5.0.0",
-  "signature": "25c77b3b10dda14b20ea31f58f52042b7ee87afc5d32460efd34b3342541ab4a",
-  "contract_signature": "fe977c79700f9ba0e02f4e2b759ad86d5730722e381f778454afb2b434caf22c",
+  "schema_version": 5,
+  "generator_version": "6.0.0",
+  "signature": "f40bf772f4bddeee0351e12486506f0947a0531aec58a6d13261d1e6730528fb",
+  "contract_signature": "67bd68c762f1ded50b24ad273dbea28b043d26ef598ba4085a76c75fc041ddfc",
   "report": {
-    "meshes": 264,
-    "triangles": 221760,
+    "meshes": 280,
+    "triangles": 222080,
     "flights": 3,
     "steps_per_flight": 36,
     "clear_width": 3.2,
@@ -17,6 +17,8 @@
     "lights": 35,
     "interior_volumes": 3,
     "puzzle_rooms": 3,
+    "puzzle_handles": 12,
+    "reward_cabinets": 1,
     "moving_assemblies": 5,
     "abyss_floor": -60,
     "short_stair_runs": 34,
@@ -3776,11 +3778,11 @@
         21.375
       ],
       "bounds_max": [
-        -31.755,
-        9.8,
-        24.625
+        -29.64,
+        10.18,
+        24.9
       ],
-      "triangles": 12
+      "triangles": 24
     },
     {
       "name": "Stage1__PuzzleFrame__Wood",
@@ -3868,6 +3870,23 @@
       "triangles": 56
     },
     {
+      "name": "Stage1__Lever_roll-0__Steel",
+      "stage": 1,
+      "chunk": "Lever_roll-0",
+      "role": "Steel",
+      "bounds_min": [
+        -31.15,
+        9.52,
+        22.285
+      ],
+      "bounds_max": [
+        -30.91,
+        9.59,
+        22.395
+      ],
+      "triangles": 56
+    },
+    {
       "name": "Stage1__PuzzleFrame__Steel",
       "stage": 1,
       "chunk": "PuzzleFrame",
@@ -3878,11 +3897,11 @@
         22.22
       ],
       "bounds_max": [
-        -30.91,
-        9.59,
+        -31.045,
+        9.4475,
         24.1
       ],
-      "triangles": 560
+      "triangles": 336
     },
     {
       "name": "Stage1__Puzzle_roll-1__Weave",
@@ -3949,6 +3968,23 @@
         -31.56,
         9.852500000000001,
         24.185
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Lever_roll-1__Steel",
+      "stage": 1,
+      "chunk": "Lever_roll-1",
+      "role": "Steel",
+      "bounds_min": [
+        -31.15,
+        9.52,
+        22.945
+      ],
+      "bounds_max": [
+        -30.91,
+        9.59,
+        23.055
       ],
       "triangles": 56
     },
@@ -4021,6 +4057,23 @@
       "triangles": 56
     },
     {
+      "name": "Stage1__Lever_roll-2__Steel",
+      "stage": 1,
+      "chunk": "Lever_roll-2",
+      "role": "Steel",
+      "bounds_min": [
+        -31.15,
+        9.52,
+        23.605
+      ],
+      "bounds_max": [
+        -30.91,
+        9.59,
+        23.715
+      ],
+      "triangles": 56
+    },
+    {
       "name": "Stage1__Puzzle_cloth-bolt__Steel",
       "stage": 1,
       "chunk": "Puzzle_cloth-bolt",
@@ -4036,6 +4089,91 @@
         24.43
       ],
       "triangles": 56
+    },
+    {
+      "name": "Stage1__Lever_cloth-bolt__Steel",
+      "stage": 1,
+      "chunk": "Lever_cloth-bolt",
+      "role": "Steel",
+      "bounds_min": [
+        -31.15,
+        9.52,
+        23.925
+      ],
+      "bounds_max": [
+        -30.91,
+        9.59,
+        24.035
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__PuzzleFrame__WornSteel",
+      "stage": 1,
+      "chunk": "PuzzleFrame",
+      "role": "WornSteel",
+      "bounds_min": [
+        -30.1325,
+        9.0175,
+        24.0975
+      ],
+      "bounds_max": [
+        -29.63,
+        10.182500000000001,
+        24.9025
+      ],
+      "triangles": 140
+    },
+    {
+      "name": "Stage1__RewardCabinetShelf__Steel",
+      "stage": 1,
+      "chunk": "RewardCabinetShelf",
+      "role": "Steel",
+      "bounds_min": [
+        -30.1,
+        9.3375,
+        24.13
+      ],
+      "bounds_max": [
+        -29.66,
+        9.3625,
+        24.87
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__RewardCabinetLeaf__Steel",
+      "stage": 1,
+      "chunk": "RewardCabinetLeaf",
+      "role": "Steel",
+      "bounds_min": [
+        -29.6375,
+        9.06,
+        24.125
+      ],
+      "bounds_max": [
+        -29.5925,
+        10.14,
+        24.875
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__RewardCabinetLeaf__WornSteel",
+      "stage": 1,
+      "chunk": "RewardCabinetLeaf",
+      "role": "WornSteel",
+      "bounds_min": [
+        -29.6375,
+        9.16,
+        24.1025
+      ],
+      "bounds_max": [
+        -29.5325,
+        10.040000000000001,
+        24.7825
+      ],
+      "triangles": 84
     },
     {
       "name": "Stage2__PuzzleFrame__Collision",
@@ -4065,11 +4203,11 @@
         12.675
       ],
       "bounds_max": [
-        -9.879999999999999,
+        -10.015,
         14.6,
         15.325
       ],
-      "triangles": 924
+      "triangles": 700
     },
     {
       "name": "Stage2__Puzzle_shutter__WornSteel",
@@ -4225,6 +4363,74 @@
       "triangles": 28
     },
     {
+      "name": "Stage2__Lever_shutter__Steel",
+      "stage": 2,
+      "chunk": "Lever_shutter",
+      "role": "Steel",
+      "bounds_min": [
+        -10.120000000000001,
+        13.120000000000001,
+        13.025
+      ],
+      "bounds_max": [
+        -9.879999999999999,
+        13.19,
+        13.135
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage2__Lever_shutter-stop__Steel",
+      "stage": 2,
+      "chunk": "Lever_shutter-stop",
+      "role": "Steel",
+      "bounds_min": [
+        -10.120000000000001,
+        13.120000000000001,
+        13.645
+      ],
+      "bounds_max": [
+        -9.879999999999999,
+        13.19,
+        13.755
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage2__Lever_weight-switch__Steel",
+      "stage": 2,
+      "chunk": "Lever_weight-switch",
+      "role": "Steel",
+      "bounds_min": [
+        -10.120000000000001,
+        13.120000000000001,
+        14.265
+      ],
+      "bounds_max": [
+        -9.879999999999999,
+        13.19,
+        14.375
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage2__Lever_carriage-send__Steel",
+      "stage": 2,
+      "chunk": "Lever_carriage-send",
+      "role": "Steel",
+      "bounds_min": [
+        -10.120000000000001,
+        13.120000000000001,
+        14.895
+      ],
+      "bounds_max": [
+        -9.879999999999999,
+        13.19,
+        15.005
+      ],
+      "triangles": 56
+    },
+    {
       "name": "Stage3__PuzzleFrame__Collision",
       "stage": 3,
       "chunk": "PuzzleFrame",
@@ -4252,11 +4458,11 @@
         72.56
       ],
       "bounds_max": [
-        16.29,
+        16.155,
         18.259999999999998,
         75.44
       ],
-      "triangles": 616
+      "triangles": 448
     },
     {
       "name": "Stage3__Puzzle_bird-0__WornSteel",
@@ -4289,6 +4495,23 @@
         15.2025,
         17.4725,
         73.51
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage3__Lever_bird-0__Steel",
+      "stage": 3,
+      "chunk": "Lever_bird-0",
+      "role": "Steel",
+      "bounds_min": [
+        16.05,
+        16.72,
+        73.285
+      ],
+      "bounds_max": [
+        16.29,
+        16.79,
+        73.395
       ],
       "triangles": 56
     },
@@ -4344,6 +4567,23 @@
       "triangles": 84
     },
     {
+      "name": "Stage3__Lever_bird-1__Steel",
+      "stage": 3,
+      "chunk": "Lever_bird-1",
+      "role": "Steel",
+      "bounds_min": [
+        16.05,
+        16.72,
+        73.945
+      ],
+      "bounds_max": [
+        16.29,
+        16.79,
+        74.055
+      ],
+      "triangles": 56
+    },
+    {
       "name": "Stage3__Puzzle_bird-2__WornSteel",
       "stage": 3,
       "chunk": "Puzzle_bird-2",
@@ -4378,6 +4618,23 @@
       "triangles": 56
     },
     {
+      "name": "Stage3__Lever_bird-2__Steel",
+      "stage": 3,
+      "chunk": "Lever_bird-2",
+      "role": "Steel",
+      "bounds_min": [
+        16.05,
+        16.72,
+        74.605
+      ],
+      "bounds_max": [
+        16.29,
+        16.79,
+        74.715
+      ],
+      "triangles": 56
+    },
+    {
       "name": "Stage3__Puzzle_bird-lift__Steel",
       "stage": 3,
       "chunk": "Puzzle_bird-lift",
@@ -4391,6 +4648,23 @@
         16.2875,
         17.09,
         75.1575
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Lever_bird-lift__Steel",
+      "stage": 3,
+      "chunk": "Lever_bird-lift",
+      "role": "Steel",
+      "bounds_min": [
+        16.2025,
+        16.7275,
+        75.0
+      ],
+      "bounds_max": [
+        16.2975,
+        16.7825,
+        75.24
       ],
       "triangles": 28
     },
@@ -4919,11 +5193,26 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -31.15,
+        9.555,
+        22.34
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage1__Puzzle_roll-0__Weave",
         "Stage1__Puzzle_roll-0__Rubber",
         "Stage1__Puzzle_roll-0__Thread",
         "Stage1__Puzzle_roll-0__Steel"
+      ],
+      "lever_parts": [
+        "Stage1__Lever_roll-0__Steel"
       ]
     },
     {
@@ -4981,11 +5270,26 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -31.15,
+        9.555,
+        23.0
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage1__Puzzle_roll-1__Weave",
         "Stage1__Puzzle_roll-1__Rubber",
         "Stage1__Puzzle_roll-1__Thread",
         "Stage1__Puzzle_roll-1__Steel"
+      ],
+      "lever_parts": [
+        "Stage1__Lever_roll-1__Steel"
       ]
     },
     {
@@ -5043,11 +5347,26 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -31.15,
+        9.555,
+        23.66
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage1__Puzzle_roll-2__Weave",
         "Stage1__Puzzle_roll-2__Rubber",
         "Stage1__Puzzle_roll-2__Thread",
         "Stage1__Puzzle_roll-2__Steel"
+      ],
+      "lever_parts": [
+        "Stage1__Lever_roll-2__Steel"
       ]
     },
     {
@@ -5105,8 +5424,23 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -31.15,
+        9.555,
+        23.98
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage1__Puzzle_cloth-bolt__Steel"
+      ],
+      "lever_parts": [
+        "Stage1__Lever_cloth-bolt__Steel"
       ]
     },
     {
@@ -5164,9 +5498,24 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -10.120000000000001,
+        13.155,
+        13.08
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage2__Puzzle_shutter__WornSteel",
         "Stage2__Puzzle_shutter__Steel"
+      ],
+      "lever_parts": [
+        "Stage2__Lever_shutter__Steel"
       ]
     },
     {
@@ -5224,8 +5573,23 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -10.120000000000001,
+        13.155,
+        13.7
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage2__Puzzle_shutter-stop__Steel"
+      ],
+      "lever_parts": [
+        "Stage2__Lever_shutter-stop__Steel"
       ]
     },
     {
@@ -5283,8 +5647,23 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -10.120000000000001,
+        13.155,
+        14.32
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage2__Puzzle_weight-switch__Steel"
+      ],
+      "lever_parts": [
+        "Stage2__Lever_weight-switch__Steel"
       ]
     },
     {
@@ -5462,8 +5841,23 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        -10.120000000000001,
+        13.155,
+        14.95
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage2__Puzzle_carriage-send__Steel"
+      ],
+      "lever_parts": [
+        "Stage2__Lever_carriage-send__Steel"
       ]
     },
     {
@@ -5521,9 +5915,24 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        16.05,
+        16.755,
+        73.34
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage3__Puzzle_bird-0__WornSteel",
         "Stage3__Puzzle_bird-0__Steel"
+      ],
+      "lever_parts": [
+        "Stage3__Lever_bird-0__Steel"
       ]
     },
     {
@@ -5581,10 +5990,25 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        16.05,
+        16.755,
+        74.0
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage3__Puzzle_bird-1__WornSteel",
         "Stage3__Puzzle_bird-1__Steel",
         "Stage3__Puzzle_bird-1__Thread"
+      ],
+      "lever_parts": [
+        "Stage3__Lever_bird-1__Steel"
       ]
     },
     {
@@ -5642,9 +6066,24 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        16.05,
+        16.755,
+        74.66
+      ],
+      "lever_axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "lever_angle": -28,
+      "lever_follows_node": false,
       "parts": [
         "Stage3__Puzzle_bird-2__WornSteel",
         "Stage3__Puzzle_bird-2__Steel"
+      ],
+      "lever_parts": [
+        "Stage3__Lever_bird-2__Steel"
       ]
     },
     {
@@ -5702,8 +6141,23 @@
         0.26,
         0.26
       ],
+      "lever_pivot": [
+        16.25,
+        16.755,
+        75.12
+      ],
+      "lever_axis": [
+        0,
+        1,
+        0
+      ],
+      "lever_angle": 0,
+      "lever_follows_node": true,
       "parts": [
         "Stage3__Puzzle_bird-lift__Steel"
+      ],
+      "lever_parts": [
+        "Stage3__Lever_bird-lift__Steel"
       ]
     }
   ],
@@ -5790,6 +6244,50 @@
       ]
     }
   ],
+  "reward_cabinet": {
+    "id": "flashlight-cabinet",
+    "stage": 1,
+    "pivot": [
+      -29.615,
+      9.6,
+      24.125
+    ],
+    "axis": [
+      0,
+      1,
+      0
+    ],
+    "open_angle": 105,
+    "collider_center": [
+      2.296212748401287e-17,
+      0.0,
+      0.375
+    ],
+    "collider_size": [
+      0.045,
+      1.08,
+      0.75
+    ],
+    "item_position": [
+      -29.87,
+      9.3625,
+      24.5
+    ],
+    "item_euler": [
+      0,
+      -90,
+      0
+    ],
+    "interaction_position": [
+      -29.52,
+      9.5,
+      24.5
+    ],
+    "parts": [
+      "Stage1__RewardCabinetLeaf__Steel",
+      "Stage1__RewardCabinetLeaf__WornSteel"
+    ]
+  },
   "contract": {
     "main": [
       [
@@ -7977,7 +8475,7 @@
         ]
       ]
     ],
-    "puzzle_version": 2,
+    "puzzle_version": 3,
     "abyss_floor": -60,
     "warehouse_chart_version": 1
   }

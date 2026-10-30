@@ -25,7 +25,8 @@ namespace BarPromenade
         RottenFishTailCan = 17,
         RottenFishBellyCan = 18,
         RottenFishHeadCan = 19,
-        WarehouseGateKey = 20
+        WarehouseGateKey = 20,
+        ChestFlashlight = 21
     }
 
     public enum InventoryItemCategory
@@ -57,7 +58,7 @@ namespace BarPromenade
         public string NameLocalizationKey { get; }
         public string DescriptionLocalizationKey { get; }
         public int MaximumStack { get; }
-        public bool IsEquippable => Category == InventoryItemCategory.Clothing;
+        public bool IsEquippable => Category == InventoryItemCategory.Clothing || Id == InventoryItemId.ChestFlashlight;
     }
 
     public readonly struct InventoryItemStack
@@ -179,7 +180,9 @@ namespace BarPromenade
             new InventoryItemDefinition(InventoryItemId.RottenFishHeadCan, InventoryItemCategory.KeyItem,
                 "inventory.item.rotten_fish_head_can.name", "inventory.item.rotten_fish_head_can.description", 1),
             new InventoryItemDefinition(InventoryItemId.WarehouseGateKey, InventoryItemCategory.KeyItem,
-                "inventory.item.warehouse_gate_key.name", "inventory.item.warehouse_gate_key.description", 1)
+                "inventory.item.warehouse_gate_key.name", "inventory.item.warehouse_gate_key.description", 1),
+            new InventoryItemDefinition(InventoryItemId.ChestFlashlight, InventoryItemCategory.Tool,
+                "inventory.item.chest_flashlight.name", "inventory.item.chest_flashlight.description", 1)
         };
 
         private static readonly IReadOnlyList<InventoryItemDefinition>

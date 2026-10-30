@@ -107,6 +107,7 @@ namespace BarPromenade
         public float HitStopSecondsConsumed { get; private set; }
         public CombatSparkEffects SparkEffects { get; private set; }
         public CombatChestFlashlight Flashlight { get; private set; }
+        private PlayerChestFlashlightController flashlightEquipment;
         internal long SimulationPoseTicks { get; private set; }
         internal long SimulationCaptureTicks { get; private set; }
         internal long SimulationFlightTicks { get; private set; }
@@ -160,8 +161,17 @@ namespace BarPromenade
             Hero.InitializeHero(Player, selection.Loadout);
             if (WarehousePlan != null)
             {
-                Flashlight = Player.GameObject.AddComponent<CombatChestFlashlight>();
-                Flashlight.Initialize((Player3DCharacterPresentation)Player.Visual);
+                flashlightEquipment = Player.GameObject.GetComponent<PlayerChestFlashlightController>();
+                flashlightEquipment.SetWarehouseVisibility(true);
+                if (!IsStoryContinuation)
+                {
+                    // The standalone test arena owns its test kit. A story
+                    // arrival keeps only the lamp actually found and equipped.
+                    if (!GameSessionState.HasInventoryItem(InventoryItemId.ChestFlashlight))
+                        GameSessionState.TryAddInventoryItem(InventoryItemId.ChestFlashlight);
+                    GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.ChestFlashlight, true);
+                }
+                Flashlight = flashlightEquipment.EnsureInitialized();
             }
             InitializeWeaponPools();
             InitializeAmmoPickups();

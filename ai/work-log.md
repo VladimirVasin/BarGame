@@ -24,16 +24,16 @@ UNIQUE_SURFACE_DAMAGE_OK passed. Clock readings leave time/audio unchanged;
 garment leg wear differs, paired forearms/patch/UV/alpha stay. Final balcony seals
 only after safe indoor return; ordinary states restore.
 
-Stairwell: three distinct Philomela-myth mechanisms use shared positioned rig/
-hand contacts; retained solutions open physical graph-cut gates. Statue/initial
-stairs retain their lighting; first flight starts presence lamp/lens/hum/heavy
-contactor, with black departed sectors. Ambient/SH/fog/reflections/grain cannot
-lift black; lower authored supports/stairs vanish before finite ends. Viewed
-frames corrected floating controls, unreachable docks and unlit bird-lift.
-Metre UV1/furniture collision, orbit/stone-head/warehouse session stay.
+Stairwell: myth gates/session retained; E opens FP, arrows select/E operates/Q
+returns. Shared rig/grips stay live; whole-hero/wardrobe/accessory/shadow lease
+hides FP and restores exact states on exit/disable. Blender handles have pivots/
+contours; solved1 opens cabinet, shared pickup grants once, inventory equips.
+Story warehouse no longer grants a lamp; debug kit stays. Lamp ambient is
+warehouse-only. Initial light/presence22/24m/two Hard lamps/black depths stay.
 STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK/DETERMINISM_OK and
-AreaCaptureFixture.StairwellLabyrinthPuzzles passed; frames reviewed.
-Radius22/24m/two Hard lamps: StairwellLabyrinthLightRadius passed; views reviewed.
+AreaCaptureFixture.StairwellLabyrinthPuzzleModeAndFlashlight passed; frames
+reviewed. Earlier StairwellLabyrinthLightRadius remains verified.
+ChestFlashlight validation finds prior hero-digest drift; FBX/contact measurements match.
 
 Balcony: lip contact/index-middle pinch/thumb faceward/shaft clearance;
 shoulder-profile orbit/City ring/rear, separate rain/NPC limits. No beam/north

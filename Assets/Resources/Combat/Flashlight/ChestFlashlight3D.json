@@ -77,8 +77,9 @@
       ]
     }
   ],
-  "test_only": true,
-  "always_on_warehouse_only": true,
+  "test_only": false,
+  "always_on_warehouse_only": false,
+  "session_inventory_equipment": true,
   "mount": {
     "bone": "chest",
     "reference_action": "Relaxed",

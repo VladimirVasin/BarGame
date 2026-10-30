@@ -2007,18 +2007,20 @@ cemetery:own interiors/returns.
   then activates only after the final blackout;
 - `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; street/middle/
   apartment seams/upper debris. Sleep retains lower walls/flights/columns,
-  breaks back/roof/seals descent. Escher: domestic→shaft→machinery, branches/
-  loops/sideways scenery over black abyss; enclosed/guarded normal-gravity paths.
-  Shared-rig E rooms/controls: woven image, cloth delivery, shadow-read birds.
-  Physical gates cut every onward route;
-  reversible attempts/monotonic session solutions; warehouse requires all three.
-  Lamp/fan/weight/vent/cloth move with causal audio/pause/cleanup. Plaster/wood→
-  concrete/steel/red; third-person/mouse above, fixed below. Statue/initial stairs
-  retain their light until the first flight. Beyond it, two shadowed lamps
-  on22m/off24m; lens/hum/contactor follow.
-  Outside black (ambient/sun/fog/reflection/grain0). Lower supports vanish before finite ends; floor unseen.
+  breaks back/roof/seals descent. Enclosed/guarded normal-gravity Escher paths:
+  domestic→shaft→machines/branches/loops/sideways scenery over black abyss.
+  E→first-person puzzle;←/→ selects outlined lever/E operates/Q returns to
+  third-person traversal;lower stairs fixed. Shared rig/grips:weave,delivery,
+  shadow-read birds. Gates block onward routes;reversible attempts/monotonic
+  session solutions;all three→warehouse. First opens cabinet→shared item
+  pickup/confirm→inventory lamp/equip. Lamp/fan/weight/vent/cloth:causal audio/
+  pause/cleanup. Plaster/wood→concrete/steel/red. Statue/initial light stays;
+  first flight:2shadowed lamps22/24m/lens-hum-contactor;return restores.
+  Outside:black ambient/sun/fog/reflection/grain. Lower supports vanish before
+  finite ends;floor unseen;equipped chest beam preserves bird projections.
   Stone-head E Cut leases hero/shadow; live Cat/grant/quest unchanged.
-  Covered Single load retains session; Endless/full kit/entry seal/fish/key/ambush.
+  Covered Single load retains session;Endless/weapon kit/entry seal/fish/key/ambush.
+  Story keeps lamp ownership/equip;direct Debug alone seeds it.
   Retry restores HP/ammo; story blocks preparation/new layout; menu tests stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
@@ -2261,15 +2263,14 @@ cemetery:own interiors/returns.
    centres a compact preview without an inner frame, with compact text/buttons;
    fish cans use a smaller inspection scale.
    The hidden unscaled preview stage reuses Home/shop bottle/egg/stew/noodles/loaf,
-   warehouse fish cans and inventory key/lighter geometry. A
-  pure catalog and ordered stack state begin every new run with apartment keys
-  and a lighter, persist across scene loads and reset with the session. Current
-  clothing has a separate equipped flag, with `Используется` / `Не используется`
-  and `Надеть` / `Снять` for the selected scarf; its icon is yellow like the
-  garment. Equipment does not consume the
-  item, requires ownership and clears when its last unit is removed; a new
-  game resets both collection and equipment. `PlayerFactory` installs the
-  optional `PlayerScarfController` on the shared hero. Its separate imported
+   warehouse fish cans,key/lighter/chest lamp geometry. Catalog/stacks:
+  starter keys/lighter;session persists across scenes/reset.
+  Scarf/chest lamp:independent equipped flags/status,
+  `Надеть`/`Снять`;scarf icon matches its yellow cloth. Equipping requires
+  ownership,never consumes;last-item removal clears it/New Game resets both.
+  `PlayerFactory` installs `PlayerScarfController` and lazy,event-owned
+  `PlayerChestFlashlightController`;warehouse ambient binding is opt-in only.
+  The scarf's separate imported
   yellow wrap covers the neck and nape, and the lower face when raised. After
   `5 s` of free third-person play it lowers everywhere except Alpine Village,
   where it rises. Travel keeps the prior resting posture; first-person views,

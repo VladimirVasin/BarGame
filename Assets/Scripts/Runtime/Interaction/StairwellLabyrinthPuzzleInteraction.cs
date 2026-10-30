@@ -25,12 +25,14 @@ namespace BarPromenade
         public PlayerDoorActionPlan Plan { get; private set; }
         public bool OwnsActiveInteraction => owns;
         public Vector3 InteractionPosition => transform.position;
+        public Vector3 CameraFocusPosition { get; private set; }
         public Transform RightGrip => hands?.RightGrip;
         public float RightWristDistance => hands?.RightWristDistance ?? 0f;
         public float RightReachLimit => hands?.RightReachLimit ?? 0f;
         public float ContactWeight { get; private set; }
         public event Action<bool> InteractionFinished;
-        public string PromptKey => Action == StairwellLabyrinthPuzzleAction.ClothBolt ? "interaction.labyrinth_bolt" :
+        public string PromptKey => "interaction.labyrinth_enter";
+        public string ActionPromptKey => Action == StairwellLabyrinthPuzzleAction.ClothBolt ? "interaction.labyrinth_bolt" :
             Action == StairwellLabyrinthPuzzleAction.Shutter ? "interaction.labyrinth_shutter" :
             Action == StairwellLabyrinthPuzzleAction.ShutterStop ? "interaction.labyrinth_stop" :
             Action == StairwellLabyrinthPuzzleAction.WeightSwitch ? "interaction.labyrinth_weight" :
@@ -46,6 +48,7 @@ namespace BarPromenade
             owner = puzzles; player = runtime; controller = shared;
             Id = node.id; Stage = node.stage; Action = action;
             Transform space = puzzles.transform;
+            CameraFocusPosition = space.TransformPoint(StairwellLabyrinthManifest.Vector(node.pivot));
             Vector3 entry = space.TransformPoint(StairwellLabyrinthManifest.Vector(node.dock));
             Vector3 exit = space.TransformPoint(StairwellLabyrinthManifest.Vector(node.exit_dock));
             Plan = new PlayerDoorActionPlan(InteractionPosition,
@@ -61,6 +64,7 @@ namespace BarPromenade
         }
 
         public bool CanInteract(PlayerInteractor interactor) => isActiveAndEnabled && !owns && owner != null &&
+            owner.PuzzleMode != null && !owner.PuzzleMode.IsActive &&
             owner.CanOperate(this) && controller != null && controller.isActiveAndEnabled &&
             controller.Phase == PlayerAnimatedInteractionPhase.Idle && interactor != null &&
             interactor == player.Interactor && interactor.InputEnabled && !GameTimeScaleRuntime.IsPaused &&
@@ -70,7 +74,15 @@ namespace BarPromenade
 
         public bool Begin()
         {
-            if (!CanInteract(player.Interactor) || !owner.TryAcquire(this)) return false;
+            return CanInteract(player.Interactor) && owner.PuzzleMode.Begin(this);
+        }
+
+        public bool BeginFromPuzzleMode(StairwellLabyrinthPuzzleModeController mode)
+        {
+            if (mode == null || owner == null || mode != owner.PuzzleMode || !mode.Owns(this) ||
+                !isActiveAndEnabled || owns || controller == null || !controller.isActiveAndEnabled ||
+                controller.Phase != PlayerAnimatedInteractionPhase.Idle || GameTimeScaleRuntime.IsPaused ||
+                SceneTransitionService.IsTransitioning || !owner.TryAcquire(this)) return false;
             before = owner.State.Current;
             expectedRevision = owner.State.Revision;
             outcome = owner.State.Preview(Action, out after);

@@ -116,7 +116,7 @@ def floor_at(row,p):
 def contract():
     return dict(main=MAIN,branches=BRANCHES,supports=supports(),lights=LIGHTS,light_directions=LIGHT_DIRECTIONS,
                 scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH,
-                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=2,abyss_floor=-60,warehouse_chart_version=1)
+                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=3,abyss_floor=-60,warehouse_chart_version=1)
 
 
 def contract_signature():
@@ -199,7 +199,7 @@ def validate_warehouse_charts(groups):
 
 def design_puzzles(add):
     """Passive solids and measured contacts; runtime owns only constrained pivots."""
-    nodes=[];gates=[]
+    nodes=[];gates=[];reward=None
     for room in ROOMS:
         stage=room['stage'];origin=room['door'];rotation=(0,-90,0)
         def wp(p):
@@ -216,9 +216,14 @@ def design_puzzles(add):
                        exit_dock=wp(dock),exit_facing=(-1,0,0),bounds_center=wp(contact),bounds_size=(.26,.26,.26))
             nodes.append(value);return value['chunk']
         def lever(id,x,z=2.45):
-            # Captive handles; no loose key/resource can be lost.
-            box('Steel',(x,1.155,z),(.11,.07,.08))
-            box('Steel',(x,1.155,z+.10),(.035,.035,.20))
+            # Each moving grip has its own measured pivot and meshes. Fixed
+            # stands/linkages remain in the common frame, never in the outline.
+            target=next(value for value in nodes if value['id']==id)
+            target.update(lever_chunk='Lever_'+id,lever_pivot=wp((x,1.155,z+.20)),
+                          lever_axis=rotated_point((1,0,0),rotation),lever_angle=-28,
+                          lever_follows_node=False)
+            box('Steel',(x,1.155,z),(.11,.07,.08),target['lever_chunk'])
+            box('Steel',(x,1.155,z+.10),(.035,.035,.20),target['lever_chunk'])
             box('Steel',(x,.52,z+.23),(.075,1.04,.10))
             box('Steel',(x,.035,z+.23),(.24,.07,.27))
             box('Steel',(x,1.02,(z+.23+3.3)/2),(.055,.055,3.3-z-.23))
@@ -250,6 +255,22 @@ def design_puzzles(add):
             box('Steel',(1.38,1.42,3.14),(.10,1.12,.10),chunk)
             box('Steel',(1.18,1.155,3.14),(.45,.075,.10),chunk)
             lever('cloth-bolt',.98)
+            # A plain wall cabinet keeps the light physically behind a real
+            # leaf until the first puzzle releases its latch. No reward glow.
+            for x in (1.12,1.88):box('WornSteel',(x,1.20,1.38),(.045,1.16,.50))
+            for y in (.64,1.76):box('WornSteel',(1.50,y,1.38),(.80,.045,.50))
+            box('WornSteel',(1.50,1.20,1.61),(.80,1.16,.045))
+            box('Steel',(1.50,.95,1.38),(.74,.025,.44),'RewardCabinetShelf')
+            box('Collision',(1.50,1.20,1.39),(.80,1.16,.50),bevel=0)
+            leaf='RewardCabinetLeaf'
+            box('Steel',(1.50,1.20,1.115),(.75,1.08,.045),leaf)
+            box('WornSteel',(1.76,1.20,1.065),(.045,.16,.065),leaf)
+            for y in (.82,1.58):box('WornSteel',(1.13,y,1.10),(.055,.12,.075),leaf)
+            reward=dict(id='flashlight-cabinet',stage=1,chunk=leaf,pivot=wp((1.125,1.20,1.115)),
+                        axis=(0,1,0),open_angle=105,
+                        collider_center=rotated_point((.375,0,0),rotation),collider_size=(.045,1.08,.75),
+                        item_position=wp((1.50,.9625,1.37)),item_euler=(0,-90,0),
+                        interaction_position=wp((1.50,1.10,1.02)))
         elif stage==2:
             # A real little delivery apparatus: shutter, retaining pawl,
             # switchable counterweight and captive cloth carriage.
@@ -272,7 +293,8 @@ def design_puzzles(add):
             box('Thread',(-.68,.89,2.96),(.035,.012,.38),chunk,.001)
             chunk=node('carriage-send','carriage-send',(.95,1.155,2.48),(.95,1.155,2.42),step=0)
             box('Steel',(.95,1.155,2.48),(.15,.055,.12),chunk)
-            for x in (-.92,-.30,.32,.95):lever('transfer',x,2.42)
+            for id,x in zip(('shutter','shutter-stop','weight-switch','carriage-send'),(-.92,-.30,.32,.95)):
+                lever(id,x,2.42)
             for x in (-1.0,-.36):box('Steel',(x,.69,3.52),(.045,.045,1.85))
         else:
             # Behind an open maintenance frame the actual stop tabs cast the
@@ -298,6 +320,10 @@ def design_puzzles(add):
                 box('Steel',(x+.25,y-.30,3.52),(.08,.16,.16))
             chunk=node('bird-lift','bird-lift',(1.12,1.155,2.25),(1.12,1.155,2.25),step=0,travel=(0,.3,0))
             box('Steel',(1.12,1.30,2.25),(.075,.38,.075),chunk)
+            target=nodes[-1]
+            target.update(lever_chunk='Lever_bird-lift',lever_pivot=wp((1.12,1.155,2.25)),
+                          lever_axis=(0,1,0),lever_angle=0,lever_follows_node=True)
+            box('Steel',(1.12,1.155,2.25),(.24,.055,.095),target['lever_chunk'])
             # A light matte receiving surface, non-emissive and physically part
             # of the room, catches the shadows rather than drawing fake birds.
             box('Cloth',(0,1.67,4.265),(2.94,1.78,.018))
@@ -316,7 +342,7 @@ def design_puzzles(add):
         c=(pivot[0],pivot[1]+3.80,pivot[2]);gb('WornSteel',c,(.24,.24,3.7) if normal[0] else (3.7,.24,.24),False)
         gates.append(dict(id='gate-'+str(stage),stage=stage,chunk=chunk,pivot=pivot,travel=(0,3.35,0),
                           collider_center=(0,1.45,0),collider_size=(.18,3.2,3.2) if normal[0] else (3.2,3.2,.18)))
-    return nodes,gates
+    return nodes,gates,reward
 
 
 def design():
@@ -775,7 +801,7 @@ def design():
         if i>=SCENERY_LIGHT_START:
             # Attach ceiling cages to the common roof; wall cages already meet their wall.
             if LIGHT_ROTATIONS[i]==(0,0,0):lb('Steel',(.67,1.5,0),(.055,3.0,.055))
-    design.puzzle_nodes,design.gates=design_puzzles(add)
+    design.puzzle_nodes,design.gates,design.reward_cabinet=design_puzzles(add)
     design.last_counts=dict(short_stair_runs=piece_index,small_landings=piece_index*2,cross_bridges=bridge_count)
     return groups
 
@@ -793,6 +819,21 @@ def validate(groups):
     for _,_,loop,points in BRANCHES:
         if points[0] not in MAIN or (loop and points[-1] not in MAIN):raise ValueError('Branch disconnected from route')
     if len(ROOMS)!=3 or [r['stage'] for r in ROOMS]!=[1,2,3]:raise ValueError('One puzzle room per stage')
+    controls=[node for node in design.puzzle_nodes if 'lever_chunk' in node]
+    if len(controls)!=12 or len({node['id'] for node in controls})!=12:
+        raise ValueError('Exactly twelve separately authored control handles required')
+    for node in controls:
+        parts=[part for (stage,chunk,role),geometries in groups.items() if chunk==node['lever_chunk'] for part in geometries]
+        if not parts or not all(math.isfinite(value) for value in node['lever_pivot']+node['lever_axis']):
+            raise ValueError('Missing measured handle '+node['id'])
+    reward=design.reward_cabinet
+    if reward is None or reward['stage']!=1 or not 90<=reward['open_angle']<=110:
+        raise ValueError('First puzzle requires a physically opening flashlight cabinet')
+    if not any(chunk==reward['chunk'] for stage,chunk,role in groups):raise ValueError('Missing cabinet leaf')
+    shelf=kit.merge_all(part for (stage,chunk,role),geometries in groups.items() if chunk=='RewardCabinetShelf' for part in geometries)
+    shelf_low,shelf_high=kit.bounds(shelf);item=reward['item_position']
+    if abs(item[1]-shelf_high[1])>.00001 or not all(shelf_low[axis]<item[axis]<shelf_high[axis] for axis in (0,2)):
+        raise ValueError('Cabinet flashlight base must sit on its measured shelf')
     for motion in MOTIONS:
         if not 0<=motion['phase']<1 or motion['period']<=0:raise ValueError('Invalid mechanical timeline')
         parts=[g for (stage,chunk,role),geometries in groups.items() if chunk=='Motion_'+motion['id'] for g in geometries]
@@ -818,7 +859,8 @@ def validate(groups):
                 raise ValueError('Motion sweep enters walkable route '+motion['id']+' / '+row['id'])
     return dict(meshes=len(groups),triangles=triangles,flights=3,steps_per_flight=36,clear_width=WIDTH,total_rise=10.8,
                 main_route_metres=round(sum(math.dist(a,b) for a,b in zip(MAIN,MAIN[1:])),3),supports=len(rows),branches=9,loops=4,
-                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),puzzle_rooms=3,moving_assemblies=len(MOTIONS),abyss_floor=-60,
+                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),puzzle_rooms=3,puzzle_handles=len(controls),
+                reward_cabinets=1,moving_assemblies=len(MOTIONS),abyss_floor=-60,
                 **design.last_counts,deterministic=True)
 
 
@@ -966,15 +1008,19 @@ def main():
         motions.append(record)
     puzzle_nodes=[]
     for node in design.puzzle_nodes:
-        record={k:v for k,v in node.items() if k!='chunk'}
+        record={k:v for k,v in node.items() if k not in ('chunk','lever_chunk')}
         record['parts']=[part['name'] for part in records if part['chunk']==node['chunk']]
+        if 'lever_chunk' in node:
+            record['lever_parts']=[part['name'] for part in records if part['chunk']==node['lever_chunk']]
         puzzle_nodes.append(record)
     gates=[]
     for gate in design.gates:
         record={k:v for k,v in gate.items() if k!='chunk'}
         record['parts']=[part['name'] for part in records if part['chunk']==gate['chunk']]
         gates.append(record)
-    payload=dict(schema_version=4,generator_version='5.0.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,contract=contract())
+    reward={k:v for k,v in design.reward_cabinet.items() if k!='chunk'}
+    reward['parts']=[part['name'] for part in records if part['chunk']==design.reward_cabinet['chunk']]
+    payload=dict(schema_version=5,generator_version='6.0.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

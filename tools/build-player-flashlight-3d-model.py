@@ -123,7 +123,7 @@ def main():
     mount = measure_mount()
     data = kit.manifest([item], signature)
     data.update(generator="tools/build-player-flashlight-3d-model.py", generator_version=VERSION,
-                test_only=True, always_on_warehouse_only=True, mount=mount)
+                test_only=False, always_on_warehouse_only=False, session_inventory_equipment=True, mount=mount)
     # The body attachment is part of the asset identity too: unchanged passive
     # geometry must not permit a stale right-side binding after a side change.
     data["geometry_signature"] = signature

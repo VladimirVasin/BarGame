@@ -33,6 +33,7 @@ namespace BarPromenade
         private PlayerEquipmentContacts equipment;
         private Renderer[] renderers;
         private bool contactsRegistered;
+        private bool usesWarehouseVisibility;
         private Transform exposureOwnerRoot;
         private RaycastHit[] exposureHits = new RaycastHit[16];
         private float exposureProbeRemaining;
@@ -50,6 +51,15 @@ namespace BarPromenade
         private Func<bool> inspectionAimSuspended;
         public bool HasInspectionAim => inspectionAimOwner != null;
         public Vector3 InspectionAimTarget { get; private set; }
+
+        /// <summary>The warehouse's ambient falloff belongs only to its scene, never to ordinary equipment.</summary>
+        public void SetWarehouseVisibility(bool value)
+        {
+            if (usesWarehouseVisibility == value) return;
+            if (usesWarehouseVisibility) WarehouseArenaLighting.ClearHeroVisibility(transform);
+            usesWarehouseVisibility = value;
+            if (usesWarehouseVisibility && contactsRegistered) WarehouseArenaLighting.BindHeroVisibility(transform);
+        }
 
         public bool BeginInspectionAim(object owner, CombatActor actor, Camera camera, Transform frame,
             Vector3 cavitySize, Func<bool> browsing, Func<bool> pointerSelection, Func<bool> suspended = null)
@@ -179,13 +189,13 @@ namespace BarPromenade
             bodyFill?.SetActive(active);
             if (active && !contactsRegistered)
             {
-                WarehouseArenaLighting.BindHeroVisibility(transform);
+                if (usesWarehouseVisibility) WarehouseArenaLighting.BindHeroVisibility(transform);
                 equipment.Register(this, ModelRoot);
                 contactsRegistered = true;
             }
             else if (!active && contactsRegistered)
             {
-                WarehouseArenaLighting.ClearHeroVisibility(transform);
+                if (usesWarehouseVisibility) WarehouseArenaLighting.ClearHeroVisibility(transform);
                 if (equipment != null) equipment.Unregister(this);
                 contactsRegistered = false;
             }
@@ -313,12 +323,12 @@ namespace BarPromenade
         {
             AdvanceInspectionAim(Time.deltaTime);
             AdvanceExposure(Time.deltaTime);
-            WarehouseArenaLighting.UpdateHeroVisibility(transform);
+            if (usesWarehouseVisibility) WarehouseArenaLighting.UpdateHeroVisibility(transform);
         }
         private void OnDestroy()
         {
             if (HasInspectionAim) EndInspectionAim(inspectionAimOwner);
-            WarehouseArenaLighting.ClearHeroVisibility(transform);
+            if (usesWarehouseVisibility) WarehouseArenaLighting.ClearHeroVisibility(transform);
             bodyFill?.Dispose();
             if (contactsRegistered && equipment != null) equipment.Unregister(this);
             if (presentation != null && renderers != null) presentation.UnregisterAccessoryRenderers(renderers);
