@@ -4,6 +4,16 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public readonly struct StairwellLabyrinthGatePlan
+    {
+        public StairwellLabyrinthGatePlan(int stage, Vector3 position, Vector3 normal, float width)
+        { Stage = stage; Position = position; Normal = normal; Width = width; }
+        public int Stage { get; }
+        public Vector3 Position { get; }
+        public Vector3 Normal { get; }
+        public float Width { get; }
+    }
+
     public struct StairwellLabyrinthSupportPlan
     {
         public StairwellLabyrinthSupportPlan(string id, int stage, Vector3 start, Vector3 end, float width, Rect bounds)

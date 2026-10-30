@@ -24,17 +24,16 @@ UNIQUE_SURFACE_DAMAGE_OK passed. Clock readings leave time/audio unchanged;
 garment leg wear differs, paired forearms/patch/UV/alpha stay. Final balcony seals
 only after safe indoor return; ordinary states restore.
 
-Stairwell: sleep→Escher maze→warehouse; domestic/shaft/machinery above black
-abyss, guarded branches/loops. Shared graph owns metric support/headroom;
-stage service rooms use shared rig E doors without puzzle/gate/reward.
-Lamp/fan/counterweight/vent/cloth move with causal audio/pause/cleanup;
-shared black material ignores light/fog. Bounded lighting/third-person/fixed
-below, stone-head Cut and warehouse/session flow retained. Viewed frames caught
-flat warehouse surfaces and a camera inside furniture: metre UV1 charts and
-solid furnishing collision fix both. STAIRWELL_LABYRINTH_DETERMINISM_OK,
-STAIRWELL_LABYRINTH_COLLISION_CLEARANCE_OK, STAIRWELL_LABYRINTH_ABYSS_ROOMS_MOTION_OK,
-STAIRWELL_LABYRINTH_WAREHOUSE_UV1_OK and AreaCaptureFixture.Stairwell passed;
-route/rooms/door grips/motion/pause/cleanup/session checked; frames reviewed.
+Stairwell: three distinct Philomela-myth mechanisms use shared positioned rig/
+hand contacts; retained solutions open physical graph-cut gates. Statue/initial
+stairs retain their lighting; first flight starts presence lamp/lens/hum/heavy
+contactor, with black departed sectors. Ambient/SH/fog/reflections/grain cannot
+lift black; lower authored supports/stairs vanish before finite ends. Viewed
+frames corrected floating controls, unreachable docks and unlit bird-lift.
+Metre UV1/furniture collision, orbit/stone-head/warehouse session stay.
+STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK/DETERMINISM_OK and
+AreaCaptureFixture.StairwellLabyrinthPuzzles passed; frames reviewed.
+Radius22/24m/two Hard lamps: StairwellLabyrinthLightRadius passed; views reviewed.
 
 Balcony: lip contact/index-middle pinch/thumb faceward/shaft clearance;
 shoulder-profile orbit/City ring/rear, separate rain/NPC limits. No beam/north

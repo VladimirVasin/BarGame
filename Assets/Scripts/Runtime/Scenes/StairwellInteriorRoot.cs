@@ -33,6 +33,7 @@ namespace BarPromenade
         public StairwellStreetExit StreetExit { get; private set; }
         public StairwellWarehouseEntrance WarehouseEntrance { get; private set; }
         public StairwellLabyrinthPresentation LabyrinthPresentation { get; private set; }
+        public StairwellLabyrinthPuzzles LabyrinthPuzzles { get; private set; }
         public StairwellApartmentEntrance ApartmentEntrance
         {
             get;
@@ -163,7 +164,7 @@ namespace BarPromenade
                 Layout.GetSpawn(Arrival),
                 camera,
                 Layout.IsCorrupted
-                    ? new StairwellWalkableArea(Layout, World.Root)
+                    ? new StairwellWalkableArea(Layout, World.Root, GameSessionState.StairwellLabyrinthPuzzles)
                     : (IWalkableArea)new RoadWalkableArea(Layout.WalkableRectangles),
                 InteractionPrompt);
             CameraFollow =
@@ -221,6 +222,8 @@ namespace BarPromenade
                 Atmosphere.ConfigureLabyrinth(Layout.Labyrinth, World.Root, Player.GameObject.transform, Soundscape);
                 LabyrinthPresentation = World.Root.Find("Stairwell Labyrinth").GetComponent<StairwellLabyrinthPresentation>();
                 LabyrinthPresentation.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
+                LabyrinthPuzzles = LabyrinthPresentation.GetComponent<StairwellLabyrinthPuzzles>();
+                LabyrinthPuzzles.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
             }
             if (!Layout.IsCorrupted)
             {

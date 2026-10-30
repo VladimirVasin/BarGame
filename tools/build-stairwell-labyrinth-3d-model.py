@@ -49,6 +49,7 @@ NEAR_LIGHTS=[
  ((36,18.9,63),3,False),((45,18.9,71),3,True),((53,18.9,56),3,False),
  ((18,18.9,59),3,False),((56,18.9,69),3,False)]
 NEAR_LIGHTS += [((room['door'][0]-2.1,room['door'][1]+2.72,room['door'][2]),room['stage'],False) for room in ROOMS]
+NEAR_LIGHTS += [((0,15.3,14),2,False),((28,18.9,71),3,False)]
 # Stepped walls/ceilings surround the route; the unlit bottom has no support/collision.
 # Bounds: xmin,zmin,xmax,zmax,floor,ceiling. Overlaps are merged, never walled off.
 INTERIOR_VOLUMES=[(-34,-6,10,43,-1,27),(6,6,49,52,3,30),(12,44,65,83,7,33)]
@@ -60,7 +61,11 @@ LIGHT_ROTATIONS=[(0,0,0)]*SCENERY_LIGHT_START+[rotation for _,_,rotation in UPPE
 def rotated_point(point,rotation):return bp.u_rotated(([point],[]),rotation)[0][0]
 LIGHTS=NEAR_LIGHTS+[(position,stage,index==len(UPPER_LIGHTS)-1) for index,(position,stage,_) in enumerate(UPPER_LIGHTS)]
 LIGHT_DIRECTIONS=[rotated_point((0,-1,0),rotation) for rotation in LIGHT_ROTATIONS]
+# Fixed room-three light projects the real stops onto its rear wall.
+LIGHT_DIRECTIONS[26]=(-1,-.50,0)
+LIGHTS[26]=(LIGHTS[26][0],3,True)
 DOOR=(45,15.6,74)
+GATES=[(1,(5.1,9.275,37),(1,0,0)),(2,(42,12.875,42.1),(0,0,1)),(3,(36,15.6,63),(1,0,0))]
 MOTIONS=[dict(id='suspended-lamp',kind='swing',stage=1,pivot=(-7,13.2,28),axis=(0,0,1),amplitude=6,period=9,phase=.05,light_index=3),
          dict(id='ventilation-fan',kind='fan',stage=2,pivot=(24,20,45),axis=(0,0,1),amplitude=360,period=13,phase=.2,light_index=-1),
          dict(id='counterweight',kind='lift',stage=3,pivot=(39,21.5,69),axis=(0,1,0),amplitude=3,period=29,phase=.1,light_index=-1),
@@ -111,7 +116,7 @@ def floor_at(row,p):
 def contract():
     return dict(main=MAIN,branches=BRANCHES,supports=supports(),lights=LIGHTS,light_directions=LIGHT_DIRECTIONS,
                 scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH,
-                rooms=ROOMS,motions=MOTIONS,abyss_floor=-35,warehouse_chart_version=1)
+                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=2,abyss_floor=-60,warehouse_chart_version=1)
 
 
 def contract_signature():
@@ -141,6 +146,9 @@ def write_runtime(directory):
     for i,(p,stage,shadow) in enumerate(LIGHTS):
         direction=cs_vec(LIGHT_DIRECTIONS[i])
         lines.append('            new StairwellLabyrinthLightPlan('+cs_vec(p)+','+direction+','+str(stage)+','+str(shadow).lower()+','+str(i>=SCENERY_LIGHT_START).lower()+'),')
+    lines+=['        };','        public static StairwellLabyrinthGatePlan[] CreatePuzzleGates() => new[] {']
+    for stage,pivot,normal in GATES:
+        lines.append('            new StairwellLabyrinthGatePlan('+str(stage)+','+cs_vec(pivot)+','+cs_vec(normal)+',3.2f),')
     lines+=['        };','    }','}','']
     directory.mkdir(parents=True,exist_ok=True)
     (directory/'StairwellLabyrinthData.cs').write_text('\n'.join(lines))
@@ -189,13 +197,135 @@ def validate_warehouse_charts(groups):
     print('STAIRWELL_LABYRINTH_WAREHOUSE_UV1_OK',flush=True)
 
 
+def design_puzzles(add):
+    """Passive solids and measured contacts; runtime owns only constrained pivots."""
+    nodes=[];gates=[]
+    for room in ROOMS:
+        stage=room['stage'];origin=room['door'];rotation=(0,-90,0)
+        def wp(p):
+            q=rotated_point(p,rotation);return tuple(origin[i]+q[i] for i in range(3))
+        def put(role,g,chunk='PuzzleFrame'):
+            add(stage,role,kit.translated(bp.u_rotated(g,rotation),origin),chunk)
+        def box(role,c,size,chunk='PuzzleFrame',bevel=.006):put(role,bp.u_box(c,size,bevel),chunk)
+        def node(id,kind,pivot,contact,axis=(1,0,0),step=120,travel=(0,0,0)):
+            # The existing room door's measured outside dock/contact vector.
+            # PlayerDoorActionTarget applies the shared 45-degree body facing.
+            dock=(contact[0]-.48,.04,contact[2]-.48)
+            value=dict(id=id,stage=stage,kind=kind,chunk='Puzzle_'+id,pivot=wp(pivot),axis=rotated_point(axis,rotation),
+                       step_angle=step,travel=rotated_point(travel,rotation),dock=wp(dock),facing=(-1,0,0),contact=wp(contact),
+                       exit_dock=wp(dock),exit_facing=(-1,0,0),bounds_center=wp(contact),bounds_size=(.26,.26,.26))
+            nodes.append(value);return value['chunk']
+        def lever(id,x,z=2.45):
+            # Captive handles; no loose key/resource can be lost.
+            box('Steel',(x,1.155,z),(.11,.07,.08))
+            box('Steel',(x,1.155,z+.10),(.035,.035,.20))
+            box('Steel',(x,.52,z+.23),(.075,1.04,.10))
+            box('Steel',(x,.035,z+.23),(.24,.07,.27))
+            box('Steel',(x,1.02,(z+.23+3.3)/2),(.055,.055,3.3-z-.23))
+        box('Collision',(0,.70,3.78),(3.25,1.4,1.05),bevel=0)
+        if stage==1:
+            # Three horizontal cloth drums make one image, each with a real
+            # three-position axle. Their rear faces show the continuous red weft.
+            for x in (-1.18,1.18):box('Wood',(x,1.35,3.30),(.10,1.44,.16))
+            for y in (.79,2.10):box('Wood',(0,y,3.30),(2.46,.09,.18))
+            for i,y in enumerate((.995,1.415,1.835)):
+                chunk=node('roll-'+str(i),'roll',(0,y,3.30),(-.66+i*.66,1.155,2.45))
+                for face in range(3):
+                    angle=(face*120,0,0)
+                    # The full household image is split into three horizontal
+                    # strips; UV authoring below gives it no repeated lettering.
+                    plate=bp.u_box((0,0,-.122),(2.10,.402,.012),.002)
+                    put('Weave' if face==0 else 'Rubber',kit.translated(bp.u_rotated(plate,angle),(0,y,3.30)),chunk)
+                    if face:
+                        for n in range(6):
+                            thread=bp.u_box((-.87+n*.34,0,-.132),(.024,.40,.008),.001)
+                            put('Thread',kit.translated(bp.u_rotated(thread,angle),(0,y,3.30)),chunk)
+                axle=bp.u_rotated(bp.u_cylinder((0,0,0),(.075,1.17,.075),8),(0,0,90))
+                put('Steel',kit.translated(axle,(0,y,3.30)),chunk)
+                # A rectangular notch mark reaches the manual common bolt only
+                # in the solved orientation. Rotation visibly breaks the line.
+                box('Steel',(1.13,y,3.16),(.11,.035,.20),chunk)
+                lever('roll-'+str(i),-.66+i*.66)
+            chunk=node('cloth-bolt','cloth-bolt',(1.38,1.155,3.17),(.98,1.155,2.45),step=0,travel=(.42,0,0))
+            box('Steel',(1.38,1.42,3.14),(.10,1.12,.10),chunk)
+            box('Steel',(1.18,1.155,3.14),(.45,.075,.10),chunk)
+            lever('cloth-bolt',.98)
+        elif stage==2:
+            # A real little delivery apparatus: shutter, retaining pawl,
+            # switchable counterweight and captive cloth carriage.
+            for x in (-1.25,1.25):box('Steel',(x,1.55,3.74),(.075,2.10,.10))
+            for y in (.64,2.52):box('Steel',(0,y,3.74),(2.65,.10,.12))
+            for x in (-.96,-.64,-.32,0,.32,.64,.96):box('Steel',(x,1.52,3.91),(.035,1.72,.045))
+            chunk=node('shutter','shutter',(0,.95,3.62),(-.92,1.155,2.42),step=0,travel=(0,.86,0))
+            box('WornSteel',(.10,.94,3.62),(1.85,.66,.055),chunk)
+            for x in (-.60,0,.60):box('Steel',(x,.94,3.56),(.045,.62,.07),chunk)
+            chunk=node('shutter-stop','shutter-stop',(.97,1.55,3.54),(-.30,1.155,2.42),axis=(0,0,1),step=65)
+            box('Steel',(.83,1.55,3.54),(.40,.07,.09),chunk)
+            chunk=node('weight-switch','weight-switch',(-1.06,1.95,3.49),(.32,1.155,2.42),axis=(0,0,1),step=55)
+            box('Steel',(-1.06,1.68,3.49),(.07,.60,.09),chunk)
+            chunk=node('transfer-weight','weight',(-1.07,1.80,3.83),(0,1.155,2.42),step=0,travel=(0,-.65,0))
+            box('ConcreteDark',(-1.07,1.80,3.83),(.28,.43,.30),chunk)
+            chunk=node('carriage','carriage',(-.68,.77,2.96),(0,1.155,2.42),step=0,travel=(0,0,1.12))
+            box('Steel',(-.68,.74,2.96),(.66,.075,.55),chunk)
+            # Folded white cloth and red stitching echo the image without text.
+            for n in range(4):box('Cloth',(-.68,.80+n*.025,2.96),(.48,.023,.36),chunk,.003)
+            box('Thread',(-.68,.89,2.96),(.035,.012,.38),chunk,.001)
+            chunk=node('carriage-send','carriage-send',(.95,1.155,2.48),(.95,1.155,2.42),step=0)
+            box('Steel',(.95,1.155,2.48),(.15,.055,.12),chunk)
+            for x in (-.92,-.30,.32,.95):lever('transfer',x,2.42)
+            for x in (-1.0,-.36):box('Steel',(x,.69,3.52),(.045,.045,1.85))
+        else:
+            # Behind an open maintenance frame the actual stop tabs cast the
+            # enlarged shadows. Reading the projection reveals the obstruction.
+            for x in (-1.40,1.40):box('Steel',(x,1.53,3.55),(.08,2.18,.10))
+            for y in (.48,2.61):box('Steel',(0,y,3.55),(2.88,.10,.12))
+            for i,x in enumerate((-.82,0,.82)):
+                y=1.70;chunk=node('bird-'+str(i),'bird',(x,y,3.32),(-.66+i*.66,1.155,2.25),axis=(0,0,1))
+                # Wings, beak, tail and the middle bird's crown are finite
+                # thick solids; all ordinary depth/shadow passes share them.
+                box('WornSteel',(x,y,3.32),(.25,.36,.045),chunk)
+                for sign in (-1,1):
+                    wing=bp.u_rotated(bp.u_box((0,0,0),(.42,.12,.045),.015),(0,0,sign*35))
+                    put('WornSteel',kit.translated(wing,(x+sign*.23,y+.09,3.32)),chunk)
+                box('Steel',(x+.17,y+.14,3.32),(.20,.065,.045),chunk)
+                tail=bp.u_rotated(bp.u_box((0,0,0),(.11,.30,.045),.005),(0,0,-25))
+                put('WornSteel',kit.translated(tail,(x-.05,y-.23,3.32)),chunk)
+                box('Steel',(x+.25,y-.12,3.38),(.16,.09,.15),chunk)
+                if i==1:
+                    for n in (-1,0,1):box('Thread',(x+n*.08,y+.37,3.32),(.045,.15 if n==0 else .11,.045),chunk)
+                lever('bird-'+str(i),-.66+i*.66,2.25)
+                # Fixed catch/running slot directly behind each moving tab.
+                box('Steel',(x+.25,y-.30,3.52),(.08,.16,.16))
+            chunk=node('bird-lift','bird-lift',(1.12,1.155,2.25),(1.12,1.155,2.25),step=0,travel=(0,.3,0))
+            box('Steel',(1.12,1.30,2.25),(.075,.38,.075),chunk)
+            # A light matte receiving surface, non-emissive and physically part
+            # of the room, catches the shadows rather than drawing fake birds.
+            box('Cloth',(0,1.67,4.265),(2.94,1.78,.018))
+    for stage,pivot,normal in GATES:
+        chunk='Gate_'+str(stage);across=(0,0,1) if normal[0] else (1,0,0)
+        def gb(role,p,size,dynamic=True):add(stage,role,bp.u_box(p,size,.005),chunk if dynamic else 'GateFrame')
+        for n in range(-7,8):
+            c=tuple(pivot[i]+across[i]*n*.22+(1.45 if i==1 else 0) for i in range(3))
+            gb('Steel',c,(.055,3.2,.055))
+        for height in (.10,1.25,2.90):
+            c=(pivot[0],pivot[1]+height,pivot[2]);size=(.12,.12,3.2) if normal[0] else (3.2,.12,.12)
+            gb('Steel',c,size)
+        for side in (-1,1):
+            c=tuple(pivot[i]+across[i]*side*1.75+(1.9 if i==1 else 0) for i in range(3))
+            gb('WornSteel',c,(.16,3.8,.16),False)
+        c=(pivot[0],pivot[1]+3.80,pivot[2]);gb('WornSteel',c,(.24,.24,3.7) if normal[0] else (3.7,.24,.24),False)
+        gates.append(dict(id='gate-'+str(stage),stage=stage,chunk=chunk,pivot=pivot,travel=(0,3.35,0),
+                          collider_center=(0,1.45,0),collider_size=(.18,3.2,3.2) if normal[0] else (3.2,3.2,.18)))
+    return nodes,gates
+
+
 def design():
     groups={};all_supports=supports()
     def add(stage,role,g,chunk=None):
         if bp.signed_volume(g)<=0:raise ValueError('Inward solid '+role)
         lo,hi=kit.bounds(g)
         if role=='Abyss':chunk='Abyss'
-        if chunk is None:chunk='C%d_%d'%(math.floor((lo[0]+hi[0])/32),math.floor((lo[2]+hi[2])/32))
+        if chunk is None:chunk='C%d_%d'%(math.floor((lo[0]+hi[0])/64),math.floor((lo[2]+hi[2])/64))
         groups.setdefault((stage,chunk,role),[]).append(g)
     def box(stage,role,c,size,bevel=.008,chunk=None):add(stage,role,bp.u_box(c,size,bevel),chunk)
     def cylinder(stage,role,c,size,chunk=None):add(stage,role,bp.u_cylinder(c,size,8),chunk)
@@ -310,7 +440,10 @@ def design():
         x=(x0+x1)/2;z=(z0+z1)/2;y=a[1]
         horizontal=(x1-x0)>(z1-z0)
         px=x if horizontal else x0-.32;pz=z0-.32 if horizontal else z
-        box(stage,'Concrete' if stage==1 else 'Steel',(px,y-2.3,pz),(.44,4.4,.44),.018)
+        box(stage,'Concrete' if stage==1 else 'Steel',(px,(y-54)/2,pz),(.44,y+54,.44),.018)
+        # Two lower brace levels tie the visible supports into a continuing shaft.
+        for depth in (5.5,15.5,29.5):
+            box(stage,'Steel',(px,y-depth,pz),(2.8,.14,.18) if horizontal else (.18,.14,2.8),.006)
         cylinder(stage,'Rust',(px,y+1.35,pz),(.18,1.5,.18))
         for h in (.4,2.4):box(stage,'Steel',(px,y+h,pz),(.27,.07,.27),.005)
         # Objects sit beyond the clear lane in small authored shelf pockets.
@@ -325,6 +458,18 @@ def design():
                 box(stage,'Timber',(px,y+.11,pz),(.58,.18,.65),.005)
                 box(stage,'Cardboard',(px,y+.40,pz),(.49,.40,.49),.012)
                 box(stage,'Rubber',(px+.12,y+.63,pz),(.24,.05,.37),.005)
+    # Lower stair tiers are passive continuation, never a second playable route.
+    # Their ends sit below the local-light reach, above the unlit bottom cap.
+    for i,r in enumerate(all_supports):
+        if r['ramp'] or i%4 or r['id'].startswith('room-'):continue
+        x0,z0,x1,z1=r['bounds'];x=(x0+x1)/2;z=(z0+z1)/2;y=r['start'][1];stage=r['stage']
+        horizontal=x1-x0>z1-z0;side=-1 if i%8 else 1
+        for tier in (4.8,14.4,28.8):
+            a=(x,y-tier,z+side*2.6) if horizontal else (x+side*2.6,y-tier,z)
+            b=(a[0]+3.2,a[1]-1.8,a[2]) if horizontal else (a[0],a[1]-1.8,a[2]+3.2)
+            stairs(stage,b,a,1.25,12,False)
+            box(stage,'Steel',(a[0],a[1]-.09,a[2]),(1.6,.18,1.6),.006)
+            box(stage,'Steel',(b[0],b[1]-.09,b[2]),(1.6,.18,1.6),.006)
     # Dead-end walls are visible reasons to turn; no interactive/lore doors.
     for bi,(name,stage,loop,points) in enumerate(BRANCHES):
         if loop or any(room['branch_id']==name for room in ROOMS):continue
@@ -334,7 +479,7 @@ def design():
         add(stage,'DoorPaint' if stage==1 else 'Rust',transform(bp.u_box((0,1.25,1.46),(1.9,2.5,.16),.012),origin,(0,yaw,0)))
         add(stage,'Collision',transform(bp.u_box((0,1.55,1.45),(3.2,3.1,.35),0),origin,(0,yaw,0)))
         for h in (.65,1.85):add(stage,'Steel',transform(bp.u_box((0,h,1.31),(2.15,.11,.10),.003),origin,(0,yaw,0)))
-    # Three physical, deliberately small puzzle-placeholder rooms. Their shapes
+    # Three physical, deliberately small puzzle rooms. Their shapes
     # and hardware are authored here; interaction never builds primitive leaves.
     design.doors=[]
     for room in ROOMS:
@@ -374,15 +519,7 @@ def design():
             rb('Wood',(0,.78,3.82),(2.75,.12,.56),True)
             for x in (-1.15,1.15):rb('Wood',(x,.36,3.82),(.09,.72,.43),True)
             for h in (1.65,2.22):rb('Wood',(.6,h,4.14),(1.8,.08,.38),True)
-        elif stage==2:
-            rb('Concrete',(-1.18,.46,3.72),(.9,.92,.8),True)
-            for x in (-1.55,1.55):rb('Rust',(x,1.65,4.23),(.075,2.5,.075),bevel=.003)
-            rb('Steel',(.25,1.22,4.26),(1.35,1.55,.13),True)
-        else:
-            for x in (-1.22,0,1.22):
-                rb('WornSteel',(x,1.22,4.15),(.95,2.44,.38),True)
-                rb('DoorPaint',(x,1.25,3.94),(.81,2.14,.04))
-                rb('Steel',(x+.27,1.20,3.89),(.035,.23,.055),bevel=.003)
+        # Each later room's old placeholder cabinets are replaced by its authored mechanism.
         interior=rp((0,.04,2.25))
         design.doors.append(dict(id=room['id'],stage=stage,branch_id=room['branch_id'],chunk=chunk,
             hinge=rp((-.6,0,0)),yaw=yaw,outer_handle=rp((.43,1.155,-.125)),inner_handle=rp((.43,1.155,.125)),
@@ -440,7 +577,7 @@ def design():
             x,z=(x0+x1)/2,(z0+z1)/2;own=column(x,z)
             if own is None:continue
             floor,ceiling,stage=own
-            box(stage,'Abyss',(x,-35.22,z),(x1-x0,.44,z1-z0),0)
+            box(stage,'Abyss',(x,-60.22,z),(x1-x0,.44,z1-z0),0)
             shell_box(stage,'Plaster' if stage==1 else 'Concrete',(x,ceiling+.22,z),(x1-x0,.44,z1-z0))
             # Visible ceiling ribs break up the room scale and connect hung pieces.
             for rx in range(math.ceil(x0/5)*5,math.ceil(x1),5):
@@ -449,8 +586,8 @@ def design():
                 adjacent=column(fixed+out,z) if axis==0 else column(x,fixed+out)
                 intervals=[(floor,ceiling)] if adjacent is None else [(floor,min(ceiling,adjacent[0])),(max(floor,adjacent[1]),ceiling)]
                 if adjacent is None:
-                    center=(fixed,(-35+floor)/2,(lo+hi)/2) if axis==0 else ((lo+hi)/2,(-35+floor)/2,fixed)
-                    size=(.5,floor+35,hi-lo) if axis==0 else (hi-lo,floor+35,.5)
+                    center=(fixed,(-60+floor)/2,(lo+hi)/2) if axis==0 else ((lo+hi)/2,(-60+floor)/2,fixed)
+                    size=(.5,floor+60,hi-lo) if axis==0 else (hi-lo,floor+60,.5)
                     box(stage,'Abyss',center,size,0)
                 for low,high in intervals:
                     if high-low<.01:continue
@@ -627,7 +764,7 @@ def design():
         # Near lamps and six wall/ceiling sources have matching interior fixture anchors.
         rotation=LIGHT_ROTATIONS[i]
         def lb(role,offset,size,bevel=.003):
-            add(stage,role,transform(bp.u_box(offset,size,bevel),c,rotation),'Motion_suspended-lamp' if i==3 else None)
+            add(stage,role,transform(bp.u_box(offset,size,bevel),c,rotation),'Motion_suspended-lamp' if i==3 else ('Fixture_'+str(i) if role=='Lens' else None))
         lb('Steel',(0,.08,0),(1.04,.16,.30),.012)
         lb('Lens',(0,0,0),(.82,.035,.18))
         for z in (-.15,.15):lb('Steel',(0,-.04,z),(.98,.035,.025),.002)
@@ -638,6 +775,7 @@ def design():
         if i>=SCENERY_LIGHT_START:
             # Attach ceiling cages to the common roof; wall cages already meet their wall.
             if LIGHT_ROTATIONS[i]==(0,0,0):lb('Steel',(.67,1.5,0),(.055,3.0,.055))
+    design.puzzle_nodes,design.gates=design_puzzles(add)
     design.last_counts=dict(short_stair_runs=piece_index,small_landings=piece_index*2,cross_bridges=bridge_count)
     return groups
 
@@ -654,7 +792,7 @@ def validate(groups):
     if [sum(b[1]==s for b in BRANCHES) for s in (1,2,3)]!=[2,3,4]:raise ValueError('Branch progression')
     for _,_,loop,points in BRANCHES:
         if points[0] not in MAIN or (loop and points[-1] not in MAIN):raise ValueError('Branch disconnected from route')
-    if len(ROOMS)!=3 or [r['stage'] for r in ROOMS]!=[1,2,3]:raise ValueError('One puzzle-placeholder room per stage')
+    if len(ROOMS)!=3 or [r['stage'] for r in ROOMS]!=[1,2,3]:raise ValueError('One puzzle room per stage')
     for motion in MOTIONS:
         if not 0<=motion['phase']<1 or motion['period']<=0:raise ValueError('Invalid mechanical timeline')
         parts=[g for (stage,chunk,role),geometries in groups.items() if chunk=='Motion_'+motion['id'] for g in geometries]
@@ -680,8 +818,51 @@ def validate(groups):
                 raise ValueError('Motion sweep enters walkable route '+motion['id']+' / '+row['id'])
     return dict(meshes=len(groups),triangles=triangles,flights=3,steps_per_flight=36,clear_width=WIDTH,total_rise=10.8,
                 main_route_metres=round(sum(math.dist(a,b) for a,b in zip(MAIN,MAIN[1:])),3),supports=len(rows),branches=9,loops=4,
-                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),puzzle_rooms=3,moving_assemblies=len(MOTIONS),abyss_floor=-35,
+                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),puzzle_rooms=3,moving_assemblies=len(MOTIONS),abyss_floor=-60,
                 **design.last_counts,deterministic=True)
+
+
+def validate_gate_cuts(groups):
+    """Each barrier cuts the actual route and every branch; no landing skirts it."""
+    segments=list(zip(MAIN,MAIN[1:]));room_targets=[]
+    for _,_,_,path in BRANCHES:segments.extend(zip(path,path[1:]))
+    for room in ROOMS:
+        path=next(branch[3] for branch in BRANCHES if branch[0]==room['branch_id'])
+        target=room['door'];segments.append((path[-1],target));room_targets.append(target)
+    def crossed(a,b,gate):
+        _,p,normal=gate;axis=0 if normal[0] else 2;delta=b[axis]-a[axis]
+        if abs(delta)<1e-8:return False
+        t=(p[axis]-a[axis])/delta
+        if not -.0001<=t<=1.0001:return False
+        q=tuple(a[i]+(b[i]-a[i])*t for i in range(3));across=2 if axis==0 else 0
+        return abs(q[across]-p[across])<=1.61 and abs(q[1]-p[1])<.20
+    for solved in range(4):
+        adjacency={}
+        for a,b in segments:
+            if any(crossed(a,b,gate) for gate in GATES[solved:]):continue
+            adjacency.setdefault(a,[]).append(b);adjacency.setdefault(b,[]).append(a)
+        seen={MAIN[0]};todo=[MAIN[0]]
+        while todo:
+            for nxt in adjacency.get(todo.pop(),[]):
+                if nxt not in seen:seen.add(nxt);todo.append(nxt)
+        if solved<3 and room_targets[solved] not in seen:raise ValueError('Puzzle room trapped before its gate')
+        if solved<2 and room_targets[solved+1] in seen:raise ValueError('A branch bypasses an unsolved gate')
+        if (MAIN[-1] in seen)!=(solved==3):raise ValueError('Warehouse gate dependency bypass')
+    # At the gate plane the accessible floor union must fit behind the grating.
+    # This catches the wide lower landing margins a waypoint-only graph misses.
+    for stage,p,normal in GATES:
+        axis=0 if normal[0] else 2;across=2 if axis==0 else 0
+        for row in supports():
+            x0,z0,x1,z1=row['bounds'];low=(x0,z0);high=(x1,z1);idx=0 if axis==0 else 1
+            if not low[idx]-.001<=p[axis]<=high[idx]+.001:continue
+            if high[1-idx]<p[across]-1.6 or low[1-idx]>p[across]+1.6:continue
+            q=list(p);q[across]=(low[1-idx]+high[1-idx])/2
+            if abs(floor_at(row,q)-p[1])>.25:continue
+            if low[1-idx]<p[across]-1.601 or high[1-idx]>p[across]+1.601:
+                raise ValueError('Floor skirts gate '+str(stage)+' via '+row['id'])
+    lower=kit.merge_all(g for (_,_,role),parts in groups.items() if role not in ('Abyss','Collision','ShellCollision') for g in parts)
+    if kit.bounds(lower)[0][1]>-53.9:raise ValueError('Structural continuation ends inside visible shaft')
+    print('STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK',flush=True)
 
 
 def validate_collision_clearance(groups):
@@ -740,7 +921,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--model-dir',type=Path,default=MODEL_DIR);parser.add_argument('--source-dir',type=Path,default=SOURCE_DIR)
     parser.add_argument('--code-dir',type=Path,default=CODE_DIR)
-    args=parser.parse_args(argv);groups=design();report=validate(groups);validate_collision_clearance(groups);validate_enclosure(groups);validate_warehouse_charts(groups)
+    args=parser.parse_args(argv);groups=design();report=validate(groups);validate_gate_cuts(groups);validate_collision_clearance(groups);validate_enclosure(groups);validate_warehouse_charts(groups)
     canonical=lambda g:json.dumps([(k,v) for k,v in g.items()],separators=(',',':'))
     signature=hashlib.sha256(canonical(groups).encode()).hexdigest()
     if canonical(groups)!=canonical(design()):raise ValueError('Nondeterministic labyrinth')
@@ -765,6 +946,10 @@ def main():
                 charts[chart_key]=warehouse_chart(plow,phigh,(a,b),f'{stage}/{chunk}/{role}/{primitive}/{major}')
             for loop in poly.loop_indices:
                 p=geometry[0][mesh.loops[loop].vertex_index];uv.data[loop].uv=(p[a],p[b])
+                if role=='Weave':
+                    strip=int(chunk.rsplit('-',1)[1]);room=ROOMS[0];drum_y=(.995,1.415,1.835)[strip]
+                    uv.data[loop].uv=((p[2]-room['door'][2]+1.05)/2.10,
+                        (strip+(p[1]-room['door'][1]-drum_y+.201)/.402)/3)
                 warehouse.data[loop].uv=warehouse_uv(p,charts[chart_key])
         if len(warehouse.data)!=len(mesh.loops):raise ValueError('Incomplete exported WarehouseMetres UV1 '+name)
         mesh.uv_layers.active_index=0;uv.active_render=True
@@ -779,7 +964,17 @@ def main():
     for motion in MOTIONS:
         record=dict(motion);record['parts']=[part['name'] for part in records if part['chunk']=='Motion_'+motion['id']]
         motions.append(record)
-    payload=dict(schema_version=3,generator_version='4.1.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,contract=contract())
+    puzzle_nodes=[]
+    for node in design.puzzle_nodes:
+        record={k:v for k,v in node.items() if k!='chunk'}
+        record['parts']=[part['name'] for part in records if part['chunk']==node['chunk']]
+        puzzle_nodes.append(record)
+    gates=[]
+    for gate in design.gates:
+        record={k:v for k,v in gate.items() if k!='chunk'}
+        record['parts']=[part['name'] for part in records if part['chunk']==gate['chunk']]
+        gates.append(record)
+    payload=dict(schema_version=4,generator_version='5.0.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

@@ -12,6 +12,7 @@ namespace BarPromenade
         public void Initialize(PlayerDoorActionTarget target) => door = target;
 
         public bool CanInteract(PlayerInteractor interactor) => isActiveAndEnabled &&
+            GameSessionState.StairwellLabyrinthPuzzles.AllSolved &&
             !SceneTransitionService.IsTransitioning && door != null && door.CanInteract(interactor);
 
         public void Interact(PlayerInteractor interactor)
@@ -19,6 +20,7 @@ namespace BarPromenade
             if (!CanInteract(interactor)) return;
             door.TryBegin(interactor, () =>
             {
+                if (!GameSessionState.StairwellLabyrinthPuzzles.AllSolved) return;
                 PlayerMotor motor = interactor == null ? null : interactor.GetComponent<PlayerMotor>();
                 motor?.SetInputEnabled(false);
                 if (!WarehouseStoryEntryService.TryEnter()) motor?.SetInputEnabled(true);

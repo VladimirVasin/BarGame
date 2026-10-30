@@ -1,11 +1,11 @@
 {
-  "schema_version": 3,
-  "generator_version": "4.1.0",
-  "signature": "570a90bc941faff271c74c2042b0682c800b16c51367436cbcbf6c804aee1226",
-  "contract_signature": "f6c968bed690640aec065797a9f4927799d4abaabe82967124f78aec76fca0c4",
+  "schema_version": 4,
+  "generator_version": "5.0.0",
+  "signature": "25c77b3b10dda14b20ea31f58f52042b7ee87afc5d32460efd34b3342541ab4a",
+  "contract_signature": "fe977c79700f9ba0e02f4e2b759ad86d5730722e381f778454afb2b434caf22c",
   "report": {
-    "meshes": 351,
-    "triangles": 184904,
+    "meshes": 264,
+    "triangles": 221760,
     "flights": 3,
     "steps_per_flight": 36,
     "clear_width": 3.2,
@@ -14,11 +14,11 @@
     "supports": 50,
     "branches": 9,
     "loops": 4,
-    "lights": 33,
+    "lights": 35,
     "interior_volumes": 3,
     "puzzle_rooms": 3,
     "moving_assemblies": 5,
-    "abyss_floor": -35,
+    "abyss_floor": -60,
     "short_stair_runs": 34,
     "small_landings": 68,
     "cross_bridges": 9,
@@ -31,16 +31,16 @@
       "chunk": "C-1_0",
       "role": "Concrete",
       "bounds_min": [
-        -15.12,
-        0.2999999999999998,
+        -33.0,
+        -54.0,
         -6.0
       ],
       "bounds_max": [
-        0.15000000000000036,
+        4.6,
         27.0,
-        15.6
+        43.0
       ],
-      "triangles": 1568
+      "triangles": 6412
     },
     {
       "name": "Stage1__C-1_0__Collision",
@@ -48,16 +48,16 @@
       "chunk": "C-1_0",
       "role": "Collision",
       "bounds_min": [
-        -25.61,
+        -33.01,
         4.56,
         2.24
       ],
       "bounds_max": [
-        0.16000000000000014,
-        9.62,
-        15.65
+        4.609999999999999,
+        11.59,
+        29.650000000000002
       ],
-      "triangles": 108
+      "triangles": 540
     },
     {
       "name": "Stage1__C-1_0__ConcreteDark",
@@ -65,16 +65,16 @@
       "chunk": "C-1_0",
       "role": "ConcreteDark",
       "bounds_min": [
-        -16.011,
+        -30.611,
         4.802,
         1.145
       ],
       "bounds_max": [
         0.13000000000000034,
-        8.414,
-        15.58
+        9.2,
+        31.211
       ],
-      "triangles": 336
+      "triangles": 1260
     },
     {
       "name": "Stage1__C-1_0__Wear",
@@ -82,16 +82,16 @@
       "chunk": "C-1_0",
       "role": "Wear",
       "bounds_min": [
-        -2.6876672909351207,
+        -29.36118699339606,
         4.814,
         1.538190120027807
       ],
       "bounds_max": [
         0.047146780724019344,
         8.422,
-        15.15627234401696
+        29.21944218241739
       ],
-      "triangles": 168
+      "triangles": 504
     },
     {
       "name": "Stage1__C-1_0__Steel",
@@ -99,16 +99,16 @@
       "chunk": "C-1_0",
       "role": "Steel",
       "bounds_min": [
-        -25.6,
-        4.482692307692307,
+        -33.0,
+        -24.77,
         1.795
       ],
       "bounds_max": [
-        0.15000000000000036,
+        4.6,
         27.0,
-        15.6275
+        31.972954545454545
       ],
-      "triangles": 1960
+      "triangles": 11144
     },
     {
       "name": "Stage1__C-1_0__Wood",
@@ -116,16 +116,16 @@
       "chunk": "C-1_0",
       "role": "Wood",
       "bounds_min": [
-        -25.6,
-        4.8,
+        -33.0,
+        -21.111213298923268,
         2.25
       ],
       "bounds_max": [
-        0.15000000000000036,
-        17.6325,
-        15.8925
+        4.6,
+        18.9075,
+        31.5175
       ],
-      "triangles": 1176
+      "triangles": 6552
     },
     {
       "name": "Stage1__C0_0__Steel",
@@ -133,16 +133,16 @@
       "chunk": "C0_0",
       "role": "Steel",
       "bounds_min": [
-        -0.06000000000000005,
-        4.482692307692307,
+        -1.5325817821425507,
+        -26.11261978337921,
         2.2225
       ],
       "bounds_max": [
-        3.1147944328322366,
+        4.6274999999999995,
         27.0,
-        15.6275
+        35.4
       ],
-      "triangles": 672
+      "triangles": 1904
     },
     {
       "name": "Stage1__C0_0__Wood",
@@ -150,16 +150,16 @@
       "chunk": "C0_0",
       "role": "Wood",
       "bounds_min": [
-        0.11250000000000013,
-        5.8825,
+        -1.466914012767323,
+        -24.71121329892327,
         2.25
       ],
       "bounds_max": [
-        3.7942207871473643,
+        4.637499999999999,
         14.347993639287072,
-        15.599999999999998
+        35.4
       ],
-      "triangles": 980
+      "triangles": 1176
     },
     {
       "name": "Stage1__C0_0__Collision",
@@ -172,105 +172,37 @@
         2.24
       ],
       "bounds_max": [
-        0.20000000000000012,
+        4.6499999999999995,
         9.62,
-        15.61
+        35.41
       ],
-      "triangles": 36
+      "triangles": 48
     },
     {
-      "name": "Stage1__C-1_1__Concrete",
+      "name": "Stage1__C0_0__ConcreteDark",
       "stage": 1,
-      "chunk": "C-1_1",
-      "role": "Concrete",
-      "bounds_min": [
-        -15.14,
-        3.9000000000000004,
-        6.0
-      ],
-      "bounds_max": [
-        4.6,
-        27.0,
-        43.0
-      ],
-      "triangles": 1064
-    },
-    {
-      "name": "Stage1__C-1_1__Collision",
-      "stage": 1,
-      "chunk": "C-1_1",
-      "role": "Collision",
-      "bounds_min": [
-        -23.409999999999997,
-        8.160000000000002,
-        12.399999999999999
-      ],
-      "bounds_max": [
-        4.609999999999999,
-        9.62,
-        29.650000000000002
-      ],
-      "triangles": 72
-    },
-    {
-      "name": "Stage1__C-1_1__ConcreteDark",
-      "stage": 1,
-      "chunk": "C-1_1",
+      "chunk": "C0_0",
       "role": "ConcreteDark",
       "bounds_min": [
-        -15.290000000000001,
-        8.399999999999999,
-        15.99
+        0.9849999999999999,
+        3.965,
+        -6.0
       ],
       "bounds_max": [
-        -0.18900000000000106,
-        9.2,
-        29.58
-      ],
-      "triangles": 420
-    },
-    {
-      "name": "Stage1__C-1_1__Wear",
-      "stage": 1,
-      "chunk": "C-1_1",
-      "role": "Wear",
-      "bounds_min": [
-        -14.344082886246445,
-        8.414000000000001,
-        19.650044268069077
-      ],
-      "bounds_max": [
-        -11.712549107532336,
-        8.422,
-        22.660736085548116
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage1__C0_1__ConcreteDark",
-      "stage": 1,
-      "chunk": "C0_1",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        1.42,
-        8.402,
-        26.42
-      ],
-      "bounds_max": [
-        4.58,
-        8.414,
+        10.27,
+        24.035,
         31.211
       ],
-      "triangles": 84
+      "triangles": 280
     },
     {
-      "name": "Stage1__C0_2__Concrete",
+      "name": "Stage1__C0_1__Concrete",
       "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Concrete",
       "bounds_min": [
         -0.19999999999999996,
-        3.9000000000000004,
+        -54.0,
         26.4
       ],
       "bounds_max": [
@@ -281,9 +213,9 @@
       "triangles": 112
     },
     {
-      "name": "Stage1__C0_2__Collision",
+      "name": "Stage1__C0_1__Collision",
       "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Collision",
       "bounds_min": [
         1.3499999999999999,
@@ -298,9 +230,9 @@
       "triangles": 24
     },
     {
-      "name": "Stage1__C0_2__ConcreteDark",
+      "name": "Stage1__C0_1__ConcreteDark",
       "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "ConcreteDark",
       "bounds_min": [
         1.42,
@@ -315,9 +247,9 @@
       "triangles": 112
     },
     {
-      "name": "Stage1__C0_1__Wear",
+      "name": "Stage1__C0_0__Wear",
       "stage": 1,
-      "chunk": "C0_1",
+      "chunk": "C0_0",
       "role": "Wear",
       "bounds_min": [
         1.5949654678566219,
@@ -332,9 +264,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C0_2__Wear",
+      "name": "Stage1__C0_1__Wear",
       "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Wear",
       "bounds_min": [
         1.8912626939194033,
@@ -349,106 +281,21 @@
       "triangles": 56
     },
     {
-      "name": "Stage2__C0_2__WornSteel",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "WornSteel",
-      "bounds_min": [
-        2.995,
-        8.360000000000001,
-        31.261993565333437
-      ],
-      "bounds_max": [
-        15.600000000000001,
-        22.74,
-        38.6
-      ],
-      "triangles": 1260
-    },
-    {
-      "name": "Stage2__C0_2__Steel",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Steel",
-      "bounds_min": [
-        2.9292307692307684,
-        7.499999999999999,
-        31.85
-      ],
-      "bounds_max": [
-        16.06,
-        30.0,
-        46.7725
-      ],
-      "triangles": 4312
-    },
-    {
-      "name": "Stage2__C0_2__Collision",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Collision",
-      "bounds_min": [
-        2.756153846153846,
-        8.289615384615384,
-        35.35
-      ],
-      "bounds_max": [
-        15.610000000000001,
-        13.219999999999999,
-        38.65
-      ],
-      "triangles": 72
-    },
-    {
-      "name": "Stage2__C0_2__Wear",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Wear",
-      "bounds_min": [
-        12.069014157913701,
-        12.014000000000001,
-        35.46148481752292
-      ],
-      "bounds_max": [
-        15.34383119811625,
-        12.022,
-        38.451703493085425
-      ],
-      "triangles": 84
-    },
-    {
       "name": "Stage2__C0_1__WornSteel",
       "stage": 2,
       "chunk": "C0_1",
       "role": "WornSteel",
       "bounds_min": [
-        7.240087878755454,
-        11.760000000000002,
-        12.399999999999999
+        2.995,
+        -18.59,
+        30.4
       ],
       "bounds_max": [
-        16.833692277178784,
-        21.06,
-        38.6
+        34.0,
+        22.74,
+        49.6
       ],
-      "triangles": 1092
-    },
-    {
-      "name": "Stage2__C0_1__Collision",
-      "stage": 2,
-      "chunk": "C0_1",
-      "role": "Collision",
-      "bounds_min": [
-        12.35,
-        11.760000000000002,
-        12.39
-      ],
-      "bounds_max": [
-        15.65,
-        13.219999999999999,
-        38.61
-      ],
-      "triangles": 60
+      "triangles": 5236
     },
     {
       "name": "Stage2__C0_1__Steel",
@@ -456,143 +303,41 @@
       "chunk": "C0_1",
       "role": "Steel",
       "bounds_min": [
-        7.2,
-        12.0,
-        6.0
-      ],
-      "bounds_max": [
-        16.67062190238791,
-        30.0,
-        43.0
-      ],
-      "triangles": 5432
-    },
-    {
-      "name": "Stage2__C1_1__WornSteel",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "WornSteel",
-      "bounds_min": [
-        8.492769379347939,
-        11.760000000000002,
-        18.490000000000002
-      ],
-      "bounds_max": [
-        40.54520142570851,
-        23.0,
-        41.76607193932176
-      ],
-      "triangles": 896
-    },
-    {
-      "name": "Stage2__C1_1__Collision",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "Collision",
-      "bounds_min": [
-        12.399999999999999,
-        11.760000000000002,
-        21.349999999999998
-      ],
-      "bounds_max": [
-        40.61,
-        13.219999999999999,
-        38.41
-      ],
-      "triangles": 72
-    },
-    {
-      "name": "Stage2__C1_1__Steel",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "Steel",
-      "bounds_min": [
-        8.46762415135186,
-        7.499999999999999,
-        6.0
-      ],
-      "bounds_max": [
-        40.6,
-        30.0,
-        43.0
-      ],
-      "triangles": 7168
-    },
-    {
-      "name": "Stage2__C1_1__Wear",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "Wear",
-      "bounds_min": [
-        20.21896555917144,
-        12.014000000000001,
-        21.845969453268296
-      ],
-      "bounds_max": [
-        22.970081534779712,
-        12.022,
-        24.116023601320435
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage2__C1_2__Steel",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "Steel",
-      "bounds_min": [
-        15.584671542247204,
-        7.499999999999999,
+        2.9292307692307684,
+        -54.0,
         30.42
       ],
       "bounds_max": [
         34.0,
-        30.0,
-        49.6
+        33.0,
+        52.27
       ],
-      "triangles": 7728
+      "triangles": 18900
     },
     {
-      "name": "Stage2__C1_2__WornSteel",
+      "name": "Stage2__C0_1__Collision",
       "stage": 2,
-      "chunk": "C1_2",
-      "role": "WornSteel",
-      "bounds_min": [
-        16.06,
-        11.760000000000002,
-        30.4
-      ],
-      "bounds_max": [
-        34.0,
-        20.53,
-        49.6
-      ],
-      "triangles": 952
-    },
-    {
-      "name": "Stage2__C1_2__Collision",
-      "stage": 2,
-      "chunk": "C1_2",
+      "chunk": "C0_1",
       "role": "Collision",
       "bounds_min": [
-        20.349999999999998,
-        11.760000000000002,
+        2.756153846153846,
+        8.289615384615384,
         30.4
       ],
       "bounds_max": [
         30.650000000000002,
-        13.219999999999999,
-        49.61
+        15.1,
+        49.65
       ],
-      "triangles": 84
+      "triangles": 180
     },
     {
-      "name": "Stage2__C1_2__Wear",
+      "name": "Stage2__C0_1__Wear",
       "stage": 2,
-      "chunk": "C1_2",
+      "chunk": "C0_1",
       "role": "Wear",
       "bounds_min": [
-        23.97723216332966,
+        12.069014157913701,
         12.014000000000001,
         34.52687044995628
       ],
@@ -601,12 +346,80 @@
         12.022,
         41.010501939133434
       ],
+      "triangles": 252
+    },
+    {
+      "name": "Stage2__C0_0__WornSteel",
+      "stage": 2,
+      "chunk": "C0_0",
+      "role": "WornSteel",
+      "bounds_min": [
+        -7.6,
+        -18.59,
+        8.27
+      ],
+      "bounds_max": [
+        40.54520142570851,
+        23.0,
+        41.76607193932176
+      ],
+      "triangles": 3276
+    },
+    {
+      "name": "Stage2__C0_0__Collision",
+      "stage": 2,
+      "chunk": "C0_0",
+      "role": "Collision",
+      "bounds_min": [
+        -7.6,
+        11.760000000000002,
+        12.35
+      ],
+      "bounds_max": [
+        40.61,
+        13.219999999999999,
+        38.61
+      ],
       "triangles": 168
     },
     {
-      "name": "Stage2__C2_2__WornSteel",
+      "name": "Stage2__C0_0__Steel",
       "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "C0_0",
+      "role": "Steel",
+      "bounds_min": [
+        -7.500000000000001,
+        -54.0,
+        5.73
+      ],
+      "bounds_max": [
+        49.0,
+        30.0,
+        43.0
+      ],
+      "triangles": 16940
+    },
+    {
+      "name": "Stage2__C0_0__Wear",
+      "stage": 2,
+      "chunk": "C0_0",
+      "role": "Wear",
+      "bounds_min": [
+        2.673993339461697,
+        12.014000000000001,
+        12.493124682665146
+      ],
+      "bounds_max": [
+        22.970081534779712,
+        12.022,
+        24.116023601320435
+      ],
+      "triangles": 168
+    },
+    {
+      "name": "Stage2__C1_1__WornSteel",
+      "stage": 2,
+      "chunk": "C1_1",
       "role": "WornSteel",
       "bounds_min": [
         27.4,
@@ -621,9 +434,9 @@
       "triangles": 840
     },
     {
-      "name": "Stage2__C2_2__Collision",
+      "name": "Stage2__C1_1__Collision",
       "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "C1_1",
       "role": "Collision",
       "bounds_min": [
         23.590000000000003,
@@ -638,132 +451,81 @@
       "triangles": 72
     },
     {
-      "name": "Stage2__C2_2__Steel",
+      "name": "Stage2__C1_1__Steel",
       "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "C1_1",
       "role": "Steel",
       "bounds_min": [
         23.6,
-        12.0,
+        7.965,
         30.42
       ],
       "bounds_max": [
-        45.12,
+        49.27,
         33.0,
         47.7125
       ],
-      "triangles": 5236
+      "triangles": 5404
     },
     {
-      "name": "Stage3__C2_2__WornSteel",
+      "name": "Stage3__C1_1__WornSteel",
       "stage": 3,
-      "chunk": "C2_2",
-      "role": "WornSteel",
-      "bounds_min": [
-        40.4,
-        11.96,
-        39.995
-      ],
-      "bounds_max": [
-        47.62,
-        24.86,
-        48.1175
-      ],
-      "triangles": 1092
-    },
-    {
-      "name": "Stage3__C2_2__Steel",
-      "stage": 3,
-      "chunk": "C2_2",
-      "role": "Steel",
-      "bounds_min": [
-        33.9,
-        11.682692307692308,
-        39.92923076923077
-      ],
-      "bounds_max": [
-        47.6425,
-        29.3,
-        48.71076923076923
-      ],
-      "triangles": 1540
-    },
-    {
-      "name": "Stage3__C2_3__WornSteel",
-      "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "WornSteel",
       "bounds_min": [
         25.5,
-        15.26,
-        47.915
+        -14.990000000000002,
+        39.995
       ],
       "bounds_max": [
-        54.6,
-        24.61,
+        57.6,
+        24.86,
         64.6
       ],
-      "triangles": 588
+      "triangles": 3248
     },
     {
-      "name": "Stage3__C2_3__Steel",
+      "name": "Stage3__C1_1__Steel",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Steel",
       "bounds_min": [
         29.6,
-        11.100000000000001,
-        44.0
+        -54.0,
+        39.92923076923077
       ],
       "bounds_max": [
-        51.4,
+        65.0,
         33.0,
         64.58
       ],
-      "triangles": 4088
+      "triangles": 11200
     },
     {
-      "name": "Stage3__C2_2__Collision",
+      "name": "Stage3__C1_1__Collision",
       "stage": 3,
-      "chunk": "C2_2",
+      "chunk": "C1_1",
       "role": "Collision",
       "bounds_min": [
-        40.35,
+        26.4,
         11.889615384615384,
         39.75615384615384
       ],
       "bounds_max": [
-        43.65,
-        16.776923076923076,
-        48.88384615384616
-      ],
-      "triangles": 36
-    },
-    {
-      "name": "Stage3__C2_3__Collision",
-      "stage": 3,
-      "chunk": "C2_3",
-      "role": "Collision",
-      "bounds_min": [
-        26.4,
-        15.360000000000001,
-        48.629999999999995
-      ],
-      "bounds_max": [
-        54.6,
-        16.82,
+        57.61,
+        18.7,
         64.6
       ],
-      "triangles": 96
+      "triangles": 216
     },
     {
-      "name": "Stage3__C1_3__Steel",
+      "name": "Stage3__C0_1__Steel",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Steel",
       "bounds_min": [
-        16.362499999999997,
-        11.100000000000001,
+        14.88,
+        -54.0,
         44.0
       ],
       "bounds_max": [
@@ -771,12 +533,12 @@
         33.0,
         64.6
       ],
-      "triangles": 5964
+      "triangles": 7840
     },
     {
-      "name": "Stage3__C2_3__Wear",
+      "name": "Stage3__C1_1__Wear",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Wear",
       "bounds_min": [
         33.322675581264335,
@@ -784,33 +546,33 @@
         49.58078857796153
       ],
       "bounds_max": [
-        48.04609677461032,
+        48.969972983891104,
         15.622,
         64.47569695414664
       ],
-      "triangles": 224
+      "triangles": 252
     },
     {
-      "name": "Stage3__C1_3__WornSteel",
+      "name": "Stage3__C0_1__WornSteel",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "WornSteel",
       "bounds_min": [
         16.4,
-        15.360000000000001,
-        49.4
+        -14.990000000000002,
+        47.775
       ],
       "bounds_max": [
         31.299999999999997,
         25.639999999999997,
         64.6
       ],
-      "triangles": 700
+      "triangles": 1708
     },
     {
-      "name": "Stage3__C1_3__Collision",
+      "name": "Stage3__C0_1__Collision",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Collision",
       "bounds_min": [
         16.349999999999998,
@@ -825,213 +587,94 @@
       "triangles": 132
     },
     {
-      "name": "Stage3__C2_4__WornSteel",
+      "name": "Stage3__C1_2__WornSteel",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "WornSteel",
       "bounds_min": [
-        43.4,
-        15.360000000000001,
+        41.775,
+        -14.990000000000002,
         61.400000000000006
       ],
       "bounds_max": [
-        46.6,
-        15.6,
-        75.6
+        57.6,
+        25.639999999999997,
+        76.705
       ],
-      "triangles": 56
+      "triangles": 1596
     },
     {
-      "name": "Stage3__C2_4__Collision",
+      "name": "Stage3__C1_2__Collision",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Collision",
       "bounds_min": [
         29.590000000000003,
         15.360000000000001,
-        61.400000000000006
+        61.39
       ],
       "bounds_max": [
-        46.65,
+        57.65,
         19.075000000000003,
         75.64999999999999
       ],
-      "triangles": 120
+      "triangles": 204
     },
     {
-      "name": "Stage3__C2_4__Steel",
+      "name": "Stage3__C1_2__Steel",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Steel",
       "bounds_min": [
         29.6,
-        -1.0,
+        -54.0,
         52.0
       ],
       "bounds_max": [
-        47.9225,
+        65.0,
         33.0,
-        83.0
+        83.27
       ],
-      "triangles": 2632
+      "triangles": 9912
     },
     {
-      "name": "Stage3__C2_4__Wear",
+      "name": "Stage3__C1_2__Wear",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Wear",
       "bounds_min": [
         43.869747676027366,
         15.614,
-        72.07133502413745
+        66.6877588492934
       ],
       "bounds_max": [
-        46.11715448192049,
+        57.19514123479679,
         15.622,
         74.9089749497781
       ],
-      "triangles": 84
+      "triangles": 168
     },
     {
-      "name": "Stage1__C-2_0__Concrete",
+      "name": "Stage1__C-1_1__Concrete",
       "stage": 1,
-      "chunk": "C-2_0",
-      "role": "Concrete",
-      "bounds_min": [
-        -30.12,
-        8.160000000000002,
-        -6.0
-      ],
-      "bounds_max": [
-        -11.399999999999999,
-        27.0,
-        15.6
-      ],
-      "triangles": 140
-    },
-    {
-      "name": "Stage1__C-2_0__Collision",
-      "stage": 1,
-      "chunk": "C-2_0",
-      "role": "Collision",
-      "bounds_min": [
-        -25.6,
-        8.160000000000002,
-        12.4
-      ],
-      "bounds_max": [
-        -11.399999999999999,
-        9.62,
-        15.65
-      ],
-      "triangles": 24
-    },
-    {
-      "name": "Stage1__C-2_0__ConcreteDark",
-      "stage": 1,
-      "chunk": "C-2_0",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        -25.58,
-        8.402,
-        12.42
-      ],
-      "bounds_max": [
-        -18.389000000000003,
-        8.414,
-        15.58
-      ],
-      "triangles": 112
-    },
-    {
-      "name": "Stage1__C-2_1__Concrete",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "Concrete",
-      "bounds_min": [
-        -33.0,
-        3.9000000000000004,
-        6.0
-      ],
-      "bounds_max": [
-        -11.399999999999999,
-        27.0,
-        43.0
-      ],
-      "triangles": 1204
-    },
-    {
-      "name": "Stage1__C-2_1__Collision",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "Collision",
-      "bounds_min": [
-        -33.01,
-        8.160000000000002,
-        12.39
-      ],
-      "bounds_max": [
-        -11.399999999999999,
-        11.59,
-        29.6
-      ],
-      "triangles": 336
-    },
-    {
-      "name": "Stage1__C-2_1__ConcreteDark",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        -30.611,
-        8.402,
-        17.189
-      ],
-      "bounds_max": [
-        -16.989,
-        8.414,
-        31.211
-      ],
-      "triangles": 392
-    },
-    {
-      "name": "Stage1__C-2_1__Wear",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "Wear",
-      "bounds_min": [
-        -29.36118699339606,
-        8.414000000000001,
-        17.06948694543848
-      ],
-      "bounds_max": [
-        -17.456398738553702,
-        8.422,
-        29.21944218241739
-      ],
-      "triangles": 252
-    },
-    {
-      "name": "Stage1__C-2_2__Concrete",
-      "stage": 1,
-      "chunk": "C-2_2",
+      "chunk": "C-1_1",
       "role": "Concrete",
       "bounds_min": [
         -32.65,
-        7.5,
+        -54.0,
         26.4
       ],
       "bounds_max": [
-        -15.3,
-        18.790000000000003,
+        3.0,
+        27.0,
         42.68
       ],
-      "triangles": 588
+      "triangles": 1064
     },
     {
-      "name": "Stage1__C-2_2__Collision",
+      "name": "Stage1__C-1_1__Collision",
       "stage": 1,
-      "chunk": "C-2_2",
+      "chunk": "C-1_1",
       "role": "Collision",
       "bounds_min": [
         -26.650000000000002,
@@ -1039,84 +682,33 @@
         26.39
       ],
       "bounds_max": [
-        -23.349999999999998,
-        9.62,
-        38.61
-      ],
-      "triangles": 36
-    },
-    {
-      "name": "Stage1__C-2_2__ConcreteDark",
-      "stage": 1,
-      "chunk": "C-2_2",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        -26.58,
-        8.402,
-        33.58899999999999
-      ],
-      "bounds_max": [
-        -16.989,
-        8.414,
-        38.58
-      ],
-      "triangles": 196
-    },
-    {
-      "name": "Stage1__C-1_2__Concrete",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "Concrete",
-      "bounds_min": [
-        -26.6,
-        3.9000000000000004,
-        34.86
-      ],
-      "bounds_max": [
-        3.0,
-        27.0,
-        42.68
-      ],
-      "triangles": 476
-    },
-    {
-      "name": "Stage1__C-1_2__Collision",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "Collision",
-      "bounds_min": [
-        -26.61,
-        8.160000000000002,
-        35.349999999999994
-      ],
-      "bounds_max": [
         4.610000000000001,
         9.62,
         38.650000000000006
       ],
-      "triangles": 36
+      "triangles": 72
     },
     {
-      "name": "Stage1__C-1_2__ConcreteDark",
+      "name": "Stage1__C-1_1__ConcreteDark",
       "stage": 1,
-      "chunk": "C-1_2",
+      "chunk": "C-1_1",
       "role": "ConcreteDark",
       "bounds_min": [
         -34.0,
         3.965,
-        35.42
+        33.58899999999999
       ],
       "bounds_max": [
         6.0,
         24.035,
         43.27
       ],
-      "triangles": 364
+      "triangles": 560
     },
     {
-      "name": "Stage1__C-1_2__Wear",
+      "name": "Stage1__C-1_1__Wear",
       "stage": 1,
-      "chunk": "C-1_2",
+      "chunk": "C-1_1",
       "role": "Wear",
       "bounds_min": [
         -13.430553370306145,
@@ -1131,57 +723,6 @@
       "triangles": 84
     },
     {
-      "name": "Stage2__C0_0__Steel",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "Steel",
-      "bounds_min": [
-        -7.500000000000001,
-        7.499999999999999,
-        5.73
-      ],
-      "bounds_max": [
-        15.627500000000001,
-        28.035,
-        15.802499999999998
-      ],
-      "triangles": 2128
-    },
-    {
-      "name": "Stage2__C0_0__WornSteel",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "WornSteel",
-      "bounds_min": [
-        -7.6,
-        11.760000000000002,
-        8.27
-      ],
-      "bounds_max": [
-        15.6,
-        22.74,
-        15.909999999999998
-      ],
-      "triangles": 280
-    },
-    {
-      "name": "Stage2__C0_0__Collision",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "Collision",
-      "bounds_min": [
-        -7.6,
-        11.760000000000002,
-        12.35
-      ],
-      "bounds_max": [
-        15.61,
-        13.219999999999999,
-        15.65
-      ],
-      "triangles": 36
-    },
-    {
       "name": "Stage2__C-1_0__Steel",
       "stage": 2,
       "chunk": "C-1_0",
@@ -1194,31 +735,14 @@
       "bounds_max": [
         0.7248242494642712,
         27.0,
-        16.099999999999998
+        16.22
       ],
-      "triangles": 2716
+      "triangles": 3052
     },
     {
-      "name": "Stage2__C0_0__Wear",
+      "name": "Stage2__C1_0__WornSteel",
       "stage": 2,
-      "chunk": "C0_0",
-      "role": "Wear",
-      "bounds_min": [
-        2.673993339461697,
-        12.014000000000001,
-        12.493124682665146
-      ],
-      "bounds_max": [
-        5.832649359805005,
-        12.022,
-        15.476121255777699
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage2__C2_1__WornSteel",
-      "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "WornSteel",
       "bounds_min": [
         27.4,
@@ -1233,9 +757,9 @@
       "triangles": 616
     },
     {
-      "name": "Stage2__C2_1__Collision",
+      "name": "Stage2__C1_0__Collision",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "Collision",
       "bounds_min": [
         27.4,
@@ -1250,26 +774,26 @@
       "triangles": 72
     },
     {
-      "name": "Stage2__C2_1__Steel",
+      "name": "Stage2__C1_0__Steel",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "Steel",
       "bounds_min": [
         30.6,
-        7.499999999999999,
+        -54.0,
         6.0
       ],
       "bounds_max": [
-        45.12,
+        49.27,
         30.0,
         43.0
       ],
-      "triangles": 5068
+      "triangles": 5544
     },
     {
-      "name": "Stage2__C2_1__Wear",
+      "name": "Stage2__C1_0__Wear",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "Wear",
       "bounds_min": [
         37.899283576345624,
@@ -1284,94 +808,9 @@
       "triangles": 84
     },
     {
-      "name": "Stage2__C1_3__Steel",
-      "stage": 2,
-      "chunk": "C1_3",
-      "role": "Steel",
-      "bounds_min": [
-        20.3725,
-        12.0,
-        46.45478607310048
-      ],
-      "bounds_max": [
-        26.9225,
-        33.0,
-        51.815000000000005
-      ],
-      "triangles": 1064
-    },
-    {
-      "name": "Stage3__C3_3__Steel",
+      "name": "Stage3__C0_1__Wear",
       "stage": 3,
-      "chunk": "C3_3",
-      "role": "Steel",
-      "bounds_min": [
-        43.6,
-        15.599999999999998,
-        44.0
-      ],
-      "bounds_max": [
-        60.12,
-        33.0,
-        64.58
-      ],
-      "triangles": 3472
-    },
-    {
-      "name": "Stage3__C3_3__Wear",
-      "stage": 3,
-      "chunk": "C3_3",
-      "role": "Wear",
-      "bounds_min": [
-        48.13002701610889,
-        15.614,
-        49.65672393637779
-      ],
-      "bounds_max": [
-        48.969972983891104,
-        15.622,
-        50.84327606362221
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C3_3__WornSteel",
-      "stage": 3,
-      "chunk": "C3_3",
-      "role": "WornSteel",
-      "bounds_min": [
-        43.4,
-        15.360000000000001,
-        49.4
-      ],
-      "bounds_max": [
-        57.6,
-        24.61,
-        64.6
-      ],
-      "triangles": 560
-    },
-    {
-      "name": "Stage3__C3_3__Collision",
-      "stage": 3,
-      "chunk": "C3_3",
-      "role": "Collision",
-      "bounds_min": [
-        43.4,
-        15.360000000000001,
-        49.35
-      ],
-      "bounds_max": [
-        57.61,
-        18.7,
-        64.6
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage3__C1_3__Wear",
-      "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Wear",
       "bounds_min": [
         21.433415035021785,
@@ -1386,29 +825,29 @@
       "triangles": 168
     },
     {
-      "name": "Stage3__C1_4__WornSteel",
+      "name": "Stage3__C0_2__WornSteel",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "WornSteel",
       "bounds_min": [
         14.0,
-        15.360000000000001,
+        -14.990000000000002,
         61.400000000000006
       ],
       "bounds_max": [
         29.6,
         23.000000000000004,
-        76.0
+        77.225
       ],
-      "triangles": 448
+      "triangles": 1456
     },
     {
-      "name": "Stage3__C1_4__Collision",
+      "name": "Stage3__C0_2__Collision",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Collision",
       "bounds_min": [
-        13.99,
+        13.95,
         15.360000000000001,
         61.400000000000006
       ],
@@ -1417,29 +856,29 @@
         18.79,
         76.05
       ],
-      "triangles": 324
+      "triangles": 364
     },
     {
-      "name": "Stage3__C1_4__Steel",
+      "name": "Stage3__C0_2__Steel",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Steel",
       "bounds_min": [
-        14.0,
-        11.100000000000001,
+        11.73,
+        -54.0,
         52.0
       ],
       "bounds_max": [
-        31.927500000000002,
+        49.0,
         33.0,
-        83.0
+        83.27
       ],
-      "triangles": 4004
+      "triangles": 6692
     },
     {
-      "name": "Stage3__C1_4__Wear",
+      "name": "Stage3__C0_2__Wear",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Wear",
       "bounds_min": [
         17.875385342048077,
@@ -1452,74 +891,6 @@
         75.40692734069337
       ],
       "triangles": 168
-    },
-    {
-      "name": "Stage3__C3_4__WornSteel",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "WornSteel",
-      "bounds_min": [
-        43.4,
-        15.360000000000001,
-        61.400000000000006
-      ],
-      "bounds_max": [
-        57.6,
-        25.639999999999997,
-        74.6
-      ],
-      "triangles": 532
-    },
-    {
-      "name": "Stage3__C3_4__Collision",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "Collision",
-      "bounds_min": [
-        43.4,
-        15.360000000000001,
-        61.39
-      ],
-      "bounds_max": [
-        57.65,
-        16.82,
-        74.64999999999999
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage3__C3_4__Steel",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "Steel",
-      "bounds_min": [
-        46.6,
-        11.100000000000001,
-        52.0
-      ],
-      "bounds_max": [
-        60.12,
-        33.0,
-        83.0
-      ],
-      "triangles": 5264
-    },
-    {
-      "name": "Stage3__C3_4__Wear",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "Wear",
-      "bounds_min": [
-        54.72715502737482,
-        15.614,
-        66.6877588492934
-      ],
-      "bounds_max": [
-        57.19514123479679,
-        15.622,
-        69.58825207680424
-      ],
-      "triangles": 84
     },
     {
       "name": "Stage2__C-1_0__WornSteel",
@@ -1551,9 +922,9 @@
       "bounds_max": [
         -4.4,
         15.19,
-        16.01
+        16.05
       ],
-      "triangles": 324
+      "triangles": 280
     },
     {
       "name": "Stage2__C-1_0__Wear",
@@ -1573,43 +944,9 @@
       "triangles": 84
     },
     {
-      "name": "Stage1__C-2_1__Steel",
+      "name": "Stage1__C-2_0__Steel",
       "stage": 1,
-      "chunk": "C-2_1",
-      "role": "Steel",
-      "bounds_min": [
-        -33.0,
-        8.4,
-        12.399999999999999
-      ],
-      "bounds_max": [
-        -14.600000000000001,
-        27.0,
-        31.972954545454545
-      ],
-      "triangles": 3108
-    },
-    {
-      "name": "Stage1__C-2_1__Wood",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "Wood",
-      "bounds_min": [
-        -33.0,
-        8.4,
-        12.399999999999999
-      ],
-      "bounds_max": [
-        -14.600000000000001,
-        18.550000000000004,
-        31.5175
-      ],
-      "triangles": 2800
-    },
-    {
-      "name": "Stage1__C-3_1__Steel",
-      "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Steel",
       "bounds_min": [
         -33.809999999999995,
@@ -1624,9 +961,9 @@
       "triangles": 448
     },
     {
-      "name": "Stage1__C-3_1__Wood",
+      "name": "Stage1__C-2_0__Wood",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Wood",
       "bounds_min": [
         -33.0375,
@@ -1641,9 +978,9 @@
       "triangles": 196
     },
     {
-      "name": "Stage1__C-3_1__Collision",
+      "name": "Stage1__C-2_0__Collision",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Collision",
       "bounds_min": [
         -33.05,
@@ -1663,16 +1000,16 @@
       "chunk": "C-1_1",
       "role": "Steel",
       "bounds_min": [
-        -23.4,
-        8.4,
-        15.600000000000001
+        -31.407713926899525,
+        -21.17,
+        26.4
       ],
       "bounds_max": [
-        4.6,
+        4.600000000000001,
         27.0,
-        30.1625
+        41.66417879031218
       ],
-      "triangles": 2128
+      "triangles": 2716
     },
     {
       "name": "Stage1__C-1_1__Wood",
@@ -1680,16 +1017,16 @@
       "chunk": "C-1_1",
       "role": "Wood",
       "bounds_min": [
-        -23.4,
-        8.4,
-        15.600000000000001
+        -32.64,
+        9.4825,
+        26.4
       ],
       "bounds_max": [
-        4.6,
-        18.9075,
-        29.637500000000003
+        4.600000000000001,
+        18.550000000000004,
+        41.8
       ],
-      "triangles": 2212
+      "triangles": 1484
     },
     {
       "name": "Stage1__C0_1__Steel",
@@ -1697,93 +1034,8 @@
       "chunk": "C0_1",
       "role": "Steel",
       "bounds_min": [
-        0.0010714285714284698,
-        8.4,
-        26.3725
-      ],
-      "bounds_max": [
-        4.6274999999999995,
-        11.677499999999998,
-        35.4
-      ],
-      "triangles": 476
-    },
-    {
-      "name": "Stage1__C-2_2__Steel",
-      "stage": 1,
-      "chunk": "C-2_2",
-      "role": "Steel",
-      "bounds_min": [
-        -31.407713926899525,
-        8.4,
-        26.4
-      ],
-      "bounds_max": [
-        -16.172500000000003,
-        27.0,
-        38.627500000000005
-      ],
-      "triangles": 1064
-    },
-    {
-      "name": "Stage1__C-2_2__Wood",
-      "stage": 1,
-      "chunk": "C-2_2",
-      "role": "Wood",
-      "bounds_min": [
-        -32.64,
-        9.4825,
-        26.4
-      ],
-      "bounds_max": [
-        -23.362499999999997,
-        18.550000000000004,
-        38.6
-      ],
-      "triangles": 532
-    },
-    {
-      "name": "Stage1__C-1_2__Steel",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "Steel",
-      "bounds_min": [
-        -26.6,
-        8.4,
-        34.945
-      ],
-      "bounds_max": [
-        4.600000000000001,
-        27.0,
-        41.66417879031218
-      ],
-      "triangles": 1568
-    },
-    {
-      "name": "Stage1__C-1_2__Wood",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "Wood",
-      "bounds_min": [
-        -26.6,
-        9.4825,
-        35.3625
-      ],
-      "bounds_max": [
-        4.600000000000001,
-        17.3225,
-        41.8
-      ],
-      "triangles": 952
-    },
-    {
-      "name": "Stage1__C0_2__Steel",
-      "stage": 1,
-      "chunk": "C0_2",
-      "role": "Steel",
-      "bounds_min": [
         0.19154761904761472,
-        8.4,
+        -21.17,
         29.6
       ],
       "bounds_max": [
@@ -1791,46 +1043,12 @@
         11.86,
         38.627500000000005
       ],
-      "triangles": 644
+      "triangles": 728
     },
     {
-      "name": "Stage1__C-2_0__Steel",
+      "name": "Stage1__C0_1__Wood",
       "stage": 1,
-      "chunk": "C-2_0",
-      "role": "Steel",
-      "bounds_min": [
-        -25.6275,
-        8.4,
-        12.3725
-      ],
-      "bounds_max": [
-        -14.600000000000001,
-        17.86,
-        15.942499999999999
-      ],
-      "triangles": 756
-    },
-    {
-      "name": "Stage1__C-2_0__Wood",
-      "stage": 1,
-      "chunk": "C-2_0",
-      "role": "Wood",
-      "bounds_min": [
-        -22.4,
-        9.4825,
-        15.5625
-      ],
-      "bounds_max": [
-        -14.600000000000001,
-        9.5575,
-        15.6375
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C0_2__Wood",
-      "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Wood",
       "bounds_min": [
         1.3624999999999998,
@@ -1845,140 +1063,21 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C0_1__Wood",
-      "stage": 1,
-      "chunk": "C0_1",
-      "role": "Wood",
-      "bounds_min": [
-        4.5625,
-        9.4825,
-        26.4
-      ],
-      "bounds_max": [
-        4.637499999999999,
-        9.5575,
-        35.4
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C0_1__Collision",
-      "stage": 1,
-      "chunk": "C0_1",
-      "role": "Collision",
-      "bounds_min": [
-        4.55,
-        8.4,
-        26.39
-      ],
-      "bounds_max": [
-        4.6499999999999995,
-        9.62,
-        35.41
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage2__C-1_1__Steel",
-      "stage": 2,
-      "chunk": "C-1_1",
-      "role": "Steel",
-      "bounds_min": [
-        -12.0275,
-        12.0,
-        15.9625
-      ],
-      "bounds_max": [
-        -3.6908333333333343,
-        20.599999999999998,
-        16.22
-      ],
-      "triangles": 336
-    },
-    {
-      "name": "Stage2__C-1_1__Collision",
-      "stage": 2,
-      "chunk": "C-1_1",
-      "role": "Collision",
-      "bounds_min": [
-        -12.01,
-        12.0,
-        15.95
-      ],
-      "bounds_max": [
-        -7.49,
-        13.219999999999999,
-        16.05
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage2__C1_3__Collision",
-      "stage": 2,
-      "chunk": "C1_3",
-      "role": "Collision",
-      "bounds_min": [
-        20.389999999999997,
-        12.0,
-        49.275
-      ],
-      "bounds_max": [
-        23.610000000000003,
-        15.1,
-        49.65
-      ],
-      "triangles": 24
-    },
-    {
-      "name": "Stage3__C0_4__Steel",
-      "stage": 3,
-      "chunk": "C0_4",
-      "role": "Steel",
-      "bounds_min": [
-        11.73,
-        11.965,
-        52.0
-      ],
-      "bounds_max": [
-        15.952499999999999,
-        33.0,
-        83.0
-      ],
-      "triangles": 616
-    },
-    {
-      "name": "Stage3__C0_4__Collision",
-      "stage": 3,
-      "chunk": "C0_4",
-      "role": "Collision",
-      "bounds_min": [
-        13.95,
-        15.6,
-        71.99
-      ],
-      "bounds_max": [
-        14.54,
-        18.7,
-        76.01
-      ],
-      "triangles": 124
-    },
-    {
       "name": "Stage1__C-1_0__Rust",
       "stage": 1,
       "chunk": "C-1_0",
       "role": "Rust",
       "bounds_min": [
-        -3.4599999999999995,
+        -26.01,
         4.65,
         1.8399999999999999
       ],
       "bounds_max": [
         -1.3599999999999997,
         11.25,
-        13.809999999999999
+        26.169999999999998
       ],
-      "triangles": 56
+      "triangles": 140
     },
     {
       "name": "Stage1__C-1_0__DoorPaint",
@@ -1986,55 +1085,21 @@
       "chunk": "C-1_0",
       "role": "DoorPaint",
       "bounds_min": [
-        -1.7099999999999997,
+        -26.21,
         5.5200000000000005,
         3.7600000000000002
       ],
       "bounds_max": [
         -1.1899999999999997,
-        5.62,
-        4.19
+        18.32,
+        29.465
       ],
-      "triangles": 28
+      "triangles": 112
     },
     {
-      "name": "Stage1__C-1_1__Rust",
+      "name": "Stage1__C0_1__Rust",
       "stage": 1,
-      "chunk": "C-1_1",
-      "role": "Rust",
-      "bounds_min": [
-        -15.01,
-        8.25,
-        20.91
-      ],
-      "bounds_max": [
-        -14.83,
-        11.25,
-        21.09
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C-1_1__DoorPaint",
-      "stage": 1,
-      "chunk": "C-1_1",
-      "role": "DoorPaint",
-      "bounds_min": [
-        -14.51,
-        9.12,
-        20.785
-      ],
-      "bounds_max": [
-        -13.99,
-        9.22,
-        21.215
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C0_2__Rust",
-      "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Rust",
       "bounds_min": [
         0.9899999999999999,
@@ -2049,9 +1114,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C0_2__Rust",
+      "name": "Stage2__C0_1__Rust",
       "stage": 2,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Rust",
       "bounds_min": [
         13.530000000000001,
@@ -2059,104 +1124,19 @@
         34.989999999999995
       ],
       "bounds_max": [
-        13.71,
+        27.169999999999998,
         14.85,
-        35.17
+        49.54
       ],
-      "triangles": 28
+      "triangles": 112
     },
     {
-      "name": "Stage2__C0_2__Timber",
+      "name": "Stage2__C0_1__Timber",
       "stage": 2,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "Timber",
       "bounds_min": [
         13.330000000000002,
-        12.02,
-        37.925
-      ],
-      "bounds_max": [
-        13.91,
-        12.2,
-        38.575
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C0_2__Cardboard",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Cardboard",
-      "bounds_min": [
-        13.375000000000002,
-        12.200000000000001,
-        38.005
-      ],
-      "bounds_max": [
-        13.865,
-        12.6,
-        38.495
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C0_2__Rubber",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Rubber",
-      "bounds_min": [
-        13.620000000000001,
-        12.605,
-        38.065
-      ],
-      "bounds_max": [
-        13.86,
-        12.655000000000001,
-        38.435
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C1_1__Rust",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "Rust",
-      "bounds_min": [
-        21.41,
-        11.85,
-        20.99
-      ],
-      "bounds_max": [
-        21.59,
-        14.85,
-        21.169999999999998
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C1_2__Rust",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "Rust",
-      "bounds_min": [
-        25.41,
-        11.85,
-        35.91
-      ],
-      "bounds_max": [
-        27.169999999999998,
-        14.85,
-        38.17
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage2__C1_2__Timber",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "Timber",
-      "bounds_min": [
-        25.21,
         12.02,
         35.675
       ],
@@ -2165,15 +1145,15 @@
         12.2,
         41.575
       ],
-      "triangles": 56
+      "triangles": 84
     },
     {
-      "name": "Stage2__C1_2__Cardboard",
+      "name": "Stage2__C0_1__Cardboard",
       "stage": 2,
-      "chunk": "C1_2",
+      "chunk": "C0_1",
       "role": "Cardboard",
       "bounds_min": [
-        25.255,
+        13.375000000000002,
         12.200000000000001,
         35.755
       ],
@@ -2182,15 +1162,15 @@
         12.6,
         41.495
       ],
-      "triangles": 56
+      "triangles": 84
     },
     {
-      "name": "Stage2__C1_2__Rubber",
+      "name": "Stage2__C0_1__Rubber",
       "stage": 2,
-      "chunk": "C1_2",
+      "chunk": "C0_1",
       "role": "Rubber",
       "bounds_min": [
-        25.5,
+        13.620000000000001,
         12.605,
         35.815
       ],
@@ -2199,12 +1179,29 @@
         12.655000000000001,
         41.435
       ],
-      "triangles": 56
+      "triangles": 84
     },
     {
-      "name": "Stage3__C2_3__Rust",
+      "name": "Stage2__C0_0__Rust",
+      "stage": 2,
+      "chunk": "C0_0",
+      "role": "Rust",
+      "bounds_min": [
+        3.91,
+        11.85,
+        6.505
+      ],
+      "bounds_max": [
+        21.59,
+        18.5,
+        21.169999999999998
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage3__C1_1__Rust",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Rust",
       "bounds_min": [
         34.91,
@@ -2212,16 +1209,16 @@
         48.989999999999995
       ],
       "bounds_max": [
-        47.59,
+        53.95,
         18.45,
-        61.17
+        61.54
       ],
-      "triangles": 84
+      "triangles": 112
     },
     {
-      "name": "Stage3__C2_3__Timber",
+      "name": "Stage3__C1_1__Timber",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Timber",
       "bounds_min": [
         34.71,
@@ -2236,9 +1233,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_3__Cardboard",
+      "name": "Stage3__C1_1__Cardboard",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Cardboard",
       "bounds_min": [
         34.755,
@@ -2253,9 +1250,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_3__Rubber",
+      "name": "Stage3__C1_1__Rubber",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "Rubber",
       "bounds_min": [
         35.0,
@@ -2270,26 +1267,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_4__Rust",
+      "name": "Stage3__C1_2__Rust",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Rust",
       "bounds_min": [
         42.989999999999995,
         15.45,
-        73.41
+        67.91
       ],
       "bounds_max": [
-        43.17,
-        18.45,
-        73.59
+        54.17,
+        22.5,
+        82.49499999999999
       ],
-      "triangles": 28
+      "triangles": 112
     },
     {
-      "name": "Stage3__C2_4__Timber",
+      "name": "Stage3__C1_2__Timber",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Timber",
       "bounds_min": [
         43.46,
@@ -2304,9 +1301,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_4__Cardboard",
+      "name": "Stage3__C1_2__Cardboard",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Cardboard",
       "bounds_min": [
         43.505,
@@ -2321,9 +1318,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_4__Rubber",
+      "name": "Stage3__C1_2__Rubber",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "C1_2",
       "role": "Rubber",
       "bounds_min": [
         43.75,
@@ -2338,47 +1335,13 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-2_1__Rust",
+      "name": "Stage1__C-1_1__Rust",
       "stage": 1,
-      "chunk": "C-2_1",
+      "chunk": "C-1_1",
       "role": "Rust",
       "bounds_min": [
-        -26.01,
-        8.25,
-        18.41
-      ],
-      "bounds_max": [
-        -18.91,
-        11.25,
-        26.169999999999998
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage1__C-2_1__DoorPaint",
-      "stage": 1,
-      "chunk": "C-2_1",
-      "role": "DoorPaint",
-      "bounds_min": [
-        -26.21,
-        9.12,
-        21.58
-      ],
-      "bounds_max": [
-        -18.74,
-        18.32,
-        29.465
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage1__C-1_2__Rust",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "Rust",
-      "bounds_min": [
-        -11.89,
-        8.25,
+        -17.995,
+        7.2,
         34.989999999999995
       ],
       "bounds_max": [
@@ -2386,24 +1349,7 @@
         14.5,
         42.495
       ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage2__C0_0__Rust",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "Rust",
-      "bounds_min": [
-        3.91,
-        11.85,
-        11.99
-      ],
-      "bounds_max": [
-        4.09,
-        14.85,
-        12.17
-      ],
-      "triangles": 28
+      "triangles": 140
     },
     {
       "name": "Stage2__C0_0__Timber",
@@ -2457,43 +1403,43 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C2_1__Rust",
+      "name": "Stage2__C1_0__Rust",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "Rust",
       "bounds_min": [
-        36.989999999999995,
+        32.98,
         11.85,
-        27.41
+        6.505
       ],
       "bounds_max": [
-        37.17,
-        14.85,
+        48.495,
+        21.8,
         27.59
       ],
-      "triangles": 28
+      "triangles": 140
     },
     {
-      "name": "Stage3__C1_3__Rust",
+      "name": "Stage3__C0_1__Rust",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Rust",
       "bounds_min": [
-        22.91,
+        12.504999999999999,
         15.45,
         48.989999999999995
       ],
       "bounds_max": [
         23.09,
-        18.45,
-        61.17
+        22.5,
+        62.145
       ],
-      "triangles": 56
+      "triangles": 112
     },
     {
-      "name": "Stage3__C1_3__Timber",
+      "name": "Stage3__C0_1__Timber",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Timber",
       "bounds_min": [
         22.71,
@@ -2508,9 +1454,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_3__Cardboard",
+      "name": "Stage3__C0_1__Cardboard",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Cardboard",
       "bounds_min": [
         22.755,
@@ -2525,9 +1471,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_3__Rubber",
+      "name": "Stage3__C0_1__Rubber",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Rubber",
       "bounds_min": [
         23.0,
@@ -2542,26 +1488,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_4__Rust",
+      "name": "Stage3__C0_2__Rust",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Rust",
       "bounds_min": [
         23.91,
-        15.45,
+        15.2,
         71.99000000000001
       ],
       "bounds_max": [
-        24.09,
-        18.45,
-        72.17000000000002
+        31.77,
+        19.2,
+        82.49499999999999
       ],
-      "triangles": 28
+      "triangles": 84
     },
     {
-      "name": "Stage3__C1_4__Timber",
+      "name": "Stage3__C0_2__Timber",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Timber",
       "bounds_min": [
         23.71,
@@ -2576,9 +1522,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_4__Cardboard",
+      "name": "Stage3__C0_2__Cardboard",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Cardboard",
       "bounds_min": [
         23.755,
@@ -2593,9 +1539,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_4__Rubber",
+      "name": "Stage3__C0_2__Rubber",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "Rubber",
       "bounds_min": [
         24.0,
@@ -2610,123 +1556,89 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C3_4__Rust",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "Rust",
-      "bounds_min": [
-        53.989999999999995,
-        15.45,
-        67.91
-      ],
-      "bounds_max": [
-        54.17,
-        18.45,
-        68.09
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C1_3__Concrete",
-      "stage": 2,
-      "chunk": "C1_3",
+      "name": "Stage1__C0_0__Concrete",
+      "stage": 1,
+      "chunk": "C0_0",
       "role": "Concrete",
       "bounds_min": [
-        20.4,
-        12.0,
-        47.932500000000005
+        -0.12166666666666637,
+        -25.79,
+        -6.0
       ],
       "bounds_max": [
-        26.9,
-        23.970087878755454,
-        51.9525
+        5.12,
+        27.0,
+        43.0
       ],
-      "triangles": 392
+      "triangles": 1008
     },
     {
-      "name": "Stage2__C1_3__Rust",
+      "name": "Stage2__C0_1__Concrete",
       "stage": 2,
-      "chunk": "C1_3",
-      "role": "Rust",
+      "chunk": "C0_1",
+      "role": "Concrete",
       "bounds_min": [
-        21.05,
-        12.0,
-        49.38
+        5.75,
+        -1.0,
+        31.88
       ],
       "bounds_max": [
-        22.95,
-        14.5,
-        49.54
+        49.0,
+        30.439999999999998,
+        52.25
       ],
-      "triangles": 28
+      "triangles": 1512
     },
     {
-      "name": "Stage3__C3_3__Concrete",
+      "name": "Stage3__C1_1__Concrete",
       "stage": 3,
-      "chunk": "C3_3",
+      "chunk": "C1_1",
       "role": "Concrete",
       "bounds_min": [
         48.75,
         3.0,
-        44.0
+        43.75
       ],
       "bounds_max": [
         65.0,
         33.44,
         61.61
       ],
-      "triangles": 140
+      "triangles": 168
     },
     {
-      "name": "Stage3__C3_3__Rust",
-      "stage": 3,
-      "chunk": "C3_3",
-      "role": "Rust",
-      "bounds_min": [
-        52.05,
-        15.6,
-        61.38
-      ],
-      "bounds_max": [
-        53.95,
-        18.1,
-        61.54
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C-2_1__Plaster",
+      "name": "Stage1__C-1_0__Plaster",
       "stage": 1,
-      "chunk": "C-2_1",
+      "chunk": "C-1_0",
       "role": "Plaster",
       "bounds_min": [
-        -33.0,
-        8.4,
-        21.0
+        -34.0,
+        5.0,
+        -6.0
       ],
       "bounds_max": [
-        -24.509999999999998,
-        18.540000000000003,
-        25.0
+        6.0,
+        27.439999999999998,
+        43.0
       ],
-      "triangles": 224
+      "triangles": 476
     },
     {
-      "name": "Stage1__C-3_1__Plaster",
+      "name": "Stage1__C-2_0__Plaster",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Plaster",
       "bounds_min": [
         -34.25,
         -1.0,
-        6.0
+        -6.0
       ],
       "bounds_max": [
         -32.84,
         27.0,
         43.0
       ],
-      "triangles": 56
+      "triangles": 84
     },
     {
       "name": "Stage1__Door_store__Wood",
@@ -2777,7 +1689,7 @@
         15.19,
         16.0
       ],
-      "triangles": 224
+      "triangles": 196
     },
     {
       "name": "Stage2__Door_service__ConcreteDark",
@@ -2831,43 +1743,9 @@
       "triangles": 224
     },
     {
-      "name": "Stage2__C-1_0__Rust",
-      "stage": 2,
-      "chunk": "C-1_0",
-      "role": "Rust",
-      "bounds_min": [
-        -11.7675,
-        12.4,
-        12.4125
-      ],
-      "bounds_max": [
-        -11.6925,
-        14.9,
-        15.5875
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage3__C1_4__Concrete",
+      "name": "Stage3__C0_2__Concrete",
       "stage": 3,
-      "chunk": "C1_4",
-      "role": "Concrete",
-      "bounds_min": [
-        12.0,
-        15.6,
-        52.0
-      ],
-      "bounds_max": [
-        49.0,
-        33.44,
-        83.0
-      ],
-      "triangles": 224
-    },
-    {
-      "name": "Stage3__C0_4__Concrete",
-      "stage": 3,
-      "chunk": "C0_4",
+      "chunk": "C0_2",
       "role": "Concrete",
       "bounds_min": [
         11.75,
@@ -2875,11 +1753,11 @@
         52.0
       ],
       "bounds_max": [
-        14.16,
-        33.0,
-        83.0
+        49.0,
+        33.44,
+        83.25
       ],
-      "triangles": 84
+      "triangles": 336
     },
     {
       "name": "Stage3__Door_switchroom__DoorPaint",
@@ -2916,57 +1794,6 @@
       "triangles": 280
     },
     {
-      "name": "Stage3__C0_4__WornSteel",
-      "stage": 3,
-      "chunk": "C0_4",
-      "role": "WornSteel",
-      "bounds_min": [
-        14.16,
-        15.6,
-        72.305
-      ],
-      "bounds_max": [
-        14.54,
-        18.04,
-        75.695
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage3__C0_4__DoorPaint",
-      "stage": 3,
-      "chunk": "C0_4",
-      "role": "DoorPaint",
-      "bounds_min": [
-        14.54,
-        15.78,
-        72.375
-      ],
-      "bounds_max": [
-        14.58,
-        17.92,
-        75.625
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage1__C-1_0__Plaster",
-      "stage": 1,
-      "chunk": "C-1_0",
-      "role": "Plaster",
-      "bounds_min": [
-        -34.0,
-        5.0,
-        -6.0
-      ],
-      "bounds_max": [
-        6.0,
-        27.439999999999998,
-        16.97
-      ],
-      "triangles": 84
-    },
-    {
       "name": "Stage1__C0_0__Plaster",
       "stage": 1,
       "chunk": "C0_0",
@@ -2984,94 +1811,60 @@
       "triangles": 140
     },
     {
-      "name": "Stage1__C0_0__ConcreteDark",
+      "name": "Stage1__C-1_0__DecorCollision",
       "stage": 1,
-      "chunk": "C0_0",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        0.9849999999999999,
-        3.965,
-        -6.0
-      ],
-      "bounds_max": [
-        10.27,
-        24.035,
-        11.959999999999999
-      ],
-      "triangles": 196
-    },
-    {
-      "name": "Stage1__C-1_1__Plaster",
-      "stage": 1,
-      "chunk": "C-1_1",
-      "role": "Plaster",
-      "bounds_min": [
-        -34.0,
-        8.399999999999999,
-        6.0
-      ],
-      "bounds_max": [
-        6.0,
-        27.439999999999998,
-        43.0
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage1__C-1_1__DecorCollision",
-      "stage": 1,
-      "chunk": "C-1_1",
+      "chunk": "C-1_0",
       "role": "DecorCollision",
       "bounds_min": [
-        -15.225,
+        -32.64,
         8.4,
-        15.86
+        12.639912121244546
       ],
       "bounds_max": [
-        -3.6875,
+        -1.049999999999999,
         19.18727064442613,
-        25.9525
+        31.675
       ],
-      "triangles": 2964
+      "triangles": 8424
     },
     {
-      "name": "Stage2__C1_1__DecorCollision",
+      "name": "Stage2__C0_0__DecorCollision",
       "stage": 2,
-      "chunk": "C1_1",
+      "chunk": "C0_0",
       "role": "DecorCollision",
       "bounds_min": [
-        8.492769379347939,
+        0.02166666666666761,
         16.380000000000003,
-        18.4675
+        8.247499999999999
       ],
       "bounds_max": [
         40.54520142570851,
         23.0,
         41.76607193932176
       ],
-      "triangles": 4928
+      "triangles": 10472
     },
     {
-      "name": "Stage3__C2_3__DecorCollision",
+      "name": "Stage3__C1_1__DecorCollision",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "DecorCollision",
       "bounds_min": [
         25.5,
         15.8,
-        46.4543424172024
+        45.2
       ],
       "bounds_max": [
-        48.6,
-        25.941345348223557,
-        59.5
+        55.142500000000005,
+        25.947499999999998,
+        59.9475
       ],
-      "triangles": 1340
+      "triangles": 3776
     },
     {
-      "name": "Stage3__C1_3__DecorCollision",
+      "name": "Stage3__C0_1__DecorCollision",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "DecorCollision",
       "bounds_min": [
         19.34327553106904,
@@ -3086,21 +1879,21 @@
       "triangles": 2672
     },
     {
-      "name": "Stage3__C2_3__ConcreteDark",
+      "name": "Stage3__C1_1__ConcreteDark",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "C1_1",
       "role": "ConcreteDark",
       "bounds_min": [
-        34.0,
+        32.6,
         15.8,
-        55.3
+        41.815
       ],
       "bounds_max": [
         39.2,
         24.400000000000002,
         59.5
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
       "name": "Stage1__Abyss__Abyss",
@@ -3109,7 +1902,7 @@
       "role": "Abyss",
       "bounds_min": [
         -34.25,
-        -35.44,
+        -60.44,
         -6.25
       ],
       "bounds_max": [
@@ -3132,48 +1925,14 @@
       "bounds_max": [
         6.0,
         27.439999999999998,
-        6.0
+        43.0
       ],
-      "triangles": 12
+      "triangles": 24
     },
     {
-      "name": "Stage1__C0_0__Concrete",
+      "name": "Stage1__C-2_0__ShellCollision",
       "stage": 1,
-      "chunk": "C0_0",
-      "role": "Concrete",
-      "bounds_min": [
-        -0.12,
-        11.740493639287072,
-        -6.0
-      ],
-      "bounds_max": [
-        5.12,
-        27.0,
-        11.03717786183201
-      ],
-      "triangles": 364
-    },
-    {
-      "name": "Stage1__C-3_0__Plaster",
-      "stage": 1,
-      "chunk": "C-3_0",
-      "role": "Plaster",
-      "bounds_min": [
-        -34.25,
-        -1.0,
-        -6.0
-      ],
-      "bounds_max": [
-        -33.75,
-        27.0,
-        6.0
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C-3_0__ShellCollision",
-      "stage": 1,
-      "chunk": "C-3_0",
+      "chunk": "C-2_0",
       "role": "ShellCollision",
       "bounds_min": [
         -34.25,
@@ -3183,14 +1942,14 @@
       "bounds_max": [
         -33.75,
         27.0,
-        6.0
+        43.0
       ],
-      "triangles": 12
+      "triangles": 24
     },
     {
-      "name": "Stage1__C-3_0__ConcreteDark",
+      "name": "Stage1__C-2_0__ConcreteDark",
       "stage": 1,
-      "chunk": "C-3_0",
+      "chunk": "C-2_0",
       "role": "ConcreteDark",
       "bounds_min": [
         -34.27,
@@ -3200,9 +1959,9 @@
       "bounds_max": [
         -33.73,
         24.035,
-        6.0
+        43.0
       ],
-      "triangles": 168
+      "triangles": 336
     },
     {
       "name": "Stage1__C-1_-1__Plaster",
@@ -3256,94 +2015,26 @@
       "triangles": 168
     },
     {
-      "name": "Stage1__C-1_1__ShellCollision",
+      "name": "Stage1__C-1_1__Plaster",
       "stage": 1,
       "chunk": "C-1_1",
-      "role": "ShellCollision",
-      "bounds_min": [
-        -34.0,
-        27.0,
-        6.0
-      ],
-      "bounds_max": [
-        6.0,
-        27.439999999999998,
-        43.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage1__C0_1__Concrete",
-      "stage": 1,
-      "chunk": "C0_1",
-      "role": "Concrete",
-      "bounds_min": [
-        -0.12,
-        26.560000000000002,
-        6.0
-      ],
-      "bounds_max": [
-        5.12,
-        27.0,
-        43.0
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage1__C-3_1__ShellCollision",
-      "stage": 1,
-      "chunk": "C-3_1",
-      "role": "ShellCollision",
-      "bounds_min": [
-        -34.25,
-        -1.0,
-        6.0
-      ],
-      "bounds_max": [
-        -33.75,
-        27.0,
-        43.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage1__C-3_1__ConcreteDark",
-      "stage": 1,
-      "chunk": "C-3_1",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        -34.27,
-        3.965,
-        6.0
-      ],
-      "bounds_max": [
-        -33.73,
-        24.035,
-        43.0
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage1__C-1_2__Plaster",
-      "stage": 1,
-      "chunk": "C-1_2",
       "role": "Plaster",
       "bounds_min": [
         -34.0,
         -1.0,
-        42.75
+        33.739999999999995
       ],
       "bounds_max": [
         6.0,
         27.0,
         43.25
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
-      "name": "Stage1__C-1_2__ShellCollision",
+      "name": "Stage1__C-1_1__ShellCollision",
       "stage": 1,
-      "chunk": "C-1_2",
+      "chunk": "C-1_1",
       "role": "ShellCollision",
       "bounds_min": [
         -34.0,
@@ -3432,7 +2123,7 @@
       "role": "Abyss",
       "bounds_min": [
         5.75,
-        -35.44,
+        -60.44,
         5.75
       ],
       "bounds_max": [
@@ -3443,21 +2134,38 @@
       "triangles": 192
     },
     {
-      "name": "Stage2__C0_1__Concrete",
+      "name": "Stage2__C0_0__Concrete",
       "stage": 2,
-      "chunk": "C0_1",
+      "chunk": "C0_0",
       "role": "Concrete",
       "bounds_min": [
         5.75,
         -1.0,
-        6.0
+        5.75
       ],
       "bounds_max": [
-        14.48,
+        49.0,
         30.439999999999998,
         43.0
       ],
-      "triangles": 224
+      "triangles": 1120
+    },
+    {
+      "name": "Stage2__C0_0__ShellCollision",
+      "stage": 2,
+      "chunk": "C0_0",
+      "role": "ShellCollision",
+      "bounds_min": [
+        5.75,
+        -1.0,
+        5.75
+      ],
+      "bounds_max": [
+        49.0,
+        30.439999999999998,
+        43.0
+      ],
+      "triangles": 96
     },
     {
       "name": "Stage2__C0_1__ShellCollision",
@@ -3467,218 +2175,14 @@
       "bounds_min": [
         5.75,
         -1.0,
-        6.0
-      ],
-      "bounds_max": [
-        12.0,
-        30.439999999999998,
-        43.0
-      ],
-      "triangles": 48
-    },
-    {
-      "name": "Stage2__C0_0__Concrete",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "Concrete",
-      "bounds_min": [
-        6.0,
-        3.0,
-        5.75
-      ],
-      "bounds_max": [
-        16.075,
-        30.0,
-        14.629999999999999
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage2__C0_0__ShellCollision",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "ShellCollision",
-      "bounds_min": [
-        6.0,
-        3.0,
-        5.75
-      ],
-      "bounds_max": [
-        12.0,
-        30.0,
-        6.25
-      ],
-      "triangles": 24
-    },
-    {
-      "name": "Stage2__C0_2__Concrete",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "Concrete",
-      "bounds_min": [
-        5.75,
-        -1.0,
-        39.6
-      ],
-      "bounds_max": [
-        12.0,
-        30.439999999999998,
-        46.91
-      ],
-      "triangles": 644
-    },
-    {
-      "name": "Stage2__C0_2__ShellCollision",
-      "stage": 2,
-      "chunk": "C0_2",
-      "role": "ShellCollision",
-      "bounds_min": [
-        5.75,
-        -1.0,
         42.75
       ],
       "bounds_max": [
-        12.0,
-        30.439999999999998,
-        44.0
-      ],
-      "triangles": 48
-    },
-    {
-      "name": "Stage2__C0_3__Concrete",
-      "stage": 2,
-      "chunk": "C0_3",
-      "role": "Concrete",
-      "bounds_min": [
-        5.75,
-        3.0,
-        44.0
-      ],
-      "bounds_max": [
-        12.0,
+        49.0,
         30.439999999999998,
         52.25
       ],
-      "triangles": 140
-    },
-    {
-      "name": "Stage2__C0_3__ShellCollision",
-      "stage": 2,
-      "chunk": "C0_3",
-      "role": "ShellCollision",
-      "bounds_min": [
-        5.75,
-        3.0,
-        44.0
-      ],
-      "bounds_max": [
-        12.0,
-        30.439999999999998,
-        52.25
-      ],
-      "triangles": 60
-    },
-    {
-      "name": "Stage2__C0_3__Steel",
-      "stage": 2,
-      "chunk": "C0_3",
-      "role": "Steel",
-      "bounds_min": [
-        5.73,
-        7.965,
-        44.0
-      ],
-      "bounds_max": [
-        12.0,
-        28.035,
-        52.27
-      ],
-      "triangles": 504
-    },
-    {
-      "name": "Stage2__C1_1__Concrete",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "Concrete",
-      "bounds_min": [
-        12.0,
-        16.380000000000003,
-        6.0
-      ],
-      "bounds_max": [
-        49.0,
-        30.439999999999998,
-        43.0
-      ],
-      "triangles": 644
-    },
-    {
-      "name": "Stage2__C1_1__ShellCollision",
-      "stage": 2,
-      "chunk": "C1_1",
-      "role": "ShellCollision",
-      "bounds_min": [
-        12.0,
-        30.0,
-        6.0
-      ],
-      "bounds_max": [
-        49.0,
-        30.439999999999998,
-        43.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage2__C3_1__Concrete",
-      "stage": 2,
-      "chunk": "C3_1",
-      "role": "Concrete",
-      "bounds_min": [
-        48.419999999999995,
-        3.0,
-        6.0
-      ],
-      "bounds_max": [
-        49.25,
-        30.0,
-        43.0
-      ],
-      "triangles": 112
-    },
-    {
-      "name": "Stage2__C3_1__ShellCollision",
-      "stage": 2,
-      "chunk": "C3_1",
-      "role": "ShellCollision",
-      "bounds_min": [
-        48.75,
-        3.0,
-        6.0
-      ],
-      "bounds_max": [
-        49.25,
-        30.0,
-        43.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage2__C3_1__Steel",
-      "stage": 2,
-      "chunk": "C3_1",
-      "role": "Steel",
-      "bounds_min": [
-        47.949999999999996,
-        7.965,
-        6.0
-      ],
-      "bounds_max": [
-        49.27,
-        28.035,
-        43.0
-      ],
-      "triangles": 392
+      "triangles": 120
     },
     {
       "name": "Stage2__C1_0__Concrete",
@@ -3686,16 +2190,16 @@
       "chunk": "C1_0",
       "role": "Concrete",
       "bounds_min": [
-        12.0,
+        32.375,
         3.0,
-        5.75
+        6.0
       ],
       "bounds_max": [
-        49.0,
+        49.25,
         30.0,
-        6.58
+        43.0
       ],
-      "triangles": 84
+      "triangles": 784
     },
     {
       "name": "Stage2__C1_0__ShellCollision",
@@ -3703,89 +2207,38 @@
       "chunk": "C1_0",
       "role": "ShellCollision",
       "bounds_min": [
-        12.0,
+        48.75,
         3.0,
-        5.75
+        6.0
       ],
       "bounds_max": [
-        49.0,
-        30.0,
-        6.25
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage2__C1_0__Steel",
-      "stage": 2,
-      "chunk": "C1_0",
-      "role": "Steel",
-      "bounds_min": [
-        12.0,
-        7.965,
-        5.73
-      ],
-      "bounds_max": [
-        49.0,
-        28.035,
-        6.27
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage2__C1_2__Concrete",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "Concrete",
-      "bounds_min": [
-        12.0,
-        17.2,
-        31.88
-      ],
-      "bounds_max": [
-        49.0,
-        30.439999999999998,
-        47.9425
-      ],
-      "triangles": 336
-    },
-    {
-      "name": "Stage2__C1_2__ShellCollision",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "ShellCollision",
-      "bounds_min": [
-        12.0,
+        49.25,
         30.0,
         43.0
       ],
-      "bounds_max": [
-        49.0,
-        30.439999999999998,
-        44.0
-      ],
       "triangles": 12
     },
     {
-      "name": "Stage2__C3_2__Concrete",
+      "name": "Stage2__C1_1__Concrete",
       "stage": 2,
-      "chunk": "C3_2",
+      "chunk": "C1_1",
       "role": "Concrete",
       "bounds_min": [
-        48.419999999999995,
+        32.333333333333336,
         3.0,
         37.05
       ],
       "bounds_max": [
         49.25,
         30.0,
-        44.0
+        47.78
       ],
-      "triangles": 112
+      "triangles": 616
     },
     {
-      "name": "Stage2__C3_2__ShellCollision",
+      "name": "Stage2__C1_1__ShellCollision",
       "stage": 2,
-      "chunk": "C3_2",
+      "chunk": "C1_1",
       "role": "ShellCollision",
       "bounds_min": [
         48.75,
@@ -3798,23 +2251,6 @@
         44.0
       ],
       "triangles": 12
-    },
-    {
-      "name": "Stage2__C3_2__Steel",
-      "stage": 2,
-      "chunk": "C3_2",
-      "role": "Steel",
-      "bounds_min": [
-        48.73,
-        7.965,
-        43.0
-      ],
-      "bounds_max": [
-        49.27,
-        28.035,
-        44.0
-      ],
-      "triangles": 168
     },
     {
       "name": "Stage3__Abyss__Abyss",
@@ -3823,7 +2259,7 @@
       "role": "Abyss",
       "bounds_min": [
         11.75,
-        -35.44,
+        -60.44,
         43.75
       ],
       "bounds_max": [
@@ -3834,162 +2270,60 @@
       "triangles": 120
     },
     {
-      "name": "Stage3__C1_3__Concrete",
+      "name": "Stage3__C0_1__Concrete",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "Concrete",
       "bounds_min": [
-        12.0,
+        11.75,
         3.0,
-        44.0
+        43.75
       ],
       "bounds_max": [
         49.0,
         33.44,
-        56.63454102911997
+        64.45
       ],
-      "triangles": 224
+      "triangles": 336
     },
     {
-      "name": "Stage3__C1_3__ShellCollision",
+      "name": "Stage3__C0_1__ShellCollision",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "ShellCollision",
       "bounds_min": [
-        12.0,
+        11.75,
         3.0,
-        44.0
+        43.75
       ],
       "bounds_max": [
         49.0,
         33.44,
         52.25
       ],
-      "triangles": 24
+      "triangles": 48
     },
     {
-      "name": "Stage3__C0_3__Steel",
+      "name": "Stage3__C1_1__ShellCollision",
       "stage": 3,
-      "chunk": "C0_3",
-      "role": "Steel",
-      "bounds_min": [
-        14.88,
-        32.56,
-        44.0
-      ],
-      "bounds_max": [
-        15.12,
-        33.0,
-        52.0
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C0_3__Concrete",
-      "stage": 3,
-      "chunk": "C0_3",
-      "role": "Concrete",
-      "bounds_min": [
-        11.75,
-        18.8,
-        44.0
-      ],
-      "bounds_max": [
-        12.58,
-        33.0,
-        64.45
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage3__C0_3__ShellCollision",
-      "stage": 3,
-      "chunk": "C0_3",
-      "role": "ShellCollision",
-      "bounds_min": [
-        11.75,
-        30.0,
-        44.0
-      ],
-      "bounds_max": [
-        12.25,
-        33.0,
-        52.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C3_3__ShellCollision",
-      "stage": 3,
-      "chunk": "C3_3",
+      "chunk": "C1_1",
       "role": "ShellCollision",
       "bounds_min": [
         48.75,
         3.0,
-        44.0
+        43.75
       ],
       "bounds_max": [
         65.0,
         33.44,
         52.0
       ],
-      "triangles": 24
+      "triangles": 36
     },
     {
-      "name": "Stage3__C1_2__Concrete",
+      "name": "Stage3__C0_2__ShellCollision",
       "stage": 3,
-      "chunk": "C1_2",
-      "role": "Concrete",
-      "bounds_min": [
-        12.0,
-        30.0,
-        43.75
-      ],
-      "bounds_max": [
-        49.0,
-        33.0,
-        44.25
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C1_2__ShellCollision",
-      "stage": 3,
-      "chunk": "C1_2",
-      "role": "ShellCollision",
-      "bounds_min": [
-        12.0,
-        30.0,
-        43.75
-      ],
-      "bounds_max": [
-        49.0,
-        33.0,
-        44.25
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C1_4__ShellCollision",
-      "stage": 3,
-      "chunk": "C1_4",
-      "role": "ShellCollision",
-      "bounds_min": [
-        12.0,
-        33.0,
-        52.0
-      ],
-      "bounds_max": [
-        49.0,
-        33.44,
-        83.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C0_4__ShellCollision",
-      "stage": 3,
-      "chunk": "C0_4",
+      "chunk": "C0_2",
       "role": "ShellCollision",
       "bounds_min": [
         11.75,
@@ -3997,67 +2331,16 @@
         52.0
       ],
       "bounds_max": [
-        12.25,
-        33.0,
-        83.0
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C1_5__Concrete",
-      "stage": 3,
-      "chunk": "C1_5",
-      "role": "Concrete",
-      "bounds_min": [
-        12.0,
-        7.0,
-        82.75
-      ],
-      "bounds_max": [
         49.0,
-        33.0,
+        33.44,
         83.25
       ],
-      "triangles": 28
+      "triangles": 36
     },
     {
-      "name": "Stage3__C1_5__ShellCollision",
+      "name": "Stage3__C2_1__Concrete",
       "stage": 3,
-      "chunk": "C1_5",
-      "role": "ShellCollision",
-      "bounds_min": [
-        12.0,
-        7.0,
-        82.75
-      ],
-      "bounds_max": [
-        49.0,
-        33.0,
-        83.25
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C1_5__Steel",
-      "stage": 3,
-      "chunk": "C1_5",
-      "role": "Steel",
-      "bounds_min": [
-        12.0,
-        11.965,
-        82.73
-      ],
-      "bounds_max": [
-        49.0,
-        32.035,
-        83.27
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage3__C4_3__Concrete",
-      "stage": 3,
-      "chunk": "C4_3",
+      "chunk": "C2_1",
       "role": "Concrete",
       "bounds_min": [
         64.42,
@@ -4072,9 +2355,9 @@
       "triangles": 112
     },
     {
-      "name": "Stage3__C4_3__ShellCollision",
+      "name": "Stage3__C2_1__ShellCollision",
       "stage": 3,
-      "chunk": "C4_3",
+      "chunk": "C2_1",
       "role": "ShellCollision",
       "bounds_min": [
         64.75,
@@ -4089,9 +2372,9 @@
       "triangles": 12
     },
     {
-      "name": "Stage3__C4_3__Steel",
+      "name": "Stage3__C2_1__Steel",
       "stage": 3,
-      "chunk": "C4_3",
+      "chunk": "C2_1",
       "role": "Steel",
       "bounds_min": [
         64.5925,
@@ -4106,94 +2389,43 @@
       "triangles": 196
     },
     {
-      "name": "Stage3__C3_2__Concrete",
+      "name": "Stage3__C1_2__Concrete",
       "stage": 3,
-      "chunk": "C3_2",
+      "chunk": "C1_2",
       "role": "Concrete",
       "bounds_min": [
-        49.0,
+        32.175,
         7.0,
-        43.75
-      ],
-      "bounds_max": [
-        65.0,
-        33.0,
-        44.25
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C3_2__ShellCollision",
-      "stage": 3,
-      "chunk": "C3_2",
-      "role": "ShellCollision",
-      "bounds_min": [
-        49.0,
-        7.0,
-        43.75
-      ],
-      "bounds_max": [
-        65.0,
-        33.0,
-        44.25
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C3_2__Steel",
-      "stage": 3,
-      "chunk": "C3_2",
-      "role": "Steel",
-      "bounds_min": [
-        49.0,
-        11.965,
-        43.73
-      ],
-      "bounds_max": [
-        65.0,
-        32.035,
-        44.27
-      ],
-      "triangles": 168
-    },
-    {
-      "name": "Stage3__C3_4__Concrete",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "Concrete",
-      "bounds_min": [
-        47.9,
-        20.299999999999997,
         52.0
       ],
       "bounds_max": [
         65.0,
         33.44,
-        83.0
+        83.25
       ],
-      "triangles": 868
+      "triangles": 1148
     },
     {
-      "name": "Stage3__C3_4__ShellCollision",
+      "name": "Stage3__C1_2__ShellCollision",
       "stage": 3,
-      "chunk": "C3_4",
+      "chunk": "C1_2",
       "role": "ShellCollision",
       "bounds_min": [
         49.0,
-        33.0,
+        7.0,
         52.0
       ],
       "bounds_max": [
         65.0,
         33.44,
-        83.0
+        83.25
       ],
-      "triangles": 12
+      "triangles": 24
     },
     {
-      "name": "Stage3__C4_4__Concrete",
+      "name": "Stage3__C2_2__Concrete",
       "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "C2_2",
       "role": "Concrete",
       "bounds_min": [
         64.42,
@@ -4208,9 +2440,9 @@
       "triangles": 112
     },
     {
-      "name": "Stage3__C4_4__ShellCollision",
+      "name": "Stage3__C2_2__ShellCollision",
       "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "C2_2",
       "role": "ShellCollision",
       "bounds_min": [
         64.75,
@@ -4225,9 +2457,9 @@
       "triangles": 12
     },
     {
-      "name": "Stage3__C4_4__Steel",
+      "name": "Stage3__C2_2__Steel",
       "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "C2_2",
       "role": "Steel",
       "bounds_min": [
         63.95,
@@ -4240,57 +2472,6 @@
         83.0
       ],
       "triangles": 364
-    },
-    {
-      "name": "Stage3__C3_5__Concrete",
-      "stage": 3,
-      "chunk": "C3_5",
-      "role": "Concrete",
-      "bounds_min": [
-        49.0,
-        7.0,
-        82.42
-      ],
-      "bounds_max": [
-        65.0,
-        33.0,
-        83.25
-      ],
-      "triangles": 112
-    },
-    {
-      "name": "Stage3__C3_5__ShellCollision",
-      "stage": 3,
-      "chunk": "C3_5",
-      "role": "ShellCollision",
-      "bounds_min": [
-        49.0,
-        7.0,
-        82.75
-      ],
-      "bounds_max": [
-        65.0,
-        33.0,
-        83.25
-      ],
-      "triangles": 12
-    },
-    {
-      "name": "Stage3__C3_5__Steel",
-      "stage": 3,
-      "chunk": "C3_5",
-      "role": "Steel",
-      "bounds_min": [
-        49.0,
-        11.965,
-        82.73
-      ],
-      "bounds_max": [
-        65.0,
-        32.035,
-        83.27
-      ],
-      "triangles": 168
     },
     {
       "name": "Stage1__C0_0__DecorCollision",
@@ -4327,26 +2508,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-1_0__DecorCollision",
-      "stage": 1,
-      "chunk": "C-1_0",
-      "role": "DecorCollision",
-      "bounds_min": [
-        -9.8425,
-        15.3,
-        12.639912121244546
-      ],
-      "bounds_max": [
-        -1.049999999999999,
-        17.6325,
-        16.97
-      ],
-      "triangles": 1428
-    },
-    {
-      "name": "Stage2__C0_2__DecorCollision",
+      "name": "Stage2__C0_1__DecorCollision",
       "stage": 2,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "DecorCollision",
       "bounds_min": [
         7.2,
@@ -4354,67 +2518,33 @@
         31.261993565333437
       ],
       "bounds_max": [
-        16.06,
-        22.77977064442613,
-        46.91
-      ],
-      "triangles": 2408
-    },
-    {
-      "name": "Stage2__C0_1__DecorCollision",
-      "stage": 2,
-      "chunk": "C0_1",
-      "role": "DecorCollision",
-      "bounds_min": [
-        7.2,
-        16.919506360712926,
-        14.422286073100473
-      ],
-      "bounds_max": [
-        16.833692277178784,
-        22.77977064442613,
-        33.007530359357595
-      ],
-      "triangles": 4536
-    },
-    {
-      "name": "Stage2__C1_2__DecorCollision",
-      "stage": 2,
-      "chunk": "C1_2",
-      "role": "DecorCollision",
-      "bounds_min": [
-        15.584671542247204,
-        17.62022935557387,
-        31.78
-      ],
-      "bounds_max": [
         34.0,
-        21.487499999999997,
-        47.9425
+        23.970087878755454,
+        51.9525
       ],
-      "triangles": 4984
+      "triangles": 8372
     },
     {
-      "name": "Stage2__C1_1__DoorPaint",
+      "name": "Stage2__C0_0__DoorPaint",
       "stage": 2,
-      "chunk": "C1_1",
+      "chunk": "C0_0",
       "role": "DoorPaint",
       "bounds_min": [
-        19.0,
-        18.49,
-        28.513333333333335
+        14.385,
+        14.8,
+        6.32
       ],
       "bounds_max": [
-        21.48,
-        19.91,
+        32.365,
+        20.46,
         28.633333333333336
       ],
-      "triangles": 28
+      "triangles": 84
     },
     {
-      "name": "Stage2__C2_1__DecorCollision",
+      "name": "Stage2__C1_0__DecorCollision",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "DecorCollision",
       "bounds_min": [
         30.79706886282113,
@@ -4429,43 +2559,9 @@
       "triangles": 3920
     },
     {
-      "name": "Stage2__C2_1__Concrete",
+      "name": "Stage2__C1_1__DecorCollision",
       "stage": 2,
-      "chunk": "C2_1",
-      "role": "Concrete",
-      "bounds_min": [
-        33.0,
-        16.96,
-        23.561149547398703
-      ],
-      "bounds_max": [
-        39.010380357640024,
-        22.619999999999997,
-        31.779999999999998
-      ],
-      "triangles": 644
-    },
-    {
-      "name": "Stage2__C2_2__Concrete",
-      "stage": 2,
-      "chunk": "C2_2",
-      "role": "Concrete",
-      "bounds_min": [
-        32.333333333333336,
-        17.02,
-        38.690000000000005
-      ],
-      "bounds_max": [
-        43.10666666666666,
-        22.04,
-        47.78
-      ],
-      "triangles": 504
-    },
-    {
-      "name": "Stage2__C2_2__DecorCollision",
-      "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "C1_1",
       "role": "DecorCollision",
       "bounds_min": [
         32.1775,
@@ -4480,46 +2576,29 @@
       "triangles": 4424
     },
     {
-      "name": "Stage2__C2_2__DoorPaint",
+      "name": "Stage2__C1_1__DoorPaint",
       "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "C1_1",
       "role": "DoorPaint",
       "bounds_min": [
         32.623333333333335,
-        17.4,
-        47.6
+        11.5,
+        37.26
       ],
       "bounds_max": [
-        34.04333333333334,
+        48.68,
         19.88,
         47.72
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
-      "name": "Stage3__C2_2__DecorCollision",
+      "name": "Stage3__C1_2__DecorCollision",
       "stage": 3,
-      "chunk": "C2_2",
+      "chunk": "C1_2",
       "role": "DecorCollision",
       "bounds_min": [
-        45.1575,
-        23.89,
-        45.2
-      ],
-      "bounds_max": [
-        47.6425,
-        25.947499999999998,
-        48.1175
-      ],
-      "triangles": 560
-    },
-    {
-      "name": "Stage3__C3_4__DecorCollision",
-      "stage": 3,
-      "chunk": "C3_4",
-      "role": "DecorCollision",
-      "bounds_min": [
-        47.9,
+        47.8775,
         20.299999999999997,
         66.0875
       ],
@@ -4528,46 +2607,12 @@
         26.030087878755456,
         72.6625
       ],
-      "triangles": 4536
+      "triangles": 4816
     },
     {
-      "name": "Stage3__C2_4__DecorCollision",
-      "stage": 3,
-      "chunk": "C2_4",
-      "role": "DecorCollision",
-      "bounds_min": [
-        47.8775,
-        22.8125,
-        66.6875
-      ],
-      "bounds_max": [
-        47.9225,
-        25.75,
-        72.1625
-      ],
-      "triangles": 280
-    },
-    {
-      "name": "Stage1__C-2_1__DecorCollision",
+      "name": "Stage1__C-1_1__DecorCollision",
       "stage": 1,
-      "chunk": "C-2_1",
-      "role": "DecorCollision",
-      "bounds_min": [
-        -32.64,
-        13.319506360712928,
-        14.2
-      ],
-      "bounds_max": [
-        -23.137499999999996,
-        18.83008787875546,
-        31.675
-      ],
-      "triangles": 3836
-    },
-    {
-      "name": "Stage1__C-2_2__DecorCollision",
-      "stage": 1,
-      "chunk": "C-2_2",
+      "chunk": "C-1_1",
       "role": "DecorCollision",
       "bounds_min": [
         -32.8,
@@ -4575,16 +2620,16 @@
         31.169999999999998
       ],
       "bounds_max": [
-        -25.4775,
+        -8.471946253386543,
         18.830087878755457,
-        33.92
+        41.8
       ],
-      "triangles": 1036
+      "triangles": 2716
     },
     {
-      "name": "Stage1__C-3_2__Wood",
+      "name": "Stage1__C-2_1__Wood",
       "stage": 1,
-      "chunk": "C-3_2",
+      "chunk": "C-2_1",
       "role": "Wood",
       "bounds_min": [
         -32.6625,
@@ -4599,9 +2644,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-3_2__DecorCollision",
+      "name": "Stage1__C-2_1__DecorCollision",
       "stage": 1,
-      "chunk": "C-3_2",
+      "chunk": "C-2_1",
       "role": "DecorCollision",
       "bounds_min": [
         -32.6625,
@@ -4616,9 +2661,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-3_1__DecorCollision",
+      "name": "Stage1__C-2_0__DecorCollision",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "DecorCollision",
       "bounds_min": [
         -32.6625,
@@ -4633,145 +2678,60 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-2_2__Plaster",
-      "stage": 1,
-      "chunk": "C-2_2",
-      "role": "Plaster",
-      "bounds_min": [
-        -32.8,
-        13.390000000000004,
-        33.739999999999995
-      ],
-      "bounds_max": [
-        -31.200000000000003,
-        15.590000000000003,
-        33.92
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C-1_2__DecorCollision",
-      "stage": 1,
-      "chunk": "C-1_2",
-      "role": "DecorCollision",
-      "bounds_min": [
-        -13.009232262303254,
-        15.100000000000001,
-        36.04049129951245
-      ],
-      "bounds_max": [
-        -8.471946253386543,
-        17.3875,
-        41.8
-      ],
-      "triangles": 1680
-    },
-    {
-      "name": "Stage2__C0_0__DecorCollision",
-      "stage": 2,
-      "chunk": "C0_0",
-      "role": "DecorCollision",
-      "bounds_min": [
-        0.02166666666666761,
-        18.240000000000002,
-        8.247499999999999
-      ],
-      "bounds_max": [
-        11.900087878755453,
-        22.74,
-        15.909999999999998
-      ],
-      "triangles": 1008
-    },
-    {
       "name": "Stage2__C-1_0__DecorCollision",
       "stage": 2,
       "chunk": "C-1_0",
       "role": "DecorCollision",
       "bounds_min": [
         -5.235833333333335,
-        18.4725,
+        18.36,
         8.247499999999999
       ],
       "bounds_max": [
         0.7248242494642712,
         22.77977064442613,
-        16.099999999999998
+        16.22
       ],
-      "triangles": 1624
+      "triangles": 1708
     },
     {
-      "name": "Stage2__C2_1__DoorPaint",
+      "name": "Stage2__C1_0__DoorPaint",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "C1_0",
       "role": "DoorPaint",
       "bounds_min": [
         33.29,
-        19.759999999999998,
-        31.599999999999998
+        18.1,
+        19.26
       ],
       "bounds_max": [
-        34.71,
+        48.68,
         22.24,
         31.72
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
-      "name": "Stage2__C1_3__DecorCollision",
-      "stage": 2,
-      "chunk": "C1_3",
-      "role": "DecorCollision",
-      "bounds_min": [
-        24.81,
-        18.9,
-        46.45478607310048
-      ],
-      "bounds_max": [
-        26.9225,
-        23.970087878755454,
-        51.9525
-      ],
-      "triangles": 980
-    },
-    {
-      "name": "Stage3__C3_3__DecorCollision",
+      "name": "Stage3__C0_1__DoorPaint",
       "stage": 3,
-      "chunk": "C3_3",
-      "role": "DecorCollision",
-      "bounds_min": [
-        48.541842417202396,
-        22.3,
-        54.44
-      ],
-      "bounds_max": [
-        55.142500000000005,
-        24.6325,
-        59.9475
-      ],
-      "triangles": 1876
-    },
-    {
-      "name": "Stage3__C1_3__DoorPaint",
-      "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "C0_1",
       "role": "DoorPaint",
       "bounds_min": [
-        19.85698398595521,
-        21.64,
+        12.319999999999999,
+        18.8,
         53.61143528705833
       ],
       "bounds_max": [
         21.25551583997635,
         24.119999999999997,
-        54.09072832553695
+        64.24
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
-      "name": "Stage3__C1_4__DecorCollision",
+      "name": "Stage3__C0_2__DecorCollision",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "C0_2",
       "role": "DecorCollision",
       "bounds_min": [
         19.8,
@@ -4786,43 +2746,9 @@
       "triangles": 1372
     },
     {
-      "name": "Stage1__C-2_0__DecorCollision",
+      "name": "Stage1__C-2_-1__Concrete",
       "stage": 1,
-      "chunk": "C-2_0",
-      "role": "DecorCollision",
-      "bounds_min": [
-        -24.682499999999997,
-        15.620000000000001,
-        14.079999999999998
-      ],
-      "bounds_max": [
-        -23.137499999999996,
-        17.86,
-        15.942499999999999
-      ],
-      "triangles": 196
-    },
-    {
-      "name": "Stage2__C-1_1__DecorCollision",
-      "stage": 2,
-      "chunk": "C-1_1",
-      "role": "DecorCollision",
-      "bounds_min": [
-        -5.235833333333334,
-        18.36,
-        15.979999999999997
-      ],
-      "bounds_max": [
-        -3.6908333333333343,
-        20.599999999999998,
-        16.22
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage1__C-3_-1__Concrete",
-      "stage": 1,
-      "chunk": "C-3_-1",
+      "chunk": "C-2_-1",
       "role": "Concrete",
       "bounds_min": [
         -33.68,
@@ -4837,9 +2763,9 @@
       "triangles": 84
     },
     {
-      "name": "Stage1__C-3_-1__DoorPaint",
+      "name": "Stage1__C-2_-1__DoorPaint",
       "stage": 1,
-      "chunk": "C-3_-1",
+      "chunk": "C-2_-1",
       "role": "DoorPaint",
       "bounds_min": [
         -33.68,
@@ -4854,9 +2780,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-3_-1__Rust",
+      "name": "Stage1__C-2_-1__Rust",
       "stage": 1,
-      "chunk": "C-3_-1",
+      "chunk": "C-2_-1",
       "role": "Rust",
       "bounds_min": [
         -33.495,
@@ -4871,9 +2797,9 @@
       "triangles": 56
     },
     {
-      "name": "Stage1__C-2_-1__Concrete",
+      "name": "Stage1__C-1_-1__Concrete",
       "stage": 1,
-      "chunk": "C-2_-1",
+      "chunk": "C-1_-1",
       "role": "Concrete",
       "bounds_min": [
         -25.7,
@@ -4881,16 +2807,16 @@
         -5.68
       ],
       "bounds_max": [
-        -23.8,
-        13.41,
+        -6.8,
+        16.71,
         -5.42
       ],
-      "triangles": 84
+      "triangles": 168
     },
     {
-      "name": "Stage1__C-2_-1__DoorPaint",
+      "name": "Stage1__C-1_-1__DoorPaint",
       "stage": 1,
-      "chunk": "C-2_-1",
+      "chunk": "C-1_-1",
       "role": "DoorPaint",
       "bounds_min": [
         -25.49,
@@ -4898,16 +2824,16 @@
         -5.68
       ],
       "bounds_max": [
-        -24.01,
-        13.16,
+        -7.01,
+        16.46,
         -5.58
       ],
-      "triangles": 28
+      "triangles": 56
     },
     {
-      "name": "Stage1__C-2_-1__Rust",
+      "name": "Stage1__C-1_-1__Rust",
       "stage": 1,
-      "chunk": "C-2_-1",
+      "chunk": "C-1_-1",
       "role": "Rust",
       "bounds_min": [
         -23.395,
@@ -4915,16 +2841,16 @@
         -5.495
       ],
       "bounds_max": [
-        -23.005,
-        14.5,
+        -6.005,
+        17.8,
         -5.404999999999999
       ],
-      "triangles": 56
+      "triangles": 112
     },
     {
-      "name": "Stage1__C-2_2__DoorPaint",
+      "name": "Stage1__C-1_1__DoorPaint",
       "stage": 1,
-      "chunk": "C-2_2",
+      "chunk": "C-1_1",
       "role": "DoorPaint",
       "bounds_min": [
         -16.99,
@@ -4939,26 +2865,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-2_2__Rust",
+      "name": "Stage1__C-2_0__Concrete",
       "stage": 1,
-      "chunk": "C-2_2",
-      "role": "Rust",
-      "bounds_min": [
-        -17.995,
-        7.2,
-        42.404999999999994
-      ],
-      "bounds_max": [
-        -17.605,
-        11.2,
-        42.495
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage1__C-3_1__Concrete",
-      "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Concrete",
       "bounds_min": [
         -33.68,
@@ -4973,9 +2882,9 @@
       "triangles": 84
     },
     {
-      "name": "Stage1__C-3_1__DoorPaint",
+      "name": "Stage1__C-2_0__DoorPaint",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "DoorPaint",
       "bounds_min": [
         -33.68,
@@ -4990,9 +2899,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-3_1__Rust",
+      "name": "Stage1__C-2_0__Rust",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "C-2_0",
       "role": "Rust",
       "bounds_min": [
         -33.495,
@@ -5007,60 +2916,9 @@
       "triangles": 56
     },
     {
-      "name": "Stage1__C-1_-1__Concrete",
+      "name": "Stage1__C0_1__DoorPaint",
       "stage": 1,
-      "chunk": "C-1_-1",
-      "role": "Concrete",
-      "bounds_min": [
-        -8.7,
-        14.1,
-        -5.68
-      ],
-      "bounds_max": [
-        -6.8,
-        16.71,
-        -5.42
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage1__C-1_-1__DoorPaint",
-      "stage": 1,
-      "chunk": "C-1_-1",
-      "role": "DoorPaint",
-      "bounds_min": [
-        -8.49,
-        14.1,
-        -5.68
-      ],
-      "bounds_max": [
-        -7.01,
-        16.46,
-        -5.58
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage1__C-1_-1__Rust",
-      "stage": 1,
-      "chunk": "C-1_-1",
-      "role": "Rust",
-      "bounds_min": [
-        -6.395,
-        13.799999999999999,
-        -5.495
-      ],
-      "bounds_max": [
-        -6.005,
-        17.8,
-        -5.404999999999999
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage1__C0_2__DoorPaint",
-      "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "C0_1",
       "role": "DoorPaint",
       "bounds_min": [
         0.010000000000000009,
@@ -5075,145 +2933,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C0_0__DoorPaint",
+      "name": "Stage2__C1_1__Rust",
       "stage": 2,
-      "chunk": "C0_0",
-      "role": "DoorPaint",
-      "bounds_min": [
-        14.385,
-        14.8,
-        6.32
-      ],
-      "bounds_max": [
-        15.865,
-        17.16,
-        6.42
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C1_0__Rust",
-      "stage": 2,
-      "chunk": "C1_0",
-      "role": "Rust",
-      "bounds_min": [
-        16.48,
-        14.5,
-        6.505
-      ],
-      "bounds_max": [
-        16.87,
-        18.5,
-        6.595000000000001
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage2__C3_1__DoorPaint",
-      "stage": 2,
-      "chunk": "C3_1",
-      "role": "DoorPaint",
-      "bounds_min": [
-        48.58,
-        18.1,
-        19.26
-      ],
-      "bounds_max": [
-        48.68,
-        20.46,
-        20.74
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C3_1__Rust",
-      "stage": 2,
-      "chunk": "C3_1",
-      "role": "Rust",
-      "bounds_min": [
-        48.404999999999994,
-        17.8,
-        21.355
-      ],
-      "bounds_max": [
-        48.495,
-        21.8,
-        21.745
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage2__C2_0__Concrete",
-      "stage": 2,
-      "chunk": "C2_0",
-      "role": "Concrete",
-      "bounds_min": [
-        32.375,
-        18.1,
-        6.32
-      ],
-      "bounds_max": [
-        32.575,
-        20.6,
-        6.58
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C1_0__DoorPaint",
-      "stage": 2,
-      "chunk": "C1_0",
-      "role": "DoorPaint",
-      "bounds_min": [
-        30.885,
-        18.1,
-        6.32
-      ],
-      "bounds_max": [
-        32.365,
-        20.46,
-        6.42
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C2_0__Rust",
-      "stage": 2,
-      "chunk": "C2_0",
-      "role": "Rust",
-      "bounds_min": [
-        32.98,
-        17.8,
-        6.505
-      ],
-      "bounds_max": [
-        33.37,
-        21.8,
-        6.595000000000001
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage2__C3_2__DoorPaint",
-      "stage": 2,
-      "chunk": "C3_2",
-      "role": "DoorPaint",
-      "bounds_min": [
-        48.58,
-        11.5,
-        37.26
-      ],
-      "bounds_max": [
-        48.68,
-        13.86,
-        38.74
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage2__C3_2__Rust",
-      "stage": 2,
-      "chunk": "C3_2",
+      "chunk": "C1_1",
       "role": "Rust",
       "bounds_min": [
         48.404999999999994,
@@ -5228,9 +2950,9 @@
       "triangles": 56
     },
     {
-      "name": "Stage3__C4_3__DoorPaint",
+      "name": "Stage3__C2_1__DoorPaint",
       "stage": 3,
-      "chunk": "C4_3",
+      "chunk": "C2_1",
       "role": "DoorPaint",
       "bounds_min": [
         64.58,
@@ -5245,9 +2967,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C4_3__Rust",
+      "name": "Stage3__C2_1__Rust",
       "stage": 3,
-      "chunk": "C4_3",
+      "chunk": "C2_1",
       "role": "Rust",
       "bounds_min": [
         64.405,
@@ -5262,26 +2984,9 @@
       "triangles": 56
     },
     {
-      "name": "Stage3__C2_5__Concrete",
+      "name": "Stage3__C1_2__DoorPaint",
       "stage": 3,
-      "chunk": "C2_5",
-      "role": "Concrete",
-      "bounds_min": [
-        32.175,
-        15.5,
-        82.42
-      ],
-      "bounds_max": [
-        34.075,
-        18.11,
-        82.67999999999999
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage3__C2_5__DoorPaint",
-      "stage": 3,
-      "chunk": "C2_5",
+      "chunk": "C1_2",
       "role": "DoorPaint",
       "bounds_min": [
         32.385,
@@ -5289,67 +2994,16 @@
         82.58
       ],
       "bounds_max": [
-        33.865,
-        17.86,
+        55.365,
+        21.16,
         82.67999999999999
       ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C1_5__Rust",
-      "stage": 3,
-      "chunk": "C1_5",
-      "role": "Rust",
-      "bounds_min": [
-        31.38,
-        15.2,
-        82.405
-      ],
-      "bounds_max": [
-        31.77,
-        19.2,
-        82.49499999999999
-      ],
       "triangles": 56
     },
     {
-      "name": "Stage3__C0_3__DoorPaint",
+      "name": "Stage3__C2_2__DoorPaint",
       "stage": 3,
-      "chunk": "C0_3",
-      "role": "DoorPaint",
-      "bounds_min": [
-        12.319999999999999,
-        18.8,
-        62.76
-      ],
-      "bounds_max": [
-        12.42,
-        21.16,
-        64.24
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C0_3__Rust",
-      "stage": 3,
-      "chunk": "C0_3",
-      "role": "Rust",
-      "bounds_min": [
-        12.504999999999999,
-        18.5,
-        61.755
-      ],
-      "bounds_max": [
-        12.594999999999999,
-        22.5,
-        62.145
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage3__C4_4__DoorPaint",
-      "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "C2_2",
       "role": "DoorPaint",
       "bounds_min": [
         64.58,
@@ -5364,9 +3018,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C4_4__Rust",
+      "name": "Stage3__C2_2__Rust",
       "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "C2_2",
       "role": "Rust",
       "bounds_min": [
         64.405,
@@ -5377,40 +3031,6 @@
         64.49499999999999,
         19.2,
         72.495
-      ],
-      "triangles": 56
-    },
-    {
-      "name": "Stage3__C3_5__DoorPaint",
-      "stage": 3,
-      "chunk": "C3_5",
-      "role": "DoorPaint",
-      "bounds_min": [
-        53.885,
-        18.8,
-        82.58
-      ],
-      "bounds_max": [
-        55.365,
-        21.16,
-        82.67999999999999
-      ],
-      "triangles": 28
-    },
-    {
-      "name": "Stage3__C3_5__Rust",
-      "stage": 3,
-      "chunk": "C3_5",
-      "role": "Rust",
-      "bounds_min": [
-        52.88,
-        18.5,
-        82.405
-      ],
-      "bounds_max": [
-        53.27,
-        22.5,
-        82.49499999999999
       ],
       "triangles": 56
     },
@@ -5534,23 +3154,6 @@
       "triangles": 84
     },
     {
-      "name": "Stage3__C2_2__ConcreteDark",
-      "stage": 3,
-      "chunk": "C2_2",
-      "role": "ConcreteDark",
-      "bounds_min": [
-        32.6,
-        17.83,
-        41.815
-      ],
-      "bounds_max": [
-        35.4,
-        19.53,
-        42.465
-      ],
-      "triangles": 28
-    },
-    {
       "name": "Stage2__Motion_vent-cloth__Rubber",
       "stage": 2,
       "chunk": "Motion_vent-cloth",
@@ -5568,26 +3171,9 @@
       "triangles": 168
     },
     {
-      "name": "Stage3__C2_4__Concrete",
-      "stage": 3,
-      "chunk": "C2_4",
-      "role": "Concrete",
-      "bounds_min": [
-        43.4,
-        15.600000000000001,
-        73.79
-      ],
-      "bounds_max": [
-        46.6,
-        19.075000000000003,
-        74.21
-      ],
-      "triangles": 84
-    },
-    {
-      "name": "Stage1__C-1_0__Lens",
+      "name": "Stage1__Fixture_0__Lens",
       "stage": 1,
-      "chunk": "C-1_0",
+      "chunk": "Fixture_0",
       "role": "Lens",
       "bounds_min": [
         -1.8599999999999999,
@@ -5596,15 +3182,32 @@
       ],
       "bounds_max": [
         -1.04,
+        8.2175,
+        5.29
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Fixture_1__Lens",
+      "stage": 1,
+      "chunk": "Fixture_1",
+      "role": "Lens",
+      "bounds_min": [
+        -1.8599999999999999,
+        11.6825,
+        13.91
+      ],
+      "bounds_max": [
+        -1.04,
         11.7175,
         14.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage1__C-1_1__Lens",
+      "name": "Stage1__Fixture_2__Lens",
       "stage": 1,
-      "chunk": "C-1_1",
+      "chunk": "Fixture_2",
       "role": "Lens",
       "bounds_min": [
         -13.41,
@@ -5612,11 +3215,11 @@
         20.91
       ],
       "bounds_max": [
-        -7.59,
-        24.0175,
-        30.09
+        -12.59,
+        11.7175,
+        21.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
       "name": "Stage1__Motion_suspended-lamp__Lens",
@@ -5636,9 +3239,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C0_2__Lens",
+      "name": "Stage1__Fixture_4__Lens",
       "stage": 1,
-      "chunk": "C0_2",
+      "chunk": "Fixture_4",
       "role": "Lens",
       "bounds_min": [
         2.59,
@@ -5653,26 +3256,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-2_1__Lens",
+      "name": "Stage1__Fixture_5__Lens",
       "stage": 1,
-      "chunk": "C-2_1",
+      "chunk": "Fixture_5",
       "role": "Lens",
       "bounds_min": [
-        -31.01,
-        11.102500000000001,
+        -24.41,
+        11.6825,
         19.91
       ],
       "bounds_max": [
         -23.59,
         11.7175,
-        23.09
+        20.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage1__C-2_2__Lens",
+      "name": "Stage1__Fixture_6__Lens",
       "stage": 1,
-      "chunk": "C-2_2",
+      "chunk": "Fixture_6",
       "role": "Lens",
       "bounds_min": [
         -25.41,
@@ -5687,9 +3290,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-1_2__Lens",
+      "name": "Stage1__Fixture_7__Lens",
       "stage": 1,
-      "chunk": "C-1_2",
+      "chunk": "Fixture_7",
       "role": "Lens",
       "bounds_min": [
         -11.41,
@@ -5704,26 +3307,43 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C0_2__Lens",
+      "name": "Stage2__Fixture_8__Lens",
       "stage": 2,
-      "chunk": "C0_2",
+      "chunk": "Fixture_8",
       "role": "Lens",
       "bounds_min": [
         6.59,
         13.4825,
+        36.91
+      ],
+      "bounds_max": [
+        7.41,
+        13.5175,
+        37.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Fixture_9__Lens",
+      "stage": 2,
+      "chunk": "Fixture_9",
+      "role": "Lens",
+      "bounds_min": [
+        13.59,
+        15.2825,
         31.91
       ],
       "bounds_max": [
         14.41,
         15.3175,
-        37.09
+        32.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage2__C1_1__Lens",
+      "name": "Stage2__Fixture_10__Lens",
       "stage": 2,
-      "chunk": "C1_1",
+      "chunk": "Fixture_10",
       "role": "Lens",
       "bounds_min": [
         21.59,
@@ -5731,33 +3351,33 @@
         22.91
       ],
       "bounds_max": [
-        25.41,
-        27.0175,
-        24.09
+        22.41,
+        15.3175,
+        23.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage2__C1_2__Lens",
+      "name": "Stage2__Fixture_11__Lens",
       "stage": 2,
-      "chunk": "C1_2",
+      "chunk": "Fixture_11",
       "role": "Lens",
       "bounds_min": [
-        21.59,
+        28.59,
         15.2825,
         31.91
       ],
       "bounds_max": [
         29.41,
         15.3175,
-        46.09
+        32.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage2__C2_2__Lens",
+      "name": "Stage2__Fixture_12__Lens",
       "stage": 2,
-      "chunk": "C2_2",
+      "chunk": "Fixture_12",
       "role": "Lens",
       "bounds_min": [
         34.59,
@@ -5772,9 +3392,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C0_1__Lens",
+      "name": "Stage2__Fixture_13__Lens",
       "stage": 2,
-      "chunk": "C0_1",
+      "chunk": "Fixture_13",
       "role": "Lens",
       "bounds_min": [
         13.59,
@@ -5789,9 +3409,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C2_1__Lens",
+      "name": "Stage2__Fixture_14__Lens",
       "stage": 2,
-      "chunk": "C2_1",
+      "chunk": "Fixture_14",
       "role": "Lens",
       "bounds_min": [
         38.59,
@@ -5806,9 +3426,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_2__Lens",
+      "name": "Stage2__Fixture_15__Lens",
+      "stage": 2,
+      "chunk": "Fixture_15",
+      "role": "Lens",
+      "bounds_min": [
+        21.59,
+        15.2825,
+        45.91
+      ],
+      "bounds_max": [
+        22.41,
+        15.3175,
+        46.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_16__Lens",
       "stage": 3,
-      "chunk": "C2_2",
+      "chunk": "Fixture_16",
       "role": "Lens",
       "bounds_min": [
         41.59,
@@ -5823,9 +3460,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C2_3__Lens",
+      "name": "Stage3__Fixture_17__Lens",
       "stage": 3,
-      "chunk": "C2_3",
+      "chunk": "Fixture_17",
       "role": "Lens",
       "bounds_min": [
         34.59,
@@ -5833,50 +3470,67 @@
         50.91
       ],
       "bounds_max": [
-        36.41,
+        35.41,
         18.917499999999997,
-        63.09
+        51.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage3__C1_3__Lens",
+      "name": "Stage3__Fixture_18__Lens",
       "stage": 3,
-      "chunk": "C1_3",
+      "chunk": "Fixture_18",
       "role": "Lens",
       "bounds_min": [
-        17.59,
+        27.59,
         18.8825,
         56.91
       ],
       "bounds_max": [
         28.41,
         18.917499999999997,
-        59.09
+        57.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage3__C2_4__Lens",
+      "name": "Stage3__Fixture_19__Lens",
       "stage": 3,
-      "chunk": "C2_4",
+      "chunk": "Fixture_19",
       "role": "Lens",
       "bounds_min": [
-        42.201065540766685,
+        35.59,
+        18.8825,
+        62.91
+      ],
+      "bounds_max": [
+        36.41,
+        18.917499999999997,
+        63.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_20__Lens",
+      "stage": 3,
+      "chunk": "Fixture_20",
+      "role": "Lens",
+      "bounds_min": [
+        44.59,
         18.8825,
         70.91
       ],
       "bounds_max": [
         45.41,
-        23.089531627948954,
-        72.34377524922019
+        18.917499999999997,
+        71.09
       ],
-      "triangles": 56
+      "triangles": 28
     },
     {
-      "name": "Stage3__C3_3__Lens",
+      "name": "Stage3__Fixture_21__Lens",
       "stage": 3,
-      "chunk": "C3_3",
+      "chunk": "Fixture_21",
       "role": "Lens",
       "bounds_min": [
         52.59,
@@ -5891,9 +3545,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C3_4__Lens",
+      "name": "Stage3__Fixture_22__Lens",
       "stage": 3,
-      "chunk": "C3_4",
+      "chunk": "Fixture_22",
+      "role": "Lens",
+      "bounds_min": [
+        17.59,
+        18.8825,
+        58.91
+      ],
+      "bounds_max": [
+        18.41,
+        18.917499999999997,
+        59.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_23__Lens",
+      "stage": 3,
+      "chunk": "Fixture_23",
       "role": "Lens",
       "bounds_min": [
         55.59,
@@ -5908,9 +3579,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C-1_0__Lens",
+      "name": "Stage1__Fixture_24__Lens",
+      "stage": 1,
+      "chunk": "Fixture_24",
+      "role": "Lens",
+      "bounds_min": [
+        -31.01,
+        11.102500000000001,
+        22.91
+      ],
+      "bounds_max": [
+        -30.19,
+        11.137500000000001,
+        23.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Fixture_25__Lens",
       "stage": 2,
-      "chunk": "C-1_0",
+      "chunk": "Fixture_25",
       "role": "Lens",
       "bounds_min": [
         -10.01,
@@ -5925,9 +3613,9 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C1_4__Lens",
+      "name": "Stage3__Fixture_26__Lens",
       "stage": 3,
-      "chunk": "C1_4",
+      "chunk": "Fixture_26",
       "role": "Lens",
       "bounds_min": [
         15.989999999999998,
@@ -5942,9 +3630,43 @@
       "triangles": 28
     },
     {
-      "name": "Stage1__C-3_1__Lens",
+      "name": "Stage2__Fixture_27__Lens",
+      "stage": 2,
+      "chunk": "Fixture_27",
+      "role": "Lens",
+      "bounds_min": [
+        -0.41,
+        15.2825,
+        13.91
+      ],
+      "bounds_max": [
+        0.41,
+        15.3175,
+        14.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_28__Lens",
+      "stage": 3,
+      "chunk": "Fixture_28",
+      "role": "Lens",
+      "bounds_min": [
+        27.59,
+        18.8825,
+        70.91
+      ],
+      "bounds_max": [
+        28.41,
+        18.917499999999997,
+        71.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Fixture_29__Lens",
       "stage": 1,
-      "chunk": "C-3_1",
+      "chunk": "Fixture_29",
       "role": "Lens",
       "bounds_min": [
         -33.6675,
@@ -5959,9 +3681,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage2__C3_1__Lens",
+      "name": "Stage1__Fixture_30__Lens",
+      "stage": 1,
+      "chunk": "Fixture_30",
+      "role": "Lens",
+      "bounds_min": [
+        -8.41,
+        23.9825,
+        29.91
+      ],
+      "bounds_max": [
+        -7.59,
+        24.0175,
+        30.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Fixture_31__Lens",
       "stage": 2,
-      "chunk": "C3_1",
+      "chunk": "Fixture_31",
       "role": "Lens",
       "bounds_min": [
         48.6325,
@@ -5976,9 +3715,26 @@
       "triangles": 28
     },
     {
-      "name": "Stage3__C4_4__Lens",
+      "name": "Stage2__Fixture_32__Lens",
+      "stage": 2,
+      "chunk": "Fixture_32",
+      "role": "Lens",
+      "bounds_min": [
+        24.59,
+        26.9825,
+        23.91
+      ],
+      "bounds_max": [
+        25.41,
+        27.0175,
+        24.09
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_33__Lens",
       "stage": 3,
-      "chunk": "C4_4",
+      "chunk": "Fixture_33",
       "role": "Lens",
       "bounds_min": [
         64.63250000000001,
@@ -5991,6 +3747,771 @@
         64.09
       ],
       "triangles": 28
+    },
+    {
+      "name": "Stage3__Fixture_34__Lens",
+      "stage": 3,
+      "chunk": "Fixture_34",
+      "role": "Lens",
+      "bounds_min": [
+        42.201065540766685,
+        22.910468372051046,
+        71.65622475077981
+      ],
+      "bounds_max": [
+        42.798934459233315,
+        23.089531627948954,
+        72.34377524922019
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__PuzzleFrame__Collision",
+      "stage": 1,
+      "chunk": "PuzzleFrame",
+      "role": "Collision",
+      "bounds_min": [
+        -32.805,
+        8.4,
+        21.375
+      ],
+      "bounds_max": [
+        -31.755,
+        9.8,
+        24.625
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "Stage1__PuzzleFrame__Wood",
+      "stage": 1,
+      "chunk": "PuzzleFrame",
+      "role": "Wood",
+      "bounds_min": [
+        -31.89,
+        9.030000000000001,
+        21.77
+      ],
+      "bounds_max": [
+        -31.71,
+        10.545,
+        24.23
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage1__Puzzle_roll-0__Weave",
+      "stage": 1,
+      "chunk": "Puzzle_roll-0",
+      "role": "Weave",
+      "bounds_min": [
+        -31.684,
+        9.194,
+        21.95
+      ],
+      "bounds_max": [
+        -31.672,
+        9.596,
+        24.05
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Puzzle_roll-0__Rubber",
+      "stage": 1,
+      "chunk": "Puzzle_roll-0",
+      "role": "Rubber",
+      "bounds_min": [
+        -32.037071106160674,
+        9.184648748315592,
+        21.95
+      ],
+      "bounds_max": [
+        -31.684928893839327,
+        9.605351251684409,
+        24.05
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Puzzle_roll-0__Thread",
+      "stage": 1,
+      "chunk": "Puzzle_roll-0",
+      "role": "Thread",
+      "bounds_min": [
+        -32.04070508075689,
+        9.177720545085316,
+        22.118
+      ],
+      "bounds_max": [
+        -31.691294919243113,
+        9.612279454914685,
+        23.842
+      ],
+      "triangles": 336
+    },
+    {
+      "name": "Stage1__Puzzle_roll-0__Steel",
+      "stage": 1,
+      "chunk": "Puzzle_roll-0",
+      "role": "Steel",
+      "bounds_min": [
+        -31.8375,
+        9.3575,
+        21.830000000000002
+      ],
+      "bounds_max": [
+        -31.56,
+        9.432500000000001,
+        24.185
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__PuzzleFrame__Steel",
+      "stage": 1,
+      "chunk": "PuzzleFrame",
+      "role": "Steel",
+      "bounds_min": [
+        -31.8,
+        8.4,
+        22.22
+      ],
+      "bounds_max": [
+        -30.91,
+        9.59,
+        24.1
+      ],
+      "triangles": 560
+    },
+    {
+      "name": "Stage1__Puzzle_roll-1__Weave",
+      "stage": 1,
+      "chunk": "Puzzle_roll-1",
+      "role": "Weave",
+      "bounds_min": [
+        -31.684,
+        9.614,
+        21.95
+      ],
+      "bounds_max": [
+        -31.672,
+        10.016,
+        24.05
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Puzzle_roll-1__Rubber",
+      "stage": 1,
+      "chunk": "Puzzle_roll-1",
+      "role": "Rubber",
+      "bounds_min": [
+        -32.037071106160674,
+        9.604648748315592,
+        21.95
+      ],
+      "bounds_max": [
+        -31.684928893839327,
+        10.025351251684409,
+        24.05
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Puzzle_roll-1__Thread",
+      "stage": 1,
+      "chunk": "Puzzle_roll-1",
+      "role": "Thread",
+      "bounds_min": [
+        -32.04070508075689,
+        9.597720545085316,
+        22.118
+      ],
+      "bounds_max": [
+        -31.691294919243113,
+        10.032279454914685,
+        23.842
+      ],
+      "triangles": 336
+    },
+    {
+      "name": "Stage1__Puzzle_roll-1__Steel",
+      "stage": 1,
+      "chunk": "Puzzle_roll-1",
+      "role": "Steel",
+      "bounds_min": [
+        -31.8375,
+        9.7775,
+        21.830000000000002
+      ],
+      "bounds_max": [
+        -31.56,
+        9.852500000000001,
+        24.185
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Puzzle_roll-2__Weave",
+      "stage": 1,
+      "chunk": "Puzzle_roll-2",
+      "role": "Weave",
+      "bounds_min": [
+        -31.684,
+        10.034,
+        21.95
+      ],
+      "bounds_max": [
+        -31.672,
+        10.436,
+        24.05
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Puzzle_roll-2__Rubber",
+      "stage": 1,
+      "chunk": "Puzzle_roll-2",
+      "role": "Rubber",
+      "bounds_min": [
+        -32.037071106160674,
+        10.024648748315592,
+        21.95
+      ],
+      "bounds_max": [
+        -31.684928893839327,
+        10.445351251684409,
+        24.05
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Puzzle_roll-2__Thread",
+      "stage": 1,
+      "chunk": "Puzzle_roll-2",
+      "role": "Thread",
+      "bounds_min": [
+        -32.04070508075689,
+        10.017720545085316,
+        22.118
+      ],
+      "bounds_max": [
+        -31.691294919243113,
+        10.452279454914684,
+        23.842
+      ],
+      "triangles": 336
+    },
+    {
+      "name": "Stage1__Puzzle_roll-2__Steel",
+      "stage": 1,
+      "chunk": "Puzzle_roll-2",
+      "role": "Steel",
+      "bounds_min": [
+        -31.8375,
+        10.1975,
+        21.830000000000002
+      ],
+      "bounds_max": [
+        -31.56,
+        10.2725,
+        24.185
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage1__Puzzle_cloth-bolt__Steel",
+      "stage": 1,
+      "chunk": "Puzzle_cloth-bolt",
+      "role": "Steel",
+      "bounds_min": [
+        -31.69,
+        9.26,
+        23.955000000000002
+      ],
+      "bounds_max": [
+        -31.59,
+        10.38,
+        24.43
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage2__PuzzleFrame__Collision",
+      "stage": 2,
+      "chunk": "PuzzleFrame",
+      "role": "Collision",
+      "bounds_min": [
+        -11.805,
+        12.0,
+        12.375
+      ],
+      "bounds_max": [
+        -10.754999999999999,
+        13.4,
+        15.625
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "Stage2__PuzzleFrame__Steel",
+      "stage": 2,
+      "chunk": "PuzzleFrame",
+      "role": "Steel",
+      "bounds_min": [
+        -11.945,
+        12.0,
+        12.675
+      ],
+      "bounds_max": [
+        -9.879999999999999,
+        14.6,
+        15.325
+      ],
+      "triangles": 924
+    },
+    {
+      "name": "Stage2__Puzzle_shutter__WornSteel",
+      "stage": 2,
+      "chunk": "Puzzle_shutter",
+      "role": "WornSteel",
+      "bounds_min": [
+        -11.1475,
+        12.61,
+        13.175
+      ],
+      "bounds_max": [
+        -11.092500000000001,
+        13.27,
+        15.025
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_shutter__Steel",
+      "stage": 2,
+      "chunk": "Puzzle_shutter",
+      "role": "Steel",
+      "bounds_min": [
+        -11.095,
+        12.629999999999999,
+        13.3775
+      ],
+      "bounds_max": [
+        -11.025,
+        13.25,
+        14.6225
+      ],
+      "triangles": 84
+    },
+    {
+      "name": "Stage2__Puzzle_shutter-stop__Steel",
+      "stage": 2,
+      "chunk": "Puzzle_shutter-stop",
+      "role": "Steel",
+      "bounds_min": [
+        -11.085,
+        13.515,
+        14.63
+      ],
+      "bounds_max": [
+        -10.995000000000001,
+        13.585,
+        15.030000000000001
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_weight-switch__Steel",
+      "stage": 2,
+      "chunk": "Puzzle_weight-switch",
+      "role": "Steel",
+      "bounds_min": [
+        -11.035,
+        13.379999999999999,
+        12.905000000000001
+      ],
+      "bounds_max": [
+        -10.945,
+        13.98,
+        12.975
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_transfer-weight__ConcreteDark",
+      "stage": 2,
+      "chunk": "Puzzle_transfer-weight",
+      "role": "ConcreteDark",
+      "bounds_min": [
+        -11.48,
+        13.585,
+        12.790000000000001
+      ],
+      "bounds_max": [
+        -11.18,
+        14.015,
+        13.07
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_carriage__Steel",
+      "stage": 2,
+      "chunk": "Puzzle_carriage",
+      "role": "Steel",
+      "bounds_min": [
+        -10.735,
+        12.7025,
+        12.99
+      ],
+      "bounds_max": [
+        -10.185,
+        12.7775,
+        13.65
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_carriage__Cloth",
+      "stage": 2,
+      "chunk": "Puzzle_carriage",
+      "role": "Cloth",
+      "bounds_min": [
+        -10.64,
+        12.7885,
+        13.08
+      ],
+      "bounds_max": [
+        -10.28,
+        12.8865,
+        13.56
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage2__Puzzle_carriage__Thread",
+      "stage": 2,
+      "chunk": "Puzzle_carriage",
+      "role": "Thread",
+      "bounds_min": [
+        -10.65,
+        12.884,
+        13.3025
+      ],
+      "bounds_max": [
+        -10.27,
+        12.896,
+        13.3375
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage2__Puzzle_carriage-send__Steel",
+      "stage": 2,
+      "chunk": "Puzzle_carriage-send",
+      "role": "Steel",
+      "bounds_min": [
+        -10.04,
+        13.1275,
+        14.875
+      ],
+      "bounds_max": [
+        -9.92,
+        13.182500000000001,
+        15.025
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__PuzzleFrame__Collision",
+      "stage": 3,
+      "chunk": "PuzzleFrame",
+      "role": "Collision",
+      "bounds_min": [
+        14.195,
+        15.6,
+        72.375
+      ],
+      "bounds_max": [
+        15.245000000000001,
+        17.0,
+        75.625
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "Stage3__PuzzleFrame__Steel",
+      "stage": 3,
+      "chunk": "PuzzleFrame",
+      "role": "Steel",
+      "bounds_min": [
+        14.89,
+        15.6,
+        72.56
+      ],
+      "bounds_max": [
+        16.29,
+        18.259999999999998,
+        75.44
+      ],
+      "triangles": 616
+    },
+    {
+      "name": "Stage3__Puzzle_bird-0__WornSteel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-0",
+      "role": "WornSteel",
+      "bounds_min": [
+        15.1575,
+        16.910809827548764,
+        72.74356348451825
+      ],
+      "bounds_max": [
+        15.2025,
+        17.55960017429106,
+        73.61643651548175
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage3__Puzzle_bird-0__Steel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-0",
+      "role": "Steel",
+      "bounds_min": [
+        15.045,
+        17.134999999999998,
+        73.25
+      ],
+      "bounds_max": [
+        15.2025,
+        17.4725,
+        73.51
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage3__Puzzle_bird-1__WornSteel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-1",
+      "role": "WornSteel",
+      "bounds_min": [
+        15.1575,
+        16.910809827548764,
+        73.56356348451826
+      ],
+      "bounds_max": [
+        15.2025,
+        17.55960017429106,
+        74.43643651548174
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage3__Puzzle_bird-1__Steel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-1",
+      "role": "Steel",
+      "bounds_min": [
+        15.045,
+        17.134999999999998,
+        74.07
+      ],
+      "bounds_max": [
+        15.2025,
+        17.4725,
+        74.33
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage3__Puzzle_bird-1__Thread",
+      "stage": 3,
+      "chunk": "Puzzle_bird-1",
+      "role": "Thread",
+      "bounds_min": [
+        15.1575,
+        17.595,
+        73.8975
+      ],
+      "bounds_max": [
+        15.2025,
+        17.745,
+        74.1025
+      ],
+      "triangles": 84
+    },
+    {
+      "name": "Stage3__Puzzle_bird-2__WornSteel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-2",
+      "role": "WornSteel",
+      "bounds_min": [
+        15.1575,
+        16.910809827548764,
+        74.38356348451825
+      ],
+      "bounds_max": [
+        15.2025,
+        17.55960017429106,
+        75.25643651548175
+      ],
+      "triangles": 112
+    },
+    {
+      "name": "Stage3__Puzzle_bird-2__Steel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-2",
+      "role": "Steel",
+      "bounds_min": [
+        15.045,
+        17.134999999999998,
+        74.89
+      ],
+      "bounds_max": [
+        15.2025,
+        17.4725,
+        75.15
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "Stage3__Puzzle_bird-lift__Steel",
+      "stage": 3,
+      "chunk": "Puzzle_bird-lift",
+      "role": "Steel",
+      "bounds_min": [
+        16.2125,
+        16.71,
+        75.0825
+      ],
+      "bounds_max": [
+        16.2875,
+        17.09,
+        75.1575
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__PuzzleFrame__Cloth",
+      "stage": 3,
+      "chunk": "PuzzleFrame",
+      "role": "Cloth",
+      "bounds_min": [
+        14.225999999999999,
+        16.38,
+        72.53
+      ],
+      "bounds_max": [
+        14.244,
+        18.16,
+        75.47
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage1__Gate_1__Steel",
+      "stage": 1,
+      "chunk": "Gate_1",
+      "role": "Steel",
+      "bounds_min": [
+        5.04,
+        9.125,
+        35.4
+      ],
+      "bounds_max": [
+        5.159999999999999,
+        12.325,
+        38.6
+      ],
+      "triangles": 504
+    },
+    {
+      "name": "Stage1__GateFrame__WornSteel",
+      "stage": 1,
+      "chunk": "GateFrame",
+      "role": "WornSteel",
+      "bounds_min": [
+        4.9799999999999995,
+        9.275,
+        35.15
+      ],
+      "bounds_max": [
+        5.22,
+        13.194999999999999,
+        38.85
+      ],
+      "triangles": 84
+    },
+    {
+      "name": "Stage2__Gate_2__Steel",
+      "stage": 2,
+      "chunk": "Gate_2",
+      "role": "Steel",
+      "bounds_min": [
+        40.4,
+        12.725,
+        42.04
+      ],
+      "bounds_max": [
+        43.6,
+        15.924999999999999,
+        42.160000000000004
+      ],
+      "triangles": 504
+    },
+    {
+      "name": "Stage2__GateFrame__WornSteel",
+      "stage": 2,
+      "chunk": "GateFrame",
+      "role": "WornSteel",
+      "bounds_min": [
+        40.15,
+        12.875,
+        41.980000000000004
+      ],
+      "bounds_max": [
+        43.85,
+        16.795,
+        42.22
+      ],
+      "triangles": 84
+    },
+    {
+      "name": "Stage3__Gate_3__Steel",
+      "stage": 3,
+      "chunk": "Gate_3",
+      "role": "Steel",
+      "bounds_min": [
+        35.94,
+        15.450000000000001,
+        61.4
+      ],
+      "bounds_max": [
+        36.06,
+        18.650000000000002,
+        64.6
+      ],
+      "triangles": 504
+    },
+    {
+      "name": "Stage3__GateFrame__WornSteel",
+      "stage": 3,
+      "chunk": "GateFrame",
+      "role": "WornSteel",
+      "bounds_min": [
+        35.88,
+        15.6,
+        61.15
+      ],
+      "bounds_max": [
+        36.12,
+        19.52,
+        64.85
+      ],
+      "triangles": 84
     }
   ],
   "doors": [
@@ -6339,6 +4860,933 @@
       ],
       "parts": [
         "Stage2__Motion_vent-cloth__Rubber"
+      ]
+    }
+  ],
+  "puzzle_nodes": [
+    {
+      "id": "roll-0",
+      "stage": 1,
+      "kind": "roll",
+      "pivot": [
+        -31.8,
+        9.395,
+        23.0
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -30.47,
+        8.44,
+        21.86
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -30.95,
+        9.555,
+        22.34
+      ],
+      "exit_dock": [
+        -30.47,
+        8.44,
+        21.86
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -30.95,
+        9.555,
+        22.34
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage1__Puzzle_roll-0__Weave",
+        "Stage1__Puzzle_roll-0__Rubber",
+        "Stage1__Puzzle_roll-0__Thread",
+        "Stage1__Puzzle_roll-0__Steel"
+      ]
+    },
+    {
+      "id": "roll-1",
+      "stage": 1,
+      "kind": "roll",
+      "pivot": [
+        -31.8,
+        9.815000000000001,
+        23.0
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -30.47,
+        8.44,
+        22.52
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -30.95,
+        9.555,
+        23.0
+      ],
+      "exit_dock": [
+        -30.47,
+        8.44,
+        22.52
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -30.95,
+        9.555,
+        23.0
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage1__Puzzle_roll-1__Weave",
+        "Stage1__Puzzle_roll-1__Rubber",
+        "Stage1__Puzzle_roll-1__Thread",
+        "Stage1__Puzzle_roll-1__Steel"
+      ]
+    },
+    {
+      "id": "roll-2",
+      "stage": 1,
+      "kind": "roll",
+      "pivot": [
+        -31.8,
+        10.235,
+        23.0
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -30.47,
+        8.44,
+        23.18
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -30.95,
+        9.555,
+        23.66
+      ],
+      "exit_dock": [
+        -30.47,
+        8.44,
+        23.18
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -30.95,
+        9.555,
+        23.66
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage1__Puzzle_roll-2__Weave",
+        "Stage1__Puzzle_roll-2__Rubber",
+        "Stage1__Puzzle_roll-2__Thread",
+        "Stage1__Puzzle_roll-2__Steel"
+      ]
+    },
+    {
+      "id": "cloth-bolt",
+      "stage": 1,
+      "kind": "cloth-bolt",
+      "pivot": [
+        -31.67,
+        9.555,
+        24.38
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        2.5717582782094416e-17,
+        0.0,
+        0.42
+      ],
+      "dock": [
+        -30.47,
+        8.44,
+        23.5
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -30.95,
+        9.555,
+        23.98
+      ],
+      "exit_dock": [
+        -30.47,
+        8.44,
+        23.5
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -30.95,
+        9.555,
+        23.98
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage1__Puzzle_cloth-bolt__Steel"
+      ]
+    },
+    {
+      "id": "shutter",
+      "stage": 2,
+      "kind": "shutter",
+      "pivot": [
+        -11.120000000000001,
+        12.95,
+        14.0
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        0.0,
+        0.86,
+        0.0
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        12.6
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        13.08
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        12.6
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        13.08
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_shutter__WornSteel",
+        "Stage2__Puzzle_shutter__Steel"
+      ]
+    },
+    {
+      "id": "shutter-stop",
+      "stage": 2,
+      "kind": "shutter-stop",
+      "pivot": [
+        -11.04,
+        13.55,
+        14.97
+      ],
+      "axis": [
+        -1.0,
+        0.0,
+        6.123233995736766e-17
+      ],
+      "step_angle": 65,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        13.22
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        13.7
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        13.22
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        13.7
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_shutter-stop__Steel"
+      ]
+    },
+    {
+      "id": "weight-switch",
+      "stage": 2,
+      "kind": "weight-switch",
+      "pivot": [
+        -10.99,
+        13.95,
+        12.94
+      ],
+      "axis": [
+        -1.0,
+        0.0,
+        6.123233995736766e-17
+      ],
+      "step_angle": 55,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        13.84
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        14.32
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        13.84
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        14.32
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_weight-switch__Steel"
+      ]
+    },
+    {
+      "id": "transfer-weight",
+      "stage": 2,
+      "kind": "weight",
+      "pivot": [
+        -11.33,
+        13.8,
+        12.93
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        0.0,
+        -0.65,
+        0.0
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        13.52
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        14.0
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        13.52
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        14.0
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_transfer-weight__ConcreteDark"
+      ]
+    },
+    {
+      "id": "carriage",
+      "stage": 2,
+      "kind": "carriage",
+      "pivot": [
+        -10.46,
+        12.77,
+        13.32
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        -1.12,
+        0.0,
+        6.858022075225179e-17
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        13.52
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        14.0
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        13.52
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        14.0
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_carriage__Steel",
+        "Stage2__Puzzle_carriage__Cloth",
+        "Stage2__Puzzle_carriage__Thread"
+      ]
+    },
+    {
+      "id": "carriage-send",
+      "stage": 2,
+      "kind": "carriage-send",
+      "pivot": [
+        -9.98,
+        13.155,
+        14.95
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        -9.44,
+        12.04,
+        14.47
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        -9.92,
+        13.155,
+        14.95
+      ],
+      "exit_dock": [
+        -9.44,
+        12.04,
+        14.47
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        -9.92,
+        13.155,
+        14.95
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage2__Puzzle_carriage-send__Steel"
+      ]
+    },
+    {
+      "id": "bird-0",
+      "stage": 3,
+      "kind": "bird",
+      "pivot": [
+        15.18,
+        17.3,
+        73.18
+      ],
+      "axis": [
+        -1.0,
+        0.0,
+        6.123233995736766e-17
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        16.73,
+        15.639999999999999,
+        72.86
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        16.25,
+        16.755,
+        73.34
+      ],
+      "exit_dock": [
+        16.73,
+        15.639999999999999,
+        72.86
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        16.25,
+        16.755,
+        73.34
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage3__Puzzle_bird-0__WornSteel",
+        "Stage3__Puzzle_bird-0__Steel"
+      ]
+    },
+    {
+      "id": "bird-1",
+      "stage": 3,
+      "kind": "bird",
+      "pivot": [
+        15.18,
+        17.3,
+        74.0
+      ],
+      "axis": [
+        -1.0,
+        0.0,
+        6.123233995736766e-17
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        16.73,
+        15.639999999999999,
+        73.52
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        16.25,
+        16.755,
+        74.0
+      ],
+      "exit_dock": [
+        16.73,
+        15.639999999999999,
+        73.52
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        16.25,
+        16.755,
+        74.0
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage3__Puzzle_bird-1__WornSteel",
+        "Stage3__Puzzle_bird-1__Steel",
+        "Stage3__Puzzle_bird-1__Thread"
+      ]
+    },
+    {
+      "id": "bird-2",
+      "stage": 3,
+      "kind": "bird",
+      "pivot": [
+        15.18,
+        17.3,
+        74.82
+      ],
+      "axis": [
+        -1.0,
+        0.0,
+        6.123233995736766e-17
+      ],
+      "step_angle": 120,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dock": [
+        16.73,
+        15.639999999999999,
+        74.18
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        16.25,
+        16.755,
+        74.66
+      ],
+      "exit_dock": [
+        16.73,
+        15.639999999999999,
+        74.18
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        16.25,
+        16.755,
+        74.66
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage3__Puzzle_bird-2__WornSteel",
+        "Stage3__Puzzle_bird-2__Steel"
+      ]
+    },
+    {
+      "id": "bird-lift",
+      "stage": 3,
+      "kind": "bird-lift",
+      "pivot": [
+        16.25,
+        16.755,
+        75.12
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        0.0,
+        0.3,
+        0.0
+      ],
+      "dock": [
+        16.73,
+        15.639999999999999,
+        74.64
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        16.25,
+        16.755,
+        75.12
+      ],
+      "exit_dock": [
+        16.73,
+        15.639999999999999,
+        74.64
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        16.25,
+        16.755,
+        75.12
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage3__Puzzle_bird-lift__Steel"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "gate-1",
+      "stage": 1,
+      "pivot": [
+        5.1,
+        9.275,
+        37
+      ],
+      "travel": [
+        0,
+        3.35,
+        0
+      ],
+      "collider_center": [
+        0,
+        1.45,
+        0
+      ],
+      "collider_size": [
+        0.18,
+        3.2,
+        3.2
+      ],
+      "parts": [
+        "Stage1__Gate_1__Steel"
+      ]
+    },
+    {
+      "id": "gate-2",
+      "stage": 2,
+      "pivot": [
+        42,
+        12.875,
+        42.1
+      ],
+      "travel": [
+        0,
+        3.35,
+        0
+      ],
+      "collider_center": [
+        0,
+        1.45,
+        0
+      ],
+      "collider_size": [
+        3.2,
+        3.2,
+        0.18
+      ],
+      "parts": [
+        "Stage2__Gate_2__Steel"
+      ]
+    },
+    {
+      "id": "gate-3",
+      "stage": 3,
+      "pivot": [
+        36,
+        15.6,
+        63
+      ],
+      "travel": [
+        0,
+        3.35,
+        0
+      ],
+      "collider_center": [
+        0,
+        1.45,
+        0
+      ],
+      "collider_size": [
+        0.18,
+        3.2,
+        3.2
+      ],
+      "parts": [
+        "Stage3__Gate_3__Steel"
       ]
     }
   ],
@@ -8024,6 +7472,24 @@
           74
         ],
         3,
+        true
+      ],
+      [
+        [
+          0,
+          15.3,
+          14
+        ],
+        2,
+        false
+      ],
+      [
+        [
+          28,
+          18.9,
+          71
+        ],
+        3,
         false
       ],
       [
@@ -8213,6 +7679,16 @@
         0.0
       ],
       [
+        -1,
+        -0.5,
+        0
+      ],
+      [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      [
         0.0,
         -1.0,
         0.0
@@ -8248,7 +7724,7 @@
         -0.6040227735550536
       ]
     ],
-    "scenery_light_start": 27,
+    "scenery_light_start": 29,
     "interior_volumes": [
       [
         -34,
@@ -8460,7 +7936,49 @@
         ]
       }
     ],
-    "abyss_floor": -35,
+    "gates": [
+      [
+        1,
+        [
+          5.1,
+          9.275,
+          37
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      [
+        2,
+        [
+          42,
+          12.875,
+          42.1
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      [
+        3,
+        [
+          36,
+          15.6,
+          63
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ]
+    ],
+    "puzzle_version": 2,
+    "abyss_floor": -60,
     "warehouse_chart_version": 1
   }
 }

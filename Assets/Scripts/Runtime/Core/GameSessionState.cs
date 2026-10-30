@@ -101,6 +101,7 @@ namespace BarPromenade
             new InventoryState();
         private static readonly WarehouseFishAssemblyState warehouseFishAssembly = new WarehouseFishAssemblyState();
         private static readonly WarehouseGateState warehouseGate = new WarehouseGateState();
+        private static readonly StairwellLabyrinthPuzzleState stairwellLabyrinthPuzzles = new StairwellLabyrinthPuzzleState();
         private static readonly WarehouseFishLampState warehouseFishLamp = new WarehouseFishLampState();
         private static readonly QuestLogState questLog =
             new QuestLogState();
@@ -123,6 +124,7 @@ namespace BarPromenade
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static WarehouseFishAssemblyState WarehouseFishAssembly => warehouseFishAssembly;
         public static WarehouseGateState WarehouseGate => warehouseGate;
+        public static StairwellLabyrinthPuzzleState StairwellLabyrinthPuzzles => stairwellLabyrinthPuzzles;
         public static int? WarehouseStorySeed { get; private set; }
         public static bool WarehouseDoorAmbushPlayed { get; private set; }
         internal static void MarkWarehouseDoorAmbushPlayed() => WarehouseDoorAmbushPlayed = true;
@@ -550,6 +552,7 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            stairwellLabyrinthPuzzles.Reset();
             CityFishSupplySession.ResetForNewGame();
             WarehouseStoryEntryService.ResetPending();
             WarehouseStorySeed = null;

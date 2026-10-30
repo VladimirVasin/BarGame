@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     internal static class StairwellLabyrinthData
     {
-        public const string Signature="f6c968bed690640aec065797a9f4927799d4abaabe82967124f78aec76fca0c4";
+        public const string Signature="fe977c79700f9ba0e02f4e2b759ad86d5730722e381f778454afb2b434caf22c";
         public const float MainRouteLength=199.46f;
         public static StairwellLabyrinthSupportPlan[] CreateSupports() => new[] {
             new StairwellLabyrinthSupportPlan("main-00",1,new Vector3(-1.45f,4.8f,2.25f),new Vector3(-1.45f,4.8f,3.2f),3.2f,Rect.MinMaxRect(-3.05f,2.25f,0.15f,3.2f)),
@@ -120,13 +120,20 @@ namespace BarPromenade
             new StairwellLabyrinthLightPlan(new Vector3(56f,18.9f,69f),new Vector3(0f,-1f,0f),3,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-30.6f,11.12f,23f),new Vector3(0f,-1f,0f),1,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-9.6f,14.72f,14f),new Vector3(0f,-1f,0f),2,false,false),
-            new StairwellLabyrinthLightPlan(new Vector3(16.4f,18.32f,74f),new Vector3(0f,-1f,0f),3,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(16.4f,18.32f,74f),new Vector3(-1f,-0.5f,0f),3,true,false),
+            new StairwellLabyrinthLightPlan(new Vector3(0f,15.3f,14f),new Vector3(0f,-1f,0f),2,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(28f,18.9f,71f),new Vector3(0f,-1f,0f),3,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-33.65f,12.5f,23f),new Vector3(1f,-0f,0f),1,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(-8f,24f,30f),new Vector3(0f,-1f,0f),1,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(48.65f,17.5f,28f),new Vector3(-1f,-0f,0f),2,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(25f,27f,24f),new Vector3(0f,-1f,0f),2,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(64.65f,23f,64f),new Vector3(-1f,-0f,0f),3,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(42.5f,23f,72f),new Vector3(-0.719846f,-0.34202f,-0.604023f),3,true,true),
+        };
+        public static StairwellLabyrinthGatePlan[] CreatePuzzleGates() => new[] {
+            new StairwellLabyrinthGatePlan(1,new Vector3(5.1f,9.275f,37f),new Vector3(1f,0f,0f),3.2f),
+            new StairwellLabyrinthGatePlan(2,new Vector3(42f,12.875f,42.1f),new Vector3(0f,0f,1f),3.2f),
+            new StairwellLabyrinthGatePlan(3,new Vector3(36f,15.6f,63f),new Vector3(1f,0f,0f),3.2f),
         };
     }
 }

@@ -17,6 +17,8 @@ namespace BarPromenade
         private const float Epsilon = .002f;
         private static readonly Vector2[] CircleOffsets = CreateCircleOffsets();
         private readonly Transform space;
+        private readonly StairwellLabyrinthPuzzleState puzzles;
+        private readonly StairwellLabyrinthGatePlan[] gates;
         private readonly Support[] supports;
         private readonly Dictionary<Vector2Int, List<int>> cells = new Dictionary<Vector2Int, List<int>>();
 
@@ -36,11 +38,13 @@ namespace BarPromenade
             }
         }
 
-        public StairwellWalkableArea(StairwellLayoutPlan plan, Transform space = null)
+        public StairwellWalkableArea(StairwellLayoutPlan plan, Transform space = null, StairwellLabyrinthPuzzleState puzzles = null)
         {
             if (plan == null || plan.Labyrinth == null)
                 throw new ArgumentException("Height-aware traversal requires the post-sleep stairwell.", nameof(plan));
             this.space = space;
+            this.puzzles = puzzles;
+            gates = puzzles != null ? StairwellLabyrinthData.CreatePuzzleGates() : Array.Empty<StairwellLabyrinthGatePlan>();
             supports = new Support[plan.Labyrinth.Supports.Count + 3];
             supports[0] = Flat(plan.ApartmentLandingBounds, plan.ApartmentElevation);
             StairwellFlightPlan flight = plan.UpperFlight;
@@ -103,15 +107,18 @@ namespace BarPromenade
             float distance = new Vector2(desired.x - current.x, desired.z - current.z).magnitude;
             int samples = Mathf.Max(1, Mathf.CeilToInt(distance / .15f));
             if (samples > 64) return false;
+            Vector3 previous = current;
             for (int i = 1; i <= samples; i++)
             {
                 Vector3 sample = Vector3.Lerp(current, desired, i / (float)samples);
                 // A connected ramp can change height; an overlapping storey
                 // cannot claim support merely because it shares a footprint.
                 sample.y = before + PlayerFactory.GroundedRootOffset;
+                if (CrossesClosedGate(previous, sample, before, radius)) return false;
                 if (!TrySupport(sample, radius, MaximumStep + .05f, MaximumStep + .05f, out float after) ||
                     Mathf.Abs(after - before) > MaximumStep + Epsilon) return false;
                 before = after;
+                previous = sample;
             }
             return true;
         }
@@ -169,6 +176,27 @@ namespace BarPromenade
                 if (underside > floor + .28f && underside < floor + StandingHeight) return false;
             }
             return true;
+        }
+
+        private bool CrossesClosedGate(Vector3 current, Vector3 desired, float supportHeight, float radius)
+        {
+            foreach (StairwellLabyrinthGatePlan gate in gates)
+            {
+                if (puzzles.CanPassGate(gate.Stage) || Mathf.Abs(supportHeight - gate.Position.y) > 1f) continue;
+                // The generator owns the very same ramp cut and physical leaf width.
+                // Floor height keeps this guard authoritative throughout an ordinary jump.
+                float from = Vector3.Dot(current - gate.Position, gate.Normal);
+                float to = Vector3.Dot(desired - gate.Position, gate.Normal);
+                float clearance = radius + .09f;
+                bool crossing = from <= 0f ? to > from && to > -clearance : to < from && to < clearance;
+                if (!crossing) continue;
+                float boundary = from <= 0f ? -clearance : clearance;
+                float t = Mathf.Abs(to - from) > .0001f ? Mathf.Clamp01((boundary - from) / (to - from)) : 0f;
+                Vector3 point = Vector3.Lerp(current, desired, t);
+                Vector3 across = Vector3.Cross(Vector3.up, gate.Normal);
+                if (Mathf.Abs(Vector3.Dot(point - gate.Position, across)) <= gate.Width * .5f + radius) return true;
+            }
+            return false;
         }
 
         private static Vector2[] CreateCircleOffsets()

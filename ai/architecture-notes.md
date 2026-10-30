@@ -1,6 +1,25 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
+  User: three Silent Hill-like tasks repeat Home painting's
+  Philomela/Procne/Tereus motifs: woven image/thread; shutter-stop-weight
+  delivery; shadow-read bird stops. Shared positioned rig/hand actions/RU prompts.
+  Guarded/enclosed domestic→shaft→machinery, normal gravity/third-person,
+  fixed below; Single-load warehouse retains session/fish/key/ambush/retry.
+  Three gates cut stage1→2→3→warehouse; reversible attempts,
+  monotonic session solutions/New Game reset. Painting anonymous/silent;
+  no hero/woman/crime clue, voice, apparition, loss or timer.
+  User correction: statue/initial stairs keep their previous light until the
+  first labyrinth flight; return restores it. Two shadowed lamps switch
+  on within22m/off beyond24m, same-storey/room-isolated; lens/hum/contactors
+  follow power. Darkness outside.
+  Blender lower stairs/supports/cables vanish before finite ends; no visible floor.
+  All24: black ambient/SH/sun/fog/reflection beyond boundary; local Hard/SSAO/
+  grade/material/motion/dust/outline and saved post owners, no lifted black.
+  No new GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur. Bounded lights/shadows/
+  cached bindings/pause/cleanup; cost unmeasured. §6/16/21/nine art checks bind.
+
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.
   Shell `12×8×2.9 m`, clear ceiling `2.86 m`; sealed-room bounds/area stay.
@@ -65,19 +84,6 @@
   lab/vocalizer/back; legacy05:59 remains API-only. All24 effects retain owners:
   existing actual-noon light/material/shadow/post coverage, only camera/DOF scope;
   no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
-
-- **Accepted architecture exception 2026-10-30 — post-sleep labyrinth to warehouse:**
-  User:3 stages/branches/loops above black unlit/no-fog abyss, sides/roof;
-  domestic/shaft/machinery; sideways/inverted small stairs.
-  Three service rooms, one/stage: shared rig E open/close, no puzzle/gate/reward.
-  Separate lamp/fan/counterweight/vent/cloth pivots; causal sound/pause-owned.
-  Guarded feet-aware paths/normal gravity; third-person/mouse, fixed below.
-  Plaster/wood→wet concrete/steel/red lamps; no cloned facades/finale/lore.
-  Single load keeps session/calendar/inventory/quests/hero/seed. Endless/full
-  kit/default density; entry seals; fish/key/gate/ambush/retry keep story.
-  Combat exceptions only in warehouse. All24: ≤8 lamps/≤2 Hard shadows,
-  fog/grade/far DOF/SSAO/SMAA/shared lens; no new GI/SSGI/SCGI/SSR/water/
-  rim/flare/blur/strobe. Blender chunks/shared surfaces/cleanup; cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — distorted Stairwell/short ascent:**
   Lower walls/columns/household/fixtures stay; broken back/east-south roof.
@@ -652,14 +658,11 @@
   Kitchen practical: six local lights, no new shadow map; bathroom/balcony light stays. No plot/clue/speech;
   story §16/§21 and all nine art §16 checks remain mandatory.
 - **Accepted 2026-10-21, Home wall painting — explicit user decision:**
-  `TheWeaverandCrownedBirdTapestry.png` becomes one anonymous household painting
-  left of the locked-room door, with original image aspect and a worn dark frame
-  `1.40 x 0.82 m`. `HomeWallPainting` uses shared narrative standing approach and
-  object close-up. The shared definition/controller allow an empty-page silent
-  view: keyed E prompt, E/Esc exit, normal owned camera/input cleanup.
-  No caption, thought, speech, sound, reward or connection to the hero/woman/crime.
-  It carries no story trace; §11/§16/§19/§21 and art §7 remain intact, so no
-  `Нельзя` is lifted and no new §6 exemption is required.
+  `HomeWallPainting`: supplied anonymous image/left of locked door, original
+  aspect/dark1.40×.82m frame; shared standing/ObjectCloseUp/E/Esc/cleanup.
+  Silent/no reward/crime clue; textile/birds inform labyrinth by2026-10-30.
+  §11/16/19/21/art§7 bind.
+
 - **Accepted exception 2026-10-21, global debug free camera — explicit user decision:**
   `DebugFreeCamera` is installed by `PlayerFactory` in every gameplay root.
   F4 selects free flight: mouse look, WASD, Q down/E up, Shift ×4 speed.

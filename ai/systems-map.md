@@ -204,7 +204,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8×2.9m; stove meets wall; sofa/kitchen/locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
-| Player-home stairwell | Escher/abyss/motion/three E-rooms; puzzles absent. Warehouse/session retained. | `StairwellLayout*`, `StairwellWalkableArea`, `WarehouseStoryEntryService` | Current |
+| Player-home stairwell | Three myth puzzles gate Escher stages; occupied light/black abyss. Session retained. | `StairwellLabyrinthPuzzles`, `StairwellWalkableArea`, `WarehouseStoryEntryService` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |

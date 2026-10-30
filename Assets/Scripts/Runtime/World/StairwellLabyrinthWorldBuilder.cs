@@ -71,7 +71,7 @@ namespace BarPromenade
                     float scale = 1f / StairwellSurfaceAppearance.GetRecipe(kind).MetersPerTile;
                     properties.SetVector("_BaseMap_ST", new Vector4(scale,scale,0f,0f));renderer.SetPropertyBlock(properties);
                 }
-                else
+                else if (part.role != "Weave" && part.role != "Cloth" && part.role != "Thread")
                 {
                     renderer.sharedMaterial = part.role == "Lens" ?
                         WarehouseArenaAssetProvider.Surface(part.stage == 3 ? "EmergencyRoomLamp" : "FishStationLamp", part.stage == 3 ? "SignalRed" : "Lamp") :
@@ -79,6 +79,7 @@ namespace BarPromenade
                 }
             }
             presentation.Prepare(manifest, byName, abyss);
+            wrapper.AddComponent<StairwellLabyrinthPuzzles>().Prepare(manifest, byName);
             BuildFootProbes(wrapper.transform, plan);
             GameObject door = ApartmentEntranceDoor.Create(wrapper.transform, plan.DoorPosition, "Labyrinth Warehouse Door");
             door.transform.localRotation = Quaternion.Euler(0f,180f,0f);

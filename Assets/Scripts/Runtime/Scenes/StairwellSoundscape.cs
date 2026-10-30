@@ -35,6 +35,7 @@ namespace BarPromenade
             StairwellSoundscapeSynthesis.SampleRate;
         public const int OwnedSourceCount = 3;
         public const int RuntimeClipCount = 6;
+        public const int MaximumLabyrinthSwitchSources = 2;
 
         private const float VentilationVolume = 0.13f;
         private const float ElectricalVolume = 0.075f;
@@ -65,6 +66,13 @@ namespace BarPromenade
         private bool hasMechanismAnchors, ownsMechanismCue;
         private Vector3 previousVentilationPosition, previousElectricalPosition;
         private float previousVentilationRange, previousElectricalRange;
+        private AudioSource lampOnSource, lampOffSource;
+        private AudioClip lampOnClip, lampOffClip;
+        private Transform poweredLamp;
+        private bool ownsLabyrinthLighting;
+        public AudioSource LampOnSource => lampOnSource;
+        public AudioSource LampOffSource => lampOffSource;
+        public Transform PoweredLamp => poweredLamp;
 
         public bool IsInitialized { get; private set; }
         public bool HasPlayedCue { get; private set; }
@@ -84,6 +92,98 @@ namespace BarPromenade
         public AudioClip DistantWaterClip => distantWaterClip;
         public AudioClip DistantMovementClip => distantMovementClip;
 
+        public void PrepareLabyrinthLighting()
+        {
+            if (lampOnSource != null) return;
+            lampOnSource = CreateOwnedSource("Industrial Lamp Contactor On", out AudioLowPassFilter onFilter);
+            lampOffSource = CreateOwnedSource("Industrial Lamp Contactor Off", out AudioLowPassFilter offFilter);
+            ConfigureSpatialSource(lampOnSource, false, .34f, 1.4f, 21f, 150, 0f);
+            ConfigureSpatialSource(lampOffSource, false, .24f, 1.4f, 18f, 151, 0f);
+            onFilter.cutoffFrequency = offFilter.cutoffFrequency = 4800f;
+            lampOnClip = CreateClip("Stairwell_IndustrialLampOn", BuildLampContactorSamples(true));
+            lampOffClip = CreateClip("Stairwell_IndustrialLampOff", BuildLampContactorSamples(false));
+            lampOnSource.clip = lampOnClip;
+            lampOffSource.clip = lampOffClip;
+        }
+
+        public void PlayLabyrinthLampCue(Transform lamp, bool turningOn)
+        {
+            if (lamp == null || !IsInitialized || !isActiveAndEnabled || GameTimeScaleRuntime.IsPaused) return;
+            AudioSource source = turningOn ? lampOnSource : lampOffSource;
+            if (source == null) return;
+            source.transform.position = lamp.position;
+            source.Play();
+        }
+
+        public void SetLabyrinthLighting(bool owned, Transform source, bool playCue, bool preserveContactorTail = false)
+        {
+            if (!IsInitialized || lampOnSource == null) return;
+            bool changed = source != poweredLamp;
+            if (changed && playCue && isActiveAndEnabled && !GameTimeScaleRuntime.IsPaused)
+            {
+                if (poweredLamp != null)
+                {
+                    lampOffSource.transform.position = poweredLamp.position;
+                    lampOffSource.Play();
+                }
+                if (source != null)
+                {
+                    lampOnSource.transform.position = source.position;
+                    lampOnSource.Play();
+                }
+            }
+            ownsLabyrinthLighting = owned;
+            poweredLamp = source;
+            if (!playCue && source == null && !preserveContactorTail)
+            {
+                lampOnSource.Stop();
+                lampOffSource.Stop();
+            }
+            if (!owned)
+            {
+                if (!playCue && !preserveContactorTail)
+                {
+                    lampOnSource.Stop();
+                    lampOffSource.Stop();
+                }
+                electricalSource.transform.position = mechanismLamp != null ? mechanismLamp.position : anchors.Electrical;
+                electricalSource.maxDistance = hasMechanismAnchors ? 15f : ElectricalRadius;
+                if (isActiveAndEnabled && !electricalSource.isPlaying) electricalSource.Play();
+                return;
+            }
+            if (source == null) electricalSource.Stop();
+            else
+            {
+                electricalSource.transform.position = source.position;
+                electricalSource.maxDistance = 12f;
+                if (isActiveAndEnabled && !electricalSource.isPlaying) electricalSource.Play();
+            }
+        }
+
+        private static float[] BuildLampContactorSamples(bool turningOn)
+        {
+            float duration = turningOn ? .82f : .48f;
+            var samples = new float[Mathf.CeilToInt(SampleRate * duration)];
+            uint noise = turningOn ? 0x4C414D50u : 0x4F46464Cu;
+            float filtered = 0f;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                float t = i / (float)SampleRate;
+                noise = unchecked(noise * 1664525u + 1013904223u);
+                float random = (noise >> 8) / 8388607.5f - 1f;
+                filtered += (random - filtered) * .28f;
+                float attack = Mathf.Clamp01(t / .0025f);
+                float impact = (filtered * .72f + Mathf.Sin(t * Mathf.PI * 2f * 83f) * .46f) * Mathf.Exp(-t * 38f);
+                float body = (Mathf.Sin(t * Mathf.PI * 2f * 57f) * .28f +
+                    Mathf.Sin(t * Mathf.PI * 2f * 171f) * .13f) * Mathf.Exp(-t * (turningOn ? 6f : 11f));
+                float catchTime = Mathf.Max(0f, t - .055f);
+                float latch = t < .055f ? 0f : filtered * .30f * Mathf.Exp(-catchTime * 65f);
+                float tail = Mathf.Clamp01((duration - t) / .06f);
+                samples[i] = Mathf.Clamp((impact + body + latch) * attack * tail, -.98f, .98f);
+            }
+            return samples;
+        }
+
         public void ConfigureLabyrinthMechanisms(Transform fan, Transform lamp, Transform lift, Transform flap)
         {
             if (!hasMechanismAnchors)
@@ -97,7 +197,7 @@ namespace BarPromenade
             mechanismFan = fan; mechanismLamp = lamp; mechanismLift = lift; mechanismFlap = flap;
             UpdateMechanismAnchors();
             ventilationSource.maxDistance = 42f;
-            electricalSource.maxDistance = 15f;
+            if (!ownsLabyrinthLighting) electricalSource.maxDistance = 15f;
         }
 
         public void ReleaseLabyrinthMechanisms()
@@ -110,7 +210,7 @@ namespace BarPromenade
                 ventilationSource.transform.position = previousVentilationPosition;
                 ventilationSource.maxDistance = previousVentilationRange;
             }
-            if (electricalSource != null)
+            if (electricalSource != null && !ownsLabyrinthLighting)
             {
                 electricalSource.transform.position = previousElectricalPosition;
                 electricalSource.maxDistance = previousElectricalRange;
@@ -123,7 +223,11 @@ namespace BarPromenade
         {
             if (!IsInitialized) return;
             if (mechanismFan != null) ventilationSource.transform.position = mechanismFan.position;
-            if (mechanismLamp != null) electricalSource.transform.position = mechanismLamp.position;
+            if (ownsLabyrinthLighting)
+            {
+                if (poweredLamp != null) electricalSource.transform.position = poweredLamp.position;
+            }
+            else if (mechanismLamp != null) electricalSource.transform.position = mechanismLamp.position;
         }
 
         public void TryPlayMechanismCue(Vector3 position, StairwellSoundscapeCueKind kind)
@@ -192,7 +296,7 @@ namespace BarPromenade
 
         public void AdvanceSoundscape(float unscaledDeltaTime)
         {
-            if (!IsInitialized ||
+            if (!IsInitialized || GameTimeScaleRuntime.IsPaused ||
                 float.IsNaN(unscaledDeltaTime) ||
                 float.IsInfinity(unscaledDeltaTime) ||
                 unscaledDeltaTime <= 0f)
@@ -225,7 +329,7 @@ namespace BarPromenade
                 ventilationSource.Play();
             }
 
-            if (electricalSource != null &&
+            if ((!ownsLabyrinthLighting || poweredLamp != null) && electricalSource != null &&
                 !electricalSource.isPlaying)
             {
                 electricalSource.Play();
@@ -237,6 +341,8 @@ namespace BarPromenade
             ventilationSource?.Stop();
             electricalSource?.Stop();
             rareCueSource?.Stop();
+            lampOnSource?.Stop();
+            lampOffSource?.Stop();
         }
 
         private void OnDestroy()
@@ -244,6 +350,8 @@ namespace BarPromenade
             StopAndClear(ventilationSource);
             StopAndClear(electricalSource);
             StopAndClear(rareCueSource);
+            StopAndClear(lampOnSource);
+            StopAndClear(lampOffSource);
 
             DestroyRuntimeClip(ref ventilationClip);
             DestroyRuntimeClip(ref electricalClip);
@@ -251,9 +359,13 @@ namespace BarPromenade
             DestroyRuntimeClip(ref metalStressClip);
             DestroyRuntimeClip(ref distantWaterClip);
             DestroyRuntimeClip(ref distantMovementClip);
+            DestroyRuntimeClip(ref lampOnClip);
+            DestroyRuntimeClip(ref lampOffClip);
             DestroyOwnedSource(ventilationSource);
             DestroyOwnedSource(electricalSource);
             DestroyOwnedSource(rareCueSource);
+            DestroyOwnedSource(lampOnSource);
+            DestroyOwnedSource(lampOffSource);
 
             ventilationSource = null;
             electricalSource = null;

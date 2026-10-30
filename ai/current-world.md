@@ -2006,20 +2006,20 @@ cemetery:own interiors/returns.
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
 - `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; street/middle/
-  apartment seams/upper debris. Sleep keeps lower walls/flights/columns/fixtures,
-  broken back/roof/descent wall. Escher:~200m/3stages/2-3-4branches/4loops/3rises:
-  domestic reveals/open shaft/machinery above black abyss; enclosed sides/roof,
-  guarded paths, sideways/inverted scenery. Generated C#/Blender share metre
-  supports/ramps/headroom/normal gravity. Three service rooms: shared rig E
-  open/close on either side; empty puzzle sites, no gate/reward. Lamp/
-  fan/counterweight/vent/cloth move with causal sound and pause/cleanup ownership.
-  Plaster/wood→concrete/steel/red lamps. Third-person/mouse, fixed below.
-  33 lights/≤8 active/≤2 Hard shadows;10Hz/reused buffers/distance. Stage fog/grade/
-  far DOF; nearest-lamp dust. Silent stone-head E Cut leases model/shadow;
-  no live Cat/grant, quest stays. WarehouseStoryEntryService/covered Single load
-  retains session/calendar/inventory/quests/hero/seed; Endless/full kit/entry seal/
-  fish/key/gate/ambush stay. Retry restores HP/ammo, not story; preparation/new
-  layout blocked in story; menu tests stay;
+  apartment seams/upper debris. Sleep retains lower walls/flights/columns,
+  breaks back/roof/seals descent. Escher: domestic→shaft→machinery, branches/
+  loops/sideways scenery over black abyss; enclosed/guarded normal-gravity paths.
+  Shared-rig E rooms/controls: woven image, cloth delivery, shadow-read birds.
+  Physical gates cut every onward route;
+  reversible attempts/monotonic session solutions; warehouse requires all three.
+  Lamp/fan/weight/vent/cloth move with causal audio/pause/cleanup. Plaster/wood→
+  concrete/steel/red; third-person/mouse above, fixed below. Statue/initial stairs
+  retain their light until the first flight. Beyond it, two shadowed lamps
+  on22m/off24m; lens/hum/contactor follow.
+  Outside black (ambient/sun/fog/reflection/grain0). Lower supports vanish before finite ends; floor unseen.
+  Stone-head E Cut leases hero/shadow; live Cat/grant/quest unchanged.
+  Covered Single load retains session; Endless/full kit/entry seal/fish/key/ambush.
+  Retry restores HP/ammo; story blocks preparation/new layout; menu tests stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
   docks align the right-hand clip with the lever, plates with the latch stile.

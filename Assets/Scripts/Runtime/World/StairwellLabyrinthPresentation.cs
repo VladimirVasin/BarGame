@@ -11,6 +11,24 @@ namespace BarPromenade
         public Part[] parts;
         public Door[] doors;
         public Motion[] motions;
+        public PuzzleNode[] puzzle_nodes;
+        public Gate[] gates;
+        [Serializable] internal sealed class PuzzleNode
+        {
+            public string id, kind;
+            public int stage;
+            public string[] parts;
+            public float step_angle;
+            public float[] pivot, axis, travel, dock, facing, exit_dock, exit_facing, contact,
+                bounds_center, bounds_size;
+        }
+        [Serializable] internal sealed class Gate
+        {
+            public string id;
+            public int stage;
+            public string[] parts;
+            public float[] pivot, travel, collider_center, collider_size;
+        }
         [Serializable] internal sealed class Part
         { public string name, role; public int stage; public float[] bounds_min, bounds_max; }
         [Serializable] internal sealed class Door
@@ -98,7 +116,7 @@ namespace BarPromenade
             for (int i = 0; i < 3; i++)
             {
                 var door = data.doors[i];
-                if (door.stage != i + 1) throw new InvalidOperationException("One puzzle placeholder is required per stage.");
+                if (door.stage != i + 1) throw new InvalidOperationException("One puzzle room is required per stage.");
                 rooms[i] = new StairwellLabyrinthRoom(door);
                 Transform hinge = Pivot(door.id, StairwellLabyrinthManifest.Vector(door.hinge), Quaternion.Euler(0f, door.yaw, 0f));
                 hinges[i] = hinge;
