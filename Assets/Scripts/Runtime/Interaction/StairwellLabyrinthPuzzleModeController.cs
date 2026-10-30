@@ -3,41 +3,43 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One first-person owner spans selection and the existing positioned hand operations.</summary>
+    /// <summary>One frontal inspection owner spans selection and the existing positioned hand operations.</summary>
     [DefaultExecutionOrder(450)]
     [DisallowMultipleComponent]
     public sealed class StairwellLabyrinthPuzzleModeController : MonoBehaviour
     {
-        private const int ControlsPerStage = 4;
+        private const int MaximumStageControls = 4;
         private const float CameraBlendSeconds = .35f;
-        public const float FieldOfView = 78f;
-        private readonly StairwellLabyrinthPuzzleInteraction[] stageControls = new StairwellLabyrinthPuzzleInteraction[ControlsPerStage];
+        public const float FieldOfView = 56f;
+        private readonly StairwellLabyrinthPuzzleInteraction[] stageControls = new StairwellLabyrinthPuzzleInteraction[MaximumStageControls];
         private readonly BarMinigameModalLock modal = new BarMinigameModalLock();
         private StairwellLabyrinthPuzzles puzzles;
         private PlayerRuntime player;
         private PlayerAnimatedInteractionController animation;
-        private Player3DAssetRegistry registry;
         private StairwellInteriorRoot host;
         private PlayerCameraFollow cameraFollow;
         private IDisposable hiddenPlayer;
         private WorldControlOutlineView outline;
         private Pose cameraStart, returnStart, previousFixedPose;
-        private Vector3 eyeOffset, focus;
         private float cameraElapsed, previousLens;
-        private int selectedIndex, openingFrame;
-        private bool wasFixed, returning, firstPersonPresented, releasePresented, restoring;
+        private int selectedIndex, openingFrame, controlCount;
+        private bool wasFixed, returning, inspectionPresented, releasePresented, restoring;
         private Func<bool> operatePrompt;
         private string shownPromptKey;
 
         public bool IsActive { get; private set; }
-        public bool IsSettled => IsActive && !returning && firstPersonPresented;
+        public bool IsSettled => IsActive && !returning && inspectionPresented;
         public bool IsOperating => IsActive && SelectedControl != null && SelectedControl.OwnsActiveInteraction;
         public int Stage { get; private set; }
         public StairwellLabyrinthPuzzleInteraction SelectedControl => IsActive ? stageControls[selectedIndex] : null;
         public int RenderedOutlineCount => IsSettled && !GameTimeScaleRuntime.IsPaused && !puzzles.State.CanPassGate(Stage)
             ? outline?.RenderedPartCount ?? 0 : 0;
-        public Vector3 FirstPersonPosition => registry != null && registry.Anchors.Mouth != null && registry.Anchors.Head != null
-            ? registry.Anchors.Mouth.position + registry.Anchors.Head.rotation * eyeOffset : Vector3.zero;
+        public Pose InspectionPose => Stage > 0 && puzzles != null && cameraFollow != null
+            ? puzzles.GetStageViewPose(Stage, cameraFollow.Camera.aspect) : default;
+        public Bounds InspectionBounds => Stage > 0 && puzzles != null ? puzzles.GetStageViewBounds(Stage) : default;
+        public Vector3 InspectionForward => InspectionPose.rotation * Vector3.forward;
+        // Historical capture callers use the inspection position as their settled-camera seam.
+        public Vector3 FirstPersonPosition => InspectionPose.position;
         public bool IsPlayerHidden => hiddenPlayer != null;
         public bool IsHeadHidden => IsPlayerHidden;
 
@@ -49,10 +51,9 @@ namespace BarPromenade
             player = runtime;
             animation = shared;
             host = runtime.GameObject.GetComponentInParent<StairwellInteriorRoot>();
-            registry = runtime.GameObject.GetComponentInChildren<Player3DAssetRegistry>();
             cameraFollow = host != null ? host.CameraFollow : null;
-            if (cameraFollow == null || host.FixedCamera == null || registry?.Anchors.Head == null || registry.Anchors.Mouth == null)
-                throw new InvalidOperationException("A labyrinth puzzle mode requires the existing camera and registered eye anchors.");
+            if (cameraFollow == null || host.FixedCamera == null)
+                throw new InvalidOperationException("A labyrinth puzzle mode requires the existing gameplay camera.");
             outline = new WorldControlOutlineView();
             operatePrompt = OperateSelected;
         }
@@ -65,10 +66,10 @@ namespace BarPromenade
             foreach (var candidate in puzzles.Controls)
             {
                 if (candidate.Stage != control.Stage) continue;
-                if (count == ControlsPerStage) { host.FixedCamera.ReleasePuzzleView(this); return false; }
+                if (count == MaximumStageControls) { host.FixedCamera.ReleasePuzzleView(this); return false; }
                 stageControls[count++] = candidate;
             }
-            if (count != ControlsPerStage || !modal.TryCaptureAndDisable(player.Interactor, cameraFollow,
+            if (count != (control.Stage == 2 ? 3 : 4) || !modal.TryCaptureAndDisable(player.Interactor, cameraFollow,
                     host.IntoxicationHud, BarMinigameModalLockOptions.FullscreenWithPause))
             {
                 Array.Clear(stageControls, 0, stageControls.Length);
@@ -78,17 +79,14 @@ namespace BarPromenade
             try
             {
                 Stage = control.Stage;
+                controlCount = count;
                 selectedIndex = Array.IndexOf(stageControls, control);
                 wasFixed = cameraFollow.FixedPoseActive;
                 previousFixedPose = cameraFollow.FixedBasePose;
                 previousLens = cameraFollow.Camera.fieldOfView;
                 cameraStart = new Pose(cameraFollow.Camera.transform.position, cameraFollow.Camera.transform.rotation);
-                eyeOffset = Quaternion.Inverse(registry.Anchors.Head.rotation) * host.transform.up * .068f;
-                focus = Vector3.zero;
-                foreach (var candidate in stageControls) focus += candidate.CameraFocusPosition;
-                focus /= ControlsPerStage;
                 cameraElapsed = 0f;
-                returning = firstPersonPresented = releasePresented = false;
+                returning = inspectionPresented = releasePresented = false;
                 openingFrame = Time.frameCount;
                 IsActive = true;
                 GameCursor.Capture(this, CursorLockMode.Locked, false);
@@ -106,7 +104,7 @@ namespace BarPromenade
         {
             if (!IsSettled || IsOperating || delta == 0 || !GameCursor.ApplicationFocused ||
                 !GameInput.CanRead(GameInputContext.Contextual) || puzzles.State.CanPassGate(Stage)) return false;
-            selectedIndex = (selectedIndex + (delta < 0 ? ControlsPerStage - 1 : 1)) % ControlsPerStage;
+            selectedIndex = (selectedIndex + (delta < 0 ? controlCount - 1 : 1)) % controlCount;
             outline.Select(puzzles.GetControlRenderers(SelectedControl));
             RefreshPrompt();
             return true;
@@ -155,7 +153,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (!IsActive || cameraFollow == null || registry == null) return;
+            if (!IsActive || cameraFollow == null) return;
             if (DebugFreeCamera.IsInspecting(player.GameObject)) { RestorePlayer(); outline.Hide(); return; }
             float amount = Mathf.SmoothStep(0f, 1f, cameraElapsed / CameraBlendSeconds);
             if (returning)
@@ -167,14 +165,11 @@ namespace BarPromenade
                 releasePresented = cameraElapsed >= CameraBlendSeconds;
                 return;
             }
-            Vector3 eye = FirstPersonPosition;
-            Vector3 direction = focus - eye;
-            Quaternion rotation = direction.sqrMagnitude > .0001f
-                ? Quaternion.LookRotation(direction, host.transform.up) : cameraStart.rotation;
-            cameraFollow.SetFixedPose(Vector3.Lerp(cameraStart.position, eye, amount),
-                Quaternion.Slerp(cameraStart.rotation, rotation, amount), Mathf.Lerp(previousLens, FieldOfView, amount));
+            Pose inspection = InspectionPose;
+            cameraFollow.SetFixedPose(Vector3.Lerp(cameraStart.position, inspection.position, amount),
+                Quaternion.Slerp(cameraStart.rotation, inspection.rotation, amount), Mathf.Lerp(previousLens, FieldOfView, amount));
             if (amount >= .88f && hiddenPlayer == null) hiddenPlayer = player.PresentationVisibility.AcquireHidden(this);
-            firstPersonPresented = cameraElapsed >= CameraBlendSeconds;
+            inspectionPresented = cameraElapsed >= CameraBlendSeconds;
             if (IsSettled && !puzzles.State.CanPassGate(Stage) && !GameTimeScaleRuntime.IsPaused)
                 outline.Present(cameraFollow.Camera);
             else outline.Hide();
@@ -220,7 +215,7 @@ namespace BarPromenade
                 if (host != null && host.FixedCamera != null) host.FixedCamera.ReleasePuzzleView(this);
                 modal.Restore();
                 GameCursor.Release(this);
-                IsActive = returning = firstPersonPresented = releasePresented = restoring = false;
+                IsActive = returning = inspectionPresented = releasePresented = restoring = false;
                 Array.Clear(stageControls, 0, stageControls.Length);
             }
         }

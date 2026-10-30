@@ -6,7 +6,7 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private const float HudFadeInSeconds = .15f, HudFadeOutSeconds = .3f;
-        private float ammoHudFade, reloadHudFade, healthHudFade, staminaHudFade, guardHudFade, chargeHudFade;
+        private float ammoHudFade, reloadHudFade, healthHudFade, staminaHudFade, guardHudFade;
         private float healthHudHold, staminaHudHold, hudLastHealth;
         private float restraintHudProgress, restraintHudPulse;
         private CombatWeaponId hudWeapon;
@@ -35,7 +35,7 @@ namespace BarPromenade
         public float HealthHudOpacity => HudOpacity(healthHudFade);
         public float StaminaHudOpacity => HudOpacity(staminaHudFade);
         public float GuardHudOpacity => HudOpacity(guardHudFade);
-        public float ChargeHudOpacity => HudOpacity(chargeHudFade);
+        public float ChargeHudOpacity => 0f;
         public bool RestraintHudVisible => GameplayHudVisible && Hero != null && Hero.CanEscapeRestraint;
         public float RestraintHudProgress => RestraintHudVisible ? Hero.RestraintEscapeProgress : 0f;
 
@@ -45,7 +45,7 @@ namespace BarPromenade
 
         private void ResetHudPresentation(bool closeDebug = false, bool preserveHealthBaseline = false)
         {
-            ammoHudFade = reloadHudFade = healthHudFade = staminaHudFade = guardHudFade = chargeHudFade = 0f;
+            ammoHudFade = reloadHudFade = healthHudFade = staminaHudFade = guardHudFade = 0f;
             healthHudHold = staminaHudHold = 0f;
             restraintHudProgress = restraintHudPulse = 0f;
             if (!preserveHealthBaseline) hudLastHealth = Hero != null ? Hero.State.Health : 0f;
@@ -89,7 +89,7 @@ namespace BarPromenade
             }
             if (hudWeapon != Hero.WeaponId || Hero.IsSwitchingWeapon)
             {
-                ammoHudFade = reloadHudFade = guardHudFade = chargeHudFade = 0f;
+                ammoHudFade = reloadHudFade = guardHudFade = 0f;
                 hudWeapon = Hero.WeaponId;
             }
             bool firearm = Hero.IsFirearm && Hero.Firearm != null && !Hero.IsSwitchingWeapon;
@@ -105,7 +105,6 @@ namespace BarPromenade
             staminaHudHold = spent ? 1f : Mathf.Max(0f, staminaHudHold - seconds);
             staminaHudFade = FadeHud(staminaHudFade, spent || staminaHudHold > 0f, seconds);
             guardHudFade = FadeHud(guardHudFade, !Hero.IsFirearm && (Hero.GuardRequested || Hero.State.IsBlocking), seconds);
-            chargeHudFade = FadeHud(chargeHudFade, !Hero.IsFirearm && Hero.State.IsCharging, seconds);
             float escapeProgress = Hero.IsRestrained ? Hero.RestraintEscapeProgress : 0f;
             // Pulse from accepted presses, never from held-device state or IMGUI events.
             restraintHudPulse = escapeProgress > restraintHudProgress ? 1f :
@@ -155,8 +154,7 @@ namespace BarPromenade
                 Hero.State.Settings.MaxHealth, HealthHudOpacity, true);
             DrawGameplayMeter(new Rect(14, 326, 114, 17), "combat.stamina", Hero.State.Stamina,
                 Hero.State.Settings.MaxStamina, StaminaHudOpacity, false);
-            DrawGameplayMeter(new Rect(14, 278, 114, 17), "combat.charge", Hero.State.Charge01,
-                1f, ChargeHudOpacity, false, Hero.State.ChargeLimit01);
+
             if (GuardHudOpacity > 0f)
                 DrawGuardReadiness(new Rect(138, 304, 15, 15), Hero, GuardHudOpacity);
             DrawGameplayAmmunition();

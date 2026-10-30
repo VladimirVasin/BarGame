@@ -30,7 +30,6 @@ namespace BarPromenade
             DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
             if (Opponent.gameObject.activeInHierarchy)
                 DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
-            DrawChargeMeter();
             DrawFirearmCrosshair(canvas);
             DrawLegacyPistolHud();
             DrawFocusMarker(canvas);

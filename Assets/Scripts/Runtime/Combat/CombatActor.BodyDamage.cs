@@ -93,6 +93,7 @@ namespace BarPromenade
         /// <summary>The intact left palm remains usable after losing the weapon arm.</summary>
         public bool RequestBodyShove()
         {
+            if (!IsFirearm && !IsZombie) return false;
             if (HasWeaponSwitchRequest || !BodyDamage.CanUseLeftHand || !CanAttemptBodyAction || !CombatFocused || roundEnded ||
                 !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             return TryBeginShove();

@@ -56,17 +56,12 @@ namespace BarPromenade
                     stairColliders.Add(collider);
                     continue;
                 }
-                if (part.role == "Plaster" || part.role == "Wood" || part.role == "DoorPaint" || part.role == "Wear" || (part.stage == 1 && part.role == "Concrete"))
+                if (TryNativeSurface(part.role, part.stage, out StairwellSurfaceKind kind, out Color color))
                 {
-                    StairwellSurfaceKind kind = part.role == "Plaster" ? StairwellSurfaceKind.WallPaint :
-                        part.role == "Wood" ? StairwellSurfaceKind.DirtyWood :
-                        part.role == "DoorPaint" ? StairwellSurfaceKind.DoorPaint :
-                        part.role == "Wear" ? StairwellSurfaceKind.Damage : StairwellSurfaceKind.StairConcrete;
-                    Color color = part.role == "Plaster" ? new Color(.46f,.48f,.40f) :
-                        part.role == "Wood" ? new Color(.27f,.20f,.12f) :
-                        part.role == "Wear" ? new Color(.18f,.20f,.16f) : new Color(.38f,.40f,.33f);
                     StairwellSurfaceAppearance.Apply(renderer, kind, StairwellSurfaceProjection.BoxXZ, color);
-                    // The imported UVs are already metre coordinates, unlike the old normalized parts.
+                    // UV0 is already in metres. Warehouse auxiliary patches are only
+                    // 496x112 texels: stretching one across a room erases close detail.
+                    // Reuse the stairwell's full repeatable maps at their native scale.
                     var properties = new MaterialPropertyBlock();renderer.GetPropertyBlock(properties);
                     float scale = 1f / StairwellSurfaceAppearance.GetRecipe(kind).MetersPerTile;
                     properties.SetVector("_BaseMap_ST", new Vector4(scale,scale,0f,0f));renderer.SetPropertyBlock(properties);
@@ -95,6 +90,25 @@ namespace BarPromenade
                 if (part != null) part.localPosition += Vector3.up * handleLift;
             }
             return door.transform;
+        }
+
+        private static bool TryNativeSurface(string role, int stage, out StairwellSurfaceKind kind, out Color color)
+        {
+            switch (role)
+            {
+                case "Plaster": kind = StairwellSurfaceKind.WallPaint; color = new Color(.46f,.48f,.40f); return true;
+                case "Wood": case "Timber": kind = StairwellSurfaceKind.DirtyWood; color = new Color(.27f,.20f,.12f); return true;
+                case "DoorPaint": kind = StairwellSurfaceKind.DoorPaint; color = new Color(.38f,.40f,.33f); return true;
+                case "Wear": kind = StairwellSurfaceKind.Damage; color = new Color(.18f,.20f,.16f); return true;
+                case "Concrete":
+                    kind = stage == 1 ? StairwellSurfaceKind.StairConcrete : StairwellSurfaceKind.Concrete;
+                    color = new Color(.38f,.40f,.33f); return true;
+                case "ConcreteDark": kind = StairwellSurfaceKind.Concrete; color = new Color(.22f,.25f,.21f); return true;
+                case "Steel": kind = StairwellSurfaceKind.CorrodedMetal; color = new Color(.20f,.23f,.20f); return true;
+                case "WornSteel": case "Decor": kind = StairwellSurfaceKind.CorrodedMetal; color = new Color(.25f,.25f,.21f); return true;
+                case "Rust": kind = StairwellSurfaceKind.CorrodedMetal; color = new Color(.28f,.16f,.08f); return true;
+                default: kind = default; color = default; return false;
+            }
         }
 
         private static void BuildFootProbes(Transform root, StairwellLabyrinthPlan plan)

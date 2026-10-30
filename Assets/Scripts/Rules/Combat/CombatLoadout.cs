@@ -41,17 +41,22 @@ namespace BarPromenade
         public static bool operator !=(CombatTestSelection left, CombatTestSelection right) => !left.Equals(right);
     }
 
-    /// <summary>All three weapons are carried; only the starting hand choice varies.</summary>
+    /// <summary>The debug kit carries all weapons; the acquired story tool carries only its crowbar.</summary>
     public readonly struct CombatLoadoutSelection : IEquatable<CombatLoadoutSelection>
     {
+        private readonly bool crowbarOnly;
         public CombatWeaponId InitialHeld { get; }
+        public static CombatLoadoutSelection CrowbarOnly => new CombatLoadoutSelection(CombatWeaponId.Crowbar, true);
         public static CombatLoadoutSelection Default => new CombatLoadoutSelection(CombatWeaponId.Crowbar);
 
-        public CombatLoadoutSelection(CombatWeaponId initialHeld)
+        public CombatLoadoutSelection(CombatWeaponId initialHeld) : this(initialHeld, false) { }
+
+        private CombatLoadoutSelection(CombatWeaponId initialHeld, bool onlyCrowbar)
         {
-            if (!ContainsWeapon(initialHeld))
+            if (!ContainsWeapon(initialHeld) || onlyCrowbar && initialHeld != CombatWeaponId.Crowbar)
                 throw new ArgumentOutOfRangeException(nameof(initialHeld));
             InitialHeld = initialHeld;
+            crowbarOnly = onlyCrowbar;
         }
 
         /// <summary>Legacy pair selections retain the starting hand choice, with every weapon now carried.</summary>
@@ -61,20 +66,20 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(secondary));
         }
 
-        public bool Contains(CombatWeaponId weapon) => ContainsWeapon(weapon);
+        public bool Contains(CombatWeaponId weapon) => ContainsWeapon(weapon) && (!crowbarOnly || weapon == CombatWeaponId.Crowbar);
 
         private static bool ContainsWeapon(CombatWeaponId weapon) => weapon == CombatWeaponId.Pistol ||
             weapon == CombatWeaponId.Crowbar || weapon == CombatWeaponId.Shotgun;
 
         public CombatLoadoutSelection WithInitialHeld(CombatWeaponId weapon) =>
-            new CombatLoadoutSelection(weapon);
+            new CombatLoadoutSelection(weapon, crowbarOnly);
 
         /// <summary>Legacy single-weapon launches retain their starting hand choice.</summary>
         public static CombatLoadoutSelection FromLegacyWeapon(CombatWeaponId weapon) => new CombatLoadoutSelection(weapon);
 
-        public bool Equals(CombatLoadoutSelection other) => InitialHeld == other.InitialHeld;
+        public bool Equals(CombatLoadoutSelection other) => InitialHeld == other.InitialHeld && crowbarOnly == other.crowbarOnly;
         public override bool Equals(object obj) => obj is CombatLoadoutSelection other && Equals(other);
-        public override int GetHashCode() => (int)InitialHeld;
+        public override int GetHashCode() => ((int)InitialHeld * 397) ^ (crowbarOnly ? 1 : 0);
         public static bool operator ==(CombatLoadoutSelection left, CombatLoadoutSelection right) => left.Equals(right);
         public static bool operator !=(CombatLoadoutSelection left, CombatLoadoutSelection right) => !left.Equals(right);
     }

@@ -85,17 +85,20 @@ namespace BarPromenade
             return null;
         }
 
-        private void InitializeWeaponCarry(CombatLoadoutSelection selection)
+        private void InitializeWeaponCarry(CombatLoadoutSelection selection, bool initiallyStowed)
         {
             LoadoutSelection = selection;
             carriedWeapons = new CarriedWeaponRecord[3];
-            carriedWeapons[0] = CreateCarriedWeapon(CombatWeaponId.Pistol);
-            carriedWeapons[1] = CreateCarriedWeapon(CombatWeaponId.Crowbar);
-            carriedWeapons[2] = CreateCarriedWeapon(CombatWeaponId.Shotgun);
+            if (selection.Contains(CombatWeaponId.Pistol)) carriedWeapons[0] = CreateCarriedWeapon(CombatWeaponId.Pistol);
+            if (selection.Contains(CombatWeaponId.Crowbar)) carriedWeapons[1] = CreateCarriedWeapon(CombatWeaponId.Crowbar);
+            if (selection.Contains(CombatWeaponId.Shotgun)) carriedWeapons[2] = CreateCarriedWeapon(CombatWeaponId.Shotgun);
             BindCarriedWeapon(FindCarriedWeapon(selection.InitialHeld));
-            activeCarry.Location = CombatWeaponCarryLocation.Held;
-            PlaceCarriedWeaponInHand(activeCarry);
-            weaponDropped = false;
+            if (!initiallyStowed)
+            {
+                activeCarry.Location = CombatWeaponCarryLocation.Held;
+                PlaceCarriedWeaponInHand(activeCarry);
+                weaponDropped = false;
+            }
             var equipment = hero.Registry.GetComponent<PlayerEquipmentContacts>() ??
                 hero.Registry.gameObject.AddComponent<PlayerEquipmentContacts>();
             RegisterWeaponEquipment(equipment);
@@ -185,7 +188,7 @@ namespace BarPromenade
             requestedCarry = id;
             journalCarryQueuedRequest = request;
             CancelPendingPistolShot("weapon_selection"); SetPistolAim(false);
-            guardHeld = false; State.SetBlocking(false);
+            guardHeld = false; State.SetBlocking(false); State.CancelParry();
             State.CancelCharge(); State.CancelBufferedAction(State.BufferedAction);
             CancelPendingKick("weapon_selection");
             TryBeginPendingWeaponCarry();
@@ -292,7 +295,7 @@ namespace BarPromenade
             if (carriedWeapons == null || presentationFrozen ||
                 !contextual && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused)) return;
             foreach (CarriedWeaponRecord record in carriedWeapons)
-                if (record != activeCarry)
+                if (record != null && record != activeCarry)
                 {
                     if (!contextual) record.Firearm?.Advance(seconds);
                     UpdateStowedWeaponMechanics(record);
@@ -453,6 +456,7 @@ namespace BarPromenade
             CancelWeaponCarry(); projectileSequence = 0;
             foreach (CarriedWeaponRecord record in carriedWeapons)
             {
+                if (record == null) continue;
                 record.Model.GetComponent<CombatDroppedWeaponPickup>()?.CancelPickup();
                 record.HeldPhysics?.ResetWeapon();
                 if (!record.Body.isKinematic) record.Body.linearVelocity = record.Body.angularVelocity = Vector3.zero;
@@ -488,6 +492,17 @@ namespace BarPromenade
             if (record.Flash != null) record.Flash.gameObject.SetActive(false);
         }
 
+        internal void SetCarriedEquipmentActive(bool active)
+        {
+            if (carriedWeapons == null) return;
+            foreach (CarriedWeaponRecord record in carriedWeapons)
+            {
+                if (record == null) continue;
+                record.Model.SetActive(active);
+                record.Mount.Root.SetActive(active);
+            }
+        }
+
         private void OnEnable()
         {
             CombatCorpseTraversal.RegisterActor(this);
@@ -501,9 +516,11 @@ namespace BarPromenade
             if (equipment == null) return;
             // Concealed chest gear does not drive jacket cloth. The authored
             // hand opens the coat; no inflated collision envelope is needed.
-            equipment.Register(this, new[] { carriedWeapons[0].Model.transform, carriedWeapons[0].Mount.Root.transform },
-                carriedWeapons[0].Model, carriedWeapons[1].Model, carriedWeapons[2].Model,
-                carriedWeapons[0].Mount.Root, carriedWeapons[1].Mount.Root, carriedWeapons[2].Mount.Root);
+            CarriedWeaponRecord pistol = FindCarriedWeapon(CombatWeaponId.Pistol);
+            equipment.Register(this, pistol != null
+                    ? new[] { pistol.Model.transform, pistol.Mount.Root.transform } : Array.Empty<Transform>(),
+                carriedWeapons[0]?.Model, carriedWeapons[1]?.Model, carriedWeapons[2]?.Model,
+                carriedWeapons[0]?.Mount.Root, carriedWeapons[1]?.Mount.Root, carriedWeapons[2]?.Mount.Root);
         }
 
         private void UpdateConcealedPistol()
@@ -548,6 +565,7 @@ namespace BarPromenade
             UnregisterWeaponEquipment();
             foreach (CarriedWeaponRecord record in carriedWeapons)
             {
+                if (record == null) continue;
                 SetConcealedRendering(record.ModelRenderers, record.ModelForcedOff, false);
                 SetConcealedRendering(record.MountRenderers, record.MountForcedOff, false);
                 if (record.Model != null) record.Model.GetComponent<CombatDroppedWeaponPickup>()?.CancelPickup();

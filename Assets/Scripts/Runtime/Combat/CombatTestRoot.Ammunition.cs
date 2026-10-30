@@ -26,6 +26,8 @@ namespace BarPromenade
 
         private void InitializeAmmoPickups()
         {
+            if (!Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol) ||
+                !Hero.LoadoutSelection.Contains(CombatWeaponId.Shotgun)) return;
             ResolveAmmoPositions();
             AmmoSpawns = new CombatAmmoSpawner(transform, Hero, ammoPositions);
             BindAmmoStorage();
@@ -33,6 +35,7 @@ namespace BarPromenade
 
         private void ResetAmmoPickups()
         {
+            if (AmmoSpawns == null) return;
             ResolveAmmoPositions();
             AmmoSpawns.Reset(ammoPositions);
             BindAmmoStorage();
@@ -41,6 +44,7 @@ namespace BarPromenade
 
         private void AdvanceAmmoPickups(float seconds)
         {
+            if (AmmoSpawns == null) return;
             AmmoSpawns.SetInteractionEnabled(isActiveAndEnabled && !Hero.State.IsDefeated && pistolApplicationFocused);
             AmmoSpawns.Advance(seconds);
         }

@@ -240,15 +240,16 @@ namespace BarPromenade.Tests.PlayMode
                 $"phase={root.Hero.State.Phase}, clip={root.Hero.ActiveClipName}.");
             Assert.That(root.Hero.ReceivedImpactCount, Is.Zero, "The guard must be ready before the wooden rail contacts it.");
             root.Tick(root.Hero.State.Settings.ParryWindowSeconds + .01f);
+            Assert.That(root.Hero.State.IsBlocking, Is.False, "Holding RMB cannot protect after the parry expires.");
             for (int step = 0; step < 240 && root.Hero.ReceivedImpactCount == 0; step++)
                 root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1),
-                "The real shared-clock ram must reach the prepared guard.");
-            Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth));
-            Assert.That(root.Hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
-            Assert.That(root.Hero.LastImpact.Impulse.magnitude, Is.EqualTo(26f).Within(.001f));
+                "The real shared-clock ram must reach the expired parry.");
+            Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth - 32f).Within(.001f));
+            Assert.That(root.Hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Hit));
+            Assert.That(root.Hero.LastImpact.Impulse.magnitude, Is.EqualTo(85f).Within(.001f));
             Assert.That(root.Hero.State.Stamina,
-                Is.EqualTo(root.Hero.State.Settings.MaxStamina - zombie.State.Settings.BlockCost).Within(.001f));
+                Is.EqualTo(root.Hero.State.Settings.MaxStamina).Within(.001f));
             Assert.That(root.SparkEffects.EmissionCount, Is.Zero);
 
             PlacePair(.70f);

@@ -27,7 +27,7 @@ namespace BarPromenade
             float chargeDamageBonus = 15f, float chargeStaminaCost = 20f,
             float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .28f,
             float chargeRecoveryBonus = .5f,
-            float parryWindowSeconds = .12f, float parryRearmSeconds = .35f,
+            float parryWindowSeconds = .20f, float parryRearmSeconds = .35f,
             float parryImpactSeconds = .06f, float parriedRecoverySeconds = .70f,
             float parryMaxPower = .5f, float counterHitStaggerBonus = .30f,
             float chargeStaggerBonus = .15f, float chargeGuardImpactBonus = .10f,

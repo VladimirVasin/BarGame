@@ -233,6 +233,7 @@ namespace BarPromenade
 
         public bool TryKick()
         {
+            if (!IsFirearm && !IsZombie) return false;
             int request = JournalCommand("kick");
             string unavailable = KickUnavailableReason;
             if (unavailable != null) return JournalCommandResult(request, "rejected", unavailable);

@@ -86,7 +86,7 @@ namespace BarPromenade
         public void InitializeHero(PlayerRuntime player, CombatWeaponId weapon = CombatWeaponId.Crowbar) =>
             InitializeHero(player, CombatLoadoutSelection.FromLegacyWeapon(weapon));
 
-        public void InitializeHero(PlayerRuntime player, CombatLoadoutSelection loadout)
+        public void InitializeHero(PlayerRuntime player, CombatLoadoutSelection loadout, bool initiallyStowed = false)
         {
             WeaponId = loadout.InitialHeld;
             hero = (Player3DCharacterPresentation)player.Visual;
@@ -108,7 +108,7 @@ namespace BarPromenade
             LoadStepClips(false);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeHero(player);
-            InitializeWeaponCarry(loadout);
+            InitializeWeaponCarry(loadout, initiallyStowed);
             InitializeDamagePose();
             LoadKickClip(false);
             InitializeCombatAttention();
@@ -203,12 +203,12 @@ namespace BarPromenade
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
         internal bool HasTwoHandSupport => BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand && !weaponDropped && HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
-        public bool GuardRequested => guardHeld;
+        public bool GuardRequested => State.IsBlocking;
         public bool GuardReady => !IsZombie && GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
         internal string GuardSupportRejection => RoomAttackSuppressed ? "room_attack" : HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
-            !HasTwoHandSupport || (guardHeld && supportGrip != null && !supportGrip.IsSupportingGuard) ? "two_hand_support" : null;
+            !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
         internal Vector3 AchievedPlanarVelocity => motor != null ? motor.PlanarVelocity : locomotionVelocity;
         internal CombatSupportGrip SupportGrip => supportGrip;
@@ -221,7 +221,6 @@ namespace BarPromenade
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CombatFocused && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (State.Phase == MeleePhase.Step && State.CanTransitionTo(MeleeBufferedAction.Attack, true) &&
                 !(footwork?.PrepareStepAttackHandoff() ?? false))
@@ -242,7 +241,6 @@ namespace BarPromenade
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CombatFocused && !State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             int previous = State.AttackSequence;
             if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
@@ -260,7 +258,6 @@ namespace BarPromenade
             if (!CombatFocused || roundEnded || !IsAvailable || !CanAttemptUpperBodyAttack ||
                 !GameInput.CanRead(GameInputContext.Gameplay))
                 return JournalCommandResult(request, "rejected", "counter_unavailable");
-            if (BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!State.TryStartObservedCounterAttack()) return JournalRulesRejected(request, State.Settings.AttackCost);
             reaction = null;
             Present();
@@ -281,8 +278,7 @@ namespace BarPromenade
             bool allowed = reason == "guard";
             bool changed = guardHeld != journalBlockHeld || allowed != journalBlockAllowed || reason != journalBlockReason;
             int request = changed ? JournalCommand("block") : 0;
-            // Restoring support while RMB is still held raises the guard at the
-            // next duel step. It does not manufacture a fresh parry press.
+            // Restoring support cannot turn a held button into another parry press.
             State.SetBlocking(allowed, freshPress);
             if (changed)
             {
@@ -353,7 +349,6 @@ namespace BarPromenade
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
             if (guardHeld) RefreshBlock();
-            if (!IsZombie && CombatFocused && BodyDamage.CanUseLeftHand && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
@@ -423,16 +418,9 @@ namespace BarPromenade
             bool physicalBody = false, BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
         {
             if (damage <= 0f || IsCraneRegenerating) return MeleeHitResult.Ignored;
-            if (source.IsCrane && CanBlockIncoming(source, direction) && !State.IsDefeated)
-            {
-                reaction = guardImpact; reactionClock = 0f;
-                RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .8f);
-                PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
-                    State.Health, State.Health, MeleeHitResult.Blocked, location, power, part,
-                    localPoint, weaponSpeed, kind: CombatImpactKind.Hook), State.Phase);
-                Present();
-                return MeleeHitResult.Blocked;
-            }
+            if ((source.IsCrane || source.IsZombie) && CanBlockIncoming(source, direction) && !State.IsDefeated)
+                return ReceiveTimedParry(source, sequence, point, normal, direction, power, location, part,
+                    localPoint, weaponSpeed, source.IsCrane ? CombatImpactKind.Hook : CombatImpactKind.Unarmed);
             MeleePhase phaseBefore = State.Phase;
             bool postmortem = State.IsDefeated;
             receivedDuringStep = State.Phase == MeleePhase.Step;
@@ -507,7 +495,7 @@ namespace BarPromenade
         internal void ShowParried(Vector3 point, Vector3 direction)
         {
             if (IsCrane) { StopCraneStrike(); return; }
-            if (IsZombie) { StopZombieAttack(); return; }
+            if (IsZombie) { StopParriedZombieAttack(); return; }
             reaction = Current.Recoil;
             reactionClock = 0f;
             sweepValid = false;
@@ -659,7 +647,7 @@ namespace BarPromenade
             bool stepping = State.Phase == MeleePhase.Step;
             // Pose the requested guard while the open left palm reaches it;
             // gameplay blocking still waits for the real accepted contact.
-            bool guardPoseRequested = guardHeld && BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand &&
+            bool guardPoseRequested = State.IsBlocking && BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand &&
                 (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact) &&
                 (GuardSupportRejection is null or "two_hand_support");
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :

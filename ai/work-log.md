@@ -5,6 +5,32 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-31
 
+Puzzle camera: frontal whole-panel/handle overview replaces the head-follow view;
+aspect fit reserves prompt space, selection/hand poses cannot skew the shot.
+Existing rig/visibility/return and effect owners stay.
+StairwellLabyrinthPuzzleModeAndFlashlight passed; frontal/operation/aspect frames reviewed.
+
+Labyrinth: tiny warehouse auxiliary strips smeared close surfaces; existing
+native metre maps now retain concrete/metal/wood detail without new textures.
+Second puzzle: distinct handle/real crowbar brace/carriage; automatic weight,
+visible rails/endstop/catch unload the bar for shared single-source pickup.
+Session ownership drives world strike/parry and story warehouse kit; context
+stows/draws the same rig. Debug kit stays. Existing scene/material/motion/post
+owners retained; no new provider. STAIRWELL_LABYRINTH_DETERMINISM_OK,
+STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK and collision/enclosure/UV checks passed.
+StairwellSecondPuzzleCrowbar passed; brace/pickup/weapon/context-return frames reviewed.
+
+Crowbar: fresh-press fixed strike and finite front parry; charge/combo/shove/
+kick/step removed from its input. One clip/time/torso direction now drives the
+arc; real hand/weapon/hook contacts consume parry instead of sustained block.
+Held input cannot repeat/extend; firearm controls stay. Charge HUD removed;
+existing rig, contact shadows, metal, impact and post owners retained.
+The old left-arm branch bent a valid authored grip into the shaft; authored
+contacts now win, with bounded visible-arm travel after draw and real final
+collision checks. Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts passed;
+gameplay/front/side frames reviewed. CommittedStrikeIsFixedAndRejectsChargeChainsAndQueuedGuard,
+OnlyAFreshUnconsumedFrontParryPreventsDamage and retained action-clock checks passed.
+
 Warehouse: continuous GoalWall and matching collision remove the piers/lintel
 seams around the doorway. The retained red practical reveals door/valve at
 its minimum dip; the ambush keeps its absolute brightness. Existing materials,

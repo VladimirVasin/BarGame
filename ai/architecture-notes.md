@@ -1,6 +1,21 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-31 — crowbar strike and parry, user:**
+  LMB→fixed forehand/full return;RMB fresh→finite frontparry. Holds never
+  charge/repeat/extend;combo/shove/kick/step0;firearms stay. Authored rig/clip/
+  clock/palms/sweep;one hit/target;wall stop;parry consumes/stops attack;
+  charge API inert/HUD0. Pause/modal/focus/switch/disable cancel/fresh input.
+  Shared/bounded/cost unmeasured. All24 keep GI/SSAO/fog/volume/
+  shadows/grade,ten material/motion/eight post owners;providers+0;§16/21/art§16.
+
+- **Accepted 2026-10-31 — second puzzle/crowbar, user:**
+  Handle↕;brace;cloth/endstop→catch/unload.
+  AutoWeight;4/3/4controls. Shared pickup/session source1x→CombatCrowbar.
+  Actor/rig/strike-parry/context stow-draw;story:CrowbarOnly;Debug3.
+  Metre maps/seats/grips;stress→impact→silence.
+  24FX/owners kept;providers0;cost unmeasured;§6/16/21/art§16.
+
 - **Accepted 2026-10-31 — labyrinth room light, user:**
   3×EmergencyRoomLamp/stage palette;outside→next unsolved door/
   samefloor22/24m/1of2Hard slots;inside room light stays;solve→next/after3none.
@@ -23,23 +38,21 @@
   no forbidden detail/§6 waiver.
 
 - **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
-  Home painting:Philomela/Procne/Tereus→weave/shutter-stop-weight delivery/
-  shadow-read birds;shared positioned rig/grips/RU. Enclosed/guarded domestic→
-  shaft→machines/branches/loops;normalgravity/thirdperson/fixed below.
-  Three gates/reversible attempts/monotonic solutions/NewGame reset→Single-load
-  warehouse/session/fish/key/ambush/retry. Anonymous/silent;hero/woman/crime clue/
-  voice/apparition/loss/timer0. Statue/initial light stay;flight1→two Hard lamps
-  on22m/off24m/samefloor-room;power→lens/hum/contactor;return restores.
-  Black beyond;Blender lower stairs/supports/cables vanish before finite ends/
-  unseen floor. Bounded lights/shadows/caches/pause/cleanup.
+  Philomela/Procne/Tereus→weave/delivery/birds;positioned rig/grips/RU.
+  Guarded domestic→shaft→machines/loops;gravity/3P/fixed below.
+  Reversible gates/session/reset→warehouse/fish/key/ambush/retry.
+  Silent/anonymous;woman/crime clue/voice/apparition/loss/timer0.
+  Statue/initial light stay;flight1:2Hard lamps22/24m/samefloor-room/lens-hum-
+  contactor;return restores. Black;Blender supports/cables hide finite ends/floor.
+  Bounded lights/caches/pause/cleanup.
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
-  User:E→FP/wholehero hidden/←→/E/Q;scoped lease/rig-grips live;
-  exit-cancel restores exact state/alternategeometry0. Solved1→cabinet/shared
-  take1x→ChestFlashlight/equip/session/reset;storygrant0/debugkit kept.
-  PlayerFactory:event/lazy/warehouse-only ambient. All24:outline/lamp-spill/
-  birdshadows-black retained;GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur/fog/post+0;
-  cost unmeasured;§6/16/21/art9.
+  User2026-10-31:E→front whole panel+handles/UI margin;aspect fit4:3–16:9.
+  Head/tool/clip0;zero roll;cached3.
+  Hiddenhero/same rig-grips;←→/E/Q;return-cancel leases.
+  Solved1→cabinet/shared take1x→ChestFlashlight/equip/session/reset;storygrant0/Debug.
+  Factory:event/lazy/warehouse ambient. All24:scene6/material10/post8 stay;
+  Readable DOF/lens;providers0/cost unknown;§6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.
@@ -921,7 +934,7 @@
   CombatTest only:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:`Audio/CombatWarehouseAmbience`/{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. Play:random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/perf unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
 - **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m;LOS before cast/release;one puncture,5s hold,6 fresh E presses. Collision haul over rails,physical struggle,body camera,fall damage;release keeps velocity. Others/spawns wait. Escape→home/watch10s;fatal→cry/spasm3s/home/regen10s;same actor,no kill/reward/corpse. Hero wounds never sever;front crowbar blocks(dot≥.35),back does not. Pause/modal/focus/reset/disable/unload clear owned input/rig/anchors/UI;no story.
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m;LOS before cast/release;one puncture,5s hold,6 fresh E presses. Collision haul over rails,physical struggle,body camera,fall damage;release keeps velocity. Others/spawns wait. Escape→home/watch10s;fatal→cry/spasm3s/home/regen10s;same actor,no kill/reward/corpse. Hero wounds never sever;front crowbar parries(dot≥.35),back does not. Pause/modal/focus/reset/disable/unload clear owned input/rig/anchors/UI;no story.
 - **Accepted 2026-10-19, hero airborne inertia:** WorldV/yaw-release brake0/limitedsteer;combat planar/vertical caps/freefall g24;NPCphys kept;fixedstep/boundedbodies/shared clamp/hotalloc0.
 - **Accepted 2026-10-19, hero weapon retention:** Hero alive:hit-fall-recovery drop0;death→drop+pickup;NPC kept;shotgun draw grip-model-ammo resumes.
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a kept;jelly waves;mid flatbar axial in/out;wet closure/low glugs/sticky pull. `CombatRoomAttackTableau`:1Spot/24×256R8texels+mips≤2MiB/.64s;SFX3.6s;preload/layerrestore/pause-focus-exit clear/hotalloc0/extra shadowpass0.
@@ -1009,9 +1022,7 @@
 - **Accepted — 2026-10-14, corpse traversal:**
   CombatTest:auto corpsestep/rigcache;livefall≠corpse/world-weapon phys-lifecycle.
 - **Accepted — 2026-10-13, simple crowbar strike:**
-  User:2actions/bat/RaboveL/end85mm/hook→/shoulder→accent→return/block.
-  Onearc/powers/palms/Ready/legacy arms/free-facing;rig/stops/continuous
-  return/25mm/12° contacts/0paired DAG.
+  Bat:RaboveL/end85mm/hook→;production rig/palms/25mm/12° contacts/0paired DAG.
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
   batchoff/5MiB+3/F8;cached finals before close/fault-isolated/reset.
@@ -1276,20 +1287,23 @@
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  NPCfloor/stall→drop;rise≠grip;unarmed walk-Q-Step/hits-falls/Eshared/0grant/floorcancel;HPfocus/MMB/reset modefocus;pause-hitstop0≠lock-reset. Aim¼windup/chargefree/yield;Step1m/bounded landing-overload/firstbar-world-body/wallrecoil-stop/guardbreak/parry0HP/sparks-SFXpool;Q-Step contacts:art§15a/`CombatActor`.
+  NPCfloor/stall→drop;rise≠grip;hits-falls/Eshared/0grant;HPfocus/MMB/reset;
+  pause-hitstop≠lock-reset;firstworld-body/wallrecoil/sparks-SFXpool;
+  firearm Q-Step contacts:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
-  R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
+  Gaze clip-physics;pause-hitstop-defeat/regrip.
 - **Accepted 2026-10-03, combat:**
-  Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;regrip≤600°/s wrist-elbow-shoulder/body-world-palm;Q/B/recoil hold;.20s walk wait/tail buffer/support≠chain.
-- **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
+  Regrip≤600°/s wrist-elbow-shoulder/body-world-palm;support≠chain.
 - **Accepted 2026-09-26, recovery:**
   Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns/Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/NPCdrop past capsule→anatomy0/hand-ignore expiry/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
-  6zones/firstseq;barhead×2(50/80,cap.99MaxHP);torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll. C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;Hold:breath0/regen delay;thud/bar pool grows10s/stays.
+  6zones/firstseq;barhead×2(50,cap.99MaxHP);torso1-rear1.25/arms.5/legs.75;
+  frozen mutual zone-dir/1HP-ragdoll;C1pose-contact/travel-yaw;stance.42/.28m/
+  Smoothstep feet;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready low/Block high;Hit-GuardBreak-Defeat release;L opposed.16→.42m/breath4s/blend/injury;Dry block-miss/ragdoll wins.
+  Ready low/defence high;Hit-Defeat release;L opposed/breath4s/blend/injury;ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;Fall freecam/shared dmg-time-cost;Charge:q=power.
+  Standard barwin→walk/reset;fall freecam/shared damage-time.
 - **Accepted exception 2026-09-21, taunt:**
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**

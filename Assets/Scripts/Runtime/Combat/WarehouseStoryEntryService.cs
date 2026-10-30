@@ -10,13 +10,14 @@ namespace BarPromenade
         private static int pendingSeed;
 
         internal static CombatTestSelection Selection => new CombatTestSelection(
-            CombatLoadoutSelection.Default, CombatTestMode.Endless, CombatEncounterSettings.Default);
+            CombatLoadoutSelection.CrowbarOnly, CombatTestMode.Endless, CombatEncounterSettings.Default);
 
         /// <summary>Called only after the source door's shared world-rig gesture completes.</summary>
         public static bool TryEnter()
         {
             if (SceneManager.GetActiveScene().name != SceneIds.StairwellInterior ||
-                !GameSessionState.HomeSleepAppearanceActive || SceneTransitionService.IsTransitioning ||
+                !GameSessionState.HomeSleepAppearanceActive || !GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar) ||
+                SceneTransitionService.IsTransitioning ||
                 !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest)) return false;
 
             ResetPending();

@@ -38,7 +38,7 @@ namespace BarPromenade
             !IsKnockedDown && !IsRagdollActive && reaction == null &&
             !(ImpactMotion?.IsActive ?? false) && !(footwork?.RecoveryEpisodeActive ?? false);
 
-        private bool NeedsCombatPresentation => IsRestrained || CombatFocused || guardHeld || (Firearm?.ReloadPending ?? false) ||
+        private bool NeedsCombatPresentation => IsRestrained || CombatFocused || State.IsBlocking || (Firearm?.ReloadPending ?? false) ||
             (Firearm?.AimRequested ?? false) || (IsFirearm && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
@@ -64,6 +64,7 @@ namespace BarPromenade
                 CancelPendingKick("focus_released");
                 guardHeld = false;
                 State.SetBlocking(false);
+                State.CancelParry();
                 if (charging) { reaction = null; sweepValid = collectSweep = false; }
                 ReleaseCombatAttention();
             }

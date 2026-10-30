@@ -979,16 +979,229 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts()
         {
+            // Use the public laboratory lifecycle to select an unarmoured body
+            // oracle, then the real Docker and his solid carried crate below.
+            yield return UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            for (int frame = 0; frame < 120 && SceneTransitionService.IsTransitioning; frame++) yield return null;
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(CombatLoadoutSelection.Default,
+                CombatTestMode.Laboratory, laboratoryEnemy: CombatEnemyKind.Zombie)), Is.True);
+            root = null;
+            for (int frame = 0; frame < 600; frame++)
+            {
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                if (root != null) root.AutomaticSimulation = false;
+                if (root != null && root.IsInitialized && GameInput.CanRead(GameInputContext.Gameplay)) break;
+                yield return null;
+            }
+            Assert.That(root != null && root.IsInitialized && root.IsLaboratory &&
+                root.LaboratoryEnemy == CombatEnemyKind.Zombie && GameInput.CanRead(GameInputContext.Gameplay), Is.True,
+                "The public laboratory launch must prepare the ordinary zombie and release its input gate.");
+            root.SetSparring(false);
+            yield return ObserveCrowbarPressAndHold();
             yield return ObserveOverShoulderCrowbarStrike();
             yield return ObserveDrawnCrowbarMovingStrikes();
             Assert.That(CombatAssetProvider.SwingClips(MeleeSwing.Backhand).Attack,
                 Is.EqualTo(CombatAssetProvider.SwingClips(MeleeSwing.Forehand).Attack));
-            Assert.That(CombatAssetProvider.ReleaseSourceSeconds(.50f, 1f), Is.EqualTo(.50f),
-                "Charge rejoins the same physical active arc.");
-            yield return ObserveSimpleCrowbarContact(false, false);
-            yield return ObserveSimpleCrowbarContact(true, false);
+            yield return ObserveSimpleCrowbarContact(false);
+            yield return ObserveSimpleCrowbarContact(true);
+            Assert.That(root.SpawnLaboratoryEnemy(CombatEnemyKind.Docker), Is.True,
+                "The laboratory must replace its target through the production prepared-enemy path.");
+            root.SetSparring(false);
             yield return ObserveSimpleCrowbarContact(false, true);
+            yield return ObservePhysicalCrowbarParry();
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator ObserveCrowbarPressAndHold()
+        {
+            PlacePair(4f);
+            CombatActor actor = root.Hero;
+            yield return SettleCrowbarSupport(actor);
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            MethodInfo consume = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(consume, Is.Not.Null);
+            MethodInfo focus = typeof(CombatTestRoot).GetMethod("OnApplicationFocus",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            bool previousCursorFocus = GameCursor.ApplicationFocused;
+            bool previousCombatFocus = (bool)typeof(CombatTestRoot).GetField("pistolApplicationFocused",
+                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(root);
+            try
+            {
+                // A batch player has no OS window focus. Exercise the same
+                // focused gameplay input path as a real foreground window.
+                focus.Invoke(root, new object[] { true });
+                input.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+                RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+                Vector2 pointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
+                pointer.y = Screen.height - pointer.y;
+                input.Set(mouse.position, pointer);
+                // ResetRound may have observed the physical mouse before this
+                // isolated device was installed. Let the real bridge observe its
+                // neutral state and release any previous ownership first.
+                ConsumeCombatMouseInput(consume, false);
+                input.Press(mouse.leftButton);
+                ConsumeCombatMouseInput(consume, true);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup),
+                    "A fresh mouse press starts the strike immediately, before release or another simulation tick. " +
+                    $"mouseAllowed={GameCursor.GameplayMouseInputAllowed}, focused={GameCursor.ApplicationFocused}, " +
+                    $"toolbar={root.PointerOverToolbar()}, weapon={actor.WeaponId}, switching={actor.IsSwitchingWeapon}, " +
+                    $"available={actor.IsAvailable}, body={actor.CanAttemptUpperBodyAttack}, " +
+                    $"rules={actor.State.LastCommandRejection}, release=" +
+                    typeof(CombatTestRoot).GetField("requireAttackRelease", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(root));
+                int sequence = actor.State.AttackSequence;
+                for (int frame = 0; frame < 100; frame++)
+                {
+                    InputSystem.Update();
+                    consume.Invoke(root, null);
+                    root.Tick(TickSeconds);
+                    actor.Present();
+                    Assert.That(actor.State.IsCharging || actor.State.HasBufferedCharge, Is.False);
+                    Assert.That(actor.State.AttackPower, Is.Zero);
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence),
+                        "Holding the button cannot queue or repeat a strike.");
+                    yield return null;
+                }
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                input.Release(mouse.leftButton);
+                ConsumeCombatMouseInput(consume, false);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready),
+                    "Releasing a held button cannot launch a delayed attack.");
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence));
+                input.Press(mouse.leftButton);
+                ConsumeCombatMouseInput(consume, true);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(actor.RequestAttack(), Is.False, "A committed strike cannot become a queued combo.");
+                Assert.That(actor.State.HasBufferedAttack, Is.False);
+                input.Release(mouse.leftButton);
+                ConsumeCombatMouseInput(consume, false);
+            }
+            finally
+            {
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+                focus.Invoke(root, new object[] { previousCombatFocus });
+                GameCursor.SetApplicationFocused(previousCursorFocus);
+            }
+        }
+
+        private IEnumerator ObservePhysicalCrowbarParry()
+        {
+            // The Docker's active root lunge belongs to the production AI update.
+            // Measure its real chase/contact, then replay the same fresh round.
+            bool previousDecisions = root.AutomaticOpponentDecisions;
+            try
+            {
+                root.SetSparring(true);
+                PlacePair(1.5f);
+                root.AutomaticOpponentDecisions = false;
+                yield return SettleCrowbarSupport(root.Hero);
+                int impacts = root.Hero.ReceivedImpactCount;
+                root.AutomaticOpponentDecisions = true;
+                int contactTick = 0;
+                for (; contactTick < 600 && root.Hero.ReceivedImpactCount == impacts; contactTick++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    yield return null;
+                }
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(impacts + 1),
+                    "The baseline production AI lunge must reach the actual hero body. " +
+                    $"phase={root.Opponent.State.Phase}, outcome={root.Opponent.State.AttackOutcome}, " +
+                    $"elapsed={root.Opponent.State.AttackElapsed:F4}, root={root.Opponent.transform.position:F3}");
+                Assert.That(root.Hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Hit));
+
+                for (int scenario = 0; scenario < 3; scenario++)
+                {
+                    root.SetSparring(true);
+                    PlacePair(1.5f);
+                    root.AutomaticOpponentDecisions = false;
+                    if (scenario == 2)
+                    {
+                        // Only voluntary hero yaw stops tracking. The AI still
+                        // pursues him and the full physical roster stays live.
+                        root.Hero.ResetActor(root.Hero.transform.position, Vector3.back);
+                        root.Hero.SetContactTarget(null);
+                        root.Player.Motor.ClearMovementTarget(root);
+                        Physics.SyncTransforms();
+                    }
+                    yield return SettleCrowbarSupport(root.Hero);
+                    CombatActor actor = root.Hero;
+                    float health = actor.State.Health;
+                    impacts = actor.ReceivedImpactCount;
+                    root.AutomaticOpponentDecisions = true;
+                    int pressTick = scenario == 1 ? 0 : Mathf.Max(0,
+                        contactTick - Mathf.CeilToInt(.10f / CombatTestRoot.SimulationStep));
+                    int tick = 0;
+                    for (; tick < 600 && actor.ReceivedImpactCount == impacts; tick++)
+                    {
+                        if (tick == pressTick)
+                        {
+                            actor.SetBlock(true);
+                            actor.Present();
+                            CaptureDuelFrame("balance/Test simple crowbar parry", scenario == 0
+                                ? "timely-press" : scenario == 1 ? "early-press" : "rear-press");
+                        }
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        actor.Present();
+                        yield return null;
+                    }
+                    string label = scenario == 0 ? "timely-front" : scenario == 1 ? "expired-held" : "rear";
+                    Vector3 incoming = Vector3.ProjectOnPlane(root.Opponent.BodyWorldPosition - actor.BodyWorldPosition,
+                        Vector3.up).normalized;
+                    float frontDot = Vector3.Dot(actor.transform.forward, incoming);
+                    string diagnostic = $"{label}: yaw={actor.transform.eulerAngles.y:F3}, frontDot={frontDot:F4}, " +
+                        $"pressTick={pressTick}, baselineContactTick={contactTick}, " +
+                        $"actualContactTick={tick}, sincePress={(tick - pressTick) * CombatTestRoot.SimulationStep:F4}, " +
+                        $"guard={actor.GuardSupportRejection ?? "none"}, blocking={actor.State.IsBlocking}, " +
+                        $"support={actor.SupportArmState}/{actor.SupportGrip.JournalGripReason}, " +
+                        $"gap={actor.SupportGrip.JournalContactError:F5}, angle={actor.SupportGrip.JournalContactAngle:F3}";
+                    Assert.That(actor.ReceivedImpactCount, Is.EqualTo(impacts + 1), diagnostic + ": resolve the real contact once");
+                    if (scenario == 2) Assert.That(frontDot, Is.LessThan(.35f), diagnostic + ": the source must remain behind the hero");
+                    Assert.That(actor.LastImpact.Result,
+                        Is.EqualTo(scenario == 0 ? MeleeHitResult.Parried : MeleeHitResult.Hit), diagnostic);
+                    if (scenario == 0)
+                    {
+                        Assert.That(actor.State.Health, Is.EqualTo(health), "A successful parry prevents damage.");
+                        Assert.That(root.Opponent.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Parried));
+                        CaptureCrowbarGameplayFrame("successful-parry");
+                    }
+                    else Assert.That(actor.State.Health, Is.LessThan(health), label + ": timing and facing matter");
+                    CaptureDuelFrame("balance/Test simple crowbar parry", label + "-contact");
+                    // Keep the resolved actor and phase intact, but prevent a
+                    // subsequent AI attack from contaminating the one-hit oracle.
+                    root.AutomaticOpponentDecisions = false;
+                    for (int follow = 0; follow < 48; follow++)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        yield return null;
+                    }
+                    Assert.That(actor.State.IsBlocking, Is.False,
+                        label + ": holding RMB cannot restore permanent protection after the window.");
+                    Assert.That(actor.ReceivedImpactCount, Is.EqualTo(impacts + 1), label + ": no duplicate body damage");
+                    actor.SetBlock(false);
+                    actor.SetContactTarget(root.Opponent);
+                    if (scenario == 2) root.Player.Motor.SetMovementTarget(root,
+                        root.Opponent.Ragdoll.PhysicsController.ChestBody.transform, true);
+                }
+            }
+            finally
+            {
+                root.AutomaticOpponentDecisions = previousDecisions;
+                root.Hero.SetContactTarget(root.Opponent);
+                root.Player.Motor.SetMovementTarget(root, root.Opponent.Ragdoll.PhysicsController.ChestBody.transform, true);
+            }
+        }
+
+        private void CaptureCrowbarGameplayFrame(string name)
+        {
+            // Keep the player's actual follow-camera transform, lens and roll.
+            string folder = SceneIds.CombatTest + "/simple-crowbar-gameplay";
+            string path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", folder, name + ".png");
+            LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+            AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, folder, name);
         }
 
         private IEnumerator SettleCrowbarSupport(CombatActor actor)
@@ -1028,91 +1241,116 @@ namespace BarPromenade.Tests.PlayMode
         {
             PlacePair(4f);
             CombatActor actor = root.Hero;
-            yield return SettleCrowbarSupport(actor);
-            const string subject = "balance/Test two-handed crowbar";
-            Transform tip = CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeTip");
-            Transform origin = CombatAssetProvider.FindAnchor(actor.Weapon, "Grip");
-            NpcHandPose hands = actor.Weapon.GetComponentInParent<NpcHandPose>();
-            Quaternion heldMount = actor.Weapon.transform.localRotation;
-            Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f),
-                "The baseball Ready holds the shaft upright beside the shoulder.");
-            CaptureDuelFrame(subject, "ready");
-            Assert.That(actor.RequestAttack(), Is.True);
-            Vector3 windup = default;
-            float travel = 0f;
-            bool loaded = false, active = false, struck = false, followed = false, completed = false;
-            for (int frame = 0; frame < 100; frame++)
+            var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+            bool previousDiagnostics = constraint.CaptureRejectedPoseDiagnostics;
+            constraint.CaptureRejectedPoseDiagnostics = true;
+            try
             {
-                root.Tick(TickSeconds);
-                actor.Present();
-                Vector3 point = actor.transform.InverseTransformPoint(tip.position);
-                Assert.That(actor.State.AttackOutcome, Is.Not.EqualTo(MeleeAttackOutcome.Obstacle),
-                    "The broad swing stays outside its own body in the clear aisle.");
-                Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f));
-                Assert.That(Quaternion.Angle(heldMount, actor.Weapon.transform.localRotation), Is.LessThanOrEqualTo(.10f),
-                    "The bent end stays rigidly mounted to the same wrist through the stroke.");
-                AssertTwoHandCrowbarContact(actor, "Test crowbar swing");
-                if (frame % 3 == 0)
-                    CaptureDuelFrame(subject + "/motion", "frame-" + frame.ToString("D3"));
-                if (actor.State.AttackElapsed >= .25f && actor.State.AttackElapsed <= .68f)
+                yield return SettleCrowbarSupport(actor);
+                const string subject = "balance/Test two-handed crowbar";
+                Transform tip = CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeTip");
+                Transform origin = CombatAssetProvider.FindAnchor(actor.Weapon, "Grip");
+                NpcHandPose hands = actor.Weapon.GetComponentInParent<NpcHandPose>();
+                Quaternion heldMount = actor.Weapon.transform.localRotation;
+                Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f),
+                    "The baseball Ready holds the shaft upright beside the shoulder.");
+                CaptureCrowbarGameplayFrame("ready");
+                CaptureDuelFrame(subject, "ready");
+                Assert.That(actor.RequestAttack(), Is.True);
+                Vector3 windup = default;
+                float travel = 0f;
+                bool loaded = false, active = false, struck = false, followed = false, completed = false;
+                for (int frame = 0; frame < 100; frame++)
                 {
-                    Vector3 handSpan = hands.CylinderCentre(true) - hands.CylinderCentre(false);
-                    Assert.That(Vector3.Dot(handSpan, actor.Weapon.transform.up),
-                        Is.EqualTo(CombatSupportGrip.ReadyDistance).Within(.025f),
-                        "The right fist stays above the adjacent left fist, like a right-handed baseball batter.");
-                    Assert.That(handSpan.magnitude, Is.EqualTo(Mathf.Abs(CombatSupportGrip.ReadyDistance)).Within(.025f),
-                        "The adjacent fists stay 8.5 cm apart at the handle end.");
-                    Vector3 forward = Vector3.ProjectOnPlane(actor.transform.forward, actor.Weapon.transform.up);
-                    if (actor.State.AttackElapsed <= .30f && forward.sqrMagnitude >= .01f)
+                    root.Tick(TickSeconds);
+                    actor.Present();
+                    Vector3 point = actor.transform.InverseTransformPoint(tip.position);
+                    if (actor.State.AttackOutcome == MeleeAttackOutcome.Obstacle)
                     {
-                        Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, actor.Weapon.transform.up);
-                        Assert.That(Vector3.Dot(hook.normalized, forward.normalized), Is.GreaterThanOrEqualTo(
-                            Mathf.Cos(CombatAssetProvider.LoadedHookForwardAngleDegrees * Mathf.Deg2Rad)),
-                            "The visible bent tip faces forward in the loaded baseball hold.");
+                        CaptureDuelFrame(subject, "failure-clear-aisle-frame-" + frame.ToString("D3"));
+                        CaptureDuelFrame(subject, "failure-clear-aisle-front", true);
                     }
-                }
-                if (actor.State.Phase == MeleePhase.Windup && actor.State.AttackElapsed >= .27f && actor.State.AttackElapsed <= .30f)
-                {
-                    Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f),
-                        "The shoulder load raises the crowbar like a baseball bat.");
-                    windup = point;
-                    if (!loaded)
+                    Assert.That(actor.State.AttackOutcome, Is.Not.EqualTo(MeleeAttackOutcome.Obstacle),
+                        "The broad swing stays outside its own body in the clear aisle. " +
+                        $"frame={frame}, elapsed={actor.State.AttackElapsed:F6}, shape={actor.WeaponBlockingShape}, " +
+                        $"depth={actor.LastRejectedWeaponDepth:F6}, sweep={actor.LastRejectedWeaponSweep}, geometry=" +
+                        JsonUtility.ToJson(actor.LastRejectedWeaponGeometry));
+                    Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f));
+                    Assert.That(Quaternion.Angle(heldMount, actor.Weapon.transform.localRotation), Is.LessThanOrEqualTo(.10f),
+                        "The bent end stays rigidly mounted to the same wrist through the stroke.");
+                    AssertTwoHandCrowbarContact(actor, "Test crowbar swing");
+                    if (frame % 3 == 0)
+                        CaptureDuelFrame(subject + "/motion", "frame-" + frame.ToString("D3"));
+                    if (actor.State.AttackElapsed >= .25f && actor.State.AttackElapsed <= .68f)
                     {
-                        CaptureDuelFrame(subject, "shoulder-windup");
-                        CaptureDuelFrame(subject, "shoulder-windup-front", true);
-                        loaded = true;
+                        Vector3 handSpan = hands.CylinderCentre(true) - hands.CylinderCentre(false);
+                        Assert.That(Vector3.Dot(handSpan, actor.Weapon.transform.up),
+                            Is.EqualTo(CombatSupportGrip.ReadyDistance).Within(.025f),
+                            "The right fist stays above the adjacent left fist, like a right-handed baseball batter.");
+                        Assert.That(handSpan.magnitude, Is.EqualTo(Mathf.Abs(CombatSupportGrip.ReadyDistance)).Within(.025f),
+                            "The adjacent fists stay 8.5 cm apart at the handle end.");
+                        Vector3 forward = Vector3.ProjectOnPlane(actor.transform.forward, actor.Weapon.transform.up);
+                        if (actor.State.AttackElapsed <= .30f && forward.sqrMagnitude >= .01f)
+                        {
+                            Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, actor.Weapon.transform.up);
+                            Assert.That(Vector3.Dot(hook.normalized, forward.normalized), Is.GreaterThanOrEqualTo(
+                                Mathf.Cos(CombatAssetProvider.LoadedHookForwardAngleDegrees * Mathf.Deg2Rad)),
+                                "The visible bent tip faces forward in the loaded baseball hold.");
+                        }
                     }
-                }
-                if (actor.State.Phase == MeleePhase.Active)
-                {
-                    active = true;
-                    travel = Mathf.Max(travel, Vector3.Distance(windup, point));
-                    if (!struck && actor.State.AttackElapsed >= .54f)
+                    if (actor.State.Phase == MeleePhase.Windup && actor.State.AttackElapsed >= .27f && actor.State.AttackElapsed <= .30f)
                     {
-                        CaptureDuelFrame(subject, "strike");
-                        CaptureDuelFrame(subject, "strike-front", true);
-                        struck = true;
+                        Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f - .0001f),
+                            "The shoulder load raises the crowbar like a baseball bat.");
+                        windup = point;
+                        if (!loaded)
+                        {
+                            CaptureDuelFrame(subject, "shoulder-windup");
+                            CaptureDuelFrame(subject, "shoulder-windup-front", true);
+                            loaded = true;
+                        }
                     }
+                    if (actor.State.Phase == MeleePhase.Active)
+                    {
+                        active = true;
+                        travel = Mathf.Max(travel, Vector3.Distance(windup, point));
+                        if (!struck && actor.State.AttackElapsed >= .54f)
+                        {
+                            CaptureCrowbarGameplayFrame("active-strike");
+                            CaptureDuelFrame(subject, "strike");
+                            CaptureDuelFrame(subject, "strike-front", true);
+                            struck = true;
+                        }
+                    }
+                    if (!followed && actor.State.Phase == MeleePhase.Recovery)
+                    {
+                        CaptureDuelFrame(subject, "follow-through");
+                        CaptureDuelFrame(subject, "follow-through-front", true);
+                        followed = true;
+                    }
+                    yield return null;
+                    if (actor.State.Phase == MeleePhase.Ready) { completed = true; break; }
                 }
-                if (!followed && actor.State.Phase == MeleePhase.Recovery)
-                {
-                    CaptureDuelFrame(subject, "follow-through");
-                    CaptureDuelFrame(subject, "follow-through-front", true);
-                    followed = true;
-                }
-                yield return null;
-                if (actor.State.Phase == MeleePhase.Ready) { completed = true; break; }
+                Assert.That(loaded && active && followed && completed, Is.True, "Present the complete authored swing.");
+                Assert.That(windup.z, Is.LessThanOrEqualTo(-.10f), "The crowbar tip loads behind the shoulder.");
+                Assert.That(travel, Is.GreaterThanOrEqualTo(.80f), "The active stroke is a broad shoulder arc.");
+                CaptureDuelFrame(subject, "return-ready");
             }
-            Assert.That(loaded && active && followed && completed, Is.True, "Present the complete authored swing.");
-            Assert.That(windup.z, Is.LessThanOrEqualTo(-.10f), "The crowbar tip loads behind the shoulder.");
-            Assert.That(travel, Is.GreaterThanOrEqualTo(.80f), "The active stroke is a broad shoulder arc.");
-            CaptureDuelFrame(subject, "return-ready");
+            finally { constraint.CaptureRejectedPoseDiagnostics = previousDiagnostics; }
         }
 
-        private IEnumerator ObserveSimpleCrowbarContact(bool charged, bool wallBlocked)
+        private IEnumerator ObserveSimpleCrowbarContact(bool wallBlocked, bool crateBlocked = false)
         {
             PlacePair(wallBlocked ? 4f : .90f);
+            if (crateBlocked) Assert.That(root.Opponent.IsDocker, Is.True,
+                "This interception case requires the production Docker's carried crate.");
+            bool obstruction = wallBlocked || crateBlocked;
             CombatActor actor = root.Hero;
+            var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+            bool previousDiagnostics = constraint.CaptureRejectedPoseDiagnostics;
+            constraint.CaptureRejectedPoseDiagnostics = true;
             GameObject wall = null;
             try
             {
@@ -1126,14 +1364,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 int impacts = root.Opponent.ReceivedImpactCount;
                 float health = root.Opponent.State.Health;
-                if (charged)
-                {
-                    Assert.That(actor.RequestCharge(), Is.True);
-                    for (int frame = 0; frame < 60; frame++) { root.Tick(TickSeconds); yield return null; }
-                    Assert.That(actor.ReleaseCharge(), Is.True);
-                    Assert.That(actor.State.AttackPower, Is.GreaterThan(.9f));
-                }
-                else Assert.That(actor.RequestAttack(), Is.True);
+                Assert.That(actor.RequestAttack(), Is.True);
+                Assert.That(actor.State.AttackPower, Is.Zero);
                 for (int frame = 0; frame < 180 && actor.State.AttackOutcome == MeleeAttackOutcome.None; frame++)
                 {
                     root.Tick(CombatTestRoot.SimulationStep);
@@ -1142,21 +1374,36 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f));
                     yield return null;
                 }
-                if (wallBlocked)
+                if (!obstruction && actor.State.AttackOutcome != MeleeAttackOutcome.Hit)
                 {
-                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle));
+                    CaptureDuelFrame("balance/Test simple crowbar", "failure-target-contact");
+                    CaptureDuelFrame("balance/Test simple crowbar", "failure-target-contact-front", true);
+                    CaptureCrowbarGameplayFrame("failure-target-contact");
+                }
+                if (obstruction)
+                {
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle),
+                        crateBlocked ? "The Docker's carried wood intercepts the frontal arc." : "The real wall stops the arc.");
                     Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(impacts));
                     Assert.That(root.Opponent.State.Health, Is.EqualTo(health));
                 }
                 else
                 {
-                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Hit));
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Hit),
+                        $"sequence={actor.State.AttackSequence}, elapsed={actor.State.AttackElapsed:F6}, " +
+                        $"shape={actor.WeaponBlockingShape}, blockedSwings={actor.BlockedWeaponSwingCount}, " +
+                        $"depth={actor.LastRejectedWeaponDepth:F6}, sweep={actor.LastRejectedWeaponSweep}, geometry=" +
+                        JsonUtility.ToJson(actor.LastRejectedWeaponGeometry));
                     Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(impacts + 1));
                     Assert.That(root.Opponent.State.Health, Is.LessThan(health));
                 }
-                CaptureDuelFrame("balance/Test simple crowbar", wallBlocked ? "wall-stop" : charged ? "charged-hit" : "simple-hit");
+                CaptureDuelFrame("balance/Test simple crowbar", wallBlocked ? "wall-stop" : crateBlocked ? "crate-stop" : "ordinary-zombie-hit");
             }
-            finally { if (wall != null) Object.Destroy(wall); }
+            finally
+            {
+                constraint.CaptureRejectedPoseDiagnostics = previousDiagnostics;
+                if (wall != null) Object.Destroy(wall);
+            }
             yield return null;
         }
 
@@ -1185,20 +1432,11 @@ namespace BarPromenade.Tests.PlayMode
             }
             CaptureDuelFrame("balance/" + label, "draw-terminal");
             yield return SettleCrowbarSupport(actor);
-            Assert.That(actor.RequestCharge(), Is.True, label);
-            for (int frame = 0; frame < 4; frame++)
-            {
-                root.Tick(TickSeconds);
-                route.Advance(actor, label);
-                Physics.SyncTransforms();
-                actor.Present();
-                yield return null;
-            }
-            Assert.That(actor.ReleaseCharge(), Is.True, label);
             for (int strike = 0; strike < 4; strike++)
             {
+                Assert.That(actor.RequestAttack(), Is.True, label);
                 int sequence = actor.State.AttackSequence;
-                bool active = false, queued = false, completed = false, captured = false;
+                bool active = false, completed = false, captured = false;
                 for (int frame = 0; frame < 180; frame++)
                 {
                     root.Tick(CombatTestRoot.SimulationStep);
@@ -1212,46 +1450,23 @@ namespace BarPromenade.Tests.PlayMode
                         detail + ": a clear aisle cannot terminate a strike against the actor's own body");
                     Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f), detail);
                     AssertTwoHandCrowbarContact(actor, detail);
+                    Assert.That(actor.State.Swing, Is.EqualTo(MeleeSwing.Forehand), detail + ": repeat the same arc");
+                    Assert.That(actor.State.IsChained || actor.State.IsContinuation, Is.False,
+                        detail + ": an ordinary strike owns its complete return");
                     active |= actor.State.Phase == MeleePhase.Active;
                     if (active && !captured && strike < 2)
                     {
                         CaptureDuelFrame("balance/" + label, strike == 0 ? "first-strike" : "repeat-strike");
                         captured = true;
                     }
-                    if (active && strike < 3 && !queued)
-                    {
-                        Assert.That(actor.RequestAttack(), Is.True, detail + ": queue the next real strike");
-                        queued = true;
-                    }
                     AssertRepeatedGripPresentation(actor, label);
                     yield return null;
-                    completed = actor.State.AttackSequence != sequence || actor.State.Phase == MeleePhase.Ready;
-                    if (completed) break;
+                    if (actor.State.Phase == MeleePhase.Ready) { completed = true; break; }
                 }
-                Assert.That(active && completed, Is.True, label + ": strike completes its active window");
-                if (strike < 3)
-                    Assert.That(actor.State.AttackSequence, Is.Not.EqualTo(sequence),
-                        label + ": queued strike continues without a source reset");
+                Assert.That(active && completed, Is.True, label + ": strike completes its active window and return");
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence), label + ": no queued second strike");
             }
-            actor.SetCombatFocused(true);
-            actor.Present();
             AssertTwoHandCrowbarContact(actor, label + ": ordinary Ready retains both hands");
-            actor.SetBlock(true);
-            Assert.That(actor.GuardRequested && !actor.State.IsBlocking, Is.True,
-                label + ": guard waits for actual palm contact");
-            CaptureDuelFrame("balance/" + label, "guard-open");
-            yield return ObserveMovingGripReturn(actor, label, "guard-after-simple-strikes", false, route);
-            actor.AdvanceSimulation(CombatTestRoot.SimulationStep);
-            actor.Present();
-            Assert.That(actor.GuardReady && actor.State.IsBlocking, Is.True, label);
-            actor.SetBlock(false);
-            for (int frame = 0; frame < 24; frame++)
-            {
-                root.Tick(TickSeconds);
-                actor.Present();
-                yield return null;
-            }
-            AssertTwoHandCrowbarContact(actor, label + ": releasing guard returns to the lower two-hand hold");
         }
 
         private static Pose PlaceReturningGripObstacle(CombatActor actor, Collider wall)

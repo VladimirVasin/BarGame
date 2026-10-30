@@ -230,10 +230,10 @@ namespace BarPromenade
             else if (mechanismLamp != null) electricalSource.transform.position = mechanismLamp.position;
         }
 
-        public void TryPlayMechanismCue(Vector3 position, StairwellSoundscapeCueKind kind)
+        public void TryPlayMechanismCue(Vector3 position, StairwellSoundscapeCueKind kind, bool deliberateContact = false)
         {
             if (!isActiveAndEnabled || !IsInitialized || GameTimeScaleRuntime.IsPaused ||
-                Time.time < nextMechanismCue || rareCueSource.isPlaying) return;
+                !deliberateContact && (Time.time < nextMechanismCue || rareCueSource.isPlaying)) return;
             nextMechanismCue = Time.time + 8f;
             rareCueSource.transform.position = position;
             rareCueSource.clip = GetCueClip(kind);

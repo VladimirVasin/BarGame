@@ -209,6 +209,8 @@ namespace BarPromenade
                 return false;
             }
 
+            var crowbar = GetComponent<PlayerCrowbarCombatController>();
+            if (crowbar != null && crowbar.TryPrepareInteraction(activeInteractable)) return true;
             activeInteractable.Interact(this);
             return true;
         }

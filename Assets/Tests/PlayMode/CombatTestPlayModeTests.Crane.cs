@@ -177,7 +177,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.ResetRound();
                 ForceAmmoFocus();
 
-                // A held crowbar remains an absolute block, including this real downward shot.
+                // Holding after a parry expires cannot block this real downward hook.
                 PlaceCraneCaptureHero(crane);
                 hero.SetBlock(true);
                 root.Tick(.7f);
@@ -185,13 +185,14 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(crane.TryBeginCraneCycle(hero), Is.True);
                 for (int step = 0; step < 600 && hero.ReceivedImpactCount == 0; step++)
                     root.Tick(CombatTestRoot.SimulationStep);
-                Assert.That(hero.ReceivedImpactCount, Is.EqualTo(1), "The actual hook must reach the held crowbar.");
-                Assert.That(hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
-                Assert.That(hero.State.Health, Is.EqualTo(hero.State.Settings.MaxHealth));
-                Assert.That(hero.IsRestrained || crane.HasCraneVictim, Is.False);
-                Assert.That(root.BloodEffects.WoundCountFor(hero), Is.Zero);
+                Assert.That(hero.ReceivedImpactCount, Is.EqualTo(1), "The actual hook must reach the hero after the parry expires.");
+                Assert.That(hero.LastImpact.Result, Is.EqualTo(MeleeHitResult.Hit));
+                Assert.That(hero.LastImpact.Damage, Is.GreaterThan(0f));
+                Assert.That(hero.State.Health, Is.EqualTo(hero.State.Settings.MaxHealth - hero.LastImpact.Damage).Within(.001f));
+                Assert.That(hero.IsRestrained && crane.HasCraneVictim, Is.True);
+                Assert.That(root.BloodEffects.WoundCountFor(hero), Is.GreaterThan(0));
                 Assert.That(hero.State.Phase, Is.Not.EqualTo(MeleePhase.GuardBroken));
-                yield return CaptureGameplayHud("Test crane - Crowbar blocks overhead hook");
+                yield return CaptureGameplayHud("Test crane - Expired parry admits overhead hook");
 
                 root.ResetRound();
                 ForceAmmoFocus();

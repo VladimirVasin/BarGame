@@ -30,6 +30,7 @@ namespace BarPromenade
         /// never disabled hit colliders. A press in the tail of a committed phase waits for its boundary.</summary>
         public bool TryStep(Vector2 input)
         {
+            if (!IsFirearm && !IsZombie) return false;
             int request = JournalCommand("step");
             if (RoomAttackSuppressed) return JournalCommandResult(request, "rejected", "room_attack");
             if (HasWeaponSwitchRequest) return JournalCommandResult(request, "rejected", "weapon_switching");

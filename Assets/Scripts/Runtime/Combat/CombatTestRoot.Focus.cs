@@ -24,7 +24,7 @@ namespace BarPromenade
                 Hero.SetCombatFocused(false);
             }
             // A held mouse button may not launch or release an old charge across the handoff.
-            ResetChargeInput();
+            ResetCombatAttackInput();
             duelJournal?.Record("target_focus", actor: 1, f0: GameLog.Field("enabled", focused));
             return true;
         }

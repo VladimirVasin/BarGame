@@ -78,13 +78,13 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- Sleep→three myth gates→warehouse;FP←→/E/Q;first→lamp pickup/equip.
-  CombatTest:fish-key-gate;all3fish→power-music-spawn0.
+- Sleep→weave/lamp→bar-delivery/pickup→birds→warehouse;front overview/←→/E/Q.
+  CombatTest:fish-key-gate;3fish→power-music-spawn0.
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
-  Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.
-  HP2/head2/wounds;Room:head0→ret+2s/retlaugh5→idle5;simlive/otherAI0;3weapons/finiteammo.
+  Refillrng;≤5active/≤6prepared;Lab:6kinds/1target.
+  HP2/head2/wounds;Room:head0→ret+2s/laugh5→idle5;simlive/otherAI0;finiteammo.
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
-  Hero:wounds/no detach/frontguard. Proxy:skin/aim.
+  Hero:wounds/no detach;bar:hit/parry;story:bar/Debug3. Proxy:skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
   Courts/light/seats/carrier;Route01;dog3/owners2.

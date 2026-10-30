@@ -196,20 +196,28 @@ namespace BarPromenade
             Quaternion savedUpper = upper.localRotation, savedForearm = forearm.localRotation, savedHand = hand.localRotation;
             string savedRejection = contactRejection, savedShape = contactBlockingShape;
             string savedDiagnostics = LastContactSearchDiagnostics;
+            Vector3 savedAuthoredPalm = authoredPalmLocal;
+            bool savedAuthoredPalmCaptured = hasAuthoredPalm;
+            Quaternion savedArmReference = armReferenceRotation;
+            Vector3 savedArmAxis = armReferenceAxis, savedElbowBack = elbowBackInUpper;
             try
             {
                 if (applied)
                 {
                     upper.localRotation = upperBase; forearm.localRotation = forearmBase; hand.localRotation = handBase;
                 }
+                authoredPalmLocal = frame.InverseTransformDirection(hands.PalmNormal(true));
+                hasAuthoredPalm = true;
+                CaptureArmReference();
+                if (TryAuthoredCrowbarContact(out _)) return true;
                 Vector3 authoredHint = GripHint;
                 if (hasArmStep) ApplyArmStep();
                 if (!TryContact(out Pose contact)) { exactContactFeasible = false; reason = "contact_frame"; return false; }
-                bool continuous = preserveSupportBranch && hasArmStep;
+                bool continuous = preserveSupportBranch && hasArmStep && !UsesAuthoredCrowbarPose;
                 bool feasible;
                 if (geometryOnly)
                 {
-                    bool returning = hasArmStep && armStepHadContactAdjustment;
+                    bool returning = !UsesAuthoredCrowbarPose && hasArmStep && armStepHadContactAdjustment;
                     feasible = TryContactHint(contact, authoredHint, ReachFraction, SupportReachSlack,
                         out _, continuous || returning, true);
                     if (!feasible && hasArmStep && Quaternion.Angle(hand.rotation, contact.rotation) <= ContactSolveAngleLimit)
@@ -233,6 +241,8 @@ namespace BarPromenade
                 upper.localRotation = savedUpper; forearm.localRotation = savedForearm; hand.localRotation = savedHand;
                 contactRejection = savedRejection; contactBlockingShape = savedShape;
                 LastContactSearchDiagnostics = savedDiagnostics;
+                authoredPalmLocal = savedAuthoredPalm; hasAuthoredPalm = savedAuthoredPalmCaptured;
+                armReferenceRotation = savedArmReference; armReferenceAxis = savedArmAxis; elbowBackInUpper = savedElbowBack;
             }
         }
 
@@ -991,6 +1001,35 @@ namespace BarPromenade
             authoredPalmLocal = frame.InverseTransformDirection(hands.PalmNormal(true));
             hasAuthoredPalm = true;
             applied = true;
+            CaptureArmReference();
+            // The fixed two-hand strike already authors both palms and elbows.
+            // Keep that legal contact before restoring the previous IK branch;
+            // carrying its small palm correction into the next key can rotate
+            // the forearm into the shaft. The weapon owner still commits the
+            // complete live geometry and sweep after this pass.
+            if (TryAuthoredCrowbarContact(out Pose authoredContact))
+            {
+                CaptureArmReference();
+                if (IsRegripping)
+                {
+                    // The draw-to-ready blend supplies the destination on this
+                    // same rig. Travel from the last visible arm with the shared
+                    // speed/clearance limits, then let normal contact closing
+                    // wait for the real palm rather than another IK branch.
+                    regripProposal = authoredContact;
+                    regripProposalElbow = forearm.position;
+                    regripProposalValid = true;
+                    reachProgress = 1f;
+                    if (hasArmStep) BlendTravellingArm();
+                }
+                presentedContactError = Vector3.Distance(socket.position, authoredContact.position);
+                presentedContactAngle = Quaternion.Angle(hand.rotation, authoredContact.rotation);
+                presentedWristSafe = true;
+                presentedContactStation = Vector3.Dot(hands.CylinderCentre(true) - Target, weapon.up);
+                hands.SetGrip(true, fingers);
+                RememberPresentedArm();
+                return;
+            }
             if (regripCommittedThisStep && (State == CombatArmSupportState.SupportingWeapon || IsRegripping ||
                 (State == CombatArmSupportState.Free && regripWaiting)))
             {
@@ -1550,6 +1589,22 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             }
         }
 
+        private bool UsesAuthoredCrowbarPose => wantsSupport && JournalActor != null && !JournalActor.IsFirearm &&
+            Mathf.Abs(targetDistance - ReadyDistance) < .001f &&
+            (JournalActor.State.IsAttacking || JournalActor.State.Phase == MeleePhase.Ready);
+
+        private bool TryAuthoredCrowbarContact(out Pose contact)
+        {
+            contact = default;
+            if (!UsesAuthoredCrowbarPose ||
+                (State != CombatArmSupportState.SupportingWeapon && !IsRegripping) || armWeight < .999f ||
+                !TryContact(out contact) || Vector3.Distance(socket.position, contact.position) > ContactTolerance ||
+                Quaternion.Angle(hand.rotation, contact.rotation) > ContactAngleLimit) return false;
+            Vector3 offset = hands.CylinderCentre(true) - Target;
+            return Vector3.ProjectOnPlane(offset, weapon.up).magnitude <= .001f &&
+                offset.magnitude <= ContactTolerance && ArmPoseClear();
+        }
+
         private bool TryContact(out Pose contact)
         {
             contact = default;
@@ -1595,7 +1650,8 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
         {
             // Returning from the bounded contact angle still belongs to that
             // accepted elbow branch; an exact frame must not snap to the raw hint.
-            bool returning = hasArmStep && State == CombatArmSupportState.SupportingWeapon && armStepHadContactAdjustment;
+            continuous &= !UsesAuthoredCrowbarPose;
+            bool returning = !UsesAuthoredCrowbarPose && hasArmStep && State == CombatArmSupportState.SupportingWeapon && armStepHadContactAdjustment;
             if (returning && Quaternion.Angle(hand.rotation, contact.rotation) <= ContactSolveAngleLimit)
             {
                 Pose accepted = hands.GetSocketPose(true, Target, hands.CylinderAxis(true), hands.PalmNormal(true));

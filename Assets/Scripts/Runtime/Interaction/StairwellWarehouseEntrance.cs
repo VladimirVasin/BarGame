@@ -18,6 +18,11 @@ namespace BarPromenade
         public void Interact(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor)) return;
+            if (!GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar))
+            {
+                interactor.ShowFeedback("interaction.labyrinth_crowbar_left", 2f);
+                return;
+            }
             door.TryBegin(interactor, () =>
             {
                 if (!GameSessionState.StairwellLabyrinthPuzzles.AllSolved) return;

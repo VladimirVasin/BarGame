@@ -82,7 +82,7 @@ namespace BarPromenade
             roomAttackSequence++;
             ReleaseFreePistolAim();
             Hero.SuspendPistolInput(); Hero.CancelPendingKick("room_attack");
-            CancelHeldHeroCharge(); ResetChargeInput();
+            Hero?.State.CancelParry(); ResetCombatAttackInput();
             Hero.State.CancelAction();
             if (!Hero.TryBeginRoomHeadPain()) { CancelRoomAttackSequence(); return false; }
             ResetAllOpponentMovement();
@@ -349,7 +349,7 @@ namespace BarPromenade
             Hero.EndRoomHeadPain();
             roomCamera.RestoreImmediate(); roomInput.Restore();
             SetRoomOpponentSuppression(false);
-            SetDuelFrozen(false); ResetChargeInput();
+            SetDuelFrozen(false); ResetCombatAttackInput();
             requireAttackRelease = requirePistolAimRelease = requireMouseAttackRelease = requireMouseAimRelease = true;
             SetRoomPhase(CombatRoomSequencePhase.Laugh);
             // Preserve the laugh already spent during head pain, including a
@@ -389,7 +389,7 @@ namespace BarPromenade
             SetRoomPhase(CombatRoomSequencePhase.Idle);
             if (owned && IsInitialized)
             {
-                SetDuelFrozen(false); ResetChargeInput();
+                SetDuelFrozen(false); ResetCombatAttackInput();
                 requireAttackRelease = requirePistolAimRelease = requireMouseAttackRelease = requireMouseAimRelease = true;
             }
         }

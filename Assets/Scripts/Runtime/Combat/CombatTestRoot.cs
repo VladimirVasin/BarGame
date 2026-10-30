@@ -240,7 +240,7 @@ namespace BarPromenade
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
             if (Mode == CombatTestMode.Endless) Sparring = true;
-            ResetChargeInput();
+            ResetCombatAttackInput();
             ResetWeaponPools();
             BloodEffects?.ResetRound();
             HeadEffects?.ResetRound();
@@ -553,7 +553,7 @@ namespace BarPromenade
                 ReleaseFreePistolAim();
                 Hero.SuspendPistolInput();
             }
-            ResetChargeInput();
+            ResetCombatAttackInput();
             roundCameraReleased = true;
         }
 

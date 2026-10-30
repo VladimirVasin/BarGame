@@ -99,7 +99,7 @@ cemetery:own interiors/returns.
   others+spawns idle→release/cancel;
   escape6freshE/bar/held0;success→actualhome→watch10;
   fatalcry-spasm3→home→regen10/full/sameactor/kill0.
-  Frontcrowbar fullblock/back0;sharedblockfront dot≥.35.
+  Crowbar:finite frontparry/back0;front dot≥.35.
   Hero:wounds/HP,no head-limb-bodydetach globally.
   pendulum/voidCOL;pause-modal-focus/reset-disable-unload;art§15a.
   18anchors/shared COL/occupied0decor;
@@ -109,10 +109,10 @@ cemetery:own interiors/returns.
   Kill1x/heroend;injury-action-ammo-flights kept;
   unused→oldest/excess retire;
   bodydrop0/focus≠hits/Tab-E0.
-  Hero:All3/alivehold/deathdrop-pickup;draw grip-ammo resume.
+  Hero:story acquiredbar/DebugAll3;deathdrop-pickup/drawresume.
   Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;
   1.7m/s/plantbursts;ram.9m(.25/.18/2.4)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
-  dmg32/guard28/impulse85-block26/firstsurface1hit/guard-counter-retreat0;
+  dmg32/impulse85/firstsurface1hit/guard-counter-retreat0;
   ownDebris0CC/resize-reset/floor;ground0attack/infection0;freecam/dummy/Tabfight/MMBfocus;
   Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
   Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/atomic;winfire/partreload/physspend/empty0;
@@ -121,7 +121,7 @@ cemetery:own interiors/returns.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
-  Bar:bat/hook→/shoulder-block/charge/free/8seg/1hit/recoil/6zones;taunt/Eshared/0grant.
+  Bar:LMB1arc/RMBfiniteparry;charge-combo-shove-kick-Step0;8seg/1hit/wallrecoil/6zones;E:taunt/0grant.
   Cloth:rig-anchors/hand-opening/physics0/hair;pause-resetclean.
   HUD:art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
@@ -2006,23 +2006,24 @@ cemetery:own interiors/returns.
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
 - `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; street/middle/
-  apartment seams/upper debris. Sleep retains lower walls/flights/columns,
-  breaks back/roof/seals descent. Enclosed/guarded normal-gravity Escher paths:
-  domestic→shaft→machines/branches/loops/sideways scenery over black abyss.
-  E→FP puzzle;←/→outlined lever/E operates/Q→third-person;lower stairs fixed.
-  Shared rig/grips:weave,delivery,shadow-read birds. Gates block onward;
-  reversible attempts/monotonic session solutions;all3→warehouse.
-  First→cabinet/shared pickup/confirm→inventory lamp/equip. Lamp/fan/weight/vent/cloth:audio/
-  pause/cleanup. Plaster/wood→concrete/steel/red. Statue/initial light stays;
-  flight1:2Hard lamps22/24m/lens-hum-contactor;return restores.
-  Next unsolved door:stage lamp/outside/samefloor22/24m/1of2Hard slots;
-  solve→next/3→none;room lights stay.
-  Outside:black ambient/sun/fog/reflection/grain. Lower supports vanish before
-  finite ends;floor unseen;equipped chest beam preserves bird projections.
-  Stone-head E Cut leases hero/shadow;liveCat/grant/quest stay.
-  Single load keeps session/Endless/weapon kit/entry seal/fish/key/ambush.
-  Story keeps lamp/equip;Debug alone seeds it.
-  Retry restores HP/ammo; story blocks preparation/new layout; menu tests stay;
+  apartment seams/upper debris. Sleep keeps lower walls/flights/columns,
+  breaks back/roof/seals descent. Gravity/domestic→shaft→machines/
+  branches/loops/scenery/abyss. E→frontal overview/hidden hero;←/→/E/Q;lower fixed.
+  Whole panel/handles/aspect/UI margin;head/selection0. Rig/grips;weave→delivery→birds.
+  First:cabinet/lamp pickup/equip;second:handle lifts/releases;
+  bar braces→cloth cart/endstop/catch→unloaded bar;weight automatic.
+  Shared pickup/session source1x→CombatCrowbar;
+  PlayerCrowbarCombatController:actor/rig/strike-parry/context.
+  Retained gates;all3→warehouse/CrowbarOnly;
+  Debug3. Lamp/fan/weight/vent/cloth:audio/pause/cleanup.
+  Native metre maps replace auxiliary-strip blur;statue/light stay. Flight1:2Hard lamps
+  22/24m/lens-hum-contactor;return restores. Next door:stage lamp/
+  outside/samefloor/1of2Hard slots;solve→next/3→none;room lights stay.
+  Outside:black ambient/sun/fog/reflection/grain;supports hide finite ends/floor.
+  Chest beam:birdshadows. Stone-head E Cut
+  leases hero/shadow;liveCat/grant/quest stay. Single load keeps session/fish/
+  key/ambush/entry seal. Story keeps lamp/equip;Debug seeds it. Retry:HP/ammo;
+  story blocks preparation/layout;menu tests stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
   docks align the right-hand clip with the lever, plates with the latch stile.

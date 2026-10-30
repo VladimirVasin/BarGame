@@ -18,7 +18,7 @@ namespace BarPromenade
         private StairwellLabyrinthPuzzleOutcome outcome;
         private int expectedRevision;
         private float elapsed;
-        private bool owns, exitRequested, committed;
+        private bool owns, exitRequested, committed, contactEnded;
         public string Id { get; private set; }
         public int Stage { get; private set; }
         public StairwellLabyrinthPuzzleAction Action { get; private set; }
@@ -27,6 +27,7 @@ namespace BarPromenade
         public Vector3 InteractionPosition => transform.position;
         public Vector3 CameraFocusPosition { get; private set; }
         public Transform RightGrip => hands?.RightGrip;
+        public Vector3 HandContactPosition => owner != null ? owner.HandContact(this) : InteractionPosition;
         public float RightWristDistance => hands?.RightWristDistance ?? 0f;
         public float RightReachLimit => hands?.RightReachLimit ?? 0f;
         public float ContactWeight { get; private set; }
@@ -34,7 +35,8 @@ namespace BarPromenade
         public string PromptKey => "interaction.labyrinth_enter";
         public string ActionPromptKey => Action == StairwellLabyrinthPuzzleAction.ClothBolt ? "interaction.labyrinth_bolt" :
             Action == StairwellLabyrinthPuzzleAction.Shutter ? "interaction.labyrinth_shutter" :
-            Action == StairwellLabyrinthPuzzleAction.ShutterStop ? "interaction.labyrinth_stop" :
+            Action == StairwellLabyrinthPuzzleAction.ShutterStop ?
+                (owner != null && owner.State.Current.StopEngaged ? "interaction.labyrinth_unbrace" : "interaction.labyrinth_stop") :
             Action == StairwellLabyrinthPuzzleAction.WeightSwitch ? "interaction.labyrinth_weight" :
             Action == StairwellLabyrinthPuzzleAction.CarriageSend ? "interaction.labyrinth_carriage" :
             Action == StairwellLabyrinthPuzzleAction.BirdLift ? "interaction.labyrinth_lift" : "interaction.labyrinth_turn";
@@ -86,7 +88,7 @@ namespace BarPromenade
             before = owner.State.Current;
             expectedRevision = owner.State.Revision;
             outcome = owner.State.Preview(Action, out after);
-            owns = true; exitRequested = false; committed = false; elapsed = 0f;
+            owns = true; exitRequested = false; committed = false; contactEnded = false; elapsed = 0f;
             try
             {
                 bool accepted = controller.BeginPositioned(Definition, Plan.EntryPose, Plan.ActionHipPosition, Plan.ExitPose, .35f);
@@ -105,6 +107,12 @@ namespace BarPromenade
             if (elapsed == 0f) owner.PlayContactCue(InteractionPosition, outcome == StairwellLabyrinthPuzzleOutcome.Blocked);
             elapsed += Mathf.Max(0f, Time.deltaTime);
             owner.Preview(before, after, Id, Smooth(elapsed / MotionSeconds), outcome == StairwellLabyrinthPuzzleOutcome.Blocked);
+            if (!contactEnded && elapsed >= MotionSeconds * .9f &&
+                (Action == StairwellLabyrinthPuzzleAction.Shutter || Action == StairwellLabyrinthPuzzleAction.CarriageSend))
+            {
+                contactEnded = true;
+                owner.PlayLatchCue(InteractionPosition);
+            }
             if (elapsed < MotionSeconds) return;
             if (outcome != StairwellLabyrinthPuzzleOutcome.Blocked)
             {
@@ -128,9 +136,14 @@ namespace BarPromenade
             if (controller.Phase == PlayerAnimatedInteractionPhase.Entering) ContactWeight = Smooth(controller.PhaseProgress);
             else if (controller.Phase == PlayerAnimatedInteractionPhase.Looping) ContactWeight = 1f;
             else if (controller.Phase == PlayerAnimatedInteractionPhase.Exiting) ContactWeight = Smooth(1f - controller.PhaseProgress / .35f);
+            // Push the reachable start of the carriage, then let it roll to the receiving stop.
+            // A stationary hero must not keep a palm attached beyond arm length.
+            if (Action == StairwellLabyrinthPuzzleAction.CarriageSend && controller.Phase == PlayerAnimatedInteractionPhase.Looping &&
+                outcome != StairwellLabyrinthPuzzleOutcome.Blocked)
+                ContactWeight *= Smooth(1f - Mathf.InverseLerp(.18f, .34f, elapsed / MotionSeconds));
             if (ContactWeight <= 0f) return;
             VillageWorkroomHandContacts.RefreshPresentation(player, controller);
-            hands.Apply(InteractionPosition, null, ContactWeight);
+            hands.Apply(HandContactPosition, null, ContactWeight);
         }
 
         public bool Cancel()

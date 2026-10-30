@@ -8,6 +8,8 @@ namespace BarPromenade
 
         private void InitializeWeaponPools()
         {
+            if (!Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol) &&
+                !Hero.LoadoutSelection.Contains(CombatWeaponId.Shotgun)) return;
             pistolProjectiles = new CombatProjectilePool(transform);
             pistolCasings = new CombatCasingPool(transform);
             shotgunProjectiles = new CombatProjectilePool(transform, true);

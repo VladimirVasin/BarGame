@@ -116,7 +116,7 @@ def floor_at(row,p):
 def contract():
     return dict(main=MAIN,branches=BRANCHES,supports=supports(),lights=LIGHTS,light_directions=LIGHT_DIRECTIONS,
                 scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH,
-                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=3,abyss_floor=-60,warehouse_chart_version=1)
+                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=4,abyss_floor=-60,warehouse_chart_version=1)
 
 
 def contract_signature():
@@ -199,7 +199,7 @@ def validate_warehouse_charts(groups):
 
 def design_puzzles(add):
     """Passive solids and measured contacts; runtime owns only constrained pivots."""
-    nodes=[];gates=[];reward=None
+    nodes=[];gates=[];reward=None;crowbar=None
     for room in ROOMS:
         stage=room['stage'];origin=room['door'];rotation=(0,-90,0)
         def wp(p):
@@ -272,30 +272,67 @@ def design_puzzles(add):
                         item_position=wp((1.50,.9625,1.37)),item_euler=(0,-90,0),
                         interaction_position=wp((1.50,1.10,1.02)))
         elif stage==2:
-            # A real little delivery apparatus: shutter, retaining pawl,
-            # switchable counterweight and captive cloth carriage.
+            # The whole task reads in one view: cloth/rails -> heavy shutter ->
+            # receiving stop. The loose crowbar becomes the physical prop;
+            # the carriage finally engages an independent permanent catch.
             for x in (-1.25,1.25):box('Steel',(x,1.55,3.74),(.075,2.10,.10))
             for y in (.64,2.52):box('Steel',(0,y,3.74),(2.65,.10,.12))
-            for x in (-.96,-.64,-.32,0,.32,.64,.96):box('Steel',(x,1.52,3.91),(.035,1.72,.045))
-            chunk=node('shutter','shutter',(0,.95,3.62),(-.92,1.155,2.42),step=0,travel=(0,.86,0))
+            # Keep the rear open: the cloth's destination cannot hide behind a grille.
+            for x in (-1.25,1.25):box('Steel',(x,1.55,4.22),(.075,2.10,.10))
+            chunk=node('shutter','shutter',(0,.95,3.62),(-.92,1.155,2.65),step=0,travel=(0,.86,0))
             box('WornSteel',(.10,.94,3.62),(1.85,.66,.055),chunk)
             for x in (-.60,0,.60):box('Steel',(x,.94,3.56),(.045,.62,.07),chunk)
-            chunk=node('shutter-stop','shutter-stop',(.97,1.55,3.54),(-.30,1.155,2.42),axis=(0,0,1),step=65)
-            box('Steel',(.83,1.55,3.54),(.40,.07,.09),chunk)
-            chunk=node('weight-switch','weight-switch',(-1.06,1.95,3.49),(.32,1.155,2.42),axis=(0,0,1),step=55)
-            box('Steel',(-1.06,1.68,3.49),(.07,.60,.09),chunk)
+            # One crank linked to the shutter, rather than four identical stands.
+            lever('shutter',-.92,2.65)
+            box('Steel',(-.92,1.03,3.16),(.055,.055,.92))
+            # A wide shallow seat visibly receives the crowbar's lower chisel.
+            chunk=node('shutter-stop','shutter-stop',(.80,.715,3.52),(1.10,1.155,2.85),step=0)
+            box('WornSteel',(.80,.685,3.52),(.26,.06,.28),chunk)
+            for side in (-1,1):box('Steel',(.80+side*.09,.745,3.52),(.025,.06,.20),chunk)
+            target=nodes[-1]
+            target.update(dock=wp((.80,.04,2.88)),exit_dock=wp((.80,.04,2.88)))
+            target.update(lever_chunk='Lever_shutter-stop',lever_pivot=wp((1.16,.95,3.40)),
+                          lever_axis=rotated_point((0,1,0),rotation),lever_angle=0,lever_follows_node=False)
+            # The brackets remain in the world after the real shared weapon is taken.
+            for y in (.82,1.26):
+                box('Steel',(1.16,y,3.46),(.20,.035,.11),target['lever_chunk'])
+                box('Steel',(1.16,y,3.53),(.20,.10,.035),target['lever_chunk'])
+            crowbar=dict(item_position=wp((1.16,.95,3.40)),item_euler=(0,-90,0),
+                         braced_position=wp((.80,.875,3.52)),braced_euler=(0,-90,0),
+                         interaction_position=wp((1.10,1.155,2.85)))
+            # An automatic counterweight/cable demonstrates where the weight goes.
             chunk=node('transfer-weight','weight',(-1.07,1.80,3.83),(0,1.155,2.42),step=0,travel=(0,-.65,0))
             box('ConcreteDark',(-1.07,1.80,3.83),(.28,.43,.30),chunk)
+            for x in (-1.24,-.90):box('Steel',(x,1.66,3.83),(.025,1.42,.035))
+            box('Steel',(-1.07,2.16,3.83),(.025,.50,.025),chunk)
+            # Fixed pulleys and taut links remain physically sourced, not UI arrows.
+            for x in (-1.07,.80):
+                wheel=bp.u_rotated(bp.u_cylinder((0,0,0),(.105,.045,.105),12),(90,0,0))
+                put('Steel',kit.translated(wheel,(x,2.40,3.83)))
+            box('Steel',(-.135,2.47,3.83),(1.87,.018,.018))
+            box('Steel',(.80,2.05,3.83),(.018,.70,.018))
             chunk=node('carriage','carriage',(-.68,.77,2.96),(0,1.155,2.42),step=0,travel=(0,0,1.12))
             box('Steel',(-.68,.74,2.96),(.66,.075,.55),chunk)
             # Folded white cloth and red stitching echo the image without text.
             for n in range(4):box('Cloth',(-.68,.80+n*.025,2.96),(.48,.023,.36),chunk,.003)
             box('Thread',(-.68,.89,2.96),(.035,.012,.38),chunk,.001)
-            chunk=node('carriage-send','carriage-send',(.95,1.155,2.48),(.95,1.155,2.42),step=0)
-            box('Steel',(.95,1.155,2.48),(.15,.055,.12),chunk)
-            for id,x in zip(('shutter','shutter-stop','weight-switch','carriage-send'),(-.92,-.30,.32,.95)):
-                lever(id,x,2.42)
+            chunk=node('carriage-send','carriage-send',(-.68,1.155,2.65),(-.68,1.155,2.65),step=0,travel=(0,0,1.12))
+            for x in (-.92,-.44):box('Steel',(x,.94,2.69),(.035,.38,.035),chunk)
+            target=nodes[-1]
+            target.update(dock=wp((-.88,.04,2.30)),exit_dock=wp((-.88,.04,2.30)))
+            target.update(lever_chunk='Lever_carriage-send',lever_pivot=wp((-.68,1.155,2.65)),
+                          lever_axis=(0,1,0),lever_angle=0,lever_follows_node=True)
+            box('WornSteel',(-.68,1.155,2.65),(.55,.055,.075),target['lever_chunk'])
             for x in (-1.0,-.36):box('Steel',(x,.69,3.52),(.045,.045,1.85))
+            # Arrival nudges this stop; the solid connecting arm engages the pawl.
+            chunk=node('delivery-catch','catch',(.80,1.48,3.70),(0,1.155,2.42),axis=(0,0,1),step=-32)
+            box('WornSteel',(.80,1.40,3.70),(.075,.22,.14),chunk)
+            box('Steel',(.12,1.30,3.86),(1.40,.045,.045),chunk)
+            box('Steel',(-.58,1.30,4.05),(.045,.045,.38),chunk)
+            box('Steel',(-.58,.99,4.24),(.055,.66,.055),chunk)
+            box('Steel',(-.68,.72,4.405),(.72,.10,.10))
+            # The receiving travel ends against the visible catch, not a blank wall.
+            for x in (-1.04,-.32):box('Steel',(x,.51,4.405),(.055,.42,.055))
         else:
             # Behind an open maintenance frame the actual stop tabs cast the
             # enlarged shadows. Reading the projection reveals the obstruction.
@@ -342,7 +379,7 @@ def design_puzzles(add):
         c=(pivot[0],pivot[1]+3.80,pivot[2]);gb('WornSteel',c,(.24,.24,3.7) if normal[0] else (3.7,.24,.24),False)
         gates.append(dict(id='gate-'+str(stage),stage=stage,chunk=chunk,pivot=pivot,travel=(0,3.35,0),
                           collider_center=(0,1.45,0),collider_size=(.18,3.2,3.2) if normal[0] else (3.2,3.2,.18)))
-    return nodes,gates,reward
+    return nodes,gates,reward,crowbar
 
 
 def design():
@@ -801,7 +838,7 @@ def design():
         if i>=SCENERY_LIGHT_START:
             # Attach ceiling cages to the common roof; wall cages already meet their wall.
             if LIGHT_ROTATIONS[i]==(0,0,0):lb('Steel',(.67,1.5,0),(.055,3.0,.055))
-    design.puzzle_nodes,design.gates,design.reward_cabinet=design_puzzles(add)
+    design.puzzle_nodes,design.gates,design.reward_cabinet,design.reward_crowbar=design_puzzles(add)
     design.last_counts=dict(short_stair_runs=piece_index,small_landings=piece_index*2,cross_bridges=bridge_count)
     return groups
 
@@ -820,8 +857,8 @@ def validate(groups):
         if points[0] not in MAIN or (loop and points[-1] not in MAIN):raise ValueError('Branch disconnected from route')
     if len(ROOMS)!=3 or [r['stage'] for r in ROOMS]!=[1,2,3]:raise ValueError('One puzzle room per stage')
     controls=[node for node in design.puzzle_nodes if 'lever_chunk' in node]
-    if len(controls)!=12 or len({node['id'] for node in controls})!=12:
-        raise ValueError('Exactly twelve separately authored control handles required')
+    if len(controls)!=11 or len({node['id'] for node in controls})!=11 or [sum(n['stage']==s for n in controls) for s in (1,2,3)]!=[4,3,4]:
+        raise ValueError('Three stages require four/three/four separately authored control handles')
     for node in controls:
         parts=[part for (stage,chunk,role),geometries in groups.items() if chunk==node['lever_chunk'] for part in geometries]
         if not parts or not all(math.isfinite(value) for value in node['lever_pivot']+node['lever_axis']):
@@ -834,6 +871,18 @@ def validate(groups):
     shelf_low,shelf_high=kit.bounds(shelf);item=reward['item_position']
     if abs(item[1]-shelf_high[1])>.00001 or not all(shelf_low[axis]<item[axis]<shelf_high[axis] for axis in (0,2)):
         raise ValueError('Cabinet flashlight base must sit on its measured shelf')
+    crowbar=design.reward_crowbar
+    if crowbar is None or any(len(value)!=3 or not all(math.isfinite(v) for v in value) for value in crowbar.values()):
+        raise ValueError('Second puzzle requires finite shared-crowbar mount, brace and reachable pickup poses')
+    # Check the actual existing weapon's measured extents, never resize a local copy
+    # to fill the gap. Y is unchanged by this room's yaw-only authored poses.
+    weapon=json.loads((ROOT/'Assets/Resources/Combat/CombatTest3D.json').read_text())
+    bar=next(model for model in weapon['models'] if model['name']=='Crowbar')
+    bottom=crowbar['braced_position'][1]+bar['bounds_min'][1]
+    top=crowbar['braced_position'][1]+bar['bounds_max'][1]
+    floor=ROOMS[1]['door'][1]
+    if abs(bottom-(floor+.715))>.004 or abs(top-(floor+.61+.86))>.004:
+        raise ValueError('Shared crowbar must contact the seat and raised shutter within4mm')
     for motion in MOTIONS:
         if not 0<=motion['phase']<1 or motion['period']<=0:raise ValueError('Invalid mechanical timeline')
         parts=[g for (stage,chunk,role),geometries in groups.items() if chunk=='Motion_'+motion['id'] for g in geometries]
@@ -1020,7 +1069,7 @@ def main():
         gates.append(record)
     reward={k:v for k,v in design.reward_cabinet.items() if k!='chunk'}
     reward['parts']=[part['name'] for part in records if part['chunk']==design.reward_cabinet['chunk']]
-    payload=dict(schema_version=5,generator_version='6.0.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,contract=contract())
+    payload=dict(schema_version=5,generator_version='6.1.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,reward_crowbar=design.reward_crowbar,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

@@ -33,19 +33,20 @@ namespace BarPromenade
 
     /// <summary>Pure heavy-melee timing. Runtime owns input, facing and weapon collision.
     /// Advance receives only unpaused seconds; no world needs or story state are involved.
-    /// Strikes are free; the meter pays for guard, steps, shoves, kicks and growing charge, regenerates
-    /// through every stun and recovery, and is re-armed only by the actor's own spending.</summary>
+    /// Crowbars have one fixed strike and a finite fresh-press parry. Runtime owns their presentation.
+    /// Zombie attack timing and physical fall/recovery remain independent.</summary>
     public sealed class MeleeCombatant
     {
         private readonly HashSet<int> hitTargets = new HashSet<int>();
         private double clock, regenerateAt, stamina, attackElapsed, attackStartedAt, stepElapsed, stunRemaining, stunDuration;
-        private double charge, chargeLimit, shoveElapsed, kickElapsed, kickStartedAt;
+        private double shoveElapsed, kickElapsed, kickStartedAt;
         private double weaponReadyAt, kickReadyAt, shoveReadyAt, stepReadyAt;
         private MeleePhase recoveryStunPhase = MeleePhase.Stagger;
         private double guardPressedAt = double.NegativeInfinity, guardReleasedAt = double.NegativeInfinity;
+        private double parryReadyAt;
         private double stepEndedAt = double.NegativeInfinity;
-        private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
-        private bool bufferedFromSwing, continuation;
+        private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased;
+        private bool bufferedFromSwing;
         private bool advancedKickWindow, registeredKickWindow;
         private double recoveryBufferExpiresAt = double.PositiveInfinity;
         private MeleeBufferedAction bufferedAction;
@@ -68,43 +69,41 @@ namespace BarPromenade
         public bool IsDefeated => Phase == MeleePhase.Defeated;
         public MeleeDefeatCause DefeatCause { get; private set; }
         public bool IsKnockedDown => Phase == MeleePhase.KnockedDown || Phase == MeleePhase.Rising;
-        public bool IsCharging => Phase == MeleePhase.Charging;
+        // Retired API retained for historical diagnostic callers; charging cannot start.
+        public bool IsCharging => false;
         public bool IsShoving => Phase == MeleePhase.Shoving;
         public bool IsKicking => Phase == MeleePhase.Kicking;
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
-        public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
+        public bool IsBlocking => !Settings.IsUnarmedZombie && clock - guardPressedAt <= Settings.ParryWindowSeconds &&
+            (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
-        /// <summary>The current swing is the one short return swing that follows a landed hit or a step.</summary>
-        public bool IsChained => chained && IsAttacking;
-        /// <summary>This charge or swing entered directly from an interrupted ordinary return tail.</summary>
-        public bool IsContinuation => continuation && (IsCharging || IsAttacking);
-        /// <summary>The side committed with the current or last swing. Sides alternate on their own:
-        /// a swing that goes through (hit or miss) hands the next one to the other side, a stopped
-        /// swing (blocked, parried, obstacle) repeats its side. A target off the facing line or a
-        /// side step just taken outranks the rhythm; the player never picks a side directly.</summary>
+        /// <summary>Retired chain flag retained for historical diagnostic callers.</summary>
+        public bool IsChained => false;
+        /// <summary>Fixed crowbar strikes always complete their own return.</summary>
+        public bool IsContinuation => false;
+        /// <summary>Crowbars always use the authored forehand. Zombies retain their anatomical striking side.</summary>
         public MeleeSwing Swing { get; private set; }
         public int AttackSequence { get; private set; }
         public MeleeAttackOutcome AttackOutcome { get; private set; }
         public float AttackElapsed => (float)attackElapsed;
-        public float Charge01 => (float)charge;
-        public float ChargeLimit01 => (float)chargeLimit;
+        public float Charge01 => 0f;
+        public float ChargeLimit01 => 0f;
         public float AttackPower { get; private set; }
-        public float AttackDamage => Settings.Damage + Settings.ChargeDamageBonus * AttackPower;
-        public float AttackBlockCost => Settings.BlockCost + Settings.ChargeBlockCostBonus * AttackPower;
-        public float AttackWindupSeconds => (chained ? Settings.ChainWindupSeconds : Settings.WindupSeconds) *
-            (1f - AttackPower) + Settings.ChargedWindupSeconds * AttackPower;
+        public float AttackDamage => Settings.Damage;
+        public float AttackBlockCost => Settings.BlockCost;
+        public float AttackWindupSeconds => Settings.WindupSeconds;
         public float AttackActiveEnd => (float)ActiveEnd;
         // Gameplay windup/recovery vary; contact sampling still traverses the
         // complete authored windup, active arc and recovery exactly once.
         public float AttackProgress => AnimationProgressAt(AttackElapsed);
         public float AttackRecoverySeconds => (AttackOutcome switch
         {
-            MeleeAttackOutcome.Hit => Settings.HitRecoverySeconds,
+            MeleeAttackOutcome.Hit => Settings.IsUnarmedZombie ? Settings.HitRecoverySeconds : Settings.AnimationRecoverySeconds,
             MeleeAttackOutcome.Blocked => Settings.BlockRecoverySeconds,
             MeleeAttackOutcome.Obstacle => Settings.ObstacleRecoverySeconds,
             MeleeAttackOutcome.Parried => Settings.ParriedRecoverySeconds,
-            _ => Settings.RecoverySeconds
-        }) * (1f + Settings.ChargeRecoveryBonus * AttackPower);
+            _ => Settings.IsUnarmedZombie ? Settings.RecoverySeconds : Settings.AnimationRecoverySeconds
+        });
         public float CurrentAttackDurationSeconds => (float)AttackDuration;
         public float StepElapsed => (float)stepElapsed;
         public float ShoveElapsed => (float)shoveElapsed;
@@ -133,7 +132,7 @@ namespace BarPromenade
         public MeleeCommandRejection LastCommandRejection { get; private set; }
         public MeleeBufferedAction LastCommandAction { get; private set; }
         public bool HasBufferedAttack => bufferedAction == MeleeBufferedAction.Attack || bufferedAction == MeleeBufferedAction.Charge;
-        public bool HasBufferedCharge => bufferedAction == MeleeBufferedAction.Charge;
+        public bool HasBufferedCharge => false;
         public bool HasBufferedStep => bufferedAction == MeleeBufferedAction.Step;
         public bool HasBufferedKick => bufferedAction == MeleeBufferedAction.Kick;
         public bool HasBufferedShove => bufferedAction == MeleeBufferedAction.Shove;
@@ -189,15 +188,14 @@ namespace BarPromenade
 
         private MeleeCommandRejection TransitionRejection(MeleeBufferedAction action, bool allowRecoveryAttack)
         {
-            if (action == MeleeBufferedAction.None) return MeleeCommandRejection.Phase;
+            if (action == MeleeBufferedAction.None || action == MeleeBufferedAction.Charge) return MeleeCommandRejection.Phase;
             if (IsDefeated) return MeleeCommandRejection.Defeated;
             if (!BodyAllows(action)) return MeleeCommandRejection.BodyUnavailable;
             if (IsKnockedDown) return MeleeCommandRejection.KnockedDown;
             if (Phase == MeleePhase.GuardBroken) return MeleeCommandRejection.GuardBroken;
-            if (Settings.IsUnarmedZombie && Phase != MeleePhase.Ready) return MeleeCommandRejection.Phase;
-            bool ordinaryContinuation = IsWeaponAction(action) && Phase == MeleePhase.Recovery &&
-                (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == MeleeAttackOutcome.Miss);
-            if (!ordinaryContinuation && clock + .000001d < ReadyAt(action)) return MeleeCommandRejection.Cooldown;
+            if ((Settings.IsUnarmedZombie || action == MeleeBufferedAction.Attack) && Phase != MeleePhase.Ready)
+                return MeleeCommandRejection.Phase;
+            if (clock + .000001d < ReadyAt(action)) return MeleeCommandRejection.Cooldown;
             bool allowed = Phase switch
             {
                 MeleePhase.Ready => true,
@@ -216,6 +214,7 @@ namespace BarPromenade
 
         private MeleeCommandRejection QueueRejection(MeleeBufferedAction action)
         {
+            if (action == MeleeBufferedAction.Attack || action == MeleeBufferedAction.Charge) return MeleeCommandRejection.Phase;
             if (IsDefeated) return MeleeCommandRejection.Defeated;
             if (!BodyAllows(action)) return MeleeCommandRejection.BodyUnavailable;
             if (IsKnockedDown) return MeleeCommandRejection.KnockedDown;
@@ -267,23 +266,29 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>A held guard resumes after recovery; it never cancels a committed attack.
-        /// Only a press made while free opens the parry window, and only after the re-arm.</summary>
+        /// <summary>A fresh ready-state press commits one finite parry. Releasing early does
+        /// not shorten it; holding never repeats it or protects after its deadline.</summary>
         public void SetBlocking(bool held, bool freshPress = true)
         {
             if (Settings.IsUnarmedZombie) { DropGuard(); return; }
-            if (held) CancelCharge();
-            bool next = held && !IsDefeated && !IsKnockedDown && bodyRightHand && bodyLeftHand && bodyStanding;
-            if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready && freshPress
-                ? clock : double.NegativeInfinity;
-            else if (!next && blockHeld) guardReleasedAt = clock;
-            blockHeld = next;
+            bool eligible = !IsDefeated && !IsKnockedDown && bodyRightHand && bodyLeftHand && bodyStanding;
+            if (held && !blockHeld && freshPress && eligible && Phase == MeleePhase.Ready && clock >= parryReadyAt)
+            {
+                guardPressedAt = clock;
+                parryReadyAt = clock + Settings.ParryRearmSeconds;
+            }
+            if (!held && blockHeld) guardReleasedAt = clock;
+            // Release ends the input latch, not the brief action that the press committed.
+            blockHeld = held;
         }
+
+        public void CancelParry() => DropGuard();
 
         private void DropGuard()
         {
             if (blockHeld) guardReleasedAt = clock;
             blockHeld = false;
+            guardPressedAt = double.NegativeInfinity;
         }
 
         /// <summary>Runtime reports where the target stands each tick: −1 left of the facing
@@ -292,13 +297,9 @@ namespace BarPromenade
 
         private MeleeSwing ChooseSwing()
         {
-            if (Settings.IsUnarmedZombie)
-                return !bodyRightHand ? MeleeSwing.Backhand : !bodyLeftHand ? MeleeSwing.Forehand : rhythm;
-            bool stepAttack = clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
-            int cue = stepAttack && stepCue != 0 ? stepCue : lateralCue;
-            // The bar goes toward the cue: a target or a step on the left calls the
-            // forehand, which sweeps right to left.
-            return cue < 0 ? MeleeSwing.Forehand : cue > 0 ? MeleeSwing.Backhand : rhythm;
+            return Settings.IsUnarmedZombie
+                ? !bodyRightHand ? MeleeSwing.Backhand : !bodyLeftHand ? MeleeSwing.Forehand : rhythm
+                : MeleeSwing.Forehand;
         }
 
         /// <summary>Recomputed whenever the swing's fate is known; later upgrades (a hit after a
@@ -334,120 +335,26 @@ namespace BarPromenade
             return (float)Math.Min(authoredWindup + authoredActive + authoredRecovery, authored);
         }
 
-        /// <summary>Charge pays base effort on entry; a queued hold starts only after the old live arc.</summary>
+        /// <summary>Retired charge command cannot queue, spend effort or start an action.</summary>
         public bool RequestCharge(bool allowRecoveryAttack = false)
-        {
-            BeginCommand(MeleeBufferedAction.Charge);
-            if (IsCharging || bufferedAction == MeleeBufferedAction.Charge) return true;
-            if (Phase == MeleePhase.Ready && BeginCharge()) return true;
-            if (allowRecoveryAttack && (Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardImpact))
-                return TryStartRecoveryCharge();
-            if (!QueueCommandAllowed(MeleeBufferedAction.Charge, Settings.AttackCost)) return false;
-            bufferedAction = MeleeBufferedAction.Charge;
-            bufferedFromSwing = IsAttacking;
-            bufferedChargeReleased = false;
-            recoveryBufferExpiresAt = double.PositiveInfinity;
-            return true;
-        }
+        { BeginCommand(MeleeBufferedAction.Charge); return RejectCommand(MeleeCommandRejection.Phase); }
 
-        /// <summary>One short-lived press waits for runtime's physical balance gate.
-        /// It uses the ordinary single slot and starts no animation or charge yet.</summary>
-        public bool RequestRecoveryCharge()
-        {
-            BeginCommand(MeleeBufferedAction.Charge);
-            if (!BodyAllows(MeleeBufferedAction.Charge)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
-            if (!(Phase == MeleePhase.Ready || CanBuffer)) return RejectCommand(MeleeCommandRejection.BufferWindow);
-            if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
-            bufferedAction = MeleeBufferedAction.Charge;
-            bufferedFromSwing = false;
-            bufferedChargeReleased = false;
-            recoveryBufferExpiresAt = clock + Settings.AttackBufferSeconds;
-            return true;
-        }
+        /// <summary>Retired diagnostic entry point; charging has no recovery path.</summary>
+        public bool RequestRecoveryCharge() => RequestCharge();
 
-        private bool BeginCharge(bool fromBuffer = false, bool ignoreWeaponCooldown = false)
-        {
-            BeginCommand(MeleeBufferedAction.Charge);
-            if (!BodyAllows(MeleeBufferedAction.Charge)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
-            if (Phase != MeleePhase.Ready) return RejectCommand(MeleeCommandRejection.Phase);
-            if (!ignoreWeaponCooldown && clock + .000001d < weaponReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
-            if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
-            Spend(Settings.AttackCost);
-            // A tap takes the same return swing as RequestAttack. Holding that press
-            // blends toward the charged windup rather than discarding its initiative.
-            chained = (fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
-            chainArmed = false;
-            regenerateAt = clock + Settings.RegenerationDelaySeconds;
-            charge = 0d;
-            chargeLimit = Math.Min(1d, stamina / Settings.ChargeStaminaCost);
-            attackElapsed = stepElapsed = shoveElapsed = 0d;
-            ClearKick();
-            AttackOutcome = MeleeAttackOutcome.None;
-            DropGuard();
-            advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = false;
-            bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
-            recoveryBufferExpiresAt = double.PositiveInfinity;
-            hitTargets.Clear();
-            // The held pose already shows the side; release keeps it.
-            Swing = ChooseSwing();
-            AttackSequence = unchecked(AttackSequence + 1);
-            Phase = MeleePhase.Charging;
-            return true;
-        }
+        private bool BeginCharge(bool fromBuffer = false, bool ignoreWeaponCooldown = false) => false;
 
-        /// <summary>An early queued release becomes one ordinary tap at the ready boundary.</summary>
-        public bool ReleaseCharge()
-        {
-            if (bufferedAction == MeleeBufferedAction.Charge)
-            {
-                bufferedChargeReleased = true;
-                return true;
-            }
-            if (!IsCharging) return false;
-            AttackPower = Charge01;
-            ClearCharge();
-            attackElapsed = 0d;
-            attackStartedAt = clock;
-            Phase = MeleePhase.Windup;
-            weaponReadyAt = attackStartedAt + AttackDuration;
-            return true;
-        }
+        /// <summary>Retired release command cannot produce an attack.</summary>
+        public bool ReleaseCharge() => false;
 
-        /// <summary>Cancel only held/queued charge, without refunding effort or cancelling a released swing.</summary>
-        public bool CancelCharge()
-        {
-            bool active = IsCharging;
-            bool cancelled = active || bufferedAction == MeleeBufferedAction.Charge;
-            // Guard refreshes call this even when no charge exists. They must
-            // not discard the deadline of a step waiting for physical support.
-            if (!cancelled) return false;
-            ClearCharge();
-            if (bufferedAction == MeleeBufferedAction.Charge)
-            {
-                bufferedAction = MeleeBufferedAction.None;
-                bufferedFromSwing = false;
-            }
-            if (active)
-            {
-                continuation = false;
-                Phase = MeleePhase.Ready;
-                advancedActiveWindow = registeredContactWindow = false;
-                hitTargets.Clear();
-                AttackSequence = unchecked(AttackSequence + 1);
-            }
-            return cancelled;
-        }
+        /// <summary>No held or queued charge exists to cancel.</summary>
+        public bool CancelCharge() => false;
 
         private void ClearCharge()
-        {
-            charge = chargeLimit = 0d;
-            bufferedChargeReleased = false;
-            recoveryBufferExpiresAt = double.PositiveInfinity;
-        }
+        { bufferedChargeReleased = false; recoveryBufferExpiresAt = double.PositiveInfinity; }
 
-        /// <summary>One press waits throughout a swing, or in another committed phase's final
-        /// buffer window. It reserves no stamina and cannot repeat from one input event.</summary>
+        /// <summary>One fresh press starts a ready-state strike. A committed crowbar action
+        /// rejects later presses rather than queuing a chain or cancelling its return.</summary>
         public bool RequestAttack(bool allowRecoveryAttack = false)
         {
             BeginCommand(MeleeBufferedAction.Attack);
@@ -500,7 +407,6 @@ namespace BarPromenade
                 _ => false
             };
             if (!started) return false;
-            continuation = cutTail;
             if (next == MeleeBufferedAction.Charge && released) ReleaseCharge();
             return true;
         }
@@ -514,7 +420,7 @@ namespace BarPromenade
         }
 
         public bool TryStartRecoveryAttack() => StartRecoveryUpperBody(MeleeBufferedAction.Attack);
-        public bool TryStartRecoveryCharge() => StartRecoveryUpperBody(MeleeBufferedAction.Charge);
+        public bool TryStartRecoveryCharge() => RequestCharge();
         public bool TryStartRecoveryShove() => StartRecoveryUpperBody(MeleeBufferedAction.Shove);
 
         private bool StartRecoveryUpperBody(MeleeBufferedAction action)
@@ -610,7 +516,6 @@ namespace BarPromenade
             if (Settings.IsUnarmedZombie)
             { BeginCommand(MeleeBufferedAction.Attack); return RejectCommand(MeleeCommandRejection.Phase); }
             if (!TryStartAttack(false)) return false;
-            chained = true;
             return true;
         }
 
@@ -618,16 +523,13 @@ namespace BarPromenade
         {
             BeginCommand(MeleeBufferedAction.Attack);
             if (!BodyAllows(MeleeBufferedAction.Attack)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
-            if (Phase != MeleePhase.Ready) return RejectCommand(MeleeCommandRejection.Phase);
+            if (Phase != MeleePhase.Ready || IsBlocking) return RejectCommand(MeleeCommandRejection.Phase);
             if (!ignoreWeaponCooldown && clock + .000001d < weaponReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
             Spend(Settings.AttackCost);
             AttackPower = 0f;
             ClearCharge();
-            // The return swing follows a landed hit straight out of the buffer, or a
-            // step whose settle just ended. It never chains into itself.
-            chained = !Settings.IsUnarmedZombie && ((fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds);
-            chainArmed = false;
+            // Every crowbar strike uses the same complete authored arc.
             Swing = ChooseSwing();
             attackElapsed = 0d;
             attackStartedAt = clock;
@@ -637,7 +539,7 @@ namespace BarPromenade
             AttackOutcome = MeleeAttackOutcome.None;
             advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Windup;
@@ -661,9 +563,9 @@ namespace BarPromenade
             AttackPower = 0f;
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             ClearKick();
-            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             stepEndedAt = double.NegativeInfinity;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
@@ -709,9 +611,9 @@ namespace BarPromenade
             stunRemaining = stunDuration = 0d;
             ClearKick();
             DropGuard();
-            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
@@ -736,9 +638,9 @@ namespace BarPromenade
             AttackPower = 0f;
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             kickStartedAt = clock;
-            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             stepEndedAt = double.NegativeInfinity;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
@@ -802,19 +704,11 @@ namespace BarPromenade
             double end = clock + seconds;
             bool wasStunned = IsStunned;
             if (!wasStunned && !IsKnockedDown) stunRemaining = Math.Max(0d, stunRemaining - seconds);
-            // Breath returns through recovery and every stun; only the swing itself
-            // (windup and the live arc) and a held charge or guard withhold it.
+            // Breath returns through recovery and every stun. Only the live
+            // strike and the brief parry action withhold it.
             double regenFrom = regenerateAt;
-            bool regenerates = !blockHeld && !IsCharging;
-            if (IsCharging)
-            {
-                double previous = charge;
-                charge = Math.Min(chargeLimit, charge + seconds / Settings.ChargeSeconds);
-                stamina = Math.Max(0d, stamina - (charge - previous) * Settings.ChargeStaminaCost);
-                // Holding the reached cap preserves breath but never restores it or fires by itself.
-                regenerateAt = end + Settings.RegenerationDelaySeconds;
-            }
-            else if (IsAttacking)
+            bool regenerates = !IsBlocking;
+            if (IsAttacking)
             {
                 double previous = attackElapsed;
                 regenFrom = Math.Max(regenFrom, attackStartedAt + ActiveEnd);
@@ -922,10 +816,10 @@ namespace BarPromenade
             attackStartedAt = clock - ActiveEnd;
             weaponReadyAt = clock + AttackRecoverySeconds;
             Phase = MeleePhase.Recovery;
-            advancedActiveWindow = chainArmed = false;
+            advancedActiveWindow = false;
             if (bufferedAction != MeleeBufferedAction.Kick && bufferedAction != MeleeBufferedAction.Shove &&
                 bufferedAction != MeleeBufferedAction.Step) bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             ClearCharge();
         }
 
@@ -962,8 +856,6 @@ namespace BarPromenade
                 double elapsed = clock - attackStartedAt;
                 attackElapsed = Math.Min(elapsed, AttackDuration);
                 if (elapsed >= AttackDuration) Phase = MeleePhase.Ready;
-                // Landing a clean hit arms the one backhand a queued press may take.
-                if (!Settings.IsUnarmedZombie && outcome == MeleeAttackOutcome.Hit && IsAttacking && !chained) chainArmed = true;
             }
             return true;
         }
@@ -1012,7 +904,7 @@ namespace BarPromenade
                 advancedKickWindow = registeredKickWindow = false;
                 bool released = bufferedChargeReleased;
                 if (bufferedAction == MeleeBufferedAction.Kick) bufferedAction = MeleeBufferedAction.None;
-                bufferedFromSwing = continuation = false;
+                bufferedFromSwing = false;
                 ClearCharge();
                 bufferedChargeReleased = bufferedAction == MeleeBufferedAction.Charge && released;
                 Phase = MeleePhase.Kicking;
@@ -1064,47 +956,39 @@ namespace BarPromenade
             return true;
         }
 
-        /// <summary>A physical bar interception already stopped the incoming swing.
-        /// A supported held guard still pays effort and may break, without body
-        /// damage or a second outcome/recoil for the attacking weapon.</summary>
+        /// <summary>A physical interception consumes the same timed parry as a hand or hook.
+        /// Runtime stops the incoming attack after the result has been recorded.</summary>
         public MeleeHitResult ReceiveWeaponObstacle(float blockCost, float power = 0f)
         {
             NonNegative(blockCost, nameof(blockCost));
             NonNegative(power, nameof(power));
-            if (!IsBlocking || IsDefeated || IsKnockedDown) return MeleeHitResult.Ignored;
-            bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
-            advancedActiveWindow = chainArmed = false;
-            ClearCharge();
-            guardPressedAt = double.NegativeInfinity;
-            bool affordable = stamina >= blockCost;
-            if (affordable) Spend(blockCost);
-            else DropGuard();
-            // As with a body-hit guard break, insufficient effort does not
-            // consume the remainder or postpone its existing regeneration.
-            stunRemaining = Math.Max(stunRemaining, affordable
-                ? Settings.GuardImpactSeconds + Settings.ChargeGuardImpactBonus * power
-                : Settings.GuardBreakSeconds);
-            stunDuration = stunRemaining;
-            Phase = affordable ? MeleePhase.GuardImpact : MeleePhase.GuardBroken;
-            return affordable ? MeleeHitResult.Blocked : MeleeHitResult.GuardBroken;
+            return ConsumeParry();
         }
 
-        /// <summary>Front is decided geometrically by runtime. A fresh, re-armed guard press
-        /// parries a light swing for free. An affordable block pays the whole cost, even
-        /// down to zero. An unaffordable block breaks: half damage, a longer stun, the
-        /// meter and its regeneration untouched. Anatomical damage is resolved before
-        /// guard reduction; a rear head finisher spends a full-health wound only after protection fails.
-        /// A received hit never delays breath.</summary>
+        private MeleeHitResult ConsumeParry()
+        {
+            if (!IsBlocking || IsDefeated || IsKnockedDown) return MeleeHitResult.Ignored;
+            guardPressedAt = double.NegativeInfinity;
+            bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = false;
+            advancedActiveWindow = false;
+            stunRemaining = Math.Max(stunRemaining, Settings.ParryImpactSeconds);
+            stunDuration = stunRemaining;
+            Phase = MeleePhase.GuardImpact;
+            return MeleeHitResult.Parried;
+        }
+
+        /// <summary>Runtime decides the front sector and physical interception. Only an active
+        /// timed parry prevents a hit; there is no sustained guard or guard damage reduction.</summary>
         public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f,
             MeleeHitLocation location = default)
             => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Crowbar, true);
 
-        /// <summary>A hand contact may be blocked, but has no weapon parry, regional
-        /// multiplier or rear-head finisher. Runtime owns the hand/body sweep.</summary>
+        /// <summary>A frontal hand contact uses the same finite parry. Its damage keeps
+        /// the unarmed profile without crowbar regional multipliers or finishers.</summary>
         public MeleeHitResult ReceiveUnarmedHit(float damage, float blockCost, bool fromFront, float power = 0f,
             MeleeHitLocation location = default)
-            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Unarmed, false);
+            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Unarmed, true);
 
         private MeleeHitResult ReceiveMeleeHit(float damage, float blockCost, bool fromFront, float power,
             MeleeHitLocation location, MeleeDamageProfile profile, bool allowParry)
@@ -1117,33 +1001,12 @@ namespace BarPromenade
             double kickRemaining = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) : 0d;
             shoveElapsed = 0d;
             ClearKick();
-            advancedActiveWindow = chainArmed = false;
+            advancedActiveWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             ClearCharge();
-            if (IsBlocking && fromFront)
-            {
-                bool freshPress = clock - guardPressedAt <= Settings.ParryWindowSeconds &&
-                    guardPressedAt - guardReleasedAt >= Settings.ParryRearmSeconds;
-                guardPressedAt = double.NegativeInfinity;
-                if (allowParry && freshPress && power < Settings.ParryMaxPower)
-                {
-                    stunRemaining = Math.Max(stunRemaining, Settings.ParryImpactSeconds);
-                    stunDuration = stunRemaining;
-                    Phase = MeleePhase.GuardImpact;
-                    return MeleeHitResult.Parried;
-                }
-                if (stamina >= blockCost)
-                {
-                    Spend(blockCost);
-                    stunRemaining = Math.Max(stunRemaining, Settings.GuardImpactSeconds + Settings.ChargeGuardImpactBonus * power);
-                    stunDuration = stunRemaining;
-                    Phase = MeleePhase.GuardImpact;
-                    return MeleeHitResult.Blocked;
-                }
-            }
-
-            bool guardBreak = IsBlocking && fromFront;
+            if (allowParry && fromFront && IsBlocking) return ConsumeParry();
+            bool guardBreak = false;
             // A committed swing or a whiff that gets punished pays extra, and being
             // punished can never end sooner than the swing would have on its own.
             bool counterHit = Phase == MeleePhase.Charging || Phase == MeleePhase.Windup || Phase == MeleePhase.Kicking ||
@@ -1160,7 +1023,6 @@ namespace BarPromenade
                 guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage;
             Health = Math.Max(0f, Health - healthDamage * Settings.IncomingDamageScale);
             attackElapsed = stepElapsed = shoveElapsed = 0d;
-            chained = false;
             if (Health == 0f)
             {
                 DefeatCause = MeleeDefeatCause.HealthLoss;
@@ -1228,8 +1090,8 @@ namespace BarPromenade
             ClearCharge();
             ClearKick();
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
-            advancedActiveWindow = chained = chainArmed = false;
+            bufferedFromSwing = false;
+            advancedActiveWindow = false;
             attackElapsed = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             stepEndedAt = double.NegativeInfinity;
             Phase = MeleePhase.KnockedDown;
@@ -1252,9 +1114,9 @@ namespace BarPromenade
             if (!IsDefeated && !IsKnockedDown) Phase = MeleePhase.Ready;
             attackElapsed = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             DropGuard();
-            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             stepEndedAt = double.NegativeInfinity;
             ClearCharge();
             ClearKick();
@@ -1284,7 +1146,8 @@ namespace BarPromenade
             ? action == MeleeBufferedAction.Attack && bodyStanding && (bodyRightHand || bodyLeftHand)
             : action switch
             {
-                MeleeBufferedAction.Attack or MeleeBufferedAction.Charge => bodyRightHand,
+                MeleeBufferedAction.Attack => bodyRightHand,
+                MeleeBufferedAction.Charge => false,
                 MeleeBufferedAction.Shove => bodyLeftHand,
                 MeleeBufferedAction.Step or MeleeBufferedAction.Kick => bodyStanding,
                 _ => true
@@ -1353,14 +1216,14 @@ namespace BarPromenade
             Swing = rhythm = MeleeSwing.Forehand;
             lateralCue = stepCue = pendingStepCue = 0;
             bufferedAction = MeleeBufferedAction.None;
-            bufferedFromSwing = continuation = false;
+            bufferedFromSwing = false;
             stamina = Settings.MaxStamina;
             Phase = MeleePhase.Ready;
             clock = regenerateAt = attackElapsed = attackStartedAt = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
-            weaponReadyAt = kickReadyAt = shoveReadyAt = stepReadyAt = 0d;
+            weaponReadyAt = kickReadyAt = shoveReadyAt = stepReadyAt = parryReadyAt = 0d;
             recoveryStunPhase = MeleePhase.Stagger;
             guardPressedAt = guardReleasedAt = stepEndedAt = double.NegativeInfinity;
-            blockHeld = advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            blockHeld = advancedActiveWindow = registeredContactWindow = false;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             // Invalidate a collision result retained by a previous round.

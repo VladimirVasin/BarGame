@@ -611,7 +611,7 @@ namespace BarPromenade
             if (duelJournal == null || held == journalAttackHeld) return;
             journalAttackHeld = held;
             duelJournal.Record("input", actor: 1, f0: GameLog.Field("command", "attack"), f1: GameLog.Field("held", held),
-                f2: GameLog.Field("owned", attackInputOwned), f3: GameLog.Field("require_release", requireAttackRelease));
+                f2: GameLog.Field("owned", false), f3: GameLog.Field("require_release", requireAttackRelease));
         }
 
         private void JournalMovementInput()

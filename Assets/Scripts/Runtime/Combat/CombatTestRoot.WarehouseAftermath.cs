@@ -39,7 +39,7 @@ namespace BarPromenade
             ClearFocusTracking(preserveCameraPose: Hero.IsFirearm);
             Hero.SetCombatFocused(false, preservePistolAim: Hero.IsFirearm);
             Hero.SetContactTarget(null);
-            ResetChargeInput();
+            ResetCombatAttackInput();
             focusNextArrival = false;
             pendingContacts.Clear(); pendingShoves.Clear(); pendingKicks.Clear();
             hitStopSubsteps = 0;

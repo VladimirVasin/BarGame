@@ -46,7 +46,7 @@ namespace BarPromenade
         public bool CanOperate(StairwellLabyrinthPuzzleAction action)
         {
             int stage = StageOf(action);
-            return stage != 0 && stage == SolvedStages + 1;
+            return action != StairwellLabyrinthPuzzleAction.WeightSwitch && stage != 0 && stage == SolvedStages + 1;
         }
 
         public StairwellLabyrinthPuzzleOutcome Preview(StairwellLabyrinthPuzzleAction action, out Snapshot next)
@@ -65,19 +65,19 @@ namespace BarPromenade
                     if (r0 != 0 || r1 != 0 || r2 != 0) return StairwellLabyrinthPuzzleOutcome.Blocked;
                     solved = 1; break;
                 case StairwellLabyrinthPuzzleAction.Shutter:
-                    if (carriage || stopped) return StairwellLabyrinthPuzzleOutcome.Blocked;
-                    raised = !raised; break;
+                    // The hand raises the unbraced shutter only for the gesture.
+                    // Its own weight returns it to the same closed detent on release.
+                    if (stopped) return StairwellLabyrinthPuzzleOutcome.Blocked;
+                    break;
                 case StairwellLabyrinthPuzzleAction.ShutterStop:
-                    if (!raised) return StairwellLabyrinthPuzzleOutcome.Blocked;
                     stopped = !stopped;
-                    if (!stopped && carriage) raised = false;
+                    raised = stopped;
                     break;
                 case StairwellLabyrinthPuzzleAction.WeightSwitch:
-                    carriage = !carriage;
-                    if (carriage && !stopped) raised = false;
-                    break;
+                    // Retained enum value for old diagnostics; no authored switch exists.
+                    return StairwellLabyrinthPuzzleOutcome.Blocked;
                 case StairwellLabyrinthPuzzleAction.CarriageSend:
-                    if (!raised || !stopped || !carriage) return StairwellLabyrinthPuzzleOutcome.Blocked;
+                    if (!raised || !stopped) return StairwellLabyrinthPuzzleOutcome.Blocked;
                     solved = 2; break;
                 case StairwellLabyrinthPuzzleAction.Bird0: b0 = (b0 + 1) % 3; break;
                 case StairwellLabyrinthPuzzleAction.Bird1: b1 = (b1 + 1) % 3; break;

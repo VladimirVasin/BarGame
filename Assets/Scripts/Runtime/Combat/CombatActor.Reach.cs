@@ -38,6 +38,13 @@ namespace BarPromenade
 
         private void ConfigureAttackReachPose(MeleeBufferedAction action, float progress = -1f)
         {
+            if (action == MeleeBufferedAction.Attack)
+            {
+                // The fixed full-body crowbar clip owns its reach and torso arc.
+                // Target distance must not bend that authored hand contact.
+                bodyMotion?.SetAttackReachPose(MeleeBufferedAction.None, 0f, 0f, 0f, KickStrikingSide, MeleeSwing.Forehand);
+                return;
+            }
             float amount = 0f;
             float turnAmount = -1f;
             if (action == MeleeBufferedAction.Kick)
@@ -49,17 +56,6 @@ namespace BarPromenade
             else if (action == MeleeBufferedAction.Shove)
                 amount = CombatSupportGrip.ShoveReach(State.ShoveElapsed,
                     State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds);
-            else if (action == MeleeBufferedAction.Attack && !State.IsCharging)
-            {
-                float seconds = (progress < 0f ? State.AttackProgress : progress) * Current.Attack.length;
-                float end = State.Settings.WindupSeconds + State.Settings.ActiveSeconds;
-                amount = seconds < end ? Mathf.SmoothStep(0f, 1f, seconds / State.Settings.WindupSeconds) :
-                    1f - Mathf.SmoothStep(0f, 1f, (seconds - end) / State.Settings.AnimationRecoverySeconds);
-                // The body gathers its reach in preparation, but turns with
-                // the actual arc rather than finishing its turn before release.
-                turnAmount = seconds < end ? Mathf.SmoothStep(0f, 1f,
-                    (seconds - State.Settings.WindupSeconds) / State.Settings.ActiveSeconds) : amount;
-            }
             bodyMotion?.SetAttackReachPose(action, attackReach, amount, turnAmount < 0f ? amount : turnAmount,
                 KickStrikingSide, State.Swing);
         }

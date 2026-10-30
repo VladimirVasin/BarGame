@@ -13,7 +13,6 @@ namespace BarPromenade
         private MeleeBufferedAction action;
         private float distance, weight, turnWeight;
         private int strikingSide;
-        private MeleeSwing swing;
         private bool applied;
 
         public float Distance01 => distance;
@@ -36,7 +35,6 @@ namespace BarPromenade
             weight = Mathf.Clamp01(amount);
             turnWeight = Mathf.Clamp01(turnAmount);
             strikingSide = side;
-            swing = weaponSwing;
         }
 
         public void Apply()
@@ -72,7 +70,8 @@ namespace BarPromenade
             else
             {
                 bones[0].position += frame.forward * Mathf.Lerp(-.01f, .045f, distance) * weight;
-                Turn(3f, 3f, swing == MeleeSwing.Forehand ? -1f : 1f);
+                // Every crowbar press uses the same authored forehand arc.
+                Turn(3f, 3f, -1f);
                 float pitch = Mathf.Lerp(-2f, 6f, distance) * weight;
                 Rotate(1, pitch * .65f); Rotate(2, pitch * .35f);
             }

@@ -4,69 +4,17 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
-        /// <summary>One swing side's clips; the rules' committed side selects the set.</summary>
+        /// <summary>Retained bank references; both sides present the same fixed strike.</summary>
         private struct SwingClips { public AnimationClip Attack, ReleaseLight, ReleaseHeavy, Charge, Recoil; }
         private readonly SwingClips[] swings = new SwingClips[2];
         private SwingClips Current => swings[(int)State.Swing];
-        private AnimationClip ReleaseClip => State.AttackPower > 0f ? Current.ReleaseLight : Current.Attack;
+        private AnimationClip ReleaseClip => Current.Attack;
         private bool IsRecoil(AnimationClip clip) => clip != null && (clip == swings[0].Recoil || clip == swings[1].Recoil);
 
-        public bool RequestCharge()
-        {
-            if (IsFirearm || IsZombie) return false;
-            int request = JournalCommand("charge");
-            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
-            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
-            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CombatFocused && !State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
-            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
-            if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
-            CancelPendingKick("replaced");
-            ContinueBufferedAttackAfterContacts();
-            if (State.IsCharging) { reaction = null; sweepValid = false; }
-            ResumeFinishedBodyAttack();
-            Present();
-            return JournalCommandResult(request, State.IsCharging ? "started" : "queued", "charge");
-        }
-
-        public bool ReleaseCharge()
-        {
-            if (IsFirearm) return false;
-            int request = JournalCommand("charge_release");
-            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
-            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
-            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (weaponDropped) return JournalCommandResult(request, "rejected", "weapon_missing");
-            if (State.HasBufferedCharge)
-            {
-                // Releasing a queued click never cancels its preceding swing,
-                // even when that swing temporarily displaced the support hand.
-                State.ReleaseCharge();
-                bool started = ContinueBufferedAttackAfterContacts();
-                return JournalCommandResult(request, started ? "started" : "queued", "charge_release");
-            }
-            if (CombatFocused && State.IsCharging && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
-            if (!CanAttemptUpperBodyAttack)
-            {
-                CancelCharge();
-                return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
-            }
-            if (!State.ReleaseCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
-            if (State.IsAttacking) { reaction = null; sweepValid = false; }
-            ResumeFinishedBodyAttack();
-            Present();
-            return JournalCommandResult(request, State.IsAttacking ? "started" : "queued", "charge_release");
-        }
-
-        public bool CancelCharge()
-        {
-            int request = JournalCommand("charge_cancel");
-            if (!State.CancelCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
-            journalQueuedRequest = 0;
-            sweepValid = false;
-            if (isActiveAndEnabled && gameObject.activeInHierarchy) Present();
-            return JournalCommandResult(request, "cancelled", "charge", trackAction: false);
-        }
+        // Historical callers can still compile; charging has no runtime action.
+        public bool RequestCharge() => false;
+        public bool ReleaseCharge() => false;
+        public bool CancelCharge() => false;
 
         /// <summary>Run after both fighters' collected contacts have resolved.
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
@@ -143,8 +91,8 @@ namespace BarPromenade
 
         private void SampleHeroRelease(float progress)
         {
-            hero.SampleOwnedClip(this,
-                CombatAssetProvider.ReleaseSourceSeconds(progress * Current.Attack.length, State.AttackPower, State.IsContinuation) / Current.Attack.length);
+            // One rules clock samples the complete authored strike directly.
+            hero.SampleOwnedClip(this, progress);
         }
 
         private void SampleHeroCharge()
@@ -160,7 +108,7 @@ namespace BarPromenade
         private void SampleNpcReleasePose(float seconds, float power)
         {
             AnimationClip clip = Current.Attack;
-            SampleNpcClip(clip, CombatAssetProvider.ReleaseSourceSeconds(seconds, power));
+            SampleNpcClip(clip, seconds);
         }
     }
 }

@@ -191,13 +191,20 @@ namespace BarPromenade
                     if (!metal && worldCollider != null)
                         CombatZombieLoad.TryReceiveHit(worldCollider, point,
                             CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, MeleeHitResult.Hit), damage);
-                    source.StopWeaponOnSolid(attackSequence, point, normal, metal);
+                    MeleeHitResult interception = guarded
+                        ? target.ReceiveWeaponGuard(source, attackSequence, point, normal, direction, blockCost, power)
+                        : MeleeHitResult.Ignored;
+                    if (interception == MeleeHitResult.Parried)
+                    {
+                        source.State.RecordAttackOutcome(interception, attackSequence);
+                        source.ShowParried(point, direction);
+                    }
+                    else source.StopWeaponOnSolid(attackSequence, point, normal, metal);
                     if (metal && target != null)
                     {
                         if (otherActive) target.StopWeaponOnSolid(otherSequence, point, -normal, true);
                         source.RecordWeaponClash(attackSequence, point);
                         target.RecordWeaponClash(otherSequence, point);
-                        if (guarded) target.ReceiveWeaponGuard(source, attackSequence, point, normal, direction, blockCost, power);
                         source.GetComponentInParent<CombatTestRoot>()?.SparkEffects?.Emit(point, normal, direction);
                     }
                     RetroAudio.PlayAt(source.IsZombie ? RetroSfxId.SpadeBite : RetroSfxId.SpadeGlance, point, .6f);
@@ -247,17 +254,11 @@ namespace BarPromenade
             WeaponClashCount++; LastWeaponClashSequence = sequence; LastWeaponClashPoint = point;
         }
 
-        private void ReceiveWeaponGuard(CombatActor source, int sequence, Vector3 point, Vector3 normal,
+        private MeleeHitResult ReceiveWeaponGuard(CombatActor source, int sequence, Vector3 point, Vector3 normal,
             Vector3 direction, float blockCost, float power)
         {
-            if (!FacingIncomingAttack(source, direction)) return;
-            MeleePhase previous = State.Phase;
-            MeleeHitResult result = State.ReceiveWeaponObstacle(blockCost, power);
-            if (result == MeleeHitResult.Ignored) return;
-            reaction = result == MeleeHitResult.Blocked ? guardImpact : null; reactionClock = 0f;
-            PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction, State.Health, State.Health,
-                result, attackPower: power, impulse: CombatImpactMotion.ResolveImpulse(direction, power, 0f, result)), previous);
-            Present();
+            if (!FacingIncomingAttack(source, direction)) return MeleeHitResult.Ignored;
+            return ReceiveTimedParry(source, sequence, point, normal, direction, power);
         }
 
         private void StopWeaponOnSolid(int sequence, Vector3 point, Vector3 normal, bool metal)

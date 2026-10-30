@@ -14,6 +14,11 @@ namespace BarPromenade
         public PuzzleNode[] puzzle_nodes;
         public Gate[] gates;
         public RewardCabinet reward_cabinet;
+        public CrowbarReward reward_crowbar;
+        [Serializable] internal sealed class CrowbarReward
+        {
+            public float[] item_position, item_euler, braced_position, braced_euler, interaction_position;
+        }
         [Serializable] internal sealed class PuzzleNode
         {
             public string id, kind;
