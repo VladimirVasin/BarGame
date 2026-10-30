@@ -57,9 +57,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Camera.main.backgroundColor, Is.EqualTo(RenderSettings.fogColor));
             Assert.That(stairwell.Atmosphere.UpperGlow, Is.Not.Null);
             Assert.That(stairwell.Atmosphere.UpperGlow.isActiveAndEnabled, Is.False);
-            Assert.That(stairwell.Atmosphere.LabyrinthLights, Has.Length.InRange(24, 30));
+            Assert.That(stairwell.Atmosphere.LabyrinthLights,
+                Has.Length.EqualTo(stairwell.Layout.Labyrinth.LightPositions.Count));
             Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.LessThanOrEqualTo(8));
             Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
+            StairwellLabyrinthPresentation presentation = RequireLabyrinthPresentation(stairwell);
+            Assert.That(presentation.Rooms, Has.Count.EqualTo(3));
+            Assert.That(presentation.Doors, Has.Count.EqualTo(presentation.Rooms.Count));
+            Assert.That(presentation.MotionRoots.Count,
+                Is.InRange(1, StairwellLabyrinthPresentation.MaximumMotionRoots));
+            for (int index = 0; index < presentation.Rooms.Count; index++)
+            {
+                Assert.That(presentation.Rooms[index].Stage, Is.EqualTo(index + 1));
+                Assert.That(presentation.Doors[index].IsClosed, Is.True,
+                    "Each puzzle placeholder starts with a usable closed leaf.");
+            }
             AssertLabyrinthStoreySelection(stairwell.Layout);
             Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(7));
             var hero = (Player3DCharacterPresentation)stairwell.Player.Visual;
@@ -190,8 +202,10 @@ namespace BarPromenade.Tests.PlayMode
         private static IEnumerator WalkCorruptedLabyrinth(StairwellInteriorRoot stairwell, bool capture)
         {
             StairwellLabyrinthPlan labyrinth = stairwell.Layout.Labyrinth;
+            StairwellLabyrinthPresentation presentation = RequireLabyrinthPresentation(stairwell);
             var captured = new bool[3];
             var visited = new bool[labyrinth.Branches.Count];
+            var roomsVisited = new bool[presentation.Rooms.Count];
             for (int routeIndex = 0; routeIndex < labyrinth.RouteWaypoints.Count; routeIndex++)
             {
                 Vector3 waypoint = labyrinth.RouteWaypoints[routeIndex];
@@ -214,6 +228,14 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.True,
                             "An excursion must not re-enter a fixed camera: " + branch.Id);
                         Assert.That(stairwell.CameraFollow.FixedPoseActive, Is.False);
+                    }
+                    for (int roomIndex = 0; roomIndex < presentation.Rooms.Count; roomIndex++)
+                    {
+                        if (presentation.Rooms[roomIndex].BranchId != branch.Id) continue;
+                        Assert.That(roomsVisited[roomIndex], Is.False);
+                        yield return VerifyLabyrinthPuzzleRoom(stairwell, presentation, roomIndex);
+                        yield return WalkStairwellWaypoint(stairwell, branch.Waypoints[branch.Waypoints.Count - 1]);
+                        roomsVisited[roomIndex] = true;
                     }
                     if (branch.IsLoop)
                     {
@@ -242,6 +264,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
                     Debug.Log("Corrupted stairwell proof: large labyrinth stage " + (stage + 1));
                     yield return CaptureCorruptedGameplay(stairwell, "labyrinth-0" + (stage + 1) + "-gameplay");
+                    yield return VerifyLabyrinthMotion(stairwell, presentation, stage == 0);
                     yield return CaptureLabyrinthEnclosure(stairwell, stage + 1);
                     captured[stage] = true;
                 }
@@ -250,6 +273,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 foreach (bool value in captured) Assert.That(value, Is.True, "Each stage requires a real gameplay composition.");
                 foreach (bool value in visited) Assert.That(value, Is.True, "Each false route must be entered and returned from.");
+                foreach (bool value in roomsVisited) Assert.That(value, Is.True,
+                    "Each stage requires an opened, entered and exited puzzle placeholder.");
             }
             AimLabyrinthOrbit(stairwell, labyrinth.DoorPosition + Vector3.up * 1.4f);
             // The atmosphere is deliberately updated at 10 Hz of unscaled
@@ -261,17 +286,202 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(labyrinth.DoorPosition.y + PlayerFactory.GroundedRootOffset).Within(.04f));
         }
 
+        private static StairwellLabyrinthPresentation RequireLabyrinthPresentation(StairwellInteriorRoot stairwell)
+        {
+            Transform root = stairwell.World.Root.Find("Stairwell Labyrinth");
+            Assert.That(root, Is.Not.Null);
+            StairwellLabyrinthPresentation presentation = root.GetComponent<StairwellLabyrinthPresentation>();
+            Assert.That(presentation, Is.Not.Null);
+            return presentation;
+        }
+
+        private static IEnumerator VerifyLabyrinthPuzzleRoom(StairwellInteriorRoot stairwell,
+            StairwellLabyrinthPresentation presentation, int index)
+        {
+            var room = presentation.Rooms[index];
+            InteriorHingedDoorInteraction door = presentation.Doors[index];
+            PlayerMotor motor = stairwell.Player.Motor;
+            bool previousMotorInput = motor.InputEnabled;
+            bool previousInteractorInput = stairwell.Player.Interactor.InputEnabled;
+            Debug.Log("Corrupted stairwell proof: puzzle placeholder stage " + room.Stage);
+            try
+            {
+                motor.SetInputEnabled(false);
+                stairwell.Player.Interactor.SetInputEnabled(true);
+                yield return WalkStairwellWaypoint(stairwell, room.OutsideDock);
+                AimLabyrinthOrbit(stairwell, stairwell.World.Root.InverseTransformPoint(door.InteractionPosition));
+                Assert.That(door.IsClosed, Is.True);
+                Assert.That(door.PromptKey, Is.EqualTo("interaction.open_village_door"));
+                Assert.That(door.Begin(), Is.True, "The placeholder door must open from its real approach.");
+                yield return WaitForCorruptedStairwell(() =>
+                    stairwell.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Looping,
+                    "The placeholder door never reached the shared hero action.");
+                Assert.That(door.OwnsActiveInteraction, Is.True);
+                Assert.That(((Player3DCharacterPresentation)stairwell.Player.Visual).ActiveClipName,
+                    Is.EqualTo("DoorUseLoop"));
+                AssertLabyrinthDoorHandContact(door, room.Stage, "outside opening");
+                if (index == 0)
+                {
+                    float pausedFraction = door.OpenFraction;
+                    using (GameTimeScaleRuntime.AcquirePause())
+                    {
+                        for (int frame = 0; frame < 3; frame++) yield return null;
+                        Assert.That(door.OpenFraction, Is.EqualTo(pausedFraction));
+                    }
+                }
+                yield return WaitForCorruptedStairwell(() => !door.OwnsActiveInteraction,
+                    "The placeholder door did not finish opening.");
+                Assert.That(door.IsOpen, Is.True);
+                AssertLabyrinthDoorSolid(door);
+                motor.SetInputEnabled(false);
+                yield return WalkStairwellWaypoint(stairwell, room.PassagePoint);
+                yield return WalkStairwellWaypoint(stairwell, room.InteriorPoint);
+                Assert.That(stairwell.Layout.Labyrinth.StageAt(stairwell.World.Root.InverseTransformPoint(
+                    stairwell.Player.GameObject.transform.position)), Is.EqualTo(room.Stage));
+                Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.True,
+                    "Entering a placeholder must retain the labyrinth camera.");
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneIds.StairwellInterior));
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+                AimLabyrinthOrbit(stairwell, room.OutsideDock + Vector3.up * 1.4f);
+                yield return CaptureCorruptedGameplay(stairwell, "labyrinth-0" + room.Stage + "-puzzle-placeholder");
+
+                Assert.That(door.Begin(), Is.True, "The hero must be able to close a placeholder from inside.");
+                yield return WaitForCorruptedStairwell(() => !door.OwnsActiveInteraction,
+                    "Closing the placeholder from inside did not finish.");
+                Assert.That(door.IsClosed, Is.True);
+                AssertLabyrinthDoorSolid(door);
+                Assert.That(door.Begin(), Is.True, "The placeholder must reopen from inside without a puzzle or key.");
+                yield return WaitForCorruptedStairwell(() =>
+                    stairwell.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Looping,
+                    "Reopening the placeholder never reached the shared hero action.");
+                AssertLabyrinthDoorHandContact(door, room.Stage, "inside reopening");
+                yield return WaitForCorruptedStairwell(() => !door.OwnsActiveInteraction,
+                    "Reopening the placeholder from inside did not finish.");
+                Assert.That(door.IsOpen, Is.True);
+                Assert.That(stairwell.Player.Interactor.InputEnabled, Is.True);
+                Assert.That(stairwell.AnimatedInteraction.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+                motor.SetInputEnabled(false);
+                yield return WalkStairwellWaypoint(stairwell, room.InteriorPoint);
+                yield return WalkStairwellWaypoint(stairwell, room.PassagePoint);
+                yield return WalkStairwellWaypoint(stairwell, room.OutsideDock);
+                Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.True);
+                AssertLabyrinthDoorSolid(door);
+            }
+            finally
+            {
+                door.Cancel();
+                motor.CancelInteractionPoseMove();
+                motor.SetInputEnabled(previousMotorInput);
+                stairwell.Player.Interactor.SetInputEnabled(previousInteractorInput);
+            }
+        }
+
+        private static void AssertLabyrinthDoorSolid(InteriorHingedDoorInteraction door)
+        {
+            bool solidLeaf = false;
+            foreach (BoxCollider collider in door.GetComponentsInChildren<BoxCollider>())
+                if (collider.enabled && !collider.isTrigger) solidLeaf = true;
+            Assert.That(solidLeaf, Is.True, "The openable leaf must retain its physical collider.");
+        }
+
+        private static void AssertLabyrinthDoorHandContact(InteriorHingedDoorInteraction door, int stage, string action)
+        {
+            // The coroutine resumes after animation sampling, before LateUpdate.
+            // Use the production same-frame contact seam before reading bones.
+            door.RefreshHandContact();
+            Assert.That(door.RightGrip, Is.Not.Null);
+            float weight = door.ContactWeight;
+            float error = Vector3.Distance(door.RightGrip.position, door.InteractionPosition);
+            string diagnostic = $"stage={stage}, action={action}, gripError={error:F5}, weight={weight:F5}, " +
+                $"wristDistance={door.RightWristDistance:F5}, reachLimit={door.RightReachLimit:F5}, " +
+                $"grip={door.RightGrip.position:F5}, handle={door.InteractionPosition:F5}";
+            Debug.Log("STAIRWELL_PUZZLE_DOOR_CONTACT " + diagnostic);
+            Assert.That(weight, Is.GreaterThan(.65f), "Observe the engaged handle contact. " + diagnostic);
+            Assert.That(door.RightWristDistance, Is.LessThanOrEqualTo(door.RightReachLimit + .02f),
+                "The authored door dock must fit the hero's actual arm reach. " + diagnostic);
+            float tolerance = .025f + (weight >= .9999f ? 0f : (1f - weight) * .5f);
+            Assert.That(error, Is.LessThanOrEqualTo(tolerance),
+                "The shared rig must reach the moving physical handle. " + diagnostic);
+        }
+
+        private static IEnumerator VerifyLabyrinthMotion(StairwellInteriorRoot stairwell,
+            StairwellLabyrinthPresentation presentation, bool verifyDisable)
+        {
+            int count = presentation.MotionRoots.Count;
+            Assert.That(count, Is.InRange(1, StairwellLabyrinthPresentation.MaximumMotionRoots));
+            Pose[] before = ReadLabyrinthMotion(presentation);
+            double previousTime = presentation.AnimationTime;
+            for (int frame = 0; frame < 12; frame++) yield return null;
+            Assert.That(presentation.AnimationTime, Is.GreaterThan(previousTime));
+            Assert.That(presentation.MotionRoots.Count, Is.EqualTo(count));
+            bool moved = false;
+            for (int index = 0; index < count; index++)
+            {
+                Transform root = presentation.MotionRoots[index];
+                if (Vector3.Distance(root.localPosition, before[index].position) > .0001f ||
+                    Quaternion.Angle(root.localRotation, before[index].rotation) > .01f) moved = true;
+            }
+            Assert.That(moved, Is.True, "Each stage must present actual changing geometry.");
+            Pose[] paused = ReadLabyrinthMotion(presentation);
+            double pausedTime = presentation.AnimationTime;
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(presentation.AnimationTime, Is.EqualTo(pausedTime));
+                AssertLabyrinthMotionUnchanged(presentation, paused);
+            }
+            if (!verifyDisable) yield break;
+            bool wasEnabled = presentation.enabled;
+            try
+            {
+                presentation.enabled = false;
+                Pose[] disabled = ReadLabyrinthMotion(presentation);
+                double disabledTime = presentation.AnimationTime;
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(presentation.AnimationTime, Is.EqualTo(disabledTime));
+                AssertLabyrinthMotionUnchanged(presentation, disabled);
+            }
+            finally { presentation.enabled = wasEnabled; }
+            yield return null;
+            Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.LessThanOrEqualTo(8));
+            Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
+        }
+
+        private static Pose[] ReadLabyrinthMotion(StairwellLabyrinthPresentation presentation)
+        {
+            var poses = new Pose[presentation.MotionRoots.Count];
+            for (int index = 0; index < poses.Length; index++)
+            {
+                Transform root = presentation.MotionRoots[index];
+                Assert.That(root, Is.Not.Null);
+                poses[index] = new Pose(root.localPosition, root.localRotation);
+            }
+            return poses;
+        }
+
+        private static void AssertLabyrinthMotionUnchanged(StairwellLabyrinthPresentation presentation, Pose[] poses)
+        {
+            Assert.That(presentation.MotionRoots.Count, Is.EqualTo(poses.Length));
+            for (int index = 0; index < poses.Length; index++)
+            {
+                Assert.That(presentation.MotionRoots[index].localPosition, Is.EqualTo(poses[index].position));
+                Assert.That(presentation.MotionRoots[index].localRotation, Is.EqualTo(poses[index].rotation));
+            }
+        }
+
         private static IEnumerator CaptureLabyrinthEnclosure(StairwellInteriorRoot stairwell, int stage)
         {
             // Diagnostic eye-level views complement the real third-person
-            // frames. Every axis shows actual geometry from the same supported
-            // position, including the ceiling and the floor beneath the route.
+            // frames. The final view looks beyond a safety rail into the abyss,
+            // rather than straight at the walkway under the hero's feet.
             Camera camera = stairwell.CameraFollow.Camera;
             Transform hero = stairwell.Player.GameObject.transform;
             Vector3 forward = Vector3.ProjectOnPlane(hero.forward, Vector3.up).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             Vector3[] directions = { forward, right, -forward, -right, Vector3.up, Vector3.down };
             Vector3 origin = hero.position + Vector3.up * 1.5f;
+            Vector3 abyssEdge = stage == 1 ? Vector3.forward : stage == 2 ? Vector3.left :
+                Vector3.right + Vector3.forward;
             const int width = 640, height = 360;
             var target = new RenderTexture(width, height, 24);
             var sheet = new Texture2D(width * 3, height * 2, TextureFormat.RGB24, false);
@@ -290,8 +500,10 @@ namespace BarPromenade.Tests.PlayMode
                     for (int view = 0; view < directions.Length; view++)
                     {
                         int tile = view;
-                        camera.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(directions[view],
-                            view >= 4 ? forward : Vector3.up));
+                        Vector3 viewOrigin = view == 5 ? origin + abyssEdge * 1.3f : origin;
+                        Vector3 viewDirection = view == 5 ? Vector3.down + abyssEdge * 1.3f : directions[view];
+                        camera.transform.SetPositionAndRotation(viewOrigin, Quaternion.LookRotation(viewDirection,
+                            view == 4 ? forward : Vector3.up));
                         yield return new WaitForSecondsRealtime(.15f);
                         yield return ScarfRenderedFrame(camera, () =>
                         {
@@ -309,9 +521,9 @@ namespace BarPromenade.Tests.PlayMode
                     string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.StairwellInterior);
                     Directory.CreateDirectory(folder);
                     string path = Path.Combine(folder, "labyrinth-0" + stage +
-                        "-enclosure-forward-right-back__left-up-down.png");
+                        "-structure-forward-right-back__left-up-abyss.png");
                     File.WriteAllBytes(path, sheet.EncodeToPNG());
-                    Debug.Log("Area enclosure capture wrote " + path + "; top: forward/right/back; bottom: left/up/down");
+                    Debug.Log("Area structure capture wrote " + path + "; top: forward/right/back; bottom: left/up/abyss");
                     Assert.That(IsBlank(sheet), Is.False);
                 }
                 finally

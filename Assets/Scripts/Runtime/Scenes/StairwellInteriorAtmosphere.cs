@@ -152,11 +152,11 @@ namespace BarPromenade
             RenderSettings.fogColor = Color.Lerp(CorruptedFogColor, new Color(.042f, .052f, .045f), t);
             RenderSettings.fogStartDistance = Mathf.Lerp(CorruptedFogStart, Mathf.Lerp(26f, 42f, t), opening);
             RenderSettings.fogEndDistance = Mathf.Lerp(CorruptedFogEnd, Mathf.Lerp(100f, 140f, t), opening);
-            // The closed interior must retain readable floors/walls/ceilings
-            // between practical pools, including when Bloom is disabled.
-            Color interiorAmbient = Color.Lerp(new Color(.17f, .19f, .16f), new Color(.13f, .145f, .125f), t);
+            // Practical pools reveal the supported path; the large shaft retains dark gaps.
+            // The separately authored abyss never receives this light or the scene fog.
+            Color interiorAmbient = Color.Lerp(new Color(.095f, .115f, .10f), new Color(.065f, .078f, .069f), t);
             RenderSettings.ambientLight = Color.Lerp(new Color(.13f, .16f, .13f), interiorAmbient, opening);
-            if (sceneSun != null) sceneSun.intensity = Mathf.Lerp(Mathf.Lerp(.38f, .14f, t), 0f, warehouseThreshold);
+            if (sceneSun != null) sceneSun.intensity = Mathf.Lerp(Mathf.Lerp(.38f, .09f, opening), 0f, warehouseThreshold);
             if (sceneCamera != null) sceneCamera.backgroundColor = RenderSettings.fogColor;
             if (runtimeProfile.TryGet(out ColorAdjustments grade))
             {
@@ -207,6 +207,16 @@ namespace BarPromenade
             }
             ActiveLabyrinthLightCount = 0;
             ActiveLabyrinthShadowCount = 0;
+            // The distant moving counterweight must actually occlude its lamp.
+            // Reserve one of the same two shadow slots only while that source is near.
+            int sceneryShadowSlot = -1;
+            for (int slot = MaximumActiveLabyrinthLights - 2; slot < MaximumActiveLabyrinthLights; slot++)
+            {
+                int index = nearestLights[slot];
+                if (index >= 0 && labyrinthPlan.LightDescriptors[index].CastsShadows &&
+                    (LabyrinthLights[index].transform.position - labyrinthTarget.position).sqrMagnitude < 24f * 24f)
+                { sceneryShadowSlot = slot; break; }
+            }
             for (int i = 0; i < LabyrinthLights.Length; i++)
             {
                 if (Array.IndexOf(nearestLights, i) >= 0) continue;
@@ -228,7 +238,8 @@ namespace BarPromenade
                 ActiveLabyrinthLightCount++;
                 LightShadows shadows = LightShadows.None;
                 if (labyrinthPlan.LightDescriptors[i].CastsShadows &&
-                    ActiveLabyrinthShadowCount < MaximumLabyrinthShadowLights && distance < 24f)
+                    distance < 24f && (scenery ? slot == sceneryShadowSlot :
+                    ActiveLabyrinthShadowCount < MaximumLabyrinthShadowLights - (sceneryShadowSlot >= 0 ? 1 : 0)))
                 {
                     shadows = LightShadows.Hard;
                     ActiveLabyrinthShadowCount++;

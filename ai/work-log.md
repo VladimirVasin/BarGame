@@ -24,18 +24,17 @@ UNIQUE_SURFACE_DAMAGE_OK passed. Clock readings leave time/audio unchanged;
 garment leg wear differs, paired forearms/patch/UV/alpha stay. Final balcony seals
 only after safe indoor return; ordinary states restore.
 
-Stairwell: sleep→branching Escher maze→warehouse. Blind paths/loops,
-layered supports/ramps/headroom; one graph shares C#/Blender collision.
-Enclosed shell; small stairs/platforms/bridges above/below the hero.
-Familiar→warehouse surfaces/props/wear; free third-person through detours, fixed
-below. Bounded lamps/shadows; stage fog/grade/far DOF retain depth.
-Shared dust/ventilation/cleanup; silent stone-head Cut/model lease stay.
-Shared rig E-door retains session/calendar/inventory/quests/hero/seed; warehouse
-Endless/full kit, closed entry/no premature ambush. Retry retains story;
-preparation/new layout stay separate. STAIRWELL_LABYRINTH_DETERMINISM_OK,
-STAIRWELL_LABYRINTH_COLLISION_CLEARANCE_OK, STAIRWELL_LABYRINTH_ENCLOSURE_OK
-and AreaCaptureFixture.Stairwell passed; route/return/door/session and
-interior/upward views reviewed.
+Stairwell: sleep→Escher maze→warehouse; domestic/shaft/machinery above black
+abyss, guarded branches/loops. Shared graph owns metric support/headroom;
+stage service rooms use shared rig E doors without puzzle/gate/reward.
+Lamp/fan/counterweight/vent/cloth move with causal audio/pause/cleanup;
+shared black material ignores light/fog. Bounded lighting/third-person/fixed
+below, stone-head Cut and warehouse/session flow retained. Viewed frames caught
+flat warehouse surfaces and a camera inside furniture: metre UV1 charts and
+solid furnishing collision fix both. STAIRWELL_LABYRINTH_DETERMINISM_OK,
+STAIRWELL_LABYRINTH_COLLISION_CLEARANCE_OK, STAIRWELL_LABYRINTH_ABYSS_ROOMS_MOTION_OK,
+STAIRWELL_LABYRINTH_WAREHOUSE_UV1_OK and AreaCaptureFixture.Stairwell passed;
+route/rooms/door grips/motion/pause/cleanup/session checked; frames reviewed.
 
 Balcony: lip contact/index-middle pinch/thumb faceward/shaft clearance;
 shoulder-profile orbit/City ring/rear, separate rain/NPC limits. No beam/north

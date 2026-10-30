@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One enclosed impossible stair interior, in measured Unity metres.
+"""Three impossible stair interiors above a black abyss, in measured Unity metres.
 
 The authored graph below generates BOTH runtime C# constants and the imported model contract.
 No runtime file reads, random layout, primitive scenery or independently copied route coordinates.
@@ -26,7 +26,7 @@ MAIN=[(-1.45,4.8,2.25),(-1.45,4.8,3.2),(-1.45,8.4,11.84),(-1.45,8.4,14),
       (42,15.6,48.64),(42,15.6,51),(28,15.6,51),(28,15.6,63),
       (45,15.6,63),(45,15.6,73),(45,15.6,74)]
 BRANCHES=[
- ('plaster-blind',1,False,[(-13,8.4,14),(-24,8.4,14),(-24,8.4,23)]),
+ ('plaster-blind',1,False,[(-13,8.4,14),(-24,8.4,14),(-24,8.4,23),(-27,8.4,23)]),
  ('plaster-return',1,True,[(-13,8.4,28),(-25,8.4,28),(-25,8.4,37),(3,8.4,37)]),
  ('overlook-blind',2,False,[(14,12,23),(14,12,14),(-6,12,14)]),
  ('service-return',2,True,[(29,12,23),(39,12,23),(39,12,32),(29,12,32)]),
@@ -35,9 +35,12 @@ BRANCHES=[
  ('west-return',3,True,[(28,15.6,51),(18,15.6,51),(18,15.6,63),(28,15.6,63)]),
  ('red-blind',3,False,[(28,15.6,63),(28,15.6,74),(20,15.6,74)]),
  ('east-return',3,True,[(45,15.6,63),(56,15.6,63),(56,15.6,73),(45,15.6,73)])]
+ROOMS=[dict(id='store',stage=1,branch_id='plaster-blind',door=(-28.5,8.4,23)),
+       dict(id='service',stage=2,branch_id='overlook-blind',door=(-7.5,12,14)),
+       dict(id='switchroom',stage=3,branch_id='red-blind',door=(18.5,15.6,74))]
 NEAR_LIGHTS=[
  ((-1.45,8.2,5.2),1,False),((-1.45,11.7,14),1,True),((-13,11.7,21),1,False),
- ((-7,11.7,28),1,False),((3,11.7,32),1,True),((-24,11.7,20),1,False),
+ ((-7,11.7,28),1,True),((3,11.7,32),1,True),((-24,11.7,20),1,False),
  ((-25,11.7,34),1,False),((-11,11.7,37),1,False),
  ((7,13.5,37),2,False),((14,15.3,32),2,True),((22,15.3,23),2,False),
  ((29,15.3,32),2,False),((35,15.3,40),2,True),((14,15.3,17),2,False),
@@ -45,18 +48,24 @@ NEAR_LIGHTS=[
  ((42,17.2,44),3,False),((35,18.9,51),3,True),((28,18.9,57),3,False),
  ((36,18.9,63),3,False),((45,18.9,71),3,True),((53,18.9,56),3,False),
  ((18,18.9,59),3,False),((56,18.9,69),3,False)]
-# One closed, stepped interior surrounds the entire corrupted stairwell and route.
+NEAR_LIGHTS += [((room['door'][0]-2.1,room['door'][1]+2.72,room['door'][2]),room['stage'],False) for room in ROOMS]
+# Stepped walls/ceilings surround the route; the unlit bottom has no support/collision.
 # Bounds: xmin,zmin,xmax,zmax,floor,ceiling. Overlaps are merged, never walled off.
 INTERIOR_VOLUMES=[(-34,-6,10,43,-1,27),(6,6,49,52,3,30),(12,44,65,83,7,33)]
 SCENERY_LIGHT_START=len(NEAR_LIGHTS)
 UPPER_LIGHTS=[((-33.65,12.5,23),1,(0,0,90)),((-8,24,30),1,(0,0,0)),
               ((48.65,17.5,28),2,(0,0,-90)),((25,27,24),2,(0,0,0)),
-              ((64.65,23,64),3,(0,0,-90)),((35,30,64),3,(0,0,0))]
+              ((64.65,23,64),3,(0,0,-90)),((42.5,23,72),3,(70,50,0))]
 LIGHT_ROTATIONS=[(0,0,0)]*SCENERY_LIGHT_START+[rotation for _,_,rotation in UPPER_LIGHTS]
 def rotated_point(point,rotation):return bp.u_rotated(([point],[]),rotation)[0][0]
-LIGHTS=NEAR_LIGHTS+[(position,stage,False) for position,stage,_ in UPPER_LIGHTS]
+LIGHTS=NEAR_LIGHTS+[(position,stage,index==len(UPPER_LIGHTS)-1) for index,(position,stage,_) in enumerate(UPPER_LIGHTS)]
 LIGHT_DIRECTIONS=[rotated_point((0,-1,0),rotation) for rotation in LIGHT_ROTATIONS]
 DOOR=(45,15.6,74)
+MOTIONS=[dict(id='suspended-lamp',kind='swing',stage=1,pivot=(-7,13.2,28),axis=(0,0,1),amplitude=6,period=9,phase=.05,light_index=3),
+         dict(id='ventilation-fan',kind='fan',stage=2,pivot=(24,20,45),axis=(0,0,1),amplitude=360,period=13,phase=.2,light_index=-1),
+         dict(id='counterweight',kind='lift',stage=3,pivot=(39,21.5,69),axis=(0,1,0),amplitude=3,period=29,phase=.1,light_index=-1),
+         dict(id='vent-flap',kind='flap',stage=3,pivot=(34,19.4,41.8),axis=(1,0,0),amplitude=13,period=19,phase=.3,light_index=-1),
+         dict(id='vent-cloth',kind='swing',stage=2,pivot=(27.15,18.1,45.1),axis=(1,0,0),amplitude=5,period=7,phase=.4,light_index=-1)]
 
 
 def stage_for(a,b):
@@ -85,6 +94,11 @@ def supports():
     for i,(a,b) in enumerate(zip(MAIN,MAIN[1:])):add('main-%02d'%i,stage_for(a,b),a,b)
     for name,stage,loop,points in BRANCHES:
         for i,(a,b) in enumerate(zip(points,points[1:])):add(name+'-%02d'%i,stage,a,b)
+    for room in ROOMS:
+        x,y,z=room['door'];branch=next(b for b in BRANCHES if b[0]==room['branch_id'])
+        add('room-'+room['id']+'-approach',room['stage'],branch[3][-1],(x,y,z))
+        rows.append(dict(id='room-'+room['id'],stage=room['stage'],start=(x,y,z),end=(x-4.5,y,z),width=4,
+                         bounds=(x-4.5,z-2,x,z+2),ramp=False))
     return rows
 
 
@@ -96,7 +110,8 @@ def floor_at(row,p):
 
 def contract():
     return dict(main=MAIN,branches=BRANCHES,supports=supports(),lights=LIGHTS,light_directions=LIGHT_DIRECTIONS,
-                scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH)
+                scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH,
+                rooms=ROOMS,motions=MOTIONS,abyss_floor=-35,warehouse_chart_version=1)
 
 
 def contract_signature():
@@ -114,7 +129,7 @@ def write_runtime(directory):
            '        public const float MainRouteLength='+cs_float(sum(math.dist(a,b) for a,b in zip(MAIN,MAIN[1:])))+';',
            '        public static StairwellLabyrinthSupportPlan[] CreateSupports() => new[] {']
     for r in supports():
-        lines.append('            new StairwellLabyrinthSupportPlan("'+r['id']+'",'+str(r['stage'])+','+cs_vec(r['start'])+','+cs_vec(r['end'])+','+cs_float(WIDTH)+',Rect.MinMaxRect('+','.join(cs_float(n) for n in r['bounds'])+')),')
+        lines.append('            new StairwellLabyrinthSupportPlan("'+r['id']+'",'+str(r['stage'])+','+cs_vec(r['start'])+','+cs_vec(r['end'])+','+cs_float(r['width'])+',Rect.MinMaxRect('+','.join(cs_float(n) for n in r['bounds'])+')),')
     lines+=['        };','        public static Vector3[] CreateRoute() => new[] {']
     for i,p in enumerate(MAIN):
         if i==0:p=(p[0],p[1],2.55)
@@ -131,11 +146,55 @@ def write_runtime(directory):
     (directory/'StairwellLabyrinthData.cs').write_text('\n'.join(lines))
 
 
+def warehouse_chart(low,high,axes,key):
+    """A bounded, deterministic patch per primitive/face direction for UV1.
+
+    Warehouse auxiliary materials map metres*.12+.5 into one material atlas
+    rectangle. Absolute room coordinates saturate that lookup, and a missing
+    TEXCOORD1 samples one constant texel. Keep the original metre UV0 untouched;
+    this independent chart uses a varying subrectangle inside [-3.8,3.8].
+    """
+    digest=hashlib.sha256(key.encode('utf-8')).digest();result=[]
+    for index,axis in enumerate(axes):
+        extent=high[axis]-low[axis]
+        span=min(6.2,max(.9,extent*.85))
+        origin=-3.8+(7.6-span)*(digest[index]/255)
+        result.append((axis,low[axis],max(extent,1e-8),origin,span,bool(digest[index+2]&1)))
+    return result
+
+
+def warehouse_uv(point,chart):
+    result=[]
+    for axis,low,extent,origin,span,flip in chart:
+        unit=max(0,min(1,(point[axis]-low)/extent))
+        result.append(origin+span*(1-unit if flip else unit))
+    if any(not math.isfinite(value) or abs(value)>3.800001 for value in result):
+        raise ValueError('Warehouse UV1 escaped its finite authored patch')
+    return tuple(result)
+
+
+def validate_warehouse_charts(groups):
+    signatures=set()
+    for (stage,chunk,role),parts in groups.items():
+        for index,geometry in enumerate(parts):
+            low,high=kit.bounds(geometry)
+            for major,axes in enumerate(((2,1),(0,2),(0,1))):
+                key=f'{stage}/{chunk}/{role}/{index}/{major}'
+                chart=warehouse_chart(low,high,axes,key)
+                first,last=warehouse_uv(low,chart),warehouse_uv(high,chart)
+                if any(abs(first[i]-last[i])<.89 for i in range(2)):
+                    raise ValueError('Degenerate Warehouse UV1 chart '+key)
+                signatures.add((first,last))
+    if len(signatures)<len(groups):raise ValueError('Warehouse charts repeat one constant patch')
+    print('STAIRWELL_LABYRINTH_WAREHOUSE_UV1_OK',flush=True)
+
+
 def design():
     groups={};all_supports=supports()
     def add(stage,role,g,chunk=None):
         if bp.signed_volume(g)<=0:raise ValueError('Inward solid '+role)
         lo,hi=kit.bounds(g)
+        if role=='Abyss':chunk='Abyss'
         if chunk is None:chunk='C%d_%d'%(math.floor((lo[0]+hi[0])/32),math.floor((lo[2]+hi[2])/32))
         groups.setdefault((stage,chunk,role),[]).append(g)
     def box(stage,role,c,size,bevel=.008,chunk=None):add(stage,role,bp.u_box(c,size,bevel),chunk)
@@ -246,7 +305,7 @@ def design():
                 rail(stage,a,b,True,wood=stage==1)
     # Source-shaped pipe/fixture poles and substantial bridge supports.
     for i,r in enumerate(all_supports):
-        if r['ramp'] or i%2:continue
+        if r['ramp'] or i%2 or r['id'].startswith('room-'):continue
         a,b=r['start'],r['end'];stage=r['stage'];x0,z0,x1,z1=r['bounds']
         x=(x0+x1)/2;z=(z0+z1)/2;y=a[1]
         horizontal=(x1-x0)>(z1-z0)
@@ -268,19 +327,105 @@ def design():
                 box(stage,'Rubber',(px+.12,y+.63,pz),(.24,.05,.37),.005)
     # Dead-end walls are visible reasons to turn; no interactive/lore doors.
     for bi,(name,stage,loop,points) in enumerate(BRANCHES):
-        if loop:continue
+        if loop or any(room['branch_id']==name for room in ROOMS):continue
         a,b=points[-2:];yaw=math.degrees(math.atan2(b[0]-a[0],b[2]-a[2]));origin=(b[0],b[1],b[2])
         for x in (-1.27,1.27):add(stage,'Plaster' if stage==1 else 'Concrete',transform(bp.u_box((x,1.6,1.42),(.54,3.2,.38),.02),origin,(0,yaw,0)))
         add(stage,'Concrete',transform(bp.u_box((0,3.1,1.42),(3.2,.4,.38),.02),origin,(0,yaw,0)))
         add(stage,'DoorPaint' if stage==1 else 'Rust',transform(bp.u_box((0,1.25,1.46),(1.9,2.5,.16),.012),origin,(0,yaw,0)))
         add(stage,'Collision',transform(bp.u_box((0,1.55,1.45),(3.2,3.1,.35),0),origin,(0,yaw,0)))
         for h in (.65,1.85):add(stage,'Steel',transform(bp.u_box((0,h,1.31),(2.15,.11,.10),.003),origin,(0,yaw,0)))
+    # Three physical, deliberately small puzzle-placeholder rooms. Their shapes
+    # and hardware are authored here; interaction never builds primitive leaves.
+    design.doors=[]
+    for room in ROOMS:
+        stage=room['stage'];origin=room['door'];yaw=-90;chunk='Door_'+room['id']
+        wall_role='Plaster' if stage==1 else 'Concrete'
+        def rg(role,geometry,collision=False,dynamic=False):
+            placed=transform(geometry,origin,(0,yaw,0))
+            add(stage,role,placed,chunk if dynamic else None)
+            if collision:add(stage,'Collision',placed)
+        def rb(role,c,size,collision=False,bevel=.012):rg(role,bp.u_box(c,size,bevel),collision)
+        def rp(point):
+            p=rotated_point(point,(0,yaw,0));return tuple(origin[i]+p[i] for i in range(3))
+        front=bp.to_source(kit.wall_run(4,3.1,.24,[kit.Opening(0,1.40,2.43)],.012))
+        rg(wall_role,front,True)
+        for side in (-1,1):rb(wall_role,(side*1.92,1.55,2.25),(.16,3.1,4.5),True)
+        rb(wall_role,(0,1.55,4.42),(4,3.1,.16),True)
+        rb(wall_role,(0,3.1,2.25),(4,.18,4.5),True)
+        rg('Wood' if stage==1 else 'Steel',bp.to_source(kit.door_frame(1.22,2.33,.25,.075,.045,.008)))
+        leaf=bp.to_source(kit.panelled_leaf(1.2,2.3,.07,3 if stage==1 else 1,.10,.014,.008))
+        if stage==2:
+            # A real narrow glazing aperture through the second leaf.
+            leaf=kit.translated(bp.to_source(kit.wall_run(1.2,2.3,.07,[kit.Opening(.24,.30,2.06,1.48)],.006)),(.6,0,0))
+            rg('ConcreteDark',kit.translated(bp.u_box((.84,1.77,0),(.296,.572,.025),.003),(-.6,0,0)),dynamic=True)
+        rg('Wood' if stage==1 else 'DoorPaint',kit.translated(leaf,(-.6,0,0)),dynamic=True)
+        for side in (-1,1):
+            for geometry in [bp.u_box((.46,1.155,side*.051),(.13,.24,.025),.006),
+                             bp.u_box((.40,1.155,side*.125),(.23,.035,.035),.008),
+                             bp.u_box((.50,1.155,side*.09),(.035,.035,.08),.006)]:
+                rg('Steel',geometry,dynamic=True)
+        for height in (.30,1.92):
+            rg('Steel',bp.u_cylinder((-.60,height,0),(.046,.07,.046),8),dynamic=True)
+        if stage==3:
+            for height in (.45,1.82):rg('Steel',bp.u_box((0,height,-.047),(1.12,.09,.025),.003),dynamic=True)
+        # Silent empty work surfaces reserve room for puzzles without a fake
+        # solved state, clues, item rewards or a text label.
+        if stage==1:
+            rb('Wood',(0,.78,3.82),(2.75,.12,.56),True)
+            for x in (-1.15,1.15):rb('Wood',(x,.36,3.82),(.09,.72,.43),True)
+            for h in (1.65,2.22):rb('Wood',(.6,h,4.14),(1.8,.08,.38),True)
+        elif stage==2:
+            rb('Concrete',(-1.18,.46,3.72),(.9,.92,.8),True)
+            for x in (-1.55,1.55):rb('Rust',(x,1.65,4.23),(.075,2.5,.075),bevel=.003)
+            rb('Steel',(.25,1.22,4.26),(1.35,1.55,.13),True)
+        else:
+            for x in (-1.22,0,1.22):
+                rb('WornSteel',(x,1.22,4.15),(.95,2.44,.38),True)
+                rb('DoorPaint',(x,1.25,3.94),(.81,2.14,.04))
+                rb('Steel',(x+.27,1.20,3.89),(.035,.23,.055),bevel=.003)
+        interior=rp((0,.04,2.25))
+        design.doors.append(dict(id=room['id'],stage=stage,branch_id=room['branch_id'],chunk=chunk,
+            hinge=rp((-.6,0,0)),yaw=yaw,outer_handle=rp((.43,1.155,-.125)),inner_handle=rp((.43,1.155,.125)),
+            outside_dock=rp((-.05,.04,-.605)),inside_dock=rp((.95,.04,.5)),passage_point=rp((0,.04,.85)),
+            leaf_center=(.6,1.15,0),leaf_size=(1.2,2.3,.07),room_center=interior,interior_point=interior))
     # Familiar fragments frame the entry but do not hide the growing view.
     for center,size in [((-4.05,7.4,7),(1.0,4.8,7.5)),((1.2,8.8,10.2),(.4,4.5,3.5)),((-15.05,10.2,20),(.45,3.6,8))]:
         box(1,'Plaster',center,size,.025)
         box(1,'ConcreteDark',(center[0],center[1]-size[1]/2+.4,center[2]),(size[0]+.03,.8,size[2]+.02),.005)
-    # Closed union of the three staggered atria. Every interior view ends on a
-    # real wall, floor or ceiling; the formerly broken old stairwell is inside too.
+    # Authored large-scale compositions distinguish the stages even in grayscale.
+    # Domestic compression opens directly onto the first black shaft.
+    for c,size in [((-10.90,10.0,19.8),(.26,3.2,7.2)),((-13,11.75,19.8),(4.45,.24,7.2))]:
+        box(1,'Plaster',c,size,.018);box(1,'DecorCollision',c,size,0)
+    for z in (16.6,22.9):
+        for x in (-15.1,-10.9):
+            box(1,'Wood',(x,10.0,z),(.10,3.2,.12),.007)
+        box(1,'Wood',(-13,11.58,z),(4.3,.12,.12),.007)
+    # The middle atrium has two clearly connected crossing high galleries.
+    for a,b in [((9,20.4,20),(37,20.4,38)),((12,23.0,41),(40,23.0,21))]:
+        dx,dz=b[0]-a[0],b[2]-a[2];yaw=math.degrees(math.atan2(dx,dz));length=math.hypot(dx,dz)
+        center=tuple((a[i]+b[i])/2 for i in range(3))
+        geometry=transform(bp.u_box((0,-.15,0),(1.9,.30,length),.012),center,(0,yaw,0))
+        add(2,'WornSteel',geometry);add(2,'DecorCollision',geometry)
+        for sign in (-1,1):
+            off=(math.cos(math.radians(yaw))*.95*sign,0,-math.sin(math.radians(yaw))*.95*sign)
+            rail(2,tuple(a[i]+off[i] for i in range(3)),tuple(b[i]+off[i] for i in range(3)),False)
+        for p in (a,b):box(2,'Steel',(p[0],(p[1]+29)/2,p[2]),(.20,29-p[1],.20),.008)
+    # Heavy service ducts compress the final traverse without entering its
+    # player/camera clearance. The machine bank is separated from all walkways.
+    for c,size in [((36.5,20.5,54.2),(22,2.4,1.8)),((30.4,20.7,58),(1.8,2.2,13))]:
+        box(3,'WornSteel',c,size,.08);box(3,'DecorCollision',c,size,0)
+        long_axis=0 if size[0]>size[2] else 2
+        for offset in (-.38,0,.38):
+            p=list(c);p[long_axis]+=offset*size[long_axis]
+            band=(.12,size[1]+.09,size[2]+.09) if long_axis==0 else (size[0]+.09,size[1]+.09,.12)
+            box(3,'Steel',p,band,.015)
+    box(3,'ConcreteDark',(36.6,20.1,57.4),(5.2,8.6,4.2),.065)
+    box(3,'DecorCollision',(36.6,20.1,57.4),(5.2,8.6,4.2),0)
+    for x in (34.2,35.4,36.6,37.8,39):
+        box(3,'Steel',(x,20.3,55.24),(.085,7.7,.13),.006)
+        box(3,'Steel',(x,20.3,59.56),(.085,7.7,.13),.006)
+    # Three atria retain real lateral/upper enclosure. Their former floors are
+    # replaced by distant black noncolliding geometry, never an invisible support.
     shell_x=sorted(set(v for room in INTERIOR_VOLUMES for v in (room[0],room[2])))
     shell_z=sorted(set(v for room in INTERIOR_VOLUMES for v in (room[1],room[3])))
     def column(x,z):
@@ -295,7 +440,7 @@ def design():
             x,z=(x0+x1)/2,(z0+z1)/2;own=column(x,z)
             if own is None:continue
             floor,ceiling,stage=own
-            shell_box(stage,'Concrete',(x,floor-.22,z),(x1-x0,.44,z1-z0))
+            box(stage,'Abyss',(x,-35.22,z),(x1-x0,.44,z1-z0),0)
             shell_box(stage,'Plaster' if stage==1 else 'Concrete',(x,ceiling+.22,z),(x1-x0,.44,z1-z0))
             # Visible ceiling ribs break up the room scale and connect hung pieces.
             for rx in range(math.ceil(x0/5)*5,math.ceil(x1),5):
@@ -303,6 +448,10 @@ def design():
             for axis,fixed,lo,hi,out in [(0,x0,z0,z1,-.05),(0,x1,z0,z1,.05),(2,z0,x0,x1,-.05),(2,z1,x0,x1,.05)]:
                 adjacent=column(fixed+out,z) if axis==0 else column(x,fixed+out)
                 intervals=[(floor,ceiling)] if adjacent is None else [(floor,min(ceiling,adjacent[0])),(max(floor,adjacent[1]),ceiling)]
+                if adjacent is None:
+                    center=(fixed,(-35+floor)/2,(lo+hi)/2) if axis==0 else ((lo+hi)/2,(-35+floor)/2,fixed)
+                    size=(.5,floor+35,hi-lo) if axis==0 else (hi-lo,floor+35,.5)
+                    box(stage,'Abyss',center,size,0)
                 for low,high in intervals:
                     if high-low<.01:continue
                     center=(fixed,(low+high)/2,(lo+hi)/2) if axis==0 else ((lo+hi)/2,(low+high)/2,fixed)
@@ -358,8 +507,12 @@ def design():
             box(stage,'Concrete' if stage==1 and piece_index%3==0 else 'Steel',(anchor[0],(anchor[1]+ceiling)/2,anchor[2]),(.18,ceiling-anchor[1],.18),.008)
         return tuple(origin[i]+offset[i] for i in range(3))
     for si,surface in enumerate(all_supports):
+        if surface['id'].startswith('room-'):continue
         a,b=surface['start'],surface['end'];stage=surface['stage'];length=math.dist(a,b)
-        copies=2 if length>12 else 1
+        copies=2 if length>12 and stage==2 else 1
+        # Stage one keeps recognizable domestic voids; stage three is sparse
+        # enough for the large machine silhouettes. The middle is the stair web.
+        if (stage==1 and si%3==0) or (stage==3 and si%2==0):continue
         for copy in range(copies):
             t=(copy+1)/(copies+1);center=tuple(a[i]+(b[i]-a[i])*t for i in range(3))
             idx=piece_index;piece_index+=1
@@ -421,6 +574,49 @@ def design():
             parts.append(('DoorPaint',bp.u_box((0,1.18,-.08),(1.48,2.36,.10),.006)))
             for offset in (1.4,1.7):parts.append(('Rust',bp.u_cylinder((offset,1.7,.10),(.09,2.0,.09),8)))
             for role,g in parts:add(stage,role,transform(g,(x,y,z),rotation))
+    # Bounded mechanical actors, exported separately with authored pivots. No
+    # rigidbody debris, runtime mesh assembly or changing navigation topology.
+    for motion in MOTIONS:
+        kind=motion['kind'];stage=motion['stage'];pivot=motion['pivot'];chunk='Motion_'+motion['id']
+        def mb(role,c,size,bevel=.008):box(stage,role,tuple(pivot[i]+c[i] for i in range(3)),size,bevel,chunk)
+        def mg(role,g):add(stage,role,kit.translated(g,pivot),chunk)
+        if motion['id']=='suspended-lamp':
+            mb('Steel',(0,-.72,0),(.024,1.44,.024),.003)
+            box(stage,'Steel',(-7,20.1,28),(.055,13.8,.055),.004)
+            box(stage,'Steel',(-7,13.2,28),(.15,.10,.15),.008)
+        elif kind=='fan':
+            hub=bp.u_rotated(bp.u_cylinder((0,0,0),(.65,.18,.65),12),(90,0,0));mg('Steel',hub)
+            blade=bp.to_source(kit.prism([(.25,-.10),(1.7,-.65),(2.2,-.30),(2.15,.20),(.35,.25)],.075))
+            for n in range(6):mg('WornSteel',bp.u_rotated(blade,(0,0,n*60)))
+            for side in (-1,1):
+                box(stage,'Concrete',(pivot[0]+side*2.65,pivot[1],pivot[2]),(.45,5.6,.8),.04)
+                box(stage,'Steel',(pivot[0],pivot[1]+side*2.65,pivot[2]),(5.6,.45,.8),.04)
+            for n in range(-4,5):
+                box(stage,'Steel',(pivot[0]+n*.5,pivot[1],pivot[2]-.45),(.035,4.8,.035),.003)
+            for x in (-2.65,2.65):box(stage,'Steel',(pivot[0]+x,25.5,pivot[2]),(.16,6,.16),.006)
+        elif kind=='lift':
+            mb('ConcreteDark',(0,0,0),(3.6,4,1.3),.06)
+            for x in (-1.65,1.65):mb('Steel',(x,0,-.71),(.16,4.15,.15),.008)
+            for y in (-1.8,1.8):mb('Steel',(0,y,-.71),(3.55,.16,.15),.008)
+            for x in (-1.05,1.05):mb('Steel',(x,9,0),(.045,14,.045),.003)
+            for x in (-2.2,2.2):
+                box(stage,'Steel',(pivot[0]+x,16,pivot[2]),(.20,34,.30),.015)
+            for y in (12,28,32):box(stage,'Steel',(pivot[0],y,pivot[2]),(4.65,.16,.35),.008)
+            # The fixture behind the weight has its own real ceiling hanger.
+            box(stage,'Steel',(42.5,28,72),(.08,10,.08),.006)
+        elif kind=='flap':
+            mb('WornSteel',(0,-.72,0),(2.5,1.44,.07),.015)
+            for x in (-1.0,0,1.0):mb('Steel',(x,-.72,-.065),(.055,1.35,.055),.004)
+            box(stage,'ConcreteDark',(pivot[0],pivot[1]-.72,pivot[2]+.34),(2.8,1.7,.65),.03)
+            box(stage,'Steel',(pivot[0],24.3,pivot[2]+.55),(.2,10,.25),.008)
+        else:
+            # A folded solid, not a one-sided card: shadow/depth/normal passes
+            # retain its silhouette while its top stays on the fixed clamp.
+            for n in range(6):
+                g=bp.u_rotated(bp.u_box((0,-.75,0),(.23,1.5,.025),.004),(0,(-1 if n%2 else 1)*18,0))
+                mg('Rubber',kit.translated(g,((n-2.5)*.20,0,0)))
+            box(stage,'Steel',pivot,(1.4,.07,.10),.008)
+            box(stage,'Steel',(pivot[0]+.68,21.5,pivot[2]),(.10,7,.10),.008)
     # Physical final door surround; shared runtime door and hand contact remain separate.
     for x in (DOOR[0]-1.25,DOOR[0]+1.25):
         box(3,'Concrete',(x,DOOR[1]+1.7,DOOR[2]),(.65,3.4,.42),.02)
@@ -431,13 +627,14 @@ def design():
         # Near lamps and six wall/ceiling sources have matching interior fixture anchors.
         rotation=LIGHT_ROTATIONS[i]
         def lb(role,offset,size,bevel=.003):
-            add(stage,role,transform(bp.u_box(offset,size,bevel),c,rotation))
+            add(stage,role,transform(bp.u_box(offset,size,bevel),c,rotation),'Motion_suspended-lamp' if i==3 else None)
         lb('Steel',(0,.08,0),(1.04,.16,.30),.012)
         lb('Lens',(0,0,0),(.82,.035,.18))
         for z in (-.15,.15):lb('Steel',(0,-.04,z),(.98,.035,.025),.002)
         for x in (-.46,0,.46):lb('Steel',(x,-.04,0),(.025,.035,.30),.002)
-        lb('Steel',(.67,-.3,0),(.055,.8,.055))
-        lb('Steel',(.34,.08,0),(.7,.045,.045))
+        if i!=3:
+            lb('Steel',(.67,-.3,0),(.055,.8,.055))
+            lb('Steel',(.34,.08,0),(.7,.045,.045))
         if i>=SCENERY_LIGHT_START:
             # Attach ceiling cages to the common roof; wall cages already meet their wall.
             if LIGHT_ROTATIONS[i]==(0,0,0):lb('Steel',(.67,1.5,0),(.055,3.0,.055))
@@ -457,9 +654,34 @@ def validate(groups):
     if [sum(b[1]==s for b in BRANCHES) for s in (1,2,3)]!=[2,3,4]:raise ValueError('Branch progression')
     for _,_,loop,points in BRANCHES:
         if points[0] not in MAIN or (loop and points[-1] not in MAIN):raise ValueError('Branch disconnected from route')
+    if len(ROOMS)!=3 or [r['stage'] for r in ROOMS]!=[1,2,3]:raise ValueError('One puzzle-placeholder room per stage')
+    for motion in MOTIONS:
+        if not 0<=motion['phase']<1 or motion['period']<=0:raise ValueError('Invalid mechanical timeline')
+        parts=[g for (stage,chunk,role),geometries in groups.items() if chunk=='Motion_'+motion['id'] for g in geometries]
+        if not parts:raise ValueError('Missing moving geometry '+motion['id'])
+        # Conservative full sweep bounds keep moving details out of hero space.
+        lo,hi=kit.bounds(kit.merge_all(parts));pivot=motion['pivot']
+        corners=[(x,y,z) for x in (lo[0],hi[0]) for y in (lo[1],hi[1]) for z in (lo[2],hi[2])]
+        samples=[]
+        for n in range(33):
+            value=motion['amplitude']*(n/32 if motion['kind']=='fan' else math.sin(n*math.tau/32))
+            for p in corners:
+                if motion['kind']=='lift':q=tuple(p[i]+value*motion['axis'][i] for i in range(3))
+                else:
+                    rotation=tuple(value*v for v in motion['axis']);local=tuple(p[i]-pivot[i] for i in range(3))
+                    q=tuple(rotated_point(local,rotation)[i]+pivot[i] for i in range(3))
+                samples.append(q)
+        motion['swept_bounds_min']=tuple(min(p[i] for p in samples) for i in range(3))
+        motion['swept_bounds_max']=tuple(max(p[i] for p in samples) for i in range(3))
+        for row in rows:
+            x0,z0,x1,z1=row['bounds'];low=motion['swept_bounds_min'];high=motion['swept_bounds_max']
+            if high[0]<x0+.35 or low[0]>x1-.35 or high[2]<z0+.35 or low[2]>z1-.35:continue
+            if high[1]>min(row['start'][1],row['end'][1])+.2 and low[1]<max(row['start'][1],row['end'][1])+2.1:
+                raise ValueError('Motion sweep enters walkable route '+motion['id']+' / '+row['id'])
     return dict(meshes=len(groups),triangles=triangles,flights=3,steps_per_flight=36,clear_width=WIDTH,total_rise=10.8,
                 main_route_metres=round(sum(math.dist(a,b) for a,b in zip(MAIN,MAIN[1:])),3),supports=len(rows),branches=9,loops=4,
-                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),**design.last_counts,deterministic=True)
+                lights=len(LIGHTS),interior_volumes=len(INTERIOR_VOLUMES),puzzle_rooms=3,moving_assemblies=len(MOTIONS),abyss_floor=-35,
+                **design.last_counts,deterministic=True)
 
 
 def validate_collision_clearance(groups):
@@ -469,6 +691,10 @@ def validate_collision_clearance(groups):
     collision=kit.merge_all(g for (_,_,role),parts in groups.items() if role in ('Collision','ShellCollision','DecorCollision') for g in parts)
     tree=BVHTree.FromPolygons(collision[0],collision[1],all_triangles=False)
     paths=[('main',MAIN[:-1]+[(DOOR[0]-.715724,DOOR[1],DOOR[2]-.719976)])]+[(name,points) for name,_,_,points in BRANCHES]
+    for room,door in zip(ROOMS,design.doors):
+        branch=next(b for b in BRANCHES if b[0]==room['branch_id'])
+        ground=lambda point:tuple(v-(.04 if i==1 else 0) for i,v in enumerate(point))
+        paths.append(('room-'+room['id'],[branch[3][-1],ground(door['outside_dock']),ground(door['passage_point']),ground(door['interior_point'])]))
     for name,path in paths:
         for a,b in zip(path,path[1:]):
             count=max(1,math.ceil(math.dist(a,b)/.15))
@@ -490,7 +716,7 @@ def validate_enclosure(groups):
     from mathutils.bvhtree import BVHTree
     shell=kit.merge_all(g for (_,_,role),parts in groups.items() if role=='ShellCollision' for g in parts)
     tree=BVHTree.FromPolygons(shell[0],shell[1],all_triangles=False)
-    directions=[(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)]
+    directions=[(1,0,0),(-1,0,0),(0,1,0),(0,0,1),(0,0,-1)]
     directions += [(math.cos((i+.5)*math.tau/8),0,math.sin((i+.5)*math.tau/8)) for i in range(8)]
     points=list(MAIN)+[p for _,_,_,path in BRANCHES for p in path]+[(0,3.2,-2),(-1.45,4.8,1.5)]
     for p in points:
@@ -499,6 +725,13 @@ def validate_enclosure(groups):
             hit,_,_,distance=tree.ray_cast(origin,Vector(direction),150)
             if hit is None:raise ValueError('Interior opens into exterior void: '+str((p,direction)))
     print('STAIRWELL_LABYRINTH_ENCLOSURE_OK',flush=True)
+    abyss=kit.merge_all(g for (_,_,role),parts in groups.items() if role=='Abyss' for g in parts)
+    black=BVHTree.FromPolygons(abyss[0],abyss[1],all_triangles=False)
+    for p in points:
+        origin=Vector((p[0],p[1]+1.5,p[2]));down=Vector((0,-1,0))
+        if tree.ray_cast(origin,down,150)[0] is not None:raise ValueError('Shell still closes abyss below route '+str(p))
+        if black.ray_cast(origin,down,150)[0] is None:raise ValueError('Black abyss coverage hole '+str(p))
+    print('STAIRWELL_LABYRINTH_ABYSS_ROOMS_MOTION_OK',flush=True)
 
 
 def main():
@@ -507,7 +740,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--model-dir',type=Path,default=MODEL_DIR);parser.add_argument('--source-dir',type=Path,default=SOURCE_DIR)
     parser.add_argument('--code-dir',type=Path,default=CODE_DIR)
-    args=parser.parse_args(argv);groups=design();report=validate(groups);validate_collision_clearance(groups);validate_enclosure(groups)
+    args=parser.parse_args(argv);groups=design();report=validate(groups);validate_collision_clearance(groups);validate_enclosure(groups);validate_warehouse_charts(groups)
     canonical=lambda g:json.dumps([(k,v) for k,v in g.items()],separators=(',',':'))
     signature=hashlib.sha256(canonical(groups).encode()).hexdigest()
     if canonical(groups)!=canonical(design()):raise ValueError('Nondeterministic labyrinth')
@@ -519,13 +752,34 @@ def main():
         geometry=kit.merge_all(parts);lo,hi=kit.bounds(geometry);v,f=bp.to_source(geometry)
         name=f'Stage{stage}__{chunk}__{role}'
         mesh=bpy.data.meshes.new(name);mesh.from_pydata(v,[],f);mesh.update();uv=mesh.uv_layers.new(name='UVMap')
+        warehouse=mesh.uv_layers.new(name='WarehouseMetres');primitive=0;last_face=len(parts[0][1])
+        primitive_bounds=[kit.bounds(part) for part in parts]
+        charts={}
         for poly in mesh.polygons:
+            while poly.index>=last_face:
+                primitive+=1;last_face+=len(parts[primitive][1])
             normal=(poly.normal.x,poly.normal.z,poly.normal.y);major=max(range(3),key=lambda i:abs(normal[i]));a,b=((2,1),(0,2),(0,1))[major]
+            chart_key=(primitive,major)
+            if chart_key not in charts:
+                plow,phigh=primitive_bounds[primitive]
+                charts[chart_key]=warehouse_chart(plow,phigh,(a,b),f'{stage}/{chunk}/{role}/{primitive}/{major}')
             for loop in poly.loop_indices:
                 p=geometry[0][mesh.loops[loop].vertex_index];uv.data[loop].uv=(p[a],p[b])
+                warehouse.data[loop].uv=warehouse_uv(p,charts[chart_key])
+        if len(warehouse.data)!=len(mesh.loops):raise ValueError('Incomplete exported WarehouseMetres UV1 '+name)
+        mesh.uv_layers.active_index=0;uv.active_render=True
         obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);obj.parent=root
         records.append(dict(name=name,stage=stage,chunk=chunk,role=role,bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(geometry)))
-    payload=dict(schema_version=2,generator_version='3.0.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,contract=contract())
+    doors=[]
+    for door in design.doors:
+        record={k:v for k,v in door.items() if k!='chunk'}
+        record['parts']=[part['name'] for part in records if part['chunk']==door['chunk']]
+        doors.append(record)
+    motions=[]
+    for motion in MOTIONS:
+        record=dict(motion);record['parts']=[part['name'] for part in records if part['chunk']=='Motion_'+motion['id']]
+        motions.append(record)
+    payload=dict(schema_version=3,generator_version='4.1.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

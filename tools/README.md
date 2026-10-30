@@ -1,6 +1,6 @@
 # Art/native tools
 
-`build-stairwell-labyrinth-3d-model.py`:`--validate-only`;graph/C#data/metres/winding.
+`build-stairwell-labyrinth-3d-model.py`:`--validate-only`;abyss/rooms/motion/metres.
 Home:`build-home-{interior-3d-model,textures,corruption-textures}.py`;
 macro shader:`build-surface-damage-shader.py --check`.
 Bar:`build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`;

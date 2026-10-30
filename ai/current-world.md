@@ -2005,22 +2005,21 @@ cemetery:own interiors/returns.
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
-- `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; safe street/middle/
-  apartment seams/upper debris. Sleep retains recognizable lower walls/flights/
-  landings/columns/household traces/fixtures, broken back/roof and descent wall.
-  Escher:~200m/3stages/2-3-4 branches/4loops/3rises.
-  Enclosed shell; small sideways/inverted stairs/platforms; gravity stays.
-  Plaster/wood→warehouse concrete/steel/props/wear. Generated C# graph/
-  Blender chunks; feet-aware supports/ramps/headroom, physics Y.
-  Third-person/mouse through detours; fixed below.30 fixtures/≤8 active/≤2 Hard
-  shadows;10Hz/reused buffers/hero distance. Stage fog/grade/far DOF85–155m;
-  approach bands stay. Dust follows nearest lamp; ventilation/owned cleanup stay.
-  Silent stone-head E cuts camera/DOF; model/shadow leased only close-up.
-  No live Cat/grant; quest stays. Shared rig E-door/covered Single load
-  uses WarehouseStoryEntryService; session/calendar/inventory/quests/hero stay.
-  Session seed/Endless/full kit; entry seals; fish/key/gate/ambush stay.
-  Retry restores HP/ammo, not story; story blocks preparation/new-layout;
-  menu test starts stay;
+- `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; street/middle/
+  apartment seams/upper debris. Sleep keeps lower walls/flights/columns/fixtures,
+  broken back/roof/descent wall. Escher:~200m/3stages/2-3-4branches/4loops/3rises:
+  domestic reveals/open shaft/machinery above black abyss; enclosed sides/roof,
+  guarded paths, sideways/inverted scenery. Generated C#/Blender share metre
+  supports/ramps/headroom/normal gravity. Three service rooms: shared rig E
+  open/close on either side; empty puzzle sites, no gate/reward. Lamp/
+  fan/counterweight/vent/cloth move with causal sound and pause/cleanup ownership.
+  Plaster/wood→concrete/steel/red lamps. Third-person/mouse, fixed below.
+  33 lights/≤8 active/≤2 Hard shadows;10Hz/reused buffers/distance. Stage fog/grade/
+  far DOF; nearest-lamp dust. Silent stone-head E Cut leases model/shadow;
+  no live Cat/grant, quest stays. WarehouseStoryEntryService/covered Single load
+  retains session/calendar/inventory/quests/hero/seed; Endless/full kit/entry seal/
+  fish/key/gate/ambush stay. Retry restores HP/ammo, not story; preparation/new
+  layout blocked in story; menu tests stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
   docks align the right-hand clip with the lever, plates with the latch stile.

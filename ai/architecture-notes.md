@@ -67,18 +67,17 @@
   no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — post-sleep labyrinth to warehouse:**
-  User: upper→3 stages/branches/loops→CombatTest. Escher means space/look up,
-  not copied forms: many small stairs/platforms/bridges/rectangular openings
-  sideways/inverted inside walls/ceiling/floors; no void/cloned facades.
-  Plaster/wood→wet concrete/steel/red lamps; ordinary gravity.
-  Third-person/mouse inside; fixed below.
-  Rig door/Single load keeps session/calendar/inventory/quests/hero/seed;
-  no BeginNewGame. Endless/default density/full kit; retry keeps story.
-  Entry seals; fish/key/gate/ambush stay. Combat/loss/creature/gore/owned-lock
-  exceptions only inside warehouse; stairs borrow materials/audio, no finale/lore.
-  ≤8 lamps/≤2 Hard shadows; stage fog/grade/far DOF; SSAO/SMAA/lens stay.
-  No new GI/SSGI/SCGI/SSR/water/wind/rim/flare/blur/strobe.
-  Feet-aware support; Blender chunks/shared surfaces/cleanup; cost unmeasured.
+  User:3 stages/branches/loops above black unlit/no-fog abyss, sides/roof;
+  domestic/shaft/machinery; sideways/inverted small stairs.
+  Three service rooms, one/stage: shared rig E open/close, no puzzle/gate/reward.
+  Separate lamp/fan/counterweight/vent/cloth pivots; causal sound/pause-owned.
+  Guarded feet-aware paths/normal gravity; third-person/mouse, fixed below.
+  Plaster/wood→wet concrete/steel/red lamps; no cloned facades/finale/lore.
+  Single load keeps session/calendar/inventory/quests/hero/seed. Endless/full
+  kit/default density; entry seals; fish/key/gate/ambush/retry keep story.
+  Combat exceptions only in warehouse. All24: ≤8 lamps/≤2 Hard shadows,
+  fog/grade/far DOF/SSAO/SMAA/shared lens; no new GI/SSGI/SCGI/SSR/water/
+  rim/flare/blur/strobe. Blender chunks/shared surfaces/cleanup; cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — distorted Stairwell/short ascent:**
   Lower walls/columns/household/fixtures stay; broken back/east-south roof.

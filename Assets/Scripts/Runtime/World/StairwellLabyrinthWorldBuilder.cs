@@ -10,9 +10,7 @@ namespace BarPromenade
     {
         private const string ResourcePath = "Stairwell/Labyrinth/Labyrinth3D";
         private static GameObject template;
-        private static Manifest manifest;
-        [Serializable] private sealed class Manifest { public string contract_signature; public Part[] parts; }
-        [Serializable] private sealed class Part { public string name, role; public int stage; public float[] bounds_min, bounds_max; }
+        private static StairwellLabyrinthManifest manifest;
 
         public static Transform Build(Transform parent, StairwellLabyrinthPlan plan, List<Collider> stairColliders)
         {
@@ -20,7 +18,7 @@ namespace BarPromenade
             if (manifest == null)
             {
                 TextAsset source = Resources.Load<TextAsset>(ResourcePath);
-                if (source != null) manifest = JsonUtility.FromJson<Manifest>(source.text);
+                if (source != null) manifest = JsonUtility.FromJson<StairwellLabyrinthManifest>(source.text);
             }
             if (template == null || manifest?.parts == null)
                 throw new InvalidOperationException("Missing authored Stairwell labyrinth. Run its Blender generator.");
@@ -31,11 +29,24 @@ namespace BarPromenade
             GameObject model = Object.Instantiate(template, wrapper.transform, false);
             var byName = new Dictionary<string, MeshRenderer>(StringComparer.Ordinal);
             foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true)) byName.Add(renderer.name, renderer);
-            foreach (Part part in manifest.parts)
+            var presentation = wrapper.AddComponent<StairwellLabyrinthPresentation>();
+            Shader abyssShader = Resources.Load<Shader>("Shaders/StairwellAbyss");
+            if (abyssShader == null) throw new InvalidOperationException("Missing stairwell abyss shader.");
+            var abyss = new Material(abyssShader) { name = "Shared Stairwell Abyss", hideFlags = HideFlags.DontSave };
+            foreach (StairwellLabyrinthManifest.Part part in manifest.parts)
             {
                 if (!byName.TryGetValue(part.name, out MeshRenderer renderer))
                     throw new InvalidOperationException("Labyrinth is missing " + part.name);
                 ValidateBounds(wrapper.transform, renderer, part);
+                if (part.role == "Abyss")
+                {
+                    renderer.sharedMaterial = abyss;
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    renderer.receiveShadows = false;
+                    renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                    renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                    continue;
+                }
                 if (part.role == "Collision" || part.role == "ShellCollision" || part.role == "DecorCollision")
                 {
                     renderer.enabled = false;
@@ -67,6 +78,7 @@ namespace BarPromenade
                         WarehouseArenaAssetProvider.GetPropSurface(part.role == "Decor" ? "WornSteel" : part.role);
                 }
             }
+            presentation.Prepare(manifest, byName, abyss);
             BuildFootProbes(wrapper.transform, plan);
             GameObject door = ApartmentEntranceDoor.Create(wrapper.transform, plan.DoorPosition, "Labyrinth Warehouse Door");
             door.transform.localRotation = Quaternion.Euler(0f,180f,0f);
@@ -102,7 +114,7 @@ namespace BarPromenade
             }
         }
 
-        private static void ValidateBounds(Transform root, Renderer renderer, Part part)
+        private static void ValidateBounds(Transform root, Renderer renderer, StairwellLabyrinthManifest.Part part)
         {
             Bounds world = renderer.bounds;Bounds local=default;
             for(int corner=0;corner<8;corner++)

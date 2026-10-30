@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     internal static class StairwellLabyrinthData
     {
-        public const string Signature="0b8b8f6049c712b34bd183083305b6feef8781ffdb6d7a8e4b393a88fc111c06";
+        public const string Signature="f6c968bed690640aec065797a9f4927799d4abaabe82967124f78aec76fca0c4";
         public const float MainRouteLength=199.46f;
         public static StairwellLabyrinthSupportPlan[] CreateSupports() => new[] {
             new StairwellLabyrinthSupportPlan("main-00",1,new Vector3(-1.45f,4.8f,2.25f),new Vector3(-1.45f,4.8f,3.2f),3.2f,Rect.MinMaxRect(-3.05f,2.25f,0.15f,3.2f)),
@@ -30,6 +30,7 @@ namespace BarPromenade
             new StairwellLabyrinthSupportPlan("main-20",3,new Vector3(45f,15.6f,73f),new Vector3(45f,15.6f,74f),3.2f,Rect.MinMaxRect(43.4f,71.4f,46.6f,75.6f)),
             new StairwellLabyrinthSupportPlan("plaster-blind-00",1,new Vector3(-13f,8.4f,14f),new Vector3(-24f,8.4f,14f),3.2f,Rect.MinMaxRect(-25.6f,12.4f,-11.4f,15.6f)),
             new StairwellLabyrinthSupportPlan("plaster-blind-01",1,new Vector3(-24f,8.4f,14f),new Vector3(-24f,8.4f,23f),3.2f,Rect.MinMaxRect(-25.6f,12.4f,-22.4f,24.6f)),
+            new StairwellLabyrinthSupportPlan("plaster-blind-02",1,new Vector3(-24f,8.4f,23f),new Vector3(-27f,8.4f,23f),3.2f,Rect.MinMaxRect(-28.6f,21.4f,-22.4f,24.6f)),
             new StairwellLabyrinthSupportPlan("plaster-return-00",1,new Vector3(-13f,8.4f,28f),new Vector3(-25f,8.4f,28f),3.2f,Rect.MinMaxRect(-26.6f,26.4f,-11.4f,29.6f)),
             new StairwellLabyrinthSupportPlan("plaster-return-01",1,new Vector3(-25f,8.4f,28f),new Vector3(-25f,8.4f,37f),3.2f,Rect.MinMaxRect(-26.6f,26.4f,-23.4f,38.6f)),
             new StairwellLabyrinthSupportPlan("plaster-return-02",1,new Vector3(-25f,8.4f,37f),new Vector3(3f,8.4f,37f),3.2f,Rect.MinMaxRect(-26.6f,35.4f,3f,38.6f)),
@@ -50,6 +51,12 @@ namespace BarPromenade
             new StairwellLabyrinthSupportPlan("east-return-00",3,new Vector3(45f,15.6f,63f),new Vector3(56f,15.6f,63f),3.2f,Rect.MinMaxRect(43.4f,61.4f,57.6f,64.6f)),
             new StairwellLabyrinthSupportPlan("east-return-01",3,new Vector3(56f,15.6f,63f),new Vector3(56f,15.6f,73f),3.2f,Rect.MinMaxRect(54.4f,61.4f,57.6f,74.6f)),
             new StairwellLabyrinthSupportPlan("east-return-02",3,new Vector3(56f,15.6f,73f),new Vector3(45f,15.6f,73f),3.2f,Rect.MinMaxRect(43.4f,71.4f,57.6f,74.6f)),
+            new StairwellLabyrinthSupportPlan("room-store-approach",1,new Vector3(-27f,8.4f,23f),new Vector3(-28.5f,8.4f,23f),3.2f,Rect.MinMaxRect(-30.1f,21.4f,-25.4f,24.6f)),
+            new StairwellLabyrinthSupportPlan("room-store",1,new Vector3(-28.5f,8.4f,23f),new Vector3(-33f,8.4f,23f),4f,Rect.MinMaxRect(-33f,21f,-28.5f,25f)),
+            new StairwellLabyrinthSupportPlan("room-service-approach",2,new Vector3(-6f,12f,14f),new Vector3(-7.5f,12f,14f),3.2f,Rect.MinMaxRect(-9.1f,12.4f,-4.4f,15.6f)),
+            new StairwellLabyrinthSupportPlan("room-service",2,new Vector3(-7.5f,12f,14f),new Vector3(-12f,12f,14f),4f,Rect.MinMaxRect(-12f,12f,-7.5f,16f)),
+            new StairwellLabyrinthSupportPlan("room-switchroom-approach",3,new Vector3(20f,15.6f,74f),new Vector3(18.5f,15.6f,74f),3.2f,Rect.MinMaxRect(16.9f,72.4f,21.6f,75.6f)),
+            new StairwellLabyrinthSupportPlan("room-switchroom",3,new Vector3(18.5f,15.6f,74f),new Vector3(14f,15.6f,74f),4f,Rect.MinMaxRect(14f,72f,18.5f,76f)),
         };
         public static Vector3[] CreateRoute() => new[] {
             new Vector3(-1.45f,4.84f,2.55f),
@@ -76,7 +83,7 @@ namespace BarPromenade
             new Vector3(45f,15.64f,74f),
         };
         public static StairwellLabyrinthBranchPlan[] CreateBranches() => new[] {
-            new StairwellLabyrinthBranchPlan("plaster-blind",1,false,new[] {new Vector3(-13f,8.44f,14f),new Vector3(-24f,8.44f,14f),new Vector3(-24f,8.44f,23f)}),
+            new StairwellLabyrinthBranchPlan("plaster-blind",1,false,new[] {new Vector3(-13f,8.44f,14f),new Vector3(-24f,8.44f,14f),new Vector3(-24f,8.44f,23f),new Vector3(-27f,8.44f,23f)}),
             new StairwellLabyrinthBranchPlan("plaster-return",1,true,new[] {new Vector3(-13f,8.44f,28f),new Vector3(-25f,8.44f,28f),new Vector3(-25f,8.44f,37f),new Vector3(3f,8.44f,37f)}),
             new StairwellLabyrinthBranchPlan("overlook-blind",2,false,new[] {new Vector3(14f,12.04f,23f),new Vector3(14f,12.04f,14f),new Vector3(-6f,12.04f,14f)}),
             new StairwellLabyrinthBranchPlan("service-return",2,true,new[] {new Vector3(29f,12.04f,23f),new Vector3(39f,12.04f,23f),new Vector3(39f,12.04f,32f),new Vector3(29f,12.04f,32f)}),
@@ -90,7 +97,7 @@ namespace BarPromenade
             new StairwellLabyrinthLightPlan(new Vector3(-1.45f,8.2f,5.2f),new Vector3(0f,-1f,0f),1,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-1.45f,11.7f,14f),new Vector3(0f,-1f,0f),1,true,false),
             new StairwellLabyrinthLightPlan(new Vector3(-13f,11.7f,21f),new Vector3(0f,-1f,0f),1,false,false),
-            new StairwellLabyrinthLightPlan(new Vector3(-7f,11.7f,28f),new Vector3(0f,-1f,0f),1,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(-7f,11.7f,28f),new Vector3(0f,-1f,0f),1,true,false),
             new StairwellLabyrinthLightPlan(new Vector3(3f,11.7f,32f),new Vector3(0f,-1f,0f),1,true,false),
             new StairwellLabyrinthLightPlan(new Vector3(-24f,11.7f,20f),new Vector3(0f,-1f,0f),1,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-25f,11.7f,34f),new Vector3(0f,-1f,0f),1,false,false),
@@ -111,12 +118,15 @@ namespace BarPromenade
             new StairwellLabyrinthLightPlan(new Vector3(53f,18.9f,56f),new Vector3(0f,-1f,0f),3,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(18f,18.9f,59f),new Vector3(0f,-1f,0f),3,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(56f,18.9f,69f),new Vector3(0f,-1f,0f),3,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(-30.6f,11.12f,23f),new Vector3(0f,-1f,0f),1,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(-9.6f,14.72f,14f),new Vector3(0f,-1f,0f),2,false,false),
+            new StairwellLabyrinthLightPlan(new Vector3(16.4f,18.32f,74f),new Vector3(0f,-1f,0f),3,false,false),
             new StairwellLabyrinthLightPlan(new Vector3(-33.65f,12.5f,23f),new Vector3(1f,-0f,0f),1,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(-8f,24f,30f),new Vector3(0f,-1f,0f),1,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(48.65f,17.5f,28f),new Vector3(-1f,-0f,0f),2,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(25f,27f,24f),new Vector3(0f,-1f,0f),2,false,true),
             new StairwellLabyrinthLightPlan(new Vector3(64.65f,23f,64f),new Vector3(-1f,-0f,0f),3,false,true),
-            new StairwellLabyrinthLightPlan(new Vector3(35f,30f,64f),new Vector3(0f,-1f,0f),3,false,true),
+            new StairwellLabyrinthLightPlan(new Vector3(42.5f,23f,72f),new Vector3(-0.719846f,-0.34202f,-0.604023f),3,true,true),
         };
     }
 }

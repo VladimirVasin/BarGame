@@ -32,6 +32,7 @@ namespace BarPromenade
         }
         public StairwellStreetExit StreetExit { get; private set; }
         public StairwellWarehouseEntrance WarehouseEntrance { get; private set; }
+        public StairwellLabyrinthPresentation LabyrinthPresentation { get; private set; }
         public StairwellApartmentEntrance ApartmentEntrance
         {
             get;
@@ -218,6 +219,8 @@ namespace BarPromenade
             {
                 BuildWarehouseEntrance();
                 Atmosphere.ConfigureLabyrinth(Layout.Labyrinth, World.Root, Player.GameObject.transform, Soundscape);
+                LabyrinthPresentation = World.Root.Find("Stairwell Labyrinth").GetComponent<StairwellLabyrinthPresentation>();
+                LabyrinthPresentation.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
             }
             if (!Layout.IsCorrupted)
             {

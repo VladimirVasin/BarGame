@@ -60,6 +60,11 @@ namespace BarPromenade
         private int cueSequence;
         private float secondsUntilNextCue;
         private StairwellSoundscapeAnchors anchors;
+        private Transform mechanismFan, mechanismLamp, mechanismLift, mechanismFlap;
+        private float nextMechanismCue;
+        private bool hasMechanismAnchors, ownsMechanismCue;
+        private Vector3 previousVentilationPosition, previousElectricalPosition;
+        private float previousVentilationRange, previousElectricalRange;
 
         public bool IsInitialized { get; private set; }
         public bool HasPlayedCue { get; private set; }
@@ -78,6 +83,62 @@ namespace BarPromenade
         public AudioClip MetalStressClip => metalStressClip;
         public AudioClip DistantWaterClip => distantWaterClip;
         public AudioClip DistantMovementClip => distantMovementClip;
+
+        public void ConfigureLabyrinthMechanisms(Transform fan, Transform lamp, Transform lift, Transform flap)
+        {
+            if (!hasMechanismAnchors)
+            {
+                previousVentilationPosition = ventilationSource.transform.position;
+                previousElectricalPosition = electricalSource.transform.position;
+                previousVentilationRange = ventilationSource.maxDistance;
+                previousElectricalRange = electricalSource.maxDistance;
+                hasMechanismAnchors = true;
+            }
+            mechanismFan = fan; mechanismLamp = lamp; mechanismLift = lift; mechanismFlap = flap;
+            UpdateMechanismAnchors();
+            ventilationSource.maxDistance = 42f;
+            electricalSource.maxDistance = 15f;
+        }
+
+        public void ReleaseLabyrinthMechanisms()
+        {
+            if (!hasMechanismAnchors) return;
+            hasMechanismAnchors = false;
+            mechanismFan = mechanismLamp = mechanismLift = mechanismFlap = null;
+            if (ventilationSource != null)
+            {
+                ventilationSource.transform.position = previousVentilationPosition;
+                ventilationSource.maxDistance = previousVentilationRange;
+            }
+            if (electricalSource != null)
+            {
+                electricalSource.transform.position = previousElectricalPosition;
+                electricalSource.maxDistance = previousElectricalRange;
+            }
+            if (ownsMechanismCue && rareCueSource != null) rareCueSource.Stop();
+            ownsMechanismCue = false;
+        }
+
+        public void UpdateMechanismAnchors()
+        {
+            if (!IsInitialized) return;
+            if (mechanismFan != null) ventilationSource.transform.position = mechanismFan.position;
+            if (mechanismLamp != null) electricalSource.transform.position = mechanismLamp.position;
+        }
+
+        public void TryPlayMechanismCue(Vector3 position, StairwellSoundscapeCueKind kind)
+        {
+            if (!isActiveAndEnabled || !IsInitialized || GameTimeScaleRuntime.IsPaused ||
+                Time.time < nextMechanismCue || rareCueSource.isPlaying) return;
+            nextMechanismCue = Time.time + 8f;
+            rareCueSource.transform.position = position;
+            rareCueSource.clip = GetCueClip(kind);
+            rareCueSource.pitch = kind == StairwellSoundscapeCueKind.MetalStress ? .72f : .85f;
+            rareCueSource.volume = CueVolume * .65f;
+            rareCueSource.Play();
+            ownsMechanismCue = true;
+            secondsUntilNextCue = Mathf.Max(secondsUntilNextCue, 8f);
+        }
 
         public void Initialize(
             int seed,
@@ -121,11 +182,11 @@ namespace BarPromenade
                 case StairwellSoundscapeCueKind.PipeKnock:
                     return anchors.PipeKnock;
                 case StairwellSoundscapeCueKind.MetalStress:
-                    return anchors.MetalStress;
+                    return mechanismLift != null ? mechanismLift.position : anchors.MetalStress;
                 case StairwellSoundscapeCueKind.DistantWater:
                     return anchors.DistantWater;
                 default:
-                    return anchors.DistantMovement;
+                    return mechanismFlap != null ? mechanismFlap.position : anchors.DistantMovement;
             }
         }
 
@@ -205,6 +266,7 @@ namespace BarPromenade
 
         private void PlayNextCue()
         {
+            ownsMechanismCue = false;
             StairwellSoundscapeCue cue =
                 StairwellSoundscapeSchedule.GetCue(
                     deterministicSeed,
